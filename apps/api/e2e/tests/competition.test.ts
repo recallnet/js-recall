@@ -12,6 +12,7 @@ import {
   AgentTrophy,
   BlockchainType,
   CROSS_CHAIN_TRADING_TYPE,
+  Competition,
   CompetitionAgentsResponse,
   CompetitionDetailResponse,
   CompetitionJoinResponse,
@@ -2059,691 +2060,6 @@ describe("Competition API", () => {
     expect(Number.isFinite(agentData.pnlPercent)).toBe(true);
     expect(Number.isFinite(agentData.change24h)).toBe(true);
     expect(Number.isFinite(agentData.change24hPercent)).toBe(true);
-  });
-
-  test("should support pagination for competition agents", async () => {
-    // Setup admin client
-    const adminClient = createTestClient();
-    await adminClient.loginAsAdmin(adminApiKey);
-
-    // Register multiple agents for pagination testing
-    const agents = [];
-    for (let i = 1; i <= 5; i++) {
-      const { agent } = await registerUserAndAgentAndGetClient({
-        adminApiKey,
-        agentName: `Pagination Test Agent ${i}`,
-      });
-      agents.push(agent);
-    }
-
-    // Start a competition with all agents
-    const competitionName = `Pagination Test Competition ${Date.now()}`;
-    const startResult = await startTestCompetition({
-      adminClient,
-      name: competitionName,
-      agentIds: agents.map((a) => a.id),
-    });
-    const competitionId = startResult.competition.id;
-
-    // Create a client for testing
-    const { client } = await registerUserAndAgentAndGetClient({
-      adminApiKey,
-      agentName: "Pagination Test Client Agent",
-    });
-
-    // Test pagination with limit=2, offset=0
-    const page1Response = (await client.getCompetitionAgents(competitionId, {
-      limit: 2,
-      offset: 0,
-    })) as CompetitionAgentsResponse;
-
-    expect(page1Response.success).toBe(true);
-    expect(page1Response.agents.length).toBe(2);
-    expect(page1Response.pagination.total).toBe(5);
-    expect(page1Response.pagination.limit).toBe(2);
-    expect(page1Response.pagination.offset).toBe(0);
-    expect(page1Response.pagination.hasMore).toBe(true);
-
-    // Test pagination with limit=2, offset=2
-    const page2Response = (await client.getCompetitionAgents(competitionId, {
-      limit: 2,
-      offset: 2,
-    })) as CompetitionAgentsResponse;
-
-    expect(page2Response.success).toBe(true);
-    expect(page2Response.agents.length).toBe(2);
-    expect(page2Response.pagination.total).toBe(5);
-    expect(page2Response.pagination.limit).toBe(2);
-    expect(page2Response.pagination.offset).toBe(2);
-    expect(page2Response.pagination.hasMore).toBe(true);
-
-    // Test pagination with limit=2, offset=4 (last page)
-    const page3Response = (await client.getCompetitionAgents(competitionId, {
-      limit: 2,
-      offset: 4,
-    })) as CompetitionAgentsResponse;
-
-    expect(page3Response.success).toBe(true);
-    expect(page3Response.agents.length).toBe(1);
-    expect(page3Response.pagination.total).toBe(5);
-    expect(page3Response.pagination.limit).toBe(2);
-    expect(page3Response.pagination.offset).toBe(4);
-    expect(page3Response.pagination.hasMore).toBe(false);
-
-    // Verify no duplicate agents across pages
-    const allAgentIds = [
-      ...page1Response.agents.map((a) => a.id),
-      ...page2Response.agents.map((a) => a.id),
-      ...page3Response.agents.map((a) => a.id),
-    ];
-    const uniqueAgentIds = new Set(allAgentIds);
-    expect(uniqueAgentIds.size).toBe(5);
-  });
-
-  test("should support filtering competition agents by name", async () => {
-    // Setup admin client
-    const adminClient = createTestClient();
-    await adminClient.loginAsAdmin(adminApiKey);
-
-    // Register agents with specific names for filtering
-    const { agent: alphaAgent } = await registerUserAndAgentAndGetClient({
-      adminApiKey,
-      agentName: "Alpha Filter Agent",
-    });
-    const { agent: betaAgent } = await registerUserAndAgentAndGetClient({
-      adminApiKey,
-      agentName: "Beta Filter Agent",
-    });
-    const { agent: gammaAgent } = await registerUserAndAgentAndGetClient({
-      adminApiKey,
-      agentName: "Gamma Different Agent",
-    });
-
-    // Start a competition with all agents
-    const competitionName = `Filter Test Competition ${Date.now()}`;
-    const startResult = await startTestCompetition({
-      adminClient,
-      name: competitionName,
-      agentIds: [alphaAgent.id, betaAgent.id, gammaAgent.id],
-    });
-    const competitionId = startResult.competition.id;
-
-    // Create a client for testing
-    const { client } = await registerUserAndAgentAndGetClient({
-      adminApiKey,
-      agentName: "Filter Test Client Agent",
-    });
-
-    // Test filtering by "Filter" - should return Alpha and Beta agents
-    const filterResponse = (await client.getCompetitionAgents(competitionId, {
-      filter: "Filter",
-    })) as CompetitionAgentsResponse;
-
-    expect(filterResponse.success).toBe(true);
-    expect(filterResponse.agents.length).toBe(2);
-    expect(filterResponse.pagination.total).toBe(2);
-
-    const filteredNames = filterResponse.agents.map((a) => a.name);
-    expect(filteredNames).toContain("Alpha Filter Agent");
-    expect(filteredNames).toContain("Beta Filter Agent");
-    expect(filteredNames).not.toContain("Gamma Different Agent");
-
-    // Test filtering by "Alpha" - should return only Alpha agent
-    const alphaResponse = (await client.getCompetitionAgents(competitionId, {
-      filter: "Alpha",
-    })) as CompetitionAgentsResponse;
-
-    expect(alphaResponse.success).toBe(true);
-    expect(alphaResponse.agents.length).toBe(1);
-    expect(alphaResponse.agents[0]?.name).toBe("Alpha Filter Agent");
-
-    // Test filtering by non-existent term
-    const noMatchResponse = (await client.getCompetitionAgents(competitionId, {
-      filter: "NonExistent",
-    })) as CompetitionAgentsResponse;
-
-    expect(noMatchResponse.success).toBe(true);
-    expect(noMatchResponse.agents.length).toBe(0);
-    expect(noMatchResponse.pagination.total).toBe(0);
-  });
-
-  test("should support sorting competition agents", async () => {
-    // Setup admin client
-    const adminClient = createTestClient();
-    await adminClient.loginAsAdmin(adminApiKey);
-
-    // Register agents with names that will test sorting
-    const { agent: charlieAgent } = await registerUserAndAgentAndGetClient({
-      adminApiKey,
-      agentName: "Charlie Sort Agent",
-    });
-
-    // Wait to ensure different creation times
-    await new Promise((resolve) => setTimeout(resolve, 100));
-
-    const { agent: alphaAgent } = await registerUserAndAgentAndGetClient({
-      adminApiKey,
-      agentName: "Alpha Sort Agent",
-    });
-
-    await new Promise((resolve) => setTimeout(resolve, 100));
-
-    const { agent: betaAgent } = await registerUserAndAgentAndGetClient({
-      adminApiKey,
-      agentName: "Beta Sort Agent",
-    });
-
-    // Start a competition with all agents
-    const competitionName = `Sort Test Competition ${Date.now()}`;
-    const startResult = await startTestCompetition({
-      adminClient,
-      name: competitionName,
-      agentIds: [charlieAgent.id, alphaAgent.id, betaAgent.id],
-    });
-    const competitionId = startResult.competition.id;
-
-    // Create a client for testing
-    const { client } = await registerUserAndAgentAndGetClient({
-      adminApiKey,
-      agentName: "Sort Test Client Agent",
-    });
-    // Force a snapshot directly
-    const services = new ServiceRegistry();
-    await services.portfolioSnapshotterService.takePortfolioSnapshots(
-      competitionId,
-    );
-
-    // Test sorting by default (rank)
-    const rankDefaultResponse = (await client.getCompetitionAgents(
-      competitionId,
-    )) as CompetitionAgentsResponse;
-
-    expect(rankDefaultResponse.success).toBe(true);
-    expect(rankDefaultResponse.agents[0]!.rank).toBe(1);
-    expect(rankDefaultResponse.agents[1]!.rank).toBe(2);
-    expect(rankDefaultResponse.agents[2]!.rank).toBe(3);
-
-    // Test sorting by name (ascending)
-    const nameAscResponse = (await client.getCompetitionAgents(competitionId, {
-      sort: "name",
-    })) as CompetitionAgentsResponse;
-
-    expect(nameAscResponse.success).toBe(true);
-    expect(nameAscResponse.agents.length).toBe(3);
-
-    const nameAscOrder = nameAscResponse.agents.map((a) => a.name);
-    expect(nameAscOrder[0]).toBe("Alpha Sort Agent");
-    expect(nameAscOrder[1]).toBe("Beta Sort Agent");
-    expect(nameAscOrder[2]).toBe("Charlie Sort Agent");
-
-    // Test sorting by name (descending)
-    const nameDescResponse = (await client.getCompetitionAgents(competitionId, {
-      sort: "-name",
-    })) as CompetitionAgentsResponse;
-
-    expect(nameDescResponse.success).toBe(true);
-    expect(nameDescResponse.agents.length).toBe(3);
-
-    const nameDescOrder = nameDescResponse.agents.map((a) => a.name);
-    expect(nameDescOrder[0]).toBe("Charlie Sort Agent");
-    expect(nameDescOrder[1]).toBe("Beta Sort Agent");
-    expect(nameDescOrder[2]).toBe("Alpha Sort Agent");
-
-    // Test sorting by rank
-    const rankAscResponse = (await client.getCompetitionAgents(competitionId, {
-      sort: "rank",
-    })) as CompetitionAgentsResponse;
-
-    expect(rankAscResponse.success).toBe(true);
-    expect(rankAscResponse.agents[0]!.rank).toBe(1);
-    expect(rankAscResponse.agents[1]!.rank).toBe(2);
-    expect(rankAscResponse.agents[2]!.rank).toBe(3);
-
-    // Test sorting by rank (descending)
-    const rankDescResponse = (await client.getCompetitionAgents(competitionId, {
-      sort: "-rank",
-    })) as CompetitionAgentsResponse;
-    expect(rankDescResponse.success).toBe(true);
-    expect(rankDescResponse.agents[0]!.rank).toBe(3);
-    expect(rankDescResponse.agents[1]!.rank).toBe(2);
-    expect(rankDescResponse.agents[2]!.rank).toBe(1);
-
-    // Test sorting by score (ascending)
-    const scoreAscResponse = (await client.getCompetitionAgents(competitionId, {
-      sort: "score",
-    })) as CompetitionAgentsResponse;
-    expect(scoreAscResponse.success).toBe(true);
-    expect(scoreAscResponse.agents[0]!.score).toBeLessThanOrEqual(
-      scoreAscResponse.agents[1]!.score,
-    );
-    expect(scoreAscResponse.agents[1]!.score).toBeLessThanOrEqual(
-      scoreAscResponse.agents[2]!.score,
-    );
-
-    // Test sorting by score (descending)
-    const scoreDescResponse = (await client.getCompetitionAgents(
-      competitionId,
-      {
-        sort: "-score",
-      },
-    )) as CompetitionAgentsResponse;
-    expect(scoreDescResponse.success).toBe(true);
-    expect(scoreDescResponse.agents[0]!.score).toBeGreaterThanOrEqual(
-      scoreDescResponse.agents[1]!.score,
-    );
-    expect(scoreDescResponse.agents[1]!.score).toBeGreaterThanOrEqual(
-      scoreDescResponse.agents[2]!.score,
-    );
-
-    // Test sorting by portfolioValue (ascending)
-    const portfolioValueAscResponse = (await client.getCompetitionAgents(
-      competitionId,
-      {
-        sort: "portfolioValue",
-      },
-    )) as CompetitionAgentsResponse;
-    expect(portfolioValueAscResponse.success).toBe(true);
-    expect(
-      portfolioValueAscResponse.agents[0]!.portfolioValue,
-    ).toBeLessThanOrEqual(portfolioValueAscResponse.agents[1]!.portfolioValue);
-    expect(
-      portfolioValueAscResponse.agents[1]!.portfolioValue,
-    ).toBeLessThanOrEqual(portfolioValueAscResponse.agents[2]!.portfolioValue);
-
-    // Test sorting by portfolioValue (descending)
-    const portfolioValueDescResponse = (await client.getCompetitionAgents(
-      competitionId,
-      {
-        sort: "-portfolioValue",
-      },
-    )) as CompetitionAgentsResponse;
-    expect(portfolioValueDescResponse.success).toBe(true);
-    expect(
-      portfolioValueDescResponse.agents[0]!.portfolioValue,
-    ).toBeGreaterThanOrEqual(
-      portfolioValueDescResponse.agents[1]!.portfolioValue,
-    );
-    expect(
-      portfolioValueDescResponse.agents[1]!.portfolioValue,
-    ).toBeGreaterThanOrEqual(
-      portfolioValueDescResponse.agents[2]!.portfolioValue,
-    );
-
-    // Check PnL (ascending)
-    const pnlAscResponse = (await client.getCompetitionAgents(competitionId, {
-      sort: "pnl",
-    })) as CompetitionAgentsResponse;
-    expect(pnlAscResponse.success).toBe(true);
-    expect(pnlAscResponse.agents[0]!.pnl).toBeGreaterThanOrEqual(
-      pnlAscResponse.agents[1]!.pnl,
-    );
-    expect(pnlAscResponse.agents[1]!.pnl).toBeGreaterThanOrEqual(
-      pnlAscResponse.agents[2]!.pnl,
-    );
-
-    // Check PnL (descending)
-    const pnlDescResponse = (await client.getCompetitionAgents(competitionId, {
-      sort: "-pnl",
-    })) as CompetitionAgentsResponse;
-    expect(pnlDescResponse.success).toBe(true);
-    expect(pnlDescResponse.agents[0]!.pnl).toBeGreaterThanOrEqual(
-      pnlDescResponse.agents[1]!.pnl,
-    );
-    expect(pnlDescResponse.agents[1]!.pnl).toBeGreaterThanOrEqual(
-      pnlDescResponse.agents[2]!.pnl,
-    );
-
-    // Verify PnL percentage is in ascending order
-    const pnlPercentAscResponse = (await client.getCompetitionAgents(
-      competitionId,
-      {
-        sort: "pnlPercent",
-      },
-    )) as CompetitionAgentsResponse;
-    expect(pnlPercentAscResponse.success).toBe(true);
-    expect(pnlPercentAscResponse.agents[0]!.pnlPercent).toBeGreaterThanOrEqual(
-      pnlPercentAscResponse.agents[1]!.pnlPercent,
-    );
-    expect(pnlPercentAscResponse.agents[1]!.pnlPercent).toBeGreaterThanOrEqual(
-      pnlPercentAscResponse.agents[2]!.pnlPercent,
-    );
-
-    // Verify PnL percentage is in descending order
-    const pnlPercentDescResponse = (await client.getCompetitionAgents(
-      competitionId,
-      {
-        sort: "-pnlPercent",
-      },
-    )) as CompetitionAgentsResponse;
-    expect(pnlPercentDescResponse.success).toBe(true);
-    expect(pnlPercentDescResponse.agents[0]!.pnlPercent).toBeLessThanOrEqual(
-      pnlPercentDescResponse.agents[1]!.pnlPercent,
-    );
-    expect(pnlPercentDescResponse.agents[1]!.pnlPercent).toBeLessThanOrEqual(
-      pnlPercentDescResponse.agents[2]!.pnlPercent,
-    );
-
-    // Verify change24h is in ascending order
-    const change24hAscResponse = (await client.getCompetitionAgents(
-      competitionId,
-      {
-        sort: "change24h",
-      },
-    )) as CompetitionAgentsResponse;
-    expect(change24hAscResponse.success).toBe(true);
-    expect(change24hAscResponse.agents[0]!.change24h).toBeGreaterThanOrEqual(
-      change24hAscResponse.agents[1]!.change24h,
-    );
-    expect(change24hAscResponse.agents[1]!.change24h).toBeGreaterThanOrEqual(
-      change24hAscResponse.agents[2]!.change24h,
-    );
-
-    // Verify change24h is in descending order
-    const change24hDescResponse = (await client.getCompetitionAgents(
-      competitionId,
-      {
-        sort: "-change24h",
-      },
-    )) as CompetitionAgentsResponse;
-    expect(change24hDescResponse.success).toBe(true);
-    expect(change24hDescResponse.agents[0]!.change24h).toBeLessThanOrEqual(
-      change24hDescResponse.agents[1]!.change24h,
-    );
-    expect(change24hDescResponse.agents[1]!.change24h).toBeLessThanOrEqual(
-      change24hDescResponse.agents[2]!.change24h,
-    );
-
-    // Verify change24h percentage is in ascending order
-    const change24hPercentAscResponse = (await client.getCompetitionAgents(
-      competitionId,
-      {
-        sort: "change24hPercent",
-      },
-    )) as CompetitionAgentsResponse;
-    expect(change24hPercentAscResponse.success).toBe(true);
-    expect(
-      change24hPercentAscResponse.agents[0]!.change24hPercent,
-    ).toBeGreaterThanOrEqual(
-      change24hPercentAscResponse.agents[1]!.change24hPercent,
-    );
-    expect(
-      change24hPercentAscResponse.agents[1]!.change24hPercent,
-    ).toBeGreaterThanOrEqual(
-      change24hPercentAscResponse.agents[2]!.change24hPercent,
-    );
-
-    // Verify change24h percentage is in descending order
-    const change24hPercentDescResponse = (await client.getCompetitionAgents(
-      competitionId,
-      {
-        sort: "-change24hPercent",
-      },
-    )) as CompetitionAgentsResponse;
-    expect(change24hPercentDescResponse.success).toBe(true);
-    expect(
-      change24hPercentDescResponse.agents[0]!.change24hPercent,
-    ).toBeLessThanOrEqual(
-      change24hPercentDescResponse.agents[1]!.change24hPercent,
-    );
-    expect(
-      change24hPercentDescResponse.agents[1]!.change24hPercent,
-    ).toBeLessThanOrEqual(
-      change24hPercentDescResponse.agents[2]!.change24hPercent,
-    );
-
-    // Test sorting by vote count (ascending)
-    const voteCountAscResponse = (await client.getCompetitionAgents(
-      competitionId,
-      {
-        sort: "voteCount",
-      },
-    )) as CompetitionAgentsResponse;
-    expect(voteCountAscResponse.success).toBe(true);
-    expect(voteCountAscResponse.agents[0]!.voteCount).toBeGreaterThanOrEqual(
-      voteCountAscResponse.agents[1]!.voteCount,
-    );
-    expect(voteCountAscResponse.agents[1]!.voteCount).toBeGreaterThanOrEqual(
-      voteCountAscResponse.agents[2]!.voteCount,
-    );
-
-    // Test sorting by vote count (descending)
-    const voteCountDescResponse = (await client.getCompetitionAgents(
-      competitionId,
-      {
-        sort: "-voteCount",
-      },
-    )) as CompetitionAgentsResponse;
-    expect(voteCountDescResponse.success).toBe(true);
-  });
-
-  test("should handle computed sorting with pagination limits", async () => {
-    // Setup admin client
-    const adminClient = createTestClient();
-    await adminClient.loginAsAdmin(adminApiKey);
-
-    // Register 6 agents to test pagination
-    const agents = [];
-    for (let i = 1; i <= 6; i++) {
-      const { agent } = await registerUserAndAgentAndGetClient({
-        adminApiKey,
-        agentName: `Pagination Test Agent ${i}`,
-      });
-      agents.push(agent);
-    }
-
-    // Start a competition with all agents
-    const competitionName = `Pagination Test Competition ${Date.now()}`;
-    const startResult = await startTestCompetition({
-      adminClient,
-      name: competitionName,
-      agentIds: agents.map((a) => a.id),
-    });
-    const competitionId = startResult.competition.id;
-
-    // Create a client for testing
-    const { client } = await registerUserAndAgentAndGetClient({
-      adminApiKey,
-      agentName: "Pagination Test Client Agent",
-    });
-
-    // Test 1: Database sorting
-    const dbSortResponse = (await client.getCompetitionAgents(competitionId, {
-      sort: "name", // Database field (no computed fields)
-      limit: 3,
-      offset: 0,
-    })) as CompetitionAgentsResponse;
-
-    expect(dbSortResponse.success).toBe(true);
-    expect(dbSortResponse.agents.length).toBe(3);
-    expect(dbSortResponse.pagination.limit).toBe(3);
-    expect(dbSortResponse.pagination.offset).toBe(0);
-    expect(dbSortResponse.pagination.total).toBe(6);
-    expect(dbSortResponse.pagination.hasMore).toBe(true);
-
-    // Test 2: Computed sorting
-    const computedSortResponse = (await client.getCompetitionAgents(
-      competitionId,
-      {
-        sort: "rank", // Computed field
-        limit: 3,
-        offset: 0,
-      },
-    )) as CompetitionAgentsResponse;
-
-    expect(computedSortResponse.success).toBe(true);
-
-    expect(computedSortResponse.agents.length).toBe(3);
-    expect(computedSortResponse.pagination.limit).toBe(3);
-    expect(computedSortResponse.pagination.offset).toBe(0);
-    expect(computedSortResponse.pagination.total).toBe(6);
-    expect(computedSortResponse.pagination.hasMore).toBe(true);
-
-    // Test 3: Try different computed fields to confirm the bug affects all computed sorting
-    const testFields = [
-      "score",
-      "pnl",
-      "pnlPercent",
-      "change24h",
-      "change24hPercent",
-      "voteCount",
-    ];
-
-    for (const field of testFields) {
-      const response = (await client.getCompetitionAgents(competitionId, {
-        sort: field,
-        limit: 2,
-        offset: 0,
-      })) as CompetitionAgentsResponse;
-
-      expect(response.success).toBe(true);
-      expect(response.agents.length).toBe(2);
-      expect(response.pagination.limit).toBe(2);
-    }
-
-    // Test 4: Demonstrate that offset is also ignored
-    const offsetResponse = (await client.getCompetitionAgents(competitionId, {
-      sort: "rank",
-      limit: 2,
-      offset: 3, // Should skip first 3 agents
-    })) as CompetitionAgentsResponse;
-
-    expect(offsetResponse.success).toBe(true);
-    expect(offsetResponse.agents.length).toBe(2);
-    expect(offsetResponse.pagination.offset).toBe(3);
-    expect(offsetResponse.pagination.limit).toBe(2);
-  });
-
-  test("should combine filtering, sorting, and pagination", async () => {
-    // Setup admin client
-    const adminClient = createTestClient();
-    await adminClient.loginAsAdmin(adminApiKey);
-
-    // Register multiple agents with "Test" in their names
-    const agents = [];
-    for (let i = 1; i <= 4; i++) {
-      const { agent } = await registerUserAndAgentAndGetClient({
-        adminApiKey,
-        agentName: `Test Agent ${String.fromCharCode(65 + i)}`, // Test Agent B, C, D, E
-      });
-      agents.push(agent);
-    }
-
-    // Register one agent without "Test" in the name
-    const { agent: otherAgent } = await registerUserAndAgentAndGetClient({
-      adminApiKey,
-      agentName: "Different Agent",
-    });
-
-    // Start a competition with all agents
-    const competitionName = `Combined Test Competition ${Date.now()}`;
-    const startResult = await startTestCompetition({
-      adminClient,
-      name: competitionName,
-      agentIds: [...agents.map((a) => a.id), otherAgent.id],
-    });
-    const competitionId = startResult.competition.id;
-
-    // Create a client for testing
-    const { client } = await registerUserAndAgentAndGetClient({
-      adminApiKey,
-      agentName: "Combined Test Client Agent",
-    });
-
-    // Test filtering by "Test", sorting by name, with pagination
-    const response = (await client.getCompetitionAgents(competitionId, {
-      filter: "Test",
-      sort: "name",
-      limit: 2,
-      offset: 0,
-    })) as CompetitionAgentsResponse;
-
-    expect(response.success).toBe(true);
-    expect(response.agents.length).toBe(2);
-    expect(response.pagination.total).toBe(4); // Only "Test" agents
-    expect(response.pagination.limit).toBe(2);
-    expect(response.pagination.offset).toBe(0);
-    expect(response.pagination.hasMore).toBe(true);
-
-    // Verify filtering worked (no "Different Agent")
-    const agentNames = response.agents.map((a) => a.name);
-    expect(agentNames.every((name) => name.includes("Test"))).toBe(true);
-
-    // Verify sorting worked (alphabetical order)
-    expect(agentNames[0]?.localeCompare(agentNames[1] || "")).toBeLessThan(0);
-
-    // Test second page
-    const page2Response = (await client.getCompetitionAgents(competitionId, {
-      filter: "Test",
-      sort: "name",
-      limit: 2,
-      offset: 2,
-    })) as CompetitionAgentsResponse;
-
-    expect(page2Response.success).toBe(true);
-    expect(page2Response.agents.length).toBe(2);
-    expect(page2Response.pagination.total).toBe(4);
-    expect(page2Response.pagination.hasMore).toBe(false);
-  });
-
-  test("should validate query parameters for competition agents", async () => {
-    // Setup admin client
-    const adminClient = createTestClient();
-    await adminClient.loginAsAdmin(adminApiKey);
-
-    // Register an agent
-    const { agent, client } = await registerUserAndAgentAndGetClient({
-      adminApiKey,
-      agentName: "Validation Test Agent",
-    });
-
-    // Start a competition
-    const competitionName = `Validation Test Competition ${Date.now()}`;
-    const startResult = await startTestCompetition({
-      adminClient,
-      name: competitionName,
-      agentIds: [agent.id],
-    });
-    const competitionId = startResult.competition.id;
-
-    // Test invalid limit (too high)
-    try {
-      await client.getCompetitionAgents(competitionId, {
-        limit: 150, // Max is 100
-      });
-      expect(false).toBe(true); // Should not reach here
-    } catch (error) {
-      expect(error).toBeDefined();
-    }
-
-    // Test invalid limit (too low)
-    try {
-      await client.getCompetitionAgents(competitionId, {
-        limit: 0, // Min is 1
-      });
-      expect(false).toBe(true); // Should not reach here
-    } catch (error) {
-      expect(error).toBeDefined();
-    }
-
-    // Test invalid offset (negative)
-    try {
-      await client.getCompetitionAgents(competitionId, {
-        offset: -1, // Min is 0
-      });
-      expect(false).toBe(true); // Should not reach here
-    } catch (error) {
-      expect(error).toBeDefined();
-    }
-
-    // Test valid parameters should work
-    const validResponse = (await client.getCompetitionAgents(competitionId, {
-      limit: 50,
-      offset: 0,
-      sort: "name",
-      filter: "Test",
-    })) as CompetitionAgentsResponse;
-
-    expect(validResponse.success).toBe(true);
   });
 
   // test cases for join/leave competition functionality
@@ -5566,6 +4882,848 @@ describe("Competition API", () => {
       expect(ourCompetition3).toBeDefined();
       expect(ourCompetition3.maxParticipants).toBeNull();
       expect(ourCompetition3.registeredParticipants).toBe(0);
+    });
+  });
+
+  describe("Competitions sorting, filtering, and pagination", () => {
+    test("should support pagination for competition agents", async () => {
+      // Setup admin client
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Register multiple agents for pagination testing
+      const agents = [];
+      for (let i = 1; i <= 5; i++) {
+        const { agent } = await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: `Pagination Test Agent ${i}`,
+        });
+        agents.push(agent);
+      }
+
+      // Start a competition with all agents
+      const competitionName = `Pagination Test Competition ${Date.now()}`;
+      const startResult = await startTestCompetition({
+        adminClient,
+        name: competitionName,
+        agentIds: agents.map((a) => a.id),
+      });
+      const competitionId = startResult.competition.id;
+
+      // Create a client for testing
+      const { client } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Pagination Test Client Agent",
+      });
+
+      // Test pagination with limit=2, offset=0
+      const page1Response = (await client.getCompetitionAgents(competitionId, {
+        limit: 2,
+        offset: 0,
+      })) as CompetitionAgentsResponse;
+
+      expect(page1Response.success).toBe(true);
+      expect(page1Response.agents.length).toBe(2);
+      expect(page1Response.pagination.total).toBe(5);
+      expect(page1Response.pagination.limit).toBe(2);
+      expect(page1Response.pagination.offset).toBe(0);
+      expect(page1Response.pagination.hasMore).toBe(true);
+
+      // Test pagination with limit=2, offset=2
+      const page2Response = (await client.getCompetitionAgents(competitionId, {
+        limit: 2,
+        offset: 2,
+      })) as CompetitionAgentsResponse;
+
+      expect(page2Response.success).toBe(true);
+      expect(page2Response.agents.length).toBe(2);
+      expect(page2Response.pagination.total).toBe(5);
+      expect(page2Response.pagination.limit).toBe(2);
+      expect(page2Response.pagination.offset).toBe(2);
+      expect(page2Response.pagination.hasMore).toBe(true);
+
+      // Test pagination with limit=2, offset=4 (last page)
+      const page3Response = (await client.getCompetitionAgents(competitionId, {
+        limit: 2,
+        offset: 4,
+      })) as CompetitionAgentsResponse;
+
+      expect(page3Response.success).toBe(true);
+      expect(page3Response.agents.length).toBe(1);
+      expect(page3Response.pagination.total).toBe(5);
+      expect(page3Response.pagination.limit).toBe(2);
+      expect(page3Response.pagination.offset).toBe(4);
+      expect(page3Response.pagination.hasMore).toBe(false);
+
+      // Verify no duplicate agents across pages
+      const allAgentIds = [
+        ...page1Response.agents.map((a) => a.id),
+        ...page2Response.agents.map((a) => a.id),
+        ...page3Response.agents.map((a) => a.id),
+      ];
+      const uniqueAgentIds = new Set(allAgentIds);
+      expect(uniqueAgentIds.size).toBe(5);
+    });
+
+    test("should support filtering competition agents by name", async () => {
+      // Setup admin client
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Register agents with specific names for filtering
+      const { agent: alphaAgent } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Alpha Filter Agent",
+      });
+      const { agent: betaAgent } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Beta Filter Agent",
+      });
+      const { agent: gammaAgent } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Gamma Different Agent",
+      });
+
+      // Start a competition with all agents
+      const competitionName = `Filter Test Competition ${Date.now()}`;
+      const startResult = await startTestCompetition({
+        adminClient,
+        name: competitionName,
+        agentIds: [alphaAgent.id, betaAgent.id, gammaAgent.id],
+      });
+      const competitionId = startResult.competition.id;
+
+      // Create a client for testing
+      const { client } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Filter Test Client Agent",
+      });
+
+      // Test filtering by "Filter" - should return Alpha and Beta agents
+      const filterResponse = (await client.getCompetitionAgents(competitionId, {
+        filter: "Filter",
+      })) as CompetitionAgentsResponse;
+
+      expect(filterResponse.success).toBe(true);
+      expect(filterResponse.agents.length).toBe(2);
+      expect(filterResponse.pagination.total).toBe(2);
+
+      const filteredNames = filterResponse.agents.map((a) => a.name);
+      expect(filteredNames).toContain("Alpha Filter Agent");
+      expect(filteredNames).toContain("Beta Filter Agent");
+      expect(filteredNames).not.toContain("Gamma Different Agent");
+
+      // Test filtering by "Alpha" - should return only Alpha agent
+      const alphaResponse = (await client.getCompetitionAgents(competitionId, {
+        filter: "Alpha",
+      })) as CompetitionAgentsResponse;
+
+      expect(alphaResponse.success).toBe(true);
+      expect(alphaResponse.agents.length).toBe(1);
+      expect(alphaResponse.agents[0]?.name).toBe("Alpha Filter Agent");
+
+      // Test filtering by non-existent term
+      const noMatchResponse = (await client.getCompetitionAgents(
+        competitionId,
+        {
+          filter: "NonExistent",
+        },
+      )) as CompetitionAgentsResponse;
+
+      expect(noMatchResponse.success).toBe(true);
+      expect(noMatchResponse.agents.length).toBe(0);
+      expect(noMatchResponse.pagination.total).toBe(0);
+    });
+
+    test("should support sorting competition agents", async () => {
+      // Setup admin client
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Register agents with names that will test sorting
+      const { agent: charlieAgent } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Charlie Sort Agent",
+      });
+
+      // Wait to ensure different creation times
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      const { agent: alphaAgent } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Alpha Sort Agent",
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      const { agent: betaAgent } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Beta Sort Agent",
+      });
+
+      // Start a competition with all agents
+      const competitionName = `Sort Test Competition ${Date.now()}`;
+      const startResult = await startTestCompetition({
+        adminClient,
+        name: competitionName,
+        agentIds: [charlieAgent.id, alphaAgent.id, betaAgent.id],
+      });
+      const competitionId = startResult.competition.id;
+
+      // Create a client for testing
+      const { client } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Sort Test Client Agent",
+      });
+      // Force a snapshot directly
+      const services = new ServiceRegistry();
+      await services.portfolioSnapshotterService.takePortfolioSnapshots(
+        competitionId,
+      );
+
+      // Test sorting by default (rank)
+      const rankDefaultResponse = (await client.getCompetitionAgents(
+        competitionId,
+      )) as CompetitionAgentsResponse;
+
+      expect(rankDefaultResponse.success).toBe(true);
+      expect(rankDefaultResponse.agents[0]!.rank).toBe(1);
+      expect(rankDefaultResponse.agents[1]!.rank).toBe(2);
+      expect(rankDefaultResponse.agents[2]!.rank).toBe(3);
+
+      // Test sorting by name (ascending)
+      const nameAscResponse = (await client.getCompetitionAgents(
+        competitionId,
+        {
+          sort: "name",
+        },
+      )) as CompetitionAgentsResponse;
+
+      expect(nameAscResponse.success).toBe(true);
+      expect(nameAscResponse.agents.length).toBe(3);
+
+      const nameAscOrder = nameAscResponse.agents.map((a) => a.name);
+      expect(nameAscOrder[0]).toBe("Alpha Sort Agent");
+      expect(nameAscOrder[1]).toBe("Beta Sort Agent");
+      expect(nameAscOrder[2]).toBe("Charlie Sort Agent");
+
+      // Test sorting by name (descending)
+      const nameDescResponse = (await client.getCompetitionAgents(
+        competitionId,
+        {
+          sort: "-name",
+        },
+      )) as CompetitionAgentsResponse;
+
+      expect(nameDescResponse.success).toBe(true);
+      expect(nameDescResponse.agents.length).toBe(3);
+
+      const nameDescOrder = nameDescResponse.agents.map((a) => a.name);
+      expect(nameDescOrder[0]).toBe("Charlie Sort Agent");
+      expect(nameDescOrder[1]).toBe("Beta Sort Agent");
+      expect(nameDescOrder[2]).toBe("Alpha Sort Agent");
+
+      // Test sorting by rank
+      const rankAscResponse = (await client.getCompetitionAgents(
+        competitionId,
+        {
+          sort: "rank",
+        },
+      )) as CompetitionAgentsResponse;
+
+      expect(rankAscResponse.success).toBe(true);
+      expect(rankAscResponse.agents[0]!.rank).toBe(1);
+      expect(rankAscResponse.agents[1]!.rank).toBe(2);
+      expect(rankAscResponse.agents[2]!.rank).toBe(3);
+
+      // Test sorting by rank (descending)
+      const rankDescResponse = (await client.getCompetitionAgents(
+        competitionId,
+        {
+          sort: "-rank",
+        },
+      )) as CompetitionAgentsResponse;
+      expect(rankDescResponse.success).toBe(true);
+      expect(rankDescResponse.agents[0]!.rank).toBe(3);
+      expect(rankDescResponse.agents[1]!.rank).toBe(2);
+      expect(rankDescResponse.agents[2]!.rank).toBe(1);
+
+      // Test sorting by score (ascending)
+      const scoreAscResponse = (await client.getCompetitionAgents(
+        competitionId,
+        {
+          sort: "score",
+        },
+      )) as CompetitionAgentsResponse;
+      expect(scoreAscResponse.success).toBe(true);
+      expect(scoreAscResponse.agents[0]!.score).toBeLessThanOrEqual(
+        scoreAscResponse.agents[1]!.score,
+      );
+      expect(scoreAscResponse.agents[1]!.score).toBeLessThanOrEqual(
+        scoreAscResponse.agents[2]!.score,
+      );
+
+      // Test sorting by score (descending)
+      const scoreDescResponse = (await client.getCompetitionAgents(
+        competitionId,
+        {
+          sort: "-score",
+        },
+      )) as CompetitionAgentsResponse;
+      expect(scoreDescResponse.success).toBe(true);
+      expect(scoreDescResponse.agents[0]!.score).toBeGreaterThanOrEqual(
+        scoreDescResponse.agents[1]!.score,
+      );
+      expect(scoreDescResponse.agents[1]!.score).toBeGreaterThanOrEqual(
+        scoreDescResponse.agents[2]!.score,
+      );
+
+      // Test sorting by portfolioValue (ascending)
+      const portfolioValueAscResponse = (await client.getCompetitionAgents(
+        competitionId,
+        {
+          sort: "portfolioValue",
+        },
+      )) as CompetitionAgentsResponse;
+      expect(portfolioValueAscResponse.success).toBe(true);
+      expect(
+        portfolioValueAscResponse.agents[0]!.portfolioValue,
+      ).toBeLessThanOrEqual(
+        portfolioValueAscResponse.agents[1]!.portfolioValue,
+      );
+      expect(
+        portfolioValueAscResponse.agents[1]!.portfolioValue,
+      ).toBeLessThanOrEqual(
+        portfolioValueAscResponse.agents[2]!.portfolioValue,
+      );
+
+      // Test sorting by portfolioValue (descending)
+      const portfolioValueDescResponse = (await client.getCompetitionAgents(
+        competitionId,
+        {
+          sort: "-portfolioValue",
+        },
+      )) as CompetitionAgentsResponse;
+      expect(portfolioValueDescResponse.success).toBe(true);
+      expect(
+        portfolioValueDescResponse.agents[0]!.portfolioValue,
+      ).toBeGreaterThanOrEqual(
+        portfolioValueDescResponse.agents[1]!.portfolioValue,
+      );
+      expect(
+        portfolioValueDescResponse.agents[1]!.portfolioValue,
+      ).toBeGreaterThanOrEqual(
+        portfolioValueDescResponse.agents[2]!.portfolioValue,
+      );
+
+      // Check PnL (ascending)
+      const pnlAscResponse = (await client.getCompetitionAgents(competitionId, {
+        sort: "pnl",
+      })) as CompetitionAgentsResponse;
+      expect(pnlAscResponse.success).toBe(true);
+      expect(pnlAscResponse.agents[0]!.pnl).toBeGreaterThanOrEqual(
+        pnlAscResponse.agents[1]!.pnl,
+      );
+      expect(pnlAscResponse.agents[1]!.pnl).toBeGreaterThanOrEqual(
+        pnlAscResponse.agents[2]!.pnl,
+      );
+
+      // Check PnL (descending)
+      const pnlDescResponse = (await client.getCompetitionAgents(
+        competitionId,
+        {
+          sort: "-pnl",
+        },
+      )) as CompetitionAgentsResponse;
+      expect(pnlDescResponse.success).toBe(true);
+      expect(pnlDescResponse.agents[0]!.pnl).toBeGreaterThanOrEqual(
+        pnlDescResponse.agents[1]!.pnl,
+      );
+      expect(pnlDescResponse.agents[1]!.pnl).toBeGreaterThanOrEqual(
+        pnlDescResponse.agents[2]!.pnl,
+      );
+
+      // Verify PnL percentage is in ascending order
+      const pnlPercentAscResponse = (await client.getCompetitionAgents(
+        competitionId,
+        {
+          sort: "pnlPercent",
+        },
+      )) as CompetitionAgentsResponse;
+      expect(pnlPercentAscResponse.success).toBe(true);
+      expect(
+        pnlPercentAscResponse.agents[0]!.pnlPercent,
+      ).toBeGreaterThanOrEqual(pnlPercentAscResponse.agents[1]!.pnlPercent);
+      expect(
+        pnlPercentAscResponse.agents[1]!.pnlPercent,
+      ).toBeGreaterThanOrEqual(pnlPercentAscResponse.agents[2]!.pnlPercent);
+
+      // Verify PnL percentage is in descending order
+      const pnlPercentDescResponse = (await client.getCompetitionAgents(
+        competitionId,
+        {
+          sort: "-pnlPercent",
+        },
+      )) as CompetitionAgentsResponse;
+      expect(pnlPercentDescResponse.success).toBe(true);
+      expect(pnlPercentDescResponse.agents[0]!.pnlPercent).toBeLessThanOrEqual(
+        pnlPercentDescResponse.agents[1]!.pnlPercent,
+      );
+      expect(pnlPercentDescResponse.agents[1]!.pnlPercent).toBeLessThanOrEqual(
+        pnlPercentDescResponse.agents[2]!.pnlPercent,
+      );
+
+      // Verify change24h is in ascending order
+      const change24hAscResponse = (await client.getCompetitionAgents(
+        competitionId,
+        {
+          sort: "change24h",
+        },
+      )) as CompetitionAgentsResponse;
+      expect(change24hAscResponse.success).toBe(true);
+      expect(change24hAscResponse.agents[0]!.change24h).toBeGreaterThanOrEqual(
+        change24hAscResponse.agents[1]!.change24h,
+      );
+      expect(change24hAscResponse.agents[1]!.change24h).toBeGreaterThanOrEqual(
+        change24hAscResponse.agents[2]!.change24h,
+      );
+
+      // Verify change24h is in descending order
+      const change24hDescResponse = (await client.getCompetitionAgents(
+        competitionId,
+        {
+          sort: "-change24h",
+        },
+      )) as CompetitionAgentsResponse;
+      expect(change24hDescResponse.success).toBe(true);
+      expect(change24hDescResponse.agents[0]!.change24h).toBeLessThanOrEqual(
+        change24hDescResponse.agents[1]!.change24h,
+      );
+      expect(change24hDescResponse.agents[1]!.change24h).toBeLessThanOrEqual(
+        change24hDescResponse.agents[2]!.change24h,
+      );
+
+      // Verify change24h percentage is in ascending order
+      const change24hPercentAscResponse = (await client.getCompetitionAgents(
+        competitionId,
+        {
+          sort: "change24hPercent",
+        },
+      )) as CompetitionAgentsResponse;
+      expect(change24hPercentAscResponse.success).toBe(true);
+      expect(
+        change24hPercentAscResponse.agents[0]!.change24hPercent,
+      ).toBeGreaterThanOrEqual(
+        change24hPercentAscResponse.agents[1]!.change24hPercent,
+      );
+      expect(
+        change24hPercentAscResponse.agents[1]!.change24hPercent,
+      ).toBeGreaterThanOrEqual(
+        change24hPercentAscResponse.agents[2]!.change24hPercent,
+      );
+
+      // Verify change24h percentage is in descending order
+      const change24hPercentDescResponse = (await client.getCompetitionAgents(
+        competitionId,
+        {
+          sort: "-change24hPercent",
+        },
+      )) as CompetitionAgentsResponse;
+      expect(change24hPercentDescResponse.success).toBe(true);
+      expect(
+        change24hPercentDescResponse.agents[0]!.change24hPercent,
+      ).toBeLessThanOrEqual(
+        change24hPercentDescResponse.agents[1]!.change24hPercent,
+      );
+      expect(
+        change24hPercentDescResponse.agents[1]!.change24hPercent,
+      ).toBeLessThanOrEqual(
+        change24hPercentDescResponse.agents[2]!.change24hPercent,
+      );
+
+      // Test sorting by vote count (ascending)
+      const voteCountAscResponse = (await client.getCompetitionAgents(
+        competitionId,
+        {
+          sort: "voteCount",
+        },
+      )) as CompetitionAgentsResponse;
+      expect(voteCountAscResponse.success).toBe(true);
+      expect(voteCountAscResponse.agents[0]!.voteCount).toBeGreaterThanOrEqual(
+        voteCountAscResponse.agents[1]!.voteCount,
+      );
+      expect(voteCountAscResponse.agents[1]!.voteCount).toBeGreaterThanOrEqual(
+        voteCountAscResponse.agents[2]!.voteCount,
+      );
+
+      // Test sorting by vote count (descending)
+      const voteCountDescResponse = (await client.getCompetitionAgents(
+        competitionId,
+        {
+          sort: "-voteCount",
+        },
+      )) as CompetitionAgentsResponse;
+      expect(voteCountDescResponse.success).toBe(true);
+    });
+
+    test("should handle computed sorting with pagination limits", async () => {
+      // Setup admin client
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Register 6 agents to test pagination
+      const agents = [];
+      for (let i = 1; i <= 6; i++) {
+        const { agent } = await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: `Pagination Test Agent ${i}`,
+        });
+        agents.push(agent);
+      }
+
+      // Start a competition with all agents
+      const competitionName = `Pagination Test Competition ${Date.now()}`;
+      const startResult = await startTestCompetition({
+        adminClient,
+        name: competitionName,
+        agentIds: agents.map((a) => a.id),
+      });
+      const competitionId = startResult.competition.id;
+
+      // Create a client for testing
+      const { client } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Pagination Test Client Agent",
+      });
+
+      // Test 1: Database sorting
+      const dbSortResponse = (await client.getCompetitionAgents(competitionId, {
+        sort: "name", // Database field (no computed fields)
+        limit: 3,
+        offset: 0,
+      })) as CompetitionAgentsResponse;
+
+      expect(dbSortResponse.success).toBe(true);
+      expect(dbSortResponse.agents.length).toBe(3);
+      expect(dbSortResponse.pagination.limit).toBe(3);
+      expect(dbSortResponse.pagination.offset).toBe(0);
+      expect(dbSortResponse.pagination.total).toBe(6);
+      expect(dbSortResponse.pagination.hasMore).toBe(true);
+
+      // Test 2: Computed sorting
+      const computedSortResponse = (await client.getCompetitionAgents(
+        competitionId,
+        {
+          sort: "rank", // Computed field
+          limit: 3,
+          offset: 0,
+        },
+      )) as CompetitionAgentsResponse;
+
+      expect(computedSortResponse.success).toBe(true);
+
+      expect(computedSortResponse.agents.length).toBe(3);
+      expect(computedSortResponse.pagination.limit).toBe(3);
+      expect(computedSortResponse.pagination.offset).toBe(0);
+      expect(computedSortResponse.pagination.total).toBe(6);
+      expect(computedSortResponse.pagination.hasMore).toBe(true);
+
+      // Test 3: Try different computed fields to confirm the bug affects all computed sorting
+      const testFields = [
+        "score",
+        "pnl",
+        "pnlPercent",
+        "change24h",
+        "change24hPercent",
+        "voteCount",
+      ];
+
+      for (const field of testFields) {
+        const response = (await client.getCompetitionAgents(competitionId, {
+          sort: field,
+          limit: 2,
+          offset: 0,
+        })) as CompetitionAgentsResponse;
+
+        expect(response.success).toBe(true);
+        expect(response.agents.length).toBe(2);
+        expect(response.pagination.limit).toBe(2);
+      }
+
+      // Test 4: Demonstrate that offset is also ignored
+      const offsetResponse = (await client.getCompetitionAgents(competitionId, {
+        sort: "rank",
+        limit: 2,
+        offset: 3, // Should skip first 3 agents
+      })) as CompetitionAgentsResponse;
+
+      expect(offsetResponse.success).toBe(true);
+      expect(offsetResponse.agents.length).toBe(2);
+      expect(offsetResponse.pagination.offset).toBe(3);
+      expect(offsetResponse.pagination.limit).toBe(2);
+    });
+
+    test("should combine filtering, sorting, and pagination", async () => {
+      // Setup admin client
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Register multiple agents with "Test" in their names
+      const agents = [];
+      for (let i = 1; i <= 4; i++) {
+        const { agent } = await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: `Test Agent ${String.fromCharCode(65 + i)}`, // Test Agent B, C, D, E
+        });
+        agents.push(agent);
+      }
+
+      // Register one agent without "Test" in the name
+      const { agent: otherAgent } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Different Agent",
+      });
+
+      // Start a competition with all agents
+      const competitionName = `Combined Test Competition ${Date.now()}`;
+      const startResult = await startTestCompetition({
+        adminClient,
+        name: competitionName,
+        agentIds: [...agents.map((a) => a.id), otherAgent.id],
+      });
+      const competitionId = startResult.competition.id;
+
+      // Create a client for testing
+      const { client } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Combined Test Client Agent",
+      });
+
+      // Test filtering by "Test", sorting by name, with pagination
+      const response = (await client.getCompetitionAgents(competitionId, {
+        filter: "Test",
+        sort: "name",
+        limit: 2,
+        offset: 0,
+      })) as CompetitionAgentsResponse;
+
+      expect(response.success).toBe(true);
+      expect(response.agents.length).toBe(2);
+      expect(response.pagination.total).toBe(4); // Only "Test" agents
+      expect(response.pagination.limit).toBe(2);
+      expect(response.pagination.offset).toBe(0);
+      expect(response.pagination.hasMore).toBe(true);
+
+      // Verify filtering worked (no "Different Agent")
+      const agentNames = response.agents.map((a) => a.name);
+      expect(agentNames.every((name) => name.includes("Test"))).toBe(true);
+
+      // Verify sorting worked (alphabetical order)
+      expect(agentNames[0]?.localeCompare(agentNames[1] || "")).toBeLessThan(0);
+
+      // Test second page
+      const page2Response = (await client.getCompetitionAgents(competitionId, {
+        filter: "Test",
+        sort: "name",
+        limit: 2,
+        offset: 2,
+      })) as CompetitionAgentsResponse;
+
+      expect(page2Response.success).toBe(true);
+      expect(page2Response.agents.length).toBe(2);
+      expect(page2Response.pagination.total).toBe(4);
+      expect(page2Response.pagination.hasMore).toBe(false);
+    });
+
+    test("should validate query parameters for competition agents", async () => {
+      // Setup admin client
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Register an agent
+      const { agent, client } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Validation Test Agent",
+      });
+
+      // Start a competition
+      const competitionName = `Validation Test Competition ${Date.now()}`;
+      const startResult = await startTestCompetition({
+        adminClient,
+        name: competitionName,
+        agentIds: [agent.id],
+      });
+      const competitionId = startResult.competition.id;
+
+      // Test invalid limit (too high)
+      try {
+        await client.getCompetitionAgents(competitionId, {
+          limit: 150, // Max is 100
+        });
+        expect(false).toBe(true); // Should not reach here
+      } catch (error) {
+        expect(error).toBeDefined();
+      }
+
+      // Test invalid limit (too low)
+      try {
+        await client.getCompetitionAgents(competitionId, {
+          limit: 0, // Min is 1
+        });
+        expect(false).toBe(true); // Should not reach here
+      } catch (error) {
+        expect(error).toBeDefined();
+      }
+
+      // Test invalid offset (negative)
+      try {
+        await client.getCompetitionAgents(competitionId, {
+          offset: -1, // Min is 0
+        });
+        expect(false).toBe(true); // Should not reach here
+      } catch (error) {
+        expect(error).toBeDefined();
+      }
+
+      // Test valid parameters should work
+      const validResponse = (await client.getCompetitionAgents(competitionId, {
+        limit: 50,
+        offset: 0,
+        sort: "name",
+        filter: "Test",
+      })) as CompetitionAgentsResponse;
+
+      expect(validResponse.success).toBe(true);
+    });
+
+    test("pending competitions default to createdAt DESC when startDate is NULL", async () => {
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Create three pending competitions with slight delays to ensure createdAt ordering
+      const c1 = await createTestCompetition({
+        adminClient,
+        name: `Pending A ${Date.now()}`,
+      });
+      await wait(10);
+      const c2 = await createTestCompetition({
+        adminClient,
+        name: `Pending B ${Date.now()}`,
+      });
+      await wait(10);
+      const c3 = await createTestCompetition({
+        adminClient,
+        name: `Pending C ${Date.now()}`,
+      });
+
+      // Fetch pending competitions without explicit sort
+      const list = (await adminClient.getCompetitions(
+        "pending",
+      )) as UpcomingCompetitionsResponse;
+
+      expect(list.success).toBe(true);
+      const comps = list.competitions as Competition[];
+
+      // Find indices of our competitions
+      const idx1 = comps.findIndex((c) => c.id === c1.competition.id);
+      const idx2 = comps.findIndex((c) => c.id === c2.competition.id);
+      const idx3 = comps.findIndex((c) => c.id === c3.competition.id);
+
+      expect(idx1).toBeGreaterThanOrEqual(0);
+      expect(idx2).toBeGreaterThanOrEqual(0);
+      expect(idx3).toBeGreaterThanOrEqual(0);
+
+      // Default order should be newest first by createdAt since startDate is null
+      // c3 created last -> smallest index
+      expect(idx3).toBeLessThan(idx2);
+      expect(idx2).toBeLessThan(idx1);
+    });
+
+    test("ended competitions default to startDate DESC", async () => {
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Create an agent to join competitions so we can start them
+      const { agent } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Sorting Agent",
+      });
+
+      // Create two competitions and start them in sequence to create distinct startDate values
+      const p1 = await createTestCompetition({
+        adminClient,
+        name: `Ended A ${Date.now()}`,
+      });
+      await wait(10);
+      const p2 = await createTestCompetition({
+        adminClient,
+        name: `Ended B ${Date.now()}`,
+      });
+
+      // Start and end first competition
+      const s1 = await startExistingTestCompetition({
+        adminClient,
+        competitionId: p1.competition.id,
+        agentIds: [agent.id],
+      });
+      await adminClient.endCompetition(s1.competition.id);
+
+      await wait(20); // ensure later startDate for the second
+
+      // Start and end second competition
+      const s2 = await startExistingTestCompetition({
+        adminClient,
+        competitionId: p2.competition.id,
+        agentIds: [agent.id],
+      });
+      await adminClient.endCompetition(s2.competition.id);
+
+      const list = (await adminClient.getCompetitions(
+        "ended",
+      )) as UpcomingCompetitionsResponse;
+
+      expect(list.success).toBe(true);
+      const comps = list.competitions as Competition[];
+
+      const idxS1 = comps.findIndex((c) => c.id === s1.competition.id);
+      const idxS2 = comps.findIndex((c) => c.id === s2.competition.id);
+
+      expect(idxS1).toBeGreaterThanOrEqual(0);
+      expect(idxS2).toBeGreaterThanOrEqual(0);
+
+      // Default order should be newest first by startDate (s2 should come before s1)
+      expect(idxS2).toBeLessThan(idxS1);
+    });
+
+    test("explicit sort param still applies (createdAt ASC for pending)", async () => {
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Create two pending competitions
+      const a1 = await createTestCompetition({
+        adminClient,
+        name: `Explicit A ${Date.now()}`,
+      });
+      await wait(10);
+      const a2 = await createTestCompetition({
+        adminClient,
+        name: `Explicit B ${Date.now()}`,
+      });
+
+      // Explicitly sort by createdAt ascending
+      const list = (await adminClient.getCompetitions(
+        "pending",
+        "createdAt",
+      )) as UpcomingCompetitionsResponse;
+
+      expect(list.success).toBe(true);
+      const comps = list.competitions as Competition[];
+
+      const idxA1 = comps.findIndex((c) => c.id === a1.competition.id);
+      const idxA2 = comps.findIndex((c) => c.id === a2.competition.id);
+
+      // Ascending order by createdAt means older (a1) should come before newer (a2)
+      expect(idxA1).toBeLessThan(idxA2);
     });
   });
 });
