@@ -37,14 +37,9 @@ function loadEnv(envFile = ".env"): void {
 
 // Test profiles configuration
 const profiles: Record<string, TestProfile> = {
-  baseline: {
-    config: "src/agent-trading/configs/stress.yml",
-    name: "Baseline Performance Test (8 req/s, 1 min)",
-    defaultAgents: "5",
-  },
   stress: {
     config: "src/agent-trading/configs/stress.yml",
-    name: "Parameterized Stress Test",
+    name: "Stress Test",
     defaultAgents: "5",
   },
   tge: {
@@ -67,7 +62,7 @@ const profiles: Record<string, TestProfile> = {
 // Parse command line arguments
 function parseArgs(): Options {
   const args = process.argv.slice(2);
-  let profile = "baseline";
+  let profile = "stress";
   let agentsOverride: string | undefined;
 
   // First pass: determine profile
@@ -180,32 +175,31 @@ Usage: tsx run.ts [profile] [options]
        pnpm test [profile] [options]
 
 Profiles:
-  baseline       Baseline test (8 req/s, 1 min) - uses defaults from stress.yml
-  stress         Parameterized stress test (use -r/-d/-t options)
-  tge            TGE burst simulation
-  resilience     Error injection and resilience test
-  daily          Daily monitoring test
+  stress         Parameterized stress test (default: 8 req/s, 60s, $0.10)
+  tge            TGE burst simulation (200 agents, multi-phase)
+  resilience     Error injection and resilience test (50 agents, 30 min)
+  daily          Daily monitoring test (30 agents, 30 min)
 
 Options:
   -n, --no-report            Don't save report file
-  -a, --agents N             Number of agents (default: 5 or AGENTS_COUNT from .env)
+  -a, --agents N             Number of agents (default: profile-specific)
   -e, --env FILE             Environment file (default: .env)
-  -d, --duration N           Test duration in seconds (for stress profile)
-  -r, --rate N               Request rate per second (for stress profile)
-  -t, --trade-amount N       Trade amount in dollars (for stress profile)
+  -d, --duration N           Test duration in seconds (stress only)
+  -r, --rate N               Request rate per second (stress only)
+  -t, --trade-amount N       Trade amount in dollars (stress only)
   --traces-sample-rate N     Sentry SDK traces sample rate 0.0-1.0 (default: 0.01)
   --request-sample-rate N    Sentry request span sample rate 0.0-1.0 (default: 0.01)
   -h, --help                 Show this help
 
 Examples:
-  tsx src/cli.ts                            # Run baseline test (8 req/s, 1 min)
+  tsx src/cli.ts                              # Run default stress test (8 req/s, 60s)
+  tsx src/cli.ts stress                       # Same as above (baseline)
   tsx src/cli.ts stress -r 20 -d 180 -t 0.05  # Custom: 20 req/s for 3 min with $0.05 trades
-  tsx src/cli.ts stress -d 1800 -r 16        # 30-minute test at 16 req/s
-  tsx src/cli.ts stress -d 7200 -r 8         # 2-hour endurance test
-  tsx src/cli.ts baseline -n                # Quick baseline test without report
-  tsx src/cli.ts baseline --request-sample-rate 1.0  # 100% span sampling
-  tsx src/cli.ts tge                        # Run TGE burst test
-  tsx src/cli.ts resilience                 # Run chaos engineering test
+  tsx src/cli.ts stress -d 1800 -r 16         # 30-minute test at 16 req/s
+  tsx src/cli.ts stress -d 7200 -r 8          # 2-hour endurance test
+  tsx src/cli.ts stress --request-sample-rate 1.0  # 100% span sampling for debugging
+  tsx src/cli.ts tge                          # Run TGE burst test
+  tsx src/cli.ts resilience                   # Run chaos engineering test
 `);
 }
 
@@ -278,35 +272,76 @@ function runTest(options: Options): void {
   artilleryEnv.SENTRY_TRACES_SAMPLE_RATE = tracesSampleRate;
   artilleryEnv.SENTRY_SAMPLE_REQUEST = requestSampleRate;
 
-  console.log(`
+  // Determine if this profile uses parameterized config or fixed phases
+  const isParameterized = options.profile === "stress";
+
+  // Build header with appropriate parameters
+  let header = `
 ════════════════════════════════════════════
   ${profile.name}
 ════════════════════════════════════════════
 Target: ${process.env.API_HOST || "NOT SET"}
-Agents: ${options.agents}
-Config: ${profile.config}
 Test Run ID: ${testRunId}
-`);
+
+Test Parameters:
+  Agents: ${options.agents}
+`;
+
+  // Add parameterized test details or fixed config note
+  if (isParameterized) {
+    header += `  Duration: ${duration}s
+  Request Rate: ${requestRate} req/s
+  Trade Amount: $${tradeAmount}
+`;
+  } else {
+    header += `  Configuration: Multi-phase (see ${profile.config})
+  Trade Patterns: Defined by test profile
+`;
+  }
+
+  // Add Sentry config if enabled
+  if (process.env.SENTRY_DSN) {
+    header += `
+Sentry Monitoring:
+  Traces Sample Rate: ${(parseFloat(tracesSampleRate) * 100).toFixed(1)}%
+  Request Sample Rate: ${(parseFloat(requestSampleRate) * 100).toFixed(1)}%
+`;
+  }
+
+  // Add report file path if saving
+  let reportFile: string | undefined;
+  if (options.saveReport) {
+    const timestamp = getTimestamp();
+    reportFile = `reports/${options.profile}-${timestamp}.json`;
+    header += `
+Report: ${reportFile}
+`;
+  }
+
+  header += `
+Config: ${profile.config}
+════════════════════════════════════════════
+`;
+
+  console.log(header);
 
   // Build Artillery command
   const artilleryArgs = ["artillery", "run"];
 
-  if (options.saveReport) {
-    const timestamp = getTimestamp();
-    const reportFile = `reports/${options.profile}-${timestamp}.json`;
+  if (reportFile) {
     artilleryArgs.push("--output", reportFile);
-    console.log(`Report: ${reportFile}`);
   }
 
-  // Add config overrides for parameterized values
-  artilleryArgs.push(
-    "--overrides",
-    `{ "config": { "phases": [{ "duration": ${duration}, "arrivalRate": ${requestRate}, "name": "stress_test" }] } }`,
-  );
+  // Only add phase overrides for parameterized profiles (baseline/stress)
+  if (isParameterized) {
+    artilleryArgs.push(
+      "--overrides",
+      `{ "config": { "phases": [{ "duration": ${duration}, "arrivalRate": ${requestRate}, "name": "stress_test" }] } }`,
+    );
+  }
 
   artilleryArgs.push(profile.config);
 
-  console.log("════════════════════════════════════════════\n");
   console.log("Starting test...\n");
 
   // Create reports directory if it doesn't exist
