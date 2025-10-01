@@ -3,13 +3,13 @@ import { ActorStatus } from "@recallnet/services/types";
 
 import { base } from "@/rpc/context/base";
 import { authMiddleware } from "@/rpc/middleware/auth";
-import { User as FrontendUser } from "@/types";
+import { User } from "@/types";
 
 /**
  * Serialize database user to frontend format
- * Converts null to undefined and Date objects to ISO strings
+ * Converts null to undefined and Date objects to ISO strings to match frontend expectations
  */
-function serializeUser(dbUser: SelectUser): FrontendUser {
+function serializeUser(dbUser: SelectUser): User {
   return {
     id: dbUser.id,
     walletAddress: dbUser.walletAddress,
@@ -32,25 +32,6 @@ function serializeUser(dbUser: SelectUser): FrontendUser {
 
 export const getProfile = base
   .use(authMiddleware)
-  .handler(async ({ context, errors }) => {
-    try {
-      const user = await context.userService.getUser(context.user.id);
-
-      if (!user) {
-        throw errors.NOT_FOUND();
-      }
-
-      return serializeUser(user);
-    } catch (error) {
-      // Re-throw if it's already one of our defined errors
-      if (error && typeof error === "object" && "code" in error) {
-        throw error;
-      }
-
-      // Wrap unexpected errors as INTERNAL
-      throw errors.INTERNAL({
-        message:
-          error instanceof Error ? error.message : "Failed to get user profile",
-      });
-    }
+  .handler(async ({ context }) => {
+    return serializeUser(context.user);
   });
