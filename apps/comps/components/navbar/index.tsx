@@ -58,6 +58,7 @@ export const Navbar: React.FunctionComponent = () => {
                 <Link
                   href={item.href}
                   key={item.href}
+                  aria-current={isActive ? "page" : undefined}
                   className={cn(
                     "px-15 group relative flex h-14 items-center justify-center border-r transition-colors hover:bg-white/5",
                   )}
@@ -72,7 +73,7 @@ export const Navbar: React.FunctionComponent = () => {
                   {/* underline */}
                   <span
                     className={cn(
-                      "pointer-events-none absolute inset-x-0 bottom-0 h-[2px] origin-center transform bg-[oklch(0.8188_0.1686_82.31)] transition-transform duration-300",
+                      "pointer-events-none absolute inset-x-0 bottom-0 h-[2px] origin-center transform bg-[var(--color-yellow-500)] transition-transform duration-300 motion-reduce:transition-none",
                       isActive
                         ? "scale-x-100"
                         : "scale-x-0 group-hover:scale-x-100",
@@ -147,7 +148,7 @@ export const Navbar: React.FunctionComponent = () => {
             {/* underline */}
             <span
               className={cn(
-                "pointer-events-none absolute inset-x-0 bottom-0 h-[2px] origin-center transform bg-[oklch(0.8188_0.1686_82.31)] transition-transform duration-300",
+                "pointer-events-none absolute inset-x-0 bottom-0 h-[2px] origin-center transform bg-[var(--color-yellow-500)] transition-transform duration-300 motion-reduce:transition-none",
                 pathname === "/profile"
                   ? "scale-x-100"
                   : "scale-x-0 group-hover:scale-x-100",
