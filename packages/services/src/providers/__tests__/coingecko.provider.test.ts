@@ -1,6 +1,6 @@
-import dotenv from "dotenv";
+import { Coingecko } from "@coingecko/coingecko-typescript";
 import { Logger } from "pino";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MockProxy, mock } from "vitest-mock-extended";
 
 import { BlockchainType } from "../../types/index.js";
@@ -9,14 +9,22 @@ import {
   CoinGeckoProviderConfig,
 } from "../coingecko.provider.js";
 
-// Load environment variables
-dotenv.config();
+// Mock the CoinGecko SDK
+vi.mock("@coingecko/coingecko-typescript");
 
-const COINGECKO_API_KEY = process.env.COINGECKO_API_KEY || "";
-console.log("COINGECKO_API_KEY", COINGECKO_API_KEY);
-
-// Set timeout for all tests in this file to 30 seconds
-vi.setConfig({ testTimeout: 30_000 });
+// Type for mocking CoinGecko client
+interface MockCoinGeckoClient {
+  coins: {
+    contract: {
+      get: ReturnType<typeof vi.fn>;
+    };
+  };
+  simple: {
+    tokenPrice: {
+      getID: ReturnType<typeof vi.fn>;
+    };
+  };
+}
 
 // Test tokens
 const solanaTokens = {
@@ -52,20 +60,48 @@ const specificChainTokens = {
   },
 };
 
-// Mock logger for the constructor
+// Mock logger
 const mockLogger: MockProxy<Logger> = mock<Logger>();
 
 const config: CoinGeckoProviderConfig = {
-  apiKey: COINGECKO_API_KEY,
+  apiKey: "test-api-key",
   mode: "demo",
   specificChainTokens,
 };
 
 describe("CoinGeckoProvider", () => {
   let provider: CoinGeckoProvider;
+  let mockCoinGeckoInstance: MockCoinGeckoClient;
 
   beforeEach(() => {
+    // Clear all mocks before each test
+    vi.clearAllMocks();
+
+    // Create mock CoinGecko client instance
+    mockCoinGeckoInstance = {
+      coins: {
+        contract: {
+          get: vi.fn(),
+        },
+      },
+      simple: {
+        tokenPrice: {
+          getID: vi.fn(),
+        },
+      },
+    };
+
+    // Mock the CoinGecko constructor to return our mock instance
+    vi.mocked(Coingecko).mockImplementation(
+      () => mockCoinGeckoInstance as unknown as Coingecko,
+    );
+
+    // Create provider instance
     provider = new CoinGeckoProvider(config, mockLogger);
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
   });
 
   describe("Basic functionality", () => {
@@ -76,58 +112,136 @@ describe("CoinGeckoProvider", () => {
 
   describe("Solana token price fetching", () => {
     it("should fetch SOL price", async () => {
+      // Mock CoinGecko API response for SOL
+      mockCoinGeckoInstance.coins.contract.get.mockResolvedValue({
+        id: "solana",
+        symbol: "sol",
+        name: "Solana",
+        market_data: {
+          current_price: { usd: 150.75 },
+          total_volume: { usd: 2500000000 },
+          fully_diluted_valuation: { usd: 85000000000 },
+        },
+      });
+
       const priceReport = await provider.getPrice(
         solanaTokens.SOL,
         BlockchainType.SVM,
         "svm",
       );
 
+      expect(mockCoinGeckoInstance.coins.contract.get).toHaveBeenCalledWith(
+        solanaTokens.SOL.toLowerCase(),
+        { id: "solana" },
+      );
       expect(priceReport).not.toBeNull();
-      expect(typeof priceReport?.price).toBe("number");
-      expect(priceReport?.price).toBeGreaterThan(0);
-    }, 15000);
+      expect(priceReport?.price).toBe(150.75);
+      expect(priceReport?.symbol).toBe("SOL");
+      expect(priceReport?.volume?.h24).toBe(2500000000);
+      expect(priceReport?.fdv).toBe(85000000000);
+    });
 
     it("should fetch USDC price", async () => {
+      // Mock CoinGecko API response for USDC
+      mockCoinGeckoInstance.coins.contract.get.mockResolvedValue({
+        id: "usd-coin",
+        symbol: "usdc",
+        name: "USD Coin",
+        market_data: {
+          current_price: { usd: 1.0001 },
+          total_volume: { usd: 5000000000 },
+          fully_diluted_valuation: { usd: 30000000000 },
+        },
+      });
+
       const priceReport = await provider.getPrice(
         solanaTokens.USDC,
         BlockchainType.SVM,
         "svm",
       );
 
+      expect(mockCoinGeckoInstance.coins.contract.get).toHaveBeenCalledWith(
+        solanaTokens.USDC.toLowerCase(),
+        { id: "solana" },
+      );
       expect(priceReport).not.toBeNull();
-      expect(typeof priceReport?.price).toBe("number");
-      expect(priceReport?.price).toBeGreaterThan(0);
+      expect(priceReport?.price).toBe(1.0001);
+      expect(priceReport?.symbol).toBe("USDC"); // Should be uppercase
       expect(priceReport?.price).toBeCloseTo(1, 1); // USDC should be close to $1
-    }, 15000);
+    });
   });
 
   describe("Ethereum token price fetching", () => {
     it("should fetch ETH price", async () => {
+      // Mock CoinGecko API response for ETH
+      mockCoinGeckoInstance.coins.contract.get.mockResolvedValue({
+        id: "weth",
+        symbol: "weth",
+        name: "Wrapped Ether",
+        market_data: {
+          current_price: { usd: 2850.45 },
+          total_volume: { usd: 12000000000 },
+          fully_diluted_valuation: { usd: 350000000000 },
+        },
+      });
+
       const priceReport = await provider.getPrice(
         ethereumTokens.ETH,
         BlockchainType.EVM,
         "eth",
       );
 
+      expect(mockCoinGeckoInstance.coins.contract.get).toHaveBeenCalledWith(
+        ethereumTokens.ETH.toLowerCase(),
+        { id: "ethereum" },
+      );
       expect(priceReport).not.toBeNull();
-      expect(typeof priceReport?.price).toBe("number");
-      expect(priceReport?.price).toBeGreaterThan(0);
+      expect(priceReport?.price).toBe(2850.45);
+      expect(priceReport?.symbol).toBe("WETH");
     });
 
     it("should fetch USDC price", async () => {
+      // Mock CoinGecko API response for USDC on Ethereum
+      mockCoinGeckoInstance.coins.contract.get.mockResolvedValue({
+        id: "usd-coin",
+        symbol: "usdc",
+        name: "USD Coin",
+        market_data: {
+          current_price: { usd: 0.9998 },
+          total_volume: { usd: 8000000000 },
+          fully_diluted_valuation: { usd: 45000000000 },
+        },
+      });
+
       const priceReport = await provider.getPrice(
         ethereumTokens.USDC,
         BlockchainType.EVM,
         "eth",
       );
 
+      expect(mockCoinGeckoInstance.coins.contract.get).toHaveBeenCalledWith(
+        ethereumTokens.USDC.toLowerCase(),
+        { id: "ethereum" },
+      );
       expect(priceReport).not.toBeNull();
-      expect(typeof priceReport?.price).toBe("number");
-      expect(priceReport?.price).toBeGreaterThan(0);
+      expect(priceReport?.price).toBe(0.9998);
+      expect(priceReport?.symbol).toBe("USDC");
       expect(priceReport?.price).toBeCloseTo(1, 1); // USDC should be close to $1
     });
 
     it("should fetch ETH price above $1000 on Ethereum mainnet", async () => {
+      // Mock CoinGecko API response for ETH with high price
+      mockCoinGeckoInstance.coins.contract.get.mockResolvedValue({
+        id: "weth",
+        symbol: "weth",
+        name: "Wrapped Ether",
+        market_data: {
+          current_price: { usd: 2850.45 },
+          total_volume: { usd: 12000000000 },
+          fully_diluted_valuation: { usd: 350000000000 },
+        },
+      });
+
       const priceReport = await provider.getPrice(
         ethereumTokens.ETH,
         BlockchainType.EVM,
@@ -135,47 +249,95 @@ describe("CoinGeckoProvider", () => {
       );
 
       expect(priceReport).not.toBeNull();
-      expect(typeof priceReport?.price).toBe("number");
+      expect(priceReport?.price).toBe(2850.45);
       expect(priceReport?.price).toBeGreaterThan(1000); // ETH should be above $1000
-    }, 15000);
+    });
 
     it("should fetch USDT price close to $1 on Ethereum mainnet", async () => {
+      // Mock CoinGecko API response for USDT
+      mockCoinGeckoInstance.coins.contract.get.mockResolvedValue({
+        id: "tether",
+        symbol: "usdt",
+        name: "Tether",
+        market_data: {
+          current_price: { usd: 1.0002 },
+          total_volume: { usd: 65000000000 },
+          fully_diluted_valuation: { usd: 100000000000 },
+        },
+      });
+
       const priceReport = await provider.getPrice(
         ethereumTokens.USDT,
         BlockchainType.EVM,
         "eth",
       );
 
+      expect(mockCoinGeckoInstance.coins.contract.get).toHaveBeenCalledWith(
+        ethereumTokens.USDT.toLowerCase(),
+        { id: "ethereum" },
+      );
       expect(priceReport).not.toBeNull();
-      expect(typeof priceReport?.price).toBe("number");
-      expect(priceReport?.price).toBeGreaterThan(0);
+      expect(priceReport?.price).toBe(1.0002);
+      expect(priceReport?.symbol).toBe("USDT");
       expect(priceReport?.price).toBeCloseTo(1, 1); // USDT should be close to $1
-    }, 15000);
+    });
   });
 
   describe("Base token price fetching", () => {
     it("should fetch ETH on Base", async () => {
+      // Mock CoinGecko API response for ETH on Base
+      mockCoinGeckoInstance.coins.contract.get.mockResolvedValue({
+        id: "weth",
+        symbol: "weth",
+        name: "Wrapped Ether",
+        market_data: {
+          current_price: { usd: 2850.45 },
+          total_volume: { usd: 500000000 },
+          fully_diluted_valuation: { usd: 350000000000 },
+        },
+      });
+
       const priceReport = await provider.getPrice(
         baseTokens.ETH,
         BlockchainType.EVM,
         "base",
       );
 
+      expect(mockCoinGeckoInstance.coins.contract.get).toHaveBeenCalledWith(
+        baseTokens.ETH.toLowerCase(),
+        { id: "base" },
+      );
       expect(priceReport).not.toBeNull();
-      expect(typeof priceReport?.price).toBe("number");
-      expect(priceReport?.price).toBeGreaterThan(0);
+      expect(priceReport?.price).toBe(2850.45);
+      expect(priceReport?.symbol).toBe("WETH");
     });
 
     it("should fetch USDC on Base", async () => {
+      // Mock CoinGecko API response for USDC on Base
+      mockCoinGeckoInstance.coins.contract.get.mockResolvedValue({
+        id: "bridged-usdc-base",
+        symbol: "usdbc",
+        name: "USD Base Coin",
+        market_data: {
+          current_price: { usd: 0.9999 },
+          total_volume: { usd: 100000000 },
+          fully_diluted_valuation: { usd: 1000000000 },
+        },
+      });
+
       const priceReport = await provider.getPrice(
         baseTokens.USDC,
         BlockchainType.EVM,
         "base",
       );
 
+      expect(mockCoinGeckoInstance.coins.contract.get).toHaveBeenCalledWith(
+        baseTokens.USDC.toLowerCase(),
+        { id: "base" },
+      );
       expect(priceReport).not.toBeNull();
-      expect(typeof priceReport?.price).toBe("number");
-      expect(priceReport?.price).toBeGreaterThan(0);
+      expect(priceReport?.price).toBe(0.9999);
+      expect(priceReport?.symbol).toBe("USDBC");
       expect(priceReport?.price).toBeCloseTo(1, 1); // USDC should be close to $1
     });
   });
@@ -199,30 +361,123 @@ describe("CoinGeckoProvider", () => {
         ethereumTokens.USDC,
         ethereumTokens.USDT,
       ];
+
+      // Mock individual API responses for each token
+      mockCoinGeckoInstance.coins.contract.get
+        .mockResolvedValueOnce({
+          id: "weth",
+          symbol: "weth",
+          name: "Wrapped Ether",
+          market_data: {
+            current_price: { usd: 2850.45 },
+            total_volume: { usd: 12000000000 },
+            fully_diluted_valuation: { usd: 350000000000 },
+          },
+        })
+        .mockResolvedValueOnce({
+          id: "usd-coin",
+          symbol: "usdc",
+          name: "USD Coin",
+          market_data: {
+            current_price: { usd: 0.9998 },
+            total_volume: { usd: 8000000000 },
+            fully_diluted_valuation: { usd: 45000000000 },
+          },
+        })
+        .mockResolvedValueOnce({
+          id: "tether",
+          symbol: "usdt",
+          name: "Tether",
+          market_data: {
+            current_price: { usd: 1.0002 },
+            total_volume: { usd: 65000000000 },
+            fully_diluted_valuation: { usd: 100000000000 },
+          },
+        });
+
       const results = await provider.getBatchPrices(
         tokens,
         BlockchainType.EVM,
         "eth",
       );
 
+      // Should call the individual API for each token
+      expect(mockCoinGeckoInstance.coins.contract.get).toHaveBeenCalledTimes(3);
+      expect(mockCoinGeckoInstance.coins.contract.get).toHaveBeenCalledWith(
+        ethereumTokens.ETH.toLowerCase(),
+        { id: "ethereum" },
+      );
+      expect(mockCoinGeckoInstance.coins.contract.get).toHaveBeenCalledWith(
+        ethereumTokens.USDC.toLowerCase(),
+        { id: "ethereum" },
+      );
+      expect(mockCoinGeckoInstance.coins.contract.get).toHaveBeenCalledWith(
+        ethereumTokens.USDT.toLowerCase(),
+        { id: "ethereum" },
+      );
+
       expect(results.size).toBe(tokens.length);
 
-      for (const token of tokens) {
-        const priceInfo = results.get(token);
-        expect(priceInfo).not.toBeNull();
-        if (priceInfo) {
-          expect(typeof priceInfo.price).toBe("number");
-          expect(priceInfo.price).toBeGreaterThan(0);
-        }
-      }
+      // Check ETH
+      const ethInfo = results.get(ethereumTokens.ETH);
+      expect(ethInfo).not.toBeNull();
+      expect(ethInfo?.price).toBe(2850.45);
+      expect(ethInfo?.volume?.h24).toBe(12000000000);
+
+      // Check USDC
+      const usdcInfo = results.get(ethereumTokens.USDC);
+      expect(usdcInfo).not.toBeNull();
+      expect(usdcInfo?.price).toBe(0.9998);
+      expect(usdcInfo?.volume?.h24).toBe(8000000000);
+
+      // Check USDT
+      const usdtInfo = results.get(ethereumTokens.USDT);
+      expect(usdtInfo).not.toBeNull();
+      expect(usdtInfo?.price).toBe(1.0002);
+      expect(usdtInfo?.volume?.h24).toBe(65000000000);
     });
 
     it("should fetch batch prices for Base tokens", async () => {
       const tokens = [baseTokens.ETH, baseTokens.USDC];
+
+      // Mock individual API responses for each token
+      mockCoinGeckoInstance.coins.contract.get
+        .mockResolvedValueOnce({
+          id: "weth",
+          symbol: "weth",
+          name: "Wrapped Ether",
+          market_data: {
+            current_price: { usd: 2850.45 },
+            total_volume: { usd: 500000000 },
+            fully_diluted_valuation: { usd: 350000000000 },
+          },
+        })
+        .mockResolvedValueOnce({
+          id: "bridged-usdc-base",
+          symbol: "usdbc",
+          name: "USD Base Coin",
+          market_data: {
+            current_price: { usd: 0.9999 },
+            total_volume: { usd: 100000000 },
+            fully_diluted_valuation: { usd: 1000000000 },
+          },
+        });
+
       const results = await provider.getBatchPrices(
         tokens,
         BlockchainType.EVM,
         "base",
+      );
+
+      // Should call the individual API for each token
+      expect(mockCoinGeckoInstance.coins.contract.get).toHaveBeenCalledTimes(2);
+      expect(mockCoinGeckoInstance.coins.contract.get).toHaveBeenCalledWith(
+        baseTokens.ETH.toLowerCase(),
+        { id: "base" },
+      );
+      expect(mockCoinGeckoInstance.coins.contract.get).toHaveBeenCalledWith(
+        baseTokens.USDC.toLowerCase(),
+        { id: "base" },
       );
 
       expect(results.size).toBe(tokens.length);
@@ -241,12 +496,16 @@ describe("CoinGeckoProvider", () => {
   describe("Burn address handling", () => {
     it("should return price of 0 for burn addresses", async () => {
       const burnAddress = "0x000000000000000000000000000000000000dead";
+
+      // The provider should not even make an API call for burn addresses
       const priceReport = await provider.getPrice(
         burnAddress,
         BlockchainType.EVM,
         "eth",
       );
 
+      // Should not call the API for burn addresses
+      expect(mockCoinGeckoInstance.coins.contract.get).not.toHaveBeenCalled();
       expect(priceReport).not.toBeNull();
       expect(priceReport?.price).toBe(0);
       expect(priceReport?.symbol).toBe("BURN");
@@ -256,6 +515,12 @@ describe("CoinGeckoProvider", () => {
   describe("Error handling", () => {
     it("should return null for invalid token addresses", async () => {
       const invalidToken = "0xinvalid";
+
+      // Mock API error response
+      mockCoinGeckoInstance.coins.contract.get.mockRejectedValue(
+        new Error("Invalid contract address"),
+      );
+
       const priceReport = await provider.getPrice(
         invalidToken,
         BlockchainType.EVM,
@@ -275,8 +540,54 @@ describe("CoinGeckoProvider", () => {
         "unsupported" as any,
       );
 
+      // Should not call the API for unsupported chains
+      expect(
+        mockCoinGeckoInstance.simple.tokenPrice.getID,
+      ).not.toHaveBeenCalled();
       expect(results.size).toBe(1);
       expect(results.get(ethereumTokens.ETH)).toBeNull();
+    });
+
+    it("should handle API errors gracefully", async () => {
+      // Mock API error (retries are handled by the SDK internally)
+      mockCoinGeckoInstance.coins.contract.get.mockRejectedValue(
+        new Error("API error after retries"),
+      );
+
+      const priceReport = await provider.getPrice(
+        ethereumTokens.ETH,
+        BlockchainType.EVM,
+        "eth",
+      );
+
+      // The provider should catch the error and return null
+      expect(mockCoinGeckoInstance.coins.contract.get).toHaveBeenCalledTimes(1);
+      expect(priceReport).toBeNull();
+    });
+
+    it("should handle successful response after SDK retries", async () => {
+      // Since the SDK handles retries internally, we just mock a successful response
+      mockCoinGeckoInstance.coins.contract.get.mockResolvedValue({
+        id: "weth",
+        symbol: "weth",
+        name: "Wrapped Ether",
+        market_data: {
+          current_price: { usd: 2850.45 },
+          total_volume: { usd: 12000000000 },
+          fully_diluted_valuation: { usd: 350000000000 },
+        },
+      });
+
+      const priceReport = await provider.getPrice(
+        ethereumTokens.ETH,
+        BlockchainType.EVM,
+        "eth",
+      );
+
+      // Should have been called once (SDK handles retries internally)
+      expect(mockCoinGeckoInstance.coins.contract.get).toHaveBeenCalledTimes(1);
+      expect(priceReport).not.toBeNull();
+      expect(priceReport?.price).toBe(2850.45);
     });
   });
 });
