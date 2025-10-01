@@ -23,7 +23,11 @@ describe("MultiChainProvider", () => {
 
   beforeEach(() => {
     provider = new MultiChainProvider(
-      { evmChains, specificChainTokens },
+      {
+        evmChains,
+        specificChainTokens,
+        priceProvider: { type: "dexscreener" },
+      },
       mockLogger,
     );
   });

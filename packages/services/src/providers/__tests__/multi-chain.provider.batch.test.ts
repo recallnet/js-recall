@@ -19,7 +19,11 @@ describe("Batch Functionality Tests", () => {
 
   beforeEach(() => {
     provider = new MultiChainProvider(
-      { evmChains: specificChains, specificChainTokens },
+      {
+        evmChains: specificChains,
+        specificChainTokens,
+        priceProvider: { type: "dexscreener" },
+      },
       mockLogger,
     );
   });

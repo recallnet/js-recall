@@ -13,6 +13,7 @@ import {
 dotenv.config();
 
 const COINGECKO_API_KEY = process.env.COINGECKO_API_KEY || "";
+console.log("COINGECKO_API_KEY", COINGECKO_API_KEY);
 
 // Set timeout for all tests in this file to 30 seconds
 vi.setConfig({ testTimeout: 30_000 });
@@ -57,7 +58,6 @@ const mockLogger: MockProxy<Logger> = mock<Logger>();
 const config: CoinGeckoProviderConfig = {
   apiKey: COINGECKO_API_KEY,
   mode: "demo",
-  logger: mockLogger,
   specificChainTokens,
 };
 
@@ -65,7 +65,7 @@ describe("CoinGeckoProvider", () => {
   let provider: CoinGeckoProvider;
 
   beforeEach(() => {
-    provider = new CoinGeckoProvider(config);
+    provider = new CoinGeckoProvider(config, mockLogger);
   });
 
   describe("Basic functionality", () => {

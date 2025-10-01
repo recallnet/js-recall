@@ -49,7 +49,11 @@ describe("Chain Override Tests", () => {
   beforeEach(() => {
     if (runTests) {
       multiChainProvider = new MultiChainProvider(
-        { evmChains: specificChains, specificChainTokens },
+        {
+          evmChains: specificChains,
+          specificChainTokens,
+          priceProvider: { type: "dexscreener" },
+        },
         mockLogger,
       );
     }
