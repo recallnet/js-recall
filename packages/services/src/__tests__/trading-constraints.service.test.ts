@@ -1,22 +1,46 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { MockProxy, mock, mockReset } from "vitest-mock-extended";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
+// Import mocked functions
 import { TradingConstraintsRepository } from "@recallnet/db/repositories/trading-constraints";
 
-import { TradingConstraintsService } from "../trading-constraints.service.js";
+import {
+  TradingConstraintsService,
+  TradingConstraintsServiceConfig,
+} from "../trading-constraints.service.js";
+
+// Create a mock class that implements TradingConstraintsRepository
+class MockTradingConstraintsRepository {
+  create = vi.fn();
+  findByCompetitionId = vi.fn();
+  update = vi.fn();
+  delete = vi.fn();
+  upsert = vi.fn();
+}
+
+vi.mock("@recallnet/db/repositories/trading-constraints", () => ({
+  TradingConstraintsRepository: vi
+    .fn()
+    .mockImplementation(() => new MockTradingConstraintsRepository()),
+}));
+
+// Mock config with default values
+const mockConfig: TradingConstraintsServiceConfig = {
+  tradingConstraints: {
+    defaultMinimumPairAgeHours: 168,
+    defaultMinimum24hVolumeUsd: 100000,
+    defaultMinimumLiquidityUsd: 100000,
+    defaultMinimumFdvUsd: 1000000,
+  },
+};
 
 describe("TradingConstraintsService", () => {
   let service: TradingConstraintsService;
-  let mockTradingConstraintsRepo: MockProxy<TradingConstraintsRepository>;
-
-  // Default constraint values for testing
-  const DEFAULT_MINIMUM_PAIR_AGE_HOURS = 168; // 1 week
-  const DEFAULT_MINIMUM_24H_VOLUME_USD = 100000; // $100k
-  const DEFAULT_MINIMUM_LIQUIDITY_USD = 100000; // $100k
-  const DEFAULT_MINIMUM_FDV_USD = 1000000; // $1M
+  let mockRepo: TradingConstraintsRepository;
+  let mockRepoInstance: MockTradingConstraintsRepository;
 
   const testCompetitionId = "comp-123";
   const mockConstraintsRecord = {
+    id: "tc-456",
     competitionId: testCompetitionId,
     minimumPairAgeHours: 168,
     minimum24hVolumeUsd: 100000,
@@ -28,31 +52,15 @@ describe("TradingConstraintsService", () => {
   };
 
   beforeEach(() => {
+    mockRepoInstance = new MockTradingConstraintsRepository();
+    mockRepo = mockRepoInstance as unknown as TradingConstraintsRepository;
+    service = new TradingConstraintsService(mockRepo, mockConfig);
     vi.clearAllMocks();
-
-    // Create repository mock
-    mockTradingConstraintsRepo = mock<TradingConstraintsRepository>();
-
-    service = new TradingConstraintsService(mockTradingConstraintsRepo, {
-      tradingConstraints: {
-        defaultMinimum24hVolumeUsd: DEFAULT_MINIMUM_24H_VOLUME_USD,
-        defaultMinimumLiquidityUsd: DEFAULT_MINIMUM_LIQUIDITY_USD,
-        defaultMinimumFdvUsd: DEFAULT_MINIMUM_FDV_USD,
-        defaultMinimumPairAgeHours: DEFAULT_MINIMUM_PAIR_AGE_HOURS,
-      },
-    });
-  });
-
-  afterEach(() => {
-    // Reset all mocks
-    mockReset(mockTradingConstraintsRepo);
   });
 
   describe("createConstraints", () => {
     it("should create constraints with custom values", async () => {
-      mockTradingConstraintsRepo.create.mockResolvedValue(
-        mockConstraintsRecord,
-      );
+      mockRepoInstance.create.mockResolvedValue(mockConstraintsRecord);
 
       const input = {
         competitionId: testCompetitionId,
@@ -65,7 +73,7 @@ describe("TradingConstraintsService", () => {
 
       const result = await service.createConstraints(input);
 
-      expect(mockTradingConstraintsRepo.create).toHaveBeenCalledWith(
+      expect(mockRepoInstance.create).toHaveBeenCalledWith(
         {
           competitionId: testCompetitionId,
           minimumPairAgeHours: 200,
@@ -80,9 +88,7 @@ describe("TradingConstraintsService", () => {
     });
 
     it("should create constraints with default values when custom values not provided", async () => {
-      mockTradingConstraintsRepo.create.mockResolvedValue(
-        mockConstraintsRecord,
-      );
+      mockRepoInstance.create.mockResolvedValue(mockConstraintsRecord);
 
       const input = {
         competitionId: testCompetitionId,
@@ -90,13 +96,13 @@ describe("TradingConstraintsService", () => {
 
       await service.createConstraints(input);
 
-      expect(mockTradingConstraintsRepo.create).toHaveBeenCalledWith(
+      expect(mockRepoInstance.create).toHaveBeenCalledWith(
         {
           competitionId: testCompetitionId,
-          minimumPairAgeHours: DEFAULT_MINIMUM_PAIR_AGE_HOURS,
-          minimum24hVolumeUsd: DEFAULT_MINIMUM_24H_VOLUME_USD,
-          minimumLiquidityUsd: DEFAULT_MINIMUM_LIQUIDITY_USD,
-          minimumFdvUsd: DEFAULT_MINIMUM_FDV_USD,
+          minimumPairAgeHours: 168,
+          minimum24hVolumeUsd: 100000,
+          minimumLiquidityUsd: 100000,
+          minimumFdvUsd: 1000000,
           minTradesPerDay: null,
         },
         undefined,
@@ -104,9 +110,7 @@ describe("TradingConstraintsService", () => {
     });
 
     it("should create constraints mixing custom and default values", async () => {
-      mockTradingConstraintsRepo.create.mockResolvedValue(
-        mockConstraintsRecord,
-      );
+      mockRepoInstance.create.mockResolvedValue(mockConstraintsRecord);
 
       const input = {
         competitionId: testCompetitionId,
@@ -118,13 +122,13 @@ describe("TradingConstraintsService", () => {
 
       await service.createConstraints(input);
 
-      expect(mockTradingConstraintsRepo.create).toHaveBeenCalledWith(
+      expect(mockRepoInstance.create).toHaveBeenCalledWith(
         {
           competitionId: testCompetitionId,
           minimumPairAgeHours: 240,
           minimum24hVolumeUsd: 200000,
-          minimumLiquidityUsd: DEFAULT_MINIMUM_LIQUIDITY_USD,
-          minimumFdvUsd: DEFAULT_MINIMUM_FDV_USD,
+          minimumLiquidityUsd: 100000,
+          minimumFdvUsd: 1000000,
           minTradesPerDay: 8,
         },
         undefined,
@@ -132,7 +136,7 @@ describe("TradingConstraintsService", () => {
     });
 
     it("should handle repository errors gracefully", async () => {
-      mockTradingConstraintsRepo.create.mockRejectedValue(
+      mockRepoInstance.create.mockRejectedValue(
         new Error("Database connection failed"),
       );
 
@@ -146,7 +150,7 @@ describe("TradingConstraintsService", () => {
     });
 
     it("should handle undefined return from repository", async () => {
-      mockTradingConstraintsRepo.create.mockResolvedValue(undefined);
+      mockRepoInstance.create.mockResolvedValue(undefined);
 
       const input = {
         competitionId: testCompetitionId,
@@ -159,20 +163,20 @@ describe("TradingConstraintsService", () => {
 
   describe("getConstraints", () => {
     it("should retrieve existing constraints", async () => {
-      mockTradingConstraintsRepo.findByCompetitionId.mockResolvedValue(
+      mockRepoInstance.findByCompetitionId.mockResolvedValue(
         mockConstraintsRecord,
       );
 
       const result = await service.getConstraints(testCompetitionId);
 
-      expect(
-        mockTradingConstraintsRepo.findByCompetitionId,
-      ).toHaveBeenCalledWith(testCompetitionId);
+      expect(mockRepoInstance.findByCompetitionId).toHaveBeenCalledWith(
+        testCompetitionId,
+      );
       expect(result).toEqual(mockConstraintsRecord);
     });
 
     it("should return null when constraints not found", async () => {
-      mockTradingConstraintsRepo.findByCompetitionId.mockResolvedValue(null);
+      mockRepoInstance.findByCompetitionId.mockResolvedValue(null);
 
       const result = await service.getConstraints(testCompetitionId);
 
@@ -180,7 +184,7 @@ describe("TradingConstraintsService", () => {
     });
 
     it("should handle repository errors", async () => {
-      mockTradingConstraintsRepo.findByCompetitionId.mockRejectedValue(
+      mockRepoInstance.findByCompetitionId.mockRejectedValue(
         new Error("Query timeout"),
       );
 
@@ -192,9 +196,7 @@ describe("TradingConstraintsService", () => {
 
   describe("updateConstraints", () => {
     it("should update constraints with partial data", async () => {
-      mockTradingConstraintsRepo.update.mockResolvedValue(
-        mockConstraintsRecord,
-      );
+      mockRepoInstance.update.mockResolvedValue(mockConstraintsRecord);
 
       const update = {
         minimumPairAgeHours: 300,
@@ -203,7 +205,7 @@ describe("TradingConstraintsService", () => {
 
       const result = await service.updateConstraints(testCompetitionId, update);
 
-      expect(mockTradingConstraintsRepo.update).toHaveBeenCalledWith(
+      expect(mockRepoInstance.update).toHaveBeenCalledWith(
         testCompetitionId,
         {
           minimumPairAgeHours: 300,
@@ -215,9 +217,7 @@ describe("TradingConstraintsService", () => {
     });
 
     it("should update all constraint fields", async () => {
-      mockTradingConstraintsRepo.update.mockResolvedValue(
-        mockConstraintsRecord,
-      );
+      mockRepoInstance.update.mockResolvedValue(mockConstraintsRecord);
 
       const update = {
         minimumPairAgeHours: 400,
@@ -229,7 +229,7 @@ describe("TradingConstraintsService", () => {
 
       const result = await service.updateConstraints(testCompetitionId, update);
 
-      expect(mockTradingConstraintsRepo.update).toHaveBeenCalledWith(
+      expect(mockRepoInstance.update).toHaveBeenCalledWith(
         testCompetitionId,
         update,
         undefined,
@@ -238,9 +238,7 @@ describe("TradingConstraintsService", () => {
     });
 
     it("should handle null minTradesPerDay explicitly", async () => {
-      mockTradingConstraintsRepo.update.mockResolvedValue(
-        mockConstraintsRecord,
-      );
+      mockRepoInstance.update.mockResolvedValue(mockConstraintsRecord);
 
       const update = {
         minTradesPerDay: null,
@@ -248,7 +246,7 @@ describe("TradingConstraintsService", () => {
 
       const result = await service.updateConstraints(testCompetitionId, update);
 
-      expect(mockTradingConstraintsRepo.update).toHaveBeenCalledWith(
+      expect(mockRepoInstance.update).toHaveBeenCalledWith(
         testCompetitionId,
         {
           minTradesPerDay: null,
@@ -259,7 +257,7 @@ describe("TradingConstraintsService", () => {
     });
 
     it("should throw error when update fails", async () => {
-      mockTradingConstraintsRepo.update.mockResolvedValue(undefined);
+      mockRepoInstance.update.mockResolvedValue(undefined);
 
       const update = {
         minimumPairAgeHours: 200,
@@ -272,8 +270,8 @@ describe("TradingConstraintsService", () => {
       );
     });
 
-    it("should handle repository errors during update", async () => {
-      mockTradingConstraintsRepo.update.mockRejectedValue(
+    it("should handle repository errors", async () => {
+      mockRepoInstance.update.mockRejectedValue(
         new Error("Constraint violation"),
       );
 
@@ -285,57 +283,108 @@ describe("TradingConstraintsService", () => {
         service.updateConstraints(testCompetitionId, update),
       ).rejects.toThrow("Constraint violation");
     });
+
+    it("should filter out undefined values correctly", async () => {
+      mockRepoInstance.update.mockResolvedValue(mockConstraintsRecord);
+
+      const update = {
+        minimumPairAgeHours: 200,
+        minimum24hVolumeUsd: undefined, // Should be filtered out
+        minimumLiquidityUsd: 150000,
+        minimumFdvUsd: undefined, // Should be filtered out
+        minTradesPerDay: 0, // Should be included as 0 is valid
+      };
+
+      await service.updateConstraints(testCompetitionId, update);
+
+      expect(mockRepoInstance.update).toHaveBeenCalledWith(
+        testCompetitionId,
+        {
+          minimumPairAgeHours: 200,
+          minimumLiquidityUsd: 150000,
+          minTradesPerDay: 0,
+        },
+        undefined,
+      );
+    });
+  });
+
+  describe("deleteConstraints", () => {
+    it("should delete constraints successfully", async () => {
+      mockRepoInstance.delete.mockResolvedValue(true);
+
+      const result = await service.deleteConstraints(testCompetitionId);
+
+      expect(mockRepoInstance.delete).toHaveBeenCalledWith(testCompetitionId);
+      expect(result).toBe(true);
+    });
+
+    it("should return false when constraints not found for deletion", async () => {
+      mockRepoInstance.delete.mockResolvedValue(false);
+
+      const result = await service.deleteConstraints(testCompetitionId);
+
+      expect(result).toBe(false);
+    });
+
+    it("should handle repository errors", async () => {
+      mockRepoInstance.delete.mockRejectedValue(
+        new Error("Foreign key violation"),
+      );
+
+      await expect(
+        service.deleteConstraints(testCompetitionId),
+      ).rejects.toThrow("Foreign key violation");
+    });
   });
 
   describe("upsertConstraints", () => {
     it("should upsert constraints with custom values", async () => {
-      mockTradingConstraintsRepo.upsert.mockResolvedValue(
-        mockConstraintsRecord,
-      );
+      mockRepoInstance.upsert.mockResolvedValue(mockConstraintsRecord);
 
       const input = {
         competitionId: testCompetitionId,
-        minimumPairAgeHours: 200,
-        minimum24hVolumeUsd: 150000,
+        minimumPairAgeHours: 180,
+        minimum24hVolumeUsd: 120000,
+        minimumLiquidityUsd: 110000,
+        minimumFdvUsd: 1200000,
+        minTradesPerDay: 6,
       };
 
       const result = await service.upsertConstraints(input);
 
-      expect(mockTradingConstraintsRepo.upsert).toHaveBeenCalledWith({
+      expect(mockRepoInstance.upsert).toHaveBeenCalledWith({
         competitionId: testCompetitionId,
-        minimumPairAgeHours: 200,
-        minimum24hVolumeUsd: 150000,
-        minimumLiquidityUsd: DEFAULT_MINIMUM_LIQUIDITY_USD,
-        minimumFdvUsd: DEFAULT_MINIMUM_FDV_USD,
-        minTradesPerDay: null,
+        minimumPairAgeHours: 180,
+        minimum24hVolumeUsd: 120000,
+        minimumLiquidityUsd: 110000,
+        minimumFdvUsd: 1200000,
+        minTradesPerDay: 6,
       });
       expect(result).toEqual(mockConstraintsRecord);
     });
 
-    it("should upsert constraints with all default values", async () => {
-      mockTradingConstraintsRepo.upsert.mockResolvedValue(
-        mockConstraintsRecord,
-      );
+    it("should upsert constraints with defaults", async () => {
+      mockRepoInstance.upsert.mockResolvedValue(mockConstraintsRecord);
 
       const input = {
         competitionId: testCompetitionId,
       };
 
-      const result = await service.upsertConstraints(input);
+      await service.upsertConstraints(input);
 
-      expect(mockTradingConstraintsRepo.upsert).toHaveBeenCalledWith({
+      expect(mockRepoInstance.upsert).toHaveBeenCalledWith({
         competitionId: testCompetitionId,
-        minimumPairAgeHours: DEFAULT_MINIMUM_PAIR_AGE_HOURS,
-        minimum24hVolumeUsd: DEFAULT_MINIMUM_24H_VOLUME_USD,
-        minimumLiquidityUsd: DEFAULT_MINIMUM_LIQUIDITY_USD,
-        minimumFdvUsd: DEFAULT_MINIMUM_FDV_USD,
+        minimumPairAgeHours: 168,
+        minimum24hVolumeUsd: 100000,
+        minimumLiquidityUsd: 100000,
+        minimumFdvUsd: 1000000,
         minTradesPerDay: null,
       });
-      expect(result).toEqual(mockConstraintsRecord);
     });
 
     it("should throw error when upsert fails", async () => {
-      mockTradingConstraintsRepo.upsert.mockResolvedValue(undefined);
+      mockRepoInstance.upsert.mockResolvedValue(undefined);
 
       const input = {
         competitionId: testCompetitionId,
@@ -346,8 +395,8 @@ describe("TradingConstraintsService", () => {
       );
     });
 
-    it("should handle repository errors during upsert", async () => {
-      mockTradingConstraintsRepo.upsert.mockRejectedValue(
+    it("should handle repository errors", async () => {
+      mockRepoInstance.upsert.mockRejectedValue(
         new Error("Unique constraint violation"),
       );
 
@@ -361,31 +410,52 @@ describe("TradingConstraintsService", () => {
     });
   });
 
-  describe("deleteConstraints", () => {
-    it("should delete constraints for a competition", async () => {
-      mockTradingConstraintsRepo.delete.mockResolvedValue(true);
-
-      const result = await service.deleteConstraints(testCompetitionId);
-
-      expect(mockTradingConstraintsRepo.delete).toHaveBeenCalledWith(
-        testCompetitionId,
+  describe("getConstraintsWithDefaults", () => {
+    it("should return existing constraints when found", async () => {
+      mockRepoInstance.findByCompetitionId.mockResolvedValue(
+        mockConstraintsRecord,
       );
-      expect(result).toBe(true);
+
+      const result =
+        await service.getConstraintsWithDefaults(testCompetitionId);
+
+      expect(result).toEqual({
+        minimumPairAgeHours: mockConstraintsRecord.minimumPairAgeHours,
+        minimum24hVolumeUsd: mockConstraintsRecord.minimum24hVolumeUsd,
+        minimumLiquidityUsd: mockConstraintsRecord.minimumLiquidityUsd,
+        minimumFdvUsd: mockConstraintsRecord.minimumFdvUsd,
+        minTradesPerDay: mockConstraintsRecord.minTradesPerDay,
+      });
     });
 
-    it("should handle repository errors during delete", async () => {
-      mockTradingConstraintsRepo.delete.mockRejectedValue(
-        new Error("Foreign key constraint"),
+    it("should return default constraints when not found", async () => {
+      mockRepoInstance.findByCompetitionId.mockResolvedValue(null);
+
+      const result =
+        await service.getConstraintsWithDefaults(testCompetitionId);
+
+      expect(result).toEqual({
+        minimumPairAgeHours: 168,
+        minimum24hVolumeUsd: 100000,
+        minimumLiquidityUsd: 100000,
+        minimumFdvUsd: 1000000,
+        minTradesPerDay: null,
+      });
+    });
+
+    it("should handle repository errors", async () => {
+      mockRepoInstance.findByCompetitionId.mockRejectedValue(
+        new Error("Connection lost"),
       );
 
       await expect(
-        service.deleteConstraints(testCompetitionId),
-      ).rejects.toThrow("Foreign key constraint");
+        service.getConstraintsWithDefaults(testCompetitionId),
+      ).rejects.toThrow("Connection lost");
     });
   });
 
   describe("validateConstraints", () => {
-    it("should validate valid constraints", () => {
+    it("should pass validation for valid constraints", () => {
       const input = {
         competitionId: testCompetitionId,
         minimumPairAgeHours: 168,
@@ -401,73 +471,7 @@ describe("TradingConstraintsService", () => {
       expect(result.errors).toHaveLength(0);
     });
 
-    it("should fail validation for negative values", () => {
-      const input = {
-        competitionId: testCompetitionId,
-        minimumPairAgeHours: -10,
-        minimum24hVolumeUsd: -50000,
-        minimumLiquidityUsd: -25000,
-        minimumFdvUsd: -500000,
-        minTradesPerDay: -5,
-      };
-
-      const result = service.validateConstraints(input);
-
-      expect(result.isValid).toBe(false);
-      expect(result.errors).toEqual([
-        "minimumPairAgeHours must be non-negative",
-        "minimum24hVolumeUsd must be non-negative",
-        "minimumLiquidityUsd must be non-negative",
-        "minimumFdvUsd must be non-negative",
-        "minTradesPerDay must be non-negative",
-      ]);
-    });
-
-    it("should fail validation for excessively large values", () => {
-      const input = {
-        competitionId: testCompetitionId,
-        minimumPairAgeHours: 8761, // Over 1 year
-        minimum24hVolumeUsd: 1000000001, // Over 1 billion
-        minimumLiquidityUsd: 1000000001, // Over 1 billion
-        minimumFdvUsd: 1000000000001, // Over 1 trillion
-        minTradesPerDay: 10001, // Large number (no limit validation in actual implementation)
-      };
-
-      const result = service.validateConstraints(input);
-
-      expect(result.isValid).toBe(false);
-      expect(result.errors).toContain(
-        "minimumPairAgeHours cannot exceed 8760 hours (1 year)",
-      );
-      expect(result.errors).toContain(
-        "minimum24hVolumeUsd cannot exceed 1 billion USD",
-      );
-      expect(result.errors).toContain(
-        "minimumLiquidityUsd cannot exceed 1 billion USD",
-      );
-      expect(result.errors).toContain(
-        "minimumFdvUsd cannot exceed 1 trillion USD",
-      );
-      // minTradesPerDay has no upper limit validation in the actual implementation
-    });
-
-    it("should pass validation for reasonable large values", () => {
-      const input = {
-        competitionId: testCompetitionId,
-        minimumPairAgeHours: 8759,
-        minimum24hVolumeUsd: 999999999,
-        minimumLiquidityUsd: 999999999,
-        minimumFdvUsd: 999999999999,
-        minTradesPerDay: 10000,
-      };
-
-      const result = service.validateConstraints(input);
-
-      expect(result.isValid).toBe(true);
-      expect(result.errors).toHaveLength(0);
-    });
-
-    it("should handle zero values correctly", () => {
+    it("should pass validation for minimal valid constraints", () => {
       const input = {
         competitionId: testCompetitionId,
         minimumPairAgeHours: 0,
@@ -483,13 +487,10 @@ describe("TradingConstraintsService", () => {
       expect(result.errors).toHaveLength(0);
     });
 
-    it("should handle decimal values (should still pass validation)", () => {
+    it("should handle null minTradesPerDay as valid", () => {
       const input = {
         competitionId: testCompetitionId,
-        minimumPairAgeHours: 168.5,
-        minimum24hVolumeUsd: 100000.99,
-        minimumLiquidityUsd: 100000.01,
-        minimumFdvUsd: 1000000.5,
+        minTradesPerDay: null,
       };
 
       const result = service.validateConstraints(input);
@@ -498,14 +499,38 @@ describe("TradingConstraintsService", () => {
       expect(result.errors).toHaveLength(0);
     });
 
-    it("should validate financial constraints realistically for high-frequency trading", () => {
+    it("should fail validation for negative minimumPairAgeHours", () => {
       const input = {
         competitionId: testCompetitionId,
-        minimumPairAgeHours: 1, // Very new pair
-        minimum24hVolumeUsd: 50000, // Lower volume threshold
-        minimumLiquidityUsd: 25000, // Minimal liquidity
-        minimumFdvUsd: 500000, // Smaller market cap
-        minTradesPerDay: 100, // High frequency trading
+        minimumPairAgeHours: -1,
+      };
+
+      const result = service.validateConstraints(input);
+
+      expect(result.isValid).toBe(false);
+      expect(result.errors).toContain(
+        "minimumPairAgeHours must be non-negative",
+      );
+    });
+
+    it("should fail validation for excessive minimumPairAgeHours", () => {
+      const input = {
+        competitionId: testCompetitionId,
+        minimumPairAgeHours: 9000,
+      };
+
+      const result = service.validateConstraints(input);
+
+      expect(result.isValid).toBe(false);
+      expect(result.errors).toContain(
+        "minimumPairAgeHours cannot exceed 8760 hours (1 year)",
+      );
+    });
+
+    it("should pass validation at exact boundary for minimumPairAgeHours", () => {
+      const input = {
+        competitionId: testCompetitionId,
+        minimumPairAgeHours: 8760,
       };
 
       const result = service.validateConstraints(input);
@@ -514,14 +539,38 @@ describe("TradingConstraintsService", () => {
       expect(result.errors).toHaveLength(0);
     });
 
-    it("should handle institutional-level constraints validation", () => {
+    it("should fail validation for negative minimum24hVolumeUsd", () => {
       const input = {
         competitionId: testCompetitionId,
-        minimumPairAgeHours: 720, // 30 days
-        minimum24hVolumeUsd: 50000000, // $50M daily volume
-        minimumLiquidityUsd: 10000000, // $10M liquidity
-        minimumFdvUsd: 100000000000, // $100B FDV
-        minTradesPerDay: 1000, // Institutional trading volume
+        minimum24hVolumeUsd: -100,
+      };
+
+      const result = service.validateConstraints(input);
+
+      expect(result.isValid).toBe(false);
+      expect(result.errors).toContain(
+        "minimum24hVolumeUsd must be non-negative",
+      );
+    });
+
+    it("should fail validation for excessive minimum24hVolumeUsd", () => {
+      const input = {
+        competitionId: testCompetitionId,
+        minimum24hVolumeUsd: 2000000000,
+      };
+
+      const result = service.validateConstraints(input);
+
+      expect(result.isValid).toBe(false);
+      expect(result.errors).toContain(
+        "minimum24hVolumeUsd cannot exceed 1 billion USD",
+      );
+    });
+
+    it("should pass validation at exact boundary for minimum24hVolumeUsd", () => {
+      const input = {
+        competitionId: testCompetitionId,
+        minimum24hVolumeUsd: 1000000000,
       };
 
       const result = service.validateConstraints(input);
@@ -530,10 +579,24 @@ describe("TradingConstraintsService", () => {
       expect(result.errors).toHaveLength(0);
     });
 
-    it("should fail validation when liquidity exceeds maximum safe trading threshold", () => {
+    it("should fail validation for negative minimumLiquidityUsd", () => {
       const input = {
         competitionId: testCompetitionId,
-        minimumLiquidityUsd: 1000000001, // Just over 1 billion
+        minimumLiquidityUsd: -500,
+      };
+
+      const result = service.validateConstraints(input);
+
+      expect(result.isValid).toBe(false);
+      expect(result.errors).toContain(
+        "minimumLiquidityUsd must be non-negative",
+      );
+    });
+
+    it("should fail validation for excessive minimumLiquidityUsd", () => {
+      const input = {
+        competitionId: testCompetitionId,
+        minimumLiquidityUsd: 1500000000,
       };
 
       const result = service.validateConstraints(input);
@@ -543,11 +606,208 @@ describe("TradingConstraintsService", () => {
         "minimumLiquidityUsd cannot exceed 1 billion USD",
       );
     });
+
+    it("should fail validation for negative minimumFdvUsd", () => {
+      const input = {
+        competitionId: testCompetitionId,
+        minimumFdvUsd: -1000,
+      };
+
+      const result = service.validateConstraints(input);
+
+      expect(result.isValid).toBe(false);
+      expect(result.errors).toContain("minimumFdvUsd must be non-negative");
+    });
+
+    it("should fail validation for excessive minimumFdvUsd", () => {
+      const input = {
+        competitionId: testCompetitionId,
+        minimumFdvUsd: 2000000000000,
+      };
+
+      const result = service.validateConstraints(input);
+
+      expect(result.isValid).toBe(false);
+      expect(result.errors).toContain(
+        "minimumFdvUsd cannot exceed 1 trillion USD",
+      );
+    });
+
+    it("should pass validation at exact boundary for minimumFdvUsd", () => {
+      const input = {
+        competitionId: testCompetitionId,
+        minimumFdvUsd: 1000000000000,
+      };
+
+      const result = service.validateConstraints(input);
+
+      expect(result.isValid).toBe(true);
+      expect(result.errors).toHaveLength(0);
+    });
+
+    it("should fail validation for negative minTradesPerDay", () => {
+      const input = {
+        competitionId: testCompetitionId,
+        minTradesPerDay: -2,
+      };
+
+      const result = service.validateConstraints(input);
+
+      expect(result.isValid).toBe(false);
+      expect(result.errors).toContain("minTradesPerDay must be non-negative");
+    });
+
+    it("should accumulate multiple validation errors", () => {
+      const input = {
+        competitionId: testCompetitionId,
+        minimumPairAgeHours: -10,
+        minimum24hVolumeUsd: 2000000000,
+        minimumLiquidityUsd: -500,
+        minimumFdvUsd: 3000000000000,
+        minTradesPerDay: -5,
+      };
+
+      const result = service.validateConstraints(input);
+
+      expect(result.isValid).toBe(false);
+      expect(result.errors).toHaveLength(5);
+      expect(result.errors).toContain(
+        "minimumPairAgeHours must be non-negative",
+      );
+      expect(result.errors).toContain(
+        "minimum24hVolumeUsd cannot exceed 1 billion USD",
+      );
+      expect(result.errors).toContain(
+        "minimumLiquidityUsd must be non-negative",
+      );
+      expect(result.errors).toContain(
+        "minimumFdvUsd cannot exceed 1 trillion USD",
+      );
+      expect(result.errors).toContain("minTradesPerDay must be non-negative");
+    });
+
+    it("should handle partial constraint validation", () => {
+      const input = {
+        competitionId: testCompetitionId,
+        minimumPairAgeHours: 200, // Only this field provided
+      };
+
+      const result = service.validateConstraints(input);
+
+      expect(result.isValid).toBe(true);
+      expect(result.errors).toHaveLength(0);
+    });
+
+    it("should handle empty constraint object", () => {
+      const input = {
+        competitionId: testCompetitionId,
+      };
+
+      const result = service.validateConstraints(input);
+
+      expect(result.isValid).toBe(true);
+      expect(result.errors).toHaveLength(0);
+    });
+
+    describe("Edge Cases", () => {
+      it("should handle extremely large valid values", () => {
+        const input = {
+          competitionId: testCompetitionId,
+          minimumPairAgeHours: 8759,
+          minimum24hVolumeUsd: 999999999,
+          minimumLiquidityUsd: 999999999,
+          minimumFdvUsd: 999999999999,
+          minTradesPerDay: 10000,
+        };
+
+        const result = service.validateConstraints(input);
+
+        expect(result.isValid).toBe(true);
+        expect(result.errors).toHaveLength(0);
+      });
+
+      it("should handle zero values correctly", () => {
+        const input = {
+          competitionId: testCompetitionId,
+          minimumPairAgeHours: 0,
+          minimum24hVolumeUsd: 0,
+          minimumLiquidityUsd: 0,
+          minimumFdvUsd: 0,
+          minTradesPerDay: 0,
+        };
+
+        const result = service.validateConstraints(input);
+
+        expect(result.isValid).toBe(true);
+        expect(result.errors).toHaveLength(0);
+      });
+
+      it("should handle decimal values (should still pass validation)", () => {
+        const input = {
+          competitionId: testCompetitionId,
+          minimumPairAgeHours: 168.5,
+          minimum24hVolumeUsd: 100000.99,
+          minimumLiquidityUsd: 100000.01,
+          minimumFdvUsd: 1000000.5,
+        };
+
+        const result = service.validateConstraints(input);
+
+        expect(result.isValid).toBe(true);
+        expect(result.errors).toHaveLength(0);
+      });
+
+      it("should validate financial constraints realistically for high-frequency trading", () => {
+        const input = {
+          competitionId: testCompetitionId,
+          minimumPairAgeHours: 1, // Very new pair
+          minimum24hVolumeUsd: 50000, // Lower volume threshold
+          minimumLiquidityUsd: 25000, // Minimal liquidity
+          minimumFdvUsd: 500000, // Smaller market cap
+          minTradesPerDay: 100, // High frequency trading
+        };
+
+        const result = service.validateConstraints(input);
+
+        expect(result.isValid).toBe(true);
+        expect(result.errors).toHaveLength(0);
+      });
+
+      it("should handle institutional-level constraints validation", () => {
+        const input = {
+          competitionId: testCompetitionId,
+          minimumPairAgeHours: 720, // 30 days
+          minimum24hVolumeUsd: 50000000, // $50M daily volume
+          minimumLiquidityUsd: 10000000, // $10M liquidity
+          minimumFdvUsd: 100000000000, // $100B FDV
+          minTradesPerDay: 1000, // Institutional trading volume
+        };
+
+        const result = service.validateConstraints(input);
+
+        expect(result.isValid).toBe(true);
+        expect(result.errors).toHaveLength(0);
+      });
+
+      it("should fail validation when liquidity exceeds maximum safe trading threshold", () => {
+        const input = {
+          competitionId: testCompetitionId,
+          minimumLiquidityUsd: 1000000001, // Just over 1 billion
+        };
+
+        const result = service.validateConstraints(input);
+
+        expect(result.isValid).toBe(false);
+        expect(result.errors).toContain(
+          "minimumLiquidityUsd cannot exceed 1 billion USD",
+        );
+      });
+    });
   });
 
   describe("Financial Edge Cases and Risk Scenarios", () => {
     it("should handle market crash scenario with extreme constraints", async () => {
-      mockTradingConstraintsRepo.update.mockResolvedValue({
+      mockRepoInstance.update.mockResolvedValue({
         ...mockConstraintsRecord,
         minimum24hVolumeUsd: 500000000, // $500M volume during crisis
         minimumLiquidityUsd: 100000000, // $100M liquidity requirement
@@ -597,7 +857,7 @@ describe("TradingConstraintsService", () => {
     });
 
     it("should handle DeFi blue-chip token constraints", async () => {
-      mockTradingConstraintsRepo.create.mockResolvedValue({
+      mockRepoInstance.create.mockResolvedValue({
         ...mockConstraintsRecord,
         minimum24hVolumeUsd: 10000000, // $10M daily volume
         minimumLiquidityUsd: 5000000, // $5M liquidity
@@ -624,23 +884,13 @@ describe("TradingConstraintsService", () => {
 
   describe("Error Handling and Robustness", () => {
     it("should handle service instantiation with dependencies", () => {
-      const newService = new TradingConstraintsService(
-        mockTradingConstraintsRepo,
-        {
-          tradingConstraints: {
-            defaultMinimum24hVolumeUsd: 168,
-            defaultMinimumLiquidityUsd: 100000,
-            defaultMinimumFdvUsd: 100000,
-            defaultMinimumPairAgeHours: 1000000,
-          },
-        },
-      );
+      const newService = new TradingConstraintsService(mockRepo, mockConfig);
       expect(newService).toBeInstanceOf(TradingConstraintsService);
     });
 
     it("should maintain consistent error messages", async () => {
-      mockTradingConstraintsRepo.update.mockResolvedValue(undefined);
-      mockTradingConstraintsRepo.upsert.mockResolvedValue(undefined);
+      mockRepoInstance.update.mockResolvedValue(undefined);
+      mockRepoInstance.upsert.mockResolvedValue(undefined);
 
       const competitionId = "test-comp";
 
@@ -661,7 +911,7 @@ describe("TradingConstraintsService", () => {
 
     it("should preserve original error when repository operations fail", async () => {
       const originalError = new Error("Database deadlock detected");
-      mockTradingConstraintsRepo.create.mockRejectedValue(originalError);
+      mockRepoInstance.create.mockRejectedValue(originalError);
 
       await expect(
         service.createConstraints({ competitionId: testCompetitionId }),
@@ -672,7 +922,7 @@ describe("TradingConstraintsService", () => {
       const concurrencyError = new Error(
         "could not serialize access due to concurrent update",
       );
-      mockTradingConstraintsRepo.update.mockRejectedValueOnce(concurrencyError);
+      mockRepoInstance.update.mockRejectedValueOnce(concurrencyError);
 
       await expect(
         service.updateConstraints(testCompetitionId, {
@@ -682,31 +932,27 @@ describe("TradingConstraintsService", () => {
     });
 
     it("should maintain constraint consistency during partial repository failures", async () => {
-      mockTradingConstraintsRepo.findByCompetitionId.mockResolvedValue(null);
-      mockTradingConstraintsRepo.upsert.mockResolvedValue(
-        mockConstraintsRecord,
-      );
+      mockRepoInstance.findByCompetitionId.mockResolvedValue(null);
+      mockRepoInstance.upsert.mockResolvedValue(mockConstraintsRecord);
 
       const result = await service.upsertConstraints({
         competitionId: testCompetitionId,
         minimumPairAgeHours: 168,
       });
 
-      expect(mockTradingConstraintsRepo.upsert).toHaveBeenCalledWith({
+      expect(mockRepoInstance.upsert).toHaveBeenCalledWith({
         competitionId: testCompetitionId,
         minimumPairAgeHours: 168,
-        minimum24hVolumeUsd: DEFAULT_MINIMUM_24H_VOLUME_USD,
-        minimumLiquidityUsd: DEFAULT_MINIMUM_LIQUIDITY_USD,
-        minimumFdvUsd: DEFAULT_MINIMUM_FDV_USD,
+        minimum24hVolumeUsd: 100000,
+        minimumLiquidityUsd: 100000,
+        minimumFdvUsd: 1000000,
         minTradesPerDay: null,
       });
       expect(result).toEqual(mockConstraintsRecord);
     });
 
     it("should handle memory pressure during bulk constraint operations", async () => {
-      mockTradingConstraintsRepo.create.mockRejectedValue(
-        new Error("out of memory"),
-      );
+      mockRepoInstance.create.mockRejectedValue(new Error("out of memory"));
 
       await expect(
         service.createConstraints({ competitionId: testCompetitionId }),
