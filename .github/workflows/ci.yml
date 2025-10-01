@@ -48,10 +48,9 @@ jobs:
         run: pnpm build
 
       - name: Run unit tests
-        working-directory: apps/api
         run: |
           echo "Running unit tests (mocked, no database)..."
-          pnpm vitest run --project unit
+          pnpm test
         env:
           NODE_ENV: test
 
@@ -105,7 +104,7 @@ jobs:
       - name: Build everything
         run: pnpm build
 
-      - name: Create test environment
+      - name: Create test environment for api app
         working-directory: apps/api
         run: |
           cat > .env.test << EOF

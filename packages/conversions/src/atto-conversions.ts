@@ -1,6 +1,6 @@
 import * as dnum from "dnum";
 
-const attoDivisor = 10 ** 18;
+const attoDivisor = dnum.from("1000000000000000000");
 
 export function attoValueToNumberValue(
   attoValue: dnum.Numberish,
@@ -8,6 +8,7 @@ export function attoValueToNumberValue(
 ) {
   const res = dnum.div(attoValue, attoDivisor, {
     rounding: rounding,
+    decimals: 18,
   });
   return dnum.toNumber(res);
 }

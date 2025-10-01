@@ -23,6 +23,7 @@
     "dist"
   ],
   "scripts": {
+    "test": "vitest run",
     "clean": "rm -rf .turbo node_modules dist",
     "lint": "eslint . --max-warnings 0",
     "docs:check": "typedoc --emit none",

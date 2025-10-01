@@ -23,7 +23,13 @@
     "ENABLE_SENTRY_DB_MONITORING"
   ],
   "tasks": {
+    "test": {
+      "cache": false
+    },
     "test:integration": {
+      "cache": false
+    },
+    "test:e2e": {
       "cache": false
     },
     "build": {

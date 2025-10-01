@@ -41,6 +41,8 @@
     "dist"
   ],
   "scripts": {
+    "test": "vitest run --project unit",
+    "test:integration": "vitest run --project integration",
     "clean": "rm -rf .turbo node_modules dist",
     "lint": "eslint . --max-warnings 0",
     "docs:check": "typedoc --emit none",
