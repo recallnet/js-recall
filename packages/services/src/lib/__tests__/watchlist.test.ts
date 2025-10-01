@@ -66,6 +66,11 @@ describe("WatchlistService", () => {
 
   describe("getStatus", () => {
     it("should return service status", () => {
+      watchlistService = new WalletWatchlist(
+        { watchlist: { chainalysisApiKey: "" } },
+        logger,
+        TEST_RETRY_CONFIG,
+      );
       const status = watchlistService.getStatus();
       expect(status).toEqual({
         configured: false,
