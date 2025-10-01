@@ -43,7 +43,7 @@
   "scripts": {
     "test": "vitest run --project unit",
     "test:integration": "vitest run --project integration",
-    "test:coverage": "vitest run --coverage",
+    "test:coverage": "vitest run --coverage --project unit",
     "clean": "rm -rf .turbo node_modules dist",
     "lint": "eslint . --max-warnings 0",
     "docs:check": "typedoc --emit none",
