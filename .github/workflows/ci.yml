@@ -1,4 +1,4 @@
-name: API CI
+name: CI
 
 on:
   push:
@@ -17,6 +17,9 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 1
 
       - name: Install Node.js
         uses: actions/setup-node@v4
@@ -48,10 +51,9 @@ jobs:
         run: pnpm build
 
       - name: Run unit tests
-        working-directory: apps/api
         run: |
           echo "Running unit tests (mocked, no database)..."
-          pnpm vitest run --project unit
+          pnpm test
         env:
           NODE_ENV: test
 
@@ -105,7 +107,7 @@ jobs:
       - name: Build everything
         run: pnpm build
 
-      - name: Create test environment
+      - name: Create test environment for api app
         working-directory: apps/api
         run: |
           cat > .env.test << EOF

@@ -16,6 +16,7 @@
     "build": "tsc && tsc-alias && copyfiles -u 0 './drizzle/**/*.{sql,json}' dist",
     "test": "vitest run --project unit",
     "test:watch": "vitest watch --project unit",
+    "test:integration": "vitest run --project integration",
     "test:e2e": "vitest run --project e2e",
     "test:all": "vitest run",
     "test:coverage": "vitest run --project unit --coverage",
