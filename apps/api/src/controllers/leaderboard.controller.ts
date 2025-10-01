@@ -62,11 +62,9 @@ export function makeLeaderboardController(services: ServiceRegistry) {
           }
         }
 
-        // Get leaderboard data with sorting from service layer
+        // Get leaderboard data from service layer
         const result =
-          await services.leaderboardService.getGlobalLeaderboardWithSorting(
-            data,
-          );
+          await services.leaderboardService.getGlobalLeaderboard(data);
 
         const responseBody = {
           success: true,
