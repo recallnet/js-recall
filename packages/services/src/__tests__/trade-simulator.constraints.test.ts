@@ -10,7 +10,17 @@ import {
   vi,
 } from "vitest";
 
-import { PriceTrackerService } from "../price-tracker.service.js";
+import { TradeRepository } from "@recallnet/db/repositories/trade";
+import { TradingConstraintsRepository } from "@recallnet/db/repositories/trading-constraints";
+
+import { BalanceService } from "../balance.service.js";
+import { CompetitionService } from "../competition.service.js";
+import {
+  PriceTrackerService,
+  PriceTrackerServiceConfig,
+} from "../price-tracker.service.js";
+import { MultiChainProvider } from "../providers/multi-chain.provider.js";
+import { DexScreenerProvider } from "../providers/price/dexscreener.provider.js";
 import { SimulatedTradeExecutionService } from "../simulated-trade-execution.service.js";
 import { TradeSimulatorService } from "../trade-simulator.service.js";
 import { BlockchainType, PriceReport } from "../types/index.js";
@@ -50,14 +60,42 @@ describe("SimulatedTradeExecutionService - Trading Constraints", () => {
 
   describe("Unit Tests", () => {
     let tradeExecutor: SimulatedTradeExecutionService;
-    let mockBalanceService: any;
-    let mockCompetitionService: any;
-    let mockPriceTracker: any;
-    let mockTradeRepo: any;
-    let mockTradingConstraintsRepo: any;
-    let mockDexScreenerProvider: any;
-    let mockConfig: any;
-    let mockFeatures: any;
+    let mockBalanceService: {
+      getBalance: ReturnType<typeof vi.fn>;
+      setBalanceCache: ReturnType<typeof vi.fn>;
+    };
+    let mockCompetitionService: {
+      getCompetition: ReturnType<typeof vi.fn>;
+      isAgentActiveInCompetition: ReturnType<typeof vi.fn>;
+    };
+    let mockPriceTracker: {
+      determineChain: ReturnType<typeof vi.fn>;
+      getPrice: ReturnType<typeof vi.fn>;
+    };
+    let mockTradeRepo: {
+      create: ReturnType<typeof vi.fn>;
+    };
+    let mockTradingConstraintsRepo: {
+      findByCompetitionId: ReturnType<typeof vi.fn>;
+    };
+    let mockDexScreenerProvider: {
+      getTokenPairData: ReturnType<typeof vi.fn>;
+      isStablecoin: ReturnType<typeof vi.fn>;
+    };
+    let mockConfig: {
+      specificChainTokens: Record<string, Record<string, string>>;
+      maxTradePercentage: number;
+      tradingConstraints: {
+        defaultMinimumPairAgeHours: number;
+        defaultMinimum24hVolumeUsd: number;
+        defaultMinimumLiquidityUsd: number;
+        defaultMinimumFdvUsd: number;
+      };
+    };
+    let mockFeatures: {
+      enableAdvancedValidation: boolean;
+      CROSS_CHAIN_TRADING_TYPE: "allow" | "disallowAll" | "disallowXParent";
+    };
 
     // Mock constraints used across all tests
     const mockConstraints = {
@@ -148,6 +186,7 @@ describe("SimulatedTradeExecutionService - Trading Constraints", () => {
 
       mockFeatures = {
         enableAdvancedValidation: true,
+        CROSS_CHAIN_TRADING_TYPE: "allow",
       };
 
       mockLogger = {
@@ -159,13 +198,13 @@ describe("SimulatedTradeExecutionService - Trading Constraints", () => {
 
       // Create SimulatedTradeExecutionService instance with mocked dependencies
       tradeExecutor = new SimulatedTradeExecutionService(
-        mockCompetitionService,
+        mockCompetitionService as unknown as CompetitionService,
         mockTradeSimulatorService as unknown as TradeSimulatorService,
-        mockBalanceService,
-        mockPriceTracker,
-        mockTradeRepo,
-        mockTradingConstraintsRepo,
-        mockDexScreenerProvider,
+        mockBalanceService as unknown as BalanceService,
+        mockPriceTracker as unknown as PriceTrackerService,
+        mockTradeRepo as unknown as TradeRepository,
+        mockTradingConstraintsRepo as unknown as TradingConstraintsRepository,
+        mockDexScreenerProvider as unknown as DexScreenerProvider,
         mockConfig,
         mockFeatures,
         mockLogger,
@@ -697,8 +736,8 @@ describe("SimulatedTradeExecutionService - Trading Constraints", () => {
       // Don't mock mockLogger.debug so we can see the constraint data
 
       priceTracker = new PriceTrackerService(
-        {} as any, // mockMultiChainProvider
-        {} as any, // mockConfig
+        {} as unknown as MultiChainProvider, // mockMultiChainProvider
+        {} as unknown as PriceTrackerServiceConfig, // mockConfig
         mockLogger,
       );
     });

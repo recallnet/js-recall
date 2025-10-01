@@ -5,6 +5,12 @@ import { AgentRepository } from "@recallnet/db/repositories/agent";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { PerpsRepository } from "@recallnet/db/repositories/perps";
 import type { SelectAgent } from "@recallnet/db/schema/core/types";
+import type {
+  InsertPerpetualPosition,
+  InsertPerpsAccountSummary,
+  SelectPerpetualPosition,
+  SelectPerpsAccountSummary,
+} from "@recallnet/db/schema/trading/types";
 
 import { CalmarRatioService } from "../calmar-ratio.service.js";
 import { PerpsDataProcessor } from "../perps-data-processor.service.js";
@@ -161,18 +167,19 @@ describe("PerpsDataProcessor", () => {
     };
 
     // Mock repository functions with dynamic behavior based on input
-    mockPerpsRepo.syncAgentPerpsData = vi
-      .fn()
-      .mockImplementation(
-        async (
-          agentId: string,
-          competitionId: string,
-          positions: any,
-          summary: any,
-        ) => {
-          return createMockSyncResult(agentId, positions, summary);
-        },
-      );
+    mockPerpsRepo.syncAgentPerpsData = vi.fn().mockImplementation(
+      async (
+        agentId: string,
+        competitionId: string,
+        positions: InsertPerpetualPosition[],
+        summary: InsertPerpsAccountSummary,
+      ): Promise<{
+        positions: SelectPerpetualPosition[];
+        summary: SelectPerpsAccountSummary;
+      }> => {
+        return createMockSyncResult(agentId, positions, summary);
+      },
+    );
 
     // batchSyncAgentsPerpsData should process the actual input data
     mockPerpsRepo.batchSyncAgentsPerpsData = vi

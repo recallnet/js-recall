@@ -2649,8 +2649,8 @@ export class CompetitionService {
           ];
         const tokenItems = [];
 
-        for (const token of Object.keys(chainBalances)) {
-          const amount = chainBalances[token];
+        for (const token of Object.keys(chainBalances || {})) {
+          const amount = chainBalances?.[token];
           if (amount && amount > 0) {
             tokenItems.push(`${amount} ${token.toUpperCase()}`);
           }
@@ -3168,8 +3168,8 @@ export class CompetitionService {
           ];
         const tokenItems = [];
 
-        for (const token of Object.keys(chainBalances)) {
-          const amount = chainBalances[token];
+        for (const token of Object.keys(chainBalances || {})) {
+          const amount = chainBalances?.[token];
           if (amount && amount > 0) {
             tokenItems.push(`${amount} ${token.toUpperCase()}`);
           }

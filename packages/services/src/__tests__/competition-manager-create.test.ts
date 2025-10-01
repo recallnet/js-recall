@@ -1,22 +1,12 @@
 import { randomUUID } from "crypto";
 import { Logger } from "pino";
-import {
-  Mock,
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  test,
-  vi,
-} from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { MockProxy, mock } from "vitest-mock-extended";
 
 import { AgentRepository } from "@recallnet/db/repositories/agent";
 import { AgentScoreRepository } from "@recallnet/db/repositories/agent-score";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { PerpsRepository } from "@recallnet/db/repositories/perps";
-import { SelectCompetitionReward } from "@recallnet/db/schema/core/types";
-import type { SelectTradingConstraints } from "@recallnet/db/schema/trading/types";
 import { Database, Transaction } from "@recallnet/db/types";
 
 import type { AgentService } from "../agent.service.js";

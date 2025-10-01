@@ -8,6 +8,7 @@ import { SelectUser } from "@recallnet/db/schema/core/types";
 import { Database } from "@recallnet/db/types";
 
 import { EmailService } from "../email.service.js";
+import { WalletWatchlist } from "../lib/watchlist.js";
 import { UserService } from "../user.service.js";
 
 // Mock dependencies
@@ -77,16 +78,20 @@ describe("UserManager", () => {
       mockUserRepo.update = vi.fn();
 
       // Setup database transaction mock
-      mockDb.transaction = vi.fn().mockImplementation(async (callback: any) => {
-        return await callback({} as any);
-      });
+      mockDb.transaction = vi
+        .fn()
+        .mockImplementation(
+          async (callback: (tx: unknown) => Promise<unknown>) => {
+            return await callback({} as Database);
+          },
+        );
 
       userManager = new UserService(
         mockEmailService as unknown as EmailService,
         mockAgentRepo,
         mockUserRepo,
         mockVoteRepo,
-        mockWatchlistInstance as any,
+        mockWatchlistInstance as unknown as WalletWatchlist,
         mockDb,
         mockLogger,
       );
