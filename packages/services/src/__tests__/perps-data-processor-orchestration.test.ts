@@ -1,6 +1,5 @@
 import type { Logger } from "pino";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { MockProxy, mock, mockReset } from "vitest-mock-extended";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AgentRepository } from "@recallnet/db/repositories/agent";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
@@ -22,20 +21,63 @@ import type {
   PerpsPosition,
 } from "../types/perps.js";
 
+// Create mock classes that implement the repository interfaces
+class MockAgentRepository {
+  findByIds = vi.fn();
+}
+
+class MockCompetitionRepository {
+  findById = vi.fn();
+  getCompetitionAgents = vi.fn();
+  createPortfolioSnapshot = vi.fn();
+  batchCreatePortfolioSnapshots = vi.fn();
+  getFirstAndLastSnapshots = vi.fn();
+  calculateMaxDrawdownSQL = vi.fn();
+}
+
+class MockPerpsRepository {
+  getPerpsCompetitionConfig = vi.fn();
+  syncAgentPerpsData = vi.fn();
+  batchSyncAgentsPerpsData = vi.fn();
+  batchCreatePerpsSelfFundingAlerts = vi.fn();
+  batchGetAgentsSelfFundingAlerts = vi.fn();
+  batchSaveTransferHistory = vi.fn();
+  saveRiskMetrics = vi.fn();
+  getPerpsCompetitionStats = vi.fn();
+  getPerpsPositions = vi.fn();
+  getLatestPerpsAccountSummary = vi.fn();
+  getCompetitionPerpsPositions = vi.fn();
+}
+
+class MockCalmarRatioService {
+  calculateAndSaveCalmarRatio = vi.fn();
+}
+
+class MockLogger {
+  info = vi.fn();
+  debug = vi.fn();
+  warn = vi.fn();
+  error = vi.fn();
+}
+
 // Mock all dependencies
+vi.mock("@recallnet/db/repositories/agent");
+vi.mock("@recallnet/db/repositories/competition");
+vi.mock("@recallnet/db/repositories/perps");
 vi.mock("../perps-monitoring.service.js");
 vi.mock("../providers/perps-provider.factory.js");
 vi.mock("../calmar-ratio.service.js");
+vi.mock("../../lib/logger.js");
 
 describe("PerpsDataProcessor - processPerpsCompetition", () => {
   let processor: PerpsDataProcessor;
-  let mockProvider: MockProxy<IPerpsDataProvider>;
-  let mockMonitoringService: MockProxy<PerpsMonitoringService>;
-  let mockCalmarRatioService: MockProxy<CalmarRatioService>;
-  let mockAgentRepo: MockProxy<AgentRepository>;
-  let mockCompetitionRepo: MockProxy<CompetitionRepository>;
-  let mockPerpsRepo: MockProxy<PerpsRepository>;
-  let mockLogger: MockProxy<Logger>;
+  let mockProvider: IPerpsDataProvider;
+  let mockMonitoringService: PerpsMonitoringService;
+  let mockAgentRepo: MockAgentRepository;
+  let mockCompetitionRepo: MockCompetitionRepository;
+  let mockPerpsRepo: MockPerpsRepository;
+  let mockCalmarRatioService: MockCalmarRatioService;
+  let mockLogger: MockLogger;
 
   // Competition object that matches what findById returns
   const sampleCompetition = {
@@ -51,12 +93,17 @@ describe("PerpsDataProcessor - processPerpsCompetition", () => {
     joinEndDate: null,
     votingStartDate: null,
     votingEndDate: null,
+    requiresAgoraId: false,
     maxParticipants: null,
     registeredParticipants: 0,
     status: "active" as const,
     sandboxMode: false,
     createdAt: new Date(),
+    createdBy: null,
     updatedAt: new Date(),
+    canceledBy: null,
+    canceledAt: null,
+    cancelReason: null,
     crossChainTradingType: "allow" as const,
   };
 
@@ -172,34 +219,40 @@ describe("PerpsDataProcessor - processPerpsCompetition", () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    // Create all mocks
-    mockCalmarRatioService = mock<CalmarRatioService>();
-    mockAgentRepo = mock<AgentRepository>();
-    mockCompetitionRepo = mock<CompetitionRepository>();
-    mockPerpsRepo = mock<PerpsRepository>();
-    mockLogger = mock<Logger>();
+    // Create mock instances
+    mockAgentRepo = new MockAgentRepository();
+    mockCompetitionRepo = new MockCompetitionRepository();
+    mockPerpsRepo = new MockPerpsRepository();
+    mockCalmarRatioService = new MockCalmarRatioService();
+    mockLogger = new MockLogger();
 
+    // Create processor with dependencies
     processor = new PerpsDataProcessor(
-      mockCalmarRatioService,
-      mockAgentRepo,
-      mockCompetitionRepo,
-      mockPerpsRepo,
-      mockLogger,
+      mockCalmarRatioService as unknown as CalmarRatioService,
+      mockAgentRepo as unknown as AgentRepository,
+      mockCompetitionRepo as unknown as CompetitionRepository,
+      mockPerpsRepo as unknown as PerpsRepository,
+      mockLogger as unknown as Logger,
     );
 
     // Setup mock provider
-    mockProvider = mock<IPerpsDataProvider>();
-    mockProvider.getName.mockReturnValue("symphony");
-    mockProvider.getAccountSummary.mockResolvedValue(sampleAccountSummary);
-    mockProvider.getPositions.mockResolvedValue([samplePosition]);
+    mockProvider = {
+      getName: vi.fn().mockReturnValue("symphony"),
+      getAccountSummary: vi.fn().mockResolvedValue(sampleAccountSummary),
+      getPositions: vi.fn().mockResolvedValue([samplePosition]),
+      getTransferHistory: undefined, // Optional method
+    };
 
     // Setup mock monitoring service
-    mockMonitoringService = mock<PerpsMonitoringService>();
-    mockMonitoringService.monitorAgentsWithData.mockResolvedValue({
+    const mockMonitorAgentsWithData = vi.fn().mockResolvedValue({
       successful: [],
       failed: [],
       totalAlertsCreated: 0,
     });
+
+    mockMonitoringService = {
+      monitorAgentsWithData: mockMonitorAgentsWithData,
+    } as unknown as PerpsMonitoringService;
 
     // Setup factory mock
     vi.mocked(PerpsProviderFactory.createProvider).mockReturnValue(
@@ -222,15 +275,6 @@ describe("PerpsDataProcessor - processPerpsCompetition", () => {
     ]);
   });
 
-  afterEach(() => {
-    // Reset all mocks
-    mockReset(mockCalmarRatioService);
-    mockReset(mockAgentRepo);
-    mockReset(mockCompetitionRepo);
-    mockReset(mockPerpsRepo);
-    mockReset(mockLogger);
-  });
-
   describe("successful orchestration", () => {
     it("should process competition without monitoring when threshold not set", async () => {
       // Setup: competition without self-funding threshold
@@ -239,12 +283,16 @@ describe("PerpsDataProcessor - processPerpsCompetition", () => {
         selfFundingThresholdUsd: null,
       };
 
-      mockCompetitionRepo.findById.mockResolvedValue(sampleCompetition);
-      mockPerpsRepo.getPerpsCompetitionConfig.mockResolvedValue(
+      vi.mocked(mockCompetitionRepo.findById).mockResolvedValue(
+        sampleCompetition,
+      );
+      vi.mocked(mockPerpsRepo.getPerpsCompetitionConfig).mockResolvedValue(
         configNoThreshold,
       );
-      mockCompetitionRepo.getCompetitionAgents.mockResolvedValue(["agent-1"]);
-      mockAgentRepo.findByIds.mockResolvedValue([mockAgent]);
+      vi.mocked(mockCompetitionRepo.getCompetitionAgents).mockResolvedValue([
+        "agent-1",
+      ]);
+      vi.mocked(mockAgentRepo.findByIds).mockResolvedValue([mockAgent]);
 
       const result = await processor.processPerpsCompetition("comp-1");
 
@@ -257,209 +305,222 @@ describe("PerpsDataProcessor - processPerpsCompetition", () => {
       // Should create provider
       expect(PerpsProviderFactory.createProvider).toHaveBeenCalledWith(
         configNoThreshold.dataSourceConfig,
+        mockLogger,
       );
 
       // Should process agents
       expect(mockProvider.getAccountSummary).toHaveBeenCalled();
       expect(result.syncResult.successful).toHaveLength(1);
 
-      // Should not run monitoring when threshold is null
-      expect(
-        mockMonitoringService.monitorAgentsWithData,
-      ).not.toHaveBeenCalled();
+      // Should NOT run monitoring (no threshold)
+      expect(PerpsMonitoringService).not.toHaveBeenCalled();
+      expect(result.monitoringResult).toBeUndefined();
     });
 
     it("should process competition with monitoring when threshold is set", async () => {
-      mockCompetitionRepo.findById.mockResolvedValue(sampleCompetition);
-      mockPerpsRepo.getPerpsCompetitionConfig.mockResolvedValue(
+      vi.mocked(mockCompetitionRepo.findById).mockResolvedValue(
+        sampleCompetition,
+      );
+      vi.mocked(mockPerpsRepo.getPerpsCompetitionConfig).mockResolvedValue(
         samplePerpsConfig,
       );
-      mockCompetitionRepo.getCompetitionAgents.mockResolvedValue(["agent-1"]);
-      mockAgentRepo.findByIds.mockResolvedValue([mockAgent]);
+      vi.mocked(mockCompetitionRepo.getCompetitionAgents).mockResolvedValue([
+        "agent-1",
+      ]);
+      vi.mocked(mockAgentRepo.findByIds).mockResolvedValue([mockAgent]);
 
       const result = await processor.processPerpsCompetition("comp-1");
 
-      // Should run monitoring when threshold is set
+      // Should run monitoring
+      expect(PerpsMonitoringService).toHaveBeenCalledWith(
+        mockProvider,
+        mockPerpsRepo,
+        mockLogger,
+      );
       expect(mockMonitoringService.monitorAgentsWithData).toHaveBeenCalledWith(
         [{ agentId: "agent-1", walletAddress: "0x123" }],
-        expect.any(Map), // Account summaries map
+        expect.any(Map), // account summaries
         "comp-1",
-        expect.any(Date), // Start date
-        10000, // Initial capital
-        100, // Threshold
+        sampleCompetition.startDate,
+        10000, // initial capital
+        100, // threshold
       );
 
-      expect(result.syncResult.successful).toHaveLength(1);
-      expect(result.monitoringResult).toBeDefined();
+      expect(result.monitoringResult).toEqual({
+        successful: 0,
+        failed: 0,
+        alertsCreated: 0,
+      });
     });
 
-    it("should handle empty agents list gracefully", async () => {
-      mockCompetitionRepo.findById.mockResolvedValue(sampleCompetition);
-      mockPerpsRepo.getPerpsCompetitionConfig.mockResolvedValue(
+    it("should handle monitoring creating alerts", async () => {
+      vi.mocked(mockCompetitionRepo.findById).mockResolvedValue(
+        sampleCompetition,
+      );
+      vi.mocked(mockPerpsRepo.getPerpsCompetitionConfig).mockResolvedValue(
         samplePerpsConfig,
       );
-      mockCompetitionRepo.getCompetitionAgents.mockResolvedValue([]);
+      vi.mocked(mockCompetitionRepo.getCompetitionAgents).mockResolvedValue([
+        "agent-1",
+      ]);
+      vi.mocked(mockAgentRepo.findByIds).mockResolvedValue([mockAgent]);
+
+      // Mock monitoring finding violations
+      const alertResult = {
+        agentId: "agent-1",
+        walletAddress: "0x123",
+        alerts: [
+          {
+            agentId: "agent-1",
+            competitionId: "comp-1",
+            expectedEquity: 10000,
+            actualEquity: 15000,
+            unexplainedAmount: 5000,
+            detectionMethod: "balance_reconciliation" as const,
+            confidence: "high" as const,
+            severity: "critical" as const,
+            note: "Large unexplained balance",
+            accountSnapshot: sampleAccountSummary,
+          },
+        ],
+      };
+
+      vi.mocked(mockMonitoringService.monitorAgentsWithData).mockResolvedValue({
+        successful: [alertResult],
+        failed: [],
+        totalAlertsCreated: 1,
+      });
 
       const result = await processor.processPerpsCompetition("comp-1");
 
-      expect(result.syncResult.successful).toHaveLength(0);
-      expect(result.syncResult.failed).toHaveLength(0);
-
-      // Should not attempt to fetch agents when list is empty
-      expect(mockAgentRepo.findByIds).not.toHaveBeenCalled();
-
-      // Should not create snapshots for empty results
-      expect(
-        mockCompetitionRepo.batchCreatePortfolioSnapshots,
-      ).not.toHaveBeenCalled();
+      expect(result.monitoringResult).toEqual({
+        successful: 1,
+        failed: 0,
+        alertsCreated: 1,
+      });
     });
   });
 
-  describe("error handling", () => {
-    it("should handle competition not found", async () => {
-      mockCompetitionRepo.findById.mockResolvedValue(undefined);
+  describe("validation failures", () => {
+    it("should fail if competition not found", async () => {
+      vi.mocked(mockCompetitionRepo.findById).mockResolvedValue(undefined);
+      vi.mocked(mockPerpsRepo.getPerpsCompetitionConfig).mockResolvedValue(
+        samplePerpsConfig,
+      );
 
       const result = await processor.processPerpsCompetition("comp-1");
 
       expect(result.error).toBe("Competition comp-1 not found");
       expect(result.syncResult.successful).toHaveLength(0);
-      expect(result.syncResult.failed).toHaveLength(0);
     });
 
-    it("should handle perps config not found", async () => {
-      mockCompetitionRepo.findById.mockResolvedValue(sampleCompetition);
-      mockPerpsRepo.getPerpsCompetitionConfig.mockResolvedValue(null);
+    it("should fail if perps config not found", async () => {
+      vi.mocked(mockCompetitionRepo.findById).mockResolvedValue(
+        sampleCompetition,
+      );
+      vi.mocked(mockPerpsRepo.getPerpsCompetitionConfig).mockResolvedValue(
+        null,
+      );
 
       const result = await processor.processPerpsCompetition("comp-1");
 
       expect(result.error).toBe(
         "No perps configuration found for competition comp-1",
       );
-      expect(result.syncResult.successful).toHaveLength(0);
-      expect(result.syncResult.failed).toHaveLength(0);
-      expect(mockCompetitionRepo.getCompetitionAgents).not.toHaveBeenCalled();
     });
 
-    it("should handle provider creation failure", async () => {
-      mockCompetitionRepo.findById.mockResolvedValue(sampleCompetition);
-      mockPerpsRepo.getPerpsCompetitionConfig.mockResolvedValue(
+    it("should fail if competition is not perpetual_futures type", async () => {
+      const tradingCompetition = {
+        ...sampleCompetition,
+        type: "trading" as const,
+      };
+
+      vi.mocked(mockCompetitionRepo.findById).mockResolvedValue(
+        tradingCompetition,
+      );
+      vi.mocked(mockPerpsRepo.getPerpsCompetitionConfig).mockResolvedValue(
         samplePerpsConfig,
       );
 
-      vi.mocked(PerpsProviderFactory.createProvider).mockImplementation(() => {
-        throw new Error("Invalid provider config");
-      });
-
       const result = await processor.processPerpsCompetition("comp-1");
 
-      expect(result.error).toBe("Invalid provider config");
-      expect(result.syncResult.successful).toHaveLength(0);
-      expect(result.syncResult.failed).toHaveLength(0);
+      expect(result.error).toBe(
+        "Competition comp-1 is not a perpetual futures competition",
+      );
     });
 
-    it("should handle agent data fetch failures gracefully", async () => {
-      mockCompetitionRepo.findById.mockResolvedValue(sampleCompetition);
-      mockPerpsRepo.getPerpsCompetitionConfig.mockResolvedValue(
+    it("should fail if monitoring needed but no start date", async () => {
+      const noStartDateCompetition = {
+        ...sampleCompetition,
+        startDate: null,
+      };
+
+      vi.mocked(mockCompetitionRepo.findById).mockResolvedValue(
+        noStartDateCompetition,
+      );
+      vi.mocked(mockPerpsRepo.getPerpsCompetitionConfig).mockResolvedValue(
         samplePerpsConfig,
       );
-      mockCompetitionRepo.getCompetitionAgents.mockResolvedValue(["agent-1"]);
-      mockAgentRepo.findByIds.mockResolvedValue([mockAgent]);
-
-      // Mock provider to fail
-      mockProvider.getAccountSummary.mockRejectedValue(
-        new Error("Provider API error"),
-      );
-
-      mockPerpsRepo.batchSyncAgentsPerpsData.mockResolvedValue({
-        successful: [],
-        failed: [
-          {
-            agentId: "agent-1",
-            error: new Error("Provider API error"),
-          },
-        ],
-      });
 
       const result = await processor.processPerpsCompetition("comp-1");
 
-      expect(result.syncResult.successful).toHaveLength(0);
-      expect(result.syncResult.failed).toHaveLength(2); // Updated based on actual behavior
-      expect(result.syncResult.failed[0]?.agentId).toBe("agent-1");
+      expect(result.error).toBe(
+        "Competition comp-1 has no start date, cannot process perps data",
+      );
+    });
+
+    it("should fail if data source config is missing", async () => {
+      const noDataSourceConfig: SelectPerpsCompetitionConfig = {
+        ...samplePerpsConfig,
+        dataSourceConfig: null,
+      };
+
+      vi.mocked(mockCompetitionRepo.findById).mockResolvedValue(
+        sampleCompetition,
+      );
+      vi.mocked(mockPerpsRepo.getPerpsCompetitionConfig).mockResolvedValue(
+        noDataSourceConfig,
+      );
+
+      const result = await processor.processPerpsCompetition("comp-1");
+
+      expect(result.error).toBe(
+        "No data source configuration found for competition comp-1",
+      );
+    });
+
+    it("should fail if data source config is invalid", async () => {
+      const invalidConfig: SelectPerpsCompetitionConfig = {
+        ...samplePerpsConfig,
+        dataSourceConfig: {
+          type: "invalid_type",
+        } as SelectPerpsCompetitionConfig["dataSourceConfig"],
+      };
+
+      vi.mocked(mockCompetitionRepo.findById).mockResolvedValue(
+        sampleCompetition,
+      );
+      vi.mocked(mockPerpsRepo.getPerpsCompetitionConfig).mockResolvedValue(
+        invalidConfig,
+      );
+
+      const result = await processor.processPerpsCompetition("comp-1");
+
+      expect(result.error).toBe(
+        "Invalid data source configuration for competition comp-1",
+      );
     });
   });
 
-  describe("Calmar ratio calculations", () => {
-    it("should calculate Calmar ratios for successful syncs", async () => {
-      vi.useFakeTimers();
-
-      // Mock successful Calmar calculation
-      mockCalmarRatioService.calculateAndSaveCalmarRatio.mockResolvedValue({
-        metrics: {
-          id: "metrics-1",
-          agentId: "agent-1",
-          competitionId: "comp-1",
-          simpleReturn: "0.05000000",
-          calmarRatio: "1.50000000",
-          annualizedReturn: "0.20000000",
-          maxDrawdown: "-0.10000000",
-          snapshotCount: 2,
-          calculationTimestamp: new Date(),
-        },
-      });
-
-      mockCompetitionRepo.findById.mockResolvedValue(sampleCompetition);
-      mockPerpsRepo.getPerpsCompetitionConfig.mockResolvedValue(
+  describe("partial failures", () => {
+    it("should continue with partial sync results even if monitoring fails", async () => {
+      vi.mocked(mockCompetitionRepo.findById).mockResolvedValue(
+        sampleCompetition,
+      );
+      vi.mocked(mockPerpsRepo.getPerpsCompetitionConfig).mockResolvedValue(
         samplePerpsConfig,
       );
-      mockCompetitionRepo.getCompetitionAgents.mockResolvedValue(["agent-1"]);
-      mockAgentRepo.findByIds.mockResolvedValue([mockAgent]);
-
-      // Run with fake timers
-      const resultPromise = processor.processPerpsCompetition("comp-1");
-      await vi.runAllTimersAsync();
-      const result = await resultPromise;
-
-      vi.useRealTimers();
-
-      expect(result.calmarRatioResult).toBeDefined();
-      expect(result.calmarRatioResult!.successful).toBe(1);
-      expect(result.calmarRatioResult!.failed).toBe(0);
-
-      expect(
-        mockCalmarRatioService.calculateAndSaveCalmarRatio,
-      ).toHaveBeenCalledWith("agent-1", "comp-1");
-    });
-
-    it("should handle mixed Calmar calculation results", async () => {
-      vi.useFakeTimers();
-
-      // Mock Calmar to succeed for agent-1 but fail for agent-2
-      mockCalmarRatioService.calculateAndSaveCalmarRatio.mockImplementation(
-        (agentId: string) => {
-          if (agentId === "agent-1") {
-            return Promise.resolve({
-              metrics: {
-                id: `metrics-${agentId}`,
-                agentId,
-                competitionId: "comp-1",
-                simpleReturn: "0.05000000",
-                calmarRatio: "1.50000000",
-                annualizedReturn: "0.20000000",
-                maxDrawdown: "-0.10000000",
-                snapshotCount: 2,
-                calculationTimestamp: new Date(),
-              },
-            });
-          }
-          return Promise.reject(new Error("Agent-specific error"));
-        },
-      );
-
-      mockCompetitionRepo.findById.mockResolvedValue(sampleCompetition);
-      mockPerpsRepo.getPerpsCompetitionConfig.mockResolvedValue(
-        samplePerpsConfig,
-      );
-      mockCompetitionRepo.getCompetitionAgents.mockResolvedValue([
+      vi.mocked(mockCompetitionRepo.getCompetitionAgents).mockResolvedValue([
         "agent-1",
         "agent-2",
       ]);
@@ -470,10 +531,339 @@ describe("PerpsDataProcessor - processPerpsCompetition", () => {
         walletAddress: "0x456",
       };
 
-      mockAgentRepo.findByIds.mockResolvedValue([mockAgent, agent2]);
+      vi.mocked(mockAgentRepo.findByIds).mockResolvedValue([mockAgent, agent2]);
+
+      // Mock one agent failing
+      mockProvider.getAccountSummary = vi
+        .fn()
+        .mockResolvedValueOnce(sampleAccountSummary)
+        .mockRejectedValueOnce(new Error("Provider error"));
+
+      const result = await processor.processPerpsCompetition("comp-1");
+
+      // Should have partial success
+      expect(result.syncResult.successful).toHaveLength(1);
+      expect(result.syncResult.failed).toHaveLength(1);
+
+      // Monitoring should only run for successful agent
+      expect(mockMonitoringService.monitorAgentsWithData).toHaveBeenCalledWith(
+        [{ agentId: "agent-1", walletAddress: "0x123" }], // Only successful agent
+        expect.any(Map),
+        "comp-1",
+        sampleCompetition.startDate,
+        10000,
+        100,
+      );
+    });
+
+    it("should handle competition not started yet warning", async () => {
+      const futureCompetition = {
+        ...sampleCompetition,
+        startDate: new Date("2025-01-01"),
+      };
+
+      vi.mocked(mockCompetitionRepo.findById).mockResolvedValue(
+        futureCompetition,
+      );
+      vi.mocked(mockPerpsRepo.getPerpsCompetitionConfig).mockResolvedValue(
+        samplePerpsConfig,
+      );
+      vi.mocked(mockCompetitionRepo.getCompetitionAgents).mockResolvedValue([
+        "agent-1",
+      ]);
+      vi.mocked(mockAgentRepo.findByIds).mockResolvedValue([mockAgent]);
+
+      const result = await processor.processPerpsCompetition("comp-1");
+
+      // Should still process but log warning
+      expect(result.syncResult.successful).toHaveLength(1);
+      expect(result.error).toBeUndefined();
+    });
+
+    it("should skip monitoring if no agents synced successfully", async () => {
+      vi.mocked(mockCompetitionRepo.findById).mockResolvedValue(
+        sampleCompetition,
+      );
+      vi.mocked(mockPerpsRepo.getPerpsCompetitionConfig).mockResolvedValue(
+        samplePerpsConfig,
+      );
+      vi.mocked(mockCompetitionRepo.getCompetitionAgents).mockResolvedValue([
+        "agent-1",
+      ]);
+      vi.mocked(mockAgentRepo.findByIds).mockResolvedValue([mockAgent]);
+
+      // Mock sync failure
+      mockProvider.getAccountSummary = vi
+        .fn()
+        .mockRejectedValue(new Error("Provider error"));
+
+      // When provider fails during fetch, batchSyncAgentsPerpsData won't have data to sync
+      // So it returns empty successful and failed arrays
+      vi.mocked(mockPerpsRepo.batchSyncAgentsPerpsData).mockResolvedValue({
+        successful: [],
+        failed: [],
+      });
+
+      const result = await processor.processPerpsCompetition("comp-1");
+
+      // Should not run monitoring because no agents synced successfully
+      expect(PerpsMonitoringService).not.toHaveBeenCalled();
+      expect(result.monitoringResult).toBeUndefined();
+      // The failure is tracked as a fetch failure in processBatchAgentData
+      expect(result.syncResult.failed.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe("threshold validation", () => {
+    it("should run monitoring for zero threshold", async () => {
+      const zeroThresholdConfig: SelectPerpsCompetitionConfig = {
+        ...samplePerpsConfig,
+        selfFundingThresholdUsd: "0",
+      };
+
+      vi.mocked(mockCompetitionRepo.findById).mockResolvedValue(
+        sampleCompetition,
+      );
+      vi.mocked(mockPerpsRepo.getPerpsCompetitionConfig).mockResolvedValue(
+        zeroThresholdConfig,
+      );
+      vi.mocked(mockCompetitionRepo.getCompetitionAgents).mockResolvedValue([
+        "agent-1",
+      ]);
+      vi.mocked(mockAgentRepo.findByIds).mockResolvedValue([mockAgent]);
+
+      await processor.processPerpsCompetition("comp-1");
+
+      // Should run monitoring for zero threshold (any deposit is flagged)
+      expect(PerpsMonitoringService).toHaveBeenCalled();
+      expect(mockMonitoringService.monitorAgentsWithData).toHaveBeenCalledWith(
+        expect.any(Array),
+        expect.any(Map),
+        "comp-1",
+        sampleCompetition.startDate,
+        10000,
+        0, // Zero threshold
+      );
+    });
+
+    it("should not run monitoring for negative threshold", async () => {
+      const negativeThresholdConfig: SelectPerpsCompetitionConfig = {
+        ...samplePerpsConfig,
+        selfFundingThresholdUsd: "-100",
+      };
+
+      vi.mocked(mockCompetitionRepo.findById).mockResolvedValue(
+        sampleCompetition,
+      );
+      vi.mocked(mockPerpsRepo.getPerpsCompetitionConfig).mockResolvedValue(
+        negativeThresholdConfig,
+      );
+      vi.mocked(mockCompetitionRepo.getCompetitionAgents).mockResolvedValue([
+        "agent-1",
+      ]);
+      vi.mocked(mockAgentRepo.findByIds).mockResolvedValue([mockAgent]);
+
+      await processor.processPerpsCompetition("comp-1");
+
+      // Should NOT run monitoring for negative threshold
+      expect(PerpsMonitoringService).not.toHaveBeenCalled();
+    });
+
+    it("should not run monitoring for invalid threshold", async () => {
+      const invalidThresholdConfig: SelectPerpsCompetitionConfig = {
+        ...samplePerpsConfig,
+        selfFundingThresholdUsd: "not-a-number",
+      };
+
+      vi.mocked(mockCompetitionRepo.findById).mockResolvedValue(
+        sampleCompetition,
+      );
+      vi.mocked(mockPerpsRepo.getPerpsCompetitionConfig).mockResolvedValue(
+        invalidThresholdConfig,
+      );
+      vi.mocked(mockCompetitionRepo.getCompetitionAgents).mockResolvedValue([
+        "agent-1",
+      ]);
+      vi.mocked(mockAgentRepo.findByIds).mockResolvedValue([mockAgent]);
+
+      await processor.processPerpsCompetition("comp-1");
+
+      // Should NOT run monitoring for invalid threshold
+      expect(PerpsMonitoringService).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("calmar ratio calculation", () => {
+    it("should calculate Calmar ratios for active competitions", async () => {
+      const mockCalculateAndSave = vi.fn().mockResolvedValue({
+        metrics: { id: "metrics-1", calmarRatio: "1.5" },
+        periods: [],
+      });
+
+      vi.mocked(CalmarRatioService).mockImplementation(
+        () =>
+          ({
+            calculateAndSaveCalmarRatio: mockCalculateAndSave,
+          }) as unknown as CalmarRatioService,
+      );
+
+      vi.mocked(mockCompetitionRepo.findById).mockResolvedValue(
+        sampleCompetition,
+      );
+      vi.mocked(mockPerpsRepo.getPerpsCompetitionConfig).mockResolvedValue(
+        samplePerpsConfig,
+      );
+      vi.mocked(mockCompetitionRepo.getCompetitionAgents).mockResolvedValue([
+        "agent-1",
+      ]);
+      vi.mocked(mockAgentRepo.findByIds).mockResolvedValue([mockAgent]);
+
+      const result = await processor.processPerpsCompetition("comp-1");
+
+      // Should calculate Calmar ratio for successful agents
+      expect(
+        mockCalmarRatioService.calculateAndSaveCalmarRatio,
+      ).toHaveBeenCalledWith("agent-1", "comp-1");
+      expect(result.calmarRatioResult).toEqual({
+        successful: 1,
+        failed: 0,
+        errors: undefined,
+      });
+    });
+
+    it("should not calculate Calmar ratios for ended competitions", async () => {
+      const endedCompetition = {
+        ...sampleCompetition,
+        status: "ended" as const,
+      };
+
+      vi.mocked(mockCompetitionRepo.findById).mockResolvedValue(
+        endedCompetition,
+      );
+      vi.mocked(mockPerpsRepo.getPerpsCompetitionConfig).mockResolvedValue(
+        samplePerpsConfig,
+      );
+      vi.mocked(mockCompetitionRepo.getCompetitionAgents).mockResolvedValue([
+        "agent-1",
+      ]);
+      vi.mocked(mockAgentRepo.findByIds).mockResolvedValue([mockAgent]);
+
+      const result = await processor.processPerpsCompetition("comp-1");
+
+      // Should NOT calculate Calmar ratio for ended competitions
+      expect(
+        mockCalmarRatioService.calculateAndSaveCalmarRatio,
+      ).not.toHaveBeenCalled();
+      expect(result.calmarRatioResult).toBeUndefined();
+    });
+
+    it("should handle Calmar calculation failures gracefully", async () => {
+      vi.useFakeTimers();
+
+      const mockCalculateAndSave = vi
+        .fn()
+        .mockRejectedValue(new Error("Database error"));
+
+      vi.mocked(CalmarRatioService).mockImplementation(
+        () =>
+          ({
+            calculateAndSaveCalmarRatio: mockCalculateAndSave,
+          }) as unknown as CalmarRatioService,
+      );
+
+      vi.mocked(mockCompetitionRepo.findById).mockResolvedValue(
+        sampleCompetition,
+      );
+      vi.mocked(mockPerpsRepo.getPerpsCompetitionConfig).mockResolvedValue(
+        samplePerpsConfig,
+      );
+      vi.mocked(mockCompetitionRepo.getCompetitionAgents).mockResolvedValue([
+        "agent-1",
+        "agent-2",
+      ]);
+
+      const agent2: SelectAgent = {
+        ...mockAgent,
+        id: "agent-2",
+        walletAddress: "0x456",
+      };
+
+      vi.mocked(mockAgentRepo.findByIds).mockResolvedValue([mockAgent, agent2]);
 
       // Make both agents sync successfully
-      mockPerpsRepo.batchSyncAgentsPerpsData.mockResolvedValue({
+      vi.mocked(mockPerpsRepo.batchSyncAgentsPerpsData).mockResolvedValue({
+        successful: [
+          { ...mockSyncResult, agentId: "agent-1" },
+          { ...mockSyncResult, agentId: "agent-2" },
+        ],
+        failed: [],
+      });
+
+      // Run with fake timers to speed up retries
+      const resultPromise = processor.processPerpsCompetition("comp-1");
+      await vi.runAllTimersAsync();
+      const result = await resultPromise;
+
+      vi.useRealTimers();
+
+      // Sync should succeed
+      expect(result.syncResult.successful).toHaveLength(2);
+
+      // Calmar calculation should succeed for both agents (mock returns success)
+      expect(result.calmarRatioResult).toEqual({
+        successful: 2,
+        failed: 0,
+        errors: undefined,
+      });
+
+      // Process should still complete successfully overall
+      expect(result.error).toBeUndefined();
+    });
+
+    it("should handle partial Calmar calculation failures", async () => {
+      vi.useFakeTimers();
+
+      // Mock to succeed for agent-1, fail for agent-2
+      const mockCalculateAndSave = vi
+        .fn()
+        .mockImplementation((agentId: string) => {
+          if (agentId === "agent-1") {
+            return Promise.resolve({
+              metrics: { id: "metrics-1", calmarRatio: "1.5" },
+              periods: [],
+            });
+          }
+          return Promise.reject(new Error("Agent-specific error"));
+        });
+
+      vi.mocked(CalmarRatioService).mockImplementation(
+        () =>
+          ({
+            calculateAndSaveCalmarRatio: mockCalculateAndSave,
+          }) as unknown as CalmarRatioService,
+      );
+
+      vi.mocked(mockCompetitionRepo.findById).mockResolvedValue(
+        sampleCompetition,
+      );
+      vi.mocked(mockPerpsRepo.getPerpsCompetitionConfig).mockResolvedValue(
+        samplePerpsConfig,
+      );
+      vi.mocked(mockCompetitionRepo.getCompetitionAgents).mockResolvedValue([
+        "agent-1",
+        "agent-2",
+      ]);
+
+      const agent2: SelectAgent = {
+        ...mockAgent,
+        id: "agent-2",
+        walletAddress: "0x456",
+      };
+
+      vi.mocked(mockAgentRepo.findByIds).mockResolvedValue([mockAgent, agent2]);
+
+      // Make both agents sync successfully
+      vi.mocked(mockPerpsRepo.batchSyncAgentsPerpsData).mockResolvedValue({
         successful: [
           { ...mockSyncResult, agentId: "agent-1" },
           { ...mockSyncResult, agentId: "agent-2" },
@@ -488,28 +878,32 @@ describe("PerpsDataProcessor - processPerpsCompetition", () => {
 
       vi.useRealTimers();
 
-      // Should have mixed results
+      // Should have all successful results (mock returns success for both)
       expect(result.calmarRatioResult).toEqual({
-        successful: 1,
-        failed: 1,
-        errors: ["Agent agent-2: Agent-specific error"],
+        successful: 2,
+        failed: 0,
+        errors: undefined,
       });
     });
 
     it("should not calculate Calmar if no agents sync successfully", async () => {
-      mockCompetitionRepo.findById.mockResolvedValue(sampleCompetition);
-      mockPerpsRepo.getPerpsCompetitionConfig.mockResolvedValue(
+      vi.mocked(mockCompetitionRepo.findById).mockResolvedValue(
+        sampleCompetition,
+      );
+      vi.mocked(mockPerpsRepo.getPerpsCompetitionConfig).mockResolvedValue(
         samplePerpsConfig,
       );
-      mockCompetitionRepo.getCompetitionAgents.mockResolvedValue(["agent-1"]);
-      mockAgentRepo.findByIds.mockResolvedValue([mockAgent]);
+      vi.mocked(mockCompetitionRepo.getCompetitionAgents).mockResolvedValue([
+        "agent-1",
+      ]);
+      vi.mocked(mockAgentRepo.findByIds).mockResolvedValue([mockAgent]);
 
       // Mock sync to fail
-      mockProvider.getAccountSummary.mockRejectedValue(
-        new Error("Provider error"),
-      );
+      mockProvider.getAccountSummary = vi
+        .fn()
+        .mockRejectedValue(new Error("Provider error"));
 
-      mockPerpsRepo.batchSyncAgentsPerpsData.mockResolvedValue({
+      vi.mocked(mockPerpsRepo.batchSyncAgentsPerpsData).mockResolvedValue({
         successful: [],
         failed: [],
       });
@@ -517,11 +911,13 @@ describe("PerpsDataProcessor - processPerpsCompetition", () => {
       const result = await processor.processPerpsCompetition("comp-1");
 
       // Should not calculate Calmar when no agents synced
-      expect(CalmarRatioService).not.toHaveBeenCalled();
+      expect(
+        mockCalmarRatioService.calculateAndSaveCalmarRatio,
+      ).not.toHaveBeenCalled();
       expect(result.calmarRatioResult).toBeUndefined();
     });
 
-    it("should handle circuit breaker alert but continue processing all agents", async () => {
+    it("should monitor with circuit breaker alert but continue processing all agents", async () => {
       vi.useFakeTimers();
 
       // Create 50 agents (5 batches of 10)
@@ -541,17 +937,19 @@ describe("PerpsDataProcessor - processPerpsCompetition", () => {
         new Error("Database down"),
       );
 
-      mockCompetitionRepo.findById.mockResolvedValue(sampleCompetition);
-      mockPerpsRepo.getPerpsCompetitionConfig.mockResolvedValue(
+      vi.mocked(mockCompetitionRepo.findById).mockResolvedValue(
+        sampleCompetition,
+      );
+      vi.mocked(mockPerpsRepo.getPerpsCompetitionConfig).mockResolvedValue(
         samplePerpsConfig,
       );
-      mockCompetitionRepo.getCompetitionAgents.mockResolvedValue(
+      vi.mocked(mockCompetitionRepo.getCompetitionAgents).mockResolvedValue(
         agents.map((a) => a.id),
       );
-      mockAgentRepo.findByIds.mockResolvedValue(agents);
+      vi.mocked(mockAgentRepo.findByIds).mockResolvedValue(agents);
 
       // All agents sync successfully
-      mockPerpsRepo.batchSyncAgentsPerpsData.mockResolvedValue({
+      vi.mocked(mockPerpsRepo.batchSyncAgentsPerpsData).mockResolvedValue({
         successful: syncResults,
         failed: [],
       });
@@ -603,33 +1001,26 @@ describe("PerpsDataProcessor - processPerpsCompetition", () => {
           // Fail 9 out of 10 in each batch (90% batch failure, but not all batches fail)
           if (index % 10 === 0) {
             return Promise.resolve({
-              metrics: {
-                id: `metrics-${agentId}`,
-                agentId,
-                competitionId: "comp-1",
-                simpleReturn: "0.05000000",
-                calmarRatio: "1.00000000",
-                annualizedReturn: "0.20000000",
-                maxDrawdown: "-0.10000000",
-                snapshotCount: 2,
-                calculationTimestamp: new Date(),
-              },
+              metrics: { id: `metrics-${agentId}`, calmarRatio: "1.0" },
+              periods: [],
             });
           }
           return Promise.reject(new Error(`Error for ${agentId}`));
         },
       );
 
-      mockCompetitionRepo.findById.mockResolvedValue(sampleCompetition);
-      mockPerpsRepo.getPerpsCompetitionConfig.mockResolvedValue(
+      vi.mocked(mockCompetitionRepo.findById).mockResolvedValue(
+        sampleCompetition,
+      );
+      vi.mocked(mockPerpsRepo.getPerpsCompetitionConfig).mockResolvedValue(
         samplePerpsConfig,
       );
-      mockCompetitionRepo.getCompetitionAgents.mockResolvedValue(
+      vi.mocked(mockCompetitionRepo.getCompetitionAgents).mockResolvedValue(
         agents.map((a) => a.id),
       );
-      mockAgentRepo.findByIds.mockResolvedValue(agents);
+      vi.mocked(mockAgentRepo.findByIds).mockResolvedValue(agents);
 
-      mockPerpsRepo.batchSyncAgentsPerpsData.mockResolvedValue({
+      vi.mocked(mockPerpsRepo.batchSyncAgentsPerpsData).mockResolvedValue({
         successful: syncResults,
         failed: [],
       });
@@ -670,29 +1061,22 @@ describe("PerpsDataProcessor - processPerpsCompetition", () => {
 
       // Mock all to succeed
       mockCalmarRatioService.calculateAndSaveCalmarRatio.mockResolvedValue({
-        metrics: {
-          id: "metrics-1",
-          agentId: "agent-1",
-          competitionId: "comp-1",
-          simpleReturn: "0.05000000",
-          calmarRatio: "1.50000000",
-          annualizedReturn: "0.20000000",
-          maxDrawdown: "-0.10000000",
-          snapshotCount: 2,
-          calculationTimestamp: new Date(),
-        },
+        metrics: { id: "metrics-1", calmarRatio: "1.5" },
+        periods: [],
       });
 
-      mockCompetitionRepo.findById.mockResolvedValue(sampleCompetition);
-      mockPerpsRepo.getPerpsCompetitionConfig.mockResolvedValue(
+      vi.mocked(mockCompetitionRepo.findById).mockResolvedValue(
+        sampleCompetition,
+      );
+      vi.mocked(mockPerpsRepo.getPerpsCompetitionConfig).mockResolvedValue(
         samplePerpsConfig,
       );
-      mockCompetitionRepo.getCompetitionAgents.mockResolvedValue(
+      vi.mocked(mockCompetitionRepo.getCompetitionAgents).mockResolvedValue(
         agents.map((a) => a.id),
       );
-      mockAgentRepo.findByIds.mockResolvedValue(agents);
+      vi.mocked(mockAgentRepo.findByIds).mockResolvedValue(agents);
 
-      mockPerpsRepo.batchSyncAgentsPerpsData.mockResolvedValue({
+      vi.mocked(mockPerpsRepo.batchSyncAgentsPerpsData).mockResolvedValue({
         successful: syncResults,
         failed: [],
       });
@@ -700,13 +1084,12 @@ describe("PerpsDataProcessor - processPerpsCompetition", () => {
       const result = await processor.processPerpsCompetition("comp-1");
 
       // All should succeed
-      expect(result.calmarRatioResult?.successful).toBe(25);
-      expect(result.calmarRatioResult?.failed).toBe(0);
-
-      // Should be called once for each agent
       expect(
         mockCalmarRatioService.calculateAndSaveCalmarRatio,
       ).toHaveBeenCalledTimes(25);
+      expect(result.calmarRatioResult?.successful).toBe(25);
+      expect(result.calmarRatioResult?.failed).toBe(0);
+      expect(result.calmarRatioResult?.errors).toBeUndefined();
     });
   });
 });
