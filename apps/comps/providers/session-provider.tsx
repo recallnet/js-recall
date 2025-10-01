@@ -26,6 +26,7 @@ import {
 
 import { ApiClient } from "@/lib/api-client";
 import { mergeWithoutUndefined } from "@/lib/merge-without-undefined";
+import { tanstackClient } from "@/rpc/clients/tanstack-query";
 import { User as BackendUser, UpdateProfileRequest } from "@/types";
 
 type Session = {
@@ -142,25 +143,25 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     isError: isFetchBackendUserError,
     error: fetchBackendUserError,
     refetch: refetchBackendUser,
-  } = useQuery({
-    queryKey: ["user"],
-    queryFn: async () => {
-      const response = await apiClient.current.getProfile();
-      if (!response.success) {
-        throw new Error("Failed to fetch user");
-      }
-      return response.user;
-    },
-    enabled: authenticated && ready && isLoginToBackendSuccess,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
-    // TODO: Use a client that has better error types that include status codes.
-    // retry: (failureCount, error) => {
-    //   // Don't retry on 401/403 errors
-    //   if (error?.status === 401 || error?.status === 403) return false;
-    //   return failureCount < 3;
-    // },
-  });
+  } = useQuery(
+    tanstackClient.user.getProfile.queryOptions({
+      enabled: authenticated && ready && isLoginToBackendSuccess,
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
+      retry: (failureCount, error) => {
+        // Don't retry on 401/403 errors (UNAUTHORIZED)
+        if (
+          error &&
+          typeof error === "object" &&
+          "code" in error &&
+          error.code === "UNAUTHORIZED"
+        ) {
+          return false;
+        }
+        return failureCount < 3;
+      },
+    }),
+  );
 
   const {
     mutate: linkWalletToBackend,
@@ -214,13 +215,14 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     isError: isUpdateBackendUserError,
     error: updateBackendUserError,
   } = useMutation({
-    mutationFn: async (updates: UpdateProfileRequest) => {
+    mutationFn: async (updates: UpdateProfileRequest): Promise<BackendUser> => {
       if (!ready) throw new Error("Auth not ready");
       if (!authenticated) throw new Error("Not authenticated");
       const response = await apiClient.current.updateProfile(updates);
       if (!response.success) {
-        throw new Error("Failed to fetch user");
+        throw new Error("Failed to update user");
       }
+
       return response.user;
     },
     onMutate: async (updates) => {
@@ -228,7 +230,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       await queryClient.cancelQueries({ queryKey: ["user"] });
 
       // Snapshot the previous value
-      const previousUser = queryClient.getQueryData<User>(["user"]);
+      const previousUser = queryClient.getQueryData<BackendUser>(["user"]);
 
       // Optimistically update the cache
       queryClient.setQueryData<BackendUser>(["user"], (old) => {

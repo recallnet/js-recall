@@ -23,7 +23,11 @@
         "POSTGRES_URL",
         "DATABASE_CA_CERT",
         "PRIVY_APP_SECRET",
-        "LOG_LEVEL"
+        "LOG_LEVEL",
+        "LOOPS_API_KEY",
+        "LOOPS_MAILING_LIST_ID",
+        "LOOPS_BASE_URL",
+        "CHAINALYSIS_API_KEY"
       ]
     }
   }
