@@ -15,7 +15,9 @@ import {
 } from "@recallnet/db/schema/ranking/defs";
 
 import { db } from "@/database/db.js";
-import * as competitionRepo from "@/database/repositories/competition-repository.js";
+import { ServiceRegistry } from "@/services/index.js";
+
+const services = new ServiceRegistry();
 
 interface Args {
   competitions: string;
@@ -120,7 +122,9 @@ async function backfillCompetitionScores(competitionId: string) {
 
   // Get the leaderboard for this competition (might be incomplete)
   const leaderboard: SelectCompetitionsLeaderboard[] | null =
-    await competitionRepo.findLeaderboardByCompetition(competitionId);
+    await services.competitionRepository.findLeaderboardByCompetition(
+      competitionId,
+    );
 
   // Create a map for easy lookup of leaderboard positions
   const leaderboardMap = new Map<string, number>();

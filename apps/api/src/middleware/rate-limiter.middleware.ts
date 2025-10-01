@@ -5,8 +5,9 @@ import {
   RateLimiterRes,
 } from "rate-limiter-flexible";
 
+import { ApiError } from "@recallnet/services/types";
+
 import { middlewareLogger } from "@/lib/logger.js";
-import { ApiError } from "@/middleware/errorHandler.js";
 
 // Define rate limiter configurations
 const rateLimiterConfigs = {

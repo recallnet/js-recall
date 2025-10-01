@@ -1,8 +1,12 @@
 import dotenv from "dotenv";
 import path from "path";
 
+import {
+  CrossChainTradingType,
+  SpecificChain,
+} from "@recallnet/services/types";
+
 import { createSentryConfig } from "@/lib/sentry-config.js";
-import { CrossChainTradingType, SpecificChain } from "@/types/index.js";
 
 // Simple console logging for config initialization (before full logger setup)
 const configLogger = {

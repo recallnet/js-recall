@@ -1,9 +1,13 @@
 import { NextFunction, Request, Response } from "express";
 import { z } from "zod";
 
-import { ApiError } from "@/middleware/errorHandler.js";
+import {
+  ApiError,
+  BlockchainType,
+  SPECIFIC_CHAIN_NAMES,
+} from "@recallnet/services/types";
+
 import { ServiceRegistry } from "@/services/index.js";
-import { BlockchainType, SPECIFIC_CHAIN_NAMES } from "@/types/index.js";
 
 const GetQuoteQuerySchema = z.object({
   fromToken: z.string().min(1, "fromToken is required"),

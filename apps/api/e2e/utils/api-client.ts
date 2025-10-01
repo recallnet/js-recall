@@ -2,7 +2,7 @@ import axios, { AxiosInstance } from "axios";
 import { wrapper } from "axios-cookiejar-support";
 import { CookieJar } from "tough-cookie";
 
-import { PagingParams } from "@/types/index.js";
+import { PagingParams } from "@recallnet/services/types";
 
 import {
   AdminAddAgentToCompetitionResponse,

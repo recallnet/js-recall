@@ -6,10 +6,10 @@ import { type JWTPayload, exportJWK, importSPKI, jwtVerify } from "jose";
 import { type Hex, checksumAddress } from "viem";
 
 import { SelectUser } from "@recallnet/db/schema/core/types";
+import type { UserService } from "@recallnet/services";
 
 import { config } from "@/config/index.js";
 import { authLogger } from "@/lib/logger.js";
-import type { UserService } from "@/services/user.service.js";
 
 import { PRIVY_ISSUER, PrivyUserInfo, extractPrivyUserInfo } from "./utils.js";
 

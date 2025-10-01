@@ -18,6 +18,12 @@ export type BoostAgentParams = {
   idemKey: Buffer;
 };
 
+export interface BoostServiceConfig {
+  boost: {
+    noStakeBoostAmount?: bigint;
+  };
+}
+
 /**
  * Boost Service
  * Manages boost operations including validation and business logic
@@ -28,20 +34,21 @@ export class BoostService {
   // or the competition service. Likewise for user repository vs user service.
   private competitionRepository: CompetitionRepository;
   private userRepository: UserRepository;
-  private nonStakeBoostAmount: bigint;
+  private noStakeBoostAmount: bigint;
   private logger: Logger;
 
   constructor(
     boostRepository: BoostRepository,
     competitionRepository: CompetitionRepository,
     userRepository: UserRepository,
-    nonStakeBoostAmount: bigint = 1000000000000000000000n,
+    config: BoostServiceConfig,
     logger: Logger,
   ) {
     this.boostRepository = boostRepository;
     this.competitionRepository = competitionRepository;
     this.userRepository = userRepository;
-    this.nonStakeBoostAmount = nonStakeBoostAmount;
+    this.noStakeBoostAmount =
+      config.boost.noStakeBoostAmount ?? 1000000000000000000000n;
     this.logger = logger;
   }
 
@@ -51,7 +58,7 @@ export class BoostService {
         userId,
         wallet,
         competitionId,
-        amount: this.nonStakeBoostAmount,
+        amount: this.noStakeBoostAmount,
         idemKey: Buffer.from(`claim-${userId}-${competitionId}`),
         meta: { description: "Claim non-stake boost" },
       }),

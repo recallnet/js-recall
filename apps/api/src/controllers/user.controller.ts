@@ -1,18 +1,19 @@
 import { NextFunction, Request, Response } from "express";
 
-import { userLogger } from "@/lib/logger.js";
-import { verifyPrivyUserHasLinkedWallet } from "@/lib/privy/verify.js";
-import { ApiError } from "@/middleware/errorHandler.js";
-import { ServiceRegistry } from "@/services/index.js";
 import {
   AgentCompetitionsParamsSchema,
+  ApiError,
   CreateAgentSchema,
   GetUserAgentSchema,
   LinkUserWalletSchema,
   UpdateUserAgentProfileSchema,
   UpdateUserProfileSchema,
   UuidSchema,
-} from "@/types/index.js";
+} from "@recallnet/services/types";
+
+import { userLogger } from "@/lib/logger.js";
+import { verifyPrivyUserHasLinkedWallet } from "@/lib/privy/verify.js";
+import { ServiceRegistry } from "@/services/index.js";
 
 import {
   ensurePaging,

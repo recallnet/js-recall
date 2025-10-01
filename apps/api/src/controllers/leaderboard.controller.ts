@@ -1,10 +1,10 @@
 import { NextFunction, Request, Response } from "express";
 import { LRUCache } from "lru-cache";
 
+import { ApiError, LeaderboardParamsSchema } from "@recallnet/services/types";
+
 import { config } from "@/config/index.js";
-import { ApiError } from "@/middleware/errorHandler.js";
 import { ServiceRegistry } from "@/services/index.js";
-import { LeaderboardParamsSchema } from "@/types/index.js";
 
 import {
   checkShouldCacheResponse,

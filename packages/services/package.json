@@ -12,10 +12,28 @@
   "homepage": "https://github.com/recallnet/js-recall#readme",
   "type": "module",
   "exports": {
-    "./boost": {
+    ".": {
       "import": {
-        "types": "./dist/boost.d.ts",
-        "default": "./dist/boost.js"
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    },
+    "./providers": {
+      "import": {
+        "types": "./dist/providers/index.d.ts",
+        "default": "./dist/providers/index.js"
+      }
+    },
+    "./lib": {
+      "import": {
+        "types": "./dist/lib/index.d.ts",
+        "default": "./dist/lib/index.js"
+      }
+    },
+    "./types": {
+      "import": {
+        "types": "./dist/types/index.d.ts",
+        "default": "./dist/types/index.js"
       }
     }
   },
@@ -35,19 +53,33 @@
   "dependencies": {
     "@recallnet/conversions": "workspace:*",
     "@recallnet/db": "workspace:*",
+    "@recallnet/staking-contracts": "workspace:*",
+    "@sentry/node": "^10.5.0",
+    "axios": "^1.6.0",
+    "decimal.js": "^10.6.0",
+    "lru-cache": "^11.1.0",
+    "merkletreejs": "^0.5.2",
     "neverthrow": "^8.2.0",
-    "pino": "^9.7.0"
+    "openskill": "^4.1.0",
+    "pg": "^8.10.0",
+    "pino": "^9.7.0",
+    "siwe": "^3.0.0",
+    "viem": "^2.37.8",
+    "zod": "3.25.17"
   },
   "devDependencies": {
     "@recallnet/eslint-config": "workspace:*",
     "@recallnet/typescript-config": "workspace:*",
     "@types/node": "^24.3.0",
+    "@types/pg": "^8.15.4",
+    "dotenv": "^16.0.3",
     "tsup": "^8.3.6",
     "typedoc": "^0.28.1",
     "typedoc-plugin-coverage": "^3.4.1",
     "typedoc-plugin-markdown": "^4.6.0",
     "typescript": "^5.7.3",
     "vite-tsconfig-paths": "^5.1.4",
-    "vitest": "^3.2.4"
+    "vitest": "^3.2.4",
+    "vitest-mock-extended": "^3.1.0"
   }
 }

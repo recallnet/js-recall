@@ -7,7 +7,7 @@ import {
   CrossChainTradingTypeSchema,
   TradingConstraintsSchema,
   UuidSchema,
-} from "@/types/index.js";
+} from "@recallnet/services/types";
 
 /**
  * Admin setup schema for initial admin account creation

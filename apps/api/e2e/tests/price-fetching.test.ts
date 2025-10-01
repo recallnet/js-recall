@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, test } from "vitest";
 
+import { BlockchainType } from "@recallnet/services/types";
+
 import config from "@/config/index.js";
 import { ApiClient } from "@/e2e/utils/api-client.js";
 import { PriceResponse, SpecificChain } from "@/e2e/utils/api-types.js";
@@ -8,7 +10,6 @@ import {
   getAdminApiKey,
   registerUserAndAgentAndGetClient,
 } from "@/e2e/utils/test-helpers.js";
-import { BlockchainType } from "@/types/index.js";
 
 // Define Ethereum token addresses for testing
 const ETHEREUM_TOKENS = {

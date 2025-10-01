@@ -1,6 +1,15 @@
 import dotenv from "dotenv";
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 
+import { PriceTrackerService } from "@recallnet/services";
+import { MultiChainProvider } from "@recallnet/services/providers";
+import {
+  BlockchainType,
+  PriceSource,
+  SpecificChain,
+} from "@recallnet/services/types";
+
+import config from "@/config/index.js";
 import { ApiClient } from "@/e2e/utils/api-client.js";
 import { PriceResponse } from "@/e2e/utils/api-types.js";
 import { dbManager } from "@/e2e/utils/db-manager.js";
@@ -9,9 +18,7 @@ import {
   getAdminApiKey,
   registerUserAndAgentAndGetClient,
 } from "@/e2e/utils/test-helpers.js";
-import { PriceTrackerService } from "@/services/price-tracker.service.js";
-import { MultiChainProvider } from "@/services/providers/multi-chain.provider.js";
-import { BlockchainType, PriceSource, SpecificChain } from "@/types/index.js";
+import { logger } from "@/lib/logger.js";
 
 // Load environment variables
 dotenv.config();
@@ -80,8 +87,8 @@ describe("Multi-Chain Provider Tests", () => {
   // Clean up test state before each test
   beforeEach(async () => {
     // Initialize providers
-    multiChainProvider = new MultiChainProvider();
-    priceTracker = new PriceTrackerService();
+    multiChainProvider = new MultiChainProvider(config, logger);
+    priceTracker = new PriceTrackerService(multiChainProvider, config, logger);
   });
 
   describe("Multi-chain token detection", () => {
@@ -248,7 +255,11 @@ describe("Multi-Chain Provider Tests", () => {
       expect(multiChainResult!.specificChain).toBe("eth");
 
       // Check PriceTracker
-      const priceTracker = new PriceTrackerService();
+      const priceTracker = new PriceTrackerService(
+        multiChainProvider,
+        config,
+        logger,
+      );
 
       // Make sure the PriceTracker has the MultiChainProvider
       const providers = priceTracker.providers;

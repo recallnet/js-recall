@@ -4,6 +4,7 @@ import { privateKeyToAccount } from "viem/accounts";
 import { beforeEach, describe, expect, test } from "vitest";
 
 import { agents } from "@recallnet/db/schema/core/defs";
+import { generateHandleFromName, isValidHandle } from "@recallnet/services/lib";
 
 import { config } from "@/config/index.js";
 import { ApiClient } from "@/e2e/utils/api-client.js";
@@ -33,7 +34,6 @@ import {
   getAdminApiKey,
   registerUserAndAgentAndGetClient,
 } from "@/e2e/utils/test-helpers.js";
-import { generateHandleFromName, isValidHandle } from "@/lib/handle-utils.js";
 import { ServiceRegistry } from "@/services/index.js";
 
 describe("Agent API", () => {

@@ -2,19 +2,19 @@ import { NextFunction, Response } from "express";
 import { LRUCache } from "lru-cache";
 
 import { ParsingError } from "@recallnet/db/errors";
-
-import { config } from "@/config/index.js";
-import { competitionLogger } from "@/lib/logger.js";
-import { ApiError } from "@/middleware/errorHandler.js";
-import { ServiceRegistry } from "@/services/index.js";
 import {
-  AuthenticatedRequest,
+  AgentQuerySchema,
+  ApiError,
   BucketParamSchema,
   CompetitionAgentParamsSchema,
   CompetitionStatusSchema,
   PagingParamsSchema,
-} from "@/types/index.js";
-import { AgentQuerySchema } from "@/types/sort/agent.js";
+} from "@recallnet/services/types";
+
+import { config } from "@/config/index.js";
+import { competitionLogger } from "@/lib/logger.js";
+import { ServiceRegistry } from "@/services/index.js";
+import { AuthenticatedRequest } from "@/types/index.js";
 
 import {
   buildPaginationResponse,
@@ -394,7 +394,14 @@ export function makeCompetitionController(services: ServiceRegistry) {
           queryParams,
         });
 
-        res.status(200).json(result);
+        res.status(200).json({
+          ...result,
+          pagination: buildPaginationResponse(
+            result.total,
+            queryParams.limit,
+            queryParams.offset,
+          ),
+        });
       } catch (error) {
         next(error);
       }
@@ -548,7 +555,14 @@ export function makeCompetitionController(services: ServiceRegistry) {
           pagingParams,
         });
 
-        res.status(200).json(result);
+        res.status(200).json({
+          ...result,
+          pagination: buildPaginationResponse(
+            result.total,
+            pagingParams.limit,
+            pagingParams.offset,
+          ),
+        });
       } catch (error) {
         next(error);
       }
@@ -578,7 +592,14 @@ export function makeCompetitionController(services: ServiceRegistry) {
             pagingParams,
           });
 
-        res.status(200).json(result);
+        res.status(200).json({
+          ...result,
+          pagination: buildPaginationResponse(
+            result.total,
+            pagingParams.limit,
+            pagingParams.offset,
+          ),
+        });
       } catch (error) {
         next(error);
       }

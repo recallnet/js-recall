@@ -1,14 +1,15 @@
 import { NextFunction, Request, Response } from "express";
 
-import { ApiError } from "@/middleware/errorHandler.js";
-import { ServiceRegistry } from "@/services/index.js";
 import {
+  ApiError,
   CreateVoteBodySchema,
   UserVotesParamsSchema,
   VOTE_ERROR_TYPES,
   VoteError,
   VotingStateParamsSchema,
-} from "@/types/index.js";
+} from "@recallnet/services/types";
+
+import { ServiceRegistry } from "@/services/index.js";
 
 /**
  * Vote Controller
