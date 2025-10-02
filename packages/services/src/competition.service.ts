@@ -373,6 +373,9 @@ export interface CompetitionServiceConfig {
   };
 }
 
+// Sentinel value for perps competitions with risk metrics but no Calmar ratio
+const SENTINEL_SCORE_NO_CALMAR = -999999;
+
 /**
  * Competition Service
  * Manages trading competitions with agent-based participation
@@ -901,7 +904,7 @@ export class CompetitionService {
         if (entry.calmarRatio !== null && entry.calmarRatio !== undefined) {
           score = entry.calmarRatio;
         } else {
-          score = -999999; // Sentinel for "has metrics but no Calmar"
+          score = SENTINEL_SCORE_NO_CALMAR; // Sentinel for "has metrics but no Calmar"
         }
       } else {
         score = entry.value; // Portfolio value for spot trading or perps without metrics

@@ -101,6 +101,9 @@ type LeaderboardEntry = InsertCompetitionsLeaderboard & {
 
 const MAX_CACHE_AGE = 1000 * 60 * 5; // 5 minutes
 
+// Default value for PnL when null (for API compatibility)
+const DEFAULT_PNL_VALUE = 0;
+
 /**
  * allowable order by database columns
  */
@@ -2017,7 +2020,7 @@ export class CompetitionRepository {
             pnlsToInsert.map((entry) => {
               return {
                 pnl: entry.pnl,
-                startingValue: entry.startingValue || 0,
+                startingValue: entry.startingValue ?? DEFAULT_PNL_VALUE,
                 competitionsLeaderboardId: entry.id,
               };
             }),
@@ -2044,7 +2047,7 @@ export class CompetitionRepository {
                 calmarRatio: entry.calmarRatio,
                 simpleReturn: entry.simpleReturn,
                 maxDrawdown: entry.maxDrawdown,
-                totalEquity: entry.totalEquity || 0, // Required field, default to 0 if undefined
+                totalEquity: entry.totalEquity ?? DEFAULT_PNL_VALUE, // Required field, default to 0 if undefined
                 totalPnl: entry.totalPnl,
                 hasRiskMetrics: entry.hasRiskMetrics,
               };
@@ -2065,7 +2068,7 @@ export class CompetitionRepository {
               totalEquity: perps.totalEquity,
               totalPnl: perps.totalPnl,
               hasRiskMetrics: perps.hasRiskMetrics,
-              pnl: perps.totalPnl ?? 0, // For API compatibility - default to 0 if null
+              pnl: perps.totalPnl ?? DEFAULT_PNL_VALUE, // For API compatibility - default to 0 if null
             };
           }
           return r;
@@ -2173,7 +2176,7 @@ export class CompetitionRepository {
       // Map to ensure pnl is a number for API compatibility
       return rows.map((row) => ({
         ...row,
-        pnl: row.totalPnl ?? 0, // Default to 0 if null
+        pnl: row.totalPnl ?? DEFAULT_PNL_VALUE, // Default to 0 if null
       }));
     } catch (error) {
       this.#logger.error(
