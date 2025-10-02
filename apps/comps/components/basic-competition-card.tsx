@@ -6,7 +6,7 @@ import React from "react";
 import { Card } from "@recallnet/ui2/components/card";
 import { cn } from "@recallnet/ui2/lib/utils";
 
-import { NEXT_PUBLIC_FRONTEND_URL } from "@/config";
+import { config } from "@/config/public";
 import { Competition } from "@/types";
 
 import { ShareModal } from "./share-modal/index";
@@ -58,7 +58,7 @@ export const BasicCompetitionCard: React.FC<BasicCompetitionCardProps> = ({
         </h1>
         <div className="flex h-3/4 items-center">
           <ShareModal
-            url={`${NEXT_PUBLIC_FRONTEND_URL}/competitions/${competition.id}`}
+            url={`${config.frontendUrl}/competitions/${competition.id}`}
             title="Share Competition"
             subtitle={
               <p className="text-muted-foreground text-sm">
