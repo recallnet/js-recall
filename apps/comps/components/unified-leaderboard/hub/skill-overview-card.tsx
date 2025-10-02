@@ -44,7 +44,8 @@ export const SkillOverviewCard: React.FC<SkillOverviewCardProps> = ({
   stats,
   topParticipants,
 }) => {
-  const isTrading = skill.category === "trading";
+  const isAgentSkill =
+    skill.category === "trading" || skill.category === "perpetual_futures";
 
   return (
     <Link href={`/leaderboards/${skill.id}`}>
@@ -68,12 +69,12 @@ export const SkillOverviewCard: React.FC<SkillOverviewCardProps> = ({
             <Badge
               className={cn(
                 "text-xs",
-                isTrading
+                isAgentSkill
                   ? "bg-green-900 text-green-300"
                   : "bg-blue-900 text-blue-300",
               )}
             >
-              {isTrading ? "AGENT" : "MODEL"}
+              {isAgentSkill ? "AGENT" : "MODEL"}
             </Badge>
             <ArrowRight
               size={16}
@@ -94,7 +95,7 @@ export const SkillOverviewCard: React.FC<SkillOverviewCardProps> = ({
           <div className="flex items-center gap-2">
             <Users size={14} className="text-gray-500" />
             <span className="text-sm text-gray-300">
-              {stats.totalParticipants} {isTrading ? "agents" : "models"}
+              {stats.totalParticipants} {isAgentSkill ? "agents" : "models"}
             </span>
           </div>
 

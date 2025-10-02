@@ -12,12 +12,15 @@ import { useBenchmarkLeaderboard } from "./useBenchmarkLeaderboard";
 
 const apiClient = new ApiClient();
 
-function calculateAvgScore(agents: LeaderboardAgent[]) {
-  return agents.reduce((acc, agent) => acc + agent.score, 0) / agents.length;
-}
-
-function calculateTopScore(agents: LeaderboardAgent[]) {
-  return Math.max(...agents.map((agent) => agent.score));
+function calculateSummaryScores(agents: LeaderboardAgent[]): {
+  avgScore: number;
+  topScore: number;
+} {
+  return {
+    avgScore:
+      agents.reduce((acc, agent) => acc + agent.score, 0) / agents.length,
+    topScore: Math.max(...agents.map((agent) => agent.score)),
+  };
 }
 
 /**
@@ -49,8 +52,9 @@ export const useUnifiedLeaderboard = () => {
             offset: 0,
           });
 
-          const avgScore = calculateAvgScore(agentsResponse.agents);
-          const topScore = calculateTopScore(agentsResponse.agents);
+          const { avgScore, topScore } = calculateSummaryScores(
+            agentsResponse.agents,
+          );
 
           skillDataMap[skillId] = {
             skill,
@@ -76,8 +80,9 @@ export const useUnifiedLeaderboard = () => {
             offset: 0,
           });
 
-          const avgScore = calculateAvgScore(agentsResponse.agents);
-          const topScore = calculateTopScore(agentsResponse.agents);
+          const { avgScore, topScore } = calculateSummaryScores(
+            agentsResponse.agents,
+          );
 
           skillDataMap[skillId] = {
             skill,
