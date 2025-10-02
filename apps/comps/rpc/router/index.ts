@@ -9,3 +9,5 @@ export const router = {
   competitions,
   user,
 } as const;
+
+export type RouterOutputs = InferRouterOutputs<typeof router>;

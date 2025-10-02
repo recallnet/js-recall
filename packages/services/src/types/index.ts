@@ -28,13 +28,13 @@ export class ApiError extends Error {
   }
 }
 
-export type SpecificChainBalances = Partial<
-  Record<SpecificChain, Record<string, number>>
->;
+export type SpecificChainBalances = {
+  [K in SpecificChain]?: Record<string, number>;
+};
 
-export type SpecificChainTokens = Partial<
-  Record<SpecificChain, Record<string, string>>
->;
+export type SpecificChainTokens = {
+  [K in SpecificChain]?: Record<string, string>;
+};
 
 /**
  * Blockchain type enum

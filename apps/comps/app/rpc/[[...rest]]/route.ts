@@ -22,7 +22,6 @@ async function handleRequest(request: Request) {
       boostAwardService,
       userService,
       competitionService,
-      db,
     },
   });
 

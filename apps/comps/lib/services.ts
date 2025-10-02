@@ -2,6 +2,7 @@ import {
   AgentRankService,
   AgentService,
   BalanceService,
+  BoostAwardService,
   BoostService,
   CalmarRatioService,
   CompetitionRewardService,
@@ -18,6 +19,7 @@ import {
 import { WalletWatchlist } from "@recallnet/services/lib";
 import { MultiChainProvider } from "@recallnet/services/providers";
 
+import { config } from "@/config/private";
 import {
   agentNonceRepository,
   agentRepository,
@@ -28,6 +30,7 @@ import {
   competitionRewardsRepository,
   leaderboardRepository,
   perpsRepository,
+  stakesRepository,
   tradeRepository,
   tradingConstraintsRepository,
   userRepository,
@@ -37,19 +40,13 @@ import {
 import { db } from "./db";
 import { createLogger } from "./logger";
 
-const noStakeBoostAmount = process.env.NEXT_PUBLIC_NON_STAKE_BOOST_AMOUNT
-  ? BigInt(process.env.NEXT_PUBLIC_NON_STAKE_BOOST_AMOUNT)
-  : undefined;
-
 const multichainProvider = new MultiChainProvider(
-  { evmChains: [], specificChainTokens: {} },
+  config,
   createLogger("MultiChainProvider"),
 );
 
 export const walletWatchList = new WalletWatchlist(
-  {
-    watchlist: { chainalysisApiKey: "" },
-  },
+  config,
   createLogger("WalletWatchlist"),
 );
 
@@ -57,19 +54,19 @@ export const boostService = new BoostService(
   boostRepository,
   competitionRepository,
   userRepository,
-  { boost: { noStakeBoostAmount } },
+  config,
   createLogger("BoostService"),
 );
 
 export const balanceService = new BalanceService(
   balanceRepository,
-  { specificChainBalances: {}, specificChainTokens: {} },
+  config,
   createLogger("BalanceService"),
 );
 
 export const priceTrackerService = new PriceTrackerService(
   multichainProvider,
-  { priceTracker: { maxCacheSize: 1000, priceTTLMs: 1000 } },
+  config,
   createLogger("PriceTrackerService"),
 );
 
@@ -88,7 +85,7 @@ export const portfolioSnapshotterService = new PortfolioSnapshotterService(
 );
 
 export const emailService = new EmailService(
-  { email: { apiKey: "", baseUrl: "", mailingListId: "" } },
+  config,
   createLogger("EmailService"),
 );
 
@@ -100,6 +97,15 @@ export const userService = new UserService(
   walletWatchList,
   db,
   createLogger("UserService"),
+);
+
+export const boostAwardService = new BoostAwardService(
+  db,
+  competitionRepository,
+  boostRepository,
+  stakesRepository,
+  userService,
+  config,
 );
 
 export const agentService = new AgentService(
@@ -114,7 +120,7 @@ export const agentService = new AgentService(
   perpsRepository,
   tradeRepository,
   userRepository,
-  { api: { domain: "" }, security: { rootEncryptionKey: "" } },
+  config,
   createLogger("AgentService"),
 );
 
@@ -133,14 +139,7 @@ export const voteService = new VoteService(
 
 export const tradingConstraintsService = new TradingConstraintsService(
   tradingConstraintsRepository,
-  {
-    tradingConstraints: {
-      defaultMinimum24hVolumeUsd: 1000,
-      defaultMinimumFdvUsd: 1000000,
-      defaultMinimumLiquidityUsd: 1000,
-      defaultMinimumPairAgeHours: 1,
-    },
-  },
+  config,
 );
 
 export const competitionRewardsService = new CompetitionRewardService(
@@ -176,11 +175,6 @@ export const competitionService = new CompetitionService(
   perpsRepository,
   competitionRepository,
   db,
-  {
-    evmChains: [],
-    maxTradePercentage: 20,
-    rateLimiting: { maxRequests: 100, windowMs: 60_000 },
-    specificChainBalances: {},
-  },
+  config,
   createLogger("CompetitionService"),
 );

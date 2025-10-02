@@ -14,7 +14,6 @@ import { os } from "@orpc/server";
 import { PrivyClient } from "@privy-io/server-auth";
 import { cookies } from "next/headers";
 
-import { Database } from "@recallnet/db/types";
 import {
   BoostAwardService,
   BoostService,
@@ -46,7 +45,6 @@ export const base = os
     boostAwardService: BoostAwardService;
     userService: UserService;
     competitionService: CompetitionService;
-    db: Database;
   }>()
   .errors({
     NOT_FOUND: {
