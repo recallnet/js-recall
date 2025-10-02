@@ -4,13 +4,13 @@ import React from "react";
 
 import { cn } from "@recallnet/ui2/lib/utils";
 
-import { CompetitionStatus } from "@/types";
+import { RouterOutputs } from "@/rpc/router";
 
 import { STATUS_ICONS } from "../utils/competition-utils";
 import { getCompetitionStatusConfig } from "./competition-status-badge";
 
 export interface CompetitionStatusBannerProps {
-  status: CompetitionStatus;
+  status: RouterOutputs["competitions"]["getById"]["status"];
   className?: string;
 }
 

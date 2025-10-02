@@ -1,10 +1,14 @@
-import { SpecificChain } from "../types/index.js";
+import {
+  SpecificChain,
+  SpecificChainBalances,
+  SpecificChainTokens,
+} from "../types/index.js";
 
 /**
  * Token addresses for each supported chain
  * Shared constant used by both API and comps apps
  */
-export const specificChainTokens = {
+export const specificChainTokens: SpecificChainTokens = {
   eth: {
     eth: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", // WETH on Ethereum
     usdc: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", // USDC on Ethereum
@@ -86,11 +90,8 @@ export function parseEvmChains(): SpecificChain[] {
  * Parse specific chain initial balance environment variables
  * Used by both API and comps apps to ensure consistent initial balance configuration
  */
-export function getSpecificChainBalances(): Record<
-  SpecificChain,
-  Record<string, number>
-> {
-  const result: Partial<Record<SpecificChain, Record<string, number>>> = {};
+export function getSpecificChainBalances(): SpecificChainBalances {
+  const result: SpecificChainBalances = {};
 
   // Ethereum Mainnet
   if (
@@ -163,5 +164,5 @@ export function getSpecificChainBalances(): Record<
     usdt: parseInt(process.env.INITIAL_SVM_USDT_BALANCE || "0", 10),
   };
 
-  return result as Record<SpecificChain, Record<string, number>>;
+  return result;
 }

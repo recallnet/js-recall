@@ -20,7 +20,7 @@ export const getById = base
     } catch (error) {
       throw errors.INTERNAL({
         cause: error,
-        message: "Failed to get compeitition by id.",
+        message: "Failed to get competition by id.",
       });
     }
   });

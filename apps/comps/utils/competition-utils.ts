@@ -1,4 +1,5 @@
 import { CheckIcon, ClockIcon, Play } from "lucide-react";
+import { JSX } from "react/jsx-runtime";
 
 import { RouterOutputs } from "@/rpc/router";
 import { Competition, CompetitionStatus, UserCompetition } from "@/types";
@@ -6,10 +7,14 @@ import { CompetitionType } from "@/types/competition";
 
 import { formatDate } from "./format";
 
-export const STATUS_ICONS = {
-  [CompetitionStatus.Active]: Play,
-  [CompetitionStatus.Pending]: ClockIcon,
-  [CompetitionStatus.Ended]: CheckIcon,
+export const STATUS_ICONS: Record<
+  RouterOutputs["competitions"]["getById"]["status"],
+  React.ComponentType
+> = {
+  active: Play,
+  pending: ClockIcon,
+  ending: Play,
+  ended: CheckIcon,
 } as const;
 
 /**
