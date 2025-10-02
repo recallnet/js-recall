@@ -73,8 +73,10 @@ export class AgentScoreRepository {
           ordinal: agentScore.ordinal,
         })
         .from(agentScore)
-        .where(and(...whereConditions))
         .innerJoin(agents, eq(agentScore.agentId, agents.id));
+      if (whereConditions.length > 0) {
+        query.where(and(...whereConditions));
+      }
 
       const rows = await query;
 
@@ -190,14 +192,18 @@ export class AgentScoreRepository {
         .from(agentScoreHistory)
         .orderBy(desc(agentScoreHistory.createdAt));
 
-      const whereClause = [];
+      const whereConditions = [];
       if (competitionId) {
-        whereClause.push(eq(agentScoreHistory.competitionId, competitionId));
+        whereConditions.push(
+          eq(agentScoreHistory.competitionId, competitionId),
+        );
       }
       if (type) {
-        whereClause.push(eq(agentScoreHistory.type, type));
+        whereConditions.push(eq(agentScoreHistory.type, type));
       }
-      query.where(and(...whereClause));
+      if (whereConditions.length > 0) {
+        query.where(and(...whereConditions));
+      }
 
       return await query;
     } catch (error) {
