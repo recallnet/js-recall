@@ -35,7 +35,7 @@ export default function CompetitionsPage() {
   const { data: leaderboard, isLoading: isLoadingLeaderboard } =
     useLeaderboards({
       limit: 25,
-      enabled: !DISABLE_LEADERBOARD,
+      enabled: !parsedConfig.clientFlags.disableLeaderboard,
     });
   const session = useSession();
 
