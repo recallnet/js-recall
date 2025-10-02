@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { ApiClient } from "@/lib/api-client";
+import { LeaderboardAgent } from "@/types/agent";
 import {
   UnifiedLeaderboardData,
   UnifiedRankingEntry,
@@ -10,6 +11,14 @@ import {
 import { useBenchmarkLeaderboard } from "./useBenchmarkLeaderboard";
 
 const apiClient = new ApiClient();
+
+function calculateAvgScore(agents: LeaderboardAgent[]) {
+  return agents.reduce((acc, agent) => acc + agent.score, 0) / agents.length;
+}
+
+function calculateTopScore(agents: LeaderboardAgent[]) {
+  return Math.max(...agents.map((agent) => agent.score));
+}
 
 /**
  * Hook to get unified leaderboard data combining benchmark models + trading agents
@@ -40,6 +49,9 @@ export const useUnifiedLeaderboard = () => {
             offset: 0,
           });
 
+          const avgScore = calculateAvgScore(agentsResponse.agents);
+          const topScore = calculateTopScore(agentsResponse.agents);
+
           skillDataMap[skillId] = {
             skill,
             participants: {
@@ -50,10 +62,35 @@ export const useUnifiedLeaderboard = () => {
               totalParticipants: agentsResponse.pagination?.total || 0, // Use total from API
               modelCount: 0,
               agentCount: agentsResponse.pagination?.total || 0, // Use total from API
-              avgScore:
-                benchmarkQuery.data?.skillStats.crypto_trading?.avgScore || 0,
-              topScore:
-                benchmarkQuery.data?.skillStats.crypto_trading?.topScore || 0,
+              avgScore,
+              topScore,
+            },
+            // Store pagination info for potential use
+            pagination: agentsResponse.pagination,
+          };
+        } else if (skillId === "perpetual_futures") {
+          // Trading skill - fetch initial agents from API
+          const agentsResponse = await apiClient.getGlobalLeaderboard({
+            type: "perpetual_futures",
+            limit: 100,
+            offset: 0,
+          });
+
+          const avgScore = calculateAvgScore(agentsResponse.agents);
+          const topScore = calculateTopScore(agentsResponse.agents);
+
+          skillDataMap[skillId] = {
+            skill,
+            participants: {
+              models: [], // No models in trading
+              agents: agentsResponse.agents || [],
+            },
+            stats: {
+              totalParticipants: agentsResponse.pagination?.total || 0, // Use total from API
+              modelCount: 0,
+              agentCount: agentsResponse.pagination?.total || 0, // Use total from API
+              avgScore,
+              topScore,
             },
             // Store pagination info for potential use
             pagination: agentsResponse.pagination,

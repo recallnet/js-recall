@@ -104,7 +104,7 @@ export const SkillOverviewCard: React.FC<SkillOverviewCardProps> = ({
               <span className="text-sm text-gray-300">
                 Top:{" "}
                 {typeof stats.topScore === "number"
-                  ? stats.topScore.toFixed(1)
+                  ? stats.topScore.toFixed(0)
                   : stats.topScore}
               </span>
             </div>
@@ -185,7 +185,7 @@ export const SkillOverviewCard: React.FC<SkillOverviewCardProps> = ({
 
                   {/* Score */}
                   <div className="w-10 text-right font-mono text-xs text-white md:w-12 md:text-sm">
-                    {score.toFixed(1)}
+                    {score.toFixed(0)}
                   </div>
                 </div>
               );
