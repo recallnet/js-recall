@@ -4,9 +4,8 @@ import { AdminService, AgentService, UserService } from "@recallnet/services";
 import { ApiError } from "@recallnet/services/types";
 
 import { authLogger } from "@/lib/logger.js";
-import { extractPrivyIdentityToken } from "@/lib/privy/utils.js";
-import { verifyPrivyIdentityToken } from "@/lib/privy/verify.js";
-import { extractApiKey, isLoginEndpoint } from "@/middleware/auth-helpers.js";
+import { extractApiKey } from "@/middleware/auth-helpers.js";
+import { applyPrivyUserAuth } from "@/middleware/user-auth.middleware.js";
 
 /**
  * Unified Authentication Middleware
@@ -31,53 +30,18 @@ export const authMiddleware = (
     try {
       authLogger.debug(`Received request to ${req.method} ${req.originalUrl}`);
 
-      /**
-       * Privy Identity Token Authentication
-       *
-       * This section attempts to authenticate the request using a Privy identity token.
-       * Tokens can be provided via privy-id-token cookie or header.
-       */
-      const identityToken = extractPrivyIdentityToken(req);
-      if (identityToken) {
-        authLogger.debug(
-          "[AuthMiddleware] Attempting Privy identity token authentication...",
-        );
-        try {
-          const { privyId } = await verifyPrivyIdentityToken(identityToken);
-          const path = new URL(
-            `${req.protocol}://${req.get("host")}${req.originalUrl}`,
-          ).pathname;
-
-          req.privyToken = identityToken;
-          authLogger.debug(
-            `[AuthMiddleware] Privy authentication successful for user ID: ${privyId}`,
-          );
-          const user = await userService.getUserByPrivyId(privyId);
-          if (!user) {
-            // Note: we allow the `/auth/login` endpoint to be accessed if a user without Privy
-            // related data exists. This is part of a backwards compatibility measure. A user will
-            // either be queried by legacy data (wallet address or email), else, created.
-            if (isLoginEndpoint(path)) {
-              return next();
-            }
-            throw new ApiError(
-              401,
-              "[AuthMiddleware] Authentication failed. User not found.",
-            );
-          }
-
-          req.userId = user.id;
-          return next();
-        } catch (error) {
-          authLogger.error(
-            `[AuthMiddleware] Privy authentication failed: ${error}`,
-          );
-        }
-      } else {
-        authLogger.debug(
-          "[AuthMiddleware] No Privy identity token found. Proceeding to API key auth.",
-        );
+      // Attempt Privy user authentication first
+      authLogger.debug(
+        "[AuthMiddleware] Attempting Privy identity token authentication...",
+      );
+      const privyApplied = await applyPrivyUserAuth(req, userService);
+      if (privyApplied) {
+        authLogger.debug("[AuthMiddleware] Privy authentication successful.");
+        return next();
       }
+      authLogger.debug(
+        "[AuthMiddleware] Privy auth not applied. Proceeding to API key auth.",
+      );
 
       /**
        * API Key Authentication

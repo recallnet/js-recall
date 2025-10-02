@@ -6,19 +6,29 @@ import type {
 import { IncomingHttpHeaders } from "http";
 
 /**
- * Extract Privy token from request headers cookies.
+ * Extract Privy identity token from request.
  *
- * The `privy-id-token` cookie is set by Privy when a user is authenticated.
- * It is a JWT token that contains the user's identity and authentication information.
- * We need to extract the token from the cookie header.
+ * Preference order:
+ * 1) privy-id-token header
+ * 2) privy-id-token cookie
  *
- * @param request - The request object to extract the token from.
- * @returns The Privy identity token.
+ * @param request - The request-like object containing headers and/or cookies
+ * @returns The Privy identity token if found, otherwise undefined
  */
 export function extractPrivyIdentityToken(request: {
   headers?: IncomingHttpHeaders;
   cookies?: { get: (name: string) => { value: string } | undefined };
 }): string | undefined {
+  // Prefer explicit header if present
+  const headerValue = request.headers?.["privy-id-token"];
+  if (typeof headerValue === "string" && headerValue.length > 0) {
+    return headerValue;
+  }
+  if (Array.isArray(headerValue) && headerValue.length > 0) {
+    return headerValue[0];
+  }
+
+  // Fallback to cookie header parsing
   return request.headers?.cookie
     ?.split("; ")
     .find((c: string) => c.startsWith("privy-id-token="))
