@@ -15,9 +15,11 @@ import path from "path";
 import client from "prom-client";
 import { afterAll, afterEach, beforeAll, beforeEach, vi } from "vitest";
 
+import { MockPrivyClient } from "@recallnet/services/lib";
+
 import { mockSymphonyServer } from "../setup.js";
 import { dbManager } from "./db-manager.js";
-import { clearPrivyLinkedWallets, setupPrivyTestEnvironment } from "./privy.js";
+import { setupPrivyTestEnvironment } from "./privy.js";
 
 // TODO: is this log file needed if we use Pino?
 // Path to log file
@@ -149,5 +151,5 @@ afterEach(async function () {
   // Clean up database state
   await dbManager.resetDatabase();
   // Clear linked Privy wallets
-  await clearPrivyLinkedWallets();
+  MockPrivyClient.clearLinkedWallets();
 });

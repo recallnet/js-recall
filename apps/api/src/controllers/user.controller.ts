@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 
+import { verifyPrivyUserHasLinkedWallet } from "@recallnet/services/lib";
 import {
   AgentCompetitionsParamsSchema,
   ApiError,
@@ -12,7 +13,6 @@ import {
 } from "@recallnet/services/types";
 
 import { userLogger } from "@/lib/logger.js";
-import { verifyPrivyUserHasLinkedWallet } from "@/lib/privy/verify.js";
 import { ServiceRegistry } from "@/services/index.js";
 
 import {
@@ -135,6 +135,7 @@ export function makeUserController(
         // Verify the custom linked wallet is properly linked to the user
         const isLinked = await verifyPrivyUserHasLinkedWallet(
           privyToken,
+          services.privyClient,
           walletAddress,
         );
         if (!isLinked) {

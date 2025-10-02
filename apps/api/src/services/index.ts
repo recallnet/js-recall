@@ -1,3 +1,5 @@
+import { PrivyClient } from "@privy-io/server-auth";
+
 import { AdminRepository } from "@recallnet/db/repositories/admin";
 import { AgentRepository } from "@recallnet/db/repositories/agent";
 import { AgentNonceRepository } from "@recallnet/db/repositories/agent-nonce";
@@ -35,6 +37,7 @@ import {
   UserService,
   VoteService,
 } from "@recallnet/services";
+import { MockPrivyClient } from "@recallnet/services/lib";
 import { WalletWatchlist } from "@recallnet/services/lib";
 import {
   DexScreenerProvider,
@@ -87,8 +90,21 @@ class ServiceRegistry {
   private readonly _eventsRepository: EventsRepository;
   private readonly _eventProcessor: EventProcessor;
   private readonly _boostAwardService: BoostAwardService;
+  private readonly _privyClient: PrivyClient;
 
   constructor() {
+    // Initialize Privy client (use MockPrivyClient in test mode to avoid real API calls)
+    if (config.server.nodeEnv === "test") {
+      this._privyClient = new MockPrivyClient(
+        config.privy.appId,
+        config.privy.appSecret,
+      ) as unknown as PrivyClient;
+    } else {
+      this._privyClient = new PrivyClient(
+        config.privy.appId,
+        config.privy.appSecret,
+      );
+    }
     this._stakesRepository = new StakesRepository(db);
     this._eventsRepository = new EventsRepository(db);
     this._boostRepository = new BoostRepository(db);
@@ -398,6 +414,10 @@ class ServiceRegistry {
 
   get boostService(): BoostService {
     return this._boostService;
+  }
+
+  get privyClient(): PrivyClient {
+    return this._privyClient;
   }
 
   get eventProcessor(): EventProcessor {
