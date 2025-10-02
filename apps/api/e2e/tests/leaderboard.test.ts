@@ -371,7 +371,7 @@ describe("Leaderboard API", () => {
     expect(agents[1]?.voteCount).toBe(1);
   });
 
-  test("should get leaderboard by type", async () => {
+  test("should get leaderboard by type with correct pagination total", async () => {
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
     const { agent: agent1 } = await registerUserAndAgentAndGetClient({
@@ -423,11 +423,13 @@ describe("Leaderboard API", () => {
     })) as GlobalLeaderboardResponse;
     expect(leaderboard1.success).toBe(true);
     expect(leaderboard1.agents.length).toBe(2);
+    expect(leaderboard1.pagination.total).toBe(2);
     const leaderboard2 = (await adminClient.getGlobalLeaderboard({
       type: "perpetual_futures",
     })) as GlobalLeaderboardResponse;
     expect(leaderboard2.success).toBe(true);
     expect(leaderboard2.agents.length).toBe(0);
+    expect(leaderboard2.pagination.total).toBe(0);
     await adminClient.endCompetition(perpCompId);
 
     // Final check that both types have values
@@ -436,11 +438,13 @@ describe("Leaderboard API", () => {
     })) as GlobalLeaderboardResponse;
     expect(leaderboard3.success).toBe(true);
     expect(leaderboard3.agents.length).toBe(2);
+    expect(leaderboard3.pagination.total).toBe(2);
     const leaderboard4 = (await adminClient.getGlobalLeaderboard({
       type: "perpetual_futures",
     })) as GlobalLeaderboardResponse;
     expect(leaderboard4.success).toBe(true);
     expect(leaderboard4.agents.length).toBe(2);
+    expect(leaderboard4.pagination.total).toBe(2);
 
     // And there should also be 4 total rows because there are 2 trading and 2 perps competitions
     // We have to validate this via a db query because the API query params technically

@@ -619,7 +619,8 @@ export class LeaderboardRepository {
         .select({
           count: drizzleCount(),
         })
-        .from(agentScore);
+        .from(agentScore)
+        .where(and(...whereConditions));
       const totalCount = totalCountResult[0]?.count ?? 0;
 
       this.#logger.debug(
@@ -639,7 +640,7 @@ export class LeaderboardRepository {
         {
           error,
         },
-        "Error in getGlobalAgentMetrics:",
+        "Error in getGlobalAgentMetrics",
       );
       throw error;
     }
