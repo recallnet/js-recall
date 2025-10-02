@@ -903,44 +903,6 @@ describe("RewardsService", () => {
         `No proof found for reward (address: ${address}, amount: ${amount}) in competition ${competitionId}`,
       );
     });
-
-    it.skip("should validate allocator existence before attempting allocation", async () => {
-      const competitionId = "comp-123";
-      const tokenAddress = "0x1234567890123456789012345678901234567890" as Hex;
-      const startTimestamp = 1640995200;
-
-      const mockRewards: SelectReward[] = [
-        {
-          id: "reward-1",
-          competitionId,
-          address:
-            "0x1111111111111111111111111111111111111111" as `0x${string}`,
-          amount: 100n,
-          leafHash: Buffer.from("hash1"),
-          claimed: false,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-      ];
-
-      vi.mocked(mockRewardsRepo.getRewardsByCompetition).mockResolvedValue(
-        mockRewards,
-      );
-
-      // Create service without allocator
-      const service = new RewardsService(
-        mockRewardsRepo,
-        mockCompetitionRepository,
-        mockBoostRepository,
-        mockRewardsAllocator,
-        mockDb,
-        mockLogger,
-      );
-
-      await expect(
-        service.allocate(competitionId, tokenAddress, startTimestamp),
-      ).rejects.toThrow();
-    });
   });
 
   describe("Integration tests with comprehensive test data", () => {
