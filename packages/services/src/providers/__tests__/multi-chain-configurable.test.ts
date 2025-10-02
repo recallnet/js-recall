@@ -1,6 +1,5 @@
-import { config } from "dotenv";
 import { Logger } from "pino";
-import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MockProxy, mock } from "vitest-mock-extended";
 
 import { BlockchainType } from "../../types/index.js";
@@ -8,18 +7,20 @@ import {
   MultiChainProvider,
   MultiChainProviderConfig,
 } from "../multi-chain.provider.js";
+import {
+  MockCoinGeckoClient,
+  commonMockResponses,
+  mockBatchTokenPrices,
+  mockTokenPrice,
+  setupCoinGeckoMock,
+  testTokens,
+} from "./helpers/coingecko.helpers.js";
 
-// Load environment variables
-config();
+// Mock the CoinGecko SDK
+vi.mock("@coingecko/coingecko-typescript");
 
-// Set timeout for all tests in this file to 30 seconds
-vi.setConfig({ testTimeout: 30_000 });
-
-// Test tokens
-const ethereumTokens = {
-  ETH: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", // WETH
-  USDC: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
-};
+// Extract token references
+const ethereumTokens = testTokens.ethereum;
 
 // Mock logger for the constructor
 const mockLogger: MockProxy<Logger> = mock<Logger>();
@@ -27,22 +28,26 @@ const mockLogger: MockProxy<Logger> = mock<Logger>();
 describe("MultiChainProvider Configurable", () => {
   describe("With CoinGecko Provider", () => {
     let provider: MultiChainProvider;
-    let coingeckoConfig: MultiChainProviderConfig;
-    beforeAll(() => {
-      const apiKey = process.env.COINGECKO_API_KEY!;
-      coingeckoConfig = {
-        priceProvider: {
-          type: "coingecko",
-          coingecko: { apiKey, mode: "demo" },
-        },
-        evmChains: ["eth"],
-        specificChainTokens: {
-          eth: { ETH: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2" },
-        },
-      };
-    });
+    let mockCoinGeckoInstance: MockCoinGeckoClient;
+    const coingeckoConfig: MultiChainProviderConfig = {
+      priceProvider: {
+        type: "coingecko",
+        coingecko: { apiKey: "test-api-key", mode: "demo" },
+      },
+      evmChains: ["eth"],
+      specificChainTokens: {
+        eth: { ETH: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2" },
+      },
+    };
 
     beforeEach(() => {
+      // Clear all mocks before each test
+      vi.clearAllMocks();
+
+      // Set up CoinGecko mock using helper
+      mockCoinGeckoInstance = setupCoinGeckoMock();
+
+      // Create provider instance
       provider = new MultiChainProvider(coingeckoConfig, mockLogger);
     });
 
@@ -51,6 +56,9 @@ describe("MultiChainProvider Configurable", () => {
     });
 
     it("should fetch ETH price using CoinGecko", async () => {
+      // Mock CoinGecko API response using helper
+      mockTokenPrice(mockCoinGeckoInstance, commonMockResponses.ETH);
+
       const priceReport = await provider.getPrice(ethereumTokens.ETH);
 
       expect(priceReport).not.toBeNull();
@@ -60,6 +68,13 @@ describe("MultiChainProvider Configurable", () => {
 
     it("should fetch batch prices using CoinGecko", async () => {
       const tokens = [ethereumTokens.ETH, ethereumTokens.USDC];
+
+      // Mock batch responses using helper
+      mockBatchTokenPrices(mockCoinGeckoInstance, [
+        commonMockResponses.ETH,
+        commonMockResponses.USDC,
+      ]);
+
       const results = await provider.getBatchPrices(
         tokens,
         BlockchainType.EVM,
@@ -120,7 +135,7 @@ describe("MultiChainProvider Configurable", () => {
     const coingeckoConfig: MultiChainProviderConfig = {
       priceProvider: {
         type: "coingecko",
-        coingecko: { apiKey: process.env.COINGECKO_API_KEY!, mode: "demo" },
+        coingecko: { apiKey: "test-api-key", mode: "demo" },
       },
       evmChains: ["eth"],
       specificChainTokens: {
@@ -134,7 +149,11 @@ describe("MultiChainProvider Configurable", () => {
         eth: { ETH: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2" },
       },
     };
+
     it("should detect chains correctly with both providers", () => {
+      // Set up CoinGecko mock for this test
+      setupCoinGeckoMock();
+
       const coinGeckoProvider = new MultiChainProvider(
         coingeckoConfig,
         mockLogger,

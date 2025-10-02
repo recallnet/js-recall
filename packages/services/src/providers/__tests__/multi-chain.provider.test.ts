@@ -34,7 +34,7 @@ describe("MultiChainProvider", () => {
 
   describe("Basic functionality", () => {
     it("should have correct name", () => {
-      expect(provider.getName()).toBe("CoinGecko MultiChain");
+      expect(provider.getName()).toBe("DexScreener MultiChain");
     });
   });
 
