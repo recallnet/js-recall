@@ -1,52 +1,9 @@
 import { Coingecko } from "@coingecko/coingecko-typescript";
 import { vi } from "vitest";
 
-/**
- * Common test tokens used across multiple tests
- */
-export const testTokens = {
-  solana: {
-    SOL: "So11111111111111111111111111111111111111112",
-    USDC: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
-    BONK: "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263",
-  },
-  ethereum: {
-    ETH: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", // WETH
-    USDC: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
-    USDT: "0xdAC17F958D2ee523a2206206994597C13D831ec7",
-    SHIB: "0x95aD61b0a150d79219dCF64E1E6Cc01f0B64C4cE",
-  },
-  base: {
-    ETH: "0x4200000000000000000000000000000000000006", // WETH on Base
-    USDC: "0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA", // USDbC on Base
-  },
-  polygon: {
-    MATIC: "0x0000000000000000000000000000000000001010",
-    USDC: "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174",
-  },
-};
-
-/**
- * Specific chain tokens configuration for provider initialization
- */
-export const specificChainTokens = {
-  svm: {
-    sol: testTokens.solana.SOL,
-    usdc: testTokens.solana.USDC,
-  },
-  eth: {
-    eth: testTokens.ethereum.ETH,
-    usdc: testTokens.ethereum.USDC,
-  },
-  base: {
-    eth: testTokens.base.ETH,
-    usdc: testTokens.base.USDC,
-  },
-  polygon: {
-    matic: testTokens.polygon.MATIC,
-    usdc: testTokens.polygon.USDC,
-  },
-};
+import { CoinGeckoProviderConfig } from "../../coingecko.provider.js";
+import { MultiChainProviderConfig } from "../../multi-chain.provider.js";
+import { specificChainTokens } from "./tokens.js";
 
 /**
  * Type for mocking CoinGecko client
@@ -76,7 +33,7 @@ export const createMockCoinResponse = (params: {
   fdvUsd?: number;
 }) => ({
   id: params.id,
-  symbol: params.symbol,
+  symbol: params.symbol.toUpperCase(),
   name: params.name,
   market_data: {
     current_price: { usd: params.priceUsd },
@@ -89,7 +46,7 @@ export const createMockCoinResponse = (params: {
  * Common mock responses for frequently used tokens
  */
 export const commonMockResponses = {
-  SOL: createMockCoinResponse({
+  sol: createMockCoinResponse({
     id: "solana",
     symbol: "sol",
     name: "Solana",
@@ -97,7 +54,7 @@ export const commonMockResponses = {
     volumeUsd: 2500000000,
     fdvUsd: 85000000000,
   }),
-  ETH: createMockCoinResponse({
+  eth: createMockCoinResponse({
     id: "weth",
     symbol: "weth",
     name: "Wrapped Ether",
@@ -105,7 +62,7 @@ export const commonMockResponses = {
     volumeUsd: 12000000000,
     fdvUsd: 350000000000,
   }),
-  USDC: createMockCoinResponse({
+  usdc: createMockCoinResponse({
     id: "usd-coin",
     symbol: "usdc",
     name: "USD Coin",
@@ -113,7 +70,7 @@ export const commonMockResponses = {
     volumeUsd: 8000000000,
     fdvUsd: 45000000000,
   }),
-  USDT: createMockCoinResponse({
+  usdt: createMockCoinResponse({
     id: "tether",
     symbol: "usdt",
     name: "Tether",
@@ -145,13 +102,32 @@ export const createMockCoinGeckoClient = (): MockCoinGeckoClient => ({
  */
 export const setupCoinGeckoMock = (): MockCoinGeckoClient => {
   const mockInstance = createMockCoinGeckoClient();
-
-  // Mock the CoinGecko constructor to return our mock instance
   vi.mocked(Coingecko).mockImplementation(
     () => mockInstance as unknown as Coingecko,
   );
 
   return mockInstance;
+};
+
+/**
+ * Typical config for a CoinGecko provider
+ */
+export const coingeckoConfig: CoinGeckoProviderConfig = {
+  apiKey: "test-api-key",
+  mode: "demo",
+  specificChainTokens,
+};
+
+/**
+ * Typical config for a MultiChainProvider with a CoinGecko provider
+ */
+export const multichainCoinGeckoConfig: MultiChainProviderConfig = {
+  priceProvider: {
+    type: "coingecko",
+    coingecko: { apiKey: coingeckoConfig.apiKey, mode: coingeckoConfig.mode },
+  },
+  evmChains: ["eth", "base", "svm"],
+  specificChainTokens,
 };
 
 /**
