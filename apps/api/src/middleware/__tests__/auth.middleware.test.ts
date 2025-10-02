@@ -33,6 +33,9 @@ vi.mock("@/lib/logger.js", () => {
 vi.mock("@recallnet/services/lib", () => ({
   extractPrivyIdentityToken: vi.fn(),
   verifyPrivyIdentityToken: vi.fn(),
+  getSpecificChainBalances: vi.fn(),
+  parseEvmChains: vi.fn(),
+  specificChainTokens: {},
 }));
 
 vi.mock("@/middleware/auth-helpers.js", () => ({
