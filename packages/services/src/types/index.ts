@@ -1020,6 +1020,55 @@ export interface CompetitionWithVotes extends Competition {
 }
 
 /**
+ * Base enriched leaderboard entry for spot trading competitions
+ */
+export interface BaseEnrichedLeaderboardEntry {
+  agentId: string;
+  competitionId: string;
+  rank: number;
+  pnl: number;
+  startingValue: number;
+  totalAgents: number;
+  score: number;
+  hasRiskMetrics: false;
+}
+
+/**
+ * Enriched leaderboard entry for perps competitions with risk metrics
+ */
+export interface PerpsEnrichedLeaderboardEntry {
+  agentId: string;
+  competitionId: string;
+  rank: number;
+  pnl: number;
+  startingValue: number;
+  totalAgents: number;
+  score: number;
+  calmarRatio: number | null;
+  simpleReturn: number | null;
+  maxDrawdown: number | null;
+  totalEquity: number;
+  totalPnl: number | null;
+  hasRiskMetrics: true;
+}
+
+/**
+ * Union type for enriched leaderboard entries
+ */
+export type EnrichedLeaderboardEntry =
+  | BaseEnrichedLeaderboardEntry
+  | PerpsEnrichedLeaderboardEntry;
+
+/**
+ * Type guard to check if an enriched entry is a perps entry with risk metrics
+ */
+export function isPerpsEnrichedEntry(
+  entry: EnrichedLeaderboardEntry,
+): entry is PerpsEnrichedLeaderboardEntry {
+  return entry.hasRiskMetrics === true;
+}
+
+/**
  * Vote error types for specific error handling
  */
 export const VOTE_ERROR_TYPES = {

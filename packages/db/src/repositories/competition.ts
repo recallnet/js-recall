@@ -38,6 +38,7 @@ import {
   UpdateCompetition,
 } from "../schema/core/types.js";
 import {
+  perpsCompetitionsLeaderboard,
   portfolioSnapshots,
   tradingCompetitions,
   tradingCompetitionsLeaderboard,
@@ -84,13 +85,24 @@ interface Snapshot24hResult {
 }
 
 // Type for leaderboard entries. Contains the fields stored in the database, enhanced with optional
-// PnL data (for trading competitions)
+// PnL data (for trading competitions) or perps metrics (for perpetual futures competitions)
 type LeaderboardEntry = InsertCompetitionsLeaderboard & {
+  // For spot trading competitions
   pnl?: number;
   startingValue?: number;
+  // For perps competitions (all numeric fields return as numbers with mode: "number")
+  calmarRatio?: number | null;
+  simpleReturn?: number | null;
+  maxDrawdown?: number | null;
+  totalEquity?: number;
+  totalPnl?: number | null;
+  hasRiskMetrics?: boolean | null;
 };
 
 const MAX_CACHE_AGE = 1000 * 60 * 5; // 5 minutes
+
+// Default zero value for numeric fields when null (for API compatibility)
+const DEFAULT_ZERO_VALUE = 0;
 
 /**
  * allowable order by database columns
@@ -1997,7 +2009,10 @@ export class CompetitionRepository {
         .values(valuesToInsert)
         .returning();
 
-      const pnlsToInsert = valuesToInsert.filter((e) => e.pnl !== undefined);
+      // Handle spot trading data
+      const pnlsToInsert = valuesToInsert.filter(
+        (e) => e.pnl !== undefined && !e.hasRiskMetrics,
+      );
       if (pnlsToInsert.length) {
         const pnlResults = await executor
           .insert(tradingCompetitionsLeaderboard)
@@ -2005,7 +2020,7 @@ export class CompetitionRepository {
             pnlsToInsert.map((entry) => {
               return {
                 pnl: entry.pnl,
-                startingValue: entry.startingValue || 0,
+                startingValue: entry.startingValue ?? DEFAULT_ZERO_VALUE,
                 competitionsLeaderboardId: entry.id,
               };
             }),
@@ -2017,6 +2032,46 @@ export class CompetitionRepository {
             (p) => p.competitionsLeaderboardId === r.id,
           );
           return { ...r, pnl: pnl?.pnl, startingValue: pnl?.startingValue };
+        });
+      }
+
+      // Handle perps data
+      const perpsToInsert = valuesToInsert.filter((e) => e.hasRiskMetrics);
+      if (perpsToInsert.length) {
+        const perpsResults = await executor
+          .insert(perpsCompetitionsLeaderboard)
+          .values(
+            perpsToInsert.map((entry) => {
+              return {
+                competitionsLeaderboardId: entry.id,
+                calmarRatio: entry.calmarRatio,
+                simpleReturn: entry.simpleReturn,
+                maxDrawdown: entry.maxDrawdown,
+                totalEquity: entry.totalEquity ?? DEFAULT_ZERO_VALUE, // Required field, default to 0 if undefined
+                totalPnl: entry.totalPnl,
+                hasRiskMetrics: entry.hasRiskMetrics,
+              };
+            }),
+          )
+          .returning();
+
+        results = results.map((r) => {
+          const perps = perpsResults.find(
+            (p) => p.competitionsLeaderboardId === r.id,
+          );
+          if (perps) {
+            return {
+              ...r,
+              calmarRatio: perps.calmarRatio,
+              simpleReturn: perps.simpleReturn,
+              maxDrawdown: perps.maxDrawdown,
+              totalEquity: perps.totalEquity,
+              totalPnl: perps.totalPnl,
+              hasRiskMetrics: perps.hasRiskMetrics,
+              pnl: perps.totalPnl ?? DEFAULT_ZERO_VALUE, // Map totalPnl to pnl field for consistent API response shape
+            };
+          }
+          return r;
         });
       }
 
@@ -2083,6 +2138,50 @@ export class CompetitionRepository {
     } catch (error) {
       this.#logger.error(
         `[CompetitionRepository] Error finding leaderboard for competition ${competitionId}:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Find leaderboard entries for a specific perps competition
+   * @param competitionId The competition ID
+   * @returns Array of leaderboard entries with perps metrics sorted by rank
+   */
+  async findLeaderboardByPerpsComp(competitionId: string) {
+    try {
+      const rows = await this.#db
+        .select({
+          agentId: competitionsLeaderboard.agentId,
+          value: perpsCompetitionsLeaderboard.totalEquity, // Alias totalEquity as value for API compatibility
+          calmarRatio: perpsCompetitionsLeaderboard.calmarRatio,
+          simpleReturn: perpsCompetitionsLeaderboard.simpleReturn,
+          maxDrawdown: perpsCompetitionsLeaderboard.maxDrawdown,
+          totalEquity: perpsCompetitionsLeaderboard.totalEquity,
+          totalPnl: perpsCompetitionsLeaderboard.totalPnl,
+          hasRiskMetrics: perpsCompetitionsLeaderboard.hasRiskMetrics,
+        })
+        .from(competitionsLeaderboard)
+        .innerJoin(
+          perpsCompetitionsLeaderboard,
+          eq(
+            competitionsLeaderboard.id,
+            perpsCompetitionsLeaderboard.competitionsLeaderboardId,
+          ),
+        )
+        .where(eq(competitionsLeaderboard.competitionId, competitionId))
+        .orderBy(competitionsLeaderboard.rank);
+
+      // Map totalPnl to pnl field to match the API response shape used by spot competitions
+      return rows.map((row) => ({
+        ...row,
+        pnl: row.totalPnl ?? DEFAULT_ZERO_VALUE, // Default to 0 if null
+        hasRiskMetrics: row.hasRiskMetrics ?? undefined, // Convert null to undefined for type compatibility
+      }));
+    } catch (error) {
+      this.#logger.error(
+        `[CompetitionRepository] Error finding perps leaderboard for competition ${competitionId}:`,
         error,
       );
       throw error;

@@ -89,6 +89,30 @@ export const tradingCompetitionsLeaderboard = tradingComps.table(
 );
 
 /**
+ * Table to hold stats on perpetual futures competitions
+ */
+export const perpsCompetitionsLeaderboard = tradingComps.table(
+  "perps_competitions_leaderboard",
+  {
+    competitionsLeaderboardId: uuid("competitions_leaderboard_id")
+      .primaryKey()
+      .references(() => competitionsLeaderboard.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    calmarRatio: numeric("calmar_ratio", { mode: "number" }), // Returns as JS number
+    simpleReturn: numeric("simple_return", { mode: "number" }), // Returns as JS number
+    maxDrawdown: numeric("max_drawdown", { mode: "number" }), // Returns as JS number
+    totalEquity: numeric("total_equity", { mode: "number" }).notNull(), // Returns as JS number
+    totalPnl: numeric("total_pnl", { mode: "number" }), // Returns as JS number
+    hasRiskMetrics: boolean("has_risk_metrics").default(false),
+  },
+  (table) => [
+    index("idx_perps_competitions_leaderboard_calmar").on(table.calmarRatio),
+  ],
+);
+
+/**
  * Table for balances of agents in a competition.
  */
 export const balances = tradingComps.table(
