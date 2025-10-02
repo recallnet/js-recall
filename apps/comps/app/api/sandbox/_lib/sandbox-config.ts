@@ -1,3 +1,5 @@
+import { parsedConfig } from "@/config/private";
+
 /**
  * Centralized sandbox configuration and utilities
  */
@@ -16,9 +18,9 @@ export interface SandboxConfig {
  * @throws Error if required configuration is missing
  */
 export function getSandboxConfig(): SandboxConfig {
-  const sandboxApiUrl = process.env.NEXT_PUBLIC_SANDBOX_API_URL;
-  const sandboxAdminApiKey = process.env.SANDBOX_ADMIN_API_KEY;
-  const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+  const sandboxApiUrl = parsedConfig.tradingApi.sandboxApiUrl;
+  const sandboxAdminApiKey = parsedConfig.tradingApi.sandboxAdminApiKey;
+  const apiBaseUrl = parsedConfig.tradingApi.baseUrl;
 
   if (!sandboxApiUrl || !sandboxAdminApiKey || !apiBaseUrl) {
     throw new Error(

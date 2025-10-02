@@ -13,11 +13,10 @@ import { Tooltip } from "@recallnet/ui2/components/tooltip";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { PrivyAuthButton } from "@/components/privy-auth-button";
+import { parsedConfig } from "@/config/public";
 import { useSession } from "@/hooks";
 
-const nonStakeBoostAmount = process.env.NEXT_PUBLIC_NON_STAKE_BOOST_AMOUNT
-  ? BigInt(process.env.NEXT_PUBLIC_NON_STAKE_BOOST_AMOUNT)
-  : undefined;
+const nonStakeBoostAmount = parsedConfig.boost.noStakeBoostAmount;
 
 const formattedNumber = new Intl.NumberFormat();
 

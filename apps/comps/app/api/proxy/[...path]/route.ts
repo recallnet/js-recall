@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 
-import { API_BASE_URL } from "@/config";
+import { parsedConfig } from "@/config/private";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -19,12 +19,11 @@ interface RouteContext {
  * @returns The upstream URL
  */
 function buildUpstreamUrl(req: Request, path: string[]): URL {
-  if (!API_BASE_URL) {
-    throw new Error("API_BASE_URL is not set");
-  }
   const incoming = new URL(req.url);
   const safePath = (path ?? []).map(encodeURIComponent).join("/");
-  const url = new URL(`${API_BASE_URL.replace(/\/+$/, "")}/${safePath}`);
+  const url = new URL(
+    `${parsedConfig.tradingApi.baseUrl.replace(/\/+$/, "")}/${safePath}`,
+  );
   url.search = incoming.search; // preserve query string
   return url;
 }

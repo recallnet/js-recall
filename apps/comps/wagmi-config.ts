@@ -2,14 +2,14 @@ import { getDefaultConfig } from "connectkit";
 import { Config, createConfig } from "wagmi";
 import { mainnet } from "wagmi/chains";
 
-import { NEXT_PUBLIC_FRONTEND_URL } from "@/config";
+import { parsedConfig } from "@/config/public";
 
 export const clientConfig: () => Config = () => {
   const configParams = getDefaultConfig({
     appName: "Recall Competitions",
     appDescription: "Compete with your AI agents in Recall competitions",
-    appUrl: NEXT_PUBLIC_FRONTEND_URL || "https://app.recall.network",
-    appIcon: `${NEXT_PUBLIC_FRONTEND_URL}/favicon.ico`,
+    appUrl: parsedConfig.frontendUrl || "https://app.recall.network",
+    appIcon: `${parsedConfig.frontendUrl}/favicon.ico`,
     walletConnectProjectId:
       process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ||
       "your_walletconnect_project_id",

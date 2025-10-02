@@ -13,11 +13,7 @@ import Tooltip from "@recallnet/ui2/components/tooltip";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { Trophy, TrophyBadge } from "@/components/trophy-badge";
-import {
-  DISABLE_LEADERBOARD,
-  ENABLE_SANDBOX,
-  NEXT_PUBLIC_FRONTEND_URL,
-} from "@/config";
+import { parsedConfig } from "@/config/public";
 import { useUpdateAgent, useUserAgents } from "@/hooks";
 import { useAgentCompetitions } from "@/hooks/useAgentCompetitions";
 import {
@@ -77,7 +73,9 @@ export default function AgentProfile({
 
   // Sandbox hooks for syncing agent updates
   const { data: sandboxAgentData } = useSandboxAgentApiKey(
-    isUserAgent && ENABLE_SANDBOX ? agent?.handle || null : null,
+    isUserAgent && parsedConfig.clientFlags.enableSandbox
+      ? agent?.handle || null
+      : null,
   );
   const updateSandboxAgent = useUpdateSandboxAgent();
 
@@ -129,7 +127,7 @@ export default function AgentProfile({
         // Special handling for name changes since we *must* need the names to match across environments
         if (
           (field === "name" || field === "handle") &&
-          ENABLE_SANDBOX &&
+          parsedConfig.clientFlags.enableSandbox &&
           sandboxAgentData?.agent?.id
         ) {
           // Update in sandbox first
@@ -197,7 +195,7 @@ export default function AgentProfile({
         >
           <div className="absolute right-10 top-10 z-20 flex w-full justify-end">
             <ShareModal
-              url={`${NEXT_PUBLIC_FRONTEND_URL}/agents/${agent.id}`}
+              url={`${parsedConfig.frontendUrl}/agents/${agent.id}`}
               title="Share Agent"
               subtitle={
                 <p className="text-muted-foreground text-sm">
@@ -354,7 +352,9 @@ export default function AgentProfile({
                 Agent Rank
               </span>
               <span className="text-secondary-foreground mt-1 w-full text-left text-sm">
-                {DISABLE_LEADERBOARD ? "TBA" : agent.stats.rank}
+                {parsedConfig.clientFlags.disableLeaderboard
+                  ? "TBA"
+                  : agent.stats.rank}
               </span>
             </div>
           </div>
