@@ -218,13 +218,14 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     tanstackClient.user.updateProfile.mutationOptions({
       onMutate: async (updates) => {
         // Cancel outgoing refetches so they don't overwrite our optimistic update
-        await queryClient.cancelQueries({ queryKey: ["user"] });
+        const queryKey = tanstackClient.user.getProfile.key();
+        await queryClient.cancelQueries({ queryKey: queryKey });
 
         // Snapshot the previous value
-        const previousUser = queryClient.getQueryData<BackendUser>(["user"]);
+        const previousUser = queryClient.getQueryData<BackendUser>(queryKey);
 
         // Optimistically update the cache
-        queryClient.setQueryData<BackendUser>(["user"], (old) => {
+        queryClient.setQueryData<BackendUser>(queryKey, (old) => {
           if (!old) return undefined;
           return mergeWithoutUndefined(old, updates);
         });
@@ -235,16 +236,24 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       onError: (_, __, context) => {
         // Rollback to the previous value on error
         if (context?.previousUser) {
-          queryClient.setQueryData(["user"], context.previousUser);
+          queryClient.setQueryData(
+            tanstackClient.user.getProfile.key(),
+            context.previousUser,
+          );
         }
       },
       onSuccess: (updatedUser) => {
         // Update cache with the actual server response
-        queryClient.setQueryData<BackendUser>(["user"], updatedUser);
+        queryClient.setQueryData<BackendUser>(
+          tanstackClient.user.getProfile.key(),
+          updatedUser,
+        );
       },
       onSettled: () => {
         // Always refetch after error or success to ensure consistency
-        queryClient.invalidateQueries({ queryKey: ["user"] });
+        queryClient.invalidateQueries({
+          queryKey: tanstackClient.user.getProfile.key(),
+        });
       },
     }),
   );
