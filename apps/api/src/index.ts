@@ -24,6 +24,7 @@ import { authMiddleware } from "@/middleware/auth.middleware.js";
 import errorHandler from "@/middleware/errorHandler.js";
 import { loggingMiddleware } from "@/middleware/logging.middleware.js";
 import { optionalAuthMiddleware } from "@/middleware/optional-auth.middleware.js";
+import { userAuthMiddleware } from "@/middleware/user-auth.middleware.js";
 import { rateLimiterMiddleware } from "@/middleware/rate-limiter.middleware.js";
 import { configureAdminSetupRoutes } from "@/routes/admin-setup.routes.js";
 import { configureAdminRoutes } from "@/routes/admin.routes.js";
@@ -161,6 +162,7 @@ const optionalAuth = optionalAuthMiddleware(
   services.userService,
   services.adminService,
 );
+const userOnlyAuth = userAuthMiddleware(services.userService);
 
 const adminController = makeAdminController(services);
 const authController = makeAuthController(services);
@@ -186,6 +188,7 @@ const competitionsRoutes = configureCompetitionsRoutes(
   boostController,
   optionalAuth,
   authMiddlewareInstance,
+  userOnlyAuth,
 );
 const docsRoutes = configureDocsRoutes(docsController);
 const healthRoutes = configureHealthRoutes(healthController);
