@@ -187,7 +187,10 @@ export default function CompetitionsPage() {
               {isCompetitionsLoading ? (
                 <Skeleton className="h-12 w-48 rounded-lg" />
               ) : (
-                <Button asChild className="border border-blue-500 bg-blue-500 p-6 uppercase text-white transition-colors duration-200 hover:border-white hover:bg-white hover:text-blue-500">
+                <Button
+                  asChild
+                  className="border border-blue-500 bg-blue-500 p-6 uppercase text-white transition-colors duration-200 hover:border-white hover:bg-white hover:text-blue-500"
+                >
                   <Link
                     href={competitionButton.href}
                     aria-label={competitionButton.ariaLabel}
