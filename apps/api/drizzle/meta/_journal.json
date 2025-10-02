@@ -320,15 +320,8 @@
     {
       "idx": 45,
       "version": "7",
-      "when": 1759362974625,
-      "tag": "0045_dry_killer_shrike",
-      "breakpoints": true
-    },
-    {
-      "idx": 46,
-      "version": "7",
-      "when": 1759371005362,
-      "tag": "0046_simple_ken_ellis",
+      "when": 1759372408267,
+      "tag": "0045_clever_squadron_sinister",
       "breakpoints": true
     }
   ]

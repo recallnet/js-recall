@@ -1,2 +1,0 @@
-ALTER TABLE "agent_score" ADD COLUMN "type" "competition_type" DEFAULT 'trading' NOT NULL;--> statement-breakpoint
-ALTER TABLE "agent_score_history" ADD COLUMN "type" "competition_type" DEFAULT 'trading' NOT NULL;

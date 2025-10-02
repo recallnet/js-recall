@@ -1,5 +1,5 @@
 {
-  "id": "0fa71607-a989-47a9-9d90-a523a5c688fb",
+  "id": "da4f8758-68b0-40f8-86f1-46180b6c0802",
   "prevId": "4fa479b3-aa55-4716-9981-36aa2b44cb9b",
   "version": "7",
   "dialect": "postgresql",
@@ -2128,6 +2128,21 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
+        },
+        "idx_agent_score_type": {
+          "name": "idx_agent_score_type",
+          "columns": [
+            {
+              "expression": "type",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -2143,10 +2158,10 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "unique_agent_score_agent_id": {
-          "name": "unique_agent_score_agent_id",
+        "unique_agent_score_agent_id_type": {
+          "name": "unique_agent_score_agent_id_type",
           "nullsNotDistinct": false,
-          "columns": ["agent_id"]
+          "columns": ["agent_id", "type"]
         }
       },
       "policies": {},
