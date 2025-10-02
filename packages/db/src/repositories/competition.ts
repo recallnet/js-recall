@@ -101,8 +101,8 @@ type LeaderboardEntry = InsertCompetitionsLeaderboard & {
 
 const MAX_CACHE_AGE = 1000 * 60 * 5; // 5 minutes
 
-// Default value for PnL when null (for API compatibility)
-const DEFAULT_PNL_VALUE = 0;
+// Default zero value for numeric fields when null (for API compatibility)
+const DEFAULT_ZERO_VALUE = 0;
 
 /**
  * allowable order by database columns
@@ -2020,7 +2020,7 @@ export class CompetitionRepository {
             pnlsToInsert.map((entry) => {
               return {
                 pnl: entry.pnl,
-                startingValue: entry.startingValue ?? DEFAULT_PNL_VALUE,
+                startingValue: entry.startingValue ?? DEFAULT_ZERO_VALUE,
                 competitionsLeaderboardId: entry.id,
               };
             }),
@@ -2047,7 +2047,7 @@ export class CompetitionRepository {
                 calmarRatio: entry.calmarRatio,
                 simpleReturn: entry.simpleReturn,
                 maxDrawdown: entry.maxDrawdown,
-                totalEquity: entry.totalEquity ?? DEFAULT_PNL_VALUE, // Required field, default to 0 if undefined
+                totalEquity: entry.totalEquity ?? DEFAULT_ZERO_VALUE, // Required field, default to 0 if undefined
                 totalPnl: entry.totalPnl,
                 hasRiskMetrics: entry.hasRiskMetrics,
               };
@@ -2068,7 +2068,7 @@ export class CompetitionRepository {
               totalEquity: perps.totalEquity,
               totalPnl: perps.totalPnl,
               hasRiskMetrics: perps.hasRiskMetrics,
-              pnl: perps.totalPnl ?? DEFAULT_PNL_VALUE, // For API compatibility - default to 0 if null
+              pnl: perps.totalPnl ?? DEFAULT_ZERO_VALUE, // Map totalPnl to pnl field for consistent API response shape
             };
           }
           return r;
@@ -2173,10 +2173,10 @@ export class CompetitionRepository {
         .where(eq(competitionsLeaderboard.competitionId, competitionId))
         .orderBy(competitionsLeaderboard.rank);
 
-      // Map to ensure pnl is a number for API compatibility
+      // Map totalPnl to pnl field to match the API response shape used by spot competitions
       return rows.map((row) => ({
         ...row,
-        pnl: row.totalPnl ?? DEFAULT_PNL_VALUE, // Default to 0 if null
+        pnl: row.totalPnl ?? DEFAULT_ZERO_VALUE, // Default to 0 if null
       }));
     } catch (error) {
       this.#logger.error(
