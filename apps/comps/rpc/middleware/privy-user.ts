@@ -13,12 +13,14 @@ export const privyUserMiddleware = base.middleware(
       return next({
         context: {
           privyUser: user,
+          privyIdToken: idToken,
         },
       });
     } catch (error) {
       return await next({
         context: {
           privyUser: undefined,
+          privyIdToken: undefined,
         },
       });
     }

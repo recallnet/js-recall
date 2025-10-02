@@ -1,10 +1,16 @@
-import { BoostService, EmailService, UserService } from "@recallnet/services";
+import {
+  BoostAwardService,
+  BoostService,
+  EmailService,
+  UserService,
+} from "@recallnet/services";
 import { WalletWatchlist } from "@recallnet/services/lib";
 
 import {
   agentRepository,
   boostRepository,
   competitionRepository,
+  stakesRepository,
   userRepository,
   voteRepository,
 } from "@/lib/repositories";
@@ -55,4 +61,12 @@ export const boostService = new BoostService(
   userRepository,
   { boost: { noStakeBoostAmount } },
   createLogger("BoostService"),
+);
+export const boostAwardService = new BoostAwardService(
+  db,
+  competitionRepository,
+  boostRepository,
+  stakesRepository,
+  userService,
+  { boost: { noStakeBoostAmount } },
 );

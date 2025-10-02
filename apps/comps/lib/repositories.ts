@@ -2,6 +2,7 @@ import { AgentRepository } from "@recallnet/db/repositories/agent";
 import { BoostRepository } from "@recallnet/db/repositories/boost";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { CompetitionRewardsRepository } from "@recallnet/db/repositories/competition-rewards";
+import { StakesRepository } from "@recallnet/db/repositories/stakes";
 import { UserRepository } from "@recallnet/db/repositories/user";
 import { VoteRepository } from "@recallnet/db/repositories/vote";
 
@@ -31,3 +32,4 @@ export const voteRepository = new VoteRepository(
   db,
   createLogger("VoteRepository"),
 );
+export const stakesRepository = new StakesRepository(db);
