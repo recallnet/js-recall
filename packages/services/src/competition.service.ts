@@ -26,13 +26,17 @@ import { PortfolioSnapshotterService } from "./portfolio-snapshotter.service.js"
 import { TradeSimulatorService } from "./trade-simulator.service.js";
 import { TradingConstraintsService } from "./trading-constraints.service.js";
 import {
+  BaseEnrichedLeaderboardEntry,
   CompetitionAgentStatus,
   CompetitionStatus,
   CompetitionType,
   CrossChainTradingType,
+  EnrichedLeaderboardEntry,
   PagingParams,
+  PerpsEnrichedLeaderboardEntry,
   SpecificChain,
   SpecificChainBalances,
+  isPerpsEnrichedEntry,
 } from "./types/index.js";
 import { ApiError } from "./types/index.js";
 import {
@@ -883,7 +887,7 @@ export class CompetitionService {
     // Get the leaderboard (calculated from final snapshots)
     const leaderboard = await this.getLeaderboard(competitionId);
 
-    const enrichedEntries = [];
+    const enrichedEntries: EnrichedLeaderboardEntry[] = [];
 
     // Note: the leaderboard array could be quite large, avoiding Promise.all
     // so that these async calls to get pnl happen in series and don't over
@@ -910,29 +914,35 @@ export class CompetitionService {
         score = entry.value; // Portfolio value for spot trading or perps without metrics
       }
 
-      // Build the base entry
-      const baseEntry = {
-        agentId: entry.agentId,
-        competitionId,
-        rank: i + 1, // 1-based ranking
-        pnl,
-        startingValue,
-        totalAgents,
-        score,
-      };
-
       // Add perps-specific fields if this is a perps competition with risk metrics
       if (competition?.type === "perpetual_futures" && entry.hasRiskMetrics) {
-        enrichedEntries.push({
-          ...baseEntry,
-          calmarRatio: entry.calmarRatio,
-          simpleReturn: entry.simpleReturn,
-          maxDrawdown: entry.maxDrawdown,
+        const perpsEntry: PerpsEnrichedLeaderboardEntry = {
+          agentId: entry.agentId,
+          competitionId,
+          rank: i + 1, // 1-based ranking
+          pnl,
+          startingValue,
+          totalAgents,
+          score,
+          calmarRatio: entry.calmarRatio ?? null,
+          simpleReturn: entry.simpleReturn ?? null,
+          maxDrawdown: entry.maxDrawdown ?? null,
           totalEquity: entry.value, // Store portfolio value as totalEquity
-          totalPnl: entry.pnl,
+          totalPnl: entry.pnl ?? null,
           hasRiskMetrics: true,
-        });
+        };
+        enrichedEntries.push(perpsEntry);
       } else {
+        const baseEntry: BaseEnrichedLeaderboardEntry = {
+          agentId: entry.agentId,
+          competitionId,
+          rank: i + 1, // 1-based ranking
+          pnl,
+          startingValue,
+          totalAgents,
+          score,
+          hasRiskMetrics: false,
+        };
         enrichedEntries.push(baseEntry);
       }
     }
@@ -944,10 +954,10 @@ export class CompetitionService {
 
     // Map enriched entries back to LeaderboardEntry format for return
     return enrichedEntries.map((entry) => {
-      const value =
-        "totalEquity" in entry
-          ? (entry as typeof entry & { totalEquity: number }).totalEquity
-          : entry.score;
+      // Use the type guard to check if it's a perps entry with totalEquity
+      const value = isPerpsEnrichedEntry(entry)
+        ? entry.totalEquity
+        : entry.score;
 
       return {
         agentId: entry.agentId,
@@ -1438,7 +1448,7 @@ export class CompetitionService {
 
         case "ended": {
           // Try saved leaderboard first
-          let savedLeaderboard;
+          let savedLeaderboard: LeaderboardEntry[] = [];
 
           // Check competition type to use the appropriate retrieval method
           if (competition.type === "perpetual_futures") {
