@@ -49,7 +49,10 @@ const configSchema = publicConfigSchema
       domain: z.url().default("https://api.competitions.recall.network/"),
     }),
     security: z.object({
-      rootEncryptionKey: z.string().min(1),
+      rootEncryptionKey: z
+        .string()
+        .min(1)
+        .default("default_encryption_key_do_not_use_in_production"),
     }),
     tradingConstraints: z.object({
       defaultMinimum24hVolumeUsd: z.coerce.number().default(100000),
@@ -63,7 +66,7 @@ const configSchema = publicConfigSchema
       windowMs: z.coerce.number().default(60000),
     }),
     tradingApi: z.object({
-      baseUrl: z.url(),
+      baseUrl: z.url().default("https://api.competitions.recall.network/api"),
       sandboxApiUrl: z.url().optional(),
       sandboxAdminApiKey: z.string().optional(),
     }),
