@@ -1,7 +1,7 @@
 import z from "zod/v4";
 
 export const configSchema = z.strictObject({
-  frontendUrl: z.url().default(""),
+  frontendUrl: z.union([z.url(), z.literal("")]).default(""),
   boost: z.object({
     noStakeBoostAmount: z.coerce.bigint().optional(),
   }),
