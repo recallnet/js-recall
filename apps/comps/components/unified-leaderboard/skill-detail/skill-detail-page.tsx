@@ -26,6 +26,7 @@ import { cn } from "@recallnet/ui2/lib/utils";
 import { useUnifiedLeaderboard } from "@/hooks/useUnifiedLeaderboard";
 import { ApiClient } from "@/lib/api-client";
 import { LeaderboardAgent } from "@/types/agent";
+import { checkIsAgentSkill } from "@/utils/competition-utils";
 
 import { SkillDetailLeaderboardTable } from "./skill-detail-leaderboard-table";
 import { SkillDetailLeaderboardTableMobile } from "./skill-detail-leaderboard-table-mobile";
@@ -47,7 +48,7 @@ export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
 
   const { data, isLoading, error } = useUnifiedLeaderboard();
 
-  // Query for loading more agents (only for crypto_trading)
+  // Query for loading more agents (only for agent skills)
   const { refetch: loadMoreAgents, isLoading: isLoadingMore } = useQuery({
     queryKey: ["load-more-agents", currentOffset],
     queryFn: async () => {
@@ -96,12 +97,7 @@ export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
   const skill = data?.skills[skillId];
   let skillData = data?.skillData[skillId];
 
-  // For crypto_trading, merge additional agents
-  if (
-    skillId === "crypto_trading" &&
-    skillData &&
-    additionalAgents.length > 0
-  ) {
+  if (checkIsAgentSkill(skillId) && skillData && additionalAgents.length > 0) {
     skillData = {
       ...skillData,
       participants: {
@@ -344,8 +340,8 @@ export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
             />
           </div>
 
-          {/* Load More Button for crypto_trading */}
-          {skillId === "crypto_trading" &&
+          {/* Load More Button for agent skills */}
+          {checkIsAgentSkill(skillId) &&
             skillData.participants.agents.length <
               skillData.stats.agentCount && (
               <div className="mt-6 text-center">

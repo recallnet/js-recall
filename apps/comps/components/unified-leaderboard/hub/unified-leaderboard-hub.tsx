@@ -5,6 +5,7 @@ import { Loader2 } from "lucide-react";
 import { Card } from "@recallnet/ui2/components/card";
 
 import { useUnifiedLeaderboard } from "@/hooks/useUnifiedLeaderboard";
+import { checkIsAgentSkill } from "@/utils/competition-utils";
 
 import { SkillOverviewCard } from "./skill-overview-card";
 
@@ -107,6 +108,15 @@ export const UnifiedLeaderboardHub: React.FC = () => {
               return (bScore || 0) - (aScore || 0);
             })
             .slice(0, 3);
+
+          // If there are no agents for an agent skill (e.g., a new competition type
+          // was added), don't show the card
+          if (
+            checkIsAgentSkill(skill.id) &&
+            skillData.participants.agents.length === 0
+          ) {
+            return null;
+          }
 
           return (
             <SkillOverviewCard

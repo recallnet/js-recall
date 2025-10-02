@@ -1,6 +1,7 @@
 import { CheckIcon, ClockIcon, Play } from "lucide-react";
 
 import { Competition, CompetitionStatus, UserCompetition } from "@/types";
+import { CompetitionType } from "@/types/competition";
 
 import { formatDate } from "./format";
 
@@ -98,4 +99,13 @@ export function getCompetitionSkills(type: string): string[] {
   }
 
   return baseSkills;
+}
+
+/**
+ * Checks if a skill is an agent skill.
+ * @param skill - The skill to check
+ * @returns True if the skill is an agent skill, false otherwise
+ */
+export function checkIsAgentSkill(skill: string): skill is CompetitionType {
+  return skill === "trading" || skill === "perpetual_futures";
 }
