@@ -7,17 +7,14 @@ import { specificChainTokens } from "../../lib/config-utils.js";
 import { BlockchainType } from "../../types/index.js";
 import { DexScreenerProvider } from "../price/dexscreener.provider.js";
 
-// Load environment variables
 dotenv.config();
 
-// Set timeout for all tests in this file to 30 seconds
 vi.setConfig({ testTimeout: 30_000 });
+
+const mockLogger: MockProxy<Logger> = mock<Logger>();
 
 describe("DexScreenerProvider", () => {
   let provider: DexScreenerProvider;
-
-  // Mock logger for the constructor
-  const mockLogger: MockProxy<Logger> = mock<Logger>();
 
   beforeEach(() => {
     provider = new DexScreenerProvider(specificChainTokens, mockLogger);

@@ -3,53 +3,35 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MockProxy, mock } from "vitest-mock-extended";
 
 import { BlockchainType } from "../../types/index.js";
-import {
-  CoinGeckoProvider,
-  CoinGeckoProviderConfig,
-} from "../coingecko.provider.js";
+import { CoinGeckoProvider } from "../coingecko.provider.js";
 import {
   MockCoinGeckoClient,
+  coingeckoConfig,
   commonMockResponses,
   mockBatchTokenPrices,
   mockTokenPrice,
   mockTokenPriceError,
   setupCoinGeckoMock,
-  specificChainTokens,
-  testTokens,
-} from "./helpers/coingecko.helpers.js";
+} from "./helpers/coingecko.js";
+import { testTokens } from "./helpers/tokens.js";
 
-// Mock the CoinGecko SDK
 vi.mock("@coingecko/coingecko-typescript");
 
-// Extract token references for easier use
 const {
   solana: solanaTokens,
   ethereum: ethereumTokens,
   base: baseTokens,
 } = testTokens;
-
-// Mock logger
 const mockLogger: MockProxy<Logger> = mock<Logger>();
-
-const config: CoinGeckoProviderConfig = {
-  apiKey: "test-api-key",
-  mode: "demo",
-  specificChainTokens,
-};
 
 describe("CoinGeckoProvider", () => {
   let provider: CoinGeckoProvider;
   let mockCoinGeckoInstance: MockCoinGeckoClient;
 
   beforeEach(() => {
-    // Clear all mocks before each test
     vi.clearAllMocks();
-
-    // Set up CoinGecko mock using helper
     mockCoinGeckoInstance = setupCoinGeckoMock();
-
-    // Create provider instance
-    provider = new CoinGeckoProvider(config, mockLogger);
+    provider = new CoinGeckoProvider(coingeckoConfig, mockLogger);
   });
 
   afterEach(() => {
@@ -64,17 +46,16 @@ describe("CoinGeckoProvider", () => {
 
   describe("Solana token price fetching", () => {
     it("should fetch SOL price", async () => {
-      // Mock CoinGecko API response for SOL using helper
-      mockTokenPrice(mockCoinGeckoInstance, commonMockResponses.SOL);
+      mockTokenPrice(mockCoinGeckoInstance, commonMockResponses.sol);
 
       const priceReport = await provider.getPrice(
-        solanaTokens.SOL,
+        solanaTokens.sol,
         BlockchainType.SVM,
         "svm",
       );
 
       expect(mockCoinGeckoInstance.coins.contract.get).toHaveBeenCalledWith(
-        solanaTokens.SOL.toLowerCase(),
+        solanaTokens.sol.toLowerCase(),
         { id: "solana" },
       );
       expect(priceReport).not.toBeNull();
@@ -85,17 +66,16 @@ describe("CoinGeckoProvider", () => {
     });
 
     it("should fetch USDC price", async () => {
-      // Mock CoinGecko API response for USDC using helper
-      mockTokenPrice(mockCoinGeckoInstance, commonMockResponses.USDC);
+      mockTokenPrice(mockCoinGeckoInstance, commonMockResponses.usdc);
 
       const priceReport = await provider.getPrice(
-        solanaTokens.USDC,
+        solanaTokens.usdc,
         BlockchainType.SVM,
         "svm",
       );
 
       expect(mockCoinGeckoInstance.coins.contract.get).toHaveBeenCalledWith(
-        solanaTokens.USDC.toLowerCase(),
+        solanaTokens.usdc.toLowerCase(),
         { id: "solana" },
       );
       expect(priceReport).not.toBeNull();
@@ -107,17 +87,16 @@ describe("CoinGeckoProvider", () => {
 
   describe("Ethereum token price fetching", () => {
     it("should fetch ETH price", async () => {
-      // Mock CoinGecko API response for ETH using helper
-      mockTokenPrice(mockCoinGeckoInstance, commonMockResponses.ETH);
+      mockTokenPrice(mockCoinGeckoInstance, commonMockResponses.eth);
 
       const priceReport = await provider.getPrice(
-        ethereumTokens.ETH,
+        ethereumTokens.eth,
         BlockchainType.EVM,
         "eth",
       );
 
       expect(mockCoinGeckoInstance.coins.contract.get).toHaveBeenCalledWith(
-        ethereumTokens.ETH.toLowerCase(),
+        ethereumTokens.eth.toLowerCase(),
         { id: "ethereum" },
       );
       expect(priceReport).not.toBeNull();
@@ -126,17 +105,16 @@ describe("CoinGeckoProvider", () => {
     });
 
     it("should fetch USDC price", async () => {
-      // Mock CoinGecko API response for USDC on Ethereum using helper
-      mockTokenPrice(mockCoinGeckoInstance, commonMockResponses.USDC);
+      mockTokenPrice(mockCoinGeckoInstance, commonMockResponses.usdc);
 
       const priceReport = await provider.getPrice(
-        ethereumTokens.USDC,
+        ethereumTokens.usdc,
         BlockchainType.EVM,
         "eth",
       );
 
       expect(mockCoinGeckoInstance.coins.contract.get).toHaveBeenCalledWith(
-        ethereumTokens.USDC.toLowerCase(),
+        ethereumTokens.usdc.toLowerCase(),
         { id: "ethereum" },
       );
       expect(priceReport).not.toBeNull();
@@ -146,11 +124,10 @@ describe("CoinGeckoProvider", () => {
     });
 
     it("should fetch ETH price above $1000 on Ethereum mainnet", async () => {
-      // Mock CoinGecko API response for ETH with high price using helper
-      mockTokenPrice(mockCoinGeckoInstance, commonMockResponses.ETH);
+      mockTokenPrice(mockCoinGeckoInstance, commonMockResponses.eth);
 
       const priceReport = await provider.getPrice(
-        ethereumTokens.ETH,
+        ethereumTokens.eth,
         BlockchainType.EVM,
         "eth",
       );
@@ -161,17 +138,16 @@ describe("CoinGeckoProvider", () => {
     });
 
     it("should fetch USDT price close to $1 on Ethereum mainnet", async () => {
-      // Mock CoinGecko API response for USDT using helper
-      mockTokenPrice(mockCoinGeckoInstance, commonMockResponses.USDT);
+      mockTokenPrice(mockCoinGeckoInstance, commonMockResponses.usdt);
 
       const priceReport = await provider.getPrice(
-        ethereumTokens.USDT,
+        ethereumTokens.usdt,
         BlockchainType.EVM,
         "eth",
       );
 
       expect(mockCoinGeckoInstance.coins.contract.get).toHaveBeenCalledWith(
-        ethereumTokens.USDT.toLowerCase(),
+        ethereumTokens.usdt.toLowerCase(),
         { id: "ethereum" },
       );
       expect(priceReport).not.toBeNull();
@@ -183,17 +159,16 @@ describe("CoinGeckoProvider", () => {
 
   describe("Base token price fetching", () => {
     it("should fetch ETH on Base", async () => {
-      // Mock CoinGecko API response for ETH on Base using helper
-      mockTokenPrice(mockCoinGeckoInstance, commonMockResponses.ETH);
+      mockTokenPrice(mockCoinGeckoInstance, commonMockResponses.eth);
 
       const priceReport = await provider.getPrice(
-        baseTokens.ETH,
+        baseTokens.eth,
         BlockchainType.EVM,
         "base",
       );
 
       expect(mockCoinGeckoInstance.coins.contract.get).toHaveBeenCalledWith(
-        baseTokens.ETH.toLowerCase(),
+        baseTokens.eth.toLowerCase(),
         { id: "base" },
       );
       expect(priceReport).not.toBeNull();
@@ -202,17 +177,16 @@ describe("CoinGeckoProvider", () => {
     });
 
     it("should fetch USDC on Base", async () => {
-      // Mock CoinGecko API response for USDC on Base using helper
-      mockTokenPrice(mockCoinGeckoInstance, commonMockResponses.USDC);
+      mockTokenPrice(mockCoinGeckoInstance, commonMockResponses.usdc);
 
       const priceReport = await provider.getPrice(
-        baseTokens.USDC,
+        baseTokens.usdc,
         BlockchainType.EVM,
         "base",
       );
 
       expect(mockCoinGeckoInstance.coins.contract.get).toHaveBeenCalledWith(
-        baseTokens.USDC.toLowerCase(),
+        baseTokens.usdc.toLowerCase(),
         { id: "base" },
       );
       expect(priceReport).not.toBeNull();
@@ -224,12 +198,12 @@ describe("CoinGeckoProvider", () => {
 
   describe("Chain detection", () => {
     it("should detect Solana addresses correctly", () => {
-      const chain = provider.determineChain(solanaTokens.SOL);
+      const chain = provider.determineChain(solanaTokens.sol);
       expect(chain).toBe(BlockchainType.SVM);
     });
 
     it("should detect Ethereum addresses correctly", () => {
-      const chain = provider.determineChain(ethereumTokens.ETH);
+      const chain = provider.determineChain(ethereumTokens.eth);
       expect(chain).toBe(BlockchainType.EVM);
     });
   });
@@ -237,16 +211,15 @@ describe("CoinGeckoProvider", () => {
   describe("Batch price fetching", () => {
     it("should fetch batch prices for Ethereum tokens", async () => {
       const tokens = [
-        ethereumTokens.ETH,
-        ethereumTokens.USDC,
-        ethereumTokens.USDT,
+        ethereumTokens.eth,
+        ethereumTokens.usdc,
+        ethereumTokens.usdt,
       ];
 
-      // Mock individual API responses for each token using batch helper
       mockBatchTokenPrices(mockCoinGeckoInstance, [
-        commonMockResponses.ETH,
-        commonMockResponses.USDC,
-        commonMockResponses.USDT,
+        commonMockResponses.eth,
+        commonMockResponses.usdc,
+        commonMockResponses.usdt,
       ]);
 
       const results = await provider.getBatchPrices(
@@ -258,46 +231,45 @@ describe("CoinGeckoProvider", () => {
       // Should call the individual API for each token
       expect(mockCoinGeckoInstance.coins.contract.get).toHaveBeenCalledTimes(3);
       expect(mockCoinGeckoInstance.coins.contract.get).toHaveBeenCalledWith(
-        ethereumTokens.ETH.toLowerCase(),
+        ethereumTokens.eth.toLowerCase(),
         { id: "ethereum" },
       );
       expect(mockCoinGeckoInstance.coins.contract.get).toHaveBeenCalledWith(
-        ethereumTokens.USDC.toLowerCase(),
+        ethereumTokens.usdc.toLowerCase(),
         { id: "ethereum" },
       );
       expect(mockCoinGeckoInstance.coins.contract.get).toHaveBeenCalledWith(
-        ethereumTokens.USDT.toLowerCase(),
+        ethereumTokens.usdt.toLowerCase(),
         { id: "ethereum" },
       );
 
       expect(results.size).toBe(tokens.length);
 
       // Check ETH
-      const ethInfo = results.get(ethereumTokens.ETH);
+      const ethInfo = results.get(ethereumTokens.eth);
       expect(ethInfo).not.toBeNull();
       expect(ethInfo?.price).toBe(2850.45);
       expect(ethInfo?.volume?.h24).toBe(12000000000);
 
       // Check USDC
-      const usdcInfo = results.get(ethereumTokens.USDC);
+      const usdcInfo = results.get(ethereumTokens.usdc);
       expect(usdcInfo).not.toBeNull();
       expect(usdcInfo?.price).toBe(0.9998);
       expect(usdcInfo?.volume?.h24).toBe(8000000000);
 
       // Check USDT
-      const usdtInfo = results.get(ethereumTokens.USDT);
+      const usdtInfo = results.get(ethereumTokens.usdt);
       expect(usdtInfo).not.toBeNull();
       expect(usdtInfo?.price).toBe(1.0002);
       expect(usdtInfo?.volume?.h24).toBe(65000000000);
     });
 
     it("should fetch batch prices for Base tokens", async () => {
-      const tokens = [baseTokens.ETH, baseTokens.USDC];
+      const tokens = [baseTokens.eth, baseTokens.usdc];
 
-      // Mock individual API responses for each token using batch helper
       mockBatchTokenPrices(mockCoinGeckoInstance, [
-        commonMockResponses.ETH,
-        commonMockResponses.USDC,
+        commonMockResponses.eth,
+        commonMockResponses.usdc,
       ]);
 
       const results = await provider.getBatchPrices(
@@ -306,14 +278,13 @@ describe("CoinGeckoProvider", () => {
         "base",
       );
 
-      // Should call the individual API for each token
       expect(mockCoinGeckoInstance.coins.contract.get).toHaveBeenCalledTimes(2);
       expect(mockCoinGeckoInstance.coins.contract.get).toHaveBeenCalledWith(
-        baseTokens.ETH.toLowerCase(),
+        baseTokens.eth.toLowerCase(),
         { id: "base" },
       );
       expect(mockCoinGeckoInstance.coins.contract.get).toHaveBeenCalledWith(
-        baseTokens.USDC.toLowerCase(),
+        baseTokens.usdc.toLowerCase(),
         { id: "base" },
       );
 
@@ -340,8 +311,6 @@ describe("CoinGeckoProvider", () => {
         BlockchainType.EVM,
         "eth",
       );
-
-      // Should not call the API for burn addresses
       expect(mockCoinGeckoInstance.coins.contract.get).not.toHaveBeenCalled();
       expect(priceReport).not.toBeNull();
       expect(priceReport?.price).toBe(0);
@@ -353,7 +322,6 @@ describe("CoinGeckoProvider", () => {
     it("should return null for invalid token addresses", async () => {
       const invalidToken = "0xinvalid";
 
-      // Mock API error response using helper
       mockTokenPriceError(mockCoinGeckoInstance, "Invalid contract address");
 
       const priceReport = await provider.getPrice(
@@ -366,7 +334,7 @@ describe("CoinGeckoProvider", () => {
     });
 
     it("should handle unsupported chains gracefully", async () => {
-      const tokens = [ethereumTokens.ETH];
+      const tokens = [ethereumTokens.eth];
       const results = await provider.getBatchPrices(
         tokens,
         BlockchainType.EVM,
@@ -374,36 +342,32 @@ describe("CoinGeckoProvider", () => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         "unsupported" as any,
       );
-
-      // Should not call the API for unsupported chains
       expect(
         mockCoinGeckoInstance.simple.tokenPrice.getID,
       ).not.toHaveBeenCalled();
       expect(results.size).toBe(1);
-      expect(results.get(ethereumTokens.ETH)).toBeNull();
+      expect(results.get(ethereumTokens.eth)).toBeNull();
     });
 
     it("should handle API errors gracefully", async () => {
-      // Mock API error (retries are handled by the SDK internally) using helper
       mockTokenPriceError(mockCoinGeckoInstance, "API error after retries");
 
       const priceReport = await provider.getPrice(
-        ethereumTokens.ETH,
+        ethereumTokens.eth,
         BlockchainType.EVM,
         "eth",
       );
 
-      // The provider should catch the error and return null
       expect(mockCoinGeckoInstance.coins.contract.get).toHaveBeenCalledTimes(1);
       expect(priceReport).toBeNull();
     });
 
     it("should handle successful response after SDK retries", async () => {
       // Since the SDK handles retries internally, we just mock a successful response using helper
-      mockTokenPrice(mockCoinGeckoInstance, commonMockResponses.ETH);
+      mockTokenPrice(mockCoinGeckoInstance, commonMockResponses.eth);
 
       const priceReport = await provider.getPrice(
-        ethereumTokens.ETH,
+        ethereumTokens.eth,
         BlockchainType.EVM,
         "eth",
       );

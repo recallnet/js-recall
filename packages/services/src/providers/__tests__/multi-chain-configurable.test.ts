@@ -12,43 +12,25 @@ import {
   commonMockResponses,
   mockBatchTokenPrices,
   mockTokenPrice,
+  multichainCoinGeckoConfig,
   setupCoinGeckoMock,
-  testTokens,
-} from "./helpers/coingecko.helpers.js";
+} from "./helpers/coingecko.js";
+import { specificChainTokens, testTokens } from "./helpers/tokens.js";
 
-// Mock the CoinGecko SDK
 vi.mock("@coingecko/coingecko-typescript");
 
-// Extract token references
 const ethereumTokens = testTokens.ethereum;
-
-// Mock logger for the constructor
 const mockLogger: MockProxy<Logger> = mock<Logger>();
 
 describe("MultiChainProvider Configurable", () => {
   describe("With CoinGecko Provider", () => {
     let provider: MultiChainProvider;
     let mockCoinGeckoInstance: MockCoinGeckoClient;
-    const coingeckoConfig: MultiChainProviderConfig = {
-      priceProvider: {
-        type: "coingecko",
-        coingecko: { apiKey: "test-api-key", mode: "demo" },
-      },
-      evmChains: ["eth"],
-      specificChainTokens: {
-        eth: { ETH: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2" },
-      },
-    };
 
     beforeEach(() => {
-      // Clear all mocks before each test
       vi.clearAllMocks();
-
-      // Set up CoinGecko mock using helper
       mockCoinGeckoInstance = setupCoinGeckoMock();
-
-      // Create provider instance
-      provider = new MultiChainProvider(coingeckoConfig, mockLogger);
+      provider = new MultiChainProvider(multichainCoinGeckoConfig, mockLogger);
     });
 
     it("should have CoinGecko in the name", () => {
@@ -56,10 +38,9 @@ describe("MultiChainProvider Configurable", () => {
     });
 
     it("should fetch ETH price using CoinGecko", async () => {
-      // Mock CoinGecko API response using helper
-      mockTokenPrice(mockCoinGeckoInstance, commonMockResponses.ETH);
+      mockTokenPrice(mockCoinGeckoInstance, commonMockResponses.eth);
 
-      const priceReport = await provider.getPrice(ethereumTokens.ETH);
+      const priceReport = await provider.getPrice(ethereumTokens.eth);
 
       expect(priceReport).not.toBeNull();
       expect(typeof priceReport?.price).toBe("number");
@@ -67,12 +48,11 @@ describe("MultiChainProvider Configurable", () => {
     });
 
     it("should fetch batch prices using CoinGecko", async () => {
-      const tokens = [ethereumTokens.ETH, ethereumTokens.USDC];
+      const tokens = [ethereumTokens.eth, ethereumTokens.usdc];
 
-      // Mock batch responses using helper
       mockBatchTokenPrices(mockCoinGeckoInstance, [
-        commonMockResponses.ETH,
-        commonMockResponses.USDC,
+        commonMockResponses.eth,
+        commonMockResponses.usdc,
       ]);
 
       const results = await provider.getBatchPrices(
@@ -94,9 +74,7 @@ describe("MultiChainProvider Configurable", () => {
     const dexScreenerConfig: MultiChainProviderConfig = {
       priceProvider: { type: "dexscreener" },
       evmChains: ["eth"],
-      specificChainTokens: {
-        eth: { ETH: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2" },
-      },
+      specificChainTokens,
     };
 
     beforeEach(() => {
@@ -108,7 +86,7 @@ describe("MultiChainProvider Configurable", () => {
     });
 
     it("should fetch ETH price using DexScreener", async () => {
-      const priceReport = await provider.getPrice(ethereumTokens.ETH);
+      const priceReport = await provider.getPrice(ethereumTokens.eth);
 
       expect(priceReport).not.toBeNull();
       expect(typeof priceReport?.price).toBe("number");
@@ -116,7 +94,7 @@ describe("MultiChainProvider Configurable", () => {
     });
 
     it("should fetch batch prices using DexScreener", async () => {
-      const tokens = [ethereumTokens.ETH, ethereumTokens.USDC];
+      const tokens = [ethereumTokens.eth, ethereumTokens.usdc];
       const results = await provider.getBatchPrices(
         tokens,
         BlockchainType.EVM,
@@ -138,20 +116,15 @@ describe("MultiChainProvider Configurable", () => {
         coingecko: { apiKey: "test-api-key", mode: "demo" },
       },
       evmChains: ["eth"],
-      specificChainTokens: {
-        eth: { ETH: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2" },
-      },
+      specificChainTokens,
     };
     const dexScreenerConfig: MultiChainProviderConfig = {
       priceProvider: { type: "dexscreener" },
       evmChains: ["eth"],
-      specificChainTokens: {
-        eth: { ETH: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2" },
-      },
+      specificChainTokens,
     };
 
     it("should detect chains correctly with both providers", () => {
-      // Set up CoinGecko mock for this test
       setupCoinGeckoMock();
 
       const coinGeckoProvider = new MultiChainProvider(
@@ -163,11 +136,10 @@ describe("MultiChainProvider Configurable", () => {
         mockLogger,
       );
 
-      // Both providers should detect chains the same way
-      expect(coinGeckoProvider.determineChain(ethereumTokens.ETH)).toBe(
+      expect(coinGeckoProvider.determineChain(ethereumTokens.eth)).toBe(
         BlockchainType.EVM,
       );
-      expect(dexScreenerProvider.determineChain(ethereumTokens.ETH)).toBe(
+      expect(dexScreenerProvider.determineChain(ethereumTokens.eth)).toBe(
         BlockchainType.EVM,
       );
     });
