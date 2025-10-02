@@ -2,6 +2,7 @@
 
 import { PrivyClientConfig, PrivyProvider } from "@privy-io/react-auth";
 import { ReactNode, useEffect } from "react";
+import { baseSepolia } from "viem/chains";
 
 const themeBackground = "#15191f";
 const themeForeground = "#ffffff";
@@ -16,6 +17,10 @@ function setCSSVariable(variable: string, value: string) {
  * Configuration for the Privy provider.
  */
 const privyConfig: PrivyClientConfig = {
+  // Chain configuration
+  defaultChain: baseSepolia,
+  supportedChains: [baseSepolia],
+
   // Login methods configuration
   loginMethods: ["email", "google"],
 

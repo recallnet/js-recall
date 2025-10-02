@@ -1,12 +1,13 @@
-import Image from "next/image";
+import { format } from "dnum";
+import Link from "next/link";
 
 import { Skeleton } from "@recallnet/ui2/components/skeleton";
 
+import { Recall } from "@/components/Recall";
 import { useRecall } from "@/hooks/useRecall";
-import { formatCompactNumber } from "@/utils/format";
 
 export const RecallToken = () => {
-  const { value, loading } = useRecall();
+  const { value, decimals, isLoading } = useRecall();
 
   return (
     <div
@@ -18,20 +19,15 @@ export const RecallToken = () => {
         } as React.CSSProperties
       }
     >
-      <div className="radial-hover-text flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full bg-gray-300 p-1">
-        <Image
-          src="/recall-token.svg"
-          alt="Recall Token"
-          width={16}
-          height={16}
-        />
-      </div>
-      {loading ? (
+      <Recall size="sm" className="radial-hover-text" />
+      {isLoading ? (
         <Skeleton className="radial-hover-text h-3 w-20 rounded-xl bg-[#1D1F2B]" />
       ) : (
-        <span className="radial-hover-text text-right font-mono text-base font-semibold not-italic leading-6 tracking-[0.96px] text-gray-100">
-          {formatCompactNumber(value ?? 0)}
-        </span>
+        <Link href="/stake" className="radial-hover-text">
+          <span className="text-right font-mono text-base font-semibold not-italic leading-6 tracking-[0.96px] text-gray-100">
+            {format([value, decimals])}
+          </span>
+        </Link>
       )}
     </div>
   );

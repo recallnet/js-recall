@@ -1,5 +1,6 @@
 "use client";
 
+import { WagmiProvider } from "@privy-io/wagmi";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { NavigationGuardProvider } from "next-navigation-guard";
 import React from "react";
@@ -10,6 +11,7 @@ import { ThemeProvider } from "@recallnet/ui2/components/theme-provider";
 import { PostHogProviderWrapper } from "@/providers/posthog-provider";
 import { PrivyProviderWrapper } from "@/providers/privy-provider";
 import { SessionProvider } from "@/providers/session-provider";
+import { wagmiConfig } from "@/wagmi-config";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -33,15 +35,17 @@ export function Providers({ children }: { children: React.ReactNode }) {
       disableTransitionOnChange
       enableColorScheme
     >
-      <QueryClientProvider client={queryClient}>
-        <PostHogProviderWrapper>
-          <PrivyProviderWrapper>
-            <SessionProvider>
-              <NavigationGuardProvider>{children}</NavigationGuardProvider>
-            </SessionProvider>
-          </PrivyProviderWrapper>
-        </PostHogProviderWrapper>
-      </QueryClientProvider>
+      <PostHogProviderWrapper>
+        <PrivyProviderWrapper>
+          <QueryClientProvider client={queryClient}>
+            <WagmiProvider config={wagmiConfig}>
+              <SessionProvider>
+                <NavigationGuardProvider>{children}</NavigationGuardProvider>
+              </SessionProvider>
+            </WagmiProvider>
+          </QueryClientProvider>
+        </PrivyProviderWrapper>
+      </PostHogProviderWrapper>
     </ThemeProvider>
   );
 }

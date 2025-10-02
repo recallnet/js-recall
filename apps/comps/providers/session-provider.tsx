@@ -6,7 +6,9 @@ import {
   useLinkAccount,
   useLogin,
   usePrivy,
+  useWallets,
 } from "@privy-io/react-auth";
+import { useSetActiveWallet } from "@privy-io/wagmi";
 import * as Sentry from "@sentry/nextjs";
 import {
   QueryObserverResult,
@@ -23,6 +25,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { useAccount, useDisconnect } from "wagmi";
 
 import { ApiClient } from "@/lib/api-client";
 import { mergeWithoutUndefined } from "@/lib/merge-without-undefined";
@@ -84,6 +87,11 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const { user, ready, authenticated, logout, isModalOpen, createWallet } =
     usePrivy();
 
+  const { disconnect } = useDisconnect();
+  const { isConnected } = useAccount();
+  const { wallets } = useWallets();
+  const { setActiveWallet } = useSetActiveWallet();
+
   const [loginError, setLoginError] = useState<Error | null>(null);
   const [shouldLinkWallet, setShouldLinkWallet] = useState(false);
   const [linkWalletError, setLinkWalletError] = useState<Error | null>(null);
@@ -97,8 +105,11 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         const message = `Privy failed to create embedded wallet. Creating wallet for user DID: ${user.id}`;
         console.warn(message);
         Sentry.captureMessage(message, "warning");
-        await createWallet();
+        const wallet = await createWallet();
+
+        console.log("Created wallet:", wallet);
       }
+
       setShouldLinkWallet(isNewUser);
       loginToBackend();
     },
@@ -162,6 +173,33 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     // },
   });
 
+  /**
+   * Synchronize wagmi's active wallet with the backend user's wallet address
+   */
+  const syncActiveWallet = useCallback(async () => {
+    try {
+      if (!backendUser?.walletAddress || !wallets || !setActiveWallet) {
+        return;
+      }
+      const targetWallet = wallets.find(
+        (wallet) =>
+          wallet.address.toLowerCase() ===
+          backendUser.walletAddress.toLowerCase(),
+      );
+
+      if (targetWallet) {
+        await setActiveWallet(targetWallet);
+      } else {
+        console.warn(
+          "Backend user wallet not found in connected wallets:",
+          backendUser.walletAddress,
+        );
+      }
+    } catch (error) {
+      console.error("Failed to sync active wallet:", error);
+    }
+  }, [backendUser?.walletAddress, wallets, setActiveWallet]);
+
   const {
     mutate: linkWalletToBackend,
     isPending: isLinkWalletToBackendPending,
@@ -206,6 +244,18 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       setShouldLinkWallet(false);
     }
   }, [backendUser, shouldLinkWallet, linkWallet]);
+
+  // Sync active wallet when backend user data is available
+  useEffect(() => {
+    if (backendUser?.walletAddress && wallets && wallets.length > 0) {
+      // Small delay to ensure the wallet state is stable
+      const timeoutId = setTimeout(() => {
+        syncActiveWallet();
+      }, 200);
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [backendUser?.walletAddress, wallets, syncActiveWallet]);
 
   // Mutation for updating user data
   const {
@@ -255,6 +305,24 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     },
   });
 
+  const handleLogout = useCallback(async () => {
+    try {
+      // Clear all cached queries first
+      queryClient.clear();
+
+      // Disconnect from wagmi first to clear connection state
+      if (isConnected) {
+        await disconnect();
+      }
+      // Then logout from Privy
+      await logout();
+    } catch (error) {
+      console.error("Logout failed:", error);
+      // Still try to logout from Privy even if wagmi disconnect fails
+      await logout();
+    }
+  }, [disconnect, logout, queryClient, isConnected]);
+
   const session: Session = {
     // Login to Privy state
     ready,
@@ -262,7 +330,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     user,
     isLoginPending: isModalOpen,
     loginError,
-    logout,
+    logout: handleLogout,
     // Allow caller to manually prompt to link wallet
     linkWallet,
     linkWalletError,

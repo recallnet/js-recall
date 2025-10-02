@@ -14,10 +14,11 @@ import { PrivyAuthButton } from "@/components/privy-auth-button";
 import { useSession } from "@/hooks";
 
 import { Boost } from "./Boost";
-import { Claim } from "./Claim";
-import { GetRecall } from "./GetRecall";
+//import { Claim } from "./Claim";
+//import { GetRecall } from "./GetRecall";
 import { RecallToken } from "./RecallToken";
-import { StakeRecall } from "./StakeRecall";
+
+//import { StakeRecall } from "./StakeRecall";
 
 export const Navbar: React.FunctionComponent = () => {
   const pathname = usePathname();
@@ -102,13 +103,23 @@ export const Navbar: React.FunctionComponent = () => {
         </div>
 
         <div className="flex h-full items-center gap-4">
-          <div className="xs:flex hidden h-full items-center gap-4">
-            <RecallToken />
-            <Boost />
-            {/* <GetRecall /> */}
-            {/* <StakeRecall /> */}
-            <Claim />
-          </div>
+          {isAuthenticated && (
+            <div className="xs:flex hidden h-full items-center gap-4">
+              <div
+                className={cn(
+                  "flex h-full items-center",
+                  pathname === "/stake" ? "shadow-[0_2px_0_0_#eab308]" : "",
+                )}
+              >
+                <RecallToken />
+              </div>
+
+              <Boost />
+              {/* <GetRecall /> */}
+              {/* <StakeRecall /> */}
+              {/* <Claim /> */}
+            </div>
+          )}
           <div
             className={cn(
               "flex h-full items-center",
