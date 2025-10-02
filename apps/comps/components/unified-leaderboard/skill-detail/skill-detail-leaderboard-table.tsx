@@ -377,7 +377,7 @@ export const SkillDetailLeaderboardTable: React.FC<
                     {/* Score Display */}
                     <div className="flex-shrink-0 text-right">
                       <div className="font-mono text-sm font-semibold text-white">
-                        {participant.score.toFixed(1)}
+                        {participant.score.toFixed(0)}
                         {confidenceInterval && (
                           <span className="ml-1 text-xs text-gray-400">
                             ±

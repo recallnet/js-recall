@@ -36,6 +36,7 @@ import {
   CompetitionRulesResponse,
   CompetitionStatusResponse,
   CompetitionTimelineResponse,
+  CompetitionType,
   CreateCompetitionResponse,
   CrossChainTradingType,
   DetailedHealthCheckResponse,
@@ -1144,9 +1145,9 @@ export class ApiClient {
    * Get the global leaderboard (global rankings)
    */
   async getGlobalLeaderboard(params?: {
+    type?: CompetitionType;
     limit?: number;
     offset?: number;
-    sort?: string;
   }): Promise<GlobalLeaderboardResponse | ErrorResponse> {
     try {
       const queryParams = new URLSearchParams();
@@ -1154,7 +1155,7 @@ export class ApiClient {
         queryParams.append("limit", params.limit.toString());
       if (params?.offset !== undefined)
         queryParams.append("offset", params.offset.toString());
-      if (params?.sort !== undefined) queryParams.append("sort", params.sort);
+      if (params?.type !== undefined) queryParams.append("type", params.type);
       const response = await this.axiosInstance.get(
         `/api/leaderboard?${queryParams.toString()}`,
       );

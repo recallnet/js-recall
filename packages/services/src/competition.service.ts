@@ -1370,18 +1370,21 @@ export class CompetitionService {
    */
   private async calculatePendingCompetitionLeaderboard(
     competitionId: string,
+    type: CompetitionType,
   ): Promise<LeaderboardEntry[]> {
-    const agents =
+    const agentIds =
       await this.competitionRepo.getCompetitionAgents(competitionId);
-    const globalLeaderboard =
-      await this.agentScoreRepo.getAllAgentRanks(agents);
+    const globalLeaderboard = await this.agentScoreRepo.getAllAgentRanks({
+      agentIds,
+      type,
+    });
 
     // Create map of agent IDs to their global rank scores
     const globalLeaderboardMap = new Map(
       globalLeaderboard.map((agent) => [agent.id, agent.score]),
     );
 
-    return agents
+    return agentIds
       .map((agentId: string) => ({
         agentId,
         value: 0, // No portfolio value for pending competitions
@@ -1427,6 +1430,7 @@ export class CompetitionService {
         case "pending":
           return await this.calculatePendingCompetitionLeaderboard(
             competitionId,
+            competition.type,
           );
 
         case "ended": {

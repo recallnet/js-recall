@@ -71,14 +71,12 @@ export class LeaderboardService {
    * @param params Pagination parameters
    * @returns Object with paginated agent metrics and total count
    */
-  private async getGlobalAgentMetrics(params: {
-    limit: number;
-    offset: number;
-  }): Promise<{
+  private async getGlobalAgentMetrics(params: LeaderboardParams): Promise<{
     agents: LeaderboardAgent[];
     totalCount: number;
   }> {
-    const { agents, totalCount } = await this.leaderboardRepo.getGlobalAgentMetrics(params);
+    const { agents, totalCount } =
+      await this.leaderboardRepo.getGlobalAgentMetrics(params);
 
     // Calculate ranks using arithmetic (offset + index + 1)
     // Database already sorted by score descending, so ranks are sequential

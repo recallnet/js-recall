@@ -54,6 +54,7 @@ import {
   BestPlacementDbSchema,
   CompetitionAgentStatus,
   CompetitionStatus,
+  CompetitionType,
   PagingParams,
   SnapshotDbSchema,
   SnapshotSchema,
@@ -177,6 +178,35 @@ export class CompetitionRepository {
         competitions,
         eq(tradingCompetitions.competitionId, competitions.id),
       );
+  }
+
+  /**
+   * Get competition type by ID
+   * @param id The competition ID
+   * @param tx Optional database transaction
+   * @returns The competition type or null if not found
+   */
+  async getCompetitionType(
+    competitionId: string,
+    tx?: Transaction,
+  ): Promise<CompetitionType | null> {
+    const executor = tx || this.#dbRead;
+
+    try {
+      const [result] = await executor
+        .select({ type: competitions.type })
+        .from(competitions)
+        .where(eq(competitions.id, competitionId))
+        .limit(1);
+
+      return result?.type || null;
+    } catch (error) {
+      this.#logger.error(
+        { competitionId, error },
+        `[CompetitionRepository] Error getting competition type`,
+      );
+      throw error;
+    }
   }
 
   /**

@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { ApiClient } from "@/lib/api-client";
+import { LeaderboardAgent } from "@/types/agent";
 import {
   UnifiedLeaderboardData,
   UnifiedRankingEntry,
@@ -10,6 +11,30 @@ import {
 import { useBenchmarkLeaderboard } from "./useBenchmarkLeaderboard";
 
 const apiClient = new ApiClient();
+
+/**
+ * Calculate summary scores for a list of agents.Note: this only considers the agents within the
+ * results, and not a "global" calculation
+ * @param agents - List of agents
+ * @returns Object containing average and top score
+ *
+ */
+function calculateSummaryScores(agents: LeaderboardAgent[]): {
+  avgScore: number;
+  topScore: number;
+} {
+  if (agents.length === 0) {
+    return {
+      avgScore: 0,
+      topScore: 0,
+    };
+  }
+  return {
+    avgScore:
+      agents.reduce((acc, agent) => acc + agent.score, 0) / agents.length,
+    topScore: Math.max(...agents.map((agent) => agent.score)),
+  };
+}
 
 /**
  * Hook to get unified leaderboard data combining benchmark models + trading agents
@@ -33,12 +58,19 @@ export const useUnifiedLeaderboard = () => {
       // Process each skill
       for (const [skillId, skill] of Object.entries(allSkills)) {
         if (skillId === "crypto_trading") {
-          // Trading skill - fetch initial agents from API
+          // TODO: the `calculateSummaryScores` takes only the paginated results into account.
+          // If we ever paginate these results, we'll need the API itself to return the avg &
+          // max score. These are probably useful, too.
+          // See: https://linear.app/recall-labs/issue/APP-553/add-new-stats-to-global-leaderboard-endpoint-average-and-max-score
           const agentsResponse = await apiClient.getGlobalLeaderboard({
             type: "trading",
             limit: 100,
             offset: 0,
           });
+
+          const { avgScore, topScore } = calculateSummaryScores(
+            agentsResponse.agents,
+          );
 
           skillDataMap[skillId] = {
             skill,
@@ -50,10 +82,39 @@ export const useUnifiedLeaderboard = () => {
               totalParticipants: agentsResponse.pagination?.total || 0, // Use total from API
               modelCount: 0,
               agentCount: agentsResponse.pagination?.total || 0, // Use total from API
-              avgScore:
-                benchmarkQuery.data?.skillStats.crypto_trading?.avgScore || 0,
-              topScore:
-                benchmarkQuery.data?.skillStats.crypto_trading?.topScore || 0,
+              avgScore,
+              topScore,
+            },
+            // Store pagination info for potential use
+            pagination: agentsResponse.pagination,
+          };
+        } else if (skillId === "perpetual_futures") {
+          // TODO: the `calculateSummaryScores` takes only the paginated results into account.
+          // If we ever paginate these results, we'll need the API itself to return the avg &
+          // max score. These are probably useful, too.
+          // See: https://linear.app/recall-labs/issue/APP-553/add-new-stats-to-global-leaderboard-endpoint-average-and-max-score
+          const agentsResponse = await apiClient.getGlobalLeaderboard({
+            type: "perpetual_futures",
+            limit: 100,
+            offset: 0,
+          });
+
+          const { avgScore, topScore } = calculateSummaryScores(
+            agentsResponse.agents,
+          );
+
+          skillDataMap[skillId] = {
+            skill,
+            participants: {
+              models: [], // No models in trading
+              agents: agentsResponse.agents || [],
+            },
+            stats: {
+              totalParticipants: agentsResponse.pagination?.total || 0, // Use total from API
+              modelCount: 0,
+              agentCount: agentsResponse.pagination?.total || 0, // Use total from API
+              avgScore,
+              topScore,
             },
             // Store pagination info for potential use
             pagination: agentsResponse.pagination,
