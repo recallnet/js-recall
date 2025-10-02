@@ -214,48 +214,49 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     isPending: isUpdateBackendUserPending,
     isError: isUpdateBackendUserError,
     error: updateBackendUserError,
-  } = useMutation({
-    mutationFn: async (updates: UpdateProfileRequest): Promise<BackendUser> => {
-      if (!ready) throw new Error("Auth not ready");
-      if (!authenticated) throw new Error("Not authenticated");
-      const response = await apiClient.current.updateProfile(updates);
-      if (!response.success) {
-        throw new Error("Failed to update user");
-      }
+  } = useMutation(
+    tanstackClient.user.updateProfile.mutationOptions({
+      onMutate: async (updates) => {
+        // Cancel outgoing refetches so they don't overwrite our optimistic update
+        const queryKey = tanstackClient.user.getProfile.key();
+        await queryClient.cancelQueries({ queryKey: queryKey });
 
-      return response.user;
-    },
-    onMutate: async (updates) => {
-      // Cancel outgoing refetches so they don't overwrite our optimistic update
-      await queryClient.cancelQueries({ queryKey: ["user"] });
+        // Snapshot the previous value
+        const previousUser = queryClient.getQueryData<BackendUser>(queryKey);
 
-      // Snapshot the previous value
-      const previousUser = queryClient.getQueryData<BackendUser>(["user"]);
+        // Optimistically update the cache
+        queryClient.setQueryData<BackendUser>(queryKey, (old) => {
+          if (!old) return undefined;
+          return mergeWithoutUndefined(old, updates);
+        });
 
-      // Optimistically update the cache
-      queryClient.setQueryData<BackendUser>(["user"], (old) => {
-        if (!old) return undefined;
-        return mergeWithoutUndefined(old, updates);
-      });
-
-      // Return a context object with the snapshotted value
-      return { previousUser: previousUser };
-    },
-    onError: (_, __, context) => {
-      // Rollback to the previous value on error
-      if (context?.previousUser) {
-        queryClient.setQueryData(["user"], context.previousUser);
-      }
-    },
-    onSuccess: (updatedUser) => {
-      // Update cache with the actual server response
-      queryClient.setQueryData<BackendUser>(["user"], updatedUser);
-    },
-    onSettled: () => {
-      // Always refetch after error or success to ensure consistency
-      queryClient.invalidateQueries({ queryKey: ["user"] });
-    },
-  });
+        // Return a context object with the snapshotted value
+        return { previousUser: previousUser };
+      },
+      onError: (_, __, context) => {
+        // Rollback to the previous value on error
+        if (context?.previousUser) {
+          queryClient.setQueryData(
+            tanstackClient.user.getProfile.key(),
+            context.previousUser,
+          );
+        }
+      },
+      onSuccess: (updatedUser) => {
+        // Update cache with the actual server response
+        queryClient.setQueryData<BackendUser>(
+          tanstackClient.user.getProfile.key(),
+          updatedUser,
+        );
+      },
+      onSettled: () => {
+        // Always refetch after error or success to ensure consistency
+        queryClient.invalidateQueries({
+          queryKey: tanstackClient.user.getProfile.key(),
+        });
+      },
+    }),
+  );
 
   const session: Session = {
     // Login to Privy state

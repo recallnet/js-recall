@@ -16,13 +16,11 @@ import {
 } from "@recallnet/ui2/components/form";
 import { Input } from "@recallnet/ui2/components/input";
 
-import { ConflictError } from "@/lib/api-client";
 import { UpdateProfileRequest } from "@/types/profile";
 import { asOptionalStringWithoutEmpty } from "@/utils/zod";
 
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
-  email: z.string().email({ message: "Invalid email address" }),
   website: asOptionalStringWithoutEmpty(
     z.string().url({ message: "Must be a valid URL" }),
   ),
@@ -42,36 +40,18 @@ export const UpdateProfile: React.FC<UpdateProfileProps> = ({ onSubmit }) => {
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
-      email: "",
       website: "",
       image: "",
     },
   });
 
   const handleSubmit = async (data: FormData) => {
-    try {
-      const transformedData: UpdateProfileRequest = {
-        name: data.name,
-        email: data.email,
-        imageUrl: data.image || undefined,
-        metadata: data.website ? { website: data.website } : undefined,
-      };
-      await onSubmit(transformedData);
-    } catch (error: unknown) {
-      // Handle ConflictError (409) for duplicate emails
-      if (
-        error instanceof ConflictError &&
-        error.message.toLowerCase().includes("email")
-      ) {
-        form.setError("email", {
-          type: "manual",
-          message: error.message,
-        });
-      } else {
-        // Re-throw other errors to be handled by parent
-        throw error;
-      }
-    }
+    const transformedData: UpdateProfileRequest = {
+      name: data.name,
+      imageUrl: data.image || undefined,
+      metadata: data.website ? { website: data.website } : undefined,
+    };
+    await onSubmit(transformedData);
   };
 
   return (
@@ -98,24 +78,6 @@ export const UpdateProfile: React.FC<UpdateProfileProps> = ({ onSubmit }) => {
                   <FormDescription>
                     The name you go by professionally, or how you&apos;d like to
                     be known.
-                  </FormDescription>
-                )}
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="email"
-            render={({ field, formState: { errors } }) => (
-              <FormItem>
-                <FormLabel>Email</FormLabel>
-                <FormControl>
-                  <Input placeholder="E.g.: walterwhite@gmail.com" {...field} />
-                </FormControl>
-                {!errors.email && (
-                  <FormDescription>
-                    We&apos;ll send an email to verify your email address.
                   </FormDescription>
                 )}
                 <FormMessage />
