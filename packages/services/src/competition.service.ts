@@ -260,6 +260,16 @@ type CompetitionAgentsData = {
     rank: number | null;
     score: number | null;
     voteCount: number;
+    // Performance metrics
+    pnl: number;
+    pnlPercent: number;
+    change24h: number;
+    change24hPercent: number;
+    // Perps competition risk metrics (null for spot trading competitions)
+    calmarRatio: number | null;
+    simpleReturn: number | null;
+    maxDrawdown: number | null;
+    hasRiskMetrics: boolean;
   }>;
   total: number;
 };
@@ -864,6 +874,9 @@ export class CompetitionService {
     totalAgents: number,
     tx: DatabaseTransaction,
   ): Promise<LeaderboardEntry[]> {
+    // Get the competition to check its type
+    const competition = await this.competitionRepo.findById(competitionId);
+
     // Get the leaderboard (calculated from final snapshots)
     const leaderboard = await this.getLeaderboard(competitionId);
 
@@ -882,15 +895,43 @@ export class CompetitionService {
           competitionId,
         );
 
-      enrichedEntries.push({
+      // Determine the score based on competition type and metrics availability
+      let score: number;
+      if (competition?.type === "perpetual_futures" && entry.hasRiskMetrics) {
+        if (entry.calmarRatio !== null && entry.calmarRatio !== undefined) {
+          score = entry.calmarRatio;
+        } else {
+          score = -999999; // Sentinel for "has metrics but no Calmar"
+        }
+      } else {
+        score = entry.value; // Portfolio value for spot trading or perps without metrics
+      }
+
+      // Build the base entry
+      const baseEntry = {
         agentId: entry.agentId,
         competitionId,
         rank: i + 1, // 1-based ranking
         pnl,
         startingValue,
         totalAgents,
-        score: entry.value, // Portfolio value in USD is saved as `score`
-      });
+        score,
+      };
+
+      // Add perps-specific fields if this is a perps competition with risk metrics
+      if (competition?.type === "perpetual_futures" && entry.hasRiskMetrics) {
+        enrichedEntries.push({
+          ...baseEntry,
+          calmarRatio: entry.calmarRatio,
+          simpleReturn: entry.simpleReturn,
+          maxDrawdown: entry.maxDrawdown,
+          totalEquity: entry.value, // Store portfolio value as totalEquity
+          totalPnl: entry.pnl,
+          hasRiskMetrics: true,
+        });
+      } else {
+        enrichedEntries.push(baseEntry);
+      }
     }
 
     // Persist to database
@@ -899,11 +940,18 @@ export class CompetitionService {
     }
 
     // Map enriched entries back to LeaderboardEntry format for return
-    return enrichedEntries.map((entry) => ({
-      agentId: entry.agentId,
-      value: entry.score, // Convert score back to value for LeaderboardEntry
-      pnl: entry.pnl,
-    }));
+    return enrichedEntries.map((entry) => {
+      const value =
+        "totalEquity" in entry
+          ? (entry as typeof entry & { totalEquity: number }).totalEquity
+          : entry.score;
+
+      return {
+        agentId: entry.agentId,
+        value,
+        pnl: entry.pnl,
+      };
+    });
   }
 
   /**
@@ -1383,10 +1431,21 @@ export class CompetitionService {
 
         case "ended": {
           // Try saved leaderboard first
-          const savedLeaderboard =
-            await this.competitionRepo.findLeaderboardByTradingComp(
-              competitionId,
-            );
+          let savedLeaderboard;
+
+          // Check competition type to use the appropriate retrieval method
+          if (competition.type === "perpetual_futures") {
+            savedLeaderboard =
+              await this.competitionRepo.findLeaderboardByPerpsComp(
+                competitionId,
+              );
+          } else {
+            savedLeaderboard =
+              await this.competitionRepo.findLeaderboardByTradingComp(
+                competitionId,
+              );
+          }
+
           if (savedLeaderboard.length > 0) {
             return savedLeaderboard;
           }

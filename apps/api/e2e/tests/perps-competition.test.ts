@@ -11,6 +11,8 @@ import {
   type AgentPerpsPositionsResponse,
   type AgentProfileResponse,
   BlockchainType,
+  type CompetitionAgent,
+  type CompetitionAgentsResponse,
   type CompetitionAllPerpsPositionsResponse,
   type CompetitionDetailResponse,
   type CompetitionPerpsSummaryResponse,
@@ -1866,5 +1868,264 @@ describe("Perps Competition", () => {
     expect(calmarRanking[0]?.agentId).not.toBe(portfolioRanking[0]?.agentId);
     expect(actualRanking[0]?.agentId).toBe(calmarRanking[0]?.agentId);
     expect(actualRanking[0]?.agentId).not.toBe(portfolioRanking[0]?.agentId);
+  });
+
+  test("should preserve perps metrics and rankings when competition ends", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register three agents with different expected outcomes (same as ranking test)
+    const { agent: agent1 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Steady Growth - For Ended Test",
+      agentWalletAddress: "0x3333333333333333333333333333333333333333", // $1100
+    });
+
+    const { agent: agent2 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Negative Return - For Ended Test",
+      agentWalletAddress: "0x2222222222222222222222222222222222222222", // $950
+    });
+
+    const { agent: agent3 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "High Equity Volatile - For Ended Test",
+      agentWalletAddress: "0x1111111111111111111111111111111111111111", // $1250
+    });
+
+    // Start perps competition
+    const response = await startPerpsTestCompetition({
+      adminClient,
+      name: `Ended Perps Preservation Test ${Date.now()}`,
+      agentIds: [agent1.id, agent2.id, agent3.id],
+    });
+
+    expect(response.success).toBe(true);
+    const competition = response.competition;
+
+    // Take initial snapshot to establish starting values
+    const services = new ServiceRegistry();
+    await services.portfolioSnapshotterService.takePortfolioSnapshots(
+      competition.id,
+    );
+    await wait(100);
+
+    // Create historical snapshots with REAL time gaps for proper Calmar calculation
+    const now = new Date();
+    const daysAgo = (days: number) =>
+      new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+
+    // Insert historical snapshots to simulate different performance patterns
+    await db.insert(portfolioSnapshots).values([
+      // Agent 1: 10% return, no drawdown → Best Calmar
+      {
+        agentId: agent1.id,
+        competitionId: competition.id,
+        totalValue: 1000,
+        timestamp: daysAgo(365),
+      },
+      {
+        agentId: agent1.id,
+        competitionId: competition.id,
+        totalValue: 1050,
+        timestamp: daysAgo(180),
+      },
+      {
+        agentId: agent1.id,
+        competitionId: competition.id,
+        totalValue: 1100,
+        timestamp: daysAgo(1),
+      },
+
+      // Agent 2: -5% return → Worst Calmar
+      {
+        agentId: agent2.id,
+        competitionId: competition.id,
+        totalValue: 1000,
+        timestamp: daysAgo(365),
+      },
+      {
+        agentId: agent2.id,
+        competitionId: competition.id,
+        totalValue: 980,
+        timestamp: daysAgo(180),
+      },
+      {
+        agentId: agent2.id,
+        competitionId: competition.id,
+        totalValue: 950,
+        timestamp: daysAgo(1),
+      },
+
+      // Agent 3: 25% return with drawdown → Middle Calmar
+      {
+        agentId: agent3.id,
+        competitionId: competition.id,
+        totalValue: 1000,
+        timestamp: daysAgo(365),
+      },
+      {
+        agentId: agent3.id,
+        competitionId: competition.id,
+        totalValue: 1400,
+        timestamp: daysAgo(180), // Peak
+      },
+      {
+        agentId: agent3.id,
+        competitionId: competition.id,
+        totalValue: 1250,
+        timestamp: daysAgo(1), // Drawdown from peak
+      },
+    ]);
+
+    // Process to calculate Calmar ratios
+    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+    await wait(1000);
+
+    // ============ STEP 1: Get data while competition is ACTIVE ============
+
+    // Get leaderboard via the admin endpoint (active competition)
+    const activeLeaderboardResponse =
+      await adminClient.getCompetitionLeaderboard();
+    expect(activeLeaderboardResponse.success).toBe(true);
+    const activeLeaderboard = (activeLeaderboardResponse as LeaderboardResponse)
+      .leaderboard;
+
+    // Get competition details with agents (uses getCompetitionAgents)
+    const activeCompResponse = await adminClient.getCompetition(competition.id);
+    expect(activeCompResponse.success).toBe(true);
+
+    // Store active metrics for each agent
+    const activeMetrics = new Map<
+      string,
+      {
+        rank: number;
+        portfolioValue: number;
+        calmarRatio: number | null;
+        simpleReturn: number | null;
+        maxDrawdown: number | null;
+        hasRiskMetrics: boolean;
+      }
+    >();
+
+    activeLeaderboard.forEach((entry: LeaderboardEntry) => {
+      activeMetrics.set(entry.agentId, {
+        rank: entry.rank,
+        portfolioValue: entry.portfolioValue,
+        calmarRatio: entry.calmarRatio ?? null,
+        simpleReturn: entry.simpleReturn ?? null,
+        maxDrawdown: entry.maxDrawdown ?? null,
+        hasRiskMetrics: entry.hasRiskMetrics ?? false,
+      });
+    });
+
+    // Verify active competition has correct ranking (Calmar-based, not portfolio-based)
+    const agent1Active = activeLeaderboard.find(
+      (e: LeaderboardEntry) => e.agentId === agent1.id,
+    );
+    const agent3Active = activeLeaderboard.find(
+      (e: LeaderboardEntry) => e.agentId === agent3.id,
+    );
+
+    expect(agent3Active?.portfolioValue).toBeGreaterThan(
+      agent1Active?.portfolioValue || 0,
+    ); // Agent 3 has more money
+    expect(agent1Active?.rank).toBeLessThan(agent3Active?.rank || 999); // But Agent 1 ranks better
+
+    // ============ STEP 2: END the competition ============
+
+    const endResponse = await adminClient.endCompetition(competition.id);
+    expect(endResponse.success).toBe(true);
+
+    // Wait for any async operations to complete
+    await wait(2000);
+
+    // ============ STEP 3: Get data after competition is ENDED ============
+
+    // Get competition details (should return saved data for ended competition)
+    const endedCompResponse = await adminClient.getCompetition(competition.id);
+    expect(endedCompResponse.success).toBe(true);
+    const endedCompetition = (endedCompResponse as CompetitionDetailResponse)
+      .competition;
+
+    // Verify competition is ended
+    expect(endedCompetition.status).toBe("ended");
+
+    // Get leaderboard via the specific competition endpoint
+    const endedLeaderboardResponse = await adminClient.getCompetitionAgents(
+      competition.id,
+    );
+    expect(endedLeaderboardResponse.success).toBe(true);
+    const endedAgents = (endedLeaderboardResponse as CompetitionAgentsResponse)
+      .agents;
+
+    // ============ STEP 4: Verify ALL metrics are PRESERVED ============
+
+    endedAgents.forEach((agent: CompetitionAgent) => {
+      const activeData = activeMetrics.get(agent.id);
+      expect(activeData).toBeDefined();
+
+      if (!activeData) return;
+
+      // Verify ranking is preserved
+      expect(agent.rank).toBe(activeData.rank);
+
+      // Verify portfolio value is preserved
+      expect(agent.portfolioValue).toBe(activeData.portfolioValue);
+
+      // Verify risk metrics are preserved EXACTLY
+      expect(agent.calmarRatio).toBe(activeData.calmarRatio);
+      expect(agent.simpleReturn).toBe(activeData.simpleReturn);
+      expect(agent.maxDrawdown).toBe(activeData.maxDrawdown);
+      expect(agent.hasRiskMetrics).toBe(activeData.hasRiskMetrics);
+    });
+
+    // ============ STEP 5: Verify Calmar-based ranking is still correct ============
+
+    const agent1Ended = endedAgents.find(
+      (a: CompetitionAgent) => a.id === agent1.id,
+    );
+    const agent2Ended = endedAgents.find(
+      (a: CompetitionAgent) => a.id === agent2.id,
+    );
+    const agent3Ended = endedAgents.find(
+      (a: CompetitionAgent) => a.id === agent3.id,
+    );
+
+    expect(agent1Ended).toBeDefined();
+    expect(agent2Ended).toBeDefined();
+    expect(agent3Ended).toBeDefined();
+
+    // Agent 1 should still rank first (best Calmar)
+    expect(agent1Ended?.rank).toBe(1);
+
+    // Agent 3 should still have highest portfolio but NOT rank first
+    expect(agent3Ended?.portfolioValue).toBe(1250);
+    expect(agent3Ended?.rank).not.toBe(1);
+
+    // Agent 2 should still rank last
+    expect(agent2Ended?.rank).toBe(3);
+
+    // ============ STEP 6: Verify data persists across multiple fetches ============
+
+    // Fetch again to ensure data is consistently retrieved from DB
+    const refetchResponse = await adminClient.getCompetitionAgents(
+      competition.id,
+    );
+    expect(refetchResponse.success).toBe(true);
+    const refetchedAgents = (refetchResponse as CompetitionAgentsResponse)
+      .agents;
+
+    // Should still have same metrics
+    refetchedAgents.forEach((agent: CompetitionAgent) => {
+      const activeData = activeMetrics.get(agent.id);
+      expect(activeData).toBeDefined();
+
+      if (!activeData) return;
+
+      expect(agent.calmarRatio).toBe(activeData.calmarRatio);
+      expect(agent.simpleReturn).toBe(activeData.simpleReturn);
+      expect(agent.maxDrawdown).toBe(activeData.maxDrawdown);
+    });
   });
 });
