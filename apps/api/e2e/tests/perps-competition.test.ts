@@ -2027,10 +2027,15 @@ describe("Perps Competition", () => {
       (e: LeaderboardEntry) => e.agentId === agent3.id,
     );
 
+    // First ensure both agents exist
+    expect(agent1Active).toBeDefined();
+    expect(agent3Active).toBeDefined();
+
+    // Now we can safely assert without optional chaining
     expect(agent3Active?.portfolioValue).toBeGreaterThan(
-      agent1Active?.portfolioValue || 0,
+      agent1Active!.portfolioValue,
     ); // Agent 3 has more money
-    expect(agent1Active?.rank).toBeLessThan(agent3Active?.rank || 999); // But Agent 1 ranks better
+    expect(agent1Active?.rank).toBeLessThan(agent3Active!.rank); // But Agent 1 ranks better
 
     // ============ STEP 2: END the competition ============
 
@@ -2065,19 +2070,17 @@ describe("Perps Competition", () => {
       const activeData = activeMetrics.get(agent.id);
       expect(activeData).toBeDefined();
 
-      if (!activeData) return;
-
       // Verify ranking is preserved
-      expect(agent.rank).toBe(activeData.rank);
+      expect(agent.rank).toBe(activeData?.rank);
 
       // Verify portfolio value is preserved
-      expect(agent.portfolioValue).toBe(activeData.portfolioValue);
+      expect(agent.portfolioValue).toBe(activeData?.portfolioValue);
 
       // Verify risk metrics are preserved EXACTLY
-      expect(agent.calmarRatio).toBe(activeData.calmarRatio);
-      expect(agent.simpleReturn).toBe(activeData.simpleReturn);
-      expect(agent.maxDrawdown).toBe(activeData.maxDrawdown);
-      expect(agent.hasRiskMetrics).toBe(activeData.hasRiskMetrics);
+      expect(agent.calmarRatio).toBe(activeData?.calmarRatio);
+      expect(agent.simpleReturn).toBe(activeData?.simpleReturn);
+      expect(agent.maxDrawdown).toBe(activeData?.maxDrawdown);
+      expect(agent.hasRiskMetrics).toBe(activeData?.hasRiskMetrics);
     });
 
     // ============ STEP 5: Verify Calmar-based ranking is still correct ============
@@ -2121,11 +2124,9 @@ describe("Perps Competition", () => {
       const activeData = activeMetrics.get(agent.id);
       expect(activeData).toBeDefined();
 
-      if (!activeData) return;
-
-      expect(agent.calmarRatio).toBe(activeData.calmarRatio);
-      expect(agent.simpleReturn).toBe(activeData.simpleReturn);
-      expect(agent.maxDrawdown).toBe(activeData.maxDrawdown);
+      expect(agent.calmarRatio).toBe(activeData?.calmarRatio);
+      expect(agent.simpleReturn).toBe(activeData?.simpleReturn);
+      expect(agent.maxDrawdown).toBe(activeData?.maxDrawdown);
     });
   });
 });
