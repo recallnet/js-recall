@@ -8,7 +8,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
-import { agents, competitions } from "../core/defs.js";
+import { agents, competitionType, competitions } from "../core/defs.js";
 
 /**
  * Stores the current agent rank for an agent
@@ -18,6 +18,7 @@ export const agentScore = pgTable(
   {
     id: uuid().primaryKey().notNull(),
     agentId: uuid("agent_id").notNull(),
+    type: competitionType("type").default("trading").notNull(),
     mu: doublePrecision("mu").notNull(),
     sigma: doublePrecision("sigma").notNull(),
     ordinal: doublePrecision("ordinal").notNull(),
@@ -49,6 +50,7 @@ export const agentScoreHistory = pgTable(
     id: uuid().primaryKey().notNull(),
     agentId: uuid("agent_id").notNull(),
     competitionId: uuid("competition_id").notNull(),
+    type: competitionType("type").default("trading").notNull(),
     mu: doublePrecision("mu").notNull(),
     sigma: doublePrecision("sigma").notNull(),
     ordinal: doublePrecision("ordinal").notNull(),

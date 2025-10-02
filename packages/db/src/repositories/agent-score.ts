@@ -1,5 +1,5 @@
 import { randomUUID } from "crypto";
-import { desc, eq, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { Logger } from "pino";
 
 import { agents } from "../schema/core/defs.js";
@@ -11,6 +11,7 @@ import {
 } from "../schema/ranking/types.js";
 import type { Transaction as DatabaseTransaction } from "../types.js";
 import { Database } from "../types.js";
+import { CompetitionType } from "./types/index.js";
 
 /**
  * Agent Rank Repository
@@ -45,9 +46,13 @@ export class AgentScoreRepository {
    * the agent information and rank score.
    * @returns An array of objects with agent ID, name, and rank score
    */
-  async getAllAgentRanks(agentIds?: string[]): Promise<AgentRankInfo[]> {
-    this.#logger.debug("getAllAgentRanks called");
-
+  async getAllAgentRanks({
+    type,
+    agentIds,
+  }: {
+    type?: CompetitionType;
+    agentIds?: string[];
+  }): Promise<AgentRankInfo[]> {
     try {
       const query = this.#db
         .select({
@@ -63,9 +68,14 @@ export class AgentScoreRepository {
         .from(agentScore)
         .innerJoin(agents, eq(agentScore.agentId, agents.id));
 
-      if (agentIds) {
-        query.where(inArray(agentScore.agentId, agentIds));
+      const whereConditions = [];
+      if (type) {
+        whereConditions.push(eq(agentScore.type, type));
       }
+      if (agentIds) {
+        whereConditions.push(inArray(agentScore.agentId, agentIds));
+      }
+      query.where(and(...whereConditions));
 
       const rows = await query;
 
@@ -82,7 +92,14 @@ export class AgentScoreRepository {
         };
       });
     } catch (error) {
-      this.#logger.error("Error in getAllAgentRanks:", error);
+      this.#logger.error(
+        {
+          type,
+          agentIds,
+          error,
+        },
+        "Error in getAllAgentRanks",
+      );
       throw error;
     }
   }
@@ -97,6 +114,7 @@ export class AgentScoreRepository {
   async batchUpdateAgentRanks(
     dataArray: Array<Omit<InsertAgentScore, "id" | "createdAt" | "updatedAt">>,
     competitionId: string,
+    type: CompetitionType,
     tx?: DatabaseTransaction,
   ): Promise<InsertAgentScore[]> {
     if (dataArray.length === 0) {
@@ -114,6 +132,7 @@ export class AgentScoreRepository {
         const rankDataArray: InsertAgentScore[] = dataArray.map((data) => ({
           id: randomUUID(),
           agentId: data.agentId,
+          type,
           mu: data.mu,
           sigma: data.sigma,
           ordinal: data.ordinal,
@@ -125,6 +144,7 @@ export class AgentScoreRepository {
             id: randomUUID(),
             agentId: data.agentId,
             competitionId: competitionId,
+            type,
             mu: data.mu,
             sigma: data.sigma,
             ordinal: data.ordinal,
@@ -158,16 +178,27 @@ export class AgentScoreRepository {
    * Get all agent rank history records
    * @param competitionId Optional competition ID to filter by
    */
-  async getAllAgentRankHistory(competitionId?: string) {
+  async getAllAgentRankHistory({
+    competitionId,
+    type,
+  }: {
+    competitionId?: string;
+    type?: CompetitionType;
+  }) {
     try {
       const query = this.#db
         .select()
         .from(agentScoreHistory)
         .orderBy(desc(agentScoreHistory.createdAt));
 
+      const whereClause = [];
       if (competitionId) {
-        query.where(eq(agentScoreHistory.competitionId, competitionId));
+        whereClause.push(eq(agentScoreHistory.competitionId, competitionId));
       }
+      if (type) {
+        whereClause.push(eq(agentScoreHistory.type, type));
+      }
+      query.where(and(...whereClause));
 
       return await query;
     } catch (error) {
@@ -191,7 +222,7 @@ export class AgentScoreRepository {
     const sqlChunks: ReturnType<typeof sql>[] = [];
 
     sqlChunks.push(sql`
-    INSERT INTO agent_score (id, agent_id, mu, sigma, ordinal)
+    INSERT INTO agent_score (id, agent_id, type, mu, sigma, ordinal)
     VALUES
   `);
 
@@ -200,12 +231,13 @@ export class AgentScoreRepository {
         sqlChunks.push(sql`, `);
       }
       sqlChunks.push(
-        sql`(${data.id}, ${data.agentId}, ${data.mu}, ${data.sigma}, ${data.ordinal})`,
+        sql`(${data.id}, ${data.agentId}, ${data.type}, ${data.mu}, ${data.sigma}, ${data.ordinal})`,
       );
     });
 
     sqlChunks.push(sql`
     ON CONFLICT (agent_id) DO UPDATE SET
+      type = EXCLUDED.type,
       mu = EXCLUDED.mu,
       sigma = EXCLUDED.sigma,
       ordinal = EXCLUDED.ordinal,
