@@ -6,10 +6,7 @@ import {
   parseEvmChains,
   specificChainTokens,
 } from "@recallnet/services/lib";
-import {
-  CrossChainTradingType,
-  SpecificChain,
-} from "@recallnet/services/types";
+import { CrossChainTradingType } from "@recallnet/services/types";
 
 import { createSentryConfig } from "@/lib/sentry-config.js";
 
