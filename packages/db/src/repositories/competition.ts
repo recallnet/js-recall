@@ -2177,6 +2177,7 @@ export class CompetitionRepository {
       return rows.map((row) => ({
         ...row,
         pnl: row.totalPnl ?? DEFAULT_ZERO_VALUE, // Default to 0 if null
+        hasRiskMetrics: row.hasRiskMetrics ?? undefined, // Convert null to undefined for type compatibility
       }));
     } catch (error) {
       this.#logger.error(
