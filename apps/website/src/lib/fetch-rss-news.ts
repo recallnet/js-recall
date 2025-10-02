@@ -1,4 +1,5 @@
 import Parser from "rss-parser";
+import sanitizeHtml from "sanitize-html";
 
 import { NewsType } from "@/types/components";
 
@@ -68,14 +69,27 @@ function cleanAndTruncateText(html?: string, maxLength: number = 200): string {
   if (!html) return "";
 
   // Strip HTML tags
-  const text = html.replace(/<[^>]*>/g, "");
+  let text: string;
+  if (typeof document !== "undefined") {
+    // In browser: use <div> to parse HTML and get textContent
+    const tempDiv = document.createElement("div");
+    tempDiv.innerHTML = html;
+    text = tempDiv.textContent || "";
+  } else {
+    // In Node: use sanitize-html to remove all tags
+    text = sanitizeHtml(html, { allowedTags: [], allowedAttributes: {} });
+  }
 
   // Decode HTML entities
-  const textarea =
-    typeof document !== "undefined" ? document.createElement("textarea") : null;
-  const decodedText = textarea
-    ? ((textarea.innerHTML = text), textarea.value)
-    : text;
+  let decodedText: string;
+  if (typeof document !== "undefined") {
+    const textarea = document.createElement("textarea");
+    textarea.innerHTML = text;
+    decodedText = textarea.value;
+  } else {
+    // On server, text is already decoded by sanitize-html
+    decodedText = text;
+  }
 
   // Truncate and add ellipsis if needed
   if (decodedText.length > maxLength) {
