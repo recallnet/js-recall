@@ -11,6 +11,7 @@ import { cn } from "@recallnet/ui2/lib/utils";
 import { AgentAvatar } from "@/components/agent-avatar";
 import { LeaderboardAgent } from "@/types/agent";
 import { BenchmarkModel, SkillOverviewCardProps } from "@/types/leaderboard";
+import { checkIsAgentSkill } from "@/utils/competition-utils";
 import { getAgentColor, getLabColor } from "@/utils/lab-colors";
 
 import { LabLogo } from "../shared/lab-logo";
@@ -44,8 +45,7 @@ export const SkillOverviewCard: React.FC<SkillOverviewCardProps> = ({
   stats,
   topParticipants,
 }) => {
-  const isAgentSkill =
-    skill.category === "trading" || skill.category === "perpetual_futures";
+  const isAgentSkill = checkIsAgentSkill(skill.category);
 
   return (
     <Link href={`/leaderboards/${skill.id}`}>
