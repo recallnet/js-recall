@@ -742,6 +742,7 @@ export interface LeaderboardAgent {
   metadata?: AgentMetadata;
   rank: number;
   score: number;
+  type: CompetitionType;
   numCompetitions: number;
   voteCount: number;
 }

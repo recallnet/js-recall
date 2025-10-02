@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, test } from "vitest";
 
+import { agentScore } from "@recallnet/db/schema/ranking/defs";
+
 import { config } from "@/config/index.js";
 import {
   CROSS_CHAIN_TRADING_TYPE,
@@ -7,6 +9,7 @@ import {
   GlobalLeaderboardResponse,
   StartCompetitionResponse,
 } from "@/e2e/utils/api-types.js";
+import { connectToDb } from "@/e2e/utils/db-manager.js";
 import {
   createPerpsTestCompetition,
   createPrivyAuthenticatedClient,
@@ -368,11 +371,90 @@ describe("Leaderboard API", () => {
     expect(agents[1]?.voteCount).toBe(1);
   });
 
+  test("should get leaderboard by type", async () => {
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+    const { agent: agent1 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Agent One",
+    });
+    const { agent: agent2 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Agent Two",
+    });
+
+    // Create/end a trading competition
+    const tradingComp = await adminClient.createCompetition({
+      name: `Trading Competition ${Date.now()}`,
+      description: "Trading competition for type segregation test",
+      tradingType: CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
+      type: "trading",
+    });
+    expect(tradingComp.success).toBe(true);
+    const tradingCompId = (tradingComp as CreateCompetitionResponse).competition
+      .id;
+    await adminClient.startExistingCompetition({
+      competitionId: tradingCompId,
+      agentIds: [agent1.id, agent2.id],
+    });
+    await adminClient.endCompetition(tradingCompId);
+
+    // Create/end a perpetual futures competition
+    const perpComp = await createPerpsTestCompetition({
+      adminClient,
+      name: "Test Perps Competition",
+      perpsProvider: {
+        provider: "symphony",
+        initialCapital: 500,
+        selfFundingThreshold: 0,
+        apiUrl: "http://localhost:4567", // Mock server URL
+      },
+    });
+    expect(perpComp.success).toBe(true);
+    const perpCompId = (perpComp as CreateCompetitionResponse).competition.id;
+    await adminClient.startExistingCompetition({
+      competitionId: perpCompId,
+      agentIds: [agent1.id, agent2.id],
+    });
+
+    // Before ending the perps comp, check that the trading leaderboard has values but perps is empty
+    const leaderboard1 = (await adminClient.getGlobalLeaderboard({
+      type: "trading",
+    })) as GlobalLeaderboardResponse;
+    expect(leaderboard1.success).toBe(true);
+    expect(leaderboard1.agents.length).toBe(2);
+    const leaderboard2 = (await adminClient.getGlobalLeaderboard({
+      type: "perpetual_futures",
+    })) as GlobalLeaderboardResponse;
+    expect(leaderboard2.success).toBe(true);
+    expect(leaderboard2.agents.length).toBe(0);
+    await adminClient.endCompetition(perpCompId);
+
+    // Final check that both types have values
+    const leaderboard3 = (await adminClient.getGlobalLeaderboard({
+      type: "trading",
+    })) as GlobalLeaderboardResponse;
+    expect(leaderboard3.success).toBe(true);
+    expect(leaderboard3.agents.length).toBe(2);
+    const leaderboard4 = (await adminClient.getGlobalLeaderboard({
+      type: "perpetual_futures",
+    })) as GlobalLeaderboardResponse;
+    expect(leaderboard4.success).toBe(true);
+    expect(leaderboard4.agents.length).toBe(2);
+
+    // And there should also be 4 total rows because there are 2 trading and 2 perps competitions
+    // We have to validate this via a db query because the API query params technically
+    // default to `trading`, so there's no "joined" leaderboard response
+    const db = await connectToDb();
+    const result = await db.select().from(agentScore);
+    expect(result.length).toBe(4);
+  });
+
   test("should segregate agent scores by competition type", async () => {
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Agent 1 & 2 will participate in both types
+    // Agent 1 & 2 will participate in both "trading" and "perpetual_futures" types
     const { client: agentClient1, agent: agent1 } =
       await registerUserAndAgentAndGetClient({
         adminApiKey,
@@ -383,14 +465,14 @@ describe("Leaderboard API", () => {
         adminApiKey,
         agentName: "Multi-Type Agent Two",
       });
-    // Agent 3 & 4 will only participate in "perpetual_futures" type
+    // Agent 3 & 4 will participate alongside 1 & 2 in "perpetual_futures" competitions
     const { agent: agent3 } = await registerUserAndAgentAndGetClient({
       adminApiKey,
-      agentName: "Perp Only Agent One",
+      agentName: "Perp Agent Three",
     });
     const { agent: agent4 } = await registerUserAndAgentAndGetClient({
       adminApiKey,
-      agentName: "Perp Only Agent Two",
+      agentName: "Perp Agent Four",
     });
 
     // ===== FIRST ROUND: Create initial competitions =====
@@ -418,15 +500,17 @@ describe("Leaderboard API", () => {
     });
     await agentClient2.executeTrade({
       fromToken: config.specificChainTokens.eth.usdc,
-      toToken: config.specificChainTokens.eth.usdt,
+      toToken: "0x000000000000000000000000000000000000dead",
       amount: "10",
       reason: "Test trade - agent2 wins",
     });
 
     // Store initial scores for "trading" type
     await adminClient.endCompetition(tradingCompId1);
-    const leaderboardAfterTrading1 =
-      (await agentClient1.getGlobalLeaderboard()) as GlobalLeaderboardResponse;
+    const leaderboardAfterTrading1 = (await agentClient1.getGlobalLeaderboard({
+      type: "trading",
+    })) as GlobalLeaderboardResponse;
+    expect(leaderboardAfterTrading1.agents).toHaveLength(2);
     expect(leaderboardAfterTrading1.success).toBe(true);
     const tradingScoresRound1 = new Map<string, number>();
     leaderboardAfterTrading1.agents.forEach((agent) => {
@@ -450,22 +534,32 @@ describe("Leaderboard API", () => {
     ).competition.id;
     await adminClient.startExistingCompetition({
       competitionId: simulatedPerpCompId1,
-      agentIds: [agent3.id, agent4.id],
+      agentIds: [agent1.id, agent2.id, agent3.id, agent4.id],
     });
 
-    // Get leaderboard after simulated perp competition & verify original agents' scores haven't changed
+    // Check that trading scores haven't changed
     await adminClient.endCompetition(simulatedPerpCompId1);
-    const leaderboardAfterSimulatedPerp1 =
-      (await agentClient1.getGlobalLeaderboard()) as GlobalLeaderboardResponse;
-    expect(leaderboardAfterSimulatedPerp1.success).toBe(true);
-    const agent1Score = leaderboardAfterSimulatedPerp1.agents.find(
+    const tradingLeaderboardAfterPerps =
+      (await agentClient1.getGlobalLeaderboard({
+        type: "trading",
+      })) as GlobalLeaderboardResponse;
+    expect(tradingLeaderboardAfterPerps.success).toBe(true);
+    expect(tradingLeaderboardAfterPerps.agents).toHaveLength(2); // Only agents 1 & 2 have trading scores
+    const agent1TradingScore = tradingLeaderboardAfterPerps.agents.find(
       (a) => a.id === agent1.id,
     )?.score;
-    const agent2Score = leaderboardAfterSimulatedPerp1.agents.find(
+    const agent2TradingScore = tradingLeaderboardAfterPerps.agents.find(
       (a) => a.id === agent2.id,
     )?.score;
-    expect(agent1Score).toBe(tradingScoresRound1.get(agent1.id));
-    expect(agent2Score).toBe(tradingScoresRound1.get(agent2.id));
+    expect(agent1TradingScore).toBe(tradingScoresRound1.get(agent1.id));
+    expect(agent2TradingScore).toBe(tradingScoresRound1.get(agent2.id));
+
+    // Check perps leaderboard has all 4 agents
+    const perpsLeaderboard = (await agentClient1.getGlobalLeaderboard({
+      type: "perpetual_futures",
+    })) as GlobalLeaderboardResponse;
+    expect(perpsLeaderboard.success).toBe(true);
+    expect(perpsLeaderboard.agents).toHaveLength(4); // All 4 agents competed in perps
 
     // ===== SECOND ROUND: Additional competitions to verify segregation =====
 
@@ -498,9 +592,11 @@ describe("Leaderboard API", () => {
 
     // Get leaderboard after second trading competition & verify they're different from round 1
     await adminClient.endCompetition(tradingCompId2);
-    const leaderboardAfterTrading2 =
-      (await agentClient1.getGlobalLeaderboard()) as GlobalLeaderboardResponse;
+    const leaderboardAfterTrading2 = (await agentClient1.getGlobalLeaderboard({
+      type: "trading",
+    })) as GlobalLeaderboardResponse;
     expect(leaderboardAfterTrading2.success).toBe(true);
+    expect(leaderboardAfterTrading2.agents).toHaveLength(2);
     const tradingScoresRound2 = new Map<string, number>();
     leaderboardAfterTrading2.agents
       .filter((a) => [agent1.id, agent2.id].includes(a.id))
@@ -531,21 +627,30 @@ describe("Leaderboard API", () => {
     ).competition.id;
     await adminClient.startExistingCompetition({
       competitionId: simulatedPerpCompId2,
-      agentIds: [agent3.id, agent4.id],
+      agentIds: [agent1.id, agent2.id, agent3.id, agent4.id],
     });
 
-    // Verify trading (1 & 2) scores haven't changed after second simulated perp competition
+    // Verify trading scores haven't changed after second perp competition (type segregation)
     await adminClient.endCompetition(simulatedPerpCompId2);
-    const finalLeaderboard =
-      (await agentClient1.getGlobalLeaderboard()) as GlobalLeaderboardResponse;
-    expect(finalLeaderboard.success).toBe(true);
-    const finalAgent1Score = finalLeaderboard.agents.find(
+    const finalTradingLeaderboard = (await agentClient1.getGlobalLeaderboard({
+      type: "trading",
+    })) as GlobalLeaderboardResponse;
+    expect(finalTradingLeaderboard.success).toBe(true);
+    expect(finalTradingLeaderboard.agents).toHaveLength(2); // Only agents 1 & 2 have trading scores
+    const finalAgent1TradingScore = finalTradingLeaderboard.agents.find(
       (a) => a.id === agent1.id,
     )?.score;
-    const finalAgent2Score = finalLeaderboard.agents.find(
+    const finalAgent2TradingScore = finalTradingLeaderboard.agents.find(
       (a) => a.id === agent2.id,
     )?.score;
-    expect(finalAgent1Score).toBe(tradingScoresRound2.get(agent1.id));
-    expect(finalAgent2Score).toBe(tradingScoresRound2.get(agent2.id));
+    expect(finalAgent1TradingScore).toBe(tradingScoresRound2.get(agent1.id));
+    expect(finalAgent2TradingScore).toBe(tradingScoresRound2.get(agent2.id));
+
+    // Also verify perps leaderboard still has all 4 agents
+    const finalPerpsLeaderboard = (await agentClient1.getGlobalLeaderboard({
+      type: "perpetual_futures",
+    })) as GlobalLeaderboardResponse;
+    expect(finalPerpsLeaderboard.success).toBe(true);
+    expect(finalPerpsLeaderboard.agents).toHaveLength(4); // All 4 agents have perps scores
   });
 });

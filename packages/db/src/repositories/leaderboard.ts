@@ -516,6 +516,7 @@ export class LeaderboardRepository {
    * @returns Object containing paginated agent metrics and total count
    */
   async getGlobalAgentMetrics(params: {
+    type: CompetitionType;
     limit: number;
     offset: number;
   }): Promise<{
@@ -527,18 +528,30 @@ export class LeaderboardRepository {
       imageUrl: string | null;
       metadata: unknown;
       score: number;
+      type: CompetitionType;
       numCompetitions: number;
       voteCount: number;
     }>;
     totalCount: number;
   }> {
     this.#logger.debug(
-      `getGlobalAgentMetrics called with limit: ${params.limit}, offset: ${params.offset}`,
+      {
+        type: params.type,
+        limit: params.limit,
+        offset: params.offset,
+      },
+      `getGlobalAgentMetrics called with params`,
     );
 
     try {
       // Get paginated agents with their basic info and scores, sorted by score descending
-      const agentsWithScores = await this.#dbRead
+      // Note: our service layer will use `LeaderboardParams` and zod to default to `trading`,
+      // so this conditional `params.type` check isn't strictly needed
+      const whereConditions = [];
+      if (params.type) {
+        whereConditions.push(eq(agentScore.type, params.type));
+      }
+      const query = this.#dbRead
         .select({
           id: agents.id,
           name: agents.name,
@@ -547,13 +560,16 @@ export class LeaderboardRepository {
           imageUrl: agents.imageUrl,
           metadata: agents.metadata,
           score: agentScore.ordinal,
+          type: agentScore.type,
         })
         .from(agentScore)
         .innerJoin(agents, eq(agentScore.agentId, agents.id))
+        .where(and(...whereConditions))
         .orderBy(desc(agentScore.ordinal))
         .limit(params.limit)
         .offset(params.offset);
 
+      const agentsWithScores = await query;
       if (agentsWithScores.length === 0) {
         return {
           agents: [],
@@ -607,7 +623,11 @@ export class LeaderboardRepository {
       const totalCount = totalCountResult[0]?.count ?? 0;
 
       this.#logger.debug(
-        `Retrieved ${enrichedAgents.length} agent metrics with pagination from ${totalCount} total agents`,
+        {
+          totalCount,
+          numEnrichedAgents: enrichedAgents.length,
+        },
+        `Retrieved agent metrics with pagination`,
       );
 
       return {
@@ -615,7 +635,12 @@ export class LeaderboardRepository {
         totalCount,
       };
     } catch (error) {
-      this.#logger.error("Error in getOptimizedGlobalAgentMetrics:", error);
+      this.#logger.error(
+        {
+          error,
+        },
+        "Error in getGlobalAgentMetrics:",
+      );
       throw error;
     }
   }

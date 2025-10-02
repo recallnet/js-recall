@@ -54,6 +54,13 @@ export class AgentScoreRepository {
     agentIds?: string[];
   }): Promise<AgentRankInfo[]> {
     try {
+      const whereConditions = [];
+      if (type) {
+        whereConditions.push(eq(agentScore.type, type));
+      }
+      if (agentIds) {
+        whereConditions.push(inArray(agentScore.agentId, agentIds));
+      }
       const query = this.#db
         .select({
           id: agents.id,
@@ -66,16 +73,8 @@ export class AgentScoreRepository {
           ordinal: agentScore.ordinal,
         })
         .from(agentScore)
+        .where(and(...whereConditions))
         .innerJoin(agents, eq(agentScore.agentId, agents.id));
-
-      const whereConditions = [];
-      if (type) {
-        whereConditions.push(eq(agentScore.type, type));
-      }
-      if (agentIds) {
-        whereConditions.push(inArray(agentScore.agentId, agentIds));
-      }
-      query.where(and(...whereConditions));
 
       const rows = await query;
 
@@ -236,8 +235,7 @@ export class AgentScoreRepository {
     });
 
     sqlChunks.push(sql`
-    ON CONFLICT (agent_id) DO UPDATE SET
-      type = EXCLUDED.type,
+    ON CONFLICT (agent_id, type) DO UPDATE SET
       mu = EXCLUDED.mu,
       sigma = EXCLUDED.sigma,
       ordinal = EXCLUDED.ordinal,

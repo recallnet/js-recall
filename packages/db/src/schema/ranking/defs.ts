@@ -32,7 +32,8 @@ export const agentScore = pgTable(
   (table) => [
     index("idx_agent_score_agent_id").on(table.agentId),
     index("idx_agent_score_ordinal").on(table.ordinal),
-    unique("unique_agent_score_agent_id").on(table.agentId),
+    index("idx_agent_score_type").on(table.type),
+    unique("unique_agent_score_agent_id_type").on(table.agentId, table.type),
     foreignKey({
       columns: [table.agentId],
       foreignColumns: [agents.id],
