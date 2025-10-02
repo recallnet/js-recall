@@ -1,5 +1,10 @@
 import z from "zod/v4";
 
+import {
+  getSpecificChainBalances,
+  parseEvmChains,
+  specificChainTokens,
+} from "@recallnet/services/lib";
 import { SpecificChainSchema } from "@recallnet/services/types";
 
 import {
@@ -75,6 +80,9 @@ const configSchema = publicConfigSchema
 
 export const rawConfig = {
   ...publicRawConfig,
+  evmChains: parseEvmChains(),
+  specificChainTokens,
+  specificChainBalances: getSpecificChainBalances(),
   watchlist: { chainalysisApiKey: process.env.WATCHLIST_CHAINALYSIS_API_KEY },
   priceTracker: {
     maxCacheSize: process.env.PRICE_TRACKER_MAX_CACHE_SIZE,
