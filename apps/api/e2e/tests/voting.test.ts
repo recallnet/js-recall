@@ -32,13 +32,13 @@ describe("Voting API", () => {
       const adminClient = createTestClient();
       await adminClient.loginAsAdmin(adminApiKey);
 
-      // Register agents with their owner Privy clients
-      const { agent: agent1, client: agent1OwnerClient } =
+      // Register agents and create Privy-authenticated clients for their owners
+      const { agent: agent1, user: user1 } =
         await registerUserAndAgentAndGetClient({
           adminApiKey,
           agentName: "Agent Alpha",
         });
-      const { agent: agent2, client: agent2OwnerClient } =
+      const { agent: agent2, user: user2 } =
         await registerUserAndAgentAndGetClient({
           adminApiKey,
           agentName: "Agent Beta",
@@ -59,12 +59,18 @@ describe("Voting API", () => {
       const competition = competitionResponse.competition;
 
       // Join agents to the competition using their owner's Privy authentication
+      const { client: agent1OwnerClient } = await createPrivyAuthenticatedClient({
+        privyId: user1.privyId,
+      });
       const joinResponse1 = await agent1OwnerClient.joinCompetition(
         competition.id,
         agent1.id,
       );
       expect(joinResponse1.success).toBe(true);
 
+      const { client: agent2OwnerClient } = await createPrivyAuthenticatedClient({
+        privyId: user2.privyId,
+      });
       const joinResponse2 = await agent2OwnerClient.joinCompetition(
         competition.id,
         agent2.id,
@@ -442,7 +448,7 @@ describe("Voting API", () => {
       await adminClient.loginAsAdmin(adminApiKey);
 
       // Register agent
-      const { agent: agent1 } = await registerUserAndAgentAndGetClient({
+      const { agent: agent1, user: agent1Owner } = await registerUserAndAgentAndGetClient({
         adminApiKey,
         agentName: "Agent Mike",
       });
@@ -461,8 +467,11 @@ describe("Voting API", () => {
       });
       const competition = competitionResponse.competition;
 
-      // Join agent to competition
-      await adminClient.joinCompetition(competition.id, agent1.id);
+      // Join agent to competition using the owner's Privy session
+      const { client: agent1OwnerClient } = await createPrivyAuthenticatedClient({
+        privyId: agent1Owner.privyId,
+      });
+      await agent1OwnerClient.joinCompetition(competition.id, agent1.id);
 
       // Create Privy authenticated user
       const { client: userClient } = await createPrivyAuthenticatedClient({

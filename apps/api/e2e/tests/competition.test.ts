@@ -93,12 +93,12 @@ describe("Competition API", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Register agents
-    const { agent: agent1, client: agent1Client } =
+    const { agent: agent1, user: user1 } =
       await registerUserAndAgentAndGetClient({
         adminApiKey,
         agentName: "Agent Alpha",
       });
-    const { agent: agent2, client: agent2Client } =
+    const { agent: agent2, user: user2 } =
       await registerUserAndAgentAndGetClient({
         adminApiKey,
         agentName: "Agent Beta",
@@ -113,13 +113,19 @@ describe("Competition API", () => {
     const originalCompetition = createResponse.competition;
     const competitionId = originalCompetition.id;
 
-    // Join both agents before starting the competition
-    const joinResponse1 = (await agent1Client.joinCompetition(
+    // Join both agents before starting the competition using their owners' Privy sessions
+    const { client: privyUserClient1 } = await createPrivyAuthenticatedClient({
+      privyId: user1.privyId,
+    });
+    const joinResponse1 = (await privyUserClient1.joinCompetition(
       competitionId,
       agent1.id,
     )) as CompetitionJoinResponse;
     expect(joinResponse1.success).toBe(true);
-    const joinResponse2 = (await agent2Client.joinCompetition(
+    const { client: privyUserClient2 } = await createPrivyAuthenticatedClient({
+      privyId: user2.privyId,
+    });
+    const joinResponse2 = (await privyUserClient2.joinCompetition(
       competitionId,
       agent2.id,
     )) as CompetitionJoinResponse;
@@ -178,12 +184,12 @@ describe("Competition API", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Register agents
-    const { agent: agent1, client: agent1Client } =
+    const { agent: agent1, user: user1 } =
       await registerUserAndAgentAndGetClient({
         adminApiKey,
         agentName: "Agent Delta",
       });
-    const { agent: agent2, client: agent2Client } =
+    const { agent: agent2, user: user2 } =
       await registerUserAndAgentAndGetClient({
         adminApiKey,
         agentName: "Agent Echo",
@@ -199,13 +205,19 @@ describe("Competition API", () => {
     expect(createResponse.competition.status).toBe("pending");
     const competitionId = createResponse.competition.id;
 
-    // Join both agents before starting the competition
-    const joinResponse1 = (await agent1Client.joinCompetition(
+    // Join both agents before starting the competition using their owners' Privy sessions
+    const { client: ownerClient1 } = await createPrivyAuthenticatedClient({
+      privyId: user1.privyId,
+    });
+    const joinResponse1 = (await ownerClient1.joinCompetition(
       competitionId,
       agent1.id,
     )) as CompetitionJoinResponse;
     expect(joinResponse1.success).toBe(true);
-    const joinResponse2 = (await agent2Client.joinCompetition(
+    const { client: ownerClient2 } = await createPrivyAuthenticatedClient({
+      privyId: user2.privyId,
+    });
+    const joinResponse2 = (await ownerClient2.joinCompetition(
       competitionId,
       agent2.id,
     )) as CompetitionJoinResponse;
@@ -3321,7 +3333,7 @@ describe("Competition API", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Register user and agent (this gives us agent API key client)
-    const { agent, client: agentClient } =
+    const { agent, client: agentClient, user } =
       await registerUserAndAgentAndGetClient({
         adminApiKey,
         agentName: "Agent API Key Test Agent",
@@ -3335,8 +3347,11 @@ describe("Competition API", () => {
     });
     const competition = createResponse.competition;
 
-    // Join using agent API key authentication (fallback method)
-    const joinResponse = await agentClient.joinCompetition(
+    // Join using the owner's Privy authentication
+    const { client: privyUserClient } = await createPrivyAuthenticatedClient({
+      privyId: user.privyId,
+    });
+    const joinResponse = await privyUserClient.joinCompetition(
       competition.id,
       agent.id,
     );
@@ -3371,7 +3386,7 @@ describe("Competition API", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Register two agents
-    const { client: agent1Client } = await registerUserAndAgentAndGetClient({
+    const { user: agent1Owner } = await registerUserAndAgentAndGetClient({
       adminApiKey,
       agentName: "Agent 1 API Key Test",
     });
@@ -3389,14 +3404,17 @@ describe("Competition API", () => {
     });
     const competition = createResponse.competition;
 
-    // Try to join with agent1's API key but agent2's ID
-    const joinResponse = await agent1Client.joinCompetition(
+    // Try to join with agent1's owner Privy session but agent2's ID (not owned)
+    const { client: agent1OwnerPrivy } = await createPrivyAuthenticatedClient({
+      privyId: agent1Owner.privyId,
+    });
+    const joinResponse = await agent1OwnerPrivy.joinCompetition(
       competition.id,
       agent2.id,
     );
     expect("success" in joinResponse && joinResponse.success).toBe(false);
     if ("error" in joinResponse) {
-      expect(joinResponse.error).toContain("does not match agent ID in URL");
+      expect(joinResponse.error).toContain("do not own this agent");
     }
   });
 
@@ -4906,19 +4924,19 @@ describe("Competition API", () => {
       });
 
       // Create multiple agents for testing
-      const { agent: agent1, client: client1 } =
+      const { agent: agent1, client: client1, user: user1 } =
         await registerUserAndAgentAndGetClient({
           adminApiKey,
           agentName: "Limit Test Agent 1",
         });
 
-      const { agent: agent2, client: client2 } =
+      const { agent: agent2, client: client2, user: user2 } =
         await registerUserAndAgentAndGetClient({
           adminApiKey,
           agentName: "Limit Test Agent 2",
         });
 
-      const { agent: agent3, client: client3 } =
+      const { agent: agent3, client: client3, user: user3 } =
         await registerUserAndAgentAndGetClient({
           adminApiKey,
           agentName: "Limit Test Agent 3",
@@ -4926,15 +4944,26 @@ describe("Competition API", () => {
 
       const competitionId = createResponse.competition.id;
 
+      // Create Privy-authenticated clients for owners
+      const { client: ownerClient1 } = await createPrivyAuthenticatedClient({
+        privyId: user1.privyId,
+      });
+      const { client: ownerClient2 } = await createPrivyAuthenticatedClient({
+        privyId: user2.privyId,
+      });
+      const { client: ownerClient3 } = await createPrivyAuthenticatedClient({
+        privyId: user3.privyId,
+      });
+
       // Register first agent - should succeed
-      const join1Result = await client1.joinCompetition(
+      const join1Result = await ownerClient1.joinCompetition(
         competitionId,
         agent1.id,
       );
       expect(join1Result.success).toBe(true);
 
       // Register second agent - should succeed (at limit)
-      const join2Result = await client2.joinCompetition(
+      const join2Result = await ownerClient2.joinCompetition(
         competitionId,
         agent2.id,
       );
@@ -4979,7 +5008,7 @@ describe("Competition API", () => {
       expect(userCompetition.registeredParticipants).toBe(2);
 
       // Try to register third agent - should fail (over limit)
-      const join3Result = (await client3.joinCompetition(
+      const join3Result = (await ownerClient3.joinCompetition(
         competitionId,
         agent3.id,
       )) as ErrorResponse;
@@ -5122,13 +5151,13 @@ describe("Competition API", () => {
       });
 
       // Create two agents
-      const { agent: agent1, client: client1 } =
+      const { agent: agent1, client: client1, user: user1 } =
         await registerUserAndAgentAndGetClient({
           adminApiKey,
           agentName: "Single Slot Agent 1",
         });
 
-      const { agent: agent2, client: client2 } =
+      const { agent: agent2, client: client2, user: user2 } =
         await registerUserAndAgentAndGetClient({
           adminApiKey,
           agentName: "Single Slot Agent 2",
@@ -5136,15 +5165,23 @@ describe("Competition API", () => {
 
       const competitionId = createResponse.competition.id;
 
+      // Create Privy clients for agent owners
+      const { client: ownerClient1 } = await createPrivyAuthenticatedClient({
+        privyId: user1.privyId,
+      });
+      const { client: ownerClient2 } = await createPrivyAuthenticatedClient({
+        privyId: user2.privyId,
+      });
+
       // First registration should succeed
-      const join1Result = await client1.joinCompetition(
+      const join1Result = await ownerClient1.joinCompetition(
         competitionId,
         agent1.id,
       );
       expect(join1Result.success).toBe(true);
 
       // Second registration should fail immediately
-      const join2Result = (await client2.joinCompetition(
+      const join2Result = (await ownerClient2.joinCompetition(
         competitionId,
         agent2.id,
       )) as ErrorResponse;

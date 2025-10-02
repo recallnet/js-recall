@@ -1033,7 +1033,7 @@ describe("Agent API", () => {
     const agentName = `Competitions Test Agent ${Date.now()}`;
     const agentDescription = "Agent for competitions endpoint test";
 
-    const { client: agentClient, agent } =
+    const { client: agentClient, agent, user } =
       await registerUserAndAgentAndGetClient({
         adminApiKey,
         userName,
@@ -1089,7 +1089,13 @@ describe("Agent API", () => {
     expect(notJoinedCompResponse.success).toBe(true);
 
     const pendingComp = pendingCompResponse as CreateCompetitionResponse;
-    await agentClient.joinCompetition(pendingComp.competition.id, agent.id);
+    const { client: ownerPrivyClient } = await createPrivyAuthenticatedClient({
+      privyId: user.privyId,
+    });
+    await ownerPrivyClient.joinCompetition(
+      pendingComp.competition.id,
+      agent.id,
+    );
     createdCompetitions.push(pendingComp.competition);
 
     // Agent fetches list of competitions
