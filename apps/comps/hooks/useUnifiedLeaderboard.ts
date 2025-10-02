@@ -16,6 +16,12 @@ function calculateSummaryScores(agents: LeaderboardAgent[]): {
   avgScore: number;
   topScore: number;
 } {
+  if (agents.length === 0) {
+    return {
+      avgScore: 0,
+      topScore: 0,
+    };
+  }
   return {
     avgScore:
       agents.reduce((acc, agent) => acc + agent.score, 0) / agents.length,
