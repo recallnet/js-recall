@@ -1,0 +1,40 @@
+{
+  "name": "website",
+  "version": "0.0.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbopack --port 3002",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint --max-warnings 0",
+    "format": "prettier --write . --ignore-path=../../.prettierignore",
+    "format:check": "prettier --check . --ignore-path=../../.prettierignore",
+    "clean": "rm -rf .turbo .next node_modules"
+  },
+  "dependencies": {
+    "@next/third-parties": "^15.1.7",
+    "@portabletext/react": "^3.2.1",
+    "embla-carousel": "^8.6.0",
+    "embla-carousel-react": "^8.6.0",
+    "framer-motion": "^12.6.3",
+    "next": "15.1.6",
+    "next-seo": "^6.6.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "rss-parser": "^3.13.0",
+    "tailwind-merge": "^2.6.0"
+  },
+  "devDependencies": {
+    "@recallnet/eslint-config": "workspace:^",
+    "@recallnet/typescript-config": "workspace:*",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "15.1.6",
+    "postcss": "^8",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5"
+  }
+}
