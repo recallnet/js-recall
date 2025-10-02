@@ -57,7 +57,7 @@ export default function RootLayout({
         <Toaster position="top-right" />
         <Providers>
           <Navbar />
-          <main className="mx-auto min-h-screen w-full max-w-screen-lg px-5 pt-10 sm:px-20 overflow-x-hidden">
+          <main className="mx-auto min-h-screen w-full max-w-screen-lg overflow-x-hidden px-5 pt-10 sm:px-20">
             {children}
           </main>
         </Providers>
