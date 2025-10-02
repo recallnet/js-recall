@@ -129,7 +129,7 @@ export async function fetchRSSNews(
       return {
         _id: item.guid || `rss-${Date.now()}-${index}`,
         _type: "news",
-        text: text.replace(/\n/g, "\n"), // Preserve line breaks for the component
+        text: text,
         source: item.link || "",
         image: {
           url: imageUrl,
