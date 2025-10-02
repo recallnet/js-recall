@@ -12,7 +12,6 @@ import {
   UuidSchema,
 } from "@recallnet/services/types";
 
-import { userLogger } from "@/lib/logger.js";
 import { ServiceRegistry } from "@/services/index.js";
 
 import {
@@ -338,19 +337,6 @@ export function makeUserController(
         const result =
           await services.agentService.getDecryptedApiKeyById(agentId);
 
-        if (!result.success) {
-          // If there was an error, use the error code and message from the service
-          throw new ApiError(
-            result.errorCode || 500,
-            result.errorMessage || "Unknown error",
-          );
-        }
-
-        // Audit log for security tracking
-        userLogger.debug(
-          `[AUDIT] User ${userId} accessed API key for agent ${agentId}`,
-        );
-
         res.status(200).json({
           success: true,
           agentId,
@@ -382,11 +368,7 @@ export function makeUserController(
         if (!success) {
           throw new ApiError(400, `Invalid request format: ${error.message}`);
         }
-        const {
-          userId,
-          agentId,
-          body: { name, handle, description, imageUrl, email, metadata },
-        } = data;
+        const { userId, agentId, body: updateData } = data;
 
         // Get the agent to verify ownership
         const agent = await services.agentService.getAgent(agentId);
@@ -399,17 +381,6 @@ export function makeUserController(
         if (agent.ownerId !== userId) {
           throw new ApiError(403, "Access denied: You don't own this agent");
         }
-
-        // Prepare update data with only allowed fields
-        const updateData = {
-          id: agentId,
-          name: name ?? agent.name,
-          handle: handle ?? agent.handle,
-          description,
-          imageUrl,
-          email,
-          metadata,
-        };
 
         // Update the agent using AgentManager
         const updatedAgent = await services.agentService.updateAgent({
@@ -515,9 +486,6 @@ export function makeUserController(
           id: userId,
           isSubscribed: true,
         });
-        if (!updatedUser) {
-          throw new ApiError(500, "Failed to update user");
-        }
 
         res.status(200).json({
           success: true,
@@ -566,9 +534,6 @@ export function makeUserController(
           id: userId,
           isSubscribed: false,
         });
-        if (!updatedUser) {
-          throw new ApiError(500, "Failed to update user");
-        }
 
         res.status(200).json({
           success: true,

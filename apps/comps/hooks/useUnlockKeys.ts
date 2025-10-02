@@ -2,8 +2,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { toast } from "@recallnet/ui2/components/toast";
 
-import { apiClient } from "@/lib/api-client";
 import { sandboxClient } from "@/lib/sandbox-client";
+import { tanstackClient } from "@/rpc/clients/tanstack-query";
 import { AdminAgentKeyResponse } from "@/types/admin";
 
 export const useUnlockKeys = (
@@ -14,14 +14,12 @@ export const useUnlockKeys = (
   const queryClient = useQueryClient();
 
   // Query for production agent API key
-  const productionKeyQuery = useQuery({
-    queryKey: ["agent-api-key", agentId],
-    queryFn: async () => {
-      if (!agentId) throw new Error("Agent ID required");
-      return await apiClient.getAgentApiKey(agentId);
-    },
-    enabled: !!agentId,
-  });
+  const productionKeyQuery = useQuery(
+    tanstackClient.agent.getAgentApiKey.queryOptions({
+      input: { agentId: agentId! },
+      enabled: !!agentId,
+    }),
+  );
 
   // Mutation to create sandbox agent if it doesn't exist
   const createSandboxAgentMutation = useMutation({
@@ -207,7 +205,9 @@ export const useUnlockKeys = (
       // Invalidate production API key if we have the agentId
       if (agentId) {
         queryClient.invalidateQueries({
-          queryKey: ["agent-api-key", agentId],
+          queryKey: tanstackClient.agent.getAgentApiKey.key({
+            input: { agentId },
+          }),
         });
       }
     },

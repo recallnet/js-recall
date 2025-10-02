@@ -1466,20 +1466,12 @@ export function makeAdminController(services: ServiceRegistry) {
         const result =
           await services.agentService.getDecryptedApiKeyById(agentId);
 
-        if (!result.success) {
-          // If there was an error, use the error code and message from the service
-          throw new ApiError(
-            result.errorCode || 500,
-            result.errorMessage || "Unknown error",
-          );
-        }
-
         // Return the agent with the decrypted API key
         res.status(200).json({
           success: true,
           agent: {
-            id: result.agent?.id || agentId,
-            name: result.agent?.name || "Unknown",
+            id: result.agent.id,
+            name: result.agent.name,
             apiKey: result.apiKey,
           },
         });

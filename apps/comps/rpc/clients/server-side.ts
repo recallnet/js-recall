@@ -7,9 +7,11 @@ import { cookies } from "next/headers";
 
 import { privyClient } from "@/lib/privy-client";
 import {
+  agentService,
   boostAwardService,
   boostService,
   competitionService,
+  emailService,
   userService,
 } from "@/lib/services";
 import { router } from "@/rpc/router/index";
@@ -23,6 +25,8 @@ export async function createClient(): Promise<RouterClient<typeof router>> {
       boostAwardService,
       userService,
       competitionService,
+      agentService,
+      emailService,
     },
   });
 }

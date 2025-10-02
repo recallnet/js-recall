@@ -5,7 +5,7 @@ import { BoostRepository } from "@recallnet/db/repositories/boost";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { UserRepository } from "@recallnet/db/repositories/user";
 
-import { errorToMessage } from "./utils/error-to-message.js";
+import { errorToMessage } from "./lib/error-to-message.js";
 
 /**
  * Parameters for boosting an agent

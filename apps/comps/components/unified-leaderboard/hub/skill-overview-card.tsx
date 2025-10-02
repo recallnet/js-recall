@@ -139,9 +139,9 @@ export const SkillOverviewCard: React.FC<SkillOverviewCardProps> = ({
                       size={16}
                       showHover={false}
                     />
-                  ) : (
+                  ) : "provider" in participant ? (
                     <LabLogo provider={participant.provider} size="sm" />
-                  )}
+                  ) : null}
 
                   {/* Name */}
                   <div className="min-w-0 flex-1">

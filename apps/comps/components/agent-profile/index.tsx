@@ -106,14 +106,14 @@ export default function AgentProfile({
 
       // Update in main environment
       try {
+        const updateData =
+          field === "skills"
+            ? { metadata: { skills: value as string[] } }
+            : { [field]: value };
+
         await updateAgent.mutateAsync({
           agentId: agent.id,
-          params:
-            field === "skills"
-              ? { metadata: { skills: value as string[] } }
-              : {
-                  [field]: value,
-                },
+          ...updateData,
         });
       } catch (error) {
         console.error("Failed to update agent:", error);
@@ -241,7 +241,7 @@ export default function AgentProfile({
         <div className="flex-2 xs:col-span-2 xs:col-start-2 xs:row-start-1 xs:mt-0 col-span-3 row-start-2 mt-5 flex shrink flex-col border lg:col-span-1 lg:col-start-2">
           <div className="relative flex w-full grow flex-col border-b p-6">
             <div className="flex gap-3 font-bold">
-              {agent.stats.score > 0 && (
+              {agent.stats.score != null && agent.stats.score > 0 && (
                 <Tooltip content="Global Score">
                   <BigNumberDisplay
                     decimals={0}

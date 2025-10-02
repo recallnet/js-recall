@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { apiClient } from "@/lib/api-client";
+import { tanstackClient } from "@/rpc/clients/tanstack-query";
 
 interface LeaveCompetitionArgs {
   agentId: string;
@@ -21,7 +22,9 @@ export const useLeaveCompetition = () => {
     },
     onSuccess: (_data, { agentId, competitionId }) => {
       // Invalidate relevant queries
-      queryClient.invalidateQueries({ queryKey: ["agent", agentId] });
+      queryClient.invalidateQueries({
+        queryKey: tanstackClient.agent.getAgent.key({ input: { agentId } }),
+      });
       queryClient.invalidateQueries({
         queryKey: ["competition-agents", competitionId],
       });

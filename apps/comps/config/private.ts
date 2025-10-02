@@ -66,7 +66,10 @@ const configSchema = publicConfigSchema
     }),
     tradingApi: z.object({
       baseUrl: z.url().default("https://api.competitions.recall.network/api"),
-      sandboxApiUrl: z.url().optional(),
+      sandboxApiUrl: z.preprocess(
+        (val) => (val ? val : undefined), // convert empty string to undefined
+        z.url().optional(),
+      ),
       sandboxAdminApiKey: z.string().optional(),
     }),
   })

@@ -4,8 +4,6 @@ import {
 } from "@recallnet/conversions/atto-conversions";
 
 import {
-  Agent,
-  AgentApiKeyResponse,
   AgentCompetitionResponse,
   AgentCompetitionsResponse,
   AgentWithOwnerResponse,
@@ -17,8 +15,6 @@ import {
   CompetitionTimelineResponse,
   CompetitionTradesResponse,
   CompetitionsResponse,
-  CreateAgentRequest,
-  CreateAgentResponse,
   CreateVoteRequest,
   EnrichedVotesResponse,
   GetAgentCompetitionsParams,
@@ -36,11 +32,8 @@ import {
   LoginResponse,
   NonceResponse,
   ProfileResponse,
-  UpdateAgentRequest,
-  UpdateAgentResponse,
   UpdateProfileRequest,
   UserCompetitionsResponse,
-  UserSubscriptionResponse,
   VerifyEmailResponse,
   VoteResponse,
   VotesResponse,
@@ -231,26 +224,6 @@ export class ApiClient {
     });
   }
 
-  /**
-   * Subscribe to mailing list
-   * @returns Profile response
-   */
-  async subscribeToMailingList(): Promise<UserSubscriptionResponse> {
-    return this.request<UserSubscriptionResponse>("/user/subscribe", {
-      method: "POST",
-    });
-  }
-
-  /**
-   * Unsubscribe from mailing list
-   * @returns Profile response
-   */
-  async unsubscribeFromMailingList(): Promise<UserSubscriptionResponse> {
-    return this.request<UserSubscriptionResponse>("/user/unsubscribe", {
-      method: "POST",
-    });
-  }
-
   // Competition endpoints
 
   /**
@@ -400,36 +373,6 @@ export class ApiClient {
   // Agent endpoints
 
   /**
-   * Get list of authenticated user agents
-   * @param params - Query parameters
-   * @returns Agents response
-   */
-  async getUserAgents(params: GetAgentsParams = {}): Promise<AgentsResponse> {
-    const queryParams = this.formatQueryParams(params);
-    return this.request<AgentsResponse>(`/user/agents${queryParams}`);
-  }
-
-  /**
-   * Get agent api key
-   * @param params - Query parameters
-   * @returns Agents response
-   */
-  async getAgentApiKey(agentId: string): Promise<AgentApiKeyResponse> {
-    return this.request<AgentApiKeyResponse>(`/user/agents/${agentId}/api-key`);
-  }
-
-  /**
-   * Get agent by ID owned by the authenticated user
-   * @param id - Agent ID
-   * @returns Agent details
-   */
-  async getUserAgent(id: string): Promise<{ success: boolean; agent: Agent }> {
-    return this.request<{ success: boolean; agent: Agent }>(
-      `/user/agents/${id}`,
-    );
-  }
-
-  /**
    * Get list of agents
    * @param params - Query parameters
    * @returns Agents response
@@ -462,18 +405,6 @@ export class ApiClient {
     return this.request<AgentCompetitionsResponse>(
       `/agents/${agentId}/competitions${queryParams}`,
     );
-  }
-
-  /**
-   * Create a new agent
-   * @param data - Agent creation data
-   * @returns Created agent response
-   */
-  async createAgent(data: CreateAgentRequest): Promise<CreateAgentResponse> {
-    return this.request<CreateAgentResponse>("/user/agents", {
-      method: "POST",
-      body: JSON.stringify(data),
-    });
   }
 
   // Leaderboards endpoints
@@ -534,21 +465,6 @@ export class ApiClient {
     const queryParams = this.formatQueryParams(params);
     return this.request<UserCompetitionsResponse>(
       `/user/competitions${queryParams}`,
-    );
-  }
-
-  /**
-   * Update user agent
-   * @param data - Agent data
-   * @returns Updated agent
-   **/
-  async updateAgent(data: UpdateAgentRequest): Promise<UpdateAgentResponse> {
-    return this.request<UpdateAgentResponse>(
-      `/user/agents/${data.agentId}/profile`,
-      {
-        method: "PUT",
-        body: JSON.stringify(data.params),
-      },
     );
   }
 
