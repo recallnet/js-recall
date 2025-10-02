@@ -1,4 +1,3 @@
-import { Coingecko } from "@coingecko/coingecko-typescript";
 import { Logger } from "pino";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MockProxy, mock } from "vitest-mock-extended";
@@ -8,57 +7,26 @@ import {
   CoinGeckoProvider,
   CoinGeckoProviderConfig,
 } from "../coingecko.provider.js";
+import {
+  MockCoinGeckoClient,
+  commonMockResponses,
+  mockBatchTokenPrices,
+  mockTokenPrice,
+  mockTokenPriceError,
+  setupCoinGeckoMock,
+  specificChainTokens,
+  testTokens,
+} from "./helpers/coingecko.helpers.js";
 
 // Mock the CoinGecko SDK
 vi.mock("@coingecko/coingecko-typescript");
 
-// Type for mocking CoinGecko client
-interface MockCoinGeckoClient {
-  coins: {
-    contract: {
-      get: ReturnType<typeof vi.fn>;
-    };
-  };
-  simple: {
-    tokenPrice: {
-      getID: ReturnType<typeof vi.fn>;
-    };
-  };
-}
-
-// Test tokens
-const solanaTokens = {
-  SOL: "So11111111111111111111111111111111111111112",
-  USDC: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
-  BONK: "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263",
-};
-
-const ethereumTokens = {
-  ETH: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", // WETH
-  USDC: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
-  USDT: "0xdAC17F958D2ee523a2206206994597C13D831ec7", // USDT on Ethereum
-  SHIB: "0x95aD61b0a150d79219dCF64E1E6Cc01f0B64C4cE",
-};
-
-const baseTokens = {
-  ETH: "0x4200000000000000000000000000000000000006", // WETH on Base
-  USDC: "0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA", // USDbC on Base
-};
-
-const specificChainTokens = {
-  svm: {
-    sol: "So11111111111111111111111111111111111111112",
-    usdc: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
-  },
-  eth: {
-    eth: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", // WETH on Ethereum
-    usdc: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", // USDC on Ethereum
-  },
-  base: {
-    eth: "0x4200000000000000000000000000000000000006", // WETH on Base
-    usdc: "0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA", // USDbC on Base
-  },
-};
+// Extract token references for easier use
+const {
+  solana: solanaTokens,
+  ethereum: ethereumTokens,
+  base: baseTokens,
+} = testTokens;
 
 // Mock logger
 const mockLogger: MockProxy<Logger> = mock<Logger>();
@@ -77,24 +45,8 @@ describe("CoinGeckoProvider", () => {
     // Clear all mocks before each test
     vi.clearAllMocks();
 
-    // Create mock CoinGecko client instance
-    mockCoinGeckoInstance = {
-      coins: {
-        contract: {
-          get: vi.fn(),
-        },
-      },
-      simple: {
-        tokenPrice: {
-          getID: vi.fn(),
-        },
-      },
-    };
-
-    // Mock the CoinGecko constructor to return our mock instance
-    vi.mocked(Coingecko).mockImplementation(
-      () => mockCoinGeckoInstance as unknown as Coingecko,
-    );
+    // Set up CoinGecko mock using helper
+    mockCoinGeckoInstance = setupCoinGeckoMock();
 
     // Create provider instance
     provider = new CoinGeckoProvider(config, mockLogger);
@@ -112,17 +64,8 @@ describe("CoinGeckoProvider", () => {
 
   describe("Solana token price fetching", () => {
     it("should fetch SOL price", async () => {
-      // Mock CoinGecko API response for SOL
-      mockCoinGeckoInstance.coins.contract.get.mockResolvedValue({
-        id: "solana",
-        symbol: "sol",
-        name: "Solana",
-        market_data: {
-          current_price: { usd: 150.75 },
-          total_volume: { usd: 2500000000 },
-          fully_diluted_valuation: { usd: 85000000000 },
-        },
-      });
+      // Mock CoinGecko API response for SOL using helper
+      mockTokenPrice(mockCoinGeckoInstance, commonMockResponses.SOL);
 
       const priceReport = await provider.getPrice(
         solanaTokens.SOL,
@@ -142,17 +85,8 @@ describe("CoinGeckoProvider", () => {
     });
 
     it("should fetch USDC price", async () => {
-      // Mock CoinGecko API response for USDC
-      mockCoinGeckoInstance.coins.contract.get.mockResolvedValue({
-        id: "usd-coin",
-        symbol: "usdc",
-        name: "USD Coin",
-        market_data: {
-          current_price: { usd: 1.0001 },
-          total_volume: { usd: 5000000000 },
-          fully_diluted_valuation: { usd: 30000000000 },
-        },
-      });
+      // Mock CoinGecko API response for USDC using helper
+      mockTokenPrice(mockCoinGeckoInstance, commonMockResponses.USDC);
 
       const priceReport = await provider.getPrice(
         solanaTokens.USDC,
@@ -165,7 +99,7 @@ describe("CoinGeckoProvider", () => {
         { id: "solana" },
       );
       expect(priceReport).not.toBeNull();
-      expect(priceReport?.price).toBe(1.0001);
+      expect(priceReport?.price).toBe(0.9998);
       expect(priceReport?.symbol).toBe("USDC"); // Should be uppercase
       expect(priceReport?.price).toBeCloseTo(1, 1); // USDC should be close to $1
     });
@@ -173,17 +107,8 @@ describe("CoinGeckoProvider", () => {
 
   describe("Ethereum token price fetching", () => {
     it("should fetch ETH price", async () => {
-      // Mock CoinGecko API response for ETH
-      mockCoinGeckoInstance.coins.contract.get.mockResolvedValue({
-        id: "weth",
-        symbol: "weth",
-        name: "Wrapped Ether",
-        market_data: {
-          current_price: { usd: 2850.45 },
-          total_volume: { usd: 12000000000 },
-          fully_diluted_valuation: { usd: 350000000000 },
-        },
-      });
+      // Mock CoinGecko API response for ETH using helper
+      mockTokenPrice(mockCoinGeckoInstance, commonMockResponses.ETH);
 
       const priceReport = await provider.getPrice(
         ethereumTokens.ETH,
@@ -201,17 +126,8 @@ describe("CoinGeckoProvider", () => {
     });
 
     it("should fetch USDC price", async () => {
-      // Mock CoinGecko API response for USDC on Ethereum
-      mockCoinGeckoInstance.coins.contract.get.mockResolvedValue({
-        id: "usd-coin",
-        symbol: "usdc",
-        name: "USD Coin",
-        market_data: {
-          current_price: { usd: 0.9998 },
-          total_volume: { usd: 8000000000 },
-          fully_diluted_valuation: { usd: 45000000000 },
-        },
-      });
+      // Mock CoinGecko API response for USDC on Ethereum using helper
+      mockTokenPrice(mockCoinGeckoInstance, commonMockResponses.USDC);
 
       const priceReport = await provider.getPrice(
         ethereumTokens.USDC,
@@ -230,17 +146,8 @@ describe("CoinGeckoProvider", () => {
     });
 
     it("should fetch ETH price above $1000 on Ethereum mainnet", async () => {
-      // Mock CoinGecko API response for ETH with high price
-      mockCoinGeckoInstance.coins.contract.get.mockResolvedValue({
-        id: "weth",
-        symbol: "weth",
-        name: "Wrapped Ether",
-        market_data: {
-          current_price: { usd: 2850.45 },
-          total_volume: { usd: 12000000000 },
-          fully_diluted_valuation: { usd: 350000000000 },
-        },
-      });
+      // Mock CoinGecko API response for ETH with high price using helper
+      mockTokenPrice(mockCoinGeckoInstance, commonMockResponses.ETH);
 
       const priceReport = await provider.getPrice(
         ethereumTokens.ETH,
@@ -254,17 +161,8 @@ describe("CoinGeckoProvider", () => {
     });
 
     it("should fetch USDT price close to $1 on Ethereum mainnet", async () => {
-      // Mock CoinGecko API response for USDT
-      mockCoinGeckoInstance.coins.contract.get.mockResolvedValue({
-        id: "tether",
-        symbol: "usdt",
-        name: "Tether",
-        market_data: {
-          current_price: { usd: 1.0002 },
-          total_volume: { usd: 65000000000 },
-          fully_diluted_valuation: { usd: 100000000000 },
-        },
-      });
+      // Mock CoinGecko API response for USDT using helper
+      mockTokenPrice(mockCoinGeckoInstance, commonMockResponses.USDT);
 
       const priceReport = await provider.getPrice(
         ethereumTokens.USDT,
@@ -285,17 +183,8 @@ describe("CoinGeckoProvider", () => {
 
   describe("Base token price fetching", () => {
     it("should fetch ETH on Base", async () => {
-      // Mock CoinGecko API response for ETH on Base
-      mockCoinGeckoInstance.coins.contract.get.mockResolvedValue({
-        id: "weth",
-        symbol: "weth",
-        name: "Wrapped Ether",
-        market_data: {
-          current_price: { usd: 2850.45 },
-          total_volume: { usd: 500000000 },
-          fully_diluted_valuation: { usd: 350000000000 },
-        },
-      });
+      // Mock CoinGecko API response for ETH on Base using helper
+      mockTokenPrice(mockCoinGeckoInstance, commonMockResponses.ETH);
 
       const priceReport = await provider.getPrice(
         baseTokens.ETH,
@@ -313,17 +202,8 @@ describe("CoinGeckoProvider", () => {
     });
 
     it("should fetch USDC on Base", async () => {
-      // Mock CoinGecko API response for USDC on Base
-      mockCoinGeckoInstance.coins.contract.get.mockResolvedValue({
-        id: "bridged-usdc-base",
-        symbol: "usdbc",
-        name: "USD Base Coin",
-        market_data: {
-          current_price: { usd: 0.9999 },
-          total_volume: { usd: 100000000 },
-          fully_diluted_valuation: { usd: 1000000000 },
-        },
-      });
+      // Mock CoinGecko API response for USDC on Base using helper
+      mockTokenPrice(mockCoinGeckoInstance, commonMockResponses.USDC);
 
       const priceReport = await provider.getPrice(
         baseTokens.USDC,
@@ -336,8 +216,8 @@ describe("CoinGeckoProvider", () => {
         { id: "base" },
       );
       expect(priceReport).not.toBeNull();
-      expect(priceReport?.price).toBe(0.9999);
-      expect(priceReport?.symbol).toBe("USDBC");
+      expect(priceReport?.price).toBe(0.9998);
+      expect(priceReport?.symbol).toBe("USDC");
       expect(priceReport?.price).toBeCloseTo(1, 1); // USDC should be close to $1
     });
   });
@@ -362,38 +242,12 @@ describe("CoinGeckoProvider", () => {
         ethereumTokens.USDT,
       ];
 
-      // Mock individual API responses for each token
-      mockCoinGeckoInstance.coins.contract.get
-        .mockResolvedValueOnce({
-          id: "weth",
-          symbol: "weth",
-          name: "Wrapped Ether",
-          market_data: {
-            current_price: { usd: 2850.45 },
-            total_volume: { usd: 12000000000 },
-            fully_diluted_valuation: { usd: 350000000000 },
-          },
-        })
-        .mockResolvedValueOnce({
-          id: "usd-coin",
-          symbol: "usdc",
-          name: "USD Coin",
-          market_data: {
-            current_price: { usd: 0.9998 },
-            total_volume: { usd: 8000000000 },
-            fully_diluted_valuation: { usd: 45000000000 },
-          },
-        })
-        .mockResolvedValueOnce({
-          id: "tether",
-          symbol: "usdt",
-          name: "Tether",
-          market_data: {
-            current_price: { usd: 1.0002 },
-            total_volume: { usd: 65000000000 },
-            fully_diluted_valuation: { usd: 100000000000 },
-          },
-        });
+      // Mock individual API responses for each token using batch helper
+      mockBatchTokenPrices(mockCoinGeckoInstance, [
+        commonMockResponses.ETH,
+        commonMockResponses.USDC,
+        commonMockResponses.USDT,
+      ]);
 
       const results = await provider.getBatchPrices(
         tokens,
@@ -440,28 +294,11 @@ describe("CoinGeckoProvider", () => {
     it("should fetch batch prices for Base tokens", async () => {
       const tokens = [baseTokens.ETH, baseTokens.USDC];
 
-      // Mock individual API responses for each token
-      mockCoinGeckoInstance.coins.contract.get
-        .mockResolvedValueOnce({
-          id: "weth",
-          symbol: "weth",
-          name: "Wrapped Ether",
-          market_data: {
-            current_price: { usd: 2850.45 },
-            total_volume: { usd: 500000000 },
-            fully_diluted_valuation: { usd: 350000000000 },
-          },
-        })
-        .mockResolvedValueOnce({
-          id: "bridged-usdc-base",
-          symbol: "usdbc",
-          name: "USD Base Coin",
-          market_data: {
-            current_price: { usd: 0.9999 },
-            total_volume: { usd: 100000000 },
-            fully_diluted_valuation: { usd: 1000000000 },
-          },
-        });
+      // Mock individual API responses for each token using batch helper
+      mockBatchTokenPrices(mockCoinGeckoInstance, [
+        commonMockResponses.ETH,
+        commonMockResponses.USDC,
+      ]);
 
       const results = await provider.getBatchPrices(
         tokens,
@@ -516,10 +353,8 @@ describe("CoinGeckoProvider", () => {
     it("should return null for invalid token addresses", async () => {
       const invalidToken = "0xinvalid";
 
-      // Mock API error response
-      mockCoinGeckoInstance.coins.contract.get.mockRejectedValue(
-        new Error("Invalid contract address"),
-      );
+      // Mock API error response using helper
+      mockTokenPriceError(mockCoinGeckoInstance, "Invalid contract address");
 
       const priceReport = await provider.getPrice(
         invalidToken,
@@ -549,10 +384,8 @@ describe("CoinGeckoProvider", () => {
     });
 
     it("should handle API errors gracefully", async () => {
-      // Mock API error (retries are handled by the SDK internally)
-      mockCoinGeckoInstance.coins.contract.get.mockRejectedValue(
-        new Error("API error after retries"),
-      );
+      // Mock API error (retries are handled by the SDK internally) using helper
+      mockTokenPriceError(mockCoinGeckoInstance, "API error after retries");
 
       const priceReport = await provider.getPrice(
         ethereumTokens.ETH,
@@ -566,17 +399,8 @@ describe("CoinGeckoProvider", () => {
     });
 
     it("should handle successful response after SDK retries", async () => {
-      // Since the SDK handles retries internally, we just mock a successful response
-      mockCoinGeckoInstance.coins.contract.get.mockResolvedValue({
-        id: "weth",
-        symbol: "weth",
-        name: "Wrapped Ether",
-        market_data: {
-          current_price: { usd: 2850.45 },
-          total_volume: { usd: 12000000000 },
-          fully_diluted_valuation: { usd: 350000000000 },
-        },
-      });
+      // Since the SDK handles retries internally, we just mock a successful response using helper
+      mockTokenPrice(mockCoinGeckoInstance, commonMockResponses.ETH);
 
       const priceReport = await provider.getPrice(
         ethereumTokens.ETH,
