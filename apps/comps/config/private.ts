@@ -3,8 +3,8 @@ import z from "zod/v4";
 import { SpecificChainSchema } from "@recallnet/services/types";
 
 import {
-  config as publicConfig,
   configSchema as publicConfigSchema,
+  rawConfig as publicRawConfig,
 } from "./public";
 
 const configSchema = publicConfigSchema
@@ -73,8 +73,8 @@ const configSchema = publicConfigSchema
   })
   .strict();
 
-export const config = {
-  ...publicConfig,
+export const rawConfig = {
+  ...publicRawConfig,
   watchlist: { chainalysisApiKey: process.env.WATCHLIST_CHAINALYSIS_API_KEY },
   priceTracker: {
     maxCacheSize: process.env.PRICE_TRACKER_MAX_CACHE_SIZE,
@@ -105,4 +105,4 @@ export const config = {
   },
 };
 
-export const parsedConfig = configSchema.parse(config);
+export const config = configSchema.parse(rawConfig);

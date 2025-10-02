@@ -13,7 +13,7 @@ import React, {
 import { Button } from "@recallnet/ui2/components/button";
 import { cn } from "@recallnet/ui2/lib/utils";
 
-import { parsedConfig } from "@/config/public";
+import { config } from "@/config/public";
 import { useCompetitionTimeline } from "@/hooks/useCompetitionTimeline";
 import { AgentCompetition, CompetitionStatus } from "@/types";
 import { formatDate } from "@/utils/format";
@@ -476,7 +476,7 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
         </div>
         <ShareModal
           title="Share portfolio timeline"
-          url={`${parsedConfig.frontendUrl}/competitions/${competition.id}/chart`}
+          url={`${config.frontendUrl}/competitions/${competition.id}/chart`}
           size={20}
         />
       </div>

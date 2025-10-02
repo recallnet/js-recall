@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 
-import { parsedConfig } from "@/config/private";
+import { config } from "@/config/private";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -22,7 +22,7 @@ function buildUpstreamUrl(req: Request, path: string[]): URL {
   const incoming = new URL(req.url);
   const safePath = (path ?? []).map(encodeURIComponent).join("/");
   const url = new URL(
-    `${parsedConfig.tradingApi.baseUrl.replace(/\/+$/, "")}/${safePath}`,
+    `${config.tradingApi.baseUrl.replace(/\/+$/, "")}/${safePath}`,
   );
   url.search = incoming.search; // preserve query string
   return url;

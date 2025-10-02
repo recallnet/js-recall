@@ -18,7 +18,7 @@ import CompetitionsSkeleton from "@/components/competitions-skeleton";
 import { FooterSection } from "@/components/footer-section";
 import { JoinSwarmSection } from "@/components/join-swarm-section";
 import ConnectPrivyModal from "@/components/modals/connect-privy";
-import { parsedConfig } from "@/config/public";
+import { config } from "@/config/public";
 import { getSocialLinksArray } from "@/data/social";
 import { useCompetitions, useUserCompetitions } from "@/hooks/useCompetitions";
 import { useLeaderboards } from "@/hooks/useLeaderboards";
@@ -35,7 +35,7 @@ export default function CompetitionsPage() {
   const { data: leaderboard, isLoading: isLoadingLeaderboard } =
     useLeaderboards({
       limit: 25,
-      enabled: !parsedConfig.clientFlags.disableLeaderboard,
+      enabled: !config.clientFlags.disableLeaderboard,
     });
   const session = useSession();
 
@@ -115,7 +115,7 @@ export default function CompetitionsPage() {
     <div>
       <div className="h-120 relative left-1/2 top-[-41] w-full -translate-x-1/2 transform pt-40">
         {carouselContent.length > 0 &&
-          !parsedConfig.clientFlags.disableLeaderboard && (
+          !config.clientFlags.disableLeaderboard && (
             <HeroCarousel
               className="absolute left-[-350px] right-[-350px] top-0"
               texts={carouselContent}

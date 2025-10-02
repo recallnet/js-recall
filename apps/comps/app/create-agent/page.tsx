@@ -5,7 +5,7 @@ import React, { Suspense, useState } from "react";
 import { AuthGuard } from "@/components/auth-guard";
 import { BreadcrumbNav } from "@/components/breadcrumb-nav";
 import { CreateAgent, FormData } from "@/components/create-agent";
-import { parsedConfig } from "@/config/public";
+import { config } from "@/config/public";
 import { useUserAgent } from "@/hooks/useAgent";
 import { useCreateAgent } from "@/hooks/useCreateAgent";
 import {
@@ -42,7 +42,7 @@ function CreateAgentView() {
 
     setCreatedAgentId(result.agent.id);
 
-    if (parsedConfig.clientFlags.enableSandbox && backendUser) {
+    if (config.clientFlags.enableSandbox && backendUser) {
       try {
         // Create user in sandbox (if not already exists)
         await createSandboxUser.mutateAsync({

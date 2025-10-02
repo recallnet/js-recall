@@ -11,7 +11,7 @@ export const configSchema = z.strictObject({
   }),
 });
 
-export const config = {
+export const rawConfig = {
   frontendUrl: process.env.NEXT_PUBLIC_FRONTEND_URL,
   boost: {
     noStakeBoostAmount: process.env.NEXT_PUBLIC_NON_STAKE_BOOST_AMOUNT,
@@ -22,4 +22,4 @@ export const config = {
   },
 };
 
-export const parsedConfig = configSchema.parse(config);
+export const config = configSchema.parse(rawConfig);
