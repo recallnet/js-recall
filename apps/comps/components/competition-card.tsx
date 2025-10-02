@@ -2,14 +2,14 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import React from "react";
+import React, { useMemo } from "react";
 
 import { Badge } from "@recallnet/ui2/components/badge";
 import { Card } from "@recallnet/ui2/components/card";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { useCompetitionAgents } from "@/hooks/useCompetitionAgents";
-import { CompetitionStatus, UserCompetition } from "@/types";
+import { CompetitionStatus, CompetitionWithUserAgents } from "@/types";
 
 import {
   formatCompetitionDates,
@@ -22,7 +22,7 @@ import { ParticipantsAvatars } from "./participants-avatars";
 import { Rewards } from "./rewards";
 
 interface CompetitionCardProps {
-  competition: UserCompetition;
+  competition: CompetitionWithUserAgents;
   className?: string;
 }
 
@@ -37,13 +37,25 @@ export const CompetitionCard: React.FC<CompetitionCardProps> = ({
     competition.endDate,
   );
 
+  const status = useMemo(() => {
+    switch (competition.status) {
+      case "active":
+        return CompetitionStatus.Active;
+      case "pending":
+        return CompetitionStatus.Pending;
+      case "ended":
+      case "ending":
+        return CompetitionStatus.Ended;
+    }
+  }, [competition.status]);
+
   return (
     <Card
       cropSize={35}
       corner="bottom-right"
       className={cn("bg-card group flex w-full flex-col", className)}
     >
-      <CompetitionStatusBanner status={competition.status} />
+      <CompetitionStatusBanner status={status} />
 
       <div className="flex h-full w-full">
         <div className="flex w-full flex-col gap-2 border-r">

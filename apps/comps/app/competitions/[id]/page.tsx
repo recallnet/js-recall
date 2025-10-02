@@ -1,5 +1,6 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import { useDebounce, useWindowScroll } from "@uidotdev/usehooks";
 import { isFuture } from "date-fns";
 import { ChevronRight } from "lucide-react";
@@ -24,11 +25,11 @@ import { TimelineChart } from "@/components/timeline-chart/index";
 import { TradesTable } from "@/components/trades-table";
 import { UserVote } from "@/components/user-vote";
 import { getSocialLinksArray } from "@/data/social";
-import { useCompetition } from "@/hooks/useCompetition";
 import { useCompetitionAgents } from "@/hooks/useCompetitionAgents";
 import { useCompetitionPerpsPositions } from "@/hooks/useCompetitionPerpsPositions";
 import { useCompetitionTrades } from "@/hooks/useCompetitionTrades";
 import { useSession } from "@/hooks/useSession";
+import { tanstackClient } from "@/rpc/clients/tanstack-query";
 
 const LIMIT_AGENTS_PER_PAGE = 10;
 const LIMIT_TRADES_PER_PAGE = 10;
@@ -55,7 +56,10 @@ export default function CompetitionPage({
     data: competition,
     isLoading: isLoadingCompetition,
     error: competitionError,
-  } = useCompetition(id);
+  } = useQuery(
+    tanstackClient.competitions.getById.queryOptions({ input: { id } }),
+  );
+
   const {
     data: agentsData,
     isLoading: isLoadingAgents,

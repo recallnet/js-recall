@@ -4,11 +4,12 @@ import React from "react";
 
 import { cn } from "@recallnet/ui2/lib/utils";
 
-import { UserCompetition } from "../types/competition";
+import { CompetitionWithUserAgents } from "@/types";
+
 import CountdownClock from "./clock";
 
 interface CompetitionStateSummaryProps {
-  competition: UserCompetition;
+  competition: CompetitionWithUserAgents;
   className?: string;
 }
 

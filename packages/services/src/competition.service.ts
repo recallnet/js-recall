@@ -166,7 +166,9 @@ type CompetitionRulesData = {
 /**
  * Enriched competition data structure
  */
-type EnrichedCompetition = SelectCompetition & {
+type EnrichedCompetition = Awaited<
+  ReturnType<typeof CompetitionService.prototype.getCompetitions>
+>["competitions"][number] & {
   tradingConstraints?: {
     minimumPairAgeHours: number | null;
     minimum24hVolumeUsd: number | null;
@@ -231,7 +233,6 @@ type CompetitionDetailsData = {
       agentId: string | null;
     }>;
     votingEnabled?: boolean;
-    openForBoosting: boolean;
     userVotingInfo?: {
       canVote: boolean;
       reason?: string;
@@ -2864,8 +2865,6 @@ export class CompetitionService {
     status?: CompetitionStatus;
     pagingParams: PagingParams;
     userId?: string;
-    agentId?: string;
-    isAdmin?: boolean;
   }): Promise<EnrichedCompetitionsData> {
     try {
       // Get competitions
@@ -2958,24 +2957,6 @@ export class CompetitionService {
     }
   }
 
-  async competitionOpenForBoosting(competitionId: string): Promise<boolean> {
-    const competition = await this.getCompetition(competitionId);
-    if (!competition) {
-      throw new ApiError(404, "Competition not found");
-    }
-    if (competition.status !== "active" && competition.status !== "pending") {
-      return false;
-    }
-    const now = new Date();
-    if (!competition.votingStartDate || !competition.votingEndDate) {
-      return false;
-    }
-    if (now < competition.votingStartDate || now > competition.votingEndDate) {
-      return false;
-    }
-    return true;
-  }
-
   /**
    * Get competition by ID with caching and authorization
    * @param params Parameters for competition request
@@ -2984,8 +2965,6 @@ export class CompetitionService {
   async getCompetitionById(params: {
     competitionId: string;
     userId?: string;
-    agentId?: string;
-    isAdmin?: boolean;
   }): Promise<CompetitionDetailsData> {
     try {
       // Fetch all data pieces first
@@ -2996,7 +2975,6 @@ export class CompetitionService {
         rewards,
         tradingConstraints,
         votingState,
-        openForBoosting,
       ] = await Promise.all([
         // Get competition details
         this.getCompetition(params.competitionId),
@@ -3021,7 +2999,6 @@ export class CompetitionService {
               params.competitionId,
             )
           : Promise.resolve(null),
-        this.competitionOpenForBoosting(params.competitionId),
       ]);
 
       if (!competition) {
@@ -3087,7 +3064,6 @@ export class CompetitionService {
             ? votingState.canVote || votingState.info.hasVoted
             : false,
           userVotingInfo: votingState || undefined,
-          openForBoosting,
         },
       };
 

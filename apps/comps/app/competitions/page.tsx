@@ -1,5 +1,6 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import AutoScroll from "embla-carousel-auto-scroll";
 import useEmblaCarousel from "embla-carousel-react";
 import React, { useEffect, useState } from "react";
@@ -20,12 +21,12 @@ import { JoinSwarmSection } from "@/components/join-swarm-section";
 import ConnectPrivyModal from "@/components/modals/connect-privy";
 import { config } from "@/config/public";
 import { getSocialLinksArray } from "@/data/social";
-import { useCompetitions, useUserCompetitions } from "@/hooks/useCompetitions";
+import { useUserCompetitions } from "@/hooks/useCompetitions";
 import { useLeaderboards } from "@/hooks/useLeaderboards";
 import { useAnalytics } from "@/hooks/usePostHog";
 import { useSession } from "@/hooks/useSession";
 import Link from "@/node_modules/next/link";
-import { CompetitionStatus } from "@/types";
+import { tanstackClient } from "@/rpc/clients/tanstack-query";
 import { mergeCompetitionsWithUserData } from "@/utils/competition-utils";
 import { toOrdinal } from "@/utils/format";
 
@@ -45,24 +46,27 @@ export default function CompetitionsPage() {
   }, [trackEvent]);
 
   const { data: activeCompetitions, isLoading: isLoadingActiveCompetitions } =
-    useCompetitions({
-      status: CompetitionStatus.Active,
-      sort: "startDate",
-    });
+    useQuery(
+      tanstackClient.competitions.listEnriched.queryOptions({
+        input: { status: "active", paging: { sort: "startDate" } },
+      }),
+    );
 
   const {
     data: upcomingCompetitions,
     isLoading: isLoadingUpcomingCompetitions,
-  } = useCompetitions({
-    status: CompetitionStatus.Pending,
-    sort: "startDate",
-  });
+  } = useQuery(
+    tanstackClient.competitions.listEnriched.queryOptions({
+      input: { status: "pending", paging: { sort: "startDate" } },
+    }),
+  );
 
   const { data: endedCompetitions, isLoading: isLoadingEndedCompetitions } =
-    useCompetitions({
-      status: CompetitionStatus.Ended,
-      sort: "-startDate",
-    });
+    useQuery(
+      tanstackClient.competitions.listEnriched.queryOptions({
+        input: { status: "ended", paging: { sort: "-startDate" } },
+      }),
+    );
 
   const { data: userCompetitions, isLoading: isLoadingUserCompetitions } =
     useUserCompetitions();

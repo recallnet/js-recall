@@ -1,3 +1,5 @@
+import { mergeCompetitionsWithUserData } from "@/utils";
+
 import { Agent } from "./agent";
 import { PaginationResponse } from "./api";
 import { CompetitionStatus, CrossChainTradingType } from "./enums";
@@ -62,7 +64,6 @@ export interface Competition {
     totalPositions?: number; // Only for perpetual futures competitions
     averageEquity?: number; // Only for perpetual futures competitions
   };
-  openForBoosting: boolean;
   votingEnabled: boolean;
   votingStartDate: string | null;
   votingEndDate: string | null;
@@ -134,6 +135,10 @@ export interface UserCompetitionsResponse {
   pagination: PaginationResponse;
   competitions: UserCompetition[];
 }
+
+export type CompetitionWithUserAgents = ReturnType<
+  typeof mergeCompetitionsWithUserData
+>[0];
 
 export interface UserAgentCompetition extends Agent {
   rank: number;

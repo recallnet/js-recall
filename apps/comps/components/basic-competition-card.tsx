@@ -7,12 +7,12 @@ import { Card } from "@recallnet/ui2/components/card";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { config } from "@/config/public";
-import { Competition } from "@/types";
+import { RouterOutputs } from "@/rpc/router";
 
 import { ShareModal } from "./share-modal/index";
 
 interface BasicCompetitionCardProps {
-  competition: Competition;
+  competition: RouterOutputs["competitions"]["getById"];
   className?: string;
 }
 

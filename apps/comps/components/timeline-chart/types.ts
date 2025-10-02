@@ -1,4 +1,5 @@
-import { AgentCompetition, Competition } from "@/types";
+import { RouterOutputs } from "@/rpc/router";
+import { AgentCompetition } from "@/types";
 
 /**
  * Types for TimelineChart components
@@ -31,7 +32,7 @@ export interface CustomLegendProps {
 
 export interface PortfolioChartProps {
   ref?: React.RefObject<HTMLDivElement | null>;
-  competition: Competition;
+  competition: RouterOutputs["competitions"]["getById"];
   agents: AgentCompetition[]; // Current page agents from parent pagination
   className?: string;
   totalAgents?: number; // Total number of agents for pagination

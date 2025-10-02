@@ -1,5 +1,6 @@
 import { CheckIcon, ClockIcon, Play } from "lucide-react";
 
+import { RouterOutputs } from "@/rpc/router";
 import { Competition, CompetitionStatus, UserCompetition } from "@/types";
 import { CompetitionType } from "@/types/competition";
 
@@ -39,9 +40,9 @@ export function formatCompetitionDates(
  * @returns List of competitions with their associated agents
  */
 export function mergeCompetitionsWithUserData(
-  competitions: Competition[],
+  competitions: RouterOutputs["competitions"]["listEnriched"]["competitions"],
   userCompetitions: UserCompetition[],
-): UserCompetition[] {
+) {
   return competitions.map((competition) => {
     const userCompetition = userCompetitions.find(
       (uc) => uc.id === competition.id,
