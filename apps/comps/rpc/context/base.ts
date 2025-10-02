@@ -6,6 +6,7 @@
  *   - HTTP cookies (from Next.js headers)
  *   - PrivyClient for authentication/session management
  *   - BoostService for boost-related business logic
+ *   - AgentService for agent management operations
  *   - Database instance for data access
  *
  * It also standardizes common error types for use in RPC responses.
@@ -15,6 +16,7 @@ import { PrivyClient } from "@privy-io/server-auth";
 import { cookies } from "next/headers";
 
 import {
+  AgentService,
   BoostAwardService,
   BoostService,
   UserService,
@@ -29,6 +31,7 @@ import {
  * @property boostService - Service for boost-related operations
  * @property boostAwardService - Service for boost awards and staking
  * @property userService - Service for user-related operations
+ * @property agentService - Service for agent management operations
  *
  * Standard errors:
  *   - NOT_FOUND: Resource not found
@@ -43,6 +46,7 @@ export const base = os
     boostService: BoostService;
     boostAwardService: BoostAwardService;
     userService: UserService;
+    agentService: AgentService;
   }>()
   .errors({
     NOT_FOUND: {

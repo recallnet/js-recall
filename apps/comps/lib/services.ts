@@ -1,20 +1,30 @@
 import {
+  AgentService,
+  BalanceService,
   BoostAwardService,
   BoostService,
   EmailService,
+  PriceTrackerService,
   UserService,
 } from "@recallnet/services";
 import { WalletWatchlist } from "@recallnet/services/lib";
+import { MultiChainProvider } from "@recallnet/services/providers";
 
 import {
+  agentNonceRepository,
   agentRepository,
+  balanceRepository,
   boostRepository,
   competitionRepository,
+  leaderboardRepository,
+  perpsRepository,
   stakesRepository,
+  tradeRepository,
   userRepository,
   voteRepository,
 } from "@/lib/repositories";
 
+import { config } from "./config";
 import { db } from "./db";
 import { createLogger } from "./logger";
 
@@ -69,4 +79,43 @@ export const boostAwardService = new BoostAwardService(
   stakesRepository,
   userService,
   { boost: { noStakeBoostAmount } },
+);
+
+const multiChainProvider = new MultiChainProvider(
+  {
+    evmChains: config.evmChains,
+    specificChainTokens: config.specificChainTokens,
+  },
+  createLogger("MultiChainProvider"),
+);
+
+export const priceTrackerService = new PriceTrackerService(
+  multiChainProvider,
+  config,
+  createLogger("PriceTrackerService"),
+);
+
+export const balanceService = new BalanceService(
+  balanceRepository,
+  {
+    specificChainBalances: config.specificChainBalances,
+    specificChainTokens: config.specificChainTokens,
+  },
+  createLogger("BalanceService"),
+);
+
+export const agentService = new AgentService(
+  emailService,
+  balanceService,
+  priceTrackerService,
+  userService,
+  agentRepository,
+  agentNonceRepository,
+  competitionRepository,
+  leaderboardRepository,
+  perpsRepository,
+  tradeRepository,
+  userRepository,
+  config,
+  createLogger("AgentService"),
 );

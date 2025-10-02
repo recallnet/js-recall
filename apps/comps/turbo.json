@@ -27,7 +27,11 @@
         "LOOPS_API_KEY",
         "LOOPS_MAILING_LIST_ID",
         "LOOPS_BASE_URL",
-        "CHAINALYSIS_API_KEY"
+        "CHAINALYSIS_API_KEY",
+        "ROOT_ENCRYPTION_KEY",
+        "API_DOMAIN",
+        "PRICE_CACHE_MAX_SIZE",
+        "PRICE_CACHE_TTL_MS"
       ]
     }
   }

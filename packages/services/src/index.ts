@@ -8,6 +8,7 @@ export * from "./boost-award.service.js";
 export * from "./calmar-ratio.service.js";
 export * from "./competition-reward.service.js";
 export * from "./competition.service.js";
+export * from "./config-utils.js";
 export * from "./email.service.js";
 export * from "./leaderboard.service.js";
 export * from "./perps-data-processor.service.js";
