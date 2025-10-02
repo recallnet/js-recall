@@ -22,6 +22,7 @@ import {
   EndCompetitionResponse,
   EnhancedCompetition,
   ErrorResponse,
+  GlobalLeaderboardResponse,
   LeaderboardResponse,
   StartCompetitionResponse,
   TradeResponse,
@@ -31,6 +32,7 @@ import {
 } from "@/e2e/utils/api-types.js";
 import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
+  createPerpsTestCompetition,
   createPrivyAuthenticatedClient,
   createTestAgent,
   createTestClient,
@@ -2059,6 +2061,149 @@ describe("Competition API", () => {
     expect(Number.isFinite(agentData.pnlPercent)).toBe(true);
     expect(Number.isFinite(agentData.change24h)).toBe(true);
     expect(Number.isFinite(agentData.change24hPercent)).toBe(true);
+  });
+
+  test("should order pending competition leaderboards by global scores based on competition type", async () => {
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+    const { client: agentClient1, agent: agent1 } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Type Test Agent 1",
+      });
+    const { client: agentClient2, agent: agent2 } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Type Test Agent 2",
+      });
+    const { agent: agent3 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Type Test Agent 3",
+    });
+    const { agent: agent4 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Type Test Agent 4",
+    });
+
+    // ===== Step 1: Create and complete a TRADING competition with agents 1 & 2 =====
+    const tradingComp1 = await adminClient.createCompetition({
+      name: `Trading Type Test ${Date.now()}`,
+      description: "Trading competition to establish global scores",
+      tradingType: CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
+      type: "trading",
+    });
+    expect(tradingComp1.success).toBe(true);
+    const tradingCompId1 = (tradingComp1 as CreateCompetitionResponse)
+      .competition.id;
+
+    // Only agents 1 and 2 compete in trading
+    await adminClient.startExistingCompetition({
+      competitionId: tradingCompId1,
+      agentIds: [agent1.id, agent2.id],
+    });
+    // Make trades - agent2 wins, agent1 loses
+    await agentClient1.executeTrade({
+      fromToken: config.specificChainTokens.eth.usdc,
+      toToken: "0x000000000000000000000000000000000000dead",
+      amount: "100",
+      reason: "Agent1 loses trading comp",
+    });
+    await agentClient2.executeTrade({
+      fromToken: config.specificChainTokens.eth.usdc,
+      toToken: "0x000000000000000000000000000000000000dead",
+      amount: "10",
+      reason: "Agent2 wins trading comp",
+    });
+
+    // Check global leaderboard after first competition
+    await adminClient.endCompetition(tradingCompId1);
+    const globalAfterTrading =
+      (await agentClient1.getGlobalLeaderboard()) as GlobalLeaderboardResponse;
+    expect(globalAfterTrading.success).toBe(true);
+    expect(globalAfterTrading.agents.length).toBe(2);
+    expect(globalAfterTrading.agents[0]?.id).toBe(agent2.id);
+    expect(globalAfterTrading.agents[1]?.id).toBe(agent1.id);
+
+    // ===== Step 2: Create and complete a PERPS competition with agents 3 & 4 agents =====
+    const perpsComp = await createPerpsTestCompetition({
+      adminClient,
+      name: `Perps Type Test ${Date.now()}`,
+      description:
+        "Perps competition with all agents for type segregation test",
+      perpsProvider: {
+        provider: "symphony",
+        initialCapital: 500,
+        selfFundingThreshold: 0,
+        apiUrl: "http://localhost:4567",
+      },
+    });
+    expect(perpsComp.success).toBe(true);
+    const perpsCompId = (perpsComp as CreateCompetitionResponse).competition.id;
+    await adminClient.startExistingCompetition({
+      competitionId: perpsCompId,
+      agentIds: [agent3.id, agent4.id],
+    });
+
+    // ===== Step 3: Create PENDING competitions of each type =====
+
+    // Create a PENDING trading competition with agent 1 and 3
+    const pendingTradingComp = await adminClient.createCompetition({
+      name: `Pending Trading Type Test ${Date.now()}`,
+      description: "Pending trading competition to test leaderboard ordering",
+      tradingType: CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
+      type: "trading",
+    });
+    expect(pendingTradingComp.success).toBe(true);
+    const pendingTradingCompId = (
+      pendingTradingComp as CreateCompetitionResponse
+    ).competition.id;
+
+    // Create a PENDING perps competition with agent 2 and 4
+    const pendingPerpsComp = await createPerpsTestCompetition({
+      adminClient,
+      name: `Pending Perps Type Test ${Date.now()}`,
+      description: "Pending perps competition to test leaderboard ordering",
+      perpsProvider: {
+        provider: "symphony",
+        initialCapital: 500,
+        selfFundingThreshold: 0,
+        apiUrl: "http://localhost:4567",
+      },
+    });
+    expect(pendingPerpsComp.success).toBe(true);
+    const pendingPerpsCompId = (pendingPerpsComp as CreateCompetitionResponse)
+      .competition.id;
+
+    // Add agents 1 & 3 to trading, and 2 & 4 to perps. Each comp has one agent that
+    // has a global rank, and one that doesn't
+    await adminClient.addAgentToCompetition(pendingTradingCompId, agent1.id);
+    await adminClient.addAgentToCompetition(pendingTradingCompId, agent3.id);
+    await adminClient.addAgentToCompetition(pendingPerpsCompId, agent2.id);
+    await adminClient.addAgentToCompetition(pendingPerpsCompId, agent4.id);
+
+    // ===== Step 4: Verify pending competitions use type-specific global scores =====
+
+    const pendingTradingAgentsResponse =
+      await adminClient.getCompetitionAgents(pendingTradingCompId);
+    expect(pendingTradingAgentsResponse.success).toBe(true);
+    const pendingTradingAgents = (
+      pendingTradingAgentsResponse as CompetitionAgentsResponse
+    ).agents;
+    const agent1Trading = pendingTradingAgents.find((a) => a.id === agent1.id);
+    const agent3Trading = pendingTradingAgents.find((a) => a.id === agent3.id);
+    expect(agent1Trading!.rank).toBe(1);
+    expect(agent3Trading!.rank).toBe(2);
+
+    const pendingPerpsAgentsResponse =
+      await adminClient.getCompetitionAgents(pendingPerpsCompId);
+    expect(pendingPerpsAgentsResponse.success).toBe(true);
+    const pendingPerpsAgents = (
+      pendingPerpsAgentsResponse as CompetitionAgentsResponse
+    ).agents;
+    const agent2Perps = pendingPerpsAgents.find((a) => a.id === agent2.id);
+    const agent4Perps = pendingPerpsAgents.find((a) => a.id === agent4.id);
+    expect(agent2Perps!.rank).toBe(1);
+    expect(agent4Perps!.rank).toBe(2);
   });
 
   test("should support pagination for competition agents", async () => {

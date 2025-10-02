@@ -235,7 +235,7 @@ export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
                     <Target size={16} className="text-green-400" />
                     <span className="text-lg font-bold text-green-400">
                       {typeof skillData.stats.topScore === "number"
-                        ? skillData.stats.topScore.toFixed(1)
+                        ? skillData.stats.topScore.toFixed(0)
                         : skillData.stats.topScore}
                     </span>
                   </div>
@@ -248,7 +248,7 @@ export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
                   <div className="mb-1 flex items-center justify-center gap-1">
                     <TrendingUp size={16} className="text-blue-400" />
                     <span className="text-lg font-bold text-blue-400">
-                      {skillData.stats.avgScore.toFixed(1)}
+                      {skillData.stats.avgScore.toFixed(0)}
                     </span>
                   </div>
                   <div className="text-xs text-gray-400">Average</div>
@@ -278,7 +278,7 @@ export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
                 <TrendingUp size={20} className="text-green-400" />
                 <span className="text-2xl font-bold text-green-400">
                   {typeof skillData.stats.topScore === "number"
-                    ? skillData.stats.topScore.toFixed(1)
+                    ? skillData.stats.topScore.toFixed(0)
                     : skillData.stats.topScore}
                 </span>
               </div>
@@ -291,7 +291,7 @@ export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
               <div className="mb-2 flex items-center justify-center gap-2">
                 <TrendingUp size={20} className="text-blue-400" />
                 <span className="text-2xl font-bold text-blue-400">
-                  {skillData.stats.avgScore.toFixed(1)}
+                  {skillData.stats.avgScore.toFixed(0)}
                 </span>
               </div>
               <div className="text-sm text-gray-400">Average Score</div>

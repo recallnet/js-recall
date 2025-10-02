@@ -92,9 +92,10 @@ export interface AgentCompetitionsResponse {
 
 export interface LeaderboardStats {
   activeAgents: number;
+  totalCompetitions: number;
   totalTrades: number;
   totalVolume: number;
-  totalCompetitions: number;
+  totalVotes: number;
 }
 
 export interface LeaderboardResponse {

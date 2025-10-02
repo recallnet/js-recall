@@ -39,19 +39,36 @@ export class AgentRankService {
     );
 
     try {
+      // Get competition type using transaction if available
+      const type = await this.competitionRepo.getCompetitionType(
+        competitionId,
+        tx,
+      );
+      if (!type) {
+        this.logger.error(
+          {
+            competitionId,
+          },
+          `[AgentRankService] Competition not found`,
+        );
+        return;
+      }
+
       const leaderboard =
         await this.competitionRepo.findLeaderboardByCompetition(
           competitionId,
           tx,
         );
       if (!leaderboard || leaderboard.length === 0) {
-        console.warn(
-          `[AgentRankService] No leaderboard entries found for competition ${competitionId}`,
+        this.logger.warn(
+          {
+            competitionId,
+          },
+          `[AgentRankService] No leaderboard entries found for competition`,
         );
         return;
       }
-
-      const currentRanks = await this.agentScoreRepo.getAllAgentRanks();
+      const currentRanks = await this.agentScoreRepo.getAllAgentRanks({ type });
 
       const ratings: Record<string, Rating> = {};
 
@@ -69,10 +86,10 @@ export class AgentRankService {
         }
       }
 
-      const teams = leaderboard.map((entry) => [ratings[entry.agentId]!]);
+      const agents = leaderboard.map((entry) => [ratings[entry.agentId]!]);
 
       // Update ratings using the PlackettLuce model
-      const updatedRatings = rate(teams);
+      const updatedRatings = rate(agents);
 
       const batchUpdateData = leaderboard.map((entry, index) => {
         const agentId = entry.agentId;
@@ -92,16 +109,25 @@ export class AgentRankService {
       const updatedRanks = await this.agentScoreRepo.batchUpdateAgentRanks(
         batchUpdateData,
         competitionId,
+        type,
         tx,
       );
 
       this.logger.debug(
-        `[AgentRankService] Successfully updated ranks for ${updatedRanks.length} agents from competition ${competitionId}`,
+        {
+          competitionId,
+          numUpdated: updatedRanks.length,
+          type,
+        },
+        `[AgentRankService] Successfully updated ranks for competition`,
       );
     } catch (error) {
       this.logger.error(
-        `[AgentRankService] Error updating agent ranks for competition ${competitionId}:`,
-        error,
+        {
+          competitionId,
+          error,
+        },
+        `[AgentRankService] Error updating agent ranks for competition`,
       );
       throw error;
     }

@@ -41,8 +41,8 @@ export interface SkillDefinition {
   description: string;
   /** Detailed description of the skill evaluation (supports markdown) */
   longDescription?: string;
-  /** Category type - "benchmark" for static skills, "trading" for live agents */
-  category: "benchmark" | "trading";
+  /** Category type - "benchmark" for static skills, "trading" for trading agents, "perpetual_futures" for perpetual futures agents */
+  category: "benchmark" | "trading" | "perpetual_futures";
   /** Array of research papers related to this skill (optional) */
   researchLinks?: ResearchLink[];
   /** Display order for UI sorting */
