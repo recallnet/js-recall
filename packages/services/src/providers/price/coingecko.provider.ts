@@ -9,7 +9,7 @@ import {
   PriceSource,
   SpecificChain,
   SpecificChainTokens,
-} from "../types/index.js";
+} from "../../types/index.js";
 
 /**
  * Configuration for different provider types
