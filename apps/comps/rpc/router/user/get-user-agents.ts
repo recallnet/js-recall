@@ -6,7 +6,7 @@ import { base } from "@/rpc/context/base";
 import { authMiddleware } from "@/rpc/middleware/auth";
 import { serializeAgent } from "@/rpc/router/utils/serialize-agent";
 
-export const getAgents = base
+export const getUserAgents = base
   .use(authMiddleware)
   .input(PagingParamsSchema)
   .handler(async ({ input, context, errors }) => {

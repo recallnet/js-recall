@@ -1,13 +1,3 @@
-import { createAgent } from "./create-agent";
-import { getAgent } from "./get-agent";
-import { getAgentApiKey } from "./get-agent-api-key";
-import { getAgents } from "./get-agents";
-import { updateAgentProfile } from "./update-agent-profile";
+// Agent router is currently empty and reserved for future public agent endpoints
 
-export const router = {
-  createAgent,
-  getAgents,
-  getAgent,
-  getAgentApiKey,
-  updateAgentProfile,
-} as const;
+export const router = {} as const;

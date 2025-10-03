@@ -11,7 +11,7 @@ import { Agent, AgentWithOwnerResponse } from "@/types";
  */
 export const useUserAgent = (id?: string): UseQueryResult<Agent, Error> => {
   return useQuery(
-    tanstackClient.agent.getAgent.queryOptions({
+    tanstackClient.user.getUserAgent.queryOptions({
       input: { agentId: id! },
       enabled: !!id,
     }),

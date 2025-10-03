@@ -13,7 +13,7 @@ export const useCreateAgent = () => {
   const { trackEvent } = useAnalytics();
 
   return useMutation(
-    tanstackClient.agent.createAgent.mutationOptions({
+    tanstackClient.user.createAgent.mutationOptions({
       onSuccess: (response, variables) => {
         trackEvent("UserSuccessfullyCreatedAgent", {
           agent_id: response.agent.id,
@@ -23,7 +23,7 @@ export const useCreateAgent = () => {
 
         // Invalidate relevant queries
         queryClient.invalidateQueries({
-          queryKey: tanstackClient.agent.getAgents.key(),
+          queryKey: tanstackClient.user.getUserAgents.key(),
         });
         queryClient.invalidateQueries({ queryKey: ["leaderboard"] });
       },
