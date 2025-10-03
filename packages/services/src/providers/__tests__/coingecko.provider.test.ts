@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MockProxy, mock } from "vitest-mock-extended";
 
 import { BlockchainType } from "../../types/index.js";
-import { CoinGeckoProvider } from "../coingecko.provider.js";
+import { CoinGeckoProvider } from "../price/coingecko.provider.js";
 import {
   MockCoinGeckoClient,
   coingeckoConfig,

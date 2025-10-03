@@ -9,7 +9,7 @@ import {
   SpecificChain,
   SpecificChainTokens,
 } from "../types/index.js";
-import { CoinGeckoProvider } from "./coingecko.provider.js";
+import { CoinGeckoProvider } from "./price/coingecko.provider.js";
 import { DexScreenerProvider } from "./price/dexscreener.provider.js";
 
 export interface MultiChainProviderConfig {
