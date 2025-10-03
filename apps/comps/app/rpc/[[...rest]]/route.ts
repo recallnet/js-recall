@@ -8,6 +8,7 @@ import {
   boostService,
   competitionService,
   emailService,
+  leaderboardService,
   userService,
 } from "@/lib/services";
 import { router } from "@/rpc/router/index";
@@ -26,6 +27,7 @@ async function handleRequest(request: Request) {
       competitionService,
       agentService,
       emailService,
+      leaderboardService,
     },
   });
 

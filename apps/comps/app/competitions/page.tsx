@@ -34,10 +34,7 @@ export default function CompetitionsPage() {
   const { trackEvent } = useAnalytics();
   const [isJoining, setIsJoining] = useState(false);
   const { data: leaderboard, isLoading: isLoadingLeaderboard } =
-    useLeaderboards({
-      limit: 25,
-      enabled: !config.clientFlags.disableLeaderboard,
-    });
+    useLeaderboards({ limit: 25 }, !config.clientFlags.disableLeaderboard);
   const session = useSession();
 
   // Track landing page view
