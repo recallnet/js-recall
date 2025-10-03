@@ -24,10 +24,8 @@ import {
   GetCompetitionPerpsPositionsParams,
   GetCompetitionTradesParams,
   GetCompetitionsParams,
-  GetLeaderboardParams,
   GetVotesParams,
   JoinCompetitionResponse,
-  LeaderboardResponse,
   LinkWalletRequest,
   LoginResponse,
   NonceResponse,
@@ -405,20 +403,6 @@ export class ApiClient {
     return this.request<AgentCompetitionsResponse>(
       `/agents/${agentId}/competitions${queryParams}`,
     );
-  }
-
-  // Leaderboards endpoints
-
-  /**
-   * Get global leaderboard
-   * @param params - Query parameters
-   * @returns Leaderboards response
-   */
-  async getGlobalLeaderboard(
-    params: GetLeaderboardParams = {},
-  ): Promise<LeaderboardResponse> {
-    const queryParams = this.formatQueryParams(params);
-    return this.request<LeaderboardResponse>(`/leaderboard${queryParams}`);
   }
 
   // Profile endpoints

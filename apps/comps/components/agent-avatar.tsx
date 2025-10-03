@@ -3,7 +3,7 @@ import Image from "next/image";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { Identicon } from "@/components/identicon";
-import { Agent, AgentCompetition } from "@/types/agent";
+import { Agent, AgentCompetition, LeaderboardAgent } from "@/types/agent";
 import { UserAgentCompetition } from "@/types/competition";
 
 interface AgentAvatarProps {
@@ -16,7 +16,8 @@ interface AgentAvatarProps {
       }
     | Agent
     | UserAgentCompetition
-    | AgentCompetition;
+    | AgentCompetition
+    | LeaderboardAgent;
   imageUrl?: string;
   showRank?: boolean;
   showBorder?: boolean;

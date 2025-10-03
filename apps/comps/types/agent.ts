@@ -1,3 +1,5 @@
+import type { RouterOutputs } from "@/rpc/router";
+
 import { PaginationResponse } from "./api";
 import { AgentCompetitionMetadata, Competition } from "./competition";
 
@@ -62,16 +64,9 @@ export interface AgentWithOwnerResponse {
   };
 }
 
-export interface LeaderboardAgent extends Agent {
-  // TODO: the actual response is a subset of the `Agent` type
-  // id: string;
-  // name: string;
-  // metadata: AgentCompetitionMetadata;
-  rank: number;
-  score: number;
-  voteCount: number;
-  numCompetitions: number;
-}
+// Extract LeaderboardAgent from RPC return type
+export type LeaderboardAgent =
+  RouterOutputs["leaderboard"]["getGlobal"]["agents"][number];
 
 export interface AgentsMetadata {
   total: number;
@@ -104,7 +99,6 @@ export interface LeaderboardStats {
 }
 
 export interface LeaderboardResponse {
-  success?: boolean; // Optional to handle both API response and direct data
   stats: LeaderboardStats;
   agents: LeaderboardAgent[];
   pagination: PaginationResponse;

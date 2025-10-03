@@ -24,7 +24,7 @@ import { Tooltip } from "@recallnet/ui2/components/tooltip";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { useUnifiedLeaderboard } from "@/hooks/useUnifiedLeaderboard";
-import { ApiClient } from "@/lib/api-client";
+import { client } from "@/rpc/clients/client-side";
 import { LeaderboardAgent } from "@/types/agent";
 import { checkIsAgentSkill } from "@/utils/competition-utils";
 
@@ -34,8 +34,6 @@ import { SkillDetailLeaderboardTableMobile } from "./skill-detail-leaderboard-ta
 interface SkillDetailPageProps {
   skillId: string;
 }
-
-const apiClient = new ApiClient();
 
 export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
   skillId,
@@ -52,7 +50,7 @@ export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
   const { refetch: loadMoreAgents, isLoading: isLoadingMore } = useQuery({
     queryKey: ["load-more-agents", currentOffset],
     queryFn: async () => {
-      const response = await apiClient.getGlobalLeaderboard({
+      const response = await client.leaderboard.getGlobal({
         type: "trading",
         limit: 100,
         offset: currentOffset,
