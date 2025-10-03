@@ -19,6 +19,7 @@ import { formatDate } from "@/utils/format";
 
 import { CompetitionStatusBadge } from "./competition-status-badge";
 import { Rewards } from "./rewards";
+import { RewardsTGE } from "./rewards-tge";
 
 export interface CompetitionInfoProps {
   competition: RouterOutputs["competitions"]["getById"];
@@ -92,7 +93,14 @@ export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
           <div className="grid grid-cols-2 border-b">
             <div className="flex flex-col items-start gap-2 border-r p-4 sm:p-[25px]">
               <CellTitle>Reward</CellTitle>
-              {competition.rewards ? (
+              {competition.rewardsTge ? (
+                <RewardsTGE
+                  rewards={{
+                    agentPrizePool: BigInt(competition.rewardsTge.agentPool),
+                    userPrizePool: BigInt(competition.rewardsTge.userPool),
+                  }}
+                />
+              ) : competition.rewards ? (
                 <Rewards rewards={competition.rewards} />
               ) : (
                 <p className="text-xl font-semibold">TBA</p>

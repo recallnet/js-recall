@@ -1,6 +1,7 @@
 import { randomUUID } from "crypto";
 import { Logger } from "pino";
 
+import { valueToAttoBigInt } from "@recallnet/conversions/atto-conversions";
 import { AgentRepository } from "@recallnet/db/repositories/agent";
 import { AgentScoreRepository } from "@recallnet/db/repositories/agent-score";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
@@ -71,6 +72,10 @@ export interface CreateCompetitionParams {
     initialCapital: number; // Required - Zod default ensures this is set
     selfFundingThreshold: number; // Required - Zod default ensures this is set
     apiUrl?: string;
+  };
+  prizePools?: {
+    agent: number;
+    users: number;
   };
 }
 
@@ -232,6 +237,10 @@ type CompetitionDetailsData = {
       reward: number;
       agentId: string | null;
     }>;
+    rewardsTge?: {
+      agentPool: string;
+      userPool: string;
+    };
     votingEnabled?: boolean;
     userVotingInfo?: {
       canVote: boolean;
@@ -477,6 +486,7 @@ export class CompetitionService {
     tradingConstraints,
     rewards,
     perpsProvider,
+    prizePools,
   }: CreateCompetitionParams) {
     const id = randomUUID();
 
@@ -561,6 +571,15 @@ export class CompetitionService {
       this.logger.debug(
         `[CompetitionManager] Created trading constraints for competition ${id}`,
       );
+
+      // Create prize pools if provided
+      if (prizePools) {
+        const attoPrizePools = {
+          agent: valueToAttoBigInt(prizePools.agent),
+          users: valueToAttoBigInt(prizePools.users),
+        };
+        await this.competitionRepo.updatePrizePools(id, attoPrizePools, tx);
+      }
 
       return {
         competition,
@@ -1775,6 +1794,10 @@ export class CompetitionService {
       selfFundingThreshold: number; // Required - Zod default ensures this is set
       apiUrl?: string;
     },
+    prizePools?: {
+      agent: number;
+      users: number;
+    },
   ): Promise<{
     competition: SelectCompetition;
     updatedRewards: SelectCompetitionReward[];
@@ -1929,6 +1952,19 @@ export class CompetitionService {
         updatedRewards = await this.competitionRewardService.replaceRewards(
           competitionId,
           rewards,
+          tx,
+        );
+      }
+
+      // Upsert prize pools if provided
+      if (prizePools) {
+        const attoPrizePools = {
+          agent: valueToAttoBigInt(prizePools.agent),
+          users: valueToAttoBigInt(prizePools.users),
+        };
+        await this.competitionRepo.updatePrizePools(
+          competitionId,
+          attoPrizePools,
           tx,
         );
       }
@@ -2975,6 +3011,7 @@ export class CompetitionService {
         rewards,
         tradingConstraints,
         votingState,
+        prizePools,
       ] = await Promise.all([
         // Get competition details
         this.getCompetition(params.competitionId),
@@ -2999,6 +3036,8 @@ export class CompetitionService {
               params.competitionId,
             )
           : Promise.resolve(null),
+
+        this.competitionRepo.getCompetitionPrizePools(params.competitionId),
       ]);
 
       if (!competition) {
@@ -3052,6 +3091,14 @@ export class CompetitionService {
         agentId: r.agentId,
       }));
 
+      // Format prize pools
+      const formattedPrizePools = prizePools
+        ? {
+            agentPool: prizePools.agentPool.toString(),
+            userPool: prizePools.userPool.toString(),
+          }
+        : undefined;
+
       // Assemble final response
       const result = {
         success: true,
@@ -3060,6 +3107,7 @@ export class CompetitionService {
           stats,
           tradingConstraints,
           rewards: formattedRewards,
+          rewardsTge: formattedPrizePools,
           votingEnabled: votingState
             ? votingState.canVote || votingState.info.hasVoted
             : false,

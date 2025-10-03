@@ -1,5 +1,5 @@
 {
-  "id": "0e2a3f32-adbb-45d7-8f54-c78f3a95859e",
+  "id": "da4f8758-68b0-40f8-86f1-46180b6c0802",
   "prevId": "4fa479b3-aa55-4716-9981-36aa2b44cb9b",
   "version": "7",
   "dialect": "postgresql",
@@ -703,49 +703,6 @@
         }
       },
       "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.competition_prize_pools": {
-      "name": "competition_prize_pools",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "competition_id": {
-          "name": "competition_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "agent_pool": {
-          "name": "agent_pool",
-          "type": "numeric(78, 0)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "user_pool": {
-          "name": "user_pool",
-          "type": "numeric(78, 0)",
-          "primaryKey": false,
-          "notNull": true
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "competition_prize_pools_competition_id_key": {
-          "name": "competition_prize_pools_competition_id_key",
-          "nullsNotDistinct": false,
-          "columns": ["competition_id"]
-        }
-      },
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -2100,6 +2057,14 @@
           "primaryKey": false,
           "notNull": true
         },
+        "type": {
+          "name": "type",
+          "type": "competition_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'trading'"
+        },
         "mu": {
           "name": "mu",
           "type": "double precision",
@@ -2163,6 +2128,21 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
+        },
+        "idx_agent_score_type": {
+          "name": "idx_agent_score_type",
+          "columns": [
+            {
+              "expression": "type",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -2178,10 +2158,10 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "unique_agent_score_agent_id": {
-          "name": "unique_agent_score_agent_id",
+        "unique_agent_score_agent_id_type": {
+          "name": "unique_agent_score_agent_id_type",
           "nullsNotDistinct": false,
-          "columns": ["agent_id"]
+          "columns": ["agent_id", "type"]
         }
       },
       "policies": {},
@@ -2209,6 +2189,14 @@
           "type": "uuid",
           "primaryKey": false,
           "notNull": true
+        },
+        "type": {
+          "name": "type",
+          "type": "competition_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'trading'"
         },
         "mu": {
           "name": "mu",
@@ -4645,18 +4633,6 @@
           "primaryKey": false,
           "notNull": true
         },
-        "user_id": {
-          "name": "user_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "agent_id": {
-          "name": "agent_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
         "address": {
           "name": "address",
           "type": "varchar(50)",
@@ -4713,36 +4689,6 @@
           "method": "btree",
           "with": {}
         },
-        "idx_rewards_user_id": {
-          "name": "idx_rewards_user_id",
-          "columns": [
-            {
-              "expression": "user_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_rewards_agent_id": {
-          "name": "idx_rewards_agent_id",
-          "columns": [
-            {
-              "expression": "agent_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
         "idx_rewards_address": {
           "name": "idx_rewards_address",
           "columns": [
@@ -4757,27 +4703,6 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
-        },
-        "uq_rewards_competition_id_address": {
-          "name": "uq_rewards_competition_id_address",
-          "columns": [
-            {
-              "expression": "competition_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "address",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
         }
       },
       "foreignKeys": {
@@ -4786,24 +4711,6 @@
           "tableFrom": "rewards",
           "tableTo": "competitions",
           "columnsFrom": ["competition_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "rewards_user_id_users_id_fk": {
-          "name": "rewards_user_id_users_id_fk",
-          "tableFrom": "rewards",
-          "tableTo": "users",
-          "columnsFrom": ["user_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "rewards_agent_id_agents_id_fk": {
-          "name": "rewards_agent_id_agents_id_fk",
-          "tableFrom": "rewards",
-          "tableTo": "agents",
-          "columnsFrom": ["agent_id"],
           "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
