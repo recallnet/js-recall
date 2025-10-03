@@ -43,7 +43,6 @@ export default function CompetitionPage({
   const { isAuthenticated } = useSession();
   const { id } = React.use(params);
   const agentsTableRef = React.useRef<HTMLDivElement>(null);
-  const chartRef = React.useRef<HTMLDivElement>(null);
   const [, scrollTo] = useWindowScroll();
   const [agentsFilter, setAgentsFilter] = React.useState("");
   const [agentsSort, setAgentsSort] = React.useState("");
@@ -204,27 +203,6 @@ export default function CompetitionPage({
             </JoinCompetitionButton>
 
             <BoostAgentsBtn className="w-full justify-between uppercase sm:w-1/2" />
-
-            {/*<Button
-              variant="outline"
-              className={cn(
-                "w-full justify-between border border-gray-700 uppercase sm:w-1/2",
-              )}
-              size="lg"
-              onClick={() => {
-                if (chartRef.current) {
-                  scrollTo({
-                    top: chartRef.current.offsetTop,
-                    behavior: "smooth",
-                  });
-                }
-              }}
-            >
-              <div className={cn("flex w-full items-center justify-between")}>
-                <span className="font-semibold">Chart</span>{" "}
-                <ChevronRight className="ml-2" size={18} />
-              </div>
-            </Button>*/}
           </div>
         </div>
       </div>
@@ -307,7 +285,6 @@ export default function CompetitionPage({
       ) : (
         <>
           <TimelineChart
-            ref={chartRef}
             className="mt-5"
             competition={competition}
             agents={agentsData?.agents || []}
