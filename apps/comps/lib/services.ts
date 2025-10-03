@@ -8,6 +8,7 @@ import {
   CompetitionRewardService,
   CompetitionService,
   EmailService,
+  LeaderboardService,
   PerpsDataProcessor,
   PortfolioSnapshotterService,
   PriceTrackerService,
@@ -158,6 +159,11 @@ const perpsDataProcessor = new PerpsDataProcessor(
   competitionRepository,
   perpsRepository,
   createLogger("PerpsDataProcessor"),
+);
+
+export const leaderboardService = new LeaderboardService(
+  leaderboardRepository,
+  createLogger("LeaderboardService"),
 );
 
 export const competitionService = new CompetitionService(

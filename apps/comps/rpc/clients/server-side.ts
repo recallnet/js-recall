@@ -12,6 +12,7 @@ import {
   boostService,
   competitionService,
   emailService,
+  leaderboardService,
   userService,
 } from "@/lib/services";
 import { router } from "@/rpc/router/index";
@@ -27,6 +28,7 @@ export async function createClient(): Promise<RouterClient<typeof router>> {
       competitionService,
       agentService,
       emailService,
+      leaderboardService,
     },
   });
 }
