@@ -3,10 +3,10 @@ import { Logger } from "pino";
 
 import {
   BlockchainType,
-  DexScreenerTokenInfo,
   PriceReport,
   PriceSource,
   SpecificChain,
+  TokenInfo,
 } from "../../types/index.js";
 
 /**
@@ -502,8 +502,8 @@ export class NovesProvider implements PriceSource {
     tokenAddresses: string[],
     chain: BlockchainType,
     specificChain: SpecificChain,
-  ): Promise<Map<string, DexScreenerTokenInfo | null>> {
-    const results = new Map<string, DexScreenerTokenInfo | null>();
+  ): Promise<Map<string, TokenInfo | null>> {
+    const results = new Map<string, TokenInfo | null>();
     for (const tokenAddress of tokenAddresses) {
       const price = await this.getPrice(tokenAddress, chain, specificChain);
       results.set(tokenAddress, price);

@@ -8,11 +8,11 @@ import { z } from "zod";
 import {
   BlockchainType,
   CoinGeckoMode,
-  DexScreenerTokenInfo,
   PriceReport,
   PriceSource,
   SpecificChain,
   SpecificChainTokens,
+  TokenInfo,
 } from "../../types/index.js";
 
 /**
@@ -239,9 +239,7 @@ export class CoinGeckoProvider implements PriceSource {
    * @param pools - The token pools
    * @returns The token info
    */
-  private parseOnchainResponse(
-    response: TokenGetAddressResponse,
-  ): DexScreenerTokenInfo {
+  private parseOnchainResponse(response: TokenGetAddressResponse): TokenInfo {
     const {
       success,
       error,
@@ -274,7 +272,7 @@ export class CoinGeckoProvider implements PriceSource {
   private async fetchPrice(
     tokenAddress: string,
     network: CoinGeckoNetwork,
-  ): Promise<DexScreenerTokenInfo | null> {
+  ): Promise<TokenInfo | null> {
     try {
       const address = this.normalizeAddress(tokenAddress);
       const response = await this.client.onchain.networks.tokens.getAddress(
@@ -311,8 +309,8 @@ export class CoinGeckoProvider implements PriceSource {
   private async fetchBatchPrices(
     tokenAddresses: string[],
     network: CoinGeckoNetwork,
-  ): Promise<Map<string, DexScreenerTokenInfo | null>> {
-    const results = new Map<string, DexScreenerTokenInfo | null>();
+  ): Promise<Map<string, TokenInfo | null>> {
+    const results = new Map<string, TokenInfo | null>();
     this.logger.debug(
       `Fetching batch prices for ${tokenAddresses.length} tokens on ${network}`,
     );
@@ -391,8 +389,8 @@ export class CoinGeckoProvider implements PriceSource {
     tokenAddresses: string[],
     chain: BlockchainType,
     specificChain: SpecificChain,
-  ): Promise<Map<string, DexScreenerTokenInfo | null>> {
-    const results = new Map<string, DexScreenerTokenInfo | null>();
+  ): Promise<Map<string, TokenInfo | null>> {
+    const results = new Map<string, TokenInfo | null>();
     if (tokenAddresses.length === 0) {
       return results;
     }

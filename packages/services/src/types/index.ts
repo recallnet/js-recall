@@ -159,7 +159,7 @@ export interface PriceSource {
     tokenAddresses: string[],
     chain: BlockchainType,
     specificChain: SpecificChain,
-  ): Promise<Map<string, DexScreenerTokenInfo | null>>;
+  ): Promise<Map<string, TokenInfo | null>>;
 
   /**
    * Determine blockchain type from token address format
@@ -220,9 +220,9 @@ export interface DexScreenerPair {
 export type DexScreenerResponse = DexScreenerPair[];
 
 /**
- * Token information returned by DexScreener API
+ * Token information returned by price provider API providers
  */
-export interface DexScreenerTokenInfo {
+export interface TokenInfo {
   price: number;
   symbol: string;
   pairCreatedAt?: number;
@@ -238,7 +238,7 @@ export interface PriceReport {
   chain: BlockchainType;
   specificChain: SpecificChain;
   symbol: string;
-  // Additional DexScreener data for trading constraints
+  // Additional data for trading constraints
   pairCreatedAt?: number;
   volume?: {
     h24?: number;
