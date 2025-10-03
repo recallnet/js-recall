@@ -23,8 +23,18 @@ const formattedNumber = new Intl.NumberFormat();
 export const Navbar: React.FunctionComponent = () => {
   const pathname = usePathname();
   const navItems = [
-    { label: "COMPETITIONS", href: "/competitions" },
-    { label: "LEADERBOARDS", href: "/leaderboards" },
+    {
+      label: "COMPETITIONS",
+      href: "/competitions",
+      activeColor: "border-b-yellow-500",
+      hoverShadow: "hover:shadow-[0_-4px_12px_rgba(251,191,36,0.4)]",
+    },
+    {
+      label: "LEADERBOARDS",
+      href: "/leaderboards",
+      activeColor: "border-b-green-400",
+      hoverShadow: "hover:shadow-[0_-4px_12px_rgba(34,197,94,0.4)]",
+    },
   ];
 
   const { isAuthenticated } = useSession();
@@ -36,7 +46,10 @@ export const Navbar: React.FunctionComponent = () => {
       <div className="mx-auto flex w-full max-w-screen-lg items-center justify-between px-5 sm:px-20">
         <div className="flex items-center">
           {/* Logo */}
-          <Link href="/" className="flex items-center border-x p-1">
+          <Link
+            href="/"
+            className="flex items-center border-x p-1 transition-colors hover:bg-gray-900/50"
+          >
             <Avatar className="h-12 w-12">
               <AvatarImage
                 src="/logo_white.svg"
@@ -55,13 +68,13 @@ export const Navbar: React.FunctionComponent = () => {
                   href={item.href}
                   key={item.href}
                   className={cn(
-                    "px-15 flex h-14 items-center justify-center border-b-2 border-r",
-                    isActive ? "border-b-yellow-500" : "border-b-transparent",
+                    "px-15 flex h-14 items-center justify-center border-b-2 border-r transition-colors",
+                    !isActive && "hover:bg-gray-900/50",
+                    isActive ? item.activeColor : "border-b-transparent",
+                    !isActive && item.hoverShadow,
                   )}
                 >
-                  <span
-                    className={`font-mono text-xs font-medium tracking-widest text-white transition-colors`}
-                  >
+                  <span className="font-mono text-xs font-medium tracking-widest text-white">
                     {item.label}
                   </span>
                 </Link>
@@ -108,7 +121,7 @@ export const Navbar: React.FunctionComponent = () => {
               tooltipClassName="max-w-xs"
               content="Boost available per competition. Visit any active compeition page to activate yours and start boosting agents."
             >
-              <div className="flex flex-row items-center space-x-2 font-bold text-yellow-500">
+              <div className="flex cursor-pointer flex-row items-center space-x-2 rounded px-2 py-1 font-bold text-yellow-500 transition-colors hover:bg-gray-900/50">
                 <Zap className="size-4" />
                 <span>
                   {formattedNumber.format(
@@ -120,10 +133,13 @@ export const Navbar: React.FunctionComponent = () => {
           )}
           <div
             className={cn(
-              "flex h-full items-center border-b-2",
+              "flex h-full items-center border-b-2 transition-colors",
+              isAuthenticated && nonStakeBoostAmount && "border-l pl-4",
               pathname === "/profile"
                 ? "border-b-yellow-500"
                 : "border-b-transparent",
+              pathname !== "/profile" &&
+                "hover:shadow-[0_-4px_12px_rgba(251,191,36,0.4)]",
             )}
           >
             <PrivyAuthButton />
