@@ -10,7 +10,6 @@ import {
   CoinGeckoMode,
   CrossChainTradingType,
   PriceProvider,
-  SpecificChain,
 } from "@recallnet/services/types";
 
 import { createSentryConfig } from "@/lib/sentry-config.js";
