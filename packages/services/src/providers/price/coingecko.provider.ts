@@ -293,9 +293,9 @@ export class CoinGeckoProvider implements PriceSource {
         timestamp: new Date(),
         chain,
         specificChain,
-        pairCreatedAt: undefined,
+        pairCreatedAt: priceData.pairCreatedAt,
         volume: priceData.volume,
-        liquidity: undefined,
+        liquidity: priceData.liquidity,
         fdv: priceData.fdv,
       };
     }
