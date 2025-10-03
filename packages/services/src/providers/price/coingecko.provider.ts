@@ -194,15 +194,14 @@ export class CoinGeckoProvider implements PriceSource {
 
   /**
    * Checks if a token address is a known burn address
-   * @param tokenAddress - The token contract address to check
+   * @param tokenAddress - The token contract address to check. Expected to be checksummed.
    * @returns True if the address is a burn address, false otherwise
    */
   private isBurnAddress(tokenAddress: string): boolean {
-    const normalizedAddress = this.normalizeAddress(tokenAddress);
-    if (normalizedAddress === "0x000000000000000000000000000000000000dEaD") {
-      return true;
-    }
-    if (normalizedAddress === "1nc1nerator11111111111111111111111111111111") {
+    if (
+      tokenAddress === "0x000000000000000000000000000000000000dEaD" ||
+      tokenAddress === "1nc1nerator11111111111111111111111111111111"
+    ) {
       return true;
     }
     return false;
@@ -347,14 +346,15 @@ export class CoinGeckoProvider implements PriceSource {
       this.logger.error(`Unsupported chain: ${specificChain}`);
       return null;
     }
-    if (this.isBurnAddress(tokenAddress)) {
+    const address = this.normalizeAddress(tokenAddress);
+    if (this.isBurnAddress(address)) {
       this.logger.debug(
-        `Burn address detected: ${tokenAddress}, returning price of 0`,
+        `Burn address detected: ${address}, returning price of 0`,
       );
       return {
         price: 0,
         symbol: "BURN",
-        token: tokenAddress,
+        token: address,
         timestamp: new Date(),
         chain,
         specificChain,
@@ -364,12 +364,12 @@ export class CoinGeckoProvider implements PriceSource {
         fdv: undefined,
       };
     }
-    const priceData = await this.fetchPrice(tokenAddress, network);
+    const priceData = await this.fetchPrice(address, network);
     if (priceData === null) return null;
     return {
       price: priceData.price,
       symbol: priceData.symbol,
-      token: tokenAddress,
+      token: address,
       timestamp: new Date(),
       chain,
       specificChain,
@@ -399,7 +399,8 @@ export class CoinGeckoProvider implements PriceSource {
 
     const addressesToFetch: string[] = [];
     for (const tokenAddress of tokenAddresses) {
-      if (this.isBurnAddress(tokenAddress)) {
+      const address = this.normalizeAddress(tokenAddress);
+      if (this.isBurnAddress(address)) {
         results.set(tokenAddress, {
           price: 0,
           symbol: "BURN",
@@ -409,11 +410,10 @@ export class CoinGeckoProvider implements PriceSource {
           fdv: undefined,
         });
       } else {
-        addressesToFetch.push(tokenAddress);
+        addressesToFetch.push(address);
       }
     }
 
-    // Check for unsupported chain early
     const network = COINGECKO_NETWORKS[specificChain];
     if (!network) {
       this.logger.error(`Unsupported chain: ${specificChain}`);
@@ -423,7 +423,6 @@ export class CoinGeckoProvider implements PriceSource {
       return results;
     }
 
-    // Process tokens in batches
     const batchResults = await this.fetchBatchPrices(addressesToFetch, network);
     batchResults.forEach((value, key) => {
       results.set(key, value);
