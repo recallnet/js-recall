@@ -417,6 +417,9 @@ importers:
       uuid:
         specifier: ^9.0.0
         version: 9.0.1
+      vanilla-cookieconsent:
+        specifier: ^3.1.0
+        version: 3.1.0
       viem:
         specifier: ^2.37.8
         version: 2.37.9(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76)
@@ -12754,6 +12757,9 @@ packages:
         optional: true
       react:
         optional: true
+
+  vanilla-cookieconsent@3.1.0:
+    resolution: {integrity: sha512-/McNRtm/3IXzb9dhqMIcbquoU45SzbN2VB+To4jxEPqMmp7uVniP6BhGLjU8MC7ZCDsNQVOp27fhQTM/ruIXAA==}
 
   vary@1.1.2:
     resolution: {integrity: sha512-BNGbWLfd0eUPabhkXUVm0j8uuvREyTh5ovRa/dyow/BqAbZJyC+5fU+IzQOzmAKzYqYRAISoRhdQr3eIZ/PXqg==}
@@ -29390,6 +29396,8 @@ snapshots:
     optionalDependencies:
       '@types/react': 19.1.4
       react: 19.1.0
+
+  vanilla-cookieconsent@3.1.0: {}
 
   vary@1.1.2: {}
 
