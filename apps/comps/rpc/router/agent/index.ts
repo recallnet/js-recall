@@ -1,3 +1,7 @@
-// Agent router is currently empty and reserved for future public agent endpoints
+import { getAgent } from "./get-agent";
+import { listAgents } from "./list-agents";
 
-export const router = {} as const;
+export const router = {
+  getAgent,
+  listAgents,
+} as const;

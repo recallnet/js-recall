@@ -223,7 +223,7 @@ function createUnifiedRankings(
       type: "agent",
       rank: agent.rank,
       score: agent.score,
-      imageUrl: agent.imageUrl,
+      imageUrl: agent.imageUrl ?? undefined,
       additionalMetrics: {
         trades: agent.numCompetitions, // Using available data
         competitions: agent.numCompetitions,
