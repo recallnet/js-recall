@@ -5,7 +5,7 @@ import * as path from "path";
 import { v4 as uuidv4 } from "uuid";
 import { hexToBytes, keccak256 } from "viem";
 
-import { competitions } from "@recallnet/db/schema/core/defs";
+import { competitions, users } from "@recallnet/db/schema/core/defs";
 import { rewards } from "@recallnet/db/schema/voting/defs";
 import { createFauxLeafNode, createLeafNode } from "@recallnet/services";
 
@@ -36,7 +36,7 @@ const TEST_WALLETS = [
 ];
 
 /**
- * Insert one competition and three rewards into the database
+ * Insert one competition, three test users, and three rewards into the database
  */
 async function insertCompetitionAndRewards() {
   try {
@@ -73,22 +73,53 @@ async function insertCompetitionAndRewards() {
       endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
     });
 
-    // Define reward data with predefined test wallets
+    // Create test users first
+    console.log(`\n${blue("Creating test users...")}`);
+    const testUsers = [];
+
+    for (let i = 0; i < TEST_WALLETS.length; i++) {
+      const wallet = TEST_WALLETS[i]!;
+      const userId = uuidv4();
+
+      await db.insert(users).values({
+        id: userId,
+        walletAddress: wallet.address,
+        embeddedWalletAddress: wallet.address,
+        name: `Test User ${i + 1}`,
+        email: `testuser${i + 1}@example.com`,
+        status: "active",
+      });
+
+      testUsers.push({
+        id: userId,
+        address: wallet.address as `0x${string}`,
+        privateKey: wallet.privateKey,
+      });
+
+      console.log(
+        `${green("Created user:")} ${yellow(wallet.address)} ${green("with ID:")} ${yellow(userId)}`,
+      );
+    }
+
+    // Define reward data with user IDs
     const rewardsData = [
       {
-        address: TEST_WALLETS[0]!.address as `0x${string}`,
+        userId: testUsers[0]!.id,
+        address: testUsers[0]!.address,
         amount: BigInt("100000000000000000"), // 0.1 token in WEI
-        privateKey: TEST_WALLETS[0]!.privateKey,
+        privateKey: testUsers[0]!.privateKey,
       },
       {
-        address: TEST_WALLETS[1]!.address as `0x${string}`,
+        userId: testUsers[1]!.id,
+        address: testUsers[1]!.address,
         amount: BigInt("200000000000000000"), // 0.2 tokens in WEI
-        privateKey: TEST_WALLETS[1]!.privateKey,
+        privateKey: testUsers[1]!.privateKey,
       },
       {
-        address: TEST_WALLETS[2]!.address as `0x${string}`,
+        userId: testUsers[2]!.id,
+        address: testUsers[2]!.address,
         amount: BigInt("300000000000000000"), // 0.3 tokens in WEI
-        privateKey: TEST_WALLETS[2]!.privateKey,
+        privateKey: testUsers[2]!.privateKey,
       },
     ];
 
@@ -101,8 +132,8 @@ async function insertCompetitionAndRewards() {
       const leafHash = createLeafNode(reward.address, reward.amount);
 
       await db.insert(rewards).values({
-        id: uuidv4(),
         competitionId: competitionId,
+        userId: reward.userId,
         address: reward.address,
         amount: reward.amount,
         leafHash: hexToBytes(leafHash),

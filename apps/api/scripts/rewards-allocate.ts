@@ -8,7 +8,9 @@ import { BoostRepository } from "@recallnet/db/repositories/boost";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { RewardsRepository } from "@recallnet/db/repositories/rewards";
 import { RewardsService } from "@recallnet/services";
-import RewardsAllocator from "@recallnet/staking-contracts/rewards-allocator";
+import RewardsAllocator, {
+  Network,
+} from "@recallnet/staking-contracts/rewards-allocator";
 
 import config from "@/config/index.js";
 import { db } from "@/database/db.js";
@@ -104,12 +106,18 @@ async function allocateRewards() {
     const competitionRepo = new CompetitionRepository(db, db, repositoryLogger);
     const boostRepo = new BoostRepository(db);
 
-    const { allocatorPrivateKey, contractAddress, rpcProvider } =
-      config.rewards;
+    const {
+      allocatorPrivateKey,
+      contractAddress,
+      tokenContractAddress,
+      rpcProvider,
+    } = config.rewards;
     const rewardsAllocator = new RewardsAllocator(
       allocatorPrivateKey as Hex,
       rpcProvider,
       contractAddress as Hex,
+      tokenContractAddress as Hex,
+      config.rewards.network as Network,
     );
 
     const rewardsService = new RewardsService(
@@ -124,7 +132,6 @@ async function allocateRewards() {
     // Call the allocate method with all required parameters
     await rewardsService.allocate(
       args.competitionId,
-      args.tokenAddress as `0x${string}`,
       parseInt(args.startTimestamp),
     );
 

@@ -78,6 +78,7 @@ describe("RewardsService", () => {
     totalAgents: 10,
     score: 1000 - rank * 100,
     userWalletAddress: wallet,
+    ownerId: `owner-${agentId}`,
   });
 
   beforeEach(() => {
@@ -93,6 +94,7 @@ describe("RewardsService", () => {
     mockCompetitionRepository = {
       findById: vi.fn(),
       findLeaderboardByCompetitionWithWallets: vi.fn(),
+      getCompetitionPrizePools: vi.fn(),
     } as unknown as DeepMockProxy<CompetitionRepository>;
 
     mockBoostRepository = {
@@ -269,9 +271,300 @@ describe("RewardsService", () => {
     });
   });
 
+  describe("calculateAndAllocate", () => {
+    const competitionId = "comp-123";
+    const startTimestamp = 1640995200; // 2022-01-01
+
+    it("should successfully calculate and allocate rewards with valid prize pool", async () => {
+      const service = new RewardsService(
+        mockRewardsRepo,
+        mockCompetitionRepository,
+        mockBoostRepository,
+        mockRewardsAllocator,
+        mockDb,
+        mockLogger,
+      );
+
+      // Mock prize pool data
+      const mockPrizePool = {
+        id: "prize-pool-123",
+        competitionId: "comp-123",
+        userPool: 1000n, // $1000 USD
+        agentPool: 2000n, // $2000 USD
+      };
+
+      // Mock the required dependencies
+      vi.mocked(
+        mockCompetitionRepository.getCompetitionPrizePools,
+      ).mockResolvedValue(mockPrizePool);
+      vi.mocked(mockRewardsRepo.insertRewards).mockResolvedValue([]);
+      vi.mocked(mockCompetitionRepository.findById).mockResolvedValue(
+        createMockCompetition(competitionId),
+      );
+      vi.mocked(
+        mockCompetitionRepository.findLeaderboardByCompetitionWithWallets,
+      ).mockResolvedValue([
+        createMockLeaderboardEntry(
+          "agent-1",
+          "0x1111111111111111111111111111111111111111",
+          1,
+        ),
+      ]);
+
+      // Mock rewards for allocation
+      const mockRewards: SelectReward[] = [
+        {
+          id: "reward-1",
+          competitionId,
+          userId: "user-1",
+          agentId: "agent-1",
+          address:
+            "0x1111111111111111111111111111111111111111" as `0x${string}`,
+          amount: 100n,
+          leafHash: Buffer.from("hash1"),
+          claimed: false,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ];
+      vi.mocked(mockRewardsRepo.getRewardsByCompetition).mockResolvedValue(
+        mockRewards,
+      );
+
+      await service.calculateAndAllocate(competitionId, startTimestamp);
+
+      // Verify prize pool calculation and conversion
+      expect(
+        mockCompetitionRepository.getCompetitionPrizePools,
+      ).toHaveBeenCalledWith(competitionId);
+
+      // Verify calculateRewards was called with converted amounts
+      // userPool: $1000 / $0.50 = 2000 tokens * 10^18 = 2000000000000000000000n
+      // agentPool: $2000 / $0.50 = 4000 tokens * 10^18 = 4000000000000000000000n
+      expect(mockRewardsRepo.insertRewards).toHaveBeenCalled();
+      expect(mockRewardsAllocator.allocate).toHaveBeenCalledWith(
+        expect.any(String),
+        100n, // total allocation amount
+        startTimestamp,
+      );
+    });
+
+    it("should throw error when no prize pool found", async () => {
+      const service = new RewardsService(
+        mockRewardsRepo,
+        mockCompetitionRepository,
+        mockBoostRepository,
+        mockRewardsAllocator,
+        mockDb,
+        mockLogger,
+      );
+
+      vi.mocked(
+        mockCompetitionRepository.getCompetitionPrizePools,
+      ).mockResolvedValue(null);
+
+      await expect(
+        service.calculateAndAllocate(competitionId, startTimestamp),
+      ).rejects.toThrow(`No prize pool found for competition ${competitionId}`);
+    });
+
+    it("should propagate errors from calculateRewards", async () => {
+      const service = new RewardsService(
+        mockRewardsRepo,
+        mockCompetitionRepository,
+        mockBoostRepository,
+        mockRewardsAllocator,
+        mockDb,
+        mockLogger,
+      );
+
+      const mockPrizePool = {
+        id: "prize-pool-123",
+        competitionId: "comp-123",
+        userPool: 1000n,
+        agentPool: 2000n,
+      };
+
+      vi.mocked(
+        mockCompetitionRepository.getCompetitionPrizePools,
+      ).mockResolvedValue(mockPrizePool);
+      vi.mocked(mockCompetitionRepository.findById).mockRejectedValue(
+        new Error("Database connection failed"),
+      );
+
+      await expect(
+        service.calculateAndAllocate(competitionId, startTimestamp),
+      ).rejects.toThrow("Database connection failed");
+    });
+
+    it("should propagate errors from allocate", async () => {
+      const service = new RewardsService(
+        mockRewardsRepo,
+        mockCompetitionRepository,
+        mockBoostRepository,
+        mockRewardsAllocator,
+        mockDb,
+        mockLogger,
+      );
+
+      const mockPrizePool = {
+        id: "prize-pool-123",
+        competitionId: "comp-123",
+        userPool: 1000n,
+        agentPool: 2000n,
+      };
+
+      vi.mocked(
+        mockCompetitionRepository.getCompetitionPrizePools,
+      ).mockResolvedValue(mockPrizePool);
+      vi.mocked(mockRewardsRepo.insertRewards).mockResolvedValue([]);
+      vi.mocked(mockCompetitionRepository.findById).mockResolvedValue(
+        createMockCompetition(competitionId),
+      );
+      vi.mocked(
+        mockCompetitionRepository.findLeaderboardByCompetitionWithWallets,
+      ).mockResolvedValue([
+        createMockLeaderboardEntry(
+          "agent-1",
+          "0x1111111111111111111111111111111111111111",
+          1,
+        ),
+      ]);
+
+      // Mock allocate to fail
+      vi.mocked(mockRewardsRepo.getRewardsByCompetition).mockResolvedValue([]);
+
+      await expect(
+        service.calculateAndAllocate(competitionId, startTimestamp),
+      ).rejects.toThrow("no rewards to allocate");
+    });
+
+    it("should handle large prize pool amounts correctly", async () => {
+      const service = new RewardsService(
+        mockRewardsRepo,
+        mockCompetitionRepository,
+        mockBoostRepository,
+        mockRewardsAllocator,
+        mockDb,
+        mockLogger,
+      );
+
+      const mockPrizePool = {
+        id: "prize-pool-123",
+        competitionId: "comp-123",
+        userPool: 1000000n, // $1M USD
+        agentPool: 2000000n, // $2M USD
+      };
+
+      vi.mocked(
+        mockCompetitionRepository.getCompetitionPrizePools,
+      ).mockResolvedValue(mockPrizePool);
+      vi.mocked(mockRewardsRepo.insertRewards).mockResolvedValue([]);
+      vi.mocked(mockCompetitionRepository.findById).mockResolvedValue(
+        createMockCompetition(competitionId),
+      );
+      vi.mocked(
+        mockCompetitionRepository.findLeaderboardByCompetitionWithWallets,
+      ).mockResolvedValue([
+        createMockLeaderboardEntry(
+          "agent-1",
+          "0x1111111111111111111111111111111111111111",
+          1,
+        ),
+      ]);
+
+      const mockRewards: SelectReward[] = [
+        {
+          id: "reward-1",
+          competitionId,
+          userId: "user-1",
+          agentId: "agent-1",
+          address:
+            "0x1111111111111111111111111111111111111111" as `0x${string}`,
+          amount: BigInt("1000000000000000000000000"), // 1M tokens
+          leafHash: Buffer.from("hash1"),
+          claimed: false,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ];
+      vi.mocked(mockRewardsRepo.getRewardsByCompetition).mockResolvedValue(
+        mockRewards,
+      );
+
+      await service.calculateAndAllocate(competitionId, startTimestamp);
+
+      expect(mockRewardsRepo.insertRewards).toHaveBeenCalled();
+      expect(mockRewardsAllocator.allocate).toHaveBeenCalledWith(
+        expect.any(String),
+        BigInt("1000000000000000000000000"),
+        startTimestamp,
+      );
+    });
+
+    it("should handle decimal precision correctly in prize pool conversion", async () => {
+      const service = new RewardsService(
+        mockRewardsRepo,
+        mockCompetitionRepository,
+        mockBoostRepository,
+        mockRewardsAllocator,
+        mockDb,
+        mockLogger,
+      );
+
+      const mockPrizePool = {
+        id: "prize-pool-123",
+        competitionId: "comp-123",
+        userPool: 1000n, // $1000 USD (rounded down)
+        agentPool: 2000n, // $2000 USD (rounded down)
+      };
+
+      vi.mocked(
+        mockCompetitionRepository.getCompetitionPrizePools,
+      ).mockResolvedValue(mockPrizePool);
+      vi.mocked(mockRewardsRepo.insertRewards).mockResolvedValue([]);
+      vi.mocked(mockCompetitionRepository.findById).mockResolvedValue(
+        createMockCompetition(competitionId),
+      );
+      vi.mocked(
+        mockCompetitionRepository.findLeaderboardByCompetitionWithWallets,
+      ).mockResolvedValue([
+        createMockLeaderboardEntry(
+          "agent-1",
+          "0x1111111111111111111111111111111111111111",
+          1,
+        ),
+      ]);
+
+      const mockRewards: SelectReward[] = [
+        {
+          id: "reward-1",
+          competitionId,
+          userId: "user-1",
+          agentId: "agent-1",
+          address:
+            "0x1111111111111111111111111111111111111111" as `0x${string}`,
+          amount: 100n,
+          leafHash: Buffer.from("hash1"),
+          claimed: false,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ];
+      vi.mocked(mockRewardsRepo.getRewardsByCompetition).mockResolvedValue(
+        mockRewards,
+      );
+
+      await service.calculateAndAllocate(competitionId, startTimestamp);
+
+      // Should handle decimal precision and round down as specified in the code
+      expect(mockRewardsRepo.insertRewards).toHaveBeenCalled();
+      expect(mockRewardsAllocator.allocate).toHaveBeenCalled();
+    });
+  });
+
   describe("allocate", () => {
     const competitionId = "comp-123";
-    const tokenAddress = "0x1234567890123456789012345678901234567890" as Hex;
     const startTimestamp = 1640995200; // 2022-01-01
 
     it("should successfully allocate rewards", async () => {
@@ -279,6 +572,8 @@ describe("RewardsService", () => {
         {
           id: "reward-1",
           competitionId,
+          userId: "user-1",
+          agentId: "agent-1",
           address:
             "0x1111111111111111111111111111111111111111" as `0x${string}`,
           amount: 100n,
@@ -290,6 +585,8 @@ describe("RewardsService", () => {
         {
           id: "reward-2",
           competitionId,
+          userId: "user-2",
+          agentId: "agent-2",
           address:
             "0x2222222222222222222222222222222222222222" as `0x${string}`,
           amount: 200n,
@@ -312,12 +609,11 @@ describe("RewardsService", () => {
         mockDb,
         mockLogger,
       );
-      await service.allocate(competitionId, tokenAddress, startTimestamp);
+      await service.allocate(competitionId, startTimestamp);
 
       // Verify blockchain allocation was called with correct parameters
       expect(mockRewardsAllocator.allocate).toHaveBeenCalledWith(
         expect.any(String), // rootHash
-        tokenAddress,
         300n, // total allocation amount
         startTimestamp,
       );
@@ -340,7 +636,7 @@ describe("RewardsService", () => {
       );
 
       await expect(
-        service.allocate(competitionId, tokenAddress, startTimestamp),
+        service.allocate(competitionId, startTimestamp),
       ).rejects.toThrow("no rewards to allocate");
     });
 
@@ -349,6 +645,8 @@ describe("RewardsService", () => {
         {
           id: "reward-1",
           competitionId,
+          userId: "user-1",
+          agentId: "agent-1",
           address:
             "0x1111111111111111111111111111111111111111" as `0x${string}`,
           amount: 150n,
@@ -360,6 +658,8 @@ describe("RewardsService", () => {
         {
           id: "reward-2",
           competitionId,
+          userId: "user-2",
+          agentId: "agent-2",
           address:
             "0x2222222222222222222222222222222222222222" as `0x${string}`,
           amount: 350n,
@@ -382,11 +682,10 @@ describe("RewardsService", () => {
         mockDb,
         mockLogger,
       );
-      await service.allocate(competitionId, tokenAddress, startTimestamp);
+      await service.allocate(competitionId, startTimestamp);
 
       expect(mockRewardsAllocator.allocate).toHaveBeenCalledWith(
         expect.any(String),
-        tokenAddress,
         500n, // 150 + 350
         startTimestamp,
       );
@@ -397,6 +696,8 @@ describe("RewardsService", () => {
         {
           id: "reward-1",
           competitionId,
+          userId: "user-1",
+          agentId: "agent-1",
           address:
             "0x1111111111111111111111111111111111111111" as `0x${string}`,
           amount: 100n,
@@ -424,7 +725,7 @@ describe("RewardsService", () => {
       );
 
       await expect(
-        service.allocate(competitionId, tokenAddress, startTimestamp),
+        service.allocate(competitionId, startTimestamp),
       ).rejects.toThrow("Blockchain transaction failed");
 
       // Verify transaction rollback - database operations should not have been called
@@ -436,6 +737,8 @@ describe("RewardsService", () => {
         {
           id: "reward-1",
           competitionId,
+          userId: "user-1",
+          agentId: "agent-1",
           address:
             "0x1111111111111111111111111111111111111111" as `0x${string}`,
           amount: 100n,
@@ -466,7 +769,7 @@ describe("RewardsService", () => {
       );
 
       await expect(
-        service.allocate(competitionId, tokenAddress, startTimestamp),
+        service.allocate(competitionId, startTimestamp),
       ).rejects.toThrow("Database constraint violation");
 
       // Blockchain call should have been made but the transaction should rollback
@@ -478,6 +781,8 @@ describe("RewardsService", () => {
         {
           id: "reward-1",
           competitionId,
+          userId: "user-1",
+          agentId: "agent-1",
           address:
             "0x1111111111111111111111111111111111111111" as `0x${string}`,
           amount: 100n,
@@ -506,7 +811,7 @@ describe("RewardsService", () => {
         mockDb,
         mockLogger,
       );
-      await service.allocate(competitionId, tokenAddress, startTimestamp);
+      await service.allocate(competitionId, startTimestamp);
 
       // Verify that database insert was called with tree nodes
       expect(mockTransaction.insert).toHaveBeenCalledTimes(2); // tree nodes and root
@@ -709,7 +1014,6 @@ describe("RewardsService", () => {
   describe("Edge cases and error conditions", () => {
     it("should handle large reward amounts without overflow and validate total", async () => {
       const competitionId = "comp-123";
-      const tokenAddress = "0x1234567890123456789012345678901234567890" as Hex;
       const startTimestamp = 1640995200;
       const largeAmount = BigInt("999999999999999999999999999999999999999");
 
@@ -717,6 +1021,8 @@ describe("RewardsService", () => {
         {
           id: "reward-1",
           competitionId,
+          userId: "user-1",
+          agentId: "agent-1",
           address:
             "0x1111111111111111111111111111111111111111" as `0x${string}`,
           amount: largeAmount,
@@ -728,6 +1034,8 @@ describe("RewardsService", () => {
         {
           id: "reward-2",
           competitionId,
+          userId: "user-2",
+          agentId: "agent-2",
           address:
             "0x2222222222222222222222222222222222222222" as `0x${string}`,
           amount: 1n,
@@ -750,12 +1058,11 @@ describe("RewardsService", () => {
         mockDb,
         mockLogger,
       );
-      await service.allocate(competitionId, tokenAddress, startTimestamp);
+      await service.allocate(competitionId, startTimestamp);
 
       // Verify correct total calculation with large numbers
       expect(mockRewardsAllocator.allocate).toHaveBeenCalledWith(
         expect.any(String),
-        tokenAddress,
         largeAmount + 1n, // Exact sum
         startTimestamp,
       );
@@ -763,13 +1070,14 @@ describe("RewardsService", () => {
 
     it("should handle zero amount rewards properly", async () => {
       const competitionId = "comp-123";
-      const tokenAddress = "0x1234567890123456789012345678901234567890" as Hex;
       const startTimestamp = 1640995200;
 
       const mockRewards: SelectReward[] = [
         {
           id: "reward-1",
           competitionId,
+          userId: "user-1",
+          agentId: "agent-1",
           address:
             "0x1111111111111111111111111111111111111111" as `0x${string}`,
           amount: 0n,
@@ -798,11 +1106,10 @@ describe("RewardsService", () => {
         mockDb,
         mockLogger,
       );
-      await service.allocate(competitionId, tokenAddress, startTimestamp);
+      await service.allocate(competitionId, startTimestamp);
 
       expect(mockRewardsAllocator.allocate).toHaveBeenCalledWith(
         expect.any(String),
-        tokenAddress,
         0n,
         startTimestamp,
       );
@@ -810,7 +1117,6 @@ describe("RewardsService", () => {
 
     it("should handle duplicate addresses with different amounts", async () => {
       const competitionId = "comp-123";
-      const tokenAddress = "0x1234567890123456789012345678901234567890" as Hex;
       const startTimestamp = 1640995200;
       const duplicateAddress =
         "0x1111111111111111111111111111111111111111" as `0x${string}`;
@@ -819,6 +1125,8 @@ describe("RewardsService", () => {
         {
           id: "reward-1",
           competitionId,
+          userId: "user-1",
+          agentId: "agent-1",
           address: duplicateAddress,
           amount: 100n,
           leafHash: Buffer.from(
@@ -832,6 +1140,8 @@ describe("RewardsService", () => {
         {
           id: "reward-2",
           competitionId,
+          userId: "user-2",
+          agentId: "agent-2",
           address: duplicateAddress,
           amount: 200n,
           leafHash: Buffer.from(
@@ -856,12 +1166,11 @@ describe("RewardsService", () => {
         mockDb,
         mockLogger,
       );
-      await service.allocate(competitionId, tokenAddress, startTimestamp);
+      await service.allocate(competitionId, startTimestamp);
 
       // Verify both rewards are counted in total
       expect(mockRewardsAllocator.allocate).toHaveBeenCalledWith(
         expect.any(String),
-        tokenAddress,
         300n, // 100n + 200n
         startTimestamp,
       );
@@ -903,6 +1212,45 @@ describe("RewardsService", () => {
         `No proof found for reward (address: ${address}, amount: ${amount}) in competition ${competitionId}`,
       );
     });
+
+    it("should throw runtime error when allocator is null", async () => {
+      const competitionId = "comp-123";
+      const startTimestamp = 1640995200;
+
+      const mockRewards: SelectReward[] = [
+        {
+          id: "reward-1",
+          competitionId,
+          userId: "user-1",
+          agentId: "agent-1",
+          address:
+            "0x1111111111111111111111111111111111111111" as `0x${string}`,
+          amount: 100n,
+          leafHash: Buffer.from("hash1"),
+          claimed: false,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ];
+
+      vi.mocked(mockRewardsRepo.getRewardsByCompetition).mockResolvedValue(
+        mockRewards,
+      );
+
+      // Create service with null allocator
+      const service = new RewardsService(
+        mockRewardsRepo,
+        mockCompetitionRepository,
+        mockBoostRepository,
+        null as unknown as RewardsAllocator, // Explicitly pass null to test runtime behavior
+        mockDb,
+        mockLogger,
+      );
+
+      await expect(
+        service.allocate(competitionId, startTimestamp),
+      ).rejects.toThrow();
+    });
   });
 
   describe("Integration tests with comprehensive test data", () => {
@@ -915,16 +1263,19 @@ describe("RewardsService", () => {
 
     const testLeaderboard: Leaderboard = [
       {
+        owner: "owner-1",
         competitor: "Competitor A",
         wallet: "0x1111111111111111111111111111111111111111",
         rank: 1,
       },
       {
+        owner: "owner-2",
         competitor: "Competitor B",
         wallet: "0x2222222222222222222222222222222222222222",
         rank: 2,
       },
       {
+        owner: "owner-3",
         competitor: "Competitor C",
         wallet: "0x3333333333333333333333333333333333333333",
         rank: 3,
@@ -1111,6 +1462,7 @@ describe("RewardsService", () => {
       const competition = createMockCompetition(testCompetitionId);
 
       const leaderboard = testCaseData.leaderBoard.map((entry, index) => ({
+        owner: `owner-${index + 1}`,
         competitor: entry.competitor,
         wallet: `0x${(index + 1).toString().padStart(40, "0")}`,
         rank: entry.rank,
@@ -1218,13 +1570,9 @@ describe("RewardsService", () => {
         new Error("Database query failed"),
       );
 
-      await expect(
-        service.allocate(
-          "test-id",
-          "0x1234567890123456789012345678901234567890" as Hex,
-          1640995200,
-        ),
-      ).rejects.toThrow("Database query failed");
+      await expect(service.allocate("test-id", 1640995200)).rejects.toThrow(
+        "Database query failed",
+      );
     });
 
     it("should handle RewardsAllocator errors", async () => {
@@ -1240,6 +1588,8 @@ describe("RewardsService", () => {
         {
           id: "reward-1",
           competitionId: "test-id",
+          userId: "user-1",
+          agentId: "agent-1",
           address: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
           amount: BigInt("100000000000000000000"),
           leafHash: new Uint8Array(32).fill(0x01),
@@ -1253,13 +1603,9 @@ describe("RewardsService", () => {
         new Error("Blockchain transaction failed"),
       );
 
-      await expect(
-        service.allocate(
-          "test-id",
-          "0x1234567890123456789012345678901234567890" as Hex,
-          1640995200,
-        ),
-      ).rejects.toThrow("Blockchain transaction failed");
+      await expect(service.allocate("test-id", 1640995200)).rejects.toThrow(
+        "Blockchain transaction failed",
+      );
     });
   });
 });
