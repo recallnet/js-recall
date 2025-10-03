@@ -142,11 +142,12 @@ export const config = {
   },
   // Multichain price provider configuration (DexScreener or CoinGecko) for paper trading
   priceProvider: {
-    // Defaults to CoinGecko
-    type: (process.env.PRICE_PROVIDER || "coingecko") as PriceProvider,
+    // Defaults to DexScreener (note: this provider does not require an API key)
+    type: (process.env.PRICE_PROVIDER || "dexscreener") as PriceProvider,
+    // For CoinGecko, an API key is required, which use different API URLs depending on the type
     coingecko: {
       apiKey: process.env.COINGECKO_API_KEY || "",
-      // Non-production environments should use a highly rate limited, free "demo" API key (30 req/min)
+      // Non-production environments should use the highly rate limited, free "demo" API key (30 req/min)
       mode: (process.env.COINGECKO_MODE || process.env.NODE_ENV === "production"
         ? "pro"
         : "demo") as CoinGeckoMode,
