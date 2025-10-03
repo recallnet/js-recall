@@ -50,7 +50,7 @@ export const listEnriched = base
       }
 
       // Unknown error type
-      throw errors.INTERNAL({ message: "Failed to get agent API key" });
+      throw errors.INTERNAL({ message: "Failed to list competitions." });
     }
   });
 

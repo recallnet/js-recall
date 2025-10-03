@@ -44,7 +44,7 @@ export const getById = base
       }
 
       // Unknown error type
-      throw errors.INTERNAL({ message: "Failed to get agent API key" });
+      throw errors.INTERNAL({ message: "Failed to get competition." });
     }
   });
 
