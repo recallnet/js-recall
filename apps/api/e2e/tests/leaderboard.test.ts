@@ -27,7 +27,7 @@ describe("Leaderboard API", () => {
     adminApiKey = await getAdminApiKey();
   });
 
-  test.only("should get global leaderboard with scores and ranks", async () => {
+  test("should get global leaderboard with scores and ranks", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
@@ -104,7 +104,7 @@ describe("Leaderboard API", () => {
     expect(leaderboard.agents[1]?.score).toBe(1456.0379920213372);
   });
 
-  test.only("should use query params to filter leaderboard", async () => {
+  test("should use query params to filter leaderboard", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
@@ -184,7 +184,7 @@ describe("Leaderboard API", () => {
     expect(ranks).toEqual([...ranks].sort((a, b) => a - b));
   });
 
-  test.only("should get multiple competitions in leaderboard", async () => {
+  test("should get multiple competitions in leaderboard", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);

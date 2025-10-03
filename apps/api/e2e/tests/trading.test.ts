@@ -190,7 +190,7 @@ describe("Trading API", () => {
     expect(finalSolBalance).toBeLessThan(updatedSolBalance);
   });
 
-  test.only("agent can execute a trade with an arbitrary token address", async () => {
+  test("agent can execute a trade with an arbitrary token address", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
@@ -502,7 +502,7 @@ describe("Trading API", () => {
     );
   });
 
-  test.only("agent can fetch price and execute a calculated trade", async () => {
+  test("agent can fetch price and execute a calculated trade", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
@@ -551,7 +551,11 @@ describe("Trading API", () => {
     );
 
     // 1. Fetch the price for the arbitrary token
-    const priceResponse = await agentClient.getPrice(wethTokenAddress);
+    const priceResponse = await agentClient.getPrice(
+      wethTokenAddress,
+      BlockchainType.SVM,
+      SpecificChain.SVM,
+    );
     expect(priceResponse.success).toBe(true);
     expect((priceResponse as PriceResponse).price).toBeDefined();
 

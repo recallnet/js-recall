@@ -171,7 +171,7 @@ describe("Specific Chains", () => {
     expect(trade?.toToken).toBe(usdcToken);
   });
 
-  test.only("can purchase token on optimism", async () => {
+  test("can purchase token on optimism", async () => {
     // Setup admin client
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);

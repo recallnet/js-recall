@@ -1166,7 +1166,7 @@ describe("Agent API", () => {
   });
 
   describe("Agent Wallet Verification", () => {
-    test.only("should successfully verify agent wallet ownership", async () => {
+    test("should successfully verify agent wallet ownership", async () => {
       // Setup: Create admin client
       const adminClient = createTestClient();
       const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
@@ -1217,7 +1217,7 @@ describe("Agent API", () => {
       expect(agentProfile.agent.isVerified).toBe(true);
     });
 
-    test.only("should reject verification with invalid signature", async () => {
+    test("should reject verification with invalid signature", async () => {
       // Setup: Create admin client and agent
       const adminClient = createTestClient();
       const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
@@ -1259,7 +1259,7 @@ describe("Agent API", () => {
       });
     });
 
-    test.only("should reject verification with expired timestamp", async () => {
+    test("should reject verification with expired timestamp", async () => {
       // Setup: Create admin client and agent
       const adminClient = createTestClient();
       const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
@@ -1299,7 +1299,7 @@ describe("Agent API", () => {
       });
     });
 
-    test.only("should reject verification with future timestamp", async () => {
+    test("should reject verification with future timestamp", async () => {
       // Setup: Create admin client and agent
       const adminClient = createTestClient();
       const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
@@ -1375,7 +1375,7 @@ describe("Agent API", () => {
       });
     });
 
-    test.only("should reject verification when wallet already assigned to different agent", async () => {
+    test("should reject verification when wallet already assigned to different agent", async () => {
       // Setup: Create admin client
       const adminClient = createTestClient();
       const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
@@ -1480,7 +1480,7 @@ Purpose: WALLET_VERIFICATION`;
       });
     });
 
-    test.only("should successfully verify agent wallet ownership with nonce", async () => {
+    test("should successfully verify agent wallet ownership with nonce", async () => {
       // Setup: Create admin client
       const adminClient = createTestClient();
       const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
@@ -1532,7 +1532,7 @@ Purpose: WALLET_VERIFICATION`;
       expect(agentProfile.agent.isVerified).toBe(true);
     });
 
-    test.only("should reject verification when nonce is reused", async () => {
+    test("should reject verification when nonce is reused", async () => {
       // Setup: Create admin client and two agents
       const adminClient = createTestClient();
       const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
@@ -1597,7 +1597,7 @@ Purpose: WALLET_VERIFICATION`;
       });
     });
 
-    test.only("should reject verification with expired nonce", async () => {
+    test("should reject verification with expired nonce", async () => {
       // Setup: Create admin client and agent
       const adminClient = createTestClient();
       const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
@@ -1651,7 +1651,7 @@ Purpose: WALLET_VERIFICATION`;
       });
     });
 
-    test.only("should work with both nonce and non-nonce verification (backward compatibility)", async () => {
+    test("should work with both nonce and non-nonce verification (backward compatibility)", async () => {
       // Setup: Create admin client and two agents
       const adminClient = createTestClient();
       const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
@@ -2828,7 +2828,7 @@ Purpose: WALLET_VERIFICATION`;
       // Both agents should have metrics from all 3 competitions
     });
 
-    test.only("should only include active agents in ranking calculations", async () => {
+    test("should only include active agents in ranking calculations", async () => {
       const adminClient = createTestClient();
       const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
       expect(adminLoginSuccess).toBe(true);
