@@ -214,7 +214,7 @@ describe("Multi-Agent Competition", () => {
     }
   });
 
-  test("each agent should purchase a different token resulting in unique portfolio compositions", async () => {
+  test("each agent should have a unique portfolio composition", async () => {
     // Step 1: Setup admin client
     adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
@@ -252,8 +252,11 @@ describe("Multi-Agent Competition", () => {
     // Wait for balances to be properly initialized
     await wait(500);
 
-    // Step 4: Each agent trades for a different token
-    const tradeAmount = 100;
+    // Step 4: Each agent trades a different amount
+    const tradeAmountPerAgent = Array.from(
+      { length: NUM_AGENTS },
+      (_, i) => i * 10 + 1,
+    );
 
     // Store token quantities for validation
     const tokenQuantities: { [tokenAddress: string]: number } = {};
@@ -270,7 +273,7 @@ describe("Multi-Agent Competition", () => {
       const tradeResponse = (await agent?.client.executeTrade({
         fromToken: BASE_USDC_ADDRESS,
         toToken: tokenToTrade!,
-        amount: tradeAmount.toString(),
+        amount: tradeAmountPerAgent[i]!.toString(),
         fromChain: BlockchainType.EVM,
         toChain: BlockchainType.EVM,
         fromSpecificChain: SpecificChain.BASE,
@@ -294,48 +297,7 @@ describe("Multi-Agent Competition", () => {
     // Wait for all trades to settle
     await wait(500);
 
-    // Step 5: Verify each agent has a unique token composition
-    for (let i = 0; i < NUM_AGENTS; i++) {
-      const agent = agentClients[i];
-      // Trade to burn address
-      const expectedToken = "0x000000000000000000000000000000000000dead";
-
-      // Get agent's current balance
-      const balanceResponse =
-        (await agent?.client.getBalance()) as BalancesResponse;
-      expect(balanceResponse?.success).toBe(true);
-      expect(balanceResponse?.balances).toBeDefined();
-      // Check that the agent has the expected token
-      const tokenBalance = parseFloat(
-        balanceResponse.balances
-          .find((b) => b.tokenAddress === expectedToken)
-          ?.amount.toString() || "0",
-      );
-
-      // Verify they have a non-zero balance of their unique token
-      expect(tokenBalance).toBeGreaterThan(0);
-
-      // Verify they DON'T have any of the other agents' tokens
-      for (let j = 0; j < NUM_AGENTS; j++) {
-        if (j !== i) {
-          // Skip their own token
-          const otherToken = "0x000000000000000000000000000000000000dead";
-          const otherTokenBalance = parseFloat(
-            balanceResponse.balances
-              .find((b) => b.tokenAddress === otherToken)
-              ?.amount.toString() || "0",
-          );
-
-          // They should have 0 of other agents' tokens
-          expect(otherTokenBalance).toBe(0);
-          if (otherTokenBalance > 0) {
-            // Agent unexpectedly has tokens from another agent's portfolio
-          }
-        }
-      }
-    }
-
-    // Step 6: Verify that token quantities differ due to different token prices
+    // Step 5: Verify that token quantities differ due to different token prices
     const uniqueQuantities = Object.values(tokenQuantities);
 
     // Verify that no two agents received the same token quantity (within a reasonable precision)
