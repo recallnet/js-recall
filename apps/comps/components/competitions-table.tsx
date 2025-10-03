@@ -132,9 +132,11 @@ export const CompetitionsTable: React.FC<CompetitionsTableProps> = ({
         id: "rank",
         header: () => "Rank",
         cell: ({ row }) => {
-          const agent = row.original.agents[0];
-          return agent ? (
-            <RankBadge rank={agent.rank} />
+          const agent = row.original.agents?.[0];
+          const rank = agent?.rank;
+
+          return rank !== undefined ? (
+            <RankBadge rank={rank} />
           ) : (
             <span className="text-xs text-slate-400">-</span>
           );

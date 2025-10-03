@@ -1195,9 +1195,6 @@ export class AgentService {
         return {
           competitions: paginatedCompetitions,
           total: results.total,
-          hasMore: endIndex < results.total,
-          limit: validatedParams.limit || 10,
-          offset: validatedParams.offset || 0,
         };
       }
 
@@ -1303,8 +1300,8 @@ export class AgentService {
       );
 
       return {
-        ...results,
         competitions: sortedCompetitions,
+        total: results.total,
       };
     } catch (error) {
       this.logger.error(

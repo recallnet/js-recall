@@ -14,12 +14,10 @@ export const getCompetitions = base
   .input(AgentCompetitionsParamsSchema)
   .handler(async ({ input, context, errors }) => {
     try {
-      const params = input;
-
       // Get competitions for all user's agents
       const results = await context.agentService.getCompetitionsForUserAgents(
         context.user.id,
-        params,
+        input,
       );
 
       return {
@@ -27,8 +25,8 @@ export const getCompetitions = base
         total: results.total,
         pagination: buildPaginationResponse(
           results.total,
-          params.limit,
-          params.offset,
+          input.limit,
+          input.offset,
         ),
       };
     } catch (error) {
