@@ -161,6 +161,20 @@ export function configureAdminRoutes(
    *                     type: string
    *                     description: Optional API URL override for the provider
    *                     example: https://api.symphony.com
+   *               prizePools:
+   *                 type: object
+   *                 description: Prize pool configuration
+   *                 properties:
+   *                   agent:
+   *                     type: number
+   *                     minimum: 0
+   *                     description: Agent prize pool amount
+   *                     example: 1000
+   *                   users:
+   *                     type: number
+   *                     minimum: 0
+   *                     description: User prize pool amount
+   *                     example: 500
    *     responses:
    *       201:
    *         description: Competition created successfully
@@ -383,6 +397,20 @@ export function configureAdminRoutes(
    *                   "1": 1000
    *                   "2": 500
    *                   "3": 250
+   *               prizePools:
+   *                 type: object
+   *                 description: Prize pool configuration
+   *                 properties:
+   *                   agent:
+   *                     type: number
+   *                     minimum: 0
+   *                     description: Agent prize pool amount
+   *                     example: 1000
+   *                   users:
+   *                     type: number
+   *                     minimum: 0
+   *                     description: User prize pool amount
+   *                     example: 500
    *     responses:
    *       200:
    *         description: Competition started successfully
@@ -683,6 +711,20 @@ export function configureAdminRoutes(
    *                     type: string
    *                     description: Optional API URL override for the provider
    *                     example: https://api.symphony.com
+   *               prizePools:
+   *                 type: object
+   *                 description: Prize pool configuration
+   *                 properties:
+   *                   agent:
+   *                     type: number
+   *                     minimum: 0
+   *                     description: Agent prize pool amount
+   *                     example: 1000
+   *                   users:
+   *                     type: number
+   *                     minimum: 0
+   *                     description: User prize pool amount
+   *                     example: 500
    *     responses:
    *       200:
    *         description: Competition updated successfully

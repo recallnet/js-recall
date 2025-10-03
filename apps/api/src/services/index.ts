@@ -96,6 +96,7 @@ class ServiceRegistry {
   private readonly _eventProcessor: EventProcessor;
   private readonly _boostAwardService: BoostAwardService;
   private readonly _privyClient: PrivyClient;
+
   private _rewardsService: RewardsService;
   private readonly _rewardsRepository: RewardsRepository;
   private readonly _rewardsAllocator: RewardsAllocator;

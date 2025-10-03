@@ -1,5 +1,5 @@
 import { randomUUID } from "crypto";
-import { and, eq, inArray } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { Logger } from "pino";
 
 import { competitionRewards } from "../schema/core/defs.js";
@@ -57,37 +57,6 @@ export class CompetitionRewardsRepository {
   }
 
   /**
-   * Find a reward by competition and rank
-   * @param competitionId The competition ID
-   * @param rank The rank
-   * @returns The reward record if found, undefined otherwise
-   */
-  async findRewardByCompetitionAndRank(
-    competitionId: string,
-    rank: number,
-  ): Promise<SelectCompetitionReward | undefined> {
-    try {
-      const [result] = await this.#db
-        .select()
-        .from(competitionRewards)
-        .where(
-          and(
-            eq(competitionRewards.competitionId, competitionId),
-            eq(competitionRewards.rank, rank),
-          ),
-        )
-        .limit(1);
-      return result;
-    } catch (error) {
-      this.#logger.error(
-        `Error in findRewardByCompetitionAndRank: ${error}`,
-        error,
-      );
-      throw error;
-    }
-  }
-
-  /**
    * Find all rewards for a competition
    * @param competitionId The competition ID
    * @returns Array of reward records
@@ -126,65 +95,6 @@ export class CompetitionRewardsRepository {
         .orderBy(competitionRewards.rank);
     } catch (error) {
       this.#logger.error(`Error in findRewardsByCompetitions: ${error}`, error);
-      throw error;
-    }
-  }
-
-  /**
-   * Find all rewards for an agent (across all competitions)
-   * @param agentId The agent ID
-   * @returns Array of reward records
-   */
-  async findRewardsByAgent(
-    agentId: string,
-  ): Promise<SelectCompetitionReward[]> {
-    try {
-      return await this.#db
-        .select()
-        .from(competitionRewards)
-        .where(eq(competitionRewards.agentId, agentId));
-    } catch (error) {
-      this.#logger.error(`Error in findRewardsByAgent: ${error}`, error);
-      throw error;
-    }
-  }
-
-  /**
-   * Update a reward by id
-   * @param id The reward ID
-   * @param update Partial update object
-   * @returns The updated reward record if found, undefined otherwise
-   */
-  async updateReward(
-    id: string,
-    update: Partial<InsertCompetitionReward>,
-  ): Promise<SelectCompetitionReward | undefined> {
-    try {
-      const [result] = await this.#db
-        .update(competitionRewards)
-        .set(update)
-        .where(eq(competitionRewards.id, id))
-        .returning();
-      return result;
-    } catch (error) {
-      this.#logger.error(`Error in updateReward: ${error}`, error);
-      throw error;
-    }
-  }
-
-  /**
-   * Delete a reward by id
-   * @param id The reward ID
-   * @returns True if deleted, false otherwise
-   */
-  async deleteReward(id: string): Promise<boolean> {
-    try {
-      const result = await this.#db
-        .delete(competitionRewards)
-        .where(eq(competitionRewards.id, id));
-      return (result?.rowCount ?? 0) > 0;
-    } catch (error) {
-      this.#logger.error(`Error in deleteReward: ${error}`, error);
       throw error;
     }
   }
