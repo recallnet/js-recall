@@ -84,7 +84,8 @@ export class BalanceService {
           // Add each configured token for this specific chain
           Object.entries(tokenBalances).forEach(([symbol, amount]) => {
             // Type assertion for the symbol access
-            const tokenAddress = chainTokens?.[symbol];
+            const tokenAddress =
+              chainTokens?.[symbol as keyof typeof chainTokens];
 
             if (tokenAddress && amount > 0) {
               this.logger.debug(

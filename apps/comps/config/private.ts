@@ -26,12 +26,6 @@ const configSchema = publicConfigSchema
         "avalanche",
         "linea",
       ]),
-    specificChainTokens: z
-      .partialRecord(
-        SpecificChainSchema,
-        z.record(z.string().min(1), z.string().min(1)),
-      )
-      .default({}),
     specificChainBalances: z
       .partialRecord(
         SpecificChainSchema,
@@ -81,7 +75,6 @@ const configSchema = publicConfigSchema
 export const rawConfig = {
   ...publicRawConfig,
   evmChains: parseEvmChains(),
-  specificChainTokens,
   specificChainBalances: getSpecificChainBalances(),
   watchlist: { chainalysisApiKey: process.env.WATCHLIST_CHAINALYSIS_API_KEY },
   priceTracker: {
@@ -113,4 +106,4 @@ export const rawConfig = {
   },
 };
 
-export const config = configSchema.parse(rawConfig);
+export const config = { ...configSchema.parse(rawConfig), specificChainTokens };
