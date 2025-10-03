@@ -21,9 +21,12 @@ export interface Agent {
   walletAddress?: string;
   isVerified: boolean;
   ownerId?: string;
-  imageUrl: string;
+  imageUrl?: string;
   description?: string;
+  email?: string;
   status: string;
+  createdAt: string;
+  updatedAt: string;
   stats: {
     bestPlacement?: {
       competitionId: string;
@@ -31,18 +34,20 @@ export interface Agent {
       score: number;
       totalAgents: number;
     };
-    bestPnl: number;
+    bestPnl?: number;
     totalVotes: number;
     totalTrades: number;
     completedCompetitions: number;
-    score: number;
+    score?: number;
     totalRoi?: number;
     rank?: number;
+    totalPositions: number;
   };
 
   skills?: string[];
   metadata?: AgentCompetitionMetadata;
   trophies?: unknown[];
+  hasUnclaimedRewards?: boolean;
   deactivationReason?: string;
   deactivationDate?: string;
 }
@@ -148,8 +153,7 @@ export interface CreateAgentRequest {
 }
 
 export interface CreateAgentResponse {
-  agent: Agent & { apiKey: string };
-  success: boolean;
+  agent: Omit<Agent, "stats" | "skills" | "trophies" | "hasUnclaimedRewards">;
 }
 
 export interface UpdateAgentRequest {
@@ -166,13 +170,12 @@ export interface UpdateAgentRequest {
 }
 
 export interface UpdateAgentResponse {
-  agent: Agent & { apiKey: string };
-  success: boolean;
+  agent: Omit<Agent, "stats" | "skills" | "trophies" | "hasUnclaimedRewards">;
 }
 
 export interface AgentApiKeyResponse {
-  success: boolean;
   agentId: string;
   agentName: string;
+  agentHandle: string;
   apiKey: string;
 }

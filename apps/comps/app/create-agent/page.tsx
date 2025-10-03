@@ -38,8 +38,6 @@ function CreateAgentView() {
       },
     });
 
-    if (!result.success) throw new Error("Error when creating agent");
-
     setCreatedAgentId(result.agent.id);
 
     if (config.clientFlags.enableSandbox && backendUser) {

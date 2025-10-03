@@ -1,6 +1,7 @@
-import { useQuery } from "@tanstack/react-query";
+import { UseQueryResult, useQuery } from "@tanstack/react-query";
 
 import { apiClient } from "@/lib/api-client";
+import { tanstackClient } from "@/rpc/clients/tanstack-query";
 import { Agent, AgentWithOwnerResponse } from "@/types";
 
 /**
@@ -8,19 +9,13 @@ import { Agent, AgentWithOwnerResponse } from "@/types";
  * @param id Agent ID
  * @returns Query result with agent data
  */
-export const useUserAgent = (id?: string) => {
-  return useQuery({
-    queryKey: ["agent", id],
-    queryFn: async (): Promise<Agent> => {
-      if (!id) throw new Error("Agent ID is required");
-      const response = await apiClient.getUserAgent(id);
-
-      if (!response.success) throw new Error("Error when querying agent");
-
-      return response.agent;
-    },
-    enabled: !!id,
-  });
+export const useUserAgent = (id?: string): UseQueryResult<Agent, Error> => {
+  return useQuery(
+    tanstackClient.agent.getAgent.queryOptions({
+      input: { agentId: id! },
+      enabled: !!id,
+    }),
+  );
 };
 
 /**

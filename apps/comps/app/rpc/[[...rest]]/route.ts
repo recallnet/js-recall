@@ -3,9 +3,11 @@ import { cookies } from "next/headers";
 
 import { privyClient } from "@/lib/privy-client";
 import {
+  agentService,
   boostAwardService,
   boostService,
   competitionService,
+  emailService,
   userService,
 } from "@/lib/services";
 import { router } from "@/rpc/router/index";
@@ -22,6 +24,8 @@ async function handleRequest(request: Request) {
       boostAwardService,
       userService,
       competitionService,
+      agentService,
+      emailService,
     },
   });
 
