@@ -2,7 +2,7 @@
 
 import { useQueryClient } from "@tanstack/react-query";
 import { LogOut } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import React, { useEffect } from "react";
 
 import {
@@ -30,6 +30,7 @@ import { Identicon } from "./identicon/index";
  */
 export const PrivyAuthButton: React.FunctionComponent = () => {
   const router = useRouter();
+  const pathname = usePathname();
 
   const { login, backendUser, isAuthenticated, isPending, logout, error } =
     useSession();
@@ -74,7 +75,12 @@ export const PrivyAuthButton: React.FunctionComponent = () => {
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <div className="flex cursor-pointer items-center justify-between">
+          <div
+            className={cn(
+              "flex cursor-pointer items-center justify-between rounded px-2 py-1 transition-colors",
+              pathname !== "/profile" && "hover:bg-gray-900/50",
+            )}
+          >
             <Avatar className="h-10 w-10">
               <AvatarImage
                 src={avatarUrl}
