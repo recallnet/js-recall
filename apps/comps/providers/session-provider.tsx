@@ -27,10 +27,14 @@ import {
   useRef,
   useState,
 } from "react";
-import { useAccount, useChainId, useDisconnect } from "wagmi";
 
 import { WrongNetworkModal } from "@/components/modals/wrong-network";
 import { WrongWalletModal } from "@/components/modals/wrong-wallet";
+import {
+  useSafeAccount,
+  useSafeChainId,
+  useSafeDisconnect,
+} from "@/hooks/useSafeWagmi";
 import { ApiClient } from "@/lib/api-client";
 import { mergeWithoutUndefined } from "@/lib/merge-without-undefined";
 import { userWalletState } from "@/lib/user-wallet-state";
@@ -95,11 +99,11 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     usePrivy();
   const { ready: walletsReady } = useWallets();
 
-  const { disconnect } = useDisconnect();
-  const { isConnected, chainId: currentChainId } = useAccount();
-  const defaultChainId = useChainId();
-  const isWrongChain = currentChainId !== defaultChainId;
+  const { disconnect } = useSafeDisconnect();
+  const { isConnected, chainId: currentChainId } = useSafeAccount();
   const { wallets, ready: readyWallets } = useWallets();
+  const defaultChainId = useSafeChainId();
+  const isWrongChain = currentChainId !== defaultChainId;
   const { setActiveWallet } = useSetActiveWallet();
 
   const [loginError, setLoginError] = useState<Error | null>(null);
@@ -481,10 +485,12 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
           expectedWalletAddress={backendUser?.walletAddress || ""}
         />
       )}
+
       {session.isAuthenticated &&
         isWalletConnected &&
         !isWrongWalletModalOpen &&
         isWrongChain &&
+        defaultChainId &&
         currentChainId && (
           <WrongNetworkModal
             isOpen

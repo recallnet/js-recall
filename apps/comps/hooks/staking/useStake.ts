@@ -3,12 +3,12 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { simulateContract, waitForTransactionReceipt } from "@wagmi/core";
 import { useCallback, useMemo, useState } from "react";
-import { useAccount, useConfig, useWriteContract } from "wagmi";
 
 import { StakingAbi } from "@/abi/Staking";
 import { clientConfig } from "@/wagmi-config";
 
 import { useRecall } from "../useRecall";
+import { useSafeAccount, useSafeWriteContract } from "../useSafeWagmi";
 import { useStakingContractAddress } from "./useStakingContractAddress";
 import { useTotalUserStaked } from "./useTotalUserStaked";
 import { useUserStakes } from "./useUserStakes";
@@ -33,8 +33,8 @@ export const useStake = (): StakingOperationResult => {
   const [isConfirming, setIsConfirming] = useState(false);
   const [isConfirmed, setIsConfirmed] = useState(false);
   const contractAddress = useStakingContractAddress();
-  const { address } = useAccount();
-  const config = useConfig();
+  const { address } = useSafeAccount();
+  const config = clientConfig;
   const { queryKey: getUserStakesQueryKey } = useUserStakes();
   const { queryKey: getTotalUserStakedQueryKey } = useTotalUserStaked();
   const { queryKey: recallQueryKey } = useRecall();
@@ -46,7 +46,7 @@ export const useStake = (): StakingOperationResult => {
     error,
     data: transactionHash,
     reset,
-  } = useWriteContract();
+  } = useSafeWriteContract();
 
   const refetchQueries = async (txHash: `0x${string}`) => {
     const transactionReceipt = await waitForTransactionReceipt(
@@ -76,6 +76,9 @@ export const useStake = (): StakingOperationResult => {
   const execute = useCallback(
     async (amount: bigint, duration: bigint) => {
       try {
+        if (!contractAddress) {
+          throw new Error("Contract address not available");
+        }
         // Resets the write contract hook
         reset();
 

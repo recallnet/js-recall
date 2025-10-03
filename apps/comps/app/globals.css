@@ -1,0 +1,4 @@
+@import "@recallnet/ui2/globals.css";
+
+/* Import cookie consent styles */
+@import "vanilla-cookieconsent/dist/cookieconsent.css";
