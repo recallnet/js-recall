@@ -1,4 +1,5 @@
-import { Agent } from "./agent";
+import type { RouterOutputs } from "@/rpc/router";
+
 import { PaginationResponse } from "./api";
 import { Competition } from "./competition";
 
@@ -12,7 +13,7 @@ export interface Vote {
 export interface EnrichedVote {
   id: string;
   createdAt: string;
-  agent: Agent;
+  agent: RouterOutputs["agent"]["getAgent"]["agent"];
   competition: Competition;
 }
 

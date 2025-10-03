@@ -12,6 +12,7 @@ import { ServiceRegistry } from "@/services/index.js";
 import { AuthenticatedRequest } from "@/types/index.js";
 
 import {
+  buildPaginationResponse,
   ensureAgentCompetitionFilters,
   ensurePaging,
   ensureUuid,
@@ -148,12 +149,7 @@ export function makeAgentController(services: ServiceRegistry) {
         // Return the agents
         res.status(200).json({
           success: true,
-          pagination: {
-            total: totalCount,
-            limit,
-            offset,
-            hasMore: limit + offset < totalCount,
-          },
+          pagination: buildPaginationResponse(totalCount, limit, offset),
           agents: agents.map(
             services.agentService.sanitizeAgent.bind(services.agentService),
           ),

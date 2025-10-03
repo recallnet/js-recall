@@ -3,11 +3,10 @@ import {
   valueToAttoString,
 } from "@recallnet/conversions/atto-conversions";
 
+import { client } from "@/rpc/clients/client-side";
 import {
   AgentCompetitionResponse,
   AgentCompetitionsResponse,
-  AgentWithOwnerResponse,
-  AgentsResponse,
   CompetitionPerpsPositionsResponse,
   CompetitionPerpsSummaryResponse,
   CompetitionResponse,
@@ -18,7 +17,6 @@ import {
   CreateVoteRequest,
   EnrichedVotesResponse,
   GetAgentCompetitionsParams,
-  GetAgentsParams,
   GetCompetitionAgentsParams,
   GetCompetitionPerformanceParams,
   GetCompetitionPerpsPositionsParams,
@@ -373,25 +371,6 @@ export class ApiClient {
   // Agent endpoints
 
   /**
-   * Get list of agents
-   * @param params - Query parameters
-   * @returns Agents response
-   */
-  async getAgents(params: GetAgentsParams = {}): Promise<AgentsResponse> {
-    const queryParams = this.formatQueryParams(params);
-    return this.request<AgentsResponse>(`/agents${queryParams}`);
-  }
-
-  /**
-   * Get agent by ID (unauthenticated)
-   * @param id - Agent ID
-   * @returns Agent details
-   */
-  async getAgent(id: string): Promise<AgentWithOwnerResponse> {
-    return this.request<AgentWithOwnerResponse>(`/agents/${id}`);
-  }
-
-  /**
    * Get competitions for an agent
    * @param agentId - Agent ID
    * @param params - Query parameters
@@ -505,15 +484,15 @@ export class ApiClient {
 
     const enrichedVotes = await Promise.all(
       votes.votes.map(async (vote) => {
-        const [competition, agent] = await Promise.all([
+        const [competition, agentData] = await Promise.all([
           this.getCompetition(vote.competitionId),
-          this.getAgent(vote.agentId),
+          client.agent.getAgent({ agentId: vote.agentId }),
         ]);
 
         return {
           id: vote.id,
           createdAt: vote.createdAt,
-          agent: agent.agent,
+          agent: agentData.agent,
           competition: competition.competition,
         };
       }),

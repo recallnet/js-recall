@@ -20,7 +20,8 @@ import {
   useSandboxAgentApiKey,
   useUpdateSandboxAgent,
 } from "@/hooks/useSandbox";
-import { Agent, AgentWithOwnerResponse, Competition } from "@/types";
+import type { RouterOutputs } from "@/rpc/router";
+import { Competition } from "@/types";
 
 import BigNumberDisplay from "../bignumber";
 import { BreadcrumbNav } from "../breadcrumb-nav";
@@ -56,8 +57,8 @@ export default function AgentProfile({
   setStatus,
 }: {
   id: string;
-  agent: Agent;
-  owner: AgentWithOwnerResponse["owner"];
+  agent: RouterOutputs["agent"]["getAgent"]["agent"];
+  owner: RouterOutputs["agent"]["getAgent"]["owner"];
   handleSortChange: (field: string) => void;
   sortState: Record<string, SortState>;
   setStatus: (status: string) => void;
@@ -439,7 +440,7 @@ export default function AgentProfile({
           </div>
           <Credentials
             agent={agent}
-            userWalletAddress={owner.walletAddress}
+            userWalletAddress={owner?.walletAddress}
             className="mt-6"
           />
         </div>

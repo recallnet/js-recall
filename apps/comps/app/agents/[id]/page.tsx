@@ -7,7 +7,7 @@ import { LoadingAgentProfile } from "@/components/agent-profile/loading";
 import { FooterSection } from "@/components/footer-section";
 import { useAgent } from "@/hooks/useAgent";
 import { useSorting } from "@/hooks/useSorting";
-import { AgentWithOwnerResponse } from "@/types";
+import type { RouterOutputs } from "@/rpc/router";
 
 export default function AgentPage({
   params,
@@ -25,7 +25,7 @@ export default function AgentPage({
 
   const { sortState, handleSortChange } = useSorting(sortDescFirst);
   const { data, isLoading: isLoadingAgent } = useAgent(id);
-  const { agent, owner } = data || ({} as AgentWithOwnerResponse);
+  const { agent, owner } = data ?? ({} as RouterOutputs["agent"]["getAgent"]);
 
   if (isLoadingAgent || !agent) return <LoadingAgentProfile />;
 
