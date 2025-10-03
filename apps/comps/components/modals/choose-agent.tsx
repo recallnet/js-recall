@@ -36,12 +36,12 @@ export const ChooseAgentModal: React.FC<ChooseAgentModalProps> = ({
   onContinue,
   competition,
 }) => {
-  const { data: compAgents } = useQuery({
-    ...tanstackClient.competitions.getAgents.queryOptions({
+  const { data: compAgents } = useQuery(
+    tanstackClient.competitions.getAgents.queryOptions({
       input: { competitionId: competition?.id ?? "" },
+      enabled: !!competition,
     }),
-    enabled: !!competition,
-  });
+  );
   const [selectedIndex, setSelectedIndex] = useState(0);
   const pathname = usePathname();
 
