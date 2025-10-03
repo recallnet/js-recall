@@ -4,18 +4,29 @@ import React from "react";
 
 import { cn } from "@recallnet/ui2/lib/utils";
 
+import { RouterOutputs } from "@/rpc/router";
 import { CompetitionWithUserAgents } from "@/types";
 
 import CountdownClock from "./clock";
 
+type CompetitionData =
+  | CompetitionWithUserAgents
+  | RouterOutputs["competitions"]["getById"];
+
 interface CompetitionStateSummaryProps {
-  competition: CompetitionWithUserAgents;
+  competition: CompetitionData;
   className?: string;
 }
 
 /**
- * Displays the current state of a competition including registration and voting status
- * with appropriate colors and timing information.
+ * Displays the current state of a competition including registration and voting status.
+ * Shows registration window status (open/closed/full) and voting/boosting window status
+ * with appropriate visual indicators and countdown timers.
+ *
+ * Handles multiple states:
+ * - Registration not started, open, closing soon, closed, or full
+ * - Voting not started, open, closing soon, or closed
+ * - Special handling for competitions with no dates set
  */
 export const CompetitionStateSummary: React.FC<
   CompetitionStateSummaryProps
@@ -34,7 +45,14 @@ export const CompetitionStateSummary: React.FC<
     ? new Date(competition.votingEndDate)
     : null;
   const hasVoted = competition.userVotingInfo?.info.hasVoted || false;
-  const isRegistered = competition.agents && competition.agents.length > 0;
+  // Type guard to check if competition has agents array
+  const hasAgents = (
+    comp: CompetitionData,
+  ): comp is CompetitionWithUserAgents => {
+    return "agents" in comp;
+  };
+
+  const isRegistered = hasAgents(competition) && competition.agents.length > 0;
 
   const getRegistrationState = () => {
     // Check if registration is full

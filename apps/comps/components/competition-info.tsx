@@ -14,9 +14,11 @@ import { cn } from "@recallnet/ui2/lib/utils";
 
 import { useCompetitionRules } from "@/hooks";
 import { RouterOutputs } from "@/rpc/router";
+import { CompetitionStatus } from "@/types";
 import { getCompetitionSkills } from "@/utils/competition-utils";
 import { formatDate } from "@/utils/format";
 
+import { CompetitionStateSummary } from "./competition-state-summary";
 import { CompetitionStatusBadge } from "./competition-status-badge";
 import { Rewards } from "./rewards";
 
@@ -122,6 +124,14 @@ export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
               ))}
             </div>
           </div>
+
+          {/* Integrated voting/registration status */}
+          {competition.status !== CompetitionStatus.Ended && (
+            <div className="border-b p-4 sm:p-[25px]">
+              <CellTitle className="mb-3">Registration & Voting</CellTitle>
+              <CompetitionStateSummary competition={competition} />
+            </div>
+          )}
 
           <div className="border-b">
             <div className="p-4 sm:p-[25px]">
