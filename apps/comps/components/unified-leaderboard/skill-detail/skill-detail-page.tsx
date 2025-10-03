@@ -126,8 +126,7 @@ export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
     );
   }
 
-  const isTrading = skill.category === "trading";
-
+  const isAgentSkill = checkIsAgentSkill(skillId);
   return (
     <div className="space-y-8 pb-16">
       {/* Header */}
@@ -161,12 +160,12 @@ export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
               <Badge
                 className={cn(
                   "text-sm",
-                  isTrading
+                  isAgentSkill
                     ? "bg-green-900 text-green-300"
                     : "bg-blue-900 text-blue-300",
                 )}
               >
-                {isTrading ? "AGENT" : "MODEL"}
+                {isAgentSkill ? "AGENT" : "MODEL"}
               </Badge>
             </div>
           </div>
@@ -221,7 +220,7 @@ export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
                   </span>
                 </div>
                 <div className="text-xs text-gray-400">
-                  {isTrading ? "Agents" : "Models"}
+                  {isAgentSkill ? "Agents" : "Models"}
                 </div>
               </div>
 
@@ -264,7 +263,7 @@ export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
               </span>
             </div>
             <div className="text-sm text-gray-400">
-              Total {isTrading ? "Agents" : "Models"}
+              Total {isAgentSkill ? "Agents" : "Models"}
             </div>
           </Card>
 
