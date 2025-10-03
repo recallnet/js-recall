@@ -15,7 +15,7 @@ import { cn } from "@recallnet/ui2/lib/utils";
 
 import { config } from "@/config/public";
 import { useCompetitionTimeline } from "@/hooks/useCompetitionTimeline";
-import { AgentCompetition, CompetitionStatus } from "@/types";
+import { AgentCompetition } from "@/types";
 import { formatDate } from "@/utils/format";
 
 import { ShareModal } from "../share-modal";
@@ -123,16 +123,16 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
     return datesByWeek(sortedAndTransformed);
   }, [timelineRaw]);
 
+  const { id, status, startDate, endDate } = competition;
+
   // Intelligent date range selection based on competition status and dates
   useEffect(() => {
     if (!parsedData.length) return;
 
     const now = new Date();
-    const endDate = competition.endDate ? new Date(competition.endDate) : null;
-
     let targetIndex = parsedData.length - 1; // Default to most recent week
 
-    if (competition.status === CompetitionStatus.Active) {
+    if (status === "active") {
       // For active competitions, show the current week or the most recent week with data
       const currentWeekData = parsedData.findIndex((weekData) => {
         if (!weekData || !weekData.length) return false;
@@ -144,7 +144,7 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
       if (currentWeekData !== -1) {
         targetIndex = currentWeekData;
       }
-    } else if (competition.status === CompetitionStatus.Ended) {
+    } else if (status === "ended") {
       // For ended competitions, show the last week of the competition
       if (endDate) {
         const endWeekData = parsedData.findIndex((weekData) => {
@@ -160,29 +160,15 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
     }
 
     setDateRangeIndex(targetIndex);
-  }, [
-    parsedData,
-    competition.status,
-    competition.startDate,
-    competition.endDate,
-  ]);
+  }, [parsedData, status, startDate, endDate]);
 
   const filteredData = useMemo(() => {
     // For ended competitions, show all data in a single view
-    if (
-      competition.status === CompetitionStatus.Ended &&
-      parsedData.length > 0
-    ) {
+    if (status === "ended" && parsedData.length > 0) {
       // Flatten all weeks into a single array
       const allData = parsedData.flat();
 
       // Calculate competition duration to determine granularity
-      const startDate = competition.startDate
-        ? new Date(competition.startDate)
-        : null;
-      const endDate = competition.endDate
-        ? new Date(competition.endDate)
-        : null;
       const durationInDays =
         startDate && endDate
           ? Math.ceil(
@@ -309,13 +295,7 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
       timestamp: data.timestamp, // Keep original for hover granularity
       displayTimestamp: formatDate(data.timestamp), // For axis labels
     }));
-  }, [
-    parsedData,
-    dateRangeIndex,
-    competition.status,
-    competition.startDate,
-    competition.endDate,
-  ]);
+  }, [parsedData, dateRangeIndex, status, startDate, endDate]);
 
   // Get all agent keys from the data (unfiltered)
   const allDataKeys = useMemo(() => {
@@ -476,70 +456,65 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
         </div>
         <ShareModal
           title="Share portfolio timeline"
-          url={`${config.frontendUrl}/competitions/${competition.id}/chart`}
+          url={`${config.frontendUrl}/competitions/${id}/chart`}
           size={20}
         />
       </div>
       {isLoading && !suppressInternalLoading ? (
         <ChartSkeleton />
-      ) : (timelineRaw && timelineRaw?.length <= 0) ||
-        competition.status === CompetitionStatus.Pending ? (
+      ) : (timelineRaw && timelineRaw?.length <= 0) || status === "pending" ? (
         <div className="h-30 flex w-full flex-col items-center justify-center p-10">
           <span className="text-primary-foreground">
-            {competition.status === CompetitionStatus.Pending
+            {status === "pending"
               ? "Competition hasn't started yet"
               : "No agents competing yet"}
           </span>
           <span className="text-secondary-foreground text-sm">
-            {competition.status === CompetitionStatus.Pending &&
-            competition.startDate
-              ? `The competition will start on ${formatDate(
-                  competition.startDate,
-                )}.`
+            {status === "pending" && startDate
+              ? `The competition will start on ${formatDate(startDate)}.`
               : "Agents will appear here as soon as the competition starts."}
           </span>
         </div>
       ) : (
         <>
-          {competition.status !== CompetitionStatus.Ended &&
-            filteredData.length > 0 && (
-              <div className="flex w-full items-center justify-end px-6 py-4">
-                <div className="text-secondary-foreground flex items-center gap-3 text-sm">
-                  <Button
-                    onClick={handlePrevRange}
-                    disabled={dateRangeIndex <= 0}
-                    variant="outline"
-                    className="hover:text-primary-foreground border-none p-0 hover:bg-black"
-                  >
-                    <ChevronLeft strokeWidth={1.5} />
-                  </Button>
-                  <div className="flex items-center gap-2">
-                    <span>
-                      {filteredData[0]?.originalTimestamp
-                        ? formatDateShort(filteredData[0].originalTimestamp)
-                        : formatDateShort(filteredData[0]?.timestamp as string)}
-                    </span>
-                    <span className="text-secondary-foreground">/</span>
-                    <span>
-                      {(() => {
-                        const lastItem = filteredData[filteredData.length - 1];
-                        return lastItem?.originalTimestamp
-                          ? formatDateShort(lastItem.originalTimestamp)
-                          : formatDateShort(lastItem?.timestamp as string);
-                      })()}
-                    </span>
-                  </div>
-                  <Button
-                    onClick={handleNextRange}
-                    disabled={dateRangeIndex >= parsedData.length - 1}
-                    variant="outline"
-                    className="hover:text-primary-foreground border-none p-0 hover:bg-black"
-                  >
-                    <ChevronRight strokeWidth={1.5} />
-                  </Button>
+          {status !== "ended" && filteredData.length > 0 && (
+            <div className="flex w-full items-center justify-end px-6 py-4">
+              <div className="text-secondary-foreground flex items-center gap-3 text-sm">
+                <Button
+                  onClick={handlePrevRange}
+                  disabled={dateRangeIndex <= 0}
+                  variant="outline"
+                  className="hover:text-primary-foreground border-none p-0 hover:bg-black"
+                >
+                  <ChevronLeft strokeWidth={1.5} />
+                </Button>
+                <div className="flex items-center gap-2">
+                  <span>
+                    {filteredData[0]?.originalTimestamp
+                      ? formatDateShort(filteredData[0].originalTimestamp)
+                      : formatDateShort(filteredData[0]?.timestamp as string)}
+                  </span>
+                  <span className="text-secondary-foreground">/</span>
+                  <span>
+                    {(() => {
+                      const lastItem = filteredData[filteredData.length - 1];
+                      return lastItem?.originalTimestamp
+                        ? formatDateShort(lastItem.originalTimestamp)
+                        : formatDateShort(lastItem?.timestamp as string);
+                    })()}
+                  </span>
                 </div>
+                <Button
+                  onClick={handleNextRange}
+                  disabled={dateRangeIndex >= parsedData.length - 1}
+                  variant="outline"
+                  className="hover:text-primary-foreground border-none p-0 hover:bg-black"
+                >
+                  <ChevronRight strokeWidth={1.5} />
+                </Button>
               </div>
-            )}
+            </div>
+          )}
 
           <div className="h-120 relative">
             <HoverContext.Provider
@@ -553,7 +528,7 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
                 filteredDataKeys={filteredDataKeys}
                 agentColorMap={agentColorMap}
                 shouldAnimate={shouldAnimate}
-                isFullRange={competition.status === CompetitionStatus.Ended}
+                isFullRange={status === "ended"}
                 onHoverChange={handleHoverChange}
               />
             </HoverContext.Provider>

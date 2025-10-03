@@ -9,7 +9,7 @@ import { Card } from "@recallnet/ui2/components/card";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { useCompetitionAgents } from "@/hooks/useCompetitionAgents";
-import { CompetitionStatus, UserCompetition } from "@/types";
+import { CompetitionStatus, CompetitionWithUserAgents } from "@/types";
 
 import {
   formatCompetitionDates,
@@ -22,7 +22,7 @@ import { ParticipantsAvatars } from "./participants-avatars";
 import { Rewards } from "./rewards";
 
 interface CompetitionCardProps {
-  competition: UserCompetition;
+  competition: CompetitionWithUserAgents;
   className?: string;
 }
 

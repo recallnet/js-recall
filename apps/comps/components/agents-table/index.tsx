@@ -31,13 +31,10 @@ import { toast } from "@recallnet/ui2/components/toast";
 import { Pagination } from "@/components/pagination/index";
 import { useSession } from "@/hooks/useSession";
 import { useVote } from "@/hooks/useVote";
+import { openForBoosting } from "@/lib/open-for-boosting";
 import { tanstackClient } from "@/rpc/clients/tanstack-query";
-import {
-  AgentCompetition,
-  Competition,
-  CompetitionStatus,
-  PaginationResponse,
-} from "@/types";
+import { RouterOutputs } from "@/rpc/router";
+import { AgentCompetition, PaginationResponse } from "@/types";
 import { formatCompactNumber, formatPercentage } from "@/utils/format";
 import { getSortState } from "@/utils/table";
 
@@ -49,7 +46,7 @@ import { RankBadge } from "./rank-badge";
 export interface AgentsTableProps {
   agents: AgentCompetition[];
   totalVotes?: number;
-  competition: Competition;
+  competition: RouterOutputs["competitions"]["getById"];
   onFilterChange: (filter: string) => void;
   onSortChange: (sort: string) => void;
   pagination: PaginationResponse;
@@ -161,17 +158,22 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
     }),
   );
 
+  const isOpenForBoosting = useMemo(
+    () => openForBoosting(competition),
+    [competition],
+  );
+
   const showClaimBoost = useMemo(() => {
     return (
       boostBalance === 0 &&
       Object.keys(userBoosts || {}).length === 0 &&
-      competition.openForBoosting
+      isOpenForBoosting
     );
-  }, [boostBalance, userBoosts, competition]);
+  }, [boostBalance, userBoosts, isOpenForBoosting]);
 
   const showBoostBalance = useMemo(() => {
-    return boostBalance !== undefined && competition.openForBoosting;
-  }, [boostBalance, competition]);
+    return boostBalance !== undefined && isOpenForBoosting;
+  }, [boostBalance, isOpenForBoosting]);
 
   const page =
     pagination.limit > 0
@@ -402,7 +404,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
 
           return (
             <div className="flex items-center justify-end gap-2">
-              {competition.openForBoosting ? (
+              {isOpenForBoosting ? (
                 hasBoosted ? (
                   <>
                     <span className="font-bold text-yellow-500">
@@ -457,7 +459,8 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
       totalBoost,
       boostBalance,
       isSuccessBoostTotals,
-      competition,
+      isOpenForBoosting,
+      competition.type,
       isSuccessUserBoosts,
     ],
   );
@@ -499,10 +502,14 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
     overscan: 5,
   });
 
-  const competitionTitles = {
-    [CompetitionStatus.Active]: "Standings",
-    [CompetitionStatus.Ended]: "Results",
-    [CompetitionStatus.Pending]: "Signups",
+  const competitionTitles: Record<
+    RouterOutputs["competitions"]["getById"]["status"],
+    string
+  > = {
+    active: "Standings",
+    ending: "Standings",
+    ended: "Results",
+    pending: "Signups",
   };
 
   return (

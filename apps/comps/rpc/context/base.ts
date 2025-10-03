@@ -17,6 +17,7 @@ import { cookies } from "next/headers";
 import {
   BoostAwardService,
   BoostService,
+  CompetitionService,
   UserService,
 } from "@recallnet/services";
 
@@ -43,6 +44,7 @@ export const base = os
     boostService: BoostService;
     boostAwardService: BoostAwardService;
     userService: UserService;
+    competitionService: CompetitionService;
   }>()
   .errors({
     NOT_FOUND: {

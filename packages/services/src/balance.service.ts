@@ -7,11 +7,12 @@ import { assertUnreachable } from "./lib/typescript-utils.js";
 import {
   CompetitionType,
   SpecificChain,
+  SpecificChainBalances,
   SpecificChainTokens,
 } from "./types/index.js";
 
 export interface BalanceServiceConfig {
-  specificChainBalances: Record<SpecificChain, Record<string, number>>;
+  specificChainBalances: SpecificChainBalances;
   specificChainTokens: SpecificChainTokens;
 }
 
@@ -23,7 +24,7 @@ export class BalanceService {
   // Cache of agentId -> Map of tokenAddress -> balance
   private balanceCache: Map<string, Map<string, number>>;
   private balanceRepo: BalanceRepository;
-  private specificChainBalances: Record<SpecificChain, Record<string, number>>;
+  private specificChainBalances: SpecificChainBalances;
   private specificChainTokens: SpecificChainTokens;
   private logger: Logger;
 
@@ -83,7 +84,8 @@ export class BalanceService {
           // Add each configured token for this specific chain
           Object.entries(tokenBalances).forEach(([symbol, amount]) => {
             // Type assertion for the symbol access
-            const tokenAddress = chainTokens?.[symbol];
+            const tokenAddress =
+              chainTokens?.[symbol as keyof typeof chainTokens];
 
             if (tokenAddress && amount > 0) {
               this.logger.debug(

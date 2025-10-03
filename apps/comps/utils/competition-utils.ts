@@ -1,15 +1,24 @@
-import { CheckIcon, ClockIcon, Play } from "lucide-react";
+import { CheckIcon, ClockIcon, LucideProps, Play } from "lucide-react";
 
+import { RouterOutputs } from "@/rpc/router";
 import { Competition, CompetitionStatus, UserCompetition } from "@/types";
 import { CompetitionType } from "@/types/competition";
 
 import { formatDate } from "./format";
 
-export const STATUS_ICONS = {
-  [CompetitionStatus.Active]: Play,
-  [CompetitionStatus.Pending]: ClockIcon,
-  [CompetitionStatus.Ended]: CheckIcon,
-} as const;
+export function iconForStatus(
+  status: RouterOutputs["competitions"]["getById"]["status"],
+) {
+  switch (status) {
+    case "active":
+      return Play;
+    case "pending":
+      return ClockIcon;
+    case "ending":
+    case "ended":
+      return CheckIcon;
+  }
+}
 
 /**
  * Formats the start and end dates of a competition in a user-friendly abbreviated form (MM/dd).
@@ -39,9 +48,9 @@ export function formatCompetitionDates(
  * @returns List of competitions with their associated agents
  */
 export function mergeCompetitionsWithUserData(
-  competitions: Competition[],
+  competitions: RouterOutputs["competitions"]["listEnriched"]["competitions"],
   userCompetitions: UserCompetition[],
-): UserCompetition[] {
+) {
   return competitions.map((competition) => {
     const userCompetition = userCompetitions.find(
       (uc) => uc.id === competition.id,

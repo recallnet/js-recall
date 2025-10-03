@@ -10,6 +10,8 @@ import { MAX_HANDLE_LENGTH } from "@recallnet/db/schema/core/defs";
 import { SelectAgent, SelectUser } from "@recallnet/db/schema/core/types";
 import { crossChainTradingType } from "@recallnet/db/schema/trading/defs";
 
+import { specificChainTokens } from "../lib/config-utils.js";
+
 export * from "./sort/index.js";
 export * from "./agent-metrics.js";
 export * from "./perps.js";
@@ -28,13 +30,11 @@ export class ApiError extends Error {
   }
 }
 
-export type SpecificChainBalances = Partial<
-  Record<SpecificChain, Record<string, number>>
->;
+export type SpecificChainBalances = {
+  [K in SpecificChain]?: Record<string, number>;
+};
 
-export type SpecificChainTokens = Partial<
-  Record<SpecificChain, Record<string, string>>
->;
+export type SpecificChainTokens = typeof specificChainTokens;
 
 /**
  * Blockchain type enum

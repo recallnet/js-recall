@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { apiClient } from "@/lib/api-client";
+import { RouterOutputs } from "@/rpc/router";
 import { CompetitionStatus, CompetitionTimelineResponse } from "@/types";
 
 /**
@@ -11,7 +12,7 @@ import { CompetitionStatus, CompetitionTimelineResponse } from "@/types";
  */
 export const useCompetitionTimeline = (
   id?: string,
-  status?: CompetitionStatus,
+  status?: RouterOutputs["competitions"]["getById"]["status"],
 ) =>
   useQuery({
     queryKey: ["competition", "timeline", id],
@@ -19,5 +20,5 @@ export const useCompetitionTimeline = (
       if (!id) throw new Error("Competition ID is required");
       return (await apiClient.getCompetitionTimeline(id)).timeline;
     },
-    enabled: !!id && status !== CompetitionStatus.Pending,
+    enabled: !!id && status !== "pending",
   });

@@ -2,14 +2,19 @@ import {
   SafeClient,
   createSafeClient as createSafeRouterClient,
 } from "@orpc/client";
-import { createRouterClient } from "@orpc/server";
+import { type RouterClient, createRouterClient } from "@orpc/server";
 import { cookies } from "next/headers";
 
 import { privyClient } from "@/lib/privy-client";
-import { boostAwardService, boostService, userService } from "@/lib/services";
+import {
+  boostAwardService,
+  boostService,
+  competitionService,
+  userService,
+} from "@/lib/services";
 import { router } from "@/rpc/router/index";
 
-export async function createClient() {
+export async function createClient(): Promise<RouterClient<typeof router>> {
   return createRouterClient(router, {
     context: {
       cookies: await cookies(),
@@ -17,6 +22,7 @@ export async function createClient() {
       boostService,
       boostAwardService,
       userService,
+      competitionService,
     },
   });
 }

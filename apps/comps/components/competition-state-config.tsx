@@ -1,4 +1,4 @@
-import { Competition, CompetitionStatus } from "@/types";
+import { RouterOutputs } from "@/rpc/router";
 
 type VotingStatusConfig = {
   subTitle: string;
@@ -15,50 +15,40 @@ type VotingStatusConfig = {
  * "Registration is full" regardless of the time window remaining.
  */
 export function getCompetitionStateConfig(
-  competition: Competition,
+  competition: RouterOutputs["competitions"]["getById"],
   hasVoted: boolean,
 ): VotingStatusConfig {
-  const status = competition.status;
-  const compStartDate = competition.startDate
-    ? new Date(competition.startDate)
-    : null;
-  const compEndDate = competition.endDate
-    ? new Date(competition.endDate)
-    : null;
-  const votingStart = competition.votingStartDate
-    ? new Date(competition.votingStartDate)
-    : null;
-  const votingEnd = competition.votingEndDate
-    ? new Date(competition.votingEndDate)
-    : null;
-  const joinStart = competition.joinStartDate
-    ? new Date(competition.joinStartDate)
-    : null;
-  const joinEnd = competition.joinEndDate
-    ? new Date(competition.joinEndDate)
-    : null;
+  const {
+    status,
+    startDate,
+    endDate,
+    votingStartDate,
+    votingEndDate,
+    joinStartDate,
+    joinEndDate,
+  } = competition;
   const now = new Date();
 
   if (hasVoted) {
-    if (status === CompetitionStatus.Pending) {
+    if (status === "pending") {
       return {
         subTitle: "Counting boosts!",
-        description: compStartDate ? "Competition starts in..." : "",
+        description: startDate ? "Competition starts in..." : "",
         variant: "gray",
-        untilTime: compStartDate,
+        untilTime: startDate,
         phase: null,
       };
     }
-    if (status === CompetitionStatus.Active) {
+    if (status === "active") {
       return {
         subTitle: "Counting boosts!",
-        description: compEndDate ? "Competition ends in..." : "",
+        description: endDate ? "Competition ends in..." : "",
         variant: "gray",
-        untilTime: compEndDate,
+        untilTime: endDate,
         phase: null,
       };
     }
-    if (status === CompetitionStatus.Ended) {
+    if (status === "ended") {
       // NOTE: we should never get here since the banner is hidden if the
       //  comp is ended.
       return {
@@ -83,12 +73,12 @@ export function getCompetitionStateConfig(
 
   // Flow #1
   if (
-    compStartDate === null &&
-    compEndDate === null &&
-    joinStart === null &&
-    joinEnd === null &&
-    votingStart === null &&
-    votingEnd === null
+    startDate === null &&
+    endDate === null &&
+    joinStartDate === null &&
+    joinEndDate === null &&
+    votingStartDate === null &&
+    votingEndDate === null
   ) {
     return {
       subTitle: "Registration starting soon!",
@@ -100,18 +90,18 @@ export function getCompetitionStateConfig(
   }
 
   // Flow #2
-  if (joinStart && now < joinStart) {
+  if (joinStartDate && now < joinStartDate) {
     return {
       subTitle: "Get ready!",
       description: "Registration opens in...",
       variant: "green",
-      untilTime: joinStart,
+      untilTime: joinStartDate,
       phase: "registration",
     };
   }
 
   // Flow #3
-  if (joinStart && joinEnd === null && now >= joinStart) {
+  if (joinStartDate && joinEndDate === null && now >= joinStartDate) {
     // Check if registration is at capacity
     const isRegistrationFull =
       competition.maxParticipants !== null &&
@@ -137,7 +127,7 @@ export function getCompetitionStateConfig(
   }
 
   // Flow #4
-  if (joinEnd && now < joinEnd) {
+  if (joinEndDate && now < joinEndDate) {
     // Check if registration is at capacity
     const isRegistrationFull =
       competition.maxParticipants !== null &&
@@ -157,13 +147,13 @@ export function getCompetitionStateConfig(
       subTitle: "Join now!",
       description: "Registration closes in...",
       variant: "green",
-      untilTime: joinEnd,
+      untilTime: joinEndDate,
       phase: "registration",
     };
   }
 
   // Flow #5
-  if (joinEnd && now >= joinEnd && votingStart === null) {
+  if (joinEndDate && now >= joinEndDate && votingStartDate === null) {
     return {
       subTitle: "Registration is closed",
       description: "",
@@ -174,18 +164,18 @@ export function getCompetitionStateConfig(
   }
 
   // Flow #6
-  if (votingStart && now < votingStart) {
+  if (votingStartDate && now < votingStartDate) {
     return {
       subTitle: "Get ready!",
       description: "Voting opens in...",
       variant: "blue",
-      untilTime: votingStart,
+      untilTime: votingStartDate,
       phase: "voting",
     };
   }
 
   // Flow #7
-  if (votingStart && votingEnd === null && now >= votingStart) {
+  if (votingStartDate && votingEndDate === null && now >= votingStartDate) {
     return {
       subTitle: "Boosting is closed!",
       description: "",
@@ -196,33 +186,33 @@ export function getCompetitionStateConfig(
   }
 
   // Flow #8
-  if (votingEnd && now < votingEnd) {
+  if (votingEndDate && now < votingEndDate) {
     return {
       subTitle: "Get ready!",
       description: "Boosting closes in...",
       variant: "blue",
-      untilTime: votingEnd,
+      untilTime: votingEndDate,
       phase: "boosting",
     };
   }
 
   // Flow #9
-  if (votingEnd && now >= votingEnd) {
-    if (status === CompetitionStatus.Pending) {
+  if (votingEndDate && now >= votingEndDate) {
+    if (status === "pending") {
       return {
         subTitle: "Boosting is closed!",
-        description: compStartDate ? "Competition starts in..." : "",
+        description: startDate ? "Competition starts in..." : "",
         variant: "gray",
-        untilTime: compStartDate,
+        untilTime: startDate,
         phase: null,
       };
     }
-    if (status === CompetitionStatus.Active) {
+    if (status === "active") {
       return {
         subTitle: "Boosting is closed!",
-        description: compEndDate ? "Competition ends in..." : "",
+        description: endDate ? "Competition ends in..." : "",
         variant: "gray",
-        untilTime: compEndDate,
+        untilTime: endDate,
         phase: null,
       };
     }

@@ -1,5 +1,6 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import { ArrowRightIcon } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -10,8 +11,8 @@ import { Skeleton } from "@recallnet/ui2/components/skeleton";
 
 import { ChartSkeleton, TimelineChart } from "@/components/timeline-chart";
 import { LIMIT_AGENTS_PER_PAGE } from "@/components/timeline-chart/constants";
-import { useCompetition } from "@/hooks/useCompetition";
 import { useCompetitionAgents } from "@/hooks/useCompetitionAgents";
+import { tanstackClient } from "@/rpc/clients/tanstack-query";
 
 /**
  * Standalone chart page for sharing
@@ -28,7 +29,9 @@ export default function CompetitionChartPage({
     data: competition,
     isLoading: competitionLoading,
     error: competitionError,
-  } = useCompetition(id);
+  } = useQuery(
+    tanstackClient.competitions.getById.queryOptions({ input: { id } }),
+  );
 
   const {
     data: agentsData,

@@ -5,13 +5,14 @@ import React, { useState } from "react";
 
 import { cn } from "@recallnet/ui2/lib/utils";
 
-import { Competition, CompetitionStatus } from "@/types";
+import { RouterOutputs } from "@/rpc/router";
+import { CompetitionStatus } from "@/types";
 
 import CountdownClock from "./clock";
 import { getCompetitionStateConfig } from "./competition-state-config";
 
 export interface CompetitionVotingBannerProps {
-  competition: Competition;
+  competition: RouterOutputs["competitions"]["getById"];
   className?: string;
   onClose?: () => void;
 }

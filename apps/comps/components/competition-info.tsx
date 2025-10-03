@@ -13,7 +13,7 @@ import {
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { useCompetitionRules } from "@/hooks";
-import { Competition } from "@/types/competition";
+import { RouterOutputs } from "@/rpc/router";
 import { getCompetitionSkills } from "@/utils/competition-utils";
 import { formatDate } from "@/utils/format";
 
@@ -21,7 +21,7 @@ import { CompetitionStatusBadge } from "./competition-status-badge";
 import { Rewards } from "./rewards";
 
 export interface CompetitionInfoProps {
-  competition: Competition;
+  competition: RouterOutputs["competitions"]["getById"];
   className?: string;
 }
 

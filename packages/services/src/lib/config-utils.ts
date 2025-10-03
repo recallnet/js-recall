@@ -1,4 +1,4 @@
-import { SpecificChain } from "../types/index.js";
+import { SpecificChain, SpecificChainBalances } from "../types/index.js";
 
 /**
  * Token addresses for each supported chain
@@ -86,11 +86,8 @@ export function parseEvmChains(): SpecificChain[] {
  * Parse specific chain initial balance environment variables
  * Used by both API and comps apps to ensure consistent initial balance configuration
  */
-export function getSpecificChainBalances(): Record<
-  SpecificChain,
-  Record<string, number>
-> {
-  const result: Partial<Record<SpecificChain, Record<string, number>>> = {};
+export function getSpecificChainBalances(): SpecificChainBalances {
+  const result: SpecificChainBalances = {};
 
   // Ethereum Mainnet
   if (
@@ -163,5 +160,5 @@ export function getSpecificChainBalances(): Record<
     usdt: parseInt(process.env.INITIAL_SVM_USDT_BALANCE || "0", 10),
   };
 
-  return result as Record<SpecificChain, Record<string, number>>;
+  return result;
 }

@@ -287,9 +287,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
       next: NextFunction,
     ) {
       try {
-        const agentId = req.agentId;
         const userId = req.userId;
-        const isAdmin = req.isAdmin === true;
         const competitionId = ensureUuid(req.params.competitionId);
 
         if (!competitionId) {
@@ -297,13 +295,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
         }
 
         // Authentication check
-        if (isAdmin) {
-          competitionLogger.debug(`Admin requesting competition details`);
-        } else if (agentId) {
-          competitionLogger.debug(
-            `Agent ${agentId} requesting competition details`,
-          );
-        } else if (userId) {
+        if (userId) {
           competitionLogger.debug(
             `User ${userId} requesting competition details`,
           );
@@ -332,8 +324,6 @@ export function makeCompetitionController(services: ServiceRegistry) {
         const result = await services.competitionService.getCompetitionById({
           competitionId,
           userId,
-          agentId,
-          isAdmin,
         });
 
         // Cache the result
