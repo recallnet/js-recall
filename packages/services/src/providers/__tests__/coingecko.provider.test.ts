@@ -346,12 +346,13 @@ describe("CoinGeckoProvider", () => {
   });
 
   describe("Burn address handling", () => {
-    it("should return price of 0 for burn addresses", async () => {
-      const burnAddress = "0x000000000000000000000000000000000000dead";
+    it("should return price of 0 for EVM burn addresses", async () => {
+      const burnAddress1 = "0x000000000000000000000000000000000000dead";
+      const burnAddress2 = "0x000000000000000000000000000000000000DEAD";
 
       // The provider should not even make an API call for burn addresses
       const priceReport = await provider.getPrice(
-        burnAddress,
+        burnAddress1,
         BlockchainType.EVM,
         "eth",
       );
@@ -361,6 +362,82 @@ describe("CoinGeckoProvider", () => {
       expect(priceReport).not.toBeNull();
       expect(priceReport?.price).toBe(0);
       expect(priceReport?.symbol).toBe("BURN");
+      const priceReport2 = await provider.getPrice(
+        burnAddress2,
+        BlockchainType.EVM,
+        "eth",
+      );
+      expect(priceReport2).not.toBeNull();
+      expect(priceReport2?.price).toBe(0);
+      expect(priceReport2?.symbol).toBe("BURN");
+    });
+
+    it("should return price of 0 for Solana burn addresses", async () => {
+      const solanaBurnAddress = "1nc1nerator11111111111111111111111111111111";
+      const priceReport = await provider.getPrice(
+        solanaBurnAddress,
+        BlockchainType.SVM,
+        "svm",
+      );
+      expect(
+        mockCoinGeckoInstance.onchain.networks.tokens.getAddress,
+      ).not.toHaveBeenCalled();
+      expect(priceReport).not.toBeNull();
+      expect(priceReport?.price).toBe(0);
+      expect(priceReport?.symbol).toBe("BURN");
+    });
+
+    it("should handle burn addresses in batch requests", async () => {
+      const tokens = [
+        "0x000000000000000000000000000000000000dead",
+        ethereumTokens.usdc,
+      ];
+
+      // Only non-burn addresses should trigger API calls
+      mockTokenPrice(mockCoinGeckoInstance, commonMockResponses.usdc);
+      const results = await provider.getBatchPrices(
+        tokens,
+        BlockchainType.EVM,
+        "eth",
+      );
+      expect(
+        mockCoinGeckoInstance.onchain.networks.tokens.getAddress,
+      ).toHaveBeenCalledTimes(1); // Only USDC
+      expect(results.size).toBe(2);
+      expect(results.get(tokens[0]!)?.price).toBe(0);
+      expect(results.get(tokens[0]!)?.symbol).toBe("BURN");
+      expect(results.get(ethereumTokens.usdc)?.price).toBe(1.0002548824);
+    });
+  });
+
+  describe("Stablecoin detection", () => {
+    it("should identify USDC as a stablecoin", () => {
+      expect(provider.isStablecoin(ethereumTokens.usdc, "eth")).toBe(true);
+    });
+
+    it("should identify USDT as a stablecoin", () => {
+      expect(provider.isStablecoin(ethereumTokens.usdt, "eth")).toBe(true);
+    });
+
+    it("should not identify non-stablecoins", () => {
+      expect(provider.isStablecoin(ethereumTokens.eth, "eth")).toBe(false);
+    });
+
+    it("should handle case-insensitive stablecoin checks on EVM", () => {
+      const lowercaseUsdc = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48";
+      const uppercaseUsdc = "0xA0B86991C6218B36C1D19D4A2E9EB0CE3606EB48";
+      const mixedCaseUsdc = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
+      expect(provider.isStablecoin(lowercaseUsdc, "eth")).toBe(true);
+      expect(provider.isStablecoin(uppercaseUsdc, "eth")).toBe(true);
+      expect(provider.isStablecoin(mixedCaseUsdc, "eth")).toBe(true);
+    });
+
+    it("should return false for unsupported chains", () => {
+      expect(
+        // We want to test the error handling for unsupported chains
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        provider.isStablecoin(ethereumTokens.usdc, "unsupported" as any),
+      ).toBe(false);
     });
   });
 
@@ -377,6 +454,19 @@ describe("CoinGeckoProvider", () => {
       );
 
       expect(priceReport).toBeNull();
+    });
+
+    it("should return empty map for empty batch request", async () => {
+      const results = await provider.getBatchPrices(
+        [],
+        BlockchainType.EVM,
+        "eth",
+      );
+
+      expect(results.size).toBe(0);
+      expect(
+        mockCoinGeckoInstance.onchain.networks.tokens.getAddress,
+      ).not.toHaveBeenCalled();
     });
 
     it("should handle unsupported chains gracefully", async () => {
