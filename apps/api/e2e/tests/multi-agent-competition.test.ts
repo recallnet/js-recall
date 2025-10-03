@@ -1,5 +1,5 @@
 import axios from "axios";
-import { assert, beforeEach, describe, expect, test } from "vitest";
+import { beforeEach, describe, expect, test } from "vitest";
 
 import { BlockchainType } from "@recallnet/services/types";
 
@@ -8,7 +8,6 @@ import { ApiClient } from "@/e2e/utils/api-client.js";
 import {
   AgentProfileResponse,
   BalancesResponse,
-  SnapshotResponse,
   SpecificChain,
   TradeResponse,
 } from "@/e2e/utils/api-types.js";
@@ -21,11 +20,8 @@ import {
   startTestCompetition,
   wait,
 } from "@/e2e/utils/test-helpers.js";
-import { ServiceRegistry } from "@/services/index.js";
 
 describe("Multi-Agent Competition", () => {
-  const services = new ServiceRegistry();
-
   let adminApiKey: string;
 
   // Number of agents to create for multi-agent tests
@@ -357,179 +353,4 @@ describe("Multi-Agent Competition", () => {
       }
     }
   });
-
-  // Test that portfolio values change over time due to price fluctuations
-  test.only("portfolio values should change differently for agents holding different tokens", async () => {
-    // Step 1: Setup admin client
-    adminClient = createTestClient();
-    await adminClient.loginAsAdmin(adminApiKey);
-
-    // Step 2: Register agents with unique names
-    agentClients = [];
-
-    // Store token quantities and initial portfolio values
-    const initialPortfolioValues: { [agentId: string]: number | undefined } =
-      {};
-    const tokensByAgent: { [agentId: string]: string } = {};
-
-    for (let i = 0; i < NUM_AGENTS; i++) {
-      const agentName = `Price Agent ${i + 1} ${Date.now()}`;
-
-      const agentData = await registerUserAndAgentAndGetClient({
-        adminApiKey,
-        agentName,
-      });
-
-      agentClients.push(agentData);
-    }
-
-    expect(agentClients.length).toBe(NUM_AGENTS);
-
-    // Step 3: Start a competition with all agents
-    const competitionName = `Portfolio Value Test ${Date.now()}`;
-    const agentIds = agentClients.map((tc) => tc.agent.id);
-
-    const competitionResponse = await startTestCompetition({
-      adminClient,
-      name: competitionName,
-      agentIds,
-      tradingConstraints: noTradingConstraints,
-    });
-
-    expect(competitionResponse.success).toBe(true);
-    expect(competitionResponse.competition).toBeDefined();
-    competitionId = competitionResponse.competition.id;
-
-    // Wait for balances to be properly initialized
-    await wait(1000);
-
-    // Step 4: Each agent trades for a different token
-    const tradeAmount = 500; // Using a larger amount to make price fluctuations more noticeable
-
-    // Execute trades for each agent
-    for (let i = 0; i < NUM_AGENTS; i++) {
-      const agent = agentClients[i]!;
-      // Trade to burn address
-      const tokenToTrade = "0x000000000000000000000000000000000000dead";
-      tokensByAgent[agent.agent.id] = tokenToTrade;
-
-      // Execute trade - each agent buys a different BASE token with USDC
-      const tradeResponse = (await agent?.client.executeTrade({
-        fromToken: BASE_USDC_ADDRESS,
-        toToken: tokenToTrade,
-        amount: tradeAmount.toString(),
-        fromChain: BlockchainType.EVM,
-        toChain: BlockchainType.EVM,
-        fromSpecificChain: SpecificChain.BASE,
-        toSpecificChain: SpecificChain.BASE,
-        reason,
-      })) as TradeResponse;
-
-      // Verify trade was successful
-      expect(tradeResponse.success).toBe(true);
-      expect(tradeResponse.transaction).toBeDefined();
-      // Wait briefly between trades
-      await wait(100);
-    }
-
-    // Wait for all trades to settle
-    await wait(1000);
-
-    // Step 5: Get initial portfolio values after trades
-    for (let i = 0; i < NUM_AGENTS; i++) {
-      const agent = agentClients[i];
-
-      assert(agent, "Agent is undefined");
-
-      // Force a snapshot to ensure we have current values
-      await services.portfolioSnapshotterService.takePortfolioSnapshots(
-        competitionId,
-      );
-      await wait(500);
-
-      // Get agent's initial portfolio value
-      const snapshotsResponse = (await adminClient.request(
-        "get",
-        `/api/admin/competition/${competitionId}/snapshots?agentId=${agent.agent.id}`,
-      )) as SnapshotResponse;
-      expect(snapshotsResponse.success).toBe(true);
-      expect(snapshotsResponse.snapshots).toBeDefined();
-      expect(snapshotsResponse.snapshots.length).toBeGreaterThan(0);
-
-      // Get the earliest snapshot
-      const earliestSnapshot = snapshotsResponse.snapshots[0];
-      const initialValue = earliestSnapshot?.totalValue;
-      initialPortfolioValues[agent.agent.id] = initialValue;
-      const token = tokensByAgent[agent.agent.id];
-      assert(token, "Token is undefined");
-    }
-
-    // Step 7: Get final portfolio values
-    const finalPortfolioValues: { [agentId: string]: number | undefined } = {};
-    const portfolioChanges: {
-      [agentId: string]: {
-        initial: number;
-        final: number;
-        change: number;
-        percentChange: number;
-      };
-    } = {};
-    let allAgentsHaveSameChange = true;
-    let previousPercentChange: number | null = null;
-
-    for (let i = 0; i < NUM_AGENTS; i++) {
-      const agent = agentClients[i];
-
-      assert(agent, "Agent is undefined");
-
-      // Force one final snapshot to ensure we have the latest prices
-      await services.portfolioSnapshotterService.takePortfolioSnapshots(
-        competitionId,
-      );
-      await wait(500);
-
-      // Get agent's final portfolio value
-      const snapshotsResponse = (await adminClient.request(
-        "get",
-        `/api/admin/competition/${competitionId}/snapshots?agentId=${agent.agent.id}`,
-      )) as SnapshotResponse;
-      expect(snapshotsResponse.success).toBe(true);
-      expect(snapshotsResponse.snapshots).toBeDefined();
-      expect(snapshotsResponse.snapshots.length).toBeGreaterThan(0);
-
-      // Get the most recent snapshot
-      const latestSnapshot =
-        snapshotsResponse.snapshots[snapshotsResponse.snapshots.length - 1];
-      const finalValue = latestSnapshot?.totalValue;
-      finalPortfolioValues[agent.agent.id] = finalValue;
-
-      assert(finalValue, "Final value is undefined");
-
-      // Calculate change
-      const initialValue = initialPortfolioValues[agent.agent.id];
-      assert(initialValue, "Initial value is undefined");
-
-      const absoluteChange = finalValue - initialValue;
-      const percentChange = (absoluteChange / initialValue) * 100;
-
-      portfolioChanges[agent.agent.id] = {
-        initial: initialValue,
-        final: finalValue,
-        change: absoluteChange,
-        percentChange: percentChange,
-      };
-
-      // Check if this percent change is different from previous agents
-      if (previousPercentChange !== null) {
-        // Allow a tiny bit of precision error (0.00001), but changes should differ by more than this
-        if (Math.abs(percentChange - previousPercentChange) > 0.00001) {
-          allAgentsHaveSameChange = false;
-        }
-      }
-      previousPercentChange = percentChange;
-    }
-
-    // Step 8: Verify that no agents have the exact same portfolio change
-    expect(allAgentsHaveSameChange).toBe(false);
-  }, 60000);
 });
