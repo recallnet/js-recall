@@ -26,15 +26,21 @@ export const useJoinCompetition = () => {
         queryKey: tanstackClient.agent.getAgent.key({ input: { agentId } }),
       });
       queryClient.invalidateQueries({
-        queryKey: ["competition-agents", competitionId],
+        queryKey: tanstackClient.competitions.getAgents.key({
+          input: { competitionId },
+        }),
       });
       queryClient.invalidateQueries({
         queryKey: ["agent-competitions", agentId],
       });
       queryClient.invalidateQueries({ queryKey: ["leaderboard"] });
-      queryClient.invalidateQueries({ queryKey: ["competitions"] });
       queryClient.invalidateQueries({
-        queryKey: ["competition", competitionId],
+        queryKey: tanstackClient.competitions.listEnriched.key(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: tanstackClient.competitions.getById.key({
+          input: { id: competitionId },
+        }),
       });
       queryClient.invalidateQueries({ queryKey: ["user-competitions"] });
     },

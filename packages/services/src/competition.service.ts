@@ -20,6 +20,10 @@ import { AgentService } from "./agent.service.js";
 import { AgentRankService } from "./agentrank.service.js";
 import { BalanceService } from "./balance.service.js";
 import { CompetitionRewardService } from "./competition-reward.service.js";
+import {
+  PaginationResponse,
+  buildPaginationResponse,
+} from "./lib/pagination-utils.js";
 import { applySortingAndPagination, splitSortField } from "./lib/sort.js";
 import { PerpsDataProcessor } from "./perps-data-processor.service.js";
 import { PortfolioSnapshotterService } from "./portfolio-snapshotter.service.js";
@@ -276,7 +280,7 @@ type CompetitionAgentsData = {
     maxDrawdown: number | null;
     hasRiskMetrics: boolean;
   }>;
-  total: number;
+  pagination: PaginationResponse;
 };
 
 /**
@@ -3110,7 +3114,11 @@ export class CompetitionService {
         registeredParticipants: competition.registeredParticipants,
         maxParticipants: competition.maxParticipants,
         agents,
-        total,
+        pagination: buildPaginationResponse(
+          total,
+          params.queryParams.limit,
+          params.queryParams.offset,
+        ),
       };
 
       return result;

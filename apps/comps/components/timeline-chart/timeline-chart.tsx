@@ -15,7 +15,7 @@ import { cn } from "@recallnet/ui2/lib/utils";
 
 import { config } from "@/config/public";
 import { useCompetitionTimeline } from "@/hooks/useCompetitionTimeline";
-import { AgentCompetition } from "@/types";
+import { RouterOutputs } from "@/rpc/router";
 import { formatDate } from "@/utils/format";
 
 import { ShareModal } from "../share-modal";
@@ -333,7 +333,12 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
     // Map timeline agents to our format, only including agents that exist in the agents prop
     return Array.from(agentNames)
       .map((agentName) => agents?.find((agent) => agent.name === agentName))
-      .filter((agent): agent is AgentCompetition => agent !== undefined);
+      .filter(
+        (
+          agent,
+        ): agent is RouterOutputs["competitions"]["getAgents"]["agents"][number] =>
+          agent !== undefined,
+      );
   }, [timelineRaw, agents]);
 
   // Current page agents with data - only show agents from the current pagination page when NOT searching

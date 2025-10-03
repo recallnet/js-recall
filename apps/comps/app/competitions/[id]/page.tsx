@@ -25,7 +25,6 @@ import { TimelineChart } from "@/components/timeline-chart/index";
 import { TradesTable } from "@/components/trades-table";
 import { UserVote } from "@/components/user-vote";
 import { getSocialLinksArray } from "@/data/social";
-import { useCompetitionAgents } from "@/hooks/useCompetitionAgents";
 import { useCompetitionPerpsPositions } from "@/hooks/useCompetitionPerpsPositions";
 import { useCompetitionTrades } from "@/hooks/useCompetitionTrades";
 import { useSession } from "@/hooks/useSession";
@@ -64,12 +63,20 @@ export default function CompetitionPage({
     data: agentsData,
     isLoading: isLoadingAgents,
     error: agentsError,
-  } = useCompetitionAgents(id, {
-    filter: debouncedFilterTerm,
-    sort: agentsSort,
-    offset: agentsOffset,
-    limit: LIMIT_AGENTS_PER_PAGE,
-  });
+  } = useQuery(
+    tanstackClient.competitions.getAgents.queryOptions({
+      placeholderData: (prev) => prev,
+      input: {
+        competitionId: id,
+        paging: {
+          sort: agentsSort,
+          offset: agentsOffset,
+          limit: LIMIT_AGENTS_PER_PAGE,
+        },
+      },
+    }),
+  );
+
   // Determine if we're in a perps competition
   const isPerpsCompetition = competition?.type === "perpetual_futures";
 

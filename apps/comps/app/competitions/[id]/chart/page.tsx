@@ -11,7 +11,6 @@ import { Skeleton } from "@recallnet/ui2/components/skeleton";
 
 import { ChartSkeleton, TimelineChart } from "@/components/timeline-chart";
 import { LIMIT_AGENTS_PER_PAGE } from "@/components/timeline-chart/constants";
-import { useCompetitionAgents } from "@/hooks/useCompetitionAgents";
 import { tanstackClient } from "@/rpc/clients/tanstack-query";
 
 /**
@@ -37,10 +36,12 @@ export default function CompetitionChartPage({
     data: agentsData,
     isLoading: agentsLoading,
     error: agentsError,
-  } = useCompetitionAgents(id, {
-    limit: 10, // Default page size
-    offset: 0,
-  });
+  } = useQuery(
+    tanstackClient.competitions.getAgents.queryOptions({
+      placeholderData: (prev) => prev,
+      input: { competitionId: id, paging: { limit: 10 } },
+    }),
+  );
 
   if (competitionLoading || agentsLoading) {
     return (

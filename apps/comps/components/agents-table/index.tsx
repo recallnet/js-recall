@@ -34,7 +34,7 @@ import { useVote } from "@/hooks/useVote";
 import { openForBoosting } from "@/lib/open-for-boosting";
 import { tanstackClient } from "@/rpc/clients/tanstack-query";
 import { RouterOutputs } from "@/rpc/router";
-import { AgentCompetition, PaginationResponse } from "@/types";
+import { PaginationResponse } from "@/types";
 import { formatCompactNumber, formatPercentage } from "@/utils/format";
 import { getSortState } from "@/utils/table";
 
@@ -44,7 +44,7 @@ import ConfirmVoteModal from "../modals/confirm-vote";
 import { RankBadge } from "./rank-badge";
 
 export interface AgentsTableProps {
-  agents: AgentCompetition[];
+  agents: RouterOutputs["competitions"]["getAgents"]["agents"];
   totalVotes?: number;
   competition: RouterOutputs["competitions"]["getById"];
   onFilterChange: (filter: string) => void;
@@ -76,9 +76,9 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
     yourShare: session.ready && session.isAuthenticated,
   });
-  const [selectedAgent, setSelectedAgent] = useState<AgentCompetition | null>(
-    null,
-  );
+  const [selectedAgent, setSelectedAgent] = useState<
+    RouterOutputs["competitions"]["getAgents"]["agents"][number] | null
+  >(null);
   const [isVoteModalOpen, setIsVoteModalOpen] = useState(false);
   const [isBoostModalOpen, setIsBoostModalOpen] = useState(false);
   const { mutate: vote, isPending: isPendingVote } = useVote();
@@ -233,18 +233,23 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
     claimBoost({ competitionId: competition.id });
   };
 
-  const handleBoost = (agent: AgentCompetition) => {
+  const handleBoost = (
+    agent: RouterOutputs["competitions"]["getAgents"]["agents"][number],
+  ) => {
     setSelectedAgent(agent);
     setIsBoostModalOpen(true);
   };
 
-  const columns = useMemo<ColumnDef<AgentCompetition>[]>(
+  const columns = useMemo<
+    ColumnDef<RouterOutputs["competitions"]["getAgents"]["agents"][number]>[]
+  >(
     () => [
       {
         id: "rank",
         accessorKey: "rank",
         header: () => "Rank",
-        cell: ({ row }) => <RankBadge rank={row.original.rank} />,
+        cell: ({ row }) =>
+          row.original.rank ? <RankBadge rank={row.original.rank} /> : null,
         enableSorting: true,
         size: 100,
         sortDescFirst: false, // Start with ascending (lower ranks first)
@@ -280,7 +285,13 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
               id: "calmarRatio",
               accessorKey: "calmarRatio",
               header: () => "Calmar Ratio",
-              cell: ({ row }: { row: { original: AgentCompetition } }) => (
+              cell: ({
+                row,
+              }: {
+                row: {
+                  original: RouterOutputs["competitions"]["getAgents"]["agents"][number];
+                };
+              }) => (
                 <span className="text-secondary-foreground font-semibold">
                   {row.original.calmarRatio !== null &&
                   row.original.calmarRatio !== undefined
@@ -300,7 +311,13 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                   <span className="sm:hidden">Ret%</span>
                 </>
               ),
-              cell: ({ row }: { row: { original: AgentCompetition } }) => (
+              cell: ({
+                row,
+              }: {
+                row: {
+                  original: RouterOutputs["competitions"]["getAgents"]["agents"][number];
+                };
+              }) => (
                 <span
                   className={`font-semibold ${
                     row.original.simpleReturn &&
@@ -330,7 +347,13 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                   <span className="sm:hidden">DD</span>
                 </>
               ),
-              cell: ({ row }: { row: { original: AgentCompetition } }) => (
+              cell: ({
+                row,
+              }: {
+                row: {
+                  original: RouterOutputs["competitions"]["getAgents"]["agents"][number];
+                };
+              }) => (
                 <span className="font-semibold text-red-400">
                   {row.original.maxDrawdown !== null &&
                   row.original.maxDrawdown !== undefined
@@ -347,7 +370,13 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
               id: "portfolioValue",
               accessorKey: "portfolioValue",
               header: () => "Portfolio",
-              cell: ({ row }: { row: { original: AgentCompetition } }) => (
+              cell: ({
+                row,
+              }: {
+                row: {
+                  original: RouterOutputs["competitions"]["getAgents"]["agents"][number];
+                };
+              }) => (
                 <span className="text-secondary-foreground font-semibold">
                   {row.original.portfolioValue.toLocaleString("en-US", {
                     style: "currency",
