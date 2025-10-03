@@ -1,5 +1,7 @@
 import { ClientOptions, Coingecko } from "@coingecko/coingecko-typescript";
+import { TokenGetAddressResponse } from "@coingecko/coingecko-typescript/resources/onchain/networks/tokens/tokens.mjs";
 import { Logger } from "pino";
+import { z } from "zod";
 
 import {
   BlockchainType,
@@ -21,6 +23,35 @@ export interface CoinGeckoProviderConfig {
 }
 
 /**
+ * Subset of the CoinGecko onchain response used in the price provider
+ */
+export const OnchainResponseSchema = z.object({
+  data: z.object({
+    attributes: z.object({
+      symbol: z.string(),
+      price_usd: z.string(),
+      volume_usd: z.object({
+        h24: z.string(),
+      }),
+      total_reserve_in_usd: z.string(),
+      fdv_usd: z.string(),
+    }),
+  }),
+  included: z.array(
+    z.object({
+      attributes: z.object({
+        pool_created_at: z.string(),
+      }),
+    }),
+  ),
+});
+
+/**
+ * CoinGecko onchain response type (subset of the full response)
+ */
+export type OnchainResponse = z.infer<typeof OnchainResponseSchema>;
+
+/**
  * CoinGecko price provider implementation
  * Provides cryptocurrency price data using the CoinGecko API
  */
@@ -32,17 +63,14 @@ export class CoinGeckoProvider implements PriceSource {
   private specificChainTokens: SpecificChainTokens;
   private logger: Logger;
 
-  // See the following API for a list of the possible values: https://docs.coingecko.com/reference/asset-platforms-list
-  // Note: an "asset platform" is the name of the chain. In CoinGecko's DEX APIs, there is a
-  // similar field called "network", but it uses different values. We don't use this DEX API, but
-  // it's important to note this distinction in case we ever need to in the future.
-  private readonly chainMapping: Record<SpecificChain, string> = {
-    eth: "ethereum",
-    polygon: "polygon-pos",
-    bsc: "binance-smart-chain",
-    arbitrum: "arbitrum-one",
-    optimism: "optimistic-ethereum",
-    avalanche: "avalanche",
+  // See the following API for a list of the possible values: https://docs.coingecko.com/reference/networks-list
+  private readonly networkMapping: Record<SpecificChain, string> = {
+    eth: "eth",
+    polygon: "polygon_pos",
+    bsc: "bsc",
+    arbitrum: "arbitrum", // Arbitrum One
+    optimism: "optimism",
+    avalanche: "avax",
     base: "base",
     linea: "linea",
     zksync: "zksync",
@@ -133,69 +161,97 @@ export class CoinGeckoProvider implements PriceSource {
   }
 
   /**
-   * Fetch coin data directly using contract address and platform
-   * @param tokenAddress - The token contract address
-   * @param platform - The CoinGecko platform identifier (e.g., "ethereum", "polygon-pos")
-   * @returns Token information including price data, or null if not found
+   * Get the created at timestamp from the token's oldest pool:
+   * - There are multiple pools for a token, and we want to use the oldest one since this is part
+   *   of how we enforce trading constraints.
+   * - The timestamp is natively in ISO 8601 format and must be converted to unix.
+   * @param pools - The token pools for the token
+   * @returns The created at timestamp
    */
-  private async fetchPriceDirect(
+  private getCreatedAtFromPools(
+    pools: TokenGetAddressResponse.Included[],
+  ): number | undefined {
+    const poolsWithTimestamps = pools.filter(
+      (p) => p.attributes?.pool_created_at,
+    );
+    if (poolsWithTimestamps.length === 0) {
+      return undefined;
+    }
+    // Note: the timestamps are guaranteed to be non-null because we filtered above
+    const sorted = poolsWithTimestamps.sort((a, b) => {
+      const aTime = new Date(a.attributes!.pool_created_at!).getTime();
+      const bTime = new Date(b.attributes!.pool_created_at!).getTime();
+      return aTime - bTime;
+    });
+    return new Date(sorted[0]!.attributes!.pool_created_at!).getTime();
+  }
+
+  /**
+   * Validate the onchain response for a token
+   * @param data - The token data
+   * @param pools - The token pools
+   * @returns The token info
+   */
+  private parseOnchainResponse(
+    response: TokenGetAddressResponse,
+  ): DexScreenerTokenInfo {
+    const {
+      success,
+      error,
+      data: parsedData,
+    } = OnchainResponseSchema.safeParse(response);
+    if (!success) {
+      throw new Error(
+        `Invalid CoinGecko response for ${response.data?.attributes?.address || "token"}: ${error}`,
+      );
+    }
+    const { data, included: pools } = parsedData;
+    const { symbol, price_usd, volume_usd, total_reserve_in_usd, fdv_usd } =
+      data.attributes;
+    return {
+      price: parseFloat(price_usd),
+      symbol: symbol.toUpperCase(),
+      pairCreatedAt: this.getCreatedAtFromPools(pools),
+      volume: { h24: parseFloat(volume_usd.h24) },
+      liquidity: { usd: parseFloat(total_reserve_in_usd) },
+      fdv: parseFloat(fdv_usd),
+    };
+  }
+
+  /**
+   * Fetch price data from CoinGecko onchain API
+   * @param tokenAddress - The token contract address
+   * @param network - The CoinGecko network identifier (e.g., "ethereum", "solana")
+   * @returns The token info
+   */
+  private async fetchPrice(
     tokenAddress: string,
-    platform: string,
+    network: string,
   ): Promise<DexScreenerTokenInfo | null> {
     try {
-      const data = await this.client.coins.contract.get(
-        tokenAddress.toLowerCase(),
-        { id: platform },
+      const response = await this.client.onchain.networks.tokens.getAddress(
+        tokenAddress,
+        {
+          network,
+          include_composition: true,
+          // Note: we need the information below in order to get the `pool_created_at` timestamp.
+          // There is also information like base vs. quote token, volume, etc., which could open
+          // up other trading flows (e.g., only allow explicitly paired addresses).
+          include: "top_pools",
+        },
       );
-
-      if (data && data.market_data) {
-        const price = data.market_data.current_price?.usd;
-        if (!price || price === 0 || isNaN(price)) {
-          this.logger.debug(
-            {
-              price,
-              tokenAddress,
-              platform,
-            },
-            `Invalid price for ${tokenAddress}`,
-          );
-          return null;
-        }
-        this.logger.debug(
-          {
-            price,
-            tokenAddress,
-            platform,
-          },
-          `Found price for ${tokenAddress}`,
-        );
-        return {
-          price,
-          symbol: data.symbol?.toUpperCase() || "N/A",
-          volume: { h24: data.market_data.total_volume?.usd },
-          liquidity: undefined,
-          fdv: data.market_data.fully_diluted_valuation?.usd,
-          pairCreatedAt: data.genesis_date
-            ? new Date(data.genesis_date).getTime()
-            : undefined,
-        };
-      }
+      return this.parseOnchainResponse(response);
     } catch (error) {
       this.logger.error(
         {
           error: error instanceof Error ? error.message : "Unknown error",
+          tokenAddress,
+          network,
         },
-        `Error fetching price for ${tokenAddress} on ${platform}:`,
+        `Error fetching price`,
       );
+      return null;
     }
-    this.logger.debug(
-      {
-        tokenAddress,
-        platform,
-      },
-      `No valid price found for ${tokenAddress}`,
-    );
-    return null;
   }
 
   /**
@@ -227,8 +283,8 @@ export class CoinGeckoProvider implements PriceSource {
         fdv: undefined,
       };
     }
-    const platform = this.chainMapping[specificChain] || "ethereum";
-    const priceData = await this.fetchPriceDirect(tokenAddress, platform);
+    const platform = this.networkMapping[specificChain] || "ethereum";
+    const priceData = await this.fetchPrice(tokenAddress, platform);
     if (priceData !== null) {
       return {
         price: priceData.price,
@@ -264,7 +320,7 @@ export class CoinGeckoProvider implements PriceSource {
       return results;
     }
 
-    const platform = this.chainMapping[specificChain];
+    const platform = this.networkMapping[specificChain];
     if (!platform) {
       this.logger.error(`Unsupported chain: ${specificChain}`);
       tokenAddresses.forEach((addr) => {
@@ -321,7 +377,7 @@ export class CoinGeckoProvider implements PriceSource {
 
     // Fetch prices for each token individually
     const promises = tokenAddresses.map(async (tokenAddress) => {
-      const result = await this.fetchPriceDirect(tokenAddress, platform);
+      const result = await this.fetchPrice(tokenAddress, platform);
       return { tokenAddress, result };
     });
 
