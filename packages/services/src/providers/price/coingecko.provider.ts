@@ -96,8 +96,12 @@ const OnchainResponseSchema = z.object({
  * @throws If the address is invalid (wrong length, alphabet, or incorrect case)
  */
 function toCanonicalBase58(addr: string): string {
-  const pk = new PublicKey(addr);
-  return pk.toBase58();
+  try {
+    const pk = new PublicKey(addr);
+    return pk.toBase58();
+  } catch {
+    throw new Error(`Invalid Solana address: ${addr}`);
+  }
 }
 
 /**
@@ -178,9 +182,7 @@ export class CoinGeckoProvider implements PriceSource {
   }
 
   /**
-   * Normalizes a token address for comparisons
-   * - EVM addresses (0x prefix): lowercase for case-insensitive matching
-   * - Solana addresses: preserve original case (base58 is case-sensitive)
+   * Normalizes a token address for proper API calls and comparisons
    * @param tokenAddress - The token address to normalize
    * @returns Normalized token address
    */
