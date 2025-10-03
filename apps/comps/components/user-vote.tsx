@@ -1,5 +1,6 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import { ArrowUp } from "lucide-react";
 import Link from "next/link";
 import React from "react";
@@ -12,8 +13,7 @@ import {
   TableRow,
 } from "@recallnet/ui2/components/table";
 
-import { useAgent } from "@/hooks/useAgent";
-import { useCompetitionAgents } from "@/hooks/useCompetitionAgents";
+import { tanstackClient } from "@/rpc/clients/tanstack-query";
 import { formatPercentage } from "@/utils/format";
 
 import { AgentAvatar } from "./agent-avatar";
@@ -30,10 +30,12 @@ export const UserVote: React.FC<UserVoteProps> = ({
   competitionId,
   totalVotes,
 }) => {
-  const { data: agentData } = useAgent(agentId);
-  const { data: competitionAgentsData } = useCompetitionAgents(competitionId, {
-    filter: agentData?.agent.name,
-  });
+  // TODO: Filter by agent name once the api supports it.
+  const { data: competitionAgentsData } = useQuery(
+    tanstackClient.competitions.getAgents.queryOptions({
+      input: { competitionId },
+    }),
+  );
 
   const agent = competitionAgentsData?.agents.find((a) => a.id === agentId);
 
@@ -47,7 +49,7 @@ export const UserVote: React.FC<UserVoteProps> = ({
           <TableBody>
             <TableRow className="flex w-full">
               <TableCell className="flex items-center">
-                <RankBadge rank={agent.rank} />
+                {agent.rank ? <RankBadge rank={agent.rank} /> : null}
               </TableCell>
               <TableCell className="flex flex-1 items-center">
                 <div className="flex min-w-0 items-center gap-3">

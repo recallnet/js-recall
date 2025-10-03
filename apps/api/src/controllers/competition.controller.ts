@@ -384,14 +384,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
           queryParams,
         });
 
-        res.status(200).json({
-          ...result,
-          pagination: buildPaginationResponse(
-            result.total,
-            queryParams.limit,
-            queryParams.offset,
-          ),
-        });
+        res.status(200).json(result);
       } catch (error) {
         next(error);
       }

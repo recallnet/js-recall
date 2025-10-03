@@ -1,5 +1,6 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import Image from "next/image";
 import Link from "next/link";
 import React from "react";
@@ -8,7 +9,7 @@ import { Badge } from "@recallnet/ui2/components/badge";
 import { Card } from "@recallnet/ui2/components/card";
 import { cn } from "@recallnet/ui2/lib/utils";
 
-import { useCompetitionAgents } from "@/hooks/useCompetitionAgents";
+import { tanstackClient } from "@/rpc/clients/tanstack-query";
 import { CompetitionStatus, CompetitionWithUserAgents } from "@/types";
 
 import {
@@ -30,7 +31,11 @@ export const CompetitionCard: React.FC<CompetitionCardProps> = ({
   competition,
   className,
 }) => {
-  const { data: topLeaders } = useCompetitionAgents(competition.id);
+  const { data: topLeaders } = useQuery(
+    tanstackClient.competitions.getAgents.queryOptions({
+      input: { competitionId: competition.id },
+    }),
+  );
 
   const duration = formatCompetitionDates(
     competition.startDate,

@@ -3,11 +3,16 @@ import Link from "next/link";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { AgentAvatar } from "@/components/agent-avatar";
+import { RouterOutputs } from "@/rpc/router";
 import { Agent, AgentCompetition } from "@/types/agent";
 import { UserAgentCompetition } from "@/types/competition";
 
 interface ParticipantsAvatarsProps {
-  agents: Agent[] | UserAgentCompetition[] | AgentCompetition[];
+  agents:
+    | Agent[]
+    | UserAgentCompetition[]
+    | AgentCompetition[]
+    | RouterOutputs["competitions"]["getAgents"]["agents"];
   compId?: string;
   maxDisplay?: number;
   className?: string;
@@ -57,11 +62,15 @@ export function ParticipantsAvatars({
 }
 
 function getRank(
-  agent: Agent | UserAgentCompetition | AgentCompetition,
+  agent:
+    | Agent
+    | UserAgentCompetition
+    | AgentCompetition
+    | RouterOutputs["competitions"]["getAgents"]["agents"][number],
   index: number,
 ) {
   if ("rank" in agent) {
-    return agent.rank;
+    return agent.rank || undefined;
   }
 
   if ("stats" in agent && agent.stats) {

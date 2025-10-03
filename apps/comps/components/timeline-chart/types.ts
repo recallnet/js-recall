@@ -1,5 +1,4 @@
 import { RouterOutputs } from "@/rpc/router";
-import { AgentCompetition } from "@/types";
 
 /**
  * Types for TimelineChart components
@@ -17,7 +16,7 @@ export interface TooltipProps {
 }
 
 export interface CustomLegendProps {
-  agents: AgentCompetition[];
+  agents: RouterOutputs["competitions"]["getAgents"]["agents"];
   colorMap: Record<string, string>;
   currentValues?: Record<string, number>;
   currentOrder?: string[];
@@ -33,7 +32,7 @@ export interface CustomLegendProps {
 export interface PortfolioChartProps {
   ref?: React.RefObject<HTMLDivElement | null>;
   competition: RouterOutputs["competitions"]["getById"];
-  agents: AgentCompetition[]; // Current page agents from parent pagination
+  agents: RouterOutputs["competitions"]["getAgents"]["agents"]; // Current page agents from parent pagination
   className?: string;
   totalAgents?: number; // Total number of agents for pagination
   currentPage?: number; // Current page from parent
