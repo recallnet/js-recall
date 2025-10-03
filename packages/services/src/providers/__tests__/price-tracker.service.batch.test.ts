@@ -2,6 +2,7 @@ import { Logger } from "pino";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MockProxy, mock } from "vitest-mock-extended";
 
+import { specificChainTokens } from "../../lib/index.js";
 import { PriceTrackerService } from "../../price-tracker.service.js";
 import { MultiChainProvider } from "../multi-chain.provider.js";
 import {
@@ -11,8 +12,7 @@ import {
   mockTokenPrice,
   multichainCoinGeckoConfig,
   setupCoinGeckoMock,
-} from "./helpers/coingecko.js";
-import { specificChainTokens } from "./helpers/tokens.js";
+} from "./mocks/coingecko.js";
 
 vi.mock("@coingecko/coingecko-typescript");
 vi.setConfig({ testTimeout: 15_000 });

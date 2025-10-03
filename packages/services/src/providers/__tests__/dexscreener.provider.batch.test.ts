@@ -2,9 +2,9 @@ import { Logger } from "pino";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MockProxy, mock } from "vitest-mock-extended";
 
+import { specificChainTokens } from "../../lib/index.js";
 import { BlockchainType } from "../../types/index.js";
 import { DexScreenerProvider } from "../price/dexscreener.provider.js";
-import { specificChainTokens } from "./helpers/tokens.js";
 
 vi.setConfig({ testTimeout: 15_000 });
 

@@ -2,6 +2,7 @@ import { Logger } from "pino";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MockProxy, mock } from "vitest-mock-extended";
 
+import { specificChainTokens } from "../../lib/index.js";
 import { BlockchainType } from "../../types/index.js";
 import { MultiChainProvider } from "../multi-chain.provider.js";
 import {
@@ -10,8 +11,7 @@ import {
   mockBatchTokenPrices,
   multichainCoinGeckoConfig,
   setupCoinGeckoMock,
-} from "./helpers/coingecko.js";
-import { specificChainTokens } from "./helpers/tokens.js";
+} from "./mocks/coingecko.js";
 
 // Mock the CoinGecko SDK
 vi.mock("@coingecko/coingecko-typescript");
