@@ -23,7 +23,7 @@ export const useJoinCompetition = () => {
     onSuccess: (_data, { agentId, competitionId }) => {
       // Invalidate relevant queries
       queryClient.invalidateQueries({
-        queryKey: tanstackClient.agent.getAgent.key({ input: { agentId } }),
+        queryKey: tanstackClient.user.getUserAgent.key({ input: { agentId } }),
       });
       queryClient.invalidateQueries({
         queryKey: ["competition-agents", competitionId],

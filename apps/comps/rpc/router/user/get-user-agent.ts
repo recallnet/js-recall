@@ -7,7 +7,7 @@ import { base } from "@/rpc/context/base";
 import { userAgentMiddleware } from "@/rpc/middleware/user-agent";
 import { serializeAgent } from "@/rpc/router/utils/serialize-agent";
 
-export const getAgent = base
+export const getUserAgent = base
   .input(z.object({ agentId: z.string().uuid() }))
   .use(userAgentMiddleware, (input) => ({ agentId: input.agentId }))
   .handler(async ({ context, errors }) => {

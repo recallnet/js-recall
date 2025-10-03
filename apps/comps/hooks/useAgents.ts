@@ -37,7 +37,7 @@ export const useUserAgents = (
   const { isAuthenticated } = useSession();
 
   return useQuery(
-    tanstackClient.agent.getAgents.queryOptions({
+    tanstackClient.user.getUserAgents.queryOptions({
       input: params,
       enabled: isAuthenticated,
       placeholderData: (prev) => prev,
@@ -53,10 +53,10 @@ export const useUpdateAgent = () => {
   const queryClient = useQueryClient();
 
   return useMutation(
-    tanstackClient.agent.updateAgentProfile.mutationOptions({
+    tanstackClient.user.updateAgentProfile.mutationOptions({
       onSuccess: () => {
         queryClient.invalidateQueries({
-          queryKey: tanstackClient.agent.getAgent.key(),
+          queryKey: tanstackClient.user.getUserAgent.key(),
         });
       },
     }),
