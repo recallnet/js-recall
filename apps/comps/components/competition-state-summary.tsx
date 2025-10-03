@@ -18,6 +18,13 @@ interface CompetitionStateSummaryProps {
   className?: string;
 }
 
+// Type guard to check if competition has agents array
+const hasAgents = (
+  comp: CompetitionData,
+): comp is CompetitionWithUserAgents => {
+  return "agents" in comp;
+};
+
 /**
  * Displays the current state of a competition including registration and voting status.
  * Shows registration window status (open/closed/full) and voting/boosting window status
@@ -45,12 +52,6 @@ export const CompetitionStateSummary: React.FC<
     ? new Date(competition.votingEndDate)
     : null;
   const hasVoted = competition.userVotingInfo?.info.hasVoted || false;
-  // Type guard to check if competition has agents array
-  const hasAgents = (
-    comp: CompetitionData,
-  ): comp is CompetitionWithUserAgents => {
-    return "agents" in comp;
-  };
 
   const isRegistered = hasAgents(competition) && competition.agents.length > 0;
 
