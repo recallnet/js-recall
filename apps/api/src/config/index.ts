@@ -147,10 +147,11 @@ export const config = {
     // For CoinGecko, an API key is required, which use different API URLs depending on the type
     coingecko: {
       apiKey: process.env.COINGECKO_API_KEY || "",
-      // Non-production environments should use the highly rate limited, free "demo" API key (30 req/min)
-      mode: (process.env.COINGECKO_MODE || process.env.NODE_ENV === "production"
-        ? "pro"
-        : "demo") as CoinGeckoMode,
+      mode: (process.env.COINGECKO_MODE ||
+        // Non-production environments should use the highly rate limited, free "demo" API key (30 req/min)
+        (process.env.NODE_ENV === "production"
+          ? "pro"
+          : "demo")) as CoinGeckoMode,
     },
   },
   priceTracker: {
