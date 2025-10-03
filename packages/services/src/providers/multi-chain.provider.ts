@@ -31,7 +31,6 @@ export interface MultiChainProviderConfig {
  * For Solana, it will delegate directly to the configured provider.
  */
 export class MultiChainProvider implements PriceSource {
-  // Use DexScreenerProvider for common functionality
   private priceProvider: PriceSource;
   private defaultChains: SpecificChain[];
   private logger: Logger;
@@ -40,7 +39,6 @@ export class MultiChainProvider implements PriceSource {
     this.defaultChains = config.evmChains;
     this.logger = logger;
 
-    // Create the appropriate provider based on the type
     switch (config.priceProvider.type) {
       case "dexscreener":
         this.priceProvider = new DexScreenerProvider(
@@ -60,18 +58,23 @@ export class MultiChainProvider implements PriceSource {
           },
           logger,
         );
-
         break;
     }
   }
 
+  /**
+   * Gets the name of the provider
+   * @returns The name of the provider
+   */
   getName(): string {
     return `${this.priceProvider.getName()} MultiChain`;
   }
 
   /**
    * Determines which blockchain a token address belongs to based on address format
-   * Using the configured provider's implementation
+   * using the configured provider's implementation
+   * @param tokenAddress The token address
+   * @returns The blockchain type
    */
   determineChain(tokenAddress: string): BlockchainType {
     return this.priceProvider.determineChain(tokenAddress);
