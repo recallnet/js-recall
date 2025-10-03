@@ -21,7 +21,6 @@ import { JoinSwarmSection } from "@/components/join-swarm-section";
 import ConnectPrivyModal from "@/components/modals/connect-privy";
 import { config } from "@/config/public";
 import { getSocialLinksArray } from "@/data/social";
-import { useUserCompetitions } from "@/hooks/useCompetitions";
 import { useLeaderboards } from "@/hooks/useLeaderboards";
 import { useAnalytics } from "@/hooks/usePostHog";
 import { useSession } from "@/hooks/useSession";
@@ -39,6 +38,7 @@ export default function CompetitionsPage() {
       enabled: !config.clientFlags.disableLeaderboard,
     });
   const session = useSession();
+  const { isAuthenticated } = session;
 
   // Track landing page view
   useEffect(() => {
@@ -69,7 +69,17 @@ export default function CompetitionsPage() {
     );
 
   const { data: userCompetitions, isLoading: isLoadingUserCompetitions } =
-    useUserCompetitions();
+    useQuery(
+      tanstackClient.user.getCompetitions.queryOptions({
+        input: {
+          limit: 10,
+          offset: 0,
+          sort: "",
+        },
+        enabled: isAuthenticated,
+        placeholderData: (prev) => prev,
+      }),
+    );
 
   const carouselContent = React.useMemo(() => {
     if (isLoadingLeaderboard) return [];
