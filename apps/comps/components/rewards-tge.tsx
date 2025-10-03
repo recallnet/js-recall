@@ -1,0 +1,91 @@
+import React, { useMemo } from "react";
+
+import { attoValueToNumberValue } from "@recallnet/conversions/atto-conversions";
+import { cn } from "@recallnet/ui2/lib/utils";
+
+import { formatAmount } from "@/utils/format";
+
+import { Recall } from "./Recall";
+
+/**
+ * Props for the Rewards component.
+ */
+export interface RewardsTGEProps {
+  /**
+   * Two prize pool amounts, agentPrizePool and userPrizePool.
+   */
+  rewards: { agentPrizePool: bigint; userPrizePool: bigint };
+  /**
+   * Optional className for the root element.
+   */
+  className?: string;
+  /**
+   * If true, only displays the total rewards amount.
+   * @default false
+   */
+  compact?: boolean;
+}
+
+/**
+ * Displays the total rewards and the 1st, 2nd, and 3rd place rewards in a responsive flex layout.
+ *
+ * @param rewards - Two prize pool amounts, agentPrizePool and userPrizePool.
+ * @param className - Optional className for the root element.
+ *
+ * @example
+ * <RewardsTGE rewards={{ agentPrizePool: 2500, userPrizePool: 1500 }} />
+ */
+export const RewardsTGE: React.FC<RewardsTGEProps> = ({
+  rewards,
+  className,
+  compact = false,
+}) => {
+  const formattedRewards = useMemo(() => {
+    const agentValue = attoValueToNumberValue(rewards.agentPrizePool);
+    const userValue = attoValueToNumberValue(rewards.userPrizePool);
+    const totalValue = attoValueToNumberValue(
+      rewards.agentPrizePool + rewards.userPrizePool,
+    );
+
+    return {
+      agentPrizePool: agentValue ? formatAmount(agentValue, 0, true) : "0",
+      userPrizePool: userValue ? formatAmount(userValue, 0, true) : "0",
+      totalValue: totalValue ? formatAmount(totalValue, 0, true) : "0",
+    };
+  }, [rewards]);
+
+  if (compact) {
+    return (
+      <div
+        className={cn(
+          "text-primary-foreground flex items-center gap-1 font-bold",
+          className,
+        )}
+      >
+        {formattedRewards.totalValue}
+        <Recall />
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-1 items-center gap-6">
+      <div className="flex items-center gap-2">
+        <span className="text-gray-100">Agents:</span>
+        <span className="font-bold text-gray-100">
+          {formattedRewards.agentPrizePool.toLocaleString()}
+        </span>
+        <Recall size="sm" />
+      </div>
+      <div className="flex items-center gap-2">
+        <span className="text-gray-100">Boosters:</span>
+        <span className="font-bold text-gray-100">
+          {formattedRewards.userPrizePool.toLocaleString()}
+        </span>
+        <Recall />
+      </div>
+    </div>
+  );
+};
+
+export default RewardsTGE;

@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, test } from "vitest";
 
 import {
   admins,
+  competitionPrizePools,
   competitionRewards,
   competitions,
 } from "@recallnet/db/schema/core/defs";
@@ -2375,5 +2376,174 @@ describe("Admin API", () => {
     expect(
       (agentsAfterConversion as CompetitionAgentsResponse).agents,
     ).toHaveLength(2);
+  });
+
+  // ===== Prize Pool Tests =====
+
+  test("should create competition with prizePools.agent and prizePools.users", async () => {
+    const client = createTestClient(getBaseUrl());
+    await client.loginAsAdmin(adminApiKey);
+
+    // Create a competition with prize pools
+    const createResponse = await axios.post(
+      `${getBaseUrl()}/api/admin/competition/create`,
+      {
+        name: "Competition with Prize Pools",
+        description: "Testing prize pool creation",
+        type: "trading",
+        prizePools: {
+          agent: 1000,
+          users: 500,
+        },
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${adminApiKey}`,
+        },
+      },
+    );
+
+    expect(createResponse.status).toBe(201);
+    expect(createResponse.data.success).toBe(true);
+    expect(createResponse.data.competition).toBeDefined();
+    const competitionId = createResponse.data.competition.id;
+
+    // Verify the competition was created successfully
+    expect(createResponse.data.competition.name).toBe(
+      "Competition with Prize Pools",
+    );
+    expect(createResponse.data.competition.description).toBe(
+      "Testing prize pool creation",
+    );
+
+    // Verify prize pools were created in the database
+    const prizePools = await db
+      .select()
+      .from(competitionPrizePools)
+      .where(eq(competitionPrizePools.competitionId, competitionId));
+
+    expect(prizePools).toHaveLength(1);
+    expect(prizePools[0]).toBeDefined();
+    expect(prizePools[0]!.agentPool.toString()).toBe("1000000000000000000000");
+    expect(prizePools[0]!.userPool.toString()).toBe("500000000000000000000");
+  });
+
+  test("should update competition with prizePools.agent and prizePools.users", async () => {
+    const client = createTestClient(getBaseUrl());
+    await client.loginAsAdmin(adminApiKey);
+
+    // First create a competition without prize pools
+    const createResponse = await axios.post(
+      `${getBaseUrl()}/api/admin/competition/create`,
+      {
+        name: "Competition to Update with Prize Pools",
+        description: "Testing prize pool updates",
+        type: "trading",
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${adminApiKey}`,
+        },
+      },
+    );
+
+    expect(createResponse.status).toBe(201);
+    const competitionId = createResponse.data.competition.id;
+
+    // Verify no prize pools exist initially
+    let prizePools = await db
+      .select()
+      .from(competitionPrizePools)
+      .where(eq(competitionPrizePools.competitionId, competitionId));
+    expect(prizePools).toHaveLength(0);
+
+    // Now update the competition with prize pools
+    const updateResponse = await axios.put(
+      `${getBaseUrl()}/api/admin/competition/${competitionId}`,
+      {
+        name: "Updated Competition with Prize Pools",
+        description: "Updated with prize pools",
+        prizePools: {
+          agent: 3000,
+          users: 1500,
+        },
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${adminApiKey}`,
+        },
+      },
+    );
+
+    expect(updateResponse.status).toBe(200);
+    expect(updateResponse.data.success).toBe(true);
+    expect(updateResponse.data.competition.name).toBe(
+      "Updated Competition with Prize Pools",
+    );
+
+    // Verify prize pools were created
+    prizePools = await db
+      .select()
+      .from(competitionPrizePools)
+      .where(eq(competitionPrizePools.competitionId, competitionId));
+
+    expect(prizePools).toHaveLength(1);
+    expect(prizePools[0]!.agentPool.toString()).toBe("3000000000000000000000");
+    expect(prizePools[0]!.userPool.toString()).toBe("1500000000000000000000");
+  });
+
+  test("should start competition with prizePools", async () => {
+    const client = createTestClient(getBaseUrl());
+    await client.loginAsAdmin(adminApiKey);
+
+    // Register agents for the competition
+    const { agent: agent1 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Agent 1 for Prize Pool Start",
+    });
+    const { agent: agent2 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Agent 2 for Prize Pool Start",
+    });
+
+    // Start a competition with prize pools
+    const competitionName = `Prize Pool Start Competition ${Date.now()}`;
+    const startResponse = await axios.post(
+      `${getBaseUrl()}/api/admin/competition/start`,
+      {
+        name: competitionName,
+        description: "Testing start competition with prize pools",
+        type: "trading",
+        agentIds: [agent1.id, agent2.id],
+        prizePools: {
+          agent: 2000,
+          users: 1000,
+        },
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${adminApiKey}`,
+        },
+      },
+    );
+
+    expect(startResponse.status).toBe(200);
+    expect(startResponse.data.success).toBe(true);
+    expect(startResponse.data.competition).toBeDefined();
+    expect(startResponse.data.competition.name).toBe(competitionName);
+    expect(startResponse.data.competition.status).toBe("active");
+
+    const competitionId = startResponse.data.competition.id;
+
+    // Verify prize pools were created in the database
+    const prizePools = await db
+      .select()
+      .from(competitionPrizePools)
+      .where(eq(competitionPrizePools.competitionId, competitionId));
+
+    expect(prizePools).toHaveLength(1);
+    expect(prizePools[0]).toBeDefined();
+    expect(prizePools[0]!.agentPool.toString()).toBe("2000000000000000000000");
+    expect(prizePools[0]!.userPool.toString()).toBe("1000000000000000000000");
   });
 });
