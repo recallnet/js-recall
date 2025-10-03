@@ -3,9 +3,9 @@ import { Logger } from "pino";
 
 import {
   BlockchainType,
-  DexScreenerTokenInfo,
   PriceReport,
   PriceSource,
+  TokenInfo,
 } from "../../types/index.js";
 
 /**
@@ -195,8 +195,8 @@ export class JupiterProvider implements PriceSource {
   async getBatchPrices(
     tokenAddresses: string[],
     chain: BlockchainType,
-  ): Promise<Map<string, DexScreenerTokenInfo | null>> {
-    const results = new Map<string, DexScreenerTokenInfo | null>();
+  ): Promise<Map<string, TokenInfo | null>> {
+    const results = new Map<string, TokenInfo | null>();
     for (const tokenAddress of tokenAddresses) {
       const price = await this.getPrice(tokenAddress, chain);
       results.set(tokenAddress, price);
