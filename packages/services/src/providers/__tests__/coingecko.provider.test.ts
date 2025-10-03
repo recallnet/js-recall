@@ -54,15 +54,22 @@ describe("CoinGeckoProvider", () => {
         "svm",
       );
 
-      expect(mockCoinGeckoInstance.coins.contract.get).toHaveBeenCalledWith(
-        solanaTokens.sol.toLowerCase(),
-        { id: "solana" },
-      );
+      expect(
+        mockCoinGeckoInstance.onchain.networks.tokens.getAddress,
+      ).toHaveBeenCalledWith(solanaTokens.sol, {
+        network: "solana",
+        include_composition: true,
+        include: "top_pools",
+      });
       expect(priceReport).not.toBeNull();
-      expect(priceReport?.price).toBe(150.75);
+      expect(priceReport?.price).toBe(231.86);
       expect(priceReport?.symbol).toBe("SOL");
-      expect(priceReport?.volume?.h24).toBe(2500000000);
-      expect(priceReport?.fdv).toBe(85000000000);
+      expect(priceReport?.volume?.h24).toBe(10888054716);
+      expect(priceReport?.fdv).toBe(141671307261);
+      expect(priceReport?.liquidity?.usd).toBe(13326272597);
+      expect(priceReport?.pairCreatedAt).toBe(
+        new Date("2023-07-05T14:34:02Z").getTime(),
+      );
     });
 
     it("should fetch USDC price", async () => {
@@ -74,12 +81,15 @@ describe("CoinGeckoProvider", () => {
         "svm",
       );
 
-      expect(mockCoinGeckoInstance.coins.contract.get).toHaveBeenCalledWith(
-        solanaTokens.usdc.toLowerCase(),
-        { id: "solana" },
-      );
+      expect(
+        mockCoinGeckoInstance.onchain.networks.tokens.getAddress,
+      ).toHaveBeenCalledWith(solanaTokens.usdc, {
+        network: "solana",
+        include_composition: true,
+        include: "top_pools",
+      });
       expect(priceReport).not.toBeNull();
-      expect(priceReport?.price).toBe(0.9998);
+      expect(priceReport?.price).toBe(1.0002548824);
       expect(priceReport?.symbol).toBe("USDC"); // Should be uppercase
       expect(priceReport?.price).toBeCloseTo(1, 1); // USDC should be close to $1
     });
@@ -95,12 +105,15 @@ describe("CoinGeckoProvider", () => {
         "eth",
       );
 
-      expect(mockCoinGeckoInstance.coins.contract.get).toHaveBeenCalledWith(
-        ethereumTokens.eth.toLowerCase(),
-        { id: "ethereum" },
-      );
+      expect(
+        mockCoinGeckoInstance.onchain.networks.tokens.getAddress,
+      ).toHaveBeenCalledWith(ethereumTokens.eth, {
+        network: "eth",
+        include_composition: true,
+        include: "top_pools",
+      });
       expect(priceReport).not.toBeNull();
-      expect(priceReport?.price).toBe(2850.45);
+      expect(priceReport?.price).toBe(4473.03);
       expect(priceReport?.symbol).toBe("WETH");
     });
 
@@ -113,12 +126,15 @@ describe("CoinGeckoProvider", () => {
         "eth",
       );
 
-      expect(mockCoinGeckoInstance.coins.contract.get).toHaveBeenCalledWith(
-        ethereumTokens.usdc.toLowerCase(),
-        { id: "ethereum" },
-      );
+      expect(
+        mockCoinGeckoInstance.onchain.networks.tokens.getAddress,
+      ).toHaveBeenCalledWith(ethereumTokens.usdc, {
+        network: "eth",
+        include_composition: true,
+        include: "top_pools",
+      });
       expect(priceReport).not.toBeNull();
-      expect(priceReport?.price).toBe(0.9998);
+      expect(priceReport?.price).toBe(1.0002548824);
       expect(priceReport?.symbol).toBe("USDC");
       expect(priceReport?.price).toBeCloseTo(1, 1); // USDC should be close to $1
     });
@@ -133,7 +149,7 @@ describe("CoinGeckoProvider", () => {
       );
 
       expect(priceReport).not.toBeNull();
-      expect(priceReport?.price).toBe(2850.45);
+      expect(priceReport?.price).toBe(4473.03);
       expect(priceReport?.price).toBeGreaterThan(1000); // ETH should be above $1000
     });
 
@@ -146,12 +162,15 @@ describe("CoinGeckoProvider", () => {
         "eth",
       );
 
-      expect(mockCoinGeckoInstance.coins.contract.get).toHaveBeenCalledWith(
-        ethereumTokens.usdt.toLowerCase(),
-        { id: "ethereum" },
-      );
+      expect(
+        mockCoinGeckoInstance.onchain.networks.tokens.getAddress,
+      ).toHaveBeenCalledWith(ethereumTokens.usdt, {
+        network: "eth",
+        include_composition: true,
+        include: "top_pools",
+      });
       expect(priceReport).not.toBeNull();
-      expect(priceReport?.price).toBe(1.0002);
+      expect(priceReport?.price).toBe(0.9977046221);
       expect(priceReport?.symbol).toBe("USDT");
       expect(priceReport?.price).toBeCloseTo(1, 1); // USDT should be close to $1
     });
@@ -167,12 +186,15 @@ describe("CoinGeckoProvider", () => {
         "base",
       );
 
-      expect(mockCoinGeckoInstance.coins.contract.get).toHaveBeenCalledWith(
-        baseTokens.eth.toLowerCase(),
-        { id: "base" },
-      );
+      expect(
+        mockCoinGeckoInstance.onchain.networks.tokens.getAddress,
+      ).toHaveBeenCalledWith(baseTokens.eth, {
+        network: "base",
+        include_composition: true,
+        include: "top_pools",
+      });
       expect(priceReport).not.toBeNull();
-      expect(priceReport?.price).toBe(2850.45);
+      expect(priceReport?.price).toBe(4473.03);
       expect(priceReport?.symbol).toBe("WETH");
     });
 
@@ -185,12 +207,15 @@ describe("CoinGeckoProvider", () => {
         "base",
       );
 
-      expect(mockCoinGeckoInstance.coins.contract.get).toHaveBeenCalledWith(
-        baseTokens.usdc.toLowerCase(),
-        { id: "base" },
-      );
+      expect(
+        mockCoinGeckoInstance.onchain.networks.tokens.getAddress,
+      ).toHaveBeenCalledWith(baseTokens.usdc, {
+        network: "base",
+        include_composition: true,
+        include: "top_pools",
+      });
       expect(priceReport).not.toBeNull();
-      expect(priceReport?.price).toBe(0.9998);
+      expect(priceReport?.price).toBe(1.0002548824);
       expect(priceReport?.symbol).toBe("USDC");
       expect(priceReport?.price).toBeCloseTo(1, 1); // USDC should be close to $1
     });
@@ -229,39 +254,50 @@ describe("CoinGeckoProvider", () => {
       );
 
       // Should call the individual API for each token
-      expect(mockCoinGeckoInstance.coins.contract.get).toHaveBeenCalledTimes(3);
-      expect(mockCoinGeckoInstance.coins.contract.get).toHaveBeenCalledWith(
-        ethereumTokens.eth.toLowerCase(),
-        { id: "ethereum" },
-      );
-      expect(mockCoinGeckoInstance.coins.contract.get).toHaveBeenCalledWith(
-        ethereumTokens.usdc.toLowerCase(),
-        { id: "ethereum" },
-      );
-      expect(mockCoinGeckoInstance.coins.contract.get).toHaveBeenCalledWith(
-        ethereumTokens.usdt.toLowerCase(),
-        { id: "ethereum" },
-      );
+      expect(
+        mockCoinGeckoInstance.onchain.networks.tokens.getAddress,
+      ).toHaveBeenCalledTimes(3);
+      expect(
+        mockCoinGeckoInstance.onchain.networks.tokens.getAddress,
+      ).toHaveBeenCalledWith(ethereumTokens.eth, {
+        network: "eth",
+        include_composition: true,
+        include: "top_pools",
+      });
+      expect(
+        mockCoinGeckoInstance.onchain.networks.tokens.getAddress,
+      ).toHaveBeenCalledWith(ethereumTokens.usdc, {
+        network: "eth",
+        include_composition: true,
+        include: "top_pools",
+      });
+      expect(
+        mockCoinGeckoInstance.onchain.networks.tokens.getAddress,
+      ).toHaveBeenCalledWith(ethereumTokens.usdt, {
+        network: "eth",
+        include_composition: true,
+        include: "top_pools",
+      });
 
       expect(results.size).toBe(tokens.length);
 
       // Check ETH
       const ethInfo = results.get(ethereumTokens.eth);
       expect(ethInfo).not.toBeNull();
-      expect(ethInfo?.price).toBe(2850.45);
-      expect(ethInfo?.volume?.h24).toBe(12000000000);
+      expect(ethInfo?.price).toBe(4473.03);
+      expect(ethInfo?.volume?.h24).toBe(1008244928);
 
       // Check USDC
       const usdcInfo = results.get(ethereumTokens.usdc);
       expect(usdcInfo).not.toBeNull();
-      expect(usdcInfo?.price).toBe(0.9998);
-      expect(usdcInfo?.volume?.h24).toBe(8000000000);
+      expect(usdcInfo?.price).toBe(1.0002548824);
+      expect(usdcInfo?.volume?.h24).toBe(1493569547);
 
       // Check USDT
       const usdtInfo = results.get(ethereumTokens.usdt);
       expect(usdtInfo).not.toBeNull();
-      expect(usdtInfo?.price).toBe(1.0002);
-      expect(usdtInfo?.volume?.h24).toBe(65000000000);
+      expect(usdtInfo?.price).toBe(0.9977046221);
+      expect(usdtInfo?.volume?.h24).toBe(1717852681);
     });
 
     it("should fetch batch prices for Base tokens", async () => {
@@ -278,15 +314,23 @@ describe("CoinGeckoProvider", () => {
         "base",
       );
 
-      expect(mockCoinGeckoInstance.coins.contract.get).toHaveBeenCalledTimes(2);
-      expect(mockCoinGeckoInstance.coins.contract.get).toHaveBeenCalledWith(
-        baseTokens.eth.toLowerCase(),
-        { id: "base" },
-      );
-      expect(mockCoinGeckoInstance.coins.contract.get).toHaveBeenCalledWith(
-        baseTokens.usdc.toLowerCase(),
-        { id: "base" },
-      );
+      expect(
+        mockCoinGeckoInstance.onchain.networks.tokens.getAddress,
+      ).toHaveBeenCalledTimes(2);
+      expect(
+        mockCoinGeckoInstance.onchain.networks.tokens.getAddress,
+      ).toHaveBeenCalledWith(baseTokens.eth, {
+        network: "base",
+        include_composition: true,
+        include: "top_pools",
+      });
+      expect(
+        mockCoinGeckoInstance.onchain.networks.tokens.getAddress,
+      ).toHaveBeenCalledWith(baseTokens.usdc, {
+        network: "base",
+        include_composition: true,
+        include: "top_pools",
+      });
 
       expect(results.size).toBe(tokens.length);
 
@@ -311,7 +355,9 @@ describe("CoinGeckoProvider", () => {
         BlockchainType.EVM,
         "eth",
       );
-      expect(mockCoinGeckoInstance.coins.contract.get).not.toHaveBeenCalled();
+      expect(
+        mockCoinGeckoInstance.onchain.networks.tokens.getAddress,
+      ).not.toHaveBeenCalled();
       expect(priceReport).not.toBeNull();
       expect(priceReport?.price).toBe(0);
       expect(priceReport?.symbol).toBe("BURN");
@@ -343,7 +389,7 @@ describe("CoinGeckoProvider", () => {
         "unsupported" as any,
       );
       expect(
-        mockCoinGeckoInstance.simple.tokenPrice.getID,
+        mockCoinGeckoInstance.onchain.networks.tokens.getAddress,
       ).not.toHaveBeenCalled();
       expect(results.size).toBe(1);
       expect(results.get(ethereumTokens.eth)).toBeNull();
@@ -358,7 +404,9 @@ describe("CoinGeckoProvider", () => {
         "eth",
       );
 
-      expect(mockCoinGeckoInstance.coins.contract.get).toHaveBeenCalledTimes(1);
+      expect(
+        mockCoinGeckoInstance.onchain.networks.tokens.getAddress,
+      ).toHaveBeenCalledTimes(1);
       expect(priceReport).toBeNull();
     });
 
@@ -373,9 +421,11 @@ describe("CoinGeckoProvider", () => {
       );
 
       // Should have been called once (SDK handles retries internally)
-      expect(mockCoinGeckoInstance.coins.contract.get).toHaveBeenCalledTimes(1);
+      expect(
+        mockCoinGeckoInstance.onchain.networks.tokens.getAddress,
+      ).toHaveBeenCalledTimes(1);
       expect(priceReport).not.toBeNull();
-      expect(priceReport?.price).toBe(2850.45);
+      expect(priceReport?.price).toBe(4473.03);
     });
   });
 });

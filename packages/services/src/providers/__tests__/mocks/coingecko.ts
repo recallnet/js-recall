@@ -1,4 +1,5 @@
 import { Coingecko } from "@coingecko/coingecko-typescript";
+import { TokenGetAddressResponse } from "@coingecko/coingecko-typescript/resources/onchain/networks/tokens/tokens.mjs";
 import { vi } from "vitest";
 
 import { specificChainTokens } from "../../../lib/index.js";
@@ -9,74 +10,169 @@ import { CoinGeckoProviderConfig } from "../../price/coingecko.provider.js";
  * Type for mocking CoinGecko client
  */
 export interface MockCoinGeckoClient {
-  coins: {
-    contract: {
-      get: ReturnType<typeof vi.fn>;
-    };
-  };
-  simple: {
-    tokenPrice: {
-      getID: ReturnType<typeof vi.fn>;
+  onchain: {
+    networks: {
+      tokens: {
+        getAddress: ReturnType<typeof vi.fn>;
+      };
     };
   };
 }
 
 /**
- * Mock response builder for CoinGecko coin contract data
+ * Mock response builder for CoinGecko onchain API response
  */
-export const createMockCoinResponse = (params: {
-  id: string;
+export const createMockOnchainResponse = (params: {
+  address: string;
   symbol: string;
-  name: string;
   priceUsd: number;
-  volumeUsd?: number;
-  fdvUsd?: number;
-}) => ({
-  id: params.id,
-  symbol: params.symbol.toUpperCase(),
-  name: params.name,
-  market_data: {
-    current_price: { usd: params.priceUsd },
-    total_volume: params.volumeUsd ? { usd: params.volumeUsd } : undefined,
-    fully_diluted_valuation: params.fdvUsd ? { usd: params.fdvUsd } : undefined,
+  volumeUsd: number;
+  liquidityUsd: number;
+  fdvUsd: number;
+  poolCreatedAt?: string;
+}): TokenGetAddressResponse => ({
+  data: {
+    id: `${params.address}`,
+    type: "token",
+    attributes: {
+      address: params.address,
+      name: params.symbol,
+      symbol: params.symbol,
+      decimals: 18,
+      image_url: "",
+      coingecko_coin_id: params.symbol.toLowerCase(),
+      total_supply: "0",
+      normalized_total_supply: "0",
+      price_usd: params.priceUsd.toString(),
+      fdv_usd: params.fdvUsd.toString(),
+      total_reserve_in_usd: params.liquidityUsd.toString(),
+      volume_usd: {
+        h24: params.volumeUsd.toString(),
+      },
+      market_cap_usd: "0",
+    },
+    relationships: {
+      top_pools: {
+        data: [
+          {
+            id: "pool_1",
+            type: "pool",
+          },
+        ],
+      },
+    },
   },
+  included: [
+    {
+      id: "pool_1",
+      type: "pool",
+      attributes: {
+        base_token_price_usd: "0",
+        base_token_price_native_currency: "0",
+        base_token_balance: "0",
+        base_token_liquidity_usd: "0",
+        quote_token_price_usd: "0",
+        quote_token_price_native_currency: "0",
+        quote_token_balance: "0",
+        quote_token_liquidity_usd: "0",
+        base_token_price_quote_token: "0",
+        quote_token_price_base_token: "0",
+        address: "0xpool1",
+        name: "Mock Pool",
+        pool_created_at: params.poolCreatedAt || "2024-01-01T00:00:00Z",
+        token_price_usd: params.priceUsd.toString(),
+        fdv_usd: params.fdvUsd.toString(),
+        market_cap_usd: "0",
+        price_change_percentage: {
+          m5: "0",
+          m15: "0",
+          m30: "0",
+          h1: "0",
+          h6: "0",
+          h24: "0",
+        },
+        transactions: {
+          m5: { buys: 0, sells: 0, buyers: 0, sellers: 0 },
+          m15: { buys: 0, sells: 0, buyers: 0, sellers: 0 },
+          m30: { buys: 0, sells: 0, buyers: 0, sellers: 0 },
+          h1: { buys: 0, sells: 0, buyers: 0, sellers: 0 },
+          h6: { buys: 0, sells: 0, buyers: 0, sellers: 0 },
+          h24: { buys: 0, sells: 0, buyers: 0, sellers: 0 },
+        },
+        volume_usd: {
+          m5: "0",
+          m15: "0",
+          m30: "0",
+          h1: "0",
+          h6: "0",
+          h24: params.volumeUsd.toString(),
+        },
+        reserve_in_usd: params.liquidityUsd.toString(),
+      },
+      relationships: {
+        base_token: {
+          data: {
+            id: params.address,
+            type: "token",
+          },
+        },
+        quote_token: {
+          data: {
+            id: "quote_token",
+            type: "token",
+          },
+        },
+        dex: {
+          data: {
+            id: "mock_dex",
+            type: "dex",
+          },
+        },
+      },
+    },
+  ],
 });
 
 /**
  * Common mock responses for frequently used tokens
+ * Based on real CoinGecko onchain API responses
  */
 export const commonMockResponses = {
-  sol: createMockCoinResponse({
-    id: "solana",
-    symbol: "sol",
-    name: "Solana",
-    priceUsd: 150.75,
-    volumeUsd: 2500000000,
-    fdvUsd: 85000000000,
+  sol: createMockOnchainResponse({
+    address: specificChainTokens.svm.sol,
+    symbol: "SOL",
+    priceUsd: 231.86,
+    volumeUsd: 10888054716,
+    liquidityUsd: 13326272597,
+    fdvUsd: 141671307261,
+    poolCreatedAt: "2023-07-05T14:34:02Z",
   }),
-  eth: createMockCoinResponse({
-    id: "weth",
-    symbol: "weth",
-    name: "Wrapped Ether",
-    priceUsd: 2850.45,
-    volumeUsd: 12000000000,
-    fdvUsd: 350000000000,
+  eth: createMockOnchainResponse({
+    address: specificChainTokens.eth.eth,
+    symbol: "WETH",
+    priceUsd: 4473.03,
+    volumeUsd: 1008244928,
+    liquidityUsd: 2033804297,
+    fdvUsd: 10956636957,
+    poolCreatedAt: "2021-12-29T12:35:14Z",
   }),
-  usdc: createMockCoinResponse({
-    id: "usd-coin",
-    symbol: "usdc",
-    name: "USD Coin",
-    priceUsd: 0.9998,
-    volumeUsd: 8000000000,
-    fdvUsd: 45000000000,
+  usdc: createMockOnchainResponse({
+    address: specificChainTokens.eth.usdc,
+    symbol: "USDC",
+    priceUsd: 1.0002548824,
+    volumeUsd: 1493569547,
+    liquidityUsd: 32854366393,
+    fdvUsd: 47961725354,
+    poolCreatedAt: "2025-09-18T08:28:30Z",
   }),
-  usdt: createMockCoinResponse({
-    id: "tether",
-    symbol: "usdt",
-    name: "Tether",
-    priceUsd: 1.0002,
-    volumeUsd: 65000000000,
-    fdvUsd: 100000000000,
+  usdt: createMockOnchainResponse({
+    address: specificChainTokens.eth.usdt,
+    symbol: "USDT",
+    priceUsd: 0.9977046221,
+    volumeUsd: 1717852681,
+    liquidityUsd: 427337930,
+    fdvUsd: 96553301896,
+    poolCreatedAt: "2025-09-18T08:28:30Z",
   }),
 };
 
@@ -84,14 +180,11 @@ export const commonMockResponses = {
  * Creates a mock CoinGecko client instance
  */
 export const createMockCoinGeckoClient = (): MockCoinGeckoClient => ({
-  coins: {
-    contract: {
-      get: vi.fn(),
-    },
-  },
-  simple: {
-    tokenPrice: {
-      getID: vi.fn(),
+  onchain: {
+    networks: {
+      tokens: {
+        getAddress: vi.fn(),
+      },
     },
   },
 });
@@ -135,9 +228,9 @@ export const multichainCoinGeckoConfig: MultiChainProviderConfig = {
  */
 export const mockTokenPrice = (
   mockClient: MockCoinGeckoClient,
-  response: ReturnType<typeof createMockCoinResponse>,
+  response: TokenGetAddressResponse,
 ) => {
-  mockClient.coins.contract.get.mockResolvedValueOnce(response);
+  mockClient.onchain.networks.tokens.getAddress.mockResolvedValueOnce(response);
 };
 
 /**
@@ -145,10 +238,12 @@ export const mockTokenPrice = (
  */
 export const mockBatchTokenPrices = (
   mockClient: MockCoinGeckoClient,
-  responses: Array<ReturnType<typeof createMockCoinResponse>>,
+  responses: TokenGetAddressResponse[],
 ) => {
   responses.forEach((response) => {
-    mockClient.coins.contract.get.mockResolvedValueOnce(response);
+    mockClient.onchain.networks.tokens.getAddress.mockResolvedValueOnce(
+      response,
+    );
   });
 };
 
@@ -159,5 +254,7 @@ export const mockTokenPriceError = (
   mockClient: MockCoinGeckoClient,
   errorMessage = "API error",
 ) => {
-  mockClient.coins.contract.get.mockRejectedValueOnce(new Error(errorMessage));
+  mockClient.onchain.networks.tokens.getAddress.mockRejectedValueOnce(
+    new Error(errorMessage),
+  );
 };
