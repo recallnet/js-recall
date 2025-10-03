@@ -6,15 +6,19 @@ import { CompetitionType } from "@/types/competition";
 
 import { formatDate } from "./format";
 
-export const STATUS_ICONS: Record<
-  RouterOutputs["competitions"]["getById"]["status"],
-  React.ComponentType<LucideProps>
-> = {
-  active: Play,
-  pending: ClockIcon,
-  ending: Play,
-  ended: CheckIcon,
-} as const;
+export function iconForStatus(
+  status: RouterOutputs["competitions"]["getById"]["status"],
+) {
+  switch (status) {
+    case "active":
+      return Play;
+    case "pending":
+      return ClockIcon;
+    case "ending":
+    case "ended":
+      return CheckIcon;
+  }
+}
 
 /**
  * Formats the start and end dates of a competition in a user-friendly abbreviated form (MM/dd).
