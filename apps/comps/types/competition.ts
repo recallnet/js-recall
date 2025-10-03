@@ -1,4 +1,4 @@
-import { mergeCompetitionsWithUserData } from "@/utils";
+import { mergeCompetitionsWithUserData } from "@/utils/competition-utils";
 
 import { Agent } from "./agent";
 import { PaginationResponse } from "./api";

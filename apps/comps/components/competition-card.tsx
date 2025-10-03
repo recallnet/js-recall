@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import React, { useMemo } from "react";
+import React from "react";
 
 import { Badge } from "@recallnet/ui2/components/badge";
 import { Card } from "@recallnet/ui2/components/card";
