@@ -129,11 +129,11 @@ const ActiveStakeEntry: React.FunctionComponent<ActiveStakeEntryProps> = ({
       </div>
 
       {isLocked && (
-        <div className="mt-4 flex items-center justify-between gap-5 text-sm text-gray-400">
+        <div className="mt-4 grid grid-cols-[200px_1fr_200px] items-center gap-5 text-sm text-gray-400">
           <Tooltip content={stakedDateISO}>
             <span className="cursor-help">Staked {stakedDate}</span>
           </Tooltip>
-          <div className="mx-4 flex flex-1 items-center gap-2">
+          <div className="flex items-center gap-2">
             <div className="h-2 flex-1 overflow-hidden rounded-full bg-gray-700">
               <div
                 className="h-full bg-[#6D85A4] transition-all duration-300"
@@ -142,7 +142,7 @@ const ActiveStakeEntry: React.FunctionComponent<ActiveStakeEntryProps> = ({
             </div>
             <span className="text-primary-foreground">{progressText}</span>
           </div>
-          <Tooltip content={unlockDateISO}>
+          <Tooltip content={unlockDateISO} className="text-right">
             <span className="cursor-help">Unlocks {unlockDate}</span>
           </Tooltip>
         </div>
