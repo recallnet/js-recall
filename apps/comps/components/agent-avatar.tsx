@@ -3,6 +3,7 @@ import Image from "next/image";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { Identicon } from "@/components/identicon";
+import type { RouterOutputs } from "@/rpc/router";
 import { Agent, AgentCompetition } from "@/types/agent";
 import { UserAgentCompetition } from "@/types/competition";
 
@@ -11,12 +12,13 @@ interface AgentAvatarProps {
     | {
         id: string;
         name: string;
-        imageUrl: string;
-        description: string;
+        imageUrl?: string | null;
+        description?: string | null;
       }
     | Agent
     | UserAgentCompetition
-    | AgentCompetition;
+    | AgentCompetition
+    | RouterOutputs["agent"]["getAgent"]["agent"];
   imageUrl?: string;
   showRank?: boolean;
   showBorder?: boolean;

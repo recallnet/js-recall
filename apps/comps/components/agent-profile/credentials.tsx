@@ -7,7 +7,7 @@ import { Tooltip } from "@recallnet/ui2/components/tooltip";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { useUnlockKeys } from "@/hooks/useUnlockKeys";
-import { Agent } from "@/types";
+import type { RouterOutputs } from "@/rpc/router";
 
 import { CopyButton } from "../copy-button";
 import { VisibilityToggle } from "../visibility-toggle";
@@ -95,8 +95,8 @@ export const Credentials = ({
   userWalletAddress,
   className,
 }: {
-  agent: Agent;
-  userWalletAddress?: string;
+  agent: RouterOutputs["agent"]["getAgent"]["agent"];
+  userWalletAddress?: string | null;
   className?: string;
 }) => {
   const {
@@ -105,7 +105,7 @@ export const Credentials = ({
     isLoadingKeys,
     isSandboxUnlocked,
     mutation,
-  } = useUnlockKeys(agent.handle, agent.id, userWalletAddress);
+  } = useUnlockKeys(agent.handle, agent.id, userWalletAddress ?? undefined);
 
   const unlockKeys = () => {
     mutation.mutate();
