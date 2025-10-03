@@ -2,6 +2,7 @@ import { Logger } from "pino";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MockProxy, mock } from "vitest-mock-extended";
 
+import { specificChainTokens } from "../../lib/index.js";
 import { BlockchainType } from "../../types/index.js";
 import { CoinGeckoProvider } from "../price/coingecko.provider.js";
 import {
@@ -12,16 +13,15 @@ import {
   mockTokenPrice,
   mockTokenPriceError,
   setupCoinGeckoMock,
-} from "./helpers/coingecko.js";
-import { testTokens } from "./helpers/tokens.js";
+} from "./mocks/coingecko.js";
 
 vi.mock("@coingecko/coingecko-typescript");
 
 const {
-  solana: solanaTokens,
-  ethereum: ethereumTokens,
+  svm: solanaTokens,
+  eth: ethereumTokens,
   base: baseTokens,
-} = testTokens;
+} = specificChainTokens;
 const mockLogger: MockProxy<Logger> = mock<Logger>();
 
 describe("CoinGeckoProvider", () => {

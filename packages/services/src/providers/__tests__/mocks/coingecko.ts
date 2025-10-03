@@ -1,9 +1,9 @@
 import { Coingecko } from "@coingecko/coingecko-typescript";
 import { vi } from "vitest";
 
+import { specificChainTokens } from "../../../lib/index.js";
 import { MultiChainProviderConfig } from "../../multi-chain.provider.js";
 import { CoinGeckoProviderConfig } from "../../price/coingecko.provider.js";
-import { specificChainTokens } from "./tokens.js";
 
 /**
  * Type for mocking CoinGecko client

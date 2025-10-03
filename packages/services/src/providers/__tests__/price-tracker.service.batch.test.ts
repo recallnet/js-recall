@@ -12,7 +12,7 @@ import {
   mockTokenPrice,
   multichainCoinGeckoConfig,
   setupCoinGeckoMock,
-} from "./helpers/coingecko.js";
+} from "./mocks/coingecko.js";
 
 vi.mock("@coingecko/coingecko-typescript");
 vi.setConfig({ testTimeout: 15_000 });

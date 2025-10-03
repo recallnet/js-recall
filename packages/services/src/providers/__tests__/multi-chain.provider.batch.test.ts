@@ -11,7 +11,7 @@ import {
   mockBatchTokenPrices,
   multichainCoinGeckoConfig,
   setupCoinGeckoMock,
-} from "./helpers/coingecko.js";
+} from "./mocks/coingecko.js";
 
 // Mock the CoinGecko SDK
 vi.mock("@coingecko/coingecko-typescript");
