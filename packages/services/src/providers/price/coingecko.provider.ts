@@ -231,7 +231,15 @@ export class CoinGeckoProvider implements PriceSource {
       const bTime = new Date(b.attributes!.pool_created_at!).getTime();
       return aTime - bTime;
     });
-    return new Date(sorted[0]!.attributes!.pool_created_at!).getTime();
+    const oldestPool = sorted[0];
+    if (
+      oldestPool &&
+      oldestPool.attributes &&
+      oldestPool.attributes.pool_created_at
+    ) {
+      return new Date(oldestPool.attributes.pool_created_at).getTime();
+    }
+    return undefined;
   }
 
   /**
