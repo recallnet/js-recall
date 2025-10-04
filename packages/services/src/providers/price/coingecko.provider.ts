@@ -91,12 +91,15 @@ export class CoinGeckoProvider implements PriceSource {
   private readonly client: Coingecko;
   private readonly MAX_RETRIES = 3; // Overrides default of 2
   private readonly MAX_TIMEOUT = 30_000; // Overrides default of 60 seconds
+  private readonly BATCH_CONCURRENCY_LIMIT = 30; // Process batch calls in max 30 tokens at a time
   private specificChainTokens: SpecificChainTokens;
   private logger: Logger;
 
   /**
    * Creates a new CoinGecko provider instance
    * Initializes the CoinGecko client with appropriate configuration based on environment
+   * @param config - Provider configuration including API key, mode, and chain tokens
+   * @param logger - Logger instance for error and debug logging
    */
   constructor(config: CoinGeckoProviderConfig, logger: Logger) {
     this.specificChainTokens = config.specificChainTokens;
@@ -378,28 +381,35 @@ export class CoinGeckoProvider implements PriceSource {
       return results;
     }
 
-    const promises = tokenAddresses.map(async (tokenAddress) => {
-      const priceReport = await this.getPrice(
-        tokenAddress,
-        chain,
-        specificChain,
-      );
-      return { tokenAddress, priceReport };
-    });
+    for (
+      let i = 0;
+      i < tokenAddresses.length;
+      i += this.BATCH_CONCURRENCY_LIMIT
+    ) {
+      const chunk = tokenAddresses.slice(i, i + this.BATCH_CONCURRENCY_LIMIT);
+      const promises = chunk.map(async (tokenAddress) => {
+        const priceReport = await this.getPrice(
+          tokenAddress,
+          chain,
+          specificChain,
+        );
+        return { tokenAddress, priceReport };
+      });
 
-    const responses = await Promise.all(promises);
-    for (const { tokenAddress, priceReport } of responses) {
-      if (priceReport) {
-        results.set(tokenAddress, {
-          price: priceReport.price,
-          symbol: priceReport.symbol,
-          pairCreatedAt: priceReport.pairCreatedAt,
-          volume: priceReport.volume,
-          liquidity: priceReport.liquidity,
-          fdv: priceReport.fdv,
-        });
-      } else {
-        results.set(tokenAddress, null);
+      const responses = await Promise.all(promises);
+      for (const { tokenAddress, priceReport } of responses) {
+        if (priceReport) {
+          results.set(tokenAddress, {
+            price: priceReport.price,
+            symbol: priceReport.symbol,
+            pairCreatedAt: priceReport.pairCreatedAt,
+            volume: priceReport.volume,
+            liquidity: priceReport.liquidity,
+            fdv: priceReport.fdv,
+          });
+        } else {
+          results.set(tokenAddress, null);
+        }
       }
     }
 
