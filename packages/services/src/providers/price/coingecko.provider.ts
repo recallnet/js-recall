@@ -5,6 +5,7 @@ import { Logger } from "pino";
 import { checksumAddress } from "viem";
 import { z } from "zod";
 
+import { withRetry } from "../../lib/retry-helper.js";
 import {
   BlockchainType,
   CoinGeckoMode,
@@ -94,6 +95,7 @@ export class CoinGeckoProvider implements PriceSource {
   private readonly BATCH_CONCURRENCY_LIMIT = 30; // Process batch calls in max 30 tokens at a time
   private specificChainTokens: SpecificChainTokens;
   private logger: Logger;
+  private coingeckoLogger: Logger; // Native logger from CoinGecko SDK (set the log level via `COINGECKO_LOG`)
 
   /**
    * Creates a new CoinGecko provider instance
@@ -104,12 +106,13 @@ export class CoinGeckoProvider implements PriceSource {
   constructor(config: CoinGeckoProviderConfig, logger: Logger) {
     this.specificChainTokens = config.specificChainTokens;
     this.logger = logger;
-
+    this.coingeckoLogger = logger.child({ context: "CoinGeckoSDK" });
     const { apiKey, mode } = config;
     const opts: ClientOptions = {
       environment: mode,
       maxRetries: this.MAX_RETRIES,
       timeout: this.MAX_TIMEOUT,
+      logger: this.coingeckoLogger,
     };
     // Note: CoinGecko has different endpoints, depending on the mode (free vs. paid)
     if (mode === "pro") {
@@ -267,7 +270,7 @@ export class CoinGeckoProvider implements PriceSource {
   }
 
   /**
-   * Fetch price data from CoinGecko onchain API
+   * Fetch price data from CoinGecko onchain API with retry logic
    * @param tokenAddress - The token contract address (expected to be normalized as canonical base58 or checksummed)
    * @param network - The CoinGecko network identifier (e.g., "ethereum", "solana")
    * @returns The token info
@@ -277,17 +280,28 @@ export class CoinGeckoProvider implements PriceSource {
     network: CoinGeckoNetwork,
   ): Promise<TokenInfo | null> {
     try {
-      const response = await this.client.onchain.networks.tokens.getAddress(
-        tokenAddress,
-        {
+      // Note: the CoinGecko SDK natively handle retries upon internal network failures. However,
+      // in case of 429 errors, `withRetry` will catch and retry manually with exponential backoff.
+      const getTokenInfo = () =>
+        this.client.onchain.networks.tokens.getAddress(tokenAddress, {
           network,
           include_composition: true,
-          // Note: we need the information below in order to get the `pool_created_at` timestamp.
-          // There is also information like base vs. quote token, volume, etc., which could open
-          // opportunities for other trading flows (e.g., only allow explicitly paired addresses).
           include: "top_pools",
+        });
+      const response = await withRetry(getTokenInfo, {
+        onRetry: ({ attempt, nextDelayMs, error }) => {
+          this.logger.warn(
+            {
+              error: error instanceof Error ? error.message : String(error),
+              attempt,
+              nextDelayMs,
+              tokenAddress,
+              network,
+            },
+            "Retrying CoinGecko API call",
+          );
         },
-      );
+      });
       return this.parseOnchainResponse(response);
     } catch (error) {
       this.logger.error(
