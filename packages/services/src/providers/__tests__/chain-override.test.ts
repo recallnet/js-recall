@@ -4,11 +4,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { MockProxy, mock } from "vitest-mock-extended";
 
 import { specificChainTokens } from "../../lib/config-utils.js";
-import {
-  BlockchainType,
-  SpecificChain,
-  SpecificChainTokens,
-} from "../../types/index.js";
+import { BlockchainType, SpecificChain } from "../../types/index.js";
 import { MultiChainProvider } from "../multi-chain.provider.js";
 
 // Load environment variables for API access
