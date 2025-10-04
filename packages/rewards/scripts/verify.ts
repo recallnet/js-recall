@@ -1,13 +1,9 @@
 #!/usr/bin/env node
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import z from "zod";
 
 import { calculateRewardsForUsers } from "../src/index.js";
-import type {
-  BoostAllocation,
-  BoostAllocationWindow,
-  Leaderboard,
-} from "../src/types.js";
 
 /**
  * Get current memory usage in a human-readable format
@@ -52,50 +48,28 @@ function logMemoryUsage(label: string): void {
   console.log(`   External: ${memory.external}`);
 }
 
-/**
- * Interface for the sample data structure
- */
-interface SampleData {
-  prizePool: string;
-  leaderBoard: Array<{
-    competitor: string;
-    rank: number;
-  }>;
-  window: {
-    start: string;
-    end: string;
-  };
-  boostAllocations: Array<{
-    user: string;
-    competitor: string;
-    boost: number;
-    timestamp: string;
-  }>;
-}
-
-/**
- * Parse boost allocations from the sample data format
- */
-function parseBoostAllocations(
-  allocations: SampleData["boostAllocations"],
-): BoostAllocation[] {
-  return allocations.map((allocation) => ({
-    user: allocation.user,
-    competitor: allocation.competitor,
-    boost: allocation.boost,
-    timestamp: new Date(allocation.timestamp),
-  }));
-}
-
-/**
- * Parse the time window from the sample data format
- */
-function parseWindow(window: SampleData["window"]): BoostAllocationWindow {
-  return {
-    start: new Date(window.start),
-    end: new Date(window.end),
-  };
-}
+const SampleDataSchema = z.object({
+  prizePool: z.coerce.bigint(),
+  leaderBoard: z.array(
+    z.object({
+      competitor: z.string(),
+      rank: z.number(),
+      wallet: z.string(),
+    }),
+  ),
+  window: z.object({
+    start: z.coerce.date(),
+    end: z.coerce.date(),
+  }),
+  boostAllocations: z.array(
+    z.object({
+      user: z.string(),
+      competitor: z.string(),
+      boost: z.coerce.bigint(),
+      timestamp: z.coerce.date(),
+    }),
+  ),
+});
 
 /**
  * Format a bigint amount for display
@@ -127,18 +101,14 @@ async function main() {
     console.log(`Reading sample data from: ${sampleDataPath}`);
 
     const sampleDataRaw = readFileSync(sampleDataPath, "utf-8");
-    const sampleData: SampleData = JSON.parse(sampleDataRaw);
+    const sampleData = SampleDataSchema.parse(sampleDataRaw);
 
     console.log("Sample data loaded successfully\n");
 
     // Log memory usage after loading data
     logMemoryUsage("After Loading Sample Data");
 
-    // Parse the data
-    const prizePool = BigInt(sampleData.prizePool);
-    const leaderBoard: Leaderboard = sampleData.leaderBoard;
-    const window = parseWindow(sampleData.window);
-    const boostAllocations = parseBoostAllocations(sampleData.boostAllocations);
+    const { prizePool, leaderBoard, window, boostAllocations } = sampleData;
 
     // Log memory usage after parsing data
     logMemoryUsage("After Parsing Data");

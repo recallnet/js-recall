@@ -5,6 +5,7 @@ export default defineConfig({
   plugins: [tsconfigPaths()],
   test: {
     passWithNoTests: true,
+    typecheck: { enabled: true, include: ["**/*.test.ts"] },
     coverage: {
       provider: "v8",
       reporter: ["text", "json", "json-summary"],
@@ -20,6 +21,7 @@ export default defineConfig({
           dir: "./src",
           include: ["**/*.test.ts"],
           exclude: ["**/*.integration.test.ts"],
+          typecheck: { enabled: true, include: ["**/*.test.ts"] },
         },
       },
       {
@@ -29,6 +31,7 @@ export default defineConfig({
           root: "./",
           dir: "./src",
           include: ["**/*.integration.test.ts"],
+          typecheck: { enabled: true, include: ["**/*.test.ts"] },
           testTimeout: 30_000, // Longer timeout for DB operations
           sequence: {
             concurrent: false,

@@ -3,6 +3,7 @@ import { Logger } from "pino";
 import { beforeEach, describe, expect, it } from "vitest";
 import { MockProxy, mock } from "vitest-mock-extended";
 
+import { specificChainTokens } from "../../lib/config-utils.js";
 import {
   BlockchainType,
   SpecificChain,
@@ -21,17 +22,6 @@ const runTests = !!apiKey;
 const mockLogger: MockProxy<Logger> = mock<Logger>();
 
 const specificChains: SpecificChain[] = ["arbitrum", "base", "eth"];
-const specificChainTokens: SpecificChainTokens = {
-  arbitrum: {
-    arb: "0x912CE59144191C1204E64559FE8253a0e49E6548", // Arbitrum
-  },
-  base: {
-    tos: "0x532f27101965dd16442E59d40670FaF5eBB142E4", // TOSHI Token
-  },
-  eth: {
-    link: "0x514910771af9ca656af840dff83e8264ecf986ca", // Chainlink
-  },
-};
 
 // Known test tokens from different chains
 const testTokens = [

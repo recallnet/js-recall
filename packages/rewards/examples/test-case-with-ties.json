@@ -1,9 +1,21 @@
 {
   "prizePool": "1000000000000000000000",
   "leaderBoard": [
-    { "competitor": "Competitor A", "rank": 1 },
-    { "competitor": "Competitor B", "rank": 1 },
-    { "competitor": "Competitor C", "rank": 3 }
+    {
+      "competitor": "Competitor A",
+      "rank": 1,
+      "wallet": "0x8e3a2b7c4f1d9e6a5b2c3d4e5f6a7b8c9d0e1f2a"
+    },
+    {
+      "competitor": "Competitor B",
+      "rank": 2,
+      "wallet": "0x4f7b6c8d2e1a3b5c7d9e0f1a2b3c4d5e6f7a8b9c"
+    },
+    {
+      "competitor": "Competitor C",
+      "rank": 3,
+      "wallet": "0x1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b"
+    }
   ],
   "window": {
     "start": "2024-01-01T00:00:00Z",

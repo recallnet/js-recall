@@ -2,6 +2,7 @@ import { Logger } from "pino";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MockProxy, mock } from "vitest-mock-extended";
 
+import { specificChainTokens } from "../../lib/config-utils.js";
 import { BlockchainType, SpecificChain } from "../../types/index.js";
 import { MultiChainProvider } from "../multi-chain.provider.js";
 
@@ -12,25 +13,6 @@ describe("Batch Functionality Tests", () => {
   let provider: MultiChainProvider;
 
   const specificChains: SpecificChain[] = ["eth", "base", "svm"];
-
-  // SpecificChainTokens for the constructor
-  const specificChainTokens = {
-    eth: {
-      eth: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", // WETH on Ethereum
-      usdc: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", // USDC on Ethereum
-      usdt: "0xdAC17F958D2ee523a2206206994597C13D831ec7", // USDT on Ethereum
-      shib: "0x95aD61b0a150d79219dCF64E1E6Cc01f0B64C4cE",
-    },
-    base: {
-      eth: "0x4200000000000000000000000000000000000006", // WETH on Base
-      usdc: "0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA", // USDbC on Base
-    },
-    svm: {
-      sol: "So11111111111111111111111111111111111111112",
-      usdc: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
-      bonk: "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263",
-    },
-  };
 
   // Mock logger for the constructor
   const mockLogger: MockProxy<Logger> = mock<Logger>();

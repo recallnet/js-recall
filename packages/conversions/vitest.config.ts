@@ -4,6 +4,7 @@ import { coverageConfigDefaults, defineConfig } from "vitest/config";
 export default defineConfig({
   plugins: [tsconfigPaths()],
   test: {
+    typecheck: { enabled: true, include: ["**/*.test.ts"] },
     root: "./",
     dir: "./src",
     include: ["**/*.test.ts"],

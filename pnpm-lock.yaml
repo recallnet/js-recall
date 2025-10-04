@@ -659,6 +659,9 @@ importers:
       decimal.js-light:
         specifier: ^2.5.1
         version: 2.5.1
+      zod:
+        specifier: 3.25.76
+        version: 3.25.76
     devDependencies:
       '@recallnet/eslint-config':
         specifier: workspace:*
