@@ -64,7 +64,7 @@ describe("Leaderboard API", () => {
     });
     await agentClient2.executeTrade({
       fromToken: config.specificChainTokens.eth.usdc,
-      toToken: config.specificChainTokens.eth.usdt,
+      toToken: "0x000000000000000000000000000000000000dead",
       amount: "1",
       reason: "Test trade",
     });
@@ -141,7 +141,7 @@ describe("Leaderboard API", () => {
     });
     await agentClient2.executeTrade({
       fromToken: config.specificChainTokens.eth.usdc,
-      toToken: config.specificChainTokens.eth.usdt,
+      toToken: "0x000000000000000000000000000000000000dead",
       amount: "1",
       reason: "Test trade",
     });
@@ -220,7 +220,7 @@ describe("Leaderboard API", () => {
     });
     await agentClient2.executeTrade({
       fromToken: config.specificChainTokens.eth.usdc,
-      toToken: config.specificChainTokens.eth.usdt,
+      toToken: "0x000000000000000000000000000000000000dead",
       amount: "1",
       reason: "Test trade",
     });
@@ -245,7 +245,7 @@ describe("Leaderboard API", () => {
     });
     await agentClient2.executeTrade({
       fromToken: config.specificChainTokens.eth.usdc,
-      toToken: config.specificChainTokens.eth.usdt,
+      toToken: "0x000000000000000000000000000000000000dead",
       amount: "1",
       reason: "Test trade",
     });

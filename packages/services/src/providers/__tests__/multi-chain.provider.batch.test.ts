@@ -2,53 +2,45 @@ import { Logger } from "pino";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MockProxy, mock } from "vitest-mock-extended";
 
-import { BlockchainType, SpecificChain } from "../../types/index.js";
+import { specificChainTokens } from "../../lib/index.js";
+import { BlockchainType } from "../../types/index.js";
 import { MultiChainProvider } from "../multi-chain.provider.js";
+import {
+  MockCoinGeckoClient,
+  commonMockResponses,
+  mockBatchTokenPrices,
+  multichainCoinGeckoConfig,
+  setupCoinGeckoMock,
+} from "./mocks/coingecko.js";
 
-// Set timeout for all tests in this file to 15 seconds
+// Mock the CoinGecko SDK
+vi.mock("@coingecko/coingecko-typescript");
+
 vi.setConfig({ testTimeout: 15_000 });
+
+const mockLogger: MockProxy<Logger> = mock<Logger>();
 
 describe("Batch Functionality Tests", () => {
   let provider: MultiChainProvider;
-
-  const specificChains: SpecificChain[] = ["eth", "base", "svm"];
-
-  // SpecificChainTokens for the constructor
-  const specificChainTokens = {
-    eth: {
-      eth: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", // WETH on Ethereum
-      usdc: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", // USDC on Ethereum
-      usdt: "0xdAC17F958D2ee523a2206206994597C13D831ec7", // USDT on Ethereum
-      shib: "0x95aD61b0a150d79219dCF64E1E6Cc01f0B64C4cE",
-    },
-    base: {
-      eth: "0x4200000000000000000000000000000000000006", // WETH on Base
-      usdc: "0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA", // USDbC on Base
-    },
-    svm: {
-      sol: "So11111111111111111111111111111111111111112",
-      usdc: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
-      bonk: "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263",
-    },
-  };
-
-  // Mock logger for the constructor
-  const mockLogger: MockProxy<Logger> = mock<Logger>();
+  let mockCoinGeckoInstance: MockCoinGeckoClient;
 
   beforeEach(() => {
-    provider = new MultiChainProvider(
-      { evmChains: specificChains, specificChainTokens },
-      mockLogger,
-    );
+    vi.clearAllMocks();
+    mockCoinGeckoInstance = setupCoinGeckoMock();
+    provider = new MultiChainProvider(multichainCoinGeckoConfig, mockLogger);
   });
 
   describe("MultiChainProvider batch methods", () => {
     it("should fetch batch prices for multiple tokens with comprehensive data", async () => {
-      // Test with a few well-known Ethereum tokens
       const testTokens = [
-        specificChainTokens.eth.eth, // WETH
-        specificChainTokens.eth.usdc, // USDC
+        specificChainTokens.eth.eth,
+        specificChainTokens.eth.usdc,
       ];
+
+      mockBatchTokenPrices(mockCoinGeckoInstance, [
+        commonMockResponses.eth,
+        commonMockResponses.usdc,
+      ]);
 
       const results = await provider.getBatchPrices(
         testTokens,
@@ -59,7 +51,6 @@ describe("Batch Functionality Tests", () => {
       expect(results).toBeInstanceOf(Map);
       expect(results.size).toBe(testTokens.length);
 
-      // Check that we got results for each token
       testTokens.forEach((token) => {
         expect(results.has(token)).toBe(true);
         const result = results.get(token);
@@ -75,11 +66,15 @@ describe("Batch Functionality Tests", () => {
     });
 
     it("should fetch batch prices for multiple tokens", async () => {
-      // Test with a few well-known Ethereum tokens
       const testTokens = [
-        specificChainTokens.eth.eth, // WETH
-        specificChainTokens.eth.usdc, // USDC
+        specificChainTokens.eth.eth,
+        specificChainTokens.eth.usdc,
       ];
+
+      mockBatchTokenPrices(mockCoinGeckoInstance, [
+        commonMockResponses.eth,
+        commonMockResponses.usdc,
+      ]);
 
       const results = await provider.getBatchPrices(
         testTokens,
@@ -90,7 +85,6 @@ describe("Batch Functionality Tests", () => {
       expect(results).toBeInstanceOf(Map);
       expect(results.size).toBe(testTokens.length);
 
-      // Check that we got results for each token
       testTokens.forEach((token) => {
         expect(results.has(token)).toBe(true);
         const result = results.get(token);
@@ -117,11 +111,15 @@ describe("Batch Functionality Tests", () => {
     });
 
     it("should handle Solana tokens in batch", async () => {
-      // Test with Solana tokens
       const testTokens = [
-        specificChainTokens.svm.sol, // SOL
-        specificChainTokens.svm.usdc, // USDC
+        specificChainTokens.svm.sol,
+        specificChainTokens.svm.usdc,
       ];
+
+      mockBatchTokenPrices(mockCoinGeckoInstance, [
+        commonMockResponses.sol,
+        commonMockResponses.usdc,
+      ]);
 
       const results = await provider.getBatchPrices(
         testTokens,
@@ -132,7 +130,6 @@ describe("Batch Functionality Tests", () => {
       expect(results).toBeInstanceOf(Map);
       expect(results.size).toBe(testTokens.length);
 
-      // Check that we got results for each token
       testTokens.forEach((token) => {
         expect(results.has(token)).toBe(true);
         const result = results.get(token);
