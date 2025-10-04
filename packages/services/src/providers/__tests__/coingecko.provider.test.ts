@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MockProxy, mock } from "vitest-mock-extended";
 
 import { specificChainTokens } from "../../lib/index.js";
+import { withRetry } from "../../lib/retry-helper.js";
 import { BlockchainType } from "../../types/index.js";
 import { CoinGeckoProvider } from "../price/coingecko.provider.js";
 import {
@@ -16,6 +17,14 @@ import {
 } from "./mocks/coingecko.js";
 
 vi.mock("@coingecko/coingecko-typescript");
+vi.mock("../../lib/retry-helper.js", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("../../lib/retry-helper.js")>();
+  return {
+    ...actual,
+    withRetry: vi.fn(actual.withRetry),
+  };
+});
 
 const {
   svm: solanaTokens,
@@ -560,6 +569,164 @@ describe("CoinGeckoProvider", () => {
       expect(results.get(tokens[1]!)).toBeNull();
       expect(results.get(tokens[2]!)).toBeNull();
       expect(results.get(tokens[3]!)).toBeNull();
+    });
+  });
+
+  describe("Retry logic", () => {
+    it("should use withRetry for API calls", async () => {
+      mockTokenPrice(mockCoinGeckoInstance, commonMockResponses.eth);
+
+      await provider.getPrice(ethereumTokens.eth, BlockchainType.EVM, "eth");
+
+      expect(withRetry).toHaveBeenCalled();
+    });
+
+    it("should invoke onRetry callback when retries occur", async () => {
+      // Mock to fail twice, then succeed
+      let callCount = 0;
+      mockCoinGeckoInstance.onchain.networks.tokens.getAddress.mockImplementation(
+        async () => {
+          callCount++;
+          if (callCount <= 2) {
+            const error: Error & { response?: { status: number } } = new Error(
+              "Rate limit exceeded",
+            );
+            error.response = { status: 429 };
+            throw error;
+          }
+          return commonMockResponses.eth;
+        },
+      );
+
+      const priceReport = await provider.getPrice(
+        ethereumTokens.eth,
+        BlockchainType.EVM,
+        "eth",
+      );
+
+      // Should eventually succeed after retries
+      expect(priceReport).not.toBeNull();
+      expect(priceReport?.price).toBe(4473.03);
+      expect(mockLogger.warn).toHaveBeenCalledWith(
+        expect.objectContaining({
+          attempt: expect.any(Number),
+          nextDelayMs: expect.any(Number),
+          error: expect.stringContaining("Rate limit"),
+        }),
+        "Retrying CoinGecko API call",
+      );
+    });
+
+    it("should handle exhausted retries gracefully", async () => {
+      // Mock to always fail with 429
+      mockCoinGeckoInstance.onchain.networks.tokens.getAddress.mockRejectedValue(
+        Object.assign(new Error("Rate limit exceeded"), {
+          response: { status: 429 },
+        }),
+      );
+
+      const priceReport = await provider.getPrice(
+        ethereumTokens.eth,
+        BlockchainType.EVM,
+        "eth",
+      );
+
+      expect(priceReport).toBeNull();
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        expect.objectContaining({
+          error: expect.any(String),
+          tokenAddress: ethereumTokens.eth,
+          network: "eth",
+        }),
+        "Error fetching price",
+      );
+    });
+  });
+
+  describe("Batch chunking", () => {
+    it("should process batches in chunks of 30 tokens", async () => {
+      // Create a batch of 65 tokens (should create 3 chunks: 30, 30, 5)
+      const tokens = Array.from({ length: 65 }, (_, i) =>
+        i === 0 ? ethereumTokens.eth : `0x${i.toString().padStart(40, "0")}`,
+      );
+
+      // Mock responses for all tokens
+      mockCoinGeckoInstance.onchain.networks.tokens.getAddress.mockResolvedValue(
+        commonMockResponses.eth,
+      );
+
+      const results = await provider.getBatchPrices(
+        tokens,
+        BlockchainType.EVM,
+        "eth",
+      );
+
+      // Should call API for all 65 tokens
+      expect(
+        mockCoinGeckoInstance.onchain.networks.tokens.getAddress,
+      ).toHaveBeenCalledTimes(65);
+      expect(results.size).toBe(65);
+    });
+
+    it("should handle errors in chunked batches without failing entire batch", async () => {
+      // Create 35 tokens (2 chunks: 30, 5)
+      const tokens = Array.from({ length: 35 }, (_, i) =>
+        i < 30 ? `0x${i.toString().padStart(40, "0")}` : `invalid-${i}`,
+      );
+
+      // First 30 succeed, last 5 fail
+      let callCount = 0;
+      mockCoinGeckoInstance.onchain.networks.tokens.getAddress.mockImplementation(
+        async () => {
+          callCount++;
+          if (callCount <= 30) {
+            return commonMockResponses.eth;
+          }
+          throw new Error("Invalid address");
+        },
+      );
+
+      const results = await provider.getBatchPrices(
+        tokens,
+        BlockchainType.EVM,
+        "eth",
+      );
+
+      expect(results.size).toBe(35);
+      // First 30 should have prices
+      for (let i = 0; i < 30; i++) {
+        expect(results.get(tokens[i]!)).not.toBeNull();
+      }
+      // Last 5 should be null due to errors
+      for (let i = 30; i < 35; i++) {
+        expect(results.get(tokens[i]!)).toBeNull();
+      }
+    });
+
+    it("should respect concurrency limit of 30 per chunk", async () => {
+      const tokens = Array.from(
+        { length: 90 },
+        (_, i) => `0x${i.toString().padStart(40, "0")}`,
+      );
+
+      let maxConcurrent = 0;
+      let currentConcurrent = 0;
+
+      mockCoinGeckoInstance.onchain.networks.tokens.getAddress.mockImplementation(
+        async () => {
+          currentConcurrent++;
+          maxConcurrent = Math.max(maxConcurrent, currentConcurrent);
+          // Simulate async delay
+          await new Promise((resolve) => setTimeout(resolve, 10));
+          currentConcurrent--;
+          return commonMockResponses.eth;
+        },
+      );
+
+      await provider.getBatchPrices(tokens, BlockchainType.EVM, "eth");
+
+      // Maximum concurrent calls should not exceed 30
+      expect(maxConcurrent).toBeLessThanOrEqual(30);
     });
   });
 });
