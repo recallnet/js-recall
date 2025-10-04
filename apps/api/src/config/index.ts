@@ -132,10 +132,6 @@ export const config = {
   // EVM chain configuration
   evmChains: parseEvmChains(),
   api: {
-    noves: {
-      apiKey: process.env.NOVES_API_KEY || "",
-      enabled: !!process.env.NOVES_API_KEY,
-    },
     // Domain for API authentication and verification purposes
     domain:
       process.env.API_DOMAIN || "https://api.competitions.recall.network/",

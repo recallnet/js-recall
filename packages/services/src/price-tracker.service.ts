@@ -22,7 +22,6 @@ export interface PriceTrackerServiceConfig {
  */
 export class PriceTrackerService {
   providers: PriceSource[];
-  // private novesProvider: NovesProvider | null = null;
   private multiChainProvider: MultiChainProvider;
 
   // In-memory LRU cache for token prices

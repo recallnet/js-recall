@@ -4,7 +4,6 @@
   "tasks": {
     "build": {
       "env": [
-        "NOVES_API_KEY",
         "ROOT_ENCRYPTION_KEY",
         "EVM_CHAINS",
         "COINGECKO_API_KEY",

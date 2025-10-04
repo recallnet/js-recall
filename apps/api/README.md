@@ -71,7 +71,7 @@ The application follows an MVC (Model-View-Controller) architecture with a robus
 - ✅ Competition management service
 - ✅ Chain override feature for high-performance price lookups
 - ✅ Portfolio snapshots with configurable intervals and price freshness optimization
-- ✅ Multiple price providers (DexScreener, Noves, Jupiter, Raydium)
+- ✅ Multiple price providers (DexScreener, CoinGecko)
 - ✅ Testing (Complete - E2E testing comprehensive)
 - ✅ Documentation
 - ⏳ Integration with front-end (planned)
@@ -112,9 +112,7 @@ The application uses a layered architecture:
   - `PriceTracker`: Multi-source price data fetching with chain detection
   - `MultiChainProvider`: Aggregates price data for all chains
   - `DexScreenerProvider`: EVM and SVM chain price data via DexScreener API
-  - `NovesProvider`: Advanced EVM chain price data (disabled)
-  - `RaydiumProvider`: Solana token price data from Raydium (disabled)
-  - `JupiterProvider`: Solana token price data from Jupiter API (disabled)
+  - `CoinGeckoProvider`: EVM and SVM chain price data via CoinGecko API
   - `SolanaProvider`: Basic SOL token information (disabled)
   - `BalanceManager`: Agent balance tracking across multiple chains
   - `TradeSimulator`: Trade execution and processing with chain-specific logic
@@ -1011,7 +1009,7 @@ The project employs a multi-layered testing strategy to ensure functionality and
 The testing suite currently includes:
 
 - **End-to-End Tests**: Comprehensive suite covering the entire application stack
-- **Provider Unit Tests**: Tests for specific price providers (DexScreener, Noves)
+- **Provider Unit Tests**: Tests for specific price providers (DexScreener, CoinGecko)
 - **Integration Tests**: Testing the interaction between services
 - **Configuration Tests**: Validating environment configurations
 
