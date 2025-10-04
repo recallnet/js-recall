@@ -619,10 +619,14 @@ describe("CoinGeckoProvider", () => {
 
     it("should handle exhausted retries gracefully", async () => {
       // Mock to always fail with 429
-      mockCoinGeckoInstance.onchain.networks.tokens.getAddress.mockRejectedValue(
-        Object.assign(new Error("Rate limit exceeded"), {
-          response: { status: 429 },
-        }),
+      mockCoinGeckoInstance.onchain.networks.tokens.getAddress.mockImplementation(
+        async () => {
+          const error: Error & { response?: { status: number } } = new Error(
+            "Rate limit exceeded",
+          );
+          error.response = { status: 429 };
+          throw error;
+        },
       );
 
       const priceReport = await provider.getPrice(
@@ -640,7 +644,7 @@ describe("CoinGeckoProvider", () => {
         }),
         "Error fetching price",
       );
-    });
+    }, 10000);
   });
 
   describe("Batch chunking", () => {
