@@ -31,7 +31,10 @@
         "ROOT_ENCRYPTION_KEY",
         "API_DOMAIN",
         "PRICE_CACHE_MAX_SIZE",
-        "PRICE_CACHE_TTL_MS"
+        "PRICE_CACHE_TTL_MS",
+        "PRICE_PROVIDER",
+        "COINGECKO_API_KEY",
+        "COINGECKO_MODE"
       ]
     }
   }

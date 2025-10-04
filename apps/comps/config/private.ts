@@ -7,11 +7,7 @@ import {
 } from "@recallnet/services/lib";
 import { SpecificChainSchema } from "@recallnet/services/types";
 
-import {
-  config as publicConfig,
-  configSchema as publicConfigSchema,
-  rawConfig as publicRawConfig,
-} from "./public";
+import { config as publicConfig } from "./public";
 
 const configSchema = z.strictObject({
   evmChains: z
@@ -38,6 +34,13 @@ const configSchema = z.strictObject({
   priceTracker: z.object({
     maxCacheSize: z.coerce.number().default(10000),
     priceTTLMs: z.coerce.number().default(60000),
+  }),
+  priceProvider: z.object({
+    type: z.enum(["dexscreener", "coingecko"]).default("dexscreener"),
+    coingecko: z.object({
+      apiKey: z.string().default(""),
+      mode: z.enum(["demo", "pro"]).default("demo"),
+    }),
   }),
   email: z.object({
     apiKey: z.string().default(""),
@@ -81,6 +84,13 @@ export const rawConfig = {
   priceTracker: {
     maxCacheSize: process.env.PRICE_TRACKER_MAX_CACHE_SIZE,
     priceTTLMs: process.env.PRICE_TRACKER_PRICE_TTL_MS,
+  },
+  priceProvider: {
+    type: process.env.PRICE_PROVIDER,
+    coingecko: {
+      apiKey: process.env.COINGECKO_API_KEY,
+      mode: process.env.COINGECKO_MODE,
+    },
   },
   email: {
     apiKey: process.env.EMAIL_API_KEY,
