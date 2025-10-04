@@ -95,7 +95,7 @@ export class CoinGeckoProvider implements PriceSource {
   private readonly BATCH_CONCURRENCY_LIMIT = 30; // Process batch calls in max 30 tokens at a time
   private specificChainTokens: SpecificChainTokens;
   private logger: Logger;
-  private coingeckoLogger: Logger; // Native logger from CoinGecko SDK (set the log level via `COINGECKO_LOG`)
+  private coingeckoLogger: Logger; // Native logger for the CoinGecko SDK (set log level via `COINGECKO_LOG`)
 
   /**
    * Creates a new CoinGecko provider instance
@@ -272,7 +272,7 @@ export class CoinGeckoProvider implements PriceSource {
   /**
    * Fetch price data from CoinGecko onchain API with retry logic
    * @param tokenAddress - The token contract address (expected to be normalized as canonical base58 or checksummed)
-   * @param network - The CoinGecko network identifier (e.g., "ethereum", "solana")
+   * @param network - The CoinGecko network identifier (e.g., "eth", "solana")
    * @returns The token info
    */
   private async fetchPrice(
@@ -280,7 +280,7 @@ export class CoinGeckoProvider implements PriceSource {
     network: CoinGeckoNetwork,
   ): Promise<TokenInfo | null> {
     try {
-      // Note: the CoinGecko SDK natively handle retries upon internal network failures. However,
+      // Note: the CoinGecko SDK natively handles retries upon internal network failures. However,
       // in case of 429 errors, `withRetry` will catch and retry manually with exponential backoff.
       const getTokenInfo = () =>
         this.client.onchain.networks.tokens.getAddress(tokenAddress, {
