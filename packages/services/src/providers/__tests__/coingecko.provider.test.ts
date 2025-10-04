@@ -517,5 +517,49 @@ describe("CoinGeckoProvider", () => {
       expect(priceReport).not.toBeNull();
       expect(priceReport?.price).toBe(4473.03);
     });
+
+    it("should handle invalid addresses gracefully in single requests", async () => {
+      const invalidAddress = "invalid-address-format";
+
+      const priceReport = await provider.getPrice(
+        invalidAddress,
+        BlockchainType.SVM,
+        "svm",
+      );
+
+      // Should not make API call for invalid address
+      expect(
+        mockCoinGeckoInstance.onchain.networks.tokens.getAddress,
+      ).not.toHaveBeenCalled();
+      expect(priceReport).toBeNull();
+    });
+
+    it("should handle invalid addresses in batch requests without failing entire batch", async () => {
+      const tokens = [
+        solanaTokens.usdc,
+        // The remaining addresses are invalid
+        "abc",
+        "",
+        "0xinvalid",
+      ];
+
+      mockTokenPrice(mockCoinGeckoInstance, commonMockResponses.usdc);
+
+      const results = await provider.getBatchPrices(
+        tokens,
+        BlockchainType.SVM,
+        "svm",
+      );
+
+      // Verify all tokens have results (some valid, some null)
+      expect(results.get(solanaTokens.usdc)?.price).toBe(1.0002548824);
+      expect(
+        mockCoinGeckoInstance.onchain.networks.tokens.getAddress,
+      ).toHaveBeenCalled();
+      expect(results.size).toBe(4);
+      expect(results.get(tokens[1]!)).toBeNull();
+      expect(results.get(tokens[2]!)).toBeNull();
+      expect(results.get(tokens[3]!)).toBeNull();
+    });
   });
 });

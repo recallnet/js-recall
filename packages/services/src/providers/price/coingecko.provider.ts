@@ -90,18 +90,14 @@ const OnchainResponseSchema = z.object({
 });
 
 /**
- * Converts a Solana address to its canonical base58 representation
+ * Converts a Solana address to its canonical base58 encoded representation
  * @param addr - The Solana address to convert
  * @returns The canonical base58 representation of the address
  * @throws If the address is invalid (wrong length, alphabet, or incorrect case)
  */
-function toCanonicalBase58(addr: string): string {
-  try {
-    const pk = new PublicKey(addr);
-    return pk.toBase58();
-  } catch {
-    throw new Error(`Invalid Solana address: ${addr}`);
-  }
+export function toCanonicalSolanaAddress(addr: string): string {
+  const pk = new PublicKey(addr);
+  return pk.toBase58();
 }
 
 /**
@@ -185,11 +181,16 @@ export class CoinGeckoProvider implements PriceSource {
    * Normalizes a token address for proper API calls and comparisons
    * @param tokenAddress - The token address to normalize
    * @returns Normalized token address
+   * @throws If the token address is invalid
    */
   private normalizeAddress(tokenAddress: string): string {
-    return tokenAddress.startsWith("0x")
-      ? checksumAddress(tokenAddress as `0x${string}`)
-      : toCanonicalBase58(tokenAddress);
+    try {
+      return tokenAddress.startsWith("0x")
+        ? checksumAddress(tokenAddress as `0x${string}`)
+        : toCanonicalSolanaAddress(tokenAddress);
+    } catch {
+      throw new Error(`Invalid token address: ${tokenAddress}`);
+    }
   }
 
   /**
@@ -265,7 +266,7 @@ export class CoinGeckoProvider implements PriceSource {
 
   /**
    * Fetch price data from CoinGecko onchain API
-   * @param tokenAddress - The token contract address
+   * @param tokenAddress - The token contract address (expected to be normalized as canonical base58 or checksummed)
    * @param network - The CoinGecko network identifier (e.g., "ethereum", "solana")
    * @returns The token info
    */
@@ -274,9 +275,8 @@ export class CoinGeckoProvider implements PriceSource {
     network: CoinGeckoNetwork,
   ): Promise<TokenInfo | null> {
     try {
-      const address = this.normalizeAddress(tokenAddress);
       const response = await this.client.onchain.networks.tokens.getAddress(
-        address,
+        tokenAddress,
         {
           network,
           include_composition: true,
@@ -301,33 +301,6 @@ export class CoinGeckoProvider implements PriceSource {
   }
 
   /**
-   * Fetch prices for a batch of tokens using CoinGecko API
-   * @param tokenAddresses - Array of token addresses (max 100 per batch)
-   * @param platform - CoinGecko platform identifier (e.g., "ethereum", "polygon-pos")
-   * @returns Map of token addresses to their price information (null if not found)
-   */
-  private async fetchBatchPrices(
-    tokenAddresses: string[],
-    network: CoinGeckoNetwork,
-  ): Promise<Map<string, TokenInfo | null>> {
-    const results = new Map<string, TokenInfo | null>();
-    this.logger.debug(
-      `Fetching batch prices for ${tokenAddresses.length} tokens on ${network}`,
-    );
-
-    const promises = tokenAddresses.map(async (tokenAddress) => {
-      const result = await this.fetchPrice(tokenAddress, network);
-      return { tokenAddress, result };
-    });
-    const responses = await Promise.all(promises);
-    for (const { tokenAddress, result } of responses) {
-      results.set(tokenAddress, result);
-    }
-
-    return results;
-  }
-
-  /**
    * Gets the current price and market data for a single token
    * @param tokenAddress - The token contract address
    * @param chain - The blockchain type (EVM or SVM)
@@ -339,43 +312,51 @@ export class CoinGeckoProvider implements PriceSource {
     chain: BlockchainType,
     specificChain: SpecificChain,
   ): Promise<PriceReport | null> {
-    const network = COINGECKO_NETWORKS[specificChain];
-    if (!network) {
-      this.logger.error(`Unsupported chain: ${specificChain}`);
-      return null;
-    }
-    const address = this.normalizeAddress(tokenAddress);
-    if (this.isBurnAddress(address)) {
-      this.logger.debug(
-        `Burn address detected: ${address}, returning price of 0`,
+    try {
+      const network = COINGECKO_NETWORKS[specificChain];
+      if (!network) {
+        this.logger.error(`Unsupported chain: ${specificChain}`);
+        return null;
+      }
+      const address = this.normalizeAddress(tokenAddress);
+      if (this.isBurnAddress(address)) {
+        this.logger.debug(
+          `Burn address detected: ${address}, returning price of 0`,
+        );
+        return {
+          price: 0,
+          symbol: "BURN",
+          token: address,
+          timestamp: new Date(),
+          chain,
+          specificChain,
+          pairCreatedAt: undefined,
+          volume: undefined,
+          liquidity: undefined,
+          fdv: undefined,
+        };
+      }
+      const priceData = await this.fetchPrice(address, network);
+      if (priceData) {
+        return {
+          price: priceData.price,
+          symbol: priceData.symbol,
+          token: address,
+          timestamp: new Date(),
+          chain,
+          specificChain,
+          pairCreatedAt: priceData.pairCreatedAt,
+          volume: priceData.volume,
+          liquidity: priceData.liquidity,
+          fdv: priceData.fdv,
+        };
+      }
+    } catch (error) {
+      this.logger.error(
+        `Error fetching price for ${tokenAddress}: ${error instanceof Error ? error.message : "Unknown error"}`,
       );
-      return {
-        price: 0,
-        symbol: "BURN",
-        token: address,
-        timestamp: new Date(),
-        chain,
-        specificChain,
-        pairCreatedAt: undefined,
-        volume: undefined,
-        liquidity: undefined,
-        fdv: undefined,
-      };
     }
-    const priceData = await this.fetchPrice(address, network);
-    if (priceData === null) return null;
-    return {
-      price: priceData.price,
-      symbol: priceData.symbol,
-      token: address,
-      timestamp: new Date(),
-      chain,
-      specificChain,
-      pairCreatedAt: priceData.pairCreatedAt,
-      volume: priceData.volume,
-      liquidity: priceData.liquidity,
-      fdv: priceData.fdv,
-    };
+    return null;
   }
 
   /**
@@ -395,36 +376,30 @@ export class CoinGeckoProvider implements PriceSource {
       return results;
     }
 
-    const addressesToFetch: string[] = [];
-    for (const tokenAddress of tokenAddresses) {
-      const address = this.normalizeAddress(tokenAddress);
-      if (this.isBurnAddress(address)) {
+    const promises = tokenAddresses.map(async (tokenAddress) => {
+      const priceReport = await this.getPrice(
+        tokenAddress,
+        chain,
+        specificChain,
+      );
+      return { tokenAddress, priceReport };
+    });
+
+    const responses = await Promise.all(promises);
+    for (const { tokenAddress, priceReport } of responses) {
+      if (priceReport) {
         results.set(tokenAddress, {
-          price: 0,
-          symbol: "BURN",
-          pairCreatedAt: undefined,
-          volume: undefined,
-          liquidity: undefined,
-          fdv: undefined,
+          price: priceReport.price,
+          symbol: priceReport.symbol,
+          pairCreatedAt: priceReport.pairCreatedAt,
+          volume: priceReport.volume,
+          liquidity: priceReport.liquidity,
+          fdv: priceReport.fdv,
         });
       } else {
-        addressesToFetch.push(address);
+        results.set(tokenAddress, null);
       }
     }
-
-    const network = COINGECKO_NETWORKS[specificChain];
-    if (!network) {
-      this.logger.error(`Unsupported chain: ${specificChain}`);
-      addressesToFetch.forEach((addr) => {
-        results.set(addr, null);
-      });
-      return results;
-    }
-
-    const batchResults = await this.fetchBatchPrices(addressesToFetch, network);
-    batchResults.forEach((value, key) => {
-      results.set(key, value);
-    });
 
     return results;
   }
