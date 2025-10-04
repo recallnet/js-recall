@@ -84,17 +84,6 @@ const OnchainResponseSchema = z.object({
 });
 
 /**
- * Converts a Solana address to its canonical base58 encoded representation
- * @param addr - The Solana address to convert
- * @returns The canonical base58 representation of the address
- * @throws If the address is invalid (wrong length, alphabet, or incorrect case)
- */
-function toCanonicalSolanaAddress(addr: string): string {
-  const pk = new PublicKey(addr);
-  return pk.toBase58();
-}
-
-/**
  * CoinGecko price provider implementation
  * Provides cryptocurrency price data using the CoinGecko API
  */
@@ -157,11 +146,8 @@ export class CoinGeckoProvider implements PriceSource {
     tokenAddress: string,
     specificChain: SpecificChain,
   ): boolean {
-    if (!(specificChain in this.specificChainTokens)) return false;
-    const chainTokens =
-      this.specificChainTokens[
-        specificChain as keyof typeof this.specificChainTokens
-      ];
+    const chainTokens = this.specificChainTokens[specificChain];
+    if (!chainTokens || !chainTokens.usdc || !chainTokens.usdt) return false;
     const normalizedAddress = this.normalizeAddress(tokenAddress);
     const normalizedUsdc = this.normalizeAddress(chainTokens.usdc);
     const normalizedUsdt = this.normalizeAddress(chainTokens.usdt);
@@ -169,6 +155,17 @@ export class CoinGeckoProvider implements PriceSource {
       normalizedAddress === normalizedUsdc ||
       normalizedAddress === normalizedUsdt
     );
+  }
+
+  /**
+   * Converts a Solana address to its canonical base58 encoded representation
+   * @param addr - The Solana address to convert
+   * @returns The canonical base58 representation of the address
+   * @throws If the address is invalid (wrong length, alphabet, or incorrect case)
+   */
+  private toCanonicalSolanaAddress(addr: string): string {
+    const pk = new PublicKey(addr);
+    return pk.toBase58();
   }
 
   /**
@@ -181,7 +178,7 @@ export class CoinGeckoProvider implements PriceSource {
     try {
       return tokenAddress.startsWith("0x")
         ? checksumAddress(tokenAddress as `0x${string}`)
-        : toCanonicalSolanaAddress(tokenAddress);
+        : this.toCanonicalSolanaAddress(tokenAddress);
     } catch {
       throw new Error(`Invalid token address: ${tokenAddress}`);
     }
@@ -292,7 +289,7 @@ export class CoinGeckoProvider implements PriceSource {
     } catch (error) {
       this.logger.error(
         {
-          error: error instanceof Error ? error.message : "Unknown error",
+          error: error instanceof Error ? error.message : JSON.stringify(error),
           tokenAddress,
           network,
         },
@@ -353,7 +350,7 @@ export class CoinGeckoProvider implements PriceSource {
     } catch (error) {
       this.logger.error(
         {
-          error: error instanceof Error ? error.message : "Unknown error",
+          error: error instanceof Error ? error.message : JSON.stringify(error),
           tokenAddress,
           chain,
           specificChain,
