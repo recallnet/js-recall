@@ -25,30 +25,24 @@ export interface CoinGeckoProviderConfig {
 }
 
 /**
- * CoinGecko network identifiers schema
- */
-export const CoinGeckoNetworksSchema = z.enum([
-  "eth",
-  "polygon_pos",
-  "bsc",
-  "arbitrum",
-  "optimism",
-  "avax",
-  "base",
-  "linea",
-  "zksync",
-  "scroll",
-  "mantle",
-  "solana",
-]);
-
-/**
  * CoinGecko network identifiers
  */
-type CoinGeckoNetwork = z.infer<typeof CoinGeckoNetworksSchema>;
+type CoinGeckoNetwork =
+  | "eth"
+  | "polygon_pos"
+  | "bsc"
+  | "arbitrum"
+  | "optimism"
+  | "avax"
+  | "base"
+  | "linea"
+  | "zksync"
+  | "scroll"
+  | "mantle"
+  | "solana";
 
 /**
- * CoinGecko network mapping from SpecificChain to CoinGecko network identifier
+ * CoinGecko network mapping from `SpecificChain` to CoinGecko network identifier
  */
 const COINGECKO_NETWORKS = {
   eth: "eth",
@@ -95,7 +89,7 @@ const OnchainResponseSchema = z.object({
  * @returns The canonical base58 representation of the address
  * @throws If the address is invalid (wrong length, alphabet, or incorrect case)
  */
-export function toCanonicalSolanaAddress(addr: string): string {
+function toCanonicalSolanaAddress(addr: string): string {
   const pk = new PublicKey(addr);
   return pk.toBase58();
 }
@@ -216,7 +210,7 @@ export class CoinGeckoProvider implements PriceSource {
    * @param pools - The token pools for the token
    * @returns The created at timestamp
    */
-  private getCreatedAtFromPools(
+  private getCreatedAtTimestampFromPools(
     pools: TokenGetAddressResponse.Included[],
   ): number | undefined {
     const poolsWithTimestamps = pools.filter(
@@ -265,7 +259,7 @@ export class CoinGeckoProvider implements PriceSource {
     return {
       price: parseFloat(price_usd),
       symbol: symbol.toUpperCase(),
-      pairCreatedAt: this.getCreatedAtFromPools(pools),
+      pairCreatedAt: this.getCreatedAtTimestampFromPools(pools),
       volume: { h24: parseFloat(volume_usd.h24) },
       liquidity: { usd: parseFloat(total_reserve_in_usd) },
       fdv: parseFloat(fdv_usd),
@@ -290,7 +284,7 @@ export class CoinGeckoProvider implements PriceSource {
           include_composition: true,
           // Note: we need the information below in order to get the `pool_created_at` timestamp.
           // There is also information like base vs. quote token, volume, etc., which could open
-          // up other trading flows (e.g., only allow explicitly paired addresses).
+          // opportunities for other trading flows (e.g., only allow explicitly paired addresses).
           include: "top_pools",
         },
       );
@@ -328,9 +322,6 @@ export class CoinGeckoProvider implements PriceSource {
       }
       const address = this.normalizeAddress(tokenAddress);
       if (this.isBurnAddress(address)) {
-        this.logger.debug(
-          `Burn address detected: ${address}, returning price of 0`,
-        );
         return {
           price: 0,
           symbol: "BURN",
@@ -361,7 +352,13 @@ export class CoinGeckoProvider implements PriceSource {
       }
     } catch (error) {
       this.logger.error(
-        `Error fetching price for ${tokenAddress}: ${error instanceof Error ? error.message : "Unknown error"}`,
+        {
+          error: error instanceof Error ? error.message : "Unknown error",
+          tokenAddress,
+          chain,
+          specificChain,
+        },
+        `Error fetching price`,
       );
     }
     return null;
