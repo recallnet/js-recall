@@ -34,7 +34,16 @@ export type SpecificChainBalances = {
   [K in SpecificChain]?: Record<string, number>;
 };
 
-export type SpecificChainTokens = typeof specificChainTokens;
+type TokenDict = Record<string, string>;
+type KnownChains = keyof typeof specificChainTokens;
+
+/**
+ * Standard chain tokens with optional additional tokens
+ */
+export type SpecificChainTokens = Partial<{
+  [K in KnownChains]: Partial<(typeof specificChainTokens)[K]> & TokenDict;
+}> &
+  Record<string, TokenDict>;
 
 /**
  * Blockchain type enum
