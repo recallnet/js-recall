@@ -5,7 +5,6 @@ import {
 
 import { client } from "@/rpc/clients/client-side";
 import {
-  AgentCompetitionResponse,
   AgentCompetitionsResponse,
   CompetitionPerpsPositionsResponse,
   CompetitionPerpsSummaryResponse,
@@ -17,7 +16,6 @@ import {
   CreateVoteRequest,
   EnrichedVotesResponse,
   GetAgentCompetitionsParams,
-  GetCompetitionAgentsParams,
   GetCompetitionPerformanceParams,
   GetCompetitionPerpsPositionsParams,
   GetCompetitionTradesParams,
@@ -243,22 +241,6 @@ export class ApiClient {
    */
   async getCompetition(id: string): Promise<CompetitionResponse> {
     return this.request<CompetitionResponse>(`/competitions/${id}`);
-  }
-
-  /**
-   * Get agents participating in a competition
-   * @param competitionId - Competition ID
-   * @param params - Query parameters
-   * @returns Agents response
-   */
-  async getCompetitionAgents(
-    competitionId: string,
-    params: GetCompetitionAgentsParams = {},
-  ): Promise<AgentCompetitionResponse> {
-    const queryParams = this.formatQueryParams(params);
-    return this.request<AgentCompetitionResponse>(
-      `/competitions/${competitionId}/agents${queryParams}`,
-    );
   }
 
   /**

@@ -13,14 +13,6 @@ export interface GetCompetitionsParams {
   sort?: string;
 }
 
-// GET /competitions/{competitionId}/agents query parameters
-export interface GetCompetitionAgentsParams {
-  filter?: string;
-  sort?: string;
-  limit?: number;
-  offset?: number;
-}
-
 // GET /competitions/{competitionId}/performance query parameters
 export interface GetCompetitionPerformanceParams {
   bucket?: number;

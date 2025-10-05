@@ -4,14 +4,13 @@ import { cn } from "@recallnet/ui2/lib/utils";
 
 import { AgentAvatar } from "@/components/agent-avatar";
 import type { RouterOutputs } from "@/rpc/router";
-import { Agent, AgentCompetition } from "@/types/agent";
+import { Agent } from "@/types/agent";
 import { UserAgentCompetition } from "@/types/competition";
 
 type AgentType =
   | Agent
   | UserAgentCompetition
-  | AgentCompetition
-  | RouterOutputs["competitions"]["getAgents"]["agents"]
+  | RouterOutputs["competitions"]["getAgents"]["agents"][number]
   | RouterOutputs["agent"]["getAgent"]["agent"];
 
 interface ParticipantsAvatarsProps {

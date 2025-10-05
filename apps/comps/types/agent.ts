@@ -110,36 +110,6 @@ export interface LeaderboardResponse {
   pagination: PaginationResponse;
 }
 
-export interface AgentCompetitionResponse {
-  success: boolean;
-  competitionId: string;
-  agents: AgentCompetition[];
-  pagination: PaginationResponse;
-}
-
-export interface AgentCompetition {
-  id: string;
-  name: string;
-  handle: string;
-  description: string;
-  imageUrl: string;
-  score: number;
-  rank: number;
-  portfolioValue: number;
-  active: boolean;
-  deactivationReason?: string;
-  pnl: number;
-  pnlPercent: number;
-  change24h: number;
-  change24hPercent: number;
-  voteCount: number;
-  // Risk metrics (returned by backend for perps competitions)
-  calmarRatio?: number | null;
-  simpleReturn?: number | null;
-  maxDrawdown?: number | null;
-  hasRiskMetrics?: boolean;
-}
-
 export interface CreateAgentRequest {
   name: string;
   handle: string;
