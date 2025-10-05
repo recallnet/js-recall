@@ -1,3 +1,4 @@
+import type { RouterOutputs } from "@/rpc/router";
 import { mergeCompetitionsWithUserData } from "@/utils/competition-utils";
 
 import { Agent } from "./agent";
@@ -219,42 +220,11 @@ export interface CompetitionTradesResponse {
   pagination: PaginationResponse;
 }
 
-export interface PerpsPosition {
-  id: string;
-  competitionId: string;
-  agentId: string;
-  positionId: string | null;
-  marketId: string | null;
-  marketSymbol: string | null;
-  asset: string;
-  isLong: boolean;
-  leverage: number;
-  size: number;
-  collateral: number;
-  averagePrice: number;
-  markPrice: number;
-  liquidationPrice: number | null;
-  unrealizedPnl: number;
-  pnlPercentage: number;
-  realizedPnl: number;
-  status?: string;
-  openedAt: string;
-  closedAt: string | null;
-  timestamp: string;
-  agent?: {
-    id: string;
-    name: string;
-    imageUrl: string;
-    handle?: string;
-    description?: string;
-  };
-}
+export type PerpsPosition =
+  RouterOutputs["competitions"]["getPerpsPositions"]["positions"][number];
 
-export interface CompetitionPerpsPositionsResponse {
-  success: boolean;
-  positions: PerpsPosition[];
-  pagination: PaginationResponse;
-}
+export type CompetitionPerpsPositionsResponse =
+  RouterOutputs["competitions"]["getPerpsPositions"];
 
 export interface CompetitionPerpsSummaryResponse {
   success: boolean;

@@ -1,13 +1,9 @@
-import { useQuery } from "@tanstack/react-query";
+import { UseQueryResult, useQuery } from "@tanstack/react-query";
 
 import { useSession } from "@/hooks/useSession";
-import { ApiClient } from "@/lib/api-client";
-import {
-  CompetitionPerpsPositionsResponse,
-  GetCompetitionPerpsPositionsParams,
-} from "@/types";
-
-const apiClient = new ApiClient();
+import { tanstackClient } from "@/rpc/clients/tanstack-query";
+import type { RouterOutputs } from "@/rpc/router";
+import { GetCompetitionPerpsPositionsParams } from "@/types";
 
 /**
  * Hook to fetch perps positions for a competition
@@ -16,19 +12,27 @@ const apiClient = new ApiClient();
  * @returns Query result with perps positions data
  */
 export const useCompetitionPerpsPositions = (
-  competitionId?: string,
+  competitionId: string,
   params: GetCompetitionPerpsPositionsParams = {},
   enabled: boolean = true,
-) => {
+): UseQueryResult<
+  RouterOutputs["competitions"]["getPerpsPositions"],
+  Error
+> => {
   const { isAuthenticated } = useSession();
 
-  return useQuery({
-    queryKey: ["competition-perps-positions", competitionId, params],
-    queryFn: async (): Promise<CompetitionPerpsPositionsResponse> => {
-      if (!competitionId) throw new Error("Competition ID is required");
-      return apiClient.getCompetitionPerpsPositions(competitionId, params);
-    },
-    enabled: !!competitionId && isAuthenticated && enabled,
-    placeholderData: (prev) => prev,
-  });
+  return useQuery(
+    tanstackClient.competitions.getPerpsPositions.queryOptions({
+      input: {
+        competitionId,
+        paging: {
+          limit: params.limit,
+          offset: params.offset,
+        },
+        status: params.status,
+      },
+      enabled: isAuthenticated && enabled,
+      placeholderData: (prev) => prev,
+    }),
+  );
 };

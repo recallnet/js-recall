@@ -10,7 +10,10 @@ import {
   SelectCompetitionReward,
   UpdateCompetition,
 } from "@recallnet/db/schema/core/types";
-import { SelectTrade } from "@recallnet/db/schema/trading/types";
+import {
+  PerpetualPositionWithAgent,
+  SelectTrade,
+} from "@recallnet/db/schema/trading/types";
 import type {
   Database,
   Transaction as DatabaseTransaction,
@@ -3338,6 +3341,55 @@ export class CompetitionService {
     } catch (error) {
       this.logger.error(
         `[CompetitionService] Error getting competition trades with auth:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Get all perps positions for a competition with pagination.
+   * Similar to getCompetitionTrades but for perps positions.
+   * @param params Parameters including competitionId, pagination, and optional status filter
+   * @returns Positions array and total count
+   */
+  async getCompetitionPerpsPositions(params: {
+    competitionId: string;
+    pagingParams: PagingParams;
+    statusFilter?: string;
+  }): Promise<{
+    positions: PerpetualPositionWithAgent[];
+    total: number;
+  }> {
+    try {
+      // Validate competition exists
+      const competition = await this.getCompetition(params.competitionId);
+      if (!competition) {
+        throw new ApiError(404, "Competition not found");
+      }
+
+      // Validate competition type
+      if (competition.type !== "perpetual_futures") {
+        throw new ApiError(
+          400,
+          "This endpoint is only available for perpetual futures competitions. " +
+            "Use GET /api/competitions/{id}/trades for paper trading competitions.",
+        );
+      }
+
+      // Get positions from repository
+      const { positions, total } =
+        await this.perpsRepo.getCompetitionPerpsPositions(
+          params.competitionId,
+          params.pagingParams.limit,
+          params.pagingParams.offset,
+          params.statusFilter,
+        );
+
+      return { positions, total };
+    } catch (error) {
+      this.logger.error(
+        `[CompetitionService] Error getting competition perps positions:`,
         error,
       );
       throw error;
