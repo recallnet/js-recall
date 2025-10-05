@@ -19,7 +19,6 @@ export const getAgents = base
     }),
   )
   .handler(async ({ context, input, errors }) => {
-    console.log("IN GET AGENTS HANDLER");
     try {
       const res = await context.competitionService.getCompetitionAgents({
         competitionId: input.competitionId,

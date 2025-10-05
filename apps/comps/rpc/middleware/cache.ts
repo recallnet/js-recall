@@ -46,16 +46,25 @@ export function cacheMiddleware<
         JSON.stringify(serialized),
       ];
 
-      context.logger.debug(
-        { cacheKey },
-        "Cache middleware: cache key generated",
+      const cachedHandler = unstable_cache(
+        async () => {
+          context.logger.warn(
+            { cacheKey },
+            "Cache middleware miss, invoking next()",
+          );
+          return await next();
+        },
+        cacheKey,
+        {
+          revalidate: options?.revalidate,
+          tags: options?.tags,
+        },
       );
 
-      const cachedHandler = unstable_cache(async () => await next(), cacheKey, {
-        revalidate: options?.revalidate,
-        tags: options?.tags,
-      });
-
+      context.logger.warn(
+        { cacheKey },
+        "Cache middleware checking cache for key",
+      );
       return await cachedHandler();
     });
 }
