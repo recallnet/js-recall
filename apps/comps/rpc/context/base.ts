@@ -14,6 +14,7 @@
 import { os } from "@orpc/server";
 import { PrivyClient } from "@privy-io/server-auth";
 import { cookies } from "next/headers";
+import { Logger } from "pino";
 
 import {
   AgentService,
@@ -56,6 +57,7 @@ export const base = os
     agentService: AgentService;
     emailService: EmailService;
     leaderboardService: LeaderboardService;
+    logger: Logger;
   }>()
   .errors({
     NOT_FOUND: {

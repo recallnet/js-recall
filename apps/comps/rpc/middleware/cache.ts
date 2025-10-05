@@ -8,37 +8,10 @@ import {
   os,
 } from "@orpc/server";
 import { unstable_cache } from "next/cache";
-
-import { base } from "@/rpc/context/base";
-
-const xcacheMiddleware = (options: {
-  key: string[];
-  revalidate?: number;
-  tags?: string[];
-  includeContext?: (context: unknown) => Record<string, any>;
-}) =>
-  base.middleware(async ({ context, next }, input) => {
-    const contextValues = options.includeContext?.(context) || {};
-    const cacheKey = [
-      ...options.key,
-      JSON.stringify(input),
-      JSON.stringify(contextValues),
-    ];
-
-    const cachedHandler = unstable_cache(
-      async () => await next({ context }),
-      cacheKey,
-      {
-        revalidate: options.revalidate,
-        tags: options.tags,
-      },
-    );
-
-    return await cachedHandler();
-  });
+import type { Logger } from "pino";
 
 export function cacheMiddleware<
-  TInContext extends Context,
+  TInContext extends Context & { logger: Logger },
   TInput,
   TOutput,
   TErrorMap extends ErrorMap,
@@ -56,30 +29,35 @@ export function cacheMiddleware<
   ORPCErrorConstructorMap<TErrorMap>,
   TMeta
 > {
-  return async ({ context, next, path }, input) => {
-    const contextValues = options?.includeContext?.(context);
+  return os
+    .$context<{ logger: Logger }>()
+    .middleware(async ({ context, next, path }, input) => {
+      const contextValues = options?.includeContext?.(context as TInContext);
 
-    const serializer = new StandardRPCJsonSerializer();
-    const [serialized] = serializer.serialize({
-      input,
-      contextValues,
+      const serializer = new StandardRPCJsonSerializer();
+      const [serialized] = serializer.serialize({
+        input,
+        contextValues,
+      });
+
+      const cacheKey = [
+        ...(options?.key || []),
+        ...path,
+        JSON.stringify(serialized),
+      ];
+
+      context.logger.debug(
+        { cacheKey },
+        "Cache middleware: cache key generated",
+      );
+
+      const cachedHandler = unstable_cache(async () => await next(), cacheKey, {
+        revalidate: options?.revalidate,
+        tags: options?.tags,
+      });
+
+      return await cachedHandler();
     });
-
-    const cacheKey = [
-      ...(options?.key || []),
-      ...path,
-      JSON.stringify(serialized),
-    ];
-
-    console.log("CACHE KEY:", cacheKey);
-
-    const cachedHandler = unstable_cache(async () => await next(), cacheKey, {
-      revalidate: options?.revalidate,
-      tags: options?.tags,
-    });
-
-    return await cachedHandler();
-  };
 }
 
 const authMiddleware = os

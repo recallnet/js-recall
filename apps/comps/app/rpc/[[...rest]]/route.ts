@@ -1,6 +1,7 @@
 import { RPCHandler } from "@orpc/server/fetch";
 import { cookies } from "next/headers";
 
+import { createLogger } from "@/lib/logger";
 import { privyClient } from "@/lib/privy-client";
 import {
   agentService,
@@ -28,6 +29,7 @@ async function handleRequest(request: Request) {
       agentService,
       emailService,
       leaderboardService,
+      logger: createLogger("RpcHandler"),
     },
   });
 

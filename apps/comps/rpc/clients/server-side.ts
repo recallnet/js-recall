@@ -5,6 +5,7 @@ import {
 import { type RouterClient, createRouterClient } from "@orpc/server";
 import { cookies } from "next/headers";
 
+import { createLogger } from "@/lib/logger";
 import { privyClient } from "@/lib/privy-client";
 import {
   agentService,
@@ -29,6 +30,7 @@ export async function createClient(): Promise<RouterClient<typeof router>> {
       agentService,
       emailService,
       leaderboardService,
+      logger: createLogger("ServerSideRpcClient"),
     },
   });
 }
