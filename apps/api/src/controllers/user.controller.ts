@@ -1,6 +1,9 @@
 import { NextFunction, Request, Response } from "express";
 
-import { verifyPrivyUserHasLinkedWallet } from "@recallnet/services/lib";
+import {
+  buildPaginationResponse,
+  verifyPrivyUserHasLinkedWallet,
+} from "@recallnet/services/lib";
 import {
   AgentCompetitionsParamsSchema,
   ApiError,
@@ -440,12 +443,11 @@ export function makeUserController(
           success: true,
           competitions: results.competitions,
           total: results.total,
-          pagination: {
-            limit: params.limit,
-            offset: params.offset,
-            total: results.total,
-            hasMore: params.limit + params.offset < results.total,
-          },
+          pagination: buildPaginationResponse(
+            results.total,
+            params.limit,
+            params.offset,
+          ),
         });
       } catch (error) {
         next(error);

@@ -42,7 +42,9 @@ export const useJoinCompetition = () => {
           input: { id: competitionId },
         }),
       });
-      queryClient.invalidateQueries({ queryKey: ["user-competitions"] });
+      queryClient.invalidateQueries({
+        queryKey: tanstackClient.user.getCompetitions.key(),
+      });
     },
   });
 };

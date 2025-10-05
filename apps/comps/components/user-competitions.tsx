@@ -1,3 +1,4 @@
+import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 
 import {
@@ -6,8 +7,8 @@ import {
   CollapsibleTrigger,
 } from "@recallnet/ui2/components/collapsible";
 
-import { useUserCompetitions } from "@/hooks";
-import { PaginationResponse, UserCompetition } from "@/types";
+import { useSession } from "@/hooks/useSession";
+import { tanstackClient } from "@/rpc/clients/tanstack-query";
 
 import { CompetitionsTable } from "./competitions-table";
 
@@ -15,20 +16,25 @@ export default function UserCompetitionsSection() {
   const [sort, setSort] = useState("-startDate");
   const [offset, setOffset] = useState(0);
   const limit = 10;
-  const { data, isLoading, isFetching } = useUserCompetitions({
-    offset,
-    limit,
-    sort,
-  });
-  const [allCompetitions, setAllCompetitions] = useState<UserCompetition[]>([]);
+  const { isAuthenticated } = useSession();
 
-  const pagination: PaginationResponse = data?.pagination || {
-    total: 0,
-    limit,
-    offset,
-    hasMore: false,
-  };
-  const hasMore = !!pagination?.hasMore;
+  const { data, isLoading, isFetching } = useQuery(
+    tanstackClient.user.getCompetitions.queryOptions({
+      input: {
+        limit,
+        offset,
+        sort,
+      },
+      enabled: isAuthenticated,
+      placeholderData: (prev) => prev,
+    }),
+  );
+
+  // Infer competition type from RPC response
+  type Competition = NonNullable<typeof data>["competitions"][number];
+  const [allCompetitions, setAllCompetitions] = useState<Competition[]>([]);
+
+  const hasMore = data?.pagination.hasMore ?? false;
 
   useEffect(() => {
     if (!data?.competitions || isFetching) return;
@@ -70,7 +76,7 @@ export default function UserCompetitionsSection() {
             }}
             onLoadMore={() => setOffset((prev) => prev + limit)}
             hasMore={hasMore}
-            pagination={pagination}
+            pagination={data!.pagination}
           />
         )}
       </CollapsibleContent>
