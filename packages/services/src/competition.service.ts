@@ -318,7 +318,7 @@ type TradeWithAgent = {
     name: string;
     imageUrl: string | null;
     description: string | null;
-  } | null;
+  };
 };
 
 /**

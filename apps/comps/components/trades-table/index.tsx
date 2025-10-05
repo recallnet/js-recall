@@ -56,7 +56,7 @@ export const TradesTable: React.FC<TradesTableProps> = ({
                 {row.original.agent.name}
               </span>
               <span className="text-secondary-foreground block w-full overflow-hidden text-ellipsis whitespace-nowrap text-xs">
-                {row.original.agent.description}
+                {row.original.agent.description || ""}
               </span>
             </div>
           </Link>
@@ -75,7 +75,8 @@ export const TradesTable: React.FC<TradesTableProps> = ({
               {"$" + row.original.toTokenSymbol}
             </div>
             <div className="text-secondary-foreground text-xs uppercase">
-              {row.original.fromSpecificChain} → {row.original.toSpecificChain}
+              {row.original.fromSpecificChain || "UNKNOWN"} →{" "}
+              {row.original.toSpecificChain || "UNKNOWN"}
             </div>
           </div>
         ),
@@ -104,16 +105,26 @@ export const TradesTable: React.FC<TradesTableProps> = ({
         id: "time",
         accessorKey: "timestamp",
         header: () => "Time",
-        cell: ({ row }) => (
-          <div className="flex flex-col items-end">
-            <span className="text-primary-foreground text-sm">
-              {format(new Date(row.original.timestamp), "MMM d, yyyy")}
-            </span>
-            <span className="text-secondary-foreground text-xs">
-              {format(new Date(row.original.timestamp), "hh:mm:ss a")}
-            </span>
-          </div>
-        ),
+        cell: ({ row }) => {
+          const timestamp = row.original.timestamp;
+          if (!timestamp) {
+            return (
+              <div className="text-secondary-foreground flex flex-col items-end">
+                Unknown
+              </div>
+            );
+          }
+          return (
+            <div className="flex flex-col items-end">
+              <span className="text-primary-foreground text-sm">
+                {format(timestamp, "MMM d, yyyy")}
+              </span>
+              <span className="text-secondary-foreground text-xs">
+                {format(timestamp, "hh:mm:ss a")}
+              </span>
+            </div>
+          );
+        },
         size: 140,
         meta: {
           className: "flex justify-end",

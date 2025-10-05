@@ -5,6 +5,7 @@ import {
   getPerpsPositions,
 } from "./get-perps-positions";
 import { GetTimelineType, getTimeline } from "./get-timeline";
+import { GetTradesType, getTrades } from "./get-trades";
 import { ListEnrichedType, listEnriched } from "./list-enriched";
 
 export const router: {
@@ -12,11 +13,13 @@ export const router: {
   getById: GetByIdType;
   getAgents: GetAgentsType;
   getTimeline: GetTimelineType;
+  getTrades: GetTradesType;
   getPerpsPositions: GetPerpsPositionsType;
 } = {
   listEnriched,
   getById,
   getAgents,
   getTimeline,
+  getTrades,
   getPerpsPositions,
 };
