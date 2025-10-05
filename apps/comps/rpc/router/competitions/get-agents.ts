@@ -4,8 +4,14 @@ import { z } from "zod/v4";
 import { ApiError, PagingParamsSchema } from "@recallnet/services/types";
 
 import { base } from "@/rpc/context/base";
+import { cacheMiddleware } from "@/rpc/middleware/cache";
 
 export const getAgents = base
+  .use(
+    cacheMiddleware({
+      revalidate: 20,
+    }),
+  )
   .input(
     z.object({
       competitionId: z.uuid(),
@@ -13,6 +19,7 @@ export const getAgents = base
     }),
   )
   .handler(async ({ context, input, errors }) => {
+    console.log("IN GET AGENTS HANDLER");
     try {
       const res = await context.competitionService.getCompetitionAgents({
         competitionId: input.competitionId,
