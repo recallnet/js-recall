@@ -71,11 +71,7 @@ export default function CompetitionsPage() {
   const { data: userCompetitions, isLoading: isLoadingUserCompetitions } =
     useQuery(
       tanstackClient.user.getCompetitions.queryOptions({
-        input: {
-          limit: 10,
-          offset: 0,
-          sort: "",
-        },
+        input: {},
         enabled: isAuthenticated,
         placeholderData: (prev) => prev,
       }),
