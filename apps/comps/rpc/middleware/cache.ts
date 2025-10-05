@@ -48,7 +48,7 @@ export function cacheMiddleware<
 
       const cachedHandler = unstable_cache(
         async () => {
-          context.logger.warn(
+          context.logger.debug(
             { cacheKey },
             "Cache middleware miss, invoking next()",
           );
@@ -61,7 +61,7 @@ export function cacheMiddleware<
         },
       );
 
-      context.logger.warn(
+      context.logger.debug(
         { cacheKey },
         "Cache middleware checking cache for key",
       );
