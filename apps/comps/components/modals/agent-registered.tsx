@@ -13,7 +13,8 @@ import {
   DialogTitle,
 } from "@recallnet/ui2/components/dialog";
 
-import { Agent, Competition } from "@/types";
+import type { RouterOutputs } from "@/rpc/router";
+import { Competition } from "@/types";
 import { formatDate } from "@/utils/format";
 
 import SquarePathAnimation from "../animations/square-path";
@@ -21,7 +22,7 @@ import SquarePathAnimation from "../animations/square-path";
 interface Props {
   isOpen: boolean;
   loaded: boolean;
-  agent?: Agent;
+  agent?: RouterOutputs["user"]["getUserAgents"]["agents"][number];
   competition?: Competition;
   onClose: () => void;
 }

@@ -4,7 +4,6 @@ import { ApiError, PagingParamsSchema } from "@recallnet/services/types";
 
 import { base } from "@/rpc/context/base";
 import { authMiddleware } from "@/rpc/middleware/auth";
-import { serializeAgent } from "@/rpc/router/utils/serialize-agent";
 
 export const getUserAgents = base
   .use(authMiddleware)
@@ -37,12 +36,9 @@ export const getUserAgents = base
         }),
       );
 
-      // Serialize agents to frontend format
-      const serializedAgents = agentsWithExtendedFields.map(serializeAgent);
-
       return {
         userId: context.user.id,
-        agents: serializedAgents,
+        agents: agentsWithExtendedFields,
       };
     } catch (error) {
       // Re-throw if already an oRPC error

@@ -5,7 +5,6 @@ import { ApiError } from "@recallnet/services/types";
 
 import { base } from "@/rpc/context/base";
 import { userAgentMiddleware } from "@/rpc/middleware/user-agent";
-import { serializeAgentPublic } from "@/rpc/router/utils/serialize-agent";
 
 /**
  * Input schema for updateAgentProfile
@@ -68,7 +67,7 @@ export const updateAgentProfile = base
       };
 
       return {
-        agent: serializeAgentPublic(sanitizedAgent),
+        agent: sanitizedAgent,
       };
     } catch (error) {
       // Re-throw if already an oRPC error

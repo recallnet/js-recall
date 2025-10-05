@@ -19,12 +19,14 @@ import { cn } from "@recallnet/ui2/lib/utils";
 import Tooltip from "@/../../packages/ui2/src/components/tooltip";
 import { AgentCard } from "@/components/user-agents/agent-card";
 import { tanstackClient } from "@/rpc/clients/tanstack-query";
-import { type Agent, Competition } from "@/types";
+import { Competition } from "@/types";
+import type { RouterOutputs } from "@/rpc/router";
+
 
 interface ChooseAgentModalProps {
   isOpen: boolean;
   onClose: (open: boolean) => void;
-  agents: Agent[];
+  agents: RouterOutputs["user"]["getUserAgents"]["agents"];
   onContinue: (agentId: string) => void;
   competition?: Competition;
 }

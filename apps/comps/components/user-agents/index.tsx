@@ -15,9 +15,13 @@ import { cn } from "@recallnet/ui2/lib/utils";
 import { AgentCard } from "@/components/user-agents/agent-card";
 import AgentsSummary from "@/components/user-agents/agents-summary";
 import { useAnalytics } from "@/hooks/usePostHog";
-import { Agent } from "@/types";
+import type { RouterOutputs } from "@/rpc/router";
 
-export default function UserAgentsSection({ agents }: { agents: Agent[] }) {
+export default function UserAgentsSection({
+  agents,
+}: {
+  agents: RouterOutputs["user"]["getUserAgents"]["agents"];
+}) {
   const { trackEvent } = useAnalytics();
   const nAgents = agents.length;
 
