@@ -5,7 +5,6 @@ import { ApiError } from "@recallnet/services/types";
 
 import { base } from "@/rpc/context/base";
 import { userAgentMiddleware } from "@/rpc/middleware/user-agent";
-import { serializeAgent } from "@/rpc/router/utils/serialize-agent";
 
 export const getUserAgent = base
   .input(z.object({ agentId: z.string().uuid() }))
@@ -25,7 +24,7 @@ export const getUserAgent = base
         deactivationDate: agent.deactivationDate,
       };
 
-      return serializeAgent(computedAgent);
+      return computedAgent;
     } catch (error) {
       // Re-throw if already an oRPC error
       if (error instanceof ORPCError) {

@@ -11,10 +11,10 @@ import { CopyButton } from "@/components/copy-button";
 import { socialLinks } from "@/data/social";
 import { useSession } from "@/hooks/useSession";
 import { useUnlockKeys } from "@/hooks/useUnlockKeys";
-import { Agent } from "@/types";
+import type { RouterOutputs } from "@/rpc/router";
 
 interface AgentCreatedProps {
-  agent: Agent;
+  agent: RouterOutputs["user"]["getUserAgents"]["agents"][number];
 }
 
 interface ApiKeySectionProps {

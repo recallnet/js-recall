@@ -13,12 +13,13 @@ import {
 
 import Rewards from "@/components/rewards";
 import { AgentCard } from "@/components/user-agents/agent-card";
-import { type Agent, Competition } from "@/types";
+import type { RouterOutputs } from "@/rpc/router";
+import { Competition } from "@/types";
 import { formatDate } from "@/utils/format";
 
 interface ChooseAgentModalProps {
   isOpen: boolean;
-  agent?: Agent;
+  agent?: RouterOutputs["user"]["getUserAgents"]["agents"][number];
   onClose: () => void;
   onBack: () => void;
   onContinue: () => void;

@@ -4,7 +4,6 @@ import { ApiError, CreateAgentBodySchema } from "@recallnet/services/types";
 
 import { base } from "@/rpc/context/base";
 import { authMiddleware } from "@/rpc/middleware/auth";
-import { serializeAgentPublic } from "@/rpc/router/utils/serialize-agent";
 
 export const createAgent = base
   .use(authMiddleware)
@@ -21,7 +20,7 @@ export const createAgent = base
         email: input.email,
       });
 
-      // Return sanitized and serialized agent
+      // Return sanitized agent
       const sanitizedAgent = {
         ...context.agentService.sanitizeAgent(agent),
         email: agent.email,
@@ -30,7 +29,7 @@ export const createAgent = base
       };
 
       return {
-        agent: serializeAgentPublic(sanitizedAgent),
+        agent: sanitizedAgent,
       };
     } catch (error) {
       // Re-throw if already an oRPC error

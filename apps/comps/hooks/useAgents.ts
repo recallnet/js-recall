@@ -8,7 +8,7 @@ import {
 import { useSession } from "@/hooks/useSession";
 import { tanstackClient } from "@/rpc/clients/tanstack-query";
 import type { RouterOutputs } from "@/rpc/router";
-import { Agent, GetAgentsParams } from "@/types";
+import { GetAgentsParams } from "@/types";
 
 /**
  * Hook to fetch agents with pagination and filtering (public endpoint)
@@ -33,7 +33,7 @@ export const useAgents = (
  */
 export const useUserAgents = (
   params: GetAgentsParams = {},
-): UseQueryResult<{ userId: string; agents: Agent[] }, Error> => {
+): UseQueryResult<RouterOutputs["user"]["getUserAgents"], Error> => {
   const { isAuthenticated } = useSession();
 
   return useQuery(
