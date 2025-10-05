@@ -19,7 +19,7 @@ export const AgentImage = ({
   agentImage,
   onSave,
 }: {
-  agentImage?: string;
+  agentImage?: string | null;
   onSave: (imageUrl: string) => void;
 }) => {
   const [dialogOpen, setDialogOpen] = React.useState(false);

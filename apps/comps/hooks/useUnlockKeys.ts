@@ -16,7 +16,7 @@ export const useUnlockKeys = (
   // Query for production agent API key
   const productionKeyQuery = useQuery(
     tanstackClient.user.getAgentApiKey.queryOptions({
-      input: { agentId: agentId! },
+      input: { agentId: agentId || "" },
       enabled: !!agentId,
     }),
   );
