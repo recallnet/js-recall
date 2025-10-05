@@ -59,15 +59,3 @@ export function cacheMiddleware<
       return await cachedHandler();
     });
 }
-
-const authMiddleware = os
-  .$context<{ something?: string }>() // <-- define dependent-context
-  .middleware(async ({ context, next }) => {
-    // Execute logic before the handler
-
-    const result = await next();
-
-    // Execute logic after the handler
-
-    return result;
-  });
