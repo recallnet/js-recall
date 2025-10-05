@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 
-import { ApiClient } from "@/lib/api-client";
+import { client } from "@/rpc/clients/client-side";
 import { LeaderboardAgent } from "@/types/agent";
 import {
   UnifiedLeaderboardData,
@@ -9,8 +9,6 @@ import {
 } from "@/types/leaderboard";
 
 import { useBenchmarkLeaderboard } from "./useBenchmarkLeaderboard";
-
-const apiClient = new ApiClient();
 
 /**
  * Calculate summary scores for a list of agents.Note: this only considers the agents within the
@@ -62,7 +60,7 @@ export const useUnifiedLeaderboard = () => {
           // If we ever paginate these results, we'll need the API itself to return the avg &
           // max score. These are probably useful, too.
           // See: https://linear.app/recall-labs/issue/APP-553/add-new-stats-to-global-leaderboard-endpoint-average-and-max-score
-          const agentsResponse = await apiClient.getGlobalLeaderboard({
+          const agentsResponse = await client.leaderboard.getGlobal({
             type: "trading",
             limit: 100,
             offset: 0,
@@ -93,7 +91,7 @@ export const useUnifiedLeaderboard = () => {
           // If we ever paginate these results, we'll need the API itself to return the avg &
           // max score. These are probably useful, too.
           // See: https://linear.app/recall-labs/issue/APP-553/add-new-stats-to-global-leaderboard-endpoint-average-and-max-score
-          const agentsResponse = await apiClient.getGlobalLeaderboard({
+          const agentsResponse = await client.leaderboard.getGlobal({
             type: "perpetual_futures",
             limit: 100,
             offset: 0,

@@ -1,6 +1,5 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import {
   ArrowLeft,
   Calendar,
@@ -24,7 +23,7 @@ import { Tooltip } from "@recallnet/ui2/components/tooltip";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { useUnifiedLeaderboard } from "@/hooks/useUnifiedLeaderboard";
-import { ApiClient } from "@/lib/api-client";
+import { client } from "@/rpc/clients/client-side";
 import { LeaderboardAgent } from "@/types/agent";
 import { checkIsAgentSkill } from "@/utils/competition-utils";
 
@@ -35,8 +34,6 @@ interface SkillDetailPageProps {
   skillId: string;
 }
 
-const apiClient = new ApiClient();
-
 export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
   skillId,
 }) => {
@@ -45,30 +42,28 @@ export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
     [],
   );
   const [currentOffset, setCurrentOffset] = useState(100); // Start at 100 since initial load gets first 100
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   const { data, isLoading, error } = useUnifiedLeaderboard();
 
-  // Query for loading more agents (only for agent skills)
-  const { refetch: loadMoreAgents, isLoading: isLoadingMore } = useQuery({
-    queryKey: ["load-more-agents", currentOffset],
-    queryFn: async () => {
-      const response = await apiClient.getGlobalLeaderboard({
+  const handleLoadMore = useCallback(async () => {
+    setIsLoadingMore(true);
+    try {
+      const result = await client.leaderboard.getGlobal({
         type: "trading",
         limit: 100,
         offset: currentOffset,
       });
-      return response;
-    },
-    enabled: false, // Manual trigger
-  });
-
-  const handleLoadMore = useCallback(async () => {
-    const result = await loadMoreAgents();
-    if (result.data?.agents) {
-      setAdditionalAgents((prev) => [...prev, ...result.data.agents]);
-      setCurrentOffset((prev) => prev + 100);
+      if (result?.agents) {
+        setAdditionalAgents((prev) => [...prev, ...result.agents]);
+        setCurrentOffset((prev) => prev + 100);
+      }
+    } catch (error) {
+      console.error("Failed to load more agents:", error);
+    } finally {
+      setIsLoadingMore(false);
     }
-  }, [loadMoreAgents]);
+  }, [currentOffset]);
 
   if (isLoading) {
     return (

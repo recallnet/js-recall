@@ -4,7 +4,7 @@ import { cn } from "@recallnet/ui2/lib/utils";
 
 import { Identicon } from "@/components/identicon";
 import type { RouterOutputs } from "@/rpc/router";
-import { Agent } from "@/types/agent";
+import { Agent, LeaderboardAgent } from "@/types/agent";
 import { UserAgentCompetition } from "@/types/competition";
 
 interface AgentAvatarProps {
@@ -18,7 +18,8 @@ interface AgentAvatarProps {
     | Agent
     | UserAgentCompetition
     | RouterOutputs["competitions"]["getAgents"]["agents"][number]
-    | RouterOutputs["agent"]["getAgent"]["agent"];
+    | RouterOutputs["agent"]["getAgent"]["agent"]
+    | LeaderboardAgent;
   imageUrl?: string;
   showRank?: boolean;
   showBorder?: boolean;

@@ -2,6 +2,7 @@ import { Logger } from "pino";
 
 import { LeaderboardRepository } from "@recallnet/db/repositories/leaderboard";
 
+import { buildPaginationResponse } from "./lib/pagination-utils.js";
 import {
   AgentMetadata,
   CompetitionType,
@@ -48,12 +49,11 @@ export class LeaderboardService {
           totalVotes: stats.totalVotes,
         },
         agents,
-        pagination: {
-          total: totalCount,
-          limit: params.limit,
-          offset: params.offset,
-          hasMore: params.offset + params.limit < totalCount,
-        },
+        pagination: buildPaginationResponse(
+          totalCount,
+          params.limit,
+          params.offset,
+        ),
       };
     } catch (error) {
       this.logger.error(
