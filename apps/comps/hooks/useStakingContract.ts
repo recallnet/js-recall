@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useEffect, useMemo } from "react";
 import { type Address, getAddress } from "viem";
 import {
   useAccount,
@@ -12,6 +13,8 @@ import {
 
 import { StakingAbi } from "@/abi/Staking";
 import { RECALL_STAKING_CONTRACT_ADDRESS } from "@/constants";
+
+import { useRecall } from "./useRecall";
 
 /**
  * Hook to get the staking contract address for the current chain
@@ -35,39 +38,6 @@ export const useStakingContractAddress = (): Address => {
 };
 
 /**
- * Stake information structure returned by the contract
- */
-type StakeInfo = {
-  amount: bigint;
-  startTime: bigint;
-  lockupEndTime: bigint;
-  withdrawAllowedTime: bigint;
-};
-
-/**
- * Stake information with token ID returned by getUserStakes
- */
-type StakeInfoWithId = {
-  tokenId: bigint;
-  amount: bigint;
-  startTime: bigint;
-  lockupEndTime: bigint;
-  withdrawAllowedTime: bigint;
-};
-
-/**
- * Return type for useReadContract calls
- */
-type ReadContractResult<T> = {
-  data: T | undefined;
-  error: Error | null;
-  isError: boolean;
-  isLoading: boolean;
-  isSuccess: boolean;
-  refetch: () => void;
-};
-
-/**
  * Hook return type for useStakingContract (write operations only)
  */
 type UseStakingContractReturn = {
@@ -88,6 +58,10 @@ type UseStakingContractReturn = {
 
 export const useStakingContract = (): UseStakingContractReturn => {
   const contractAddress = useStakingContractAddress();
+  const { queryKey: userStakesQueryKey } = useUserStakes();
+  const recall = useRecall();
+  const queryClient = useQueryClient();
+
   const {
     writeContract,
     isPending,
@@ -100,6 +74,13 @@ export const useStakingContract = (): UseStakingContractReturn => {
     useWaitForTransactionReceipt({
       hash: transactionHash,
     });
+
+  useEffect(() => {
+    if (isConfirmed) {
+      queryClient.invalidateQueries({ queryKey: userStakesQueryKey });
+      queryClient.invalidateQueries({ queryKey: recall.queryKey });
+    }
+  }, [isConfirmed, queryClient, userStakesQueryKey]);
 
   const stake = async (amount: bigint, duration: bigint) => {
     return writeContract({
@@ -176,7 +157,7 @@ export const useStakingContract = (): UseStakingContractReturn => {
  * Hook to get user stakes data
  * @returns Read contract result with user stakes
  */
-export const useUserStakes = (): ReadContractResult<StakeInfoWithId[]> => {
+export const useUserStakes = () => {
   const { address, isConnected } = useAccount();
   const contractAddress = useStakingContractAddress();
 
@@ -194,9 +175,7 @@ export const useUserStakes = (): ReadContractResult<StakeInfoWithId[]> => {
  * @param tokenId - The token ID to get stake info for
  * @returns Read contract result with stake info
  */
-export const useStakeInfo = (
-  tokenId: bigint,
-): ReadContractResult<StakeInfo> => {
+export const useStakeInfo = (tokenId: bigint) => {
   const contractAddress = useStakingContractAddress();
 
   return useReadContract({

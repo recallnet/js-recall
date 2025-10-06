@@ -4,3 +4,4 @@ export const DISABLE_LEADERBOARD =
   !!process.env.NEXT_PUBLIC_DISABLE_LEADERBOARD_TEMP;
 export const NEXT_PUBLIC_FRONTEND_URL =
   process.env.NEXT_PUBLIC_FRONTEND_URL || "";
+export const BASE_SEPOLIA_RPC = process.env.NEXT_PUBLIC_BASE_SEPOLIA_RPC || "";

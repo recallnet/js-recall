@@ -39,7 +39,13 @@ const StakeEntry: React.FunctionComponent<StakeEntryProps> = ({
           </div>
           <div className="text-secondary-foreground">→</div>
           <div className="flex items-center gap-1 text-yellow-400">
-            <Image src="/boost.svg" alt="Boost" width={16} height={16} />
+            <Image
+              src="/boost.svg"
+              alt="Boost"
+              width={16}
+              height={16}
+              style={{ width: "auto", height: "auto" }}
+            />
             <span>{boostAmount}</span>
             <span className="text-secondary-foreground">per competition.</span>
           </div>

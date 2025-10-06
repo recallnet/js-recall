@@ -1,5 +1,6 @@
 "use client";
 
+import * as dnum from "dnum";
 import {
   ArrowLeft,
   ArrowRight,
@@ -14,8 +15,8 @@ import {
   ZapOff,
 } from "lucide-react";
 import React, { useEffect, useState } from "react";
+import { useAccount, useChainId } from "wagmi";
 
-import { valueToAttoBigInt } from "@recallnet/conversions/atto-conversions";
 import { Button } from "@recallnet/ui2/components/button";
 import {
   Collapsible,
@@ -37,7 +38,15 @@ import {
 
 import { Recall } from "@/components/Recall";
 import { useRecall } from "@/hooks/useRecall";
-import { useStakingContract } from "@/hooks/useStakingContract";
+import {
+  useStakingContract,
+  useStakingContractAddress,
+} from "@/hooks/useStakingContract";
+import { useTokenApproval } from "@/hooks/useTokenApproval";
+import {
+  handleApprovalError,
+  handleStakeTransactionError,
+} from "@/lib/error-handling";
 
 import { BoostIcon } from "../BoostIcon";
 
@@ -86,14 +95,19 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
   onClose,
 }) => {
   const [step, setStep] = useState<StakeStep>("stake");
-  const [stakeAmount, setStakeAmount] = useState<number>(0);
+  // Amounts are tracked as bigint base units (decimals per token)
+  const [stakeAmountRaw, setStakeAmountRaw] = useState<bigint>(0n);
   const [selectedDuration, setSelectedDuration] =
     useState<StakeDurationKey>("90");
   const [error, setError] = useState<string | null>(null);
   const [termsAccepted, setTermsAccepted] = useState<boolean>(false);
   const [isCollapsibleOpen, setIsCollapsibleOpen] = useState<boolean>(true);
 
+  const { address } = useAccount();
+  const chainId = useChainId();
   const recall = useRecall();
+  const stakingContractAddress = useStakingContractAddress();
+  const tokenApproval = useTokenApproval(recall.token, stakingContractAddress);
   const {
     stake,
     isPending: isSigning,
@@ -103,29 +117,76 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
     transactionHash,
   } = useStakingContract();
 
-  // Calculate available tokens
-  const availableTokens = recall.isLoading
-    ? 0
-    : Number(recall.value ?? 0n) / 1e18;
-  const stakeAmountBigInt = valueToAttoBigInt(stakeAmount);
-  const boostAmount = stakeAmount;
+  // Decimals with fallback
+  const decimals =
+    recall.isLoading || recall.decimals === undefined ? 18 : recall.decimals;
+
+  // Available tokens as bigint base units
+  const availableRaw =
+    recall.isLoading || recall.value === undefined ? 0n : recall.value;
+
+  // Derived number values for UI controls (slider), safe to use for UX only
+  const availableTokensNumber = dnum.toNumber([availableRaw, decimals]);
+  const stakeAmountTokensNumber = dnum.toNumber([stakeAmountRaw, decimals]);
+
+  // Boost equals staked amount (same units)
+  const boostAmountRaw = stakeAmountRaw;
   const unlockDate = getUnlockDate(selectedDuration);
   const stakeDuration = STAKE_DURATIONS[selectedDuration];
 
-  // Handle transaction success
+  // Format helper: enable compact only for values > 1,000,000 tokens
+  const formatAmount = (rawValue: bigint): string => {
+    const isGreaterThanMillion =
+      dnum.cmp([rawValue, decimals], 1_000_000) === 1;
+    return dnum.format([rawValue, decimals], { compact: isGreaterThanMillion });
+  };
+
+  // Check if approval is currently pending (loading or confirming)
+  const isApprovalPending =
+    !tokenApproval.isLoading &&
+    "isApprovalLoading" in tokenApproval &&
+    "isApprovalConfirming" in tokenApproval &&
+    (tokenApproval.isApprovalLoading || tokenApproval.isApprovalConfirming);
+
+  // Check if approval is needed
+  const needsApproval = tokenApproval.isLoading
+    ? false
+    : isApprovalPending || tokenApproval.needsApproval(stakeAmountRaw);
+
+  // Handle stake transaction success
   useEffect(() => {
-    if (isConfirmed) {
+    if (isConfirmed && step === "confirming") {
       setStep("success");
     }
-  }, [isConfirmed]);
+  }, [isConfirmed, step]);
 
   // Handle write errors
   useEffect(() => {
-    if (writeError) {
-      setError(writeError.message);
+    if (writeError && (step === "signing" || step === "confirming")) {
+      const userFriendlyError = handleStakeTransactionError(writeError, {
+        stakeAmount: stakeAmountTokensNumber,
+        duration: selectedDuration,
+        userAddress: address,
+        chainId,
+        additionalData: {
+          step,
+          stakeAmountBigInt: stakeAmountRaw.toString(),
+          transactionHash,
+        },
+      });
+      setError(userFriendlyError);
       setStep("error");
     }
-  }, [writeError]);
+  }, [
+    writeError,
+    stakeAmountTokensNumber,
+    selectedDuration,
+    address,
+    chainId,
+    step,
+    stakeAmountRaw,
+    transactionHash,
+  ]);
 
   // Handle transaction hash - transition to confirming step
   useEffect(() => {
@@ -138,7 +199,7 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       setStep("stake");
-      setStakeAmount(0);
+      setStakeAmountRaw(0n);
       setSelectedDuration("90");
       setError(null);
       setTermsAccepted(false);
@@ -146,15 +207,27 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
     }
   }, [isOpen]);
 
+  useEffect(() => {
+    if (!tokenApproval.isLoading && tokenApproval.isApprovalConfirmed) {
+      // Force immediate refetch
+      tokenApproval.refetchAllowance();
+    }
+  }, [tokenApproval]);
+
   // Calculate slider percentage
   const sliderPercentage = Math.round(
-    availableTokens > 0 ? (stakeAmount * 100) / availableTokens : 0,
+    availableTokensNumber > 0
+      ? (stakeAmountTokensNumber * 100) / availableTokensNumber
+      : 0,
   );
 
-  const handleAmountChange = (newAmount: number) => {
-    if (newAmount >= 0 && newAmount <= availableTokens) {
-      setStakeAmount(newAmount);
-    }
+  const handleAmountChange = (newAmountTokens: number) => {
+    if (newAmountTokens < 0) return;
+    if (newAmountTokens > availableTokensNumber) return;
+    // Convert number of tokens (UI) to bigint base units using token decimals
+    const nextRaw = dnum.from(newAmountTokens, decimals)[0];
+    // Ensure we do not exceed available
+    setStakeAmountRaw(nextRaw > availableRaw ? availableRaw : nextRaw);
   };
 
   const handleSliderChange = (value: number[]) => {
@@ -167,20 +240,61 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
     setStep("review");
   };
 
-  const handleConfirm = async () => {
+  // Approval and staking handlers used by action components
+  const handleApprove = async (): Promise<void> => {
     if (!termsAccepted) return;
+    try {
+      if (!tokenApproval.isLoading && "approve" in tokenApproval) {
+        await tokenApproval.approve(stakeAmountRaw);
+      }
+    } catch (error) {
+      const userFriendlyError = handleApprovalError(
+        error instanceof Error ? error : new Error("Unknown error occurred"),
+        {
+          stakeAmount: stakeAmountTokensNumber,
+          duration: selectedDuration,
+          userAddress: address,
+          chainId,
+          additionalData: {
+            step: "handleApprove",
+            stakeAmountBigInt: stakeAmountRaw.toString(),
+          },
+        },
+      );
+      setError(userFriendlyError);
+      setStep("error");
+    }
+  };
 
+  const handleStake = async (): Promise<void> => {
+    if (!termsAccepted) return;
     try {
       setStep("signing");
-      await stake(stakeAmountBigInt, stakeDuration);
+      await stake(stakeAmountRaw, stakeDuration);
     } catch (error) {
-      setError(error instanceof Error ? error.message : "Transaction failed");
+      const userFriendlyError = handleStakeTransactionError(
+        error instanceof Error ? error : new Error("Unknown error occurred"),
+        {
+          stakeAmount: stakeAmountTokensNumber,
+          duration: selectedDuration,
+          userAddress: address,
+          chainId,
+          additionalData: {
+            step: "handleStake",
+            stakeAmountBigInt: stakeAmountRaw.toString(),
+          },
+        },
+      );
+      setError(userFriendlyError);
       setStep("error");
     }
   };
 
   const handleBack = () => {
     setStep("stake");
+    setError(null);
+    setTermsAccepted(false);
+    setIsCollapsibleOpen(true);
   };
 
   const handleClose = () => {
@@ -188,7 +302,9 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
   };
 
   const handleShareOnX = () => {
-    const shareText = `I just staked ${stakeAmount.toLocaleString()} $RECALL tokens and got ${boostAmount.toLocaleString()} boost! 🚀`;
+    const formattedStake = formatAmount(stakeAmountRaw);
+    const formattedBoost = formatAmount(boostAmountRaw);
+    const shareText = `I just staked ${formattedStake} $RECALL tokens and got ${formattedBoost} boost! 🚀`;
 
     const hashtags = "Staking,Recall,Boost";
 
@@ -213,12 +329,12 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
   };
 
   const setMaxStakeAmount = () => {
-    setStakeAmount(availableTokens);
+    setStakeAmountRaw(availableRaw);
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-[500px] max-w-[90vw]">
+      <DialogContent className="min-w-[500px]">
         {/* Header */}
         <DialogHeader>
           <div className="flex items-center justify-between">
@@ -242,7 +358,7 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
               <div className="space-y-4">
                 <div className="flex justify-between">
                   <div className="flex items-center justify-center gap-2 text-5xl font-bold">
-                    {stakeAmount.toLocaleString()}
+                    {formatAmount(stakeAmountRaw)}
                     <Recall size="md" />
                   </div>
                   <div
@@ -252,7 +368,7 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
                     <div className="text-secondary-foreground flex items-center justify-center gap-2 text-xl font-bold">
                       <Wallet className="text-secondary-foreground h-5 w-5" />
                       <span className="text-primary-foreground">
-                        {availableTokens.toLocaleString()}
+                        {formatAmount(availableRaw)}
                       </span>
                     </div>
                     <span className="text-secondary-foreground text-sm font-bold">
@@ -264,9 +380,9 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
                 {/* Slider */}
                 <div className="space-y-2">
                   <Slider
-                    value={[stakeAmount]}
+                    value={[stakeAmountTokensNumber]}
                     onValueChange={handleSliderChange}
-                    max={availableTokens}
+                    max={availableTokensNumber}
                     step={1}
                     className="w-full"
                   />
@@ -303,7 +419,7 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
                 {/* Boost Display */}
                 <div className="flex w-fit items-center justify-center gap-2 rounded-lg bg-gray-800 p-3">
                   <span className="text-primary-foreground text-xl font-bold">
-                    +{boostAmount.toLocaleString()}
+                    +{formatAmount(boostAmountRaw)}
                   </span>
                   <BoostIcon className="size-4" fill />
                   <span className="text-secondary-foreground text-sm font-bold">
@@ -316,7 +432,7 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
             <DialogFooter>
               <Button
                 onClick={handleReview}
-                disabled={stakeAmount <= 0}
+                disabled={stakeAmountRaw === 0n}
                 className="w-full"
               >
                 CONTINUE
@@ -338,7 +454,7 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
                     </span>
                     <div className="flex items-center gap-2">
                       <span className="text-4xl font-bold">
-                        {stakeAmount.toLocaleString()}
+                        {formatAmount(stakeAmountRaw)}
                       </span>
                       <Recall size="md" />
                     </div>
@@ -350,7 +466,7 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
                     </span>
                     <div className="flex items-center gap-2">
                       <span className="text-4xl font-bold">
-                        {boostAmount.toLocaleString()}
+                        {formatAmount(boostAmountRaw)}
                       </span>
                       <BoostIcon className="size-5" />
                     </div>
@@ -475,13 +591,25 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
             </div>
 
             <DialogFooter className="gap-2 sm:flex-col">
-              <Button
-                onClick={handleConfirm}
-                disabled={!termsAccepted || isSigning}
-                className="w-full"
-              >
-                {isSigning ? "SIGNING..." : "STAKE & LOCK"}
-              </Button>
+              {needsApproval || isApprovalPending ? (
+                <Button
+                  onClick={handleApprove}
+                  disabled={!termsAccepted || isApprovalPending}
+                  className="w-full"
+                >
+                  {isApprovalPending
+                    ? "APPROVING..."
+                    : "Approve Spending $RECALL"}
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleStake}
+                  disabled={!termsAccepted || isSigning}
+                  className="w-full"
+                >
+                  {isSigning ? "SIGNING..." : "STAKE & LOCK"}
+                </Button>
+              )}
               <Button
                 variant="outline"
                 onClick={handleBack}
@@ -494,7 +622,7 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
           </>
         )}
 
-        {/* Step 3: Signing Transaction */}
+        {/* Step 5: Signing Transaction */}
         {step === "signing" && (
           <>
             <div className="flex flex-col items-center justify-center space-y-6 py-8">
@@ -517,7 +645,7 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
           </>
         )}
 
-        {/* Step 4: Confirming Transaction */}
+        {/* Step 6: Confirming Transaction */}
         {step === "confirming" && (
           <>
             <div className="flex flex-col items-center justify-center space-y-6 py-8">
@@ -546,7 +674,7 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
           </>
         )}
 
-        {/* Step 5: Success */}
+        {/* Step 7: Success */}
         {step === "success" && (
           <>
             <div className="flex flex-col items-center justify-center space-y-6 py-8">
@@ -566,7 +694,7 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
                       </span>
                       <div className="flex items-center gap-2">
                         <span className="text-4xl font-bold">
-                          {stakeAmount.toLocaleString()}
+                          {formatAmount(stakeAmountRaw)}
                         </span>
                         <Recall size="md" />
                       </div>
@@ -578,7 +706,7 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
                       </span>
                       <div className="flex items-center gap-2">
                         <span className="text-4xl font-bold">
-                          {boostAmount.toLocaleString()}
+                          {formatAmount(boostAmountRaw)}
                         </span>
                         <BoostIcon className="size-5" />
                       </div>
@@ -617,7 +745,7 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
           </>
         )}
 
-        {/* Step 6: Error */}
+        {/* Step 8: Error */}
         {step === "error" && (
           <>
             <div className="flex flex-col items-center justify-center space-y-6 py-8">

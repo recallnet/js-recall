@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { getAddress } from "viem";
+import { type Address, getAddress } from "viem";
 import { useAccount, useBalance, useChainId } from "wagmi";
 
 import { RECALL_TOKEN_ADDRESS } from "@/constants";
@@ -11,6 +11,8 @@ type UseRecallLoading = {
   value: undefined;
   decimals: undefined;
   isLoading: true;
+  token: undefined;
+  queryKey: undefined;
 };
 
 /**
@@ -20,6 +22,8 @@ type UseRecallLoaded = {
   value: bigint;
   decimals: number;
   isLoading: false;
+  token: Address;
+  queryKey: readonly unknown[];
 };
 
 /**
@@ -28,13 +32,14 @@ type UseRecallLoaded = {
 type UseRecallReturn = UseRecallLoading | UseRecallLoaded;
 
 /**
- * Hook to get Recall token balance and information
- * @returns Object containing token value, decimals, and loading state
+ * Hook to get Recall token balance and basic information
+ * @returns Object containing token value and decimals
  */
 export const useRecall = (): UseRecallReturn => {
   const { address } = useAccount();
   const chainId = useChainId();
-  const token = useMemo(() => {
+
+  const token: Address | undefined = useMemo(() => {
     if (!chainId) return undefined;
     const tokenHex =
       RECALL_TOKEN_ADDRESS[
@@ -43,23 +48,31 @@ export const useRecall = (): UseRecallReturn => {
     return tokenHex ? getAddress(tokenHex) : undefined;
   }, [chainId]);
 
-  const { data, isLoading } = useBalance({
+  const {
+    data: balanceData,
+    isLoading: isBalanceLoading,
+    queryKey,
+  } = useBalance({
     address,
     token,
-    query: { enabled: Boolean(address && token) },
+    query: { enabled: Boolean(address && token), refetchInterval: 10_000 },
   });
 
-  if (isLoading || !data) {
+  if (isBalanceLoading || !balanceData) {
     return {
       value: undefined,
       decimals: undefined,
       isLoading: true,
+      token: undefined,
+      queryKey: undefined,
     };
   }
 
   return {
-    value: data.value,
-    decimals: data.decimals,
+    value: balanceData.value,
+    decimals: balanceData.decimals,
     isLoading: false,
+    token: token!,
+    queryKey: queryKey,
   };
 };

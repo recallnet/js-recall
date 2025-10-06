@@ -1,8 +1,11 @@
 "use client";
 
+import { addRpcUrlOverrideToChain } from "@privy-io/chains";
 import { PrivyClientConfig, PrivyProvider } from "@privy-io/react-auth";
 import { ReactNode, useEffect } from "react";
 import { baseSepolia } from "viem/chains";
+
+import { BASE_SEPOLIA_RPC } from "@/config";
 
 const themeBackground = "#15191f";
 const themeForeground = "#ffffff";
@@ -13,13 +16,17 @@ function setCSSVariable(variable: string, value: string) {
   }
 }
 
+export const baseSepoliaWithRpcUrl = BASE_SEPOLIA_RPC
+  ? addRpcUrlOverrideToChain(baseSepolia, BASE_SEPOLIA_RPC)
+  : baseSepolia;
+
 /**
  * Configuration for the Privy provider.
  */
 const privyConfig: PrivyClientConfig = {
   // Chain configuration
-  defaultChain: baseSepolia,
-  supportedChains: [baseSepolia],
+  defaultChain: baseSepoliaWithRpcUrl,
+  supportedChains: [baseSepoliaWithRpcUrl],
 
   // Login methods configuration
   loginMethods: ["email", "google"],

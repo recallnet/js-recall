@@ -10,7 +10,8 @@ export const RecallToken = () => {
   const { value, decimals, isLoading } = useRecall();
 
   return (
-    <div
+    <Link
+      href="/stake"
       className="radial-hover hover:hand flex h-full cursor-pointer items-center gap-2 p-2"
       style={
         {
@@ -23,12 +24,10 @@ export const RecallToken = () => {
       {isLoading ? (
         <Skeleton className="radial-hover-text h-3 w-20 rounded-xl bg-[#1D1F2B]" />
       ) : (
-        <Link href="/stake" className="radial-hover-text">
-          <span className="text-right font-mono text-base font-semibold not-italic leading-6 tracking-[0.96px] text-gray-100">
-            {format([value, decimals])}
-          </span>
-        </Link>
+        <span className="radial-hover-text text-right font-mono text-base font-semibold not-italic leading-6 tracking-[0.96px] text-gray-100">
+          {format([value, decimals], { compact: true })}
+        </span>
       )}
-    </div>
+    </Link>
   );
 };

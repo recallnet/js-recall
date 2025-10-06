@@ -1,7 +1,7 @@
 "use client";
 
+import * as dnum from "dnum";
 import React from "react";
-import { formatUnits } from "viem";
 
 import { Button } from "@recallnet/ui2/components/button";
 
@@ -34,12 +34,9 @@ export const StakeSummary: React.FunctionComponent<StakeSummaryProps> = ({
 
   const format = (v: bigint): string => {
     try {
-      const asStr = formatUnits(v, decimals);
-      const asNum = Number(asStr);
-      return Number.isFinite(asNum)
-        ? asNum.toLocaleString(undefined, { maximumFractionDigits: 4 })
-        : "0";
-    } catch {
+      return dnum.format([v, decimals], { compact: true });
+    } catch (e) {
+      console.error(e);
       return "0";
     }
   };

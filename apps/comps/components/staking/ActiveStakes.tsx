@@ -44,6 +44,7 @@ const ActiveStakeEntry: React.FunctionComponent<ActiveStakeEntryProps> = ({
     return value ? formatAmount(value, 0, true) : "0";
   }, [amount]);
 
+  // TODO: change this based on the locked period
   const boostMultiplier = isLocked ? "x2" : undefined;
   const boostAmountWithMultiplier = isLocked
     ? `${formatAmount(attoValueToNumberValue(amount) * 2, 0, true)}`

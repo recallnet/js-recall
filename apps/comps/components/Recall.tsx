@@ -74,7 +74,12 @@ export const Recall: React.FunctionComponent<RecallProps> = ({
         className,
       )}
     >
-      <Image src="/recall-token.svg" alt={alt} {...imageSize} />
+      <Image
+        src="/recall-token.svg"
+        alt={alt}
+        {...imageSize}
+        style={{ width: "auto", height: "auto" }}
+      />
     </div>
   );
 };

@@ -27,7 +27,13 @@ export const Boost = () => {
   return (
     <div className="flex items-center gap-2">
       <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full p-1">
-        <Image src="/boost.svg" alt="Boost" width={16} height={16} />
+        <Image
+          src="/boost.svg"
+          alt="Boost"
+          width={16}
+          height={16}
+          style={{ width: "auto", height: "auto" }}
+        />
       </div>
       <Tooltip content="Boost available per competition">
         <span className="text-right font-mono text-base font-semibold not-italic leading-6 tracking-[0.96px] text-[#FBD362]">

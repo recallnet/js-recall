@@ -25,6 +25,7 @@
     "@orpc/client": "^1.9.2",
     "@orpc/server": "^1.9.2",
     "@orpc/tanstack-query": "^1.9.2",
+    "@privy-io/chains": "^0.0.2",
     "@privy-io/node": "^0.1.0",
     "@privy-io/react-auth": "^2.25.0",
     "@privy-io/wagmi": "^2.0.0",
