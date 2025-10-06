@@ -57,7 +57,7 @@ export class MockSymphonyServer {
         {
           isLong: true,
           leverage: 2,
-          positionSize: 0.5,
+          positionSize: 23500, // USD value (0.5 BTC * $47,000 current price)
           entryPrice: 45000,
           currentPrice: 47000,
           collateralAmount: 500,
@@ -69,7 +69,7 @@ export class MockSymphonyServer {
         {
           isLong: false,
           leverage: 2,
-          positionSize: 2,
+          positionSize: 6300, // USD value (2 ETH * $3,150 current price)
           entryPrice: 3200,
           currentPrice: 3150,
           collateralAmount: 300,
@@ -97,7 +97,7 @@ export class MockSymphonyServer {
         {
           isLong: true,
           leverage: 5,
-          positionSize: 10,
+          positionSize: 950, // USD value (10 SOL * $95 current price)
           entryPrice: 100,
           currentPrice: 95,
           collateralAmount: 200,

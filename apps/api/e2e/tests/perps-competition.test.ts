@@ -883,7 +883,7 @@ describe("Perps Competition", () => {
     );
     expect(btcPosition).toBeDefined();
     expect(btcPosition?.isLong).toBe(true);
-    expect(btcPosition?.size).toBe(0.5);
+    expect(btcPosition?.size).toBe(23500);
     expect(btcPosition?.averagePrice).toBe(45000);
     expect(btcPosition?.markPrice).toBe(47000);
     expect(btcPosition?.unrealizedPnl).toBe(1000);
@@ -893,7 +893,7 @@ describe("Perps Competition", () => {
     );
     expect(ethPosition).toBeDefined();
     expect(ethPosition?.isLong).toBe(false);
-    expect(ethPosition?.size).toBe(2);
+    expect(ethPosition?.size).toBe(6300);
 
     // Verify agent1's account summary
     const agent1Account = await agent1Client.getPerpsAccount();
@@ -918,7 +918,7 @@ describe("Perps Competition", () => {
     const solPosition = typedAgent2Positions.positions[0];
     expect(solPosition?.marketSymbol).toBe("SOL");
     expect(solPosition?.isLong).toBe(true);
-    expect(solPosition?.size).toBe(10);
+    expect(solPosition?.size).toBe(950); // USD value
     expect(solPosition?.unrealizedPnl).toBe(-50);
 
     // Verify agent2's account summary
@@ -1714,73 +1714,72 @@ describe("Perps Competition", () => {
     );
     await wait(100);
 
-    // Create historical snapshots with REAL time gaps for proper Calmar calculation
-    // Using 365 days of history to avoid crazy annualization effects
+    // Create snapshots AFTER competition starts with small time increments
     const now = new Date();
-    const daysAgo = (days: number) =>
-      new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+    const minutesAgo = (minutes: number) =>
+      new Date(now.getTime() - minutes * 60 * 1000);
 
-    // Insert historical snapshots to simulate different performance patterns over a year
+    // Insert snapshots to simulate different performance patterns
     await db.insert(portfolioSnapshots).values([
-      // Agent 1: Steady 10% total return over 365 days (annualized: 10%), no drawdown → BEST Calmar = 10/0 = capped at 100
+      // Agent 1: Steady 10% growth, no drawdown → BEST Calmar
       {
         agentId: agent1.id,
         competitionId: competition.id,
         totalValue: 1000,
-        timestamp: daysAgo(365),
+        timestamp: minutesAgo(60),
       },
       {
         agentId: agent1.id,
         competitionId: competition.id,
         totalValue: 1050,
-        timestamp: daysAgo(180),
+        timestamp: minutesAgo(30),
       },
       {
         agentId: agent1.id,
         competitionId: competition.id,
         totalValue: 1100,
-        timestamp: daysAgo(1),
+        timestamp: minutesAgo(1),
       },
 
-      // Agent 2: -5% total return over 365 days (annualized: -5%) → WORST Calmar (negative)
+      // Agent 2: -5% loss → WORST Calmar (negative)
       {
         agentId: agent2.id,
         competitionId: competition.id,
         totalValue: 1000,
-        timestamp: daysAgo(365),
+        timestamp: minutesAgo(60),
       },
       {
         agentId: agent2.id,
         competitionId: competition.id,
         totalValue: 980,
-        timestamp: daysAgo(180),
+        timestamp: minutesAgo(30),
       },
       {
         agentId: agent2.id,
         competitionId: competition.id,
         totalValue: 950,
-        timestamp: daysAgo(1),
+        timestamp: minutesAgo(1),
       },
 
-      // Agent 3: 25% total return over 365 days (annualized: 25%) with 10.7% drawdown → MIDDLE Calmar ≈ 2.3
-      // Goes 1000 → 1400 (peak) → 1250 (drawdown of 10.7%)
+      // Agent 3: 25% gain with 10.7% drawdown → MIDDLE Calmar
+      // Goes 1000 → 1400 (peak) → 1250 (drawdown)
       {
         agentId: agent3.id,
         competitionId: competition.id,
         totalValue: 1000,
-        timestamp: daysAgo(365),
+        timestamp: minutesAgo(60),
       },
       {
         agentId: agent3.id,
         competitionId: competition.id,
         totalValue: 1400,
-        timestamp: daysAgo(180),
+        timestamp: minutesAgo(30),
       },
       {
         agentId: agent3.id,
         competitionId: competition.id,
         totalValue: 1250,
-        timestamp: daysAgo(1),
+        timestamp: minutesAgo(1),
       },
     ]);
 
@@ -1813,10 +1812,10 @@ describe("Perps Competition", () => {
     expect(agent3Entry).toBeDefined();
 
     // Verify ranking is by Calmar ratio, not portfolio value
-    // Expected outcomes based on our mock data (365 days of history):
-    // Agent 1 (Steady Growth): 10% total return, 0% drawdown → Best Calmar
-    // Agent 2 (Negative Return): -5% total return → Worst Calmar (negative)
-    // Agent 3 (High Equity): 25% total return, 10.7% drawdown → Middle Calmar
+    // Expected outcomes based on our mock data:
+    // Agent 1 (Steady Growth): 10% return, 0% drawdown → Best Calmar
+    // Agent 2 (Negative Return): -5% return → Worst Calmar (negative)
+    // Agent 3 (High Equity): 25% return, 10.7% drawdown → Middle Calmar
 
     // Agent 3 has the HIGHEST portfolio value ($1250) but should NOT be first!
     expect(agent3Entry?.portfolioValue).toBe(1250); // Highest portfolio
@@ -1910,31 +1909,31 @@ describe("Perps Competition", () => {
     );
     await wait(100);
 
-    // Create historical snapshots with REAL time gaps for proper Calmar calculation
+    // Create snapshots AFTER competition starts with small time increments
     const now = new Date();
-    const daysAgo = (days: number) =>
-      new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+    const minutesAgo = (minutes: number) =>
+      new Date(now.getTime() - minutes * 60 * 1000);
 
-    // Insert historical snapshots to simulate different performance patterns
+    // Insert snapshots to simulate different performance patterns
     await db.insert(portfolioSnapshots).values([
       // Agent 1: 10% return, no drawdown → Best Calmar
       {
         agentId: agent1.id,
         competitionId: competition.id,
         totalValue: 1000,
-        timestamp: daysAgo(365),
+        timestamp: minutesAgo(60),
       },
       {
         agentId: agent1.id,
         competitionId: competition.id,
         totalValue: 1050,
-        timestamp: daysAgo(180),
+        timestamp: minutesAgo(30),
       },
       {
         agentId: agent1.id,
         competitionId: competition.id,
         totalValue: 1100,
-        timestamp: daysAgo(1),
+        timestamp: minutesAgo(1),
       },
 
       // Agent 2: -5% return → Worst Calmar
@@ -1942,19 +1941,19 @@ describe("Perps Competition", () => {
         agentId: agent2.id,
         competitionId: competition.id,
         totalValue: 1000,
-        timestamp: daysAgo(365),
+        timestamp: minutesAgo(60),
       },
       {
         agentId: agent2.id,
         competitionId: competition.id,
         totalValue: 980,
-        timestamp: daysAgo(180),
+        timestamp: minutesAgo(30),
       },
       {
         agentId: agent2.id,
         competitionId: competition.id,
         totalValue: 950,
-        timestamp: daysAgo(1),
+        timestamp: minutesAgo(1),
       },
 
       // Agent 3: 25% return with drawdown → Middle Calmar
@@ -1962,19 +1961,19 @@ describe("Perps Competition", () => {
         agentId: agent3.id,
         competitionId: competition.id,
         totalValue: 1000,
-        timestamp: daysAgo(365),
+        timestamp: minutesAgo(60),
       },
       {
         agentId: agent3.id,
         competitionId: competition.id,
         totalValue: 1400,
-        timestamp: daysAgo(180), // Peak
+        timestamp: minutesAgo(30), // Peak
       },
       {
         agentId: agent3.id,
         competitionId: competition.id,
         totalValue: 1250,
-        timestamp: daysAgo(1), // Drawdown from peak
+        timestamp: minutesAgo(1), // Drawdown from peak
       },
     ]);
 
@@ -2128,5 +2127,760 @@ describe("Perps Competition", () => {
       expect(agent.simpleReturn).toBe(activeData?.simpleReturn);
       expect(agent.maxDrawdown).toBe(activeData?.maxDrawdown);
     });
+  });
+
+  test("should start a perps competition with Hyperliquid provider", async () => {
+    // Setup admin client
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agents for this test
+    const { agent: agent1 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Hyperliquid Test Agent 1",
+    });
+    const { agent: agent2 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Hyperliquid Test Agent 2",
+    });
+
+    // Start a perps competition with Hyperliquid
+    const competitionName = `Hyperliquid Perps Test ${Date.now()}`;
+    const response = await startPerpsTestCompetition({
+      adminClient,
+      name: competitionName,
+      agentIds: [agent1.id, agent2.id],
+      perpsProvider: {
+        provider: "hyperliquid",
+        apiUrl: "http://localhost:4568",
+      },
+    });
+
+    // Verify competition was started
+    expect(response.success).toBe(true);
+    expect(response.competition).toBeDefined();
+    expect(response.competition.type).toBe("perpetual_futures");
+    expect(response.competition.status).toBe("active");
+    expect(response.competition.name).toBe(competitionName);
+    expect(response.competition.agentIds).toContain(agent1.id);
+    expect(response.competition.agentIds).toContain(agent2.id);
+  });
+
+  test("should sync agent positions from Hyperliquid to database", async () => {
+    // Setup admin client
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agents with pre-configured Hyperliquid wallet addresses
+    const { agent: agentBTC, client: agentBTCClient } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Hyperliquid BTC Position Agent",
+        agentWalletAddress: "0x5555555555555555555555555555555555555555", // Pre-configured with BTC long
+      });
+
+    const { agent: agentETH, client: agentETHClient } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Hyperliquid ETH Position Agent",
+        agentWalletAddress: "0x6666666666666666666666666666666666666666", // Pre-configured with ETH short
+      });
+
+    const { agent: agentNoPos, client: agentNoPosClient } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Hyperliquid No Positions Agent",
+        agentWalletAddress: "0x7777777777777777777777777777777777777777", // Pre-configured with closed positions only
+      });
+
+    // Start a Hyperliquid perps competition
+    const response = await startPerpsTestCompetition({
+      adminClient,
+      name: `Hyperliquid Position Sync Test ${Date.now()}`,
+      agentIds: [agentBTC.id, agentETH.id, agentNoPos.id],
+      perpsProvider: {
+        provider: "hyperliquid",
+        apiUrl: "http://localhost:4568",
+      },
+    });
+
+    expect(response.success).toBe(true);
+    const competition = response.competition;
+
+    // Trigger sync from Hyperliquid
+    const services = new ServiceRegistry();
+    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+
+    // Wait for sync to complete
+    await wait(500);
+
+    // Verify BTC agent's position
+    const btcPositions = await agentBTCClient.getPerpsPositions();
+    expect(btcPositions.success).toBe(true);
+    const typedBTCPositions = btcPositions as PerpsPositionsResponse;
+    expect(typedBTCPositions.positions).toHaveLength(1);
+
+    const btcPosition = typedBTCPositions.positions[0];
+    expect(btcPosition?.marketSymbol).toBe("BTC");
+    expect(btcPosition?.isLong).toBe(true);
+    expect(btcPosition?.size).toBe(23500);
+    expect(btcPosition?.averagePrice).toBe(45000);
+    expect(btcPosition?.unrealizedPnl).toBe(1000);
+
+    // Verify BTC agent's account summary
+    const btcAccount = await agentBTCClient.getPerpsAccount();
+    expect(btcAccount.success).toBe(true);
+    const typedBTCAccount = btcAccount as PerpsAccountResponse;
+    expect(typedBTCAccount.account.totalEquity).toBe("1250");
+    expect(typedBTCAccount.account.availableBalance).toBe("450");
+    expect(typedBTCAccount.account.marginUsed).toBe("800");
+    expect(typedBTCAccount.account.openPositions).toBe(1);
+
+    // Verify ETH agent's position (short)
+    const ethPositions = await agentETHClient.getPerpsPositions();
+    expect(ethPositions.success).toBe(true);
+    const typedETHPositions = ethPositions as PerpsPositionsResponse;
+    expect(typedETHPositions.positions).toHaveLength(1);
+
+    const ethPosition = typedETHPositions.positions[0];
+    expect(ethPosition?.marketSymbol).toBe("ETH");
+    expect(ethPosition?.isLong).toBe(false);
+    expect(ethPosition?.size).toBe(6300);
+    expect(ethPosition?.averagePrice).toBe(3200);
+    expect(ethPosition?.unrealizedPnl).toBe(-50);
+
+    // Verify agent with no open positions
+    const noPositions = await agentNoPosClient.getPerpsPositions();
+    expect(noPositions.success).toBe(true);
+    const typedNoPositions = noPositions as PerpsPositionsResponse;
+    expect(typedNoPositions.positions).toHaveLength(0);
+
+    const noPosAccount = await agentNoPosClient.getPerpsAccount();
+    expect(noPosAccount.success).toBe(true);
+    const typedNoPosAccount = noPosAccount as PerpsAccountResponse;
+    expect(typedNoPosAccount.account.totalEquity).toBe("1100");
+    expect(typedNoPosAccount.account.openPositions).toBe(0);
+  });
+
+  test("should calculate Calmar ratio with Hyperliquid data", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agent with volatile portfolio wallet
+    const { agent, client: agentClient } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Hyperliquid Calmar Test Agent",
+        agentWalletAddress: "0x8888888888888888888888888888888888888888", // Pre-configured for volatility testing
+      });
+
+    // Start Hyperliquid perps competition
+    const response = await startPerpsTestCompetition({
+      adminClient,
+      name: `Hyperliquid Calmar Test ${Date.now()}`,
+      agentIds: [agent.id],
+      perpsProvider: {
+        provider: "hyperliquid",
+        apiUrl: "http://localhost:4568",
+      },
+    });
+
+    expect(response.success).toBe(true);
+    const competition = response.competition;
+
+    await wait(1000);
+
+    const services = new ServiceRegistry();
+
+    // First sync - peak equity
+    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+    await wait(500);
+
+    // Second sync - trough
+    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+    await wait(500);
+
+    // Third sync - recovery
+    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+
+    // Wait for calculations
+    await wait(1000);
+
+    // Get leaderboard with risk metrics
+    const leaderboardResponse = await agentClient.getCompetitionLeaderboard();
+    expect(leaderboardResponse.success).toBe(true);
+    const typedLeaderboard = leaderboardResponse as LeaderboardResponse;
+
+    const agentEntry = typedLeaderboard.leaderboard.find(
+      (entry) => entry.agentId === agent.id,
+    );
+
+    expect(agentEntry).toBeDefined();
+    expect(agentEntry?.hasRiskMetrics).toBe(true);
+    expect(agentEntry?.calmarRatio).not.toBeNull();
+    expect(agentEntry?.simpleReturn).not.toBeNull();
+    expect(agentEntry?.maxDrawdown).not.toBeNull();
+
+    // Portfolio: $1700 → $1200 → $1550
+    // Simple Return = ($1550 / $1700) - 1 = -0.088
+    expect(agentEntry?.simpleReturn).toBeCloseTo(-0.088, 2);
+
+    // Max drawdown = ($1200 / $1700) - 1 = -0.294
+    expect(agentEntry?.maxDrawdown).toBeCloseTo(-0.294, 2);
+
+    // Calmar = -0.088 / 0.294 = -0.299
+    expect(agentEntry?.calmarRatio).toBeCloseTo(-0.299, 2);
+  });
+
+  test("should detect transfer violations with Hyperliquid provider", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agent with transfers configured in mock
+    const { agent: agentWithTransfers } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Hyperliquid Agent With Transfers",
+        agentWalletAddress: "0x8888888888888888888888888888888888888888", // Has test transfers
+      });
+
+    const { agent: agentClean } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Hyperliquid Clean Agent",
+      agentWalletAddress: "0x5555555555555555555555555555555555555555", // No transfers
+    });
+
+    // Start Hyperliquid competition
+    const response = await startPerpsTestCompetition({
+      adminClient,
+      name: `Hyperliquid Transfer Violation Test ${Date.now()}`,
+      agentIds: [agentWithTransfers.id, agentClean.id],
+      perpsProvider: {
+        provider: "hyperliquid",
+        apiUrl: "http://localhost:4568",
+      },
+    });
+
+    expect(response.success).toBe(true);
+    const competition = response.competition;
+
+    await wait(1000);
+
+    // Process competition to detect transfers
+    const services = new ServiceRegistry();
+    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+    await wait(500);
+
+    // Check for violations
+    const violationsResponse =
+      await adminClient.getCompetitionTransferViolations(competition.id);
+
+    expect(violationsResponse.success).toBe(true);
+    const typedViolationsResponse =
+      violationsResponse as AdminCompetitionTransferViolationsResponse;
+
+    // Should only report agent with transfers
+    expect(typedViolationsResponse.violations).toHaveLength(1);
+
+    const violation = typedViolationsResponse.violations[0];
+    expect(violation?.agentId).toBe(agentWithTransfers.id);
+    expect(violation?.agentName).toBe("Hyperliquid Agent With Transfers");
+    expect(violation?.transferCount).toBeGreaterThan(0);
+
+    // Clean agent should not appear
+    const cleanViolation = typedViolationsResponse.violations.find(
+      (v) => v.agentId === agentClean.id,
+    );
+    expect(cleanViolation).toBeUndefined();
+  });
+
+  test("should sync multiple positions per agent from Hyperliquid", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    const { agent: agentMulti, client: agentMultiClient } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Hyperliquid Multi-Position Agent",
+        agentWalletAddress: "0x9999999999999999999999999999999999999999",
+      });
+
+    const { agent: agentBTC } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Hyperliquid BTC Only Agent",
+      agentWalletAddress: "0x5555555555555555555555555555555555555555",
+    });
+
+    const response = await startPerpsTestCompetition({
+      adminClient,
+      name: `Hyperliquid Multi-Position Test ${Date.now()}`,
+      agentIds: [agentMulti.id, agentBTC.id],
+      perpsProvider: {
+        provider: "hyperliquid",
+        apiUrl: "http://localhost:4568",
+      },
+    });
+
+    expect(response.success).toBe(true);
+    const competition = response.competition;
+
+    const services = new ServiceRegistry();
+    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+    await wait(500);
+
+    const multiPositions = await agentMultiClient.getPerpsPositions();
+    expect(multiPositions.success).toBe(true);
+    const typedMultiPositions = multiPositions as PerpsPositionsResponse;
+    expect(typedMultiPositions.positions).toHaveLength(3);
+
+    const btcPos = typedMultiPositions.positions.find(
+      (p) => p.marketSymbol === "BTC",
+    );
+    const ethPos = typedMultiPositions.positions.find(
+      (p) => p.marketSymbol === "ETH",
+    );
+    const solPos = typedMultiPositions.positions.find(
+      (p) => p.marketSymbol === "SOL",
+    );
+
+    expect(btcPos).toBeDefined();
+    expect(ethPos).toBeDefined();
+    expect(solPos).toBeDefined();
+
+    expect(btcPos?.isLong).toBe(true);
+    expect(ethPos?.isLong).toBe(false);
+    expect(solPos?.isLong).toBe(true);
+
+    const multiAccount = await agentMultiClient.getPerpsAccount();
+    expect(multiAccount.success).toBe(true);
+    const typedMultiAccount = multiAccount as PerpsAccountResponse;
+    expect(typedMultiAccount.account.openPositions).toBe(3);
+    expect(typedMultiAccount.account.totalVolume).toBe("66700"); // Realistic volume from 6 fills
+  });
+
+  test("should rank multiple Hyperliquid agents by Calmar ratio", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    const { agent: agentSteady } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Hyperliquid Steady Growth",
+      agentWalletAddress: "0x7777777777777777777777777777777777777777",
+    });
+
+    const { agent: agentVolatile } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Hyperliquid Volatile",
+      agentWalletAddress: "0x8888888888888888888888888888888888888888",
+    });
+
+    const { agent: agentNegative } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Hyperliquid Negative",
+      agentWalletAddress: "0x6666666666666666666666666666666666666666",
+    });
+
+    const response = await startPerpsTestCompetition({
+      adminClient,
+      name: `Hyperliquid Ranking Test ${Date.now()}`,
+      agentIds: [agentSteady.id, agentVolatile.id, agentNegative.id],
+      perpsProvider: {
+        provider: "hyperliquid",
+        apiUrl: "http://localhost:4568",
+      },
+    });
+
+    expect(response.success).toBe(true);
+    const competition = response.competition;
+
+    const services = new ServiceRegistry();
+    await services.portfolioSnapshotterService.takePortfolioSnapshots(
+      competition.id,
+    );
+    await wait(100);
+
+    const now = new Date();
+    const minutesAgo = (minutes: number) =>
+      new Date(now.getTime() - minutes * 60 * 1000);
+
+    await db.insert(portfolioSnapshots).values([
+      {
+        agentId: agentSteady.id,
+        competitionId: competition.id,
+        totalValue: 1000,
+        timestamp: minutesAgo(60),
+      },
+      {
+        agentId: agentSteady.id,
+        competitionId: competition.id,
+        totalValue: 1100,
+        timestamp: minutesAgo(1),
+      },
+      {
+        agentId: agentVolatile.id,
+        competitionId: competition.id,
+        totalValue: 1000,
+        timestamp: minutesAgo(60),
+      },
+      {
+        agentId: agentVolatile.id,
+        competitionId: competition.id,
+        totalValue: 1700,
+        timestamp: minutesAgo(30), // Peak
+      },
+      {
+        agentId: agentVolatile.id,
+        competitionId: competition.id,
+        totalValue: 1550,
+        timestamp: minutesAgo(1),
+      },
+      {
+        agentId: agentNegative.id,
+        competitionId: competition.id,
+        totalValue: 1000,
+        timestamp: minutesAgo(60),
+      },
+      {
+        agentId: agentNegative.id,
+        competitionId: competition.id,
+        totalValue: 850,
+        timestamp: minutesAgo(1),
+      },
+    ]);
+
+    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+    await wait(1000);
+
+    const leaderboardResponse = await adminClient.getCompetitionLeaderboard();
+    expect(leaderboardResponse.success).toBe(true);
+    const typedLeaderboard = leaderboardResponse as LeaderboardResponse;
+
+    expect(typedLeaderboard.leaderboard).toHaveLength(3);
+
+    const steadyEntry = typedLeaderboard.leaderboard.find(
+      (e: LeaderboardEntry) => e.agentId === agentSteady.id,
+    );
+    const volatileEntry = typedLeaderboard.leaderboard.find(
+      (e: LeaderboardEntry) => e.agentId === agentVolatile.id,
+    );
+    const negativeEntry = typedLeaderboard.leaderboard.find(
+      (e: LeaderboardEntry) => e.agentId === agentNegative.id,
+    );
+
+    expect(steadyEntry).toBeDefined();
+    expect(volatileEntry).toBeDefined();
+    expect(negativeEntry).toBeDefined();
+
+    expect(steadyEntry?.rank).toBe(1);
+    expect(volatileEntry?.rank).toBe(2);
+    expect(negativeEntry?.rank).toBe(3);
+
+    expect(volatileEntry?.portfolioValue).toBeGreaterThan(
+      steadyEntry!.portfolioValue,
+    );
+    expect(steadyEntry?.rank).toBeLessThan(volatileEntry!.rank);
+  });
+
+  test("should get Hyperliquid competition summary with correct aggregations", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    const { agent: agent1 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Hyperliquid Summary Agent 1",
+      agentWalletAddress: "0x5555555555555555555555555555555555555555",
+    });
+
+    const { agent: agent2 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Hyperliquid Summary Agent 2",
+      agentWalletAddress: "0x6666666666666666666666666666666666666666",
+    });
+
+    const { agent: agent3, client: agent3Client } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Hyperliquid Summary Agent 3",
+        agentWalletAddress: "0x7777777777777777777777777777777777777777",
+      });
+
+    const response = await startPerpsTestCompetition({
+      adminClient,
+      name: `Hyperliquid Summary Test ${Date.now()}`,
+      agentIds: [agent1.id, agent2.id, agent3.id],
+      perpsProvider: {
+        provider: "hyperliquid",
+        apiUrl: "http://localhost:4568",
+      },
+    });
+
+    expect(response.success).toBe(true);
+    const competition = response.competition;
+
+    await wait(1000);
+
+    const services = new ServiceRegistry();
+    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+    await wait(500);
+
+    const summaryResponse = await agent3Client.getCompetitionPerpsSummary(
+      competition.id,
+    );
+
+    expect(summaryResponse.success).toBe(true);
+    const typedSummaryResponse =
+      summaryResponse as CompetitionPerpsSummaryResponse;
+
+    expect(typedSummaryResponse.competitionId).toBe(competition.id);
+    expect(typedSummaryResponse.summary.totalAgents).toBe(3);
+    expect(typedSummaryResponse.summary.totalPositions).toBe(2);
+    expect(typedSummaryResponse.summary.totalVolume).toBeGreaterThanOrEqual(
+      30000,
+    );
+    expect(typedSummaryResponse.summary.averageEquity).toBeGreaterThan(1000);
+  });
+
+  test("should paginate all Hyperliquid positions with embedded agent info", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    const { agent: agent1 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Hyperliquid Paginated Agent 1",
+      agentWalletAddress: "0x5555555555555555555555555555555555555555",
+    });
+
+    const { agent: agent2 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Hyperliquid Paginated Agent 2",
+      agentWalletAddress: "0x9999999999999999999999999999999999999999",
+    });
+
+    const response = await startPerpsTestCompetition({
+      adminClient,
+      name: `Hyperliquid Pagination Test ${Date.now()}`,
+      agentIds: [agent1.id, agent2.id],
+      perpsProvider: {
+        provider: "hyperliquid",
+        apiUrl: "http://localhost:4568",
+      },
+    });
+
+    expect(response.success).toBe(true);
+    const competition = response.competition;
+
+    const services = new ServiceRegistry();
+    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+    await wait(500);
+
+    const allPositions = await adminClient.getCompetitionAllPerpsPositions(
+      competition.id,
+    );
+    expect(allPositions.success).toBe(true);
+    const typedAllPositions =
+      allPositions as CompetitionAllPerpsPositionsResponse;
+    expect(typedAllPositions.positions).toHaveLength(4);
+
+    const btcPosition = typedAllPositions.positions.find(
+      (p) => p.marketSymbol === "BTC" && p.agentId === agent1.id,
+    );
+    expect(btcPosition).toBeDefined();
+    expect(btcPosition?.agent).toBeDefined();
+    expect(btcPosition?.agent.name).toBe("Hyperliquid Paginated Agent 1");
+
+    const page1 = await adminClient.getCompetitionAllPerpsPositions(
+      competition.id,
+      2,
+      0,
+    );
+    expect(page1.success).toBe(true);
+    const typedPage1 = page1 as CompetitionAllPerpsPositionsResponse;
+    expect(typedPage1.positions).toHaveLength(2);
+    expect(typedPage1.pagination.hasMore).toBe(true);
+
+    const page2 = await adminClient.getCompetitionAllPerpsPositions(
+      competition.id,
+      2,
+      2,
+    );
+    expect(page2.success).toBe(true);
+    const typedPage2 = page2 as CompetitionAllPerpsPositionsResponse;
+    expect(typedPage2.positions).toHaveLength(2);
+    expect(typedPage2.pagination.hasMore).toBe(false);
+  });
+
+  test("should preserve Hyperliquid data when competition ends", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    const { agent: agent1 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Hyperliquid End Test Agent 1",
+      agentWalletAddress: "0x5555555555555555555555555555555555555555",
+    });
+
+    const { agent: agent2 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Hyperliquid End Test Agent 2",
+      agentWalletAddress: "0x6666666666666666666666666666666666666666",
+    });
+
+    const response = await startPerpsTestCompetition({
+      adminClient,
+      name: `Hyperliquid End Test ${Date.now()}`,
+      agentIds: [agent1.id, agent2.id],
+      perpsProvider: {
+        provider: "hyperliquid",
+        apiUrl: "http://localhost:4568",
+      },
+    });
+
+    expect(response.success).toBe(true);
+    const competition = response.competition;
+
+    const services = new ServiceRegistry();
+    await services.portfolioSnapshotterService.takePortfolioSnapshots(
+      competition.id,
+    );
+    await wait(100);
+
+    const now = new Date();
+    const minutesAgo = (minutes: number) =>
+      new Date(now.getTime() - minutes * 60 * 1000);
+
+    await db.insert(portfolioSnapshots).values([
+      {
+        agentId: agent1.id,
+        competitionId: competition.id,
+        totalValue: 1000,
+        timestamp: minutesAgo(60),
+      },
+      {
+        agentId: agent1.id,
+        competitionId: competition.id,
+        totalValue: 1250,
+        timestamp: minutesAgo(1),
+      },
+      {
+        agentId: agent2.id,
+        competitionId: competition.id,
+        totalValue: 1000,
+        timestamp: minutesAgo(60),
+      },
+      {
+        agentId: agent2.id,
+        competitionId: competition.id,
+        totalValue: 850,
+        timestamp: minutesAgo(1),
+      },
+    ]);
+
+    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+    await wait(1000);
+
+    const activeLeaderboardResponse =
+      await adminClient.getCompetitionLeaderboard();
+    expect(activeLeaderboardResponse.success).toBe(true);
+    const activeLeaderboard = (activeLeaderboardResponse as LeaderboardResponse)
+      .leaderboard;
+
+    const activeMetrics = new Map<
+      string,
+      {
+        rank: number;
+        portfolioValue: number;
+        calmarRatio: number | null;
+        simpleReturn: number | null;
+        maxDrawdown: number | null;
+        hasRiskMetrics: boolean;
+      }
+    >();
+
+    activeLeaderboard.forEach((entry: LeaderboardEntry) => {
+      activeMetrics.set(entry.agentId, {
+        rank: entry.rank,
+        portfolioValue: entry.portfolioValue,
+        calmarRatio: entry.calmarRatio ?? null,
+        simpleReturn: entry.simpleReturn ?? null,
+        maxDrawdown: entry.maxDrawdown ?? null,
+        hasRiskMetrics: entry.hasRiskMetrics ?? false,
+      });
+    });
+
+    const endResponse = await adminClient.endCompetition(competition.id);
+    expect(endResponse.success).toBe(true);
+    await wait(2000);
+
+    const endedCompResponse = await adminClient.getCompetition(competition.id);
+    expect(endedCompResponse.success).toBe(true);
+    const endedCompetition = (endedCompResponse as CompetitionDetailResponse)
+      .competition;
+    expect(endedCompetition.status).toBe("ended");
+
+    const endedLeaderboardResponse = await adminClient.getCompetitionAgents(
+      competition.id,
+    );
+    expect(endedLeaderboardResponse.success).toBe(true);
+    const endedAgents = (endedLeaderboardResponse as CompetitionAgentsResponse)
+      .agents;
+
+    endedAgents.forEach((agent: CompetitionAgent) => {
+      const activeData = activeMetrics.get(agent.id);
+      expect(activeData).toBeDefined();
+
+      expect(agent.rank).toBe(activeData?.rank);
+      expect(agent.portfolioValue).toBe(activeData?.portfolioValue);
+      expect(agent.calmarRatio).toBe(activeData?.calmarRatio);
+      expect(agent.simpleReturn).toBe(activeData?.simpleReturn);
+      expect(agent.maxDrawdown).toBe(activeData?.maxDrawdown);
+      expect(agent.hasRiskMetrics).toBe(activeData?.hasRiskMetrics);
+    });
+  });
+
+  test("should verify Hyperliquid trading volume calculations", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    const { agent: agentActive, client: agentActiveClient } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Hyperliquid Active Trader",
+        agentWalletAddress: "0x9999999999999999999999999999999999999999",
+      });
+
+    const { agent: agentMinimal } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Hyperliquid Minimal Trader",
+      agentWalletAddress: "0x5555555555555555555555555555555555555555",
+    });
+
+    const response = await startPerpsTestCompetition({
+      adminClient,
+      name: `Hyperliquid Volume Test ${Date.now()}`,
+      agentIds: [agentActive.id, agentMinimal.id],
+      perpsProvider: {
+        provider: "hyperliquid",
+        apiUrl: "http://localhost:4568",
+      },
+    });
+
+    expect(response.success).toBe(true);
+    const competition = response.competition;
+
+    const services = new ServiceRegistry();
+    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+    await wait(500);
+
+    const activeAccount = await agentActiveClient.getPerpsAccount();
+    expect(activeAccount.success).toBe(true);
+    const typedActiveAccount = activeAccount as PerpsAccountResponse;
+    expect(typedActiveAccount.account.totalVolume).toBe("66700"); // Realistic volume from 6 fills
+
+    const summaryResponse = await adminClient.getCompetitionPerpsSummary(
+      competition.id,
+    );
+    expect(summaryResponse.success).toBe(true);
+    const typedSummary = summaryResponse as CompetitionPerpsSummaryResponse;
+    expect(typedSummary.summary.totalVolume).toBeGreaterThanOrEqual(75000);
   });
 });
