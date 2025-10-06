@@ -20,11 +20,9 @@ import {
   createContext,
   useCallback,
   useEffect,
-  useRef,
   useState,
 } from "react";
 
-import { ApiClient } from "@/lib/api-client";
 import { mergeWithoutUndefined } from "@/lib/merge-without-undefined";
 import { tanstackClient } from "@/rpc/clients/tanstack-query";
 import { User as BackendUser, UpdateProfileRequest } from "@/types";
@@ -80,7 +78,6 @@ export const SessionContext = createContext<Session | null>(null);
 
 export function SessionProvider({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
-  const apiClient = useRef(new ApiClient());
 
   const { user, ready, authenticated, logout, isModalOpen, createWallet } =
     usePrivy();
@@ -88,6 +85,25 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [loginError, setLoginError] = useState<Error | null>(null);
   const [shouldLinkWallet, setShouldLinkWallet] = useState(false);
   const [linkWalletError, setLinkWalletError] = useState<Error | null>(null);
+
+  const {
+    mutate: loginToBackend,
+    isSuccess: isLoginToBackendSuccess,
+    isPending: isLoginToBackendPending,
+    isError: isLoginToBackendError,
+    error: loginToBackendError,
+  } = useMutation(
+    tanstackClient.user.login.mutationOptions({
+      onSuccess: () => {
+        refetchBackendUser();
+      },
+      onError: (error) => {
+        const message = `Login to backend failed: ${error}`;
+        console.error(message);
+        Sentry.captureException(new Error(message));
+      },
+    }),
+  );
 
   const { login: loginInner } = useLogin({
     onComplete: async ({ user, isNewUser }) => {
@@ -101,7 +117,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         await createWallet();
       }
       setShouldLinkWallet(isNewUser);
-      loginToBackend();
+      loginToBackend(undefined);
     },
     onError: (err) => {
       if (err === "exited_auth_flow") return;
@@ -115,26 +131,6 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     },
     [loginInner, setLoginError],
   );
-
-  const {
-    mutate: loginToBackend,
-    isSuccess: isLoginToBackendSuccess,
-    isPending: isLoginToBackendPending,
-    isError: isLoginToBackendError,
-    error: loginToBackendError,
-  } = useMutation({
-    mutationFn: async () => {
-      await apiClient.current.login();
-    },
-    onSuccess: () => {
-      refetchBackendUser();
-    },
-    onError: (error) => {
-      const message = `Login to backend failed: ${error}`;
-      console.error(message);
-      Sentry.captureException(new Error(message));
-    },
-  });
 
   // Query for BackendUser session data
   const {
