@@ -283,9 +283,10 @@ describe("PerpsDataProcessor", () => {
         mockProvider,
       );
 
-      // Verify provider was called
+      // Verify provider was called (with undefined initialCapital since no snapshots exist)
       expect(mockProvider.getAccountSummary).toHaveBeenCalledWith(
         "0x123456789",
+        undefined,
       );
       expect(mockProvider.getPositions).toHaveBeenCalledWith("0x123456789");
 
@@ -1098,8 +1099,11 @@ describe("PerpsDataProcessor", () => {
       );
       expect(mockAgentRepo.findByIds).toHaveBeenCalledWith(["agent-1"]);
 
-      // Should process the agent
-      expect(mockProvider.getAccountSummary).toHaveBeenCalledWith("0x123");
+      // Should process the agent (with undefined initialCapital)
+      expect(mockProvider.getAccountSummary).toHaveBeenCalledWith(
+        "0x123",
+        undefined,
+      );
       expect(result.successful).toHaveLength(1);
     });
 
@@ -1172,7 +1176,10 @@ describe("PerpsDataProcessor", () => {
 
       // Only agent-1 should be processed
       expect(mockProvider.getAccountSummary).toHaveBeenCalledTimes(1);
-      expect(mockProvider.getAccountSummary).toHaveBeenCalledWith("0x123");
+      expect(mockProvider.getAccountSummary).toHaveBeenCalledWith(
+        "0x123",
+        undefined,
+      );
       expect(result.successful).toHaveLength(1);
     });
 

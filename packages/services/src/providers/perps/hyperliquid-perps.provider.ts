@@ -131,6 +131,7 @@ export class HyperliquidPerpsProvider implements IPerpsDataProvider {
   private readonly REQUEST_TIMEOUT = 30000; // 30 seconds
   private readonly MAX_RETRIES = 3;
   private readonly RETRY_DELAY = 1000; // 1 second
+  private readonly SAMPLING_RATE = 0.01; // 1% of requests for raw data storage
 
   constructor(logger: Logger, apiUrl?: string) {
     this.logger = logger;
@@ -188,6 +189,17 @@ export class HyperliquidPerpsProvider implements IPerpsDataProvider {
   ): Promise<PerpsAccountSummary> {
     const startTime = Date.now();
     const maskedAddress = this.maskWalletAddress(walletAddress);
+
+    // Add Sentry breadcrumb for debugging
+    Sentry.addBreadcrumb({
+      category: "hyperliquid.api",
+      message: `Account summary request`,
+      level: "info",
+      data: {
+        walletAddress: maskedAddress,
+        hasInitialCapital: initialCapital !== undefined,
+      },
+    });
 
     try {
       this.logger.debug(
@@ -280,9 +292,31 @@ export class HyperliquidPerpsProvider implements IPerpsDataProvider {
         // Status
         accountStatus: openPositionsCount > 0 ? "active" : "inactive",
 
-        // Raw data not needed for Hyperliquid as we process immediately
+        // Raw data storage: Only store for sampled requests (1% by default)
         rawData: undefined,
       };
+
+      // Sampling for raw data storage
+      const shouldSample = Math.random() < this.SAMPLING_RATE;
+
+      if (shouldSample) {
+        // Store raw data for debugging
+        summary.rawData = { clearinghouseState, recentFills };
+
+        // Also send to Sentry for monitoring
+        Sentry.captureMessage("Hyperliquid API Response Sample", {
+          level: "debug",
+          extra: {
+            response: { clearinghouseState, recentFills },
+            walletAddress: maskedAddress,
+            processingTime: Date.now() - startTime,
+          },
+        });
+
+        this.logger.debug(
+          `[HyperliquidProvider] Sampled request - storing raw data for ${maskedAddress}`,
+        );
+      }
 
       this.logger.debug(
         `[HyperliquidProvider] Fetched account summary for ${maskedAddress} in ${Date.now() - startTime}ms`,
@@ -312,6 +346,16 @@ export class HyperliquidPerpsProvider implements IPerpsDataProvider {
   async getPositions(walletAddress: string): Promise<PerpsPosition[]> {
     const startTime = Date.now();
     const maskedAddress = this.maskWalletAddress(walletAddress);
+
+    // Add Sentry breadcrumb for debugging
+    Sentry.addBreadcrumb({
+      category: "hyperliquid.api",
+      message: `Positions request`,
+      level: "info",
+      data: {
+        walletAddress: maskedAddress,
+      },
+    });
 
     try {
       this.logger.debug(
@@ -405,6 +449,17 @@ export class HyperliquidPerpsProvider implements IPerpsDataProvider {
   ): Promise<Transfer[]> {
     const startTime = Date.now();
     const maskedAddress = this.maskWalletAddress(walletAddress);
+
+    // Add Sentry breadcrumb for debugging
+    Sentry.addBreadcrumb({
+      category: "hyperliquid.api",
+      message: `Transfer history request`,
+      level: "info",
+      data: {
+        walletAddress: maskedAddress,
+        since: since.toISOString(),
+      },
+    });
 
     try {
       this.logger.debug(
