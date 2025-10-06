@@ -21,7 +21,6 @@ import {
   useUpdateSandboxAgent,
 } from "@/hooks/useSandbox";
 import type { RouterOutputs } from "@/rpc/router";
-import { Competition } from "@/types";
 
 import BigNumberDisplay from "../bignumber";
 import { BreadcrumbNav } from "../breadcrumb-nav";
@@ -167,15 +166,16 @@ export default function AgentProfile({
   );
   const { total } = compsData?.pagination || { total: 0 };
 
-  const competitions: (Competition & { trophies: Trophy[] })[] =
-    React.useMemo(() => {
-      return (
-        compsData?.competitions.map((comp) => ({
-          ...comp,
-          trophies: trophies.filter((t) => t.competitionId === comp.id),
-        })) || []
-      );
-    }, [compsData?.competitions, trophies]);
+  type Competition = NonNullable<typeof compsData>["competitions"][number];
+
+  const competitions = React.useMemo(() => {
+    return (
+      compsData?.competitions.map((comp: Competition) => ({
+        ...comp,
+        trophies: trophies.filter((t) => t.competitionId === comp.id),
+      })) || []
+    );
+  }, [compsData?.competitions, trophies]);
 
   return (
     <>

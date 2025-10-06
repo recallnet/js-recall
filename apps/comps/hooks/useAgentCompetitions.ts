@@ -1,7 +1,10 @@
-import { useQuery } from "@tanstack/react-query";
+import { UseQueryResult, useQuery } from "@tanstack/react-query";
 
-import { apiClient } from "@/lib/api-client";
-import { AgentCompetitionsResponse, GetAgentCompetitionsParams } from "@/types";
+import { CompetitionStatus } from "@recallnet/services/types";
+
+import { tanstackClient } from "@/rpc/clients/tanstack-query";
+import type { RouterOutputs } from "@/rpc/router";
+import { GetAgentCompetitionsParams } from "@/types";
 
 /**
  * Hook to fetch competitions for a specific agent
@@ -12,13 +15,27 @@ import { AgentCompetitionsResponse, GetAgentCompetitionsParams } from "@/types";
 export const useAgentCompetitions = (
   agentId?: string,
   params: GetAgentCompetitionsParams = {},
-) =>
-  useQuery({
-    queryKey: ["agent-competitions", agentId, params],
-    queryFn: async (): Promise<AgentCompetitionsResponse> => {
-      if (!agentId) throw new Error("Agent ID is required");
-      return apiClient.getAgentCompetitions(agentId, params);
-    },
-    enabled: !!agentId,
-    placeholderData: (prev) => prev,
-  });
+): UseQueryResult<RouterOutputs["agent"]["getCompetitions"], Error> => {
+  const { status, claimed, sort, limit = 10, offset = 0 } = params;
+
+  return useQuery(
+    tanstackClient.agent.getCompetitions.queryOptions({
+      input: {
+        agentId: agentId ?? "",
+        filters: {
+          status: status as CompetitionStatus | undefined,
+          claimed,
+        },
+        paging: {
+          sort,
+          limit,
+          offset,
+        },
+      },
+      enabled: !!agentId,
+      placeholderData: (prev) => prev,
+    }),
+  );
+};
+
+export type AgentCompetitionsResult = RouterOutputs["agent"]["getCompetitions"];
