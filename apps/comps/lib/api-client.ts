@@ -10,13 +10,11 @@ import {
   CompetitionPerpsSummaryResponse,
   CompetitionResponse,
   CompetitionRulesResponse,
-  CompetitionTimelineResponse,
   CompetitionTradesResponse,
   CompetitionsResponse,
   CreateVoteRequest,
   EnrichedVotesResponse,
   GetAgentCompetitionsParams,
-  GetCompetitionPerformanceParams,
   GetCompetitionPerpsPositionsParams,
   GetCompetitionTradesParams,
   GetCompetitionsParams,
@@ -283,24 +281,6 @@ export class ApiClient {
   ): Promise<CompetitionPerpsSummaryResponse> {
     return this.request<CompetitionPerpsSummaryResponse>(
       `/competitions/${competitionId}/perps/summary`,
-    );
-  }
-
-  /**
-   * Get competition performance
-   * @param competitionId - Competition ID
-   * @param params - Query parameters
-   * @returns Agents response
-   */
-  async getCompetitionTimeline(
-    competitionId: string,
-    params: GetCompetitionPerformanceParams = {
-      bucket: 3 * 60,
-    },
-  ): Promise<CompetitionTimelineResponse> {
-    const queryParams = this.formatQueryParams(params);
-    return this.request<CompetitionTimelineResponse>(
-      `/competitions/${competitionId}/timeline${queryParams}`,
     );
   }
 

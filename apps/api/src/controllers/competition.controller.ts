@@ -478,12 +478,17 @@ export function makeCompetitionController(services: ServiceRegistry) {
         // Parse and validate bucket parameter (convert string to number)
         const bucket = BucketParamSchema.parse(req.query.bucket);
 
-        const result = await services.competitionService.getCompetitionTimeline(
-          competitionId,
-          bucket,
-        );
+        const timeline =
+          await services.competitionService.getCompetitionTimeline(
+            competitionId,
+            bucket,
+          );
 
-        res.status(200).json(result);
+        res.status(200).json({
+          success: true,
+          competitionId,
+          timeline,
+        });
       } catch (error) {
         next(error);
       }

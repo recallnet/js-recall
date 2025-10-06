@@ -284,16 +284,12 @@ type CompetitionAgentsData = {
 };
 
 /**
- * Competition timeline data structure
+ * Competition timeline entry structure
  */
-type CompetitionTimelineData = {
-  success: boolean;
-  competitionId: string;
-  timeline: Array<{
-    agentId: string;
-    agentName: string;
-    timeline: Array<{ timestamp: string; totalValue: number }>;
-  }>;
+type CompetitionTimelineEntry = {
+  agentId: string;
+  agentName: string;
+  timeline: Array<{ timestamp: string; totalValue: number }>;
 };
 
 /**
@@ -3135,12 +3131,12 @@ export class CompetitionService {
    * Get competition timeline with caching
    * @param competitionId The competition ID
    * @param bucket Time bucket interval in minutes
-   * @returns Competition timeline data
+   * @returns Array of timeline entries for each agent
    */
   async getCompetitionTimeline(
     competitionId: string,
     bucket: number,
-  ): Promise<CompetitionTimelineData> {
+  ): Promise<CompetitionTimelineEntry[]> {
     try {
       // Get competition
       const competition = await this.getCompetition(competitionId);
@@ -3180,13 +3176,7 @@ export class CompetitionService {
         });
       }
 
-      const result = {
-        success: true,
-        competitionId,
-        timeline: Array.from(agentsMap.values()),
-      };
-
-      return result;
+      return Array.from(agentsMap.values());
     } catch (error) {
       this.logger.error(
         `[CompetitionService] Error getting competition timeline with auth:`,
