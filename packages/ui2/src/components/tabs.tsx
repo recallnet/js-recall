@@ -13,7 +13,10 @@ function TabsList({ className, ref, ...props }: TabsListProps) {
   return (
     <TabsPrimitive.List
       ref={ref}
-      className={cn("inline-flex h-10 items-center justify-start", className)}
+      className={cn(
+        "inline-flex min-h-10 items-center justify-start",
+        className,
+      )}
       {...props}
     />
   );

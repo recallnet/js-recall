@@ -51,7 +51,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${fontSans.variable} ${fontMono.variable} overflow-x-hidden bg-black antialiased`}
+        className={`${fontSans.variable} ${fontMono.variable} bg-black antialiased`}
       >
         <Tracking />
         <Toaster position="top-right" />
