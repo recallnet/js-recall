@@ -25,6 +25,7 @@ import {
   CompetitionDetailResponse,
   CreateCompetitionResponse,
   ErrorResponse,
+  StartCompetitionResponse,
   UpdateCompetitionResponse,
   UserRegistrationResponse,
 } from "@/e2e/utils/api-types.js";
@@ -2385,34 +2386,25 @@ describe("Admin API", () => {
     await client.loginAsAdmin(adminApiKey);
 
     // Create a competition with prize pools
-    const createResponse = await axios.post(
-      `${getBaseUrl()}/api/admin/competition/create`,
-      {
-        name: "Competition with Prize Pools",
-        description: "Testing prize pool creation",
-        type: "trading",
-        prizePools: {
-          agent: 1000,
-          users: 500,
-        },
+    const createResponse = (await client.createCompetition({
+      name: "Competition with Prize Pools",
+      description: "Testing prize pool creation",
+      type: "trading",
+      prizePools: {
+        agent: 1000,
+        users: 500,
       },
-      {
-        headers: {
-          Authorization: `Bearer ${adminApiKey}`,
-        },
-      },
-    );
+    })) as CreateCompetitionResponse;
 
-    expect(createResponse.status).toBe(201);
-    expect(createResponse.data.success).toBe(true);
-    expect(createResponse.data.competition).toBeDefined();
-    const competitionId = createResponse.data.competition.id;
+    expect(createResponse.success).toBe(true);
+    expect(createResponse.competition).toBeDefined();
+    const competitionId = createResponse.competition.id;
 
     // Verify the competition was created successfully
-    expect(createResponse.data.competition.name).toBe(
+    expect(createResponse.competition.name).toBe(
       "Competition with Prize Pools",
     );
-    expect(createResponse.data.competition.description).toBe(
+    expect(createResponse.competition.description).toBe(
       "Testing prize pool creation",
     );
 
@@ -2433,22 +2425,14 @@ describe("Admin API", () => {
     await client.loginAsAdmin(adminApiKey);
 
     // First create a competition without prize pools
-    const createResponse = await axios.post(
-      `${getBaseUrl()}/api/admin/competition/create`,
-      {
-        name: "Competition to Update with Prize Pools",
-        description: "Testing prize pool updates",
-        type: "trading",
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${adminApiKey}`,
-        },
-      },
-    );
+    const createResponse = (await client.createCompetition({
+      name: "Competition to Update with Prize Pools",
+      description: "Testing prize pool updates",
+      type: "trading",
+    })) as CreateCompetitionResponse;
 
-    expect(createResponse.status).toBe(201);
-    const competitionId = createResponse.data.competition.id;
+    expect(createResponse.success).toBe(true);
+    const competitionId = createResponse.competition.id;
 
     // Verify no prize pools exist initially
     let prizePools = await db
@@ -2458,26 +2442,17 @@ describe("Admin API", () => {
     expect(prizePools).toHaveLength(0);
 
     // Now update the competition with prize pools
-    const updateResponse = await axios.put(
-      `${getBaseUrl()}/api/admin/competition/${competitionId}`,
-      {
-        name: "Updated Competition with Prize Pools",
-        description: "Updated with prize pools",
-        prizePools: {
-          agent: 3000,
-          users: 1500,
-        },
+    const updateResponse = (await client.updateCompetition(competitionId, {
+      name: "Updated Competition with Prize Pools",
+      description: "Updated with prize pools",
+      prizePools: {
+        agent: 3000,
+        users: 1500,
       },
-      {
-        headers: {
-          Authorization: `Bearer ${adminApiKey}`,
-        },
-      },
-    );
+    })) as UpdateCompetitionResponse;
 
-    expect(updateResponse.status).toBe(200);
-    expect(updateResponse.data.success).toBe(true);
-    expect(updateResponse.data.competition.name).toBe(
+    expect(updateResponse.success).toBe(true);
+    expect(updateResponse.competition.name).toBe(
       "Updated Competition with Prize Pools",
     );
 
@@ -2508,32 +2483,23 @@ describe("Admin API", () => {
 
     // Start a competition with prize pools
     const competitionName = `Prize Pool Start Competition ${Date.now()}`;
-    const startResponse = await axios.post(
-      `${getBaseUrl()}/api/admin/competition/start`,
-      {
-        name: competitionName,
-        description: "Testing start competition with prize pools",
-        type: "trading",
-        agentIds: [agent1.id, agent2.id],
-        prizePools: {
-          agent: 2000,
-          users: 1000,
-        },
+    const startResponse = (await client.startCompetition({
+      name: competitionName,
+      description: "Testing start competition with prize pools",
+      type: "trading",
+      agentIds: [agent1.id, agent2.id],
+      prizePools: {
+        agent: 2000,
+        users: 1000,
       },
-      {
-        headers: {
-          Authorization: `Bearer ${adminApiKey}`,
-        },
-      },
-    );
+    })) as StartCompetitionResponse;
 
-    expect(startResponse.status).toBe(200);
-    expect(startResponse.data.success).toBe(true);
-    expect(startResponse.data.competition).toBeDefined();
-    expect(startResponse.data.competition.name).toBe(competitionName);
-    expect(startResponse.data.competition.status).toBe("active");
+    expect(startResponse.success).toBe(true);
+    expect(startResponse.competition).toBeDefined();
+    expect(startResponse.competition.name).toBe(competitionName);
+    expect(startResponse.competition.status).toBe("active");
 
-    const competitionId = startResponse.data.competition.id;
+    const competitionId = startResponse.competition.id;
 
     // Verify prize pools were created in the database
     const prizePools = await db

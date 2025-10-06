@@ -52,11 +52,7 @@ import {
   InsertPortfolioSnapshot,
   SelectPortfolioSnapshot,
 } from "../schema/trading/types.js";
-import {
-  Database,
-  Transaction as DatabaseTransaction,
-  Transaction,
-} from "../types.js";
+import { Database, Transaction } from "../types.js";
 import {
   BestPlacementDbSchema,
   CompetitionAgentStatus,
@@ -2700,7 +2696,7 @@ export class CompetitionRepository {
   async updatePrizePools(
     competitionId: string,
     pools: { agent: bigint; users: bigint },
-    tx?: DatabaseTransaction,
+    tx?: Transaction,
   ): Promise<SelectCompetitionPrizePool> {
     try {
       const db = tx || this.#db;
@@ -2723,7 +2719,13 @@ export class CompetitionRepository {
         })
         .returning();
 
-      return result!;
+      if (!result) {
+        throw new Error(
+          `[CompetitionRepository] Error upserting prize pools for competition ${competitionId}: No result returned`,
+        );
+      }
+
+      return result;
     } catch (error) {
       this.#logger.error(
         `[CompetitionRepository] Error upserting prize pools for competition ${competitionId}:`,
