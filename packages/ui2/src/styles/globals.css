@@ -90,8 +90,12 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    overflow-x: clip;
+  }
   body {
     @apply bg-background text-foreground font-sans tracking-wider;
+    overflow-x: clip;
   }
   button {
     @apply font-mono;
