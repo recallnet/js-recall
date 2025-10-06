@@ -1,57 +1,64 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  UseQueryResult,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 
 import { useSession } from "@/hooks/useSession";
-import { apiClient } from "@/lib/api-client";
-import { AgentsResponse, GetAgentsParams, UpdateAgentRequest } from "@/types";
+import { tanstackClient } from "@/rpc/clients/tanstack-query";
+import type { RouterOutputs } from "@/rpc/router";
+import { GetAgentsParams } from "@/types";
 
 /**
- * Hook to fetch agents with pagination and filtering
+ * Hook to fetch agents with pagination and filtering (public endpoint)
  * @param params Query parameters for agents endpoint
  * @returns Query result with agents data
  */
-export const useAgents = (params: GetAgentsParams = {}) => {
-  return useQuery({
-    queryKey: ["agents", params],
-    queryFn: async (): Promise<AgentsResponse> => {
-      return apiClient.getAgents(params);
-    },
-    placeholderData: (prev) => prev,
-  });
-};
+export const useAgents = (
+  params: GetAgentsParams = {},
+): UseQueryResult<RouterOutputs["agent"]["listAgents"], Error> =>
+  useQuery(
+    tanstackClient.agent.listAgents.queryOptions({
+      input: params,
+      placeholderData: (prev) => prev,
+    }),
+  );
 
 /**
- * Hook to fetch agents with pagination and filtering
+ * Hook to fetch user's owned agents with pagination
  * @param params Query parameters for agents endpoint
- * @returns Query result with agents data
+ * @returns Query result with user agents data
+
  */
-export const useUserAgents = (params: GetAgentsParams = {}) => {
+export const useUserAgents = (
+  params: GetAgentsParams = {},
+): UseQueryResult<RouterOutputs["user"]["getUserAgents"], Error> => {
   const { isAuthenticated } = useSession();
 
-  return useQuery({
-    queryKey: ["agents", params],
-    queryFn: async (): Promise<AgentsResponse> => {
-      return apiClient.getUserAgents(params);
-    },
-    enabled: isAuthenticated,
-    placeholderData: (prev) => prev,
-  });
+  return useQuery(
+    tanstackClient.user.getUserAgents.queryOptions({
+      input: params,
+      enabled: isAuthenticated,
+      placeholderData: (prev) => prev,
+    }),
+  );
 };
 
 /**
  * Hook to update agents
- * @param body Body fields to update
- * @returns
+ * @returns Mutation for updating an agent
  */
 export const useUpdateAgent = () => {
   const queryClient = useQueryClient();
 
-  return useMutation({
-    mutationFn: async (data: UpdateAgentRequest) => {
-      return apiClient.updateAgent(data);
-    },
-    onSuccess: () => {
-      // Invalidate profile query to get updated data
-      queryClient.invalidateQueries({ queryKey: ["agent"] });
-    },
-  });
+  return useMutation(
+    tanstackClient.user.updateAgentProfile.mutationOptions({
+      onSuccess: () => {
+        queryClient.invalidateQueries({
+          queryKey: tanstackClient.user.getUserAgent.key(),
+        });
+      },
+    }),
+  );
 };

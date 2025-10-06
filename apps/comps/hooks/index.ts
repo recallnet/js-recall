@@ -3,7 +3,6 @@ export * from "./useAgent";
 export * from "./useCompetitions";
 export * from "./useCompetition";
 export * from "./useCompetitionRules";
-export * from "./useCompetitionAgents";
 export * from "./useCompetitionTrades";
 export * from "./useCompetitionPerpsPositions";
 export * from "./useAgentCompetitions";

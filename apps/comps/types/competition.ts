@@ -1,3 +1,6 @@
+import type { RouterOutputs } from "@/rpc/router";
+import { mergeCompetitionsWithUserData } from "@/utils/competition-utils";
+
 import { Agent } from "./agent";
 import { PaginationResponse } from "./api";
 import { CompetitionStatus, CrossChainTradingType } from "./enums";
@@ -62,7 +65,6 @@ export interface Competition {
     totalPositions?: number; // Only for perpetual futures competitions
     averageEquity?: number; // Only for perpetual futures competitions
   };
-  openForBoosting: boolean;
   votingEnabled: boolean;
   votingStartDate: string | null;
   votingEndDate: string | null;
@@ -135,6 +137,10 @@ export interface UserCompetitionsResponse {
   competitions: UserCompetition[];
 }
 
+export type CompetitionWithUserAgents = ReturnType<
+  typeof mergeCompetitionsWithUserData
+>[0];
+
 export interface UserAgentCompetition extends Agent {
   rank: number;
 }
@@ -174,28 +180,8 @@ export interface CompetitionRules {
   };
 }
 
-export interface Trade {
-  id: string;
-  competitionId: string;
-  agentId: string;
-  fromToken: string;
-  toToken: string;
-  fromAmount: number;
-  toAmount: number;
-  fromTokenSymbol: string;
-  toTokenSymbol: string;
-  fromSpecificChain: string;
-  toSpecificChain: string;
-  tradeAmountUsd: number;
-  timestamp: string;
-  reason?: string;
-  agent: {
-    id: string;
-    name: string;
-    imageUrl: string;
-    description: string;
-  };
-}
+export type Trade =
+  RouterOutputs["competitions"]["getTrades"]["trades"][number];
 
 export interface GetCompetitionTradesParams {
   limit?: number;
@@ -208,48 +194,14 @@ export interface GetCompetitionPerpsPositionsParams {
   status?: string; // Optional filter: "Open", "Closed", "Liquidated"
 }
 
-export interface CompetitionTradesResponse {
-  success: boolean;
-  trades: Trade[];
-  pagination: PaginationResponse;
-}
+export type CompetitionTradesResponse =
+  RouterOutputs["competitions"]["getTrades"];
 
-export interface PerpsPosition {
-  id: string;
-  competitionId: string;
-  agentId: string;
-  positionId: string | null;
-  marketId: string | null;
-  marketSymbol: string | null;
-  asset: string;
-  isLong: boolean;
-  leverage: number;
-  size: number;
-  collateral: number;
-  averagePrice: number;
-  markPrice: number;
-  liquidationPrice: number | null;
-  unrealizedPnl: number;
-  pnlPercentage: number;
-  realizedPnl: number;
-  status?: string;
-  openedAt: string;
-  closedAt: string | null;
-  timestamp: string;
-  agent?: {
-    id: string;
-    name: string;
-    imageUrl: string;
-    handle?: string;
-    description?: string;
-  };
-}
+export type PerpsPosition =
+  RouterOutputs["competitions"]["getPerpsPositions"]["positions"][number];
 
-export interface CompetitionPerpsPositionsResponse {
-  success: boolean;
-  positions: PerpsPosition[];
-  pagination: PaginationResponse;
-}
+export type CompetitionPerpsPositionsResponse =
+  RouterOutputs["competitions"]["getPerpsPositions"];
 
 export interface CompetitionPerpsSummaryResponse {
   success: boolean;

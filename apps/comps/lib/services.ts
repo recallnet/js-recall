@@ -1,21 +1,186 @@
-import { BoostService } from "@recallnet/services";
-
 import {
+  AgentRankService,
+  AgentService,
+  BalanceService,
+  BoostAwardService,
+  BoostService,
+  CalmarRatioService,
+  CompetitionRewardService,
+  CompetitionService,
+  EmailService,
+  LeaderboardService,
+  PerpsDataProcessor,
+  PortfolioSnapshotterService,
+  PriceTrackerService,
+  TradeSimulatorService,
+  TradingConstraintsService,
+  UserService,
+  VoteService,
+} from "@recallnet/services";
+import { WalletWatchlist } from "@recallnet/services/lib";
+import { MultiChainProvider } from "@recallnet/services/providers";
+
+import { config } from "@/config/private";
+import {
+  agentNonceRepository,
+  agentRepository,
+  agentScoreRepository,
+  balanceRepository,
   boostRepository,
   competitionRepository,
+  competitionRewardsRepository,
+  leaderboardRepository,
+  perpsRepository,
+  stakesRepository,
+  tradeRepository,
+  tradingConstraintsRepository,
   userRepository,
+  voteRepository,
 } from "@/lib/repositories";
 
+import { db } from "./db";
 import { createLogger } from "./logger";
 
-const noStakeBoostAmount = process.env.NEXT_PUBLIC_NON_STAKE_BOOST_AMOUNT
-  ? BigInt(process.env.NEXT_PUBLIC_NON_STAKE_BOOST_AMOUNT)
-  : undefined;
+const multichainProvider = new MultiChainProvider(
+  config,
+  createLogger("MultiChainProvider"),
+);
+
+export const walletWatchList = new WalletWatchlist(
+  config,
+  createLogger("WalletWatchlist"),
+);
 
 export const boostService = new BoostService(
   boostRepository,
   competitionRepository,
   userRepository,
-  { boost: { noStakeBoostAmount } },
+  config,
   createLogger("BoostService"),
+);
+
+export const balanceService = new BalanceService(
+  balanceRepository,
+  config,
+  createLogger("BalanceService"),
+);
+
+export const priceTrackerService = new PriceTrackerService(
+  multichainProvider,
+  config,
+  createLogger("PriceTrackerService"),
+);
+
+export const tradeSimulatorService = new TradeSimulatorService(
+  balanceService,
+  priceTrackerService,
+  tradeRepository,
+  createLogger("TradeSimulatorService"),
+);
+
+export const portfolioSnapshotterService = new PortfolioSnapshotterService(
+  balanceService,
+  priceTrackerService,
+  competitionRepository,
+  createLogger("PortfolioSnapshotterService"),
+);
+
+export const emailService = new EmailService(
+  config,
+  createLogger("EmailService"),
+);
+
+export const userService = new UserService(
+  emailService,
+  agentRepository,
+  userRepository,
+  voteRepository,
+  walletWatchList,
+  db,
+  createLogger("UserService"),
+);
+
+export const boostAwardService = new BoostAwardService(
+  db,
+  competitionRepository,
+  boostRepository,
+  stakesRepository,
+  userService,
+  config,
+);
+
+export const agentService = new AgentService(
+  emailService,
+  balanceService,
+  priceTrackerService,
+  userService,
+  agentRepository,
+  agentNonceRepository,
+  competitionRepository,
+  leaderboardRepository,
+  perpsRepository,
+  tradeRepository,
+  userRepository,
+  config,
+  createLogger("AgentService"),
+);
+
+export const agentRankService = new AgentRankService(
+  agentScoreRepository,
+  competitionRepository,
+  createLogger("AgentRankService"),
+);
+
+export const voteService = new VoteService(
+  agentRepository,
+  competitionRepository,
+  voteRepository,
+  createLogger("VoteService"),
+);
+
+export const tradingConstraintsService = new TradingConstraintsService(
+  tradingConstraintsRepository,
+  config,
+);
+
+export const competitionRewardsService = new CompetitionRewardService(
+  competitionRewardsRepository,
+);
+
+export const calmarRatioService = new CalmarRatioService(
+  competitionRepository,
+  perpsRepository,
+  createLogger("CalmarRatioService"),
+);
+
+const perpsDataProcessor = new PerpsDataProcessor(
+  calmarRatioService,
+  agentRepository,
+  competitionRepository,
+  perpsRepository,
+  createLogger("PerpsDataProcessor"),
+);
+
+export const leaderboardService = new LeaderboardService(
+  leaderboardRepository,
+  createLogger("LeaderboardService"),
+);
+
+export const competitionService = new CompetitionService(
+  balanceService,
+  tradeSimulatorService,
+  portfolioSnapshotterService,
+  agentService,
+  agentRankService,
+  voteService,
+  tradingConstraintsService,
+  competitionRewardsService,
+  perpsDataProcessor,
+  agentRepository,
+  agentScoreRepository,
+  perpsRepository,
+  competitionRepository,
+  db,
+  config,
+  createLogger("CompetitionService"),
 );

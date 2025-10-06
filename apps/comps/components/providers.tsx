@@ -11,7 +11,7 @@ import { ThemeProvider } from "@recallnet/ui2/components/theme-provider";
 import { PostHogProviderWrapper } from "@/providers/posthog-provider";
 import { PrivyProviderWrapper } from "@/providers/privy-provider";
 import { SessionProvider } from "@/providers/session-provider";
-import { wagmiConfig } from "@/wagmi-config";
+import { clientConfig } from "@/wagmi-config";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -38,7 +38,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <PostHogProviderWrapper>
         <PrivyProviderWrapper>
           <QueryClientProvider client={queryClient}>
-            <WagmiProvider config={wagmiConfig}>
+            <WagmiProvider config={clientConfig}>
               <SessionProvider>
                 <NavigationGuardProvider>{children}</NavigationGuardProvider>
               </SessionProvider>

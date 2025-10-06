@@ -4,6 +4,7 @@ import {
   desc,
   count as drizzleCount,
   eq,
+  getTableColumns,
   gt,
   inArray,
   not,
@@ -28,6 +29,7 @@ import {
   InsertPerpsRiskMetrics,
   InsertPerpsSelfFundingAlert,
   InsertPerpsTransferHistory,
+  PerpetualPositionWithAgent,
   RiskAdjustedLeaderboardEntry,
   SelectPerpetualPosition,
   SelectPerpsAccountSummary,
@@ -1128,7 +1130,10 @@ export class PerpsRepository {
     limit?: number,
     offset?: number,
     statusFilter?: string,
-  ) {
+  ): Promise<{
+    positions: PerpetualPositionWithAgent[];
+    total: number;
+  }> {
     try {
       const conditions = [eq(perpetualPositions.competitionId, competitionId)];
 
@@ -1140,28 +1145,7 @@ export class PerpsRepository {
       // Build the main query with agent join - following same pattern as getCompetitionTrades
       const positionsQuery = this.#dbRead
         .select({
-          // All position fields from perpetualPositions table
-          id: perpetualPositions.id,
-          competitionId: perpetualPositions.competitionId,
-          agentId: perpetualPositions.agentId,
-          providerPositionId: perpetualPositions.providerPositionId,
-          providerTradeId: perpetualPositions.providerTradeId,
-          asset: perpetualPositions.asset,
-          isLong: perpetualPositions.isLong,
-          leverage: perpetualPositions.leverage,
-          positionSize: perpetualPositions.positionSize,
-          collateralAmount: perpetualPositions.collateralAmount,
-          entryPrice: perpetualPositions.entryPrice,
-          currentPrice: perpetualPositions.currentPrice,
-          liquidationPrice: perpetualPositions.liquidationPrice,
-          pnlUsdValue: perpetualPositions.pnlUsdValue,
-          pnlPercentage: perpetualPositions.pnlPercentage,
-          status: perpetualPositions.status,
-          createdAt: perpetualPositions.createdAt,
-          lastUpdatedAt: perpetualPositions.lastUpdatedAt,
-          closedAt: perpetualPositions.closedAt,
-          capturedAt: perpetualPositions.capturedAt,
-          // Agent info embedded like in trades
+          ...getTableColumns(perpetualPositions),
           agent: {
             id: agents.id,
             name: agents.name,
@@ -1170,7 +1154,7 @@ export class PerpsRepository {
           },
         })
         .from(perpetualPositions)
-        .leftJoin(agents, eq(perpetualPositions.agentId, agents.id))
+        .innerJoin(agents, eq(perpetualPositions.agentId, agents.id))
         .where(and(...conditions))
         .orderBy(desc(perpetualPositions.lastUpdatedAt));
 

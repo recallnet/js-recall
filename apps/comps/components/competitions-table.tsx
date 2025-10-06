@@ -133,7 +133,7 @@ export const CompetitionsTable: React.FC<CompetitionsTableProps> = ({
         header: () => "Rank",
         cell: ({ row }) => {
           const agent = row.original.agents[0];
-          return agent ? (
+          return agent?.rank ? (
             <RankBadge rank={agent.rank} />
           ) : (
             <span className="text-xs text-slate-400">-</span>

@@ -5,9 +5,12 @@ import type {
   AgentService,
   UserService,
 } from "@recallnet/services";
+import {
+  extractPrivyIdentityToken,
+  verifyPrivyIdentityToken,
+} from "@recallnet/services/lib";
 
-import { extractPrivyIdentityToken } from "@/lib/privy/utils.js";
-import { verifyPrivyIdentityToken } from "@/lib/privy/verify.js";
+import { config } from "@/config/index.js";
 import { extractApiKey } from "@/middleware/auth-helpers.js";
 
 /**
@@ -34,7 +37,11 @@ export function optionalAuthMiddleware(
       const identityToken = extractPrivyIdentityToken(req);
       if (identityToken) {
         try {
-          const { privyId } = await verifyPrivyIdentityToken(identityToken);
+          const { privyId } = await verifyPrivyIdentityToken(
+            identityToken,
+            config.privy.jwksPublicKey,
+            config.privy.appId,
+          );
 
           req.privyToken = identityToken;
           const user = await userService.getUserByPrivyId(privyId);

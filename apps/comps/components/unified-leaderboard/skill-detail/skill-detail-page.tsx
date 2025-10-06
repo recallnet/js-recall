@@ -1,6 +1,5 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import {
   ArrowLeft,
   Calendar,
@@ -24,8 +23,9 @@ import { Tooltip } from "@recallnet/ui2/components/tooltip";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { useUnifiedLeaderboard } from "@/hooks/useUnifiedLeaderboard";
-import { ApiClient } from "@/lib/api-client";
+import { client } from "@/rpc/clients/client-side";
 import { LeaderboardAgent } from "@/types/agent";
+import { checkIsAgentSkill } from "@/utils/competition-utils";
 
 import { SkillDetailLeaderboardTable } from "./skill-detail-leaderboard-table";
 import { SkillDetailLeaderboardTableMobile } from "./skill-detail-leaderboard-table-mobile";
@@ -33,8 +33,6 @@ import { SkillDetailLeaderboardTableMobile } from "./skill-detail-leaderboard-ta
 interface SkillDetailPageProps {
   skillId: string;
 }
-
-const apiClient = new ApiClient();
 
 export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
   skillId,
@@ -44,30 +42,28 @@ export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
     [],
   );
   const [currentOffset, setCurrentOffset] = useState(100); // Start at 100 since initial load gets first 100
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   const { data, isLoading, error } = useUnifiedLeaderboard();
 
-  // Query for loading more agents (only for crypto_trading)
-  const { refetch: loadMoreAgents, isLoading: isLoadingMore } = useQuery({
-    queryKey: ["load-more-agents", currentOffset],
-    queryFn: async () => {
-      const response = await apiClient.getGlobalLeaderboard({
+  const handleLoadMore = useCallback(async () => {
+    setIsLoadingMore(true);
+    try {
+      const result = await client.leaderboard.getGlobal({
         type: "trading",
         limit: 100,
         offset: currentOffset,
       });
-      return response;
-    },
-    enabled: false, // Manual trigger
-  });
-
-  const handleLoadMore = useCallback(async () => {
-    const result = await loadMoreAgents();
-    if (result.data?.agents) {
-      setAdditionalAgents((prev) => [...prev, ...result.data.agents]);
-      setCurrentOffset((prev) => prev + 100);
+      if (result?.agents) {
+        setAdditionalAgents((prev) => [...prev, ...result.agents]);
+        setCurrentOffset((prev) => prev + 100);
+      }
+    } catch (error) {
+      console.error("Failed to load more agents:", error);
+    } finally {
+      setIsLoadingMore(false);
     }
-  }, [loadMoreAgents]);
+  }, [currentOffset]);
 
   if (isLoading) {
     return (
@@ -96,12 +92,7 @@ export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
   const skill = data?.skills[skillId];
   let skillData = data?.skillData[skillId];
 
-  // For crypto_trading, merge additional agents
-  if (
-    skillId === "crypto_trading" &&
-    skillData &&
-    additionalAgents.length > 0
-  ) {
+  if (checkIsAgentSkill(skillId) && skillData && additionalAgents.length > 0) {
     skillData = {
       ...skillData,
       participants: {
@@ -130,8 +121,7 @@ export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
     );
   }
 
-  const isTrading = skill.category === "trading";
-
+  const isAgentSkill = checkIsAgentSkill(skillId);
   return (
     <div className="space-y-8 pb-16">
       {/* Header */}
@@ -165,12 +155,12 @@ export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
               <Badge
                 className={cn(
                   "text-sm",
-                  isTrading
+                  isAgentSkill
                     ? "bg-green-900 text-green-300"
                     : "bg-blue-900 text-blue-300",
                 )}
               >
-                {isTrading ? "AGENT" : "MODEL"}
+                {isAgentSkill ? "AGENT" : "MODEL"}
               </Badge>
             </div>
           </div>
@@ -225,7 +215,7 @@ export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
                   </span>
                 </div>
                 <div className="text-xs text-gray-400">
-                  {isTrading ? "Agents" : "Models"}
+                  {isAgentSkill ? "Agents" : "Models"}
                 </div>
               </div>
 
@@ -235,7 +225,7 @@ export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
                     <Target size={16} className="text-green-400" />
                     <span className="text-lg font-bold text-green-400">
                       {typeof skillData.stats.topScore === "number"
-                        ? skillData.stats.topScore.toFixed(1)
+                        ? skillData.stats.topScore.toFixed(0)
                         : skillData.stats.topScore}
                     </span>
                   </div>
@@ -248,7 +238,7 @@ export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
                   <div className="mb-1 flex items-center justify-center gap-1">
                     <TrendingUp size={16} className="text-blue-400" />
                     <span className="text-lg font-bold text-blue-400">
-                      {skillData.stats.avgScore.toFixed(1)}
+                      {skillData.stats.avgScore.toFixed(0)}
                     </span>
                   </div>
                   <div className="text-xs text-gray-400">Average</div>
@@ -268,7 +258,7 @@ export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
               </span>
             </div>
             <div className="text-sm text-gray-400">
-              Total {isTrading ? "Agents" : "Models"}
+              Total {isAgentSkill ? "Agents" : "Models"}
             </div>
           </Card>
 
@@ -278,7 +268,7 @@ export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
                 <TrendingUp size={20} className="text-green-400" />
                 <span className="text-2xl font-bold text-green-400">
                   {typeof skillData.stats.topScore === "number"
-                    ? skillData.stats.topScore.toFixed(1)
+                    ? skillData.stats.topScore.toFixed(0)
                     : skillData.stats.topScore}
                 </span>
               </div>
@@ -291,7 +281,7 @@ export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
               <div className="mb-2 flex items-center justify-center gap-2">
                 <TrendingUp size={20} className="text-blue-400" />
                 <span className="text-2xl font-bold text-blue-400">
-                  {skillData.stats.avgScore.toFixed(1)}
+                  {skillData.stats.avgScore.toFixed(0)}
                 </span>
               </div>
               <div className="text-sm text-gray-400">Average Score</div>
@@ -344,8 +334,8 @@ export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
             />
           </div>
 
-          {/* Load More Button for crypto_trading */}
-          {skillId === "crypto_trading" &&
+          {/* Load More Button for agent skills */}
+          {checkIsAgentSkill(skillId) &&
             skillData.participants.agents.length <
               skillData.stats.agentCount && (
               <div className="mt-6 text-center">

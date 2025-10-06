@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 
-import { ENABLE_SANDBOX } from "@/config";
+import { config } from "@/config/public";
 import { sandboxClient } from "@/lib/sandbox-client";
 import {
   AdminAgentKeyResponse,
@@ -41,7 +41,7 @@ export const useSandboxAgentApiKey = (agentHandle: string | null) => {
   return useQuery<AdminAgentKeyResponse, Error>({
     queryKey: ["sandbox-agent-api-key", agentHandle],
     queryFn: () => sandboxClient.getAgentApiKey(agentHandle!),
-    enabled: !!agentHandle && ENABLE_SANDBOX,
+    enabled: !!agentHandle && config.clientFlags.enableSandbox,
   });
 };
 

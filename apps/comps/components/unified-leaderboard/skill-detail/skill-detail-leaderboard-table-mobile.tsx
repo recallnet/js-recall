@@ -253,7 +253,7 @@ export const SkillDetailLeaderboardTableMobile: React.FC<
               {/* Score Row */}
               <div className="mb-3 text-center">
                 <div className="font-mono text-2xl font-bold text-white">
-                  {participant.score.toFixed(1)}
+                  {participant.score.toFixed(0)}
                 </div>
                 {confidenceInterval && (
                   <div className="text-sm text-gray-400">

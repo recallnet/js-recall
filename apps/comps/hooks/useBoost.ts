@@ -7,6 +7,7 @@ import {
 
 import { useSession } from "@/hooks/useSession";
 import { apiClient } from "@/lib/api-client";
+import { tanstackClient } from "@/rpc/clients/tanstack-query";
 
 export const useBoosts = (competitionId: string) => {
   const { isAuthenticated } = useSession();
@@ -60,13 +61,19 @@ export const useBoostAgent = (
       options?.onSuccess?.(data, variables, context);
       // Invalidate relevant queries
       queryClient.invalidateQueries({
-        queryKey: ["boostTotals", variables.competitionId],
+        queryKey: tanstackClient.boost.agentBoostTotals.key({
+          input: { competitionId: variables.competitionId },
+        }),
       });
       queryClient.invalidateQueries({
-        queryKey: ["boosts", variables.competitionId],
+        queryKey: tanstackClient.boost.userBoosts.key({
+          input: { competitionId: variables.competitionId },
+        }),
       });
       queryClient.invalidateQueries({
-        queryKey: ["boostBalance", variables.competitionId],
+        queryKey: tanstackClient.boost.balance.key({
+          input: { competitionId: variables.competitionId },
+        }),
       });
     },
   });

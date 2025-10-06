@@ -1,7 +1,7 @@
 import { createConfig } from "@privy-io/wagmi";
-import { http } from "wagmi";
+import { Config, http } from "wagmi";
 
-import { BASE_SEPOLIA_RPC } from "@/config";
+import { config } from "@/config/public";
 import { baseSepoliaWithRpcUrl } from "@/providers/privy-provider";
 
 /**
@@ -11,10 +11,10 @@ import { baseSepoliaWithRpcUrl } from "@/providers/privy-provider";
  * Note: The shimDisconnect behavior is handled automatically by @privy-io/wagmi
  * to ensure proper state synchronization between Privy and wagmi.
  */
-export const wagmiConfig = createConfig({
+export const clientConfig: Config = createConfig({
   chains: [baseSepoliaWithRpcUrl], // Match the chains configured in Privy
   transports: {
     // Explicitly use the env-provided RPC for wagmi if available; otherwise fall back
-    [baseSepoliaWithRpcUrl.id]: http(BASE_SEPOLIA_RPC || undefined),
+    [baseSepoliaWithRpcUrl.id]: http(config.rpc.baseSepolia || undefined),
   },
 });

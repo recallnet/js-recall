@@ -10,7 +10,10 @@ import {
   SelectCompetitionReward,
   UpdateCompetition,
 } from "@recallnet/db/schema/core/types";
-import { SelectTrade } from "@recallnet/db/schema/trading/types";
+import {
+  PerpetualPositionWithAgent,
+  SelectTrade,
+} from "@recallnet/db/schema/trading/types";
 import type {
   Database,
   Transaction as DatabaseTransaction,
@@ -20,19 +23,27 @@ import { AgentService } from "./agent.service.js";
 import { AgentRankService } from "./agentrank.service.js";
 import { BalanceService } from "./balance.service.js";
 import { CompetitionRewardService } from "./competition-reward.service.js";
+import {
+  PaginationResponse,
+  buildPaginationResponse,
+} from "./lib/pagination-utils.js";
 import { applySortingAndPagination, splitSortField } from "./lib/sort.js";
 import { PerpsDataProcessor } from "./perps-data-processor.service.js";
 import { PortfolioSnapshotterService } from "./portfolio-snapshotter.service.js";
 import { TradeSimulatorService } from "./trade-simulator.service.js";
 import { TradingConstraintsService } from "./trading-constraints.service.js";
 import {
+  BaseEnrichedLeaderboardEntry,
   CompetitionAgentStatus,
   CompetitionStatus,
   CompetitionType,
   CrossChainTradingType,
+  EnrichedLeaderboardEntry,
   PagingParams,
+  PerpsEnrichedLeaderboardEntry,
   SpecificChain,
   SpecificChainBalances,
+  isPerpsEnrichedEntry,
 } from "./types/index.js";
 import { ApiError } from "./types/index.js";
 import {
@@ -162,7 +173,9 @@ type CompetitionRulesData = {
 /**
  * Enriched competition data structure
  */
-type EnrichedCompetition = SelectCompetition & {
+type EnrichedCompetition = Awaited<
+  ReturnType<typeof CompetitionService.prototype.getCompetitions>
+>["competitions"][number] & {
   tradingConstraints?: {
     minimumPairAgeHours: number | null;
     minimum24hVolumeUsd: number | null;
@@ -227,7 +240,6 @@ type CompetitionDetailsData = {
       agentId: string | null;
     }>;
     votingEnabled?: boolean;
-    openForBoosting: boolean;
     userVotingInfo?: {
       canVote: boolean;
       reason?: string;
@@ -260,21 +272,27 @@ type CompetitionAgentsData = {
     rank: number | null;
     score: number | null;
     voteCount: number;
+    // Performance metrics
+    pnl: number;
+    pnlPercent: number;
+    change24h: number;
+    change24hPercent: number;
+    // Perps competition risk metrics (null for spot trading competitions)
+    calmarRatio: number | null;
+    simpleReturn: number | null;
+    maxDrawdown: number | null;
+    hasRiskMetrics: boolean;
   }>;
-  total: number;
+  pagination: PaginationResponse;
 };
 
 /**
- * Competition timeline data structure
+ * Competition timeline entry structure
  */
-type CompetitionTimelineData = {
-  success: boolean;
-  competitionId: string;
-  timeline: Array<{
-    agentId: string;
-    agentName: string;
-    timeline: Array<{ timestamp: string; totalValue: number }>;
-  }>;
+type CompetitionTimelineEntry = {
+  agentId: string;
+  agentName: string;
+  timeline: Array<{ timestamp: string; totalValue: number }>;
 };
 
 /**
@@ -300,7 +318,7 @@ type TradeWithAgent = {
     name: string;
     imageUrl: string | null;
     description: string | null;
-  } | null;
+  };
 };
 
 /**
@@ -362,6 +380,9 @@ export interface CompetitionServiceConfig {
     windowMs: number;
   };
 }
+
+// Sentinel value for perps competitions with risk metrics but no Calmar ratio
+const SENTINEL_SCORE_NO_CALMAR = -999999;
 
 /**
  * Competition Service
@@ -864,10 +885,13 @@ export class CompetitionService {
     totalAgents: number,
     tx: DatabaseTransaction,
   ): Promise<LeaderboardEntry[]> {
+    // Get the competition to check its type
+    const competition = await this.competitionRepo.findById(competitionId);
+
     // Get the leaderboard (calculated from final snapshots)
     const leaderboard = await this.getLeaderboard(competitionId);
 
-    const enrichedEntries = [];
+    const enrichedEntries: EnrichedLeaderboardEntry[] = [];
 
     // Note: the leaderboard array could be quite large, avoiding Promise.all
     // so that these async calls to get pnl happen in series and don't over
@@ -882,15 +906,49 @@ export class CompetitionService {
           competitionId,
         );
 
-      enrichedEntries.push({
-        agentId: entry.agentId,
-        competitionId,
-        rank: i + 1, // 1-based ranking
-        pnl,
-        startingValue,
-        totalAgents,
-        score: entry.value, // Portfolio value in USD is saved as `score`
-      });
+      // Determine the score based on competition type and metrics availability
+      let score: number;
+      if (competition?.type === "perpetual_futures" && entry.hasRiskMetrics) {
+        if (entry.calmarRatio !== null && entry.calmarRatio !== undefined) {
+          score = entry.calmarRatio;
+        } else {
+          score = SENTINEL_SCORE_NO_CALMAR; // Sentinel for "has metrics but no Calmar"
+        }
+      } else {
+        score = entry.value; // Portfolio value for spot trading or perps without metrics
+      }
+
+      // Add perps-specific fields if this is a perps competition with risk metrics
+      if (competition?.type === "perpetual_futures" && entry.hasRiskMetrics) {
+        const perpsEntry: PerpsEnrichedLeaderboardEntry = {
+          agentId: entry.agentId,
+          competitionId,
+          rank: i + 1, // 1-based ranking
+          pnl,
+          startingValue,
+          totalAgents,
+          score,
+          calmarRatio: entry.calmarRatio ?? null,
+          simpleReturn: entry.simpleReturn ?? null,
+          maxDrawdown: entry.maxDrawdown ?? null,
+          totalEquity: entry.value, // Store portfolio value as totalEquity
+          totalPnl: entry.pnl ?? null,
+          hasRiskMetrics: true,
+        };
+        enrichedEntries.push(perpsEntry);
+      } else {
+        const baseEntry: BaseEnrichedLeaderboardEntry = {
+          agentId: entry.agentId,
+          competitionId,
+          rank: i + 1, // 1-based ranking
+          pnl,
+          startingValue,
+          totalAgents,
+          score,
+          hasRiskMetrics: false,
+        };
+        enrichedEntries.push(baseEntry);
+      }
     }
 
     // Persist to database
@@ -899,11 +957,18 @@ export class CompetitionService {
     }
 
     // Map enriched entries back to LeaderboardEntry format for return
-    return enrichedEntries.map((entry) => ({
-      agentId: entry.agentId,
-      value: entry.score, // Convert score back to value for LeaderboardEntry
-      pnl: entry.pnl,
-    }));
+    return enrichedEntries.map((entry) => {
+      // Use the type guard to check if it's a perps entry with totalEquity
+      const value = isPerpsEnrichedEntry(entry)
+        ? entry.totalEquity
+        : entry.score;
+
+      return {
+        agentId: entry.agentId,
+        value,
+        pnl: entry.pnl,
+      };
+    });
   }
 
   /**
@@ -1322,18 +1387,21 @@ export class CompetitionService {
    */
   private async calculatePendingCompetitionLeaderboard(
     competitionId: string,
+    type: CompetitionType,
   ): Promise<LeaderboardEntry[]> {
-    const agents =
+    const agentIds =
       await this.competitionRepo.getCompetitionAgents(competitionId);
-    const globalLeaderboard =
-      await this.agentScoreRepo.getAllAgentRanks(agents);
+    const globalLeaderboard = await this.agentScoreRepo.getAllAgentRanks({
+      agentIds,
+      type,
+    });
 
     // Create map of agent IDs to their global rank scores
     const globalLeaderboardMap = new Map(
       globalLeaderboard.map((agent) => [agent.id, agent.score]),
     );
 
-    return agents
+    return agentIds
       .map((agentId: string) => ({
         agentId,
         value: 0, // No portfolio value for pending competitions
@@ -1379,14 +1447,26 @@ export class CompetitionService {
         case "pending":
           return await this.calculatePendingCompetitionLeaderboard(
             competitionId,
+            competition.type,
           );
 
         case "ended": {
           // Try saved leaderboard first
-          const savedLeaderboard =
-            await this.competitionRepo.findLeaderboardByTradingComp(
-              competitionId,
-            );
+          let savedLeaderboard: LeaderboardEntry[] = [];
+
+          // Check competition type to use the appropriate retrieval method
+          if (competition.type === "perpetual_futures") {
+            savedLeaderboard =
+              await this.competitionRepo.findLeaderboardByPerpsComp(
+                competitionId,
+              );
+          } else {
+            savedLeaderboard =
+              await this.competitionRepo.findLeaderboardByTradingComp(
+                competitionId,
+              );
+          }
+
           if (savedLeaderboard.length > 0) {
             return savedLeaderboard;
           }
@@ -2788,8 +2868,6 @@ export class CompetitionService {
     status?: CompetitionStatus;
     pagingParams: PagingParams;
     userId?: string;
-    agentId?: string;
-    isAdmin?: boolean;
   }): Promise<EnrichedCompetitionsData> {
     try {
       // Get competitions
@@ -2882,24 +2960,6 @@ export class CompetitionService {
     }
   }
 
-  async competitionOpenForBoosting(competitionId: string): Promise<boolean> {
-    const competition = await this.getCompetition(competitionId);
-    if (!competition) {
-      throw new ApiError(404, "Competition not found");
-    }
-    if (competition.status !== "active" && competition.status !== "pending") {
-      return false;
-    }
-    const now = new Date();
-    if (!competition.votingStartDate || !competition.votingEndDate) {
-      return false;
-    }
-    if (now < competition.votingStartDate || now > competition.votingEndDate) {
-      return false;
-    }
-    return true;
-  }
-
   /**
    * Get competition by ID with caching and authorization
    * @param params Parameters for competition request
@@ -2908,8 +2968,6 @@ export class CompetitionService {
   async getCompetitionById(params: {
     competitionId: string;
     userId?: string;
-    agentId?: string;
-    isAdmin?: boolean;
   }): Promise<CompetitionDetailsData> {
     try {
       // Fetch all data pieces first
@@ -2920,7 +2978,6 @@ export class CompetitionService {
         rewards,
         tradingConstraints,
         votingState,
-        openForBoosting,
       ] = await Promise.all([
         // Get competition details
         this.getCompetition(params.competitionId),
@@ -2945,7 +3002,6 @@ export class CompetitionService {
               params.competitionId,
             )
           : Promise.resolve(null),
-        this.competitionOpenForBoosting(params.competitionId),
       ]);
 
       if (!competition) {
@@ -3011,7 +3067,6 @@ export class CompetitionService {
             ? votingState.canVote || votingState.info.hasVoted
             : false,
           userVotingInfo: votingState || undefined,
-          openForBoosting,
         },
       };
 
@@ -3058,7 +3113,11 @@ export class CompetitionService {
         registeredParticipants: competition.registeredParticipants,
         maxParticipants: competition.maxParticipants,
         agents,
-        total,
+        pagination: buildPaginationResponse(
+          total,
+          params.queryParams.limit,
+          params.queryParams.offset,
+        ),
       };
 
       return result;
@@ -3075,12 +3134,12 @@ export class CompetitionService {
    * Get competition timeline with caching
    * @param competitionId The competition ID
    * @param bucket Time bucket interval in minutes
-   * @returns Competition timeline data
+   * @returns Array of timeline entries for each agent
    */
   async getCompetitionTimeline(
     competitionId: string,
     bucket: number,
-  ): Promise<CompetitionTimelineData> {
+  ): Promise<CompetitionTimelineEntry[]> {
     try {
       // Get competition
       const competition = await this.getCompetition(competitionId);
@@ -3120,13 +3179,7 @@ export class CompetitionService {
         });
       }
 
-      const result = {
-        success: true,
-        competitionId,
-        timeline: Array.from(agentsMap.values()),
-      };
-
-      return result;
+      return Array.from(agentsMap.values());
     } catch (error) {
       this.logger.error(
         `[CompetitionService] Error getting competition timeline with auth:`,
@@ -3288,6 +3341,55 @@ export class CompetitionService {
     } catch (error) {
       this.logger.error(
         `[CompetitionService] Error getting competition trades with auth:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Get all perps positions for a competition with pagination.
+   * Similar to getCompetitionTrades but for perps positions.
+   * @param params Parameters including competitionId, pagination, and optional status filter
+   * @returns Positions array and total count
+   */
+  async getCompetitionPerpsPositions(params: {
+    competitionId: string;
+    pagingParams: PagingParams;
+    statusFilter?: string;
+  }): Promise<{
+    positions: PerpetualPositionWithAgent[];
+    total: number;
+  }> {
+    try {
+      // Validate competition exists
+      const competition = await this.getCompetition(params.competitionId);
+      if (!competition) {
+        throw new ApiError(404, "Competition not found");
+      }
+
+      // Validate competition type
+      if (competition.type !== "perpetual_futures") {
+        throw new ApiError(
+          400,
+          "This endpoint is only available for perpetual futures competitions. " +
+            "Use GET /api/competitions/{id}/trades for paper trading competitions.",
+        );
+      }
+
+      // Get positions from repository
+      const { positions, total } =
+        await this.perpsRepo.getCompetitionPerpsPositions(
+          params.competitionId,
+          params.pagingParams.limit,
+          params.pagingParams.offset,
+          params.statusFilter,
+        );
+
+      return { positions, total };
+    } catch (error) {
+      this.logger.error(
+        `[CompetitionService] Error getting competition perps positions:`,
         error,
       );
       throw error;

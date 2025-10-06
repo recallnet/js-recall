@@ -10,6 +10,8 @@ import { MAX_HANDLE_LENGTH } from "@recallnet/db/schema/core/defs";
 import { SelectAgent, SelectUser } from "@recallnet/db/schema/core/types";
 import { crossChainTradingType } from "@recallnet/db/schema/trading/defs";
 
+import { specificChainTokens } from "../lib/config-utils.js";
+
 export * from "./sort/index.js";
 export * from "./agent-metrics.js";
 export * from "./perps.js";
@@ -28,13 +30,11 @@ export class ApiError extends Error {
   }
 }
 
-export type SpecificChainBalances = Partial<
-  Record<SpecificChain, Record<string, number>>
->;
+export type SpecificChainBalances = {
+  [K in SpecificChain]?: Record<string, number>;
+};
 
-export type SpecificChainTokens = Partial<
-  Record<SpecificChain, Record<string, string>>
->;
+export type SpecificChainTokens = typeof specificChainTokens;
 
 /**
  * Blockchain type enum
@@ -909,7 +909,6 @@ export const LeaderboardParamsSchema = z.object({
   type: CompetitionTypeSchema.default("trading"),
   limit: z.coerce.number().min(1).max(100).default(50),
   offset: z.coerce.number().min(0).default(0),
-  sort: z.string().optional().default("rank"), // Default to rank ascending
 });
 
 export type LeaderboardParams = z.infer<typeof LeaderboardParamsSchema>;
@@ -1018,6 +1017,55 @@ export interface CompetitionWithVotes extends Competition {
   votingEnabled: boolean; // Based on competition status
   agents: AgentWithVotes[];
   userVotingInfo?: CompetitionVotingStatus; // Only if user is authenticated
+}
+
+/**
+ * Base enriched leaderboard entry for spot trading competitions
+ */
+export interface BaseEnrichedLeaderboardEntry {
+  agentId: string;
+  competitionId: string;
+  rank: number;
+  pnl: number;
+  startingValue: number;
+  totalAgents: number;
+  score: number;
+  hasRiskMetrics: false;
+}
+
+/**
+ * Enriched leaderboard entry for perps competitions with risk metrics
+ */
+export interface PerpsEnrichedLeaderboardEntry {
+  agentId: string;
+  competitionId: string;
+  rank: number;
+  pnl: number;
+  startingValue: number;
+  totalAgents: number;
+  score: number;
+  calmarRatio: number | null;
+  simpleReturn: number | null;
+  maxDrawdown: number | null;
+  totalEquity: number;
+  totalPnl: number | null;
+  hasRiskMetrics: true;
+}
+
+/**
+ * Union type for enriched leaderboard entries
+ */
+export type EnrichedLeaderboardEntry =
+  | BaseEnrichedLeaderboardEntry
+  | PerpsEnrichedLeaderboardEntry;
+
+/**
+ * Type guard to check if an enriched entry is a perps entry with risk metrics
+ */
+export function isPerpsEnrichedEntry(
+  entry: EnrichedLeaderboardEntry,
+): entry is PerpsEnrichedLeaderboardEntry {
+  return entry.hasRiskMetrics === true;
 }
 
 /**

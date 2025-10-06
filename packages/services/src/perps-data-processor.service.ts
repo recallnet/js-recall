@@ -1061,35 +1061,4 @@ export class PerpsDataProcessor {
       throw error;
     }
   }
-
-  /**
-   * Get all perps positions for a competition with pagination
-   * Similar to TradeSimulator.getCompetitionTrades but for perps positions
-   * @param competitionId Competition ID
-   * @param limit Optional number of positions to return
-   * @param offset Optional offset for pagination
-   * @param statusFilter Optional status filter (defaults to "Open")
-   * @returns Object with positions array and total count
-   */
-  async getCompetitionPerpsPositions(
-    competitionId: string,
-    limit?: number,
-    offset?: number,
-    statusFilter?: string,
-  ) {
-    try {
-      return await this.perpsRepo.getCompetitionPerpsPositions(
-        competitionId,
-        limit,
-        offset,
-        statusFilter,
-      );
-    } catch (error) {
-      this.logger.error(
-        `[PerpsDataProcessor] Error getting competition positions for ${competitionId}:`,
-        error,
-      );
-      throw error;
-    }
-  }
 }

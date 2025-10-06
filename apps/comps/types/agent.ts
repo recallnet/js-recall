@@ -1,3 +1,5 @@
+import type { RouterOutputs } from "@/rpc/router";
+
 import { PaginationResponse } from "./api";
 import { AgentCompetitionMetadata, Competition } from "./competition";
 
@@ -21,9 +23,12 @@ export interface Agent {
   walletAddress?: string;
   isVerified: boolean;
   ownerId?: string;
-  imageUrl: string;
+  imageUrl?: string;
   description?: string;
+  email?: string;
   status: string;
+  createdAt: string;
+  updatedAt: string;
   stats: {
     bestPlacement?: {
       competitionId: string;
@@ -31,18 +36,20 @@ export interface Agent {
       score: number;
       totalAgents: number;
     };
-    bestPnl: number;
+    bestPnl?: number;
     totalVotes: number;
     totalTrades: number;
     completedCompetitions: number;
-    score: number;
+    score?: number;
     totalRoi?: number;
     rank?: number;
+    totalPositions: number;
   };
 
   skills?: string[];
   metadata?: AgentCompetitionMetadata;
   trophies?: unknown[];
+  hasUnclaimedRewards?: boolean;
   deactivationReason?: string;
   deactivationDate?: string;
 }
@@ -57,16 +64,9 @@ export interface AgentWithOwnerResponse {
   };
 }
 
-export interface LeaderboardAgent extends Agent {
-  // TODO: the actual response is a subset of the `Agent` type
-  // id: string;
-  // name: string;
-  // metadata: AgentCompetitionMetadata;
-  rank: number;
-  score: number;
-  voteCount: number;
-  numCompetitions: number;
-}
+// Extract LeaderboardAgent from RPC return type
+export type LeaderboardAgent =
+  RouterOutputs["leaderboard"]["getGlobal"]["agents"][number];
 
 export interface AgentsMetadata {
   total: number;
@@ -92,46 +92,16 @@ export interface AgentCompetitionsResponse {
 
 export interface LeaderboardStats {
   activeAgents: number;
+  totalCompetitions: number;
   totalTrades: number;
   totalVolume: number;
-  totalCompetitions: number;
+  totalVotes: number;
 }
 
 export interface LeaderboardResponse {
-  success?: boolean; // Optional to handle both API response and direct data
   stats: LeaderboardStats;
   agents: LeaderboardAgent[];
   pagination: PaginationResponse;
-}
-
-export interface AgentCompetitionResponse {
-  success: boolean;
-  competitionId: string;
-  agents: AgentCompetition[];
-  pagination: PaginationResponse;
-}
-
-export interface AgentCompetition {
-  id: string;
-  name: string;
-  handle: string;
-  description: string;
-  imageUrl: string;
-  score: number;
-  rank: number;
-  portfolioValue: number;
-  active: boolean;
-  deactivationReason?: string;
-  pnl: number;
-  pnlPercent: number;
-  change24h: number;
-  change24hPercent: number;
-  voteCount: number;
-  // Risk metrics (returned by backend for perps competitions)
-  calmarRatio?: number | null;
-  simpleReturn?: number | null;
-  maxDrawdown?: number | null;
-  hasRiskMetrics?: boolean;
 }
 
 export interface CreateAgentRequest {
@@ -147,8 +117,7 @@ export interface CreateAgentRequest {
 }
 
 export interface CreateAgentResponse {
-  agent: Agent & { apiKey: string };
-  success: boolean;
+  agent: Omit<Agent, "stats" | "skills" | "trophies" | "hasUnclaimedRewards">;
 }
 
 export interface UpdateAgentRequest {
@@ -165,13 +134,12 @@ export interface UpdateAgentRequest {
 }
 
 export interface UpdateAgentResponse {
-  agent: Agent & { apiKey: string };
-  success: boolean;
+  agent: Omit<Agent, "stats" | "skills" | "trophies" | "hasUnclaimedRewards">;
 }
 
 export interface AgentApiKeyResponse {
-  success: boolean;
   agentId: string;
   agentName: string;
+  agentHandle: string;
   apiKey: string;
 }

@@ -1,3 +1,4 @@
+import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, ArrowRight, Bot } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -17,13 +18,14 @@ import { cn } from "@recallnet/ui2/lib/utils";
 
 import Tooltip from "@/../../packages/ui2/src/components/tooltip";
 import { AgentCard } from "@/components/user-agents/agent-card";
-import { useCompetitionAgents } from "@/hooks/useCompetitionAgents";
-import { type Agent, Competition } from "@/types";
+import { tanstackClient } from "@/rpc/clients/tanstack-query";
+import type { RouterOutputs } from "@/rpc/router";
+import { Competition } from "@/types";
 
 interface ChooseAgentModalProps {
   isOpen: boolean;
   onClose: (open: boolean) => void;
-  agents: Agent[];
+  agents: RouterOutputs["user"]["getUserAgents"]["agents"];
   onContinue: (agentId: string) => void;
   competition?: Competition;
 }
@@ -35,7 +37,12 @@ export const ChooseAgentModal: React.FC<ChooseAgentModalProps> = ({
   onContinue,
   competition,
 }) => {
-  const { data: compAgents } = useCompetitionAgents(competition?.id);
+  const { data: compAgents } = useQuery(
+    tanstackClient.competitions.getAgents.queryOptions({
+      input: { competitionId: competition?.id ?? "" },
+      enabled: !!competition,
+    }),
+  );
   const [selectedIndex, setSelectedIndex] = useState(0);
   const pathname = usePathname();
 

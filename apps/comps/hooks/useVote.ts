@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { useSession } from "@/hooks/useSession";
 import { UnauthorizedError, apiClient } from "@/lib/api-client";
+import { tanstackClient } from "@/rpc/clients/tanstack-query";
 import {
   CreateVoteRequest,
   EnrichedVotesResponse,
@@ -25,10 +26,14 @@ export const useVote = () => {
       // Invalidate relevant queries
       queryClient.invalidateQueries({ queryKey: ["votes"] });
       queryClient.invalidateQueries({
-        queryKey: ["competition-agents", variables.competitionId],
+        queryKey: tanstackClient.competitions.getAgents.key({
+          input: { competitionId: variables.competitionId },
+        }),
       });
       queryClient.invalidateQueries({
-        queryKey: ["competition", variables.competitionId],
+        queryKey: tanstackClient.competitions.getById.key({
+          input: { id: variables.competitionId },
+        }),
       });
       queryClient.invalidateQueries({
         queryKey: ["votingState", variables.competitionId],
@@ -115,5 +120,6 @@ export const useVotingState = (competitionId: string) => {
       }
     },
     enabled: isAuthenticated && !!competitionId,
+    staleTime: 15 * 1000, // 15 seconds - short cache for real-time voting state updates
   });
 };

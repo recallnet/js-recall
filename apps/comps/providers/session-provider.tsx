@@ -29,6 +29,7 @@ import { useAccount, useDisconnect } from "wagmi";
 
 import { ApiClient } from "@/lib/api-client";
 import { mergeWithoutUndefined } from "@/lib/merge-without-undefined";
+import { tanstackClient } from "@/rpc/clients/tanstack-query";
 import { User as BackendUser, UpdateProfileRequest } from "@/types";
 
 type Session = {
@@ -153,25 +154,25 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     isError: isFetchBackendUserError,
     error: fetchBackendUserError,
     refetch: refetchBackendUser,
-  } = useQuery({
-    queryKey: ["user"],
-    queryFn: async () => {
-      const response = await apiClient.current.getProfile();
-      if (!response.success) {
-        throw new Error("Failed to fetch user");
-      }
-      return response.user;
-    },
-    enabled: authenticated && ready && isLoginToBackendSuccess,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
-    // TODO: Use a client that has better error types that include status codes.
-    // retry: (failureCount, error) => {
-    //   // Don't retry on 401/403 errors
-    //   if (error?.status === 401 || error?.status === 403) return false;
-    //   return failureCount < 3;
-    // },
-  });
+  } = useQuery(
+    tanstackClient.user.getProfile.queryOptions({
+      enabled: authenticated && ready && isLoginToBackendSuccess,
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
+      retry: (failureCount, error) => {
+        // Don't retry on 401/403 errors (UNAUTHORIZED)
+        if (
+          error &&
+          typeof error === "object" &&
+          "code" in error &&
+          error.code === "UNAUTHORIZED"
+        ) {
+          return false;
+        }
+        return failureCount < 3;
+      },
+    }),
+  );
 
   /**
    * Synchronize wagmi's active wallet with the backend user's wallet address
@@ -205,25 +206,20 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     isPending: isLinkWalletToBackendPending,
     isError: isLinkWalletToBackendError,
     error: linkWalletToBackendError,
-  } = useMutation({
-    mutationFn: async (walletAddress: string) => {
-      const res = await apiClient.current.linkWallet({ walletAddress });
-      if (!res.success) {
-        throw new Error("Error linking wallet to server.");
-      }
-      return res.user;
-    },
-    onSuccess: () => {
-      refetchBackendUser();
-    },
-  });
+  } = useMutation(
+    tanstackClient.user.linkWallet.mutationOptions({
+      onSuccess: () => {
+        refetchBackendUser();
+      },
+    }),
+  );
 
   const { linkWallet: linkWalletInner } = useLinkAccount({
     onSuccess: async ({ linkedAccount }) => {
       const walletAddress = (
         linkedAccount as WalletWithMetadata
       ).address.toLowerCase();
-      linkWalletToBackend(walletAddress);
+      linkWalletToBackend({ walletAddress });
     },
     onError: (err) => {
       if (err === "exited_link_flow") return;
@@ -263,47 +259,49 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     isPending: isUpdateBackendUserPending,
     isError: isUpdateBackendUserError,
     error: updateBackendUserError,
-  } = useMutation({
-    mutationFn: async (updates: UpdateProfileRequest) => {
-      if (!ready) throw new Error("Auth not ready");
-      if (!authenticated) throw new Error("Not authenticated");
-      const response = await apiClient.current.updateProfile(updates);
-      if (!response.success) {
-        throw new Error("Failed to fetch user");
-      }
-      return response.user;
-    },
-    onMutate: async (updates) => {
-      // Cancel outgoing refetches so they don't overwrite our optimistic update
-      await queryClient.cancelQueries({ queryKey: ["user"] });
+  } = useMutation(
+    tanstackClient.user.updateProfile.mutationOptions({
+      onMutate: async (updates) => {
+        // Cancel outgoing refetches so they don't overwrite our optimistic update
+        const queryKey = tanstackClient.user.getProfile.key();
+        await queryClient.cancelQueries({ queryKey: queryKey });
 
-      // Snapshot the previous value
-      const previousUser = queryClient.getQueryData<User>(["user"]);
+        // Snapshot the previous value
+        const previousUser = queryClient.getQueryData<BackendUser>(queryKey);
 
-      // Optimistically update the cache
-      queryClient.setQueryData<BackendUser>(["user"], (old) => {
-        if (!old) return undefined;
-        return mergeWithoutUndefined(old, updates);
-      });
+        // Optimistically update the cache
+        queryClient.setQueryData<BackendUser>(queryKey, (old) => {
+          if (!old) return undefined;
+          return mergeWithoutUndefined(old, updates);
+        });
 
-      // Return a context object with the snapshotted value
-      return { previousUser: previousUser };
-    },
-    onError: (_, __, context) => {
-      // Rollback to the previous value on error
-      if (context?.previousUser) {
-        queryClient.setQueryData(["user"], context.previousUser);
-      }
-    },
-    onSuccess: (updatedUser) => {
-      // Update cache with the actual server response
-      queryClient.setQueryData<BackendUser>(["user"], updatedUser);
-    },
-    onSettled: () => {
-      // Always refetch after error or success to ensure consistency
-      queryClient.invalidateQueries({ queryKey: ["user"] });
-    },
-  });
+        // Return a context object with the snapshotted value
+        return { previousUser: previousUser };
+      },
+      onError: (_, __, context) => {
+        // Rollback to the previous value on error
+        if (context?.previousUser) {
+          queryClient.setQueryData(
+            tanstackClient.user.getProfile.key(),
+            context.previousUser,
+          );
+        }
+      },
+      onSuccess: (updatedUser) => {
+        // Update cache with the actual server response
+        queryClient.setQueryData<BackendUser>(
+          tanstackClient.user.getProfile.key(),
+          updatedUser,
+        );
+      },
+      onSettled: () => {
+        // Always refetch after error or success to ensure consistency
+        queryClient.invalidateQueries({
+          queryKey: tanstackClient.user.getProfile.key(),
+        });
+      },
+    }),
+  );
 
   const handleLogout = useCallback(async () => {
     try {

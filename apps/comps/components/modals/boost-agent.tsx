@@ -25,7 +25,7 @@ import { Slider } from "@recallnet/ui2/components/slider";
 import { AgentAvatar } from "@/components/agent-avatar";
 import { RankBadge } from "@/components/agents-table/rank-badge";
 import { tanstackClient } from "@/rpc/clients/tanstack-query";
-import { AgentCompetition } from "@/types";
+import { RouterOutputs } from "@/rpc/router";
 import { formatPercentage } from "@/utils/format";
 
 import { BoostIcon } from "../BoostIcon";
@@ -33,7 +33,7 @@ import { BoostIcon } from "../BoostIcon";
 interface BoostAgentModalProps {
   isOpen: boolean;
   onClose: (open: boolean) => void;
-  agent: AgentCompetition | null;
+  agent: RouterOutputs["competitions"]["getAgents"]["agents"][number] | null;
   availableBoost: number;
   currentAgentBoostTotal: number;
   currentUserBoostAmount: number;
@@ -196,7 +196,7 @@ export const BoostAgentModal: React.FC<BoostAgentModalProps> = ({
                 <AgentAvatar agent={agent} size={48} />
                 <div>
                   <div className="flex items-center gap-2">
-                    <RankBadge rank={agent.rank} />
+                    {agent.rank ? <RankBadge rank={agent.rank} /> : null}
                     <span className="text-lg font-bold">{agent.name}</span>
                   </div>
                   <p className="text-sm text-gray-400">{agent.description}</p>

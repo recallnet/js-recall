@@ -7,9 +7,11 @@ RUN npm install -g pnpm typescript turbo
 COPY package.json pnpm-*.yaml .npmrc ./
 COPY packages/eslint-config/package.json packages/eslint-config/
 COPY packages/typescript-config/package.json packages/typescript-config/
-COPY packages/address-utils/package.json packages/address-utils/
 COPY packages/fonts/package.json packages/fonts/
 COPY packages/ui2/package.json packages/ui2/
+COPY packages/db/package.json packages/db/
+COPY packages/conversions/package.json packages/conversions/
+COPY packages/services/package.json packages/services/
 COPY apps/comps/package.json apps/comps/
 
 RUN pnpm install --frozen-lockfile
@@ -22,6 +24,9 @@ ARG NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID
 
 # Build the application
 RUN pnpm --filter=@recallnet/fonts build && \
+    pnpm --filter=@recallnet/db build && \
+    pnpm --filter=@recallnet/conversions build && \
+    pnpm --filter=@recallnet/services build && \
     pnpm --filter=comps build
 
 FROM node:22-alpine

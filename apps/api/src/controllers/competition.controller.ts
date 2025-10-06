@@ -2,6 +2,7 @@ import { NextFunction, Response } from "express";
 import { LRUCache } from "lru-cache";
 
 import { ParsingError } from "@recallnet/db/errors";
+import { PerpetualPositionWithAgent } from "@recallnet/db/schema/trading/types";
 import {
   AgentQuerySchema,
   ApiError,
@@ -287,9 +288,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
       next: NextFunction,
     ) {
       try {
-        const agentId = req.agentId;
         const userId = req.userId;
-        const isAdmin = req.isAdmin === true;
         const competitionId = ensureUuid(req.params.competitionId);
 
         if (!competitionId) {
@@ -297,13 +296,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
         }
 
         // Authentication check
-        if (isAdmin) {
-          competitionLogger.debug(`Admin requesting competition details`);
-        } else if (agentId) {
-          competitionLogger.debug(
-            `Agent ${agentId} requesting competition details`,
-          );
-        } else if (userId) {
+        if (userId) {
           competitionLogger.debug(
             `User ${userId} requesting competition details`,
           );
@@ -332,8 +325,6 @@ export function makeCompetitionController(services: ServiceRegistry) {
         const result = await services.competitionService.getCompetitionById({
           competitionId,
           userId,
-          agentId,
-          isAdmin,
         });
 
         // Cache the result
@@ -394,14 +385,7 @@ export function makeCompetitionController(services: ServiceRegistry) {
           queryParams,
         });
 
-        res.status(200).json({
-          ...result,
-          pagination: buildPaginationResponse(
-            result.total,
-            queryParams.limit,
-            queryParams.offset,
-          ),
-        });
+        res.status(200).json(result);
       } catch (error) {
         next(error);
       }
@@ -495,12 +479,17 @@ export function makeCompetitionController(services: ServiceRegistry) {
         // Parse and validate bucket parameter (convert string to number)
         const bucket = BucketParamSchema.parse(req.query.bucket);
 
-        const result = await services.competitionService.getCompetitionTimeline(
-          competitionId,
-          bucket,
-        );
+        const timeline =
+          await services.competitionService.getCompetitionTimeline(
+            competitionId,
+            bucket,
+          );
 
-        res.status(200).json(result);
+        res.status(200).json({
+          success: true,
+          competitionId,
+          timeline,
+        });
       } catch (error) {
         next(error);
       }
@@ -795,22 +784,6 @@ export function makeCompetitionController(services: ServiceRegistry) {
         // Optional status filter (defaults to "Open" in repository)
         const statusFilter = req.query.status as string | undefined;
 
-        // Check if competition exists
-        const competition =
-          await services.competitionService.getCompetition(competitionId);
-        if (!competition) {
-          throw new ApiError(404, "Competition not found");
-        }
-
-        // Check if this is a perps competition
-        if (competition.type !== "perpetual_futures") {
-          throw new ApiError(
-            400,
-            "This endpoint is only available for perpetual futures competitions. " +
-              "Use GET /api/competitions/{id}/trades for paper trading competitions.",
-          );
-        }
-
         // Cache only public requests (similar to getCompetitionTrades)
         const shouldCacheResponse = checkShouldCacheResponse(req);
         const cacheKey = generateCacheKey(req, "competitionPerpsPositions", {
@@ -825,44 +798,45 @@ export function makeCompetitionController(services: ServiceRegistry) {
           }
         }
 
-        // Get positions from perps data processor
+        // Get positions from competition service
         const { positions, total } =
-          await services.perpsDataProcessor.getCompetitionPerpsPositions(
+          await services.competitionService.getCompetitionPerpsPositions({
             competitionId,
-            pagingParams.limit,
-            pagingParams.offset,
+            pagingParams,
             statusFilter,
-          );
+          });
 
         // Map the response to match EXACT same format as agent.controller.ts
-        const mappedPositions = positions.map((pos) => ({
-          id: pos.id,
-          competitionId: pos.competitionId,
-          agentId: pos.agentId,
-          agent: pos.agent, // Embedded agent info
-          positionId: pos.providerPositionId || null,
-          marketId: pos.asset || null, // Same as agent controller
-          marketSymbol: pos.asset || null, // Same as agent controller
-          asset: pos.asset,
-          isLong: pos.isLong,
-          leverage: Number(pos.leverage || 0),
-          size: Number(pos.positionSize),
-          collateral: Number(pos.collateralAmount),
-          averagePrice: Number(pos.entryPrice),
-          markPrice: Number(pos.currentPrice || 0),
-          liquidationPrice: pos.liquidationPrice
-            ? Number(pos.liquidationPrice)
-            : null,
-          unrealizedPnl: Number(pos.pnlUsdValue || 0),
-          pnlPercentage: Number(pos.pnlPercentage || 0),
-          realizedPnl: 0, // Not tracked in our schema
-          status: pos.status,
-          openedAt: pos.createdAt.toISOString(),
-          closedAt: pos.closedAt ? pos.closedAt.toISOString() : null,
-          timestamp: pos.lastUpdatedAt
-            ? pos.lastUpdatedAt.toISOString()
-            : pos.createdAt.toISOString(),
-        }));
+        const mappedPositions = positions.map(
+          (pos: PerpetualPositionWithAgent) => ({
+            id: pos.id,
+            competitionId: pos.competitionId,
+            agentId: pos.agentId,
+            agent: pos.agent, // Embedded agent info
+            positionId: pos.providerPositionId || null,
+            marketId: pos.asset || null, // Same as agent controller
+            marketSymbol: pos.asset || null, // Same as agent controller
+            asset: pos.asset,
+            isLong: pos.isLong,
+            leverage: Number(pos.leverage || 0),
+            size: Number(pos.positionSize),
+            collateral: Number(pos.collateralAmount),
+            averagePrice: Number(pos.entryPrice),
+            markPrice: Number(pos.currentPrice || 0),
+            liquidationPrice: pos.liquidationPrice
+              ? Number(pos.liquidationPrice)
+              : null,
+            unrealizedPnl: Number(pos.pnlUsdValue || 0),
+            pnlPercentage: Number(pos.pnlPercentage || 0),
+            realizedPnl: 0, // Not tracked in our schema
+            status: pos.status,
+            openedAt: pos.createdAt.toISOString(),
+            closedAt: pos.closedAt ? pos.closedAt.toISOString() : null,
+            timestamp: pos.lastUpdatedAt
+              ? pos.lastUpdatedAt.toISOString()
+              : pos.createdAt.toISOString(),
+          }),
+        );
 
         const responseBody = {
           success: true,

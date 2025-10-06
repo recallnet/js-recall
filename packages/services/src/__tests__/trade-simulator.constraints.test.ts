@@ -15,6 +15,7 @@ import { TradingConstraintsRepository } from "@recallnet/db/repositories/trading
 
 import { BalanceService } from "../balance.service.js";
 import { CompetitionService } from "../competition.service.js";
+import { specificChainTokens } from "../lib/config-utils.js";
 import {
   PriceTrackerService,
   PriceTrackerServiceConfig,
@@ -23,7 +24,11 @@ import { MultiChainProvider } from "../providers/multi-chain.provider.js";
 import { DexScreenerProvider } from "../providers/price/dexscreener.provider.js";
 import { SimulatedTradeExecutionService } from "../simulated-trade-execution.service.js";
 import { TradeSimulatorService } from "../trade-simulator.service.js";
-import { BlockchainType, PriceReport } from "../types/index.js";
+import {
+  BlockchainType,
+  PriceReport,
+  SpecificChainTokens,
+} from "../types/index.js";
 
 // Mock dependencies for unit tests
 vi.mock("../balance.service.js");
@@ -83,7 +88,7 @@ describe("SimulatedTradeExecutionService - Trading Constraints", () => {
       isStablecoin: ReturnType<typeof vi.fn>;
     };
     let mockConfig: {
-      specificChainTokens: Record<string, Record<string, string>>;
+      specificChainTokens: SpecificChainTokens;
       maxTradePercentage: number;
       tradingConstraints: {
         defaultMinimumPairAgeHours: number;
@@ -143,38 +148,7 @@ describe("SimulatedTradeExecutionService - Trading Constraints", () => {
       };
 
       mockConfig = {
-        specificChainTokens: {
-          eth: {
-            eth: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", // WETH on Ethereum
-            usdc: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", // USDC on Ethereum
-            usdt: "0xdAC17F958D2ee523a2206206994597C13D831ec7", // USDT on Ethereum
-          },
-          polygon: {
-            eth: "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619", // Weth on Polygon
-            usdc: "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174", // USDC on Polygon
-            usdt: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F", // USDT on Polygon
-          },
-          base: {
-            eth: "0x4200000000000000000000000000000000000006", // WETH on Base
-            usdc: "0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA", // USDbC on Base
-            usdt: "0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb", // USDT on Base
-          },
-          svm: {
-            sol: "So11111111111111111111111111111111111111112",
-            usdc: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
-            usdt: "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB",
-          },
-          arbitrum: {
-            eth: "0x82af49447d8a07e3bd95bd0d56f35241523fbab1", // WETH on Arbitrum
-            usdc: "0xaf88d065e77c8cc2239327c5edb3a432268e5831", // Native USDC on Arbitrum
-            usdt: "0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9", // USDT on Arbitrum
-          },
-          optimism: {
-            eth: "0x4200000000000000000000000000000000000006", // WETH on Optimism
-            usdc: "0x7f5c764cbc14f9669b88837ca1490cca17c31607", // USDC on Optimism
-            usdt: "0x94b008aa00579c1307b0ef2c499ad98a8ce58e58", // USDT on Optimism
-          },
-        },
+        specificChainTokens,
         maxTradePercentage: 25,
         tradingConstraints: {
           defaultMinimumPairAgeHours: MINIMUM_PAIR_AGE_HOURS,
@@ -206,7 +180,6 @@ describe("SimulatedTradeExecutionService - Trading Constraints", () => {
         mockTradingConstraintsRepo as unknown as TradingConstraintsRepository,
         mockDexScreenerProvider as unknown as DexScreenerProvider,
         mockConfig,
-        mockFeatures,
         mockLogger,
       );
     });
@@ -557,6 +530,119 @@ describe("SimulatedTradeExecutionService - Trading Constraints", () => {
             mockConstraints,
           ),
         ).not.toThrow();
+      });
+    });
+
+    describe("validateCrossChainTrading", () => {
+      it("should use competition-specific crossChainTradingType, not global features", async () => {
+        // Set global features to disallow all cross-chain trading
+        mockFeatures.CROSS_CHAIN_TRADING_TYPE = "disallowAll";
+
+        // But competition allows cross-chain trading
+        const competitionWithAllowCrossChain = {
+          id: "comp-1",
+          name: "Test Competition",
+          endDate: null,
+          type: "trading" as const,
+          crossChainTradingType: "allow" as const,
+        };
+
+        mockCompetitionService.getCompetition.mockResolvedValue(
+          competitionWithAllowCrossChain,
+        );
+        mockCompetitionService.isAgentActiveInCompetition.mockResolvedValue(
+          true,
+        );
+
+        mockBalanceService.getBalance.mockResolvedValue(1000);
+        mockPriceTracker.determineChain.mockReturnValue(BlockchainType.SVM);
+
+        const fromPrice: PriceReport = {
+          token: "SVM_TOKEN_1",
+          price: 1.0,
+          timestamp: new Date(),
+          chain: BlockchainType.SVM,
+          specificChain: "svm",
+          symbol: "SVMT1",
+          pairCreatedAt: Date.now() - 200 * 60 * 60 * 1000,
+          volume: { h24: 500000 },
+          liquidity: { usd: 600000 },
+          fdv: 2000000,
+        };
+
+        const toPrice: PriceReport = {
+          token: "0xETH_TOKEN_1",
+          price: 2.0,
+          timestamp: new Date(),
+          chain: BlockchainType.EVM,
+          specificChain: "eth",
+          symbol: "EVMT1",
+          pairCreatedAt: Date.now() - 200 * 60 * 60 * 1000,
+          volume: { h24: 500000 },
+          liquidity: { usd: 600000 },
+          fdv: 2000000,
+        };
+
+        mockPriceTracker.getPrice
+          .mockResolvedValueOnce(fromPrice)
+          .mockResolvedValueOnce(toPrice);
+
+        mockTradingConstraintsRepo.findByCompetitionId.mockResolvedValue(
+          mockConstraints,
+        );
+
+        mockTradeRepo.create.mockResolvedValue({
+          id: randomUUID(),
+          timestamp: new Date(),
+          fromToken: "SVM_TOKEN_1",
+          toToken: "0xETH_TOKEN_1",
+          fromAmount: 100,
+          toAmount: 50,
+          price: 2.0,
+          success: true,
+          agentId: randomUUID(),
+          competitionId: "comp-1",
+          reason: "Test cross-chain trade",
+          fromChain: BlockchainType.SVM,
+          toChain: BlockchainType.EVM,
+          fromSpecificChain: "svm",
+          toSpecificChain: "eth",
+          toTokenSymbol: "EVMT1",
+          fromTokenSymbol: "SVMT1",
+          tradeAmountUsd: 100,
+        });
+
+        // Execute a cross-chain trade (SVM -> EVM)
+        // Note: this should NOT throw "Cross-chain trading is disabled"
+        // We use a try-catch because the `SimulatedTradeExecutionService`'s `executeTrade` method
+        // throws a 400 error due to missing mock logic. Without the try-catch, the test will
+        // complain that `this.tradeRepo.createTradeWithBalances` is not a method. However, this
+        // logic comes *after* the `validateCrossChainTrading` is used, and is called by the
+        // `executeTradeAndUpdateDatabase` method. That is, all we're testing is the validation.
+        try {
+          await tradeExecutor.executeTrade({
+            agentId: randomUUID(),
+            competitionId: "comp-1",
+            fromToken: "SVM_TOKEN_1",
+            toToken: "0xETH_TOKEN_1",
+            fromAmount: 100,
+            reason: "Test cross-chain trade with allow setting",
+            chainOptions: {
+              fromChain: BlockchainType.SVM,
+              toChain: BlockchainType.EVM,
+            },
+          });
+          // We should not get here
+          expect(false).toBe(true);
+        } catch (error) {
+          // Make sure it's not the cross-chain validation error
+          const errorMessage =
+            error instanceof Error ? error.message : String(error);
+          expect(errorMessage).not.toContain("Cross-chain trading is disabled");
+          expect(errorMessage).toContain(
+            "this.tradeRepo.createTradeWithBalances is not a function",
+          );
+        }
       });
     });
 

@@ -13,7 +13,7 @@ import { toast } from "@recallnet/ui2/components/toast";
 
 import { AgentCard } from "@/components/user-agents/agent-card";
 import { useRedirectTo } from "@/hooks/useRedirectTo";
-import { Agent } from "@/types/agent";
+import type { RouterOutputs } from "@/rpc/router";
 import { asOptionalStringWithoutEmpty } from "@/utils";
 
 import { UnsavedChangesModal } from "../modals/unsaved-changes-modal";
@@ -79,7 +79,7 @@ export type FormData = z.infer<typeof formSchema>;
 interface CreateAgentProps {
   onSubmit: (data: FormData) => Promise<void>;
   isSubmitting?: boolean;
-  agent?: Agent | null;
+  agent?: RouterOutputs["user"]["getUserAgent"] | null;
 }
 
 export function CreateAgent({

@@ -1,6 +1,6 @@
 import { Badge } from "@recallnet/ui2/components/badge";
 
-import { CompetitionStatus } from "@/types";
+import { RouterOutputs } from "@/rpc/router";
 
 type StatusConfig = {
   text: string;
@@ -8,14 +8,14 @@ type StatusConfig = {
 };
 
 export function getCompetitionStatusConfig(
-  status: CompetitionStatus,
+  status: RouterOutputs["competitions"]["getById"]["status"],
 ): StatusConfig {
-  return status === CompetitionStatus.Active
+  return status === "active"
     ? {
         text: "Ongoing",
         variant: "green",
       }
-    : status === CompetitionStatus.Pending
+    : status === "pending"
       ? {
           text: "Upcoming",
           variant: "blue",
@@ -29,7 +29,7 @@ export function getCompetitionStatusConfig(
 export function CompetitionStatusBadge({
   status,
 }: {
-  status: CompetitionStatus;
+  status: RouterOutputs["competitions"]["getById"]["status"];
 }) {
   const statusConfig = getCompetitionStatusConfig(status);
 

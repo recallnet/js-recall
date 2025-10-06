@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import React from "react";
+import React, { useMemo } from "react";
 
 import { Button } from "@recallnet/ui2/components/button";
 import { cn } from "@recallnet/ui2/lib/utils";
 
-import { Competition, CompetitionStatus } from "@/types";
+import { openForBoosting } from "@/lib/open-for-boosting";
+import { CompetitionStatus, CompetitionWithUserAgents } from "@/types";
 
 import { JoinCompetitionButton } from "./join-competition-button";
 
@@ -48,7 +49,7 @@ const VoteButton: React.FC<VoteButtonProps> = ({
 };
 
 export interface CompetitionActionsProps {
-  competition: Competition;
+  competition: CompetitionWithUserAgents;
   /** Optional container classes */
   className?: string;
 }
@@ -63,12 +64,17 @@ export const CompetitionActions: React.FC<CompetitionActionsProps> = ({
 }) => {
   const containerClasses = cn("flex gap-4", className);
 
+  const isOpenForBoosting = useMemo(
+    () => openForBoosting(competition),
+    [competition],
+  );
+
   if (competition.status === CompetitionStatus.Pending) {
     return (
       <div className={containerClasses}>
         <VoteButton
           competitionId={competition.id}
-          votingEnabled={competition.votingEnabled}
+          votingEnabled={isOpenForBoosting}
         />
         <JoinCompetitionButton
           competitionId={competition.id}
@@ -86,7 +92,7 @@ export const CompetitionActions: React.FC<CompetitionActionsProps> = ({
       <div className={containerClasses}>
         <VoteButton
           competitionId={competition.id}
-          votingEnabled={competition.votingEnabled}
+          votingEnabled={isOpenForBoosting}
         />
       </div>
     );

@@ -1,5 +1,6 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import { useDebounce, useWindowScroll } from "@uidotdev/usehooks";
 import { isFuture } from "date-fns";
 import { ChevronRight } from "lucide-react";
@@ -24,11 +25,10 @@ import { TimelineChart } from "@/components/timeline-chart/index";
 import { TradesTable } from "@/components/trades-table";
 import { UserVote } from "@/components/user-vote";
 import { getSocialLinksArray } from "@/data/social";
-import { useCompetition } from "@/hooks/useCompetition";
-import { useCompetitionAgents } from "@/hooks/useCompetitionAgents";
 import { useCompetitionPerpsPositions } from "@/hooks/useCompetitionPerpsPositions";
 import { useCompetitionTrades } from "@/hooks/useCompetitionTrades";
 import { useSession } from "@/hooks/useSession";
+import { tanstackClient } from "@/rpc/clients/tanstack-query";
 
 const LIMIT_AGENTS_PER_PAGE = 10;
 const LIMIT_TRADES_PER_PAGE = 10;
@@ -42,7 +42,6 @@ export default function CompetitionPage({
   const { isAuthenticated } = useSession();
   const { id } = React.use(params);
   const agentsTableRef = React.useRef<HTMLDivElement>(null);
-  const chartRef = React.useRef<HTMLDivElement>(null);
   const [, scrollTo] = useWindowScroll();
   const [agentsFilter, setAgentsFilter] = React.useState("");
   const [agentsSort, setAgentsSort] = React.useState("");
@@ -55,17 +54,28 @@ export default function CompetitionPage({
     data: competition,
     isLoading: isLoadingCompetition,
     error: competitionError,
-  } = useCompetition(id);
+  } = useQuery(
+    tanstackClient.competitions.getById.queryOptions({ input: { id } }),
+  );
+
   const {
     data: agentsData,
     isLoading: isLoadingAgents,
     error: agentsError,
-  } = useCompetitionAgents(id, {
-    filter: debouncedFilterTerm,
-    sort: agentsSort,
-    offset: agentsOffset,
-    limit: LIMIT_AGENTS_PER_PAGE,
-  });
+  } = useQuery(
+    tanstackClient.competitions.getAgents.queryOptions({
+      placeholderData: (prev) => prev,
+      input: {
+        competitionId: id,
+        paging: {
+          sort: agentsSort,
+          offset: agentsOffset,
+          limit: LIMIT_AGENTS_PER_PAGE,
+        },
+      },
+    }),
+  );
+
   // Determine if we're in a perps competition
   const isPerpsCompetition = competition?.type === "perpetual_futures";
 
@@ -144,6 +154,34 @@ export default function CompetitionPage({
     );
   }
 
+  // Helper function to determine if voting is actually available
+  const isVotingAvailable = () => {
+    // For authenticated users, trust server validation
+    if (competition.userVotingInfo) {
+      return competition.userVotingInfo.canVote ?? false;
+    }
+
+    // For unauthenticated users, check client-side
+    if (!competition.votingEnabled) return false;
+    if (competition.status === "ended") return false;
+
+    const now = new Date();
+    const votingStart = competition.votingStartDate
+      ? new Date(competition.votingStartDate)
+      : null;
+    const votingEnd = competition.votingEndDate
+      ? new Date(competition.votingEndDate)
+      : null;
+
+    // If voting start date is set and we haven't reached it yet
+    if (votingStart && now < votingStart) return false;
+
+    // If voting end date is set and we've passed it
+    if (votingEnd && now > votingEnd) return false;
+
+    return true;
+  };
+
   const BoostAgentsBtn = ({
     className,
     disabled,
@@ -152,7 +190,7 @@ export default function CompetitionPage({
     disabled?: boolean;
   }) => (
     <Button
-      disabled={!competition.votingEnabled || disabled}
+      disabled={!isVotingAvailable() || disabled}
       variant="default"
       className={cn(
         "border border-blue-500 bg-blue-500 text-white hover:bg-white hover:text-blue-500 disabled:hover:bg-blue-500 disabled:hover:text-white",
@@ -200,27 +238,6 @@ export default function CompetitionPage({
             </JoinCompetitionButton>
 
             <BoostAgentsBtn className="w-full justify-between uppercase sm:w-1/2" />
-
-            {/*<Button
-              variant="outline"
-              className={cn(
-                "w-full justify-between border border-gray-700 uppercase sm:w-1/2",
-              )}
-              size="lg"
-              onClick={() => {
-                if (chartRef.current) {
-                  scrollTo({
-                    top: chartRef.current.offsetTop,
-                    behavior: "smooth",
-                  });
-                }
-              }}
-            >
-              <div className={cn("flex w-full items-center justify-between")}>
-                <span className="font-semibold">Chart</span>{" "}
-                <ChevronRight className="ml-2" size={18} />
-              </div>
-            </Button>*/}
           </div>
         </div>
       </div>
@@ -303,7 +320,6 @@ export default function CompetitionPage({
       ) : (
         <>
           <TimelineChart
-            ref={chartRef}
             className="mt-5"
             competition={competition}
             agents={agentsData?.agents || []}

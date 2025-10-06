@@ -13,18 +13,15 @@ import Tooltip from "@recallnet/ui2/components/tooltip";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { Trophy, TrophyBadge } from "@/components/trophy-badge";
-import {
-  DISABLE_LEADERBOARD,
-  ENABLE_SANDBOX,
-  NEXT_PUBLIC_FRONTEND_URL,
-} from "@/config";
+import { config } from "@/config/public";
 import { useUpdateAgent, useUserAgents } from "@/hooks";
 import { useAgentCompetitions } from "@/hooks/useAgentCompetitions";
 import {
   useSandboxAgentApiKey,
   useUpdateSandboxAgent,
 } from "@/hooks/useSandbox";
-import { Agent, AgentWithOwnerResponse, Competition } from "@/types";
+import type { RouterOutputs } from "@/rpc/router";
+import { Competition } from "@/types";
 
 import BigNumberDisplay from "../bignumber";
 import { BreadcrumbNav } from "../breadcrumb-nav";
@@ -60,8 +57,8 @@ export default function AgentProfile({
   setStatus,
 }: {
   id: string;
-  agent: Agent;
-  owner: AgentWithOwnerResponse["owner"];
+  agent: RouterOutputs["agent"]["getAgent"]["agent"];
+  owner: RouterOutputs["agent"]["getAgent"]["owner"];
   handleSortChange: (field: string) => void;
   sortState: Record<string, SortState>;
   setStatus: (status: string) => void;
@@ -77,7 +74,9 @@ export default function AgentProfile({
 
   // Sandbox hooks for syncing agent updates
   const { data: sandboxAgentData } = useSandboxAgentApiKey(
-    isUserAgent && ENABLE_SANDBOX ? agent?.handle || null : null,
+    isUserAgent && config.clientFlags.enableSandbox
+      ? agent?.handle || null
+      : null,
   );
   const updateSandboxAgent = useUpdateSandboxAgent();
 
@@ -108,14 +107,14 @@ export default function AgentProfile({
 
       // Update in main environment
       try {
+        const updateData =
+          field === "skills"
+            ? { metadata: { skills: value as string[] } }
+            : { [field]: value };
+
         await updateAgent.mutateAsync({
           agentId: agent.id,
-          params:
-            field === "skills"
-              ? { metadata: { skills: value as string[] } }
-              : {
-                  [field]: value,
-                },
+          ...updateData,
         });
       } catch (error) {
         console.error("Failed to update agent:", error);
@@ -129,7 +128,7 @@ export default function AgentProfile({
         // Special handling for name changes since we *must* need the names to match across environments
         if (
           (field === "name" || field === "handle") &&
-          ENABLE_SANDBOX &&
+          config.clientFlags.enableSandbox &&
           sandboxAgentData?.agent?.id
         ) {
           // Update in sandbox first
@@ -197,7 +196,7 @@ export default function AgentProfile({
         >
           <div className="absolute right-10 top-10 z-20 flex w-full justify-end">
             <ShareModal
-              url={`${NEXT_PUBLIC_FRONTEND_URL}/agents/${agent.id}`}
+              url={`${config.frontendUrl}/agents/${agent.id}`}
               title="Share Agent"
               subtitle={
                 <p className="text-muted-foreground text-sm">
@@ -243,7 +242,7 @@ export default function AgentProfile({
         <div className="flex-2 xs:col-span-2 xs:col-start-2 xs:row-start-1 xs:mt-0 col-span-3 row-start-2 mt-5 flex shrink flex-col border lg:col-span-1 lg:col-start-2">
           <div className="relative flex w-full grow flex-col border-b p-6">
             <div className="flex gap-3 font-bold">
-              {agent.stats.score > 0 && (
+              {agent.stats.score != null && agent.stats.score > 0 && (
                 <Tooltip content="Global Score">
                   <BigNumberDisplay
                     decimals={0}
@@ -354,7 +353,9 @@ export default function AgentProfile({
                 Agent Rank
               </span>
               <span className="text-secondary-foreground mt-1 w-full text-left text-sm">
-                {DISABLE_LEADERBOARD ? "TBA" : agent.stats.rank}
+                {config.clientFlags.disableLeaderboard
+                  ? "TBA"
+                  : agent.stats.rank}
               </span>
             </div>
           </div>
@@ -439,7 +440,7 @@ export default function AgentProfile({
           </div>
           <Credentials
             agent={agent}
-            userWalletAddress={owner.walletAddress}
+            userWalletAddress={owner?.walletAddress}
             className="mt-6"
           />
         </div>

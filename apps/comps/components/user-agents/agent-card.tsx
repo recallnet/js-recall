@@ -8,14 +8,14 @@ import Card, { CardProps } from "@recallnet/ui2/components/card";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import MirrorImage from "@/components/mirror-image";
-import { Agent } from "@/types";
+import type { RouterOutputs } from "@/rpc/router";
 import { displayAddress } from "@/utils/address";
 import { formatCompactNumber, toOrdinal } from "@/utils/format";
 
 import { VerificationBadge } from "../verification-badge";
 
 type AgentCardProps = {
-  agent: Agent;
+  agent: RouterOutputs["user"]["getUserAgents"]["agents"][number];
   nameComponent?: "link" | "text";
 };
 

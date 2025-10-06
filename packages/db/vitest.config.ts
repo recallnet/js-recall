@@ -1,20 +1,16 @@
 import tsconfigPaths from "vite-tsconfig-paths";
-import { defineConfig } from "vitest/config";
+import { coverageConfigDefaults, defineConfig } from "vitest/config";
 
 export default defineConfig({
   plugins: [tsconfigPaths()],
   test: {
+    passWithNoTests: true,
+    typecheck: { enabled: true, include: ["**/*.test.ts"] },
     coverage: {
       provider: "v8",
       reporter: ["text", "json", "json-summary"],
-      exclude: [
-        "node_modules/**",
-        "dist/**",
-        "**/*.d.ts",
-        "**/*.test.ts",
-        "**/*.spec.ts",
-        "**/test/**",
-      ],
+      include: ["src/**/*.ts"],
+      exclude: [...coverageConfigDefaults.exclude],
     },
     projects: [
       {
@@ -25,6 +21,7 @@ export default defineConfig({
           dir: "./src",
           include: ["**/*.test.ts"],
           exclude: ["**/*.integration.test.ts"],
+          typecheck: { enabled: true, include: ["**/*.test.ts"] },
         },
       },
       {
@@ -34,6 +31,7 @@ export default defineConfig({
           root: "./",
           dir: "./src",
           include: ["**/*.integration.test.ts"],
+          typecheck: { enabled: true, include: ["**/*.test.ts"] },
           testTimeout: 30_000, // Longer timeout for DB operations
           sequence: {
             concurrent: false,

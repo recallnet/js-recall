@@ -44,7 +44,8 @@
     "generate": "tsx scripts/generate.ts"
   },
   "dependencies": {
-    "decimal.js-light": "^2.5.1"
+    "decimal.js-light": "^2.5.1",
+    "zod": "3.25.76"
   },
   "devDependencies": {
     "@recallnet/eslint-config": "workspace:*",

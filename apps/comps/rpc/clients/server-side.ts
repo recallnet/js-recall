@@ -2,21 +2,35 @@ import {
   SafeClient,
   createSafeClient as createSafeRouterClient,
 } from "@orpc/client";
-import { createRouterClient } from "@orpc/server";
+import { type RouterClient, createRouterClient } from "@orpc/server";
 import { cookies } from "next/headers";
 
-import { db } from "@/lib/db";
+import { createLogger } from "@/lib/logger";
 import { privyClient } from "@/lib/privy-client";
-import { boostService } from "@/lib/services";
+import {
+  agentService,
+  boostAwardService,
+  boostService,
+  competitionService,
+  emailService,
+  leaderboardService,
+  userService,
+} from "@/lib/services";
 import { router } from "@/rpc/router/index";
 
-export async function createClient() {
+export async function createClient(): Promise<RouterClient<typeof router>> {
   return createRouterClient(router, {
     context: {
       cookies: await cookies(),
-      db,
       privyClient,
       boostService,
+      boostAwardService,
+      userService,
+      competitionService,
+      agentService,
+      emailService,
+      leaderboardService,
+      logger: createLogger("ServerSideRpcClient"),
     },
   });
 }

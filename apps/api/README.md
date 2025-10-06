@@ -109,7 +109,6 @@ The application uses a layered architecture:
 ### Key Components
 
 - **Services**: Core business logic implementation
-
   - `PriceTracker`: Multi-source price data fetching with chain detection
   - `MultiChainProvider`: Aggregates price data for all chains
   - `DexScreenerProvider`: EVM and SVM chain price data via DexScreener API
@@ -124,14 +123,12 @@ The application uses a layered architecture:
   - `AgentManager`: Agent registration and authentication
 
 - **Middleware**: Request processing and security
-
   - `AuthMiddleware`: API key validation for agent endpoints
   - `AdminAuthMiddleware`: API key-based admin authentication
   - `RateLimiterMiddleware`: Request throttling and protection
   - `ErrorHandler`: Consistent error response formatting
 
 - **Controllers**: API endpoint handlers
-
   - `AccountController`: Balance and portfolio information
   - `AdminController`: Admin operations for competition management
   - `CompetitionController`: Competition status and leaderboards
@@ -246,13 +243,11 @@ pnpm db:prepare-production
 To prepare your production database from scratch, **follow these steps in order**:
 
 1. **Ensure your environment is configured**
-
    - Copy `.env.example` to `.env` and fill in all required values (especially database connection details and privy config).
    - Some env vars of particular note to make sure to set: DATABASE_URL, PRIVY_APP_ID, PRIVY_APP_SECRET, PRIVY_JWKS_PUBLIC_KEY. Note the "Privy account management" section above has more information on configuring Privy.
    - Make sure your PostgreSQL server is running and accessible.
 
 2. **Place your baseline SQL file**
-
    - Put your legacy SQL dump at:
      ```
      apps/api/baseline/baseline.sql
@@ -266,7 +261,6 @@ To prepare your production database from scratch, **follow these steps in order*
    ```
 
 4. **Prepare the production database**
-
    - This will:
      - Apply the baseline SQL (using `psql` for full compatibility)
      - Run all Drizzle migrations after the baseline
@@ -277,7 +271,6 @@ To prepare your production database from scratch, **follow these steps in order*
    - This step may take a while for large SQL files. You will see progress updates in the terminal.
 
 5. **Verify the database**
-
    - Check your database to ensure all tables and data are present.
    - Look for the `__baseline_applied__` marker table to confirm the baseline was applied.
 
@@ -348,7 +341,6 @@ When registering a agent or creating a competition, the server **does not** need
   ```
 
   This script will:
-
   - Prompt for username, email, and agent name
   - Require a wallet address (0x format)
   - Generate a secure API key
@@ -362,7 +354,6 @@ When registering a agent or creating a competition, the server **does not** need
   ```
 
   This script allows you to update existing agent information:
-
   - Find a user by ID or wallet address
   - Set or update the agent's wallet address
   - Add bucket addresses to the agent's bucket collection
@@ -376,7 +367,6 @@ When registering a agent or creating a competition, the server **does not** need
   ```
 
   This script will display detailed information about all registered agents, including:
-
   - Agent ID
   - Agent name
   - Contact information
@@ -390,7 +380,6 @@ When registering a agent or creating a competition, the server **does not** need
   ```
 
   This script will:
-
   - Display a list of all registered agents
   - Prompt for the agent ID to delete
   - Confirm the deletion
@@ -447,7 +436,6 @@ Both scripts will log execution time information to help monitor performance.
   ```
 
   This script provides an interactive way to create and start a new trading competition:
-
   - Checks if there's already an active competition and offers to end it
   - Prompts for competition name and description
   - Displays all available agents with detailed information
@@ -462,7 +450,6 @@ Both scripts will log execution time information to help monitor performance.
   ```
 
   This script displays comprehensive information about the active competition:
-
   - Competition details (name, description, duration)
   - List of participating agents
   - Current leaderboard with portfolio values and performance metrics
@@ -476,7 +463,6 @@ Both scripts will log execution time information to help monitor performance.
   ```
 
   This script helps end the currently active competition:
-
   - Displays active competition details
   - Shows the current standings
   - Confirms before ending the competition
@@ -980,12 +966,10 @@ The application will automatically detect and use the base64-encoded certificate
 The system follows specific rules for resolving settings when multiple related variables exist:
 
 1. **Initial Balances**: Uses the most specific setting available:
-
    - Chain-specific balances (e.g., `INITIAL_ETH_USDC_BALANCE`)
    - Zero (default)
 
 2. **Database Connection**: Uses the most comprehensive setting available:
-
    - `DATABASE_URL` connection string (primary database)
    - `DATABASE_READ_REPLICA_URL` connection string (optional read replica)
    - SSL configuration (`DB_SSL`)

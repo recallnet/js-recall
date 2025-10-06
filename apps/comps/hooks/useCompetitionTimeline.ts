@@ -1,23 +1,22 @@
+import { UseQueryResult } from "@tanstack/react-query";
 import { useQuery } from "@tanstack/react-query";
 
-import { apiClient } from "@/lib/api-client";
-import { CompetitionStatus, CompetitionTimelineResponse } from "@/types";
+import { tanstackClient } from "@/rpc/clients/tanstack-query";
+import { RouterOutputs } from "@/rpc/router";
 
 /**
- * Hook to fetch a single competition by ID
+ * Hook to fetch competition timeline data
  * @param id Competition ID
  * @param status Competition status (optional) - will skip fetch if status is pending
- * @returns Query result with competition data
+ * @returns Query result with timeline data
  */
 export const useCompetitionTimeline = (
-  id?: string,
-  status?: CompetitionStatus,
-) =>
-  useQuery({
-    queryKey: ["competition", "timeline", id],
-    queryFn: async (): Promise<CompetitionTimelineResponse["timeline"]> => {
-      if (!id) throw new Error("Competition ID is required");
-      return (await apiClient.getCompetitionTimeline(id)).timeline;
-    },
-    enabled: !!id && status !== CompetitionStatus.Pending,
-  });
+  id: string,
+  status?: RouterOutputs["competitions"]["getById"]["status"],
+): UseQueryResult<RouterOutputs["competitions"]["getTimeline"]> =>
+  useQuery(
+    tanstackClient.competitions.getTimeline.queryOptions({
+      input: { competitionId: id, bucket: 180 }, // 3 hour buckets
+      enabled: status !== "pending",
+    }),
+  );

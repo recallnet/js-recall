@@ -3,44 +3,29 @@ import {
   valueToAttoString,
 } from "@recallnet/conversions/atto-conversions";
 
+import { client } from "@/rpc/clients/client-side";
 import {
-  Agent,
-  AgentApiKeyResponse,
-  AgentCompetitionResponse,
   AgentCompetitionsResponse,
-  AgentWithOwnerResponse,
-  AgentsResponse,
   CompetitionPerpsPositionsResponse,
   CompetitionPerpsSummaryResponse,
   CompetitionResponse,
   CompetitionRulesResponse,
-  CompetitionTimelineResponse,
   CompetitionTradesResponse,
   CompetitionsResponse,
-  CreateAgentRequest,
-  CreateAgentResponse,
   CreateVoteRequest,
   EnrichedVotesResponse,
   GetAgentCompetitionsParams,
-  GetAgentsParams,
-  GetCompetitionAgentsParams,
-  GetCompetitionPerformanceParams,
   GetCompetitionPerpsPositionsParams,
   GetCompetitionTradesParams,
   GetCompetitionsParams,
-  GetLeaderboardParams,
   GetVotesParams,
   JoinCompetitionResponse,
-  LeaderboardResponse,
   LinkWalletRequest,
   LoginResponse,
   NonceResponse,
   ProfileResponse,
-  UpdateAgentRequest,
-  UpdateAgentResponse,
   UpdateProfileRequest,
   UserCompetitionsResponse,
-  UserSubscriptionResponse,
   VerifyEmailResponse,
   VoteResponse,
   VotesResponse,
@@ -231,26 +216,6 @@ export class ApiClient {
     });
   }
 
-  /**
-   * Subscribe to mailing list
-   * @returns Profile response
-   */
-  async subscribeToMailingList(): Promise<UserSubscriptionResponse> {
-    return this.request<UserSubscriptionResponse>("/user/subscribe", {
-      method: "POST",
-    });
-  }
-
-  /**
-   * Unsubscribe from mailing list
-   * @returns Profile response
-   */
-  async unsubscribeFromMailingList(): Promise<UserSubscriptionResponse> {
-    return this.request<UserSubscriptionResponse>("/user/unsubscribe", {
-      method: "POST",
-    });
-  }
-
   // Competition endpoints
 
   /**
@@ -272,22 +237,6 @@ export class ApiClient {
    */
   async getCompetition(id: string): Promise<CompetitionResponse> {
     return this.request<CompetitionResponse>(`/competitions/${id}`);
-  }
-
-  /**
-   * Get agents participating in a competition
-   * @param competitionId - Competition ID
-   * @param params - Query parameters
-   * @returns Agents response
-   */
-  async getCompetitionAgents(
-    competitionId: string,
-    params: GetCompetitionAgentsParams = {},
-  ): Promise<AgentCompetitionResponse> {
-    const queryParams = this.formatQueryParams(params);
-    return this.request<AgentCompetitionResponse>(
-      `/competitions/${competitionId}/agents${queryParams}`,
-    );
   }
 
   /**
@@ -332,24 +281,6 @@ export class ApiClient {
   ): Promise<CompetitionPerpsSummaryResponse> {
     return this.request<CompetitionPerpsSummaryResponse>(
       `/competitions/${competitionId}/perps/summary`,
-    );
-  }
-
-  /**
-   * Get competition performance
-   * @param competitionId - Competition ID
-   * @param params - Query parameters
-   * @returns Agents response
-   */
-  async getCompetitionTimeline(
-    competitionId: string,
-    params: GetCompetitionPerformanceParams = {
-      bucket: 3 * 60,
-    },
-  ): Promise<CompetitionTimelineResponse> {
-    const queryParams = this.formatQueryParams(params);
-    return this.request<CompetitionTimelineResponse>(
-      `/competitions/${competitionId}/timeline${queryParams}`,
     );
   }
 
@@ -400,55 +331,6 @@ export class ApiClient {
   // Agent endpoints
 
   /**
-   * Get list of authenticated user agents
-   * @param params - Query parameters
-   * @returns Agents response
-   */
-  async getUserAgents(params: GetAgentsParams = {}): Promise<AgentsResponse> {
-    const queryParams = this.formatQueryParams(params);
-    return this.request<AgentsResponse>(`/user/agents${queryParams}`);
-  }
-
-  /**
-   * Get agent api key
-   * @param params - Query parameters
-   * @returns Agents response
-   */
-  async getAgentApiKey(agentId: string): Promise<AgentApiKeyResponse> {
-    return this.request<AgentApiKeyResponse>(`/user/agents/${agentId}/api-key`);
-  }
-
-  /**
-   * Get agent by ID owned by the authenticated user
-   * @param id - Agent ID
-   * @returns Agent details
-   */
-  async getUserAgent(id: string): Promise<{ success: boolean; agent: Agent }> {
-    return this.request<{ success: boolean; agent: Agent }>(
-      `/user/agents/${id}`,
-    );
-  }
-
-  /**
-   * Get list of agents
-   * @param params - Query parameters
-   * @returns Agents response
-   */
-  async getAgents(params: GetAgentsParams = {}): Promise<AgentsResponse> {
-    const queryParams = this.formatQueryParams(params);
-    return this.request<AgentsResponse>(`/agents${queryParams}`);
-  }
-
-  /**
-   * Get agent by ID (unauthenticated)
-   * @param id - Agent ID
-   * @returns Agent details
-   */
-  async getAgent(id: string): Promise<AgentWithOwnerResponse> {
-    return this.request<AgentWithOwnerResponse>(`/agents/${id}`);
-  }
-
-  /**
    * Get competitions for an agent
    * @param agentId - Agent ID
    * @param params - Query parameters
@@ -462,32 +344,6 @@ export class ApiClient {
     return this.request<AgentCompetitionsResponse>(
       `/agents/${agentId}/competitions${queryParams}`,
     );
-  }
-
-  /**
-   * Create a new agent
-   * @param data - Agent creation data
-   * @returns Created agent response
-   */
-  async createAgent(data: CreateAgentRequest): Promise<CreateAgentResponse> {
-    return this.request<CreateAgentResponse>("/user/agents", {
-      method: "POST",
-      body: JSON.stringify(data),
-    });
-  }
-
-  // Leaderboards endpoints
-
-  /**
-   * Get global leaderboard
-   * @param params - Query parameters
-   * @returns Leaderboards response
-   */
-  async getGlobalLeaderboard(
-    params: GetLeaderboardParams = {},
-  ): Promise<LeaderboardResponse> {
-    const queryParams = this.formatQueryParams(params);
-    return this.request<LeaderboardResponse>(`/leaderboard${queryParams}`);
   }
 
   // Profile endpoints
@@ -538,21 +394,6 @@ export class ApiClient {
   }
 
   /**
-   * Update user agent
-   * @param data - Agent data
-   * @returns Updated agent
-   **/
-  async updateAgent(data: UpdateAgentRequest): Promise<UpdateAgentResponse> {
-    return this.request<UpdateAgentResponse>(
-      `/user/agents/${data.agentId}/profile`,
-      {
-        method: "PUT",
-        body: JSON.stringify(data.params),
-      },
-    );
-  }
-
-  /**
    * Create a vote for an agent in a competition
    * @param data - Vote creation data
    * @returns Vote response
@@ -589,15 +430,15 @@ export class ApiClient {
 
     const enrichedVotes = await Promise.all(
       votes.votes.map(async (vote) => {
-        const [competition, agent] = await Promise.all([
+        const [competition, agentData] = await Promise.all([
           this.getCompetition(vote.competitionId),
-          this.getAgent(vote.agentId),
+          client.agent.getAgent({ agentId: vote.agentId }),
         ]);
 
         return {
           id: vote.id,
           createdAt: vote.createdAt,
-          agent: agent.agent,
+          agent: agentData.agent,
           competition: competition.competition,
         };
       }),

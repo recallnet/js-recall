@@ -1,18 +1,25 @@
-import { useQuery } from "@tanstack/react-query";
+import { UseQueryResult, useQuery } from "@tanstack/react-query";
 
-import { apiClient } from "@/lib/api-client";
-import { GetLeaderboardParams, LeaderboardResponse } from "@/types";
+import type { LeaderboardParams } from "@recallnet/services/types";
+
+import { tanstackClient } from "@/rpc/clients/tanstack-query";
+import type { RouterOutputs } from "@/rpc/router/index";
 
 /**
  * Hook to fetch leaderboards data
  * @param params Query parameters for leaderboard endpoint
+ * @param enabled Whether the query should be enabled
  * @returns Query result with leaderboard data
  */
-export const useLeaderboards = (params: GetLeaderboardParams = {}) =>
-  useQuery({
-    queryKey: ["leaderboards", params],
-    queryFn: async (): Promise<LeaderboardResponse> => {
-      return apiClient.getGlobalLeaderboard(params);
-    },
-    placeholderData: (prev) => prev,
-  });
+export function useLeaderboards(
+  params: Partial<LeaderboardParams> = {},
+  enabled = true,
+): UseQueryResult<RouterOutputs["leaderboard"]["getGlobal"]> {
+  return useQuery(
+    tanstackClient.leaderboard.getGlobal.queryOptions({
+      input: params,
+      enabled,
+      placeholderData: (prev) => prev,
+    }),
+  );
+}

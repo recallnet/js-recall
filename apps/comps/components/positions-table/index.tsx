@@ -86,11 +86,13 @@ export const PositionsTable: React.FC<PositionsTableProps> = ({
           <div>
             <div className="text-primary-foreground text-sm">
               {row.original.isLong ? "LONG" : "SHORT"}{" "}
-              {formatAmount(row.original.size)} {row.original.asset}
+              {formatAmount(Number(row.original.positionSize))}{" "}
+              {row.original.asset}
             </div>
             <div className="text-secondary-foreground text-xs">
-              {row.original.leverage}x leverage •{" "}
-              {formatAmount(row.original.collateral)} collateral
+              {row.original.leverage ? Number(row.original.leverage) : 0}x
+              leverage • {formatAmount(Number(row.original.collateralAmount))}{" "}
+              collateral
             </div>
           </div>
         ),
@@ -105,14 +107,19 @@ export const PositionsTable: React.FC<PositionsTableProps> = ({
         cell: ({ row }) => (
           <div>
             <div className="text-secondary-foreground text-xs">
-              Entry: ${formatAmount(row.original.averagePrice)}
+              Entry: ${formatAmount(Number(row.original.entryPrice))}
             </div>
             <div className="text-secondary-foreground text-xs">
-              Mark: ${formatAmount(row.original.markPrice)}
+              Mark: $
+              {formatAmount(
+                row.original.currentPrice
+                  ? Number(row.original.currentPrice)
+                  : 0,
+              )}
             </div>
             {row.original.liquidationPrice && (
               <div className="text-secondary-foreground text-xs">
-                Liq: ${formatAmount(row.original.liquidationPrice)}
+                Liq: ${formatAmount(Number(row.original.liquidationPrice))}
               </div>
             )}
           </div>
@@ -123,8 +130,12 @@ export const PositionsTable: React.FC<PositionsTableProps> = ({
         id: "pnl",
         header: () => "PnL",
         cell: ({ row }) => {
-          const pnl = row.original.unrealizedPnl;
-          const pnlPercent = row.original.pnlPercentage; // Use Symphony's calculation
+          const pnl = row.original.pnlUsdValue
+            ? Number(row.original.pnlUsdValue)
+            : 0;
+          const pnlPercent = row.original.pnlPercentage
+            ? Number(row.original.pnlPercentage)
+            : 0;
           const isPositive = pnl >= 0;
 
           return (
@@ -171,7 +182,7 @@ export const PositionsTable: React.FC<PositionsTableProps> = ({
                 {status}
               </span>
               <span className="text-secondary-foreground text-xs">
-                {format(new Date(row.original.openedAt), "MMM d, HH:mm")}
+                {format(new Date(row.original.createdAt), "MMM d, HH:mm")}
               </span>
             </div>
           );

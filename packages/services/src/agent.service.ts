@@ -529,67 +529,51 @@ export class AgentService {
    * Get a decrypted API key for a specific agent
    * This is intended only for admin access to help users that have lost their API keys
    * @param agentId ID of the agent whose API key should be retrieved
-   * @returns Object with success status, the decrypted API key if successful, agent details, and error information if not
+   * @returns Object with the decrypted API key and agent details
+   * @throws {ApiError} 404 if agent not found
+   * @throws {ApiError} 500 if decryption fails
    */
   public async getDecryptedApiKeyById(agentId: string): Promise<{
-    success: boolean;
-    apiKey?: string;
-    agent?: {
+    apiKey: string;
+    agent: {
       id: string;
       name: string;
       ownerId: string;
     };
-    errorCode?: number;
-    errorMessage?: string;
   }> {
+    // Get the agent
+    const agent = await this.agentRepository.findById(agentId);
+
+    if (!agent) {
+      throw new ApiError(404, "Agent not found");
+    }
+
     try {
-      // Get the agent
-      const agent = await this.agentRepository.findById(agentId);
-
-      if (!agent) {
-        return {
-          success: false,
-          errorCode: 404,
-          errorMessage: "Agent not found",
-        };
-      }
-
-      try {
-        // Decrypt the API key using shared utility
-        const apiKey = decryptApiKey(
-          agent.apiKey,
-          String(this.rootEncryptionKey),
-        );
-        return {
-          success: true,
-          apiKey,
-          agent: {
-            id: agent.id,
-            name: agent.name,
-            ownerId: agent.ownerId,
-          },
-        };
-      } catch (decryptError) {
-        this.logger.error(
-          `[AgentManager] Error decrypting API key for agent ${agentId}:`,
-          decryptError,
-        );
-        return {
-          success: false,
-          errorCode: 500,
-          errorMessage: "Failed to decrypt API key",
-        };
-      }
-    } catch (error) {
-      this.logger.error(
-        `[AgentManager] Error retrieving decrypted API key for agent ${agentId}:`,
-        error,
+      // Decrypt the API key using shared utility
+      const apiKey = decryptApiKey(
+        agent.apiKey,
+        String(this.rootEncryptionKey),
       );
+
+      // Audit log for security tracking
+      this.logger.debug(
+        `[AUDIT] User ${agent.ownerId} accessed API key for agent ${agentId}`,
+      );
+
       return {
-        success: false,
-        errorCode: 500,
-        errorMessage: "Server error retrieving API key",
+        apiKey,
+        agent: {
+          id: agent.id,
+          name: agent.name,
+          ownerId: agent.ownerId,
+        },
       };
+    } catch (decryptError) {
+      this.logger.error(
+        `[AgentManager] Error decrypting API key for agent ${agentId}:`,
+        decryptError,
+      );
+      throw new ApiError(500, "Failed to decrypt API key");
     }
   }
 
@@ -1211,9 +1195,6 @@ export class AgentService {
         return {
           competitions: paginatedCompetitions,
           total: results.total,
-          hasMore: endIndex < results.total,
-          limit: validatedParams.limit || 10,
-          offset: validatedParams.offset || 0,
         };
       }
 
@@ -1319,8 +1300,8 @@ export class AgentService {
       );
 
       return {
-        ...results,
         competitions: sortedCompetitions,
+        total: results.total,
       };
     } catch (error) {
       this.logger.error(

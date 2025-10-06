@@ -31,13 +31,10 @@ import { toast } from "@recallnet/ui2/components/toast";
 import { Pagination } from "@/components/pagination/index";
 import { useSession } from "@/hooks/useSession";
 import { useVote } from "@/hooks/useVote";
+import { openForBoosting } from "@/lib/open-for-boosting";
 import { tanstackClient } from "@/rpc/clients/tanstack-query";
-import {
-  AgentCompetition,
-  Competition,
-  CompetitionStatus,
-  PaginationResponse,
-} from "@/types";
+import { RouterOutputs } from "@/rpc/router";
+import { PaginationResponse } from "@/types";
 import { formatCompactNumber, formatPercentage } from "@/utils/format";
 import { getSortState } from "@/utils/table";
 
@@ -47,9 +44,9 @@ import ConfirmVoteModal from "../modals/confirm-vote";
 import { RankBadge } from "./rank-badge";
 
 export interface AgentsTableProps {
-  agents: AgentCompetition[];
+  agents: RouterOutputs["competitions"]["getAgents"]["agents"];
   totalVotes?: number;
-  competition: Competition;
+  competition: RouterOutputs["competitions"]["getById"];
   onFilterChange: (filter: string) => void;
   onSortChange: (sort: string) => void;
   pagination: PaginationResponse;
@@ -79,9 +76,9 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
     yourShare: session.ready && session.isAuthenticated,
   });
-  const [selectedAgent, setSelectedAgent] = useState<AgentCompetition | null>(
-    null,
-  );
+  const [selectedAgent, setSelectedAgent] = useState<
+    RouterOutputs["competitions"]["getAgents"]["agents"][number] | null
+  >(null);
   const [isVoteModalOpen, setIsVoteModalOpen] = useState(false);
   const [isBoostModalOpen, setIsBoostModalOpen] = useState(false);
   const { mutate: vote, isPending: isPendingVote } = useVote();
@@ -161,17 +158,22 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
     }),
   );
 
+  const isOpenForBoosting = useMemo(
+    () => openForBoosting(competition),
+    [competition],
+  );
+
   const showClaimBoost = useMemo(() => {
     return (
       boostBalance === 0 &&
       Object.keys(userBoosts || {}).length === 0 &&
-      competition.openForBoosting
+      isOpenForBoosting
     );
-  }, [boostBalance, userBoosts, competition]);
+  }, [boostBalance, userBoosts, isOpenForBoosting]);
 
   const showBoostBalance = useMemo(() => {
-    return boostBalance !== undefined && competition.openForBoosting;
-  }, [boostBalance, competition]);
+    return boostBalance !== undefined && isOpenForBoosting;
+  }, [boostBalance, isOpenForBoosting]);
 
   const page =
     pagination.limit > 0
@@ -231,18 +233,23 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
     claimBoost({ competitionId: competition.id });
   };
 
-  const handleBoost = (agent: AgentCompetition) => {
+  const handleBoost = (
+    agent: RouterOutputs["competitions"]["getAgents"]["agents"][number],
+  ) => {
     setSelectedAgent(agent);
     setIsBoostModalOpen(true);
   };
 
-  const columns = useMemo<ColumnDef<AgentCompetition>[]>(
+  const columns = useMemo<
+    ColumnDef<RouterOutputs["competitions"]["getAgents"]["agents"][number]>[]
+  >(
     () => [
       {
         id: "rank",
         accessorKey: "rank",
         header: () => "Rank",
-        cell: ({ row }) => <RankBadge rank={row.original.rank} />,
+        cell: ({ row }) =>
+          row.original.rank ? <RankBadge rank={row.original.rank} /> : null,
         enableSorting: true,
         size: 100,
         sortDescFirst: false, // Start with ascending (lower ranks first)
@@ -278,7 +285,13 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
               id: "calmarRatio",
               accessorKey: "calmarRatio",
               header: () => "Calmar Ratio",
-              cell: ({ row }: { row: { original: AgentCompetition } }) => (
+              cell: ({
+                row,
+              }: {
+                row: {
+                  original: RouterOutputs["competitions"]["getAgents"]["agents"][number];
+                };
+              }) => (
                 <span className="text-secondary-foreground font-semibold">
                   {row.original.calmarRatio !== null &&
                   row.original.calmarRatio !== undefined
@@ -298,7 +311,13 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                   <span className="sm:hidden">Ret%</span>
                 </>
               ),
-              cell: ({ row }: { row: { original: AgentCompetition } }) => (
+              cell: ({
+                row,
+              }: {
+                row: {
+                  original: RouterOutputs["competitions"]["getAgents"]["agents"][number];
+                };
+              }) => (
                 <span
                   className={`font-semibold ${
                     row.original.simpleReturn &&
@@ -328,7 +347,13 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                   <span className="sm:hidden">DD</span>
                 </>
               ),
-              cell: ({ row }: { row: { original: AgentCompetition } }) => (
+              cell: ({
+                row,
+              }: {
+                row: {
+                  original: RouterOutputs["competitions"]["getAgents"]["agents"][number];
+                };
+              }) => (
                 <span className="font-semibold text-red-400">
                   {row.original.maxDrawdown !== null &&
                   row.original.maxDrawdown !== undefined
@@ -345,7 +370,13 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
               id: "portfolioValue",
               accessorKey: "portfolioValue",
               header: () => "Portfolio",
-              cell: ({ row }: { row: { original: AgentCompetition } }) => (
+              cell: ({
+                row,
+              }: {
+                row: {
+                  original: RouterOutputs["competitions"]["getAgents"]["agents"][number];
+                };
+              }) => (
                 <span className="text-secondary-foreground font-semibold">
                   {row.original.portfolioValue.toLocaleString("en-US", {
                     style: "currency",
@@ -356,6 +387,68 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
               ),
               enableSorting: true,
               size: 140,
+            },
+            {
+              id: "pnl",
+              accessorKey: "pnl",
+              header: () => "P&L",
+              cell: ({
+                row,
+              }: {
+                row: {
+                  original: RouterOutputs["competitions"]["getAgents"]["agents"][number];
+                };
+              }) => {
+                const pnlColor =
+                  row.original.pnlPercent >= 0
+                    ? "text-green-500"
+                    : "text-red-500";
+                return (
+                  <div className="flex flex-col">
+                    <span className={`text-secondary-foreground font-semibold`}>
+                      {row.original.pnlPercent >= 0 ? "+" : ""}
+                      {row.original.pnl.toLocaleString("en-US", {
+                        style: "currency",
+                        currency: "USD",
+                        maximumFractionDigits: 2,
+                      })}
+                    </span>
+                    <span className={`text-xs ${pnlColor}`}>
+                      ({row.original.pnlPercent >= 0 ? "+" : ""}
+                      {row.original.pnlPercent.toFixed(2)}%)
+                    </span>
+                  </div>
+                );
+              },
+              enableSorting: true,
+              size: 140,
+            },
+            {
+              id: "change24h",
+              accessorKey: "change24h",
+              header: () => "24h",
+              cell: ({
+                row,
+              }: {
+                row: {
+                  original: RouterOutputs["competitions"]["getAgents"]["agents"][number];
+                };
+              }) => {
+                const percentColor =
+                  row.original.change24hPercent >= 0
+                    ? "text-green-500"
+                    : "text-red-500";
+                return (
+                  <div className="flex flex-col font-semibold">
+                    <span className={`text-xs ${percentColor}`}>
+                      {row.original.change24hPercent >= 0 ? "+" : ""}
+                      {row.original.change24hPercent.toFixed(2)}%
+                    </span>
+                  </div>
+                );
+              },
+              enableSorting: true,
+              size: 100,
             },
           ]),
 
@@ -402,7 +495,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
 
           return (
             <div className="flex items-center justify-end gap-2">
-              {competition.openForBoosting ? (
+              {isOpenForBoosting ? (
                 hasBoosted ? (
                   <>
                     <span className="font-bold text-yellow-500">
@@ -457,7 +550,8 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
       totalBoost,
       boostBalance,
       isSuccessBoostTotals,
-      competition,
+      isOpenForBoosting,
+      competition.type,
       isSuccessUserBoosts,
     ],
   );
@@ -499,10 +593,14 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
     overscan: 5,
   });
 
-  const competitionTitles = {
-    [CompetitionStatus.Active]: "Standings",
-    [CompetitionStatus.Ended]: "Results",
-    [CompetitionStatus.Pending]: "Signups",
+  const competitionTitles: Record<
+    RouterOutputs["competitions"]["getById"]["status"],
+    string
+  > = {
+    active: "Standings",
+    ending: "Standings",
+    ended: "Results",
+    pending: "Signups",
   };
 
   return (

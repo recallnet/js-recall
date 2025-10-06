@@ -742,6 +742,7 @@ export interface LeaderboardAgent {
   metadata?: AgentMetadata;
   rank: number;
   score: number;
+  type: CompetitionType;
   numCompetitions: number;
   voteCount: number;
 }
@@ -1063,4 +1064,23 @@ export interface UserSubscriptionResponse extends ApiResponse {
   success: true;
   userId: string;
   isSubscribed: boolean;
+}
+
+// Rewards API response types
+export interface RewardsTotalResponse {
+  success: true;
+  address: string;
+  totalClaimableRewards: string;
+}
+
+export interface RewardProof {
+  merkleRoot: string;
+  amount: string;
+  proof: string[];
+}
+
+export interface RewardsProofsResponse {
+  success: true;
+  address: string;
+  rewards: RewardProof[];
 }

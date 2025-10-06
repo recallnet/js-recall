@@ -22,6 +22,7 @@ import { toast } from "@recallnet/ui2/components/toast";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { useSession } from "@/hooks/useSession";
+import { tanstackClient } from "@/rpc/clients/tanstack-query";
 
 import { Identicon } from "./identicon/index";
 
@@ -37,7 +38,9 @@ export const PrivyAuthButton: React.FunctionComponent = () => {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    queryClient.invalidateQueries({ queryKey: ["user-competitions"] });
+    queryClient.invalidateQueries({
+      queryKey: tanstackClient.user.getCompetitions.key(),
+    });
     queryClient.invalidateQueries({ queryKey: ["competitions"] });
     queryClient.invalidateQueries({ queryKey: ["competition"] });
   }, [isAuthenticated, queryClient]);

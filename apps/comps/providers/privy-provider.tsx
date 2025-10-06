@@ -5,7 +5,7 @@ import { PrivyClientConfig, PrivyProvider } from "@privy-io/react-auth";
 import { ReactNode, useEffect } from "react";
 import { baseSepolia } from "viem/chains";
 
-import { BASE_SEPOLIA_RPC } from "@/config";
+import { config } from "@/config/public";
 
 const themeBackground = "#15191f";
 const themeForeground = "#ffffff";
@@ -16,8 +16,8 @@ function setCSSVariable(variable: string, value: string) {
   }
 }
 
-export const baseSepoliaWithRpcUrl = BASE_SEPOLIA_RPC
-  ? addRpcUrlOverrideToChain(baseSepolia, BASE_SEPOLIA_RPC)
+export const baseSepoliaWithRpcUrl = config.rpc.baseSepolia
+  ? addRpcUrlOverrideToChain(baseSepolia, config.rpc.baseSepolia)
   : baseSepolia;
 
 /**

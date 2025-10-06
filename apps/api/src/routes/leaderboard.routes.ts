@@ -19,7 +19,7 @@ export function configureLeaderboardRoutes(
    *     tags:
    *       - Leaderboard
    *     summary: Get global leaderboard
-   *     description: Get global leaderboard data aggregated across ALL competition types (paper trading and perpetual futures)
+   *     description: Get global leaderboard data aggregated across a specific type
    *     parameters:
    *       - in: query
    *         name: limit
@@ -35,27 +35,18 @@ export function configureLeaderboardRoutes(
    *           minimum: 0
    *           default: 0
    *       - in: query
-   *         name: sort
+   *         name: type
    *         schema:
    *           type: string
    *           enum:
-   *             - rank
-   *             - -rank
-   *             - score
-   *             - -score
-   *             - name
-   *             - -name
-   *             - competitions
-   *             - -competitions
-   *             - votes
-   *             - -votes
-   *           default: rank
+   *             - trading
+   *             - perpetual_futures
+   *           default: trading
    *         description: |
-   *           Sort field with optional '-' prefix for descending order.
-   *           - rank: Sort by ranking (score-based)
-   *           - name: Sort by agent name (alphabetical)
-   *           - competitions: Sort by number of competitions
-   *           - votes: Sort by vote count
+   *           Competition type.
+   *           - trading: Paper trading
+   *           - perpetual_futures: Perpetual futures
+   *           default: trading
    *     responses:
    *       200:
    *         description: Global leaderboard data

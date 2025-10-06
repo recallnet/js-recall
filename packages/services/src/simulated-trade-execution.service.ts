@@ -65,10 +65,6 @@ export interface SimulatedTradeExecutionServiceConfig {
   };
 }
 
-export interface SimulatedTradeExecutionServiceFeatures {
-  CROSS_CHAIN_TRADING_TYPE: CrossChainTradingType;
-}
-
 /**
  * Service for executing simulated trades with competition validation
  * Handles business logic for trade execution including competition checks
@@ -87,7 +83,6 @@ export class SimulatedTradeExecutionService {
     private readonly tradingConstraintsRepo: TradingConstraintsRepository,
     private readonly dexScreenerProvider: DexScreenerProvider,
     private readonly config: SimulatedTradeExecutionServiceConfig,
-    private readonly features: SimulatedTradeExecutionServiceFeatures,
     private readonly logger: Logger,
   ) {
     this.exemptTokens = EXEMPT_TOKENS(config.specificChainTokens);
@@ -170,8 +165,11 @@ export class SimulatedTradeExecutionService {
         chainOptions,
       );
 
-      // Validate cross-chain trading rules
-      this.validateCrossChainTrading(chainInfo);
+      // Validate cross-chain trading rules using competition-specific settings
+      this.validateCrossChainTrading(
+        chainInfo,
+        competition.crossChainTradingType,
+      );
 
       // Fetch and validate prices
       const { fromPrice, toPrice } = await this.fetchAndValidatePrices(
@@ -513,11 +511,15 @@ export class SimulatedTradeExecutionService {
   /**
    * Validates cross-chain trading rules.
    * @param chainInfo The resolved chain and specific chain information.
+   * @param crossChainTradingType The competition's cross-chain trading policy
    * @throws ApiError if cross-chain trading is not allowed.
    */
-  private validateCrossChainTrading(chainInfo: ChainOptions): void {
+  private validateCrossChainTrading(
+    chainInfo: ChainOptions,
+    crossChainTradingType: CrossChainTradingType,
+  ): void {
     if (
-      this.features.CROSS_CHAIN_TRADING_TYPE === "disallowXParent" &&
+      crossChainTradingType === "disallowXParent" &&
       chainInfo.fromChain !== chainInfo.toChain
     ) {
       this.logger.debug(
@@ -530,7 +532,7 @@ export class SimulatedTradeExecutionService {
     }
 
     if (
-      this.features.CROSS_CHAIN_TRADING_TYPE === "disallowAll" &&
+      crossChainTradingType === "disallowAll" &&
       (chainInfo.fromChain !== chainInfo.toChain ||
         (chainInfo.fromSpecificChain &&
           chainInfo.toSpecificChain &&

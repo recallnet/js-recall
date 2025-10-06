@@ -24,7 +24,6 @@ export interface ProfileResponse {
 
 export interface UpdateProfileRequest {
   name?: string;
-  email?: string;
   imageUrl?: string;
   metadata?: {
     website?: string;

@@ -1,11 +1,14 @@
 import { NextFunction, Request, Response } from "express";
 
 import { AdminService, AgentService, UserService } from "@recallnet/services";
+import {
+  extractPrivyIdentityToken,
+  verifyPrivyIdentityToken,
+} from "@recallnet/services/lib";
 import { ApiError } from "@recallnet/services/types";
 
+import { config } from "@/config/index.js";
 import { authLogger } from "@/lib/logger.js";
-import { extractPrivyIdentityToken } from "@/lib/privy/utils.js";
-import { verifyPrivyIdentityToken } from "@/lib/privy/verify.js";
 import { extractApiKey, isLoginEndpoint } from "@/middleware/auth-helpers.js";
 
 /**
@@ -43,7 +46,12 @@ export const authMiddleware = (
           "[AuthMiddleware] Attempting Privy identity token authentication...",
         );
         try {
-          const { privyId } = await verifyPrivyIdentityToken(identityToken);
+          const { privyId } = await verifyPrivyIdentityToken(
+            identityToken,
+            config.privy.jwksPublicKey,
+            config.privy.appId,
+            authLogger,
+          );
           const path = new URL(
             `${req.protocol}://${req.get("host")}${req.originalUrl}`,
           ).pathname;

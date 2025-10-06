@@ -1,32 +1,19 @@
 import tsconfigPaths from "vite-tsconfig-paths";
-import { defineConfig } from "vitest/config";
+import { coverageConfigDefaults, defineConfig } from "vitest/config";
 
 export default defineConfig({
   plugins: [tsconfigPaths()],
   test: {
+    typecheck: { enabled: true, include: ["**/*.test.ts"] },
+    root: "./",
+    dir: "./src",
+    include: ["**/*.test.ts"],
+    exclude: ["**/*.integration.test.ts"],
     coverage: {
       provider: "v8",
       reporter: ["text", "json", "json-summary"],
-      exclude: [
-        "node_modules/**",
-        "dist/**",
-        "**/*.d.ts",
-        "**/*.test.ts",
-        "**/*.spec.ts",
-        "**/test/**",
-      ],
+      include: ["src/**/*.ts"],
+      exclude: [...coverageConfigDefaults.exclude],
     },
-    projects: [
-      {
-        extends: true,
-        test: {
-          name: "unit",
-          root: "./",
-          dir: "./src",
-          include: ["**/*.test.ts"],
-          exclude: ["**/*.integration.test.ts"],
-        },
-      },
-    ],
   },
 });

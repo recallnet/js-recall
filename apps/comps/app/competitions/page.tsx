@@ -1,5 +1,6 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import AutoScroll from "embla-carousel-auto-scroll";
 import useEmblaCarousel from "embla-carousel-react";
 import React, { useEffect, useState } from "react";
@@ -18,14 +19,13 @@ import CompetitionsSkeleton from "@/components/competitions-skeleton";
 import { FooterSection } from "@/components/footer-section";
 import { JoinSwarmSection } from "@/components/join-swarm-section";
 import ConnectPrivyModal from "@/components/modals/connect-privy";
-import { DISABLE_LEADERBOARD } from "@/config";
+import { config } from "@/config/public";
 import { getSocialLinksArray } from "@/data/social";
-import { useCompetitions, useUserCompetitions } from "@/hooks/useCompetitions";
 import { useLeaderboards } from "@/hooks/useLeaderboards";
 import { useAnalytics } from "@/hooks/usePostHog";
 import { useSession } from "@/hooks/useSession";
 import Link from "@/node_modules/next/link";
-import { CompetitionStatus } from "@/types";
+import { tanstackClient } from "@/rpc/clients/tanstack-query";
 import { mergeCompetitionsWithUserData } from "@/utils/competition-utils";
 import { toOrdinal } from "@/utils/format";
 
@@ -33,10 +33,9 @@ export default function CompetitionsPage() {
   const { trackEvent } = useAnalytics();
   const [isJoining, setIsJoining] = useState(false);
   const { data: leaderboard, isLoading: isLoadingLeaderboard } =
-    useLeaderboards({
-      limit: 25,
-    });
+    useLeaderboards({ limit: 25 }, !config.clientFlags.disableLeaderboard);
   const session = useSession();
+  const { isAuthenticated } = session;
 
   // Track landing page view
   useEffect(() => {
@@ -44,27 +43,36 @@ export default function CompetitionsPage() {
   }, [trackEvent]);
 
   const { data: activeCompetitions, isLoading: isLoadingActiveCompetitions } =
-    useCompetitions({
-      status: CompetitionStatus.Active,
-      sort: "startDate",
-    });
+    useQuery(
+      tanstackClient.competitions.listEnriched.queryOptions({
+        input: { status: "active", paging: { sort: "startDate" } },
+      }),
+    );
 
   const {
     data: upcomingCompetitions,
     isLoading: isLoadingUpcomingCompetitions,
-  } = useCompetitions({
-    status: CompetitionStatus.Pending,
-    sort: "startDate",
-  });
+  } = useQuery(
+    tanstackClient.competitions.listEnriched.queryOptions({
+      input: { status: "pending", paging: { sort: "startDate" } },
+    }),
+  );
 
   const { data: endedCompetitions, isLoading: isLoadingEndedCompetitions } =
-    useCompetitions({
-      status: CompetitionStatus.Ended,
-      sort: "-startDate",
-    });
+    useQuery(
+      tanstackClient.competitions.listEnriched.queryOptions({
+        input: { status: "ended", paging: { sort: "-startDate" } },
+      }),
+    );
 
   const { data: userCompetitions, isLoading: isLoadingUserCompetitions } =
-    useUserCompetitions();
+    useQuery(
+      tanstackClient.user.getCompetitions.queryOptions({
+        input: {},
+        enabled: isAuthenticated,
+        placeholderData: (prev) => prev,
+      }),
+    );
 
   const carouselContent = React.useMemo(() => {
     if (isLoadingLeaderboard) return [];
@@ -113,12 +121,13 @@ export default function CompetitionsPage() {
   return (
     <div>
       <div className="h-120 relative left-1/2 top-[-41] w-full -translate-x-1/2 transform pt-40">
-        {carouselContent.length > 0 && !DISABLE_LEADERBOARD && (
-          <HeroCarousel
-            className="absolute left-[-350px] right-[-350px] top-0"
-            texts={carouselContent}
-          />
-        )}
+        {carouselContent.length > 0 &&
+          !config.clientFlags.disableLeaderboard && (
+            <HeroCarousel
+              className="absolute left-[-350px] right-[-350px] top-0"
+              texts={carouselContent}
+            />
+          )}
 
         <div
           className={cn(
@@ -373,8 +382,8 @@ const RainbowStripes: React.FC<RainbowStripesProps> = ({
                   "absolute z-20 h-full w-full",
                   "bg-[length:250%_250%,100%_100%] bg-no-repeat",
                   direction === "right"
-                    ? `bg-[linear-gradient(60deg,transparent_47%,rgba(255,255,255)_50%,transparent_52%,transparent_100%)]`
-                    : `bg-[linear-gradient(120deg,transparent_47%,rgba(255,255,255)_50%,transparent_52%,transparent_100%)]`,
+                    ? `bg-[linear-gradient(60deg,transparent_47%,rgba(255,255,255,0.4)_50%,transparent_52%,transparent_100%)]`
+                    : `bg-[linear-gradient(120deg,transparent_47%,rgba(255,255,255,0.4)_50%,transparent_52%,transparent_100%)]`,
                 )}
                 style={{
                   animation: "shine 6s ease-in-out infinite",

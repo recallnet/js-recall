@@ -1,9 +1,11 @@
 import { NextFunction, Request, Response } from "express";
 
-import { checkUserUniqueConstraintViolation } from "@recallnet/services/lib";
+import {
+  checkUserUniqueConstraintViolation,
+  verifyPrivyIdentityTokenAndUpdateUser,
+} from "@recallnet/services/lib";
 
 import { authLogger } from "@/lib/logger.js";
-import { verifyPrivyIdentityTokenAndUpdateUser } from "@/lib/privy/verify.js";
 import { ServiceRegistry } from "@/services/index.js";
 
 export function makeAuthController(services: ServiceRegistry) {
@@ -54,6 +56,7 @@ export function makeAuthController(services: ServiceRegistry) {
         const { id: userId, walletAddress } =
           await verifyPrivyIdentityTokenAndUpdateUser(
             identityToken,
+            services.privyClient,
             services.userService,
           );
 
