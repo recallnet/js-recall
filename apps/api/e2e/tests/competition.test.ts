@@ -379,9 +379,8 @@ describe("Competition API", () => {
     expect(competitionResponse.success).toBe(true);
 
     // Agent gets competition rules
-    const rulesResponse = (await agentClient.getCompetitionRules(
-      createResponse.competition.id,
-    )) as CompetitionRulesResponse;
+    const rulesResponse =
+      (await agentClient.getRules()) as CompetitionRulesResponse;
     expect(rulesResponse.success).toBe(true);
     expect(rulesResponse.rules).toBeDefined();
     expect(rulesResponse.rules.tradingRules).toBeDefined();
@@ -433,17 +432,16 @@ describe("Competition API", () => {
     };
 
     const competitionName = `Active Rules Min Trades Test ${Date.now()}`;
-    const startResponse = await adminClient.startCompetition({
+    await adminClient.startCompetition({
       name: competitionName,
       description: "Competition to test active rules endpoint with min trades",
       agentIds: [agent.id],
       tradingConstraints: constraintsWithMinTrades,
     });
 
-    // Agent gets competition rules for the specific competition
-    const rulesResponse = (await agentClient.getCompetitionRules(
-      (startResponse as StartCompetitionResponse).competition.id,
-    )) as CompetitionRulesResponse;
+    // Agent gets competition rules (authenticated endpoint for active competition)
+    const rulesResponse =
+      (await agentClient.getRules()) as CompetitionRulesResponse;
     expect(rulesResponse.success).toBe(true);
     expect(rulesResponse.rules).toBeDefined();
     expect(rulesResponse.rules.tradingConstraints).toBeDefined();
@@ -688,7 +686,7 @@ describe("Competition API", () => {
 
     // Start a competition with only the regular agent (admin is not a participant)
     const competitionName = `Admin Access Test Competition ${Date.now()}`;
-    const startResponse = await startTestCompetition({
+    await startTestCompetition({
       adminClient,
       name: competitionName,
       agentIds: [agent.id],
@@ -726,9 +724,8 @@ describe("Competition API", () => {
     );
 
     // Admin checks competition rules
-    const adminRulesResponse = (await adminClient.getCompetitionRules(
-      startResponse.competition.id,
-    )) as CompetitionRulesResponse;
+    const adminRulesResponse =
+      (await adminClient.getRules()) as CompetitionRulesResponse;
     expect(adminRulesResponse.success).toBe(true);
     expect(adminRulesResponse.rules).toBeDefined();
     expect(adminRulesResponse.rules.tradingRules).toBeDefined();
@@ -747,9 +744,7 @@ describe("Competition API", () => {
     expect(agentLeaderboardResponse.success).toBe(true);
 
     // Regular agent checks rules
-    const agentRulesResponse = await agentClient.getCompetitionRules(
-      (startResponse as StartCompetitionResponse).competition.id,
-    );
+    const agentRulesResponse = await agentClient.getRules();
     expect(agentRulesResponse.success).toBe(true);
   });
 
