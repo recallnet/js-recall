@@ -50,6 +50,18 @@ export type SelectPerpsRiskMetrics = typeof defs.perpsRiskMetrics.$inferSelect;
 export type InsertPerpsRiskMetrics = typeof defs.perpsRiskMetrics.$inferInsert;
 
 /**
+ * Perpetual position with embedded agent information
+ */
+export type PerpetualPositionWithAgent = SelectPerpetualPosition & {
+  agent: {
+    id: string;
+    name: string;
+    imageUrl: string | null;
+    description: string | null;
+  };
+};
+
+/**
  * Risk-adjusted leaderboard entry combining account summary and risk metrics
  */
 export interface RiskAdjustedLeaderboardEntry {
