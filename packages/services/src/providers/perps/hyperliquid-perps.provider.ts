@@ -84,9 +84,12 @@ interface HyperliquidLedgerUpdate {
       | "liquidation"
       | "vaultCreate"
       | "vaultDisbursement";
-    usdc: string;
-    user?: string;
-    destination?: string;
+    // Either usdc (for USDC) or amount + token (for other assets)
+    usdc?: string; // For USDC transactions
+    amount?: string; // For non-USDC assets
+    token?: string; // Asset name when amount is used (e.g., "BTC", "ETH", "SOL")
+    user?: string; // For transfers: the other party
+    destination?: string; // For transfers: where funds went
     fee?: string;
   };
 }
@@ -271,7 +274,7 @@ export class HyperliquidPerpsProvider implements IPerpsDataProvider {
         // Status
         accountStatus: openPositionsCount > 0 ? "active" : "inactive",
 
-        // Store raw data for debugging (only in dev/sampling)
+        // Raw data not needed for Hyperliquid as we process immediately
         rawData: undefined,
       };
 
@@ -333,7 +336,8 @@ export class HyperliquidPerpsProvider implements IPerpsDataProvider {
 
         positions.push({
           // Identifiers (Hyperliquid doesn't provide position IDs)
-          providerPositionId: `${walletAddress}-${pos.coin}-${Date.now()}`,
+          // Use wallet + coin + size + entry price for uniqueness
+          providerPositionId: `${walletAddress}-${pos.coin}-${pos.szi}-${pos.entryPx}`,
           providerTradeId: undefined,
 
           // Position details
@@ -422,10 +426,33 @@ export class HyperliquidPerpsProvider implements IPerpsDataProvider {
 
         // Track only deposits and withdrawals (skip subAccountTransfers as they're internal)
         if (type === "deposit" || type === "withdraw") {
+          // Determine amount and asset based on field presence
+          let amount: number;
+          let asset: string;
+
+          if (update.delta.usdc !== undefined) {
+            // USDC transfer
+            amount = Math.abs(new Decimal(update.delta.usdc).toNumber());
+            asset = "USDC";
+          } else if (
+            update.delta.amount !== undefined &&
+            update.delta.token !== undefined
+          ) {
+            // Other asset transfer (BTC, ETH, SOL, etc.)
+            amount = Math.abs(new Decimal(update.delta.amount).toNumber());
+            asset = update.delta.token;
+          } else {
+            // Unknown format, skip
+            this.logger.warn(
+              `[HyperliquidProvider] Unknown transfer format: ${JSON.stringify(update.delta)}`,
+            );
+            continue;
+          }
+
           transfers.push({
             type: type,
-            amount: Math.abs(new Decimal(update.delta.usdc).toNumber()),
-            asset: "USDC",
+            amount: amount,
+            asset: asset,
             from: type === "deposit" ? "external" : walletAddress,
             to: type === "withdraw" ? "external" : walletAddress,
             timestamp: new Date(update.time),

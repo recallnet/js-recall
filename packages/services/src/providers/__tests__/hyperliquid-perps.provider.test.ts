@@ -774,6 +774,103 @@ describe("HyperliquidPerpsProvider", () => {
       });
     });
 
+    it("should handle non-USDC asset transfers (BTC, ETH, SOL)", async () => {
+      const multiAssetTransfers = [
+        {
+          time: 1759757500000,
+          hash: "0xbtc123",
+          delta: {
+            type: "deposit" as const,
+            amount: "0.5",
+            token: "BTC",
+          },
+        },
+        {
+          time: 1759757600000,
+          hash: "0xeth456",
+          delta: {
+            type: "withdraw" as const,
+            amount: "-2.5",
+            token: "ETH",
+          },
+        },
+        {
+          time: 1759757700000,
+          hash: "0xsol789",
+          delta: {
+            type: "deposit" as const,
+            amount: "100",
+            token: "SOL",
+          },
+        },
+        // Mixed with USDC
+        {
+          time: 1759757800000,
+          hash: "0xusdc999",
+          delta: {
+            type: "deposit" as const,
+            usdc: "1000",
+          },
+        },
+      ];
+
+      mockAxiosInstance.post.mockResolvedValueOnce({
+        data: multiAssetTransfers,
+      });
+
+      const result = await provider.getTransferHistory("0xtest123", new Date());
+
+      expect(result).toHaveLength(4);
+
+      // BTC deposit
+      expect(result[0]).toEqual({
+        type: "deposit",
+        amount: 0.5,
+        asset: "BTC",
+        from: "external",
+        to: "0xtest123",
+        timestamp: new Date(1759757500000),
+        txHash: "0xbtc123",
+        chainId: 1,
+      });
+
+      // ETH withdrawal
+      expect(result[1]).toEqual({
+        type: "withdraw",
+        amount: 2.5,
+        asset: "ETH",
+        from: "0xtest123",
+        to: "external",
+        timestamp: new Date(1759757600000),
+        txHash: "0xeth456",
+        chainId: 1,
+      });
+
+      // SOL deposit
+      expect(result[2]).toEqual({
+        type: "deposit",
+        amount: 100,
+        asset: "SOL",
+        from: "external",
+        to: "0xtest123",
+        timestamp: new Date(1759757700000),
+        txHash: "0xsol789",
+        chainId: 1,
+      });
+
+      // USDC deposit
+      expect(result[3]).toEqual({
+        type: "deposit",
+        amount: 1000,
+        asset: "USDC",
+        from: "external",
+        to: "0xtest123",
+        timestamp: new Date(1759757800000),
+        txHash: "0xusdc999",
+        chainId: 1,
+      });
+    });
+
     it("should handle negative amounts correctly", async () => {
       const negativeAmountTransfers = [
         {
@@ -930,9 +1027,7 @@ describe("HyperliquidPerpsProvider", () => {
       expect(result[0]?.liquidationPrice).toBe(0.000000005);
     });
 
-    it("should handle position ID generation with timestamps", async () => {
-      const beforeTime = Date.now();
-
+    it("should handle position ID generation deterministically", async () => {
       mockAxiosInstance.post.mockResolvedValueOnce({
         data: sampleClearinghouseState,
       });
@@ -940,17 +1035,18 @@ describe("HyperliquidPerpsProvider", () => {
 
       const result = await provider.getPositions("0xtest123");
 
-      const afterTime = Date.now();
+      // Position IDs should be deterministic: wallet-coin-size-entryPrice
+      // This prevents collisions and makes IDs predictable
+      expect(result[0]?.providerPositionId).toBe("0xtest123-BTC-0.1-45000");
 
-      // Position IDs should contain wallet address, coin, and timestamp
-      expect(result[0]?.providerPositionId).toMatch(/^0xtest123-BTC-\d+$/);
+      // Verify ID is deterministic by calling again
+      mockAxiosInstance.post.mockResolvedValueOnce({
+        data: sampleClearinghouseState,
+      });
+      mockAxiosInstance.post.mockResolvedValueOnce({ data: sampleAllMids });
 
-      // Extract timestamp from ID and verify it's within the test timeframe
-      const timestamp = parseInt(
-        result[0]?.providerPositionId?.split("-")[2] ?? "0",
-      );
-      expect(timestamp).toBeGreaterThanOrEqual(beforeTime);
-      expect(timestamp).toBeLessThanOrEqual(afterTime);
+      const result2 = await provider.getPositions("0xtest123");
+      expect(result2[0]?.providerPositionId).toBe("0xtest123-BTC-0.1-45000");
     });
 
     it("should mask wallet addresses in logs", async () => {
