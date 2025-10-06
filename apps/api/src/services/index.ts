@@ -53,6 +53,7 @@ import { EventProcessor } from "@/indexing/event-processor.js";
 import { EventsRepository } from "@/indexing/events.repository.js";
 import { IndexingService } from "@/indexing/indexing.service.js";
 import {
+  configLogger,
   indexingLogger,
   repositoryLogger,
   serviceLogger,
@@ -126,6 +127,7 @@ class ServiceRegistry {
       !config.rewards.contractAddress ||
       !config.rewards.rpcProvider
     ) {
+      configLogger.warn("Rewards allocator config is not set");
       this._rewardsAllocator =
         new MockRewardsAllocator() as unknown as RewardsAllocator;
     } else {
