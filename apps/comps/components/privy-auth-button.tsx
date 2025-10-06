@@ -91,7 +91,7 @@ export const PrivyAuthButton: React.FunctionComponent = () => {
                 />
               </AvatarFallback>
             </Avatar>
-            <div className="ml-3 hidden text-xs font-medium uppercase text-white sm:block">
+            <div className="ml-3 hidden font-mono text-xs font-medium uppercase tracking-widest text-white sm:block">
               {displayName && displayName.length > 15
                 ? displayName.slice(0, 15) + "..."
                 : displayName ||
