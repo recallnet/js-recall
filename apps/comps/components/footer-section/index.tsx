@@ -45,7 +45,7 @@ export const FooterSection: React.FC<FooterSectionProps> = ({ className }) => {
 
   return (
     <footer className={cn("mt-10", className)}>
-      <div className="xs:grid-cols-5 grid grid-cols-3 content-center gap-8 border-y py-10 font-bold">
+      <div className="xs:grid-cols-5 grid grid-cols-3 content-center gap-8 border-y py-10 font-normal">
         <Image
           src="/logo_white.svg"
           alt="recallnet"
