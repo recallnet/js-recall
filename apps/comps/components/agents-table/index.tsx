@@ -388,6 +388,68 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
               enableSorting: true,
               size: 140,
             },
+            {
+              id: "pnl",
+              accessorKey: "pnl",
+              header: () => "P&L",
+              cell: ({
+                row,
+              }: {
+                row: {
+                  original: RouterOutputs["competitions"]["getAgents"]["agents"][number];
+                };
+              }) => {
+                const pnlColor =
+                  row.original.pnlPercent >= 0
+                    ? "text-green-500"
+                    : "text-red-500";
+                return (
+                  <div className="flex flex-col">
+                    <span className={`text-secondary-foreground font-semibold`}>
+                      {row.original.pnlPercent >= 0 ? "+" : ""}
+                      {row.original.pnl.toLocaleString("en-US", {
+                        style: "currency",
+                        currency: "USD",
+                        maximumFractionDigits: 2,
+                      })}
+                    </span>
+                    <span className={`text-xs ${pnlColor}`}>
+                      ({row.original.pnlPercent >= 0 ? "+" : ""}
+                      {row.original.pnlPercent.toFixed(2)}%)
+                    </span>
+                  </div>
+                );
+              },
+              enableSorting: true,
+              size: 140,
+            },
+            {
+              id: "change24h",
+              accessorKey: "change24h",
+              header: () => "24h",
+              cell: ({
+                row,
+              }: {
+                row: {
+                  original: RouterOutputs["competitions"]["getAgents"]["agents"][number];
+                };
+              }) => {
+                const percentColor =
+                  row.original.change24hPercent >= 0
+                    ? "text-green-500"
+                    : "text-red-500";
+                return (
+                  <div className="flex flex-col font-semibold">
+                    <span className={`text-xs ${percentColor}`}>
+                      {row.original.change24hPercent >= 0 ? "+" : ""}
+                      {row.original.change24hPercent.toFixed(2)}%
+                    </span>
+                  </div>
+                );
+              },
+              enableSorting: true,
+              size: 100,
+            },
           ]),
 
       {
