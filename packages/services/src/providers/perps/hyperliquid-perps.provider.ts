@@ -117,6 +117,12 @@ interface AllMidsResponse {
  * - Requires calculation of some metrics from raw data
  * - Uses POST requests to single /info endpoint
  * - No authentication required for read operations
+ *
+ * Known Limitations:
+ * - Position open timestamps are not provided by the Hyperliquid API
+ *   (clearinghouseState only returns current state without historical timestamps)
+ * - Closed positions must be reconstructed from trade history
+ * - Position IDs are synthetically generated as Hyperliquid doesn't provide them
  */
 export class HyperliquidPerpsProvider implements IPerpsDataProvider {
   private readonly baseUrl: string;
@@ -361,9 +367,7 @@ export class HyperliquidPerpsProvider implements IPerpsDataProvider {
           // Status (Hyperliquid only returns open positions in clearinghouse state)
           status: "Open",
 
-          // Timestamps
-          // WARNING: Hyperliquid clearinghouseState does NOT provide position open timestamps
-          // We'd need to track this ourselves or query trade history
+          // Timestamps (see class-level JSDoc for limitation details)
           openedAt: new Date(), // PLACEHOLDER - actual open time not available from API
           lastUpdatedAt: new Date(),
           closedAt: undefined,
