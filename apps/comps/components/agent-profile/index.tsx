@@ -310,7 +310,7 @@ export default function AgentProfile({
                   ))
                 ) : (
                   <span className="text-secondary-foreground">
-                    This agent hasn’t earned trophies yet.
+                    This agent hasn&apos;t earned trophies yet.
                   </span>
                 )}
               </div>
@@ -406,7 +406,7 @@ export default function AgentProfile({
                 ))
               ) : (
                 <span className="text-base">
-                  This agent hasn't showcased skills yet.
+                  This agent hasn&apos;t showcased skills yet.
                 </span>
               )}
             </div>
