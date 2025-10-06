@@ -24,7 +24,6 @@ import {
   useCallback,
   useEffect,
   useMemo,
-  useRef,
   useState,
 } from "react";
 
@@ -93,7 +92,6 @@ export const SessionContext = createContext<Session | null>(null);
 
 export function SessionProvider({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
-  const apiClient = useRef(new ApiClient());
 
   const { user, ready, authenticated, logout, isModalOpen, createWallet } =
     usePrivy();
@@ -122,6 +120,41 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     [setIsWrongWalletModalOpen, disconnect],
   );
 
+  const {
+    mutate: loginToBackend,
+    isSuccess: isLoginToBackendSuccess,
+    isPending: isLoginToBackendPending,
+    isError: isLoginToBackendError,
+    error: loginToBackendError,
+  } = useMutation(
+    tanstackClient.user.login.mutationOptions({
+      onSuccess: () => {
+        refetchBackendUser();
+      },
+      onError: (error) => {
+        console.error("Login to backend failed:", {
+          error: error?.message || String(error),
+          privyAuthenticated: authenticated,
+          privyReady: ready,
+          privyWalletsReady: walletsReady,
+          browserOnline: navigator.onLine,
+        });
+
+        Sentry.captureException(
+          error instanceof Error ? error : new Error(String(error)),
+          {
+            extra: {
+              privyAuthenticated: authenticated,
+              privyReady: ready,
+              privyWalletsReady: walletsReady,
+              browserOnline: navigator.onLine,
+            },
+          },
+        );
+      },
+    }),
+  );
+
   const { login: loginInner } = useLogin({
     onComplete: async ({ user, isNewUser }) => {
       // Note: Privy has a known issue where embedded wallets are, sometimes, not created for a
@@ -137,7 +170,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       }
 
       setShouldLinkWallet(isNewUser);
-      loginToBackend();
+      loginToBackend(undefined);
     },
     onError: (err) => {
       if (err === "exited_auth_flow") return;
@@ -151,45 +184,6 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     },
     [loginInner, setLoginError],
   );
-
-  const {
-    mutate: loginToBackend,
-    isSuccess: isLoginToBackendSuccess,
-    isPending: isLoginToBackendPending,
-    isError: isLoginToBackendError,
-    error: loginToBackendError,
-  } = useMutation({
-    mutationFn: async () => {
-      await apiClient.current.login();
-    },
-    retry: 3,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000), // Exponential backoff: 1s, 2s, 4s, max 10s
-    onSuccess: () => {
-      refetchBackendUser();
-    },
-    onError: (error) => {
-      console.error("Login to backend failed:", {
-        error: error?.message || String(error),
-        privyAuthenticated: authenticated,
-        privyReady: ready,
-        privyWalletsReady: walletsReady,
-        browserOnline: navigator.onLine,
-      });
-
-      Sentry.captureException(
-        error instanceof Error ? error : new Error(String(error)),
-        {
-          extra: {
-            privyAuthenticated: authenticated,
-            privyReady: ready,
-            privyWalletsReady: walletsReady,
-            browserOnline: navigator.onLine,
-          },
-        },
-      );
-    },
-  });
-
   // Query for BackendUser session data
   const {
     data: backendUser,
