@@ -981,7 +981,7 @@ describe("Trading API", () => {
     expect(competitionResponse.success).toBe(true);
 
     // Check if competition rules reflect the disabled cross-chain trading
-    const rulesResponse = await agentClient.getRules();
+    const rulesResponse = await agentClient.getCompetitionRules();
     expect(rulesResponse.success).toBe(true);
 
     // Find cross-chain trading rule in the rules list
@@ -1035,7 +1035,7 @@ describe("Trading API", () => {
     expect(secondCompetitionResponse.success).toBe(true);
 
     // Check if competition rules reflect the enabled cross-chain trading
-    const secondRulesResponse = await agentClient.getRules();
+    const secondRulesResponse = await agentClient.getCompetitionRules();
     expect(secondRulesResponse.success).toBe(true);
 
     // Find cross-chain trading rule in the rules list

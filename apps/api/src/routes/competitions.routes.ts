@@ -506,94 +506,15 @@ export function configureCompetitionsRoutes(
    *   get:
    *     tags:
    *       - Competition
-   *     summary: Get competition rules
-   *     description: Get the rules, rate limits, and other configuration details for the competition
-   *     security:
-   *       - BearerAuth: []
-   *     responses:
-   *       200:
-   *         description: Competition rules retrieved successfully
-   *         content:
-   *           application/json:
-   *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   description: Operation success status
-   *                 rules:
-   *                   type: object
-   *                   properties:
-   *                     tradingRules:
-   *                       type: array
-   *                       items:
-   *                         type: string
-   *                       description: List of trading rules for the competition
-   *                     rateLimits:
-   *                       type: array
-   *                       items:
-   *                         type: string
-   *                       description: Rate limits for API endpoints
-   *                     availableChains:
-   *                       type: object
-   *                       properties:
-   *                         svm:
-   *                           type: boolean
-   *                           description: Whether Solana (SVM) is available
-   *                         evm:
-   *                           type: array
-   *                           items:
-   *                             type: string
-   *                           description: List of available EVM chains
-   *                     slippageFormula:
-   *                       type: string
-   *                       description: Formula used for calculating slippage
-   *                     tradingConstraints:
-   *                       type: object
-   *                       description: Trading constraints for the competition
-   *                       properties:
-   *                         minimumPairAgeHours:
-   *                           type: number
-   *                           description: Minimum age of trading pairs in hours
-   *                         minimum24hVolumeUsd:
-   *                           type: number
-   *                           description: Minimum 24-hour volume in USD
-   *                         minimumLiquidityUsd:
-   *                           type: number
-   *                           description: Minimum liquidity in USD
-   *                         minimumFdvUsd:
-   *                           type: number
-   *                           description: Minimum fully diluted valuation in USD
-   *                         minTradesPerDay:
-   *                           type: number
-   *                           nullable: true
-   *                           description: Minimum number of trades required per day (null if no requirement)
-   *       400:
-   *         description: Bad request - No active competition
-   *       401:
-   *         description: Unauthorized - Missing or invalid authentication
-   *       403:
-   *         description: Forbidden - Agent not participating in the competition
-   *       500:
-   *         description: Server error
-   */
-  router.get("/rules", ...authMiddlewares, competitionController.getRules);
-
-  /**
-   * @openapi
-   * /api/competitions/{competitionId}/rules:
-   *   get:
-   *     tags:
-   *       - Competition
-   *     summary: Get rules for a specific competition
-   *     description: Get the competition rules including trading constraints, rate limits, and formulas for a specific competition
+   *     summary: Get rules for a specific competition or active competition
+   *     description: Get the competition rules including trading constraints, rate limits, and formulas. If competitionId query parameter is provided, returns rules for that competition. If competitionId is omitted, returns rules for the currently active competition.
    *     parameters:
-   *       - in: path
+   *       - in: query
    *         name: competitionId
-   *         required: true
+   *         required: false
    *         schema:
    *           type: string
-   *         description: Competition ID
+   *         description: Competition ID (optional - if not provided, returns rules for active competition)
    *     responses:
    *       200:
    *         description: Competition rules retrieved successfully
@@ -662,12 +583,12 @@ export function configureCompetitionsRoutes(
    *                           nullable: true
    *                           description: Minimum number of trades required per day (null if no requirement)
    *       404:
-   *         description: Competition not found
+   *         description: Competition not found (or no active competition when competitionId is omitted)
    *       500:
    *         description: Server error
    */
   router.get(
-    "/:competitionId/rules",
+    "/rules",
     optionalAuthMiddleware,
     competitionController.getCompetitionRules,
   );

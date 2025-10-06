@@ -317,15 +317,16 @@ export class ApiClient {
 
   /**
    * Get competition rules
-   * @param competitionId - Competition ID
-   * @returns Competition rules for the specified competition
+   * @param competitionId - Competition ID (optional - if not provided, returns rules for active competition)
+   * @returns Competition rules for the specified competition or active competition
    */
   async getCompetitionRules(
-    competitionId: string,
+    competitionId?: string,
   ): Promise<CompetitionRulesResponse> {
-    return this.request<CompetitionRulesResponse>(
-      `/competitions/${competitionId}/rules`,
-    );
+    const url = competitionId
+      ? `/competitions/rules?competitionId=${competitionId}`
+      : `/competitions/rules`;
+    return this.request<CompetitionRulesResponse>(url);
   }
 
   // Agent endpoints

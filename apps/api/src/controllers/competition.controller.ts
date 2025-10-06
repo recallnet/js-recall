@@ -146,49 +146,6 @@ export function makeCompetitionController(services: ServiceRegistry) {
     },
 
     /**
-     * Get competition rules
-     * @param req AuthenticatedRequest object with agent authentication information
-     * @param res Express response object
-     * @param next Express next function
-     */
-    async getRules(
-      req: AuthenticatedRequest,
-      res: Response,
-      next: NextFunction,
-    ) {
-      try {
-        const agentId = req.agentId;
-        const isAdmin = req.isAdmin === true;
-
-        // Check cache
-        const shouldCacheResponse = checkShouldCacheResponse(req);
-        const cacheKey = generateCacheKey(req, "rules", {});
-
-        if (shouldCacheResponse) {
-          const cached = caches.rules.get(cacheKey);
-          if (cached) {
-            res.status(200).json(cached);
-            return;
-          }
-        }
-
-        const result = await services.competitionService.getCompetitionRules({
-          agentId,
-          isAdmin,
-        });
-
-        // Cache the result
-        if (shouldCacheResponse) {
-          caches.rules.set(cacheKey, result);
-        }
-
-        res.status(200).json(result);
-      } catch (error) {
-        next(error);
-      }
-    },
-
-    /**
      * Get upcoming competitions
      * @param req AuthenticatedRequest object with agent authentication information
      * @param res Express response object
@@ -496,8 +453,8 @@ export function makeCompetitionController(services: ServiceRegistry) {
     },
 
     /**
-     * Get competition rules by competition ID
-     * Public endpoint that returns rules for any competition
+     * Get competition rules by competition ID or for current competition
+     * Public endpoint that returns rules for any competition or current competition if no ID provided
      * @param req AuthenticatedRequest object (authentication optional)
      * @param res Express response object
      * @param next Express next function
@@ -508,15 +465,15 @@ export function makeCompetitionController(services: ServiceRegistry) {
       next: NextFunction,
     ) {
       try {
-        const competitionId = ensureUuid(req.params.competitionId);
-        if (!competitionId) {
-          throw new ApiError(400, "Competition ID is required");
+        let competitionId: string | undefined;
+        if (req.query.competitionId) {
+          competitionId = ensureUuid(req.query.competitionId as string);
+        } else {
+          competitionId = undefined;
         }
 
         const result =
-          await services.competitionService.getRulesForSpecificCompetition(
-            competitionId,
-          );
+          await services.competitionService.getCompetitionRules(competitionId);
 
         res.status(200).json(result);
       } catch (error) {

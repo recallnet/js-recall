@@ -380,7 +380,7 @@ describe("Competition API", () => {
 
     // Agent gets competition rules
     const rulesResponse =
-      (await agentClient.getRules()) as CompetitionRulesResponse;
+      (await agentClient.getCompetitionRules()) as CompetitionRulesResponse;
     expect(rulesResponse.success).toBe(true);
     expect(rulesResponse.rules).toBeDefined();
     expect(rulesResponse.rules.tradingRules).toBeDefined();
@@ -441,7 +441,7 @@ describe("Competition API", () => {
 
     // Agent gets competition rules (authenticated endpoint for active competition)
     const rulesResponse =
-      (await agentClient.getRules()) as CompetitionRulesResponse;
+      (await agentClient.getCompetitionRules()) as CompetitionRulesResponse;
     expect(rulesResponse.success).toBe(true);
     expect(rulesResponse.rules).toBeDefined();
     expect(rulesResponse.rules.tradingConstraints).toBeDefined();
@@ -725,7 +725,7 @@ describe("Competition API", () => {
 
     // Admin checks competition rules
     const adminRulesResponse =
-      (await adminClient.getRules()) as CompetitionRulesResponse;
+      (await adminClient.getCompetitionRules()) as CompetitionRulesResponse;
     expect(adminRulesResponse.success).toBe(true);
     expect(adminRulesResponse.rules).toBeDefined();
     expect(adminRulesResponse.rules.tradingRules).toBeDefined();
@@ -744,7 +744,7 @@ describe("Competition API", () => {
     expect(agentLeaderboardResponse.success).toBe(true);
 
     // Regular agent checks rules
-    const agentRulesResponse = await agentClient.getRules();
+    const agentRulesResponse = await agentClient.getCompetitionRules();
     expect(agentRulesResponse.success).toBe(true);
   });
 
@@ -4070,7 +4070,7 @@ describe("Competition API", () => {
       expect(Array.isArray(response.data.agents)).toBe(true);
     });
 
-    test("should allow unauthenticated access to GET /competitions/{id}/rules", async () => {
+    test("should allow unauthenticated access to GET /competitions/rules?competitionId={id}", async () => {
       // Setup: Create competition with trading constraints via admin
       const adminClient = createTestClient();
       await adminClient.loginAsAdmin(adminApiKey);
@@ -4094,7 +4094,7 @@ describe("Competition API", () => {
 
       // Test: Direct axios call without authentication
       const response = await axios.get(
-        `${getBaseUrl()}/api/competitions/${competition.id}/rules`,
+        `${getBaseUrl()}/api/competitions/rules?competitionId=${competition.id}`,
       );
 
       expect(response.status).toBe(200);
@@ -4314,7 +4314,9 @@ describe("Competition API", () => {
       });
 
       await expect(
-        axios.get(`${getBaseUrl()}/api/competitions/${nonExistentId}/rules`),
+        axios.get(
+          `${getBaseUrl()}/api/competitions/rules?competitionId=${nonExistentId}`,
+        ),
       ).rejects.toMatchObject({
         response: { status: 404 },
       });
@@ -4324,7 +4326,6 @@ describe("Competition API", () => {
       const protectedEndpoints = [
         "/api/competitions/leaderboard",
         "/api/competitions/status",
-        "/api/competitions/rules",
         "/api/competitions/upcoming",
       ];
 
@@ -4336,6 +4337,39 @@ describe("Competition API", () => {
           response: { status: 401 },
         });
       }
+    });
+
+    test("rules endpoint should be publicly accessible", async () => {
+      // Setup: Create a competition (don't need to start it, just test the query parameter functionality)
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      const competitionName = `Public Rules Test ${Date.now()}`;
+      const competitionResponse = await adminClient.createCompetition({
+        name: competitionName,
+        description: "Test competition for public rules access",
+        tradingConstraints: {
+          minimumPairAgeHours: 24,
+          minimum24hVolumeUsd: 50000,
+          minimumLiquidityUsd: 100000,
+          minimumFdvUsd: 1000000,
+        },
+      });
+
+      expect(competitionResponse.success).toBe(true);
+      const competition = competitionResponse as CreateCompetitionResponse;
+
+      // Test with specific competition ID via query parameter (public access)
+      const specificResponse = await axios.get(
+        `${getBaseUrl()}/api/competitions/rules?competitionId=${competition.competition.id}`,
+      );
+      expect(specificResponse.status).toBe(200);
+      expect(specificResponse.data.success).toBe(true);
+      expect(specificResponse.data.rules).toBeDefined();
+      expect(specificResponse.data.rules.tradingConstraints).toBeDefined();
+      expect(
+        specificResponse.data.rules.tradingConstraints.minimumPairAgeHours,
+      ).toBe(24);
     });
 
     test("join/leave competition endpoints should still require authentication", async () => {

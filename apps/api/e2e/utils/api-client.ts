@@ -1168,30 +1168,19 @@ export class ApiClient {
   }
 
   /**
-   * Get competition rules
+   * Get competition rules by competition ID or for active competition
    */
-  async getRules(): Promise<CompetitionRulesResponse | ErrorResponse> {
+  async getCompetitionRules(
+    competitionId?: string,
+  ): Promise<CompetitionRulesResponse | ErrorResponse> {
     try {
-      const response = await this.axiosInstance.get("/api/competitions/rules");
+      const url = competitionId
+        ? `/api/competitions/rules?competitionId=${competitionId}`
+        : `/api/competitions/rules`;
+      const response = await this.axiosInstance.get(url);
       return response.data as CompetitionRulesResponse;
     } catch (error) {
       return this.handleApiError(error, "get competition rules");
-    }
-  }
-
-  /**
-   * Get competition rules by competition ID
-   */
-  async getCompetitionRules(
-    competitionId: string,
-  ): Promise<CompetitionRulesResponse | ErrorResponse> {
-    try {
-      const response = await this.axiosInstance.get(
-        `/api/competitions/${competitionId}/rules`,
-      );
-      return response.data as CompetitionRulesResponse;
-    } catch (error) {
-      return this.handleApiError(error, "get competition rules by ID");
     }
   }
 

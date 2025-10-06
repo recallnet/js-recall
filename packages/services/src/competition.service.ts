@@ -2806,88 +2806,35 @@ export class CompetitionService {
   }
 
   /**
-   * Get competition rules for the active competition as a participant
-   * @param params Parameters for rules request
-   * @returns Formatted competition rules
-   */
-  async getCompetitionRules(params: {
-    agentId?: string;
-    isAdmin?: boolean;
-  }): Promise<CompetitionRulesData> {
-    try {
-      // Get active competition first, as rules are always for the active one
-      const activeCompetition = await this.getActiveCompetition();
-
-      if (!activeCompetition) {
-        throw new ApiError(
-          404,
-          "No active competition found to get rules for.",
-        );
-      }
-
-      // Authentication and Authorization
-      if (params.isAdmin) {
-        // Admin access: Log and proceed
-        this.logger.debug(
-          `Admin accessing rules for competition ${activeCompetition.id}.`,
-        );
-      } else {
-        // Not an admin, an agentId is required
-        if (!params.agentId) {
-          throw new ApiError(
-            401,
-            "Authentication required to view competition rules: Agent ID missing.",
-          );
-        }
-        // AgentId is present, verify participation in the active competition
-        if (activeCompetition.status !== "active") {
-          throw new ApiError(
-            400,
-            "No active competition found to get rules for.",
-          );
-        }
-        const isAgentActive = await this.isAgentActiveInCompetition(
-          activeCompetition.id,
-          params.agentId,
-        );
-        if (!isAgentActive) {
-          throw new ApiError(
-            403,
-            "Forbidden: Your agent is not actively participating in this competition.",
-          );
-        }
-      }
-
-      return await this.assembleCompetitionRules(activeCompetition);
-    } catch (error) {
-      this.logger.error(
-        `[CompetitionService] Error getting competition rules:`,
-        error,
-      );
-      throw error;
-    }
-  }
-
-  /**
-   * Get rules for a specific competition by competition ID.
-   * @param competitionId The competition ID
+   * Get rules for a specific competition by competition ID, or for the active competition if no ID provided.
+   * @param competitionId The competition ID (optional - defaults to active competition)
    * @returns Competition rules
    */
-  async getRulesForSpecificCompetition(
-    competitionId: string,
+  async getCompetitionRules(
+    competitionId?: string,
   ): Promise<CompetitionRulesData> {
     try {
-      // Get competition
-      const competition = await this.getCompetition(competitionId);
-      if (!competition) {
-        throw new ApiError(404, "Competition not found");
+      let competition;
+
+      if (competitionId) {
+        // Get specific competition
+        competition = await this.getCompetition(competitionId);
+        if (!competition) {
+          throw new ApiError(404, "Competition not found");
+        }
+      } else {
+        // Get active competition
+        competition = await this.getActiveCompetition();
+        if (!competition) {
+          throw new ApiError(404, "No active competition found");
+        }
       }
 
       // Use helper method to assemble complete rules
       return await this.assembleCompetitionRules(competition);
     } catch (error) {
       this.logger.error(
-        `[CompetitionService] Error getting competition rules with auth:`,
+        `[CompetitionService] Error getting competition rules:`,
         error,
       );
       throw error;
