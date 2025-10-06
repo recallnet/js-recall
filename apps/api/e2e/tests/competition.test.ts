@@ -4070,7 +4070,7 @@ describe("Competition API", () => {
       expect(Array.isArray(response.data.agents)).toBe(true);
     });
 
-    test("should allow unauthenticated access to GET /competitions/rules?competitionId={id}", async () => {
+    test("should allow unauthenticated access to GET /competitions/{id}/rules", async () => {
       // Setup: Create competition with trading constraints via admin
       const adminClient = createTestClient();
       await adminClient.loginAsAdmin(adminApiKey);
@@ -4094,7 +4094,7 @@ describe("Competition API", () => {
 
       // Test: Direct axios call without authentication
       const response = await axios.get(
-        `${getBaseUrl()}/api/competitions/rules?competitionId=${competition.id}`,
+        `${getBaseUrl()}/api/competitions/${competition.id}/rules`,
       );
 
       expect(response.status).toBe(200);
@@ -4358,16 +4358,14 @@ describe("Competition API", () => {
       const competition = competitionResponse as CreateCompetitionResponse;
 
       // Test with specific competition ID via path parameter (public access)
-      const specificResponse = await axios.get(
-        `${getBaseUrl()}/api/competitions/${competition.competition.id}/rules`,
+      const rulesResponse = (await adminClient.getCompetitionRules(
+        competition.competition.id,
+      )) as CompetitionRulesResponse;
+      expect(rulesResponse.rules).toBeDefined();
+      expect(rulesResponse.rules.tradingConstraints).toBeDefined();
+      expect(rulesResponse.rules.tradingConstraints!.minimumPairAgeHours).toBe(
+        24,
       );
-      expect(specificResponse.status).toBe(200);
-      expect(specificResponse.data.success).toBe(true);
-      expect(specificResponse.data.rules).toBeDefined();
-      expect(specificResponse.data.rules.tradingConstraints).toBeDefined();
-      expect(
-        specificResponse.data.rules.tradingConstraints.minimumPairAgeHours,
-      ).toBe(24);
     });
 
     test("join/leave competition endpoints should still require authentication", async () => {
