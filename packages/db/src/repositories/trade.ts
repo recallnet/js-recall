@@ -222,7 +222,7 @@ export class TradeRepository {
           },
         })
         .from(trades)
-        .leftJoin(agents, eq(trades.agentId, agents.id))
+        .innerJoin(agents, eq(trades.agentId, agents.id))
         .where(eq(trades.competitionId, competitionId))
         .orderBy(desc(trades.timestamp));
 
