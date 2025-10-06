@@ -18,7 +18,7 @@ export function cacheMiddleware<
   TMeta extends Meta,
 >(options?: {
   key?: string[];
-  revalidate?: number;
+  revalidateSecs?: number;
   tags?: string[];
   includeContext?: (context: TInContext) => Record<string, any>;
 }): Middleware<
@@ -41,9 +41,9 @@ export function cacheMiddleware<
       });
 
       const cacheKey = [
-        ...(options?.key || []),
         ...path,
         JSON.stringify(serialized),
+        ...(options?.key || []),
       ];
 
       const cachedHandler = unstable_cache(
@@ -56,7 +56,7 @@ export function cacheMiddleware<
         },
         cacheKey,
         {
-          revalidate: options?.revalidate,
+          revalidate: options?.revalidateSecs,
           tags: options?.tags,
         },
       );

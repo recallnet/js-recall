@@ -9,7 +9,7 @@ import { cacheMiddleware } from "@/rpc/middleware/cache";
 export const getAgents = base
   .use(
     cacheMiddleware({
-      revalidate: 20,
+      revalidateSecs: 20,
     }),
   )
   .input(
