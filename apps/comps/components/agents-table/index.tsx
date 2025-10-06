@@ -45,7 +45,7 @@ import { RankBadge } from "./rank-badge";
 
 export interface AgentsTableProps {
   agents: RouterOutputs["competitions"]["getAgents"]["agents"];
-  totalVotes?: number;
+  totalVotes: number;
   competition: RouterOutputs["competitions"]["getById"];
   onFilterChange: (filter: string) => void;
   onSortChange: (sort: string) => void;
@@ -58,7 +58,7 @@ const numberFormatter = new Intl.NumberFormat();
 
 export const AgentsTable: React.FC<AgentsTableProps> = ({
   agents,
-  //totalVotes,
+  totalVotes,
   competition,
   //onFilterChange,
   onSortChange,
@@ -180,17 +180,22 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
       ? Math.floor(pagination.offset / pagination.limit) + 1
       : 1;
 
-  useEffect(() => {
-    setColumnVisibility({
-      yourShare: session.ready && session.isAuthenticated,
-    });
-  }, [session]);
-
   // Calculate total boost for percentage calculation
   const totalBoost = useMemo(() => {
     if (!isSuccessBoostTotals) return 0;
     return Object.values(boostTotals).reduce((sum, amount) => sum + amount, 0);
   }, [boostTotals, isSuccessBoostTotals]);
+
+  // Determine if this competition has boost enabled (any agent has boost > 0)
+  const hasBoostEnabled = useMemo(() => {
+    return totalBoost > 0 || isOpenForBoosting;
+  }, [totalBoost, isOpenForBoosting]);
+
+  useEffect(() => {
+    setColumnVisibility({
+      yourShare: session.ready && session.isAuthenticated && hasBoostEnabled,
+    });
+  }, [session.ready, session.isAuthenticated, hasBoostEnabled]);
 
   // Calculate user's total spent boost for progress bar
   const userSpentBoost = useMemo(() => {
@@ -455,25 +460,48 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
       {
         id: "boostPool",
         accessorKey: "boostTotal",
-        header: () => <span className="whitespace-nowrap">Boost Pool</span>,
+        header: () => (
+          <span className="whitespace-nowrap">
+            {hasBoostEnabled ? "Boost Pool" : "Votes"}
+          </span>
+        ),
         cell: ({ row }) => {
-          const agentBoostTotal = isSuccessBoostTotals
-            ? boostTotals[row.original.id] || 0
-            : 0;
+          if (hasBoostEnabled) {
+            const agentBoostTotal = isSuccessBoostTotals
+              ? boostTotals[row.original.id] || 0
+              : 0;
 
-          return (
-            <div className="flex flex-col items-end">
-              <span className="text-secondary-foreground font-semibold">
-                {isBoostDataLoading
-                  ? "..."
-                  : formatCompactNumber(agentBoostTotal)}
-              </span>
-              <span className="text-xs text-slate-400">
-                ({formatPercentage(Number(agentBoostTotal), Number(totalBoost))}
-                )
-              </span>
-            </div>
-          );
+            return (
+              <div className="flex flex-col items-end">
+                <span className="text-secondary-foreground font-semibold">
+                  {isBoostDataLoading
+                    ? "..."
+                    : formatCompactNumber(agentBoostTotal)}
+                </span>
+                <span className="text-xs text-slate-400">
+                  (
+                  {formatPercentage(
+                    Number(agentBoostTotal),
+                    Number(totalBoost),
+                  )}
+                  )
+                </span>
+              </div>
+            );
+          } else {
+            // Show vote counts for old competitions without boost
+            const voteCount = row.original.voteCount || 0;
+            return (
+              <div className="flex flex-col items-end">
+                <span className="text-secondary-foreground font-semibold">
+                  {formatCompactNumber(voteCount)}
+                </span>
+                <span className="text-xs text-slate-400">
+                  ({formatPercentage(Number(voteCount), Number(totalVotes))})
+                </span>
+              </div>
+            );
+          }
         },
         enableSorting: false,
         size: 100,
@@ -553,6 +581,8 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
       isOpenForBoosting,
       competition.type,
       isSuccessUserBoosts,
+      hasBoostEnabled,
+      totalVotes,
     ],
   );
 
