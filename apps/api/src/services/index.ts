@@ -121,6 +121,13 @@ class ServiceRegistry {
     if (config.server.nodeEnv === "test") {
       this._rewardsAllocator =
         new MockRewardsAllocator() as unknown as RewardsAllocator;
+    } else if (
+      !config.rewards.allocatorPrivateKey ||
+      !config.rewards.contractAddress ||
+      !config.rewards.rpcProvider
+    ) {
+      this._rewardsAllocator =
+        new MockRewardsAllocator() as unknown as RewardsAllocator;
     } else {
       this._rewardsAllocator = new RewardsAllocator(
         config.rewards.allocatorPrivateKey as Hex,
