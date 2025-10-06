@@ -382,8 +382,8 @@ const RainbowStripes: React.FC<RainbowStripesProps> = ({
                   "absolute z-20 h-full w-full",
                   "bg-[length:250%_250%,100%_100%] bg-no-repeat",
                   direction === "right"
-                    ? `bg-[linear-gradient(60deg,transparent_47%,rgba(255,255,255)_50%,transparent_52%,transparent_100%)]`
-                    : `bg-[linear-gradient(120deg,transparent_47%,rgba(255,255,255)_50%,transparent_52%,transparent_100%)]`,
+                    ? `bg-[linear-gradient(60deg,transparent_47%,rgba(255,255,255,0.4)_50%,transparent_52%,transparent_100%)]`
+                    : `bg-[linear-gradient(120deg,transparent_47%,rgba(255,255,255,0.4)_50%,transparent_52%,transparent_100%)]`,
                 )}
                 style={{
                   animation: "shine 6s ease-in-out infinite",
