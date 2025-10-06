@@ -120,5 +120,6 @@ export const useVotingState = (competitionId: string) => {
       }
     },
     enabled: isAuthenticated && !!competitionId,
+    staleTime: 15 * 1000, // 15 seconds - short cache for real-time voting state updates
   });
 };

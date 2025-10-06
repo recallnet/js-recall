@@ -154,6 +154,34 @@ export default function CompetitionPage({
     );
   }
 
+  // Helper function to determine if voting is actually available
+  const isVotingAvailable = () => {
+    // For authenticated users, trust server validation
+    if (competition.userVotingInfo) {
+      return competition.userVotingInfo.canVote ?? false;
+    }
+
+    // For unauthenticated users, check client-side
+    if (!competition.votingEnabled) return false;
+    if (competition.status === "ended") return false;
+
+    const now = new Date();
+    const votingStart = competition.votingStartDate
+      ? new Date(competition.votingStartDate)
+      : null;
+    const votingEnd = competition.votingEndDate
+      ? new Date(competition.votingEndDate)
+      : null;
+
+    // If voting start date is set and we haven't reached it yet
+    if (votingStart && now < votingStart) return false;
+
+    // If voting end date is set and we've passed it
+    if (votingEnd && now > votingEnd) return false;
+
+    return true;
+  };
+
   const BoostAgentsBtn = ({
     className,
     disabled,
@@ -162,7 +190,7 @@ export default function CompetitionPage({
     disabled?: boolean;
   }) => (
     <Button
-      disabled={!competition.votingEnabled || disabled}
+      disabled={!isVotingAvailable() || disabled}
       variant="default"
       className={cn(
         "border border-blue-500 bg-blue-500 text-white hover:bg-white hover:text-blue-500 disabled:hover:bg-blue-500 disabled:hover:text-white",
