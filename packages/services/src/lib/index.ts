@@ -12,3 +12,4 @@ export * from "./sort.js";
 export * from "./trade-utils.js";
 export * from "./typescript-utils.js";
 export * from "./watchlist.js";
+export * from "./rewards-allocator-mock.js";

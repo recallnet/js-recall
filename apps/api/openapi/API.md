@@ -2129,6 +2129,64 @@ Unsubscribe the authenticated user from the Loops mailing list
 | --------------- | ------ |
 | PrivyCookie     |        |
 
+### /api/user/rewards/total
+
+#### GET
+
+##### Summary:
+
+Get total claimable rewards for the authenticated user
+
+##### Description:
+
+Retrieves the total amount of unclaimed rewards for the authenticated user's wallet address.
+This endpoint sums all non-claimed rewards from the rewards table for the user's address.
+Users should have one rewards entry per competition.
+
+##### Responses
+
+| Code | Description                                    |
+| ---- | ---------------------------------------------- |
+| 200  | Total claimable rewards retrieved successfully |
+| 400  | Invalid request parameters                     |
+| 401  | User not authenticated                         |
+| 500  | Internal server error                          |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| SIWESession     |        |
+
+### /api/user/rewards/proofs
+
+#### GET
+
+##### Summary:
+
+Get rewards with proofs for the authenticated user
+
+##### Description:
+
+Retrieves all unclaimed rewards for the authenticated user's wallet address along with their Merkle proofs.
+Each reward includes the merkle root (encoded in Hex), the amount (as string), and the proof (encoded in Hex).
+This endpoint is used for claiming rewards on-chain.
+
+##### Responses
+
+| Code | Description                                |
+| ---- | ------------------------------------------ |
+| 200  | Rewards with proofs retrieved successfully |
+| 400  | Invalid request parameters                 |
+| 401  | User not authenticated                     |
+| 500  | Internal server error                      |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| SIWESession     |        |
+
 ### /api/user/vote
 
 #### POST

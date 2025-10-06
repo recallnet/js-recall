@@ -53,6 +53,8 @@ import {
   PublicAgentResponse,
   QuoteResponse,
   ResetApiKeyResponse,
+  RewardsProofsResponse,
+  RewardsTotalResponse,
   SpecificChain,
   StartCompetitionResponse,
   TradeExecutionParams,
@@ -2044,6 +2046,34 @@ export class ApiClient {
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "unsubscribe from mailing list");
+    }
+  }
+
+  /**
+   * Get total claimable rewards for the authenticated user
+   * Requires SIWE session authentication
+   */
+  async getTotalClaimableRewards(): Promise<
+    RewardsTotalResponse | ErrorResponse
+  > {
+    try {
+      const response = await this.axiosInstance.get("/api/user/rewards/total");
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get total claimable rewards");
+    }
+  }
+
+  /**
+   * Get rewards with proofs for the authenticated user
+   * Requires SIWE session authentication
+   */
+  async getRewardsWithProofs(): Promise<RewardsProofsResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.get("/api/user/rewards/proofs");
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get rewards with proofs");
     }
   }
 }

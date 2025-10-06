@@ -1,5 +1,6 @@
 import { Router } from "express";
 
+import { RewardsController } from "@/controllers/rewards.controller.js";
 import { UserController } from "@/controllers/user.controller.js";
 import { VoteController } from "@/controllers/vote.controller.js";
 import { configureVoteRoutes } from "@/routes/vote.routes.js";
@@ -12,6 +13,7 @@ import { configureVoteRoutes } from "@/routes/vote.routes.js";
 export function configureUserRoutes(
   userController: UserController,
   voteController: VoteController,
+  rewardsController: RewardsController,
 ): Router {
   const router = Router();
 
@@ -1106,6 +1108,174 @@ export function configureUserRoutes(
    *         description: Failed to unsubscribe user from mailing list
    */
   router.post("/unsubscribe", userController.unsubscribe);
+
+  /**
+   * @openapi
+   * /api/user/rewards/total:
+   *   get:
+   *     summary: Get total claimable rewards for the authenticated user
+   *     description: |
+   *       Retrieves the total amount of unclaimed rewards for the authenticated user's wallet address.
+   *       This endpoint sums all non-claimed rewards from the rewards table for the user's address.
+   *       Users should have one rewards entry per competition.
+   *     tags:
+   *       - User
+   *     security:
+   *       - SIWESession: []
+   *     responses:
+   *       200:
+   *         description: Total claimable rewards retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *                 address:
+   *                   type: string
+   *                   description: The authenticated user's wallet address
+   *                   example: "0x1234567890abcdef1234567890abcdef12345678"
+   *                 totalClaimableRewards:
+   *                   type: string
+   *                   description: The total amount of unclaimed rewards as a string (to handle large numbers)
+   *                   example: "1000000000000000000"
+   *       400:
+   *         description: Invalid request parameters
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: false
+   *                 error:
+   *                   type: string
+   *                   examples:
+   *                     missing_address: "Invalid request format: address is required"
+   *                     invalid_format: "Invalid request format: Invalid Ethereum address format"
+   *       401:
+   *         description: User not authenticated
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: false
+   *                 error:
+   *                   type: string
+   *                   example: "User not authenticated"
+   *       500:
+   *         description: Internal server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: false
+   *                 error:
+   *                   type: string
+   *                   example: "Internal server error"
+   */
+  router.get("/rewards/total", rewardsController.getTotalClaimableRewards);
+
+  /**
+   * @openapi
+   * /api/user/rewards/proofs:
+   *   get:
+   *     summary: Get rewards with proofs for the authenticated user
+   *     description: |
+   *       Retrieves all unclaimed rewards for the authenticated user's wallet address along with their Merkle proofs.
+   *       Each reward includes the merkle root (encoded in Hex), the amount (as string), and the proof (encoded in Hex).
+   *       This endpoint is used for claiming rewards on-chain.
+   *     tags:
+   *       - User
+   *     security:
+   *       - SIWESession: []
+   *     responses:
+   *       200:
+   *         description: Rewards with proofs retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *                 address:
+   *                   type: string
+   *                   description: The authenticated user's wallet address
+   *                   example: "0x1234567890abcdef1234567890abcdef12345678"
+   *                 rewards:
+   *                   type: array
+   *                   description: Array of rewards with their proofs
+   *                   items:
+   *                     type: object
+   *                     properties:
+   *                       merkleRoot:
+   *                         type: string
+   *                         description: The Merkle root hash encoded in Hex
+   *                         example: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef12"
+   *                       amount:
+   *                         type: string
+   *                         description: The reward amount as a string (to handle large numbers)
+   *                         example: "1000000000000000000"
+   *                       proof:
+   *                         type: array
+   *                         description: Array of proof hashes encoded in Hex
+   *                         items:
+   *                           type: string
+   *                           example: "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890"
+   *       400:
+   *         description: Invalid request parameters
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: false
+   *                 error:
+   *                   type: string
+   *                   examples:
+   *                     missing_address: "Invalid request format: address is required"
+   *                     invalid_format: "Invalid request format: Invalid Ethereum address format"
+   *       401:
+   *         description: User not authenticated
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: false
+   *                 error:
+   *                   type: string
+   *                   example: "User not authenticated"
+   *       500:
+   *         description: Internal server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: false
+   *                 error:
+   *                   type: string
+   *                   example: "Internal server error"
+   */
+  router.get("/rewards/proofs", rewardsController.getRewardsWithProofs);
 
   // Include vote routes under user namespace
   router.use(configureVoteRoutes(voteController));

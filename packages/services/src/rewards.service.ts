@@ -246,62 +246,101 @@ export class RewardsService {
     address: `0x${string}`,
     amount: bigint,
   ): Promise<Uint8Array[]> {
-    try {
-      const leafHash = createLeafNode(address, amount);
+    const leafHash = createLeafNode(address, amount);
 
       const tree =
         await this.rewardsRepo.getRewardsTreeByCompetition(competitionId);
 
-      const treeNodes: { [level: number]: { [idx: number]: Uint8Array } } = {};
-      for (const { level, idx, hash } of tree) {
-        if (!treeNodes[level]) {
-          treeNodes[level] = {};
-        }
-        treeNodes[level][idx] = hash;
+    const treeNodes: { [level: number]: { [idx: number]: Uint8Array } } = {};
+    for (const { level, idx, hash } of tree) {
+      if (!treeNodes[level]) {
+        treeNodes[level] = {};
       }
-
-      // Search for the leaf hash
-      let leafIdx: number | null = null;
-      for (const [idxStr, hash] of Object.entries(treeNodes[0] || {})) {
-        const idx = parseInt(idxStr);
-        if (areUint8ArraysEqual(hash, hexToBytes(leafHash))) {
-          leafIdx = idx;
-          break;
-        }
-      }
-
-      if (leafIdx === null) {
-        throw new Error(
-          `No proof found for reward (address: ${address}, amount: ${amount}) in competition ${competitionId}`,
-        );
-      }
-
-      const proof: Uint8Array[] = [];
-      const maxLevel = Math.max(...Object.keys(treeNodes).map(Number));
-
-      let currentLevel = 0;
-      let currentIdx = leafIdx;
-      while (currentLevel < maxLevel) {
-        // Determine sibling index
-        const siblingIdx =
-          currentIdx % 2 === 0 ? currentIdx + 1 : currentIdx - 1;
-        const sibling = treeNodes[currentLevel]?.[siblingIdx];
-
-        // Add sibling to proof if it exists
-        if (sibling) {
-          proof.push(sibling);
-        }
-
-        // Move up to parent
-        currentIdx = Math.floor(currentIdx / 2);
-        currentLevel++;
-      }
-
-      return proof;
-    } catch (error) {
-      this.logger.error("[RewardsService] Error in retrieveProof:", error);
-      throw error;
+      treeNodes[level][idx] = hash;
     }
+    // Search for the leaf hash
+    let leafIdx: number | null = null;
+    for (const [idxStr, hash] of Object.entries(treeNodes[0] || {})) {
+      const idx = parseInt(idxStr);
+      if (areUint8ArraysEqual(hash, hexToBytes(leafHash))) {
+        leafIdx = idx;
+        break;
+      }
+    }
+
+    if (leafIdx === null) {
+      throw new Error(
+        `No proof found for reward (address: ${address}, amount: ${amount}) in competition ${competitionId}`,
+      );
+    }
+
+    const proof: Uint8Array[] = [];
+    const maxLevel = Math.max(...Object.keys(treeNodes).map(Number));
+
+    let currentLevel = 0;
+    let currentIdx = leafIdx;
+    while (currentLevel < maxLevel) {
+      // Determine sibling index
+      const siblingIdx = currentIdx % 2 === 0 ? currentIdx + 1 : currentIdx - 1;
+      const sibling = treeNodes[currentLevel]?.[siblingIdx];
+
+      // Add sibling to proof if it exists
+      if (sibling) {
+        proof.push(sibling);
+      }
+
+      // Move up to parent
+      currentIdx = Math.floor(currentIdx / 2);
+      currentLevel++;
+    }
+
+    return proof;
+  }
+
+  /**
+   * Get the total claimable rewards for a specific address
+   * @param address The wallet address to get total claimable rewards for
+   * @returns The total amount of unclaimed rewards as a bigint
+   */
+  public async getTotalClaimableRewards(address: string): Promise<bigint> {
+    return await this.rewardsRepo.getTotalClaimableRewardsByAddress(address);
+  }
+
+  /**
+   * Get rewards with proofs for a specific address
+   * @param address The wallet address to get rewards with proofs for
+   * @returns Array of rewards with merkle root and proof information
+   */
+  public async getRewardsWithProofs(address: string): Promise<
+    Array<{
+      merkleRoot: string;
+      amount: string;
+      proof: string[];
+    }>
+  > {
+    const rewardsWithRoots = await this.rewardsRepo.getRewardsWithRootsByAddress(address);
+
+    const results = [];
+
+    for (const { reward, rootHash } of rewardsWithRoots) {
+      const merkleRoot = `0x${Buffer.from(rootHash).toString("hex")}`;
+
+      const proof = await this.retrieveProof(
+        reward.competitionId,
+        reward.address as `0x${string}`,
+        reward.amount,
+      );
+
+      const proofHex = proof.map((p) => `0x${Buffer.from(p).toString("hex")}`);
+
+      results.push({
+        merkleRoot,
+        amount: reward.amount.toString(),
+        proof: proofHex,
+      });
+    }
+
+    return results;
   }
 
   /**
