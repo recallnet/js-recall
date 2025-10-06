@@ -28,16 +28,10 @@ export function makeAuthController(services: ServiceRegistry) {
         }
 
         // Agent nonce generation - store in database
-        const result =
+        const nonce =
           await services.agentService.generateNonceForAgent(agentId);
 
-        if (!result.success) {
-          return res.status(500).json({
-            error: result.error || "Failed to generate nonce for agent",
-          });
-        }
-
-        res.status(200).json({ nonce: result.nonce });
+        res.status(200).json({ nonce });
       } catch (error) {
         next(error);
       }

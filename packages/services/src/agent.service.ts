@@ -1960,11 +1960,7 @@ export class AgentService {
    * @param agentId The agent ID requesting a nonce
    * @returns Generated nonce
    */
-  async generateNonceForAgent(agentId: string): Promise<{
-    success: boolean;
-    nonce?: string;
-    error?: string;
-  }> {
+  async generateNonceForAgent(agentId: string): Promise<string> {
     try {
       // Generate a cryptographically secure nonce
       const nonce = generateNonce();
@@ -1983,10 +1979,10 @@ export class AgentService {
         expiresAt,
       });
 
-      return { success: true, nonce };
+      return nonce;
     } catch (error) {
       this.logger.error("[AgentManager] Error generating nonce:", error);
-      return { success: false, error: "Failed to generate nonce" };
+      throw new ApiError(500, "Failed to generate nonce");
     }
   }
 
