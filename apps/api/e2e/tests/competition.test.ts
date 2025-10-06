@@ -379,8 +379,9 @@ describe("Competition API", () => {
     expect(competitionResponse.success).toBe(true);
 
     // Agent gets competition rules
-    const rulesResponse =
-      (await agentClient.getCompetitionRules()) as CompetitionRulesResponse;
+    const rulesResponse = (await agentClient.getCompetitionRules(
+      createResponse.competition.id,
+    )) as CompetitionRulesResponse;
     expect(rulesResponse.success).toBe(true);
     expect(rulesResponse.rules).toBeDefined();
     expect(rulesResponse.rules.tradingRules).toBeDefined();
@@ -432,16 +433,17 @@ describe("Competition API", () => {
     };
 
     const competitionName = `Active Rules Min Trades Test ${Date.now()}`;
-    await adminClient.startCompetition({
+    const startResponse = await adminClient.startCompetition({
       name: competitionName,
       description: "Competition to test active rules endpoint with min trades",
       agentIds: [agent.id],
       tradingConstraints: constraintsWithMinTrades,
     });
 
-    // Agent gets competition rules (authenticated endpoint for active competition)
-    const rulesResponse =
-      (await agentClient.getCompetitionRules()) as CompetitionRulesResponse;
+    // Agent gets competition rules for the specific competition
+    const rulesResponse = (await agentClient.getCompetitionRules(
+      (startResponse as StartCompetitionResponse).competition.id,
+    )) as CompetitionRulesResponse;
     expect(rulesResponse.success).toBe(true);
     expect(rulesResponse.rules).toBeDefined();
     expect(rulesResponse.rules.tradingConstraints).toBeDefined();
@@ -686,7 +688,7 @@ describe("Competition API", () => {
 
     // Start a competition with only the regular agent (admin is not a participant)
     const competitionName = `Admin Access Test Competition ${Date.now()}`;
-    await startTestCompetition({
+    const startResponse = await startTestCompetition({
       adminClient,
       name: competitionName,
       agentIds: [agent.id],
@@ -724,8 +726,9 @@ describe("Competition API", () => {
     );
 
     // Admin checks competition rules
-    const adminRulesResponse =
-      (await adminClient.getCompetitionRules()) as CompetitionRulesResponse;
+    const adminRulesResponse = (await adminClient.getCompetitionRules(
+      startResponse.competition.id,
+    )) as CompetitionRulesResponse;
     expect(adminRulesResponse.success).toBe(true);
     expect(adminRulesResponse.rules).toBeDefined();
     expect(adminRulesResponse.rules.tradingRules).toBeDefined();
@@ -744,7 +747,9 @@ describe("Competition API", () => {
     expect(agentLeaderboardResponse.success).toBe(true);
 
     // Regular agent checks rules
-    const agentRulesResponse = await agentClient.getCompetitionRules();
+    const agentRulesResponse = await agentClient.getCompetitionRules(
+      (startResponse as StartCompetitionResponse).competition.id,
+    );
     expect(agentRulesResponse.success).toBe(true);
   });
 
@@ -4314,9 +4319,7 @@ describe("Competition API", () => {
       });
 
       await expect(
-        axios.get(
-          `${getBaseUrl()}/api/competitions/rules?competitionId=${nonExistentId}`,
-        ),
+        axios.get(`${getBaseUrl()}/api/competitions/${nonExistentId}/rules`),
       ).rejects.toMatchObject({
         response: { status: 404 },
       });
@@ -4340,7 +4343,7 @@ describe("Competition API", () => {
     });
 
     test("rules endpoint should be publicly accessible", async () => {
-      // Setup: Create a competition (don't need to start it, just test the query parameter functionality)
+      // Setup: Create a competition (don't need to start it, just test the path parameter functionality)
       const adminClient = createTestClient();
       await adminClient.loginAsAdmin(adminApiKey);
 
@@ -4359,9 +4362,9 @@ describe("Competition API", () => {
       expect(competitionResponse.success).toBe(true);
       const competition = competitionResponse as CreateCompetitionResponse;
 
-      // Test with specific competition ID via query parameter (public access)
+      // Test with specific competition ID via path parameter (public access)
       const specificResponse = await axios.get(
-        `${getBaseUrl()}/api/competitions/rules?competitionId=${competition.competition.id}`,
+        `${getBaseUrl()}/api/competitions/${competition.competition.id}/rules`,
       );
       expect(specificResponse.status).toBe(200);
       expect(specificResponse.data.success).toBe(true);

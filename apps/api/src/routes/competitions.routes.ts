@@ -502,19 +502,19 @@ export function configureCompetitionsRoutes(
 
   /**
    * @openapi
-   * /api/competitions/rules:
+   * /api/competitions/{competitionId}/rules:
    *   get:
    *     tags:
    *       - Competition
-   *     summary: Get rules for a specific competition or active competition
-   *     description: Get the competition rules including trading constraints, rate limits, and formulas. If competitionId query parameter is provided, returns rules for that competition. If competitionId is omitted, returns rules for the currently active competition.
+   *     summary: Get rules for a specific competition
+   *     description: Get the competition rules including trading constraints, rate limits, and formulas for a specific competition
    *     parameters:
-   *       - in: query
+   *       - in: path
    *         name: competitionId
-   *         required: false
+   *         required: true
    *         schema:
    *           type: string
-   *         description: Competition ID (optional - if not provided, returns rules for active competition)
+   *         description: Competition ID
    *     responses:
    *       200:
    *         description: Competition rules retrieved successfully
@@ -583,12 +583,12 @@ export function configureCompetitionsRoutes(
    *                           nullable: true
    *                           description: Minimum number of trades required per day (null if no requirement)
    *       404:
-   *         description: Competition not found (or no active competition when competitionId is omitted)
+   *         description: Competition not found
    *       500:
    *         description: Server error
    */
   router.get(
-    "/rules",
+    "/:competitionId/rules",
     optionalAuthMiddleware,
     competitionController.getCompetitionRules,
   );

@@ -2806,28 +2806,18 @@ export class CompetitionService {
   }
 
   /**
-   * Get rules for a specific competition by competition ID, or for the active competition if no ID provided.
-   * @param competitionId The competition ID (optional - defaults to active competition)
+   * Get rules for a specific competition by competition ID.
+   * @param competitionId The competition ID
    * @returns Competition rules
    */
   async getCompetitionRules(
-    competitionId?: string,
+    competitionId: string,
   ): Promise<CompetitionRulesData> {
     try {
-      let competition;
-
-      if (competitionId) {
-        // Get specific competition
-        competition = await this.getCompetition(competitionId);
-        if (!competition) {
-          throw new ApiError(404, "Competition not found");
-        }
-      } else {
-        // Get active competition
-        competition = await this.getActiveCompetition();
-        if (!competition) {
-          throw new ApiError(404, "No active competition found");
-        }
+      // Get specific competition
+      const competition = await this.getCompetition(competitionId);
+      if (!competition) {
+        throw new ApiError(404, "Competition not found");
       }
 
       // Use helper method to assemble complete rules

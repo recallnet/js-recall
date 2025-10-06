@@ -453,8 +453,8 @@ export function makeCompetitionController(services: ServiceRegistry) {
     },
 
     /**
-     * Get competition rules by competition ID or for current competition
-     * Public endpoint that returns rules for any competition or current competition if no ID provided
+     * Get competition rules by competition ID
+     * Public endpoint that returns rules for a specific competition
      * @param req AuthenticatedRequest object (authentication optional)
      * @param res Express response object
      * @param next Express next function
@@ -465,11 +465,9 @@ export function makeCompetitionController(services: ServiceRegistry) {
       next: NextFunction,
     ) {
       try {
-        let competitionId: string | undefined;
-        if (req.query.competitionId) {
-          competitionId = ensureUuid(req.query.competitionId as string);
-        } else {
-          competitionId = undefined;
+        const competitionId = ensureUuid(req.params.competitionId);
+        if (!competitionId) {
+          throw new ApiError(400, "Competition ID is required");
         }
 
         const result =
