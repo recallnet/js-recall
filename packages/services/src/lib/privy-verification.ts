@@ -6,9 +6,6 @@ import { type JWTPayload, exportJWK, importSPKI, jwtVerify } from "jose";
 import type { Logger } from "pino";
 import { type Hex, checksumAddress } from "viem";
 
-import { SelectUser } from "@recallnet/db/schema/core/types";
-
-import type { UserService } from "../user.service.js";
 import {
   PRIVY_ISSUER,
   PrivyUserInfo,
@@ -125,90 +122,6 @@ export async function verifyAndGetPrivyUserInfo(
 ): Promise<PrivyUserInfo> {
   const user = await privyClient.getUser({ idToken: idToken });
   return extractPrivyUserInfo(user);
-}
-
-/**
- * Verify Privy identity token and create user if needed (used during login)
- * This function uses Privy's getUser method for proper identity token verification
- * and combines it with automatic user creation using data from Privy.
- *
- * Note: we need to make these checks for connected users:
- * 1. For "ultra legacy" users, we can only guarantee a `walletAddress`. Email may not exist
- *    since we implemented custom email verification sometime after launch, but before Privy.
- * 2. For post-legacy but pre-Privy users, we can only guarantee a `walletAddress` and `email`,
- *    but not an `embeddedWalletAddress`.
- * 3. For post-Privy users, we can guarantee an `email` and `embeddedWalletAddress`,
- *    but not a `walletAddress` (i.e., a user may not have a custom linked wallet).
- * 4. i.e., we need to check the three cases above and update the user accordingly, else, we
- *    fallback to creating a brand new user.
- *
- * In all cases, we do not update the `walletAddress` and handle this through explicit UI actions,
- * which ensures custom wallets don't hit flakiness with mismatched wallet addresses.
- *
- * @param identityToken - The Privy identity token to verify.
- * @param privyClient - The Privy client instance to use for user lookup.
- * @param userService - The user service to use to create or update users.
- * @returns The user object.
- */
-export async function verifyPrivyIdentityTokenAndUpdateUser(
-  idToken: string,
-  privyClient: PrivyClient,
-  userService: UserService,
-): Promise<SelectUser> {
-  // Note: in the future, we can simply use `verifyIdentityToken` to get the `privyId`, which is
-  // stored in the `users` table as `privyID`. But, since we need to account for legacy users, we
-  // must refetch user information from the Privy API and update are database accordingly.
-  const { privyId, name, email, embeddedWallet, customWallets } =
-    await verifyAndGetPrivyUserInfo(idToken, privyClient);
-  const embeddedWalletAddress = embeddedWallet.address;
-  const now = new Date();
-
-  // 1. Handle post-Privy migration users
-  const existingUserWithPrivyId = await userService.getUserByPrivyId(privyId);
-  if (existingUserWithPrivyId) {
-    return await userService.updateUser({
-      id: existingUserWithPrivyId.id,
-      lastLoginAt: now,
-    });
-  }
-
-  // 2. Handle post-legacy but pre-Privy users (an `email` always exists via legacy Loops emails)
-  // Note: we skip the explicit email branch and rely on repository UPSERT (email idempotency)
-  // in `registerUser` (called in the fallback below) to handle this case.
-
-  // 3. Handle legacy users (only a `walletAddress` exists, but it might not be connected to Privy)
-  // This is an edge case where a user never logged in nor set up an email, so our best guess is to
-  // use the "latest" connected wallet as the primary wallet address and see if the user exists.
-  const customWalletAddress = customWallets.sort(
-    (a, b) =>
-      (b.latestVerifiedAt?.getTime() ?? 0) -
-      (a.latestVerifiedAt?.getTime() ?? 0),
-  )[0]?.address;
-  if (customWalletAddress) {
-    const existingUserWithWallet =
-      await userService.getUserByWalletAddress(customWalletAddress);
-    if (existingUserWithWallet) {
-      return await userService.updateUser({
-        id: existingUserWithWallet.id,
-        name: existingUserWithWallet.name ?? name,
-        email,
-        privyId,
-        embeddedWalletAddress,
-        lastLoginAt: now,
-      });
-    }
-  }
-
-  // 4. Create completely new user, using the embedded wallet address as the primary wallet address
-  return await userService.registerUser(
-    embeddedWalletAddress,
-    name,
-    email,
-    undefined,
-    undefined,
-    privyId,
-    embeddedWalletAddress,
-  );
 }
 
 /**
