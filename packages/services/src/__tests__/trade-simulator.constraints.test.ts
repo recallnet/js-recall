@@ -180,7 +180,6 @@ describe("SimulatedTradeExecutionService - Trading Constraints", () => {
         mockTradingConstraintsRepo as unknown as TradingConstraintsRepository,
         mockDexScreenerProvider as unknown as DexScreenerProvider,
         mockConfig,
-        mockFeatures,
         mockLogger,
       );
     });

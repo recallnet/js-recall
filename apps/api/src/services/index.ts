@@ -47,7 +47,7 @@ import {
 } from "@recallnet/services/providers";
 import RewardsAllocator from "@recallnet/staking-contracts/rewards-allocator";
 
-import config, { features } from "@/config/index.js";
+import config from "@/config/index.js";
 import { db, dbRead } from "@/database/db.js";
 import { EventProcessor } from "@/indexing/event-processor.js";
 import { EventsRepository } from "@/indexing/events.repository.js";
@@ -299,7 +299,6 @@ class ServiceRegistry {
       tradingConstraintsRepository,
       dexScreenerProvider,
       config,
-      features,
       serviceLogger,
     );
 
