@@ -44,7 +44,7 @@ export function CompetitionTable({
     <>
       <div className="overflow-x-auto rounded border">
         <Table className="min-w-[800px]">
-          <TableHeader className="text-muted-foreground bg-gray-900 text-xs uppercase">
+          <TableHeader className="text-muted-foreground bg-gray-900 font-mono text-xs uppercase">
             <TableRow className={cn("grid w-full", gridColumns)}>
               <SortableTableHeader
                 onToggleSort={() => handleSortChange("name")}
@@ -119,12 +119,12 @@ export function CompetitionTable({
                     className={cn("grid w-full cursor-pointer", gridColumns)}
                   >
                     <TableCell className="flex min-w-0 flex-col justify-center">
-                      <span className="text-secondary-foreground block truncate text-sm font-semibold">
+                      <span className="text-secondary-foreground block truncate text-sm font-normal">
                         {comp.name}
                       </span>
                       <span
                         className={cn(
-                          "mt-1 w-fit rounded border px-2 py-0.5 text-xs font-medium",
+                          "mt-1 w-fit rounded border px-2 py-0.5 text-xs font-normal",
                           compStatus.style,
                         )}
                       >
@@ -134,7 +134,7 @@ export function CompetitionTable({
                     <TableCell className="flex flex-wrap items-center gap-2">
                       {/* Future skills mapping */}
                     </TableCell>
-                    <TableCell className="text-md text-secondary-foreground font-medium">
+                    <TableCell className="text-md text-secondary-foreground font-normal">
                       {comp.type === "perpetual_futures" ? (
                         <div className="flex h-full flex-col justify-center">
                           <span>
@@ -157,17 +157,17 @@ export function CompetitionTable({
                         </div>
                       )}
                     </TableCell>
-                    <TableCell className="w-30 flex items-center font-medium">
+                    <TableCell className="w-30 flex items-center font-normal">
                       <span className="text-secondary-foreground flex flex-col">
                         {typeof comp.pnlPercent === "number"
                           ? `${Math.round(comp.pnlPercent)}%`
                           : "n/a"}
                       </span>
                     </TableCell>
-                    <TableCell className="w-30 text-md fond-semibold text-secondary-foreground flex items-center text-center">
+                    <TableCell className="w-30 text-md text-secondary-foreground flex items-center text-center font-normal">
                       {comp.totalTrades ?? 0}
                     </TableCell>
-                    <TableCell className="w-30 text-md fond-semibold text-secondary-foreground flex items-center text-center">
+                    <TableCell className="w-30 text-md text-secondary-foreground flex items-center text-center font-normal">
                       {comp.totalPositions ?? 0}
                     </TableCell>
                     <TableCell className="w-30 text-secondary-foreground flex items-center text-center">
@@ -201,7 +201,7 @@ export function CompetitionTable({
               <TableRow>
                 <TableCell colSpan={8} className="p-5 text-center">
                   <div className="flex flex-col">
-                    <span className="text-secondary-foreground font-bold">
+                    <span className="text-secondary-foreground font-normal">
                       This agent hasn&apos;t joined any competitions yet
                     </span>
                     <span className="text-secondary-foreground">
