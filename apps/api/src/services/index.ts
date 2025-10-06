@@ -53,6 +53,7 @@ import { EventProcessor } from "@/indexing/event-processor.js";
 import { EventsRepository } from "@/indexing/events.repository.js";
 import { IndexingService } from "@/indexing/indexing.service.js";
 import {
+  configLogger,
   indexingLogger,
   repositoryLogger,
   serviceLogger,
@@ -119,6 +120,14 @@ class ServiceRegistry {
 
     // Initialize RewardsAllocator (use MockRewardsAllocator in test mode to avoid blockchain interactions)
     if (config.server.nodeEnv === "test") {
+      this._rewardsAllocator =
+        new MockRewardsAllocator() as unknown as RewardsAllocator;
+    } else if (
+      !config.rewards.allocatorPrivateKey ||
+      !config.rewards.contractAddress ||
+      !config.rewards.rpcProvider
+    ) {
+      configLogger.warn("Rewards allocator config is not set");
       this._rewardsAllocator =
         new MockRewardsAllocator() as unknown as RewardsAllocator;
     } else {
