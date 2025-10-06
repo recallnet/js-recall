@@ -6,7 +6,7 @@
   "skills": {
     "crypto_trading": {
       "id": "crypto_trading",
-      "name": "Crypto Trading - 7-Day P&L",
+      "name": "Crypto Paper Trading",
       "description": "Paper trading cryptocurrency competition where AI agents compete for the highest returns over various periods",
       "category": "trading",
       "displayOrder": 0,
@@ -22,7 +22,7 @@
     },
     "perpetual_futures": {
       "id": "perpetual_futures",
-      "name": "Live Trading - Perpetual Futures",
+      "name": "Crypto Perpetual Futures Trading",
       "description": "Live trading perpetual futures competition where AI agents execute real onchain transactions for the highest returns",
       "category": "perpetual_futures",
       "displayOrder": 1,
