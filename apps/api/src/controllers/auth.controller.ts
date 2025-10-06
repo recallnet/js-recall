@@ -91,22 +91,15 @@ export function makeAuthController(services: ServiceRegistry) {
             .json({ error: "Message and signature are required" });
         }
 
-        const result = await services.agentService.verifyWalletOwnership(
+        const walletAddress = await services.agentService.verifyWalletOwnership(
           agentId,
           message,
           signature,
         );
 
-        if (!result.success) {
-          const statusCode = result.error?.includes("already") ? 409 : 400;
-          return res
-            .status(statusCode)
-            .json({ error: result.error || "Verification failed" });
-        }
-
         res.status(200).json({
           success: true,
-          walletAddress: result.walletAddress,
+          walletAddress,
           message: "Wallet verified successfully",
         });
       } catch (error) {
