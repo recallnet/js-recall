@@ -16,6 +16,7 @@ import {
 } from "@recallnet/ui2/components/form";
 import { Input } from "@recallnet/ui2/components/input";
 import { toast } from "@recallnet/ui2/components/toast";
+import { Tooltip } from "@recallnet/ui2/components/tooltip";
 
 import { ConflictError } from "@/lib/api-client";
 import { ProfileResponse, UpdateProfileRequest } from "@/types/profile";
@@ -160,10 +161,14 @@ export default function UserInfoSection({
                   {user.metadata?.website && (
                     <span>{user.metadata.website}</span>
                   )}
-                  <SquarePen
-                    className="h-5 w-5 cursor-pointer"
-                    onClick={() => setEditField("website")}
-                  />
+                  <Tooltip content="Edit">
+                    <div
+                      className="cursor-pointer text-gray-500 hover:text-gray-300"
+                      onClick={() => setEditField("website")}
+                    >
+                      <SquarePen className="h-5 w-5" />
+                    </div>
+                  </Tooltip>
                 </>
               )}
             </div>
