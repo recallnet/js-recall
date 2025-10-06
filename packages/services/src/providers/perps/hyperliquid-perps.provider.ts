@@ -69,7 +69,8 @@ interface HyperliquidUserFill {
   fee: string;
   tid: number;
   feeToken: string;
-  cloid?: string;
+  builderFee: string | null; // Always present, null if 0
+  cloid: string | null;
   twapId?: string | null;
 }
 
@@ -90,7 +91,9 @@ interface HyperliquidLedgerUpdate {
     token?: string; // Asset name when amount is used (e.g., "BTC", "ETH", "SOL")
     user?: string; // For transfers: the other party
     destination?: string; // For transfers: where funds went
-    fee?: string;
+    fee?: string; // Withdrawal fee
+    nonce?: number; // Withdrawal transaction nonce
+    toPerp?: boolean; // SubAccountTransfer: whether transfer is to perp account
   };
 }
 
