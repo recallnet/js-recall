@@ -21,7 +21,6 @@ import {
   GetVotesParams,
   JoinCompetitionResponse,
   LinkWalletRequest,
-  LoginResponse,
   NonceResponse,
   ProfileResponse,
   UpdateProfileRequest,
@@ -192,17 +191,6 @@ export class ApiClient {
    */
   async getNonce(): Promise<NonceResponse> {
     return this.request<NonceResponse>("/auth/nonce");
-  }
-
-  /**
-   * Login with ethereum signature
-   * @param data - Login request data
-   * @returns Login response
-   */
-  async login(): Promise<LoginResponse> {
-    return this.request<LoginResponse>("/auth/login", {
-      method: "POST",
-    });
   }
 
   /**
