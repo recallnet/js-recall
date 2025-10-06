@@ -4,6 +4,7 @@ import { MockProxy, mock } from "vitest-mock-extended";
 
 import { PerpsProviderConfig } from "../../types/perps.js";
 import { PerpsProviderFactory } from "../perps-provider.factory.js";
+import { HyperliquidPerpsProvider } from "../perps/hyperliquid-perps.provider.js";
 import { SymphonyPerpsProvider } from "../perps/symphony-perps.provider.js";
 
 // Mock logger for the constructor
@@ -35,15 +36,28 @@ describe("PerpsProviderFactory", () => {
       expect(provider).toBeInstanceOf(SymphonyPerpsProvider);
     });
 
-    it("should throw error for unimplemented hyperliquid provider", () => {
+    it("should create Hyperliquid provider for external_api type", () => {
+      const config: PerpsProviderConfig = {
+        type: "external_api",
+        provider: "hyperliquid",
+        apiUrl: "https://api.hyperliquid.xyz",
+      };
+
+      const provider = PerpsProviderFactory.createProvider(config, mockLogger);
+
+      expect(provider).toBeInstanceOf(HyperliquidPerpsProvider);
+      expect(provider.getName()).toBe("Hyperliquid");
+    });
+
+    it("should create Hyperliquid provider without API URL", () => {
       const config: PerpsProviderConfig = {
         type: "external_api",
         provider: "hyperliquid",
       };
 
-      expect(() =>
-        PerpsProviderFactory.createProvider(config, mockLogger),
-      ).toThrow("Hyperliquid provider not yet implemented");
+      const provider = PerpsProviderFactory.createProvider(config, mockLogger);
+
+      expect(provider).toBeInstanceOf(HyperliquidPerpsProvider);
     });
 
     it("should throw error for unknown external API provider", () => {

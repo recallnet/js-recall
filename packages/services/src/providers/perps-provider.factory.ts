@@ -1,6 +1,7 @@
 import { Logger } from "pino";
 
 import { IPerpsDataProvider, PerpsProviderConfig } from "../types/perps.js";
+import { HyperliquidPerpsProvider } from "./perps/hyperliquid-perps.provider.js";
 import { SymphonyPerpsProvider } from "./perps/symphony-perps.provider.js";
 
 /**
@@ -50,8 +51,10 @@ export class PerpsProviderFactory {
         );
 
       case "hyperliquid":
-        // Placeholder for future implementation
-        throw new Error("Hyperliquid provider not yet implemented");
+        return PerpsProviderFactory.createHyperliquidProvider(
+          logger,
+          config.apiUrl,
+        );
 
       default:
         throw new Error(`Unknown external API provider: ${config.provider}`);
@@ -66,6 +69,16 @@ export class PerpsProviderFactory {
     apiUrl?: string,
   ): IPerpsDataProvider {
     return new SymphonyPerpsProvider(logger, apiUrl);
+  }
+
+  /**
+   * Create Hyperliquid provider instance
+   */
+  private static createHyperliquidProvider(
+    logger: Logger,
+    apiUrl?: string,
+  ): IPerpsDataProvider {
+    return new HyperliquidPerpsProvider(logger, apiUrl);
   }
 
   /**
