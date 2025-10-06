@@ -223,10 +223,20 @@ export class PerpsDataProcessor {
         );
 
         if (first) {
-          initialCapital = Number(first.totalValue);
-          this.logger.debug(
-            `[PerpsDataProcessor] Found initial capital for agent ${agentId}: ${initialCapital}`,
-          );
+          const capitalValue = Number(first.totalValue);
+
+          // Validate the conversion - protect against NaN or invalid values
+          if (isFinite(capitalValue) && capitalValue >= 0) {
+            initialCapital = capitalValue;
+            this.logger.debug(
+              `[PerpsDataProcessor] Found initial capital for agent ${agentId}: ${initialCapital}`,
+            );
+          } else {
+            this.logger.warn(
+              `[PerpsDataProcessor] Invalid initial capital value for agent ${agentId}: ${first.totalValue}, will use current equity`,
+            );
+            // Leave initialCapital as undefined to use provider's default
+          }
         } else {
           this.logger.debug(
             `[PerpsDataProcessor] No existing snapshots for agent ${agentId}, will use current equity as initial`,
@@ -352,7 +362,17 @@ export class PerpsDataProcessor {
                 agentId,
               );
             if (first) {
-              initialCapital = Number(first.totalValue);
+              const capitalValue = Number(first.totalValue);
+
+              // Validate the conversion - protect against NaN or invalid values
+              if (isFinite(capitalValue) && capitalValue >= 0) {
+                initialCapital = capitalValue;
+              } else {
+                this.logger.warn(
+                  `[PerpsDataProcessor] Invalid initial capital value for agent ${agentId}: ${first.totalValue}, will use current equity`,
+                );
+                // Leave initialCapital as undefined to use provider's default
+              }
             }
           } catch {
             // Continue without initial capital
