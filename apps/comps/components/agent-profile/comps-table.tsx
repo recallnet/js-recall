@@ -49,38 +49,43 @@ export function CompetitionTable({
               <SortableTableHeader
                 onToggleSort={() => handleSortChange("name")}
                 sortState={sortState["name"]}
+                className="font-bold"
               >
                 Competition
               </SortableTableHeader>
               {
                 // some fields have sorted removed until they are supported by the api, specifically Trophies and Skills
               }
-              <TableHead>Skills</TableHead>
+              <TableHead className="font-bold">Skills</TableHead>
               <SortableTableHeader
                 onToggleSort={() => handleSortChange("portfolioValue")}
                 sortState={sortState["portfolioValue"]}
+                className="font-bold"
               >
                 Portfolio
               </SortableTableHeader>
               <SortableTableHeader
                 onToggleSort={() => handleSortChange("pnl")}
                 sortState={sortState["pnl"]}
+                className="font-bold"
               >
                 P&L
               </SortableTableHeader>
               <SortableTableHeader
                 onToggleSort={() => handleSortChange("totalTrades")}
                 sortState={sortState["totalTrades"]}
+                className="font-bold"
               >
                 Trades
               </SortableTableHeader>
               <SortableTableHeader
                 onToggleSort={() => handleSortChange("totalPositions")}
                 sortState={sortState["totalPositions"]}
+                className="font-bold"
               >
                 Positions
               </SortableTableHeader>
-              <TableHead>Placement</TableHead>
+              <TableHead className="font-bold">Placement</TableHead>
               {/* TODO: fix `bestPlacement.rank` sorting bug */}
               {/* <SortableTableHeader
                 onToggleSort={() => handleSortChange("bestPlacement.rank")}
@@ -88,8 +93,10 @@ export function CompetitionTable({
               >
                 Placement
               </SortableTableHeader> */}
-              <TableHead>Trophies</TableHead>
-              {canClaim && <TableHead className="text-left">Reward</TableHead>}
+              <TableHead className="font-bold">Trophies</TableHead>
+              {canClaim && (
+                <TableHead className="text-left font-bold">Reward</TableHead>
+              )}
             </TableRow>
           </TableHeader>
 
