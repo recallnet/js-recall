@@ -116,7 +116,7 @@ export default function UserInfoSection({
       />
       <div className="flex w-full flex-col items-start justify-center gap-5 border-l p-4">
         <div className="flex items-center gap-3">
-          <h2 className="text-4xl font-bold">{user?.name}</h2>
+          <h2 className="font-mono text-4xl font-bold">{user?.name}</h2>
         </div>
 
         <Form {...form}>
