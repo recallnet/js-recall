@@ -285,6 +285,24 @@ export default function AgentProfile({
                 </h1>
               </div>
             )}
+
+            {/* Agent Handle */}
+            {isUserAgent ? (
+              <EditAgentField
+                title="Agent Handle"
+                value={agent.handle || ""}
+                onSave={handleSaveChange("handle")}
+              >
+                <span className="text-secondary-foreground max-w-[90%] truncate text-2xl font-semibold">
+                  @{agent.handle}
+                </span>
+              </EditAgentField>
+            ) : (
+              <span className="text-secondary-foreground max-w-[90%] truncate text-2xl font-semibold">
+                @{agent.handle}
+              </span>
+            )}
+
             {!isUserAgent && (
               <div className="mt-5 flex w-full gap-1 text-nowrap">
                 <span className="text-secondary-foreground text-lg font-normal">
