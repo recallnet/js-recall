@@ -1,6 +1,8 @@
+import { eq } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 import { beforeEach, describe, expect, test } from "vitest";
 
+import { competitions } from "@recallnet/db/schema/core/defs";
 import { trades as tradesDef } from "@recallnet/db/schema/trading/defs";
 import { InsertTrade } from "@recallnet/db/schema/trading/types";
 
@@ -21,6 +23,7 @@ import {
   TradeResponse,
   TradeTransaction,
 } from "@/e2e/utils/api-types.js";
+import { connectToDb } from "@/e2e/utils/db-manager.js";
 import {
   createTestClient,
   getAdminApiKey,
@@ -1908,6 +1911,75 @@ describe("Trading API", () => {
     expect(evmBurnTrade!.reason).toBe(
       "Burning tokens by trading to EVM dead address",
     );
+  });
+
+  test("competition with allow cross-chain trading overrides default disallowAll feature flag", async () => {
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+    const { client: agent1Client, agent: agent1 } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Agent Competition 1",
+      });
+
+    // Start Competition with cross-chain trading enabled
+    const name = `Multi-Comp Test 1 ${Date.now()}`;
+    const competitionResponse = (await adminClient.startCompetition({
+      name,
+      agentIds: [agent1.id],
+      tradingType: CROSS_CHAIN_TRADING_TYPE.ALLOW,
+    })) as StartCompetitionResponse;
+    const competition1 = competitionResponse.competition;
+    expect(competitionResponse.success).toBe(true);
+
+    // We need to start a second competition to trigger the bug, but since concurrent comps
+    // are not allowed, we have to make some direct db changes temporarily. It occurs because
+    // `updateFeaturesWithCompetition` is called at app startup as well as when comps are
+    // started or ended.
+    const db = await connectToDb();
+    await db
+      .update(competitions)
+      .set({
+        status: "pending",
+      })
+      .where(eq(competitions.id, competition1.id));
+
+    // Create a second competition with cross-chain trading disabled
+    const competition2Response = (await adminClient.startCompetition({
+      name: "Competition 2",
+      agentIds: [agent1.id],
+      tradingType: CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
+    })) as StartCompetitionResponse;
+    const competition2 = competition2Response.competition;
+    expect(competition2Response.success).toBe(true);
+
+    // Fixup the db values so that app logic will work as expected
+    await db
+      .update(competitions)
+      .set({
+        status: "pending",
+      })
+      .where(eq(competitions.id, competition2.id));
+    await db
+      .update(competitions)
+      .set({
+        status: "active",
+      })
+      .where(eq(competitions.id, competition1.id));
+
+    // Verify competition 1 (allow) allows cross-chain trades
+    const svmUsdcAddress = config.specificChainTokens.svm.usdc;
+    const ethTokenAddress = config.specificChainTokens.eth.eth;
+    const tradeAmount = "10";
+    const comp1CrossChainResponse = await agent1Client.executeTrade({
+      fromToken: svmUsdcAddress,
+      toToken: ethTokenAddress,
+      amount: tradeAmount,
+      fromChain: BlockchainType.SVM,
+      toChain: BlockchainType.EVM,
+      reason: "Testing cross-chain enabled in comp1",
+    });
+    expect(comp1CrossChainResponse.success).toBe(true);
   });
 
   test("agent cannot execute trade on competition they are not registered for", async () => {
