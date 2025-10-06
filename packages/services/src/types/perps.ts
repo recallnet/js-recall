@@ -178,9 +178,13 @@ export interface IPerpsDataProvider {
   /**
    * Get account summary with total equity and metrics
    * @param walletAddress Wallet address to query
+   * @param initialCapital Optional initial capital for providers that don't track it (e.g., Hyperliquid)
    * @returns Account summary with equity, PnL, and stats
    */
-  getAccountSummary(walletAddress: string): Promise<PerpsAccountSummary>;
+  getAccountSummary(
+    walletAddress: string,
+    initialCapital?: number,
+  ): Promise<PerpsAccountSummary>;
 
   /**
    * Get all positions (open, closed, liquidated) for a wallet

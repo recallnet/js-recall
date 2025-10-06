@@ -237,10 +237,22 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
 
   /**
    * Get account summary - transforms Symphony response to generic format
+   * @param walletAddress Wallet address to query
+   * @param initialCapital Optional initial capital for validation (Symphony tracks this internally)
    */
-  async getAccountSummary(walletAddress: string): Promise<PerpsAccountSummary> {
+  async getAccountSummary(
+    walletAddress: string,
+    initialCapital?: number,
+  ): Promise<PerpsAccountSummary> {
     const startTime = Date.now();
     const maskedAddress = this.maskWalletAddress(walletAddress);
+
+    // Log if initial capital is provided (for debugging provider compatibility)
+    if (initialCapital !== undefined) {
+      this.logger.debug(
+        `[SymphonyProvider] Initial capital provided: ${initialCapital} (will use Symphony's tracked value)`,
+      );
+    }
 
     // Add Sentry breadcrumb for debugging
     Sentry.addBreadcrumb({
