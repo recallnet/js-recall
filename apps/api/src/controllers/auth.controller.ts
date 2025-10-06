@@ -1,10 +1,5 @@
 import { NextFunction, Request, Response } from "express";
 
-import {
-  checkUserUniqueConstraintViolation,
-  verifyPrivyIdentityTokenAndUpdateUser,
-} from "@recallnet/services/lib";
-
 import { authLogger } from "@/lib/logger.js";
 import { ServiceRegistry } from "@/services/index.js";
 
@@ -28,16 +23,10 @@ export function makeAuthController(services: ServiceRegistry) {
         }
 
         // Agent nonce generation - store in database
-        const result =
+        const nonce =
           await services.agentService.generateNonceForAgent(agentId);
 
-        if (!result.success) {
-          return res.status(500).json({
-            error: result.error || "Failed to generate nonce for agent",
-          });
-        }
-
-        res.status(200).json({ nonce: result.nonce });
+        res.status(200).json({ nonce });
       } catch (error) {
         next(error);
       }
@@ -53,26 +42,19 @@ export function makeAuthController(services: ServiceRegistry) {
         if (!identityToken) {
           return res.status(401).json({ error: "Unauthorized" });
         }
-        const { id: userId, walletAddress } =
-          await verifyPrivyIdentityTokenAndUpdateUser(
-            identityToken,
-            services.privyClient,
-            services.userService,
-          );
+
+        const user = await services.userService.loginWithPrivyToken(
+          identityToken,
+          services.privyClient,
+        );
 
         authLogger.debug(
-          `Login successful for user '${userId}' with wallet address '${walletAddress}'`,
+          `Login successful for user '${user.id}' with wallet address '${user.walletAddress}'`,
         );
-        res.status(200).json({ success: true, userId, wallet: walletAddress });
+        res
+          .status(200)
+          .json({ success: true, userId: user.id, wallet: user.walletAddress });
       } catch (error) {
-        // Unique constraint violations → 409 Conflict with friendly message
-        const violatedField = checkUserUniqueConstraintViolation(error);
-        if (violatedField) {
-          return res.status(409).json({
-            success: false,
-            error: `A user with this ${violatedField} already exists`,
-          });
-        }
         next(error);
       }
     },
@@ -97,22 +79,15 @@ export function makeAuthController(services: ServiceRegistry) {
             .json({ error: "Message and signature are required" });
         }
 
-        const result = await services.agentService.verifyWalletOwnership(
+        const walletAddress = await services.agentService.verifyWalletOwnership(
           agentId,
           message,
           signature,
         );
 
-        if (!result.success) {
-          const statusCode = result.error?.includes("already") ? 409 : 400;
-          return res
-            .status(statusCode)
-            .json({ error: result.error || "Verification failed" });
-        }
-
         res.status(200).json({
           success: true,
-          walletAddress: result.walletAddress,
+          walletAddress,
           message: "Wallet verified successfully",
         });
       } catch (error) {
