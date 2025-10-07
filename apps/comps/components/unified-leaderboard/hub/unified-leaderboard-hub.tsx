@@ -112,7 +112,7 @@ export const UnifiedLeaderboardHub: React.FC = () => {
           // If there are no agents for an agent skill (e.g., a new competition type
           // was added), don't show the card
           if (
-            checkIsAgentSkill(skill.id) &&
+            checkIsAgentSkill(skill.category) &&
             skillData.participants.agents.length === 0
           ) {
             return null;
