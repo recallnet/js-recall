@@ -86,7 +86,8 @@ export class PerpsDataProcessor {
       pnlUsdValue: this.numberToString(position.pnlUsdValue),
       pnlPercentage: this.numberToString(position.pnlPercentage),
       status: position.status,
-      createdAt: position.openedAt,
+      // Use provider's openedAt if available, otherwise DB will use current time on first insert
+      createdAt: position.openedAt || new Date(),
       lastUpdatedAt: position.lastUpdatedAt || null,
       closedAt: position.closedAt || null,
     };

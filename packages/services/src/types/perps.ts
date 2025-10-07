@@ -149,7 +149,7 @@ export interface PerpsPosition {
   status: "Open" | "Closed" | "Liquidated";
 
   // Timestamps
-  openedAt: Date;
+  openedAt?: Date; // Optional - some providers don't provide position open time
   lastUpdatedAt?: Date;
   closedAt?: Date;
 }
