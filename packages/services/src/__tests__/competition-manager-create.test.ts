@@ -7,6 +7,8 @@ import { AgentRepository } from "@recallnet/db/repositories/agent";
 import { AgentScoreRepository } from "@recallnet/db/repositories/agent-score";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { PerpsRepository } from "@recallnet/db/repositories/perps";
+import { StakesRepository } from "@recallnet/db/repositories/stakes";
+import { UserRepository } from "@recallnet/db/repositories/user";
 import { Database, Transaction } from "@recallnet/db/types";
 
 import type { AgentService } from "../agent.service.js";
@@ -34,6 +36,8 @@ describe("CompetitionService - createCompetition", () => {
   let agentScoreRepo: MockProxy<AgentScoreRepository>;
   let perpsRepo: MockProxy<PerpsRepository>;
   let competitionRepo: MockProxy<CompetitionRepository>;
+  let stakesRepo: MockProxy<StakesRepository>;
+  let userRepo: MockProxy<UserRepository>;
   let mockDb: MockProxy<Database>;
   let logger: MockProxy<Logger>;
 
@@ -53,6 +57,8 @@ describe("CompetitionService - createCompetition", () => {
     agentScoreRepo = mock<AgentScoreRepository>();
     perpsRepo = mock<PerpsRepository>();
     competitionRepo = mock<CompetitionRepository>();
+    stakesRepo = mock<StakesRepository>();
+    userRepo = mock<UserRepository>();
     mockDb = mock<Database>();
     logger = mock<Logger>();
 
@@ -107,6 +113,8 @@ describe("CompetitionService - createCompetition", () => {
       agentScoreRepo,
       perpsRepo,
       competitionRepo,
+      stakesRepo,
+      userRepo,
       mockDb,
       {
         evmChains: [
@@ -151,6 +159,7 @@ describe("CompetitionService - createCompetition", () => {
       joinStartDate: null,
       joinEndDate: null,
       maxParticipants: null,
+      minimumStake: null,
       registeredParticipants: 0,
       sandboxMode: false,
       crossChainTradingType: "disallowAll",
@@ -336,5 +345,81 @@ describe("CompetitionService - createCompetition", () => {
     // Verify competition and rewards were created but the whole transaction should roll back
     expect(competitionRepo.create).toHaveBeenCalled();
     expect(tradingConstraintsService.createConstraints).toHaveBeenCalled();
+  });
+
+  test("should create competition with minimum stake requirement", async () => {
+    mockDb.transaction.mockImplementation(async (callback) => {
+      const mockTx = mock<Transaction>();
+      return await callback(mockTx);
+    });
+
+    const result = await competitionService.createCompetition({
+      name: "Staked Competition",
+      description: "Competition with minimum stake",
+      minimumStake: 1000,
+      tradingType: "disallowAll",
+      sandboxMode: false,
+      type: "trading",
+    });
+
+    // Verify transaction was called
+    expect(mockDb.transaction).toHaveBeenCalledTimes(1);
+
+    // Verify competition was created with minimum stake
+    expect(competitionRepo.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: "Staked Competition",
+        description: "Competition with minimum stake",
+        minimumStake: 1000,
+        crossChainTradingType: "disallowAll",
+        sandboxMode: false,
+        type: "trading",
+        status: "pending",
+      }),
+      expect.any(Object), // The transaction object
+    );
+
+    // Verify result structure includes minimum stake
+    expect(result).toMatchObject({
+      name: "Staked Competition",
+      minimumStake: 1000,
+      rewards: expect.any(Array),
+      tradingConstraints: expect.any(Object),
+    });
+  });
+
+  test("should create competition without minimum stake (null)", async () => {
+    mockDb.transaction.mockImplementation(async (callback) => {
+      const mockTx = mock<Transaction>();
+      return await callback(mockTx);
+    });
+
+    const result = await competitionService.createCompetition({
+      name: "No Stake Competition",
+      description: "Competition without minimum stake",
+      tradingType: "disallowAll",
+    });
+
+    // Verify competition was created with null minimum stake
+    expect(competitionRepo.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: "No Stake Competition",
+        description: "Competition without minimum stake",
+        minimumStake: null,
+        crossChainTradingType: "disallowAll",
+        sandboxMode: false,
+        type: "trading",
+        status: "pending",
+      }),
+      expect.any(Object), // The transaction object
+    );
+
+    // Verify result structure
+    expect(result).toMatchObject({
+      name: "No Stake Competition",
+      minimumStake: null,
+      rewards: expect.any(Array),
+      tradingConstraints: expect.any(Object),
+    });
   });
 });

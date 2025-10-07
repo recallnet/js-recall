@@ -337,6 +337,13 @@
       "when": 1759872985855,
       "tag": "0047_skinny_master_mold",
       "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "7",
+      "when": 1759929881829,
+      "tag": "0048_lucky_purple_man",
+      "breakpoints": true
     }
   ]
 }

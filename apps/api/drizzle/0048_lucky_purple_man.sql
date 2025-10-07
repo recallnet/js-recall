@@ -1,0 +1,1 @@
+ALTER TABLE "competitions" ADD COLUMN "minimum_stake" numeric(30, 15);

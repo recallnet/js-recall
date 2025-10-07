@@ -1,10 +1,13 @@
 import { randomUUID } from "crypto";
 import { Logger } from "pino";
 
+import { valueToAttoBigInt } from "@recallnet/conversions/atto-conversions";
 import { AgentRepository } from "@recallnet/db/repositories/agent";
 import { AgentScoreRepository } from "@recallnet/db/repositories/agent-score";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { PerpsRepository } from "@recallnet/db/repositories/perps";
+import { StakesRepository } from "@recallnet/db/repositories/stakes";
+import { UserRepository } from "@recallnet/db/repositories/user";
 import {
   SelectCompetition,
   SelectCompetitionReward,
@@ -73,6 +76,7 @@ export interface CreateCompetitionParams {
   maxParticipants?: number;
   tradingConstraints?: TradingConstraintsInput;
   rewards?: Record<number, number>;
+  minimumStake?: number;
   perpsProvider?: {
     provider: "symphony" | "hyperliquid";
     initialCapital: number; // Required - Zod default ensures this is set
@@ -363,6 +367,8 @@ export class CompetitionService {
   private agentScoreRepo: AgentScoreRepository;
   private perpsRepo: PerpsRepository;
   private competitionRepo: CompetitionRepository;
+  private stakesRepo: StakesRepository;
+  private userRepo: UserRepository;
   private db: Database;
   private config: CompetitionServiceConfig;
   private logger: Logger;
@@ -381,6 +387,8 @@ export class CompetitionService {
     agentScoreRepo: AgentScoreRepository,
     perpsRepo: PerpsRepository,
     competitionRepo: CompetitionRepository,
+    stakesRepo: StakesRepository,
+    userRepo: UserRepository,
     db: Database,
     config: CompetitionServiceConfig,
     logger: Logger,
@@ -398,6 +406,8 @@ export class CompetitionService {
     this.agentScoreRepo = agentScoreRepo;
     this.perpsRepo = perpsRepo;
     this.competitionRepo = competitionRepo;
+    this.stakesRepo = stakesRepo;
+    this.userRepo = userRepo;
     this.db = db;
     this.config = config;
     this.logger = logger;
@@ -421,6 +431,7 @@ export class CompetitionService {
    * @param maxParticipants Optional maximum number of participants allowed
    * @param tradingConstraints Optional trading constraints for the competition
    * @param rewards Optional rewards for the competition
+   * @param minimumStake Optional minimum stake amount
    * @returns The created competition
    */
   async createCompetition({
@@ -440,6 +451,7 @@ export class CompetitionService {
     maxParticipants,
     tradingConstraints,
     rewards,
+    minimumStake,
     perpsProvider,
   }: CreateCompetitionParams) {
     const id = randomUUID();
@@ -457,6 +469,7 @@ export class CompetitionService {
       joinStartDate: joinStartDate ?? null,
       joinEndDate: joinEndDate ?? null,
       maxParticipants: maxParticipants ?? null,
+      minimumStake: minimumStake ?? null,
       status: "pending",
       crossChainTradingType: tradingType ?? "disallowAll",
       sandboxMode: sandboxMode ?? false,
@@ -1721,6 +1734,7 @@ export class CompetitionService {
    * @param updates The core competition fields to update
    * @param tradingConstraints Optional trading constraints to update
    * @param rewards Optional rewards to replace
+   * @param minimumStake Optional minimum stake amount
    * @param perpsProvider Optional perps provider config (required when changing to perps type)
    * @returns The updated competition with constraints and rewards
    */
@@ -2004,6 +2018,22 @@ export class CompetitionService {
         403,
         "Agent is already actively registered for this competition",
       );
+    }
+
+    if (competition.minimumStake && competition.minimumStake > 0) {
+      const user = await this.userRepo.findById(validatedUserId);
+      if (!user) {
+        throw new ApiError(404, `User not found: ${validatedUserId}`);
+      }
+      const totalStaked: bigint = await this.stakesRepo.getTotalStakedByWallet(
+        user.walletAddress,
+      );
+      if (totalStaked < valueToAttoBigInt(competition.minimumStake)) {
+        throw new ApiError(
+          403,
+          `The minimum stake requirement (${competition.minimumStake.toLocaleString()}) to join this competition is not met`,
+        );
+      }
     }
 
     // Atomically add agent to competition with participant limit check
