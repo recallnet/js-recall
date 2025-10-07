@@ -1407,6 +1407,16 @@ export function makeAdminController(services: ServiceRegistry) {
           ) {
             throw new ApiError(409, error.message);
           }
+          // Handle one-agent-per-user error
+          if (
+            error instanceof Error &&
+            error.message.includes("already has an agent registered")
+          ) {
+            throw new ApiError(
+              409,
+              "This user already has another agent registered in this competition. Each user can only register one agent per competition.",
+            );
+          }
           // Re-throw other errors
           throw error;
         }

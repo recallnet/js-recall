@@ -726,7 +726,16 @@ export class CompetitionService {
           error.message.includes("maximum participant limit")
         ) {
           throw new Error(
-            `Cannot start competition: ${error.message}. Some agents may already be registered.`,
+            `Cannot start competition: ${error.message}. Participant limit reached. Some agents may already be registered.`,
+          );
+        }
+        // Handle one-agent-per-user error
+        if (
+          error instanceof Error &&
+          error.message.includes("already has an agent registered")
+        ) {
+          throw new Error(
+            `Cannot start competition: A user has multiple agents in the participant list. Each user can only have one agent per competition.`,
           );
         }
         throw error;
@@ -2059,7 +2068,17 @@ export class CompetitionService {
         error instanceof Error &&
         error.message.includes("maximum participant limit")
       ) {
-        throw new ApiError(403, error.message);
+        throw new ApiError(409, error.message);
+      }
+      // Handle one-agent-per-user error
+      if (
+        error instanceof Error &&
+        error.message.includes("already has an agent registered")
+      ) {
+        throw new ApiError(
+          409,
+          "You already have an agent registered in this competition. Each user can only register one agent per competition.",
+        );
       }
       throw error;
     }

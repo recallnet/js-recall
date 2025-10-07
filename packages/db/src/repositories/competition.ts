@@ -13,6 +13,7 @@ import {
   isNotNull,
   lt,
   lte,
+  ne,
   or,
   sql,
 } from "drizzle-orm";
@@ -448,6 +449,39 @@ export class CompetitionRepository {
 
         if (!competition) {
           throw new Error(`Competition ${competitionId} not found`);
+        }
+
+        // Check if the agent's owner already has ANY OTHER agent (any status) in this competition
+        // First, get the owner of the agent being added
+        const [agentToAdd] = await tx
+          .select({ ownerId: agents.ownerId })
+          .from(agents)
+          .where(eq(agents.id, agentId))
+          .limit(1);
+
+        if (!agentToAdd) {
+          throw new Error(`Agent ${agentId} not found`);
+        }
+
+        // Check if this owner already has any OTHER agent (regardless of status) in the competition
+        // We allow re-adding the same agent (idempotent), but block different agents for same user
+        const existingAgents = await tx
+          .select({ agentId: competitionAgents.agentId })
+          .from(competitionAgents)
+          .innerJoin(agents, eq(agents.id, competitionAgents.agentId))
+          .where(
+            and(
+              eq(competitionAgents.competitionId, competitionId),
+              eq(agents.ownerId, agentToAdd.ownerId),
+              ne(competitionAgents.agentId, agentId),
+            ),
+          )
+          .limit(1);
+
+        if (existingAgents.length > 0) {
+          throw new Error(
+            "User already has an agent registered in this competition",
+          );
         }
 
         // Attempt to add the agent to the competition
