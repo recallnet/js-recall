@@ -6,9 +6,9 @@ import { createContext } from "react";
 
 export const CHART_COLORS = [
   "#cc66ff", // Purple
-  "#14f195", // Green
-  "#ff4d4d", // Red
-  "#ffcc00", // Yellow
+  "#38a430", // Green
+  "#d94545", // Red
+  "#f9b700", // Yellow
   "#b3ff66", // Light Green
   "#6366f1", // Indigo
   "#ff9933", // Orange

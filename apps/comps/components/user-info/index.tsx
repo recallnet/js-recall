@@ -2,7 +2,6 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useClickAway } from "@uidotdev/usehooks";
-import { SquarePen } from "lucide-react";
 import React, { useState } from "react";
 import { SubmitHandler, useForm } from "react-hook-form";
 import { z } from "zod";
@@ -21,6 +20,7 @@ import { ConflictError } from "@/lib/api-client";
 import { ProfileResponse, UpdateProfileRequest } from "@/types/profile";
 import { asOptionalStringWithoutEmpty } from "@/utils";
 
+import { EditButton } from "../edit-button";
 import { ProfilePicture } from "./ProfilePicture";
 import LinkWallet from "./link-wallet";
 
@@ -114,25 +114,27 @@ export default function UserInfoSection({
           name: user?.name,
         }}
       />
-      <div className="flex w-full flex-col items-start justify-center gap-5 border-l p-4">
+      <div className="flex w-full flex-col items-start justify-center gap-2 border-l p-4">
         <div className="flex items-center gap-3">
-          <h2 className="text-4xl font-bold">{user?.name}</h2>
+          <h2 className="text-2xl font-bold">{user?.name}</h2>
         </div>
 
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(handleSave)}
-            className="w-full space-y-4"
+            className="w-full space-y-2"
           >
             {/* Email row (not editable) */}
-            <div className="text-secondary-foreground flex min-h-[40px] flex-wrap items-center gap-4">
-              <span className="text-foreground w-20 font-semibold">Email</span>
-              <span>{user?.email}</span>
+            <div className="text-secondary-foreground flex min-h-[30px] items-center gap-4">
+              <span className="text-foreground w-20 text-sm font-semibold">
+                Email
+              </span>
+              <span className="text-sm">{user?.email}</span>
             </div>
 
             {/* Website row */}
-            <div className="text-secondary-foreground flex min-h-[40px] flex-wrap items-center gap-4">
-              <span className="text-foreground w-20 font-semibold">
+            <div className="text-secondary-foreground flex min-h-[30px] items-center gap-4">
+              <span className="text-foreground w-20 text-sm font-semibold">
                 Website
               </span>
               {editField === "website" ? (
@@ -158,11 +160,12 @@ export default function UserInfoSection({
               ) : (
                 <>
                   {user.metadata?.website && (
-                    <span>{user.metadata.website}</span>
+                    <span className="text-sm">{user.metadata.website}</span>
                   )}
-                  <SquarePen
-                    className="h-5 w-5 cursor-pointer"
+                  <EditButton
                     onClick={() => setEditField("website")}
+                    size={20}
+                    iconClassName="text-gray-500 hover:text-gray-300"
                   />
                 </>
               )}
@@ -170,8 +173,8 @@ export default function UserInfoSection({
           </form>
 
           {/* Link wallet button. Note: for now, we only allow for linking wallets */}
-          <div className="text-secondary-foreground flex min-h-[40px] flex-wrap items-center gap-4">
-            <span className="text-foreground w-20 font-semibold">
+          <div className="text-secondary-foreground flex min-h-[30px] items-center gap-4">
+            <span className="text-foreground w-20 text-sm font-semibold">
               Wallet address
             </span>
             <LinkWallet user={user} onLinkWallet={onLinkWallet} />

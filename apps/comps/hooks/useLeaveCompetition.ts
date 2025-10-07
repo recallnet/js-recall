@@ -1,6 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-import { apiClient } from "@/lib/api-client";
 import { tanstackClient } from "@/rpc/clients/tanstack-query";
 
 interface LeaveCompetitionArgs {
@@ -15,28 +14,40 @@ interface LeaveCompetitionArgs {
 export const useLeaveCompetition = () => {
   const queryClient = useQueryClient();
 
-  return useMutation({
-    mutationFn: async ({ agentId, competitionId }: LeaveCompetitionArgs) => {
-      await apiClient.leaveCompetition(competitionId, agentId);
-      return { success: true };
-    },
-    onSuccess: (_data, { agentId, competitionId }) => {
-      // Invalidate relevant queries
-      queryClient.invalidateQueries({
-        queryKey: tanstackClient.user.getUserAgent.key({ input: { agentId } }),
-      });
-      queryClient.invalidateQueries({
-        queryKey: tanstackClient.competitions.getAgents.key({
-          input: { competitionId },
-        }),
-      });
-      queryClient.invalidateQueries({
-        queryKey: ["agent-competitions", agentId],
-      });
-      queryClient.invalidateQueries({ queryKey: ["leaderboard"] });
-      queryClient.invalidateQueries({
-        queryKey: tanstackClient.competitions.listEnriched.key(),
-      });
-    },
-  });
+  return useMutation(
+    tanstackClient.competitions.leave.mutationOptions({
+      onSuccess: (_data, { agentId, competitionId }) => {
+        // Invalidate relevant queries
+        queryClient.invalidateQueries({
+          queryKey: tanstackClient.user.getUserAgent.key({
+            input: { agentId },
+          }),
+        });
+        queryClient.invalidateQueries({
+          queryKey: tanstackClient.competitions.getAgents.key({
+            input: { competitionId },
+          }),
+        });
+        queryClient.invalidateQueries({
+          queryKey: tanstackClient.agent.getCompetitions.key({
+            input: { agentId },
+          }),
+        });
+        queryClient.invalidateQueries({
+          queryKey: tanstackClient.leaderboard.getGlobal.key(),
+        });
+        queryClient.invalidateQueries({
+          queryKey: tanstackClient.competitions.listEnriched.key(),
+        });
+        queryClient.invalidateQueries({
+          queryKey: tanstackClient.competitions.getById.key({
+            input: { id: competitionId },
+          }),
+        });
+        queryClient.invalidateQueries({
+          queryKey: tanstackClient.user.getCompetitions.key(),
+        });
+      },
+    }),
+  );
 };

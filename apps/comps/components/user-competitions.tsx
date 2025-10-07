@@ -51,7 +51,7 @@ export default function UserCompetitionsSection() {
       <CollapsibleTrigger>
         <div className="flex w-full items-center justify-between">
           <div className="ml-2 flex items-center gap-2">
-            <span className="text-2xl font-bold">Your Competitions</span>
+            <span className="text-xl font-bold">Your Competitions</span>
             <span className="text-secondary-foreground">
               ({allCompetitions.length})
             </span>

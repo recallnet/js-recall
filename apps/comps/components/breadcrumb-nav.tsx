@@ -27,7 +27,7 @@ export function BreadcrumbNav({ items, className }: BreadcrumbNavProps) {
     <div className={cn("flex items-center gap-4 border-b pb-5", className)}>
       <BackButton />
       <Breadcrumb>
-        <BreadcrumbList>
+        <BreadcrumbList className="font-mono">
           {items.map((item, index) => (
             <React.Fragment key={item.label}>
               <BreadcrumbItem className="uppercase">

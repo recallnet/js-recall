@@ -106,9 +106,11 @@ export const TrophyBadge: React.FC<TrophyBadgeProps> = ({ trophy, size }) => {
             style={{
               height: innerH,
               width: innerW,
+              position: "absolute",
+              left: `${borderThickness}px`,
+              top: `${borderThickness}px`,
             }}
             className={cn(
-              `relative left-[${borderThickness}px] top-[${borderThickness}px]`,
               "duration-330 transition-transform ease-in-out group-hover:scale-110",
             )}
           >
@@ -128,9 +130,10 @@ export const TrophyBadge: React.FC<TrophyBadgeProps> = ({ trophy, size }) => {
               src={imageUrl}
               alt="competition"
               fill
-              className="rotate-270 left-0 top-0 w-full object-cover"
+              className="object-cover"
               style={{
-                transform: `scale(${imageZoom})`, // Dynamically set scale
+                transform: `scale(${imageZoom})`,
+                objectPosition: "center",
               }}
             />
           </Hexagon>

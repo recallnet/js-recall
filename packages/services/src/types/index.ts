@@ -488,6 +488,10 @@ export interface EnhancedCompetition {
   competitionType?: CompetitionType; // Included for client awareness
   totalTrades?: number; // For paper trading competitions
   totalPositions?: number; // For perpetual futures competitions
+  // Risk metrics (for perpetual futures competitions)
+  calmarRatio: number | null;
+  simpleReturn: number | null;
+  maxDrawdown: number | null;
   // TODO: dry out the type for best placement
   bestPlacement?: {
     rank: number;
@@ -732,10 +736,25 @@ export type CompetitionAgentParams = z.infer<
   typeof CompetitionAgentParamsSchema
 >;
 
-export const AgentCompetitionsParamsSchema = PagingParamsSchema.extend({
+/**
+ * Filter parameters for agent competitions (without pagination)
+ */
+export const AgentCompetitionsFiltersSchema = z.object({
   status: z.optional(CompetitionStatusSchema),
   claimed: z.optional(z.boolean()),
 });
+
+export type AgentCompetitionsFilters = z.infer<
+  typeof AgentCompetitionsFiltersSchema
+>;
+
+/**
+ * Combined parameters for agent competitions (filters + pagination)
+ */
+export const AgentCompetitionsParamsSchema = z.intersection(
+  PagingParamsSchema,
+  AgentCompetitionsFiltersSchema,
+);
 
 export type AgentCompetitionsParams = z.infer<
   typeof AgentCompetitionsParamsSchema
