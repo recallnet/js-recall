@@ -1035,18 +1035,25 @@ describe("HyperliquidPerpsProvider", () => {
 
       const result = await provider.getPositions("0xtest123");
 
-      // Position IDs should be deterministic: wallet-coin-size-entryPrice
-      // This prevents collisions and makes IDs predictable
-      expect(result[0]?.providerPositionId).toBe("0xtest123-BTC-0.1-45000");
+      // Position IDs should be unique UUIDs (Hyperliquid doesn't provide position IDs)
+      expect(result[0]?.providerPositionId).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+      );
 
-      // Verify ID is deterministic by calling again
+      // Verify each call generates a new UUID
       mockAxiosInstance.post.mockResolvedValueOnce({
         data: sampleClearinghouseState,
       });
       mockAxiosInstance.post.mockResolvedValueOnce({ data: sampleAllMids });
 
       const result2 = await provider.getPositions("0xtest123");
-      expect(result2[0]?.providerPositionId).toBe("0xtest123-BTC-0.1-45000");
+      expect(result2[0]?.providerPositionId).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+      );
+      // UUIDs should be different for each call
+      expect(result2[0]?.providerPositionId).not.toBe(
+        result[0]?.providerPositionId,
+      );
     });
 
     it("should mask wallet addresses in logs", async () => {

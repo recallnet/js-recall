@@ -1,5 +1,6 @@
 import * as Sentry from "@sentry/node";
 import axios, { AxiosInstance } from "axios";
+import { randomUUID } from "crypto";
 import { Decimal } from "decimal.js";
 import { Logger } from "pino";
 
@@ -392,8 +393,8 @@ export class HyperliquidPerpsProvider implements IPerpsDataProvider {
 
         positions.push({
           // Identifiers (Hyperliquid doesn't provide position IDs)
-          // Use wallet + coin + size + entry price for uniqueness
-          providerPositionId: `${walletAddress}-${pos.coin}-${pos.szi}-${pos.entryPx}`,
+          // Generate a unique UUID for each position
+          providerPositionId: randomUUID(),
           providerTradeId: undefined,
 
           // Position details
