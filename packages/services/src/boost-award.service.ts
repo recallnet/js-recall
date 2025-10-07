@@ -162,11 +162,14 @@ export class BoostAwardService {
       tx,
     );
     if (increaseRes.type === "applied") {
-      await this.#boostRepository.recordStakeBoostAward({
-        competitionId: competition.id,
-        stakeId: stake.id,
-        boostChangeId: increaseRes.changeId,
-      });
+      await this.#boostRepository.recordStakeBoostAward(
+        {
+          competitionId: competition.id,
+          stakeId: stake.id,
+          boostChangeId: increaseRes.changeId,
+        },
+        tx,
+      );
     }
     return increaseRes;
   }
