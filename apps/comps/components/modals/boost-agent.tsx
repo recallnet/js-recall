@@ -198,7 +198,9 @@ export const BoostAgentModal: React.FC<BoostAgentModalProps> = ({
                     {agent.rank ? <RankBadge rank={agent.rank} /> : null}
                     <span className="text-lg font-bold">{agent.name}</span>
                   </div>
-                  <p className="text-sm text-gray-400">{agent.description}</p>
+                  <p className="break-words text-sm text-gray-400">
+                    {agent.description}
+                  </p>
                 </div>
               </div>
 

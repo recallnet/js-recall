@@ -387,7 +387,7 @@ export default function AgentProfile({
                 agent description
               </span>
             )}
-            <span className="text-primary-foreground break-all text-base">
+            <span className="text-primary-foreground break-words text-base">
               {agent.description || "No profile created yet"}
             </span>
           </div>
@@ -409,7 +409,7 @@ export default function AgentProfile({
             )}
             <div
               className={cn(
-                "text-secondary-foreground mt-3 gap-3 break-all",
+                "text-secondary-foreground mt-3 gap-3 break-words",
                 skills.length > 0 ? "grid grid-cols-2" : "flex flex-wrap",
               )}
             >
