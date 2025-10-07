@@ -241,7 +241,7 @@ export default function AgentProfile({
         </Card>
         <div className="flex-2 xs:col-span-2 xs:col-start-2 xs:row-start-1 xs:mt-0 col-span-3 row-start-2 mt-5 flex shrink flex-col border lg:col-span-1 lg:col-start-2">
           <div className="relative flex w-full grow flex-col border-b p-6">
-            <div className="flex gap-3 font-bold">
+            <div className="flex gap-3 font-mono text-lg font-semibold">
               {agent.stats.score != null && agent.stats.score > 0 && (
                 <Tooltip content="Global Score">
                   <BigNumberDisplay
@@ -276,15 +276,6 @@ export default function AgentProfile({
                     />
                   </>
                 </EditAgentField>
-                <EditAgentField
-                  title="Agent Handle"
-                  value={agent.handle || ""}
-                  onSave={handleSaveChange("handle")}
-                >
-                  <span className="text-secondary-foreground max-w-[90%] truncate text-2xl font-semibold">
-                    @{agent.handle}
-                  </span>
-                </EditAgentField>
               </div>
             ) : (
               <div>
@@ -292,17 +283,32 @@ export default function AgentProfile({
                   <span className="truncate">{agent.name}</span>
                   <AgentVerifiedBadge verified={Boolean(agent.walletAddress)} />
                 </h1>
+              </div>
+            )}
+
+            {/* Agent Handle */}
+            {isUserAgent ? (
+              <EditAgentField
+                title="Agent Handle"
+                value={agent.handle || ""}
+                onSave={handleSaveChange("handle")}
+              >
                 <span className="text-secondary-foreground max-w-[90%] truncate text-2xl font-semibold">
                   @{agent.handle}
                 </span>
-              </div>
+              </EditAgentField>
+            ) : (
+              <span className="text-secondary-foreground max-w-[90%] truncate text-2xl font-semibold">
+                @{agent.handle}
+              </span>
             )}
+
             {!isUserAgent && (
               <div className="mt-5 flex w-full gap-1 text-nowrap">
-                <span className="text-secondary-foreground text-xl font-semibold">
+                <span className="text-secondary-foreground text-lg font-normal">
                   Developed by
                 </span>
-                <span className="text-primary-foreground truncate text-xl font-semibold">
+                <span className="text-primary-foreground truncate text-lg font-normal">
                   [{owner?.name}]
                 </span>
               </div>
@@ -322,15 +328,15 @@ export default function AgentProfile({
                   ))
                 ) : (
                   <span className="text-secondary-foreground">
-                    This agent hasn’t earned trophies yet.
+                    This agent hasn&apos;t earned trophies yet.
                   </span>
                 )}
               </div>
             </div>
           </div>
           <div className="flex h-[99px] w-full border-b">
-            <div className="flex flex-1 flex-col items-start gap-2 px-6 py-6 text-xs">
-              <span className="text-secondary-foreground w-full text-nowrap text-left font-semibold uppercase">
+            <div className="flex flex-1 flex-col items-start gap-2 px-6 py-6">
+              <span className="text-secondary-foreground w-full text-nowrap text-left font-mono text-sm font-semibold uppercase tracking-wide">
                 Best Placement
               </span>
               <AgentBestPlacement
@@ -341,21 +347,19 @@ export default function AgentProfile({
           </div>
           <div className="flex w-full">
             <div className="flex w-1/2 flex-col items-start p-5">
-              <span className="text-secondary-foreground w-full truncate text-left text-xs font-semibold uppercase">
+              <span className="text-secondary-foreground w-full text-nowrap text-left font-mono text-sm font-semibold uppercase tracking-wide">
                 Completed Comps
               </span>
-              <span className="text-primary-foreground w-full text-left text-lg font-bold">
+              <span className="text-primary-foreground w-full text-left text-lg font-semibold">
                 {agent.stats.completedCompetitions}
               </span>
             </div>
             <div className="flex w-1/2 flex-col items-start border-l p-5">
-              <span className="text-secondary-foreground w-full text-nowrap text-left text-xs font-semibold uppercase">
-                Agent Rank
+              <span className="text-secondary-foreground w-full text-nowrap text-left font-mono text-sm font-semibold uppercase tracking-wide">
+                Total Votes
               </span>
-              <span className="text-secondary-foreground mt-1 w-full text-left text-sm">
-                {config.clientFlags.disableLeaderboard
-                  ? "TBA"
-                  : agent.stats.rank}
+              <span className="text-primary-foreground w-full text-left text-lg font-semibold">
+                {agent.stats.totalVotes?.toLocaleString() || "0"}
               </span>
             </div>
           </div>
@@ -374,16 +378,16 @@ export default function AgentProfile({
                 value={agent.description || ""}
                 onSave={handleSaveChange("description")}
               >
-                <span className="text-secondary-foreground font-semibold uppercase">
+                <span className="text-secondary-foreground font-mono text-sm font-semibold uppercase tracking-wide">
                   agent description
                 </span>
               </EditAgentField>
             ) : (
-              <span className="text-secondary-foreground font-semibold uppercase">
+              <span className="text-secondary-foreground font-mono text-sm font-semibold uppercase tracking-wide">
                 agent description
               </span>
             )}
-            <span className="text-primary-foreground break-all">
+            <span className="text-primary-foreground break-all text-base">
               {agent.description || "No profile created yet"}
             </span>
           </div>
@@ -394,12 +398,12 @@ export default function AgentProfile({
                 value={agent.skills || []}
                 onSave={handleSaveChange("skills")}
               >
-                <span className="text-secondary-foreground text-left font-semibold uppercase">
+                <span className="text-secondary-foreground text-left font-mono text-sm font-semibold uppercase tracking-wide">
                   Agent Skills
                 </span>
               </EditSkillsField>
             ) : (
-              <span className="text-secondary-foreground text-left font-semibold uppercase">
+              <span className="text-secondary-foreground text-left font-mono text-sm font-semibold uppercase tracking-wide">
                 Agent Skills
               </span>
             )}
@@ -409,16 +413,20 @@ export default function AgentProfile({
                 skills.length > 0 ? "grid grid-cols-2" : "flex flex-wrap",
               )}
             >
-              {skills.length > 0
-                ? skills.map((skill, index) => (
-                    <span
-                      key={index}
-                      className="text-primary-foreground truncate rounded border px-2 py-1"
-                    >
-                      {skill}
-                    </span>
-                  ))
-                : "This agent hasn't showcased skills yet."}
+              {skills.length > 0 ? (
+                skills.map((skill, index) => (
+                  <span
+                    key={index}
+                    className="text-primary-foreground truncate rounded border px-2 py-1 text-base"
+                  >
+                    {skill}
+                  </span>
+                ))
+              ) : (
+                <span className="text-base">
+                  This agent hasn&apos;t showcased skills yet.
+                </span>
+              )}
             </div>
           </div>
         </div>

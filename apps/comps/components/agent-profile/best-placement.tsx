@@ -16,7 +16,7 @@ export const AgentBestPlacement = ({
   };
 
   return (
-    <div className="text-secondary-foreground flex w-full items-center gap-2 text-left text-lg font-semibold">
+    <div className="text-primary-foreground flex w-full items-center gap-2 text-left text-lg font-semibold">
       {rank && places ? (
         <>
           <Trophy
@@ -26,10 +26,8 @@ export const AgentBestPlacement = ({
               rankInfo[rank as 1]?.color || "text-gray-600",
             )}
           />
-          <span className="text-primary-foreground">
-            {rankInfo[rank as 1]?.name || `${rank}th`}
-          </span>{" "}
-          of <span className="text-primary-foreground">{places}</span>
+          <span>{rankInfo[rank as 1]?.name || `${rank}th`}</span> of{" "}
+          <span>{places}</span>
         </>
       ) : (
         "No completed yet"
