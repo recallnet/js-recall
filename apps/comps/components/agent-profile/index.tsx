@@ -348,7 +348,8 @@ export default function AgentProfile({
                 {agent.stats.completedCompetitions}
               </span>
             </div>
-            <div className="flex w-1/2 flex-col items-start border-l p-5">
+            <div className="relative flex w-1/2 flex-col items-start p-5">
+              <div className="absolute bottom-2 left-0 top-2 w-px border-l"></div>
               <span className="text-secondary-foreground w-full text-nowrap text-left text-xs font-semibold uppercase">
                 Agent Rank
               </span>
