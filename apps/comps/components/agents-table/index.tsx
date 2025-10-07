@@ -186,10 +186,11 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
     return Object.values(boostTotals).reduce((sum, amount) => sum + amount, 0);
   }, [boostTotals, isSuccessBoostTotals]);
 
-  // Determine if this competition has boost enabled (any agent has boost > 0)
-  const hasBoostEnabled = useMemo(() => {
-    return totalBoost > 0 || isOpenForBoosting;
-  }, [totalBoost, isOpenForBoosting]);
+  const isLegacyCompetition = useMemo(() => {
+    return competition.stats.totalVotes > 0 && competition.status === "ended";
+  }, [competition.stats.totalVotes, competition.status]);
+
+  const hasBoostEnabled = !isLegacyCompetition;
 
   useEffect(() => {
     setColumnVisibility({
