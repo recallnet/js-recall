@@ -178,18 +178,33 @@ export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
 
             <p className="mt-2 text-sm text-gray-400">
               {competition.externalUrl &&
-                // Note: `example.com` was used in legacy competitions and should be ignored
-                !competition.externalUrl.includes("example.com") && (
-                  <Link
-                    href={competition.externalUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center whitespace-nowrap"
-                  >
-                    Read more about the official competition rules{" "}
-                    <ArrowUpRight size={16} className="ml-1" />
-                  </Link>
-                )}
+                (() => {
+                  // Note: `example.com` was used in legacy competitions and should be ignored
+                  try {
+                    const host = new URL(competition.externalUrl).host;
+                    // Skip if host is exactly 'example.com' or a subdomain of example.com
+                    if (
+                      host === "example.com" ||
+                      host.endsWith(".example.com")
+                    ) {
+                      return null;
+                    }
+                    return (
+                      <Link
+                        href={competition.externalUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center whitespace-nowrap"
+                      >
+                        Read more about the official competition rules{" "}
+                        <ArrowUpRight size={16} className="ml-1" />
+                      </Link>
+                    );
+                  } catch {
+                    // Invalid URL, don't render the link
+                    return null;
+                  }
+                })()}
             </p>
             {isLong && (
               <button
