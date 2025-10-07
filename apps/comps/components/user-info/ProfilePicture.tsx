@@ -89,12 +89,12 @@ export const ProfilePicture: React.FC<ProfilePictureProps> = ({
       tabIndex={0}
       aria-label="Change profile picture"
     >
-      <div className="flex flex-col items-center px-2 py-4">
-        <span className="flex gap-2 text-xs font-medium">
-          <SquarePen className="text-secondary-foreground mr-2 inline-block" />
-          Profile Picture URL
-        </span>
-        <span className="text-secondary-foreground mt-1 text-xs">
+      <div className="flex flex-col items-center gap-1 px-2 py-4">
+        <div className="flex items-center gap-2">
+          <SquarePen size={16} className="text-secondary-foreground" />
+          <span className="text-xs font-medium">Profile Picture URL</span>
+        </div>
+        <span className="text-secondary-foreground text-xs">
           Public PNG/JPEG
         </span>
       </div>
