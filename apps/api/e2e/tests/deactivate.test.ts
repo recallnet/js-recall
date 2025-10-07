@@ -9,7 +9,6 @@ import {
   AdminAgentsListResponse,
   AgentProfileResponse,
   ErrorResponse,
-  LeaderboardResponse,
 } from "@/e2e/utils/api-types.js";
 import {
   createTestClient,
@@ -268,11 +267,13 @@ describe("Agent Deactivation API", () => {
 
     // Create competition with all three agents
     const competitionName = `Leaderboard Test ${Date.now()}`;
-    const competition = await startTestCompetition({
+    const startResult = await startTestCompetition({
       adminClient,
       name: competitionName,
       agentIds: [agent1.id, agent2.id, agent3.id],
     });
+    const competition = startResult.competition;
+    const competitionId = competition.id;
 
     // Make some trades to differentiate portfolio values
     // We'll have Agent 3 (to be deactivated) make some trades to put them on the leaderboard
@@ -312,19 +313,23 @@ describe("Agent Deactivation API", () => {
     await wait(1000);
 
     // Check leaderboard before deactivation
-    const leaderboardBefore =
-      (await client1.getCompetitionLeaderboard()) as LeaderboardResponse;
+    const leaderboardBefore = await client1.getCompetitionAgents(
+      competitionId,
+      { sort: "rank" },
+    );
     expect(leaderboardBefore.success).toBe(true);
-    expect(leaderboardBefore.leaderboard).toBeDefined();
+    if (!leaderboardBefore.success) throw new Error("Failed to get agents");
 
-    // Verify inactiveAgents array exists but is empty before deactivation
-    expect(leaderboardBefore.inactiveAgents).toBeDefined();
-    expect(leaderboardBefore.inactiveAgents.length).toBe(0);
+    expect(leaderboardBefore.agents).toBeDefined();
+
+    // Verify all agents are active before deactivation
+    const inactiveAgentsBefore = leaderboardBefore.agents.filter(
+      (a) => !a.active,
+    );
+    expect(inactiveAgentsBefore.length).toBe(0);
 
     // All three agents should be in the active leaderboard
-    const agentIds = leaderboardBefore.leaderboard.map(
-      (entry) => entry.agentId,
-    );
+    const agentIds = leaderboardBefore.agents.map((entry) => entry.id);
     expect(agentIds).toContain(agent1.id);
     expect(agentIds).toContain(agent2.id);
     expect(agentIds).toContain(agent3.id);
@@ -332,80 +337,82 @@ describe("Agent Deactivation API", () => {
     // Now deactivate agent3
     const reason = "Deactivated for leaderboard test";
     const deactivateResponse = await adminClient.removeAgentFromCompetition(
-      competition.competition.id,
+      competitionId,
       agent3.id,
       reason,
     );
     expect(deactivateResponse.success).toBe(true);
 
-    // Check leaderboard after deactivation
-    const leaderboardAfter =
-      (await client1.getCompetitionLeaderboard()) as LeaderboardResponse;
+    // Check leaderboard after deactivation (include inactive agents)
+    const leaderboardAfter = await client1.getCompetitionAgents(competitionId, {
+      sort: "rank",
+      includeInactive: true,
+    });
     expect(leaderboardAfter.success).toBe(true);
-    expect(leaderboardAfter.leaderboard).toBeDefined();
-    expect(leaderboardAfter.inactiveAgents).toBeDefined();
+    if (!leaderboardAfter.success) throw new Error("Failed to get agents");
 
-    // Verify agent3 is now in the inactiveAgents array, not in the main leaderboard
-    // Active leaderboard should only contain agent1 and agent2
-    const activeagentIds = leaderboardAfter.leaderboard.map(
-      (entry) => entry.agentId,
+    expect(leaderboardAfter.agents).toBeDefined();
+    const inactiveAgentsAfter = leaderboardAfter.agents.filter(
+      (a) => !a.active,
     );
-    expect(activeagentIds).toContain(agent1.id);
-    expect(activeagentIds).toContain(agent2.id);
-    expect(activeagentIds).not.toContain(agent3.id);
+    expect(inactiveAgentsAfter.length).toBeGreaterThan(0);
+
+    // Verify agent3 is now in the inactive agents, not in the active list
+    // Active leaderboard should only contain agent1 and agent2
+    const activeAgentsAfter = leaderboardAfter.agents.filter((a) => a.active);
+    const activeAgentIds = activeAgentsAfter.map((entry) => entry.id);
+    expect(activeAgentIds).toContain(agent1.id);
+    expect(activeAgentIds).toContain(agent2.id);
+    expect(activeAgentIds).not.toContain(agent3.id);
 
     // Verify inactive agent array contains only agent3
-    expect(leaderboardAfter.inactiveAgents.length).toBe(1);
-    const inactiveAgent = leaderboardAfter.inactiveAgents[0];
-    expect(inactiveAgent?.agentId).toBe(agent3.id);
+    expect(inactiveAgentsAfter.length).toBe(1);
+    const inactiveAgent = inactiveAgentsAfter[0];
+    expect(inactiveAgent?.id).toBe(agent3.id);
     expect(inactiveAgent?.active).toBe(false);
 
     expect(inactiveAgent?.deactivationReason).includes(reason);
 
     // Active agents should have ranks 1 and 2
-    const ranks = leaderboardAfter.leaderboard.map((entry) => entry.rank);
+    const ranks = activeAgentsAfter.map((entry) => entry.rank);
     expect(ranks).toContain(1);
     expect(ranks).toContain(2);
     expect(ranks.length).toBe(2); // Only two agents should have ranks
 
-    expect(leaderboardAfter.hasInactiveAgents).toBe(true);
-
     // Reactivate the agent and verify they show up again
-    await adminClient.reactivateAgentInCompetition(
-      competition.competition.id,
-      agent3.id,
-    );
+    await adminClient.reactivateAgentInCompetition(competitionId, agent3.id);
 
     // Wait a moment for any cache to update
     await wait(100);
 
     // Check leaderboard after reactivation
-    const leaderboardFinal =
-      (await client1.getCompetitionLeaderboard()) as LeaderboardResponse;
+    const leaderboardFinal = await client1.getCompetitionAgents(competitionId, {
+      sort: "rank",
+    });
     expect(leaderboardFinal.success).toBe(true);
-    expect(leaderboardFinal.leaderboard).toBeDefined();
-    expect(leaderboardFinal.inactiveAgents).toBeDefined();
-    expect(leaderboardFinal.inactiveAgents.length).toBe(0);
+    if (!leaderboardFinal.success) throw new Error("Failed to get agents");
+
+    expect(leaderboardFinal.agents).toBeDefined();
+    const inactiveAgentsFinal = leaderboardFinal.agents.filter(
+      (a) => !a.active,
+    );
+    expect(inactiveAgentsFinal).toBeDefined();
+    expect(inactiveAgentsFinal.length).toBe(0);
 
     // Verify agent3 is back in the active leaderboard
-    const agentIdsFinal = leaderboardFinal.leaderboard.map(
-      (entry) => entry.agentId,
-    );
+    const agentIdsFinal = leaderboardFinal.agents.map((entry) => entry.id);
     expect(agentIdsFinal).toContain(agent1.id);
     expect(agentIdsFinal).toContain(agent2.id);
     expect(agentIdsFinal).toContain(agent3.id);
 
     // Find agent3 entry and verify it's now active
-    const agent3FinalEntry = leaderboardFinal.leaderboard.find(
-      (entry) => entry.agentId === agent3.id,
+    const agent3FinalEntry = leaderboardFinal.agents.find(
+      (entry) => entry.id === agent3.id,
     );
     expect(agent3FinalEntry).toBeDefined();
     expect(agent3FinalEntry?.active).toBe(true);
     expect(agent3FinalEntry?.deactivationReason).toBeNull();
     expect(agent3FinalEntry?.rank).toBeDefined(); // Should have a rank assigned
-
-    // Verify the hasInactiveAgents flag is false
-    expect(leaderboardFinal.hasInactiveAgents).toBe(false);
   });
 
   test("disqualified agents rankings are immediately consistent", async () => {
@@ -430,11 +437,13 @@ describe("Agent Deactivation API", () => {
 
     // Create competition with both agents
     const competitionName = `Ranking Consistency Test ${Date.now()}`;
-    const competition = await startTestCompetition({
+    const startResult = await startTestCompetition({
       adminClient,
       name: competitionName,
       agentIds: [agent1.id, agent2.id],
     });
+    const competition = startResult.competition;
+    const competitionId = competition.id;
 
     // Make trades to establish different portfolio values
     const usdcTokenAddress = config.specificChainTokens.svm.usdc;
@@ -454,9 +463,8 @@ describe("Agent Deactivation API", () => {
     await wait(1000);
 
     // Get initial competition agents to verify rankings
-    const initialAgentsResponse = await client1.getCompetitionAgents(
-      competition.competition.id,
-    );
+    const initialAgentsResponse =
+      await client1.getCompetitionAgents(competitionId);
     expect(initialAgentsResponse.success).toBe(true);
 
     if ("agents" in initialAgentsResponse) {
@@ -481,7 +489,7 @@ describe("Agent Deactivation API", () => {
     // Now remove the top performing agent (agent1)
     const removeReason = "Disqualified for ranking consistency test";
     const removeResponse = await adminClient.removeAgentFromCompetition(
-      competition.competition.id,
+      competitionId,
       agent1.id,
       removeReason,
     );
@@ -490,9 +498,8 @@ describe("Agent Deactivation API", () => {
     // Immediately check the competition agents again (this is the critical test)
     // Before our fix, agent2 would still show position 2 even though they're the only agent
     // After our fix, agent2 should show position 1
-    const afterRemovalResponse = await client2.getCompetitionAgents(
-      competition.competition.id,
-    );
+    const afterRemovalResponse =
+      await client2.getCompetitionAgents(competitionId);
     expect(afterRemovalResponse.success).toBe(true);
 
     if ("agents" in afterRemovalResponse) {
@@ -521,29 +528,37 @@ describe("Agent Deactivation API", () => {
       expect(afterRemovalResponse.pagination.total).toBe(1);
     }
 
-    // ADDITIONAL TEST: Verify the leaderboard endpoint also shows correct rankings immediately
+    // ADDITIONAL TEST: Verify the agents endpoint also shows correct rankings immediately
     // This ensures our fix works across all ranking-related APIs
-    const leaderboardResponse = await client2.getCompetitionLeaderboard();
+    const leaderboardResponse = await client2.getCompetitionAgents(
+      competitionId,
+      { sort: "rank", includeInactive: true },
+    );
     expect(leaderboardResponse.success).toBe(true);
 
-    if ("leaderboard" in leaderboardResponse) {
+    if ("agents" in leaderboardResponse) {
+      const activeAgentsCheck = leaderboardResponse.agents.filter(
+        (a) => a.active,
+      );
       // Should only have 1 agent in active leaderboard
-      expect(leaderboardResponse.leaderboard.length).toBe(1);
+      expect(activeAgentsCheck.length).toBe(1);
 
-      const leaderboardAgent = leaderboardResponse.leaderboard[0];
-      expect(leaderboardAgent?.agentId).toBe(agent2.id);
+      const leaderboardAgent = activeAgentsCheck[0];
+      expect(leaderboardAgent?.id).toBe(agent2.id);
 
       // Critical assertion: leaderboard should also show rank 1 immediately
       expect(leaderboardAgent?.rank).toBe(1);
       expect(leaderboardAgent?.active).toBe(true);
 
       // Should have 1 inactive agent (the removed agent1)
-      expect(leaderboardResponse.inactiveAgents.length).toBe(1);
-      expect(leaderboardResponse.hasInactiveAgents).toBe(true);
+      const inactiveAgentsCheck = leaderboardResponse.agents.filter(
+        (a) => !a.active,
+      );
+      expect(inactiveAgentsCheck.length).toBe(1);
 
       // Verify the removed agent appears in inactive agents array
-      const inactiveAgent = leaderboardResponse.inactiveAgents[0];
-      expect(inactiveAgent?.agentId).toBe(agent1.id);
+      const inactiveAgent = inactiveAgentsCheck[0];
+      expect(inactiveAgent?.id).toBe(agent1.id);
       expect(inactiveAgent?.active).toBe(false);
       expect(inactiveAgent?.deactivationReason).toContain(removeReason);
     }

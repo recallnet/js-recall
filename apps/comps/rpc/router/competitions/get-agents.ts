@@ -22,7 +22,10 @@ export const getAgents = base
     try {
       const res = await context.competitionService.getCompetitionAgents({
         competitionId: input.competitionId,
-        queryParams: input.paging || PagingParamsSchema.parse({}),
+        queryParams: {
+          ...(input.paging || PagingParamsSchema.parse({})),
+          includeInactive: false,
+        },
       });
       return res;
     } catch (error) {

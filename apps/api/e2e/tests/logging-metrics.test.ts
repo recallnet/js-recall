@@ -250,7 +250,7 @@ describe("Logging and Metrics API", () => {
 
     // Admin operations
     await adminClient.getCompetition(competitionId);
-    await adminClient.getCompetitionLeaderboard();
+    await adminClient.getCompetitionAgents(competitionId);
     await adminClient.listAgents();
 
     // Step 5: Check metrics after all this activity
@@ -442,7 +442,7 @@ describe("Logging and Metrics API", () => {
     await agentClient.getTradeHistory(); // getAgentTrades
     await client.listAgents(); // findAll
     await client.getCompetition(competitionId); // findById
-    await client.getCompetitionLeaderboard(); // findLeaderboardByTradingComp
+    await client.getCompetitionAgents(competitionId); // findAgentsByCompetition
 
     // INSERT operations (should be classified as "INSERT")
     await agentClient.executeTrade({

@@ -16,14 +16,12 @@ import {
   CompetitionDetailResponse,
   CompetitionJoinResponse,
   CompetitionRulesResponse,
-  CompetitionStatusResponse,
   CompetitionWithAgents,
   CreateCompetitionResponse,
   EndCompetitionResponse,
   EnhancedCompetition,
   ErrorResponse,
   GlobalLeaderboardResponse,
-  LeaderboardResponse,
   StartCompetitionResponse,
   TradeResponse,
   UpcomingCompetitionsResponse,
@@ -603,26 +601,27 @@ describe("Competition API", () => {
     });
 
     // Agent checks competition status
-    const statusResponse =
-      (await agentClient.getCompetitionStatus()) as CompetitionStatusResponse;
-    expect(statusResponse.success).toBe(true);
-    expect(statusResponse.competition).toBeDefined();
-    expect(statusResponse.competition?.name).toBe(competitionName);
-    expect(statusResponse.competition?.status).toBe("active");
+    const competition = await agentClient.getActiveCompetition();
+    expect(competition.name).toBe(competitionName);
+    expect(competition.status).toBe("active");
 
     // Agent checks leaderboard
-    const leaderboardResponse =
-      (await agentClient.getCompetitionLeaderboard()) as LeaderboardResponse;
+    const leaderboardResponse = await agentClient.getCompetitionAgents(
+      competition.id,
+      { sort: "rank" },
+    );
     expect(leaderboardResponse.success).toBe(true);
-    expect(leaderboardResponse.leaderboard).toBeDefined();
-    expect(leaderboardResponse.leaderboard).toBeInstanceOf(Array);
+    if (!leaderboardResponse.success) throw new Error("Failed to get agents");
+
+    expect(leaderboardResponse.agents).toBeDefined();
+    expect(leaderboardResponse.agents).toBeInstanceOf(Array);
 
     // There should be one agent in the leaderboard
-    expect(leaderboardResponse.leaderboard.length).toBe(1);
+    expect(leaderboardResponse.agents.length).toBe(1);
 
     // The agent should be in the leaderboard
-    const agentInLeaderboard = leaderboardResponse.leaderboard.find(
-      (entry) => entry.agentName === "Agent Gamma",
+    const agentInLeaderboard = leaderboardResponse.agents.find(
+      (entry) => entry.name === "Agent Gamma",
     );
     expect(agentInLeaderboard).toBeDefined();
   });
@@ -644,32 +643,20 @@ describe("Competition API", () => {
     });
 
     // Start a competition with only one agent
-    await startTestCompetition({
+    const { competition } = await startTestCompetition({
       adminClient,
       name: `Exclusive Competition ${Date.now()}`,
       agentIds: [agentIn.id],
     });
 
-    // Agent in competition checks status - should succeed
-    const statusInResponse =
-      (await agentInClient.getCompetitionStatus()) as CompetitionStatusResponse;
-    expect(statusInResponse.success).toBe(true);
-    expect(statusInResponse.competition).toBeDefined();
-    expect(statusInResponse.participating).toBe(true);
+    // Both agents can check status of the active competition
+    const competitionFromAgentIn = await agentInClient.getActiveCompetition();
+    expect(competitionFromAgentIn.id).toBe(competition.id);
+    expect(competitionFromAgentIn.status).toBe("active");
 
-    // Agent not in competition checks status - should show limited competition info
-    const statusOutResponse =
-      (await agentOutClient.getCompetitionStatus()) as CompetitionStatusResponse;
-    expect(statusOutResponse.success).toBe(true);
-    expect(statusOutResponse.active).toBe(true);
-    expect(statusOutResponse.competition).toBeDefined();
-    expect(statusOutResponse.competition?.id).toBeDefined();
-    expect(statusOutResponse.competition?.name).toBeDefined();
-    expect(statusOutResponse.competition?.status).toBeDefined();
-    expect(statusOutResponse.message).toBe(
-      "Your agent is not participating in this competition",
-    );
-    expect(statusOutResponse.participating).toBe(false);
+    const competitionFromAgentOut = await agentOutClient.getActiveCompetition();
+    expect(competitionFromAgentOut.id).toBe(competition.id);
+    expect(competitionFromAgentOut.status).toBe("active");
   });
 
   test("admin can access competition status without being a participant", async () => {
@@ -693,35 +680,30 @@ describe("Competition API", () => {
     });
 
     // Admin checks competition status with full details
-    const adminStatusResponse =
-      (await adminClient.getCompetitionStatus()) as CompetitionStatusResponse;
-    expect(adminStatusResponse.success).toBe(true);
-    expect(adminStatusResponse.active).toBe(true);
-    expect(adminStatusResponse.competition).toBeDefined();
-    expect(adminStatusResponse.competition?.name).toBe(competitionName);
-    expect(adminStatusResponse.competition?.status).toBe("active");
-    expect(adminStatusResponse.competition?.description).toBeDefined();
-    expect(adminStatusResponse.competition?.externalUrl).toBeDefined();
-    expect(adminStatusResponse.competition?.imageUrl).toBeDefined();
-    expect(
-      adminStatusResponse.competition?.crossChainTradingType,
-    ).toBeDefined();
-    expect(adminStatusResponse.competition?.startDate).toBeDefined();
-    expect(adminStatusResponse.competition?.endDate).toBeDefined();
+    const adminCompetition = await adminClient.getActiveCompetition();
+    expect(adminCompetition.name).toBe(competitionName);
+    expect(adminCompetition.status).toBe("active");
+    expect(adminCompetition.description).toBeDefined();
+    expect(adminCompetition.externalUrl).toBeDefined();
+    expect(adminCompetition.imageUrl).toBeDefined();
+    expect(adminCompetition.startDate).toBeDefined();
+    expect(adminCompetition.endDate).toBeDefined();
 
-    // Admin checks leaderboard with no agentId
-    const adminLeaderboardResponse =
-      (await adminClient.getCompetitionLeaderboard()) as LeaderboardResponse;
+    // Admin checks leaderboard
+    const adminLeaderboardResponse = await adminClient.getCompetitionAgents(
+      adminCompetition.id,
+      { sort: "rank" },
+    );
     expect(adminLeaderboardResponse.success).toBe(true);
-    expect(adminLeaderboardResponse.competition).toBeDefined();
-    expect(adminLeaderboardResponse.leaderboard).toBeDefined();
-    expect(adminLeaderboardResponse.leaderboard).toBeInstanceOf(Array);
+    if (!adminLeaderboardResponse.success)
+      throw new Error("Failed to get agents");
+
+    expect(adminLeaderboardResponse.agents).toBeDefined();
+    expect(adminLeaderboardResponse.agents).toBeInstanceOf(Array);
 
     // There should be one agent in the leaderboard
-    expect(adminLeaderboardResponse.leaderboard.length).toBe(1);
-    expect(adminLeaderboardResponse.leaderboard[0]?.agentName).toBe(
-      "Regular Agent",
-    );
+    expect(adminLeaderboardResponse.agents.length).toBe(1);
+    expect(adminLeaderboardResponse.agents[0]?.name).toBe("Regular Agent");
 
     // Admin checks competition rules
     const adminRulesResponse =
@@ -734,13 +716,13 @@ describe("Competition API", () => {
     expect(adminRulesResponse.rules.slippageFormula).toBeDefined();
 
     // Regular agent checks all the same endpoints to verify they work for participants too
-    const agentStatusResponse =
-      (await agentClient.getCompetitionStatus()) as CompetitionStatusResponse;
-    expect(agentStatusResponse.success).toBe(true);
-    expect(agentStatusResponse.active).toBe(true);
+    const agentCompetition = await agentClient.getActiveCompetition();
+    expect(agentCompetition.id).toBe(adminCompetition.id);
+    expect(agentCompetition.status).toBe("active");
 
-    const agentLeaderboardResponse =
-      await agentClient.getCompetitionLeaderboard();
+    const agentLeaderboardResponse = await agentClient.getCompetitionAgents(
+      agentCompetition.id,
+    );
     expect(agentLeaderboardResponse.success).toBe(true);
 
     // Regular agent checks rules
@@ -772,21 +754,25 @@ describe("Competition API", () => {
 
     // Start a competition with the agent
     const competitionName = `Activation Test ${Date.now()}`;
-    await startTestCompetition({
+    const { competition } = await startTestCompetition({
       adminClient,
       name: competitionName,
       agentIds: [agent.id],
     });
 
     // Check leaderboard to verify agent is now active
-    const leaderboardResponse =
-      (await adminClient.getCompetitionLeaderboard()) as LeaderboardResponse;
+    const leaderboardResponse = await adminClient.getCompetitionAgents(
+      competition.id,
+      { sort: "rank" },
+    );
     expect(leaderboardResponse.success).toBe(true);
-    expect(leaderboardResponse.leaderboard).toBeDefined();
+    if (!leaderboardResponse.success) throw new Error("Failed to get agents");
+
+    expect(leaderboardResponse.agents).toBeDefined();
 
     // Find the agent in the leaderboard
-    const agentInLeaderboard = leaderboardResponse.leaderboard.find(
-      (entry) => entry.agentId === agent.id,
+    const agentInLeaderboard = leaderboardResponse.agents.find(
+      (entry) => entry.id === agent.id,
     );
     expect(agentInLeaderboard).toBeDefined();
     expect(agentInLeaderboard?.active).toBe(true);
@@ -903,9 +889,10 @@ describe("Competition API", () => {
     expect(createResponse2.competition.status).toBe("pending");
     expect(createResponse3.competition.status).toBe("pending");
 
-    // Call the new endpoint to get upcoming competitions
-    const upcomingResponse =
-      (await agentClient.getUpcomingCompetitions()) as UpcomingCompetitionsResponse;
+    // Call the competitions endpoint with pending status
+    const upcomingResponse = (await agentClient.getCompetitions(
+      "pending",
+    )) as UpcomingCompetitionsResponse;
 
     // Verify the response
     expect(upcomingResponse.success).toBe(true);
@@ -945,8 +932,9 @@ describe("Competition API", () => {
     });
 
     // Get upcoming competitions again
-    const upcomingResponseAfterStart =
-      (await agentClient.getUpcomingCompetitions()) as UpcomingCompetitionsResponse;
+    const upcomingResponseAfterStart = (await agentClient.getCompetitions(
+      "pending",
+    )) as UpcomingCompetitionsResponse;
 
     expect(upcomingResponseAfterStart.competitions.length).toBe(2);
 
@@ -1169,23 +1157,19 @@ describe("Competition API", () => {
     expect(startResponse.competition.imageUrl).toBe(imageUrl);
 
     // 3. Verify the fields are in the competition status response for participating agents
-    const agentStatusResponse =
-      (await agentClient.getCompetitionStatus()) as CompetitionStatusResponse;
-    expect(agentStatusResponse.success).toBe(true);
-    expect(agentStatusResponse.active).toBe(true);
+    const agentCompetition = await agentClient.getActiveCompetition();
+    expect(agentCompetition.id).toBe(startResponse.competition.id);
+    expect(agentCompetition.status).toBe("active");
+    expect(agentCompetition.externalUrl).toBe(externalUrl);
+    expect(agentCompetition.imageUrl).toBe(imageUrl);
 
-    if (agentStatusResponse.success && agentStatusResponse.competition) {
-      expect(agentStatusResponse.competition.externalUrl).toBe(externalUrl);
-      expect(agentStatusResponse.competition.imageUrl).toBe(imageUrl);
-    }
-
-    // 4. Verify the fields are in the competition leaderboard response
-    const leaderboardResponse = await agentClient.getCompetitionLeaderboard();
-    expect(leaderboardResponse.success).toBe(true);
-
-    if (leaderboardResponse.success && "competition" in leaderboardResponse) {
-      expect(leaderboardResponse.competition.externalUrl).toBe(externalUrl);
-      expect(leaderboardResponse.competition.imageUrl).toBe(imageUrl);
+    // 4. Verify the fields are in the competition detail response
+    const competitionDetail = await agentClient.getCompetition(
+      startResponse.competition.id,
+    );
+    if (competitionDetail.success && "competition" in competitionDetail) {
+      expect(competitionDetail.competition.externalUrl).toBe(externalUrl);
+      expect(competitionDetail.competition.imageUrl).toBe(imageUrl);
     }
 
     // 5. Verify the fields are in the upcoming competitions endpoint for pending competitions
@@ -1195,7 +1179,7 @@ describe("Competition API", () => {
     }
 
     // Get upcoming competitions
-    const upcomingResponse = await agentClient.getUpcomingCompetitions();
+    const upcomingResponse = await agentClient.getCompetitions("pending");
 
     if (upcomingResponse.success && "competitions" in upcomingResponse) {
       // Find our created but not started competition
@@ -4318,23 +4302,6 @@ describe("Competition API", () => {
       ).rejects.toMatchObject({
         response: { status: 404 },
       });
-    });
-
-    test("protected endpoints should still require authentication", async () => {
-      const protectedEndpoints = [
-        "/api/competitions/leaderboard",
-        "/api/competitions/status",
-        "/api/competitions/upcoming",
-      ];
-
-      // Test each protected endpoint without authentication
-      for (const endpoint of protectedEndpoints) {
-        await expect(
-          axios.get(`${getBaseUrl()}${endpoint}`),
-        ).rejects.toMatchObject({
-          response: { status: 401 },
-        });
-      }
     });
 
     test("rules endpoint should be publicly accessible", async () => {

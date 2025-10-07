@@ -16,7 +16,11 @@ import {
   competitions,
   competitionsLeaderboard,
 } from "../schema/core/defs.js";
-import { InsertAgent, SelectAgent } from "../schema/core/types.js";
+import {
+  InsertAgent,
+  SelectAgent,
+  SelectAgentWithCompetitionStatus,
+} from "../schema/core/types.js";
 import { Database, Transaction } from "../types.js";
 import { CompetitionRewardsRepository } from "./competition-rewards.js";
 import {
@@ -251,15 +255,22 @@ export class AgentRepository {
     competitionId: string,
     params: AgentQueryParams,
     isComputedSort: boolean = false,
-  ): Promise<{ agents: SelectAgent[]; total: number }> {
+  ): Promise<{
+    agents: SelectAgentWithCompetitionStatus[];
+    total: number;
+  }> {
     try {
-      const { filter, sort, limit, offset } = params;
+      const { filter, sort, limit, offset, includeInactive } = params;
 
       // Build where conditions
       const whereConditions = [
         eq(competitionAgents.competitionId, competitionId),
-        eq(competitionAgents.status, "active"), // Only show active agents in competition
       ];
+
+      // Filter by status - default to active only, unless includeInactive is true
+      if (!includeInactive) {
+        whereConditions.push(eq(competitionAgents.status, "active"));
+      }
 
       if (filter) {
         whereConditions.push(ilike(agents.name, `%${filter}%`));
@@ -304,8 +315,13 @@ export class AgentRepository {
 
       const total = countResult[0]?.count ?? 0;
 
-      // Extract agent data from the joined result
-      const agentsData = agentsResult.map((row) => row.agents);
+      // Extract agent data from the joined result and include competition status
+      const agentsData = agentsResult.map((row) => ({
+        ...row.agents,
+        competitionStatus: row.competition_agents.status,
+        competitionDeactivationReason:
+          row.competition_agents.deactivationReason,
+      }));
 
       return {
         agents: agentsData,

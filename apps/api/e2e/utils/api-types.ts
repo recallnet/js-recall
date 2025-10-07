@@ -1046,17 +1046,6 @@ export interface AgentPerpsPositionsResponse extends ApiResponse {
   positions: PerpsPosition[];
 }
 
-export interface CompetitionPerpsSummaryResponse extends ApiResponse {
-  success: true;
-  competitionId: string;
-  summary: {
-    totalAgents: number;
-    totalPositions: number;
-    totalVolume: number;
-    averageEquity: number;
-  };
-  timestamp: string;
-}
 /*
  * Response type for getting user subscription status
  */
