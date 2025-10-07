@@ -57,8 +57,8 @@ export const useBoostAgent = (
     mutationFn: async (params: Parameters<typeof apiClient.boostAgent>[0]) => {
       return apiClient.boostAgent(params);
     },
-    onSuccess: (data, variables, context) => {
-      options?.onSuccess?.(data, variables, context);
+    onSuccess: (data, variables, onMutateResult, context) => {
+      options?.onSuccess?.(data, variables, onMutateResult, context);
       // Invalidate relevant queries
       queryClient.invalidateQueries({
         queryKey: tanstackClient.boost.agentBoostTotals.key({

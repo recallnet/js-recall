@@ -136,7 +136,7 @@ importers:
         version: 8.16.3
       pino:
         specifier: ^9.7.0
-        version: 9.13.1
+        version: 9.7.0
       pino-pretty:
         specifier: ^13.0.0
         version: 13.1.1
@@ -386,7 +386,7 @@ importers:
         version: 8.16.3
       pino:
         specifier: ^9.7.0
-        version: 9.13.1
+        version: 9.7.0
       pino-pretty:
         specifier: ^13.0.0
         version: 13.1.1
@@ -520,7 +520,7 @@ importers:
         version: 8.2.0
       pino:
         specifier: ^9.7.0
-        version: 9.13.1
+        version: 9.7.0
       zod:
         specifier: 3.25.76
         version: 3.25.76
@@ -758,7 +758,7 @@ importers:
         version: 8.16.3
       pino:
         specifier: ^9.7.0
-        version: 9.13.1
+        version: 9.7.0
       siwe:
         specifier: ^3.0.0
         version: 3.0.0(ethers@6.15.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))
@@ -10272,8 +10272,8 @@ packages:
     resolution: {integrity: sha512-dMACeu63HtRLmCG8VKdy4cShCPKaYDR4youZqoSWLxl5Gu99HUw8bw75thbPv9Nip+H+QYX8o3ZJbTdVZZ2TVg==}
     hasBin: true
 
-  pino@9.13.1:
-    resolution: {integrity: sha512-Szuj+ViDTjKPQYiKumGmEn3frdl+ZPSdosHyt9SnUevFosOkMY2b7ipxlEctNKPmMD/VibeBI+ZcZCJK+4DPuw==}
+  pino@9.7.0:
+    resolution: {integrity: sha512-vnMCM6xZTb1WDmLvtG2lE/2p+t9hDEIvTWJsu6FejkE62vB7gDhvzrpFR4Cw2to+9JNQxVnkAKVPA1KPB98vWg==}
     hasBin: true
 
   pirates@4.0.7:
@@ -11130,9 +11130,6 @@ packages:
   slice-ansi@7.1.2:
     resolution: {integrity: sha512-iOBWFgUX7caIZiuutICxVgX1SdxwAVFFKwt1EvMYYec/NWO5meOJ6K5uQxhrYBdQJne4KxiqZc+KptFOWFSI9w==}
     engines: {node: '>=18'}
-
-  slow-redact@0.3.1:
-    resolution: {integrity: sha512-NvFvl1GuLZNW4U046Tfi8b26zXo8aBzgCAS2f7yVJR/fArN93mOqSA99cB9uITm92ajSz01bsu1K7SCVVjIMpQ==}
 
   smart-buffer@4.2.0:
     resolution: {integrity: sha512-94hK0Hh8rPqQl2xXc3HsaBoOXKV20MToPkcXvwbISWLEs+64sBq5kFgn2kJDHb1Pry9yrP0dxrCI9RRci7RXKg==}
@@ -14672,7 +14669,7 @@ snapshots:
       js-tiktoken: 1.0.15
       ollama-ai-provider: 0.16.1(zod@3.25.76)
       openai: 4.82.0(encoding@0.1.13)(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@5.0.10))(zod@3.25.76)
-      pino: 9.13.1
+      pino: 9.7.0
       pino-pretty: 13.1.1
       sql.js: 1.13.0
       together-ai: 0.7.0(encoding@0.1.13)
@@ -24557,7 +24554,7 @@ snapshots:
 
   jest-worker@27.5.1:
     dependencies:
-      '@types/node': 24.7.0
+      '@types/node': 20.19.19
       merge-stream: 2.0.0
       supports-color: 8.1.1
 
@@ -26100,9 +26097,10 @@ snapshots:
       sonic-boom: 2.8.0
       thread-stream: 0.15.2
 
-  pino@9.13.1:
+  pino@9.7.0:
     dependencies:
       atomic-sleep: 1.0.0
+      fast-redact: 3.5.0
       on-exit-leak-free: 2.1.2
       pino-abstract-transport: 2.0.0
       pino-std-serializers: 7.0.0
@@ -26110,7 +26108,6 @@ snapshots:
       quick-format-unescaped: 4.0.4
       real-require: 0.2.0
       safe-stable-stringify: 2.5.0
-      slow-redact: 0.3.1
       sonic-boom: 4.2.0
       thread-stream: 3.1.0
 
@@ -27089,8 +27086,6 @@ snapshots:
     dependencies:
       ansi-styles: 6.2.3
       is-fullwidth-code-point: 5.1.0
-
-  slow-redact@0.3.1: {}
 
   smart-buffer@4.2.0: {}
 
