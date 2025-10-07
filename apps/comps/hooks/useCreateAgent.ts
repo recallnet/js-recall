@@ -25,7 +25,9 @@ export const useCreateAgent = () => {
         queryClient.invalidateQueries({
           queryKey: tanstackClient.user.getUserAgents.key(),
         });
-        queryClient.invalidateQueries({ queryKey: ["leaderboard"] });
+        queryClient.invalidateQueries({
+          queryKey: tanstackClient.leaderboard.getGlobal.key(),
+        });
       },
     }),
   );

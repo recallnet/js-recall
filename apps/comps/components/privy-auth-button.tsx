@@ -42,8 +42,12 @@ export const PrivyAuthButton: React.FunctionComponent = () => {
     queryClient.invalidateQueries({
       queryKey: tanstackClient.user.getCompetitions.key(),
     });
-    queryClient.invalidateQueries({ queryKey: ["competitions"] });
-    queryClient.invalidateQueries({ queryKey: ["competition"] });
+    queryClient.invalidateQueries({
+      queryKey: tanstackClient.competitions.listEnriched.key(),
+    });
+    queryClient.invalidateQueries({
+      queryKey: tanstackClient.competitions.getById.key(),
+    });
   }, [isAuthenticated, queryClient]);
 
   useEffect(() => {

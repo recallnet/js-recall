@@ -14,7 +14,6 @@ import {
 import Rewards from "@/components/rewards";
 import { AgentCard } from "@/components/user-agents/agent-card";
 import type { RouterOutputs } from "@/rpc/router";
-import { Competition } from "@/types";
 import { formatDate } from "@/utils/format";
 
 interface ChooseAgentModalProps {
@@ -23,7 +22,7 @@ interface ChooseAgentModalProps {
   onClose: () => void;
   onBack: () => void;
   onContinue: () => void;
-  competition?: Competition;
+  competition?: RouterOutputs["competitions"]["getById"];
 }
 
 export const ConfirmAgentEntryModal: React.FC<ChooseAgentModalProps> = ({
