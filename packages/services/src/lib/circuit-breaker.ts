@@ -136,9 +136,9 @@ export class CircuitBreaker {
     const now = Date.now();
     const windowStart = now - this.config.rollingWindowDuration;
 
-    // Clean old entries and count stats
+    // Count requests within the window (at or after windowStart)
     const recentRequests = this.requestHistory.filter(
-      (req) => req.timestamp > windowStart,
+      (req) => req.timestamp >= windowStart,
     );
 
     const totalInWindow = recentRequests.length;
@@ -269,12 +269,13 @@ export class CircuitBreaker {
     const now = Date.now();
     this.requestHistory.push({ timestamp: now, success });
 
-    // Clean old entries
+    // Clean old entries (remove those before windowStart)
+    // This is consistent with getWindowStats which counts entries >= windowStart
     if (this.config.rollingWindowDuration) {
       const windowStart = now - this.config.rollingWindowDuration;
       while (
         this.requestHistory.length > 0 &&
-        this.requestHistory[0]!.timestamp <= windowStart
+        this.requestHistory[0]!.timestamp < windowStart
       ) {
         this.requestHistory.shift();
       }
