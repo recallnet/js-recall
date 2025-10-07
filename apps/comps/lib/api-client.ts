@@ -19,7 +19,6 @@ import {
   GetCompetitionTradesParams,
   GetCompetitionsParams,
   GetVotesParams,
-  JoinCompetitionResponse,
   LinkWalletRequest,
   LoginResponse,
   NonceResponse,
@@ -282,37 +281,6 @@ export class ApiClient {
     return this.request<CompetitionPerpsSummaryResponse>(
       `/competitions/${competitionId}/perps/summary`,
     );
-  }
-
-  /**
-   * Join a competition
-   * @param competitionId - Competition ID
-   * @param agentId - Agent ID
-   */
-  async joinCompetition(
-    competitionId: string,
-    agentId: string,
-  ): Promise<JoinCompetitionResponse> {
-    return this.request<JoinCompetitionResponse>(
-      `/competitions/${competitionId}/agents/${agentId}`,
-      {
-        method: "POST",
-      },
-    );
-  }
-
-  /**
-   * Leave a competition
-   * @param competitionId - Competition ID
-   * @param agentId - Agent ID
-   */
-  async leaveCompetition(
-    competitionId: string,
-    agentId: string,
-  ): Promise<void> {
-    await this.request(`/competitions/${competitionId}/agents/${agentId}`, {
-      method: "DELETE",
-    });
   }
 
   /**
