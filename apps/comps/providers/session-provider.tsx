@@ -6,6 +6,7 @@ import {
   useLinkAccount,
   useLogin,
   usePrivy,
+  useWallets,
 } from "@privy-io/react-auth";
 import * as Sentry from "@sentry/nextjs";
 import {
@@ -84,6 +85,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   const { user, ready, authenticated, logout, isModalOpen, createWallet } =
     usePrivy();
+  const { ready: walletsReady } = useWallets();
 
   const [loginError, setLoginError] = useState<Error | null>(null);
   const [shouldLinkWallet, setShouldLinkWallet] = useState(false);
@@ -132,9 +134,25 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       refetchBackendUser();
     },
     onError: (error) => {
-      const message = `Login to backend failed: ${error}`;
-      console.error(message);
-      Sentry.captureException(new Error(message));
+      console.error("Login to backend failed:", {
+        error: error?.message || String(error),
+        privyAuthenticated: authenticated,
+        privyReady: ready,
+        privyWalletsReady: walletsReady,
+        browserOnline: navigator.onLine,
+      });
+
+      Sentry.captureException(
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          extra: {
+            privyAuthenticated: authenticated,
+            privyReady: ready,
+            privyWalletsReady: walletsReady,
+            browserOnline: navigator.onLine,
+          },
+        },
+      );
     },
   });
 
