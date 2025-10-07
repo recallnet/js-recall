@@ -3,6 +3,11 @@ import axios, { AxiosInstance } from "axios";
 import { Logger } from "pino";
 
 import {
+  CircuitBreaker,
+  CircuitOpenError,
+  createCircuitBreaker,
+} from "../../lib/circuit-breaker.js";
+import {
   IPerpsDataProvider,
   PerpsAccountSummary,
   PerpsPosition,
@@ -130,6 +135,7 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
   private readonly REQUEST_TIMEOUT = 30000; // 30 seconds
   private readonly SAMPLING_RATE = 0.01; // 1% of requests for both Sentry and raw data storage
   private logger: Logger;
+  private readonly circuitBreaker: CircuitBreaker;
 
   constructor(logger: Logger, apiUrl?: string) {
     this.logger = logger;
@@ -142,6 +148,29 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
       timeout: this.REQUEST_TIMEOUT,
       headers: {
         "Content-Type": "application/json",
+      },
+    });
+
+    // Initialize circuit breaker with financial API best practices
+    this.circuitBreaker = createCircuitBreaker("symphony-api", {
+      failureThreshold: 3, // Open after 3 consecutive failures
+      resetTimeout: 15000, // Try again after 15 seconds
+      successThreshold: 2, // Need 2 successful calls to close
+      requestTimeout: 5000, // 5 second timeout (slightly higher than axios timeout)
+      logger: this.logger,
+      onStateChange: (from, to) => {
+        this.logger.warn(
+          { from, to },
+          `[SymphonyProvider] Circuit breaker state changed`,
+        );
+
+        // Track in Sentry when circuit opens
+        if (to === "open") {
+          Sentry.captureMessage(
+            `Symphony API circuit breaker opened`,
+            "warning",
+          );
+        }
       },
     });
 
@@ -167,6 +196,17 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
    */
   getName(): string {
     return "Symphony";
+  }
+
+  /**
+   * Get circuit breaker health status
+   */
+  getHealthStatus() {
+    const stats = this.circuitBreaker.getStats();
+    return {
+      provider: "Symphony",
+      circuitBreaker: stats,
+    };
   }
 
   /**
@@ -573,9 +613,35 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
   }
 
   /**
-   * Make HTTP request with retries and error handling
+   * Make HTTP request with circuit breaker protection
    */
   private async makeRequest<T>(
+    endpoint: string,
+    params: Record<string, string>,
+  ): Promise<T> {
+    try {
+      // Wrap the entire retry logic in the circuit breaker
+      return await this.circuitBreaker.execute(async () => {
+        return await this.makeRequestWithRetry<T>(endpoint, params);
+      });
+    } catch (error) {
+      // Enhance circuit breaker errors with more context
+      if (error instanceof CircuitOpenError) {
+        this.logger.error(
+          `[SymphonyProvider] Circuit breaker is open - too many failures`,
+        );
+        throw new Error(
+          `Symphony API temporarily unavailable due to multiple failures. ${error.message}`,
+        );
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Make HTTP request with retry logic
+   */
+  private async makeRequestWithRetry<T>(
     endpoint: string,
     params: Record<string, string>,
   ): Promise<T> {

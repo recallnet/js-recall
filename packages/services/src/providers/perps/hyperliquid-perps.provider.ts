@@ -5,6 +5,11 @@ import { Decimal } from "decimal.js";
 import { Logger } from "pino";
 
 import {
+  CircuitBreaker,
+  CircuitOpenError,
+  createCircuitBreaker,
+} from "../../lib/circuit-breaker.js";
+import {
   IPerpsDataProvider,
   PerpsAccountSummary,
   PerpsPosition,
@@ -140,6 +145,7 @@ export class HyperliquidPerpsProvider implements IPerpsDataProvider {
   private readonly MAX_RETRIES = 3;
   private readonly RETRY_DELAY = 1000; // 1 second
   private readonly SAMPLING_RATE = 0.01; // 1% of requests for raw data storage
+  private readonly circuitBreaker: CircuitBreaker;
 
   constructor(logger: Logger, apiUrl?: string) {
     this.logger = logger;
@@ -153,6 +159,29 @@ export class HyperliquidPerpsProvider implements IPerpsDataProvider {
       },
     });
 
+    // Initialize circuit breaker with financial API best practices
+    this.circuitBreaker = createCircuitBreaker("hyperliquid-api", {
+      failureThreshold: 3, // Open after 3 consecutive failures
+      resetTimeout: 15000, // Try again after 15 seconds
+      successThreshold: 2, // Need 2 successful calls to close
+      requestTimeout: 5000, // 5 second timeout (slightly higher than axios timeout)
+      logger: this.logger,
+      onStateChange: (from, to) => {
+        this.logger.warn(
+          { from, to },
+          `[HyperliquidProvider] Circuit breaker state changed`,
+        );
+
+        // Track in Sentry when circuit opens
+        if (to === "open") {
+          Sentry.captureMessage(
+            `Hyperliquid API circuit breaker opened`,
+            "warning",
+          );
+        }
+      },
+    });
+
     this.logger.debug(
       `[HyperliquidProvider] Initialized with base URL: ${this.baseUrl}`,
     );
@@ -163,6 +192,17 @@ export class HyperliquidPerpsProvider implements IPerpsDataProvider {
    */
   getName(): string {
     return "Hyperliquid";
+  }
+
+  /**
+   * Get circuit breaker health status
+   */
+  getHealthStatus() {
+    const stats = this.circuitBreaker.getStats();
+    return {
+      provider: "Hyperliquid",
+      circuitBreaker: stats,
+    };
   }
 
   /**
@@ -708,9 +748,34 @@ export class HyperliquidPerpsProvider implements IPerpsDataProvider {
   }
 
   /**
-   * Make HTTP request to Hyperliquid API
+   * Make HTTP request to Hyperliquid API with circuit breaker protection
    */
   private async makeRequest<T>(body: HyperliquidApiRequest): Promise<T> {
+    try {
+      // Wrap the entire retry logic in the circuit breaker
+      return await this.circuitBreaker.execute(async () => {
+        return await this.makeRequestWithRetry<T>(body);
+      });
+    } catch (error) {
+      // Enhance circuit breaker errors with more context
+      if (error instanceof CircuitOpenError) {
+        this.logger.error(
+          `[HyperliquidProvider] Circuit breaker is open - too many failures`,
+        );
+        throw new Error(
+          `Hyperliquid API temporarily unavailable due to multiple failures. ${error.message}`,
+        );
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Make HTTP request with retry logic
+   */
+  private async makeRequestWithRetry<T>(
+    body: HyperliquidApiRequest,
+  ): Promise<T> {
     let lastError: Error | null = null;
 
     for (let attempt = 1; attempt <= this.MAX_RETRIES; attempt++) {
