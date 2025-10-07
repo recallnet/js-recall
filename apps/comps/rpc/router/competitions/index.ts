@@ -4,6 +4,7 @@ import {
   GetPerpsPositionsType,
   getPerpsPositions,
 } from "./get-perps-positions";
+import { GetRulesType, getRules } from "./get-rules";
 import { GetTimelineType, getTimeline } from "./get-timeline";
 import { GetTradesType, getTrades } from "./get-trades";
 import { JoinType, join } from "./join";
@@ -19,6 +20,7 @@ export const router: {
   getPerpsPositions: GetPerpsPositionsType;
   join: JoinType;
   leave: LeaveType;
+  getRules: GetRulesType;
 } = {
   listEnriched,
   getById,
@@ -28,4 +30,5 @@ export const router: {
   getPerpsPositions,
   join,
   leave,
+  getRules,
 };

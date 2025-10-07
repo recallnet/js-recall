@@ -9,7 +9,6 @@ import {
   CompetitionPerpsPositionsResponse,
   CompetitionPerpsSummaryResponse,
   CompetitionResponse,
-  CompetitionRulesResponse,
   CompetitionTradesResponse,
   CompetitionsResponse,
   CreateVoteRequest,
@@ -282,20 +281,6 @@ export class ApiClient {
       `/competitions/${competitionId}/perps/summary`,
     );
   }
-
-  /**
-   * Get competition rules
-   * @param competitionId - Competition ID
-   * @returns Competition rules for the specified competition
-   */
-  async getCompetitionRules(
-    competitionId: string,
-  ): Promise<CompetitionRulesResponse> {
-    return this.request<CompetitionRulesResponse>(
-      `/competitions/${competitionId}/rules`,
-    );
-  }
-
   // Agent endpoints
 
   /**
