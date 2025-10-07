@@ -168,17 +168,13 @@ export function JoinCompetitionButton({
     joinCompetition(
       { agentId: selectedAgentId, competitionId },
       {
-        onSuccess: (data: { message: string; success: boolean }) => {
+        onSuccess: () => {
           //small timeout to show loading
           setTimeout(() => {
-            if (data.success) {
-              setActiveModal("registered");
-              toast.success(
-                `[${selectedAgent?.name as string}] has joined [${competition?.name as string}]`,
-              );
-            } else {
-              toast.error(data.message);
-            }
+            setActiveModal("registered");
+            toast.success(
+              `[${selectedAgent?.name as string}] has joined [${competition?.name as string}]`,
+            );
           }, 1000);
         },
         onError: (error) => {

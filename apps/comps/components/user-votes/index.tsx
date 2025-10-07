@@ -44,7 +44,7 @@ export default function UserVotesSection() {
       <CollapsibleTrigger>
         <div className="flex w-full items-center justify-between">
           <div className="ml-2 flex items-center gap-2">
-            <span className="text-2xl font-bold">Your Votes</span>
+            <span className="text-xl font-bold">Your Votes</span>
             <span className="text-secondary-foreground">({votes.length})</span>
           </div>
         </div>

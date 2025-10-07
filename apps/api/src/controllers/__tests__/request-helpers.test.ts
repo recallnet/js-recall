@@ -19,7 +19,7 @@ import {
 } from "../request-helpers.js";
 import {
   buildPaginationResponse,
-  ensureAgentCompetitionFilters,
+  ensureAgentCompetitionParams,
   ensureAgentId,
   ensureCompetitionUpdate,
   ensurePaging,
@@ -100,10 +100,10 @@ describe("Request Helpers", () => {
     });
   });
 
-  describe("ensureAgentCompetitionFilters", () => {
+  describe("ensureAgentCompetitionParams", () => {
     it("should return default values for empty query", () => {
       const req = { query: {} } as Request;
-      const result = ensureAgentCompetitionFilters(req);
+      const result = ensureAgentCompetitionParams(req);
       expect(result).toMatchObject({
         sort: "",
         limit: 10,
@@ -115,7 +115,7 @@ describe("Request Helpers", () => {
       const req = {
         query: { status: "active", sort: "name", limit: 20, offset: 10 },
       } as unknown as Request;
-      const result = ensureAgentCompetitionFilters(req);
+      const result = ensureAgentCompetitionParams(req);
       expect(result).toMatchObject({
         status: "active",
         sort: "name",
@@ -128,8 +128,8 @@ describe("Request Helpers", () => {
       const req = {
         query: { status: "invalid_status", sort: "", limit: 10, offset: 0 },
       } as unknown as Request;
-      expect(() => ensureAgentCompetitionFilters(req)).toThrow(
-        "Invalid sort filter page params",
+      expect(() => ensureAgentCompetitionParams(req)).toThrow(
+        "Invalid filter and paging params",
       );
     });
   });

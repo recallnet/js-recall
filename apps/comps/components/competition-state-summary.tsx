@@ -4,18 +4,36 @@ import React from "react";
 
 import { cn } from "@recallnet/ui2/lib/utils";
 
+import { RouterOutputs } from "@/rpc/router";
 import { CompetitionWithUserAgents } from "@/types";
 
 import CountdownClock from "./clock";
 
+type CompetitionData =
+  | CompetitionWithUserAgents
+  | RouterOutputs["competitions"]["getById"];
+
 interface CompetitionStateSummaryProps {
-  competition: CompetitionWithUserAgents;
+  competition: CompetitionData;
   className?: string;
 }
 
+// Type guard to check if competition has agents array
+const hasAgents = (
+  comp: CompetitionData,
+): comp is CompetitionWithUserAgents => {
+  return "agents" in comp;
+};
+
 /**
- * Displays the current state of a competition including registration and voting status
- * with appropriate colors and timing information.
+ * Displays the current state of a competition including registration and voting status.
+ * Shows registration window status (open/closed/full) and voting/boosting window status
+ * with appropriate visual indicators and countdown timers.
+ *
+ * Handles multiple states:
+ * - Registration not started, open, closing soon, closed, or full
+ * - Voting not started, open, closing soon, or closed
+ * - Special handling for competitions with no dates set
  */
 export const CompetitionStateSummary: React.FC<
   CompetitionStateSummaryProps
@@ -34,7 +52,8 @@ export const CompetitionStateSummary: React.FC<
     ? new Date(competition.votingEndDate)
     : null;
   const hasVoted = competition.userVotingInfo?.info.hasVoted || false;
-  const isRegistered = competition.agents && competition.agents.length > 0;
+
+  const isRegistered = hasAgents(competition) && competition.agents.length > 0;
 
   const getRegistrationState = () => {
     // Check if registration is full
@@ -143,61 +162,39 @@ export const CompetitionStateSummary: React.FC<
     };
   };
 
-  const getRegistrationLimit = () => {
-    if (
-      competition.maxParticipants === null ||
-      competition.registeredParticipants >= competition.maxParticipants
-    ) {
-      return null;
-    }
-    return (
-      <span className="text-gray-400">
-        Limit: {competition.maxParticipants} participants
-      </span>
-    );
-  };
-
   const registrationState = getRegistrationState();
-  const registrationLimit = getRegistrationLimit();
   const votingState = getVotingState();
 
   return (
-    <div className={cn("space-y-2", className)}>
-      {/* Registration State */}
-      <div className="flex items-center gap-2">
-        <Circle
-          className={cn("h-2 w-2 fill-current", registrationState.color)}
-        />
-        <p className="text-sm">
-          <span>{registrationState.text}</span>{" "}
-          {registrationState.date &&
-            (registrationState.showCountdown ? (
-              <CountdownClock
-                targetDate={registrationState.date}
-                className="text-sm font-bold text-white"
-              />
-            ) : (
-              <span className="font-bold text-white">
-                {formatDistanceToNow(registrationState.date)}
-              </span>
-            ))}
-        </p>
-      </div>
-
-      {/* Registration Limit */}
-      {registrationLimit && (
-        <div className="flex items-center gap-2">
-          <Circle className={cn("h-2 w-2 fill-current", "text-gray-500")} />
-          <p className="text-sm">{registrationLimit}</p>
+    <div className={cn("flex flex-col gap-2", className)}>
+      {/* Main status row - Stacks on mobile, inline on desktop */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        {/* Registration State */}
+        <div className="flex flex-1 items-center gap-3">
+          <Circle
+            className={cn("h-2 w-2 fill-current", registrationState.color)}
+          />
+          <div className="flex items-center gap-1">
+            <span className="text-sm">{registrationState.text}</span>
+            {registrationState.date &&
+              (registrationState.showCountdown ? (
+                <CountdownClock
+                  targetDate={registrationState.date}
+                  className="text-sm font-bold text-white"
+                />
+              ) : (
+                <span className="text-sm font-bold text-white">
+                  {formatDistanceToNow(registrationState.date)}
+                </span>
+              ))}
+          </div>
         </div>
-      )}
 
-      {/* Voting State */}
-      {
-        <div className="flex items-center gap-2">
+        {/* Voting State */}
+        <div className="flex flex-1 items-center gap-3">
           <Circle className={cn("h-2 w-2 fill-current", votingState.color)} />
-          <p className="text-sm">
-            <span>{votingState.text}</span>{" "}
+          <div className="flex items-center gap-1">
+            <span className="text-sm">{votingState.text}</span>
             {votingState.date &&
               (votingState.showCountdown ? (
                 <CountdownClock
@@ -205,13 +202,13 @@ export const CompetitionStateSummary: React.FC<
                   className="text-sm font-bold text-white"
                 />
               ) : (
-                <span className="font-bold text-white">
+                <span className="text-sm font-bold text-white">
                   {formatDistanceToNow(votingState.date)}
                 </span>
               ))}
-          </p>
+          </div>
         </div>
-      }
+      </div>
     </div>
   );
 };

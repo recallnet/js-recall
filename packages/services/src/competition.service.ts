@@ -2666,151 +2666,162 @@ export class CompetitionService {
   }
 
   /**
-   * Get competition rules for the active competition as a participant
-   * @param params Parameters for rules request
-   * @returns Formatted competition rules
+   * Builds initial balance descriptions from configuration
+   * @returns Array of formatted balance descriptions by chain
    */
-  async getCompetitionRules(params: {
-    agentId?: string;
-    isAdmin?: boolean;
-  }): Promise<CompetitionRulesData> {
+  private buildInitialBalanceDescriptions(): string[] {
+    const initialBalanceDescriptions = [];
+
+    // Chain-specific balances
+    for (const chain of Object.keys(this.config.specificChainBalances)) {
+      const chainBalances =
+        this.config.specificChainBalances[
+          chain as keyof typeof this.config.specificChainBalances
+        ];
+      const tokenItems = [];
+
+      for (const token of Object.keys(chainBalances || {})) {
+        const amount = chainBalances?.[token];
+        if (amount && amount > 0) {
+          tokenItems.push(`${amount} ${token.toUpperCase()}`);
+        }
+      }
+
+      if (tokenItems.length > 0) {
+        let chainName = chain;
+        // Format chain name for better readability
+        if (chain === "eth") chainName = "Ethereum";
+        else if (chain === "svm") chainName = "Solana";
+        else chainName = chain.charAt(0).toUpperCase() + chain.slice(1); // Capitalize
+
+        initialBalanceDescriptions.push(
+          `${chainName}: ${tokenItems.join(", ")}`,
+        );
+      }
+    }
+
+    return initialBalanceDescriptions;
+  }
+
+  /**
+   * Builds core trading rules array for a competition
+   * @param competition The competition to build rules for
+   * @param tradingConstraints Trading constraints for the competition
+   * @param initialBalanceDescriptions Formatted balance descriptions
+   * @returns Array of trading rule strings
+   */
+  private buildTradingRules(
+    competition: SelectCompetition & { crossChainTradingType: string },
+    tradingConstraints: {
+      minimumPairAgeHours: number;
+      minimum24hVolumeUsd: number;
+      minimumLiquidityUsd: number;
+      minimumFdvUsd: number;
+      minTradesPerDay: number | null;
+    },
+    initialBalanceDescriptions: string[],
+  ): string[] {
+    const tradingRules = [
+      "Trading is only allowed for tokens with valid price data",
+      `All agents start with identical token balances: ${initialBalanceDescriptions.join("; ")}`,
+      "Minimum trade amount: 0.000001 tokens",
+      `Maximum single trade: ${this.config.maxTradePercentage}% of agent's total portfolio value`,
+      "No shorting allowed (trades limited to available balance)",
+      "Slippage is applied to all trades based on trade size",
+      `Cross-chain trading type: ${competition.crossChainTradingType}`,
+      "Transaction fees are not simulated",
+      `Token eligibility requires minimum ${tradingConstraints.minimumPairAgeHours} hours of trading history`,
+      `Token must have minimum 24h volume of $${tradingConstraints.minimum24hVolumeUsd.toLocaleString()} USD`,
+      `Token must have minimum liquidity of $${tradingConstraints.minimumLiquidityUsd.toLocaleString()} USD`,
+      `Token must have minimum FDV of $${tradingConstraints.minimumFdvUsd.toLocaleString()} USD`,
+    ];
+
+    // Add minimum trades per day rule if set
+    if (tradingConstraints.minTradesPerDay !== null) {
+      tradingRules.push(
+        `Minimum trades per day requirement: ${tradingConstraints.minTradesPerDay} trades`,
+      );
+    }
+
+    return tradingRules;
+  }
+
+  /**
+   * Builds rate limits array
+   * @returns Array of rate limit strings
+   */
+  private buildRateLimits(): string[] {
+    return [
+      `${this.config.rateLimiting.maxRequests} requests per ${this.config.rateLimiting.windowMs / 1000} seconds per endpoint`,
+      "100 requests per minute for trade operations",
+      "300 requests per minute for price queries",
+      "30 requests per minute for balance/portfolio checks",
+      "3,000 requests per minute across all endpoints",
+      "10,000 requests per hour per agent",
+    ];
+  }
+
+  /**
+   * Assembles complete competition rules data
+   * @param competition The competition to assemble rules for
+   * @param tradingConstraints Trading constraints for the competition
+   * @returns Complete competition rules data
+   */
+  private async assembleCompetitionRules(
+    competition: SelectCompetition & { crossChainTradingType: string },
+  ): Promise<CompetitionRulesData> {
+    const tradingConstraints =
+      await this.tradingConstraintsService.getConstraintsWithDefaults(
+        competition.id,
+      );
+    const initialBalanceDescriptions = this.buildInitialBalanceDescriptions();
+    const tradingRules = this.buildTradingRules(
+      competition,
+      tradingConstraints,
+      initialBalanceDescriptions,
+    );
+    const rateLimits = this.buildRateLimits();
+
+    const availableChains = {
+      svm: true,
+      evm: this.config.evmChains,
+    };
+
+    const slippageFormula =
+      "baseSlippage = (tradeAmountUSD / 10000) * 0.05%, actualSlippage = baseSlippage * (0.9 + (Math.random() * 0.2))";
+
+    const rules = {
+      tradingRules,
+      rateLimits,
+      availableChains,
+      slippageFormula,
+      tradingConstraints,
+    };
+
+    return {
+      success: true,
+      competition,
+      rules,
+    };
+  }
+
+  /**
+   * Get rules for a specific competition by competition ID.
+   * @param competitionId The competition ID
+   * @returns Competition rules
+   */
+  async getCompetitionRules(
+    competitionId: string,
+  ): Promise<CompetitionRulesData> {
     try {
-      // Get active competition first, as rules are always for the active one
-      const activeCompetition = await this.getActiveCompetition();
-
-      if (!activeCompetition) {
-        throw new ApiError(
-          404,
-          "No active competition found to get rules for.",
-        );
+      // Get specific competition
+      const competition = await this.getCompetition(competitionId);
+      if (!competition) {
+        throw new ApiError(404, "Competition not found");
       }
 
-      // Authentication and Authorization
-      if (params.isAdmin) {
-        // Admin access: Log and proceed
-        this.logger.debug(
-          `Admin accessing rules for competition ${activeCompetition.id}.`,
-        );
-      } else {
-        // Not an admin, an agentId is required
-        if (!params.agentId) {
-          throw new ApiError(
-            401,
-            "Authentication required to view competition rules: Agent ID missing.",
-          );
-        }
-        // AgentId is present, verify participation in the active competition
-        if (activeCompetition.status !== "active") {
-          throw new ApiError(
-            400,
-            "No active competition found to get rules for.",
-          );
-        }
-        const isAgentActive = await this.isAgentActiveInCompetition(
-          activeCompetition.id,
-          params.agentId,
-        );
-        if (!isAgentActive) {
-          throw new ApiError(
-            403,
-            "Forbidden: Your agent is not actively participating in this competition.",
-          );
-        }
-      }
-
-      // Build initial balances description based on config
-      const initialBalanceDescriptions = [];
-
-      // Chain-specific balances
-      for (const chain of Object.keys(this.config.specificChainBalances)) {
-        const chainBalances =
-          this.config.specificChainBalances[
-            chain as keyof typeof this.config.specificChainBalances
-          ];
-        const tokenItems = [];
-
-        for (const token of Object.keys(chainBalances || {})) {
-          const amount = chainBalances?.[token];
-          if (amount && amount > 0) {
-            tokenItems.push(`${amount} ${token.toUpperCase()}`);
-          }
-        }
-
-        if (tokenItems.length > 0) {
-          let chainName = chain;
-          // Format chain name for better readability
-          if (chain === "eth") chainName = "Ethereum";
-          else if (chain === "svm") chainName = "Solana";
-          else chainName = chain.charAt(0).toUpperCase() + chain.slice(1); // Capitalize
-
-          initialBalanceDescriptions.push(
-            `${chainName}: ${tokenItems.join(", ")}`,
-          );
-        }
-      }
-
-      // Get trading constraints for the active competition
-      const tradingConstraints =
-        await this.tradingConstraintsService.getConstraintsWithDefaults(
-          activeCompetition.id,
-        );
-
-      // Define base rules
-      const tradingRules = [
-        "Trading is only allowed for tokens with valid price data",
-        `All agents start with identical token balances: ${initialBalanceDescriptions.join("; ")}`,
-        "Minimum trade amount: 0.000001 tokens",
-        `Maximum single trade: ${this.config.maxTradePercentage}% of agent's total portfolio value`,
-        "No shorting allowed (trades limited to available balance)",
-        "Slippage is applied to all trades based on trade size",
-        `Cross-chain trading type: ${activeCompetition.crossChainTradingType}`,
-        "Transaction fees are not simulated",
-        `Token eligibility requires minimum ${tradingConstraints.minimumPairAgeHours} hours of trading history`,
-        `Token must have minimum 24h volume of $${tradingConstraints.minimum24hVolumeUsd.toLocaleString()} USD`,
-        `Token must have minimum liquidity of $${tradingConstraints.minimumLiquidityUsd.toLocaleString()} USD`,
-        `Token must have minimum FDV of $${tradingConstraints.minimumFdvUsd.toLocaleString()} USD`,
-      ];
-
-      // Add minimum trades per day rule if set
-      if (tradingConstraints.minTradesPerDay !== null) {
-        tradingRules.push(
-          `Minimum trades per day requirement: ${tradingConstraints.minTradesPerDay} trades`,
-        );
-      }
-
-      const rateLimits = [
-        `${this.config.rateLimiting.maxRequests} requests per ${this.config.rateLimiting.windowMs / 1000} seconds per endpoint`,
-        "100 requests per minute for trade operations",
-        "300 requests per minute for price queries",
-        "30 requests per minute for balance/portfolio checks",
-        "3,000 requests per minute across all endpoints",
-        "10,000 requests per hour per agent",
-      ];
-
-      const availableChains = {
-        svm: true,
-        evm: this.config.evmChains,
-      };
-
-      const slippageFormula =
-        "baseSlippage = (tradeAmountUSD / 10000) * 0.05%, actualSlippage = baseSlippage * (0.9 + (Math.random() * 0.2))";
-
-      // Assemble all rules
-      const allRules = {
-        tradingRules,
-        rateLimits,
-        availableChains,
-        slippageFormula,
-        tradingConstraints,
-      };
-
-      const result = {
-        success: true,
-        competition: activeCompetition,
-        rules: allRules,
-      };
-
-      return result;
+      // Use helper method to assemble complete rules
+      return await this.assembleCompetitionRules(competition);
     } catch (error) {
       this.logger.error(
         `[CompetitionService] Error getting competition rules:`,
@@ -3183,123 +3194,6 @@ export class CompetitionService {
     } catch (error) {
       this.logger.error(
         `[CompetitionService] Error getting competition timeline with auth:`,
-        error,
-      );
-      throw error;
-    }
-  }
-
-  /**
-   * Get rules for a specific competition by competition ID.
-   * @param competitionId The competition ID
-   * @returns Competition rules
-   */
-  async getRulesForSpecificCompetition(
-    competitionId: string,
-  ): Promise<CompetitionRulesData> {
-    try {
-      // Get competition
-      const competition = await this.getCompetition(competitionId);
-      if (!competition) {
-        throw new ApiError(404, "Competition not found");
-      }
-
-      // Get trading constraints
-      const tradingConstraints =
-        await this.tradingConstraintsService.getConstraintsWithDefaults(
-          competition.id,
-        );
-
-      // Build initial balances description based on config (original logic)
-      const initialBalanceDescriptions = [];
-
-      // Chain-specific balances
-      for (const chain of Object.keys(this.config.specificChainBalances)) {
-        const chainBalances =
-          this.config.specificChainBalances[
-            chain as keyof typeof this.config.specificChainBalances
-          ];
-        const tokenItems = [];
-
-        for (const token of Object.keys(chainBalances || {})) {
-          const amount = chainBalances?.[token];
-          if (amount && amount > 0) {
-            tokenItems.push(`${amount} ${token.toUpperCase()}`);
-          }
-        }
-
-        if (tokenItems.length > 0) {
-          let chainName = chain;
-          // Format chain name for better readability
-          if (chain === "eth") chainName = "Ethereum";
-          else if (chain === "svm") chainName = "Solana";
-          else chainName = chain.charAt(0).toUpperCase() + chain.slice(1); // Capitalize
-
-          initialBalanceDescriptions.push(
-            `${chainName}: ${tokenItems.join(", ")}`,
-          );
-        }
-      }
-
-      // Define base rules (same logic as getRules but for specific competition)
-      const tradingRules = [
-        "Trading is only allowed for tokens with valid price data",
-        `All agents start with identical token balances: ${initialBalanceDescriptions.join("; ")}`,
-        "Minimum trade amount: 0.000001 tokens",
-        `Maximum single trade: ${this.config.maxTradePercentage}% of agent's total portfolio value`,
-        "No shorting allowed (trades limited to available balance)",
-        "Slippage is applied to all trades based on trade size",
-        `Cross-chain trading type: ${competition.crossChainTradingType}`,
-        "Transaction fees are not simulated",
-        `Token eligibility requires minimum ${tradingConstraints.minimumPairAgeHours} hours of trading history`,
-        `Token must have minimum 24h volume of $${tradingConstraints.minimum24hVolumeUsd.toLocaleString()} USD`,
-        `Token must have minimum liquidity of $${tradingConstraints.minimumLiquidityUsd.toLocaleString()} USD`,
-        `Token must have minimum FDV of $${tradingConstraints.minimumFdvUsd.toLocaleString()} USD`,
-      ];
-
-      // Add minimum trades per day rule if set
-      if (tradingConstraints.minTradesPerDay !== null) {
-        tradingRules.push(
-          `Minimum trades per day requirement: ${tradingConstraints.minTradesPerDay} trades`,
-        );
-      }
-
-      const rateLimits = [
-        `${this.config.rateLimiting.maxRequests} requests per ${this.config.rateLimiting.windowMs / 1000} seconds per endpoint`,
-        "100 requests per minute for trade operations",
-        "300 requests per minute for price queries",
-        "30 requests per minute for balance/portfolio checks",
-        "3,000 requests per minute across all endpoints",
-        "10,000 requests per hour per agent",
-      ];
-
-      const availableChains = {
-        svm: true,
-        evm: this.config.evmChains,
-      };
-
-      const slippageFormula =
-        "baseSlippage = (tradeAmountUSD / 10000) * 0.05%, actualSlippage = baseSlippage * (0.9 + (Math.random() * 0.2))";
-
-      // Assemble all rules (original format)
-      const rules = {
-        tradingRules,
-        rateLimits,
-        availableChains,
-        slippageFormula,
-        tradingConstraints,
-      };
-
-      const result = {
-        success: true,
-        competition,
-        rules,
-      };
-
-      return result;
-    } catch (error) {
-      this.logger.error(
-        `[CompetitionService] Error getting competition rules with auth:`,
         error,
       );
       throw error;

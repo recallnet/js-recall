@@ -14,11 +14,11 @@ import { cn } from "@recallnet/ui2/lib/utils";
 
 import { useCompetitionRules } from "@/hooks";
 import { RouterOutputs } from "@/rpc/router";
+import { CompetitionStatus } from "@/types";
 import { getCompetitionSkills } from "@/utils/competition-utils";
 import { formatDate } from "@/utils/format";
 
-import { CompetitionStatusBadge } from "./competition-status-badge";
-import { Rewards } from "./rewards";
+import { CompetitionStateSummary } from "./competition-state-summary";
 
 export interface CompetitionInfoProps {
   competition: RouterOutputs["competitions"]["getById"];
@@ -89,78 +89,132 @@ export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
 
       <TabsContent value="info" className="border">
         <div>
+          {/* Registration and Voting Status Bar - At the very top */}
+          {competition.status !== CompetitionStatus.Ended && (
+            <div className="border-b bg-[#0C0D12] px-4 py-2">
+              <CompetitionStateSummary competition={competition} />
+            </div>
+          )}
+
+          {/* Skills and Dates Row */}
           <div className="grid grid-cols-2 border-b">
             <div className="flex flex-col items-start gap-2 border-r p-4 sm:p-[25px]">
-              <CellTitle>Reward</CellTitle>
-              {competition.rewards ? (
-                <Rewards rewards={competition.rewards} />
-              ) : (
-                <p className="text-xl font-semibold">TBA</p>
-              )}
+              <CellTitle>Skills</CellTitle>
+              <div className="flex flex-wrap gap-2">
+                {getCompetitionSkills(competition.type).map((skill) => (
+                  <span
+                    key={skill}
+                    className="rounded-sm border border-gray-600 px-2 py-1 text-sm"
+                  >
+                    {skill}
+                  </span>
+                ))}
+              </div>
             </div>
             <div className="flex flex-col items-start gap-2 p-4 sm:p-[25px]">
-              <div className="flex w-full items-center justify-between">
-                <CellTitle>Status</CellTitle>
-                <CompetitionStatusBadge status={competition.status} />
-              </div>
-              <span>
+              <CellTitle>Dates</CellTitle>
+              <p className="font-bold">
                 {startDate} - {endDate}
-              </span>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 border-b p-4 sm:p-[25px]">
-            <CellTitle>Skills</CellTitle>
-            <div className="flex flex-wrap gap-2">
-              {getCompetitionSkills(competition.type).map((skill) => (
-                <span
-                  key={skill}
-                  className="rounded border p-2 text-xs capitalize"
-                >
-                  {skill}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          <div className="border-b">
-            <div className="p-4 sm:p-[25px]">
-              <CellTitle>About</CellTitle>
-              <div
-                className={`relative ${expanded ? "max-h-40 overflow-y-auto" : "max-h-16 overflow-hidden"}`}
-              >
-                <p className="whitespace-pre-line pr-2">
-                  {expanded ? competition.description : shortDesc}
-                </p>
-                {!expanded && isLong && (
-                  <div className="pointer-events-none absolute bottom-0 left-0 h-8 w-full bg-gradient-to-t from-black to-transparent" />
-                )}
-              </div>
-              <p className="mt-2 text-sm text-gray-400">
-                {competition.externalUrl &&
-                  // Note: `example.com` was used in legacy competitions and should be ignored
-                  !competition.externalUrl.includes("example.com") && (
-                    <Link
-                      href={competition.externalUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center whitespace-nowrap"
-                    >
-                      Read more about the official competition rules{" "}
-                      <ArrowUpRight size={16} className="ml-1" />
-                    </Link>
-                  )}
               </p>
-              {isLong && (
-                <button
-                  className="hover: mt-2 self-start transition-colors"
-                  onClick={() => setExpanded((v) => !v)}
-                  aria-expanded={expanded}
-                >
-                  {expanded ? "SHOW LESS" : "SHOW MORE"}
-                </button>
+            </div>
+          </div>
+
+          {/* Rewards Row */}
+          <div className="flex items-center gap-6 border-b px-6 py-6">
+            <CellTitle className="uppercase tracking-wider">Rewards</CellTitle>
+            {competition.rewards && competition.rewards.length > 0 ? (
+              <div className="flex flex-1 items-center gap-6">
+                {competition.rewards
+                  .sort((a, b) => a.rank - b.rank)
+                  .slice(0, 3)
+                  .map((r) => (
+                    <div key={r.rank} className="flex items-center gap-2">
+                      <span
+                        className={
+                          r.rank === 1
+                            ? "text-[#FBD362]"
+                            : r.rank === 2
+                              ? "text-[#93A5BA]"
+                              : "text-[#C76E29]"
+                        }
+                      >
+                        {r.rank === 1 ? "1st" : r.rank === 2 ? "2nd" : "3rd"}
+                      </span>
+                      <span className="font-bold text-gray-100">
+                        ${r.reward.toLocaleString()}
+                      </span>
+                    </div>
+                  ))}
+              </div>
+            ) : (
+              <p className="text-xl font-semibold">TBA</p>
+            )}
+          </div>
+
+          {/* About Section */}
+          <div className="border-b p-4 sm:p-[25px]">
+            <CellTitle className="mb-3 uppercase tracking-wider">
+              About
+            </CellTitle>
+            <div
+              className={`relative ${expanded ? "max-h-40 overflow-y-auto" : "max-h-16 overflow-hidden"}`}
+            >
+              <p className="whitespace-pre-line pr-2">
+                {expanded ? competition.description : shortDesc}
+              </p>
+              {!expanded && isLong && (
+                <div className="pointer-events-none absolute bottom-0 left-0 h-8 w-full bg-gradient-to-t from-black to-transparent" />
               )}
             </div>
+
+            {/* Registration Limit */}
+            {competition.maxParticipants &&
+              competition.registeredParticipants <
+                competition.maxParticipants && (
+                <p className="mt-3 text-sm text-gray-400">
+                  Registration limit: {competition.maxParticipants} participants
+                </p>
+              )}
+
+            <p className="mt-2 text-sm text-gray-400">
+              {competition.externalUrl &&
+                (() => {
+                  // Note: `example.com` was used in legacy competitions and should be ignored
+                  try {
+                    const host = new URL(competition.externalUrl).host;
+                    // Skip if host is exactly 'example.com' or a subdomain of example.com
+                    if (
+                      host === "example.com" ||
+                      host.endsWith(".example.com")
+                    ) {
+                      return null;
+                    }
+                    return (
+                      <Link
+                        href={competition.externalUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center whitespace-nowrap"
+                      >
+                        Read more about the official competition rules{" "}
+                        <ArrowUpRight size={16} className="ml-1" />
+                      </Link>
+                    );
+                  } catch {
+                    // Invalid URL, don't render the link
+                    return null;
+                  }
+                })()}
+            </p>
+            {isLong && (
+              <button
+                className="hover: mt-2 self-start transition-colors"
+                onClick={() => setExpanded((v) => !v)}
+                aria-expanded={expanded}
+              >
+                {expanded ? "SHOW LESS" : "SHOW MORE"}
+              </button>
+            )}
           </div>
 
           <div className="grid grid-cols-3">

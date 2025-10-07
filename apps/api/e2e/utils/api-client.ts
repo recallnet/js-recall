@@ -1168,12 +1168,22 @@ export class ApiClient {
   }
 
   /**
-   * Get competition rules
+   * Get competition rules for active competition (convenience method)
    */
   async getRules(): Promise<CompetitionRulesResponse | ErrorResponse> {
     try {
-      const response = await this.axiosInstance.get("/api/competitions/rules");
-      return response.data as CompetitionRulesResponse;
+      // Get active competition first
+      const statusResponse = await this.getCompetitionStatus();
+      if (!statusResponse.success || !statusResponse.competition?.id) {
+        return {
+          success: false,
+          error: "No active competition found",
+          status: 404,
+        };
+      }
+
+      // Get rules for the active competition
+      return this.getCompetitionRules(statusResponse.competition.id);
     } catch (error) {
       return this.handleApiError(error, "get competition rules");
     }

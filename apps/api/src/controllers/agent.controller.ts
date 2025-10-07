@@ -333,12 +333,11 @@ export function makeAgentController(services: ServiceRegistry) {
         res.status(200).json({
           success: true,
           competitions: results.competitions,
-          pagination: {
-            limit: paging.limit,
-            offset: paging.offset,
-            total: results.total,
-            hasMore: paging.limit + paging.offset < results.total,
-          },
+          pagination: buildPaginationResponse(
+            results.total,
+            paging.limit,
+            paging.offset,
+          ),
         });
       } catch (error) {
         next(error);
