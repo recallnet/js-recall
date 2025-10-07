@@ -42,15 +42,17 @@ export const AgentImage = ({
   return (
     <>
       <div
-        className="bg-card/70 group absolute z-10 flex h-full w-full cursor-pointer flex-col justify-end justify-center overflow-hidden opacity-0 transition-opacity duration-300 hover:opacity-100"
+        className="bg-card/70 group absolute z-10 flex h-full w-full cursor-pointer flex-col justify-end overflow-hidden opacity-0 transition-opacity duration-300 hover:opacity-100"
         onClick={() => setDialogOpen(true)}
       >
-        <div className="bg-card flex h-1/4 w-full translate-y-20 flex-col items-center justify-start gap-1 px-3 pt-2 transition-all duration-700 group-hover:translate-y-0">
-          <div className="flex items-center text-xs font-medium">
-            <SquarePen className="mr-2 inline-block text-gray-500" size={17} />
-            <span>Picture URL</span>
+        <div className="bg-card flex h-1/4 w-full translate-y-20 flex-col items-center justify-center gap-1 transition-all duration-700 group-hover:translate-y-0">
+          <div className="flex items-center gap-2">
+            <SquarePen size={16} className="text-secondary-foreground" />
+            <span className="text-xs font-medium">Picture URL</span>
           </div>
-          <span className="text-xs text-gray-500">Public image</span>
+          <span className="text-secondary-foreground text-xs">
+            Public PNG/JPEG
+          </span>
         </div>
       </div>
 

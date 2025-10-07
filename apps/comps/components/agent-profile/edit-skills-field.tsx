@@ -1,4 +1,3 @@
-import { SquarePen } from "lucide-react";
 import React, { useEffect, useState } from "react";
 
 import { Button } from "@recallnet/ui2/components/button";
@@ -12,6 +11,8 @@ import {
   DialogTitle,
 } from "@recallnet/ui2/components/dialog";
 import { cn } from "@recallnet/ui2/lib/utils";
+
+import { EditButton } from "../edit-button";
 
 interface EditAgentFieldProps {
   title: string;
@@ -64,12 +65,10 @@ export const EditSkillsField: React.FC<EditAgentFieldProps> = ({
     <>
       <div className="flex w-full items-center justify-start gap-3">
         {children}
-        <div
-          className="right-2 top-2 cursor-pointer p-1"
+        <EditButton
           onClick={() => setDialogOpen(true)}
-        >
-          <SquarePen className="text-secondary-foreground" size={18} />
-        </div>
+          className="right-2 top-2"
+        />
       </div>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
