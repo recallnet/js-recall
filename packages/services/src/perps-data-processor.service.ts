@@ -251,7 +251,7 @@ export class PerpsDataProcessor {
       }
 
       // 2. Fetch account data from provider
-      // Use batch method if available for efficiency (single API call)
+      // Use batch method if available
       let accountSummary: PerpsAccountSummary;
       let positions: PerpsPosition[];
 
