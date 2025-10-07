@@ -43,7 +43,7 @@ export default function CompetitionPage({
   const agentsTableRef = React.useRef<HTMLDivElement>(null);
   const [, scrollTo] = useWindowScroll();
   const [agentsFilter, setAgentsFilter] = React.useState("");
-  const [agentsSort, setAgentsSort] = React.useState("");
+  const [agentsSort, setAgentsSort] = React.useState("rank");
   const [agentsOffset, setAgentsOffset] = React.useState(0);
   const [tradesOffset, setTradesOffset] = React.useState(0);
   const [positionsOffset, setPositionsOffset] = React.useState(0);

@@ -69,10 +69,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
   const session = useSession();
   const router = useRouter();
   const tableContainerRef = useRef<HTMLDivElement>(null);
-  // Default sort: Always sort by rank (backend handles Calmar-based ordering for perps)
-  const [sorting, setSorting] = useState<SortingState>([
-    { id: "rank", desc: false },
-  ]);
+  const [sorting, setSorting] = useState<SortingState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
     yourShare: session.ready && session.isAuthenticated,
   });
@@ -616,9 +613,13 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
       setSorting(newSorting);
 
       // Convert sorting state to server-side sort format
-      const sortString = newSorting
-        .map((sort) => `${sort.desc ? "-" : ""}${sort.id}`)
-        .join(",");
+      // Always fall back to "rank" if no sort is explicitly set
+      const sortString =
+        newSorting.length > 0
+          ? newSorting
+              .map((sort) => `${sort.desc ? "-" : ""}${sort.id}`)
+              .join(",")
+          : "rank";
 
       onSortChange(sortString);
     },
