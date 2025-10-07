@@ -335,28 +335,32 @@ export class CircuitBreaker {
 }
 
 /**
- * Factory function to create a circuit breaker with defaults for financial/trading APIs
- * Based on industry best practices research
+ * Factory function to create a simple circuit breaker
+ * CAUTION: This uses consecutive failure counting where a single success resets the counter.
+ * Only use for internal services or low-volume scenarios where this behavior is acceptable.
+ * For production APIs, use createCircuitBreaker() instead.
  */
-export function createCircuitBreaker(
+export function createSimpleCircuitBreaker(
   name: string,
   options: Partial<CircuitBreakerConfig> = {},
 ): CircuitBreaker {
   return new CircuitBreaker({
     name,
-    failureThreshold: 3, // Lower threshold for financial APIs
-    resetTimeout: 10000, // 10 seconds (faster recovery for trading systems)
-    successThreshold: 2, // Require 2 successful calls to fully close
-    requestTimeout: 3000, // 3 second timeout for API calls
+    failureThreshold: 3,
+    resetTimeout: 10000,
+    successThreshold: 2,
+    requestTimeout: 3000,
     ...options,
   });
 }
 
 /**
- * Factory function for circuit breaker with rolling window (advanced)
- * Better for high-volume scenarios where percentage-based thresholds are more meaningful
+ * Factory function to create a circuit breaker with rolling window
+ * Uses time-based error rate tracking that won't reset on single successes.
+ * Recommended for production APIs, external services, and financial systems.
+ * Opens circuit when error rate exceeds threshold percentage within the time window.
  */
-export function createRollingWindowCircuitBreaker(
+export function createCircuitBreaker(
   name: string,
   options: Partial<CircuitBreakerConfig> = {},
 ): CircuitBreaker {
@@ -371,3 +375,7 @@ export function createRollingWindowCircuitBreaker(
     ...options,
   });
 }
+
+// Export the old name for backwards compatibility (will be removed in next major version)
+/** @deprecated Use createCircuitBreaker instead */
+export const createRollingWindowCircuitBreaker = createCircuitBreaker;

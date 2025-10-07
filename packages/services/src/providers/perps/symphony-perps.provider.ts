@@ -151,11 +151,14 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
       },
     });
 
-    // Initialize circuit breaker with financial API best practices
+    // Initialize circuit breaker with rolling window for better resilience
+    // Rolling window prevents single successes from resetting failure tracking
     this.circuitBreaker = createCircuitBreaker("symphony-api", {
-      failureThreshold: 3, // Open after 3 consecutive failures
+      rollingWindowDuration: 30000, // 30 second window
+      errorThresholdPercentage: 50, // Open if >50% requests fail in window
+      failureThreshold: 5, // Also open after 5 consecutive failures
       resetTimeout: 15000, // Try again after 15 seconds
-      successThreshold: 2, // Need 2 successful calls to close
+      successThreshold: 3, // Need 3 successful calls to close
       requestTimeout: 5000, // 5 second timeout (slightly higher than axios timeout)
       logger: this.logger,
       onStateChange: (from, to) => {

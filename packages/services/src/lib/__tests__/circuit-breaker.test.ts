@@ -5,7 +5,7 @@ import {
   CircuitOpenError,
   CircuitTimeoutError,
   createCircuitBreaker,
-  createRollingWindowCircuitBreaker,
+  createSimpleCircuitBreaker,
 } from "../circuit-breaker.js";
 
 describe("CircuitBreaker", () => {
@@ -18,7 +18,7 @@ describe("CircuitBreaker", () => {
 
   describe("Basic functionality", () => {
     it("should allow requests when circuit is closed", async () => {
-      breaker = createCircuitBreaker("test");
+      breaker = createSimpleCircuitBreaker("test");
 
       const result = await breaker.execute(() => Promise.resolve("success"));
       expect(result).toBe("success");
@@ -123,7 +123,7 @@ describe("CircuitBreaker", () => {
 
   describe("Rolling window", () => {
     it("should track error rate in rolling window", async () => {
-      breaker = createRollingWindowCircuitBreaker("test", {
+      breaker = createCircuitBreaker("test", {
         rollingWindowDuration: 1000,
         errorThresholdPercentage: 50,
       });
@@ -149,7 +149,7 @@ describe("CircuitBreaker", () => {
     });
 
     it("should open based on error percentage", async () => {
-      breaker = createRollingWindowCircuitBreaker("test", {
+      breaker = createCircuitBreaker("test", {
         rollingWindowDuration: 1000,
         errorThresholdPercentage: 50,
       });
@@ -204,7 +204,7 @@ describe("CircuitBreaker", () => {
 
   describe("Stats and monitoring", () => {
     it("should provide comprehensive statistics", () => {
-      breaker = createCircuitBreaker("test");
+      breaker = createSimpleCircuitBreaker("test");
 
       const stats = breaker.getStats();
       expect(stats).toHaveProperty("state");
