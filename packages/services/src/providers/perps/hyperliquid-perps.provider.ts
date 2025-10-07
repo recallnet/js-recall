@@ -167,7 +167,8 @@ export class HyperliquidPerpsProvider implements IPerpsDataProvider {
       failureThreshold: 5, // Also open after 5 consecutive failures
       resetTimeout: 15000, // Try again after 15 seconds
       successThreshold: 3, // Need 3 successful calls to close
-      requestTimeout: 5000, // 5 second timeout (slightly higher than axios timeout)
+      // Don't set requestTimeout - let axios handle timeouts (30s)
+      // Circuit breaker should track failures, not enforce timeouts
       logger: this.logger,
       onStateChange: (from, to) => {
         this.logger.warn(

@@ -359,6 +359,7 @@ export function createSimpleCircuitBreaker(
  * Uses time-based error rate tracking that won't reset on single successes.
  * Recommended for production APIs, external services, and financial systems.
  * Opens circuit when error rate exceeds threshold percentage within the time window.
+ * Note: Does not set requestTimeout by default - let your HTTP client handle timeouts.
  */
 export function createCircuitBreaker(
   name: string,
@@ -369,7 +370,7 @@ export function createCircuitBreaker(
     failureThreshold: 3, // Fallback for consecutive failures
     resetTimeout: 10000, // 10 seconds
     successThreshold: 2,
-    requestTimeout: 3000, // 3 seconds
+    // No requestTimeout - let HTTP clients (axios, fetch) handle their own timeouts
     rollingWindowDuration: 10000, // 10 second window
     errorThresholdPercentage: 50, // Open if >50% requests fail in window
     ...options,
