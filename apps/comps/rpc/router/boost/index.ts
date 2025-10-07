@@ -1,4 +1,5 @@
 import { agentBoostTotals } from "./agent-boost-totals";
+import { availableAwards } from "./available-awards";
 import { balance } from "./balance";
 import { boostAgent } from "./boost-agent";
 import { claimBoost } from "./claim-boost";
@@ -10,4 +11,5 @@ export const router = {
   balance,
   boostAgent,
   userBoosts,
+  availableAwards,
 };

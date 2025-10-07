@@ -1,10 +1,12 @@
-import { and, eq, sql, sum } from "drizzle-orm";
+import { and, desc, eq, isNull, notExists, sql, sum } from "drizzle-orm";
 import { randomBytes } from "node:crypto";
 import { z } from "zod";
 
 import { BlockchainAddressAsU8A } from "../coders/index.js";
+import { stakes } from "../schema/indexing/defs.js";
 import * as schema from "../schema/voting/defs.js";
 import {
+  InsertStakeBoostAward,
   SelectAgentBoost,
   SelectAgentBoostTotal,
 } from "../schema/voting/types.js";
@@ -760,5 +762,89 @@ class BoostRepository {
         agentBoostTotal: updatedAgentBoostTotal,
       };
     });
+  }
+
+  async recordStakeBoostAward(award: InsertStakeBoostAward, tx?: Transaction) {
+    const executor = tx || this.#db;
+    return await executor.transaction(async (tx) => {
+      return await tx.insert(schema.stakeBoostAwards).values(award).returning();
+    });
+  }
+
+  async stakeBoostAwards(
+    wallet: string,
+    competitionId: string,
+    tx?: Transaction,
+  ) {
+    const executor = tx || this.#db;
+    const u8aWallet = BlockchainAddressAsU8A.encode(wallet);
+    const res = await executor
+      .select({ stakeBoostAward: schema.stakeBoostAwards, stake: stakes })
+      .from(schema.stakeBoostAwards)
+      .innerJoin(stakes, eq(schema.stakeBoostAwards.stakeId, stakes.id))
+      .where(
+        and(
+          eq(schema.stakeBoostAwards.competitionId, competitionId),
+          eq(stakes.wallet, u8aWallet),
+        ),
+      )
+      .orderBy(desc(schema.stakeBoostAwards.createdAt));
+    return res;
+  }
+
+  /**
+   * Retrieve stakes for a wallet that haven't received boost awards for a specific competition.
+   *
+   * Behavior:
+   * 1) Query all stakes for the specified wallet.
+   * 2) LEFT JOIN with stakeBoostAwards to identify which stakes already have awards for the competition.
+   * 3) Filter to only return stakes that don't have corresponding award records.
+   *
+   * Read-Only Operation:
+   * - This method only reads data and does not modify any records.
+   * - Safe to call concurrently with other operations.
+   *
+   * Returns:
+   * - Array of stake records that haven't received boost awards for the specified competition.
+   * - Empty array if no unawarded stakes found for the wallet/competition combination.
+   *
+   * Notes:
+   * - Only returns stakes that exist but don't have corresponding stakeBoostAward records.
+   * - Results are ordered by stake creation timestamp (most recent first).
+   * - The wallet address is encoded to Uint8Array format for database comparison.
+   *
+   * @param wallet - EVM address of the wallet (will be encoded to Uint8Array)
+   * @param competitionId - ID of the competition context
+   * @param tx - Optional database transaction to use for the query
+   * @returns Promise resolving to array of unawarded stake records
+   */
+  async unawardedStakes(
+    wallet: string,
+    competitionId: string,
+    tx?: Transaction,
+  ) {
+    const executor = tx || this.#db;
+    const u8aWallet = BlockchainAddressAsU8A.encode(wallet);
+    const awardsQuery = executor
+      .select()
+      .from(schema.stakeBoostAwards)
+      .where(
+        and(
+          eq(schema.stakeBoostAwards.stakeId, stakes.id),
+          eq(schema.stakeBoostAwards.competitionId, competitionId),
+        ),
+      );
+    const res = await executor
+      .select()
+      .from(stakes)
+      .where(
+        and(
+          eq(stakes.wallet, u8aWallet),
+          isNull(stakes.unstakedAt),
+          notExists(awardsQuery),
+        ),
+      )
+      .orderBy(desc(stakes.createdAt));
+    return res;
   }
 }

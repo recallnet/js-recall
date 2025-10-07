@@ -42,13 +42,11 @@ All test profiles follow the same basic structure:
 #### Setup Phase (before:)
 
 1. **Competition Management**:
-
    - Check for existing active competition
    - End active competition if exists
    - Create new competition for test isolation
 
 2. **Agent Creation**:
-
    - Create N agents (configurable via `AGENTS_COUNT`)
    - Each agent gets: user account, wallet, profile, and API key
    - Register all agents to the competition
