@@ -167,8 +167,8 @@ export const CompetitionStateSummary: React.FC<
 
   return (
     <div className={cn("flex flex-col gap-2", className)}>
-      {/* Main status row - Registration and Voting inline */}
-      <div className="flex items-center gap-2">
+      {/* Main status row - Stacks on mobile, inline on desktop */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
         {/* Registration State */}
         <div className="flex flex-1 items-center gap-3">
           <Circle
