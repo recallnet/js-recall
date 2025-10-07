@@ -176,7 +176,7 @@ export class HyperliquidPerpsProvider implements IPerpsDataProvider {
         Object.keys(response).length > 0
       );
     } catch (error) {
-      this.logger.warn("[HyperliquidProvider] Health check failed:", error);
+      this.logger.warn({ error }, "[HyperliquidProvider] Health check failed");
       return false;
     }
   }
@@ -336,8 +336,11 @@ export class HyperliquidPerpsProvider implements IPerpsDataProvider {
       });
 
       this.logger.error(
-        `[HyperliquidProvider] Error fetching account summary for ${maskedAddress}:`,
-        error,
+        {
+          error,
+          address: maskedAddress,
+        },
+        "[HyperliquidProvider] Error fetching account summary",
       );
       throw error;
     }
@@ -436,8 +439,11 @@ export class HyperliquidPerpsProvider implements IPerpsDataProvider {
       });
 
       this.logger.error(
-        `[HyperliquidProvider] Error fetching positions for ${maskedAddress}:`,
-        error,
+        {
+          error,
+          address: maskedAddress,
+        },
+        "[HyperliquidProvider] Error fetching positions",
       );
       throw error;
     }
@@ -542,8 +548,11 @@ export class HyperliquidPerpsProvider implements IPerpsDataProvider {
       });
 
       this.logger.error(
-        `[HyperliquidProvider] Error fetching transfers for ${maskedAddress}:`,
-        error,
+        {
+          error,
+          address: maskedAddress,
+        },
+        "[HyperliquidProvider] Error fetching transfers",
       );
       // Don't throw - transfer history is optional for self-funding detection
       return [];
@@ -582,8 +591,8 @@ export class HyperliquidPerpsProvider implements IPerpsDataProvider {
       return priceMap;
     } catch (error) {
       this.logger.warn(
-        "[HyperliquidProvider] Failed to fetch market prices:",
-        error,
+        { error },
+        "[HyperliquidProvider] Failed to fetch market prices",
       );
       return new Map();
     }
@@ -697,15 +706,22 @@ export class HyperliquidPerpsProvider implements IPerpsDataProvider {
           // Don't retry on client errors (4xx)
           if (status && status >= 400 && status < 500) {
             this.logger.error(
-              `[HyperliquidProvider] Client error (${status}):`,
-              error.response?.data,
+              {
+                status,
+                data: error.response?.data,
+              },
+              "[HyperliquidProvider] Client error",
             );
             throw error;
           }
 
           this.logger.warn(
-            `[HyperliquidProvider] Request failed (attempt ${attempt}/${this.MAX_RETRIES}):`,
-            error.message,
+            {
+              attempt,
+              maxRetries: this.MAX_RETRIES,
+              message: error.message,
+            },
+            "[HyperliquidProvider] Request failed",
           );
         }
 

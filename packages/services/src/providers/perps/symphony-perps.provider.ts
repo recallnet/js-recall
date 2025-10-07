@@ -299,7 +299,11 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
 
       if (missingFields.length > 0) {
         this.logger.warn(
-          `[SymphonyProvider] Missing critical fields for ${this.maskWalletAddress(walletAddress)}: ${missingFields.join(", ")}. Using 0 as default.`,
+          {
+            address: this.maskWalletAddress(walletAddress),
+            missingFields,
+          },
+          "[SymphonyProvider] Missing critical fields. Using 0 as default",
         );
       }
 
@@ -358,7 +362,11 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
       }
 
       this.logger.debug(
-        `[SymphonyProvider] Fetched account summary for ${maskedAddress} in ${Date.now() - startTime}ms`,
+        {
+          address: maskedAddress,
+          processingTime: Date.now() - startTime,
+        },
+        "[SymphonyProvider] Fetched account summary",
       );
 
       return summary;
@@ -404,7 +412,8 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
       await this.enforceRateLimit();
 
       this.logger.debug(
-        `[SymphonyProvider] Fetching positions for ${maskedAddress}`,
+        { address: maskedAddress },
+        "[SymphonyProvider] Fetching positions",
       );
 
       const data = await this.fetchPositionData(walletAddress);
@@ -414,7 +423,12 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
       const positions = this.transformPositions(data.openPositions, "Open");
 
       this.logger.debug(
-        `[SymphonyProvider] Fetched ${positions.length} open positions for ${maskedAddress} in ${Date.now() - startTime}ms`,
+        {
+          address: maskedAddress,
+          positionCount: positions.length,
+          processingTime: Date.now() - startTime,
+        },
+        "[SymphonyProvider] Fetched open positions",
       );
 
       return positions;
@@ -464,7 +478,11 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
       await this.enforceRateLimit();
 
       this.logger.debug(
-        `[SymphonyProvider] Fetching transfers for ${maskedAddress} since ${since.toISOString()}`,
+        {
+          address: maskedAddress,
+          since: since.toISOString(),
+        },
+        "[SymphonyProvider] Fetching transfers",
       );
 
       const response = await this.makeRequest<SymphonyTransferResponse>(
@@ -477,7 +495,8 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
 
       if (!response.success) {
         this.logger.warn(
-          `[SymphonyProvider] Transfer fetch unsuccessful for ${maskedAddress}`,
+          { address: maskedAddress },
+          "[SymphonyProvider] Transfer fetch unsuccessful",
         );
         return [];
       }
@@ -496,7 +515,12 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
       }));
 
       this.logger.debug(
-        `[SymphonyProvider] Fetched ${transfers.length} transfers for ${maskedAddress} in ${Date.now() - startTime}ms`,
+        {
+          address: maskedAddress,
+          transferCount: transfers.length,
+          processingTime: Date.now() - startTime,
+        },
+        "[SymphonyProvider] Fetched transfers",
       );
 
       return transfers;
@@ -614,7 +638,10 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
 
         if (attempt < this.MAX_RETRIES) {
           const delay = this.RETRY_DELAY * attempt;
-          this.logger.debug(`[SymphonyProvider] Retrying after ${delay}ms...`);
+          this.logger.debug(
+            { delay },
+            "[SymphonyProvider] Retrying after delay",
+          );
           await this.delay(delay);
         }
       }
@@ -693,7 +720,11 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
     const date = new Date(dateStr);
     if (isNaN(date.getTime())) {
       this.logger.warn(
-        `[SymphonyProvider] Invalid date format for ${fieldName}: ${dateStr}`,
+        {
+          fieldName,
+          dateStr,
+        },
+        "[SymphonyProvider] Invalid date format",
       );
       return undefined;
     }
