@@ -40,6 +40,8 @@ export const availableAwards = base
       }
 
       // Unknown error type
-      throw errors.INTERNAL({ message: "Failed to get agents." });
+      throw errors.INTERNAL({
+        message: "Failed to get available boost awards.",
+      });
     }
   });
