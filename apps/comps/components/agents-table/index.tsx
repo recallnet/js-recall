@@ -466,7 +466,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
         id: "boostPool",
         accessorKey: "boostTotal",
         header: () => (
-          <span className="whitespace-nowrap">
+          <span className="whitespace-nowrap font-mono font-bold">
             {hasBoostEnabled ? "Boost Pool" : "Votes"}
           </span>
         ),
