@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { type Address, getAddress } from "viem";
 import { useAccount, useBalance, useChainId } from "wagmi";
 
-import { RECALL_TOKEN_ADDRESS } from "@/constants";
+import { config } from "@/config/public";
 
 /**
  * Hook return type for loading state
@@ -39,14 +39,7 @@ export const useRecall = (): UseRecallReturn => {
   const { address } = useAccount();
   const chainId = useChainId();
 
-  const token: Address | undefined = useMemo(() => {
-    if (!chainId) return undefined;
-    const tokenHex =
-      RECALL_TOKEN_ADDRESS[
-        chainId.toString() as keyof typeof RECALL_TOKEN_ADDRESS
-      ];
-    return tokenHex ? getAddress(tokenHex) : undefined;
-  }, [chainId]);
+  const token = getAddress(config.blockchain.tokenContractAddress);
 
   const {
     data: balanceData,

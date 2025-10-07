@@ -12,7 +12,7 @@ import {
 } from "wagmi";
 
 import { StakingAbi } from "@/abi/Staking";
-import { RECALL_STAKING_CONTRACT_ADDRESS } from "@/constants";
+import { config } from "@/config/public";
 
 import { useRecall } from "./useRecall";
 
@@ -27,7 +27,7 @@ export const useStakingContractAddress = (): Address => {
     if (!chainId) {
       throw new Error("Chain ID not found");
     }
-    const addressHex = RECALL_STAKING_CONTRACT_ADDRESS[chainId];
+    const addressHex = config.blockchain.stakingContractAddress;
 
     if (!addressHex) {
       throw new Error("Staking contract address not found");
