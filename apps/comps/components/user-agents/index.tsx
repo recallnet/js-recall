@@ -128,7 +128,7 @@ export default function UserAgentsSection({
       <CollapsibleTrigger>
         <div className="flex w-full items-center justify-between">
           <div className="ml-2 flex items-center gap-2">
-            <span className="text-2xl font-bold">Your Agents</span>
+            <span className="text-xl font-bold">Your Agents</span>
             <span className="text-secondary-foreground">({nAgents})</span>
           </div>
           <Button asChild>

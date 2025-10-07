@@ -26,17 +26,36 @@
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.556 0 0);
 
-  /* Custom colors */
-  --color-green-500: oklch(0.6337 0.182 142.13);
-  --color-red-500: oklch(0.6032 0.214 28.67);
-  --color-yellow-500: oklch(0.8188 0.1686 82.31);
+  /* Brand colors - Status indicators */
+  --green-400: oklch(0.7337 0.182 142.13);
+  --green-500: oklch(0.6337 0.182 142.13);
+  --green-700: oklch(0.5337 0.182 142.13);
+  --green-900: oklch(0.3337 0.182 142.13);
+
+  --red-400: oklch(0.7032 0.214 28.67);
+  --red-500: oklch(0.6032 0.214 28.67);
+  --red-900: oklch(0.3032 0.214 28.67);
+
+  --yellow-300: oklch(0.9188 0.1686 82.31);
+  --yellow-400: oklch(0.8688 0.1686 82.31);
+  --yellow-500: oklch(0.8188 0.1686 82.31);
+  --yellow-600: oklch(0.7188 0.1686 82.31);
+  --yellow-900: oklch(0.5188 0.1686 82.31);
+
+  --blue-300: oklch(0.71383 0.17311 255.646);
+  --blue-400: oklch(0.61383 0.17311 255.646);
+  --blue-500: oklch(0.51383 0.17311 255.646);
+  --blue-600: oklch(0.41383 0.17311 255.646);
+  --blue-700: oklch(0.31383 0.17311 255.646);
+  --blue-800: oklch(0.21383 0.17311 255.646);
+  --blue-900: oklch(0.11383 0.17311 255.646);
 
   /* Hero graphic colors */
-  --hero-red: oklch(0.6538 0.2342 33.367); /* #FF3D0C */
-  --hero-yellow: var(--color-yellow-500); /* #F9B700 */
-  --hero-green: var(--color-green-500); /* #38A430 */
-  --hero-blue: oklch(0.51383 0.17311 255.646); /* #0064C7 */
-  --hero-black: oklch(0 0 0); /* #000000 */
+  --hero-red: oklch(0.6538 0.2342 33.367);
+  --hero-yellow: var(--yellow-500);
+  --hero-green: var(--green-500);
+  --hero-blue: var(--blue-500);
+  --hero-black: oklch(0 0 0);
 
   /* Trophy and rank colors */
   --trophy-first: oklch(0.8799 0.1379 89.79);
@@ -72,6 +91,29 @@
   --color-trophy-first-bg: var(--trophy-first-bg);
   --color-trophy-second-bg: var(--trophy-second-bg);
   --color-trophy-third-bg: var(--trophy-third-bg);
+
+  --color-green-400: var(--green-400);
+  --color-green-500: var(--green-500);
+  --color-green-700: var(--green-700);
+  --color-green-900: var(--green-900);
+
+  --color-red-400: var(--red-400);
+  --color-red-500: var(--red-500);
+  --color-red-900: var(--red-900);
+
+  --color-yellow-300: var(--yellow-300);
+  --color-yellow-400: var(--yellow-400);
+  --color-yellow-500: var(--yellow-500);
+  --color-yellow-600: var(--yellow-600);
+  --color-yellow-900: var(--yellow-900);
+
+  --color-blue-300: var(--blue-300);
+  --color-blue-400: var(--blue-400);
+  --color-blue-500: var(--blue-500);
+  --color-blue-600: var(--blue-600);
+  --color-blue-700: var(--blue-700);
+  --color-blue-800: var(--blue-800);
+  --color-blue-900: var(--blue-900);
 
   --breakpoint-*: initial;
   --breakpoint-xs: 42rem;
