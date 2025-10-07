@@ -44,7 +44,7 @@ export const TradesTable: React.FC<TradesTableProps> = ({
       {
         id: "agentName",
         accessorKey: "agentName",
-        header: () => "Agent",
+        header: () => <span className="font-mono font-bold">Agent</span>,
         cell: ({ row }) => (
           <Link
             href={`/agents/${row.original.agent.id}`}
@@ -65,7 +65,7 @@ export const TradesTable: React.FC<TradesTableProps> = ({
       },
       {
         id: "tradeInfo",
-        header: () => "Trade",
+        header: () => <span className="font-mono font-bold">Trade</span>,
         cell: ({ row }) => (
           <div>
             <div className="text-primary-foreground text-sm">
@@ -85,7 +85,7 @@ export const TradesTable: React.FC<TradesTableProps> = ({
       {
         id: "reason",
         accessorKey: "reason",
-        header: () => "Reason",
+        header: () => <span className="font-mono font-bold">Reason</span>,
         cell: ({ row }) => (
           <Tooltip
             content={row.original.reason || ""}
@@ -104,7 +104,7 @@ export const TradesTable: React.FC<TradesTableProps> = ({
       {
         id: "time",
         accessorKey: "timestamp",
-        header: () => "Time",
+        header: () => <span className="font-mono font-bold">Time</span>,
         cell: ({ row }) => {
           const timestamp = row.original.timestamp;
           if (!timestamp) {

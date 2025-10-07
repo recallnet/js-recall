@@ -44,7 +44,7 @@ export function CompetitionTable({
     <>
       <div className="overflow-x-auto rounded border">
         <Table className="min-w-[800px]">
-          <TableHeader className="text-muted-foreground bg-gray-900 font-mono text-xs uppercase">
+          <TableHeader className="text-muted-foreground bg-gray-900 font-mono text-xs">
             <TableRow className={cn("grid w-full", gridColumns)}>
               <SortableTableHeader
                 onToggleSort={() => handleSortChange("name")}
