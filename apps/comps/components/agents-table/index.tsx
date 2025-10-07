@@ -646,7 +646,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
     <div className="mt-12 w-full" ref={ref}>
       <div className="mb-5 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="w-full md:w-1/2">
-          <h2 className="p-4 text-2xl font-bold">
+          <h2 className="text-2xl font-bold">
             Competition {competitionTitles[competition.status]}
             {/*({pagination.total})*/}
           </h2>
