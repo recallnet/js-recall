@@ -162,61 +162,39 @@ export const CompetitionStateSummary: React.FC<
     };
   };
 
-  const getRegistrationLimit = () => {
-    if (
-      competition.maxParticipants === null ||
-      competition.registeredParticipants >= competition.maxParticipants
-    ) {
-      return null;
-    }
-    return (
-      <span className="text-gray-400">
-        Limit: {competition.maxParticipants} participants
-      </span>
-    );
-  };
-
   const registrationState = getRegistrationState();
-  const registrationLimit = getRegistrationLimit();
   const votingState = getVotingState();
 
   return (
-    <div className={cn("space-y-2", className)}>
-      {/* Registration State */}
+    <div className={cn("flex flex-col gap-2", className)}>
+      {/* Main status row - Registration and Voting inline */}
       <div className="flex items-center gap-2">
-        <Circle
-          className={cn("h-2 w-2 fill-current", registrationState.color)}
-        />
-        <p className="text-sm">
-          <span>{registrationState.text}</span>{" "}
-          {registrationState.date &&
-            (registrationState.showCountdown ? (
-              <CountdownClock
-                targetDate={registrationState.date}
-                className="text-sm font-bold text-white"
-              />
-            ) : (
-              <span className="font-bold text-white">
-                {formatDistanceToNow(registrationState.date)}
-              </span>
-            ))}
-        </p>
-      </div>
-
-      {/* Registration Limit */}
-      {registrationLimit && (
-        <div className="flex items-center gap-2">
-          <Circle className={cn("h-2 w-2 fill-current", "text-gray-500")} />
-          <p className="text-sm">{registrationLimit}</p>
+        {/* Registration State */}
+        <div className="flex flex-1 items-center gap-3">
+          <Circle
+            className={cn("h-2 w-2 fill-current", registrationState.color)}
+          />
+          <div className="flex items-center gap-1">
+            <span className="text-sm">{registrationState.text}</span>
+            {registrationState.date &&
+              (registrationState.showCountdown ? (
+                <CountdownClock
+                  targetDate={registrationState.date}
+                  className="text-sm font-bold text-white"
+                />
+              ) : (
+                <span className="text-sm font-bold text-white">
+                  {formatDistanceToNow(registrationState.date)}
+                </span>
+              ))}
+          </div>
         </div>
-      )}
 
-      {/* Voting State */}
-      {
-        <div className="flex items-center gap-2">
+        {/* Voting State */}
+        <div className="flex flex-1 items-center gap-3">
           <Circle className={cn("h-2 w-2 fill-current", votingState.color)} />
-          <p className="text-sm">
-            <span>{votingState.text}</span>{" "}
+          <div className="flex items-center gap-1">
+            <span className="text-sm">{votingState.text}</span>
             {votingState.date &&
               (votingState.showCountdown ? (
                 <CountdownClock
@@ -224,13 +202,13 @@ export const CompetitionStateSummary: React.FC<
                   className="text-sm font-bold text-white"
                 />
               ) : (
-                <span className="font-bold text-white">
+                <span className="text-sm font-bold text-white">
                   {formatDistanceToNow(votingState.date)}
                 </span>
               ))}
-          </p>
+          </div>
         </div>
-      }
+      </div>
     </div>
   );
 };
