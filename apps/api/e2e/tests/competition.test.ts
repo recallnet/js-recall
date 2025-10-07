@@ -4324,7 +4324,6 @@ describe("Competition API", () => {
       const protectedEndpoints = [
         "/api/competitions/leaderboard",
         "/api/competitions/status",
-        "/api/competitions/rules",
         "/api/competitions/upcoming",
       ];
 
@@ -4336,6 +4335,37 @@ describe("Competition API", () => {
           response: { status: 401 },
         });
       }
+    });
+
+    test("rules endpoint should be publicly accessible", async () => {
+      // Setup: Create a competition (don't need to start it, just test the path parameter functionality)
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      const competitionName = `Public Rules Test ${Date.now()}`;
+      const competitionResponse = await adminClient.createCompetition({
+        name: competitionName,
+        description: "Test competition for public rules access",
+        tradingConstraints: {
+          minimumPairAgeHours: 24,
+          minimum24hVolumeUsd: 50000,
+          minimumLiquidityUsd: 100000,
+          minimumFdvUsd: 1000000,
+        },
+      });
+
+      expect(competitionResponse.success).toBe(true);
+      const competition = competitionResponse as CreateCompetitionResponse;
+
+      // Test with specific competition ID via path parameter (public access)
+      const rulesResponse = (await adminClient.getCompetitionRules(
+        competition.competition.id,
+      )) as CompetitionRulesResponse;
+      expect(rulesResponse.rules).toBeDefined();
+      expect(rulesResponse.rules.tradingConstraints).toBeDefined();
+      expect(rulesResponse.rules.tradingConstraints!.minimumPairAgeHours).toBe(
+        24,
+      );
     });
 
     test("join/leave competition endpoints should still require authentication", async () => {
