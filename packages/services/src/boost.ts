@@ -4,7 +4,9 @@ import { Logger } from "pino";
 import { BoostRepository } from "@recallnet/db/repositories/boost";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { UserRepository } from "@recallnet/db/repositories/user";
+import { Database } from "@recallnet/db/types";
 
+import { BoostAwardService } from "./boost-award.service.js";
 import { errorToMessage } from "./lib/error-to-message.js";
 
 /**
@@ -34,6 +36,8 @@ export class BoostService {
   // or the competition service. Likewise for user repository vs user service.
   private competitionRepository: CompetitionRepository;
   private userRepository: UserRepository;
+  private boostAwardService: BoostAwardService;
+  private database: Database;
   private noStakeBoostAmount: bigint;
   private logger: Logger;
 
@@ -41,12 +45,16 @@ export class BoostService {
     boostRepository: BoostRepository,
     competitionRepository: CompetitionRepository,
     userRepository: UserRepository,
+    boostAwardService: BoostAwardService,
+    database: Database,
     config: BoostServiceConfig,
     logger: Logger,
   ) {
     this.boostRepository = boostRepository;
     this.competitionRepository = competitionRepository;
     this.userRepository = userRepository;
+    this.boostAwardService = boostAwardService;
+    this.database = database;
     this.noStakeBoostAmount =
       config.boost.noStakeBoostAmount ?? 1000000000000000000000n;
     this.logger = logger;
@@ -61,6 +69,81 @@ export class BoostService {
         amount: this.noStakeBoostAmount,
         idemKey: Buffer.from(`claim-${userId}-${competitionId}`),
         meta: { description: "Claim non-stake boost" },
+      }),
+      (err) =>
+        ({
+          type: "RepositoryError",
+          message: errorToMessage(err),
+        }) as const,
+    ).andThen((result) => {
+      if (result.type === "noop") {
+        return errAsync({ type: "AlreadyClaimedBoost" } as const);
+      }
+      return ok(result);
+    });
+  }
+
+  claimStakedBoost(userId: string, wallet: string, competitionId: string) {
+    return ResultAsync.fromPromise(
+      this.database.transaction(async (tx) => {
+        const stakes = await this.boostRepository.unawardedStakes(
+          wallet,
+          competitionId,
+          tx,
+        );
+        if (stakes.length === 0) {
+          return {
+            type: "noop" as const,
+            balance: 0n,
+            idemKey: Buffer.from(`claim-staked-${userId}-${competitionId}`),
+          };
+        }
+
+        const competition =
+          await this.competitionRepository.findById(competitionId);
+        if (!competition) {
+          throw new Error("Competition not found");
+        }
+
+        if (!competition.votingStartDate || !competition.votingEndDate) {
+          throw new Error("Competition missing voting dates");
+        }
+
+        let balance = 0n;
+        for (const stake of stakes) {
+          const result = await this.boostAwardService.awardForStake(
+            {
+              id: stake.id,
+              wallet: wallet,
+              amount: stake.amount,
+              stakedAt: stake.stakedAt,
+              canUnstakeAfter: stake.canUnstakeAfter,
+            },
+            {
+              id: competition.id,
+              votingStartDate: competition.votingStartDate,
+              votingEndDate: competition.votingEndDate,
+            },
+            tx,
+          );
+
+          // We should get "applied" for all
+          if (result.type === "noop") {
+            return {
+              type: "noop" as const,
+              balance: 0n,
+              idemKey: Buffer.from(`claim-staked-${userId}-${competitionId}`),
+            };
+          }
+
+          balance = result.balanceAfter;
+        }
+
+        return {
+          type: "claimed" as const,
+          balance: balance,
+          idemKey: Buffer.from(`claim-staked-${userId}-${competitionId}`),
+        };
       }),
       (err) =>
         ({
