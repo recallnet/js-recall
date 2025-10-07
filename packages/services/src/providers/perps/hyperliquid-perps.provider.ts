@@ -1,6 +1,6 @@
 import * as Sentry from "@sentry/node";
 import axios, { AxiosInstance } from "axios";
-import { randomUUID } from "crypto";
+import crypto from "crypto";
 import { Decimal } from "decimal.js";
 import { Logger } from "pino";
 
@@ -126,8 +126,11 @@ interface AllMidsResponse {
  * - Position open timestamps are not provided by the Hyperliquid API
  *   (clearinghouseState only returns current state without historical timestamps)
  *   Our system tracks when we first discovered each position instead
- * - Closed positions must be reconstructed from trade history
- * - Position IDs are synthetically generated using UUIDs as Hyperliquid doesn't provide them
+ * - Hyperliquid only provides net positions per asset (not individual position lifecycles)
+ * - Position IDs are deterministically generated from wallet-coin-side-entryPrice combination
+ *   Entry price is rounded to nearest dollar to handle minor weighted average fluctuations
+ *   Positions reopened at similar prices may reuse the same ID
+ * - These limitations do NOT affect competition scoring (which uses portfolio value, not positions)
  */
 export class HyperliquidPerpsProvider implements IPerpsDataProvider {
   private readonly baseUrl: string;
@@ -392,10 +395,25 @@ export class HyperliquidPerpsProvider implements IPerpsDataProvider {
         // Get current price from market data or calculate from position data
         const currentPrice = this.getCurrentPrice(pos, marketPrices);
 
+        // Generate a deterministic ID based on wallet, coin, side, and entry price
+        // Round entry price to nearest dollar to handle minor price variations
+        // This helps distinguish between different position entries while avoiding duplicates
+        // from minor price fluctuations in the weighted average
+        const entryPriceRounded = Math.round(
+          new Decimal(pos.entryPx).toNumber(),
+        );
+        const positionIdentifier = `${walletAddress.toLowerCase()}-${pos.coin}-${isLong ? "long" : "short"}-${entryPriceRounded}`;
+
+        // Create a shorter, more readable hash
+        const positionId = crypto
+          .createHash("sha256")
+          .update(positionIdentifier)
+          .digest("hex")
+          .substring(0, 16); // Use first 16 chars for readability
+
         positions.push({
-          // Identifiers (Hyperliquid doesn't provide position IDs)
-          // Generate a unique UUID for each position
-          providerPositionId: randomUUID(),
+          // Identifiers (deterministic based on wallet-coin-side combination)
+          providerPositionId: positionId,
           providerTradeId: undefined,
 
           // Position details

@@ -1035,24 +1035,60 @@ describe("HyperliquidPerpsProvider", () => {
 
       const result = await provider.getPositions("0xtest123");
 
-      // Position IDs should be unique UUIDs (Hyperliquid doesn't provide position IDs)
-      expect(result[0]?.providerPositionId).toMatch(
-        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
-      );
+      // Position IDs should be deterministic hashes (16 chars of hex)
+      expect(result[0]?.providerPositionId).toMatch(/^[0-9a-f]{16}$/i);
 
-      // Verify each call generates a new UUID
+      // Verify same position generates same ID (deterministic)
       mockAxiosInstance.post.mockResolvedValueOnce({
         data: sampleClearinghouseState,
       });
       mockAxiosInstance.post.mockResolvedValueOnce({ data: sampleAllMids });
 
       const result2 = await provider.getPositions("0xtest123");
-      expect(result2[0]?.providerPositionId).toMatch(
-        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
-      );
-      // UUIDs should be different for each call
-      expect(result2[0]?.providerPositionId).not.toBe(
+      expect(result2[0]?.providerPositionId).toMatch(/^[0-9a-f]{16}$/i);
+
+      // Same position should have same ID (deterministic based on wallet-coin-side-entryPrice)
+      expect(result2[0]?.providerPositionId).toBe(
         result[0]?.providerPositionId,
+      );
+    });
+
+    it("should generate different IDs for positions with different entry prices", async () => {
+      const firstAsset = sampleClearinghouseState.assetPositions[0];
+      if (!firstAsset) {
+        throw new Error("Sample data missing first asset position");
+      }
+
+      const stateWithDifferentEntry = {
+        ...sampleClearinghouseState,
+        assetPositions: [
+          {
+            ...firstAsset,
+            position: {
+              ...firstAsset.position,
+              entryPx: "50000", // Different entry price
+            },
+          },
+        ],
+      };
+
+      mockAxiosInstance.post.mockResolvedValueOnce({
+        data: sampleClearinghouseState, // Entry price: 45000
+      });
+      mockAxiosInstance.post.mockResolvedValueOnce({ data: sampleAllMids });
+
+      const result1 = await provider.getPositions("0xtest123");
+
+      mockAxiosInstance.post.mockResolvedValueOnce({
+        data: stateWithDifferentEntry, // Entry price: 50000
+      });
+      mockAxiosInstance.post.mockResolvedValueOnce({ data: sampleAllMids });
+
+      const result2 = await provider.getPositions("0xtest123");
+
+      // Different entry prices should generate different IDs
+      expect(result1[0]?.providerPositionId).not.toBe(
+        result2[0]?.providerPositionId,
       );
     });
 
