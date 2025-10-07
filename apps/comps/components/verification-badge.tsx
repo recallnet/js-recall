@@ -3,7 +3,7 @@ import { cn } from "@recallnet/ui2/lib/utils";
 export const VerificationBadge = ({ className }: { className?: string }) => {
   return (
     <svg
-      className={cn("stroke-[#38A430]", className)}
+      className={cn("stroke-green-500", className)}
       width="25"
       height="24"
       viewBox="0 0 25 24"
