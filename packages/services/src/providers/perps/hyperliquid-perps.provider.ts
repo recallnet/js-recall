@@ -258,125 +258,20 @@ export class HyperliquidPerpsProvider implements IPerpsDataProvider {
       const clearinghouseState =
         await this.getClearinghouseState(walletAddress);
 
-      // Fetch recent fills to calculate volume and trade counts
-      const recentFills = await this.getRecentFills(walletAddress);
-
-      // Calculate metrics from raw data
-      const accountValue = new Decimal(
-        clearinghouseState.marginSummary.accountValue,
+      // Delegate to internal method that works with clearinghouse state
+      return await this.buildAccountSummaryFromState(
+        clearinghouseState,
+        walletAddress,
+        initialCapital,
       );
-      const totalMarginUsed = new Decimal(
-        clearinghouseState.marginSummary.totalMarginUsed,
-      );
-      const totalRawUsd = new Decimal(
-        clearinghouseState.marginSummary.totalRawUsd,
-      );
-
-      // Calculate PnL from positions
-      let totalUnrealizedPnl = new Decimal(0);
-      let totalPositionValue = new Decimal(0);
-      let openPositionsCount = 0;
-
-      for (const asset of clearinghouseState.assetPositions) {
-        if (asset.position && asset.position.szi !== "0") {
-          openPositionsCount++;
-          totalUnrealizedPnl = totalUnrealizedPnl.plus(
-            asset.position.unrealizedPnl || 0,
-          );
-          totalPositionValue = totalPositionValue.plus(
-            asset.position.positionValue || 0,
-          );
-        }
-      }
-
-      // Calculate volume and fees from recent fills
-      const { totalVolume, totalFees, tradeCount, closedPnl } =
-        this.calculateTradingStats(recentFills);
-
-      // Use provided initial capital or default to current equity
-      // Hyperliquid doesn't track initial capital, so we rely on the caller to provide it
-      const totalEquityValue = accountValue.toNumber();
-      const effectiveInitialCapital = initialCapital ?? totalEquityValue;
-
-      const summary: PerpsAccountSummary = {
-        // Core metrics
-        totalEquity: totalEquityValue,
-        initialCapital: effectiveInitialCapital,
-        availableBalance: totalRawUsd.toNumber(),
-        marginUsed: totalMarginUsed.toNumber(),
-
-        // PnL metrics
-        totalPnl: totalUnrealizedPnl.plus(closedPnl).toNumber(),
-        totalRealizedPnl: closedPnl.toNumber(),
-        totalUnrealizedPnl: totalUnrealizedPnl.toNumber(),
-
-        // Trading statistics
-        totalVolume: totalVolume.toNumber(),
-        totalTrades: tradeCount,
-        totalFeesPaid: totalFees.toNumber(),
-
-        // Position counts
-        openPositionsCount,
-        closedPositionsCount: 0, // Would need historical data
-        liquidatedPositionsCount: 0, // Would need to track liquidation events
-
-        // Performance metrics
-        // Calculate ROI based on provided initial capital
-        roi:
-          effectiveInitialCapital > 0
-            ? ((totalEquityValue - effectiveInitialCapital) /
-                effectiveInitialCapital) *
-              100
-            : 0,
-        roiPercent:
-          effectiveInitialCapital > 0
-            ? ((totalEquityValue - effectiveInitialCapital) /
-                effectiveInitialCapital) *
-              100
-            : 0,
-        averageTradeSize:
-          tradeCount > 0 ? totalVolume.dividedBy(tradeCount).toNumber() : 0,
-
-        // Status
-        accountStatus: openPositionsCount > 0 ? "active" : "inactive",
-
-        // Raw data storage: Only store for sampled requests (1% by default)
-        rawData: undefined,
-      };
-
-      // Sampling for raw data storage
-      const shouldSample = Math.random() < this.SAMPLING_RATE;
-
-      if (shouldSample) {
-        // Store raw data for debugging
-        summary.rawData = { clearinghouseState, recentFills };
-
-        // Also send to Sentry for monitoring
-        Sentry.captureMessage("Hyperliquid API Response Sample", {
-          level: "debug",
-          extra: {
-            response: { clearinghouseState, recentFills },
-            walletAddress: maskedAddress,
-            processingTime: Date.now() - startTime,
-          },
-        });
-
-        this.logger.debug(
-          `[HyperliquidProvider] Sampled request - storing raw data for ${maskedAddress}`,
-        );
-      }
-
-      this.logger.debug(
-        `[HyperliquidProvider] Fetched account summary for ${maskedAddress} in ${Date.now() - startTime}ms`,
-      );
-
-      return summary;
     } catch (error) {
+      const endTime = Date.now() - startTime;
+
       Sentry.captureException(error, {
         extra: {
           walletAddress: maskedAddress,
           method: "getAccountSummary",
-          processingTime: Date.now() - startTime,
+          processingTime: endTime,
         },
       });
 
@@ -389,6 +284,133 @@ export class HyperliquidPerpsProvider implements IPerpsDataProvider {
       );
       throw error;
     }
+  }
+
+  /**
+   * Internal method to build account summary from clearinghouse state
+   * This allows reuse when we already have the clearinghouse state
+   */
+  private async buildAccountSummaryFromState(
+    clearinghouseState: HyperliquidClearinghouseState,
+    walletAddress: string,
+    initialCapital?: number,
+  ): Promise<PerpsAccountSummary> {
+    const startTime = Date.now();
+    const maskedAddress = this.maskWalletAddress(walletAddress);
+
+    // Fetch recent fills to calculate volume and trade counts
+    const recentFills = await this.getRecentFills(walletAddress);
+
+    // Calculate metrics from raw data
+    const accountValue = new Decimal(
+      clearinghouseState.marginSummary.accountValue,
+    );
+    const totalMarginUsed = new Decimal(
+      clearinghouseState.marginSummary.totalMarginUsed,
+    );
+    const totalRawUsd = new Decimal(
+      clearinghouseState.marginSummary.totalRawUsd,
+    );
+
+    // Calculate PnL from positions
+    let totalUnrealizedPnl = new Decimal(0);
+    let totalPositionValue = new Decimal(0);
+    let openPositionsCount = 0;
+
+    for (const asset of clearinghouseState.assetPositions) {
+      if (asset.position && asset.position.szi !== "0") {
+        openPositionsCount++;
+        totalUnrealizedPnl = totalUnrealizedPnl.plus(
+          asset.position.unrealizedPnl || 0,
+        );
+        totalPositionValue = totalPositionValue.plus(
+          asset.position.positionValue || 0,
+        );
+      }
+    }
+
+    // Calculate volume and fees from recent fills
+    const { totalVolume, totalFees, tradeCount, closedPnl } =
+      this.calculateTradingStats(recentFills);
+
+    // Use provided initial capital or default to current equity
+    // Hyperliquid doesn't track initial capital, so we rely on the caller to provide it
+    const totalEquityValue = accountValue.toNumber();
+    const effectiveInitialCapital = initialCapital ?? totalEquityValue;
+
+    const summary: PerpsAccountSummary = {
+      // Core metrics
+      totalEquity: totalEquityValue,
+      initialCapital: effectiveInitialCapital,
+      availableBalance: totalRawUsd.toNumber(),
+      marginUsed: totalMarginUsed.toNumber(),
+
+      // PnL metrics
+      totalPnl: totalUnrealizedPnl.plus(closedPnl).toNumber(),
+      totalRealizedPnl: closedPnl.toNumber(),
+      totalUnrealizedPnl: totalUnrealizedPnl.toNumber(),
+
+      // Trading statistics
+      totalVolume: totalVolume.toNumber(),
+      totalTrades: tradeCount,
+      totalFeesPaid: totalFees.toNumber(),
+
+      // Position counts
+      openPositionsCount,
+      closedPositionsCount: 0, // Would need historical data
+      liquidatedPositionsCount: 0, // Would need to track liquidation events
+
+      // Performance metrics
+      // Calculate ROI based on provided initial capital
+      roi:
+        effectiveInitialCapital > 0
+          ? ((totalEquityValue - effectiveInitialCapital) /
+              effectiveInitialCapital) *
+            100
+          : 0,
+      roiPercent:
+        effectiveInitialCapital > 0
+          ? ((totalEquityValue - effectiveInitialCapital) /
+              effectiveInitialCapital) *
+            100
+          : 0,
+      averageTradeSize:
+        tradeCount > 0 ? totalVolume.dividedBy(tradeCount).toNumber() : 0,
+
+      // Status
+      accountStatus: openPositionsCount > 0 ? "active" : "inactive",
+
+      // Raw data storage: Only store for sampled requests (1% by default)
+      rawData: undefined,
+    };
+
+    // Sampling for raw data storage
+    const shouldSample = Math.random() < this.SAMPLING_RATE;
+
+    if (shouldSample) {
+      // Store raw data for debugging
+      summary.rawData = { clearinghouseState, recentFills };
+
+      // Also send to Sentry for monitoring
+      Sentry.captureMessage("Hyperliquid API Response Sample", {
+        level: "debug",
+        extra: {
+          response: { clearinghouseState, recentFills },
+          walletAddress: maskedAddress,
+          processingTime: Date.now() - startTime,
+        },
+      });
+
+      this.logger.debug(
+        `[HyperliquidProvider] Sampled request - storing raw data for ${maskedAddress}`,
+      );
+    }
+
+    this.logger.debug(
+      `[HyperliquidProvider] Fetched account summary for ${maskedAddress} in ${Date.now() - startTime}ms`,
+    );
+
+    return summary;
   }
 
   /**
@@ -416,85 +438,19 @@ export class HyperliquidPerpsProvider implements IPerpsDataProvider {
       const clearinghouseState =
         await this.getClearinghouseState(walletAddress);
 
-      // Fetch current market prices for all assets
-      const marketPrices = await this.getMarketPrices();
-
-      const positions: PerpsPosition[] = [];
-
-      for (const asset of clearinghouseState.assetPositions) {
-        const pos = asset.position;
-
-        // Skip if no position (size is 0)
-        if (!pos || pos.szi === "0") {
-          continue;
-        }
-
-        const size = new Decimal(pos.szi);
-        const isLong = size.isPositive();
-
-        // Get current price from market data or calculate from position data
-        const currentPrice = this.getCurrentPrice(pos, marketPrices);
-
-        // Generate a deterministic ID based on wallet, coin, side, and entry price
-        // Round entry price to nearest dollar to handle minor price variations
-        // This helps distinguish between different position entries while avoiding duplicates
-        // from minor price fluctuations in the weighted average
-        const entryPriceRounded = Math.round(
-          new Decimal(pos.entryPx).toNumber(),
-        );
-        const positionIdentifier = `${walletAddress.toLowerCase()}-${pos.coin}-${isLong ? "long" : "short"}-${entryPriceRounded}`;
-
-        // Create a shorter, more readable hash
-        const positionId = crypto
-          .createHash("sha256")
-          .update(positionIdentifier)
-          .digest("hex")
-          .substring(0, 16); // Use first 16 chars for readability
-
-        positions.push({
-          // Identifiers (deterministic based on wallet-coin-side combination)
-          providerPositionId: positionId,
-          providerTradeId: undefined,
-
-          // Position details
-          symbol: pos.coin,
-          side: isLong ? "long" : "short",
-          positionSizeUsd: new Decimal(pos.positionValue).abs().toNumber(),
-          leverage: pos.leverage.value,
-          collateralAmount: new Decimal(pos.marginUsed).toNumber(),
-
-          // Prices
-          entryPrice: new Decimal(pos.entryPx).toNumber(),
-          currentPrice,
-          liquidationPrice: pos.liquidationPx
-            ? new Decimal(pos.liquidationPx).toNumber()
-            : undefined,
-
-          // PnL
-          pnlUsdValue: new Decimal(pos.unrealizedPnl).toNumber(),
-          pnlPercentage: new Decimal(pos.returnOnEquity).times(100).toNumber(),
-
-          // Status (Hyperliquid only returns open positions in clearinghouse state)
-          status: "Open",
-
-          // Timestamps (see class-level JSDoc for limitation details)
-          openedAt: undefined, // Hyperliquid API doesn't provide position open time
-          lastUpdatedAt: new Date(),
-          closedAt: undefined,
-        });
-      }
-
-      this.logger.debug(
-        `[HyperliquidProvider] Fetched ${positions.length} positions for ${maskedAddress} in ${Date.now() - startTime}ms`,
+      // Delegate to internal method that works with clearinghouse state
+      return await this.buildPositionsFromState(
+        clearinghouseState,
+        walletAddress,
       );
-
-      return positions;
     } catch (error) {
+      const endTime = Date.now() - startTime;
+
       Sentry.captureException(error, {
         extra: {
           walletAddress: maskedAddress,
           method: "getPositions",
-          processingTime: Date.now() - startTime,
+          processingTime: endTime,
         },
       });
 
@@ -504,6 +460,161 @@ export class HyperliquidPerpsProvider implements IPerpsDataProvider {
           address: maskedAddress,
         },
         "[HyperliquidProvider] Error fetching positions",
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Internal method to build positions from clearinghouse state
+   * This allows reuse when we already have the clearinghouse state
+   */
+  private async buildPositionsFromState(
+    clearinghouseState: HyperliquidClearinghouseState,
+    walletAddress: string,
+  ): Promise<PerpsPosition[]> {
+    const startTime = Date.now();
+    const maskedAddress = this.maskWalletAddress(walletAddress);
+
+    // Fetch current market prices for all assets
+    const marketPrices = await this.getMarketPrices();
+
+    const positions: PerpsPosition[] = [];
+
+    for (const asset of clearinghouseState.assetPositions) {
+      const pos = asset.position;
+
+      // Skip if no position (size is 0)
+      if (!pos || pos.szi === "0") {
+        continue;
+      }
+
+      const size = new Decimal(pos.szi);
+      const isLong = size.isPositive();
+
+      // Get current price from market data or calculate from position data
+      const currentPrice = this.getCurrentPrice(pos, marketPrices);
+
+      // Generate a deterministic ID based on wallet, coin, side, and entry price
+      // Round entry price to nearest dollar to handle minor price variations
+      // This helps distinguish between different position entries while avoiding duplicates
+      // from minor price fluctuations in the weighted average
+      const entryPriceRounded = Math.round(new Decimal(pos.entryPx).toNumber());
+      const positionIdentifier = `${walletAddress.toLowerCase()}-${pos.coin}-${isLong ? "long" : "short"}-${entryPriceRounded}`;
+
+      // Create a shorter, more readable hash
+      const positionId = crypto
+        .createHash("sha256")
+        .update(positionIdentifier)
+        .digest("hex")
+        .substring(0, 16); // Use first 16 chars for readability
+
+      positions.push({
+        // Identifiers (deterministic based on wallet-coin-side combination)
+        providerPositionId: positionId,
+        providerTradeId: undefined,
+
+        // Position details
+        symbol: pos.coin,
+        side: isLong ? "long" : "short",
+        positionSizeUsd: new Decimal(pos.positionValue).abs().toNumber(),
+        leverage: pos.leverage.value,
+        collateralAmount: new Decimal(pos.marginUsed).toNumber(),
+
+        // Prices
+        entryPrice: new Decimal(pos.entryPx).toNumber(),
+        currentPrice,
+        liquidationPrice: pos.liquidationPx
+          ? new Decimal(pos.liquidationPx).toNumber()
+          : undefined,
+
+        // PnL
+        pnlUsdValue: new Decimal(pos.unrealizedPnl).toNumber(),
+        pnlPercentage: new Decimal(pos.returnOnEquity).times(100).toNumber(),
+
+        // Status (Hyperliquid only returns open positions in clearinghouse state)
+        status: "Open",
+
+        // Timestamps (see class-level JSDoc for limitation details)
+        openedAt: undefined, // Hyperliquid API doesn't provide position open time
+        lastUpdatedAt: new Date(),
+        closedAt: undefined,
+      });
+    }
+
+    this.logger.debug(
+      `[HyperliquidProvider] Fetched ${positions.length} positions for ${maskedAddress} in ${Date.now() - startTime}ms`,
+    );
+
+    return positions;
+  }
+
+  /**
+   * Batch fetch account summary and positions with a single clearinghouse state call
+   * Avoids duplicate API calls
+   */
+  async getAccountDataBatch(
+    walletAddress: string,
+    initialCapital?: number,
+  ): Promise<{
+    accountSummary: PerpsAccountSummary;
+    positions: PerpsPosition[];
+  }> {
+    const startTime = Date.now();
+    const maskedAddress = this.maskWalletAddress(walletAddress);
+
+    // Add Sentry breadcrumb for debugging
+    Sentry.addBreadcrumb({
+      category: "hyperliquid.api",
+      message: `Account data batch request`,
+      level: "info",
+      data: {
+        walletAddress: maskedAddress,
+        hasInitialCapital: initialCapital !== undefined,
+      },
+    });
+
+    try {
+      this.logger.debug(
+        `[HyperliquidProvider] Fetching account data batch for ${maskedAddress}`,
+      );
+
+      // Fetch clearinghouse state once
+      const clearinghouseState =
+        await this.getClearinghouseState(walletAddress);
+
+      // Build both account summary and positions from the same state
+      const [accountSummary, positions] = await Promise.all([
+        this.buildAccountSummaryFromState(
+          clearinghouseState,
+          walletAddress,
+          initialCapital,
+        ),
+        this.buildPositionsFromState(clearinghouseState, walletAddress),
+      ]);
+
+      this.logger.debug(
+        `[HyperliquidProvider] Fetched account data batch for ${maskedAddress} in ${Date.now() - startTime}ms`,
+      );
+
+      return { accountSummary, positions };
+    } catch (error) {
+      const endTime = Date.now() - startTime;
+
+      Sentry.captureException(error, {
+        extra: {
+          walletAddress: maskedAddress,
+          method: "getAccountDataBatch",
+          processingTime: endTime,
+        },
+      });
+
+      this.logger.error(
+        {
+          error,
+          address: maskedAddress,
+        },
+        "[HyperliquidProvider] Error fetching account data batch",
       );
       throw error;
     }

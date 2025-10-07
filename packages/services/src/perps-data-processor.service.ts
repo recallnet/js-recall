@@ -250,14 +250,31 @@ export class PerpsDataProcessor {
         // Continue without initial capital - provider will use current equity
       }
 
-      // 2. Fetch account summary from provider (with initial capital if available)
-      const accountSummary = await provider.getAccountSummary(
-        walletAddress,
-        initialCapital,
-      );
+      // 2. Fetch account data from provider
+      // Use batch method if available for efficiency (single API call)
+      let accountSummary: PerpsAccountSummary;
+      let positions: PerpsPosition[];
 
-      // 3. Fetch positions from provider
-      const positions = await provider.getPositions(walletAddress);
+      if (provider.getAccountDataBatch) {
+        // Provider supports batch fetching - more efficient
+        const batchResult = await provider.getAccountDataBatch(
+          walletAddress,
+          initialCapital,
+        );
+        accountSummary = batchResult.accountSummary;
+        positions = batchResult.positions;
+
+        this.logger.debug(
+          `[PerpsDataProcessor] Used batch fetch for agent ${agentId}`,
+        );
+      } else {
+        // Fall back to sequential fetching
+        accountSummary = await provider.getAccountSummary(
+          walletAddress,
+          initialCapital,
+        );
+        positions = await provider.getPositions(walletAddress);
+      }
 
       // 4. Transform to database format
       const dbPositions = positions.map((p) =>

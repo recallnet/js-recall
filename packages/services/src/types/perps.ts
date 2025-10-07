@@ -213,6 +213,20 @@ export interface IPerpsDataProvider {
    * @returns True if provider is operational
    */
   isHealthy?(): Promise<boolean>;
+
+  /**
+   * Batch fetch account summary and positions with a single API call (when supported)
+   * @param walletAddress Wallet address to query
+   * @param initialCapital Optional initial capital for providers that don't track it
+   * @returns Both account summary and positions
+   */
+  getAccountDataBatch?(
+    walletAddress: string,
+    initialCapital?: number,
+  ): Promise<{
+    accountSummary: PerpsAccountSummary;
+    positions: PerpsPosition[];
+  }>;
 }
 
 /**
