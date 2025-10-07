@@ -248,9 +248,14 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
     const maskedAddress = this.maskWalletAddress(walletAddress);
 
     // Log if initial capital is provided (for debugging provider compatibility)
+    // Symphony tracks its own initial capital, so this parameter is ignored
     if (initialCapital !== undefined) {
       this.logger.debug(
-        `[SymphonyProvider] Initial capital provided: ${initialCapital} (will use Symphony's tracked value)`,
+        {
+          address: maskedAddress,
+          providedInitialCapital: initialCapital,
+        },
+        "[SymphonyProvider] Initial capital provided but will use Symphony's tracked value",
       );
     }
 
