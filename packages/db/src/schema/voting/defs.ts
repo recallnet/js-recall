@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
+  bigint,
   boolean,
   index,
   integer,
@@ -14,6 +15,7 @@ import {
 
 import { agents, competitions, users } from "../core/defs.js";
 import { blockchainAddress, bytea, tokenAmount } from "../custom-types.js";
+import { stakes } from "../indexing/defs.js";
 
 export const epochs = pgTable("epochs", {
   id: uuid().primaryKey().notNull().defaultRandom(),
@@ -198,6 +200,29 @@ export const boostChanges = pgTable(
     index("boost_changes_created_at_idx").on(t.createdAt),
     // address must be exactly 20 bytes
     sql`CHECK (octet_length(${t.wallet}) = 20)`,
+  ],
+);
+
+export const stakeBoostAwards = pgTable(
+  "stake_boost_awards",
+  {
+    id: serial().primaryKey().notNull(),
+    stakeId: bigint("stake_id", { mode: "bigint" })
+      .notNull()
+      .references(() => stakes.id, { onDelete: "cascade" }),
+    boostChangeId: uuid("boost_change_id")
+      .notNull()
+      .references(() => boostChanges.id, { onDelete: "cascade" }),
+    competitionId: uuid("competition_id")
+      .notNull()
+      .references(() => competitions.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("stake_boost_awards_stake_id_competition_id_idx").on(
+      t.stakeId,
+      t.competitionId,
+    ),
   ],
 );
 

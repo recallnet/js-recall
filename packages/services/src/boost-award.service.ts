@@ -60,6 +60,73 @@ export class BoostAwardService {
     this.#noStakeBoostAmount = config.boost.noStakeBoostAmount;
   }
 
+  awardAmountForStake(stake: StakePosition, competition: CompetitionPosition) {
+    const stakedAt = stake.stakedAt.valueOf();
+    const canUnstakeAfter = stake.canUnstakeAfter.valueOf();
+    const votingEndDate = competition.votingEndDate.valueOf();
+    const votingStartDate = competition.votingStartDate.valueOf();
+    let multiplier: bigint;
+    // Before voting starts
+    if (stakedAt < votingStartDate) {
+      // And covers the voting period
+      if (canUnstakeAfter >= votingEndDate) {
+        // Means can not unstake before the voting ends
+        multiplier = 2n;
+      } else {
+        // Can unstake during the voting period
+        multiplier = 1n;
+      }
+    } else {
+      // Staked after the voting starts
+      multiplier = 1n;
+    }
+    return stake.amount * multiplier;
+  }
+
+  async availableStakeAwards(wallet: string, competitionId: string) {
+    const competition = await this.#competitionRepo.findById(competitionId);
+    if (!competition) {
+      throw new Error("Competition not found.");
+    }
+
+    const { id, votingStartDate, votingEndDate } = competition;
+
+    if (!(votingStartDate && votingEndDate)) {
+      throw new Error("Competition has no boost window.");
+    }
+
+    const stakes = await this.#boostRepository.unawardedStakes(
+      wallet,
+      competition.id,
+    );
+
+    return stakes.reduce(
+      (acc, stake) => {
+        const stakePosition: StakePosition = {
+          ...stake,
+          wallet,
+        };
+        const awardAmount = this.awardAmountForStake(stakePosition, {
+          id,
+          votingStartDate,
+          votingEndDate,
+        });
+
+        acc.stakes.push({
+          ...stake,
+          awardAmount,
+        });
+        acc.totalAwardAmount += awardAmount;
+
+        return acc;
+      },
+      {
+        stakes: [] as Array<(typeof stakes)[0] & { awardAmount: bigint }>,
+        totalAwardAmount: 0n,
+      },
+    );
+  }
+
   async awardForStake(
     stake: StakePosition,
     competition: CompetitionPosition,
@@ -80,27 +147,8 @@ export class BoostAwardService {
       };
     }
     const userId = user.id;
-    const stakedAt = stake.stakedAt.valueOf();
-    const canUnstakeAfter = stake.canUnstakeAfter.valueOf();
-    const votingEndDate = competition.votingEndDate.valueOf();
-    const votingStartDate = competition.votingStartDate.valueOf();
-    let multiplier: bigint;
-    // Before voting starts
-    if (stakedAt < votingStartDate) {
-      // And covers the voting period
-      if (canUnstakeAfter >= votingEndDate) {
-        // Means can not unstake before the voting ends
-        multiplier = 2n;
-      } else {
-        // Can unstake during the voting period
-        multiplier = 1n;
-      }
-    } else {
-      // Staked after the voting starts
-      multiplier = 1n;
-    }
-    const boostAmount = stake.amount * multiplier;
-    return this.#boostRepository.increase(
+    const boostAmount = this.awardAmountForStake(stake, competition);
+    const increaseRes = await this.#boostRepository.increase(
       {
         userId: userId,
         wallet: wallet,
@@ -113,6 +161,17 @@ export class BoostAwardService {
       },
       tx,
     );
+    if (increaseRes.type === "applied") {
+      await this.#boostRepository.recordStakeBoostAward(
+        {
+          competitionId: competition.id,
+          stakeId: stake.id,
+          boostChangeId: increaseRes.changeId,
+        },
+        tx,
+      );
+    }
+    return increaseRes;
   }
 
   async awardNoStake(
