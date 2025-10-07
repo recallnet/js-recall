@@ -316,8 +316,8 @@ export default function AgentProfile({
 
             <div
               className={cn(
-                "mt-3 min-h-40 w-full overflow-y-auto overflow-x-visible py-2",
-                isUserAgent ? "max-h-[70px]" : "h-[150px] max-h-[136px]",
+                "scrollbar-thin scrollbar-track-transparent scrollbar-thumb-secondary-foreground/30 hover:scrollbar-thumb-secondary-foreground/50 mt-3 w-full overflow-y-auto overflow-x-hidden py-2",
+                isUserAgent ? "h-[70px]" : "h-[136px]",
                 trophies.length > 0 && "px-2",
               )}
             >
@@ -365,12 +365,7 @@ export default function AgentProfile({
           </div>
         </div>
         <div className="xs:grid col-span-3 row-start-2 mt-8 hidden grid-rows-2 border-b border-l border-r border-t text-xs lg:col-start-3 lg:row-start-1 lg:mt-0 lg:grid-rows-3 lg:border-l-0">
-          <div
-            className={cn(
-              "flex flex-col items-start gap-2 border-b p-6",
-              agent.skills && agent.skills?.length > 4 ? "" : "lg:row-span-2",
-            )}
-          >
+          <div className="flex flex-col items-start border-b p-6">
             {isUserAgent ? (
               <EditAgentField
                 useTextarea
@@ -387,11 +382,18 @@ export default function AgentProfile({
                 agent description
               </span>
             )}
-            <span className="text-primary-foreground break-words text-base">
-              {agent.description || "No profile created yet"}
-            </span>
+            <div className="scrollbar-thin scrollbar-track-transparent scrollbar-thumb-secondary-foreground/30 hover:scrollbar-thumb-secondary-foreground/50 mt-2 max-h-[120px] w-full overflow-y-auto pr-2">
+              <span className="text-primary-foreground break-words text-base">
+                {agent.description || "No profile created yet"}
+              </span>
+            </div>
           </div>
-          <div className="flex flex-col items-start p-6">
+          <div
+            className={cn(
+              "flex flex-col items-start p-6",
+              agent.skills && agent.skills?.length > 4 ? "" : "lg:row-span-2",
+            )}
+          >
             {isUserAgent ? (
               <EditSkillsField
                 title="Agent Skills"
