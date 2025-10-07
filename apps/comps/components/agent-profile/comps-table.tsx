@@ -93,9 +93,7 @@ export function CompetitionTable({
                 Placement
               </SortableTableHeader> */}
               <TableHead>Trophies</TableHead>
-              {canClaim && (
-                <TableHead className="text-left font-bold">Reward</TableHead>
-              )}
+              {canClaim && <TableHead className="text-left">Reward</TableHead>}
             </TableRow>
           </TableHeader>
 

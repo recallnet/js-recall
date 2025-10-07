@@ -63,7 +63,7 @@ function TableHead({ className, ref, ...props }: TableHeadProps) {
     <th
       ref={ref}
       className={cn(
-        "text-primary-foreground flex h-12 items-center px-4 align-middle font-bold",
+        "text-primary-foreground flex h-12 items-center px-4 align-middle",
         className,
       )}
       {...props}
@@ -119,7 +119,7 @@ function SortableTableHeader({
       {...props}
     >
       <div className="flex items-center gap-2">
-        <span className="font-bold">{props.children}</span>
+        <span>{props.children}</span>
         {getSortIcon()}
       </div>
     </TableHead>
