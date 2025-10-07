@@ -30,6 +30,7 @@ import { PriceTrackerService } from "./price-tracker.service.js";
 import type { AgentWithMetrics } from "./types/agent-metrics.js";
 import { ApiError } from "./types/index.js";
 import {
+  AgentCompetitionsFilters,
   AgentCompetitionsParams,
   AgentMetadata,
   AgentPublic,
@@ -944,15 +945,17 @@ export class AgentService {
   /**
    * Get competitions for a specific agent
    * @param agentId Agent ID
-   * @param params Agent competitions parameters
-   * @returns Object containing agents array and total count
+   * @param filters Filter parameters (status, claimed)
+   * @param paging Pagination parameters (limit, offset, sort)
+   * @returns Object containing competitions array and total count
    */
   async getCompetitionsForAgent(
     agentId: string,
-    filters: AgentCompetitionsParams,
+    filters: AgentCompetitionsFilters,
     paging: PagingParams,
   ) {
     try {
+      // Combine filters and paging for repository call
       const params = {
         ...filters,
         ...paging,

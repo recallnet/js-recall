@@ -14,9 +14,13 @@ import {
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { Trophy, TrophyBadge } from "@/components/trophy-badge";
-import { Competition, CompetitionStatus } from "@/types";
+import type { RouterOutputs } from "@/rpc/router";
+import { CompetitionStatus } from "@/types";
 
 import RainbowText from "../animations/rainbow-text";
+
+type AgentCompetition =
+  RouterOutputs["agent"]["getCompetitions"]["competitions"][number];
 
 export function CompetitionTable({
   competitions,
@@ -26,7 +30,7 @@ export function CompetitionTable({
   onLoadMore,
   total = 0,
 }: {
-  competitions: (Competition & { trophies: Trophy[] })[];
+  competitions: (AgentCompetition & { trophies: Trophy[] })[];
   handleSortChange: (field: string) => void;
   sortState: Record<string, SortState>;
   canClaim: boolean;

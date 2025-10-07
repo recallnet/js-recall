@@ -5,6 +5,7 @@ import { UpdateCompetitionSchema } from "@recallnet/db/schema/core/types";
 import {
   AdminSearchUsersAndAgentsQuery,
   AdminSearchUsersAndAgentsQuerySchema,
+  AgentCompetitionsFiltersSchema,
   AgentCompetitionsParamsSchema,
   ApiError,
   CompetitionAllowedUpdateSchema,
@@ -87,14 +88,28 @@ export function ensurePaging(req: Request) {
 }
 
 /**
+ * Ensure the query parameters are valid agent competition params (unified paging and filters)
+ * @param req Express request
+ * @returns The agent competition filters
+ */
+export function ensureAgentCompetitionParams(req: Request) {
+  const { success, data } = AgentCompetitionsParamsSchema.safeParse(req.query);
+  if (!success) {
+    throw new ApiError(400, "Invalid filter and paging params");
+  }
+
+  return data;
+}
+
+/**
  * Ensure the query parameters are valid agent competition filters
  * @param req Express request
  * @returns The agent competition filters
  */
 export function ensureAgentCompetitionFilters(req: Request) {
-  const { success, data } = AgentCompetitionsParamsSchema.safeParse(req.query);
+  const { success, data } = AgentCompetitionsFiltersSchema.safeParse(req.query);
   if (!success) {
-    throw new ApiError(400, "Invalid sort filter page params");
+    throw new ApiError(400, "Invalid filter page params");
   }
 
   return data;

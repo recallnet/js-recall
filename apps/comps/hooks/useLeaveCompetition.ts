@@ -29,7 +29,12 @@ export const useLeaveCompetition = () => {
           }),
         });
         queryClient.invalidateQueries({
-          queryKey: ["agent-competitions", agentId],
+          queryKey: tanstackClient.agent.getCompetitions.key({
+            input: { agentId },
+          }),
+        });
+        queryClient.invalidateQueries({
+          queryKey: tanstackClient.leaderboard.getGlobal.key(),
         });
         queryClient.invalidateQueries({
           queryKey: tanstackClient.competitions.listEnriched.key(),
