@@ -2512,4 +2512,94 @@ describe("Admin API", () => {
     expect(prizePools[0]!.agentPool.toString()).toBe("2000000000000000000000");
     expect(prizePools[0]!.userPool.toString()).toBe("1000000000000000000000");
   });
+
+  test("should create a competition with minimum stake", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Create a competition with minimum stake
+    const createResponse = await adminClient.createCompetition({
+      name: "Competition with Minimum Stake",
+      description: "Test competition with minimum stake requirement",
+      type: "trading",
+      minimumStake: 1000, // 1000 tokens minimum stake
+    });
+
+    expect(createResponse.success).toBe(true);
+    const createResult = createResponse as CreateCompetitionResponse;
+    expect(createResult.competition).toBeDefined();
+    expect(createResult.competition.name).toBe(
+      "Competition with Minimum Stake",
+    );
+    expect(createResult.competition.description).toBe(
+      "Test competition with minimum stake requirement",
+    );
+    expect(createResult.competition.type).toBe("trading");
+
+    // Verify minimum stake was set correctly using API call
+    const competitionId = createResult.competition.id;
+
+    // Get the competition details to verify minimum stake
+    const detailsResponse = await adminClient.getCompetition(competitionId);
+    expect(detailsResponse.success).toBe(true);
+
+    const competitionDetails = detailsResponse as CompetitionDetailResponse;
+    expect(competitionDetails.competition).toBeDefined();
+    expect(competitionDetails.competition.minimumStake).toBeDefined();
+    expect(competitionDetails.competition.minimumStake).toBe(1000);
+  });
+
+  test("should update a competition with minimum stake", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // First create a competition without minimum stake
+    const createResponse = await adminClient.createCompetition({
+      name: "Competition to Update with Minimum Stake",
+      description: "Test updating competition with minimum stake",
+      type: "trading",
+    });
+
+    expect(createResponse.success).toBe(true);
+    const competitionId = (createResponse as CreateCompetitionResponse)
+      .competition.id;
+
+    // Verify initial state has no minimum stake using API call
+    const initialDetailsResponse =
+      await adminClient.getCompetition(competitionId);
+    expect(initialDetailsResponse.success).toBe(true);
+
+    const initialCompetitionDetails =
+      initialDetailsResponse as CompetitionDetailResponse;
+    expect(initialCompetitionDetails.competition).toBeDefined();
+    expect(initialCompetitionDetails.competition.minimumStake).toBeNull();
+
+    // Now update the competition with minimum stake
+    const updateResponse = await adminClient.updateCompetition(competitionId, {
+      name: "Updated Competition with Minimum Stake",
+      description: "Updated with minimum stake requirement",
+      minimumStake: 2500, // 2500 tokens minimum stake
+    });
+
+    expect(updateResponse.success).toBe(true);
+    const updateResult = updateResponse as UpdateCompetitionResponse;
+    expect(updateResult.competition).toBeDefined();
+    expect(updateResult.competition.name).toBe(
+      "Updated Competition with Minimum Stake",
+    );
+    expect(updateResult.competition.description).toBe(
+      "Updated with minimum stake requirement",
+    );
+
+    // Verify minimum stake was updated correctly using API call
+    const updatedDetailsResponse =
+      await adminClient.getCompetition(competitionId);
+    expect(updatedDetailsResponse.success).toBe(true);
+
+    const updatedCompetitionDetails =
+      updatedDetailsResponse as CompetitionDetailResponse;
+    expect(updatedCompetitionDetails.competition).toBeDefined();
+    expect(updatedCompetitionDetails.competition.minimumStake).toBeDefined();
+    expect(updatedCompetitionDetails.competition.minimumStake).toBe(2500);
+  });
 });

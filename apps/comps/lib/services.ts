@@ -182,6 +182,8 @@ export const competitionService = new CompetitionService(
   agentScoreRepository,
   perpsRepository,
   competitionRepository,
+  stakesRepository,
+  userRepository,
   db,
   config,
   createLogger("CompetitionService"),

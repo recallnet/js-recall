@@ -118,8 +118,8 @@ export function calculateRewardsForUsers(
 
     for (const [competitor, effectiveBoost] of Object.entries(competitors)) {
       if (effectiveBoost.gt(0)) {
-        // This check is to avoid the case where an user has voted to a competitor that is not in the leader board,
-        // that can happend if the  competitor was disqualified or removed from the leaderboard
+        // This check is to avoid the case where an user has voted to a competitor that is not in the leaderboard,
+        // that can happen if the  competitor was disqualified or removed from competition or left the competition
         if (
           !(competitor in prizePoolSplits) ||
           !(competitor in competitorTotals)
