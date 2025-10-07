@@ -149,7 +149,7 @@ export interface PerpsPosition {
   status: "Open" | "Closed" | "Liquidated";
 
   // Timestamps
-  openedAt: Date;
+  openedAt?: Date; // Optional - some providers don't provide position open time
   lastUpdatedAt?: Date;
   closedAt?: Date;
 }
@@ -178,9 +178,13 @@ export interface IPerpsDataProvider {
   /**
    * Get account summary with total equity and metrics
    * @param walletAddress Wallet address to query
+   * @param initialCapital Optional initial capital for providers that don't track it (e.g., Hyperliquid)
    * @returns Account summary with equity, PnL, and stats
    */
-  getAccountSummary(walletAddress: string): Promise<PerpsAccountSummary>;
+  getAccountSummary(
+    walletAddress: string,
+    initialCapital?: number,
+  ): Promise<PerpsAccountSummary>;
 
   /**
    * Get all positions (open, closed, liquidated) for a wallet
@@ -209,6 +213,20 @@ export interface IPerpsDataProvider {
    * @returns True if provider is operational
    */
   isHealthy?(): Promise<boolean>;
+
+  /**
+   * Batch fetch account summary and positions with a single API call (when supported)
+   * @param walletAddress Wallet address to query
+   * @param initialCapital Optional initial capital for providers that don't track it
+   * @returns Both account summary and positions
+   */
+  getAccountDataBatch?(
+    walletAddress: string,
+    initialCapital?: number,
+  ): Promise<{
+    accountSummary: PerpsAccountSummary;
+    positions: PerpsPosition[];
+  }>;
 }
 
 /**

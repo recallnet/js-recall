@@ -1445,7 +1445,7 @@ export class CompetitionRepository {
   }
 
   /**
-   * Calculate maximum drawdown using SQL window functions for efficiency
+   * Calculate maximum drawdown using SQL window functions
    * This avoids loading all snapshots into memory
    *
    * Max Drawdown = (Trough - Peak) / Peak (will be negative or 0)
