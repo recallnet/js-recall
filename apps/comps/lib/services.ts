@@ -51,14 +51,6 @@ export const walletWatchList = new WalletWatchlist(
   createLogger("WalletWatchlist"),
 );
 
-export const boostService = new BoostService(
-  boostRepository,
-  competitionRepository,
-  userRepository,
-  config,
-  createLogger("BoostService"),
-);
-
 export const balanceService = new BalanceService(
   balanceRepository,
   config,
@@ -107,6 +99,16 @@ export const boostAwardService = new BoostAwardService(
   stakesRepository,
   userService,
   config,
+);
+
+export const boostService = new BoostService(
+  boostRepository,
+  competitionRepository,
+  userRepository,
+  boostAwardService,
+  db,
+  config,
+  createLogger("BoostService"),
 );
 
 export const agentService = new AgentService(
