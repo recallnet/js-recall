@@ -771,34 +771,13 @@ class BoostRepository {
     });
   }
 
-  async stakeBoostAwards(
-    wallet: string,
-    competitionId: string,
-    tx?: Transaction,
-  ) {
-    const executor = tx || this.#db;
-    const u8aWallet = BlockchainAddressAsU8A.encode(wallet);
-    const res = await executor
-      .select({ stakeBoostAward: schema.stakeBoostAwards, stake: stakes })
-      .from(schema.stakeBoostAwards)
-      .innerJoin(stakes, eq(schema.stakeBoostAwards.stakeId, stakes.id))
-      .where(
-        and(
-          eq(schema.stakeBoostAwards.competitionId, competitionId),
-          eq(stakes.wallet, u8aWallet),
-        ),
-      )
-      .orderBy(desc(schema.stakeBoostAwards.createdAt));
-    return res;
-  }
-
   /**
    * Retrieve stakes for a wallet that haven't received boost awards for a specific competition.
    *
    * Behavior:
-   * 1) Query all stakes for the specified wallet.
-   * 2) LEFT JOIN with stakeBoostAwards to identify which stakes already have awards for the competition.
-   * 3) Filter to only return stakes that don't have corresponding award records.
+   * 1) Query all stakes for the specified wallet that are still active (not unstaked).
+   * 2) Use NOT EXISTS subquery to filter out stakes that already have award records for the competition.
+   * 3) Return only stakes that don't have corresponding stakeBoostAward records.
    *
    * Read-Only Operation:
    * - This method only reads data and does not modify any records.
@@ -809,9 +788,10 @@ class BoostRepository {
    * - Empty array if no unawarded stakes found for the wallet/competition combination.
    *
    * Notes:
-   * - Only returns stakes that exist but don't have corresponding stakeBoostAward records.
+   * - Only returns active stakes (unstakedAt is null) without corresponding stakeBoostAward records.
    * - Results are ordered by stake creation timestamp (most recent first).
    * - The wallet address is encoded to Uint8Array format for database comparison.
+   * - Uses NOT EXISTS subquery for efficient exclusion of already awarded stakes.
    *
    * @param wallet - EVM address of the wallet (will be encoded to Uint8Array)
    * @param competitionId - ID of the competition context
