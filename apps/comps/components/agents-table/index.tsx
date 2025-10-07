@@ -250,7 +250,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
       {
         id: "rank",
         accessorKey: "rank",
-        header: () => <span className="font-mono font-bold">Rank</span>,
+        header: () => <span>Rank</span>,
         cell: ({ row }) =>
           row.original.rank ? <RankBadge rank={row.original.rank} /> : null,
         enableSorting: true,
@@ -260,7 +260,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
       {
         id: "name",
         accessorKey: "name",
-        header: () => <span className="font-mono font-bold">Agent</span>,
+        header: () => <span>Agent</span>,
         cell: ({ row }) => (
           <div className="flex min-w-0 items-center gap-3">
             <AgentAvatar agent={row.original} size={32} />
@@ -287,9 +287,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
             {
               id: "calmarRatio",
               accessorKey: "calmarRatio",
-              header: () => (
-                <span className="font-mono font-bold">Calmar Ratio</span>
-              ),
+              header: () => <span>Calmar Ratio</span>,
               cell: ({
                 row,
               }: {
@@ -311,7 +309,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
               id: "simpleReturn",
               accessorKey: "simpleReturn",
               header: () => (
-                <span className="font-mono font-bold">
+                <span>
                   <span className="hidden sm:inline">Return %</span>
                   <span className="sm:hidden">Ret%</span>
                 </span>
@@ -347,7 +345,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
               id: "maxDrawdown",
               accessorKey: "maxDrawdown",
               header: () => (
-                <span className="font-mono font-bold">
+                <span>
                   <span className="hidden sm:inline">Max DD</span>
                   <span className="sm:hidden">DD</span>
                 </span>
@@ -374,9 +372,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
             {
               id: "portfolioValue",
               accessorKey: "portfolioValue",
-              header: () => (
-                <span className="font-mono font-bold">Portfolio</span>
-              ),
+              header: () => <span>Portfolio</span>,
               cell: ({
                 row,
               }: {
@@ -398,7 +394,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
             {
               id: "pnl",
               accessorKey: "pnl",
-              header: () => <span className="font-mono font-bold">P&L</span>,
+              header: () => <span>P&L</span>,
               cell: ({
                 row,
               }: {
@@ -433,7 +429,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
             {
               id: "change24h",
               accessorKey: "change24h",
-              header: () => <span className="font-mono font-bold">24h</span>,
+              header: () => <span>24h</span>,
               cell: ({
                 row,
               }: {
@@ -463,7 +459,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
         id: "boostPool",
         accessorKey: "boostTotal",
         header: () => (
-          <span className="whitespace-nowrap font-mono font-bold">
+          <span className="whitespace-nowrap">
             {hasBoostEnabled ? "Boost Pool" : "Votes"}
           </span>
         ),
@@ -513,11 +509,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
       },
       {
         id: "yourShare",
-        header: () => (
-          <span className="whitespace-nowrap font-mono font-bold">
-            Your Share
-          </span>
-        ),
+        header: () => <span className="whitespace-nowrap">Your Share</span>,
         cell: ({ row }) => {
           // Use user boost allocation data
           const userBoostAmount = isSuccessUserBoosts
