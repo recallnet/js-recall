@@ -66,12 +66,12 @@ type StakeStep =
 /**
  * Predefined stake durations in seconds (as bigint)
  * These correspond to the allowed durations in the smart contract:
- * - 90 days, 180 days, 270 days, 365 days
+ * - 30, 90 days, 180 days, 365 days
  */
 const STAKE_DURATIONS = {
+  "30": BigInt(30 * 24 * 60 * 60), // 30 days in seconds
   "90": BigInt(90 * 24 * 60 * 60), // 90 days in seconds
   "180": BigInt(180 * 24 * 60 * 60), // 180 days in seconds
-  "270": BigInt(270 * 24 * 60 * 60), // 270 days in seconds
   "365": BigInt(365 * 24 * 60 * 60), // 365 days in seconds
 } as const;
 
@@ -98,7 +98,7 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
   // Amounts are tracked as bigint base units (decimals per token)
   const [stakeAmountRaw, setStakeAmountRaw] = useState<bigint>(0n);
   const [selectedDuration, setSelectedDuration] =
-    useState<StakeDurationKey>("90");
+    useState<StakeDurationKey>("30");
   const [error, setError] = useState<string | null>(null);
   const [termsAccepted, setTermsAccepted] = useState<boolean>(false);
   const [isCollapsibleOpen, setIsCollapsibleOpen] = useState<boolean>(true);
@@ -200,7 +200,7 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
     if (isOpen) {
       setStep("stake");
       setStakeAmountRaw(0n);
-      setSelectedDuration("90");
+      setSelectedDuration("30");
       setError(null);
       setTermsAccepted(false);
       setIsCollapsibleOpen(true);
@@ -401,14 +401,14 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
                     }}
                     className="flex w-full gap-2"
                   >
+                    <ToggleGroupItem value="30" className="flex-1">
+                      30 Days
+                    </ToggleGroupItem>
                     <ToggleGroupItem value="90" className="flex-1">
                       90 Days
                     </ToggleGroupItem>
                     <ToggleGroupItem value="180" className="flex-1">
                       180 Days
-                    </ToggleGroupItem>
-                    <ToggleGroupItem value="270" className="flex-1">
-                      270 Days
                     </ToggleGroupItem>
                     <ToggleGroupItem value="365" className="flex-1">
                       365 Days

@@ -59,7 +59,8 @@ type UseStakingContractReturn = {
 export const useStakingContract = (): UseStakingContractReturn => {
   const contractAddress = useStakingContractAddress();
   const { queryKey: userStakesQueryKey } = useUserStakes();
-  const recall = useRecall();
+  const { queryKey: totalUserStakedQueryKey } = useTotalUserStaked();
+  const { queryKey: recallQueryKey } = useRecall();
   const queryClient = useQueryClient();
 
   const {
@@ -78,9 +79,16 @@ export const useStakingContract = (): UseStakingContractReturn => {
   useEffect(() => {
     if (isConfirmed) {
       queryClient.invalidateQueries({ queryKey: userStakesQueryKey });
-      queryClient.invalidateQueries({ queryKey: recall.queryKey });
+      queryClient.invalidateQueries({ queryKey: totalUserStakedQueryKey });
+      queryClient.invalidateQueries({ queryKey: recallQueryKey });
     }
-  }, [isConfirmed, queryClient, userStakesQueryKey]);
+  }, [
+    isConfirmed,
+    queryClient,
+    userStakesQueryKey,
+    totalUserStakedQueryKey,
+    recallQueryKey,
+  ]);
 
   const stake = async (amount: bigint, duration: bigint) => {
     return writeContract({

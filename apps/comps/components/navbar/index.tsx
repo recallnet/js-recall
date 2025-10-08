@@ -11,8 +11,10 @@ import { Button } from "@recallnet/ui2/components/button";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { PrivyAuthButton } from "@/components/privy-auth-button";
+import { config } from "@/config/public";
 import { useSession } from "@/hooks";
 
+import { NonStakeBoost } from "./NonStakeBoost";
 //import { Claim } from "./Claim";
 //import { GetRecall } from "./GetRecall";
 import { RecallToken } from "./RecallToken";
@@ -111,10 +113,9 @@ export const Navbar: React.FunctionComponent = () => {
                   pathname === "/stake" ? "shadow-[0_2px_0_0_#eab308]" : "",
                 )}
               >
-                <RecallToken />
+                {config.clientFlags.tge && <RecallToken />}
               </div>
-
-              <StakeBoost />
+              {config.clientFlags.tge ? <StakeBoost /> : <NonStakeBoost />}
               {/* <GetRecall /> */}
               {/* <StakeRecall /> */}
               {/* <Claim /> */}

@@ -11,6 +11,7 @@ import { ActiveStakes } from "@/components/staking/ActiveStakes";
 import { StakeSummary } from "@/components/staking/StakeSummary";
 // import { InactiveStakes } from "@/components/staking/InactiveStakes";
 import { StakeSkeleton } from "@/components/staking/stake-skeleton";
+import { config } from "@/config/public";
 import { getSocialLinksArray } from "@/data/social";
 import { useRecall } from "@/hooks/useRecall";
 import { useUserStakes } from "@/hooks/useStakingContract";
@@ -25,6 +26,11 @@ export default function StakePage() {
   const isLoading = recall.isLoading || stakesLoading;
   const isZeroState = !hasBalance && activeCount === 0 && !isLoading;
   const hasBalanceNoStakes = hasBalance && activeCount === 0 && !isLoading;
+
+  if (!config.clientFlags.tge) {
+    return null;
+  }
+
   return (
     <div>
       {/* Main Content */}
