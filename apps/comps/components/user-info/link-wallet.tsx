@@ -50,7 +50,7 @@ export default function LinkWallet({
           <BadgeCheckIcon
             className="flex-shrink-0 text-green-500 transition-colors hover:text-green-700"
             strokeWidth={1}
-            aria-label="Wallet verified"
+            aria-hidden="true"
           />
         </Tooltip>
       ) : customWalletAddress !== embeddedWalletAddress ? (
