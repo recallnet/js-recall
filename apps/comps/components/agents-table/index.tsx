@@ -188,13 +188,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
       isOpenForBoosting &&
       (config.publicFlags.tge ? !!totalStaked : true)
     );
-  }, [
-    boostBalance,
-    userBoosts,
-    isOpenForBoosting,
-    totalStaked,
-    config.publicFlags.tge,
-  ]);
+  }, [boostBalance, userBoosts, isOpenForBoosting, totalStaked]);
 
   const showBoostBalance = useMemo(() => {
     return boostBalance !== undefined && isOpenForBoosting;
