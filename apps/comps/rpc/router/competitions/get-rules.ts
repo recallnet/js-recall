@@ -4,8 +4,14 @@ import { z } from "zod";
 import { ApiError } from "@recallnet/services/types";
 
 import { base } from "@/rpc/context/base";
+import { cacheMiddleware } from "@/rpc/middleware/cache";
 
 export const getRules = base
+  .use(
+    cacheMiddleware({
+      revalidateSecs: 60 * 5, // 5 minutes
+    }),
+  )
   .input(
     z.object({
       competitionId: z.string().uuid(),

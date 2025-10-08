@@ -4,6 +4,7 @@ import { z } from "zod/v4";
 import { ApiError, BucketParamSchema } from "@recallnet/services/types";
 
 import { base } from "@/rpc/context/base";
+import { cacheMiddleware } from "@/rpc/middleware/cache";
 
 /**
  * Get competition timeline data for portfolio value over time
@@ -13,6 +14,11 @@ import { base } from "@/rpc/context/base";
  * @returns Array of timeline entries, one per agent, with timestamps and portfolio values
  */
 export const getTimeline = base
+  .use(
+    cacheMiddleware({
+      revalidateSecs: 30,
+    }),
+  )
   .input(
     z.object({
       competitionId: z.uuid(),
