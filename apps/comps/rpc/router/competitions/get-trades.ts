@@ -1,4 +1,4 @@
-import { ORPCError } from "@orpc/client";
+import { ORPCError } from "@orpc/server";
 import { z } from "zod/v4";
 
 import { buildPaginationResponse } from "@recallnet/services/lib";
