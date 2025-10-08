@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { config } from "@/config/public";
 import { base } from "@/rpc/context/base";
 import { authMiddleware } from "@/rpc/middleware/auth";
 import { assertNever } from "@/rpc/router/utils/assert-never";
@@ -10,6 +11,9 @@ export const claimBoost = base
     BOOST_ALREADY_CLAIMED: {
       message: "Boost already claimed",
     },
+    NOT_SUPPORTED_POST_TGE: {
+      message: "Claiming boost is not supported after TGE",
+    },
   })
   .input(
     z.object({
@@ -17,6 +21,9 @@ export const claimBoost = base
     }),
   )
   .handler(async ({ context, input, errors }) => {
+    if (config.publicFlags.tge) {
+      throw errors.NOT_SUPPORTED_POST_TGE();
+    }
     const res = await context.boostService.claimBoost(
       context.user.id,
       context.user.walletAddress,
