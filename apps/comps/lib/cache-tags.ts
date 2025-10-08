@@ -19,7 +19,7 @@ export const CacheTags = {
  *
  * @param tags - Array of cache tag strings to invalidate
  */
-export async function invalidateCacheTags(tags: string[]): Promise<void> {
+export function invalidateCacheTags(tags: string[]): void {
   for (const tag of tags) {
     revalidateTag(tag);
   }

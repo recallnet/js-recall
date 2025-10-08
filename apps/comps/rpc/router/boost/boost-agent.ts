@@ -50,9 +50,7 @@ export const boostAgent = base
       }
     } else {
       // Invalidate the agentBoostTotals cache for this competition
-      await invalidateCacheTags([
-        CacheTags.agentBoostTotals(input.competitionId),
-      ]);
+      invalidateCacheTags([CacheTags.agentBoostTotals(input.competitionId)]);
 
       return res.value;
     }
