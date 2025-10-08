@@ -5,7 +5,6 @@ import { Tooltip } from "@recallnet/ui2/components/tooltip";
 
 import { Clipboard } from "@/components/clipboard";
 import { ProfileResponse } from "@/types/profile";
-import { displayAddress } from "@/utils/address";
 
 export default function LinkWallet({
   user,
@@ -36,23 +35,22 @@ export default function LinkWallet({
   // Note: currently, we only allow for linking wallets, which is why we use the
   // last verified at timestamp. i.e., if it's been verified, then it's been
   // linked / stored in the backend.
-  const displayWalletAddress = displayAddress(user.walletAddress, {
-    numChars: 6,
-  });
   return (
-    <>
+    <div className="flex min-w-0 flex-1 items-center gap-4">
       <Clipboard
-        text={displayWalletAddress}
+        text={user.walletAddress}
         textOnCopy={user.walletAddress}
-        className="text-secondary-foreground text-md w-full rounded-[10px] hover:text-gray-300"
+        className="text-secondary-foreground text-sm"
+        showBorder={false}
       />
       {/* If a user has a custom wallet address stored in the db, we need them to officially
          verify/link it. If it's already been verified, we show a badge. */}
       {walletLastVerifiedAt ? (
         <Tooltip content="Wallet connected">
           <BadgeCheckIcon
-            className="text-green-500 hover:text-green-700"
+            className="flex-shrink-0 text-green-500 transition-colors hover:text-green-700"
             strokeWidth={1}
+            aria-label="Wallet verified"
           />
         </Tooltip>
       ) : customWalletAddress !== embeddedWalletAddress ? (
@@ -60,6 +58,6 @@ export default function LinkWallet({
       ) : (
         <Button onClick={onLinkWallet}>Connect wallet</Button>
       )}
-    </>
+    </div>
   );
 }

@@ -10,10 +10,12 @@ export const Clipboard = ({
   text,
   textOnCopy,
   className,
+  showBorder = true,
 }: {
   text: string;
   textOnCopy?: string;
   className?: string;
+  showBorder?: boolean;
 }) => {
   const [copied, setCopied] = React.useState(false);
   const [, copyToClipboard] = useCopyToClipboard();
@@ -25,23 +27,19 @@ export const Clipboard = ({
     setTimeout(() => setCopied(false), 1500);
   };
 
-  // Outer div is necessary because copy icon for some reason reduces its size because the tooltip
   return (
-    <div>
-      <Tooltip content={copied ? "Copied!" : "Copy"}>
-        <div
-          className={cn(
-            "flex cursor-pointer items-center justify-between gap-2 rounded border px-3 py-2 text-sm text-gray-500 hover:text-gray-300",
-            className,
-          )}
-          onClick={handleCopy}
-        >
-          <p className="truncate">{text}</p>
-          <div className="relative h-4 w-10">
-            <CopyIcon className="absolute right-1 h-4 w-4 cursor-pointer" />
-          </div>
-        </div>
-      </Tooltip>
-    </div>
+    <Tooltip content={copied ? "Copied!" : "Copy"} className="flex min-w-0">
+      <div
+        className={cn(
+          "flex min-w-0 cursor-pointer items-center gap-2 text-gray-500 transition-colors hover:text-gray-300",
+          showBorder && "rounded border px-3 py-2",
+          className,
+        )}
+        onClick={handleCopy}
+      >
+        <span className="min-w-0 truncate">{text}</span>
+        <CopyIcon className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
+      </div>
+    </Tooltip>
   );
 };
