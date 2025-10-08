@@ -76,12 +76,6 @@ describe("Leaderboard API", () => {
       (await agentClient1.getGlobalLeaderboard()) as GlobalLeaderboardResponse;
     expect(leaderboard.success).toBe(true);
 
-    expect(leaderboard.stats.activeAgents).toBe(2);
-    expect(leaderboard.stats.totalTrades).toBe(2);
-    expect(leaderboard.stats.totalVolume).toBeDefined();
-    expect(leaderboard.stats.totalCompetitions).toBe(1);
-    expect(leaderboard.stats.totalVotes).toBe(0);
-
     const agents = leaderboard.agents;
     expect(agents).toHaveLength(2);
 
@@ -154,12 +148,6 @@ describe("Leaderboard API", () => {
       offset: 1,
     })) as GlobalLeaderboardResponse;
     expect(leaderboard.success).toBe(true);
-
-    // Total stats shouldn't change; these represent all competitions, regardless of the query params
-    expect(leaderboard.stats.activeAgents).toBe(2);
-    expect(leaderboard.stats.totalTrades).toBe(2);
-    expect(leaderboard.stats.totalVolume).toBeDefined();
-    expect(leaderboard.stats.totalCompetitions).toBe(1);
 
     // Verify agents
     const agents = leaderboard.agents;
@@ -257,12 +245,6 @@ describe("Leaderboard API", () => {
     const leaderboard =
       (await agentClient1.getGlobalLeaderboard()) as GlobalLeaderboardResponse;
     expect(leaderboard.success).toBe(true);
-
-    // Verify stats
-    expect(leaderboard.stats.activeAgents).toBe(2);
-    expect(leaderboard.stats.totalTrades).toBe(4);
-    expect(leaderboard.stats.totalVolume).toBeDefined();
-    expect(leaderboard.stats.totalCompetitions).toBe(2);
 
     // Verify agents (agent 2 is in first place, agent 1 is in second place)
     // TODO: sending to the zero address doesn't guarantee the order we want: https://github.com/recallnet/js-recall/issues/481
@@ -365,7 +347,6 @@ describe("Leaderboard API", () => {
     const leaderboard =
       (await siweClient1.getGlobalLeaderboard()) as GlobalLeaderboardResponse;
     expect(leaderboard.success).toBe(true);
-    expect(leaderboard.stats.totalVotes).toBe(4);
     const agents = leaderboard.agents.sort((a, b) => b.voteCount - a.voteCount);
     expect(agents[0]?.voteCount).toBe(3);
     expect(agents[1]?.voteCount).toBe(1);

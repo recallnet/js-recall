@@ -33,24 +33,10 @@ export class LeaderboardService {
    */
   async getGlobalLeaderboard(params: LeaderboardParams) {
     try {
-      // Get global stats across all competition types
-      const stats = await this.leaderboardRepo.getGlobalStatsAllTypes();
-      if (stats.competitionIds.length === 0) {
-        return this.emptyLeaderboardResponse(params);
-      }
-
       // Get paginated global metrics from database
       const { agents, totalCount } = await this.getGlobalAgentMetrics(params);
 
       return {
-        stats: {
-          activeAgents: stats.activeAgents,
-          totalCompetitions: stats.totalCompetitions,
-          totalTrades: stats.totalTrades,
-          totalPositions: stats.totalPositions,
-          totalVolume: stats.totalVolume,
-          totalVotes: stats.totalVotes,
-        },
         agents,
         pagination: buildPaginationResponse(
           totalCount,
@@ -102,13 +88,6 @@ export class LeaderboardService {
    */
   private emptyLeaderboardResponse(params: LeaderboardParams) {
     return {
-      stats: {
-        activeAgents: 0,
-        totalCompetitions: 0,
-        totalTrades: 0,
-        totalVolume: 0,
-        totalVotes: 0,
-      },
       agents: [],
       pagination: {
         total: 0,
