@@ -28,18 +28,18 @@ export const Clipboard = ({
   };
 
   return (
-    <div
-      className={cn(
-        "flex min-w-0 cursor-pointer items-center gap-2 text-gray-500 transition-colors hover:text-gray-300",
-        showBorder && "rounded border px-3 py-2",
-        className,
-      )}
-      onClick={handleCopy}
-    >
-      <span className="min-w-0 truncate">{text}</span>
-      <Tooltip content={copied ? "Copied!" : "Copy"}>
+    <Tooltip content={copied ? "Copied!" : "Copy"} className="flex min-w-0">
+      <div
+        className={cn(
+          "flex min-w-0 cursor-pointer items-center gap-2 text-gray-500 transition-colors hover:text-gray-300",
+          showBorder && "rounded border px-3 py-2",
+          className,
+        )}
+        onClick={handleCopy}
+      >
+        <span className="min-w-0 truncate">{text}</span>
         <CopyIcon className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
-      </Tooltip>
-    </div>
+      </div>
+    </Tooltip>
   );
 };
