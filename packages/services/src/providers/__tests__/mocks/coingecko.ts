@@ -14,6 +14,9 @@ export interface MockCoinGeckoClient {
     networks: {
       tokens: {
         getAddress: ReturnType<typeof vi.fn>;
+        multi: {
+          getAddresses: ReturnType<typeof vi.fn>;
+        };
       };
     };
   };
@@ -184,6 +187,9 @@ export const createMockCoinGeckoClient = (): MockCoinGeckoClient => ({
     networks: {
       tokens: {
         getAddress: vi.fn(),
+        multi: {
+          getAddresses: vi.fn(),
+        },
       },
     },
   },
@@ -234,17 +240,21 @@ export const mockTokenPrice = (
 };
 
 /**
- * Helper to mock multiple token prices in sequence
+ * Helper to mock batch price fetches
+ * Converts individual token responses into the batch format expected by the API
  */
 export const mockBatchTokenPrices = (
   mockClient: MockCoinGeckoClient,
   responses: TokenGetAddressResponse[],
 ) => {
-  responses.forEach((response) => {
-    mockClient.onchain.networks.tokens.getAddress.mockResolvedValueOnce(
-      response,
-    );
-  });
+  const batchResponse = {
+    data: responses.map((r) => r.data),
+    included: responses.flatMap((r) => r.included || []),
+  };
+
+  mockClient.onchain.networks.tokens.multi.getAddresses.mockResolvedValueOnce(
+    batchResponse,
+  );
 };
 
 /**
@@ -257,4 +267,29 @@ export const mockTokenPriceError = (
   mockClient.onchain.networks.tokens.getAddress.mockRejectedValueOnce(
     new Error(errorMessage),
   );
+};
+
+/**
+ * Helper to create a mock response with a specific address
+ */
+export const createMockResponseForAddress = (
+  address: string,
+  overrides?: Partial<{
+    symbol: string;
+    priceUsd: number;
+    volumeUsd: number;
+    liquidityUsd: number;
+    fdvUsd: number;
+    poolCreatedAt: string;
+  }>,
+): TokenGetAddressResponse => {
+  return createMockOnchainResponse({
+    address,
+    symbol: overrides?.symbol || "TOKEN",
+    priceUsd: overrides?.priceUsd || 100,
+    volumeUsd: overrides?.volumeUsd || 1000000,
+    liquidityUsd: overrides?.liquidityUsd || 5000000,
+    fdvUsd: overrides?.fdvUsd || 10000000,
+    poolCreatedAt: overrides?.poolCreatedAt || "2024-01-01T00:00:00Z",
+  });
 };

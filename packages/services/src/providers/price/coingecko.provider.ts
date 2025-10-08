@@ -1,5 +1,5 @@
 import { ClientOptions, Coingecko } from "@coingecko/coingecko-typescript";
-import { TokenGetAddressResponse } from "@coingecko/coingecko-typescript/resources/onchain/networks";
+import { Tokens } from "@coingecko/coingecko-typescript/resources/onchain/networks/tokens/tokens";
 import { PublicKey } from "@solana/web3.js";
 import { Logger } from "pino";
 import { checksumAddress } from "viem";
@@ -61,27 +61,55 @@ const COINGECKO_NETWORKS = {
 } as const satisfies Record<SpecificChain, CoinGeckoNetwork>;
 
 /**
- * Subset of the CoinGecko onchain response used in the price provider
+ * Subset of the CoinGecko onchain response that includes token attributes (volume, FDV, etc.)
  */
-const OnchainResponseSchema = z.object({
-  data: z.object({
-    attributes: z.object({
-      symbol: z.string(),
-      price_usd: z.string(),
-      volume_usd: z.object({
-        h24: z.string(),
-      }),
-      total_reserve_in_usd: z.string(),
-      fdv_usd: z.string(),
+const OnchainResponseDataSchema = z.object({
+  attributes: z.object({
+    address: z.string(),
+    symbol: z.string(),
+    price_usd: z.string(),
+    volume_usd: z.object({
+      h24: z.string(),
+    }),
+    total_reserve_in_usd: z.string(),
+    fdv_usd: z.string(),
+    market_cap_usd: z.string(),
+  }),
+  relationships: z.object({
+    top_pools: z.object({
+      data: z.array(
+        z.object({
+          id: z.string(),
+        }),
+      ),
     }),
   }),
-  included: z.array(
-    z.object({
-      attributes: z.object({
-        pool_created_at: z.string(),
-      }),
-    }),
-  ),
+});
+
+/**
+ * Subset of the CoinGecko onchain response with pool information (created at, etc.)
+ */
+const OnchainResponseIncludedSchema = z.object({
+  id: z.string(),
+  attributes: z.object({
+    pool_created_at: z.string(),
+  }),
+});
+
+/**
+ * Subset of the CoinGecko onchain response for a single onchain token request
+ */
+const OnchainResponseSchema = z.object({
+  data: OnchainResponseDataSchema,
+  included: z.array(OnchainResponseIncludedSchema),
+});
+
+/**
+ * Subset of the CoinGecko onchain response for batch onchain token requests
+ */
+const BatchOnchainResponseSchema = z.object({
+  data: z.array(OnchainResponseDataSchema),
+  included: z.array(OnchainResponseIncludedSchema),
 });
 
 /**
@@ -92,7 +120,7 @@ export class CoinGeckoProvider implements PriceSource {
   private readonly client: Coingecko;
   private readonly MAX_RETRIES = 3; // Overrides default of 2
   private readonly MAX_TIMEOUT = 30_000; // Overrides default of 60 seconds
-  private readonly BATCH_CONCURRENCY_LIMIT = 30; // Process batch calls in max 30 tokens at a time
+  private readonly MAX_BATCH_SIZE: number; // Number of tokens in batch calls (30 or 50, depending on mode)
   private specificChainTokens: SpecificChainTokens;
   private logger: Logger;
   private coingeckoLogger: Logger; // Native logger for the CoinGecko SDK (set log level via `COINGECKO_LOG`)
@@ -117,8 +145,10 @@ export class CoinGeckoProvider implements PriceSource {
     // Note: CoinGecko has different endpoints, depending on the mode (free vs. paid)
     if (mode === "pro") {
       opts.proAPIKey = apiKey;
+      this.MAX_BATCH_SIZE = 50;
     } else {
       opts.demoAPIKey = apiKey;
+      this.MAX_BATCH_SIZE = 30;
     }
     this.client = new Coingecko(opts);
   }
@@ -214,7 +244,7 @@ export class CoinGeckoProvider implements PriceSource {
    * @returns The created at timestamp
    */
   private getCreatedAtTimestampFromPools(
-    pools: TokenGetAddressResponse.Included[],
+    pools: Tokens.TokenGetAddressResponse.Included[],
   ): number | undefined {
     const poolsWithTimestamps = pools.filter(
       (p) => p.attributes?.pool_created_at,
@@ -245,7 +275,9 @@ export class CoinGeckoProvider implements PriceSource {
    * @param pools - The token pools
    * @returns The token info
    */
-  private parseOnchainResponse(response: TokenGetAddressResponse): TokenInfo {
+  private parseOnchainResponse(
+    response: Tokens.TokenGetAddressResponse,
+  ): TokenInfo {
     const {
       success,
       error,
@@ -267,6 +299,54 @@ export class CoinGeckoProvider implements PriceSource {
       liquidity: { usd: parseFloat(total_reserve_in_usd) },
       fdv: parseFloat(fdv_usd),
     };
+  }
+
+  /**
+   * Validate the onchain response for a token
+   * @param data - The token data
+   * @param pools - The token pools
+   * @returns The token info
+   */
+  private parseBatchOnchainResponse(
+    response: Tokens.MultiGetAddressesResponse,
+  ): Map<string, TokenInfo> {
+    const {
+      success,
+      error,
+      data: parsedData,
+    } = BatchOnchainResponseSchema.safeParse(response);
+    if (!success) {
+      throw new Error(`Invalid CoinGecko response for batch: ${error}`);
+    }
+    const { data, included: pools } = parsedData;
+    const results = new Map<string, TokenInfo>();
+    for (const token of data) {
+      const {
+        address,
+        symbol,
+        price_usd,
+        volume_usd,
+        total_reserve_in_usd,
+        fdv_usd,
+      } = token.attributes;
+      // The batch response includes a `data` array and `included` array. Each includes all of
+      // the respective tokens and pools, which means we need to find the matching pool relative
+      // to the token. The `tokens` response includes a pool ID value, and this matches with the
+      // `included` array's `id` value. The only datapoint we use is the created at timestamp.
+      const poolId = token.relationships?.top_pools?.data?.[0]?.id;
+      results.set(address, {
+        price: parseFloat(price_usd),
+        symbol: symbol.toUpperCase(),
+        pairCreatedAt: this.getCreatedAtTimestampFromPools(
+          pools.filter((p) => p.id === poolId),
+        ),
+        volume: { h24: parseFloat(volume_usd.h24) },
+        liquidity: { usd: parseFloat(total_reserve_in_usd) },
+        fdv: parseFloat(fdv_usd),
+      });
+    }
+
+    return results;
   }
 
   /**
@@ -314,6 +394,66 @@ export class CoinGeckoProvider implements PriceSource {
       );
       return null;
     }
+  }
+
+  /**
+   * Fetch batch price data from CoinGecko onchain API with retry logic
+   * @param tokenAddresses - Array of token addresses (already normalized)
+   * @param network - The CoinGecko network identifier
+   * @returns Map of token addresses to their price information
+   */
+  private async fetchBatchPrices(
+    tokenAddresses: string[],
+    network: CoinGeckoNetwork,
+  ): Promise<Map<string, TokenInfo | null>> {
+    const results = new Map<string, TokenInfo | null>();
+    try {
+      const addresses = tokenAddresses.join(",");
+      const getBatchTokenInfo = () =>
+        this.client.onchain.networks.tokens.multi.getAddresses(addresses, {
+          network,
+          include_composition: true,
+          include: "top_pools",
+        });
+      const response = await withRetry(getBatchTokenInfo, {
+        onRetry: ({ attempt, nextDelayMs, error }) => {
+          this.logger.warn(
+            {
+              error: error instanceof Error ? error.message : String(error),
+              attempt,
+              nextDelayMs,
+              tokenCount: tokenAddresses.length,
+              network,
+            },
+            "Retrying CoinGecko batch API call",
+          );
+        },
+      });
+
+      const batchResults = this.parseBatchOnchainResponse(response);
+      batchResults.forEach((tokenInfo: TokenInfo | null, address: string) => {
+        results.set(address, tokenInfo);
+      });
+      for (const addr of tokenAddresses) {
+        if (!results.has(addr)) {
+          results.set(addr, null);
+        }
+      }
+    } catch (error) {
+      this.logger.error(
+        {
+          error: error instanceof Error ? error.message : JSON.stringify(error),
+          tokenCount: tokenAddresses.length,
+          network,
+        },
+        `Error fetching batch prices`,
+      );
+      // Set all to null on complete batch failure
+      for (const address of tokenAddresses) {
+        results.set(address, null);
+      }
+    }
+    return results;
   }
 
   /**
@@ -387,7 +527,7 @@ export class CoinGeckoProvider implements PriceSource {
    */
   async getBatchPrices(
     tokenAddresses: string[],
-    chain: BlockchainType,
+    _: BlockchainType,
     specificChain: SpecificChain,
   ): Promise<Map<string, TokenInfo | null>> {
     const results = new Map<string, TokenInfo | null>();
@@ -395,36 +535,46 @@ export class CoinGeckoProvider implements PriceSource {
       return results;
     }
 
-    for (
-      let i = 0;
-      i < tokenAddresses.length;
-      i += this.BATCH_CONCURRENCY_LIMIT
-    ) {
-      const chunk = tokenAddresses.slice(i, i + this.BATCH_CONCURRENCY_LIMIT);
-      const promises = chunk.map(async (tokenAddress) => {
-        const priceReport = await this.getPrice(
-          tokenAddress,
-          chain,
-          specificChain,
-        );
-        return { tokenAddress, priceReport };
-      });
+    const network = COINGECKO_NETWORKS[specificChain];
+    const normalizedAddresses = tokenAddresses.map(this.normalizeAddress);
+    if (!network) {
+      this.logger.error(`Unsupported chain: ${specificChain}`);
+      for (const addr of normalizedAddresses) {
+        results.set(addr, null);
+      }
+      return results;
+    }
 
-      const responses = await Promise.all(promises);
-      for (const { tokenAddress, priceReport } of responses) {
-        if (priceReport) {
-          results.set(tokenAddress, {
-            price: priceReport.price,
-            symbol: priceReport.symbol,
-            pairCreatedAt: priceReport.pairCreatedAt,
-            volume: priceReport.volume,
-            liquidity: priceReport.liquidity,
-            fdv: priceReport.fdv,
+    const addressesToFetch: string[] = [];
+    for (const address of normalizedAddresses) {
+      try {
+        if (this.isBurnAddress(address)) {
+          results.set(address, {
+            price: 0,
+            symbol: "BURN",
+            pairCreatedAt: undefined,
+            volume: undefined,
+            liquidity: undefined,
+            fdv: undefined,
           });
         } else {
-          results.set(tokenAddress, null);
+          addressesToFetch.push(address);
         }
+      } catch {
+        results.set(address, null);
       }
+    }
+    if (addressesToFetch.length === 0) {
+      return results;
+    }
+
+    // Process in chunks to respect CoinGecko batch API limits
+    for (let i = 0; i < addressesToFetch.length; i += this.MAX_BATCH_SIZE) {
+      const chunk = addressesToFetch.slice(i, i + this.MAX_BATCH_SIZE);
+      const batchResults = await this.fetchBatchPrices(chunk, network);
+      batchResults.forEach((tokenInfo: TokenInfo | null, address: string) => {
+        results.set(address, tokenInfo);
+      });
     }
 
     return results;

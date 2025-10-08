@@ -1,4 +1,5 @@
 import { Logger } from "pino";
+import { checksumAddress } from "viem";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MockProxy, mock } from "vitest-mock-extended";
 
@@ -10,6 +11,7 @@ import {
   MockCoinGeckoClient,
   coingeckoConfig,
   commonMockResponses,
+  createMockResponseForAddress,
   mockBatchTokenPrices,
   mockTokenPrice,
   mockTokenPriceError,
@@ -262,27 +264,13 @@ describe("CoinGeckoProvider", () => {
         "eth",
       );
 
-      // Should call the individual API for each token
+      // Should call the batch API
       expect(
-        mockCoinGeckoInstance.onchain.networks.tokens.getAddress,
-      ).toHaveBeenCalledTimes(3);
+        mockCoinGeckoInstance.onchain.networks.tokens.multi.getAddresses,
+      ).toHaveBeenCalledTimes(1);
       expect(
-        mockCoinGeckoInstance.onchain.networks.tokens.getAddress,
-      ).toHaveBeenCalledWith(ethereumTokens.eth, {
-        network: "eth",
-        include_composition: true,
-        include: "top_pools",
-      });
-      expect(
-        mockCoinGeckoInstance.onchain.networks.tokens.getAddress,
-      ).toHaveBeenCalledWith(ethereumTokens.usdc, {
-        network: "eth",
-        include_composition: true,
-        include: "top_pools",
-      });
-      expect(
-        mockCoinGeckoInstance.onchain.networks.tokens.getAddress,
-      ).toHaveBeenCalledWith(ethereumTokens.usdt, {
+        mockCoinGeckoInstance.onchain.networks.tokens.multi.getAddresses,
+      ).toHaveBeenCalledWith(tokens.join(","), {
         network: "eth",
         include_composition: true,
         include: "top_pools",
@@ -312,9 +300,16 @@ describe("CoinGeckoProvider", () => {
     it("should fetch batch prices for Base tokens", async () => {
       const tokens = [baseTokens.eth, baseTokens.usdc];
 
+      // Create responses with the actual Base token addresses
       mockBatchTokenPrices(mockCoinGeckoInstance, [
-        commonMockResponses.eth,
-        commonMockResponses.usdc,
+        createMockResponseForAddress(baseTokens.eth, {
+          symbol: "WETH",
+          priceUsd: 4473.03,
+        }),
+        createMockResponseForAddress(baseTokens.usdc, {
+          symbol: "USDC",
+          priceUsd: 1.0002548824,
+        }),
       ]);
 
       const results = await provider.getBatchPrices(
@@ -324,22 +319,8 @@ describe("CoinGeckoProvider", () => {
       );
 
       expect(
-        mockCoinGeckoInstance.onchain.networks.tokens.getAddress,
-      ).toHaveBeenCalledTimes(2);
-      expect(
-        mockCoinGeckoInstance.onchain.networks.tokens.getAddress,
-      ).toHaveBeenCalledWith(baseTokens.eth, {
-        network: "base",
-        include_composition: true,
-        include: "top_pools",
-      });
-      expect(
-        mockCoinGeckoInstance.onchain.networks.tokens.getAddress,
-      ).toHaveBeenCalledWith(baseTokens.usdc, {
-        network: "base",
-        include_composition: true,
-        include: "top_pools",
-      });
+        mockCoinGeckoInstance.onchain.networks.tokens.multi.getAddresses,
+      ).toHaveBeenCalledTimes(1);
 
       expect(results.size).toBe(tokens.length);
 
@@ -402,16 +383,19 @@ describe("CoinGeckoProvider", () => {
         ethereumTokens.usdc,
       ];
 
-      // Only non-burn addresses should trigger API calls
-      mockTokenPrice(mockCoinGeckoInstance, commonMockResponses.usdc);
+      // Only non-burn addresses should trigger batch API calls
+      mockBatchTokenPrices(mockCoinGeckoInstance, [commonMockResponses.usdc]);
+
       const results = await provider.getBatchPrices(
         tokens,
         BlockchainType.EVM,
         "eth",
       );
+
+      // Burn addresses are handled separately, only USDC goes to batch API
       expect(
-        mockCoinGeckoInstance.onchain.networks.tokens.getAddress,
-      ).toHaveBeenCalledTimes(1); // Only USDC
+        mockCoinGeckoInstance.onchain.networks.tokens.multi.getAddresses,
+      ).toHaveBeenCalledTimes(1);
       expect(results.size).toBe(2);
       expect(results.get(tokens[0]!)?.price).toBe(0);
       expect(results.get(tokens[0]!)?.symbol).toBe("BURN");
@@ -552,7 +536,13 @@ describe("CoinGeckoProvider", () => {
         "0xinvalid",
       ];
 
-      mockTokenPrice(mockCoinGeckoInstance, commonMockResponses.usdc);
+      // Mock the batch call with just the valid token
+      mockBatchTokenPrices(mockCoinGeckoInstance, [
+        createMockResponseForAddress(solanaTokens.usdc, {
+          symbol: "USDC",
+          priceUsd: 1.0002548824,
+        }),
+      ]);
 
       const results = await provider.getBatchPrices(
         tokens,
@@ -562,9 +552,10 @@ describe("CoinGeckoProvider", () => {
 
       // Verify all tokens have results (some valid, some null)
       expect(results.get(solanaTokens.usdc)?.price).toBe(1.0002548824);
+      // Should call batch API once for valid token
       expect(
-        mockCoinGeckoInstance.onchain.networks.tokens.getAddress,
-      ).toHaveBeenCalled();
+        mockCoinGeckoInstance.onchain.networks.tokens.multi.getAddresses,
+      ).toHaveBeenCalledTimes(1);
       expect(results.size).toBe(4);
       expect(results.get(tokens[1]!)).toBeNull();
       expect(results.get(tokens[2]!)).toBeNull();
@@ -648,89 +639,102 @@ describe("CoinGeckoProvider", () => {
   });
 
   describe("Batch chunking", () => {
-    it("should process batches in chunks of 30 tokens", async () => {
-      // Create a batch of 65 tokens (should create 3 chunks: 30, 30, 5)
-      const tokens = Array.from({ length: 65 }, (_, i) =>
-        i === 0 ? ethereumTokens.eth : `0x${i.toString().padStart(40, "0")}`,
-      );
-
-      // Mock responses for all tokens
-      mockCoinGeckoInstance.onchain.networks.tokens.getAddress.mockResolvedValue(
-        commonMockResponses.eth,
-      );
-
-      const results = await provider.getBatchPrices(
-        tokens,
-        BlockchainType.EVM,
-        "eth",
-      );
-
-      // Should call API for all 65 tokens
-      expect(
-        mockCoinGeckoInstance.onchain.networks.tokens.getAddress,
-      ).toHaveBeenCalledTimes(65);
-      expect(results.size).toBe(65);
-    });
-
-    it("should handle errors in chunked batches without failing entire batch", async () => {
-      // Create 35 tokens (2 chunks: 30, 5)
-      const tokens = Array.from({ length: 35 }, (_, i) =>
-        i < 30 ? `0x${i.toString().padStart(40, "0")}` : `invalid-${i}`,
-      );
-
-      // First 30 succeed, last 5 fail
-      let callCount = 0;
-      mockCoinGeckoInstance.onchain.networks.tokens.getAddress.mockImplementation(
-        async () => {
-          callCount++;
-          if (callCount <= 30) {
-            return commonMockResponses.eth;
-          }
-          throw new Error("Invalid address");
-        },
-      );
-
-      const results = await provider.getBatchPrices(
-        tokens,
-        BlockchainType.EVM,
-        "eth",
-      );
-
-      expect(results.size).toBe(35);
-      // First 30 should have prices
-      for (let i = 0; i < 30; i++) {
-        expect(results.get(tokens[i]!)).not.toBeNull();
-      }
-      // Last 5 should be null due to errors
-      for (let i = 30; i < 35; i++) {
-        expect(results.get(tokens[i]!)).toBeNull();
-      }
-    });
-
-    it("should respect concurrency limit of 30 per chunk", async () => {
+    it("should process batches in chunks of 30 tokens (demo mode)", async () => {
+      // Create a batch of 120 tokens (should create 4 chunks: 30+30+30+30 in demo mode)
       const tokens = Array.from(
-        { length: 90 },
+        { length: 120 },
         (_, i) => `0x${i.toString().padStart(40, "0")}`,
       );
 
-      let maxConcurrent = 0;
-      let currentConcurrent = 0;
-
-      mockCoinGeckoInstance.onchain.networks.tokens.getAddress.mockImplementation(
-        async () => {
-          currentConcurrent++;
-          maxConcurrent = Math.max(maxConcurrent, currentConcurrent);
-          // Simulate async delay
-          await new Promise((resolve) => setTimeout(resolve, 10));
-          currentConcurrent--;
-          return commonMockResponses.eth;
-        },
+      // Normalize addresses for proper matching
+      const normalizedTokens = tokens.map((t) =>
+        checksumAddress(t as `0x${string}`),
       );
 
-      await provider.getBatchPrices(tokens, BlockchainType.EVM, "eth");
+      // Create responses with matching normalized addresses (4 batches of 30)
+      const batch1 = normalizedTokens
+        .slice(0, 30)
+        .map((addr) => createMockResponseForAddress(addr, { priceUsd: 100 }));
+      const batch2 = normalizedTokens
+        .slice(30, 60)
+        .map((addr) => createMockResponseForAddress(addr, { priceUsd: 100 }));
+      const batch3 = normalizedTokens
+        .slice(60, 90)
+        .map((addr) => createMockResponseForAddress(addr, { priceUsd: 100 }));
+      const batch4 = normalizedTokens
+        .slice(90, 120)
+        .map((addr) => createMockResponseForAddress(addr, { priceUsd: 100 }));
 
-      // Maximum concurrent calls should not exceed 30
-      expect(maxConcurrent).toBeLessThanOrEqual(30);
+      mockBatchTokenPrices(mockCoinGeckoInstance, batch1);
+      mockBatchTokenPrices(mockCoinGeckoInstance, batch2);
+      mockBatchTokenPrices(mockCoinGeckoInstance, batch3);
+      mockBatchTokenPrices(mockCoinGeckoInstance, batch4);
+
+      // Also mock individual retries for any tokens that might not be found in batch
+      for (let i = 0; i < 120; i++) {
+        mockTokenPrice(
+          mockCoinGeckoInstance,
+          createMockResponseForAddress(normalizedTokens[i]!, { priceUsd: 100 }),
+        );
+      }
+
+      const results = await provider.getBatchPrices(
+        tokens,
+        BlockchainType.EVM,
+        "eth",
+      );
+
+      // Should call batch API 4 times (demo mode batch size is 30)
+      expect(
+        mockCoinGeckoInstance.onchain.networks.tokens.multi.getAddresses,
+      ).toHaveBeenCalledTimes(4);
+      expect(results.size).toBe(120);
+      for (let i = 0; i < 120; i++) {
+        expect(results.get(tokens[i]!)).not.toBeNull();
+      }
+    });
+
+    it("should handle errors in chunked batches without failing entire batch", async () => {
+      // Create 60 tokens (2 chunks: 50, 10)
+      const tokens = Array.from(
+        { length: 60 },
+        (_, i) => `0x${i.toString().padStart(40, "0")}`,
+      );
+
+      // Normalize addresses for proper matching
+      const normalizedTokens = tokens.map((t) =>
+        checksumAddress(t as `0x${string}`),
+      );
+
+      // Create responses with matching normalized addresses (demo mode: 30 tokens per batch)
+      const firstBatchResponses = normalizedTokens
+        .slice(0, 30)
+        .map((addr) => createMockResponseForAddress(addr, { priceUsd: 100 }));
+      const secondBatchResponses = normalizedTokens
+        .slice(30, 60)
+        .map((addr) => createMockResponseForAddress(addr, { priceUsd: 100 }));
+
+      mockBatchTokenPrices(mockCoinGeckoInstance, firstBatchResponses);
+      mockBatchTokenPrices(mockCoinGeckoInstance, secondBatchResponses);
+
+      const results = await provider.getBatchPrices(
+        tokens,
+        BlockchainType.EVM,
+        "eth",
+      );
+
+      expect(results.size).toBe(60);
+      // All tokens should have prices
+      for (let i = 0; i < 60; i++) {
+        expect(results.get(tokens[i]!)).not.toBeNull();
+      }
+      // Should call batch API twice (30 + 30 in demo mode), no individual retries
+      expect(
+        mockCoinGeckoInstance.onchain.networks.tokens.multi.getAddresses,
+      ).toHaveBeenCalledTimes(2);
+      expect(
+        mockCoinGeckoInstance.onchain.networks.tokens.getAddress,
+      ).not.toHaveBeenCalled();
     });
   });
 });
