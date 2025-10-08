@@ -8,75 +8,73 @@ import {
 import { SpecificChainSchema } from "@recallnet/services/types";
 
 import {
+  config as publicConfig,
   configSchema as publicConfigSchema,
   rawConfig as publicRawConfig,
 } from "./public";
 
-const configSchema = publicConfigSchema
-  .extend({
-    evmChains: z
-      .array(SpecificChainSchema)
-      .default([
-        "eth",
-        "polygon",
-        "bsc",
-        "arbitrum",
-        "base",
-        "optimism",
-        "avalanche",
-        "linea",
-      ]),
-    specificChainBalances: z
-      .partialRecord(
-        SpecificChainSchema,
-        z.record(z.string().min(1), z.number()),
-      )
-      .default({}),
-    watchlist: z.object({
-      chainalysisApiKey: z.string().default(""),
-    }),
-    priceTracker: z.object({
-      maxCacheSize: z.coerce.number().default(10000),
-      priceTTLMs: z.coerce.number().default(60000),
-    }),
-    email: z.object({
-      apiKey: z.string().default(""),
-      mailingListId: z.string().default(""),
-      baseUrl: z.url().default("https://app.loops.so/api/v1"),
-    }),
-    api: z.object({
-      domain: z.url().default("https://api.competitions.recall.network/"),
-    }),
-    security: z.object({
-      rootEncryptionKey: z
-        .string()
-        .min(1)
-        .default("default_encryption_key_do_not_use_in_production"),
-    }),
-    tradingConstraints: z.object({
-      defaultMinimum24hVolumeUsd: z.coerce.number().default(100000),
-      defaultMinimumFdvUsd: z.coerce.number().default(1000000),
-      defaultMinimumLiquidityUsd: z.coerce.number().default(100000),
-      defaultMinimumPairAgeHours: z.coerce.number().default(168),
-    }),
-    maxTradePercentage: z.coerce.number().min(1).max(100).default(25),
-    rateLimiting: z.object({
-      maxRequests: z.coerce.number().default(100),
-      windowMs: z.coerce.number().default(60000),
-    }),
-    tradingApi: z.object({
-      baseUrl: z.url().default("https://api.competitions.recall.network/api"),
-      sandboxApiUrl: z.preprocess(
-        (val) => (val ? val : undefined), // convert empty string to undefined
-        z.url().optional(),
-      ),
-      sandboxAdminApiKey: z.string().optional(),
-    }),
-  })
-  .strict();
+const configSchema = z.strictObject({
+  evmChains: z
+    .array(SpecificChainSchema)
+    .default([
+      "eth",
+      "polygon",
+      "bsc",
+      "arbitrum",
+      "base",
+      "optimism",
+      "avalanche",
+      "linea",
+    ]),
+  specificChainBalances: z
+    .partialRecord(SpecificChainSchema, z.record(z.string().min(1), z.number()))
+    .default({}),
+  specificChainTokens: z
+    .custom<typeof specificChainTokens>()
+    .default(specificChainTokens),
+  watchlist: z.object({
+    chainalysisApiKey: z.string().default(""),
+  }),
+  priceTracker: z.object({
+    maxCacheSize: z.coerce.number().default(10000),
+    priceTTLMs: z.coerce.number().default(60000),
+  }),
+  email: z.object({
+    apiKey: z.string().default(""),
+    mailingListId: z.string().default(""),
+    baseUrl: z.url().default("https://app.loops.so/api/v1"),
+  }),
+  api: z.object({
+    domain: z.url().default("https://api.competitions.recall.network/"),
+  }),
+  security: z.object({
+    rootEncryptionKey: z
+      .string()
+      .min(1)
+      .default("default_encryption_key_do_not_use_in_production"),
+  }),
+  tradingConstraints: z.object({
+    defaultMinimum24hVolumeUsd: z.coerce.number().default(100000),
+    defaultMinimumFdvUsd: z.coerce.number().default(1000000),
+    defaultMinimumLiquidityUsd: z.coerce.number().default(100000),
+    defaultMinimumPairAgeHours: z.coerce.number().default(168),
+  }),
+  maxTradePercentage: z.coerce.number().min(1).max(100).default(25),
+  rateLimiting: z.object({
+    maxRequests: z.coerce.number().default(100),
+    windowMs: z.coerce.number().default(60000),
+  }),
+  tradingApi: z.object({
+    baseUrl: z.url().default("https://api.competitions.recall.network/api"),
+    sandboxApiUrl: z.preprocess(
+      (val) => (val ? val : undefined), // convert empty string to undefined
+      z.url().optional(),
+    ),
+    sandboxAdminApiKey: z.string().optional(),
+  }),
+});
 
 export const rawConfig = {
-  ...publicRawConfig,
   evmChains: parseEvmChains(),
   specificChainBalances: getSpecificChainBalances(),
   watchlist: { chainalysisApiKey: process.env.WATCHLIST_CHAINALYSIS_API_KEY },
@@ -109,4 +107,4 @@ export const rawConfig = {
   },
 };
 
-export const config = { ...configSchema.parse(rawConfig), specificChainTokens };
+export const config = { ...publicConfig, ...configSchema.parse(rawConfig) };

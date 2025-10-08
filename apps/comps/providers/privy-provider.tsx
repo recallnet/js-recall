@@ -3,7 +3,6 @@
 import { addRpcUrlOverrideToChain } from "@privy-io/chains";
 import { PrivyClientConfig, PrivyProvider } from "@privy-io/react-auth";
 import { ReactNode, useEffect } from "react";
-import { baseSepolia } from "viem/chains";
 
 import { config } from "@/config/public";
 
@@ -16,17 +15,17 @@ function setCSSVariable(variable: string, value: string) {
   }
 }
 
-export const baseSepoliaWithRpcUrl = config.rpc.baseSepolia
-  ? addRpcUrlOverrideToChain(baseSepolia, config.rpc.baseSepolia)
-  : baseSepolia;
+export const chainWithRpcUrl = config.blockchain.rpcUrl
+  ? addRpcUrlOverrideToChain(config.blockchain.chain, config.blockchain.rpcUrl)
+  : config.blockchain.chain;
 
 /**
  * Configuration for the Privy provider.
  */
 const privyConfig: PrivyClientConfig = {
   // Chain configuration
-  defaultChain: baseSepoliaWithRpcUrl,
-  supportedChains: [baseSepoliaWithRpcUrl],
+  defaultChain: chainWithRpcUrl,
+  supportedChains: [chainWithRpcUrl],
 
   // Login methods configuration
   loginMethods: ["email", "google"],

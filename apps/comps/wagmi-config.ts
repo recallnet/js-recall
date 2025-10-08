@@ -2,7 +2,7 @@ import { createConfig } from "@privy-io/wagmi";
 import { Config, http } from "wagmi";
 
 import { config } from "@/config/public";
-import { baseSepoliaWithRpcUrl } from "@/providers/privy-provider";
+import { chainWithRpcUrl } from "@/providers/privy-provider";
 
 /**
  * Wagmi configuration for Privy integration.
@@ -12,9 +12,9 @@ import { baseSepoliaWithRpcUrl } from "@/providers/privy-provider";
  * to ensure proper state synchronization between Privy and wagmi.
  */
 export const clientConfig: Config = createConfig({
-  chains: [baseSepoliaWithRpcUrl], // Match the chains configured in Privy
+  chains: [chainWithRpcUrl], // Match the chains configured in Privy
   transports: {
     // Explicitly use the env-provided RPC for wagmi if available; otherwise fall back
-    [baseSepoliaWithRpcUrl.id]: http(config.rpc.baseSepolia || undefined),
+    [chainWithRpcUrl.id]: http(config.blockchain.rpcUrl),
   },
 });
