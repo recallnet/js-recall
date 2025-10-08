@@ -12,6 +12,7 @@ describe("Claimer Error Path", () => {
       "http://invalid-url", // Invalid RPC to trigger failure
       "0x0000000000000000000000000000000000000000",
       Network.Hardhat,
+      { timeout: 100, retryCount: 0 },
     );
 
     await assert.rejects(
