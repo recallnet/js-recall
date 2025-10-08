@@ -5,12 +5,18 @@ export const configSchema = z
   .strictObject({
     frontendUrl: z.union([z.url(), z.literal("")]).default(""),
     blockchain: z.object({
-      chainId: z.coerce.number().default(8453),
-      chain: z.custom<Chain>().default(base),
+      chainId: z.coerce.number().default(84532),
+      chain: z.custom<Chain>().default(baseSepolia),
       rpcUrl: z.url().optional(),
-      tokenContractAddress: z.string(),
-      stakingContractAddress: z.string(),
-      rewardAllocationContractAddress: z.string(),
+      tokenContractAddress: z
+        .string()
+        .default("0x7323CC5c18DEcCD3e918bbccff80333961d85a88"),
+      stakingContractAddress: z
+        .string()
+        .default("0x4F93a503972F1d35244C43fD76e0e880e75c14aC"),
+      rewardAllocationContractAddress: z
+        .string()
+        .default("0x08EB26382777B344e21d0EbE92bB4B32a5FF63b6"),
     }),
     boost: z.object({
       noStakeBoostAmount: z.coerce.bigint().default(0n),
