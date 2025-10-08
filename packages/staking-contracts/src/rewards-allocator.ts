@@ -37,12 +37,14 @@ interface ClaimResult {
 interface Options {
   timeout?: number;
   retryCount?: number;
+  pollingInterval?: number;
 }
 
 class RewardsAllocator {
   private walletClient: WalletClient;
   private publicClient: PublicClient;
   private contractAddress: Hex;
+  private timeout?: number;
 
   constructor(
     privateKey: Hex,
@@ -65,15 +67,18 @@ class RewardsAllocator {
     this.publicClient = createPublicClient({
       chain,
       transport: http(rpcProviderUrl, httpTransportOptions),
+      pollingInterval: options?.pollingInterval,
     });
 
     this.walletClient = createWalletClient({
       account,
       chain,
       transport: http(rpcProviderUrl, httpTransportOptions),
+      pollingInterval: options?.pollingInterval,
     });
 
     this.contractAddress = contractAddress;
+    this.timeout = options?.timeout;
   }
 
   async allocate(
@@ -93,6 +98,7 @@ class RewardsAllocator {
 
     const receipt = await this.publicClient.waitForTransactionReceipt({
       hash,
+      timeout: this.timeout,
     });
 
     if (receipt.status === "success") {

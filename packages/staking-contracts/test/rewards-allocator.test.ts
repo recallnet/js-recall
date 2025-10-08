@@ -13,10 +13,10 @@ describe("Allocator Error Path", () => {
     // Mock a failed transaction to hit `allocate`
     const allocator = new RewardsAllocator(
       "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
-      "http://invalid-url", // Invalid RPC to trigger failure
+      "http://127.0.0.1:9999", // Invalid RPC to trigger failure
       "0x0000000000000000000000000000000000000000",
       Network.Hardhat,
-      { timeout: 100, retryCount: 0 },
+      { timeout: 100, retryCount: 0, pollingInterval: 100 },
     );
 
     await assert.rejects(
