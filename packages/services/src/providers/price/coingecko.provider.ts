@@ -2,7 +2,6 @@ import { ClientOptions, Coingecko } from "@coingecko/coingecko-typescript";
 import { Tokens } from "@coingecko/coingecko-typescript/resources/onchain/networks/tokens/tokens";
 import { PublicKey } from "@solana/web3.js";
 import { Logger } from "pino";
-import { checksumAddress } from "viem";
 import { z } from "zod";
 
 import { withRetry } from "../../lib/retry-helper.js";
@@ -194,6 +193,19 @@ export class CoinGeckoProvider implements PriceSource {
   }
 
   /**
+   * Converts all EVM addresses to lowercase, also checking that the address is valid
+   * @param addr - The EVM address to convert
+   * @returns The normalized EVM hex address
+   * @throws If the address is invalid (wrong length, alphabet, or incorrect case)
+   */
+  private toNormalizedEvmAddress(addr: string): string {
+    if (!/^0x[0-9a-fA-F]{40}$/.test(addr)) {
+      throw new Error(`Invalid EVM address: ${addr}`);
+    }
+    return addr.toLowerCase();
+  }
+
+  /**
    * Converts a Solana address to its canonical base58 encoded representation
    * @param addr - The Solana address to convert
    * @returns The canonical base58 representation of the address
@@ -206,6 +218,8 @@ export class CoinGeckoProvider implements PriceSource {
 
   /**
    * Normalizes a token address for proper API calls and comparisons
+   * Note: the CoinGecko response lowercases EVM addresses but requires Solana addresses to be the
+   * canonical base58 representation.
    * @param tokenAddress - The token address to normalize
    * @returns Normalized token address
    * @throws If the token address is invalid
@@ -213,7 +227,7 @@ export class CoinGeckoProvider implements PriceSource {
   private normalizeAddress(tokenAddress: string): string {
     try {
       return tokenAddress.startsWith("0x")
-        ? checksumAddress(tokenAddress as `0x${string}`)
+        ? this.toNormalizedEvmAddress(tokenAddress)
         : this.toCanonicalSolanaAddress(tokenAddress);
     } catch {
       throw new Error(`Invalid token address: ${tokenAddress}`);
@@ -227,7 +241,7 @@ export class CoinGeckoProvider implements PriceSource {
    */
   private isBurnAddress(tokenAddress: string): boolean {
     if (
-      tokenAddress === "0x000000000000000000000000000000000000dEaD" ||
+      tokenAddress === "0x000000000000000000000000000000000000dead" ||
       tokenAddress === "1nc1nerator11111111111111111111111111111111"
     ) {
       return true;
@@ -474,12 +488,14 @@ export class CoinGeckoProvider implements PriceSource {
         this.logger.error(`Unsupported chain: ${specificChain}`);
         return null;
       }
-      const address = this.normalizeAddress(tokenAddress);
-      if (this.isBurnAddress(address)) {
+      // Note: although we handle normalization internally, we return the original token address to
+      // the caller to ensure they can easily identify the token with the original request.
+      const normalizedAddress = this.normalizeAddress(tokenAddress);
+      if (this.isBurnAddress(normalizedAddress)) {
         return {
           price: 0,
           symbol: "BURN",
-          token: address,
+          token: tokenAddress,
           timestamp: new Date(),
           chain,
           specificChain,
@@ -489,12 +505,12 @@ export class CoinGeckoProvider implements PriceSource {
           fdv: undefined,
         };
       }
-      const priceData = await this.fetchPrice(address, network);
+      const priceData = await this.fetchPrice(normalizedAddress, network);
       if (priceData) {
         return {
           price: priceData.price,
           symbol: priceData.symbol,
-          token: address,
+          token: tokenAddress,
           timestamp: new Date(),
           chain,
           specificChain,
@@ -536,32 +552,42 @@ export class CoinGeckoProvider implements PriceSource {
     }
 
     const network = COINGECKO_NETWORKS[specificChain];
-    const normalizedAddresses = tokenAddresses.map(this.normalizeAddress);
     if (!network) {
       this.logger.error(`Unsupported chain: ${specificChain}`);
-      for (const addr of normalizedAddresses) {
+      for (const addr of tokenAddresses) {
         results.set(addr, null);
       }
       return results;
     }
 
-    const addressesToFetch: string[] = [];
-    for (const address of normalizedAddresses) {
+    // Build a mapping from original -> normalized addresses, handling invalid addresses. This
+    // helps ensure the caller's token addresses are preserved while meeting the expected
+    // CoinGecko API requirements.
+    const originalToNormalizedAddresses = new Map<string, string>();
+    const normalizedToOriginalAddresses = new Map<string, string>();
+    for (const original of tokenAddresses) {
       try {
-        if (this.isBurnAddress(address)) {
-          results.set(address, {
-            price: 0,
-            symbol: "BURN",
-            pairCreatedAt: undefined,
-            volume: undefined,
-            liquidity: undefined,
-            fdv: undefined,
-          });
-        } else {
-          addressesToFetch.push(address);
-        }
+        const normalized = this.normalizeAddress(original);
+        originalToNormalizedAddresses.set(original, normalized);
+        normalizedToOriginalAddresses.set(normalized, original);
       } catch {
-        results.set(address, null);
+        results.set(original, null);
+      }
+    }
+
+    const addressesToFetch: string[] = [];
+    for (const [original, normalized] of originalToNormalizedAddresses) {
+      if (this.isBurnAddress(normalized)) {
+        results.set(original, {
+          price: 0,
+          symbol: "BURN",
+          pairCreatedAt: undefined,
+          volume: undefined,
+          liquidity: undefined,
+          fdv: undefined,
+        });
+      } else {
+        addressesToFetch.push(normalized);
       }
     }
     if (addressesToFetch.length === 0) {
@@ -572,9 +598,14 @@ export class CoinGeckoProvider implements PriceSource {
     for (let i = 0; i < addressesToFetch.length; i += this.MAX_BATCH_SIZE) {
       const chunk = addressesToFetch.slice(i, i + this.MAX_BATCH_SIZE);
       const batchResults = await this.fetchBatchPrices(chunk, network);
-      batchResults.forEach((tokenInfo: TokenInfo | null, address: string) => {
-        results.set(address, tokenInfo);
-      });
+      batchResults.forEach(
+        (tokenInfo: TokenInfo | null, normalized: string) => {
+          const original = normalizedToOriginalAddresses.get(normalized);
+          if (original) {
+            results.set(original, tokenInfo);
+          }
+        },
+      );
     }
 
     return results;

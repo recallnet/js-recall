@@ -1,5 +1,4 @@
 import { Logger } from "pino";
-import { checksumAddress } from "viem";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MockProxy, mock } from "vitest-mock-extended";
 
@@ -118,7 +117,7 @@ describe("CoinGeckoProvider", () => {
 
       expect(
         mockCoinGeckoInstance.onchain.networks.tokens.getAddress,
-      ).toHaveBeenCalledWith(ethereumTokens.eth, {
+      ).toHaveBeenCalledWith(ethereumTokens.eth.toLowerCase(), {
         network: "eth",
         include_composition: true,
         include: "top_pools",
@@ -139,7 +138,7 @@ describe("CoinGeckoProvider", () => {
 
       expect(
         mockCoinGeckoInstance.onchain.networks.tokens.getAddress,
-      ).toHaveBeenCalledWith(ethereumTokens.usdc, {
+      ).toHaveBeenCalledWith(ethereumTokens.usdc.toLowerCase(), {
         network: "eth",
         include_composition: true,
         include: "top_pools",
@@ -175,7 +174,7 @@ describe("CoinGeckoProvider", () => {
 
       expect(
         mockCoinGeckoInstance.onchain.networks.tokens.getAddress,
-      ).toHaveBeenCalledWith(ethereumTokens.usdt, {
+      ).toHaveBeenCalledWith(ethereumTokens.usdt.toLowerCase(), {
         network: "eth",
         include_composition: true,
         include: "top_pools",
@@ -220,7 +219,7 @@ describe("CoinGeckoProvider", () => {
 
       expect(
         mockCoinGeckoInstance.onchain.networks.tokens.getAddress,
-      ).toHaveBeenCalledWith(baseTokens.usdc, {
+      ).toHaveBeenCalledWith(baseTokens.usdc.toLowerCase(), {
         network: "base",
         include_composition: true,
         include: "top_pools",
@@ -270,7 +269,7 @@ describe("CoinGeckoProvider", () => {
       ).toHaveBeenCalledTimes(1);
       expect(
         mockCoinGeckoInstance.onchain.networks.tokens.multi.getAddresses,
-      ).toHaveBeenCalledWith(tokens.join(","), {
+      ).toHaveBeenCalledWith(tokens.map((t) => t.toLowerCase()).join(","), {
         network: "eth",
         include_composition: true,
         include: "top_pools",
@@ -300,13 +299,13 @@ describe("CoinGeckoProvider", () => {
     it("should fetch batch prices for Base tokens", async () => {
       const tokens = [baseTokens.eth, baseTokens.usdc];
 
-      // Create responses with the actual Base token addresses
+      // Create responses with lowercase addresses (as returned by CoinGecko)
       mockBatchTokenPrices(mockCoinGeckoInstance, [
-        createMockResponseForAddress(baseTokens.eth, {
+        createMockResponseForAddress(baseTokens.eth.toLowerCase(), {
           symbol: "WETH",
           priceUsd: 4473.03,
         }),
-        createMockResponseForAddress(baseTokens.usdc, {
+        createMockResponseForAddress(baseTokens.usdc.toLowerCase(), {
           symbol: "USDC",
           priceUsd: 1.0002548824,
         }),
@@ -630,7 +629,7 @@ describe("CoinGeckoProvider", () => {
       expect(mockLogger.error).toHaveBeenCalledWith(
         expect.objectContaining({
           error: expect.any(String),
-          tokenAddress: ethereumTokens.eth,
+          tokenAddress: ethereumTokens.eth.toLowerCase(),
           network: "eth",
         }),
         "Error fetching price",
@@ -647,9 +646,7 @@ describe("CoinGeckoProvider", () => {
       );
 
       // Normalize addresses for proper matching
-      const normalizedTokens = tokens.map((t) =>
-        checksumAddress(t as `0x${string}`),
-      );
+      const normalizedTokens = tokens.map((t) => t.toLowerCase());
 
       // Create responses with matching normalized addresses (4 batches of 30)
       const batch1 = normalizedTokens
@@ -702,9 +699,7 @@ describe("CoinGeckoProvider", () => {
       );
 
       // Normalize addresses for proper matching
-      const normalizedTokens = tokens.map((t) =>
-        checksumAddress(t as `0x${string}`),
-      );
+      const normalizedTokens = tokens.map((t) => t.toLowerCase());
 
       // Create responses with matching normalized addresses (demo mode: 30 tokens per batch)
       const firstBatchResponses = normalizedTokens

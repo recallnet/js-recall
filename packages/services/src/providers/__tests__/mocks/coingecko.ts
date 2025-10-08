@@ -38,7 +38,9 @@ export const createMockOnchainResponse = (params: {
     id: `${params.address}`,
     type: "token",
     attributes: {
-      address: params.address,
+      address: params.address.startsWith("0x")
+        ? params.address.toLowerCase()
+        : params.address,
       name: params.symbol,
       symbol: params.symbol,
       decimals: 18,
@@ -115,7 +117,9 @@ export const createMockOnchainResponse = (params: {
       relationships: {
         base_token: {
           data: {
-            id: params.address,
+            id: params.address.startsWith("0x")
+              ? params.address.toLowerCase()
+              : params.address,
             type: "token",
           },
         },
@@ -151,7 +155,7 @@ export const commonMockResponses = {
     poolCreatedAt: "2023-07-05T14:34:02Z",
   }),
   eth: createMockOnchainResponse({
-    address: specificChainTokens.eth.eth,
+    address: specificChainTokens.eth.eth.toLowerCase(),
     symbol: "WETH",
     priceUsd: 4473.03,
     volumeUsd: 1008244928,
@@ -160,7 +164,7 @@ export const commonMockResponses = {
     poolCreatedAt: "2021-12-29T12:35:14Z",
   }),
   usdc: createMockOnchainResponse({
-    address: specificChainTokens.eth.usdc,
+    address: specificChainTokens.eth.usdc.toLowerCase(),
     symbol: "USDC",
     priceUsd: 1.0002548824,
     volumeUsd: 1493569547,
@@ -169,7 +173,7 @@ export const commonMockResponses = {
     poolCreatedAt: "2025-09-18T08:28:30Z",
   }),
   usdt: createMockOnchainResponse({
-    address: specificChainTokens.eth.usdt,
+    address: specificChainTokens.eth.usdt.toLowerCase(),
     symbol: "USDT",
     priceUsd: 0.9977046221,
     volumeUsd: 1717852681,
