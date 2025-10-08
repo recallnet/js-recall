@@ -31,12 +31,14 @@ interface ClaimResult {
 interface Options {
   timeout?: number;
   retryCount?: number;
+  pollingInterval?: number;
 }
 
 class RewardsClaimer {
   private walletClient: WalletClient;
   private publicClient: PublicClient;
   private contractAddress: Hex;
+  private timeout?: number;
 
   constructor(
     privateKey: Hex,
@@ -59,15 +61,18 @@ class RewardsClaimer {
     this.publicClient = createPublicClient({
       chain,
       transport: http(rpcProviderUrl, httpTransportOptions),
+      pollingInterval: options?.pollingInterval,
     });
 
     this.walletClient = createWalletClient({
       account,
       chain,
       transport: http(rpcProviderUrl, httpTransportOptions),
+      pollingInterval: options?.pollingInterval,
     });
 
     this.contractAddress = contractAddress;
+    this.timeout = options?.timeout;
   }
 
   /**
@@ -93,6 +98,7 @@ class RewardsClaimer {
 
     const receipt = await this.publicClient.waitForTransactionReceipt({
       hash,
+      timeout: this.timeout,
     });
 
     if (receipt.status === "success") {
