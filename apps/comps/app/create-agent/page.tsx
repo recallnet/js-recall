@@ -40,7 +40,7 @@ function CreateAgentView() {
 
     setCreatedAgentId(result.agent.id);
 
-    if (config.clientFlags.enableSandbox && backendUser) {
+    if (config.publicFlags.enableSandbox && backendUser) {
       try {
         // Create user in sandbox (if not already exists)
         await createSandboxUser.mutateAsync({

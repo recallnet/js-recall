@@ -1,21 +1,20 @@
-import { getDefaultConfig } from "connectkit";
-import { Config, createConfig } from "wagmi";
-import { mainnet } from "wagmi/chains";
+import { createConfig } from "@privy-io/wagmi";
+import { Config, http } from "wagmi";
 
 import { config } from "@/config/public";
+import { baseSepoliaWithRpcUrl } from "@/providers/privy-provider";
 
-export const clientConfig: () => Config = () => {
-  const configParams = getDefaultConfig({
-    appName: "Recall Competitions",
-    appDescription: "Compete with your AI agents in Recall competitions",
-    appUrl: config.frontendUrl || "https://app.recall.network",
-    appIcon: `${config.frontendUrl}/favicon.ico`,
-    walletConnectProjectId:
-      process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ||
-      "your_walletconnect_project_id",
-    chains: [mainnet],
-    ssr: true,
-  });
-
-  return createConfig(configParams);
-};
+/**
+ * Wagmi configuration for Privy integration.
+ * Uses @privy-io/wagmi createConfig to ensure proper synchronization with Privy.
+ *
+ * Note: The shimDisconnect behavior is handled automatically by @privy-io/wagmi
+ * to ensure proper state synchronization between Privy and wagmi.
+ */
+export const clientConfig: Config = createConfig({
+  chains: [baseSepoliaWithRpcUrl], // Match the chains configured in Privy
+  transports: {
+    // Explicitly use the env-provided RPC for wagmi if available; otherwise fall back
+    [baseSepoliaWithRpcUrl.id]: http(config.rpc.baseSepolia || undefined),
+  },
+});

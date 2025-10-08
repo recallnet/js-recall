@@ -31,6 +31,7 @@ import { toast } from "@recallnet/ui2/components/toast";
 import { Pagination } from "@/components/pagination/index";
 import { config } from "@/config/public";
 import { useSession } from "@/hooks/useSession";
+import { useTotalUserStaked } from "@/hooks/useStakingContract";
 import { useVote } from "@/hooks/useVote";
 import { openForBoosting } from "@/lib/open-for-boosting";
 import { tanstackClient } from "@/rpc/clients/tanstack-query";
@@ -82,6 +83,8 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
   const { mutate: vote, isPending: isPendingVote } = useVote();
 
   const queryClient = useQueryClient();
+
+  const { data: totalStaked } = useTotalUserStaked();
 
   // Boost hooks
   const {
@@ -175,14 +178,14 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
     [competition],
   );
 
-  // TODO: edit condition to check if user has stakes
   const showClaimBoost = useMemo(() => {
     return (
       boostBalance === 0 &&
       Object.keys(userBoosts || {}).length === 0 &&
-      isOpenForBoosting
+      isOpenForBoosting &&
+      (config.publicFlags.tge ? !!totalStaked : true)
     );
-  }, [boostBalance, userBoosts, isOpenForBoosting]);
+  }, [boostBalance, userBoosts, isOpenForBoosting, totalStaked]);
 
   const showBoostBalance = useMemo(() => {
     return boostBalance !== undefined && isOpenForBoosting;
@@ -249,8 +252,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
   };
 
   const handleClaimBoost = () => {
-    // TODO: maybe use a different feature flag
-    if (config.boost.noStakeBoostAmount === undefined) {
+    if (config.publicFlags.tge) {
       claimStakedBoost({ competitionId: competition.id });
     } else {
       claimBoost({ competitionId: competition.id });
