@@ -41,7 +41,7 @@ export const useSandboxAgentApiKey = (agentHandle: string | null) => {
   return useQuery<AdminAgentKeyResponse, Error>({
     queryKey: ["sandbox-agent-api-key", agentHandle],
     queryFn: () => sandboxClient.getAgentApiKey(agentHandle!),
-    enabled: !!agentHandle && config.clientFlags.enableSandbox,
+    enabled: !!agentHandle && config.publicFlags.enableSandbox,
   });
 };
 

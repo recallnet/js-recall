@@ -113,9 +113,9 @@ export const Navbar: React.FunctionComponent = () => {
                   pathname === "/stake" ? "shadow-[0_2px_0_0_#eab308]" : "",
                 )}
               >
-                {config.clientFlags.tge && <RecallToken />}
+                {config.publicFlags.tge && <RecallToken />}
               </div>
-              {config.clientFlags.tge ? <StakeBoost /> : <NonStakeBoost />}
+              {config.publicFlags.tge ? <StakeBoost /> : <NonStakeBoost />}
               {/* <GetRecall /> */}
               {/* <StakeRecall /> */}
               {/* <Claim /> */}

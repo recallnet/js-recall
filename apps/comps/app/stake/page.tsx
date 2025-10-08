@@ -27,7 +27,7 @@ export default function StakePage() {
   const isZeroState = !hasBalance && activeCount === 0 && !isLoading;
   const hasBalanceNoStakes = hasBalance && activeCount === 0 && !isLoading;
 
-  if (!config.clientFlags.tge) {
+  if (!config.publicFlags.tge) {
     return null;
   }
 

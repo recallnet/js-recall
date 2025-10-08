@@ -9,7 +9,7 @@ import { formatAmount, formatCompactNumber } from "@/utils/format";
 
 export const NonStakeBoost = () => {
   const boostValue = useMemo(() => {
-    const value = attoValueToNumberValue(config.boost.nonStakeBoostAmount);
+    const value = attoValueToNumberValue(config.boost.noStakeBoostAmount);
     if (value === null || value <= 0) {
       return "0";
     }
