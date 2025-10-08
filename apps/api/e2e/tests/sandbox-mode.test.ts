@@ -5,7 +5,6 @@ import {
   AdminAgentResponse,
   BalancesResponse,
   CompetitionAgentsResponse,
-  CompetitionStatusResponse,
   ErrorResponse,
   PerpsAccountResponse,
   PerpsPositionsResponse,
@@ -66,12 +65,10 @@ describe("Sandbox Mode", () => {
       expect(competition.sandboxMode).toBe(true);
 
       // Verify competition is active and in sandbox mode
-      const statusResponse = await adminClient.getCompetitionStatus();
-      expect(statusResponse.success).toBe(true);
-      const status = statusResponse as CompetitionStatusResponse;
-      expect(status.competition?.id).toBe(competition.id);
-      expect(status.competition?.status).toBe("active");
-      expect(status.competition?.sandboxMode).toBe(true);
+      const activeCompetition = await adminClient.getActiveCompetition();
+      expect(activeCompetition.id).toBe(competition.id);
+      expect(activeCompetition.status).toBe("active");
+      expect(activeCompetition.sandboxMode).toBe(true);
 
       // First register a user without an agent
       const newUserResponse = await adminClient.registerUser({
@@ -165,12 +162,10 @@ describe("Sandbox Mode", () => {
       expect(competition.sandboxMode).toBe(false);
 
       // Verify competition is active but NOT in sandbox mode
-      const statusResponse = await adminClient.getCompetitionStatus();
-      expect(statusResponse.success).toBe(true);
-      const status = statusResponse as CompetitionStatusResponse;
-      expect(status.competition?.id).toBe(competition.id);
-      expect(status.competition?.status).toBe("active");
-      expect(status.competition?.sandboxMode).toBe(false);
+      const activeCompetition = await adminClient.getActiveCompetition();
+      expect(activeCompetition.id).toBe(competition.id);
+      expect(activeCompetition.status).toBe("active");
+      expect(activeCompetition.sandboxMode).toBe(false);
 
       // First register a user without an agent
       const newUserResponse = await adminClient.registerUser({
@@ -728,14 +723,12 @@ describe("Sandbox Mode", () => {
     }
 
     // Verify the first competition is still active
-    const statusResponse = await adminClient.getCompetitionStatus();
-    expect(statusResponse.success).toBe(true);
-    const status = statusResponse as CompetitionStatusResponse;
+    const activeCompetition = await adminClient.getActiveCompetition();
 
     // Should still be the first competition
-    expect(status.competition?.id).toBe(competition1.id);
-    expect(status.competition?.status).toBe("active");
-    expect(status.competition?.sandboxMode).toBe(true);
+    expect(activeCompetition.id).toBe(competition1.id);
+    expect(activeCompetition.status).toBe("active");
+    expect(activeCompetition.sandboxMode).toBe(true);
   });
 
   test("should verify that manually added agent gets a portfolio snapshot in sandbox mode", async () => {
@@ -765,12 +758,10 @@ describe("Sandbox Mode", () => {
     expect(competition.sandboxMode).toBe(true);
 
     // Verify competition is active and in sandbox mode
-    const statusResponse = await adminClient.getCompetitionStatus();
-    expect(statusResponse.success).toBe(true);
-    const status = statusResponse as CompetitionStatusResponse;
-    expect(status.competition?.id).toBe(competition.id);
-    expect(status.competition?.status).toBe("active");
-    expect(status.competition?.sandboxMode).toBe(true);
+    const activeCompetition = await adminClient.getActiveCompetition();
+    expect(activeCompetition.id).toBe(competition.id);
+    expect(activeCompetition.status).toBe("active");
+    expect(activeCompetition.sandboxMode).toBe(true);
 
     // First register a user without an agent
     const newUserResponse = await adminClient.registerUser({

@@ -9,6 +9,15 @@ export type InsertUser = typeof defs.users.$inferInsert;
 export type SelectAgent = typeof defs.agents.$inferSelect;
 export type InsertAgent = typeof defs.agents.$inferInsert;
 
+/**
+ * Agent with competition-specific status fields
+ * Used when querying agents within a specific competition context
+ */
+export type SelectAgentWithCompetitionStatus = SelectAgent & {
+  competitionStatus: string;
+  competitionDeactivationReason: string | null;
+};
+
 export type SelectAdmin = typeof defs.admins.$inferSelect;
 export type InsertAdmin = typeof defs.admins.$inferInsert;
 

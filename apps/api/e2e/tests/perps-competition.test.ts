@@ -15,13 +15,10 @@ import {
   type CompetitionAgentsResponse,
   type CompetitionAllPerpsPositionsResponse,
   type CompetitionDetailResponse,
-  type CompetitionPerpsSummaryResponse,
   type EnhancedCompetition,
   type ErrorResponse,
   type GetUserAgentsResponse,
   type GlobalLeaderboardResponse,
-  type LeaderboardEntry,
-  type LeaderboardResponse,
   type PerpsAccountResponse,
   type PerpsPositionsResponse,
   type StartCompetitionResponse,
@@ -950,19 +947,17 @@ describe("Perps Competition", () => {
     expect(typedAgent3Account.account.totalVolume).toBe("10000");
     expect(typedAgent3Account.account.openPositions).toBe(0);
 
-    // Verify competition summary reflects all agents' data
-    const summaryResponse = await adminClient.getCompetitionPerpsSummary(
-      competition.id,
-    );
-    expect(summaryResponse.success).toBe(true);
+    // Verify competition details reflect all agents' data
+    const competitionDetails = await adminClient.getCompetition(competition.id);
+    expect(competitionDetails.success).toBe(true);
 
     // Type assertion since we've verified success
-    const typedSummaryResponse =
-      summaryResponse as CompetitionPerpsSummaryResponse;
-    expect(typedSummaryResponse.summary.totalAgents).toBe(3);
-    expect(typedSummaryResponse.summary.totalPositions).toBe(3); // 2 for agent1 + 1 for agent2 + 0 for agent3
-    expect(typedSummaryResponse.summary.totalVolume).toBe(40000); // 25000 + 5000 + 10000
-    expect(typedSummaryResponse.summary.averageEquity).toBe(1100); // (1250 + 950 + 1100) / 3
+    if (competitionDetails.success && "competition" in competitionDetails) {
+      const stats = competitionDetails.competition.stats;
+      expect(stats?.totalAgents).toBe(3);
+      expect(stats?.totalPositions).toBe(3); // 2 for agent1 + 1 for agent2 + 0 for agent3
+      expect(stats?.totalVolume).toBe(40000); // 25000 + 5000 + 10000
+    }
 
     // Verify agent-specific competition endpoint also works
     const agent1CompPositions =
@@ -1114,98 +1109,6 @@ describe("Perps Competition", () => {
     }
   });
 
-  test("should get perps competition summary", async () => {
-    // Setup admin client
-    const adminClient = createTestClient(getBaseUrl());
-    await adminClient.loginAsAdmin(adminApiKey);
-
-    // Register multiple agents for this test
-    const { agent: agent1, client: agent1Client } =
-      await registerUserAndAgentAndGetClient({
-        adminApiKey,
-        agentName: "Summary Test Agent 1",
-      });
-    const { agent: agent2 } = await registerUserAndAgentAndGetClient({
-      adminApiKey,
-      agentName: "Summary Test Agent 2",
-    });
-
-    // Start a perps competition with multiple agents
-    const competitionResponse = await startPerpsTestCompetition({
-      adminClient,
-      name: `Perps Summary Test ${Date.now()}`,
-      agentIds: [agent1.id, agent2.id],
-    });
-
-    expect(competitionResponse.success).toBe(true);
-    const competition = competitionResponse.competition;
-
-    // Wait for competition start to fully commit
-    await wait(1000);
-
-    // Trigger sync from Symphony (simulating what the cron job does)
-    const services = new ServiceRegistry();
-    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
-
-    // Wait for sync to complete
-    await wait(500);
-
-    // Get competition summary
-    const summaryResponse = await agent1Client.getCompetitionPerpsSummary(
-      competition.id,
-    );
-
-    expect(summaryResponse.success).toBe(true);
-
-    // Type assertion since we've verified success
-    const typedSummaryResponse =
-      summaryResponse as CompetitionPerpsSummaryResponse;
-    expect(typedSummaryResponse.competitionId).toBe(competition.id);
-    expect(typedSummaryResponse.summary).toBeDefined();
-    expect(typedSummaryResponse.summary.totalAgents).toBeGreaterThanOrEqual(2);
-    expect(typedSummaryResponse.summary.totalPositions).toBeGreaterThanOrEqual(
-      0,
-    );
-    // After syncing data, we should have actual trading volume and equity
-    // All test agents have positive equity (minimum 500) and some have volume
-    expect(typedSummaryResponse.summary.totalVolume).toBeGreaterThanOrEqual(0);
-    expect(typedSummaryResponse.summary.averageEquity).toBeGreaterThan(0);
-    expect(typedSummaryResponse.timestamp).toBeDefined();
-  });
-
-  test("should return 400 for paper trading competition when getting summary", async () => {
-    // Setup admin client
-    const adminClient = createTestClient(getBaseUrl());
-    await adminClient.loginAsAdmin(adminApiKey);
-
-    // Register agent for this test
-    const { agent, client: agentClient } =
-      await registerUserAndAgentAndGetClient({
-        adminApiKey,
-        agentName: "Paper Trading Summary Test Agent",
-      });
-
-    // Start a PAPER TRADING competition (not perps)
-    const competitionResponse = await startTestCompetition({
-      adminClient,
-      name: `Paper Trading Summary Test ${Date.now()}`,
-      agentIds: [agent.id],
-    });
-
-    expect(competitionResponse.success).toBe(true);
-    const competition = competitionResponse.competition;
-
-    // Try to get perps summary for a paper trading competition
-    const summaryResponse = await agentClient.getCompetitionPerpsSummary(
-      competition.id,
-    );
-
-    expect(summaryResponse.success).toBe(false);
-    expect((summaryResponse as ErrorResponse).error).toContain(
-      "This endpoint is only available for perpetual futures competitions",
-    );
-  });
-
   test("should return 403 when agent not in perps competition", async () => {
     // Setup admin client
     const adminClient = createTestClient(getBaseUrl());
@@ -1271,6 +1174,7 @@ describe("Perps Competition", () => {
 
     expect(response.success).toBe(true);
     const competition = response.competition;
+    const competitionId = competition.id;
 
     // Wait to ensure competition is fully started
     await wait(1000);
@@ -1298,15 +1202,16 @@ describe("Perps Competition", () => {
     await wait(1000);
 
     // Get competition leaderboard - should include risk metrics
-    const leaderboardResponse = await agentClient.getCompetitionLeaderboard();
+    const leaderboardResponse = await agentClient.getCompetitionAgents(
+      competitionId,
+      { sort: "rank" },
+    );
     expect(leaderboardResponse.success).toBe(true);
-
-    // Type assertion since we've verified success
-    const typedLeaderboard = leaderboardResponse as LeaderboardResponse;
+    if (!leaderboardResponse.success) throw new Error("Failed to get agents");
 
     // Find our agent in the leaderboard
-    const agentEntry = typedLeaderboard.leaderboard.find(
-      (entry) => entry.agentId === agent.id,
+    const agentEntry = leaderboardResponse.agents.find(
+      (entry) => entry.id === agent.id,
     );
     expect(agentEntry).toBeDefined();
 
@@ -1384,29 +1289,32 @@ describe("Perps Competition", () => {
     await wait(500);
 
     // Get leaderboard
-    const leaderboardResponse = await adminClient.getCompetitionLeaderboard();
+    const leaderboardResponse = await adminClient.getCompetitionAgents(
+      competition.id,
+      { sort: "rank" },
+    );
     expect(leaderboardResponse.success).toBe(true);
 
-    const typedLeaderboard = leaderboardResponse as LeaderboardResponse;
+    const typedLeaderboard = leaderboardResponse as CompetitionAgentsResponse;
 
     // Agent with worst Calmar ratio (volatility) should be ranked first
     // (negative Calmar due to losses and high drawdown)
-    const firstAgent = typedLeaderboard.leaderboard[0];
-    expect(firstAgent?.agentId).toBe(agentVolatile.id);
+    const firstAgent = typedLeaderboard.agents[0];
+    expect(firstAgent?.id).toBe(agentVolatile.id);
     expect(firstAgent?.hasRiskMetrics).toBe(true);
     expect(firstAgent?.calmarRatio).not.toBeNull();
 
     // Other agents ranked by their Calmar ratios
-    const secondAgent = typedLeaderboard.leaderboard[1];
-    const thirdAgent = typedLeaderboard.leaderboard[2];
+    const secondAgent = typedLeaderboard.agents[1];
+    const thirdAgent = typedLeaderboard.agents[2];
 
     // 0x1111 has $1250 equity (positive PnL), 0x2222 has $950 equity (negative PnL)
-    expect(secondAgent?.agentId).toBe(agentPositive.id);
+    expect(secondAgent?.id).toBe(agentPositive.id);
     // All agents have risk metrics calculated using simple returns
     expect(secondAgent?.hasRiskMetrics).toBe(true);
     expect(secondAgent?.calmarRatio).not.toBeNull();
 
-    expect(thirdAgent?.agentId).toBe(agentNegative.id);
+    expect(thirdAgent?.id).toBe(agentNegative.id);
     // All agents have risk metrics calculated using simple returns
     expect(thirdAgent?.hasRiskMetrics).toBe(true);
     expect(thirdAgent?.calmarRatio).not.toBeNull();
@@ -1494,12 +1402,15 @@ describe("Perps Competition", () => {
     await wait(500);
 
     // Get leaderboard
-    const leaderboardResponse = await agentClient.getCompetitionLeaderboard();
+    const leaderboardResponse = await agentClient.getCompetitionAgents(
+      competition.id,
+      { sort: "rank" },
+    );
     expect(leaderboardResponse.success).toBe(true);
+    if (!leaderboardResponse.success) throw new Error("Failed to get agents");
 
-    const typedLeaderboard = leaderboardResponse as LeaderboardResponse;
-    const agentEntry = typedLeaderboard.leaderboard.find(
-      (entry) => entry.agentId === agent.id,
+    const agentEntry = leaderboardResponse.agents.find(
+      (entry) => entry.id === agent.id,
     );
 
     // Agent should have risk metrics calculated using simple return
@@ -1788,24 +1699,21 @@ describe("Perps Competition", () => {
     await wait(1000);
 
     // Get the leaderboard as admin (uses active competition)
-    const leaderboardResponse = await adminClient.getCompetitionLeaderboard();
+    const leaderboardResponse = await adminClient.getCompetitionAgents(
+      competition.id,
+      { sort: "rank" },
+    );
 
     expect(leaderboardResponse.success).toBe(true);
-    const typedResponse = leaderboardResponse as LeaderboardResponse;
+    const typedResponse = leaderboardResponse as CompetitionAgentsResponse;
 
     // Verify we have all agents
-    expect(typedResponse.leaderboard).toHaveLength(3);
+    expect(typedResponse.agents).toHaveLength(3);
 
     // Find each agent in the leaderboard
-    const agent1Entry = typedResponse.leaderboard.find(
-      (e: LeaderboardEntry) => e.agentId === agent1.id,
-    );
-    const agent2Entry = typedResponse.leaderboard.find(
-      (e: LeaderboardEntry) => e.agentId === agent2.id,
-    );
-    const agent3Entry = typedResponse.leaderboard.find(
-      (e: LeaderboardEntry) => e.agentId === agent3.id,
-    );
+    const agent1Entry = typedResponse.agents.find((e) => e.id === agent1.id);
+    const agent2Entry = typedResponse.agents.find((e) => e.id === agent2.id);
+    const agent3Entry = typedResponse.agents.find((e) => e.id === agent3.id);
 
     expect(agent1Entry).toBeDefined();
     expect(agent2Entry).toBeDefined();
@@ -1845,7 +1753,7 @@ describe("Perps Competition", () => {
     expect(agent3Entry.hasRiskMetrics).toBe(true);
 
     // All have risk metrics - should be ranked by Calmar ratio
-    const entries: LeaderboardEntry[] = [agent1Entry, agent2Entry, agent3Entry];
+    const entries = [agent1Entry, agent2Entry, agent3Entry];
     const calmarRanking = [...entries].sort(
       (a, b) => (b.calmarRatio ?? -999999) - (a.calmarRatio ?? -999999),
     );
@@ -1853,9 +1761,9 @@ describe("Perps Competition", () => {
     const actualRanking = [...entries].sort((a, b) => a.rank - b.rank);
 
     // Rankings should match Calmar-based order, not portfolio value order
-    expect(actualRanking[0]?.agentId).toBe(calmarRanking[0]?.agentId);
-    expect(actualRanking[1]?.agentId).toBe(calmarRanking[1]?.agentId);
-    expect(actualRanking[2]?.agentId).toBe(calmarRanking[2]?.agentId);
+    expect(actualRanking[0]?.id).toBe(calmarRanking[0]?.id);
+    expect(actualRanking[1]?.id).toBe(calmarRanking[1]?.id);
+    expect(actualRanking[2]?.id).toBe(calmarRanking[2]?.id);
 
     // Verify this is different from portfolio value ranking
     const portfolioRanking = [...entries].sort(
@@ -1864,9 +1772,9 @@ describe("Perps Competition", () => {
 
     // Verify that Calmar ranking is being used, not portfolio ranking
     // The rankings should differ since Agent 3 has highest portfolio but not best Calmar
-    expect(calmarRanking[0]?.agentId).not.toBe(portfolioRanking[0]?.agentId);
-    expect(actualRanking[0]?.agentId).toBe(calmarRanking[0]?.agentId);
-    expect(actualRanking[0]?.agentId).not.toBe(portfolioRanking[0]?.agentId);
+    expect(calmarRanking[0]?.id).not.toBe(portfolioRanking[0]?.id);
+    expect(actualRanking[0]?.id).toBe(calmarRanking[0]?.id);
+    expect(actualRanking[0]?.id).not.toBe(portfolioRanking[0]?.id);
   });
 
   test("should preserve perps metrics and rankings when competition ends", async () => {
@@ -1984,11 +1892,14 @@ describe("Perps Competition", () => {
     // ============ STEP 1: Get data while competition is ACTIVE ============
 
     // Get leaderboard via the admin endpoint (active competition)
-    const activeLeaderboardResponse =
-      await adminClient.getCompetitionLeaderboard();
+    const activeLeaderboardResponse = await adminClient.getCompetitionAgents(
+      competition.id,
+      { sort: "rank" },
+    );
     expect(activeLeaderboardResponse.success).toBe(true);
-    const activeLeaderboard = (activeLeaderboardResponse as LeaderboardResponse)
-      .leaderboard;
+    const activeLeaderboard = (
+      activeLeaderboardResponse as CompetitionAgentsResponse
+    ).agents;
 
     // Get competition details with agents (uses getCompetitionAgents)
     const activeCompResponse = await adminClient.getCompetition(competition.id);
@@ -2007,8 +1918,8 @@ describe("Perps Competition", () => {
       }
     >();
 
-    activeLeaderboard.forEach((entry: LeaderboardEntry) => {
-      activeMetrics.set(entry.agentId, {
+    activeLeaderboard.forEach((entry) => {
+      activeMetrics.set(entry.id, {
         rank: entry.rank,
         portfolioValue: entry.portfolioValue,
         calmarRatio: entry.calmarRatio ?? null,
@@ -2019,12 +1930,8 @@ describe("Perps Competition", () => {
     });
 
     // Verify active competition has correct ranking (Calmar-based, not portfolio-based)
-    const agent1Active = activeLeaderboard.find(
-      (e: LeaderboardEntry) => e.agentId === agent1.id,
-    );
-    const agent3Active = activeLeaderboard.find(
-      (e: LeaderboardEntry) => e.agentId === agent3.id,
-    );
+    const agent1Active = activeLeaderboard.find((e) => e.id === agent1.id);
+    const agent3Active = activeLeaderboard.find((e) => e.id === agent3.id);
 
     // First ensure both agents exist
     expect(agent1Active).toBeDefined();
@@ -2307,12 +2214,14 @@ describe("Perps Competition", () => {
     await wait(1000);
 
     // Get leaderboard with risk metrics
-    const leaderboardResponse = await agentClient.getCompetitionLeaderboard();
+    const leaderboardResponse = (await agentClient.getCompetitionAgents(
+      competition.id,
+      { sort: "rank" },
+    )) as CompetitionAgentsResponse;
     expect(leaderboardResponse.success).toBe(true);
-    const typedLeaderboard = leaderboardResponse as LeaderboardResponse;
 
-    const agentEntry = typedLeaderboard.leaderboard.find(
-      (entry) => entry.agentId === agent.id,
+    const agentEntry = leaderboardResponse.agents.find(
+      (entry) => entry.id === agent.id,
     );
 
     expect(agentEntry).toBeDefined();
@@ -2551,20 +2460,22 @@ describe("Perps Competition", () => {
     await services.perpsDataProcessor.processPerpsCompetition(competition.id);
     await wait(1000);
 
-    const leaderboardResponse = await adminClient.getCompetitionLeaderboard();
+    const leaderboardResponse = (await adminClient.getCompetitionAgents(
+      competition.id,
+      { sort: "rank" },
+    )) as CompetitionAgentsResponse;
     expect(leaderboardResponse.success).toBe(true);
-    const typedLeaderboard = leaderboardResponse as LeaderboardResponse;
 
-    expect(typedLeaderboard.leaderboard).toHaveLength(3);
+    expect(leaderboardResponse.agents).toHaveLength(3);
 
-    const steadyEntry = typedLeaderboard.leaderboard.find(
-      (e: LeaderboardEntry) => e.agentId === agentSteady.id,
+    const steadyEntry = leaderboardResponse.agents.find(
+      (e) => e.id === agentSteady.id,
     );
-    const volatileEntry = typedLeaderboard.leaderboard.find(
-      (e: LeaderboardEntry) => e.agentId === agentVolatile.id,
+    const volatileEntry = leaderboardResponse.agents.find(
+      (e) => e.id === agentVolatile.id,
     );
-    const negativeEntry = typedLeaderboard.leaderboard.find(
-      (e: LeaderboardEntry) => e.agentId === agentNegative.id,
+    const negativeEntry = leaderboardResponse.agents.find(
+      (e) => e.id === agentNegative.id,
     );
 
     expect(steadyEntry).toBeDefined();
@@ -2623,21 +2534,17 @@ describe("Perps Competition", () => {
     await services.perpsDataProcessor.processPerpsCompetition(competition.id);
     await wait(500);
 
-    const summaryResponse = await agent3Client.getCompetitionPerpsSummary(
+    const competitionDetails = (await agent3Client.getCompetition(
       competition.id,
-    );
+    )) as CompetitionDetailResponse;
 
-    expect(summaryResponse.success).toBe(true);
-    const typedSummaryResponse =
-      summaryResponse as CompetitionPerpsSummaryResponse;
-
-    expect(typedSummaryResponse.competitionId).toBe(competition.id);
-    expect(typedSummaryResponse.summary.totalAgents).toBe(3);
-    expect(typedSummaryResponse.summary.totalPositions).toBe(2);
-    expect(typedSummaryResponse.summary.totalVolume).toBeGreaterThanOrEqual(
-      30000,
-    );
-    expect(typedSummaryResponse.summary.averageEquity).toBeGreaterThan(1000);
+    expect(competitionDetails.success).toBe(true);
+    expect(competitionDetails.competition).toBeDefined();
+    const stats = competitionDetails.competition.stats;
+    expect(competitionDetails.competition.id).toBe(competition.id);
+    expect(stats?.totalAgents).toBe(3);
+    expect(stats?.totalPositions).toBe(2);
+    expect(stats?.totalVolume).toBeGreaterThanOrEqual(30000);
   });
 
   test("should paginate all Hyperliquid positions with embedded agent info", async () => {
@@ -2778,11 +2685,12 @@ describe("Perps Competition", () => {
     await services.perpsDataProcessor.processPerpsCompetition(competition.id);
     await wait(1000);
 
-    const activeLeaderboardResponse =
-      await adminClient.getCompetitionLeaderboard();
+    const activeLeaderboardResponse = (await adminClient.getCompetitionAgents(
+      competition.id,
+      { sort: "rank" },
+    )) as CompetitionAgentsResponse;
     expect(activeLeaderboardResponse.success).toBe(true);
-    const activeLeaderboard = (activeLeaderboardResponse as LeaderboardResponse)
-      .leaderboard;
+    const activeLeaderboard = activeLeaderboardResponse.agents;
 
     const activeMetrics = new Map<
       string,
@@ -2796,8 +2704,8 @@ describe("Perps Competition", () => {
       }
     >();
 
-    activeLeaderboard.forEach((entry: LeaderboardEntry) => {
-      activeMetrics.set(entry.agentId, {
+    activeLeaderboard.forEach((entry) => {
+      activeMetrics.set(entry.id, {
         rank: entry.rank,
         portfolioValue: entry.portfolioValue,
         calmarRatio: entry.calmarRatio ?? null,
@@ -2876,11 +2784,12 @@ describe("Perps Competition", () => {
     const typedActiveAccount = activeAccount as PerpsAccountResponse;
     expect(typedActiveAccount.account.totalVolume).toBe("66700"); // Realistic volume from 6 fills
 
-    const summaryResponse = await adminClient.getCompetitionPerpsSummary(
+    const competitionDetails = (await adminClient.getCompetition(
       competition.id,
-    );
-    expect(summaryResponse.success).toBe(true);
-    const typedSummary = summaryResponse as CompetitionPerpsSummaryResponse;
-    expect(typedSummary.summary.totalVolume).toBeGreaterThanOrEqual(75000);
+    )) as CompetitionDetailResponse;
+    expect(competitionDetails.success).toBe(true);
+    expect(competitionDetails.competition).toBeDefined();
+    const stats = competitionDetails.competition.stats;
+    expect(stats?.totalVolume).toBeGreaterThanOrEqual(75000);
   });
 });

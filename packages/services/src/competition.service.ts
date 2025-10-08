@@ -116,37 +116,6 @@ interface LeaderboardEntry {
 }
 
 /**
- * Leaderboard data structure
- */
-type LeaderboardData = {
-  success: boolean;
-  competition: SelectCompetition;
-  leaderboard: Array<{
-    rank: number;
-    agentId: string;
-    agentName: string;
-    agentHandle: string;
-    portfolioValue: number;
-    active: boolean;
-    deactivationReason: string | null;
-    // Risk-adjusted metrics (primarily for perps competitions)
-    calmarRatio?: number | null;
-    simpleReturn?: number | null;
-    maxDrawdown?: number | null;
-    hasRiskMetrics?: boolean;
-  }>;
-  inactiveAgents: Array<{
-    agentId: string;
-    agentName: string;
-    agentHandle: string;
-    portfolioValue: number;
-    active: boolean;
-    deactivationReason: string | null;
-  }>;
-  hasInactiveAgents: boolean;
-};
-
-/**
  * Competition rules data structure
  */
 type CompetitionRulesData = {
@@ -362,14 +331,6 @@ interface LeaderboardWithInactiveAgents {
 /**
  * Basic competition info for unauthenticated users
  */
-type BasicCompetitionInfo = {
-  id: string;
-  name: string;
-  status: CompetitionStatus;
-  externalUrl: string | null;
-  imageUrl: string | null;
-  startDate?: Date;
-};
 
 export interface CompetitionServiceConfig {
   evmChains: SpecificChain[];
@@ -648,7 +609,7 @@ export class CompetitionService {
   ): Promise<string[]> {
     const competitionAgents = await this.agentService.getAgentsForCompetition(
       competitionId,
-      { sort: "", limit: 1000, offset: 0 },
+      { sort: "", limit: 1000, offset: 0, includeInactive: false },
     );
     return competitionAgents.agents.map((agent) => agent.id);
   }
@@ -1199,7 +1160,10 @@ export class CompetitionService {
 
     // Build the response with agent details and competition data
     const competitionAgents = agents.map((agent) => {
-      const isActive = agent.status === "active";
+      // Use competition-specific status instead of global agent status
+      const isActive = agent.competitionStatus === "active";
+      const competitionDeactivationReason = agent.competitionDeactivationReason;
+
       const leaderboardData = leaderboardMap.get(agent.id);
       const leaderboardEntry = leaderboard.find(
         (entry) => entry.agentId === agent.id,
@@ -1222,7 +1186,7 @@ export class CompetitionService {
         imageUrl: agent.imageUrl,
         score,
         active: isActive,
-        deactivationReason: !isActive ? agent.deactivationReason : null,
+        deactivationReason: !isActive ? competitionDeactivationReason : null,
         rank,
         portfolioValue: score,
         pnl: metrics.pnl,
@@ -1724,22 +1688,6 @@ export class CompetitionService {
       this.logger.error("[CompetitionManager] Health check failed:", error);
       return false;
     }
-  }
-
-  /**
-   * Get all upcoming (pending) competitions
-   * @returns Object with competitions array and total count
-   * TODO(stbrody): add caching
-   */
-  async getUpcomingCompetitions() {
-    return this.competitionRepo.findByStatus({
-      status: "pending",
-      params: {
-        sort: "",
-        limit: 100,
-        offset: 0,
-      },
-    });
   }
 
   /**
@@ -2434,236 +2382,6 @@ export class CompetitionService {
       }
     }
   }
-  /**
-   * Get leaderboard with authorization checks
-   * @param params Parameters for leaderboard request
-   * @returns Leaderboard data with proper authorization
-   */
-  async getLeaderboardWithAuthorization(params: {
-    competitionId?: string;
-    agentId?: string;
-    isAdmin?: boolean;
-  }): Promise<LeaderboardData> {
-    try {
-      // Get active competition or use provided competitionId
-      const competitionId =
-        params.competitionId || (await this.getActiveCompetition())?.id;
-
-      if (!competitionId) {
-        throw new ApiError(
-          400,
-          "No active competition and no competitionId provided",
-        );
-      }
-
-      // Check if competition exists
-      const competition = await this.getCompetition(competitionId);
-      if (!competition) {
-        throw new ApiError(404, "Competition not found");
-      }
-
-      // Authentication and Authorization
-      if (params.isAdmin) {
-        // Admin access: Log and proceed
-        this.logger.debug(
-          `Admin accessing leaderboard for competition ${competitionId}.`,
-        );
-      } else {
-        // Not an admin, an agentId is required
-        if (!params.agentId) {
-          throw new ApiError(
-            401,
-            "Authentication required to view leaderboard",
-          );
-        }
-        // AgentId is present, verify active participation
-        const isAgentActive = await this.isAgentActiveInCompetition(
-          competitionId,
-          params.agentId,
-        );
-        if (!isAgentActive) {
-          throw new ApiError(
-            403,
-            "Forbidden: Your agent is not actively participating in this competition.",
-          );
-        }
-      }
-
-      // Get leaderboard data (active and inactive agents)
-      const leaderboardData =
-        await this.getLeaderboardWithInactiveAgents(competitionId);
-
-      // Get only the agents that are in this competition
-      const competitionAgentIds = [
-        ...leaderboardData.activeAgents.map((entry) => entry.agentId),
-        ...leaderboardData.inactiveAgents.map((entry) => entry.agentId),
-      ];
-      const agents =
-        await this.agentService.getAgentsByIds(competitionAgentIds);
-      const agentMap = new Map(agents.map((agent) => [agent.id, agent]));
-
-      // Build active leaderboard with ranks
-      const activeLeaderboard = leaderboardData.activeAgents.map(
-        (entry, index) => {
-          const agent = agentMap.get(entry.agentId);
-          return {
-            rank: index + 1,
-            agentId: entry.agentId,
-            agentName: agent ? agent.name : "Unknown Agent",
-            agentHandle: agent ? agent.handle : "unknown_agent",
-            portfolioValue: entry.value,
-            active: true,
-            deactivationReason: null,
-            // Include risk metrics if available
-            calmarRatio: entry.calmarRatio,
-            simpleReturn: entry.simpleReturn,
-            maxDrawdown: entry.maxDrawdown,
-            hasRiskMetrics: entry.hasRiskMetrics,
-          };
-        },
-      );
-
-      // Build inactive agents list
-      const inactiveAgents = leaderboardData.inactiveAgents.map((entry) => {
-        const agent = agentMap.get(entry.agentId);
-        return {
-          agentId: entry.agentId,
-          agentName: agent ? agent.name : "Unknown Agent",
-          agentHandle: agent ? agent.handle : "unknown_agent",
-          portfolioValue: entry.value,
-          active: false,
-          deactivationReason: entry.deactivationReason,
-        };
-      });
-
-      const result = {
-        success: true,
-        competition,
-        leaderboard: activeLeaderboard,
-        inactiveAgents: inactiveAgents,
-        hasInactiveAgents: inactiveAgents.length > 0,
-      };
-
-      return result;
-    } catch (error) {
-      this.logger.error(
-        `[CompetitionService] Error getting leaderboard with authorization:`,
-        error,
-      );
-      throw error;
-    }
-  }
-
-  /**
-   * Get competition status with participation info
-   * @param agentId Optional agent ID for participation check
-   * @param isAdmin Whether the requester is an admin
-   * @returns Competition status with authorization-based information
-   */
-  async getCompetitionStatus(
-    agentId?: string,
-    isAdmin?: boolean,
-  ): Promise<{
-    success: boolean;
-    active: boolean;
-    competition: SelectCompetition | null | BasicCompetitionInfo;
-    isAdmin?: boolean;
-    participating?: boolean;
-    message?: string;
-  }> {
-    try {
-      // Get active competition
-      const activeCompetition = await this.getActiveCompetition();
-
-      // If no active competition, return null status
-      if (!activeCompetition) {
-        this.logger.debug("[CompetitionService] No active competition found");
-        return {
-          success: true,
-          active: false,
-          competition: null,
-          message: "No active competition found",
-        };
-      }
-
-      this.logger.debug(
-        `[CompetitionService] Found active competition: ${activeCompetition.id}`,
-      );
-
-      // If admin, return full status
-      if (isAdmin) {
-        this.logger.debug(
-          `[CompetitionService] Admin ${agentId} accessing competition status`,
-        );
-        return {
-          success: true,
-          active: true,
-          competition: activeCompetition,
-          isAdmin: true,
-          participating: false,
-        };
-      }
-
-      // If not authenticated, just return basic status
-      const basicInfo = {
-        id: activeCompetition.id,
-        name: activeCompetition.name,
-        status: activeCompetition.status,
-        externalUrl: activeCompetition.externalUrl,
-        imageUrl: activeCompetition.imageUrl,
-      };
-
-      if (!agentId) {
-        return {
-          success: true,
-          active: true,
-          competition: basicInfo,
-          message: "Authentication required to check participation status",
-        };
-      }
-
-      // Check if the agent is actively participating in the competition
-      const isAgentActiveInCompetitionResult =
-        await this.isAgentActiveInCompetition(activeCompetition.id, agentId);
-
-      // If agent is not actively participating, return limited info
-      if (!isAgentActiveInCompetitionResult) {
-        this.logger.debug(
-          `[CompetitionService] Agent ${agentId} is not in competition ${activeCompetition.id}`,
-        );
-
-        return {
-          success: true,
-          active: true,
-          competition: {
-            ...basicInfo,
-            startDate: activeCompetition.startDate || undefined,
-          },
-          participating: false,
-          message: "Your agent is not participating in this competition",
-        };
-      }
-
-      // Agent is participating
-      this.logger.debug(
-        `[CompetitionService] Agent ${agentId} is participating in competition ${activeCompetition.id}`,
-      );
-
-      // Return full competition info
-      return {
-        success: true,
-        active: true,
-        competition: activeCompetition,
-        participating: true,
-      };
-    } catch (error) {
-      this.logger.error(
-        `[CompetitionService] Error getting competition status:`,
-        error,
-      );
-      throw error;
-    }
-  }
 
   /**
    * Builds initial balance descriptions from configuration
@@ -2825,45 +2543,6 @@ export class CompetitionService {
     } catch (error) {
       this.logger.error(
         `[CompetitionService] Error getting competition rules:`,
-        error,
-      );
-      throw error;
-    }
-  }
-
-  /**
-   * Get upcoming competitions with authentication check
-   * @param agentId Optional agent ID for authentication
-   * @param isAdmin Whether the requester is an admin
-   * @returns Upcoming competitions
-   */
-  async getUpcomingCompetitionsWithAuth(
-    agentId?: string,
-    isAdmin?: boolean,
-  ): Promise<SelectCompetition[]> {
-    try {
-      // Authentication check
-      if (!isAdmin && !agentId) {
-        throw new ApiError(401, "Authentication required");
-      }
-
-      if (isAdmin) {
-        this.logger.debug(
-          `[CompetitionService] Admin ${agentId} requesting upcoming competitions`,
-        );
-      } else {
-        this.logger.debug(
-          `[CompetitionService] Agent ${agentId} requesting upcoming competitions`,
-        );
-      }
-
-      // Get upcoming competitions
-      const result = await this.getUpcomingCompetitions();
-
-      return result.competitions;
-    } catch (error) {
-      this.logger.error(
-        `[CompetitionService] Error getting upcoming competitions with auth:`,
         error,
       );
       throw error;
@@ -3098,12 +2777,7 @@ export class CompetitionService {
    */
   async getCompetitionAgents(params: {
     competitionId: string;
-    queryParams: {
-      limit: number;
-      offset: number;
-      sortBy?: string;
-      sortOrder?: string;
-    };
+    queryParams: AgentQueryParams;
   }): Promise<CompetitionAgentsData> {
     try {
       // Get competition

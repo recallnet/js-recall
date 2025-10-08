@@ -8,8 +8,6 @@ import { ApiClient } from "@/e2e/utils/api-client.js";
 import {
   AgentProfileResponse,
   BalancesResponse,
-  CompetitionStatusResponse,
-  LeaderboardResponse,
   SnapshotResponse,
   SpecificChain,
   TradeResponse,
@@ -206,23 +204,26 @@ describe("Multi-Agent Competition", () => {
       const agentClient = agentClients[i]?.client;
 
       // Check competition status
-      const statusResponse =
-        (await agentClient?.getCompetitionStatus()) as CompetitionStatusResponse;
-      expect(statusResponse?.success).toBe(true);
-      expect(statusResponse?.competition).toBeDefined();
-      expect(statusResponse?.competition?.id).toBe(competitionId);
+      const competition = await agentClient?.getActiveCompetition();
+      expect(competition).toBeDefined();
+      expect(competition?.id).toBe(competitionId);
 
       // Check leaderboard
-      const leaderboardResponse =
-        (await agentClient?.getCompetitionLeaderboard()) as LeaderboardResponse;
+      const leaderboardResponse = await agentClient?.getCompetitionAgents(
+        competitionId,
+        { sort: "rank" },
+      );
       expect(leaderboardResponse?.success).toBe(true);
-      expect(leaderboardResponse?.leaderboard).toBeDefined();
-      expect(leaderboardResponse?.leaderboard).toBeInstanceOf(Array);
-      expect(leaderboardResponse?.leaderboard?.length).toBe(NUM_AGENTS);
+      if (!leaderboardResponse?.success)
+        throw new Error("Failed to get agents");
+
+      expect(leaderboardResponse.agents).toBeDefined();
+      expect(leaderboardResponse.agents).toBeInstanceOf(Array);
+      expect(leaderboardResponse.agents.length).toBe(NUM_AGENTS);
 
       // Verify this agent is in the leaderboard
-      const agentInLeaderboard = leaderboardResponse.leaderboard.find(
-        (entry) => entry.agentId === agentClients[i]?.agent.id,
+      const agentInLeaderboard = leaderboardResponse.agents.find(
+        (entry) => entry.id === agentClients[i]?.agent.id,
       );
       expect(agentInLeaderboard).toBeDefined();
     }
