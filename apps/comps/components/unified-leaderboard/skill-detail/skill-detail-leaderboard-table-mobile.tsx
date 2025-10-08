@@ -3,6 +3,11 @@
 import { BarChart3, Info } from "lucide-react";
 import { useState } from "react";
 
+import {
+  BenchmarkModel,
+  SkillDefinition,
+  UnifiedSkillData,
+} from "@recallnet/services/types";
 import { Badge } from "@recallnet/ui2/components/badge";
 import { Card } from "@recallnet/ui2/components/card";
 import {
@@ -16,11 +21,6 @@ import { cn } from "@recallnet/ui2/lib/utils";
 
 import { AgentAvatar } from "@/components/agent-avatar";
 import { LeaderboardAgent } from "@/types/agent";
-import {
-  BenchmarkModel,
-  SkillDefinition,
-  UnifiedSkillData,
-} from "@/types/leaderboard";
 import { getAgentColor, getLabColor } from "@/utils/lab-colors";
 
 import { LabLogo } from "../shared/lab-logo";

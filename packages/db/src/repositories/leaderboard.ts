@@ -1,10 +1,12 @@
 import {
   and,
+  avg,
   countDistinct,
   desc,
   count as drizzleCount,
   eq,
   inArray,
+  max,
   min,
   sql,
   sum,
@@ -505,6 +507,74 @@ export class LeaderboardRepository {
       };
     } catch (error) {
       this.#logger.error("Error in getBulkAgentMetrics:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get statistics for a specific competition type across all agents
+   * @param type The competition type to get statistics for
+   * @returns Average score, top score, and total agent count for the given type
+   */
+  async getStatsForCompetitionType(type: CompetitionType): Promise<{
+    avgScore: number;
+    topScore: number;
+    totalAgents: number;
+  }> {
+    this.#logger.debug(`getStatsForCompetitionType called for type: ${type}`);
+
+    try {
+      const result = await this.#dbRead
+        .select({
+          avgScore: avg(agentScore.ordinal).mapWith(Number),
+          topScore: max(agentScore.ordinal).mapWith(Number),
+          totalAgents: drizzleCount(),
+        })
+        .from(agentScore)
+        .where(eq(agentScore.type, type));
+
+      const stats = result[0];
+      if (!stats) {
+        return {
+          avgScore: 0,
+          topScore: 0,
+          totalAgents: 0,
+        };
+      }
+
+      return {
+        avgScore: stats.avgScore ?? 0,
+        topScore: stats.topScore ?? 0,
+        totalAgents: stats.totalAgents,
+      };
+    } catch (error) {
+      this.#logger.error(
+        { error, type },
+        "Error in getStatsForCompetitionType",
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Get total count of active agents across all competition types and statuses
+   * Counts distinct agents with 'active' status in all competitions
+   * @returns Total number of unique active agents across the platform
+   */
+  async getTotalActiveAgents(): Promise<number> {
+    this.#logger.debug("getTotalActiveAgents called");
+
+    try {
+      const result = await this.#dbRead
+        .select({
+          totalActiveAgents: countDistinct(competitionAgents.agentId),
+        })
+        .from(competitionAgents)
+        .where(eq(competitionAgents.status, "active"));
+
+      return result[0]?.totalActiveAgents ?? 0;
+    } catch (error) {
+      this.#logger.error({ error }, "Error in getTotalActiveAgents");
       throw error;
     }
   }

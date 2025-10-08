@@ -15,6 +15,7 @@ import { specificChainTokens } from "../lib/config-utils.js";
 export * from "./sort/index.js";
 export * from "./agent-metrics.js";
 export * from "./perps.js";
+export * from "./unified-leaderboard.js";
 
 /**
  * Custom error class with HTTP status code
