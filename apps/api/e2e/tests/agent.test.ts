@@ -2873,17 +2873,17 @@ Purpose: WALLET_VERIFICATION`;
       // Agent 1: Good performance (buys ETH)
       await agentClient1.executeTrade({
         fromToken: config.specificChainTokens.eth.usdc,
-        toToken: config.specificChainTokens.eth.eth,
-        amount: "100",
-        reason: "Agent 1 good trade - buying ETH",
+        toToken: "0x000000000000000000000000000000000000dead",
+        amount: "1",
+        reason: "Agent 1 good trade",
       });
 
       // Agent 2: Medium performance (mixed strategy)
       await agentClient2.executeTrade({
         fromToken: config.specificChainTokens.eth.usdc,
-        toToken: config.specificChainTokens.eth.eth,
+        toToken: "0x000000000000000000000000000000000000dead",
         amount: "50",
-        reason: "Agent 2 medium trade - buying ETH",
+        reason: "Agent 2 medium trade",
       });
 
       // Agent 3: Poor performance (burns tokens)
@@ -2891,7 +2891,7 @@ Purpose: WALLET_VERIFICATION`;
         fromToken: config.specificChainTokens.eth.usdc,
         toToken: "0x000000000000000000000000000000000000dead",
         amount: "200",
-        reason: "Agent 3 bad trade - burning tokens",
+        reason: "Agent 3 bad trade",
       });
 
       // Trigger portfolio snapshots

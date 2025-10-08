@@ -217,7 +217,6 @@ describe("Multi-Chain Provider Tests", () => {
       expect(apiResponse.chain).toBe(BlockchainType.EVM);
     });
 
-    // Replace the test that was using NovesProvider with one that just tests MultiChainProvider
     it("should find token on Base chain", async () => {
       // Token from the base chain
       const baseToken = "0x532f27101965dd16442e59d40670faf5ebb142e4";
@@ -237,7 +236,6 @@ describe("Multi-Chain Provider Tests", () => {
       expect(priceReport!.specificChain).toBe("base");
     }, 60000); // Increase timeout for API calls
 
-    // Replace the test for NovesProvider fallback
     it("should handle token lookups without specific chain parameter", async () => {
       // Use a known token that should work without specific chain
       const ethToken = testTokens.eth.ETH; // WETH token
@@ -266,8 +264,8 @@ describe("Multi-Chain Provider Tests", () => {
       expect(providers.length).toBe(1);
 
       // Find MultiChainProvider in the list
-      const hasMultiChain = providers.some(
-        (p: PriceSource) => p.getName() === "DexScreener MultiChain",
+      const hasMultiChain = providers.some((p: PriceSource) =>
+        p.getName().includes("MultiChain"),
       );
       expect(hasMultiChain).toBe(true);
 

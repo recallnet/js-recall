@@ -6,7 +6,11 @@ import {
   parseEvmChains,
   specificChainTokens,
 } from "@recallnet/services/lib";
-import { CrossChainTradingType } from "@recallnet/services/types";
+import {
+  CoinGeckoMode,
+  CrossChainTradingType,
+  PriceProvider,
+} from "@recallnet/services/types";
 
 import { createSentryConfig } from "@/lib/sentry-config.js";
 
@@ -128,15 +132,24 @@ export const config = {
   // EVM chain configuration
   evmChains: parseEvmChains(),
   api: {
-    noves: {
-      apiKey: process.env.NOVES_API_KEY || "",
-      enabled: !!process.env.NOVES_API_KEY,
-    },
     // Domain for API authentication and verification purposes
     domain:
       process.env.API_DOMAIN || "https://api.competitions.recall.network/",
   },
-
+  // Multichain price provider configuration (DexScreener or CoinGecko) for paper trading
+  priceProvider: {
+    // Defaults to DexScreener (note: this provider does not require an API key)
+    type: (process.env.PRICE_PROVIDER || "dexscreener") as PriceProvider,
+    // For CoinGecko, an API key is required, which use different API URLs depending on the type
+    coingecko: {
+      apiKey: process.env.COINGECKO_API_KEY || "",
+      mode: (process.env.COINGECKO_MODE ||
+        // Non-production environments should use the highly rate limited, free "demo" API key (30 req/min)
+        (process.env.NODE_ENV === "production"
+          ? "pro"
+          : "demo")) as CoinGeckoMode,
+    },
+  },
   priceTracker: {
     // Maximum number of entries for the token price cache
     maxCacheSize: parseInt(process.env.PRICE_CACHE_MAX_SIZE || "10000", 10),

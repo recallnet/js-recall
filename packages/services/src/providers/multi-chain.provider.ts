@@ -2,58 +2,86 @@ import { Logger } from "pino";
 
 import {
   BlockchainType,
+  CoinGeckoMode,
+  PriceProvider,
   PriceReport,
   PriceSource,
   SpecificChain,
   SpecificChainTokens,
 } from "../types/index.js";
+import { CoinGeckoProvider } from "./price/coingecko.provider.js";
 import { DexScreenerProvider } from "./price/dexscreener.provider.js";
 
 export interface MultiChainProviderConfig {
+  priceProvider: {
+    type: PriceProvider;
+    coingecko?: {
+      apiKey: string;
+      mode: CoinGeckoMode;
+    };
+  };
   evmChains: SpecificChain[];
   specificChainTokens: SpecificChainTokens;
 }
 
 /**
  * MultiChainProvider implementation
- * Uses DexScreener API to get token prices across multiple chains
+ * Uses configurable price provider (CoinGecko or DexScreener) to get token prices across multiple chains
  * For EVM chains, it will try each chain until a valid price is found.
- * For Solana, it will delegate directly to the DexScreenerProvider.
+ * For Solana, it will delegate directly to the configured provider.
  */
 export class MultiChainProvider implements PriceSource {
-  // Use DexScreenerProvider for common functionality
-  private dexScreenerProvider: DexScreenerProvider;
+  private priceProvider: PriceSource;
   private defaultChains: SpecificChain[];
   private logger: Logger;
 
   constructor(config: MultiChainProviderConfig, logger: Logger) {
     this.defaultChains = config.evmChains;
-    // Initialize the DexScreenerProvider for delegation
-    this.dexScreenerProvider = new DexScreenerProvider(
-      config.specificChainTokens,
-      logger,
-    );
     this.logger = logger;
 
-    this.logger.debug(
-      `[MultiChainProvider] Initialized with chains: ${this.defaultChains.join(", ")}`,
-    );
+    switch (config.priceProvider.type) {
+      case "coingecko":
+        if (!config.priceProvider.coingecko?.apiKey) {
+          throw new Error("CoinGecko API key is required");
+        }
+        this.priceProvider = new CoinGeckoProvider(
+          {
+            ...config.priceProvider.coingecko,
+            specificChainTokens: config.specificChainTokens,
+          },
+          logger,
+        );
+        break;
+      case "dexscreener":
+      default:
+        this.priceProvider = new DexScreenerProvider(
+          config.specificChainTokens,
+          logger,
+        );
+        break;
+    }
   }
 
+  /**
+   * Gets the name of the provider
+   * @returns The name of the provider
+   */
   getName(): string {
-    return "DexScreener MultiChain";
+    return `${this.priceProvider.getName()} MultiChain`;
   }
 
   /**
    * Determines which blockchain a token address belongs to based on address format
-   * Using DexScreenerProvider's implementation
+   * using the configured provider's implementation
+   * @param tokenAddress The token address
+   * @returns The blockchain type
    */
   determineChain(tokenAddress: string): BlockchainType {
-    return this.dexScreenerProvider.determineChain(tokenAddress);
+    return this.priceProvider.determineChain(tokenAddress);
   }
 
   /**
-   * Fetches token price from DexScreener API across multiple chains
+   * Fetches token price from the configured provider across multiple chains
    * @param tokenAddress Token address
    * @param blockchainType Optional blockchain type (EVM or SVM)
    * @param specificChain Optional specific chain to check directly (bypasses chain detection)
@@ -65,12 +93,9 @@ export class MultiChainProvider implements PriceSource {
     specificChain?: SpecificChain,
   ): Promise<PriceReport | null> {
     try {
-      // Normalize token address to lowercase
-      const normalizedAddress = tokenAddress.toLowerCase();
-
       // Determine blockchain type if not provided
       const detectedChainType =
-        blockchainType || this.determineChain(normalizedAddress);
+        blockchainType || this.determineChain(tokenAddress);
 
       // For Solana tokens, the chain is fixed
       if (detectedChainType === BlockchainType.SVM) {
@@ -81,19 +106,19 @@ export class MultiChainProvider implements PriceSource {
       if (specificChain) {
         try {
           this.logger.debug(
-            `[MultiChainProvider] Getting price for token ${normalizedAddress} on specific chain ${specificChain} with type ${detectedChainType}`,
+            `[MultiChainProvider] Getting price for token ${tokenAddress} on specific chain ${specificChain} with type ${detectedChainType}`,
           );
 
-          // Use DexScreenerProvider to get price for a specific chain
-          const price = await this.dexScreenerProvider.getPrice(
-            normalizedAddress,
+          // Use the configured provider to get price for a specific chain
+          const price = await this.priceProvider.getPrice(
+            tokenAddress,
             detectedChainType,
             specificChain,
           );
 
           if (price !== null) {
             this.logger.debug(
-              `[MultiChainProvider] Successfully found price for ${normalizedAddress} on ${specificChain} chain: $${price.price}`,
+              `[MultiChainProvider] Successfully found price for ${tokenAddress} on ${specificChain} chain: $${price.price}`,
             );
             return {
               ...price,
@@ -102,13 +127,13 @@ export class MultiChainProvider implements PriceSource {
           }
 
           this.logger.debug(
-            `[MultiChainProvider] No price found for ${normalizedAddress} on specified chain ${specificChain}`,
+            `[MultiChainProvider] No price found for ${tokenAddress} on specified chain ${specificChain}`,
           );
           // Important: Return null here without falling back to other chains
           return null;
         } catch (error) {
           this.logger.debug(
-            `[MultiChainProvider] Error fetching price for ${normalizedAddress} on specified chain ${specificChain}:`,
+            `[MultiChainProvider] Error fetching price for ${tokenAddress} on specified chain ${specificChain}:`,
             error instanceof Error ? error.message : "Unknown error",
           );
           // Important: Return null here without falling back to other chains
@@ -120,19 +145,19 @@ export class MultiChainProvider implements PriceSource {
       for (const chain of this.defaultChains) {
         try {
           this.logger.debug(
-            `[MultiChainProvider] Attempting to fetch price for ${normalizedAddress} on ${chain} chain`,
+            `[MultiChainProvider] Attempting to fetch price for ${tokenAddress} on ${chain} chain`,
           );
 
-          // Get price for a specific chain using DexScreener
-          const price = await this.dexScreenerProvider.getPrice(
-            normalizedAddress,
+          // Get price for a specific chain using the configured provider
+          const price = await this.priceProvider.getPrice(
+            tokenAddress,
             detectedChainType,
             chain,
           );
 
           if (price !== null) {
             this.logger.debug(
-              `[MultiChainProvider] Successfully found price for ${normalizedAddress} on ${chain} chain: $${price.price}`,
+              `[MultiChainProvider] Successfully found price for ${tokenAddress} on ${chain} chain: $${price.price}`,
             );
             return {
               ...price,
@@ -141,7 +166,7 @@ export class MultiChainProvider implements PriceSource {
           }
         } catch (error) {
           this.logger.debug(
-            `[MultiChainProvider] Error fetching price for ${normalizedAddress} on ${chain} chain:`,
+            `[MultiChainProvider] Error fetching price for ${tokenAddress} on ${chain} chain:`,
             error instanceof Error ? error.message : "Unknown error",
           );
 
@@ -151,7 +176,7 @@ export class MultiChainProvider implements PriceSource {
       }
 
       this.logger.debug(
-        `[MultiChainProvider] Could not find price for ${normalizedAddress} on any chain`,
+        `[MultiChainProvider] Could not find price for ${tokenAddress} on any chain`,
       );
       return null;
     } catch (error) {
@@ -189,13 +214,13 @@ export class MultiChainProvider implements PriceSource {
     const detectedChainType =
       blockchainType || this.determineChain(firstAddress);
 
-    // For Solana tokens, delegate to DexScreenerProvider
+    // For Solana tokens, delegate to the configured provider
     if (detectedChainType === BlockchainType.SVM) {
       this.logger.debug(
         `[MultiChainProvider] Getting batch prices for ${tokenAddresses.length} Solana tokens`,
       );
       try {
-        const batchResults = await this.dexScreenerProvider.getBatchPrices(
+        const batchResults = await this.priceProvider.getBatchPrices(
           tokenAddresses,
           BlockchainType.SVM,
           "svm",
@@ -239,7 +264,7 @@ export class MultiChainProvider implements PriceSource {
       );
 
       try {
-        const batchResults = await this.dexScreenerProvider.getBatchPrices(
+        const batchResults = await this.priceProvider.getBatchPrices(
           tokenAddresses,
           BlockchainType.EVM,
           specificChain,
@@ -285,7 +310,7 @@ export class MultiChainProvider implements PriceSource {
           `[MultiChainProvider] Attempting to fetch batch prices for ${remainingTokens.size} tokens on ${chain} chain`,
         );
 
-        const batchResults = await this.dexScreenerProvider.getBatchPrices(
+        const batchResults = await this.priceProvider.getBatchPrices(
           Array.from(remainingTokens),
           BlockchainType.EVM,
           chain,
