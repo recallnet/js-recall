@@ -4,15 +4,12 @@ import { useMemo } from "react";
 import { attoValueToNumberValue } from "@recallnet/conversions/atto-conversions";
 import { Tooltip } from "@recallnet/ui2/components/tooltip";
 
+import { config } from "@/config/public";
 import { formatAmount, formatCompactNumber } from "@/utils/format";
 
-const nonStakeBoostAmount = process.env.NEXT_PUBLIC_NON_STAKE_BOOST_AMOUNT
-  ? BigInt(process.env.NEXT_PUBLIC_NON_STAKE_BOOST_AMOUNT)
-  : undefined;
-
-export const Boost = () => {
+export const NonStakeBoost = () => {
   const boostValue = useMemo(() => {
-    const value = attoValueToNumberValue(nonStakeBoostAmount ?? 0);
+    const value = attoValueToNumberValue(config.boost.noStakeBoostAmount);
     if (value === null || value <= 0) {
       return "0";
     }
