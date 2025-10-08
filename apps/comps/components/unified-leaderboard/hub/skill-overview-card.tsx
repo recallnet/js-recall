@@ -3,6 +3,7 @@
 import { ArrowRight, Info, TrendingUp, Users } from "lucide-react";
 import Link from "next/link";
 
+import { BenchmarkModel } from "@recallnet/services/types";
 import { Badge } from "@recallnet/ui2/components/badge";
 import { Card } from "@recallnet/ui2/components/card";
 import { Tooltip } from "@recallnet/ui2/components/tooltip";
@@ -10,7 +11,7 @@ import { cn } from "@recallnet/ui2/lib/utils";
 
 import { AgentAvatar } from "@/components/agent-avatar";
 import { LeaderboardAgent } from "@/types/agent";
-import { BenchmarkModel, SkillOverviewCardProps } from "@/types/leaderboard";
+import { SkillOverviewCardProps } from "@/types/leaderboard";
 import { checkIsAgentSkill } from "@/utils/competition-utils";
 import { getAgentColor, getLabColor } from "@/utils/lab-colors";
 

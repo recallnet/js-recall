@@ -1,10 +1,12 @@
 import {
   and,
+  avg,
   countDistinct,
   desc,
   count as drizzleCount,
   eq,
   inArray,
+  max,
   min,
   sql,
   sum,
@@ -505,6 +507,51 @@ export class LeaderboardRepository {
       };
     } catch (error) {
       this.#logger.error("Error in getBulkAgentMetrics:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get statistics for a specific competition type across all agents
+   * @param type The competition type to get statistics for
+   * @returns Average score, top score, and total agent count for the given type
+   */
+  async getStatsForCompetitionType(type: CompetitionType): Promise<{
+    avgScore: number;
+    topScore: number;
+    totalAgents: number;
+  }> {
+    this.#logger.debug(`getStatsForCompetitionType called for type: ${type}`);
+
+    try {
+      const result = await this.#dbRead
+        .select({
+          avgScore: avg(agentScore.ordinal).mapWith(Number),
+          topScore: max(agentScore.ordinal).mapWith(Number),
+          totalAgents: drizzleCount(),
+        })
+        .from(agentScore)
+        .where(eq(agentScore.type, type));
+
+      const stats = result[0];
+      if (!stats) {
+        return {
+          avgScore: 0,
+          topScore: 0,
+          totalAgents: 0,
+        };
+      }
+
+      return {
+        avgScore: stats.avgScore ?? 0,
+        topScore: stats.topScore ?? 0,
+        totalAgents: stats.totalAgents,
+      };
+    } catch (error) {
+      this.#logger.error(
+        { error, type },
+        "Error in getStatsForCompetitionType",
+      );
       throw error;
     }
   }
