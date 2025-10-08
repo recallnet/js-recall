@@ -13,10 +13,10 @@ import { cn } from "@recallnet/ui2/lib/utils";
 import { PrivyAuthButton } from "@/components/privy-auth-button";
 import { useSession } from "@/hooks";
 
-import { Boost } from "./Boost";
 //import { Claim } from "./Claim";
 //import { GetRecall } from "./GetRecall";
 import { RecallToken } from "./RecallToken";
+import { StakeBoost } from "./StakeBoost";
 
 //import { StakeRecall } from "./StakeRecall";
 
@@ -114,7 +114,7 @@ export const Navbar: React.FunctionComponent = () => {
                 <RecallToken />
               </div>
 
-              <Boost />
+              <StakeBoost />
               {/* <GetRecall /> */}
               {/* <StakeRecall /> */}
               {/* <Claim /> */}
