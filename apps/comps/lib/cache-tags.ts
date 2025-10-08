@@ -12,6 +12,15 @@ export const CacheTags = {
    */
   agentBoostTotals: (competitionId: string): string =>
     `agent-boost-totals:${competitionId}`,
+
+  /**
+   * Cache tag for competitions that a specific agent is participating in
+   *
+   * @param agentId - The agent UUID
+   * @returns Cache tag string
+   */
+  agentCompetitions: (agentId: string): string =>
+    `agent-competitions:${agentId}`,
 } as const;
 
 /**
