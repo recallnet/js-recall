@@ -552,11 +552,14 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
                       <div className="text-secondary-foreground flex items-center gap-2 px-4 py-3 text-sm">
                         <Zap className="text-secondary-foreground size-4 flex-shrink-0" />
                         <div className="text-primary-foreground">
-                          Boosts ...
+                          <span className="text-yellow-400">
+                            Back your conviction.
+                          </span>{" "}
+                          Stack boost on the agents you think will dominate or
+                          spread them to hedge your bets.
                           {/* <span className="text-yellow-400">
                             non-refundable
                           </span> */}
-                          .
                         </div>
                       </div>
                     </CollapsibleContent>
