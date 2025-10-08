@@ -3,6 +3,11 @@ import axios, { AxiosInstance } from "axios";
 import { Logger } from "pino";
 
 import {
+  CircuitBreaker,
+  CircuitOpenError,
+  createCircuitBreaker,
+} from "../../lib/circuit-breaker.js";
+import {
   IPerpsDataProvider,
   PerpsAccountSummary,
   PerpsPosition,
@@ -130,6 +135,7 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
   private readonly REQUEST_TIMEOUT = 30000; // 30 seconds
   private readonly SAMPLING_RATE = 0.01; // 1% of requests for both Sentry and raw data storage
   private logger: Logger;
+  private readonly circuitBreaker: CircuitBreaker;
 
   constructor(logger: Logger, apiUrl?: string) {
     this.logger = logger;
@@ -142,6 +148,33 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
       timeout: this.REQUEST_TIMEOUT,
       headers: {
         "Content-Type": "application/json",
+      },
+    });
+
+    // Initialize circuit breaker with rolling window for better resilience
+    // Rolling window prevents single successes from resetting failure tracking
+    this.circuitBreaker = createCircuitBreaker("symphony-api", {
+      rollingWindowDuration: 30000, // 30 second window
+      errorThresholdPercentage: 50, // Open if >50% requests fail in window
+      failureThreshold: 5, // Also open after 5 consecutive failures
+      resetTimeout: 15000, // Try again after 15 seconds
+      successThreshold: 3, // Need 3 successful calls to close
+      // Don't set requestTimeout - let axios handle timeouts (30s)
+      // Circuit breaker should track failures, not enforce timeouts
+      logger: this.logger,
+      onStateChange: (from, to) => {
+        this.logger.warn(
+          { from, to },
+          `[SymphonyProvider] Circuit breaker state changed`,
+        );
+
+        // Track in Sentry when circuit opens
+        if (to === "open") {
+          Sentry.captureMessage(
+            `Symphony API circuit breaker opened`,
+            "warning",
+          );
+        }
       },
     });
 
@@ -167,6 +200,17 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
    */
   getName(): string {
     return "Symphony";
+  }
+
+  /**
+   * Get circuit breaker health status
+   */
+  getHealthStatus() {
+    const stats = this.circuitBreaker.getStats();
+    return {
+      provider: "Symphony",
+      circuitBreaker: stats,
+    };
   }
 
   /**
@@ -237,10 +281,27 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
 
   /**
    * Get account summary - transforms Symphony response to generic format
+   * @param walletAddress Wallet address to query
+   * @param initialCapital Optional initial capital for validation (Symphony tracks this internally)
    */
-  async getAccountSummary(walletAddress: string): Promise<PerpsAccountSummary> {
+  async getAccountSummary(
+    walletAddress: string,
+    initialCapital?: number,
+  ): Promise<PerpsAccountSummary> {
     const startTime = Date.now();
     const maskedAddress = this.maskWalletAddress(walletAddress);
+
+    // Log if initial capital is provided (for debugging provider compatibility)
+    // Symphony tracks its own initial capital, so this parameter is ignored
+    if (initialCapital !== undefined) {
+      this.logger.debug(
+        {
+          address: maskedAddress,
+          providedInitialCapital: initialCapital,
+        },
+        "[SymphonyProvider] Initial capital provided but will use Symphony's tracked value",
+      );
+    }
 
     // Add Sentry breadcrumb for debugging
     Sentry.addBreadcrumb({
@@ -287,7 +348,11 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
 
       if (missingFields.length > 0) {
         this.logger.warn(
-          `[SymphonyProvider] Missing critical fields for ${this.maskWalletAddress(walletAddress)}: ${missingFields.join(", ")}. Using 0 as default.`,
+          {
+            address: this.maskWalletAddress(walletAddress),
+            missingFields,
+          },
+          "[SymphonyProvider] Missing critical fields. Using 0 as default",
         );
       }
 
@@ -346,7 +411,11 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
       }
 
       this.logger.debug(
-        `[SymphonyProvider] Fetched account summary for ${maskedAddress} in ${Date.now() - startTime}ms`,
+        {
+          address: maskedAddress,
+          processingTime: Date.now() - startTime,
+        },
+        "[SymphonyProvider] Fetched account summary",
       );
 
       return summary;
@@ -392,7 +461,8 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
       await this.enforceRateLimit();
 
       this.logger.debug(
-        `[SymphonyProvider] Fetching positions for ${maskedAddress}`,
+        { address: maskedAddress },
+        "[SymphonyProvider] Fetching positions",
       );
 
       const data = await this.fetchPositionData(walletAddress);
@@ -402,7 +472,12 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
       const positions = this.transformPositions(data.openPositions, "Open");
 
       this.logger.debug(
-        `[SymphonyProvider] Fetched ${positions.length} open positions for ${maskedAddress} in ${Date.now() - startTime}ms`,
+        {
+          address: maskedAddress,
+          positionCount: positions.length,
+          processingTime: Date.now() - startTime,
+        },
+        "[SymphonyProvider] Fetched open positions",
       );
 
       return positions;
@@ -452,7 +527,11 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
       await this.enforceRateLimit();
 
       this.logger.debug(
-        `[SymphonyProvider] Fetching transfers for ${maskedAddress} since ${since.toISOString()}`,
+        {
+          address: maskedAddress,
+          since: since.toISOString(),
+        },
+        "[SymphonyProvider] Fetching transfers",
       );
 
       const response = await this.makeRequest<SymphonyTransferResponse>(
@@ -465,7 +544,8 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
 
       if (!response.success) {
         this.logger.warn(
-          `[SymphonyProvider] Transfer fetch unsuccessful for ${maskedAddress}`,
+          { address: maskedAddress },
+          "[SymphonyProvider] Transfer fetch unsuccessful",
         );
         return [];
       }
@@ -484,7 +564,12 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
       }));
 
       this.logger.debug(
-        `[SymphonyProvider] Fetched ${transfers.length} transfers for ${maskedAddress} in ${Date.now() - startTime}ms`,
+        {
+          address: maskedAddress,
+          transferCount: transfers.length,
+          processingTime: Date.now() - startTime,
+        },
+        "[SymphonyProvider] Fetched transfers",
       );
 
       return transfers;
@@ -532,9 +617,35 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
   }
 
   /**
-   * Make HTTP request with retries and error handling
+   * Make HTTP request with circuit breaker protection
    */
   private async makeRequest<T>(
+    endpoint: string,
+    params: Record<string, string>,
+  ): Promise<T> {
+    try {
+      // Wrap the entire retry logic in the circuit breaker
+      return await this.circuitBreaker.execute(async () => {
+        return await this.makeRequestWithRetry<T>(endpoint, params);
+      });
+    } catch (error) {
+      // Enhance circuit breaker errors with more context
+      if (error instanceof CircuitOpenError) {
+        this.logger.error(
+          `[SymphonyProvider] Circuit breaker is open - too many failures`,
+        );
+        throw new Error(
+          `Symphony API temporarily unavailable due to multiple failures. ${error.message}`,
+        );
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Make HTTP request with retry logic
+   */
+  private async makeRequestWithRetry<T>(
     endpoint: string,
     params: Record<string, string>,
   ): Promise<T> {
@@ -602,7 +713,10 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
 
         if (attempt < this.MAX_RETRIES) {
           const delay = this.RETRY_DELAY * attempt;
-          this.logger.debug(`[SymphonyProvider] Retrying after ${delay}ms...`);
+          this.logger.debug(
+            { delay },
+            "[SymphonyProvider] Retrying after delay",
+          );
           await this.delay(delay);
         }
       }
@@ -681,7 +795,11 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
     const date = new Date(dateStr);
     if (isNaN(date.getTime())) {
       this.logger.warn(
-        `[SymphonyProvider] Invalid date format for ${fieldName}: ${dateStr}`,
+        {
+          fieldName,
+          dateStr,
+        },
+        "[SymphonyProvider] Invalid date format",
       );
       return undefined;
     }

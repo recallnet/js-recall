@@ -17,7 +17,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, vi } from "vitest";
 
 import { MockPrivyClient } from "@recallnet/services/lib";
 
-import { mockSymphonyServer } from "../setup.js";
+import { mockHyperliquidServer, mockSymphonyServer } from "../setup.js";
 import { dbManager } from "./db-manager.js";
 import { setupPrivyTestEnvironment } from "./privy.js";
 
@@ -143,6 +143,11 @@ beforeEach(async function () {
   // Reset mock Symphony server call counter between tests
   if (mockSymphonyServer) {
     mockSymphonyServer.reset();
+  }
+
+  // Reset mock Hyperliquid server call counter between tests
+  if (mockHyperliquidServer) {
+    mockHyperliquidServer.reset();
   }
 });
 

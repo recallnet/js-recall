@@ -29,6 +29,7 @@ import {
 import { toast } from "@recallnet/ui2/components/toast";
 
 import { Pagination } from "@/components/pagination/index";
+import { config } from "@/config/public";
 import { useSession } from "@/hooks/useSession";
 import { useVote } from "@/hooks/useVote";
 import { openForBoosting } from "@/lib/open-for-boosting";
@@ -158,11 +159,26 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
     }),
   );
 
+  const { mutate: claimStakedBoost } = useMutation(
+    tanstackClient.boost.claimStakedBoost.mutationOptions({
+      onSuccess: () => {
+        toast.success("Successfully claimed competition boost!");
+        queryClient.invalidateQueries({
+          queryKey: tanstackClient.boost.balance.key(),
+        });
+      },
+      onError: (error) => {
+        toast.error(error.message);
+      },
+    }),
+  );
+
   const isOpenForBoosting = useMemo(
     () => openForBoosting(competition),
     [competition],
   );
 
+  // TODO: edit condition to check if user has stakes
   const showClaimBoost = useMemo(() => {
     return (
       boostBalance === 0 &&
@@ -236,7 +252,12 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
   };
 
   const handleClaimBoost = () => {
-    claimBoost({ competitionId: competition.id });
+    // TODO: maybe use a different feature flag
+    if (config.boost.noStakeBoostAmount === undefined) {
+      claimStakedBoost({ competitionId: competition.id });
+    } else {
+      claimBoost({ competitionId: competition.id });
+    }
   };
 
   const handleBoost = (

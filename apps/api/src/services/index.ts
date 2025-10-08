@@ -317,16 +317,7 @@ class ServiceRegistry {
       serviceLogger,
     );
 
-    // Initialize BoostService with its dependencies
-    // TODO: Consider the best practice for services depending on repositories and/or other services.
-    this._boostService = new BoostService(
-      this._boostRepository,
-      this._competitionRepository,
-      this._userRepository,
-      config,
-      serviceLogger,
-    );
-
+    // Initialize BoostAwardService first (needed by BoostService)
     this._boostAwardService = new BoostAwardService(
       db,
       this._competitionRepository,
@@ -334,6 +325,18 @@ class ServiceRegistry {
       this._stakesRepository,
       this._userService,
       config,
+    );
+
+    // Initialize BoostService with its dependencies
+    // TODO: Consider the best practice for services depending on repositories and/or other services.
+    this._boostService = new BoostService(
+      this._boostRepository,
+      this._competitionRepository,
+      this._userRepository,
+      this._boostAwardService,
+      db,
+      config,
+      serviceLogger,
     );
 
     // Initialize RewardsService with its dependencies

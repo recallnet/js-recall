@@ -1315,7 +1315,7 @@ export class PerpsRepository {
 
   /**
    * Get transfer violation counts for all agents in a competition with agent names
-   * Uses SQL aggregation with JOIN for efficiency - single query instead of N+1
+   * Uses SQL aggregation with JOIN
    * @param competitionId Competition ID
    * @param startDate Competition start date (only count transfers after this)
    * @returns Array of agents with transfer counts and names (only includes agents with violations)

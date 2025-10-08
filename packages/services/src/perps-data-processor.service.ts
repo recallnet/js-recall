@@ -86,7 +86,8 @@ export class PerpsDataProcessor {
       pnlUsdValue: this.numberToString(position.pnlUsdValue),
       pnlPercentage: this.numberToString(position.pnlPercentage),
       status: position.status,
-      createdAt: position.openedAt,
+      // Use provider's openedAt if available, otherwise DB will use current time on first insert
+      createdAt: position.openedAt || new Date(),
       lastUpdatedAt: position.lastUpdatedAt || null,
       closedAt: position.closedAt || null,
     };
@@ -214,13 +215,68 @@ export class PerpsDataProcessor {
         `[PerpsDataProcessor] Processing agent ${agentId} for competition ${competitionId}`,
       );
 
-      // 1. Fetch account summary from provider
-      const accountSummary = await provider.getAccountSummary(walletAddress);
+      // 1. Check for existing snapshots to determine initial capital
+      let initialCapital: number | undefined;
+      try {
+        const { first } = await this.competitionRepo.getFirstAndLastSnapshots(
+          competitionId,
+          agentId,
+        );
 
-      // 2. Fetch positions from provider
-      const positions = await provider.getPositions(walletAddress);
+        if (first) {
+          const capitalValue = Number(first.totalValue);
 
-      // 3. Transform to database format
+          // Validate the conversion - protect against NaN or invalid values
+          if (isFinite(capitalValue) && capitalValue >= 0) {
+            initialCapital = capitalValue;
+            this.logger.debug(
+              `[PerpsDataProcessor] Found initial capital for agent ${agentId}: ${initialCapital}`,
+            );
+          } else {
+            this.logger.warn(
+              `[PerpsDataProcessor] Invalid initial capital value for agent ${agentId}: ${first.totalValue}, will use current equity`,
+            );
+            // Leave initialCapital as undefined to use provider's default
+          }
+        } else {
+          this.logger.debug(
+            `[PerpsDataProcessor] No existing snapshots for agent ${agentId}, will use current equity as initial`,
+          );
+        }
+      } catch (error) {
+        this.logger.warn(
+          `[PerpsDataProcessor] Error fetching initial capital for agent ${agentId}: ${error}`,
+        );
+        // Continue without initial capital - provider will use current equity
+      }
+
+      // 2. Fetch account data from provider
+      // Use batch method if available
+      let accountSummary: PerpsAccountSummary;
+      let positions: PerpsPosition[];
+
+      if (provider.getAccountDataBatch) {
+        // Provider supports batch fetching - more efficient
+        const batchResult = await provider.getAccountDataBatch(
+          walletAddress,
+          initialCapital,
+        );
+        accountSummary = batchResult.accountSummary;
+        positions = batchResult.positions;
+
+        this.logger.debug(
+          `[PerpsDataProcessor] Used batch fetch for agent ${agentId}`,
+        );
+      } else {
+        // Fall back to sequential fetching
+        accountSummary = await provider.getAccountSummary(
+          walletAddress,
+          initialCapital,
+        );
+        positions = await provider.getPositions(walletAddress);
+      }
+
+      // 4. Transform to database format
       const dbPositions = positions.map((p) =>
         this.transformPositionToDb(p, agentId, competitionId),
       );
@@ -230,7 +286,7 @@ export class PerpsDataProcessor {
         competitionId,
       );
 
-      // 4. Store everything in a transaction
+      // 5. Store everything in a transaction
       const syncResult = await this.perpsRepo.syncAgentPerpsData(
         agentId,
         competitionId,
@@ -238,7 +294,7 @@ export class PerpsDataProcessor {
         dbAccountSummary,
       );
 
-      // 5. Create portfolio snapshot for leaderboard
+      // 6. Create portfolio snapshot for leaderboard
       // Use 0 if totalEquity is invalid (consistent with our transform logic)
       const snapshotValue =
         accountSummary.totalEquity != null && !isNaN(accountSummary.totalEquity)
@@ -315,8 +371,36 @@ export class PerpsDataProcessor {
           // 3. The Symphony provider has built-in retry logic (3 retries with exponential backoff)
           // 4. The outer Promise.allSettled provides per-agent resilience - if this agent fails,
           //    others will still be processed
+          // Check for initial capital for this agent
+          let initialCapital: number | undefined;
+          try {
+            const { first } =
+              await this.competitionRepo.getFirstAndLastSnapshots(
+                competitionId,
+                agentId,
+              );
+            if (first) {
+              const capitalValue = Number(first.totalValue);
+
+              // Validate the conversion - protect against NaN or invalid values
+              if (isFinite(capitalValue) && capitalValue >= 0) {
+                initialCapital = capitalValue;
+              } else {
+                this.logger.warn(
+                  `[PerpsDataProcessor] Invalid initial capital value for agent ${agentId}: ${first.totalValue}, will use current equity`,
+                );
+                // Leave initialCapital as undefined to use provider's default
+              }
+            }
+          } catch {
+            // Continue without initial capital
+            this.logger.debug(
+              `[PerpsDataProcessor] No initial capital found for agent ${agentId}`,
+            );
+          }
+
           const [accountSummary, positions] = await Promise.all([
-            provider.getAccountSummary(walletAddress),
+            provider.getAccountSummary(walletAddress, initialCapital),
             provider.getPositions(walletAddress),
           ]);
 
@@ -373,7 +457,7 @@ export class PerpsDataProcessor {
         }
       }
 
-      // Build all needed data structures in a single pass for efficiency
+      // Build all needed data structures
       const rawAccountSummaries = new Map<string, PerpsAccountSummary>();
       const syncDataMap = new Map<string, (typeof syncDataArray)[0]>();
       const syncDataForDb = [];

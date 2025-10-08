@@ -15,6 +15,7 @@ import {
   startLoopsMockServer,
   stopLoopsMockServer,
 } from "./utils/loops-mock.js";
+import { MockHyperliquidServer } from "./utils/mock-hyperliquid-server.js";
 import { MockSymphonyServer } from "./utils/mock-symphony-server.js";
 import { startServer, stopServer } from "./utils/server.js";
 
@@ -26,6 +27,8 @@ const testLogger = createLogger("E2E-Setup");
 
 // Mock Symphony server instance
 export let mockSymphonyServer: MockSymphonyServer | null = null;
+// Mock Hyperliquid server instance
+export let mockHyperliquidServer: MockHyperliquidServer | null = null;
 
 // Function to log to both Pino logger and file
 const log = (message: string) => {
@@ -189,9 +192,18 @@ export async function setup() {
     mockSymphonyServer = new MockSymphonyServer(4567);
     await mockSymphonyServer.start();
 
+    // Start mock Hyperliquid server for perps testing
+    log("🎨 Starting mock Hyperliquid server...");
+    mockHyperliquidServer = new MockHyperliquidServer(4568);
+    await mockHyperliquidServer.start();
+
     // Set Symphony API URL to point to our mock server
     const SYMPHONY_API_URL = "http://localhost:4567";
     testLogger.info(`SYMPHONY_API_URL set to: ${SYMPHONY_API_URL}`);
+
+    // Set Hyperliquid API URL to point to our mock server
+    const HYPERLIQUID_API_URL = "http://localhost:4568";
+    testLogger.info(`HYPERLIQUID_API_URL set to: ${HYPERLIQUID_API_URL}`);
 
     // Start server
     log("🌐 Starting server...");
@@ -216,6 +228,13 @@ export async function teardown() {
     log("🛑 Stopping mock Symphony server...");
     await mockSymphonyServer.stop();
     mockSymphonyServer = null;
+  }
+
+  // Stop mock Hyperliquid server
+  if (mockHyperliquidServer) {
+    log("🛑 Stopping mock Hyperliquid server...");
+    await mockHyperliquidServer.stop();
+    mockHyperliquidServer = null;
   }
 
   // Close database connection using our DbManager
