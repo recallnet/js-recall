@@ -2214,12 +2214,15 @@ describe("Perps Competition", () => {
     await wait(1000);
 
     // Get leaderboard with risk metrics
-    const leaderboardResponse = await agentClient.getCompetitionLeaderboard();
+    const leaderboardResponse = await agentClient.getCompetitionAgents(
+      competition.id,
+      { sort: "rank" },
+    );
     expect(leaderboardResponse.success).toBe(true);
-    const typedLeaderboard = leaderboardResponse as LeaderboardResponse;
+    if (!leaderboardResponse.success) throw new Error("Failed to get agents");
 
-    const agentEntry = typedLeaderboard.leaderboard.find(
-      (entry) => entry.agentId === agent.id,
+    const agentEntry = leaderboardResponse.agents.find(
+      (entry) => entry.id === agent.id,
     );
 
     expect(agentEntry).toBeDefined();
@@ -2458,20 +2461,23 @@ describe("Perps Competition", () => {
     await services.perpsDataProcessor.processPerpsCompetition(competition.id);
     await wait(1000);
 
-    const leaderboardResponse = await adminClient.getCompetitionLeaderboard();
+    const leaderboardResponse = await adminClient.getCompetitionAgents(
+      competition.id,
+      { sort: "rank" },
+    );
     expect(leaderboardResponse.success).toBe(true);
-    const typedLeaderboard = leaderboardResponse as LeaderboardResponse;
+    if (!leaderboardResponse.success) throw new Error("Failed to get agents");
 
-    expect(typedLeaderboard.leaderboard).toHaveLength(3);
+    expect(leaderboardResponse.agents).toHaveLength(3);
 
-    const steadyEntry = typedLeaderboard.leaderboard.find(
-      (e: LeaderboardEntry) => e.agentId === agentSteady.id,
+    const steadyEntry = leaderboardResponse.agents.find(
+      (e) => e.id === agentSteady.id,
     );
-    const volatileEntry = typedLeaderboard.leaderboard.find(
-      (e: LeaderboardEntry) => e.agentId === agentVolatile.id,
+    const volatileEntry = leaderboardResponse.agents.find(
+      (e) => e.id === agentVolatile.id,
     );
-    const negativeEntry = typedLeaderboard.leaderboard.find(
-      (e: LeaderboardEntry) => e.agentId === agentNegative.id,
+    const negativeEntry = leaderboardResponse.agents.find(
+      (e) => e.id === agentNegative.id,
     );
 
     expect(steadyEntry).toBeDefined();
@@ -2530,21 +2536,18 @@ describe("Perps Competition", () => {
     await services.perpsDataProcessor.processPerpsCompetition(competition.id);
     await wait(500);
 
-    const summaryResponse = await agent3Client.getCompetitionPerpsSummary(
+    const competitionDetails = await agent3Client.getCompetition(
       competition.id,
     );
 
-    expect(summaryResponse.success).toBe(true);
-    const typedSummaryResponse =
-      summaryResponse as CompetitionPerpsSummaryResponse;
-
-    expect(typedSummaryResponse.competitionId).toBe(competition.id);
-    expect(typedSummaryResponse.summary.totalAgents).toBe(3);
-    expect(typedSummaryResponse.summary.totalPositions).toBe(2);
-    expect(typedSummaryResponse.summary.totalVolume).toBeGreaterThanOrEqual(
-      30000,
-    );
-    expect(typedSummaryResponse.summary.averageEquity).toBeGreaterThan(1000);
+    expect(competitionDetails.success).toBe(true);
+    if (competitionDetails.success && "competition" in competitionDetails) {
+      const stats = competitionDetails.competition.stats;
+      expect(competitionDetails.competition.id).toBe(competition.id);
+      expect(stats?.totalAgents).toBe(3);
+      expect(stats?.totalPositions).toBe(2);
+      expect(stats?.totalVolume).toBeGreaterThanOrEqual(30000);
+    }
   });
 
   test("should paginate all Hyperliquid positions with embedded agent info", async () => {
@@ -2685,11 +2688,14 @@ describe("Perps Competition", () => {
     await services.perpsDataProcessor.processPerpsCompetition(competition.id);
     await wait(1000);
 
-    const activeLeaderboardResponse =
-      await adminClient.getCompetitionLeaderboard();
+    const activeLeaderboardResponse = await adminClient.getCompetitionAgents(
+      competition.id,
+      { sort: "rank" },
+    );
     expect(activeLeaderboardResponse.success).toBe(true);
-    const activeLeaderboard = (activeLeaderboardResponse as LeaderboardResponse)
-      .leaderboard;
+    if (!activeLeaderboardResponse.success)
+      throw new Error("Failed to get agents");
+    const activeLeaderboard = activeLeaderboardResponse.agents;
 
     const activeMetrics = new Map<
       string,
@@ -2703,8 +2709,8 @@ describe("Perps Competition", () => {
       }
     >();
 
-    activeLeaderboard.forEach((entry: LeaderboardEntry) => {
-      activeMetrics.set(entry.agentId, {
+    activeLeaderboard.forEach((entry) => {
+      activeMetrics.set(entry.id, {
         rank: entry.rank,
         portfolioValue: entry.portfolioValue,
         calmarRatio: entry.calmarRatio ?? null,
@@ -2783,11 +2789,11 @@ describe("Perps Competition", () => {
     const typedActiveAccount = activeAccount as PerpsAccountResponse;
     expect(typedActiveAccount.account.totalVolume).toBe("66700"); // Realistic volume from 6 fills
 
-    const summaryResponse = await adminClient.getCompetitionPerpsSummary(
-      competition.id,
-    );
-    expect(summaryResponse.success).toBe(true);
-    const typedSummary = summaryResponse as CompetitionPerpsSummaryResponse;
-    expect(typedSummary.summary.totalVolume).toBeGreaterThanOrEqual(75000);
+    const competitionDetails = await adminClient.getCompetition(competition.id);
+    expect(competitionDetails.success).toBe(true);
+    if (competitionDetails.success && "competition" in competitionDetails) {
+      const stats = competitionDetails.competition.stats;
+      expect(stats?.totalVolume).toBeGreaterThanOrEqual(75000);
+    }
   });
 });
