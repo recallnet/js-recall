@@ -3,6 +3,7 @@ import { ORPCError } from "@orpc/server";
 import { LeaderboardParamsSchema } from "@recallnet/services/types";
 
 import { base } from "@/rpc/context/base";
+import { cacheMiddleware } from "@/rpc/middleware/cache";
 
 /**
  * Get global leaderboard across all relevant competitions
@@ -11,6 +12,11 @@ import { base } from "@/rpc/context/base";
  * It returns an empty response as fallback on any failure.
  */
 export const getGlobal = base
+  .use(
+    cacheMiddleware({
+      revalidateSecs: 30,
+    }),
+  )
   .input(LeaderboardParamsSchema)
   .handler(async ({ input, context, errors }) => {
     try {
