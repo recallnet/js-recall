@@ -45,10 +45,10 @@ export default function StakePage() {
             <div className="mb-16">
               <div className="mb-10">
                 <h2 className="text-primary-foreground mb-2 text-xl font-semibold">
-                  Acquire $RECALL to get started.
+                  Acquire RECALL to get started.
                 </h2>
                 <p className="text-secondary-foreground text-sm">
-                  You need $RECALL to Stake and start getting Boost.
+                  You need RECALL to Stake and start getting Boost.
                 </p>
               </div>
 
@@ -68,7 +68,7 @@ export default function StakePage() {
                   Stake to get Boost!
                 </h2>
                 <p className="text-secondary-foreground text-sm">
-                  It looks like you have some $RECALL in your wallet - great!{" "}
+                  It looks like you have some RECALL in your wallet - great!{" "}
                   <br />
                   Now, stake it so you can start getting Boost each competition.
                 </p>
@@ -97,7 +97,7 @@ export default function StakePage() {
                   More Stakes = more Boost!
                 </h2>
                 <p className="text-secondary-foreground text-base">
-                  With more $RECALL, you can Boost your favorite agents even
+                  With more RECALL, you can Boost your favorite agents even
                   further!
                 </p>
               </div>

@@ -18,9 +18,9 @@ const ERROR_MESSAGES: Record<StakingErrorType, string> = {
   user_rejected:
     "Transaction was cancelled. Please try again if you want to proceed.",
   insufficient_funds:
-    "Insufficient $RECALL tokens. Please check your balance and try again.",
+    "Insufficient RECALL tokens. Please check your balance and try again.",
   insufficient_allowance:
-    "Token approval required. Please approve $RECALL token spending first.",
+    "Token approval required. Please approve RECALL token spending first.",
   network_error:
     "Network error occurred. Please check your connection and try again.",
   contract_error:
