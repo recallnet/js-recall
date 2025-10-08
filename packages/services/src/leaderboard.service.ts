@@ -228,9 +228,9 @@ export class LeaderboardService {
         }
       }
 
-      // Calculate total agents from trading stats
-      const tradingStats =
-        await this.leaderboardRepo.getStatsForCompetitionType("trading");
+      // Get total active agents across all competition types
+      const totalActiveAgents =
+        await this.leaderboardRepo.getTotalActiveAgents();
 
       return {
         skills: allSkills,
@@ -238,7 +238,7 @@ export class LeaderboardService {
         globalStats: {
           totalSkills: Object.keys(allSkills).length,
           totalModels: benchmarkData.models.length,
-          totalAgents: tradingStats.totalAgents,
+          totalAgents: totalActiveAgents,
         },
       };
     } catch (error) {

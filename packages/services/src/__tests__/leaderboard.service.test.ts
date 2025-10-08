@@ -26,6 +26,7 @@ describe("LeaderboardService", () => {
       getStatsForCompetitionType: vi.fn(),
       getGlobalAgentMetrics: vi.fn(),
       getGlobalStatsAllTypes: vi.fn(),
+      getTotalActiveAgents: vi.fn(),
     } as unknown as MockedObject<LeaderboardRepository>;
 
     // Create mock logger
@@ -192,6 +193,9 @@ describe("LeaderboardService", () => {
           totalAgents: 44,
         });
 
+        // Mock total active agents across all types
+        mockRepo.getTotalActiveAgents.mockResolvedValue(44);
+
         // Mock agent metrics
         mockRepo.getGlobalAgentMetrics.mockResolvedValueOnce({
           agents: mockAgents,
@@ -268,7 +272,8 @@ describe("LeaderboardService", () => {
         expect(mockRepo.getStatsForCompetitionType).toHaveBeenCalledWith(
           "trading",
         );
-        expect(mockRepo.getStatsForCompetitionType).toHaveBeenCalledTimes(2); // Once for crypto_trading, once for globalStats
+        expect(mockRepo.getStatsForCompetitionType).toHaveBeenCalledTimes(1);
+        expect(mockRepo.getTotalActiveAgents).toHaveBeenCalledTimes(1);
         expect(mockRepo.getGlobalAgentMetrics).toHaveBeenCalledWith({
           type: "trading",
           limit: 100,
@@ -280,18 +285,15 @@ describe("LeaderboardService", () => {
         const benchmarkData = createMockBenchmarkData(false, true);
         const mockFuturesAgents = createMockAgents(5);
 
-        // Mock futures stats (called twice: once for perpetual_futures, once for globalStats which returns 0 since no trading)
-        mockRepo.getStatsForCompetitionType
-          .mockResolvedValueOnce({
-            avgScore: 1450,
-            topScore: 1550,
-            totalAgents: 25,
-          })
-          .mockResolvedValueOnce({
-            avgScore: 0,
-            topScore: 0,
-            totalAgents: 0,
-          });
+        // Mock futures stats
+        mockRepo.getStatsForCompetitionType.mockResolvedValue({
+          avgScore: 1450,
+          topScore: 1550,
+          totalAgents: 25,
+        });
+
+        // Mock total active agents (25 since only futures in this test)
+        mockRepo.getTotalActiveAgents.mockResolvedValue(25);
 
         // Mock agent metrics for futures
         mockRepo.getGlobalAgentMetrics.mockResolvedValueOnce({
@@ -351,12 +353,8 @@ describe("LeaderboardService", () => {
           totalAgents: 25,
         });
 
-        // Mock trading stats again for global stats
-        mockRepo.getStatsForCompetitionType.mockResolvedValueOnce({
-          avgScore: 1500,
-          topScore: 1600,
-          totalAgents: 44,
-        });
+        // Mock total active agents across all types (69 = 44 trading + 25 futures, assuming no overlap)
+        mockRepo.getTotalActiveAgents.mockResolvedValue(69);
 
         // Mock trading agent metrics
         mockRepo.getGlobalAgentMetrics.mockResolvedValueOnce({
@@ -372,7 +370,7 @@ describe("LeaderboardService", () => {
 
         // Mock global stats
         mockRepo.getGlobalStatsAllTypes.mockResolvedValue({
-          activeAgents: 50,
+          activeAgents: 69,
           totalCompetitions: 8,
           totalTrades: 100,
           totalPositions: 150,
@@ -399,8 +397,8 @@ describe("LeaderboardService", () => {
           result.skillData.perpetual_futures!.participants.agents,
         ).toHaveLength(2);
 
-        // Verify global stats uses trading count (44 from trading, not 0 from no futures in this test)
-        expect(result.globalStats.totalAgents).toBe(44);
+        // Verify global stats uses combined count across all types
+        expect(result.globalStats.totalAgents).toBe(69);
       });
     });
 
@@ -414,6 +412,8 @@ describe("LeaderboardService", () => {
           topScore: 0,
           totalAgents: 0,
         });
+
+        mockRepo.getTotalActiveAgents.mockResolvedValue(0);
 
         mockRepo.getGlobalAgentMetrics.mockResolvedValue({
           agents: [],
@@ -446,12 +446,8 @@ describe("LeaderboardService", () => {
       it("should handle benchmark data with no trading skills", async () => {
         const benchmarkData = createMockBenchmarkData(false, false);
 
-        // Mock trading stats even though no trading skill (for globalStats)
-        mockRepo.getStatsForCompetitionType.mockResolvedValue({
-          avgScore: 0,
-          topScore: 0,
-          totalAgents: 0,
-        });
+        // Mock total active agents (could still have agents even without trading skills in JSON)
+        mockRepo.getTotalActiveAgents.mockResolvedValue(0);
 
         const result = await service.getUnifiedLeaderboard(benchmarkData);
 
@@ -470,11 +466,7 @@ describe("LeaderboardService", () => {
       it("should filter models correctly by skill", async () => {
         const benchmarkData = createMockBenchmarkData(false, false);
 
-        mockRepo.getStatsForCompetitionType.mockResolvedValue({
-          avgScore: 0,
-          topScore: 0,
-          totalAgents: 0,
-        });
+        mockRepo.getTotalActiveAgents.mockResolvedValue(0);
 
         const result = await service.getUnifiedLeaderboard(benchmarkData);
 
@@ -507,11 +499,7 @@ describe("LeaderboardService", () => {
           },
         });
 
-        mockRepo.getStatsForCompetitionType.mockResolvedValue({
-          avgScore: 0,
-          topScore: 0,
-          totalAgents: 0,
-        });
+        mockRepo.getTotalActiveAgents.mockResolvedValue(0);
 
         const result = await service.getUnifiedLeaderboard(benchmarkData);
 
@@ -526,6 +514,9 @@ describe("LeaderboardService", () => {
     describe("error handling", () => {
       it("should throw error when database query fails", async () => {
         const benchmarkData = createMockBenchmarkData(true, false);
+
+        // Mock total active agents
+        mockRepo.getTotalActiveAgents.mockResolvedValue(44);
 
         // Mock database error
         mockRepo.getStatsForCompetitionType.mockRejectedValue(
@@ -546,11 +537,7 @@ describe("LeaderboardService", () => {
       it("should log debug message on successful call", async () => {
         const benchmarkData = createMockBenchmarkData(false, false);
 
-        mockRepo.getStatsForCompetitionType.mockResolvedValue({
-          avgScore: 0,
-          topScore: 0,
-          totalAgents: 0,
-        });
+        mockRepo.getTotalActiveAgents.mockResolvedValue(0);
 
         await service.getUnifiedLeaderboard(benchmarkData);
 
@@ -571,6 +558,9 @@ describe("LeaderboardService", () => {
           topScore: 1650, // Top of ALL agents
           totalAgents: 500, // Total in database
         });
+
+        // Mock total active agents (500 total across platform)
+        mockRepo.getTotalActiveAgents.mockResolvedValue(500);
 
         mockRepo.getGlobalAgentMetrics.mockResolvedValue({
           agents: mockAgents, // Only return 100

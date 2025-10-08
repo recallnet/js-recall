@@ -557,6 +557,29 @@ export class LeaderboardRepository {
   }
 
   /**
+   * Get total count of active agents across all competition types and statuses
+   * Counts distinct agents with 'active' status in all competitions
+   * @returns Total number of unique active agents across the platform
+   */
+  async getTotalActiveAgents(): Promise<number> {
+    this.#logger.debug("getTotalActiveAgents called");
+
+    try {
+      const result = await this.#dbRead
+        .select({
+          totalActiveAgents: countDistinct(competitionAgents.agentId),
+        })
+        .from(competitionAgents)
+        .where(eq(competitionAgents.status, "active"));
+
+      return result[0]?.totalActiveAgents ?? 0;
+    } catch (error) {
+      this.#logger.error({ error }, "Error in getTotalActiveAgents");
+      throw error;
+    }
+  }
+
+  /**
    * Get global agent metrics with pagination
    * Uses separate aggregation queries to avoid Cartesian product issues
    * @param params Pagination parameters (limit and offset)
