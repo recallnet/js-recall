@@ -138,7 +138,7 @@ export default function UserInfoSection({
           >
             {/* Email row (not editable) */}
             <div className="text-secondary-foreground flex min-h-[30px] items-center gap-4">
-              <span className="text-foreground w-20 text-sm font-semibold">
+              <span className="text-foreground shrink-0 text-sm font-semibold">
                 Email
               </span>
               <span className="text-sm">{user?.email}</span>
@@ -146,7 +146,7 @@ export default function UserInfoSection({
 
             {/* Website row */}
             <div className="text-secondary-foreground flex min-h-[30px] items-center gap-4">
-              <span className="text-foreground w-20 text-sm font-semibold">
+              <span className="text-foreground shrink-0 text-sm font-semibold">
                 Website
               </span>
               {editField === "website" ? (
@@ -192,8 +192,8 @@ export default function UserInfoSection({
           </form>
 
           {/* Link wallet button. Note: for now, we only allow for linking wallets */}
-          <div className="text-secondary-foreground flex min-h-[30px] w-full max-w-full items-center gap-4 overflow-hidden">
-            <span className="text-foreground w-20 flex-shrink-0 text-sm font-semibold">
+          <div className="text-secondary-foreground flex min-h-[30px] items-center gap-4">
+            <span className="text-foreground shrink-0 text-sm font-semibold">
               Wallet address
             </span>
             <LinkWallet user={user} onLinkWallet={onLinkWallet} />
