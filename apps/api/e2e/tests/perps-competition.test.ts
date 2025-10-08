@@ -2214,12 +2214,11 @@ describe("Perps Competition", () => {
     await wait(1000);
 
     // Get leaderboard with risk metrics
-    const leaderboardResponse = await agentClient.getCompetitionAgents(
+    const leaderboardResponse = (await agentClient.getCompetitionAgents(
       competition.id,
       { sort: "rank" },
-    );
+    )) as CompetitionAgentsResponse;
     expect(leaderboardResponse.success).toBe(true);
-    if (!leaderboardResponse.success) throw new Error("Failed to get agents");
 
     const agentEntry = leaderboardResponse.agents.find(
       (entry) => entry.id === agent.id,
@@ -2461,12 +2460,11 @@ describe("Perps Competition", () => {
     await services.perpsDataProcessor.processPerpsCompetition(competition.id);
     await wait(1000);
 
-    const leaderboardResponse = await adminClient.getCompetitionAgents(
+    const leaderboardResponse = (await adminClient.getCompetitionAgents(
       competition.id,
       { sort: "rank" },
-    );
+    )) as CompetitionAgentsResponse;
     expect(leaderboardResponse.success).toBe(true);
-    if (!leaderboardResponse.success) throw new Error("Failed to get agents");
 
     expect(leaderboardResponse.agents).toHaveLength(3);
 
@@ -2536,18 +2534,17 @@ describe("Perps Competition", () => {
     await services.perpsDataProcessor.processPerpsCompetition(competition.id);
     await wait(500);
 
-    const competitionDetails = await agent3Client.getCompetition(
+    const competitionDetails = (await agent3Client.getCompetition(
       competition.id,
-    );
+    )) as CompetitionDetailResponse;
 
     expect(competitionDetails.success).toBe(true);
-    if (competitionDetails.success && "competition" in competitionDetails) {
-      const stats = competitionDetails.competition.stats;
-      expect(competitionDetails.competition.id).toBe(competition.id);
-      expect(stats?.totalAgents).toBe(3);
-      expect(stats?.totalPositions).toBe(2);
-      expect(stats?.totalVolume).toBeGreaterThanOrEqual(30000);
-    }
+    expect(competitionDetails.competition).toBeDefined();
+    const stats = competitionDetails.competition.stats;
+    expect(competitionDetails.competition.id).toBe(competition.id);
+    expect(stats?.totalAgents).toBe(3);
+    expect(stats?.totalPositions).toBe(2);
+    expect(stats?.totalVolume).toBeGreaterThanOrEqual(30000);
   });
 
   test("should paginate all Hyperliquid positions with embedded agent info", async () => {
@@ -2688,13 +2685,11 @@ describe("Perps Competition", () => {
     await services.perpsDataProcessor.processPerpsCompetition(competition.id);
     await wait(1000);
 
-    const activeLeaderboardResponse = await adminClient.getCompetitionAgents(
+    const activeLeaderboardResponse = (await adminClient.getCompetitionAgents(
       competition.id,
       { sort: "rank" },
-    );
+    )) as CompetitionAgentsResponse;
     expect(activeLeaderboardResponse.success).toBe(true);
-    if (!activeLeaderboardResponse.success)
-      throw new Error("Failed to get agents");
     const activeLeaderboard = activeLeaderboardResponse.agents;
 
     const activeMetrics = new Map<
@@ -2789,11 +2784,12 @@ describe("Perps Competition", () => {
     const typedActiveAccount = activeAccount as PerpsAccountResponse;
     expect(typedActiveAccount.account.totalVolume).toBe("66700"); // Realistic volume from 6 fills
 
-    const competitionDetails = await adminClient.getCompetition(competition.id);
+    const competitionDetails = (await adminClient.getCompetition(
+      competition.id,
+    )) as CompetitionDetailResponse;
     expect(competitionDetails.success).toBe(true);
-    if (competitionDetails.success && "competition" in competitionDetails) {
-      const stats = competitionDetails.competition.stats;
-      expect(stats?.totalVolume).toBeGreaterThanOrEqual(75000);
-    }
+    expect(competitionDetails.competition).toBeDefined();
+    const stats = competitionDetails.competition.stats;
+    expect(stats?.totalVolume).toBeGreaterThanOrEqual(75000);
   });
 });
