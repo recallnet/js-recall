@@ -72,7 +72,10 @@ const OnchainResponseDataSchema = z.object({
     }),
     total_reserve_in_usd: z.string(),
     fdv_usd: z.string(),
-    market_cap_usd: z.string(),
+    // Note: This can be null in the API response, but it (seemingly) only happens for the native
+    // SOL token (`So11..112`). Downstream clients should handle this through token "whitelists",
+    // in case it is used for validation (e.g., trading constraints in the API app).
+    market_cap_usd: z.string().nullable(),
   }),
   relationships: z.object({
     top_pools: z.object({
