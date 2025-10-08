@@ -24,8 +24,11 @@ export const join = base
         undefined,
       );
 
-      // Invalidate the agentCompetitions cache for this agent
-      await invalidateCacheTags([CacheTags.agentCompetitions(input.agentId)]);
+      // Invalidate caches for this agent (competitions list and agent profile with metrics)
+      await invalidateCacheTags([
+        CacheTags.agentCompetitions(input.agentId),
+        CacheTags.agent(input.agentId),
+      ]);
     } catch (error) {
       // Re-throw if already an oRPC error
       if (error instanceof ORPCError) {

@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { ApiError } from "@recallnet/services/types";
 
+import { CacheTags, invalidateCacheTags } from "@/lib/cache-tags";
 import { base } from "@/rpc/context/base";
 import { userAgentMiddleware } from "@/rpc/middleware/user-agent";
 
@@ -65,6 +66,9 @@ export const updateAgentProfile = base
         deactivationReason: updatedAgent.deactivationReason,
         deactivationDate: updatedAgent.deactivationDate,
       };
+
+      // Invalidate the agent cache for this agent
+      await invalidateCacheTags([CacheTags.agent(updatedAgent.id)]);
 
       return {
         agent: sanitizedAgent,
