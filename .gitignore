@@ -59,4 +59,4 @@ apps/api/baseline/*.sql
 coverage/
 
 # Load test reports
-/packages/load-test/reports
+packages/load-test/reports
