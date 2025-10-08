@@ -143,10 +143,7 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
 
   // Check if approval is currently pending (loading or confirming)
   const isApprovalPending =
-    !tokenApproval.isLoading &&
-    "isApprovalLoading" in tokenApproval &&
-    "isApprovalConfirming" in tokenApproval &&
-    (tokenApproval.isApprovalLoading || tokenApproval.isApprovalConfirming);
+    tokenApproval.isApprovalLoading || tokenApproval.isApprovalConfirming;
 
   // Check if approval is needed
   const needsApproval = tokenApproval.isLoading
@@ -207,13 +204,6 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
     }
   }, [isOpen]);
 
-  useEffect(() => {
-    if (!tokenApproval.isLoading && tokenApproval.isApprovalConfirmed) {
-      // Force immediate refetch
-      tokenApproval.refetchAllowance();
-    }
-  }, [tokenApproval]);
-
   // Calculate slider percentage
   const sliderPercentage = Math.round(
     availableTokensNumber > 0
@@ -244,9 +234,7 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
   const handleApprove = async (): Promise<void> => {
     if (!termsAccepted) return;
     try {
-      if (!tokenApproval.isLoading && "approve" in tokenApproval) {
-        await tokenApproval.approve(stakeAmountRaw);
-      }
+      await tokenApproval.approve(stakeAmountRaw);
     } catch (error) {
       const userFriendlyError = handleApprovalError(
         error instanceof Error ? error : new Error("Unknown error occurred"),

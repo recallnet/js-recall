@@ -54,7 +54,7 @@ export default function StakePage() {
 
               <div>
                 <h3 className="text-primary-foreground mb-2 text-xl font-bold">
-                  Active Stakes (0)
+                  Active Stakes
                 </h3>
                 <p className="text-secondary-foreground text-sm">
                   No active stakes yet. Stake to earn Boost.
@@ -82,7 +82,7 @@ export default function StakePage() {
 
               <div>
                 <h3 className="text-primary-foreground mb-2 text-xl font-bold">
-                  Active Stakes (0)
+                  Active Stakes
                 </h3>
                 <p className="text-secondary-foreground text-sm">
                   No active stakes yet. Stake to earn Boost.

@@ -1,7 +1,7 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { type Address, getAddress } from "viem";
 import {
   useAccount,
@@ -40,7 +40,7 @@ export const useStakingContractAddress = (): Address => {
 /**
  * Hook return type for useStakingContract (write operations only)
  */
-type UseStakingContractReturn = {
+export type UseStakingContractResult = {
   stake: (amount: bigint, duration: bigint) => Promise<void>;
   withdraw: (tokenId: bigint) => Promise<void>;
   unstake: (tokenId: bigint, amountToUnstake?: bigint) => Promise<void>;
@@ -56,7 +56,7 @@ type UseStakingContractReturn = {
   transactionHash: `0x${string}` | undefined;
 };
 
-export const useStakingContract = (): UseStakingContractReturn => {
+export const useStakingContract = (): UseStakingContractResult => {
   const contractAddress = useStakingContractAddress();
   const { queryKey: userStakesQueryKey } = useUserStakes();
   const { queryKey: totalUserStakedQueryKey } = useTotalUserStaked();
@@ -76,89 +76,122 @@ export const useStakingContract = (): UseStakingContractReturn => {
       hash: transactionHash,
     });
 
+  const stake = useCallback(
+    async (amount: bigint, duration: bigint) => {
+      return writeContract({
+        address: contractAddress,
+        abi: StakingAbi,
+        functionName: "stake",
+        args: [amount, duration],
+      });
+    },
+    [writeContract, contractAddress],
+  );
+
+  const withdraw = useCallback(
+    async (tokenId: bigint) => {
+      return writeContract({
+        address: contractAddress,
+        abi: StakingAbi,
+        functionName: "withdraw",
+        args: [tokenId],
+      });
+    },
+    [writeContract, contractAddress],
+  );
+
+  const unstake = useCallback(
+    async (tokenId: bigint, amountToUnstake?: bigint) => {
+      if (amountToUnstake !== undefined) {
+        return writeContract({
+          address: contractAddress,
+          abi: StakingAbi,
+          functionName: "unstake",
+          args: [tokenId, amountToUnstake],
+        });
+      } else {
+        return writeContract({
+          address: contractAddress,
+          abi: StakingAbi,
+          functionName: "unstake",
+          args: [tokenId],
+        });
+      }
+    },
+    [writeContract, contractAddress],
+  );
+
+  const relock = useCallback(
+    async (
+      tokenId: bigint,
+      newLockDuration: bigint,
+      newLockAmount?: bigint,
+    ) => {
+      if (newLockAmount !== undefined) {
+        return writeContract({
+          address: contractAddress,
+          abi: StakingAbi,
+          functionName: "relock",
+          args: [tokenId, newLockDuration, newLockAmount],
+        });
+      } else {
+        return writeContract({
+          address: contractAddress,
+          abi: StakingAbi,
+          functionName: "relock",
+          args: [tokenId, newLockDuration],
+        });
+      }
+    },
+    [writeContract, contractAddress],
+  );
+
+  // Invalidate queries once per confirmed transaction
+  const lastConfirmedHashRef = useRef<`0x${string}` | undefined>(undefined);
   useEffect(() => {
-    if (isConfirmed) {
+    if (
+      isConfirmed &&
+      transactionHash &&
+      lastConfirmedHashRef.current !== transactionHash
+    ) {
       queryClient.invalidateQueries({ queryKey: userStakesQueryKey });
       queryClient.invalidateQueries({ queryKey: totalUserStakedQueryKey });
       queryClient.invalidateQueries({ queryKey: recallQueryKey });
+      lastConfirmedHashRef.current = transactionHash;
     }
   }, [
     isConfirmed,
+    transactionHash,
     queryClient,
     userStakesQueryKey,
     totalUserStakedQueryKey,
     recallQueryKey,
   ]);
 
-  const stake = async (amount: bigint, duration: bigint) => {
-    return writeContract({
-      address: contractAddress,
-      abi: StakingAbi,
-      functionName: "stake",
-      args: [amount, duration],
-    });
-  };
-
-  const withdraw = async (tokenId: bigint) => {
-    return writeContract({
-      address: contractAddress,
-      abi: StakingAbi,
-      functionName: "withdraw",
-      args: [tokenId],
-    });
-  };
-
-  const unstake = async (tokenId: bigint, amountToUnstake?: bigint) => {
-    if (amountToUnstake !== undefined) {
-      return writeContract({
-        address: contractAddress,
-        abi: StakingAbi,
-        functionName: "unstake",
-        args: [tokenId, amountToUnstake],
-      });
-    } else {
-      return writeContract({
-        address: contractAddress,
-        abi: StakingAbi,
-        functionName: "unstake",
-        args: [tokenId],
-      });
-    }
-  };
-
-  const relock = async (
-    tokenId: bigint,
-    newLockDuration: bigint,
-    newLockAmount?: bigint,
-  ) => {
-    if (newLockAmount !== undefined) {
-      return writeContract({
-        address: contractAddress,
-        abi: StakingAbi,
-        functionName: "relock",
-        args: [tokenId, newLockDuration, newLockAmount],
-      });
-    } else {
-      return writeContract({
-        address: contractAddress,
-        abi: StakingAbi,
-        functionName: "relock",
-        args: [tokenId, newLockDuration],
-      });
-    }
-  };
-
-  return {
-    stake,
-    withdraw,
-    unstake,
-    relock,
-    isPending,
-    isConfirming,
-    isConfirmed,
-    writeError,
-    transactionHash,
-  };
+  return useMemo(
+    () => ({
+      stake,
+      withdraw,
+      unstake,
+      relock,
+      isPending,
+      isConfirming,
+      isConfirmed,
+      writeError,
+      transactionHash,
+    }),
+    [
+      stake,
+      withdraw,
+      unstake,
+      relock,
+      isPending,
+      isConfirming,
+      isConfirmed,
+      writeError,
+      transactionHash,
+    ],
+  );
 };
 
 /**

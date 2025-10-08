@@ -1,3 +1,4 @@
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { type Address, erc20Abi } from "viem";
 import {
   useAccount,
@@ -6,20 +7,9 @@ import {
   useWriteContract,
 } from "wagmi";
 
-/**
- * Hook return type for loading state
- */
-type UseTokenApprovalLoading = {
-  allowance: undefined;
-  isLoading: true;
-};
-
-/**
- * Hook return type for loaded state
- */
-type UseTokenApprovalLoaded = {
-  isLoading: false;
-  allowance: bigint;
+export type UseTokenApprovalResult = {
+  isLoading: boolean;
+  allowance: bigint | undefined;
   isApprovalLoading: boolean;
   isApprovalConfirming: boolean;
   isApprovalConfirmed: boolean;
@@ -31,11 +21,6 @@ type UseTokenApprovalLoaded = {
 };
 
 /**
- * Union type for the useTokenApproval hook return value
- */
-type UseTokenApprovalReturn = UseTokenApprovalLoading | UseTokenApprovalLoaded;
-
-/**
  * Hook to get token allowance and approval functionality for a specific spender
  * @param tokenAddress - The token contract address
  * @param spenderAddress - The address that needs approval to spend tokens
@@ -44,14 +29,13 @@ type UseTokenApprovalReturn = UseTokenApprovalLoading | UseTokenApprovalLoaded;
 export const useTokenApproval = (
   tokenAddress: Address | undefined,
   spenderAddress: Address | undefined,
-): UseTokenApprovalReturn => {
+): UseTokenApprovalResult => {
   const { address } = useAccount();
 
-  // All hooks must be called in the same order every time
   const {
     data: allowance,
     isLoading: isAllowanceLoading,
-    refetch: refetchAllowance,
+    refetch,
   } = useReadContract({
     address: tokenAddress,
     abi: erc20Abi,
@@ -63,7 +47,7 @@ export const useTokenApproval = (
   });
 
   const {
-    writeContract: writeApprove,
+    writeContract,
     isPending: isApprovalLoading,
     error: approvalError,
     data: approvalTransactionHash,
@@ -74,44 +58,77 @@ export const useTokenApproval = (
       hash: approvalTransactionHash,
     });
 
-  const approve = async (amount: bigint): Promise<void> => {
-    if (!tokenAddress || !spenderAddress) {
-      throw new Error(
-        "Token address and spender address are required for approval",
-      );
+  const approve = useCallback(
+    async (amount: bigint): Promise<void> => {
+      if (!tokenAddress || !spenderAddress) {
+        throw new Error(
+          "Token address and spender address are required for approval",
+        );
+      }
+      return writeContract({
+        address: tokenAddress,
+        abi: erc20Abi,
+        functionName: "approve",
+        args: [spenderAddress, amount],
+      });
+    },
+    [tokenAddress, spenderAddress, writeContract],
+  );
+
+  const needsApproval = useCallback(
+    (amount: bigint): boolean => {
+      if (allowance === undefined) return true;
+      return allowance < amount;
+    },
+    [allowance],
+  );
+
+  const refetchAllowance = useCallback(() => {
+    if (address && tokenAddress && spenderAddress) {
+      void refetch();
     }
-    return writeApprove({
-      address: tokenAddress,
-      abi: erc20Abi,
-      functionName: "approve",
-      args: [spenderAddress, amount],
-    });
-  };
+  }, [refetch, address, tokenAddress, spenderAddress]);
 
-  const needsApproval = (amount: bigint): boolean => {
-    if (!allowance) return true;
-    // Check if we have sufficient allowance for the requested amount
-    return allowance < amount;
-  };
+  // Refetch allowance once per confirmed approval transaction
+  const lastConfirmedHashRef = useRef<`0x${string}` | undefined>(undefined);
+  useEffect(() => {
+    if (
+      isApprovalConfirmed &&
+      approvalTransactionHash &&
+      lastConfirmedHashRef.current !== approvalTransactionHash
+    ) {
+      refetchAllowance();
+      lastConfirmedHashRef.current = approvalTransactionHash;
+    }
+  }, [isApprovalConfirmed, approvalTransactionHash, refetchAllowance]);
 
-  // Handle loading and missing parameters after all hooks are called
-  if (isAllowanceLoading || !tokenAddress || !spenderAddress || !address) {
-    return {
-      allowance: undefined,
-      isLoading: true,
-    };
-  }
+  const isParamsMissing = !address || !tokenAddress || !spenderAddress;
 
-  return {
-    allowance: allowance ?? 0n,
-    isLoading: false,
-    isApprovalLoading,
-    isApprovalConfirming,
-    isApprovalConfirmed,
-    approvalError,
-    approvalTransactionHash,
-    approve,
-    needsApproval,
-    refetchAllowance,
-  };
+  return useMemo(
+    () => ({
+      isLoading: isAllowanceLoading || isParamsMissing,
+      allowance,
+      isApprovalLoading,
+      isApprovalConfirming,
+      isApprovalConfirmed,
+      approvalError: approvalError ?? null,
+      approvalTransactionHash,
+      approve,
+      needsApproval,
+      refetchAllowance,
+    }),
+    [
+      isAllowanceLoading,
+      isParamsMissing,
+      allowance,
+      isApprovalLoading,
+      isApprovalConfirming,
+      isApprovalConfirmed,
+      approvalError,
+      approvalTransactionHash,
+      approve,
+      needsApproval,
+      refetchAllowance,
+    ],
+  );
 };
