@@ -1,8 +1,7 @@
-import { CheckIcon, ClockIcon, LucideProps, Play } from "lucide-react";
+import { CheckIcon, ClockIcon, Play } from "lucide-react";
 
 import { RouterOutputs } from "@/rpc/router";
-import { Competition, CompetitionStatus, UserCompetition } from "@/types";
-import { CompetitionType } from "@/types/competition";
+import { UserCompetition } from "@/types";
 
 import { formatDate } from "./format";
 
@@ -115,6 +114,6 @@ export function getCompetitionSkills(type: string): string[] {
  * @param skill - The skill to check
  * @returns True if the skill is an agent skill, false otherwise
  */
-export function checkIsAgentSkill(skill: string): skill is CompetitionType {
+export function checkIsAgentSkill(skill: string): boolean {
   return skill === "trading" || skill === "perpetual_futures";
 }

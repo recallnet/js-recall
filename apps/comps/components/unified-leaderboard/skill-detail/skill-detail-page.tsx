@@ -92,7 +92,12 @@ export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
   const skill = data?.skills[skillId];
   let skillData = data?.skillData[skillId];
 
-  if (checkIsAgentSkill(skillId) && skillData && additionalAgents.length > 0) {
+  if (
+    skill &&
+    checkIsAgentSkill(skill.category) &&
+    skillData &&
+    additionalAgents.length > 0
+  ) {
     skillData = {
       ...skillData,
       participants: {
@@ -121,7 +126,7 @@ export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
     );
   }
 
-  const isAgentSkill = checkIsAgentSkill(skillId);
+  const isAgentSkill = checkIsAgentSkill(skill.category);
   return (
     <div className="space-y-8 pb-16">
       {/* Header */}
@@ -335,7 +340,7 @@ export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
           </div>
 
           {/* Load More Button for agent skills */}
-          {checkIsAgentSkill(skillId) &&
+          {checkIsAgentSkill(skill.category) &&
             skillData.participants.agents.length <
               skillData.stats.agentCount && (
               <div className="mt-6 text-center">
