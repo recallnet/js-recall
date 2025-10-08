@@ -7,13 +7,11 @@ import {
   Ban,
   Check,
   Lock,
-  OctagonMinus,
   Share2Icon,
   TrendingUp,
   Wallet,
   X,
   Zap,
-  ZapOff,
 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useAccount, useChainId } from "wagmi";
