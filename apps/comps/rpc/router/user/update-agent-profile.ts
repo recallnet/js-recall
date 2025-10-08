@@ -67,8 +67,11 @@ export const updateAgentProfile = base
         deactivationDate: updatedAgent.deactivationDate,
       };
 
-      // Invalidate the agent cache for this agent
-      await invalidateCacheTags([CacheTags.agent(updatedAgent.id)]);
+      // Invalidate the agent cache and agent list (profile appears in list)
+      await invalidateCacheTags([
+        CacheTags.agent(updatedAgent.id),
+        CacheTags.agentList(),
+      ]);
 
       return {
         agent: sanitizedAgent,

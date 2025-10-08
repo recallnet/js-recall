@@ -2,6 +2,7 @@ import { ORPCError } from "@orpc/server";
 
 import { ApiError, CreateAgentBodySchema } from "@recallnet/services/types";
 
+import { CacheTags, invalidateCacheTags } from "@/lib/cache-tags";
 import { base } from "@/rpc/context/base";
 import { authMiddleware } from "@/rpc/middleware/auth";
 
@@ -27,6 +28,9 @@ export const createAgent = base
         deactivationReason: agent.deactivationReason,
         deactivationDate: agent.deactivationDate,
       };
+
+      // Invalidate agent list cache since a new agent was added
+      await invalidateCacheTags([CacheTags.agentList()]);
 
       return {
         agent: sanitizedAgent,

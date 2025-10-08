@@ -29,6 +29,15 @@ export const CacheTags = {
    * @returns Cache tag string
    */
   agent: (agentId: string): string => `agent:${agentId}`,
+
+  /**
+   * Cache tag for the global agent list
+   *
+   * Invalidating this tag will invalidate all paginated agent list queries
+   *
+   * @returns Cache tag string
+   */
+  agentList: (): string => `agent-list`,
 } as const;
 
 /**
