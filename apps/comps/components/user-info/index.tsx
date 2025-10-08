@@ -160,7 +160,14 @@ export default function UserInfoSection({
               ) : (
                 <>
                   {user.metadata?.website && (
-                    <span className="text-sm">{user.metadata.website}</span>
+                    <a
+                      href={user.metadata.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-white underline hover:text-gray-300"
+                    >
+                      {user.metadata.website}
+                    </a>
                   )}
                   <EditButton
                     onClick={() => setEditField("website")}
