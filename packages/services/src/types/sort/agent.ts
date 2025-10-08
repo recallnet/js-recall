@@ -67,6 +67,11 @@ export const AgentSortField = makeSortFieldSchema([
 export const AgentQuerySchema = PagingSchema.extend({
   sort: AgentSortField.optional(),
   filter: z.string().optional(),
+  includeInactive: z
+    .enum(["true", "false"])
+    .optional()
+    .default("false")
+    .transform((val) => (val === "true" ? true : false)),
 });
 
 /**

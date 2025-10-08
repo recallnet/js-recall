@@ -202,15 +202,3 @@ export type PerpsPosition =
 
 export type CompetitionPerpsPositionsResponse =
   RouterOutputs["competitions"]["getPerpsPositions"];
-
-export interface CompetitionPerpsSummaryResponse {
-  success: boolean;
-  competitionId: string;
-  summary: {
-    totalAgents: number;
-    totalPositions: number;
-    totalVolume: number;
-    averageEquity: number;
-  };
-  timestamp: string;
-}

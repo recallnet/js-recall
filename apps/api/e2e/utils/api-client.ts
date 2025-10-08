@@ -26,15 +26,14 @@ import {
   ApiResponse,
   BalancesResponse,
   BlockchainType,
+  Competition,
   CompetitionAgentsResponse,
   CompetitionAllPerpsPositionsResponse,
   CompetitionDetailResponse,
   CompetitionJoinResponse,
   CompetitionLeaveResponse,
   CompetitionPerpsPositionsResponse,
-  CompetitionPerpsSummaryResponse,
   CompetitionRulesResponse,
-  CompetitionStatusResponse,
   CompetitionTimelineResponse,
   CompetitionType,
   CreateCompetitionResponse,
@@ -44,7 +43,6 @@ import {
   GetUserAgentsResponse,
   GlobalLeaderboardResponse,
   HealthCheckResponse,
-  LeaderboardResponse,
   LinkUserWalletResponse,
   LoginResponse,
   PerpsAccountResponse,
@@ -1114,36 +1112,6 @@ export class ApiClient {
   }
 
   /**
-   * Get competition status
-   */
-  async getCompetitionStatus(): Promise<
-    CompetitionStatusResponse | ErrorResponse
-  > {
-    try {
-      const response = await this.axiosInstance.get("/api/competitions/status");
-      return response.data as CompetitionStatusResponse;
-    } catch (error) {
-      return this.handleApiError(error, "get competition status");
-    }
-  }
-
-  /**
-   * Get competition leaderboard
-   */
-  async getCompetitionLeaderboard(): Promise<
-    LeaderboardResponse | ErrorResponse
-  > {
-    try {
-      const response = await this.axiosInstance.get(
-        "/api/competitions/leaderboard",
-      );
-      return response.data as LeaderboardResponse;
-    } catch (error) {
-      return this.handleApiError(error, "get leaderboard");
-    }
-  }
-
-  /**
    * Get the global leaderboard (global rankings)
    */
   async getGlobalLeaderboard(params?: {
@@ -1173,17 +1141,10 @@ export class ApiClient {
   async getRules(): Promise<CompetitionRulesResponse | ErrorResponse> {
     try {
       // Get active competition first
-      const statusResponse = await this.getCompetitionStatus();
-      if (!statusResponse.success || !statusResponse.competition?.id) {
-        return {
-          success: false,
-          error: "No active competition found",
-          status: 404,
-        };
-      }
+      const competition = await this.getActiveCompetition();
 
       // Get rules for the active competition
-      return this.getCompetitionRules(statusResponse.competition.id);
+      return this.getCompetitionRules(competition.id);
     } catch (error) {
       return this.handleApiError(error, "get competition rules");
     }
@@ -1203,15 +1164,6 @@ export class ApiClient {
     } catch (error) {
       return this.handleApiError(error, "get competition rules by ID");
     }
-  }
-
-  /**
-   * Get upcoming competitions (status=PENDING)
-   */
-  async getUpcomingCompetitions(): Promise<
-    UpcomingCompetitionsResponse | ErrorResponse
-  > {
-    return this.getCompetitions("pending");
   }
 
   /**
@@ -1239,6 +1191,34 @@ export class ApiClient {
         `get competitions: sort=${sort}, status=${status}, limit=${limit}, offset=${offset}`,
       );
     }
+  }
+
+  /**
+   * Get the currently active competition
+   * Convenience method for tests - throws an error if no active competition exists
+   * @returns The active competition
+   * @throws Error if no active competition is found
+   */
+  async getActiveCompetition(): Promise<Competition> {
+    const response = await this.getCompetitions("active", undefined, 1);
+
+    if (!response.success) {
+      throw new Error(response.error || "Failed to get active competitions");
+    }
+
+    const competitions = (response as UpcomingCompetitionsResponse)
+      .competitions;
+
+    if (!competitions || competitions.length === 0) {
+      throw new Error("No active competition found");
+    }
+
+    const firstCompetition = competitions[0];
+    if (!firstCompetition) {
+      throw new Error("No active competition found");
+    }
+
+    return firstCompetition;
   }
 
   /**
@@ -1272,6 +1252,7 @@ export class ApiClient {
       sort?: string;
       limit?: number;
       offset?: number;
+      includeInactive?: boolean;
     },
   ): Promise<CompetitionAgentsResponse | ErrorResponse> {
     const queryParams = new URLSearchParams();
@@ -1287,6 +1268,9 @@ export class ApiClient {
     }
     if (params?.offset !== undefined) {
       queryParams.append("offset", params.offset.toString());
+    }
+    if (params?.includeInactive !== undefined) {
+      queryParams.append("includeInactive", params.includeInactive.toString());
     }
 
     const queryString = queryParams.toString();
@@ -1371,26 +1355,6 @@ export class ApiClient {
       return this.handleApiError(
         error,
         `get agent perps positions in competition: competitionId=${competitionId}, agentId=${agentId}`,
-      );
-    }
-  }
-
-  /**
-   * Get perps competition summary statistics
-   * @param competitionId Competition ID
-   * @returns A promise that resolves to the competition perps summary response
-   */
-  async getCompetitionPerpsSummary(
-    competitionId: string,
-  ): Promise<CompetitionPerpsSummaryResponse | ErrorResponse> {
-    try {
-      const url = `/api/competitions/${competitionId}/perps/summary`;
-      const response = await this.axiosInstance.get(url);
-      return response.data as CompetitionPerpsSummaryResponse;
-    } catch (error) {
-      return this.handleApiError(
-        error,
-        `get competition perps summary: competitionId=${competitionId}`,
       );
     }
   }

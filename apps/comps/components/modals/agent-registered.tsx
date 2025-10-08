@@ -14,7 +14,6 @@ import {
 } from "@recallnet/ui2/components/dialog";
 
 import type { RouterOutputs } from "@/rpc/router";
-import { Competition } from "@/types";
 import { formatDate } from "@/utils/format";
 
 import SquarePathAnimation from "../animations/square-path";
@@ -23,7 +22,7 @@ interface Props {
   isOpen: boolean;
   loaded: boolean;
   agent?: RouterOutputs["user"]["getUserAgents"]["agents"][number];
-  competition?: Competition;
+  competition?: RouterOutputs["competitions"]["getById"];
   onClose: () => void;
 }
 
@@ -73,7 +72,7 @@ export const AgentRegisteredModal: React.FC<Props> = ({
                   <>
                     This competition starts on the
                     <span className="text-primary-foreground">
-                      {` ${formatDate(competition.startDate as string)} `}
+                      {` ${formatDate(competition.startDate)} `}
                     </span>
                     - make sure you’re ready to compete by then!
                   </>

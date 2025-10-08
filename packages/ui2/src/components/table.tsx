@@ -29,7 +29,7 @@ function TableHeader({ className, ref, ...props }: TableHeaderProps) {
   return (
     <thead
       ref={ref}
-      className={cn("bg-card [&_tr]:border-0", className)}
+      className={cn("bg-card font-mono font-bold [&_tr]:border-0", className)}
       {...props}
     />
   );
@@ -63,7 +63,7 @@ function TableHead({ className, ref, ...props }: TableHeadProps) {
     <th
       ref={ref}
       className={cn(
-        "text-primary-foreground flex h-12 items-center px-4 align-middle font-medium",
+        "text-primary-foreground flex h-12 items-center px-4 align-middle",
         className,
       )}
       {...props}
@@ -119,7 +119,7 @@ function SortableTableHeader({
       {...props}
     >
       <div className="flex items-center gap-2">
-        <span className="font-semibold">{props.children}</span>
+        <span>{props.children}</span>
         {getSortIcon()}
       </div>
     </TableHead>

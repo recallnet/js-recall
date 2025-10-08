@@ -1,4 +1,4 @@
-import { ORPCError } from "@orpc/client";
+import { ORPCError } from "@orpc/server";
 import { z } from "zod/v4";
 
 import { ApiError, PagingParamsSchema } from "@recallnet/services/types";
@@ -22,7 +22,10 @@ export const getAgents = base
     try {
       const res = await context.competitionService.getCompetitionAgents({
         competitionId: input.competitionId,
-        queryParams: input.paging || PagingParamsSchema.parse({}),
+        queryParams: {
+          ...(input.paging || PagingParamsSchema.parse({})),
+          includeInactive: false,
+        },
       });
       return res;
     } catch (error) {

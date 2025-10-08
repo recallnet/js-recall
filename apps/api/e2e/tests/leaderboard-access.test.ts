@@ -1,7 +1,6 @@
 import axios from "axios";
 import { beforeEach, describe, expect, test } from "vitest";
 
-import { ErrorResponse, LeaderboardResponse } from "@/e2e/utils/api-types.js";
 import {
   createTestClient,
   getAdminApiKey,
@@ -43,23 +42,25 @@ describe("Leaderboard Access Control", () => {
 
     // Start a competition with the agent
     const competitionName = `Admin Access Test ${Date.now()}`;
-    await startTestCompetition({
+    const { competition } = await startTestCompetition({
       adminClient,
       name: competitionName,
       agentIds: [agent.id],
     });
 
-    // Verify the admin can still access the leaderboard
-    const adminResponse =
-      (await adminClient.getCompetitionLeaderboard()) as LeaderboardResponse;
+    // Verify the admin can still access the competition agents
+    const adminResponse = await adminClient.getCompetitionAgents(
+      competition.id,
+      { sort: "rank" },
+    );
     expect(adminResponse.success).toBe(true);
-    expect(adminResponse.leaderboard).toBeDefined();
+    if (!adminResponse.success) throw new Error("Failed to get agents");
+
+    expect(adminResponse.agents).toBeDefined();
 
     // Agent should not be able to access leaderboard
     try {
-      const result = (await client.getCompetitionLeaderboard()) as
-        | ErrorResponse
-        | LeaderboardResponse;
+      const result = await client.getCompetitionAgents(competition.id);
       // If we get here with a success response, the access control is not working as expected
       if (result.success === true) {
         expect(result.success).toBe(false); // Should have failed with access denied

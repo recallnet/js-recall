@@ -7,7 +7,6 @@ import { client } from "@/rpc/clients/client-side";
 import {
   AgentCompetitionsResponse,
   CompetitionPerpsPositionsResponse,
-  CompetitionPerpsSummaryResponse,
   CompetitionResponse,
   CompetitionTradesResponse,
   CompetitionsResponse,
@@ -269,18 +268,6 @@ export class ApiClient {
     );
   }
 
-  /**
-   * Get perps summary for a competition
-   * @param competitionId - Competition ID
-   * @returns Perps summary response
-   */
-  async getCompetitionPerpsSummary(
-    competitionId: string,
-  ): Promise<CompetitionPerpsSummaryResponse> {
-    return this.request<CompetitionPerpsSummaryResponse>(
-      `/competitions/${competitionId}/perps/summary`,
-    );
-  }
   // Agent endpoints
 
   /**

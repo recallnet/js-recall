@@ -711,6 +711,11 @@ export const CompetitionAgentsParamsSchema = z.object({
   sort: z.string().default("rank"),
   limit: z.coerce.number().min(1).max(100).default(50),
   offset: z.coerce.number().min(0).default(0),
+  includeInactive: z
+    .enum(["true", "false"])
+    .optional()
+    .default("false")
+    .transform((val) => (val === "true" ? true : false)),
 });
 
 export type CompetitionAgentsParams = z.infer<
