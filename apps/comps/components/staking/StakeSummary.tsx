@@ -28,7 +28,7 @@ export const StakeSummary: React.FunctionComponent<StakeSummaryProps> = ({
     recall.isLoading || recall.value === undefined ? 0n : recall.value;
 
   const lockedRaw =
-    stakes?.reduce((acc, s) => acc + (s?.amount ?? 0n), 0n) ?? 0n;
+    stakes?.reduce((acc: bigint, s: any) => acc + (s?.amount ?? 0n), 0n) ?? 0n;
 
   const totalRaw = availableRaw + lockedRaw;
 

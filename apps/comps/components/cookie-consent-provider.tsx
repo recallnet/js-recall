@@ -31,6 +31,9 @@ export function CookieConsentProvider({
             enabled: true,
             readOnly: true,
           },
+          functional: {
+            enabled: false,
+          },
           analytics: {
             enabled: false,
           },
@@ -42,7 +45,7 @@ export function CookieConsentProvider({
               consentModal: {
                 title: "We use cookies",
                 description:
-                  "We use cookies to improve your experience and for analytics. Some cookies are necessary for security and basic site functionality (including Cloudflare protection). By clicking 'Accept all', you consent to our use of analytics cookies.",
+                  "We use cookies to improve your experience and for analytics. Some cookies are necessary for security and basic site functionality (including Cloudflare protection). Functional cookies enable authentication features. By clicking 'Accept all', you consent to our use of functional and analytics cookies.",
                 acceptAllBtn: "Accept all",
                 acceptNecessaryBtn: "Reject all",
                 showPreferencesBtn: "Manage preferences",
@@ -64,6 +67,12 @@ export function CookieConsentProvider({
                     description:
                       "These cookies are essential for the proper functioning of the website. This includes Cloudflare security cookies (__cf_bm, _cfuvid, cf_clearance) that protect against bots and malicious traffic. These cannot be disabled.",
                     linkedCategory: "necessary",
+                  },
+                  {
+                    title: "Functional cookies",
+                    description:
+                      "These cookies enable essential features like user authentication and session management through Privy. Without these cookies, you cannot log in or access authenticated features.",
+                    linkedCategory: "functional",
                   },
                   {
                     title: "Analytics cookies",
@@ -93,21 +102,25 @@ export function CookieConsentProvider({
         onFirstConsent: () => {
           // User just gave consent for the first time
           const analyticsAccepted = CookieConsent.acceptedCategory("analytics");
-          setConsent(analyticsAccepted);
+          const functionalAccepted =
+            CookieConsent.acceptedCategory("functional");
+          setConsent(analyticsAccepted || functionalAccepted);
 
-          // Reload page to properly initialize tracking scripts
-          if (analyticsAccepted) {
+          // Reload page to properly initialize tracking scripts and auth
+          if (analyticsAccepted || functionalAccepted) {
             window.location.reload();
           }
         },
         onChange: () => {
           // User changed their consent preferences
           const analyticsAccepted = CookieConsent.acceptedCategory("analytics");
+          const functionalAccepted =
+            CookieConsent.acceptedCategory("functional");
           const previousConsent = consent;
-          setConsent(analyticsAccepted);
+          setConsent(analyticsAccepted || functionalAccepted);
 
-          // Reload page if user just enabled analytics
-          if (!previousConsent && analyticsAccepted) {
+          // Reload page if user just enabled analytics or functional cookies
+          if (!previousConsent && (analyticsAccepted || functionalAccepted)) {
             window.location.reload();
           }
         },
@@ -115,7 +128,8 @@ export function CookieConsentProvider({
 
       // Check if consent was previously given
       const analyticsAccepted = CookieConsent.acceptedCategory("analytics");
-      setConsent(analyticsAccepted);
+      const functionalAccepted = CookieConsent.acceptedCategory("functional");
+      setConsent(analyticsAccepted || functionalAccepted);
       setIsLoading(false);
     };
 

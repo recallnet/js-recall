@@ -213,7 +213,7 @@ export const ActiveStakes: React.FunctionComponent = () => {
           While Locked, your staked RECALL earns you 2x Boost!
         </p>
       </div>
-      {stakes.map((stake) => (
+      {stakes.map((stake: any) => (
         <ActiveStakeEntry
           key={stake.tokenId.toString()}
           tokenId={stake.tokenId}
