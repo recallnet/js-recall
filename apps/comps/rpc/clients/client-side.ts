@@ -14,6 +14,19 @@ const link = new RPCLink({
   url: `${getSiteUrl()}/rpc`,
   interceptors: [
     onError((error) => {
+      // Don't log abort errors in development (common with React StrictMode)
+      const errorMessage =
+        typeof error === "object" &&
+        error !== null &&
+        "message" in error &&
+        error.message;
+      if (
+        typeof errorMessage === "string" &&
+        (errorMessage.includes("abort") || errorMessage.includes("AbortError"))
+      ) {
+        console.log(errorMessage);
+        return;
+      }
       console.error(error);
     }),
   ],
