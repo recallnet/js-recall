@@ -9,7 +9,9 @@ import {
   UuidSchema,
 } from "@recallnet/services/types";
 
+import { CacheTags } from "@/lib/cache-tags";
 import { base } from "@/rpc/context/base";
+import { cacheMiddleware } from "@/rpc/middleware/cache";
 
 const GetAgentCompetitionsInputSchema = z.object({
   agentId: UuidSchema,
@@ -22,6 +24,12 @@ const GetAgentCompetitionsInputSchema = z.object({
  */
 export const getCompetitions = base
   .input(GetAgentCompetitionsInputSchema)
+  .use(
+    cacheMiddleware({
+      revalidateSecs: 30,
+      getTags: (input) => [CacheTags.agentCompetitions(input.agentId)],
+    }),
+  )
   .handler(async ({ input, context, errors }) => {
     try {
       const { agentId, filters, paging } = input;

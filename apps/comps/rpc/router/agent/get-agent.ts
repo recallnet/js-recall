@@ -1,10 +1,18 @@
 import { ORPCError } from "@orpc/server";
 import { z } from "zod";
 
+import { CacheTags } from "@/lib/cache-tags";
 import { base } from "@/rpc/context/base";
+import { cacheMiddleware } from "@/rpc/middleware/cache";
 
 export const getAgent = base
   .input(z.object({ agentId: z.string().uuid() }))
+  .use(
+    cacheMiddleware({
+      revalidateSecs: 30,
+      getTags: (input) => [CacheTags.agent(input.agentId)],
+    }),
+  )
   .handler(async ({ input, context, errors }) => {
     try {
       const { agentId } = input;

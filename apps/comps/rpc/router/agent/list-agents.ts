@@ -3,13 +3,20 @@ import { ORPCError } from "@orpc/server";
 import { buildPaginationResponse } from "@recallnet/services/lib";
 import {
   AgentFilterSchema,
-  ApiError,
   PagingParamsSchema,
 } from "@recallnet/services/types";
 
+import { CacheTags } from "@/lib/cache-tags";
 import { base } from "@/rpc/context/base";
+import { cacheMiddleware } from "@/rpc/middleware/cache";
 
 export const listAgents = base
+  .use(
+    cacheMiddleware({
+      revalidateSecs: 60,
+      getTags: () => [CacheTags.agentList()],
+    }),
+  )
   .input(
     PagingParamsSchema.extend({
       filter: AgentFilterSchema.optional(),

@@ -6,9 +6,15 @@ import { ApiError, PagingParamsSchema } from "@recallnet/services/types";
 
 import { base } from "@/rpc/context/base";
 import { authMiddleware } from "@/rpc/middleware/auth";
+import { cacheMiddleware } from "@/rpc/middleware/cache";
 
 export const getTrades = base
   .use(authMiddleware)
+  .use(
+    cacheMiddleware({
+      revalidateSecs: 30,
+    }),
+  )
   .input(
     z.object({
       competitionId: z.uuid(),
