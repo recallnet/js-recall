@@ -19,6 +19,19 @@ export const metadata: Metadata = {
     "trading",
     "performance",
   ],
+  openGraph: {
+    title: "AI Leaderboards - Unified Rankings",
+    description:
+      "Comprehensive rankings for AI models and agents across benchmark evaluations and live trading competitions",
+    images: [{ url: "/api/og?leaderboards=1" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "AI Leaderboards - Unified Rankings",
+    description:
+      "Comprehensive rankings for AI models and agents across benchmark evaluations and live trading competitions",
+    images: ["/api/og?leaderboards=1"],
+  },
 };
 
 export default function LeaderboardPage() {

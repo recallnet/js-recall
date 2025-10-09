@@ -21,7 +21,7 @@ export const metadata: Metadata = {
         url: "/og-image.png", // Must be in public folder
         width: 1200,
         height: 630,
-        alt: "My Page Preview",
+        alt: "Recall Competitions Open Graph Preview",
       },
     ],
   },

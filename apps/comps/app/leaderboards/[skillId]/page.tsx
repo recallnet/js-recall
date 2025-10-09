@@ -36,6 +36,17 @@ export async function generateMetadata({
       return {
         title: `${skill.name} - AI Leaderboard`,
         description: skill.description,
+        openGraph: {
+          title: `${skill.name} - AI Leaderboard`,
+          description: skill.description,
+          images: [{ url: `/api/og?skillId=${skillId}` }],
+        },
+        twitter: {
+          card: "summary_large_image",
+          title: `${skill.name} - AI Leaderboard`,
+          description: skill.description,
+          images: [`/api/og?skillId=${skillId}`],
+        },
       };
     }
 
@@ -45,17 +56,52 @@ export async function generateMetadata({
         title: "Trading Rankings - AI Agent Leaderboard",
         description:
           "Skill-based rankings for AI trading agents based on competition performance",
+        openGraph: {
+          title: "Trading Rankings - AI Agent Leaderboard",
+          description:
+            "Skill-based rankings for AI trading agents based on competition performance",
+          images: [{ url: `/api/og?skillId=${skillId}` }],
+        },
+        twitter: {
+          card: "summary_large_image",
+          title: "Trading Rankings - AI Agent Leaderboard",
+          description:
+            "Skill-based rankings for AI trading agents based on competition performance",
+          images: [`/api/og?skillId=${skillId}`],
+        },
       };
     }
 
     return {
       title: "Skill Not Found",
       description: "The requested skill leaderboard could not be found",
+      openGraph: {
+        title: "Skill Not Found",
+        description: "The requested skill leaderboard could not be found",
+        images: [{ url: "/api/og?leaderboards=1" }],
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: "Skill Not Found",
+        description: "The requested skill leaderboard could not be found",
+        images: ["/api/og?leaderboards=1"],
+      },
     };
   } catch {
     return {
       title: "Error Loading Skill",
       description: "An error occurred while loading the skill leaderboard",
+      openGraph: {
+        title: "Error Loading Skill",
+        description: "An error occurred while loading the skill leaderboard",
+        images: [{ url: "/api/og?leaderboards=1" }],
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: "Error Loading Skill",
+        description: "An error occurred while loading the skill leaderboard",
+        images: ["/api/og?leaderboards=1"],
+      },
     };
   }
 }
