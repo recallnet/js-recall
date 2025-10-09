@@ -24,14 +24,16 @@ import { StakeBoost } from "./StakeBoost";
 
 export const Navbar: React.FunctionComponent = () => {
   const pathname = usePathname();
-  const navItems = [
-    { label: "COMPETITIONS", href: "/competitions" },
-    { label: "LEADERBOARDS", href: "/leaderboards" },
-  ];
 
   const { isAuthenticated } = useSession();
 
   const [open, setOpen] = useState(false);
+
+  const navItems = [
+    { label: "COMPETITIONS", href: "/competitions" },
+    { label: "LEADERBOARDS", href: "/leaderboards" },
+    ...(isAuthenticated ? [{ label: "STAKE RECALL", href: "/stake" }] : []),
+  ];
 
   return (
     <nav className="flex w-full justify-center border-b bg-black">
@@ -50,25 +52,27 @@ export const Navbar: React.FunctionComponent = () => {
 
           {/* Inline nav items for lg+ */}
           <div className="xs:flex hidden">
-            {navItems.map((item) => {
-              const isActive = pathname.startsWith(item.href);
-              return (
-                <Link
-                  href={item.href}
-                  key={item.href}
-                  className={cn(
-                    "px-15 radial-hover flex h-14 items-center justify-center border-r",
-                    isActive ? "border-b-2 border-b-yellow-500" : "",
-                  )}
-                >
-                  <span
-                    className={`font-mono text-xs font-medium tracking-widest text-white transition-colors`}
+            {navItems
+              .map((item) => {
+                const isActive = pathname.startsWith(item.href);
+                return (
+                  <Link
+                    href={item.href}
+                    key={item.href}
+                    className={cn(
+                      "px-15 radial-hover flex h-14 items-center justify-center border-r",
+                      isActive ? "border-b-2 border-b-yellow-500" : "",
+                    )}
                   >
-                    {item.label}
-                  </span>
-                </Link>
-              );
-            })}
+                    <span
+                      className={`font-mono text-xs font-medium tracking-widest text-white transition-colors`}
+                    >
+                      {item.label}
+                    </span>
+                  </Link>
+                );
+              })
+              .slice(0, 2)}
           </div>
 
           {/* Dropdown trigger for <sm */}

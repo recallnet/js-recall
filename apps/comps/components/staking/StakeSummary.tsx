@@ -47,7 +47,7 @@ export const StakeSummary: React.FunctionComponent<StakeSummaryProps> = ({
 
   return (
     <div className="mb-20 rounded-lg border border-[#212C3A] bg-gray-900">
-      <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-[1fr_2fr_1fr]">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-[1fr_2fr_1fr] sm:gap-6">
         {/* Total */}
         <div className="flex flex-col border-r p-4 last:border-r-0 sm:p-6">
           <div className="mb-2 text-sm font-bold uppercase text-gray-400">
@@ -64,9 +64,12 @@ export const StakeSummary: React.FunctionComponent<StakeSummaryProps> = ({
           <div className="mb-2 text-sm font-bold uppercase text-gray-400">
             Locked
           </div>
-          <div className="flex items-center gap-2">
-            <Recall size="md" />
-            <span className="text-2xl font-bold text-white">{locked}</span>
+          <div className="xs:flex-row xs:items-center flex flex-col items-start gap-2">
+            <div className="flex items-center gap-2">
+              <Recall size="md" />
+              <span className="text-2xl font-bold text-white">{locked}</span>
+            </div>
+
             <div className="flex items-center gap-1 text-sm">
               <span className="font-bold text-yellow-400">+{locked}</span>
               <span className="font-bold">Boost</span>
@@ -81,9 +84,11 @@ export const StakeSummary: React.FunctionComponent<StakeSummaryProps> = ({
           <div className="mb-2 text-sm font-bold uppercase text-gray-400">
             Available
           </div>
-          <div className="flex items-center gap-3">
-            <Recall size="md" />
-            <span className="text-2xl font-bold text-white">{available}</span>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Recall size="md" />
+              <span className="text-2xl font-bold text-white">{available}</span>
+            </div>
             <Button
               className="px-6"
               onClick={onStakeClick}

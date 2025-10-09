@@ -18,7 +18,8 @@ export const StatusPill: React.FunctionComponent<StatusPillProps> = ({
   status,
 }) => {
   const getStatusStyles = (status: StatusType): string => {
-    const baseStyles = "rounded-xl px-4 py-2 text-xs font-bold border";
+    const baseStyles =
+      "rounded-xl px-4 py-2 text-xs font-bold border text-center";
 
     const statusStyles: Record<StatusType, string> = {
       staked: "border-gray-400 text-white",
