@@ -253,8 +253,12 @@ export const config = {
     allocatorPrivateKey: process.env.REWARDS_ALLOCATOR_PRIVATE_KEY || "",
     // Contract address for the rewards contract
     contractAddress: process.env.REWARDS_CONTRACT_ADDRESS || "",
+    // Contract address of the ERC20 token
+    tokenContractAddress: process.env.REWARDS_TOKEN_CONTRACT_ADDRESS || "",
     // RPC provider URL for blockchain interactions
     rpcProvider: process.env.RPC_PROVIDER || "",
+    // Network for the rewards allocator
+    network: process.env.REWARDS_NETWORK || "baseSepolia",
   },
   boost: {
     // Amount of boost (in wei) to grant on wallet linking pre TGE

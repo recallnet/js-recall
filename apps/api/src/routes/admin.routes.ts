@@ -2337,5 +2337,65 @@ export function configureAdminRoutes(
     controller.reactivateAgentInCompetition,
   );
 
+  /**
+   * @openapi
+   * /api/admin/rewards/allocate:
+   *   post:
+   *     tags:
+   *       - Admin
+   *     summary: Allocate rewards for a competition
+   *     description: Calculate and allocate rewards for a competition by building a Merkle tree and publishing it to the blockchain
+   *     security:
+   *       - BearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - competitionId
+   *               - startTimestamp
+   *             properties:
+   *               competitionId:
+   *                 type: string
+   *                 format: uuid
+   *                 description: The competition ID to allocate rewards for
+   *                 example: "12345678-1234-1234-1234-123456789012"
+   *               startTimestamp:
+   *                 type: integer
+   *                 minimum: 1
+   *                 description: The timestamp from which rewards can be claimed
+   *                 example: 1640995200
+   *     responses:
+   *       200:
+   *         description: Rewards allocated successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   description: Operation success status
+   *                   example: true
+   *                 message:
+   *                   type: string
+   *                   description: Success message
+   *                   example: "Rewards allocated successfully"
+   *                 competitionId:
+   *                   type: string
+   *                   format: uuid
+   *                   description: The competition ID that rewards were allocated for
+   *                   example: "12345678-1234-1234-1234-123456789012"
+   *       400:
+   *         description: Bad Request - Invalid request format or missing required parameters
+   *       401:
+   *         description: Unauthorized - Admin authentication required
+   *       500:
+   *         description: Server error
+   */
+  router.post("/rewards/allocate", controller.allocateRewards);
+
   return router;
 }

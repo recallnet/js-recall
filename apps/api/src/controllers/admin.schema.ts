@@ -295,3 +295,17 @@ export const AdminListAllAgentsQuerySchema = z.object({
 export const AdminGetCompetitionTransferViolationsParamsSchema = z.object({
   competitionId: UuidSchema,
 });
+
+/**
+ * Admin rewards allocation schema
+ */
+export const AdminRewardsAllocationSchema = z.object({
+  competitionId: UuidSchema.describe(
+    "The competition ID to allocate rewards for",
+  ),
+  startTimestamp: z
+    .number()
+    .int()
+    .positive()
+    .describe("The timestamp from which rewards can be claimed"),
+});

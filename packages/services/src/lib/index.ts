@@ -6,6 +6,7 @@ export * from "./handle-utils.js";
 export * from "./pagination-utils.js";
 export * from "./privy-mock.js";
 export * from "./privy-utils.js";
+export * from "./rewards-allocator-mock.js";
 export * from "./privy-verification.js";
 export * from "./retry-helper.js";
 export * from "./sort.js";

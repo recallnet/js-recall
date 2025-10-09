@@ -45,7 +45,9 @@ import {
   DexScreenerProvider,
   MultiChainProvider,
 } from "@recallnet/services/providers";
-import RewardsAllocator from "@recallnet/staking-contracts/rewards-allocator";
+import RewardsAllocator, {
+  Network,
+} from "@recallnet/staking-contracts/rewards-allocator";
 
 import config from "@/config/index.js";
 import { db, dbRead } from "@/database/db.js";
@@ -135,6 +137,8 @@ class ServiceRegistry {
         config.rewards.allocatorPrivateKey as Hex,
         config.rewards.rpcProvider,
         config.rewards.contractAddress as Hex,
+        config.rewards.tokenContractAddress as Hex,
+        config.rewards.network as Network,
       );
     }
     const balanceRepository = new BalanceRepository(

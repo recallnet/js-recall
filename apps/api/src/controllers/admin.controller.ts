@@ -35,6 +35,7 @@ import {
   AdminRegisterUserSchema,
   AdminRemoveAgentFromCompetitionBodySchema,
   AdminRemoveAgentFromCompetitionParamsSchema,
+  AdminRewardsAllocationSchema,
   AdminSetupSchema,
   AdminStartCompetitionSchema,
   AdminUpdateAgentBodySchema,
@@ -1493,6 +1494,7 @@ export function makeAdminController(services: ServiceRegistry) {
     /**
      * Get competition transfer violations
      * Returns agents who have made transfers during the competition
+     *
      * @param req Express request
      * @param res Express response
      * @param next Express next function
@@ -1524,6 +1526,37 @@ export function makeAdminController(services: ServiceRegistry) {
           violations,
         });
       } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Allocate rewards for a competition
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async allocateRewards(req: Request, res: Response, next: NextFunction) {
+      try {
+        const result = flatParse(AdminRewardsAllocationSchema, req.body);
+        if (!result.success) {
+          throw new ApiError(400, `Invalid request format: ${result.error}`);
+        }
+
+        const { competitionId, startTimestamp } = result.data;
+
+        await services.rewardsService.calculateAndAllocate(
+          competitionId,
+          startTimestamp,
+        );
+
+        res.status(200).json({
+          success: true,
+          message: "Rewards allocated successfully",
+          competitionId,
+        });
+      } catch (error) {
+        adminLogger.error("Error allocating rewards:", error);
         next(error);
       }
     },

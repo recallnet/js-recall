@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 import { BoostRepository } from "@recallnet/db/repositories/boost";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { RewardsRepository } from "@recallnet/db/repositories/rewards";
-import { competitions } from "@recallnet/db/schema/core/defs";
+import { competitions, users } from "@recallnet/db/schema/core/defs";
 import {
   rewards,
   rewardsRoots,
@@ -38,10 +38,9 @@ describe("Rewards Service", () => {
   let boostRepo: BoostRepository;
   let rewardsService: RewardsService;
   let testCompetitionId: string;
+  let testUserId: string;
 
   // Test constants for the allocate method
-  const testTokenAddress =
-    "0x1234567890123456789012345678901234567890" as `0x${string}`;
   const testStartTimestamp = Math.floor(Date.now() / 1000); // Current timestamp
 
   beforeEach(async () => {
@@ -59,6 +58,20 @@ describe("Rewards Service", () => {
       db,
       logger,
     );
+
+    // Create a test user
+    const userId = "12345678-1234-1234-1234-123456789012";
+    const [user] = await db
+      .insert(users)
+      .values({
+        id: userId,
+        walletAddress: "0x1234567890123456789012345678901234567890",
+        email: "test@example.com",
+      })
+      .returning();
+
+    expect(!user).toBe(false);
+    testUserId = userId;
 
     // Create a test competition with UUID
     const competitionId = "756fddf2-d5a3-4d07-b769-109583469c88";
@@ -100,6 +113,7 @@ describe("Rewards Service", () => {
       testRewards.push({
         id: crypto.randomUUID(),
         competitionId: testCompetitionId,
+        userId: testUserId,
         address,
         amount,
         leafHash: hexToBytes(leafHashBuffer), // Convert Buffer to Uint8Array
@@ -111,11 +125,7 @@ describe("Rewards Service", () => {
     await rewardsRepo.insertRewards(testRewards);
 
     // Execute the allocate method with all required parameters
-    await rewardsService.allocate(
-      testCompetitionId,
-      testTokenAddress,
-      testStartTimestamp,
-    );
+    await rewardsService.allocate(testCompetitionId, testStartTimestamp);
 
     // Verify that merkle tree nodes were created
     const treeNodes = await db
@@ -154,7 +164,6 @@ describe("Rewards Service", () => {
     // Verify that the mock RewardsAllocator was called
     expect(mockRewardsAllocator.allocate).toHaveBeenCalledWith(
       "0xdff434aaf652bbb60e68c978041653e565ff2ee478d62fe2e1ff42ae3e6b6177", // root hash
-      testTokenAddress,
       6n,
       testStartTimestamp,
     );
@@ -163,11 +172,7 @@ describe("Rewards Service", () => {
   test("allocate method throws error when no rewards exist for competition", async () => {
     // Try to allocate rewards for a competition with no rewards
     await expect(
-      rewardsService.allocate(
-        testCompetitionId,
-        testTokenAddress,
-        testStartTimestamp,
-      ),
+      rewardsService.allocate(testCompetitionId, testStartTimestamp),
     ).rejects.toThrow("no rewards to allocate");
 
     // Verify no tree nodes or root entries were created
@@ -198,6 +203,7 @@ describe("Rewards Service", () => {
       {
         id: crypto.randomUUID(),
         competitionId: testCompetitionId,
+        userId: testUserId,
         address,
         amount,
         leafHash: hexToBytes(leafHashBuffer), // Convert Buffer to Uint8Array
@@ -209,11 +215,7 @@ describe("Rewards Service", () => {
     await rewardsRepo.insertRewards(singleReward);
 
     // Execute allocate with all required parameters
-    await rewardsService.allocate(
-      testCompetitionId,
-      testTokenAddress,
-      testStartTimestamp,
-    );
+    await rewardsService.allocate(testCompetitionId, testStartTimestamp);
 
     // Verify tree structure for single reward
     const treeNodes = await db
@@ -258,6 +260,7 @@ describe("Rewards Service", () => {
         return {
           id: crypto.randomUUID(),
           competitionId: testCompetitionId,
+          userId: testUserId,
           address,
           amount,
           leafHash: hexToBytes(leafHashBuffer),
@@ -268,11 +271,7 @@ describe("Rewards Service", () => {
 
     // Insert rewards and build the Merkle tree
     await rewardsRepo.insertRewards(testRewards);
-    await rewardsService.allocate(
-      testCompetitionId,
-      testTokenAddress,
-      testStartTimestamp,
-    );
+    await rewardsService.allocate(testCompetitionId, testStartTimestamp);
 
     // Create a MerkleTree instance to verify proofs
     const rewardEntries = await db
@@ -342,6 +341,7 @@ describe("Rewards Service", () => {
       {
         id: crypto.randomUUID(),
         competitionId: testCompetitionId,
+        userId: testUserId,
         address: existingAddress,
         amount: existingAmount,
         leafHash: hexToBytes(leafHashBuffer),
@@ -349,11 +349,7 @@ describe("Rewards Service", () => {
       },
     ]);
 
-    await rewardsService.allocate(
-      testCompetitionId,
-      testTokenAddress,
-      testStartTimestamp,
-    );
+    await rewardsService.allocate(testCompetitionId, testStartTimestamp);
 
     // Try to retrieve proof for a non-existent reward
     const nonExistentAddress =
