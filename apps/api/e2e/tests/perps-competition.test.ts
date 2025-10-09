@@ -18,10 +18,8 @@ import {
   type EnhancedCompetition,
   type ErrorResponse,
   type GetUserAgentsResponse,
-  type GlobalLeaderboardResponse,
   type PerpsAccountResponse,
   type PerpsPositionsResponse,
-  type StartCompetitionResponse,
 } from "@/e2e/utils/api-types.js";
 import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
@@ -340,81 +338,6 @@ describe("Perps Competition", () => {
       // Or it might return an error
       expect((response as ErrorResponse).error).toBeDefined();
     }
-  });
-
-  test("should include perps competitions in global leaderboard stats", async () => {
-    // Setup admin client
-    const adminClient = createTestClient(getBaseUrl());
-    await adminClient.loginAsAdmin(adminApiKey);
-
-    // Register agents for both competition types
-    const { agent: paperAgent } = await registerUserAndAgentAndGetClient({
-      adminApiKey,
-      agentName: "Paper Trading Agent for Global",
-    });
-    const { agent: perpsAgent, client: perpsClient } =
-      await registerUserAndAgentAndGetClient({
-        adminApiKey,
-        agentName: "Perps Agent for Global",
-      });
-
-    // Start and end a paper trading competition
-    const paperCompName = `Paper Trading Global ${Date.now()}`;
-    const paperResponse = await adminClient.startCompetition({
-      name: paperCompName,
-      type: "trading",
-      agentIds: [paperAgent.id],
-    });
-    expect(paperResponse.success).toBe(true);
-
-    // Type assertion since we've verified success
-    const typedPaperResponse = paperResponse as StartCompetitionResponse;
-    const paperCompId = typedPaperResponse.competition.id;
-
-    // End the paper trading competition so it's included in global stats
-    await adminClient.endCompetition(paperCompId);
-
-    // Start and end a perps competition
-    const perpsCompName = `Perps Competition Global ${Date.now()}`;
-    const perpsResponse = await startPerpsTestCompetition({
-      adminClient,
-      name: perpsCompName,
-      agentIds: [perpsAgent.id],
-    });
-    expect(perpsResponse.success).toBe(true);
-    const perpsCompId = perpsResponse.competition.id;
-
-    // End the perps competition so it's included in global stats
-    await adminClient.endCompetition(perpsCompId);
-
-    // Get global leaderboard
-    const leaderboardResponse = await perpsClient.getGlobalLeaderboard();
-
-    expect(leaderboardResponse.success).toBe(true);
-
-    // Type assertion since we've verified success
-    const typedLeaderboardResponse =
-      leaderboardResponse as GlobalLeaderboardResponse;
-    const stats = typedLeaderboardResponse.stats;
-
-    // Should have stats from both competition types
-    expect(stats).toBeDefined();
-    expect(stats.totalCompetitions).toBeGreaterThanOrEqual(2); // At least our 2 competitions
-
-    // Paper trading contributes totalTrades
-    expect(stats.totalTrades).toBeDefined();
-    expect(typeof stats.totalTrades).toBe("number");
-
-    // Perps competitions contribute totalPositions
-    expect(stats.totalPositions).toBeDefined();
-    expect(typeof stats.totalPositions).toBe("number");
-
-    // Should have volume stats
-    expect(stats.totalVolume).toBeDefined();
-    expect(typeof stats.totalVolume).toBe("number");
-
-    // Should include agents from both competitions
-    expect(stats.activeAgents).toBeGreaterThanOrEqual(2);
   });
 
   test("should show user's agents with both paper trading and perps metrics", async () => {

@@ -750,14 +750,6 @@ export interface LeaderboardAgent {
 // Global leaderboard response
 export interface GlobalLeaderboardResponse extends ApiResponse {
   success: true;
-  stats: {
-    activeAgents: number;
-    totalTrades: number;
-    totalPositions?: number; // For perps competitions
-    totalVolume: number;
-    totalCompetitions: number;
-    totalVotes: number;
-  };
   agents: LeaderboardAgent[];
   pagination: {
     total: number;
