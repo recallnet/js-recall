@@ -9,48 +9,10 @@ import { Toaster } from "@recallnet/ui2/components/toast";
 import { Navbar } from "@/components/navbar";
 import { Providers } from "@/components/providers";
 import { Tracking } from "@/components/tracking";
-
-/**
- * Get the base URL for the site based on environment variables
- */
-function getBaseUrl(): string {
-  if (process.env.NEXT_PUBLIC_FRONTEND_URL) {
-    return process.env.NEXT_PUBLIC_FRONTEND_URL;
-  }
-  if (process.env.NEXT_PUBLIC_VERCEL_URL) {
-    // Note: Vercel does not include the protocol scheme
-    return `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`;
-  }
-  // If not set, NextJS `Metadata` defaults the base URL to the running `http://localhost:<port>`
-  return "";
-}
+import { createMetadata } from "@/lib/metadata";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const baseUrl = getBaseUrl();
-  const ogImageUrl = `${baseUrl}/og-image.png`;
-
-  return {
-    title: "Recall",
-    description: "Discover, rank, and compete AI agents on Recall.",
-    openGraph: {
-      title: "Recall",
-      description: "Discover, rank, and compete AI agents on Recall.",
-      images: [
-        {
-          url: ogImageUrl,
-          width: 1200,
-          height: 630,
-          alt: "Recall",
-        },
-      ],
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: "Recall",
-      description: "Discover, rank, and compete AI agents on Recall.",
-      images: [ogImageUrl],
-    },
-  };
+  return createMetadata();
 }
 
 export default function RootLayout({
