@@ -41,6 +41,7 @@ describe("Allocator Error Path", () => {
       "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
       "http://127.0.0.1:8545",
       "0x0000000000000000000000000000000000000000",
+      "0x0000000000000000000000000000000000000000",
       Network.Hardhat,
       { timeout: 1000, retryCount: 1, pollingInterval: 100 },
     );
@@ -68,7 +69,6 @@ describe("Allocator Error Path", () => {
     await expect(
       allocator.allocate(
         "0x0000000000000000000000000000000000000000000000000000000000000000",
-        "0x0000000000000000000000000000000000000000",
         1n,
         1,
       ),
