@@ -986,7 +986,7 @@ export class AgentService {
       let finalCompetitions = enhancedCompetitions;
       if (results.isComputedSort && params.sort) {
         finalCompetitions = this.sortCompetitionsByComputedField(
-          enhancedCompetitions, // No need to filter again
+          enhancedCompetitions,
           params.sort,
         );
 
@@ -1654,6 +1654,12 @@ export class AgentService {
           case "totalTrades": {
             const aValue = a.totalTrades || 0;
             const bValue = b.totalTrades || 0;
+            comparison = isDesc ? bValue - aValue : aValue - bValue;
+            break;
+          }
+          case "totalPositions": {
+            const aValue = a.totalPositions || 0;
+            const bValue = b.totalPositions || 0;
             comparison = isDesc ? bValue - aValue : aValue - bValue;
             break;
           }
