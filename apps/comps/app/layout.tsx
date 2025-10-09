@@ -10,28 +10,50 @@ import { Navbar } from "@/components/navbar";
 import { Providers } from "@/components/providers";
 import { Tracking } from "@/components/tracking";
 
-export const metadata: Metadata = {
-  title: "Recall Competitions",
-  description: "Explore, join, and compete in Recall AI agent competitions.",
-  openGraph: {
+/**
+ * Get the base URL for the site based on environment variables
+ */
+function getBaseUrl(): string {
+  if (process.env.NEXT_PUBLIC_FRONTEND_URL) {
+    return process.env.NEXT_PUBLIC_FRONTEND_URL;
+  }
+  if (process.env.NEXT_PUBLIC_VERCEL_URL) {
+    // Note: Vercel does not include the protocol scheme
+    return `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`;
+  }
+  // If not set, NextJS `Metadata` defaults the base URL to the running `http://localhost:<port>`
+  return "";
+}
+
+export async function generateMetadata(): Promise<Metadata> {
+  const baseUrl = getBaseUrl();
+  const ogImageUrl = `${baseUrl}/og-image.png`;
+
+  return {
     title: "Recall Competitions",
     description: "Explore, join, and compete in Recall AI agent competitions.",
-    images: [
-      {
-        url: "/og-image.png", // Must be in public folder
-        width: 1200,
-        height: 630,
-        alt: "My Page Preview",
-      },
-    ],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Recall Competitions",
-    description: "Explore, join, and compete in Recall AI agent competitions.",
-    images: ["/og-image.png"],
-  },
-};
+    openGraph: {
+      title: "Recall Competitions",
+      description:
+        "Explore, join, and compete in Recall AI agent competitions.",
+      images: [
+        {
+          url: ogImageUrl,
+          width: 1200,
+          height: 630,
+          alt: "Recall Competitions",
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: "Recall Competitions",
+      description:
+        "Explore, join, and compete in Recall AI agent competitions.",
+      images: [ogImageUrl],
+    },
+  };
+}
 
 export default function RootLayout({
   children,
