@@ -214,6 +214,29 @@ describe("WatchlistService", () => {
       ).rejects.toThrow(RetryExhaustedError);
     }, 6000); // 6 second timeout (TEST_RETRY_CONFIG maxElapsedTime is 5 seconds)
 
+    it("should retry on 403 from Chainalysis", async () => {
+      const address = "0x1234567890abcdef1234567890abcdef12345678";
+      watchlistService = new WalletWatchlist(
+        { watchlist: { chainalysisApiKey: "test-api-key" } },
+        logger,
+      );
+
+      // Mock 403 responses for all attempts (initial + maxRetries from DEFAULT_RETRY_CONFIG)
+      mockFetch.mockResolvedValue({
+        ok: false,
+        status: 403,
+        statusText: "Forbidden",
+      });
+
+      // Should throw after exhausting retries
+      await expect(
+        watchlistService.isAddressSanctioned(address),
+      ).rejects.toThrow();
+
+      // Should be called 4 times (initial + 3 retries from DEFAULT_RETRY_CONFIG)
+      expect(mockFetch).toHaveBeenCalledTimes(4);
+    });
+
     it("should throw on network error", async () => {
       const address = "0x1234567890abcdef1234567890abcdef12345678";
       // Mock multiple rejections for retries (initial + 2 retries = 3 total)

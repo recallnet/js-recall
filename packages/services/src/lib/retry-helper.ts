@@ -80,7 +80,7 @@ export class RetryExhaustedError extends Error {
 }
 
 /** Optional shape for HTTP-like errors */
-type MaybeHttpError = Error & {
+export type MaybeHttpError = Error & {
   code?: string;
   name?: string;
   response?: {
