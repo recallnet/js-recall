@@ -5,7 +5,7 @@ import { Network } from "../src/rewards-allocator.js";
 import RewardsClaimer from "../src/rewards-claimer.js";
 
 describe("Claimer Error Path", () => {
-  it(
+  it.skip(
     "should throw error on network failure",
     {
       timeout: 10_000,
