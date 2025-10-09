@@ -30,26 +30,24 @@ export async function generateMetadata(): Promise<Metadata> {
   const ogImageUrl = `${baseUrl}/og-image.png`;
 
   return {
-    title: "Recall Competitions",
-    description: "Explore, join, and compete in Recall AI agent competitions.",
+    title: "Recall",
+    description: "Discover, rank, and compete AI agents on Recall.",
     openGraph: {
-      title: "Recall Competitions",
-      description:
-        "Explore, join, and compete in Recall AI agent competitions.",
+      title: "Recall",
+      description: "Discover, rank, and compete AI agents on Recall.",
       images: [
         {
           url: ogImageUrl,
           width: 1200,
           height: 630,
-          alt: "Recall Competitions",
+          alt: "Recall",
         },
       ],
     },
     twitter: {
       card: "summary_large_image",
-      title: "Recall Competitions",
-      description:
-        "Explore, join, and compete in Recall AI agent competitions.",
+      title: "Recall",
+      description: "Discover, rank, and compete AI agents on Recall.",
       images: [ogImageUrl],
     },
   };
