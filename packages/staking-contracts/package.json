@@ -28,8 +28,8 @@
   },
   "scripts": {
     "build": "tsup",
-    "test": "vitest run",
-    "test:coverage": "vitest run --coverage",
+    "test": "pnpm hardhat compile && vitest run",
+    "test:coverage": "pnpm hardhat compile && vitest run --coverage",
     "lint": "eslint . --max-warnings 0",
     "format": "prettier --write . --ignore-path=../../.prettierignore",
     "format:check": "prettier --check . --ignore-path=../../.prettierignore"

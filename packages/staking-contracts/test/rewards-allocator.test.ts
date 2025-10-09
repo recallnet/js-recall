@@ -76,26 +76,26 @@ describe("Allocator Error Path", () => {
   });
 });
 
-describe("Allocate Rewards", () => {
+describe("Allocate Rewards", async () => {
+  const network = await RewardAllocationTestHelper.initializeNetwork();
+
+  // Extract the properties from the network object
+  const {
+    rewardAllocatorPrivateKey,
+    rewardsContractAddress,
+    mockTokenAddress,
+  } = network;
+
+  const rewardsAllocator = new RewardsAllocator(
+    rewardAllocatorPrivateKey,
+    network.getJsonRpcUrl(),
+    rewardsContractAddress,
+    mockTokenAddress,
+    Network.Hardhat,
+  );
+
   it("should create merkle tree with rewards for 3 accounts, allocate root, and verify proofs", async () => {
-    const network = await RewardAllocationTestHelper.initializeNetwork();
-
     try {
-      // Extract the properties from the network object
-      const {
-        rewardAllocatorPrivateKey,
-        rewardsContractAddress,
-        mockTokenAddress,
-      } = network;
-
-      const rewardsAllocator = new RewardsAllocator(
-        rewardAllocatorPrivateKey,
-        network.getJsonRpcUrl(),
-        rewardsContractAddress,
-        mockTokenAddress,
-        Network.Hardhat,
-      );
-
       // Use accounts that already have ETH in the test network
       // These are typically the first few accounts in hardhat
       const testAccounts = [
