@@ -3,8 +3,10 @@
 import { useQuery } from "@tanstack/react-query";
 import AutoScroll from "embla-carousel-auto-scroll";
 import useEmblaCarousel from "embla-carousel-react";
+import Link from "next/link";
 import React, { useEffect, useState } from "react";
 
+import { Button } from "@recallnet/ui2/components/button";
 import {
   Tabs,
   TabsContent,
@@ -13,7 +15,6 @@ import {
 } from "@recallnet/ui2/components/tabs";
 import { cn } from "@recallnet/ui2/lib/utils";
 
-import { Button } from "@/../../packages/ui2/src/components/button";
 import { CompetitionCard } from "@/components/competition-card";
 import CompetitionsSkeleton from "@/components/competitions-skeleton";
 import { FooterSection } from "@/components/footer-section";
@@ -24,7 +25,6 @@ import { getSocialLinksArray } from "@/data/social";
 import { useLeaderboards } from "@/hooks/useLeaderboards";
 import { useAnalytics } from "@/hooks/usePostHog";
 import { useSession } from "@/hooks/useSession";
-import Link from "@/node_modules/next/link";
 import { tanstackClient } from "@/rpc/clients/tanstack-query";
 import { mergeCompetitionsWithUserData } from "@/utils/competition-utils";
 import { toOrdinal } from "@/utils/format";
