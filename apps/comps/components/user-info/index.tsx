@@ -31,6 +31,19 @@ const formSchema = z.object({
     .max(100, { message: "Name must be less than 100 characters" }),
   website: asOptionalStringWithoutEmpty(
     z.string().url({ message: "Must be a valid URL" }),
+  ).refine(
+    (url) => {
+      if (!url) return true; // Allow empty/undefined values after transformation
+      try {
+        const parsedUrl = new URL(url);
+        return (
+          parsedUrl.protocol === "http:" || parsedUrl.protocol === "https:"
+        );
+      } catch {
+        return false;
+      }
+    },
+    { message: "Only HTTP and HTTPS URLs are allowed" },
   ),
 });
 
