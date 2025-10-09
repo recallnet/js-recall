@@ -318,7 +318,7 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="min-w-[500px]">
+      <DialogContent className="min-w-xs">
         {/* Header */}
         <DialogHeader>
           <div className="flex items-center justify-between">
@@ -401,7 +401,7 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
                 </div>
 
                 {/* Boost Display */}
-                <div className="flex w-fit items-center justify-center gap-2 rounded-lg bg-gray-800 p-3">
+                <div className="xs:m-0 m-auto flex w-fit items-center justify-center gap-2 rounded-lg bg-gray-800 p-3">
                   <span className="text-primary-foreground text-xl font-bold">
                     +{formatAmount(boostAmountRaw)}
                   </span>
