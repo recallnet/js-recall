@@ -1,7 +1,10 @@
 "use client";
 
+import { addRpcUrlOverrideToChain } from "@privy-io/chains";
 import { PrivyClientConfig, PrivyProvider } from "@privy-io/react-auth";
 import { ReactNode, useEffect } from "react";
+
+import { config } from "@/config/public";
 
 const themeBackground = "#15191f";
 const themeForeground = "#ffffff";
@@ -12,10 +15,18 @@ function setCSSVariable(variable: string, value: string) {
   }
 }
 
+export const chainWithRpcUrl = config.blockchain.rpcUrl
+  ? addRpcUrlOverrideToChain(config.blockchain.chain, config.blockchain.rpcUrl)
+  : config.blockchain.chain;
+
 /**
  * Configuration for the Privy provider.
  */
 const privyConfig: PrivyClientConfig = {
+  // Chain configuration
+  defaultChain: chainWithRpcUrl,
+  supportedChains: [chainWithRpcUrl],
+
   // Login methods configuration
   loginMethods: ["email", "google"],
 

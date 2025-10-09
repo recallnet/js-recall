@@ -6,14 +6,12 @@ import { specificChainTokens } from "../../lib/config-utils.js";
 import { BlockchainType } from "../../types/index.js";
 import { DexScreenerProvider } from "../price/dexscreener.provider.js";
 
-// Set timeout for all tests in this file to 15 seconds
 vi.setConfig({ testTimeout: 15_000 });
+
+const mockLogger: MockProxy<Logger> = mock<Logger>();
 
 describe("Batch Functionality Tests", () => {
   let provider: DexScreenerProvider;
-
-  // Mock logger for the constructor
-  const mockLogger: MockProxy<Logger> = mock<Logger>();
 
   beforeEach(() => {
     provider = new DexScreenerProvider(specificChainTokens, mockLogger);
@@ -21,7 +19,6 @@ describe("Batch Functionality Tests", () => {
 
   describe("DexScreenerProvider batch methods", () => {
     it("should fetch batch prices for multiple tokens", async () => {
-      // Test with a few well-known Ethereum tokens
       const testTokens = [
         specificChainTokens.eth.eth,
         specificChainTokens.eth.usdc,
@@ -36,7 +33,6 @@ describe("Batch Functionality Tests", () => {
       expect(results).toBeInstanceOf(Map);
       expect(results.size).toBe(testTokens.length);
 
-      // Check that we got results for each token
       testTokens.forEach((token) => {
         expect(results.has(token)).toBe(true);
         const result = results.get(token);
@@ -73,14 +69,12 @@ describe("Batch Functionality Tests", () => {
       expect(results).toBeInstanceOf(Map);
       expect(results.size).toBe(testTokens.length);
 
-      // WETH should have a result
       const wethResult = results.get(testTokens[0] as string);
       expect(wethResult).toBeDefined();
       if (wethResult) {
         expect(wethResult.price).toBeGreaterThan(0);
       }
 
-      // Invalid token should be null
       const invalidResult = results.get(testTokens[1] as string);
       expect(invalidResult).toBeNull();
     });

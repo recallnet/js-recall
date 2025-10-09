@@ -554,7 +554,11 @@ describe("Trading API", () => {
     );
 
     // 1. Fetch the price for the arbitrary token
-    const priceResponse = await agentClient.getPrice(wethTokenAddress);
+    const priceResponse = await agentClient.getPrice(
+      wethTokenAddress,
+      BlockchainType.SVM,
+      SpecificChain.SVM,
+    );
     expect(priceResponse.success).toBe(true);
     expect((priceResponse as PriceResponse).price).toBeDefined();
 

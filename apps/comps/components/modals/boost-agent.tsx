@@ -8,7 +8,6 @@ import {
   Plus,
   Share2Icon,
   X,
-  Zap,
 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 
@@ -28,6 +27,8 @@ import { RankBadge } from "@/components/agents-table/rank-badge";
 import { tanstackClient } from "@/rpc/clients/tanstack-query";
 import { RouterOutputs } from "@/rpc/router";
 import { formatPercentage } from "@/utils/format";
+
+import { BoostIcon } from "../BoostIcon";
 
 interface BoostAgentModalProps {
   isOpen: boolean;
@@ -219,7 +220,7 @@ export const BoostAgentModal: React.FC<BoostAgentModalProps> = ({
 
                   <div className="text-center">
                     <div className="flex items-center gap-2 text-3xl font-bold">
-                      <Zap className="h-6 w-6 text-yellow-500" />
+                      <BoostIcon className="size-6" />
                       {boostAmount.toLocaleString()}
                     </div>
                     <div className="text-sm text-gray-400">
@@ -281,7 +282,7 @@ export const BoostAgentModal: React.FC<BoostAgentModalProps> = ({
                   <span className="text-3xl font-bold">
                     +{boostAmount.toLocaleString()}
                   </span>
-                  <Zap className="h-6 w-6 text-yellow-500" />
+                  <BoostIcon className="size-6" />
                 </div>
               </div>
 
@@ -296,13 +297,13 @@ export const BoostAgentModal: React.FC<BoostAgentModalProps> = ({
                     {/* Current boost total */}
                     <div className="flex items-center gap-2 text-xl font-bold">
                       <span>{currentAgentBoostTotal.toLocaleString()}</span>
-                      <Zap className="h-4 w-4 text-yellow-500" />
+                      <BoostIcon className="size-4" />
                     </div>
 
                     {/* New boost total with increment */}
                     <div className="flex items-center gap-2 text-xl font-bold">
                       <span>{newAgentBoostTotal.toLocaleString()}</span>
-                      <Zap className="h-4 w-4 text-yellow-500" />
+                      <BoostIcon className="size-4" />
                       <span className="text-xs font-normal text-green-500">
                         +{boostAmount.toLocaleString()}
                       </span>
@@ -340,17 +341,17 @@ export const BoostAgentModal: React.FC<BoostAgentModalProps> = ({
                     </div>
 
                     {/* Row 2, Col 1: Current boost amount */}
-                    <div className="flex items-center gap-1 text-sm text-yellow-500">
+                    <div className="flex items-center gap-1 text-sm text-yellow-400">
                       <span>{currentUserBoostAmount.toLocaleString()}</span>
-                      <Zap className="h-3 w-3" />
+                      <BoostIcon className="size-3" />
                     </div>
 
                     {/* Row 2, Col 2: New boost amount with increment */}
-                    <div className="flex items-center gap-1 text-sm text-yellow-500">
+                    <div className="flex items-center gap-1 text-sm text-yellow-400">
                       <span className="font-bold">
                         {newUserBoostAmount.toLocaleString()}
                       </span>
-                      <Zap className="h-3 w-3" />
+                      <BoostIcon className="size-3" />
                       <span className="text-xs text-green-500">
                         +{boostAmount.toLocaleString()}
                       </span>
@@ -402,7 +403,7 @@ export const BoostAgentModal: React.FC<BoostAgentModalProps> = ({
         {/* Step 3: Loading */}
         {step === "loading" && (
           <div className="flex flex-col items-center justify-center space-y-6 py-8">
-            <div className="h-12 w-12 animate-spin rounded-full border-4 border-gray-300 border-t-yellow-500"></div>
+            <div className="h-12 w-12 animate-spin rounded-full border-4 border-gray-300 border-t-yellow-400"></div>
             <div className="text-center">
               <div className="text-lg font-semibold">Processing Boost...</div>
               <div className="text-sm text-gray-400">
@@ -426,7 +427,7 @@ export const BoostAgentModal: React.FC<BoostAgentModalProps> = ({
                   <span className="text-2xl font-bold">
                     +{boostAmount.toLocaleString()}
                   </span>
-                  <Zap className="h-4 w-4 text-yellow-500" />
+                  <BoostIcon className="size-4" />
                 </div>
               </div>
             </div>

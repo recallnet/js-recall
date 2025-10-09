@@ -3,6 +3,7 @@ import { z } from "zod/v4";
 
 import { ApiError } from "@recallnet/services/types";
 
+import { CacheTags, invalidateCacheTags } from "@/lib/cache-tags";
 import { base } from "@/rpc/context/base";
 import { authMiddleware } from "@/rpc/middleware/auth";
 
@@ -22,6 +23,12 @@ export const leave = base
         context.user.id,
         undefined,
       );
+
+      // Invalidate caches for this agent (competitions list and agent profile with metrics)
+      invalidateCacheTags([
+        CacheTags.agentCompetitions(input.agentId),
+        CacheTags.agent(input.agentId),
+      ]);
     } catch (error) {
       // Re-throw if already an oRPC error
       if (error instanceof ORPCError) {

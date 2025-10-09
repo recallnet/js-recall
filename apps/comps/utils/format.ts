@@ -69,14 +69,22 @@ export const formatDate = (
  * without adding unnecessary trailing zeros.
  * @param amount - The number to format.
  * @param maxDecimals - The maximum number of decimal places to show (default: 2).
+ * @param thousandsSeparator - Whether to use a thousands separator (default: false).
  * @returns A formatted number string.
+ * @example
+ * ```typescript
+ * formatAmount(1000) // Returns "1,000"
+ * formatAmount(1000, 0, true) // Returns "1,000"
+ * formatAmount(1000, 2, true) // Returns "1,000.00"
+ * ```
  */
 export const formatAmount = (
   amount: number,
   maxDecimals: number = 2,
+  thousandsSeparator: boolean = false,
 ): string => {
   return new Intl.NumberFormat("en-US", {
     maximumFractionDigits: maxDecimals,
-    useGrouping: false,
+    useGrouping: thousandsSeparator,
   }).format(amount);
 };

@@ -15,6 +15,7 @@ import { specificChainTokens } from "../lib/config-utils.js";
 export * from "./sort/index.js";
 export * from "./agent-metrics.js";
 export * from "./perps.js";
+export * from "./unified-leaderboard.js";
 
 /**
  * Custom error class with HTTP status code
@@ -34,7 +35,16 @@ export type SpecificChainBalances = {
   [K in SpecificChain]?: Record<string, number>;
 };
 
-export type SpecificChainTokens = typeof specificChainTokens;
+type TokenDict = Record<string, string>;
+type KnownChains = keyof typeof specificChainTokens;
+
+/**
+ * Standard chain tokens with optional additional tokens
+ */
+export type SpecificChainTokens = Partial<{
+  [K in KnownChains]: Partial<(typeof specificChainTokens)[K]> & TokenDict;
+}> &
+  Record<string, TokenDict>;
 
 /**
  * Blockchain type enum
@@ -142,12 +152,40 @@ export interface Trade {
  */
 export interface PriceSource {
   getName(): string;
+
+  /**
+   * Get price for a single token
+   */
   getPrice(
     tokenAddress: string,
     chain: BlockchainType,
     specificChain: SpecificChain,
   ): Promise<PriceReport | null>;
+
+  /**
+   * Get prices for multiple tokens in batch
+   */
+  getBatchPrices(
+    tokenAddresses: string[],
+    chain: BlockchainType,
+    specificChain: SpecificChain,
+  ): Promise<Map<string, TokenInfo | null>>;
+
+  /**
+   * Determine blockchain type from token address format
+   */
+  determineChain(tokenAddress: string): BlockchainType;
 }
+
+/**
+ * Available price provider implementations
+ */
+export type PriceProvider = "dexscreener" | "coingecko";
+
+/**
+ * CoinGecko API environment (free vs. paid plan)
+ */
+export type CoinGeckoMode = "demo" | "pro";
 
 // DexScreener API interfaces
 export interface DexScreenerToken {
@@ -192,9 +230,9 @@ export interface DexScreenerPair {
 export type DexScreenerResponse = DexScreenerPair[];
 
 /**
- * Token information returned by DexScreener API
+ * Token information returned by price provider API providers
  */
-export interface DexScreenerTokenInfo {
+export interface TokenInfo {
   price: number;
   symbol: string;
   pairCreatedAt?: number;
@@ -210,7 +248,7 @@ export interface PriceReport {
   chain: BlockchainType;
   specificChain: SpecificChain;
   symbol: string;
-  // Additional DexScreener data for trading constraints
+  // Additional data for trading constraints
   pairCreatedAt?: number;
   volume?: {
     h24?: number;

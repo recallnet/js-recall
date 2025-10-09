@@ -4,9 +4,11 @@
   "tasks": {
     "build": {
       "env": [
-        "NOVES_API_KEY",
         "ROOT_ENCRYPTION_KEY",
         "EVM_CHAINS",
+        "COINGECKO_API_KEY",
+        "COINGECKO_MODE",
+        "PRICE_PROVIDER",
         "INITIAL_ETH_ETH_BALANCE",
         "INITIAL_ETH_USDC_BALANCE",
         "INITIAL_ETH_USDT_BALANCE",

@@ -7,7 +7,6 @@ import { PerpsProviderFactory } from "../perps-provider.factory.js";
 import { HyperliquidPerpsProvider } from "../perps/hyperliquid-perps.provider.js";
 import { SymphonyPerpsProvider } from "../perps/symphony-perps.provider.js";
 
-// Mock logger for the constructor
 const mockLogger: MockProxy<Logger> = mock<Logger>();
 
 describe("PerpsProviderFactory", () => {

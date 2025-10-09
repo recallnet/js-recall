@@ -1,12 +1,12 @@
 import { MerkleTree } from "merkletreejs";
 import { Logger } from "pino";
-
-import { RewardsRepository } from "@recallnet/db/repositories/rewards";
-
-
 import { Hex, bytesToHex, encodePacked, hexToBytes, keccak256 } from "viem";
 
+import { BoostRepository } from "@recallnet/db/repositories/boost";
+import { CompetitionRepository } from "@recallnet/db/repositories/competition";
+import { RewardsRepository } from "@recallnet/db/repositories/rewards";
 import { rewardsRoots, rewardsTree } from "@recallnet/db/schema/voting/defs";
+import { Database } from "@recallnet/db/types";
 import {
   BoostAllocation,
   BoostAllocationWindow,
@@ -17,10 +17,6 @@ import {
 } from "@recallnet/rewards";
 import RewardsAllocator from "@recallnet/staking-contracts/rewards-allocator";
 
-import { Database } from "@recallnet/db/types";
-import { BoostRepository } from "@recallnet/db/repositories/boost";
-import { CompetitionRepository } from "@recallnet/db/repositories/competition";
-
 /**
  * Service for handling reward-related operations
  */
@@ -29,7 +25,6 @@ export class RewardsService {
   private competitionRepository: CompetitionRepository;
   private boostRepository: BoostRepository;
   private rewardsAllocator: RewardsAllocator;
-
 
   private db: Database;
   private logger: Logger;
@@ -59,7 +54,8 @@ export class RewardsService {
     prizePoolCompetitors: bigint,
   ): Promise<void> {
     try {
-      const competition = await this.competitionRepository.findById(competitionId);
+      const competition =
+        await this.competitionRepository.findById(competitionId);
       if (!competition) {
         throw new Error("Competition not found");
       }
@@ -78,7 +74,9 @@ export class RewardsService {
       };
 
       const leaderboardWithWallets =
-        await this.competitionRepository.findLeaderboardByCompetitionWithWallets(competitionId);
+        await this.competitionRepository.findLeaderboardByCompetitionWithWallets(
+          competitionId,
+        );
       if (leaderboardWithWallets.length === 0) {
         throw new Error("No leaderboard entries found");
       }
@@ -248,8 +246,8 @@ export class RewardsService {
   ): Promise<Uint8Array[]> {
     const leafHash = createLeafNode(address, amount);
 
-      const tree =
-        await this.rewardsRepo.getRewardsTreeByCompetition(competitionId);
+    const tree =
+      await this.rewardsRepo.getRewardsTreeByCompetition(competitionId);
 
     const treeNodes: { [level: number]: { [idx: number]: Uint8Array } } = {};
     for (const { level, idx, hash } of tree) {
@@ -318,7 +316,8 @@ export class RewardsService {
       proof: string[];
     }>
   > {
-    const rewardsWithRoots = await this.rewardsRepo.getRewardsWithRootsByAddress(address);
+    const rewardsWithRoots =
+      await this.rewardsRepo.getRewardsWithRootsByAddress(address);
 
     const results = [];
 

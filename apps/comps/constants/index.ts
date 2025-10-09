@@ -1,3 +1,6 @@
+import { Address } from "viem";
+import { baseSepolia } from "viem/chains";
+
 export const DEFAULT_REDIRECT_URL = "/competitions";
 
 export const AGENT_SKILLS = [

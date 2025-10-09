@@ -34,33 +34,51 @@ interface ClaimResult {
   gasUsed: bigint;
 }
 
+interface Options {
+  timeout?: number;
+  retryCount?: number;
+  pollingInterval?: number;
+}
+
 class RewardsAllocator {
   private walletClient: WalletClient;
   private publicClient: PublicClient;
   private contractAddress: Hex;
+  private timeout?: number;
 
   constructor(
     privateKey: Hex,
     rpcProviderUrl: string,
     contractAddress: Hex,
     network: Network = Network.BaseSepolia,
+    options?: Options,
   ) {
     const account = privateKeyToAccount(privateKey);
 
     const chain = getChainForNetwork(network);
 
+    const httpTransportOptions = options
+      ? {
+          timeout: options.timeout,
+          retryCount: options.retryCount,
+        }
+      : undefined;
+
     this.publicClient = createPublicClient({
       chain,
-      transport: http(rpcProviderUrl),
+      transport: http(rpcProviderUrl, httpTransportOptions),
+      pollingInterval: options?.pollingInterval,
     });
 
     this.walletClient = createWalletClient({
       account,
       chain,
-      transport: http(rpcProviderUrl),
+      transport: http(rpcProviderUrl, httpTransportOptions),
+      pollingInterval: options?.pollingInterval,
     });
 
     this.contractAddress = contractAddress;
+    this.timeout = options?.timeout;
   }
 
   async allocate(
@@ -80,6 +98,7 @@ class RewardsAllocator {
 
     const receipt = await this.publicClient.waitForTransactionReceipt({
       hash,
+      timeout: this.timeout,
     });
 
     if (receipt.status === "success") {

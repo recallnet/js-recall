@@ -10,10 +10,6 @@ import { MultiChainProvider } from "../multi-chain.provider.js";
 // Load environment variables for API access
 dotenv.config();
 
-// Skip tests if NOVES_API_KEY is not set
-const apiKey = process.env.NOVES_API_KEY;
-const runTests = !!apiKey;
-
 // Mock logger for the constructor
 const mockLogger: MockProxy<Logger> = mock<Logger>();
 
@@ -47,20 +43,18 @@ describe("Chain Override Tests", () => {
   let multiChainProvider: MultiChainProvider;
 
   beforeEach(() => {
-    if (runTests) {
-      multiChainProvider = new MultiChainProvider(
-        { evmChains: specificChains, specificChainTokens },
-        mockLogger,
-      );
-    }
+    multiChainProvider = new MultiChainProvider(
+      {
+        evmChains: specificChains,
+        specificChainTokens,
+        priceProvider: { type: "dexscreener" },
+      },
+      mockLogger,
+    );
   });
 
   describe("Direct provider tests with chain override", () => {
     it("should successfully fetch prices when providing the exact chain for at least one token", async () => {
-      if (!runTests) {
-        return;
-      }
-
       // Track if at least one token worked correctly
       // TODO(stbrody): Why do we only need one token to be successful?  Shouldn't they all succeed?
       let atLeastOneSuccess = false;

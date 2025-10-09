@@ -73,7 +73,7 @@ export default function AgentProfile({
 
   // Sandbox hooks for syncing agent updates
   const { data: sandboxAgentData } = useSandboxAgentApiKey(
-    isUserAgent && config.clientFlags.enableSandbox
+    isUserAgent && config.publicFlags.enableSandbox
       ? agent?.handle || null
       : null,
   );
@@ -127,7 +127,7 @@ export default function AgentProfile({
         // Special handling for name changes since we *must* need the names to match across environments
         if (
           (field === "name" || field === "handle") &&
-          config.clientFlags.enableSandbox &&
+          config.publicFlags.enableSandbox &&
           sandboxAgentData?.agent?.id
         ) {
           // Update in sandbox first

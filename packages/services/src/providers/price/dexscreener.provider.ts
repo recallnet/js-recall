@@ -4,11 +4,11 @@ import { Logger } from "pino";
 import {
   BlockchainType,
   DexScreenerResponse,
-  DexScreenerTokenInfo,
   PriceReport,
   PriceSource,
   SpecificChain,
   SpecificChainTokens,
+  TokenInfo,
 } from "../../types/index.js";
 
 /**
@@ -151,7 +151,7 @@ export class DexScreenerProvider implements PriceSource {
     tokenAddress: string,
     dexScreenerChain: string,
     specificChain: SpecificChain,
-  ): Promise<DexScreenerTokenInfo | null> {
+  ): Promise<TokenInfo | null> {
     // Try to get a better pairing for the token
     const pairTokens = this.getBestPairForPrice(tokenAddress, specificChain);
 
@@ -460,10 +460,10 @@ export class DexScreenerProvider implements PriceSource {
     tokenAddresses: string[],
     chain: BlockchainType,
     specificChain: SpecificChain,
-  ): Promise<Map<string, DexScreenerTokenInfo | null>> {
+  ): Promise<Map<string, TokenInfo | null>> {
     // Ensure we don't exceed the 30 token limit
     const MAX_BATCH_SIZE = 30;
-    const results = new Map<string, DexScreenerTokenInfo | null>();
+    const results = new Map<string, TokenInfo | null>();
 
     // Process tokens in batches of up to 30
     for (let i = 0; i < tokenAddresses.length; i += MAX_BATCH_SIZE) {
@@ -544,8 +544,8 @@ export class DexScreenerProvider implements PriceSource {
     tokenAddresses: string[],
     chain: BlockchainType,
     specificChain: SpecificChain,
-  ): Promise<Map<string, DexScreenerTokenInfo | null>> {
-    const results = new Map<string, DexScreenerTokenInfo | null>();
+  ): Promise<Map<string, TokenInfo | null>> {
+    const results = new Map<string, TokenInfo | null>();
 
     // Normalize addresses and filter out burn addresses
     const normalizedAddresses = tokenAddresses.map((addr) =>
@@ -680,7 +680,7 @@ export class DexScreenerProvider implements PriceSource {
     addr: string,
     data: DexScreenerResponse,
     specificChain: SpecificChain,
-  ): DexScreenerTokenInfo | null {
+  ): TokenInfo | null {
     // Find the pair where our token is the base token
     const result = data.find(
       (pair) => pair.baseToken?.address?.toLowerCase() === addr.toLowerCase(),

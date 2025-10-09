@@ -33,7 +33,7 @@ export default function CompetitionsPage() {
   const { trackEvent } = useAnalytics();
   const [isJoining, setIsJoining] = useState(false);
   const { data: leaderboard, isLoading: isLoadingLeaderboard } =
-    useLeaderboards({ limit: 25 }, !config.clientFlags.disableLeaderboard);
+    useLeaderboards({ limit: 25 }, !config.publicFlags.disableLeaderboard);
   const session = useSession();
   const { isAuthenticated } = session;
 
@@ -122,7 +122,7 @@ export default function CompetitionsPage() {
     <div>
       <div className="h-120 relative left-1/2 top-[-41] w-full -translate-x-1/2 transform pt-40">
         {carouselContent.length > 0 &&
-          !config.clientFlags.disableLeaderboard && (
+          !config.publicFlags.disableLeaderboard && (
             <HeroCarousel
               className="absolute left-[-350px] right-[-350px] top-0"
               texts={carouselContent}
