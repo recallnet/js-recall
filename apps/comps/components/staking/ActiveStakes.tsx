@@ -210,7 +210,7 @@ export const ActiveStakes: React.FunctionComponent = () => {
       <div className="mb-4 flex items-center gap-4">
         <h2 className="text-2xl font-bold text-white">Active Stakes</h2>
         <p className="text-sm text-gray-400">
-          While Locked, your staked $RECALL earns you 2x Boost!
+          While Locked, your staked RECALL earns you 2x Boost!
         </p>
       </div>
       {stakes.map((stake) => (

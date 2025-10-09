@@ -29,7 +29,7 @@ export const AddFundsStep: React.FunctionComponent<unknown> = () => {
         <div className="mt-7 flex flex-col gap-2 text-sm">
           <div className="flex items-center justify-start gap-3">
             <span className="text-gray-400">BALANCE</span>
-            <span className="text-primary">0 $RECALL</span>
+            <span className="text-primary">0 RECALL</span>
             <ReloadIcon className="cursor-pointer text-sky-400" />
           </div>
           <Link

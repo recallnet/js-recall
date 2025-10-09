@@ -7,12 +7,11 @@ import {
   Ban,
   Check,
   Lock,
-  OctagonMinus,
   Share2Icon,
   TrendingUp,
   Wallet,
   X,
-  ZapOff,
+  Zap,
 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useAccount, useChainId } from "wagmi";
@@ -292,15 +291,12 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
   const handleShareOnX = () => {
     const formattedStake = formatAmount(stakeAmountRaw);
     const formattedBoost = formatAmount(boostAmountRaw);
-    const shareText = `I just staked ${formattedStake} $RECALL tokens and got ${formattedBoost} boost! 🚀`;
+    const shareText = `I just staked ${formattedStake} $RECALL tokens and got ${formattedBoost} boost ⚡️`;
 
-    const hashtags = "Staking,Recall,Boost";
-
-    const currentUrl = window.location.href;
+    const currentUrl = window.location.origin;
 
     const twitterUrl = new URL("https://twitter.com/intent/tweet");
     twitterUrl.searchParams.set("text", shareText);
-    twitterUrl.searchParams.set("hashtags", hashtags);
     twitterUrl.searchParams.set("url", currentUrl);
 
     window.open(twitterUrl.toString(), "_blank", "width=550,height=420");
@@ -328,7 +324,7 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
           <div className="flex items-center justify-between">
             <DialogTitle className="text-primary-foreground flex items-center justify-start gap-2 text-xl font-bold">
               <Lock className="text-secondary-foreground size-6" />
-              {step === "stake" && "Stake $RECALL"}
+              {step === "stake" && "Stake RECALL"}
               {step === "review" && "Review Stake"}
               {step === "signing" && "Sign Transaction"}
               {step === "confirming" && "Confirming Transaction"}
@@ -512,7 +508,7 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
                       <div className="text-secondary-foreground flex items-center gap-2 px-4 py-3 text-sm">
                         <Lock className="size-4 flex-shrink-0" />
                         <div className="text-primary-foreground">
-                          Your $RECALL tokens will be{" "}
+                          Your RECALL tokens will be{" "}
                           <span className="text-yellow-400">
                             {" "}
                             locked for {selectedDuration} days.
@@ -542,34 +538,20 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
                           <span className="text-yellow-400">
                             increased instantly
                           </span>{" "}
-                          after Staking.
+                          after staking.
                         </div>
                       </div>
 
                       <div className="border-t"></div>
 
                       <div className="text-secondary-foreground flex items-center gap-2 px-4 py-3 text-sm">
-                        <ZapOff className="text-secondary-foreground size-4 flex-shrink-0" />
+                        <Zap className="text-secondary-foreground size-4 flex-shrink-0" />
                         <div className="text-primary-foreground">
-                          Boosts are{" "}
+                          Use Boost to{" "}
                           <span className="text-yellow-400">
-                            non-refundable
-                          </span>
-                          .
-                        </div>
-                      </div>
-
-                      <div className="border-t"></div>
-
-                      <div className="text-secondary-foreground flex items-center gap-2 px-4 py-3 text-sm">
-                        <OctagonMinus className="text-secondary-foreground size-4 flex-shrink-0" />
-                        <div className="text-primary-foreground">
-                          Boosts{" "}
-                          <span className="text-yellow-400">
-                            may be removed
+                            compete or vote
                           </span>{" "}
-                          from a token if it&apos;s flagged as malicious by our
-                          moderators or third-party auditors.
+                          on agents.
                         </div>
                       </div>
                     </CollapsibleContent>
@@ -585,9 +567,7 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
                   disabled={!termsAccepted || isApprovalPending}
                   className="w-full"
                 >
-                  {isApprovalPending
-                    ? "APPROVING..."
-                    : "Approve Spending $RECALL"}
+                  {isApprovalPending ? "APPROVING..." : "Approve"}
                 </Button>
               ) : (
                 <Button
@@ -671,7 +651,7 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
               </div>
               <div className="text-center">
                 <div className="text-lg font-semibold">
-                  You have successfully staked your $RECALL tokens.
+                  You have successfully staked your RECALL tokens.
                 </div>
 
                 <div className="mt-10">
