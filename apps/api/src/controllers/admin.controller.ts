@@ -226,6 +226,7 @@ export function makeAdminController(services: ServiceRegistry) {
           tradingConstraints,
           rewards,
           perpsProvider,
+          prizePools,
         } = result.data;
 
         // Create a new competition
@@ -250,6 +251,7 @@ export function makeAdminController(services: ServiceRegistry) {
             tradingConstraints,
             rewards,
             perpsProvider,
+            prizePools,
           },
         );
 
@@ -296,6 +298,7 @@ export function makeAdminController(services: ServiceRegistry) {
           joinEndDate,
           rewards,
           perpsProvider,
+          prizePools,
         } = result.data;
 
         // Call service method with creation params only if no competitionId
@@ -322,6 +325,7 @@ export function makeAdminController(services: ServiceRegistry) {
                   joinEndDate,
                   rewards,
                   perpsProvider,
+                  prizePools,
                 },
           });
 
@@ -407,6 +411,7 @@ export function makeAdminController(services: ServiceRegistry) {
           rewards,
           tradingConstraints,
           perpsProvider,
+          prizePools,
           ...competitionUpdates
         } = bodyResult.data;
         const updates = competitionUpdates;
@@ -416,7 +421,8 @@ export function makeAdminController(services: ServiceRegistry) {
           Object.keys(updates).length === 0 &&
           !rewards &&
           !tradingConstraints &&
-          !perpsProvider
+          !perpsProvider &&
+          !prizePools
         ) {
           throw new ApiError(400, "No valid fields provided for update");
         }
@@ -429,6 +435,7 @@ export function makeAdminController(services: ServiceRegistry) {
             tradingConstraints,
             rewards,
             perpsProvider,
+            prizePools,
           );
 
         // Return the updated competition

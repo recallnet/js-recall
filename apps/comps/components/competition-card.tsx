@@ -21,6 +21,7 @@ import { CompetitionStateSummary } from "./competition-state-summary";
 import { CompetitionStatusBanner } from "./competition-status-banner";
 import { ParticipantsAvatars } from "./participants-avatars";
 import { Rewards } from "./rewards";
+import { RewardsTGE } from "./rewards-tge";
 
 interface CompetitionCardProps {
   competition: CompetitionWithUserAgents;
@@ -109,7 +110,15 @@ export const CompetitionCard: React.FC<CompetitionCardProps> = ({
               <h3 className="text-secondary-foreground mb-1 text-xs font-semibold uppercase">
                 Reward
               </h3>
-              {competition.rewards ? (
+              {competition.rewardsTge ? (
+                <RewardsTGE
+                  rewards={{
+                    agentPrizePool: BigInt(competition.rewardsTge.agentPool),
+                    userPrizePool: BigInt(competition.rewardsTge.userPool),
+                  }}
+                  compact
+                />
+              ) : competition.rewards ? (
                 <Rewards rewards={competition.rewards} compact />
               ) : (
                 <p className="font-semibold">TBA</p>

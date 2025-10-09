@@ -161,6 +161,19 @@ export class CompetitionRepository {
           WHERE cr.competition_id = ${competitions.id}
         )
       `.as("rewards"),
+        rewardsTge: sql<{ agentPool: bigint; userPool: bigint } | undefined>`
+        (
+          SELECT COALESCE(
+            json_build_object(
+              'agentPool', cpp.agent_pool,
+              'userPool', cpp.user_pool
+            ),
+            NULL
+          )
+          FROM ${competitionPrizePools} cpp
+          WHERE cpp.competition_id = ${competitions.id}
+        )
+      `.as("rewards_tge"),
         ...getTableColumns(competitions),
       })
       .from(tradingCompetitions)
@@ -2667,6 +2680,55 @@ export class CompetitionRepository {
     } catch (error) {
       this.#logger.error(
         `[CompetitionRepository] Error getting prize pools for competition ${competitionId}:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Upsert prize pools for a competition (create if not exists, update if exists)
+   * @param competitionId The competition ID
+   * @param pools The prize pool amounts in WEI (bigint)
+   * @param tx Optional database transaction
+   * @returns The upserted prize pool record
+   */
+  async updatePrizePools(
+    competitionId: string,
+    pools: { agent: bigint; users: bigint },
+    tx?: Transaction,
+  ): Promise<SelectCompetitionPrizePool> {
+    try {
+      const db = tx || this.#db;
+      const id = randomUUID();
+
+      const [result] = await db
+        .insert(competitionPrizePools)
+        .values({
+          id,
+          competitionId,
+          agentPool: pools.agent,
+          userPool: pools.users,
+        })
+        .onConflictDoUpdate({
+          target: competitionPrizePools.competitionId,
+          set: {
+            agentPool: pools.agent,
+            userPool: pools.users,
+          },
+        })
+        .returning();
+
+      if (!result) {
+        throw new Error(
+          `[CompetitionRepository] Error upserting prize pools for competition ${competitionId}: No result returned`,
+        );
+      }
+
+      return result;
+    } catch (error) {
+      this.#logger.error(
+        `[CompetitionRepository] Error upserting prize pools for competition ${competitionId}:`,
         error,
       );
       throw error;

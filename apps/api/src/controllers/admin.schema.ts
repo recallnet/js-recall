@@ -90,6 +90,12 @@ export const AdminCreateCompetitionSchema = z
     tradingConstraints: TradingConstraintsSchema,
     rewards: RewardsSchema,
     perpsProvider: PerpsProviderSchema.optional(), // Only required for perps competitions
+    prizePools: z
+      .object({
+        agent: z.number().min(0),
+        users: z.number().min(0),
+      })
+      .optional(),
   })
   .refine(
     (data) => {
@@ -138,6 +144,12 @@ export const AdminStartCompetitionSchema = z
     tradingConstraints: TradingConstraintsSchema,
     rewards: RewardsSchema,
     perpsProvider: PerpsProviderSchema.optional(), // Only required for perps competitions
+    prizePools: z
+      .object({
+        agent: z.number().min(0),
+        users: z.number().min(0),
+      })
+      .optional(),
   })
   .refine((data) => data.competitionId || data.name, {
     message: "Either competitionId or name must be provided",
