@@ -1,3 +1,4 @@
+import "@nomicfoundation/hardhat-toolbox-viem";
 import { network } from "hardhat";
 import { ChildProcess, spawn } from "node:child_process";
 import { Address } from "viem";
@@ -32,6 +33,9 @@ export class RewardAllocationTestHelper {
     const [admin] = await viem.getWalletClients();
     const rewardAllocatorPrivateKey = generatePrivateKey();
     const rewardAllocator = privateKeyToAccount(rewardAllocatorPrivateKey);
+    if (!admin) {
+      throw new Error("Admin account not found");
+    }
 
     // Transfer some funds to the rewardAllocator account so it can pay for gas
     const publicClient = await viem.getPublicClient();
@@ -68,13 +72,11 @@ export class RewardAllocationTestHelper {
     const proxyAddress = receipt.contractAddress;
     // This error condition is very rare - only occurs if blockchain deployment
     // transaction succeeds but returns undefined contractAddress (infrastructure failure)
-    /* c8 ignore start */
     if (!proxyAddress) {
       throw new Error(
         "Failed to deploy proxy contract: contractAddress is undefined",
       );
     }
-    /* c8 ignore stop */
 
     const rewardsAllocationProxy = await viem.getContractAt(
       "RewardAllocation",
@@ -98,11 +100,9 @@ export class RewardAllocationTestHelper {
 
     // This error condition is very rare - only occurs if role granting appears to
     // succeed but verification fails (smart contract logic error or blockchain inconsistency)
-    /* c8 ignore start */
     if (!hasRole) {
       throw new Error("Failed to grant REWARD_ALLOCATOR_ROLE to the account");
     }
-    /* c8 ignore stop */
 
     // Mint tokens to the contract for testing
     const mockTokenContract = await viem.getContractAt(
@@ -175,7 +175,6 @@ export class NetworkManager {
       });
 
       this.hardhatProcess.stderr?.on("data", (data) => {
-        /* c8 ignore start */
         // This error handling is defensive programming for process stderr parsing.
         // It only triggers if Hardhat outputs specific "Error:" messages to stderr
         // during startup, which is rare and hard to reproduce reliably in tests.
@@ -186,7 +185,6 @@ export class NetworkManager {
           hasError = true;
           reject(new Error(`Hardhat node error: ${output}`));
         }
-        /* c8 ignore stop */
       });
 
       // Handle process exit
@@ -194,17 +192,14 @@ export class NetworkManager {
         // This handles the rare case where Hardhat process exits with non-zero code
         // before becoming ready. Would require infrastructure failures or system
         // resource issues that are impractical to simulate reliably in tests.
-        /* c8 ignore start */
         if (code !== 0 && !isReady && !hasError) {
           hasError = true;
           reject(new Error(`Hardhat node exited with code ${code}`));
         }
-        /* c8 ignore stop */
       });
 
       // Handle process errors
       this.hardhatProcess.on("error", (error) => {
-        /* c8 ignore start */
         // This handles process-level errors during Hardhat startup (e.g., spawn failures,
         // permission issues, missing executables). These are system-level failures
         // that are difficult to simulate without modifying the test environment.
@@ -212,7 +207,6 @@ export class NetworkManager {
           hasError = true;
           reject(new Error(`Hardhat node process error: ${error.message}`));
         }
-        /* c8 ignore stop */
       });
     });
   }
@@ -235,11 +229,9 @@ export class NetworkManager {
           // This handles the edge case where close() is called but hardhatProcess
           // is already null (double cleanup). This is defensive programming for
           // race conditions that are difficult to reproduce reliably in tests.
-          /* c8 ignore start */
         } else {
           resolve();
         }
-        /* c8 ignore stop */
       });
     }
   }

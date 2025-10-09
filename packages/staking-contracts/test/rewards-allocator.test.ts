@@ -1,41 +1,82 @@
 import { MerkleTree } from "merkletreejs";
-import assert from "node:assert/strict";
-import { describe, it } from "node:test";
 import { encodePacked, keccak256, parseEther } from "viem";
+import type { PublicClient, WalletClient } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
+import { describe, expect, it, vi } from "vitest";
 
 import RewardsAllocator, { Network } from "../src/rewards-allocator.js";
 import RewardsClaimer from "../src/rewards-claimer.js";
-import { RewardAllocationTestHelper } from "../src/test-helper.js";
+import { RewardAllocationTestHelper } from "./test-helper.js";
 
 describe("Allocator Error Path", () => {
-  it("should throw error on transaction failure", async () => {
-    // Mock a failed transaction to hit `allocate`
+  it("should throw error on network failure", async () => {
     const allocator = new RewardsAllocator(
       "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
-      "http://127.0.0.1:9999", // Invalid RPC to trigger failure
+      "http://127.0.0.1:8545",
       "0x0000000000000000000000000000000000000000",
       "0x0000000000000000000000000000000000000000",
       Network.Hardhat,
-      { timeout: 100, retryCount: 0, pollingInterval: 100 },
+      { timeout: 1000, retryCount: 1, pollingInterval: 100 },
     );
 
-    await assert.rejects(
-      () =>
-        allocator.allocate(
-          "0x0000000000000000000000000000000000000000000000000000000000000000", // 32-byte merkle root
-          1n,
-          1,
-        ),
-      (error: Error) =>
-        error.message.includes("fetch") ||
-        error.message.includes("ECONNREFUSED") ||
-        error.message.includes("timeout"),
+    // @ts-expect-error - accessing private property for test mocking
+    const walletClient = allocator.walletClient as WalletClient;
+
+    // Mock writeContract to throw a network error
+    vi.spyOn(walletClient, "writeContract").mockRejectedValue(
+      new Error("fetch failed: ECONNREFUSED"),
     );
+
+    await expect(
+      allocator.allocate(
+        "0x0000000000000000000000000000000000000000000000000000000000000000", // 32-byte merkle root
+        1n,
+        1,
+      ),
+    ).rejects.toThrow(/(fetch|ECONNREFUSED)/);
+  });
+
+  it("should throw error when transaction receipt fails", async () => {
+    const allocator = new RewardsAllocator(
+      "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
+      "http://127.0.0.1:8545",
+      "0x0000000000000000000000000000000000000000",
+      "0x0000000000000000000000000000000000000000",
+      Network.Hardhat,
+      { timeout: 1000, retryCount: 1, pollingInterval: 100 },
+    );
+
+    // Mock the internal clients to simulate a failed transaction
+    const mockHash = "0x123";
+
+    // Access private properties for testing
+    // @ts-expect-error - accessing private property for test mocking
+    const walletClient = allocator.walletClient as WalletClient;
+    // @ts-expect-error - accessing private property for test mocking
+    const publicClient = allocator.publicClient as PublicClient;
+
+    // Mock writeContract to succeed but return a hash
+    vi.spyOn(walletClient, "writeContract").mockResolvedValue(mockHash);
+
+    // Mock waitForTransactionReceipt to return a failed receipt
+    vi.spyOn(publicClient, "waitForTransactionReceipt").mockResolvedValue({
+      status: "reverted",
+      transactionHash: mockHash,
+    } as unknown as Awaited<
+      ReturnType<PublicClient["waitForTransactionReceipt"]>
+    >);
+
+    await expect(
+      allocator.allocate(
+        "0x0000000000000000000000000000000000000000000000000000000000000000",
+        1n,
+        1,
+      ),
+    ).rejects.toThrow(/Transaction failed/);
   });
 });
 
-describe("Allocate Rewards", async function () {
+describe("Allocate Rewards", async () => {
   const network = await RewardAllocationTestHelper.initializeNetwork();
 
   // Extract the properties from the network object
@@ -53,7 +94,7 @@ describe("Allocate Rewards", async function () {
     Network.Hardhat,
   );
 
-  it("should create merkle tree with rewards for 3 accounts, allocate root, and verify proofs", async function () {
+  it("should create merkle tree with rewards for 3 accounts, allocate root, and verify proofs", async () => {
     try {
       // Use accounts that already have ETH in the test network
       // These are typically the first few accounts in hardhat
@@ -118,18 +159,9 @@ describe("Allocate Rewards", async function () {
       );
 
       // Verify allocation was successful
-      assert(
-        allocationResult.transactionHash,
-        "Transaction hash should be returned",
-      );
-      assert(
-        allocationResult.blockNumber > 0n,
-        "Block number should be greater than 0",
-      );
-      assert(
-        allocationResult.gasUsed > 0n,
-        "Gas used should be greater than 0",
-      );
+      expect(allocationResult.transactionHash).toBeTruthy();
+      expect(allocationResult.blockNumber).toBeGreaterThan(0n);
+      expect(allocationResult.gasUsed).toBeGreaterThan(0n);
 
       // Wait a bit for the allocation to be processed
       await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -163,15 +195,12 @@ describe("Allocate Rewards", async function () {
         );
         // Verify the balance increased by the claimed amount
         const balanceIncrease = finalBalance - initialBalance;
-        assert(
-          balanceIncrease === reward.amount,
-          `Account ${i + 1} balance should increase by ${reward.amount.toString()}, but increased by ${balanceIncrease.toString()}`,
-        );
+        expect(balanceIncrease).toBe(reward.amount);
       }
     } finally {
       await network.close();
     }
-  });
+  }, 30_000);
 });
 
 /**

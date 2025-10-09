@@ -103,16 +103,17 @@ class RewardsAllocator {
       timeout: this.timeout,
     });
 
-    if (receipt.status === "success") {
-      return {
-        transactionHash: hash,
-        blockNumber: receipt.blockNumber,
-        gasUsed: receipt.gasUsed,
-      };
+    if (receipt.status !== "success") {
+      throw new Error(
+        "Transaction failed. Receipt: " + JSON.stringify(receipt),
+      );
     }
 
-    /* c8 ignore next */
-    throw new Error("Transaction failed. Receipt: " + JSON.stringify(receipt));
+    return {
+      transactionHash: hash,
+      blockNumber: receipt.blockNumber,
+      gasUsed: receipt.gasUsed,
+    };
   }
 }
 
