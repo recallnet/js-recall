@@ -83,25 +83,20 @@ export class RewardAllocationTestHelper {
       proxyAddress,
     );
 
-    // @ts-expect-error - initialize is a function
     await rewardsAllocationProxy.write.initialize([admin.account.address]);
 
     const REWARD_ALLOCATOR_ROLE =
-      // @ts-expect-error - REWARD_ALLOCATOR_ROLE is a function
       await rewardsAllocationProxy.read.REWARD_ALLOCATOR_ROLE();
 
-    // @ts-expect-error - grantRole is a function
     await rewardsAllocationProxy.write.grantRole([
       REWARD_ALLOCATOR_ROLE,
       rewardAllocator.address,
     ]);
 
-    const hasRole =
-      // @ts-expect-error - hasRole is a function
-      await rewardsAllocationProxy.read.hasRole([
-        REWARD_ALLOCATOR_ROLE,
-        rewardAllocator.address,
-      ]);
+    const hasRole = await rewardsAllocationProxy.read.hasRole([
+      REWARD_ALLOCATOR_ROLE,
+      rewardAllocator.address,
+    ]);
 
     // This error condition is very rare - only occurs if role granting appears to
     // succeed but verification fails (smart contract logic error or blockchain inconsistency)
@@ -115,11 +110,9 @@ export class RewardAllocationTestHelper {
       mockToken.address,
     );
     const mintAmount = 1000000n * 10n ** 18n; // 1 million tokens with 18 decimals
-    // @ts-expect-error - mint is a function
     await mockTokenContract.write.mint([mintAmount]);
 
     // Transfer tokens to the rewards contract
-    // @ts-expect-error - transfer is a function
     await mockTokenContract.write.transfer([proxyAddress, mintAmount]);
 
     // Return the network manager with additional deployment info
