@@ -293,6 +293,8 @@ class ServiceRegistry {
       agentScoreRepository,
       this._perpsRepository,
       this._competitionRepository,
+      this._stakesRepository,
+      this._userRepository,
       db,
       config,
       serviceLogger,

@@ -99,6 +99,11 @@ export function configureAdminRoutes(
    *                 minimum: 1
    *                 description: Maximum number of participants allowed to register for this competition. If not specified, there is no limit.
    *                 example: 50
+   *               minimumStake:
+   *                 type: number
+   *                 minimum: 0
+   *                 description: Minimum stake amount required to join the competition (in USD)
+   *                 example: 100
    *               tradingConstraints:
    *                 type: object
    *                 description: Trading constraints for the competition (used when creating a new competition)
@@ -217,6 +222,11 @@ export function configureAdminRoutes(
    *                       nullable: true
    *                       description: Maximum number of participants allowed to register for this competition. null means no limit.
    *                       example: 50
+   *                     minimumStake:
+   *                       type: number
+   *                       nullable: true
+   *                       description: Minimum stake amount required to join the competition (in USD). null means no minimum stake.
+   *                       example: 100
    *                     rewards:
    *                       type: array
    *                       description: Rewards for competition placements
@@ -683,6 +693,12 @@ export function configureAdminRoutes(
    *                     type: string
    *                     description: Optional API URL override for the provider
    *                     example: https://api.symphony.com
+   *               minimumStake:
+   *                 type: number
+   *                 minimum: 0
+   *                 nullable: true
+   *                 description: Minimum stake amount required to join the competition (in USD)
+   *                 example: 100
    *     responses:
    *       200:
    *         description: Competition updated successfully
@@ -756,6 +772,11 @@ export function configureAdminRoutes(
    *                             type: number
    *                             description: Reward amount for the given rank
    *                             example: 1000
+   *                     minimumStake:
+   *                       type: number
+   *                       nullable: true
+   *                       description: Minimum stake amount required to join the competition (in USD). null means no minimum stake.
+   *                       example: 100
    *                     createdAt:
    *                       type: string
    *                       format: date-time

@@ -365,6 +365,7 @@ export interface Competition {
   // Participant limit field
   maxParticipants: number | null;
   registeredParticipants: number;
+  minimumStake?: string | null; // Minimum stake required to join competition (in atto units as string)
   tradingConstraints?: TradingConstraints;
   rewards?: {
     rank: number;

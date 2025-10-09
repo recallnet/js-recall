@@ -1220,6 +1220,7 @@ describe("PerpsDataProcessor", () => {
         canceledAt: null,
         cancelReason: null,
         crossChainTradingType: "allow" as const,
+        minimumStake: null,
       };
 
       vi.mocked(mockCompetitionRepo.findById).mockResolvedValue(
@@ -1256,6 +1257,7 @@ describe("PerpsDataProcessor", () => {
         canceledAt: null,
         cancelReason: null,
         crossChainTradingType: "allow" as const,
+        minimumStake: null,
       };
 
       vi.mocked(mockCompetitionRepo.findById).mockResolvedValue(

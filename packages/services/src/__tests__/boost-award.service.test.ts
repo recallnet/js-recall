@@ -45,6 +45,7 @@ describe("BoostAwardService", () => {
     sandboxMode: false,
     createdAt: new Date(),
     updatedAt: null,
+    minimumStake: null,
   });
 
   beforeEach(() => {

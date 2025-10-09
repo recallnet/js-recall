@@ -525,6 +525,7 @@ export class ApiClient {
     joinStartDate,
     joinEndDate,
     maxParticipants,
+    minimumStake,
     tradingConstraints,
     rewards,
     perpsProvider,
@@ -543,6 +544,7 @@ export class ApiClient {
     joinStartDate?: string;
     joinEndDate?: string;
     maxParticipants?: number;
+    minimumStake?: number;
     tradingConstraints?: TradingConstraints;
     rewards?: Record<number, number>;
     perpsProvider?: {
@@ -571,6 +573,7 @@ export class ApiClient {
           joinStartDate,
           joinEndDate,
           maxParticipants,
+          minimumStake,
           tradingConstraints,
           rewards,
           perpsProvider,
@@ -596,6 +599,7 @@ export class ApiClient {
       imageUrl,
       votingStartDate,
       votingEndDate,
+      minimumStake,
       tradingConstraints,
       rewards,
       perpsProvider,
@@ -607,6 +611,7 @@ export class ApiClient {
       imageUrl?: string;
       votingStartDate?: string;
       votingEndDate?: string;
+      minimumStake?: number;
       tradingConstraints?: TradingConstraints;
       rewards?: Record<number, number>;
       perpsProvider?: {
@@ -628,6 +633,7 @@ export class ApiClient {
           imageUrl,
           votingStartDate,
           votingEndDate,
+          minimumStake,
           tradingConstraints,
           rewards,
           perpsProvider,

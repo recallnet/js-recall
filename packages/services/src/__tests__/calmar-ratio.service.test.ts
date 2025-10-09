@@ -36,6 +36,7 @@ describe("CalmarRatioService", () => {
     updatedAt: new Date(),
     creatorId: "creator-123",
     crossChainTradingType: "disallowAll" as const,
+    minimumStake: null,
   });
 
   // Helper to create mock portfolio snapshots

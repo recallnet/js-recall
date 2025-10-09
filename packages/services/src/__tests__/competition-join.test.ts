@@ -7,6 +7,8 @@ import { AgentRepository } from "@recallnet/db/repositories/agent";
 import { AgentScoreRepository } from "@recallnet/db/repositories/agent-score";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { PerpsRepository } from "@recallnet/db/repositories/perps";
+import { StakesRepository } from "@recallnet/db/repositories/stakes";
+import { UserRepository } from "@recallnet/db/repositories/user";
 import type { SelectAgent } from "@recallnet/db/schema/core/types";
 import { SelectCompetition } from "@recallnet/db/schema/core/types";
 import { Database } from "@recallnet/db/types";
@@ -42,6 +44,8 @@ describe("CompetitionService - joinCompetition", () => {
   let agentScoreRepo: MockProxy<AgentScoreRepository>;
   let perpsRepo: MockProxy<PerpsRepository>;
   let competitionRepo: MockProxy<CompetitionRepository>;
+  let stakesRepo: MockProxy<StakesRepository>;
+  let userRepo: MockProxy<UserRepository>;
   let mockDb: MockProxy<Database>;
   let logger: MockProxy<Logger>;
 
@@ -88,6 +92,7 @@ describe("CompetitionService - joinCompetition", () => {
     maxParticipants: null,
     registeredParticipants: 0,
     sandboxMode: false,
+    minimumStake: null,
     crossChainTradingType: "allow",
   };
 
@@ -106,6 +111,8 @@ describe("CompetitionService - joinCompetition", () => {
     agentScoreRepo = mock<AgentScoreRepository>();
     perpsRepo = mock<PerpsRepository>();
     competitionRepo = mock<CompetitionRepository>();
+    stakesRepo = mock<StakesRepository>();
+    userRepo = mock<UserRepository>();
     mockDb = mock<Database>();
     logger = mock<Logger>();
 
@@ -144,6 +151,8 @@ describe("CompetitionService - joinCompetition", () => {
       agentScoreRepo,
       perpsRepo,
       competitionRepo,
+      stakesRepo,
+      userRepo,
       mockDb,
       mockConfig,
       logger,
@@ -433,6 +442,280 @@ describe("CompetitionService - joinCompetition", () => {
 
       // Both should have attempted to call addAgentToCompetition
       expect(competitionRepo.addAgentToCompetition).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe("minimum stake validation", () => {
+    const mockUser = {
+      id: mockUserId,
+      name: "Test User",
+      walletAddress: "0x1234567890123456789012345678901234567890",
+      walletLastVerifiedAt: new Date(),
+      embeddedWalletAddress: null,
+      privyId: "test-privy-id",
+      email: "test@example.com",
+      isSubscribed: false,
+      imageUrl: null,
+      metadata: null,
+      status: "active" as const,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      lastLoginAt: null,
+    };
+
+    it("should allow join when user has sufficient stake", async () => {
+      // Setup mocks
+      const competitionWithStake = {
+        ...mockCompetition,
+        minimumStake: 1000,
+      };
+
+      agentService.getAgent.mockResolvedValue(mockAgent);
+      competitionRepo.findById.mockResolvedValue(competitionWithStake);
+      competitionRepo.isAgentActiveInCompetition.mockResolvedValue(false);
+      userRepo.findById.mockResolvedValue(mockUser);
+      stakesRepo.getTotalStakedByWallet.mockResolvedValue(
+        BigInt("2000000000000000000000"),
+      ); // 2000 tokens (sufficient)
+      competitionRepo.addAgentToCompetition.mockResolvedValue();
+
+      // Execute
+      await competitionService.joinCompetition(
+        mockCompetition.id,
+        mockAgent.id,
+        mockUserId,
+        undefined,
+      );
+
+      // Verify
+      expect(userRepo.findById).toHaveBeenCalledWith(mockUserId);
+      expect(stakesRepo.getTotalStakedByWallet).toHaveBeenCalledWith(
+        mockUser.walletAddress,
+      );
+      expect(competitionRepo.addAgentToCompetition).toHaveBeenCalledWith(
+        mockCompetition.id,
+        mockAgent.id,
+      );
+    });
+
+    it("should reject when user has insufficient stake", async () => {
+      // Setup mocks
+      const competitionWithStake = {
+        ...mockCompetition,
+        minimumStake: 1000,
+      };
+
+      agentService.getAgent.mockResolvedValue(mockAgent);
+      competitionRepo.findById.mockResolvedValue(competitionWithStake);
+      competitionRepo.isAgentActiveInCompetition.mockResolvedValue(false);
+      userRepo.findById.mockResolvedValue(mockUser);
+      stakesRepo.getTotalStakedByWallet.mockResolvedValue(
+        BigInt("500000000000000000000"),
+      ); // 500 tokens (insufficient)
+
+      // Execute & Verify
+      await expect(
+        competitionService.joinCompetition(
+          mockCompetition.id,
+          mockAgent.id,
+          mockUserId,
+          undefined,
+        ),
+      ).rejects.toThrow(ApiError);
+
+      await expect(
+        competitionService.joinCompetition(
+          mockCompetition.id,
+          mockAgent.id,
+          mockUserId,
+          undefined,
+        ),
+      ).rejects.toThrow(
+        "minimum stake requirement (1,000) to join this competition is not met",
+      );
+
+      // Verify addAgentToCompetition was never called
+      expect(competitionRepo.addAgentToCompetition).not.toHaveBeenCalled();
+    });
+
+    it("should return correct HTTP status code (403) for insufficient stake", async () => {
+      // Setup mocks
+      const competitionWithStake = {
+        ...mockCompetition,
+        minimumStake: 1000,
+      };
+
+      agentService.getAgent.mockResolvedValue(mockAgent);
+      competitionRepo.findById.mockResolvedValue(competitionWithStake);
+      competitionRepo.isAgentActiveInCompetition.mockResolvedValue(false);
+      userRepo.findById.mockResolvedValue(mockUser);
+      stakesRepo.getTotalStakedByWallet.mockResolvedValue(
+        BigInt("500000000000000000000"),
+      ); // 500 tokens (insufficient)
+
+      // Execute & Verify
+      try {
+        await competitionService.joinCompetition(
+          mockCompetition.id,
+          mockAgent.id,
+          mockUserId,
+          undefined,
+        );
+        expect.fail("Should have thrown ApiError");
+      } catch (error) {
+        expect(error).toBeInstanceOf(ApiError);
+        expect((error as ApiError).statusCode).toBe(403);
+      }
+    });
+
+    it("should allow join when competition has no minimum stake requirement", async () => {
+      // Setup mocks - competition with no minimum stake
+      agentService.getAgent.mockResolvedValue(mockAgent);
+      competitionRepo.findById.mockResolvedValue(mockCompetition); // no minimumStake field
+      competitionRepo.isAgentActiveInCompetition.mockResolvedValue(false);
+      competitionRepo.addAgentToCompetition.mockResolvedValue();
+
+      // Execute
+      await competitionService.joinCompetition(
+        mockCompetition.id,
+        mockAgent.id,
+        mockUserId,
+        undefined,
+      );
+
+      // Verify
+      expect(userRepo.findById).not.toHaveBeenCalled();
+      expect(stakesRepo.getTotalStakedByWallet).not.toHaveBeenCalled();
+      expect(competitionRepo.addAgentToCompetition).toHaveBeenCalledWith(
+        mockCompetition.id,
+        mockAgent.id,
+      );
+    });
+
+    it("should allow join when minimum stake is 0", async () => {
+      // Setup mocks
+      const competitionWithZeroStake = {
+        ...mockCompetition,
+        minimumStake: 0,
+      };
+
+      agentService.getAgent.mockResolvedValue(mockAgent);
+      competitionRepo.findById.mockResolvedValue(competitionWithZeroStake);
+      competitionRepo.isAgentActiveInCompetition.mockResolvedValue(false);
+      competitionRepo.addAgentToCompetition.mockResolvedValue();
+
+      // Execute
+      await competitionService.joinCompetition(
+        mockCompetition.id,
+        mockAgent.id,
+        mockUserId,
+        undefined,
+      );
+
+      // Verify
+      expect(userRepo.findById).not.toHaveBeenCalled();
+      expect(stakesRepo.getTotalStakedByWallet).not.toHaveBeenCalled();
+      expect(competitionRepo.addAgentToCompetition).toHaveBeenCalledWith(
+        mockCompetition.id,
+        mockAgent.id,
+      );
+    });
+
+    it("should handle user not found during stake validation", async () => {
+      // Setup mocks
+      const competitionWithStake = {
+        ...mockCompetition,
+        minimumStake: 1000,
+      };
+
+      agentService.getAgent.mockResolvedValue(mockAgent);
+      competitionRepo.findById.mockResolvedValue(competitionWithStake);
+      competitionRepo.isAgentActiveInCompetition.mockResolvedValue(false);
+      userRepo.findById.mockResolvedValue(undefined); // User not found
+
+      // Execute & Verify
+      await expect(
+        competitionService.joinCompetition(
+          mockCompetition.id,
+          mockAgent.id,
+          mockUserId,
+          undefined,
+        ),
+      ).rejects.toThrow(ApiError);
+
+      await expect(
+        competitionService.joinCompetition(
+          mockCompetition.id,
+          mockAgent.id,
+          mockUserId,
+          undefined,
+        ),
+      ).rejects.toThrow(`User not found: ${mockUserId}`);
+
+      // Verify addAgentToCompetition was never called
+      expect(competitionRepo.addAgentToCompetition).not.toHaveBeenCalled();
+    });
+
+    it("should return correct HTTP status code (404) for user not found", async () => {
+      // Setup mocks
+      const competitionWithStake = {
+        ...mockCompetition,
+        minimumStake: 1000,
+      };
+
+      agentService.getAgent.mockResolvedValue(mockAgent);
+      competitionRepo.findById.mockResolvedValue(competitionWithStake);
+      competitionRepo.isAgentActiveInCompetition.mockResolvedValue(false);
+      userRepo.findById.mockResolvedValue(undefined); // User not found
+
+      // Execute & Verify
+      try {
+        await competitionService.joinCompetition(
+          mockCompetition.id,
+          mockAgent.id,
+          mockUserId,
+          undefined,
+        );
+        expect.fail("Should have thrown ApiError");
+      } catch (error) {
+        expect(error).toBeInstanceOf(ApiError);
+        expect((error as ApiError).statusCode).toBe(404);
+      }
+    });
+
+    it("should work with agent API key authentication", async () => {
+      // Setup mocks
+      const competitionWithStake = {
+        ...mockCompetition,
+        minimumStake: 1000,
+      };
+
+      agentService.getAgent.mockResolvedValue(mockAgent);
+      competitionRepo.findById.mockResolvedValue(competitionWithStake);
+      competitionRepo.isAgentActiveInCompetition.mockResolvedValue(false);
+      userRepo.findById.mockResolvedValue(mockUser);
+      stakesRepo.getTotalStakedByWallet.mockResolvedValue(
+        BigInt("2000000000000000000000"),
+      ); // 2000 tokens (sufficient)
+      competitionRepo.addAgentToCompetition.mockResolvedValue();
+
+      // Execute with agent API key authentication
+      await competitionService.joinCompetition(
+        mockCompetition.id,
+        mockAgent.id,
+        undefined, // no userId
+        mockAgent.id, // authenticatedAgentId
+      );
+
+      // Verify
+      expect(userRepo.findById).toHaveBeenCalledWith(mockAgent.ownerId);
+      expect(stakesRepo.getTotalStakedByWallet).toHaveBeenCalledWith(
+        mockUser.walletAddress,
+      );
+      expect(competitionRepo.addAgentToCompetition).toHaveBeenCalledWith(
+        mockCompetition.id,
+        mockAgent.id,
+      );
     });
   });
 });

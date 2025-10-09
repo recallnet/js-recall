@@ -1,4 +1,4 @@
-import { and, asc, eq, getTableColumns, gt, isNull } from "drizzle-orm";
+import { and, asc, eq, getTableColumns, gt, isNull, sql } from "drizzle-orm";
 
 import {
   BlockHashCoder,
@@ -566,5 +566,38 @@ class StakesRepository {
         ),
       )
       .orderBy(asc(schema.stakes.id));
+  }
+
+  /**
+   * Get the total sum of all active stakes for a wallet.
+   *
+   * Returns:
+   * - The sum of all stake amounts where `unstakedAt` is NULL for the given wallet.
+   * - Returns 0n if no active stakes are found.
+   *
+   * @param wallet - The wallet address to query
+   * @param tx - Optional transaction context
+   * @returns Promise<bigint> - The total sum of active stakes
+   */
+  async getTotalStakedByWallet(
+    wallet: string,
+    tx?: Transaction,
+  ): Promise<bigint> {
+    const walletBytes = BlockchainAddressAsU8A.encode(wallet);
+    const executor = tx ?? this.#db;
+
+    const result = await executor
+      .select({
+        total: sql`sum(${schema.stakes.amount})`.mapWith(BigInt).as("total"),
+      })
+      .from(schema.stakes)
+      .where(
+        and(
+          eq(schema.stakes.wallet, walletBytes),
+          isNull(schema.stakes.unstakedAt),
+        ),
+      );
+
+    return result[0]?.total ?? 0n;
   }
 }
