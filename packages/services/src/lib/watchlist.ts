@@ -2,9 +2,8 @@ import { Logger } from "pino";
 
 import {
   DEFAULT_RETRY_CONFIG,
-  NonRetryableError,
+  MaybeHttpError,
   RetryConfig,
-  RetryableError,
   withRetry,
 } from "./retry-helper.js";
 
@@ -64,12 +63,77 @@ export class WalletWatchlist {
   ) {
     this.apiKey = config.watchlist.chainalysisApiKey;
     this.logger = logger;
-    this.retryConfig = retryConfig;
+    // Note: Chainalysis throws a 403 upon rate limiting
+    const isRetryable = (error: unknown) => {
+      const err = error as MaybeHttpError;
+      return err.response?.status === 403;
+    };
+    this.retryConfig = { ...retryConfig, isRetryable };
 
     if (!this.apiKey) {
       this.logger.warn(
         "CHAINALYSIS_API_KEY not configured - watchlist checks will be skipped",
       );
+    }
+  }
+
+  /**
+   * Fetch sanction status for a normalized address from Chainalysis API
+   * @param normalizedAddress The normalized (lowercase) wallet address
+   * @returns Promise<boolean> - true if sanctioned, false if clean
+   * @throws Error with response metadata for retry logic
+   */
+  private async fetchAddressSanctionStatus(
+    normalizedAddress: string,
+  ): Promise<boolean> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), this.requestTimeout);
+
+    try {
+      const response = await fetch(`${this.baseUrl}/${normalizedAddress}`, {
+        method: "GET",
+        headers: {
+          "X-API-Key": this.apiKey,
+          Accept: "application/json",
+        },
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        this.logger.error(
+          {
+            address: normalizedAddress,
+            status: response.status,
+            statusText: response.statusText,
+          },
+          "Chainalysis API error",
+        );
+        const error = new Error(
+          `Chainalysis API error: ${response.statusText}`,
+        ) as MaybeHttpError;
+        error.response = {
+          status: response.status,
+          headers: response.headers,
+        };
+        throw error;
+      }
+
+      const data: ChainalysisResponse = await response.json();
+      const isSanctioned =
+        data.identifications?.some(checkIsSanctioned) ?? false;
+      if (isSanctioned) {
+        this.logger.warn(
+          {
+            address: normalizedAddress,
+            identifications: data.identifications.filter(checkIsSanctioned),
+          },
+          "SANCTIONED ADDRESS DETECTED",
+        );
+      }
+
+      return isSanctioned;
+    } finally {
+      clearTimeout(timeoutId);
     }
   }
 
@@ -81,7 +145,6 @@ export class WalletWatchlist {
    */
   async isAddressSanctioned(address: string): Promise<boolean> {
     try {
-      // Skip check if API key not configured (fail-safe - only exception)
       if (!this.isConfigured()) {
         this.logger.debug(
           {
@@ -92,7 +155,8 @@ export class WalletWatchlist {
         return false;
       }
 
-      // Normalize address (Chainalysis API is case-sensitive)
+      // Normalize address (Note: Chainalysis API docs state this is case-sensitive, but in
+      // practice it is case-insensitive)
       const normalizedAddress = address.toLowerCase();
       this.logger.debug(
         {
@@ -100,68 +164,12 @@ export class WalletWatchlist {
         },
         `Checking address`,
       );
-
-      // Use retry logic for API calls with exponential backoff
-      return await withRetry(async () => {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(
-          () => controller.abort(),
-          this.requestTimeout,
-        );
-
-        try {
-          const response = await fetch(`${this.baseUrl}/${normalizedAddress}`, {
-            method: "GET",
-            headers: {
-              "X-API-Key": this.apiKey,
-              Accept: "application/json",
-            },
-            signal: controller.signal,
-          });
-
-          // Handle API errors
-          if (!response.ok) {
-            const errorMessage = `Chainalysis API error: ${response.statusText}`;
-            this.logger.error(
-              {
-                address: normalizedAddress,
-                status: response.status,
-                statusText: response.statusText,
-              },
-              "Chainalysis API error",
-            );
-
-            // Determine if error is retryable
-            if (response.status >= 500 || response.status === 429) {
-              // Server errors and rate limiting are retryable
-              throw new RetryableError(errorMessage);
-            } else {
-              // Other client errors (400, 404, etc.) are generally not retryable
-              throw new NonRetryableError(errorMessage);
-            }
-          }
-
-          // Check if any identification has sanctions category
-          const data: ChainalysisResponse = await response.json();
-          const isSanctioned =
-            data.identifications?.some(checkIsSanctioned) ?? false;
-          if (isSanctioned) {
-            this.logger.warn(
-              {
-                address: normalizedAddress,
-                identifications: data.identifications.filter(checkIsSanctioned),
-              },
-              "SANCTIONED ADDRESS DETECTED",
-            );
-          }
-
-          return isSanctioned;
-        } finally {
-          clearTimeout(timeoutId);
-        }
-      }, this.retryConfig);
+      return await withRetry(
+        () => this.fetchAddressSanctionStatus(normalizedAddress),
+        this.retryConfig,
+      );
     } catch (error) {
-      // Fail closed: Do not allow access in case of network errors, timeouts, etc.
+      // Do not allow access in case of network errors, timeouts, etc.
       this.logger.error(
         {
           address,
