@@ -2,18 +2,16 @@ import { z } from "zod";
 
 import { CacheTags } from "@/lib/cache-tags";
 import { base } from "@/rpc/context/base";
-import { cacheMiddleware, inputTags } from "@/rpc/middleware/cache";
+import { cacheMiddleware } from "@/rpc/middleware/cache";
 
 export const agentBoostTotals = base
+  .input(z.object({ competitionId: z.string() }))
   .use(
     cacheMiddleware({
       revalidateSecs: 30,
-      getTags: inputTags<{ competitionId: string }>((input) => [
-        CacheTags.agentBoostTotals(input.competitionId),
-      ]),
+      getTags: (input) => [CacheTags.agentBoostTotals(input.competitionId)],
     }),
   )
-  .input(z.object({ competitionId: z.string() }))
   .handler(async ({ input, context, errors }) => {
     const res = await context.boostService.getAgentBoostTotals(
       input.competitionId,

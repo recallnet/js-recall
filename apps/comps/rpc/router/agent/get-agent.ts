@@ -3,18 +3,16 @@ import { z } from "zod";
 
 import { CacheTags } from "@/lib/cache-tags";
 import { base } from "@/rpc/context/base";
-import { cacheMiddleware, inputTags } from "@/rpc/middleware/cache";
+import { cacheMiddleware } from "@/rpc/middleware/cache";
 
 export const getAgent = base
+  .input(z.object({ agentId: z.string().uuid() }))
   .use(
     cacheMiddleware({
       revalidateSecs: 30,
-      getTags: inputTags<{ agentId: string }>((input) => [
-        CacheTags.agent(input.agentId),
-      ]),
+      getTags: (input) => [CacheTags.agent(input.agentId)],
     }),
   )
-  .input(z.object({ agentId: z.string().uuid() }))
   .handler(async ({ input, context, errors }) => {
     try {
       const { agentId } = input;

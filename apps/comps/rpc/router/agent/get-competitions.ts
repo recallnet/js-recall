@@ -11,7 +11,7 @@ import {
 
 import { CacheTags } from "@/lib/cache-tags";
 import { base } from "@/rpc/context/base";
-import { cacheMiddleware, inputTags } from "@/rpc/middleware/cache";
+import { cacheMiddleware } from "@/rpc/middleware/cache";
 
 const GetAgentCompetitionsInputSchema = z.object({
   agentId: UuidSchema,
@@ -23,15 +23,13 @@ const GetAgentCompetitionsInputSchema = z.object({
  * Get competitions for a specific agent
  */
 export const getCompetitions = base
+  .input(GetAgentCompetitionsInputSchema)
   .use(
     cacheMiddleware({
       revalidateSecs: 30,
-      getTags: inputTags<{ agentId: string }>((input) => [
-        CacheTags.agentCompetitions(input.agentId),
-      ]),
+      getTags: (input) => [CacheTags.agentCompetitions(input.agentId)],
     }),
   )
-  .input(GetAgentCompetitionsInputSchema)
   .handler(async ({ input, context, errors }) => {
     try {
       const { agentId, filters, paging } = input;
