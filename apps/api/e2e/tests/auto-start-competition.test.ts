@@ -10,6 +10,7 @@ import {
   createTestClient,
   getAdminApiKey,
   registerUserAndAgentAndGetClient,
+  createPrivyAuthenticatedClient,
   wait,
 } from "@/e2e/utils/test-helpers.js";
 import { ServiceRegistry } from "@/services/index.js";
@@ -27,7 +28,7 @@ describe("Competition Start Date Processing", () => {
     expect(loginSuccess).toBe(true);
 
     // Register agent and join the competition pre-start
-    const { agent, client: agentClient } =
+    const { agent, user } =
       await registerUserAndAgentAndGetClient({
         adminApiKey,
         agentName: "Auto Start Agent",
@@ -48,8 +49,11 @@ describe("Competition Start Date Processing", () => {
     const competition = (createResponse as CreateCompetitionResponse)
       .competition;
 
-    // Pre-register agent by joining the pending competition
-    const joinResponse = await agentClient.joinCompetition(
+    // Create a Privy-authenticated client for the agent owner and join
+    const { client: privyUserClient } = await createPrivyAuthenticatedClient({
+      privyId: user.privyId,
+    });
+    const joinResponse = await privyUserClient.joinCompetition(
       competition.id,
       agent.id,
     );
@@ -148,7 +152,7 @@ describe("Competition Start Date Processing", () => {
     expect(loginSuccess).toBe(true);
 
     // Create and start an active competition
-    const { agent: activeAgent, client: activeAgentClient } =
+    const { agent: activeAgent, user: activeUser } =
       await registerUserAndAgentAndGetClient({
         adminApiKey,
         agentName: "Active Comp Agent",
@@ -163,8 +167,11 @@ describe("Competition Start Date Processing", () => {
     const activeCompId = (activeCompCreate as CreateCompetitionResponse)
       .competition.id;
 
-    // Join the agent and start it
-    const joinActive = await activeAgentClient.joinCompetition(
+    // Join the agent and start it using the owner's Privy session
+    const { client: activeOwnerClient } = await createPrivyAuthenticatedClient({
+      privyId: activeUser.privyId,
+    });
+    const joinActive = await activeOwnerClient.joinCompetition(
       activeCompId,
       activeAgent.id,
     );
@@ -177,7 +184,7 @@ describe("Competition Start Date Processing", () => {
     expect(startActive.success).toBe(true);
 
     // Now create another competition that is eligible to start
-    const { agent: pendingAgent, client: pendingAgentClient } =
+    const { agent: pendingAgent, user: pendingUser } =
       await registerUserAndAgentAndGetClient({
         adminApiKey,
         agentName: "Pending Start Agent",
@@ -193,7 +200,10 @@ describe("Competition Start Date Processing", () => {
 
     const pendingComp = (pendingCreate as CreateCompetitionResponse)
       .competition;
-    const joinPending = await pendingAgentClient.joinCompetition(
+    const { client: pendingOwnerClient } = await createPrivyAuthenticatedClient({
+      privyId: pendingUser.privyId,
+    });
+    const joinPending = await pendingOwnerClient.joinCompetition(
       pendingComp.id,
       pendingAgent.id,
     );
@@ -219,7 +229,7 @@ describe("Competition Start Date Processing", () => {
     const startDate = new Date(Date.now()).toISOString();
 
     // Create two competitions
-    const { agent: activeAgent, client: activeAgentClient } =
+    const { agent: activeAgent, user: activeUser } =
       await registerUserAndAgentAndGetClient({
         adminApiKey,
         agentName: "Competition Agent 1",
@@ -234,7 +244,10 @@ describe("Competition Start Date Processing", () => {
     expect(pendingComp1Create.success).toBe(true);
     const pendingComp1Id = (pendingComp1Create as CreateCompetitionResponse)
       .competition.id;
-    const joinActive = await activeAgentClient.joinCompetition(
+    const { client: activeOwnerClient2 } = await createPrivyAuthenticatedClient({
+      privyId: activeUser.privyId,
+    });
+    const joinActive = await activeOwnerClient2.joinCompetition(
       pendingComp1Id,
       activeAgent.id,
     );
@@ -250,7 +263,7 @@ describe("Competition Start Date Processing", () => {
     const pendingComp2 = (pendingComp2Create as CreateCompetitionResponse)
       .competition;
     const pendingComp2Id = pendingComp2.id;
-    const joinPending2 = await activeAgentClient.joinCompetition(
+    const joinPending2 = await activeOwnerClient2.joinCompetition(
       pendingComp2Id,
       activeAgent.id,
     );
@@ -278,8 +291,8 @@ describe("Competition Start Date Processing", () => {
     const loginSuccess = await adminClient.loginAsAdmin(adminApiKey);
     expect(loginSuccess).toBe(true);
 
-    // Create a sandbox competition eligible for start
-    const { agent, client: agentClient } =
+      // Create a sandbox competition eligible for start
+    const { agent, user } =
       await registerUserAndAgentAndGetClient({
         adminApiKey,
         agentName: "Sandbox Agent",
@@ -297,7 +310,10 @@ describe("Competition Start Date Processing", () => {
     const sandboxComp = (sandboxCreate as CreateCompetitionResponse)
       .competition;
 
-    const joinSandbox = await agentClient.joinCompetition(
+    const { client: ownerPrivyClient } = await createPrivyAuthenticatedClient({
+      privyId: user.privyId,
+    });
+    const joinSandbox = await ownerPrivyClient.joinCompetition(
       sandboxComp.id,
       agent.id,
     );
