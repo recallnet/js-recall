@@ -103,13 +103,11 @@ class RewardsAllocator {
       timeout: this.timeout,
     });
 
-    /* v8 ignore start */
     if (receipt.status !== "success") {
       throw new Error(
         "Transaction failed. Receipt: " + JSON.stringify(receipt),
       );
     }
-    /* v8 ignore stop */
 
     return {
       transactionHash: hash,

@@ -101,13 +101,11 @@ class RewardsClaimer {
       timeout: this.timeout,
     });
 
-    /* v8 ignore start */
     if (receipt.status !== "success") {
       throw new Error(
         "Claim transaction failed. Receipt: " + JSON.stringify(receipt),
       );
     }
-    /* v8 ignore stop */
 
     return {
       transactionHash: hash,
