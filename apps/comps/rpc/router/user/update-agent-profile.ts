@@ -68,7 +68,7 @@ export const updateAgentProfile = base
       };
 
       // Invalidate the agent cache and agent list (profile appears in list)
-      await invalidateCacheTags([
+      invalidateCacheTags([
         CacheTags.agent(updatedAgent.id),
         CacheTags.agentList(),
       ]);

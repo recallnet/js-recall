@@ -30,7 +30,7 @@ export const createAgent = base
       };
 
       // Invalidate agent list cache since a new agent was added
-      await invalidateCacheTags([CacheTags.agentList()]);
+      invalidateCacheTags([CacheTags.agentList()]);
 
       return {
         agent: sanitizedAgent,

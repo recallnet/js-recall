@@ -25,7 +25,7 @@ export const join = base
       );
 
       // Invalidate caches for this agent (competitions list and agent profile with metrics)
-      await invalidateCacheTags([
+      invalidateCacheTags([
         CacheTags.agentCompetitions(input.agentId),
         CacheTags.agent(input.agentId),
       ]);
