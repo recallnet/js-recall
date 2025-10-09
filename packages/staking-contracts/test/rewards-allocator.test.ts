@@ -1,12 +1,11 @@
 import { MerkleTree } from "merkletreejs";
-import assert from "node:assert/strict";
-import { describe, it } from "node:test";
 import { encodePacked, keccak256, parseEther } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
+import { describe, expect, it } from "vitest";
 
 import RewardsAllocator, { Network } from "../src/rewards-allocator.js";
 import RewardsClaimer from "../src/rewards-claimer.js";
-import { RewardAllocationTestHelper } from "../src/test-helper.js";
+import { RewardAllocationTestHelper } from "./test-helper.js";
 
 describe("Allocator Error Path", () => {
   it("should throw error on transaction failure", async () => {
@@ -20,41 +19,36 @@ describe("Allocator Error Path", () => {
       { timeout: 100, retryCount: 0, pollingInterval: 100 },
     );
 
-    await assert.rejects(
-      () =>
-        allocator.allocate(
-          "0x0000000000000000000000000000000000000000000000000000000000000000", // 32-byte merkle root
-          1n,
-          1,
-        ),
-      (error: Error) =>
-        error.message.includes("fetch") ||
-        error.message.includes("ECONNREFUSED") ||
-        error.message.includes("timeout"),
-    );
+    await expect(
+      allocator.allocate(
+        "0x0000000000000000000000000000000000000000000000000000000000000000", // 32-byte merkle root
+        1n,
+        1,
+      ),
+    ).rejects.toThrow(/(fetch|ECONNREFUSED|timeout)/);
   });
 });
 
-describe("Allocate Rewards", async function () {
-  const network = await RewardAllocationTestHelper.initializeNetwork();
+describe("Allocate Rewards", () => {
+  it("should create merkle tree with rewards for 3 accounts, allocate root, and verify proofs", async () => {
+    const network = await RewardAllocationTestHelper.initializeNetwork();
 
-  // Extract the properties from the network object
-  const {
-    rewardAllocatorPrivateKey,
-    rewardsContractAddress,
-    mockTokenAddress,
-  } = network;
-
-  const rewardsAllocator = new RewardsAllocator(
-    rewardAllocatorPrivateKey,
-    network.getJsonRpcUrl(),
-    rewardsContractAddress,
-    mockTokenAddress,
-    Network.Hardhat,
-  );
-
-  it("should create merkle tree with rewards for 3 accounts, allocate root, and verify proofs", async function () {
     try {
+      // Extract the properties from the network object
+      const {
+        rewardAllocatorPrivateKey,
+        rewardsContractAddress,
+        mockTokenAddress,
+      } = network;
+
+      const rewardsAllocator = new RewardsAllocator(
+        rewardAllocatorPrivateKey,
+        network.getJsonRpcUrl(),
+        rewardsContractAddress,
+        mockTokenAddress,
+        Network.Hardhat,
+      );
+
       // Use accounts that already have ETH in the test network
       // These are typically the first few accounts in hardhat
       const testAccounts = [
@@ -118,18 +112,9 @@ describe("Allocate Rewards", async function () {
       );
 
       // Verify allocation was successful
-      assert(
-        allocationResult.transactionHash,
-        "Transaction hash should be returned",
-      );
-      assert(
-        allocationResult.blockNumber > 0n,
-        "Block number should be greater than 0",
-      );
-      assert(
-        allocationResult.gasUsed > 0n,
-        "Gas used should be greater than 0",
-      );
+      expect(allocationResult.transactionHash).toBeTruthy();
+      expect(allocationResult.blockNumber).toBeGreaterThan(0n);
+      expect(allocationResult.gasUsed).toBeGreaterThan(0n);
 
       // Wait a bit for the allocation to be processed
       await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -163,15 +148,12 @@ describe("Allocate Rewards", async function () {
         );
         // Verify the balance increased by the claimed amount
         const balanceIncrease = finalBalance - initialBalance;
-        assert(
-          balanceIncrease === reward.amount,
-          `Account ${i + 1} balance should increase by ${reward.amount.toString()}, but increased by ${balanceIncrease.toString()}`,
-        );
+        expect(balanceIncrease).toBe(reward.amount);
       }
     } finally {
       await network.close();
     }
-  });
+  }, 30_000);
 });
 
 /**

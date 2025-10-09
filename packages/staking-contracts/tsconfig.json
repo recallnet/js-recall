@@ -3,6 +3,6 @@
   "compilerOptions": {
     "outDir": "dist"
   },
-  "include": ["src"],
+  "include": ["src", "test/test-helper.ts"],
   "exclude": ["node_modules", "staking-contracts"]
 }
