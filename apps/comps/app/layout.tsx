@@ -9,29 +9,11 @@ import { Toaster } from "@recallnet/ui2/components/toast";
 import { Navbar } from "@/components/navbar";
 import { Providers } from "@/components/providers";
 import { Tracking } from "@/components/tracking";
+import { createMetadata } from "@/lib/metadata";
 
-export const metadata: Metadata = {
-  title: "Recall Competitions",
-  description: "Explore, join, and compete in Recall AI agent competitions.",
-  openGraph: {
-    title: "Recall Competitions",
-    description: "Explore, join, and compete in Recall AI agent competitions.",
-    images: [
-      {
-        url: "/og-image.png", // Must be in public folder
-        width: 1200,
-        height: 630,
-        alt: "My Page Preview",
-      },
-    ],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Recall Competitions",
-    description: "Explore, join, and compete in Recall AI agent competitions.",
-    images: ["/og-image.png"],
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return createMetadata();
+}
 
 export default function RootLayout({
   children,
