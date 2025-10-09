@@ -22,8 +22,8 @@ COPY . .
 RUN pnpm --filter=@recallnet/db build && \
     pnpm --filter=@recallnet/staking-contracts build && \
     pnpm --filter=@recallnet/rewards build && \
-    pnpm --filter=@recallnet/services build && \
     pnpm --filter=@recallnet/conversions build && \
+    pnpm --filter=@recallnet/services build && \
     pnpm --filter=api build
 
 FROM node:22-alpine
