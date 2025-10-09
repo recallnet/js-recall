@@ -1589,6 +1589,7 @@ export class AgentService {
           return {
             ...baseMetrics,
             totalPositions: positionCountsMap.get(competition.id) || 0,
+            totalTrades: 0, // Not applicable for perps, but include for consistency
             // Include risk metrics if available
             calmarRatio: riskMetrics ? Number(riskMetrics.calmarRatio) : null,
             simpleReturn: riskMetrics ? Number(riskMetrics.simpleReturn) : null,
@@ -1599,6 +1600,7 @@ export class AgentService {
           return {
             ...baseMetrics,
             totalTrades: tradeCountsMap.get(competition.id) || 0,
+            totalPositions: 0, // Not applicable for paper trading, but include for consistency
             // Risk metrics not applicable for paper trading
             calmarRatio: null,
             simpleReturn: null,
