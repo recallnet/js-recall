@@ -11,6 +11,7 @@ import { SkillOverviewCard } from "./skill-overview-card";
 
 export const UnifiedLeaderboardHub: React.FC = () => {
   const { data, isLoading, error } = useUnifiedLeaderboard();
+  console.log("Unified Leaderboard Hub data", data);
 
   if (isLoading) {
     return (

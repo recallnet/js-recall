@@ -209,7 +209,7 @@ export class LeaderboardService {
 
       // Get total active agents across all competition types
       const totalActiveAgents =
-        await this.leaderboardRepo.getTotalActiveAgents();
+        await this.leaderboardRepo.getTotalActiveCompetitionAgents();
 
       return {
         skills: allSkills,

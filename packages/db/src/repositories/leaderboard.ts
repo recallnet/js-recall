@@ -393,12 +393,12 @@ export class LeaderboardRepository {
   }
 
   /**
-   * Get total count of active agents across all competition types and statuses
+   * Get total count of active agents across all competition types and competition statuses
    * Counts distinct agents with 'active' status in all competitions
    * @returns Total number of unique active agents across the platform
    */
-  async getTotalActiveAgents(): Promise<number> {
-    this.#logger.debug("getTotalActiveAgents called");
+  async getTotalActiveCompetitionAgents(): Promise<number> {
+    this.#logger.debug("getTotalActiveCompetitionAgents called");
 
     try {
       const result = await this.#dbRead
@@ -410,7 +410,7 @@ export class LeaderboardRepository {
 
       return result[0]?.totalActiveAgents ?? 0;
     } catch (error) {
-      this.#logger.error({ error }, "Error in getTotalActiveAgents");
+      this.#logger.error({ error }, "Error in getTotalActiveCompetitionAgents");
       throw error;
     }
   }
