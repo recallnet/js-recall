@@ -986,7 +986,7 @@ export class AgentService {
       let finalCompetitions = enhancedCompetitions;
       if (results.isComputedSort && params.sort) {
         finalCompetitions = this.sortCompetitionsByComputedField(
-          enhancedCompetitions, // No need to filter again
+          enhancedCompetitions,
           params.sort,
         );
 
@@ -1589,6 +1589,7 @@ export class AgentService {
           return {
             ...baseMetrics,
             totalPositions: positionCountsMap.get(competition.id) || 0,
+            totalTrades: 0, // Not applicable for perps, but include for consistency
             // Include risk metrics if available
             calmarRatio: riskMetrics ? Number(riskMetrics.calmarRatio) : null,
             simpleReturn: riskMetrics ? Number(riskMetrics.simpleReturn) : null,
@@ -1599,6 +1600,7 @@ export class AgentService {
           return {
             ...baseMetrics,
             totalTrades: tradeCountsMap.get(competition.id) || 0,
+            totalPositions: 0, // Not applicable for paper trading, but include for consistency
             // Risk metrics not applicable for paper trading
             calmarRatio: null,
             simpleReturn: null,
@@ -1654,6 +1656,12 @@ export class AgentService {
           case "totalTrades": {
             const aValue = a.totalTrades || 0;
             const bValue = b.totalTrades || 0;
+            comparison = isDesc ? bValue - aValue : aValue - bValue;
+            break;
+          }
+          case "totalPositions": {
+            const aValue = a.totalPositions || 0;
+            const bValue = b.totalPositions || 0;
             comparison = isDesc ? bValue - aValue : aValue - bValue;
             break;
           }
