@@ -131,14 +131,6 @@ export default function UserAgentsSection({
             <span className="text-xl font-bold">Your Agents</span>
             <span className="text-secondary-foreground">({nAgents})</span>
           </div>
-          <Button asChild>
-            <Link
-              href="/create-agent"
-              onClick={() => trackEvent("UserClickedAddAgentButton")}
-            >
-              {"+ ADD AGENT"}
-            </Link>
-          </Button>
         </div>
       </CollapsibleTrigger>
       <CollapsibleContent className="w-full">
@@ -162,7 +154,7 @@ const NoAgents = ({
         <span className="text-secondary-foreground">
           {`Kick things off by creating your very first AI agent. It'll start competing and climbing the leaderboard in no time!`}
         </span>
-        <Button asChild className="mt-6 w-40 whitespace-nowrap px-8 py-5">
+        <Button asChild className="mt-6">
           <Link
             href="/create-agent"
             onClick={() => trackEvent("UserClickedAddAgentButton")}
