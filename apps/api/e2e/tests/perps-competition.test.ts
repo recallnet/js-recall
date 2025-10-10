@@ -117,7 +117,7 @@ describe("Perps Competition", () => {
     const comp = typedDetailResponse.competition as EnhancedCompetition;
 
     expect(comp?.stats?.totalPositions).toBeDefined();
-    expect(comp.stats?.totalTrades).toBeUndefined();
+    expect(comp.stats?.totalTrades).toBe(0);
 
     // Verify perps competitions include volume and average equity stats
     expect(comp?.stats?.totalVolume).toBeDefined();
@@ -261,7 +261,7 @@ describe("Perps Competition", () => {
     expect(perpsComp?.type).toBe("perpetual_futures");
     expect(perpsComp?.name).toBe(competitionName);
     expect(perpsComp?.totalPositions).toBeDefined();
-    expect(perpsComp?.totalTrades).toBeUndefined();
+    expect(perpsComp?.totalTrades).toBe(0);
   });
 
   test("should prevent paper trading endpoints during perps competition", async () => {
