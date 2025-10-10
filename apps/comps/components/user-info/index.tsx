@@ -48,6 +48,18 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
+const FieldLabel = ({ children }: { children: React.ReactNode }) => (
+  <span className="text-foreground content-center text-sm font-semibold">
+    {children}
+  </span>
+);
+
+const FieldValue = ({ children }: { children: React.ReactNode }) => (
+  <div className="text-secondary-foreground flex content-center items-center gap-2">
+    {children}
+  </div>
+);
+
 interface UserInfoSectionProps {
   user: ProfileResponse["user"];
   onSave: (data: Partial<UpdateProfileRequest>) => Promise<void>;
@@ -134,70 +146,57 @@ export default function UserInfoSection({
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(handleSave)}
-            className="w-full space-y-2"
+            className="grid w-full auto-rows-[minmax(theme(spacing.8),auto)] grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-2"
           >
-            {/* Email row (not editable) */}
-            <div className="text-secondary-foreground flex min-h-[30px] items-center gap-4">
-              <span className="text-foreground w-20 text-sm font-semibold">
-                Email
-              </span>
-              <span className="text-sm">{user?.email}</span>
-            </div>
+            <FieldLabel>Email</FieldLabel>
+            <FieldValue>{user?.email}</FieldValue>
 
-            {/* Website row */}
-            <div className="text-secondary-foreground flex min-h-[30px] items-center gap-4">
-              <span className="text-foreground w-20 text-sm font-semibold">
-                Website
-              </span>
-              {editField === "website" ? (
-                <div ref={editFieldRef} className="flex items-center gap-2">
-                  <FormField
-                    control={form.control}
-                    name="website"
-                    render={({ field }) => (
-                      <FormItem className="w-full">
-                        <FormControl>
-                          <Input
-                            {...field}
-                            className="w-full max-w-sm"
-                            autoFocus
-                            onKeyDown={handleKeyDown}
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                  <Button>Save</Button>
-                </div>
-              ) : (
-                <>
-                  {user.metadata?.website && (
-                    <Link
-                      href={user.metadata.website}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-white underline hover:text-gray-300"
-                    >
-                      {user.metadata.website}
-                    </Link>
+            <FieldLabel>Website</FieldLabel>
+            {editField === "website" ? (
+              <div ref={editFieldRef} className="flex items-center gap-2">
+                <FormField
+                  control={form.control}
+                  name="website"
+                  render={({ field }) => (
+                    <FormItem className="w-full">
+                      <FormControl>
+                        <Input
+                          {...field}
+                          className="w-full max-w-sm"
+                          autoFocus
+                          onKeyDown={handleKeyDown}
+                        />
+                      </FormControl>
+                    </FormItem>
                   )}
-                  <EditButton
-                    onClick={() => setEditField("website")}
-                    size={20}
-                    iconClassName="text-gray-500 hover:text-gray-300"
-                  />
-                </>
-              )}
-            </div>
-          </form>
+                />
+                <Button>Save</Button>
+              </div>
+            ) : (
+              <FieldValue>
+                {user.metadata?.website && (
+                  <Link
+                    href={user.metadata.website}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="truncate underline hover:text-gray-300"
+                  >
+                    {user.metadata.website}
+                  </Link>
+                )}
+                <EditButton
+                  onClick={() => setEditField("website")}
+                  size={20}
+                  iconClassName="text-gray-500 hover:text-gray-300"
+                />
+              </FieldValue>
+            )}
 
-          {/* Link wallet button. Note: for now, we only allow for linking wallets */}
-          <div className="text-secondary-foreground flex min-h-[30px] w-full max-w-full items-center gap-4 overflow-hidden">
-            <span className="text-foreground w-20 flex-shrink-0 text-sm font-semibold">
-              Wallet address
-            </span>
-            <LinkWallet user={user} onLinkWallet={onLinkWallet} />
-          </div>
+            <FieldLabel>Wallet address</FieldLabel>
+            <FieldValue>
+              <LinkWallet user={user} onLinkWallet={onLinkWallet} />
+            </FieldValue>
+          </form>
         </Form>
       </div>
     </div>
