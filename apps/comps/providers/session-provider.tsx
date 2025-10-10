@@ -93,6 +93,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   const { user, ready, authenticated, logout, isModalOpen, createWallet } =
     usePrivy();
+  const { ready: walletsReady } = useWallets();
 
   const { disconnect } = useDisconnect();
   const { isConnected, chainId: currentChainId } = useAccount();
@@ -148,13 +149,31 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     mutationFn: async () => {
       await apiClient.current.login();
     },
+    retry: 3,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000), // Exponential backoff: 1s, 2s, 4s, max 10s
     onSuccess: () => {
       refetchBackendUser();
     },
     onError: (error) => {
-      const message = `Login to backend failed: ${error}`;
-      console.error(message);
-      Sentry.captureException(new Error(message));
+      console.error("Login to backend failed:", {
+        error: error?.message || String(error),
+        privyAuthenticated: authenticated,
+        privyReady: ready,
+        privyWalletsReady: walletsReady,
+        browserOnline: navigator.onLine,
+      });
+
+      Sentry.captureException(
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          extra: {
+            privyAuthenticated: authenticated,
+            privyReady: ready,
+            privyWalletsReady: walletsReady,
+            browserOnline: navigator.onLine,
+          },
+        },
+      );
     },
   });
 

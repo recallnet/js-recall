@@ -161,6 +161,20 @@ export function configureAdminRoutes(
    *                     type: string
    *                     description: Optional API URL override for the provider
    *                     example: https://api.symphony.com
+   *               prizePools:
+   *                 type: object
+   *                 description: Prize pool configuration
+   *                 properties:
+   *                   agent:
+   *                     type: number
+   *                     minimum: 0
+   *                     description: Agent prize pool amount
+   *                     example: 1000
+   *                   users:
+   *                     type: number
+   *                     minimum: 0
+   *                     description: User prize pool amount
+   *                     example: 500
    *     responses:
    *       201:
    *         description: Competition created successfully
@@ -383,6 +397,20 @@ export function configureAdminRoutes(
    *                   "1": 1000
    *                   "2": 500
    *                   "3": 250
+   *               prizePools:
+   *                 type: object
+   *                 description: Prize pool configuration
+   *                 properties:
+   *                   agent:
+   *                     type: number
+   *                     minimum: 0
+   *                     description: Agent prize pool amount
+   *                     example: 1000
+   *                   users:
+   *                     type: number
+   *                     minimum: 0
+   *                     description: User prize pool amount
+   *                     example: 500
    *     responses:
    *       200:
    *         description: Competition started successfully
@@ -683,6 +711,20 @@ export function configureAdminRoutes(
    *                     type: string
    *                     description: Optional API URL override for the provider
    *                     example: https://api.symphony.com
+   *               prizePools:
+   *                 type: object
+   *                 description: Prize pool configuration
+   *                 properties:
+   *                   agent:
+   *                     type: number
+   *                     minimum: 0
+   *                     description: Agent prize pool amount
+   *                     example: 1000
+   *                   users:
+   *                     type: number
+   *                     minimum: 0
+   *                     description: User prize pool amount
+   *                     example: 500
    *     responses:
    *       200:
    *         description: Competition updated successfully
@@ -2336,6 +2378,66 @@ export function configureAdminRoutes(
     "/competitions/:competitionId/agents/:agentId/reactivate",
     controller.reactivateAgentInCompetition,
   );
+
+  /**
+   * @openapi
+   * /api/admin/rewards/allocate:
+   *   post:
+   *     tags:
+   *       - Admin
+   *     summary: Allocate rewards for a competition
+   *     description: Calculate and allocate rewards for a competition by building a Merkle tree and publishing it to the blockchain
+   *     security:
+   *       - BearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - competitionId
+   *               - startTimestamp
+   *             properties:
+   *               competitionId:
+   *                 type: string
+   *                 format: uuid
+   *                 description: The competition ID to allocate rewards for
+   *                 example: "12345678-1234-1234-1234-123456789012"
+   *               startTimestamp:
+   *                 type: integer
+   *                 minimum: 1
+   *                 description: The timestamp from which rewards can be claimed
+   *                 example: 1640995200
+   *     responses:
+   *       200:
+   *         description: Rewards allocated successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   description: Operation success status
+   *                   example: true
+   *                 message:
+   *                   type: string
+   *                   description: Success message
+   *                   example: "Rewards allocated successfully"
+   *                 competitionId:
+   *                   type: string
+   *                   format: uuid
+   *                   description: The competition ID that rewards were allocated for
+   *                   example: "12345678-1234-1234-1234-123456789012"
+   *       400:
+   *         description: Bad Request - Invalid request format or missing required parameters
+   *       401:
+   *         description: Unauthorized - Admin authentication required
+   *       500:
+   *         description: Server error
+   */
+  router.post("/rewards/allocate", controller.allocateRewards);
 
   return router;
 }

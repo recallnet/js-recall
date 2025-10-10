@@ -101,19 +101,17 @@ class RewardsClaimer {
       timeout: this.timeout,
     });
 
-    if (receipt.status === "success") {
-      return {
-        transactionHash: hash,
-        blockNumber: receipt.blockNumber,
-        gasUsed: receipt.gasUsed,
-      };
+    if (receipt.status !== "success") {
+      throw new Error(
+        "Claim transaction failed. Receipt: " + JSON.stringify(receipt),
+      );
     }
 
-    /* c8 ignore start */
-    throw new Error(
-      "Claim transaction failed. Receipt: " + JSON.stringify(receipt),
-    );
-    /* c8 ignore stop */
+    return {
+      transactionHash: hash,
+      blockNumber: receipt.blockNumber,
+      gasUsed: receipt.gasUsed,
+    };
   }
 
   /**

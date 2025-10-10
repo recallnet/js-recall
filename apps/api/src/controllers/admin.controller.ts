@@ -35,6 +35,7 @@ import {
   AdminRegisterUserSchema,
   AdminRemoveAgentFromCompetitionBodySchema,
   AdminRemoveAgentFromCompetitionParamsSchema,
+  AdminRewardsAllocationSchema,
   AdminSetupSchema,
   AdminStartCompetitionSchema,
   AdminUpdateAgentBodySchema,
@@ -225,6 +226,7 @@ export function makeAdminController(services: ServiceRegistry) {
           tradingConstraints,
           rewards,
           perpsProvider,
+          prizePools,
         } = result.data;
 
         // Create a new competition
@@ -249,6 +251,7 @@ export function makeAdminController(services: ServiceRegistry) {
             tradingConstraints,
             rewards,
             perpsProvider,
+            prizePools,
           },
         );
 
@@ -295,6 +298,7 @@ export function makeAdminController(services: ServiceRegistry) {
           joinEndDate,
           rewards,
           perpsProvider,
+          prizePools,
         } = result.data;
 
         // Call service method with creation params only if no competitionId
@@ -321,6 +325,7 @@ export function makeAdminController(services: ServiceRegistry) {
                   joinEndDate,
                   rewards,
                   perpsProvider,
+                  prizePools,
                 },
           });
 
@@ -406,6 +411,7 @@ export function makeAdminController(services: ServiceRegistry) {
           rewards,
           tradingConstraints,
           perpsProvider,
+          prizePools,
           ...competitionUpdates
         } = bodyResult.data;
         const updates = competitionUpdates;
@@ -415,7 +421,8 @@ export function makeAdminController(services: ServiceRegistry) {
           Object.keys(updates).length === 0 &&
           !rewards &&
           !tradingConstraints &&
-          !perpsProvider
+          !perpsProvider &&
+          !prizePools
         ) {
           throw new ApiError(400, "No valid fields provided for update");
         }
@@ -428,6 +435,7 @@ export function makeAdminController(services: ServiceRegistry) {
             tradingConstraints,
             rewards,
             perpsProvider,
+            prizePools,
           );
 
         // Return the updated competition
@@ -1493,6 +1501,7 @@ export function makeAdminController(services: ServiceRegistry) {
     /**
      * Get competition transfer violations
      * Returns agents who have made transfers during the competition
+     *
      * @param req Express request
      * @param res Express response
      * @param next Express next function
@@ -1524,6 +1533,37 @@ export function makeAdminController(services: ServiceRegistry) {
           violations,
         });
       } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Allocate rewards for a competition
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async allocateRewards(req: Request, res: Response, next: NextFunction) {
+      try {
+        const result = flatParse(AdminRewardsAllocationSchema, req.body);
+        if (!result.success) {
+          throw new ApiError(400, `Invalid request format: ${result.error}`);
+        }
+
+        const { competitionId, startTimestamp } = result.data;
+
+        await services.rewardsService.calculateAndAllocate(
+          competitionId,
+          startTimestamp,
+        );
+
+        res.status(200).json({
+          success: true,
+          message: "Rewards allocated successfully",
+          competitionId,
+        });
+      } catch (error) {
+        adminLogger.error("Error allocating rewards:", error);
         next(error);
       }
     },

@@ -23,6 +23,7 @@ import { Logger } from "pino";
 import {
   agents,
   competitionAgents,
+  competitionPrizePools,
   competitionRewards,
   competitions,
   competitionsLeaderboard,
@@ -35,6 +36,7 @@ import {
   InsertCompetitionAgent,
   InsertCompetitionsLeaderboard,
   SelectCompetition,
+  SelectCompetitionPrizePool,
   SelectCompetitionsLeaderboard,
   UpdateCompetition,
 } from "../schema/core/types.js";
@@ -159,6 +161,19 @@ export class CompetitionRepository {
           WHERE cr.competition_id = ${competitions.id}
         )
       `.as("rewards"),
+        rewardsTge: sql<{ agentPool: bigint; userPool: bigint } | undefined>`
+        (
+          SELECT COALESCE(
+            json_build_object(
+              'agentPool', cpp.agent_pool,
+              'userPool', cpp.user_pool
+            ),
+            NULL
+          )
+          FROM ${competitionPrizePools} cpp
+          WHERE cpp.competition_id = ${competitions.id}
+        )
+      `.as("rewards_tge"),
         ...getTableColumns(competitions),
       })
       .from(tradingCompetitions)
@@ -2617,16 +2632,20 @@ export class CompetitionRepository {
    * @param competitionId The competition ID
    * @returns Array of leaderboard entries with user wallet addresses, sorted by rank
    */
-  async findLeaderboardByCompetitionWithWallets(
-    competitionId: string,
-  ): Promise<
-    Array<SelectCompetitionsLeaderboard & { userWalletAddress: string }>
+  async findLeaderboardByCompetitionWithWallets(competitionId: string): Promise<
+    Array<
+      SelectCompetitionsLeaderboard & {
+        userWalletAddress: string;
+        ownerId: string;
+      }
+    >
   > {
     try {
       return await this.#dbRead
         .select({
           ...getTableColumns(competitionsLeaderboard),
           userWalletAddress: users.walletAddress,
+          ownerId: users.id,
         })
         .from(competitionsLeaderboard)
         .innerJoin(agents, eq(competitionsLeaderboard.agentId, agents.id))
@@ -2636,6 +2655,80 @@ export class CompetitionRepository {
     } catch (error) {
       console.error(
         `[CompetitionRepository] Error finding leaderboard with wallets for competition ${competitionId}:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Get user and agent prize pools for a competition
+   * @param competitionId The competition ID
+   * @returns Prize pool data with agent and user pool amounts, or null if not found
+   */
+  async getCompetitionPrizePools(
+    competitionId: string,
+  ): Promise<SelectCompetitionPrizePool | null> {
+    try {
+      const [result] = await this.#dbRead
+        .select()
+        .from(competitionPrizePools)
+        .where(eq(competitionPrizePools.competitionId, competitionId))
+        .limit(1);
+
+      return result || null;
+    } catch (error) {
+      this.#logger.error(
+        `[CompetitionRepository] Error getting prize pools for competition ${competitionId}:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Upsert prize pools for a competition (create if not exists, update if exists)
+   * @param competitionId The competition ID
+   * @param pools The prize pool amounts in WEI (bigint)
+   * @param tx Optional database transaction
+   * @returns The upserted prize pool record
+   */
+  async updatePrizePools(
+    competitionId: string,
+    pools: { agent: bigint; users: bigint },
+    tx?: Transaction,
+  ): Promise<SelectCompetitionPrizePool> {
+    try {
+      const db = tx || this.#db;
+      const id = randomUUID();
+
+      const [result] = await db
+        .insert(competitionPrizePools)
+        .values({
+          id,
+          competitionId,
+          agentPool: pools.agent,
+          userPool: pools.users,
+        })
+        .onConflictDoUpdate({
+          target: competitionPrizePools.competitionId,
+          set: {
+            agentPool: pools.agent,
+            userPool: pools.users,
+          },
+        })
+        .returning();
+
+      if (!result) {
+        throw new Error(
+          `[CompetitionRepository] Error upserting prize pools for competition ${competitionId}: No result returned`,
+        );
+      }
+
+      return result;
+    } catch (error) {
+      this.#logger.error(
+        `[CompetitionRepository] Error upserting prize pools for competition ${competitionId}:`,
         error,
       );
       throw error;

@@ -5,8 +5,10 @@ import { Decimal } from "decimal.js-light";
  * at a given timestamp
  */
 export type BoostAllocation = {
+  /** The user's identifier */
+  user_id: string;
   /** The user's address or identifier */
-  user: string;
+  user_wallet: string;
   /** The competitor's address or identifier */
   competitor: string;
   /** The amount of boost allocated */
@@ -40,7 +42,11 @@ export type Interval = [Date, Date];
  * Represents a reward payout to a user
  */
 export type Reward = {
-  /** The user's address */
+  /** The owner's identifier */
+  owner: string;
+  /** The competitor's identifier */
+  competitor?: string;
+  /** The wallet address */
   address: string;
   /** The amount of the reward in WEI */
   amount: bigint;
@@ -52,6 +58,8 @@ export type Reward = {
  */
 
 export type Placement = {
+  /** The owner's identifier */
+  owner: string;
   /** The competitor's identifier */
   competitor: string;
   /** The competitor's wallet */
