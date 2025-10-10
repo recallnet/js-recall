@@ -36,14 +36,12 @@ const formSchema = z.object({
       if (!url) return true; // Allow empty/undefined values after transformation
       try {
         const parsedUrl = new URL(url);
-        return (
-          parsedUrl.protocol === "http:" || parsedUrl.protocol === "https:"
-        );
+        return parsedUrl.protocol === "https:";
       } catch {
         return false;
       }
     },
-    { message: "Only HTTP and HTTPS URLs are allowed" },
+    { message: "Only HTTPS URLs are allowed" },
   ),
 });
 
