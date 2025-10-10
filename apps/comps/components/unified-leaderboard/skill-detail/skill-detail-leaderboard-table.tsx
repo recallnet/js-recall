@@ -9,8 +9,13 @@ import {
   UnifiedSkillData,
 } from "@recallnet/services/types";
 import { Badge } from "@recallnet/ui2/components/badge";
-import { Button } from "@recallnet/ui2/components/button";
 import { Card } from "@recallnet/ui2/components/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@recallnet/ui2/components/dialog";
 import { Tooltip } from "@recallnet/ui2/components/tooltip";
 import { cn } from "@recallnet/ui2/lib/utils";
 
@@ -52,7 +57,9 @@ type ParticipantEntry = (BenchmarkModel | LeaderboardAgent) & {
 export const SkillDetailLeaderboardTable: React.FC<
   SkillDetailLeaderboardTableProps
 > = ({ skill, skillData }) => {
-  const [showType, setShowType] = useState<"all" | "models" | "agents">("all");
+  const [selectedModel, setSelectedModel] = useState<BenchmarkModel | null>(
+    null,
+  );
 
   // Combine and rank all participants
   const allParticipants: ParticipantEntry[] = [
@@ -70,19 +77,9 @@ export const SkillDetailLeaderboardTable: React.FC<
     })),
   ].sort((a, b) => b.score - a.score);
 
-  // Apply filters
-  const filteredParticipants = allParticipants.filter((participant) => {
-    if (showType === "all") return true;
-    if (showType === "models") return participant.type === "model";
-    if (showType === "agents") return participant.type === "agent";
-    return true;
-  });
-
   // Calculate max score for bar scaling, including confidence intervals
   const maxPossibleScore = Math.max(
-    ...filteredParticipants.map(
-      (p) => getParticipantMetrics(p, skill.id).maxScore,
-    ),
+    ...allParticipants.map((p) => getParticipantMetrics(p, skill.id).maxScore),
     1,
   );
 
@@ -90,42 +87,18 @@ export const SkillDetailLeaderboardTable: React.FC<
   const maxScaleScore = maxPossibleScore * 1.1;
 
   return (
-    <div className="space-y-6">
-      {/* Filters */}
-      <div className="flex items-center gap-4">
-        <div className="flex items-center gap-2">
-          <Button
-            variant={showType === "all" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setShowType("all")}
-          >
-            All ({allParticipants.length})
-          </Button>
-          <Button
-            variant={showType === "models" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setShowType("models")}
-          >
-            Models ({skillData.stats.modelCount})
-          </Button>
-          <Button
-            variant={showType === "agents" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setShowType("agents")}
-          >
-            Agents ({skillData.stats.agentCount})
-          </Button>
-        </div>
-      </div>
+    <div className="space-y-4 md:space-y-6">
+      {/* Filters - Responsive */}
+      {/* Mobile: Horizontal scroll buttons */}
 
-      {/* Performance Comparison - Horizontal Bar Graphs */}
-      <Card className="overflow-hidden">
+      {/* Desktop: Horizontal bar layout */}
+      <Card className="hidden overflow-hidden md:block">
         <div className="p-6">
           <h3 className="mb-6 text-lg font-semibold text-white">
             Performance Comparison
           </h3>
           <div className="space-y-3">
-            {filteredParticipants.map((participant, index) => {
+            {allParticipants.map((participant, index) => {
               const metrics = getParticipantMetrics(participant, skill.id);
               const isModel = metrics.isModel;
               const confidenceInterval = metrics.confidenceInterval;
@@ -440,6 +413,296 @@ export const SkillDetailLeaderboardTable: React.FC<
           </div>
         </div>
       </Card>
+
+      {/* Mobile: Card layout */}
+      <div className="space-y-3 md:hidden">
+        <h3 className="text-lg font-semibold text-white">
+          Performance Comparison
+        </h3>
+
+        {allParticipants.map((participant, index) => {
+          const metrics = getParticipantMetrics(participant, skill.id);
+          const isModel = metrics.isModel;
+          const confidenceInterval = metrics.confidenceInterval;
+          const barWidth = (participant.score / maxScaleScore) * 100;
+
+          // Get colors
+          const barColor = isModel
+            ? getLabColor((participant as BenchmarkModel).provider)
+            : getAgentColor(participant.name);
+
+          // Calculate confidence range positions
+          const confidenceLowerWidth = confidenceInterval
+            ? (confidenceInterval[0] / maxScaleScore) * 100
+            : 0;
+          const confidenceUpperWidth = confidenceInterval
+            ? (confidenceInterval[1] / maxScaleScore) * 100
+            : barWidth;
+          const confidenceRangeWidth =
+            confidenceUpperWidth - confidenceLowerWidth;
+
+          return (
+            <Card key={participant.id} className="p-4">
+              {/* Header Row - Rank, Logo, Name/Provider, Icons */}
+              <div className="mb-3 flex items-center justify-between">
+                <div className="flex min-w-0 flex-1 items-center gap-3">
+                  {/* Rank Badge */}
+                  <div
+                    className={cn(
+                      "flex h-6 w-6 flex-shrink-0 items-center justify-center rounded text-xs font-bold",
+                      index === 0
+                        ? "bg-gradient-to-br from-yellow-300 to-yellow-600 text-yellow-900 shadow-md"
+                        : index === 1
+                          ? "bg-gradient-to-br from-gray-300 to-gray-500 text-gray-800 shadow-md"
+                          : index === 2
+                            ? "bg-gradient-to-br from-amber-600 to-amber-800 text-amber-100 shadow-md"
+                            : "bg-gray-700 text-gray-300",
+                    )}
+                  >
+                    {index + 1}
+                  </div>
+
+                  {/* Logo */}
+                  {isModel ? (
+                    <LabLogo
+                      provider={(participant as BenchmarkModel).provider}
+                      size="sm"
+                    />
+                  ) : (
+                    <AgentAvatar
+                      agent={participant as LeaderboardAgent}
+                      size={24}
+                      showHover={false}
+                    />
+                  )}
+
+                  {/* Name and Provider */}
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-medium leading-tight text-white">
+                      {participant.name}
+                    </div>
+                    {isModel && (
+                      <div className="text-xs text-gray-400">
+                        {(participant as BenchmarkModel).provider}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Icons Row */}
+                <div className="flex items-center gap-2">
+                  {/* Model Stats Button (Mobile-friendly tap target) */}
+                  {isModel &&
+                    (participant as BenchmarkModel).context_length && (
+                      <button
+                        onClick={() =>
+                          setSelectedModel(participant as BenchmarkModel)
+                        }
+                        className="flex items-center gap-1 rounded-md bg-gray-700/50 px-2 py-1 transition-colors hover:bg-gray-600/50 active:bg-gray-600"
+                        aria-label={`View statistics for ${(participant as BenchmarkModel).name}`}
+                        type="button"
+                      >
+                        <BarChart3 size={12} className="text-gray-300" />
+                        <span className="text-[10px] font-medium text-gray-300">
+                          {Math.round(
+                            (participant as BenchmarkModel).context_length! /
+                              1000,
+                          )}
+                          k
+                        </span>
+                      </button>
+                    )}
+
+                  {/* NEW Badge */}
+                  {isModel &&
+                    (participant as BenchmarkModel).created &&
+                    new Date((participant as BenchmarkModel).created! * 1000) >
+                      new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) && (
+                      <Badge className="bg-blue-600 text-xs text-white">
+                        NEW
+                      </Badge>
+                    )}
+
+                  {/* Notice Icon */}
+                  {isModel &&
+                    skill.id in (participant as BenchmarkModel).scores &&
+                    (participant as BenchmarkModel).scores[skill.id]
+                      ?.notice && (
+                      <Tooltip
+                        content={
+                          (participant as BenchmarkModel).scores[skill.id]
+                            ?.notice
+                        }
+                      >
+                        <div className="flex h-4 w-4 items-center justify-center rounded-full bg-blue-500/20 text-blue-400">
+                          <Info size={10} />
+                        </div>
+                      </Tooltip>
+                    )}
+                </div>
+              </div>
+
+              {/* Score Row */}
+              <div className="mb-3 text-center">
+                <div className="font-mono text-2xl font-bold text-white">
+                  {participant.score.toFixed(0)}
+                </div>
+                {confidenceInterval && (
+                  <div className="text-sm text-gray-400">
+                    ±
+                    {(confidenceInterval[1] - confidenceInterval[0]).toFixed(1)}
+                  </div>
+                )}
+              </div>
+
+              {/* Progress Bar */}
+              <div className="relative h-3 w-full rounded-full bg-gray-800">
+                {/* Confidence interval background */}
+                {confidenceInterval && (
+                  <div
+                    className="absolute h-3 rounded-full bg-white opacity-20"
+                    style={{
+                      left: `${confidenceLowerWidth}%`,
+                      width: `${Math.max(confidenceRangeWidth, 1)}%`,
+                    }}
+                  />
+                )}
+
+                {/* Main progress bar */}
+                <div
+                  className="relative h-3 rounded-full transition-all duration-300 ease-out"
+                  style={{
+                    width: `${Math.max(barWidth, 2)}%`,
+                    backgroundColor: barColor,
+                  }}
+                />
+
+                {/* Confidence interval markers */}
+                {confidenceInterval && (
+                  <>
+                    {/* Lower bound marker */}
+                    <div
+                      className="absolute top-0 h-3 w-0.5 bg-white opacity-60"
+                      style={{
+                        left: `${confidenceLowerWidth}%`,
+                      }}
+                    />
+                    {/* Upper bound marker */}
+                    <div
+                      className="absolute top-0 h-3 w-0.5 bg-white opacity-60"
+                      style={{
+                        left: `${confidenceUpperWidth}%`,
+                      }}
+                    />
+                  </>
+                )}
+              </div>
+            </Card>
+          );
+        })}
+      </div>
+
+      {/* Model Stats Modal (Mobile) */}
+      <Dialog
+        open={!!selectedModel}
+        onOpenChange={(open) => !open && setSelectedModel(null)}
+      >
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <BarChart3 size={16} />
+              Model Statistics
+            </DialogTitle>
+          </DialogHeader>
+          {selectedModel && (
+            <div className="space-y-4">
+              <div>
+                <h4 className="text-sm font-medium text-gray-400">Model</h4>
+                <p className="text-sm text-white">{selectedModel.name}</p>
+              </div>
+
+              <div>
+                <h4 className="text-sm font-medium text-gray-400">Provider</h4>
+                <p className="text-sm text-white">{selectedModel.provider}</p>
+              </div>
+
+              {selectedModel.modelFamily && (
+                <div>
+                  <h4 className="text-sm font-medium text-gray-400">Family</h4>
+                  <p className="text-sm text-white">
+                    {selectedModel.modelFamily}
+                  </p>
+                </div>
+              )}
+
+              {selectedModel.context_length && (
+                <div>
+                  <h4 className="text-sm font-medium text-gray-400">
+                    Context Length
+                  </h4>
+                  <p className="text-sm text-white">
+                    {selectedModel.context_length.toLocaleString()} tokens
+                  </p>
+                </div>
+              )}
+
+              {selectedModel.architecture?.tokenizer && (
+                <div>
+                  <h4 className="text-sm font-medium text-gray-400">
+                    Tokenizer
+                  </h4>
+                  <p className="text-sm text-white">
+                    {selectedModel.architecture.tokenizer}
+                  </p>
+                </div>
+              )}
+
+              {selectedModel.architecture?.input_modalities && (
+                <div>
+                  <h4 className="text-sm font-medium text-gray-400">
+                    Input Modalities
+                  </h4>
+                  <p className="text-sm text-white">
+                    {selectedModel.architecture.input_modalities.join(", ")}
+                  </p>
+                </div>
+              )}
+
+              {selectedModel.pricing && (
+                <div>
+                  <h4 className="text-sm font-medium text-gray-400">Pricing</h4>
+                  <div className="space-y-1 text-sm text-white">
+                    <p>Input: ${selectedModel.pricing.prompt}/1M tokens</p>
+                    <p>Output: ${selectedModel.pricing.completion}/1M tokens</p>
+                  </div>
+                </div>
+              )}
+
+              {selectedModel.created && (
+                <div>
+                  <h4 className="text-sm font-medium text-gray-400">Created</h4>
+                  <p className="text-sm text-white">
+                    {new Date(
+                      selectedModel.created * 1000,
+                    ).toLocaleDateString()}
+                  </p>
+                </div>
+              )}
+
+              {selectedModel.description && (
+                <div>
+                  <h4 className="text-sm font-medium text-gray-400">
+                    Description
+                  </h4>
+                  <p className="text-sm text-white">
+                    {selectedModel.description}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

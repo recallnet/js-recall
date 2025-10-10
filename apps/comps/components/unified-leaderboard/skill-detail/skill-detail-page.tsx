@@ -8,7 +8,6 @@ import {
   ExternalLink,
   Info,
   Loader2,
-  Target,
   TrendingUp,
   Users,
 } from "lucide-react";
@@ -28,7 +27,6 @@ import { LeaderboardAgent } from "@/types/agent";
 import { checkIsAgentSkill } from "@/utils/competition-utils";
 
 import { SkillDetailLeaderboardTable } from "./skill-detail-leaderboard-table";
-import { SkillDetailLeaderboardTableMobile } from "./skill-detail-leaderboard-table-mobile";
 
 interface SkillDetailPageProps {
   skillId: string;
@@ -227,7 +225,7 @@ export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
               {skillData.stats.topScore && (
                 <div>
                   <div className="mb-1 flex items-center justify-center gap-1">
-                    <Target size={16} className="text-green-400" />
+                    <TrendingUp size={16} className="text-green-400" />
                     <span className="text-lg font-bold text-green-400">
                       {typeof skillData.stats.topScore === "number"
                         ? skillData.stats.topScore.toFixed(0)
@@ -254,7 +252,7 @@ export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
         </div>
 
         {/* Stats Overview - Desktop */}
-        <div className="hidden grid-cols-4 gap-6 md:grid">
+        <div className="hidden grid-cols-3 gap-6 md:grid">
           <Card className="p-6 text-center">
             <div className="mb-2 flex items-center justify-center gap-2">
               <Users size={20} className="text-gray-400" />
@@ -292,32 +290,6 @@ export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
               <div className="text-sm text-gray-400">Average Score</div>
             </Card>
           )}
-
-          <Card className="p-6 text-center">
-            <div className="mb-2 flex items-center justify-center gap-2">
-              <Calendar size={20} className="text-purple-400" />
-              <span className="text-2xl font-bold text-purple-400">
-                {skillData.stats.modelCount + skillData.stats.agentCount}
-              </span>
-            </div>
-            <Tooltip
-              content={
-                <div className="space-y-1">
-                  <div>
-                    <span className="font-semibold">M</span> = Models
-                  </div>
-                  <div>
-                    <span className="font-semibold">A</span> = Agents
-                  </div>
-                </div>
-              }
-              position="bottom"
-            >
-              <div className="cursor-help text-sm text-gray-400">
-                {skillData.stats.modelCount}M + {skillData.stats.agentCount}A
-              </div>
-            </Tooltip>
-          </Card>
         </div>
 
         {/* Leaderboard Table */}
@@ -326,18 +298,7 @@ export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
             {skill.name} Leaderboard
           </h2>
 
-          {/* Desktop View */}
-          <div className="hidden md:block">
-            <SkillDetailLeaderboardTable skill={skill} skillData={skillData} />
-          </div>
-
-          {/* Mobile View */}
-          <div className="block md:hidden">
-            <SkillDetailLeaderboardTableMobile
-              skill={skill}
-              skillData={skillData}
-            />
-          </div>
+          <SkillDetailLeaderboardTable skill={skill} skillData={skillData} />
 
           {/* Load More Button for agent skills */}
           {checkIsAgentSkill(skill.category) &&
