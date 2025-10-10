@@ -2828,6 +2828,7 @@ export class CompetitionService {
           totalPositions: perpsStatsData?.totalPositions ?? 0,
           totalVolume: perpsStatsData?.totalVolume ?? 0,
           averageEquity: perpsStatsData?.averageEquity ?? 0,
+          totalTrades: 0, // Not applicable for perps, but include for consistency
         };
       } else {
         // For paper trading competitions, include trade metrics
@@ -2837,6 +2838,7 @@ export class CompetitionService {
           totalVolume: tradeMetrics.totalVolume,
           totalVotes,
           uniqueTokens: tradeMetrics.uniqueTokens,
+          totalPositions: 0, // Not applicable for paper trading, but include for consistency
         };
       }
 
