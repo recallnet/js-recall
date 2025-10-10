@@ -1332,13 +1332,13 @@ export class AgentService {
     filter?: string;
     pagingParams: PagingParams;
   }): Promise<SelectAgent[]> {
-    if (filter?.length === 42) {
+    if (filter && /^0x[a-fA-F0-9]{40}$/.test(filter)) {
       return this.agentRepository.findByWallet({
         walletAddress: filter,
         pagingParams,
       });
     }
-    if (typeof filter === "string" && filter.length > 0) {
+    if (filter && filter.length > 0) {
       return this.agentRepository.findByName({ name: filter, pagingParams });
     }
 
@@ -1351,10 +1351,10 @@ export class AgentService {
    * @returns Number of agents matching the filter
    */
   async countAgents(filter?: string) {
-    if (filter?.length === 42) {
+    if (filter && /^0x[a-fA-F0-9]{40}$/.test(filter)) {
       return this.agentRepository.countByWallet(filter);
     }
-    if (filter?.length) {
+    if (filter && filter.length > 0) {
       return this.agentRepository.countByName(filter);
     }
 
