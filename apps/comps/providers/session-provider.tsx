@@ -3,6 +3,7 @@ import {
   LoginModalOptions,
   User,
   WalletWithMetadata,
+  useConnectWallet,
   useLinkAccount,
   useLogin,
   usePrivy,
@@ -22,6 +23,7 @@ import {
   createContext,
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
@@ -31,6 +33,7 @@ import { WrongNetworkModal } from "@/components/modals/wrong-network";
 import { WrongWalletModal } from "@/components/modals/wrong-wallet";
 import { ApiClient } from "@/lib/api-client";
 import { mergeWithoutUndefined } from "@/lib/merge-without-undefined";
+import { userWalletState } from "@/lib/user-wallet-state";
 import { tanstackClient } from "@/rpc/clients/tanstack-query";
 import { User as BackendUser, UpdateProfileRequest } from "@/types";
 
@@ -43,10 +46,10 @@ type Session = {
   loginError: Error | null;
   logout: () => Promise<void>;
   // Allow caller to manually prompt to link wallet
-  linkWallet: (
+  linkOrConnectWallet: (
     options?: ConnectWalletModalOptions | MouseEvent<HTMLElement>,
   ) => void;
-  linkWalletError: Error | null;
+  linkOrConnectWalletError: Error | null;
 
   // Fetch user state
   backendUser: BackendUser | undefined;
@@ -101,7 +104,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [loginError, setLoginError] = useState<Error | null>(null);
   const [shouldLinkWallet, setShouldLinkWallet] = useState(false);
   const [isWalletConnected, setIsWalletConnected] = useState(false);
-  const [linkWalletError, setLinkWalletError] = useState<Error | null>(null);
+  const [linkOrConnectWalletError, setLinkOrConnectWalletError] =
+    useState<Error | null>(null);
   const [isWrongWalletModalOpen, setIsWrongWalletModalOpen] = useState(false);
 
   const { login: loginInner } = useLogin({
@@ -181,40 +185,10 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     }),
   );
 
-  /**
-   * Synchronize wagmi's active wallet with the backend user's wallet address
-   */
-  const syncActiveWallet = useCallback(async () => {
-    try {
-      if (!backendUser?.walletAddress || !wallets || !setActiveWallet) {
-        return;
-      }
-      const targetWallet = wallets.find(
-        (wallet) =>
-          wallet.address.toLowerCase() ===
-          backendUser.walletAddress.toLowerCase(),
-      );
-
-      if (targetWallet) {
-        await setActiveWallet(targetWallet);
-        setIsWalletConnected(true);
-      } else {
-        if (isConnected) {
-          await disconnect();
-          setIsWrongWalletModalOpen(true);
-        }
-        setIsWalletConnected(false);
-      }
-    } catch (error) {
-      console.error("Failed to sync active wallet:", error);
-    }
-  }, [
-    backendUser?.walletAddress,
-    wallets,
-    setActiveWallet,
-    isConnected,
-    disconnect,
-  ]);
+  // Iterate through all the connected wallets and filter out the embedded Privy wallet.
+  const connectedExternalWallets = useMemo(() => {
+    return wallets.filter((w) => w.walletClientType !== "privy");
+  }, [wallets]);
 
   const {
     mutate: linkWalletToBackend,
@@ -229,7 +203,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     }),
   );
 
-  const { linkWallet: linkWalletInner } = useLinkAccount({
+  const { linkWallet } = useLinkAccount({
     onSuccess: async ({ linkedAccount }) => {
       const walletAddress = (
         linkedAccount as WalletWithMetadata
@@ -238,27 +212,91 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     },
     onError: (err) => {
       if (err === "exited_link_flow") return;
-      setLinkWalletError(new Error(err));
+      setLinkOrConnectWalletError(new Error(err));
     },
   });
-  const linkWallet = useCallback(
-    (options?: Parameters<typeof linkWalletInner>[0]) => {
-      setLinkWalletError(null);
-      linkWalletInner(options);
+
+  const { connectWallet } = useConnectWallet({
+    onError: (err) => {
+      setLinkOrConnectWalletError(new Error(err));
     },
-    [linkWalletInner, setLinkWalletError],
+  });
+
+  const linkOrConnectWallet = useCallback(
+    (options?: ConnectWalletModalOptions | MouseEvent<any, any>) => {
+      setLinkOrConnectWalletError(null);
+
+      if (!backendUser) return;
+
+      const walletState = userWalletState(backendUser);
+      switch (walletState.type) {
+        case "only-embedded":
+          linkWallet(options);
+          return;
+        case "external-not-linked":
+          linkWallet(options);
+          return;
+        case "external-linked":
+          connectWallet(options);
+          return;
+        case "unknown":
+          const message = `Unknown wallet state for user ID: ${backendUser.id}`;
+          setLinkOrConnectWalletError(new Error(message));
+          console.error(message);
+          return;
+      }
+    },
+    [linkWallet, setLinkOrConnectWalletError, connectWallet, backendUser],
   );
 
-  useEffect(() => {
-    if (backendUser && shouldLinkWallet) {
-      linkWallet();
-      setShouldLinkWallet(false);
+  /**
+   * Synchronize wagmi's active wallet with the backend user's wallet address
+   */
+  const syncActiveWallet = useCallback(async () => {
+    try {
+      if (!readyWallets) return;
+
+      const walletState = backendUser
+        ? userWalletState(backendUser)
+        : undefined;
+      const userExternalWalletAddress =
+        walletState?.type === "external-linked" ||
+        walletState?.type === "external-not-linked"
+          ? walletState.address
+          : undefined;
+
+      const match = connectedExternalWallets.find(
+        (w) =>
+          w.address.toLowerCase() === userExternalWalletAddress?.toLowerCase(),
+      );
+      if (match) {
+        await setActiveWallet(match);
+        setIsWalletConnected(true);
+      } else if (
+        userExternalWalletAddress &&
+        connectedExternalWallets.length > 0
+      ) {
+        setIsWrongWalletModalOpen(true);
+        setIsWalletConnected(false);
+      } else {
+        setIsWalletConnected(false);
+      }
+    } catch (error) {
+      console.error("Failed to sync active wallet:", error);
     }
-  }, [backendUser, shouldLinkWallet, linkWallet]);
+  }, [
+    backendUser?.walletAddress,
+    backendUser?.embeddedWalletAddress,
+    connectedExternalWallets,
+    readyWallets,
+    setActiveWallet,
+    setIsWrongWalletModalOpen,
+    setIsWalletConnected,
+  ]);
 
   // Sync active wallet when backend user data is available
   useEffect(() => {
-    if (backendUser?.walletAddress && wallets && wallets.length > 0) {
+    if (backendUser?.walletAddress) {
       // Small delay to ensure the wallet state is stable
       const timeoutId = setTimeout(() => {
         syncActiveWallet();
@@ -266,7 +304,14 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
       return () => clearTimeout(timeoutId);
     }
-  }, [backendUser?.walletAddress, wallets, syncActiveWallet]);
+  }, [backendUser?.walletAddress, syncActiveWallet]);
+
+  useEffect(() => {
+    if (backendUser && shouldLinkWallet) {
+      linkOrConnectWallet();
+      setShouldLinkWallet(false);
+    }
+  }, [backendUser, shouldLinkWallet, linkOrConnectWallet]);
 
   // Mutation for updating user data
   const {
@@ -345,8 +390,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     loginError,
     logout: handleLogout,
     // Allow caller to manually prompt to link wallet
-    linkWallet,
-    linkWalletError,
+    linkOrConnectWallet,
+    linkOrConnectWalletError,
 
     // Fetch user state
     backendUser,
@@ -383,14 +428,14 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       isLinkWalletToBackendPending,
     isError:
       !!loginError ||
-      !!linkWalletError ||
+      !!linkOrConnectWalletError ||
       isFetchBackendUserError ||
       isLoginToBackendError ||
       isUpdateBackendUserError ||
       isLinkWalletToBackendError,
     error:
       loginError ||
-      linkWalletError ||
+      linkOrConnectWalletError ||
       fetchBackendUserError ||
       loginToBackendError ||
       updateBackendUserError ||

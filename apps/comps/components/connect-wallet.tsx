@@ -1,24 +1,18 @@
 "use client";
 
-import { useConnectWallet } from "@privy-io/react-auth";
 import { Wallet } from "lucide-react";
 import React from "react";
 
 import { Button } from "@recallnet/ui2/components/button";
 import { cn } from "@recallnet/ui2/lib/utils";
 
+import { useSession } from "@/hooks/useSession";
+
 export const ConnectWallet: React.FunctionComponent = () => {
-  const { connectWallet } = useConnectWallet({
-    onSuccess: ({ wallet }) => {
-      console.log("Wallet connected successfully:", wallet);
-    },
-    onError: (error) => {
-      console.error("Failed to connect wallet:", error);
-    },
-  });
+  const { linkOrConnectWallet } = useSession();
 
   const handleConnectWallet = () => {
-    connectWallet();
+    linkOrConnectWallet();
   };
 
   return (
