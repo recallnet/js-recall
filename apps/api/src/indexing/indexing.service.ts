@@ -214,16 +214,12 @@ export class IndexingService {
     if (!eventHash) {
       return;
     }
-
-    const eventName = this.#eventHashNames[eventHash] || "Unknown";
-    const tokenAddress = rawLog.address;
-
-    this.#logger.debug(
-      `Processing log (${eventName}) from token ${tokenAddress}`,
-    );
-
-    // Only process relevant events
-    if (eventHash in this.#eventHashNames) {
+    const contractAddress = rawLog.address;
+    const eventName = this.#eventHashNames[eventHash];
+    if (eventName) {
+      this.#logger.debug(
+        `Processing log (${eventName}) from contract ${contractAddress}`,
+      );
       // Create raw event data
       const event = createEventData(eventName, rawLog);
 
@@ -235,7 +231,7 @@ export class IndexingService {
 
       await this.#eventProcessor.processEvent(event, eventName);
     } else {
-      this.#logger.debug(`Skipped non-relevant event type: ${eventName}`);
+      this.#logger.debug(`Skipped Unknown event hash: ${eventHash}`);
     }
   }
 
