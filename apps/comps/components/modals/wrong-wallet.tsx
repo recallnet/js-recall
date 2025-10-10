@@ -69,7 +69,7 @@ export const WrongWalletModal: React.FC<WrongWalletModalProps> = ({
           <DialogClose asChild>
             <Button
               variant="outline"
-              className="h-full rounded-lg"
+              className="h-14"
               onClick={() => onClose(false)}
             >
               Cancel
