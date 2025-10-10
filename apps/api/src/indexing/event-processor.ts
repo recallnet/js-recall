@@ -182,6 +182,9 @@ class EventProcessor {
     const lockupEndTime = Number(decodedEvent.args.lockupEndTime); // seconds;
     const duration = lockupEndTime - stakedAt;
     const isStakeAdded = await this.#db.transaction(async (tx) => {
+      this.#logger.debug(
+        `Staking ${amount} tokens for ${staker} at ${event.blockNumber} (${event.transactionHash})`,
+      );
       const stake = await this.#stakesRepository.stake(
         {
           stakeId: tokenId,
@@ -197,6 +200,9 @@ class EventProcessor {
         tx,
       );
       if (stake) {
+        this.#logger.debug(
+          `Staked ${amount} tokens for ${staker} at ${event.blockNumber} (${event.transactionHash})`,
+        );
         const competition =
           await this.#competitionService.getActiveCompetition();
         if (
@@ -204,6 +210,9 @@ class EventProcessor {
           competition.votingStartDate &&
           competition.votingEndDate
         ) {
+          this.#logger.debug(
+            `Awarding for stake ${tokenId} at ${event.blockNumber} (${event.transactionHash})`,
+          );
           await this.#boostAwardService.awardForStake(
             {
               id: tokenId,
