@@ -116,13 +116,17 @@ export function CookieConsentProvider({
           const analyticsAccepted = CookieConsent.acceptedCategory("analytics");
           const functionalAccepted =
             CookieConsent.acceptedCategory("functional");
-          const previousConsent = consent;
-          setConsent(analyticsAccepted || functionalAccepted);
 
-          // Reload page if user just enabled analytics or functional cookies
-          if (!previousConsent && (analyticsAccepted || functionalAccepted)) {
-            window.location.reload();
-          }
+          setConsent((previousConsent) => {
+            const newConsent = analyticsAccepted || functionalAccepted;
+
+            // Reload page if user just enabled analytics or functional cookies
+            if (!previousConsent && newConsent) {
+              window.location.reload();
+            }
+
+            return newConsent;
+          });
         },
       });
 

@@ -8,6 +8,7 @@ import { Button } from "@recallnet/ui2/components/button";
 import { Recall } from "@/components/Recall";
 import { useRecall } from "@/hooks/useRecall";
 import { useUserStakes } from "@/hooks/useStakingContract";
+import type { StakeInfoWithId } from "@/types/staking";
 
 import { BoostIcon } from "../BoostIcon";
 
@@ -28,7 +29,10 @@ export const StakeSummary: React.FunctionComponent<StakeSummaryProps> = ({
     recall.isLoading || recall.value === undefined ? 0n : recall.value;
 
   const lockedRaw =
-    stakes?.reduce((acc: bigint, s: any) => acc + (s?.amount ?? 0n), 0n) ?? 0n;
+    (stakes as StakeInfoWithId[] | undefined)?.reduce(
+      (acc: bigint, s: StakeInfoWithId) => acc + (s?.amount ?? 0n),
+      0n,
+    ) ?? 0n;
 
   const totalRaw = availableRaw + lockedRaw;
 
