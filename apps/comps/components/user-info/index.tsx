@@ -2,6 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useClickAway } from "@uidotdev/usehooks";
+import Link from "next/link";
 import React, { useState } from "react";
 import { SubmitHandler, useForm } from "react-hook-form";
 import { z } from "zod";
@@ -171,14 +172,14 @@ export default function UserInfoSection({
               ) : (
                 <>
                   {user.metadata?.website && (
-                    <a
+                    <Link
                       href={user.metadata.website}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-sm text-white underline hover:text-gray-300"
                     >
                       {user.metadata.website}
-                    </a>
+                    </Link>
                   )}
                   <EditButton
                     onClick={() => setEditField("website")}
