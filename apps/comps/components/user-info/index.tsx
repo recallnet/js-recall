@@ -2,6 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useClickAway } from "@uidotdev/usehooks";
+import Link from "next/link";
 import React, { useState } from "react";
 import { SubmitHandler, useForm } from "react-hook-form";
 import { z } from "zod";
@@ -31,6 +32,17 @@ const formSchema = z.object({
     .max(100, { message: "Name must be less than 100 characters" }),
   website: asOptionalStringWithoutEmpty(
     z.string().url({ message: "Must be a valid URL" }),
+  ).refine(
+    (url) => {
+      if (!url) return true; // Allow empty/undefined values after transformation
+      try {
+        const parsedUrl = new URL(url);
+        return parsedUrl.protocol === "https:";
+      } catch {
+        return false;
+      }
+    },
+    { message: "Only HTTPS URLs are allowed" },
   ),
 });
 
@@ -160,7 +172,14 @@ export default function UserInfoSection({
               ) : (
                 <>
                   {user.metadata?.website && (
-                    <span className="text-sm">{user.metadata.website}</span>
+                    <Link
+                      href={user.metadata.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-white underline hover:text-gray-300"
+                    >
+                      {user.metadata.website}
+                    </Link>
                   )}
                   <EditButton
                     onClick={() => setEditField("website")}
