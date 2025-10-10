@@ -13,11 +13,11 @@ import type { StakeInfoWithId } from "@/types/staking";
 import { BoostIcon } from "../BoostIcon";
 
 interface StakeSummaryProps {
-  onStakeClick: () => void;
+  onStakeClickAction: () => void;
 }
 
 export const StakeSummary: React.FunctionComponent<StakeSummaryProps> = ({
-  onStakeClick,
+  onStakeClickAction,
 }) => {
   const recall = useRecall();
   const { data: stakes } = useUserStakes();
@@ -90,7 +90,7 @@ export const StakeSummary: React.FunctionComponent<StakeSummaryProps> = ({
             <span className="text-2xl font-bold text-white">{available}</span>
             <Button
               className="px-6"
-              onClick={onStakeClick}
+              onClick={onStakeClickAction}
               disabled={availableRaw === 0n}
             >
               STAKE

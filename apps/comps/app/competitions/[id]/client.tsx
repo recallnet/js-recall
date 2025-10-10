@@ -336,11 +336,11 @@ export default function CompetitionPageClient({
             ref={agentsTableRef}
             competition={competition}
             agents={agentsData.agents}
-            onFilterChange={setAgentsFilter}
-            onSortChange={setAgentsSort}
+            onFilterChangeAction={setAgentsFilter}
+            onSortChangeAction={setAgentsSort}
             pagination={agentsData.pagination}
             totalVotes={competition.stats.totalVotes}
-            onPageChange={handleAgentsPageChange}
+            onPageChangeAction={handleAgentsPageChange}
           />
         </>
       )}

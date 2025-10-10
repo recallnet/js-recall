@@ -51,7 +51,7 @@ import { BoostIcon } from "../BoostIcon";
 
 interface StakeRecallModalProps {
   isOpen: boolean;
-  onClose: (open: boolean) => void;
+  onCloseAction: (open: boolean) => void;
 }
 
 type StakeStep =
@@ -91,7 +91,7 @@ const getUnlockDate = (durationKey: StakeDurationKey): Date => {
 
 export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
   isOpen,
-  onClose,
+  onCloseAction,
 }) => {
   const [step, setStep] = useState<StakeStep>("stake");
   // Amounts are tracked as bigint base units (decimals per token)
@@ -285,7 +285,7 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
   };
 
   const handleClose = () => {
-    onClose(false);
+    onCloseAction(false);
   };
 
   const handleShareOnX = () => {
@@ -317,7 +317,7 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={onCloseAction}>
       <DialogContent className="min-w-[500px]">
         {/* Header */}
         <DialogHeader>

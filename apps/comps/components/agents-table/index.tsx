@@ -49,11 +49,11 @@ export interface AgentsTableProps {
   agents: RouterOutputs["competitions"]["getAgents"]["agents"];
   totalVotes: number;
   competition: RouterOutputs["competitions"]["getById"];
-  onFilterChange: (filter: string) => void;
-  onSortChange: (sort: string) => void;
+  onFilterChangeAction: (filter: string) => void;
+  onSortChangeAction: (sort: string) => void;
   pagination: PaginationResponse;
   ref: React.RefObject<HTMLDivElement | null>;
-  onPageChange: (page: number) => void;
+  onPageChangeAction: (page: number) => void;
 }
 
 const numberFormatter = new Intl.NumberFormat();
@@ -62,9 +62,9 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
   agents,
   totalVotes,
   competition,
-  //onFilterChange,
-  onSortChange,
-  onPageChange,
+  //onFilterChangeAction,
+  onSortChangeAction,
+  onPageChangeAction,
   pagination,
   ref,
 }) => {
@@ -636,7 +636,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
               .join(",")
           : "rank";
 
-      onSortChange(sortString);
+      onSortChangeAction(sortString);
     },
   });
 
@@ -820,7 +820,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
         totalItems={pagination.total}
         currentPage={page}
         itemsPerPage={pagination.limit}
-        onPageChange={onPageChange}
+        onPageChange={onPageChangeAction}
       />
 
       <ConfirmVoteModal
