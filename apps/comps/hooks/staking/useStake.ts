@@ -1,19 +1,17 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
-import { simulateContract } from "@wagmi/core";
-import { useCallback, useEffect, useMemo, useRef } from "react";
-import {
-  useAccount,
-  useConfig,
-  useWaitForTransactionReceipt,
-  useWriteContract,
-} from "wagmi";
+import { simulateContract, waitForTransactionReceipt } from "@wagmi/core";
+import { useCallback, useMemo, useState } from "react";
+import { useAccount, useConfig, useWriteContract } from "wagmi";
 
 import { StakingAbi } from "@/abi/Staking";
+import { clientConfig } from "@/wagmi-config";
 
 import { useRecall } from "../useRecall";
 import { useStakingContractAddress } from "./useStakingContractAddress";
+import { useTotalUserStaked } from "./useTotalUserStaked";
+import { useUserStakes } from "./useUserStakes";
 
 /**
  * Base hook result type for individual staking operations
@@ -32,9 +30,13 @@ export type StakingOperationResult = {
  * @returns Staking operation result with transaction hash and state
  */
 export const useStake = (): StakingOperationResult => {
+  const [isConfirming, setIsConfirming] = useState(false);
+  const [isConfirmed, setIsConfirmed] = useState(false);
   const contractAddress = useStakingContractAddress();
   const { address } = useAccount();
   const config = useConfig();
+  const { queryKey: getUserStakesQueryKey } = useUserStakes();
+  const { queryKey: getTotalUserStakedQueryKey } = useTotalUserStaked();
   const { queryKey: recallQueryKey } = useRecall();
   const queryClient = useQueryClient();
 
@@ -45,11 +47,6 @@ export const useStake = (): StakingOperationResult => {
     data: transactionHash,
     reset,
   } = useWriteContract();
-
-  const { isLoading: isConfirming, isSuccess: isConfirmed } =
-    useWaitForTransactionReceipt({
-      hash: transactionHash,
-    });
 
   // Enhanced execute function that simulates before executing
   const execute = useCallback(
@@ -68,7 +65,12 @@ export const useStake = (): StakingOperationResult => {
         });
 
         // If simulation succeeds, use the request data for the actual transaction
-        writeContract(simulationResult.request);
+        writeContract(simulationResult.request, {
+          onSuccess: (txHash) => {
+            refetchQueries(txHash);
+          },
+        });
+        setIsConfirming(true);
       } catch (simulationError) {
         // Re-throw simulation errors with a clear message
         throw new Error(
@@ -79,31 +81,28 @@ export const useStake = (): StakingOperationResult => {
     [writeContract, config, contractAddress, address, reset],
   );
 
-  // Invalidate queries once per confirmed transaction
-  const lastConfirmedHashRef = useRef<`0x${string}` | undefined>(undefined);
-  useEffect(() => {
-    if (
-      isConfirmed &&
-      transactionHash &&
-      lastConfirmedHashRef.current !== transactionHash
-    ) {
-      // Invalidate staking-related queries
+  const refetchQueries = async (txHash: `0x${string}`) => {
+    const transactionReceipt = await waitForTransactionReceipt(
+      clientConfig as any,
+      {
+        hash: txHash,
+        pollingInterval: 1000,
+      },
+    );
+
+    if (transactionReceipt.status === "success") {
+      setIsConfirmed(true);
       queryClient.invalidateQueries({
-        queryKey: ["readContract", contractAddress, "getUserStakes"],
+        queryKey: recallQueryKey,
       });
       queryClient.invalidateQueries({
-        queryKey: ["readContract", contractAddress, "totalUserStaked"],
+        queryKey: getUserStakesQueryKey,
       });
-      queryClient.invalidateQueries({ queryKey: recallQueryKey });
-      lastConfirmedHashRef.current = transactionHash;
+      queryClient.invalidateQueries({
+        queryKey: getTotalUserStakedQueryKey,
+      });
     }
-  }, [
-    isConfirmed,
-    transactionHash,
-    queryClient,
-    contractAddress,
-    recallQueryKey,
-  ]);
+  };
 
   return useMemo(
     () => ({
