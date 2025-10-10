@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef } from "react";
 import { type Address, erc20Abi } from "viem";
 import {
   useAccount,
+  useChainId,
   useReadContract,
   useWaitForTransactionReceipt,
   useWriteContract,
@@ -30,8 +31,9 @@ export const useTokenApproval = (
   tokenAddress: Address | undefined,
   spenderAddress: Address | undefined,
 ): UseTokenApprovalResult => {
-  const { address } = useAccount();
-
+  const { address, chain, isConnected } = useAccount();
+  const chainId = useChainId();
+  console.log({ chain, chainId, isConnected });
   const {
     data: allowance,
     isLoading: isAllowanceLoading,
