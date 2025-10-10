@@ -36,11 +36,9 @@ import {
 } from "@recallnet/ui2/components/toggle-group";
 
 import { Recall } from "@/components/Recall";
+import { useStake } from "@/hooks/staking";
+import { useStakingContractAddress } from "@/hooks/staking";
 import { useRecall } from "@/hooks/useRecall";
-import {
-  useStakingContract,
-  useStakingContractAddress,
-} from "@/hooks/useStakingContract";
 import { useTokenApproval } from "@/hooks/useTokenApproval";
 import {
   handleApprovalError,
@@ -108,13 +106,13 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
   const stakingContractAddress = useStakingContractAddress();
   const tokenApproval = useTokenApproval(recall.token, stakingContractAddress);
   const {
-    stake,
+    execute: stake,
     isPending: isSigning,
     isConfirming,
     isConfirmed,
-    writeError,
+    error: writeError,
     transactionHash,
-  } = useStakingContract();
+  } = useStake();
 
   // Decimals with fallback
   const decimals =
@@ -255,6 +253,7 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
 
   const handleStake = async (): Promise<void> => {
     if (!termsAccepted) return;
+
     try {
       setStep("signing");
       await stake(stakeAmountRaw, stakeDuration);

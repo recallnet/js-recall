@@ -8,7 +8,8 @@ import { Button } from "@recallnet/ui2/components/button";
 import { Tooltip } from "@recallnet/ui2/components/tooltip";
 
 import { Recall } from "@/components/Recall";
-import { useStakingContract, useUserStakes } from "@/hooks/useStakingContract";
+import { useRelock, useUnstake } from "@/hooks/staking";
+import { useUserStakes } from "@/hooks/staking";
 import { formatAmount, formatDate } from "@/utils/format";
 
 import { BoostIcon } from "../BoostIcon";
@@ -154,7 +155,8 @@ const ActiveStakeEntry: React.FunctionComponent<ActiveStakeEntryProps> = ({
 
 export const ActiveStakes: React.FunctionComponent = () => {
   const { data: stakes, isLoading, error } = useUserStakes();
-  const { unstake, relock } = useStakingContract();
+  const { execute: unstake } = useUnstake();
+  const { execute: relock } = useRelock();
 
   const handleUnstake = async (tokenId: bigint) => {
     try {

@@ -6,8 +6,8 @@ import React from "react";
 import { Button } from "@recallnet/ui2/components/button";
 
 import { Recall } from "@/components/Recall";
+import { useUserStakes } from "@/hooks/staking";
 import { useRecall } from "@/hooks/useRecall";
-import { useUserStakes } from "@/hooks/useStakingContract";
 
 import { BoostIcon } from "../BoostIcon";
 

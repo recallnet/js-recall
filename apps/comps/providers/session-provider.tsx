@@ -27,6 +27,7 @@ import {
 } from "react";
 import { useAccount, useDisconnect } from "wagmi";
 
+import { WrongWalletModal } from "@/components/modals/wrong-wallet";
 import { ApiClient } from "@/lib/api-client";
 import { mergeWithoutUndefined } from "@/lib/merge-without-undefined";
 import { tanstackClient } from "@/rpc/clients/tanstack-query";
@@ -74,6 +75,7 @@ type Session = {
 
   // Combined state
   isAuthenticated: boolean;
+  isWalletConnected: boolean;
   isPending: boolean;
   isError: boolean;
   error: Error | null;
@@ -90,12 +92,14 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   const { disconnect } = useDisconnect();
   const { isConnected } = useAccount();
-  const { wallets } = useWallets();
+  const { wallets, ready: readyWallets } = useWallets();
   const { setActiveWallet } = useSetActiveWallet();
 
   const [loginError, setLoginError] = useState<Error | null>(null);
   const [shouldLinkWallet, setShouldLinkWallet] = useState(false);
+  const [isWalletConnected, setIsWalletConnected] = useState(false);
   const [linkWalletError, setLinkWalletError] = useState<Error | null>(null);
+  const [isWrongWalletModalOpen, setIsWrongWalletModalOpen] = useState(false);
 
   const { login: loginInner } = useLogin({
     onComplete: async ({ user, isNewUser }) => {
@@ -190,16 +194,24 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
       if (targetWallet) {
         await setActiveWallet(targetWallet);
+        setIsWalletConnected(true);
       } else {
-        console.warn(
-          "Backend user wallet not found in connected wallets:",
-          backendUser.walletAddress,
-        );
+        if (isConnected) {
+          await disconnect();
+          setIsWrongWalletModalOpen(true);
+        }
+        setIsWalletConnected(false);
       }
     } catch (error) {
       console.error("Failed to sync active wallet:", error);
     }
-  }, [backendUser?.walletAddress, wallets, setActiveWallet]);
+  }, [
+    backendUser?.walletAddress,
+    wallets,
+    setActiveWallet,
+    isConnected,
+    disconnect,
+  ]);
 
   const {
     mutate: linkWalletToBackend,
@@ -323,7 +335,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   const session: Session = {
     // Login to Privy state
-    ready,
+    ready: ready && readyWallets,
     login,
     user,
     isLoginPending: isModalOpen,
@@ -359,6 +371,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
     // Combined state
     isAuthenticated: authenticated && backendUser?.status === "active",
+    isWalletConnected,
     isPending:
       isModalOpen ||
       isFetchBackendUserLoading ||
@@ -384,6 +397,13 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   return (
     <SessionContext.Provider value={session}>
       {children}
+      {isWrongWalletModalOpen && session.isAuthenticated && (
+        <WrongWalletModal
+          isOpen
+          onClose={setIsWrongWalletModalOpen}
+          expectedWalletAddress={backendUser?.walletAddress || ""}
+        />
+      )}
     </SessionContext.Provider>
   );
 }

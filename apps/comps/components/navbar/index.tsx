@@ -10,6 +10,7 @@ import { Avatar, AvatarImage } from "@recallnet/ui2/components/avatar";
 import { Button } from "@recallnet/ui2/components/button";
 import { cn } from "@recallnet/ui2/lib/utils";
 
+import { ConnectWallet } from "@/components/connect-wallet";
 import { PrivyAuthButton } from "@/components/privy-auth-button";
 import { config } from "@/config/public";
 import { useSession } from "@/hooks";
@@ -29,7 +30,7 @@ export const Navbar: React.FunctionComponent = () => {
     { label: "LEADERBOARDS", href: "/leaderboards" },
   ];
 
-  const { isAuthenticated } = useSession();
+  const { isAuthenticated, isWalletConnected } = useSession();
 
   const [open, setOpen] = useState(false);
 
@@ -105,7 +106,7 @@ export const Navbar: React.FunctionComponent = () => {
         </div>
 
         <div className="flex h-full items-center gap-4">
-          {isAuthenticated && (
+          {isAuthenticated && isWalletConnected && (
             <div className="xs:flex hidden h-full items-center gap-4">
               <div
                 className={cn(
@@ -119,6 +120,11 @@ export const Navbar: React.FunctionComponent = () => {
               {/* <GetRecall /> */}
               {/* <StakeRecall /> */}
               {/* <Claim /> */}
+            </div>
+          )}
+          {isAuthenticated && !isWalletConnected && (
+            <div className="flex h-full items-center">
+              <ConnectWallet />
             </div>
           )}
           <div
