@@ -348,15 +348,8 @@
     {
       "idx": 49,
       "version": "7",
-      "when": 1760216633798,
-      "tag": "0049_puzzling_gauntlet",
-      "breakpoints": true
-    },
-    {
-      "idx": 50,
-      "version": "7",
-      "when": 1760383868057,
-      "tag": "0050_woozy_brother_voodoo",
+      "when": 1760149044015,
+      "tag": "0049_elite_dexter_bennett",
       "breakpoints": true
     }
   ]

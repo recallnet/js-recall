@@ -1,5 +1,5 @@
 {
-  "id": "f924227c-f7ad-41ed-a3ef-e5934b151ace",
+  "id": "b5330145-b7ce-4b3f-816b-3cebf0ca6b8c",
   "prevId": "d2df5279-34c7-4cf0-b838-d5b4b0df45bb",
   "version": "7",
   "dialect": "postgresql",
@@ -1221,6 +1221,48 @@
           "onUpdate": "no action"
         }
       },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.sanctioned_wallets": {
+      "name": "sanctioned_wallets",
+      "schema": "",
+      "columns": {
+        "address": {
+          "name": "address",
+          "type": "varchar(42)",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "idx_sanctioned_wallets_address": {
+          "name": "idx_sanctioned_wallets_address",
+          "columns": [
+            {
+              "expression": "address",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
@@ -5153,18 +5195,6 @@
         "stake_id": {
           "name": "stake_id",
           "type": "bigint",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "base_amount": {
-          "name": "base_amount",
-          "type": "numeric(78, 0)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "multiplier": {
-          "name": "multiplier",
-          "type": "numeric(6, 4)",
           "primaryKey": false,
           "notNull": true
         },

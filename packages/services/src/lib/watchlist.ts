@@ -1,5 +1,7 @@
 import { Logger } from "pino";
 
+import type { SanctionedWalletRepository } from "@recallnet/db/repositories/sanctioned-wallet";
+
 import {
   DEFAULT_RETRY_CONFIG,
   MaybeHttpError,
@@ -42,27 +44,36 @@ function checkIsSanctioned(identification: ChainalysisIdentification): boolean {
 
 export interface WalletWatchlistConfig {
   watchlist: {
-    chainalysisApiKey: string;
+    mode: "database" | "api" | "hybrid";
+    apiUrl: string;
+    apiKey: string;
   };
 }
 
 /**
  * Wallet Address Watchlist
- * Checks wallet addresses against Chainalysis sanctions list
+ * Checks wallet addresses against sanctions list using database, external API, or hybrid mode
  */
 export class WalletWatchlist {
+  private readonly mode: "database" | "api" | "hybrid";
   private readonly apiKey: string;
-  private readonly baseUrl = "https://public.chainalysis.com/api/v1/address";
+  private readonly baseUrl: string;
   private readonly requestTimeout = 10_000;
-  private logger: Logger;
+  private readonly logger: Logger;
+  private readonly dbRepository?: SanctionedWalletRepository;
 
   constructor(
     config: WalletWatchlistConfig,
     logger: Logger,
+    dbRepository?: SanctionedWalletRepository,
     readonly retryConfig: RetryConfig = DEFAULT_RETRY_CONFIG,
   ) {
-    this.apiKey = config.watchlist.chainalysisApiKey;
+    this.mode = config.watchlist.mode;
+    this.apiKey = config.watchlist.apiKey;
+    this.baseUrl = config.watchlist.apiUrl;
     this.logger = logger;
+    this.dbRepository = dbRepository;
+
     // Note: Chainalysis throws a 403 upon rate limiting
     const isRetryable = (error: unknown) => {
       const err = error as MaybeHttpError;
@@ -70,9 +81,28 @@ export class WalletWatchlist {
     };
     this.retryConfig = { ...retryConfig, isRetryable };
 
-    if (!this.apiKey) {
+    // Log configuration status
+    this.logger.info(
+      {
+        mode: this.mode,
+        apiConfigured: !!this.apiKey,
+        dbConfigured: !!this.dbRepository,
+      },
+      "WalletWatchlist initialized",
+    );
+
+    // Validate configuration based on mode
+    if (this.mode === "api" && !this.apiKey) {
       this.logger.warn(
-        "CHAINALYSIS_API_KEY not configured - watchlist checks will be skipped",
+        "API mode selected but API key not configured - checks will fail",
+      );
+    }
+    if (
+      (this.mode === "database" || this.mode === "hybrid") &&
+      !this.dbRepository
+    ) {
+      this.logger.warn(
+        `${this.mode} mode selected but database repository not provided`,
       );
     }
   }
@@ -138,44 +168,124 @@ export class WalletWatchlist {
   }
 
   /**
+   * Check address against database
+   * @param normalizedAddress The normalized (lowercase) wallet address
+   * @returns Promise<boolean> - true if sanctioned, false if not found
+   */
+  private async checkDatabase(normalizedAddress: string): Promise<boolean> {
+    if (!this.dbRepository) {
+      this.logger.warn("Database repository not configured");
+      return false;
+    }
+
+    try {
+      const isSanctioned =
+        await this.dbRepository.isSanctioned(normalizedAddress);
+      if (isSanctioned) {
+        this.logger.warn(
+          {
+            address: normalizedAddress,
+            source: "database",
+          },
+          "SANCTIONED ADDRESS DETECTED (database)",
+        );
+      }
+      return isSanctioned;
+    } catch (error) {
+      this.logger.error(
+        {
+          address: normalizedAddress,
+          error,
+        },
+        "Error checking database",
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Check address against external API
+   * @param normalizedAddress The normalized (lowercase) wallet address
+   * @returns Promise<boolean> - true if sanctioned, false if clean
+   * @throws Error if API is unavailable or network issues
+   */
+  private async checkApi(normalizedAddress: string): Promise<boolean> {
+    if (!this.apiKey) {
+      throw new Error("API key not configured");
+    }
+
+    return await withRetry(
+      () => this.fetchAddressSanctionStatus(normalizedAddress),
+      this.retryConfig,
+    );
+  }
+
+  /**
    * Check if a wallet address is sanctioned
    * @param address The wallet address to check (case-insensitive)
    * @returns Promise<boolean> - true if sanctioned, false if clean
-   * @throws Error if API is unavailable or network issues (fail closed for security)
+   * @throws Error if check fails and cannot be satisfied (fail closed for security)
    */
   async isAddressSanctioned(address: string): Promise<boolean> {
-    try {
-      if (!this.isConfigured()) {
-        this.logger.debug(
-          {
-            address,
-          },
-          "API key not configured, allowing address",
-        );
-        return false;
-      }
+    const normalizedAddress = address.toLowerCase();
+    this.logger.debug(
+      {
+        address: normalizedAddress,
+        mode: this.mode,
+      },
+      "Checking address",
+    );
 
-      // Normalize address (Note: Chainalysis API docs state this is case-sensitive, but in
-      // practice it is case-insensitive)
-      const normalizedAddress = address.toLowerCase();
-      this.logger.debug(
-        {
-          address: normalizedAddress,
-        },
-        `Checking address`,
-      );
-      return await withRetry(
-        () => this.fetchAddressSanctionStatus(normalizedAddress),
-        this.retryConfig,
-      );
+    try {
+      switch (this.mode) {
+        case "database":
+          return await this.checkDatabase(normalizedAddress);
+
+        case "api":
+          if (!this.isConfigured()) {
+            this.logger.warn("API mode selected but not configured");
+            return false;
+          }
+          return await this.checkApi(normalizedAddress);
+
+        case "hybrid":
+          // Try API first
+          if (this.isConfigured()) {
+            try {
+              return await this.checkApi(normalizedAddress);
+            } catch (apiError) {
+              // API failed, fall back to database
+              this.logger.warn(
+                {
+                  address: normalizedAddress,
+                  error: apiError,
+                },
+                "API check failed, falling back to database",
+              );
+
+              // Check database as fallback
+              return await this.checkDatabase(normalizedAddress);
+            }
+          } else {
+            // API not configured, use database only
+            this.logger.debug(
+              "API not configured in hybrid mode, using database",
+            );
+            return await this.checkDatabase(normalizedAddress);
+          }
+
+        default:
+          throw new Error(`Unknown watchlist mode: ${this.mode}`);
+      }
     } catch (error) {
-      // Do not allow access in case of network errors, timeouts, etc.
+      // Fail closed for security
       this.logger.error(
         {
-          address,
+          address: normalizedAddress,
+          mode: this.mode,
           error,
         },
-        `Error checking address after retries - failing closed for security`,
+        "Error checking address - failing closed for security",
       );
       throw error;
     }
@@ -195,7 +305,9 @@ export class WalletWatchlist {
    */
   getStatus() {
     return {
-      configured: this.isConfigured(),
+      mode: this.mode,
+      apiConfigured: this.isConfigured(),
+      databaseConfigured: !!this.dbRepository,
       baseUrl: this.baseUrl,
       timeout: this.requestTimeout,
     };

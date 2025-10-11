@@ -266,9 +266,22 @@ export const config = {
       ? BigInt(process.env.NO_STAKE_BOOST_AMOUNT)
       : undefined,
   },
-  // Chainalysis API key
+  // Wallet watchlist configuration
   watchlist: {
-    chainalysisApiKey: process.env.CHAINALYSIS_API_KEY || "",
+    // Mode can be: 'database', 'api', or 'hybrid'
+    // - database: Only use local database table
+    // - api: Only use external API (Chainalysis)
+    // - hybrid: Use API first, fallback to database on error
+    mode: (process.env.WALLET_WATCHLIST_MODE || "hybrid") as
+      | "database"
+      | "api"
+      | "hybrid",
+    // External API URL (defaults to Chainalysis)
+    apiUrl:
+      process.env.WALLET_WATCHLIST_API_URL ||
+      "https://public.chainalysis.com/api/v1/address",
+    // API key for external watchlist service
+    apiKey: process.env.CHAINALYSIS_API_KEY || "",
   },
   symphony: {
     apiUrl: process.env.SYMPHONY_API_URL || "https://api.symphony.io",
