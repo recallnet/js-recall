@@ -39,7 +39,7 @@ export default function StakePage() {
       ) : (
         <div className="mx-auto max-w-screen-xl px-4 sm:px-6 lg:px-8">
           {/* Summary Cards */}
-          <StakeSummary onStakeClick={() => setIsStakeModalOpen(true)} />
+          <StakeSummary onStakeClickAction={() => setIsStakeModalOpen(true)} />
 
           {isZeroState ? (
             <div className="mb-16">
@@ -116,7 +116,7 @@ export default function StakePage() {
       {/* Stake Modal */}
       <StakeRecallModal
         isOpen={isStakeModalOpen}
-        onClose={setIsStakeModalOpen}
+        onCloseAction={setIsStakeModalOpen}
       />
     </div>
   );

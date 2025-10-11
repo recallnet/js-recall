@@ -25,8 +25,8 @@ import {
   useRef,
   useState,
 } from "react";
-import { useAccount, useDisconnect } from "wagmi";
 
+import { useSafeAccount, useSafeDisconnect } from "@/hooks/useSafeWagmi";
 import { ApiClient } from "@/lib/api-client";
 import { mergeWithoutUndefined } from "@/lib/merge-without-undefined";
 import { tanstackClient } from "@/rpc/clients/tanstack-query";
@@ -89,8 +89,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     usePrivy();
   const { ready: walletsReady } = useWallets();
 
-  const { disconnect } = useDisconnect();
-  const { isConnected } = useAccount();
+  const { disconnect } = useSafeDisconnect();
+  const { isConnected } = useSafeAccount();
   const { wallets } = useWallets();
   const { setActiveWallet } = useSetActiveWallet();
 

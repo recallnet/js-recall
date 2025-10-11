@@ -8,12 +8,20 @@ import { useCallback } from "react";
  * Provides a clean interface for capturing events with proper typing
  */
 export function useAnalytics() {
-  const posthog = usePostHog();
+  let posthog;
+
+  try {
+    // This will return undefined if PostHog provider is not available
+    posthog = usePostHog();
+  } catch (error) {
+    // PostHog provider not available (no consent yet)
+    posthog = undefined;
+  }
 
   const trackEvent = useCallback(
     (eventName: string, properties?: Record<string, unknown>) => {
       if (!posthog) {
-        console.warn("PostHog not initialized, event not tracked:", eventName);
+        // Silently skip tracking when PostHog is not available (no consent)
         return;
       }
 
@@ -26,5 +34,5 @@ export function useAnalytics() {
     [posthog],
   );
 
-  return { trackEvent };
+  return { trackEvent, isEnabled: !!posthog };
 }

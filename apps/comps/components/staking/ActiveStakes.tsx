@@ -9,6 +9,7 @@ import { Tooltip } from "@recallnet/ui2/components/tooltip";
 
 import { Recall } from "@/components/Recall";
 import { useStakingContract, useUserStakes } from "@/hooks/useStakingContract";
+import type { StakeInfoWithId } from "@/types/staking";
 import { formatAmount, formatDate } from "@/utils/format";
 
 import { BoostIcon } from "../BoostIcon";
@@ -154,6 +155,7 @@ const ActiveStakeEntry: React.FunctionComponent<ActiveStakeEntryProps> = ({
 
 export const ActiveStakes: React.FunctionComponent = () => {
   const { data: stakes, isLoading, error } = useUserStakes();
+  const typedStakes = stakes as StakeInfoWithId[] | undefined;
   const { unstake, relock } = useStakingContract();
 
   const handleUnstake = async (tokenId: bigint) => {
@@ -194,7 +196,7 @@ export const ActiveStakes: React.FunctionComponent = () => {
     );
   }
 
-  if (!stakes || stakes.length === 0) {
+  if (!typedStakes || typedStakes.length === 0) {
     return (
       <div className="mb-8">
         <h2 className="mb-2 text-2xl font-bold text-white">Active Stakes</h2>
@@ -213,7 +215,7 @@ export const ActiveStakes: React.FunctionComponent = () => {
           While Locked, your staked RECALL earns you 2x Boost!
         </p>
       </div>
-      {stakes.map((stake) => (
+      {typedStakes.map((stake: StakeInfoWithId) => (
         <ActiveStakeEntry
           key={stake.tokenId.toString()}
           tokenId={stake.tokenId}
