@@ -35,7 +35,7 @@ export const activeCompMiddleware = function () {
       // Only log error if it's not the one we're throwing above
       if (!(error instanceof ApiError && error.statusCode === 403)) {
         middlewareLogger.error(
-          { error },
+          { error, agentId: req.agentId },
           `Active comp middleware: Error checking active competition`,
         );
       }
