@@ -372,6 +372,7 @@ describe("WatchlistService", () => {
         },
         logger,
         mockDbRepository,
+        TEST_RETRY_CONFIG,
       );
 
       // Mock 403 responses for all attempts (initial + maxRetries from DEFAULT_RETRY_CONFIG)
@@ -386,9 +387,9 @@ describe("WatchlistService", () => {
         watchlistService.isAddressSanctioned(address),
       ).rejects.toThrow();
 
-      // Should be called 4 times (initial + 3 retries from DEFAULT_RETRY_CONFIG)
-      expect(mockFetch).toHaveBeenCalledTimes(4);
-    });
+      // Should be called 3 times (initial + 2 retries from TEST_RETRY_CONFIG)
+      expect(mockFetch).toHaveBeenCalledTimes(3);
+    }, 6000);
 
     it("should throw on network error", async () => {
       const address = "0x1234567890abcdef1234567890abcdef12345678";
@@ -811,6 +812,48 @@ describe("WatchlistService", () => {
         );
       }).toThrow("Unhandled watchlist mode: invalid-mode");
     });
+
+    it("should handle hybrid mode API failure with no database (defensive check)", async () => {
+      // This tests the defensive check in checkDatabase (lines 210-212)
+      watchlistService = new WalletWatchlist(
+        {
+          watchlist: {
+            mode: "hybrid",
+            apiUrl: "https://public.chainalysis.com/api/v1/address",
+            apiKey: "test-api-key",
+          },
+        },
+        logger,
+        undefined, // No DB repository
+        TEST_RETRY_CONFIG,
+      );
+
+      const address = "0x1234567890abcdef1234567890abcdef12345678";
+
+      // Mock API failures to trigger fallback to DB
+      mockFetch
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 500,
+          statusText: "Internal Server Error",
+        })
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 500,
+          statusText: "Internal Server Error",
+        })
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 500,
+          statusText: "Internal Server Error",
+        });
+
+      // Should return false from defensive check in checkDatabase
+      const result = await watchlistService.isAddressSanctioned(address);
+
+      expect(result).toBe(false);
+      expect(mockFetch).toHaveBeenCalled();
+    }, 6000);
   });
 
   describe("Test Addresses", () => {
