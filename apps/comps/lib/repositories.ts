@@ -7,6 +7,7 @@ import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { CompetitionRewardsRepository } from "@recallnet/db/repositories/competition-rewards";
 import { LeaderboardRepository } from "@recallnet/db/repositories/leaderboard";
 import { PerpsRepository } from "@recallnet/db/repositories/perps";
+import { SanctionedWalletRepository } from "@recallnet/db/repositories/sanctioned-wallet";
 import { StakesRepository } from "@recallnet/db/repositories/stakes";
 import { TradeRepository } from "@recallnet/db/repositories/trade";
 import { TradingConstraintsRepository } from "@recallnet/db/repositories/trading-constraints";
@@ -59,6 +60,11 @@ export const perpsRepository = new PerpsRepository(
   db,
   db,
   createLogger("PerpsRepository"),
+);
+
+export const sanctionedWalletRepository = new SanctionedWalletRepository(
+  db,
+  createLogger("SanctionedWalletRepository"),
 );
 
 export const stakesRepository = new StakesRepository(db);
