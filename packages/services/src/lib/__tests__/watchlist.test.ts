@@ -812,6 +812,48 @@ describe("WatchlistService", () => {
         );
       }).toThrow("Unhandled watchlist mode: invalid-mode");
     });
+
+    it("should handle hybrid mode API failure with no database (defensive check)", async () => {
+      // This tests the defensive check in checkDatabase (lines 210-212)
+      watchlistService = new WalletWatchlist(
+        {
+          watchlist: {
+            mode: "hybrid",
+            apiUrl: "https://public.chainalysis.com/api/v1/address",
+            apiKey: "test-api-key",
+          },
+        },
+        logger,
+        undefined, // No DB repository
+        TEST_RETRY_CONFIG,
+      );
+
+      const address = "0x1234567890abcdef1234567890abcdef12345678";
+
+      // Mock API failures to trigger fallback to DB
+      mockFetch
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 500,
+          statusText: "Internal Server Error",
+        })
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 500,
+          statusText: "Internal Server Error",
+        })
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 500,
+          statusText: "Internal Server Error",
+        });
+
+      // Should return false from defensive check in checkDatabase
+      const result = await watchlistService.isAddressSanctioned(address);
+
+      expect(result).toBe(false);
+      expect(mockFetch).toHaveBeenCalled();
+    }, 6000);
   });
 
   describe("Test Addresses", () => {
