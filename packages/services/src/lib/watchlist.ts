@@ -281,8 +281,10 @@ export class WalletWatchlist {
             return await this.checkDatabase(normalizedAddress);
           }
 
-        default:
-          throw new Error(`Unknown watchlist mode: ${this.mode}`);
+        default: {
+          const _exhaustiveCheck: never = this.mode;
+          throw new Error(`Unhandled watchlist mode: ${_exhaustiveCheck}`);
+        }
       }
     } catch (error) {
       // Fail closed for security

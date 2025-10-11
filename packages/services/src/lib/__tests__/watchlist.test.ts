@@ -362,243 +362,385 @@ describe("WatchlistService", () => {
     });
   });
 
-  describe("Database Mode", () => {
-    beforeEach(() => {
-      watchlistService = new WalletWatchlist(
-        {
-          watchlist: {
-            mode: "database",
-            apiUrl: "https://public.chainalysis.com/api/v1/address",
-            apiKey: "",
+  describe("Watchlist modes", () => {
+    describe("API", () => {
+      beforeEach(() => {
+        watchlistService = new WalletWatchlist(
+          {
+            watchlist: {
+              mode: "api",
+              apiUrl: "https://public.chainalysis.com/api/v1/address",
+              apiKey: "test-api-key",
+            },
           },
-        },
-        logger,
-        mockDbRepository,
-        TEST_RETRY_CONFIG,
-      );
-    });
-
-    it("should check database in database mode", async () => {
-      const address = SANCTIONED_TEST_ADDRESSES[0];
-      vi.mocked(mockDbRepository.isSanctioned).mockResolvedValueOnce(true);
-
-      const result = await watchlistService.isAddressSanctioned(address!);
-
-      expect(result).toBe(true);
-      expect(mockDbRepository.isSanctioned).toHaveBeenCalledWith(
-        address?.toLowerCase(),
-      );
-      expect(mockFetch).not.toHaveBeenCalled();
-    });
-
-    it("should return false for non-sanctioned address in database mode", async () => {
-      const address = "0x1234567890abcdef1234567890abcdef12345678";
-      vi.mocked(mockDbRepository.isSanctioned).mockResolvedValueOnce(false);
-
-      const result = await watchlistService.isAddressSanctioned(address);
-
-      expect(result).toBe(false);
-      expect(mockDbRepository.isSanctioned).toHaveBeenCalledWith(
-        address.toLowerCase(),
-      );
-    });
-
-    it("should throw on database error", async () => {
-      const address = "0x1234567890abcdef1234567890abcdef12345678";
-      const dbError = new Error("Database connection failed");
-      vi.mocked(mockDbRepository.isSanctioned).mockRejectedValueOnce(dbError);
-
-      await expect(
-        watchlistService.isAddressSanctioned(address),
-      ).rejects.toThrow("Database connection failed");
-    });
-  });
-
-  describe("Hybrid Mode", () => {
-    beforeEach(() => {
-      watchlistService = new WalletWatchlist(
-        {
-          watchlist: {
-            mode: "hybrid",
-            apiUrl: "https://public.chainalysis.com/api/v1/address",
-            apiKey: "test-api-key",
-          },
-        },
-        logger,
-        mockDbRepository,
-        TEST_RETRY_CONFIG,
-      );
-    });
-
-    it("should use API first in hybrid mode", async () => {
-      const address = "0x1234567890abcdef1234567890abcdef12345678";
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          identifications: [],
-        }),
+          logger,
+          mockDbRepository,
+          TEST_RETRY_CONFIG,
+        );
       });
 
-      const result = await watchlistService.isAddressSanctioned(address);
-
-      expect(result).toBe(false);
-      expect(mockFetch).toHaveBeenCalled();
-      expect(mockDbRepository.isSanctioned).not.toHaveBeenCalled();
-    });
-
-    it("should fallback to database when API fails in hybrid mode", async () => {
-      const address = SANCTIONED_TEST_ADDRESSES[0];
-
-      // Mock API failures for all retry attempts
-      mockFetch
-        .mockResolvedValueOnce({
-          ok: false,
-          status: 500,
-          statusText: "Internal Server Error",
-        })
-        .mockResolvedValueOnce({
-          ok: false,
-          status: 500,
-          statusText: "Internal Server Error",
-        })
-        .mockResolvedValueOnce({
-          ok: false,
-          status: 500,
-          statusText: "Internal Server Error",
+      it("should use API only in API mode", async () => {
+        const address = "0x1234567890abcdef1234567890abcdef12345678";
+        mockFetch.mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            identifications: [],
+          }),
         });
 
-      // Mock database returning sanctioned
-      vi.mocked(mockDbRepository.isSanctioned).mockResolvedValueOnce(true);
+        const result = await watchlistService.isAddressSanctioned(address);
 
-      const result = await watchlistService.isAddressSanctioned(address!);
+        expect(result).toBe(false);
+        expect(mockFetch).toHaveBeenCalled();
+        expect(mockDbRepository.isSanctioned).not.toHaveBeenCalled();
+      });
 
-      expect(result).toBe(true);
-      expect(mockFetch).toHaveBeenCalled();
-      expect(mockDbRepository.isSanctioned).toHaveBeenCalledWith(
-        address?.toLowerCase(),
-      );
-    }, 6000);
+      it("should return true for sanctioned address in API mode", async () => {
+        const address = SANCTIONED_TEST_ADDRESSES[0];
+        mockFetch.mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            identifications: [
+              {
+                category: "sanctions",
+                name: "OFAC SDN",
+                description: "Specially Designated National",
+              },
+            ],
+          }),
+        });
 
-    it("should fallback to database when API times out", async () => {
-      const address = "0x1234567890abcdef1234567890abcdef12345678";
+        const result = await watchlistService.isAddressSanctioned(address!);
 
-      // Mock timeout errors for all retry attempts
-      const abortError = new Error("This operation was aborted");
-      abortError.name = "AbortError";
+        expect(result).toBe(true);
+        expect(mockFetch).toHaveBeenCalled();
+        expect(mockDbRepository.isSanctioned).not.toHaveBeenCalled();
+      });
 
-      mockFetch
-        .mockRejectedValueOnce(abortError)
-        .mockRejectedValueOnce(abortError)
-        .mockRejectedValueOnce(abortError);
+      it("should throw when API fails in API mode", async () => {
+        const address = "0x1234567890abcdef1234567890abcdef12345678";
 
-      // Mock database returning not sanctioned
-      vi.mocked(mockDbRepository.isSanctioned).mockResolvedValueOnce(false);
+        // Mock API failures for all retry attempts
+        mockFetch
+          .mockResolvedValueOnce({
+            ok: false,
+            status: 500,
+            statusText: "Internal Server Error",
+          })
+          .mockResolvedValueOnce({
+            ok: false,
+            status: 500,
+            statusText: "Internal Server Error",
+          })
+          .mockResolvedValueOnce({
+            ok: false,
+            status: 500,
+            statusText: "Internal Server Error",
+          });
 
-      const result = await watchlistService.isAddressSanctioned(address);
+        await expect(
+          watchlistService.isAddressSanctioned(address),
+        ).rejects.toThrow(RetryExhaustedError);
+        expect(mockFetch).toHaveBeenCalled();
+        expect(mockDbRepository.isSanctioned).not.toHaveBeenCalled();
+      }, 6000);
 
-      expect(result).toBe(false);
-      expect(mockDbRepository.isSanctioned).toHaveBeenCalled();
-    }, 6000);
+      it("should throw when API times out in API mode", async () => {
+        const address = "0x1234567890abcdef1234567890abcdef12345678";
 
-    it("should use database when API not configured in hybrid mode", async () => {
-      watchlistService = new WalletWatchlist(
-        {
-          watchlist: {
-            mode: "hybrid",
-            apiUrl: "https://public.chainalysis.com/api/v1/address",
-            apiKey: "", // No API key
+        // Mock timeout errors for all retry attempts
+        const abortError = new Error("This operation was aborted");
+        abortError.name = "AbortError";
+
+        mockFetch
+          .mockRejectedValueOnce(abortError)
+          .mockRejectedValueOnce(abortError)
+          .mockRejectedValueOnce(abortError);
+
+        await expect(
+          watchlistService.isAddressSanctioned(address),
+        ).rejects.toThrow(RetryExhaustedError);
+        expect(mockDbRepository.isSanctioned).not.toHaveBeenCalled();
+      }, 6000);
+
+      it("should throw when API not configured in API mode", async () => {
+        watchlistService = new WalletWatchlist(
+          {
+            watchlist: {
+              mode: "api",
+              apiUrl: "https://public.chainalysis.com/api/v1/address",
+              apiKey: "", // No API key
+            },
           },
-        },
+          logger,
+          mockDbRepository,
+          TEST_RETRY_CONFIG,
+        );
+
+        const address = "0x1234567890abcdef1234567890abcdef12345678";
+
+        await expect(
+          watchlistService.isAddressSanctioned(address),
+        ).rejects.toThrow("API key not configured");
+        expect(mockFetch).not.toHaveBeenCalled();
+        expect(mockDbRepository.isSanctioned).not.toHaveBeenCalled();
+      });
+    });
+
+    describe("Database", () => {
+      beforeEach(() => {
+        watchlistService = new WalletWatchlist(
+          {
+            watchlist: {
+              mode: "database",
+              apiUrl: "https://public.chainalysis.com/api/v1/address",
+              apiKey: "",
+            },
+          },
+          logger,
+          mockDbRepository,
+          TEST_RETRY_CONFIG,
+        );
+      });
+
+      it("should check database in database mode", async () => {
+        const address = SANCTIONED_TEST_ADDRESSES[0];
+        vi.mocked(mockDbRepository.isSanctioned).mockResolvedValueOnce(true);
+
+        const result = await watchlistService.isAddressSanctioned(address!);
+
+        expect(result).toBe(true);
+        expect(mockDbRepository.isSanctioned).toHaveBeenCalledWith(
+          address?.toLowerCase(),
+        );
+        expect(mockFetch).not.toHaveBeenCalled();
+      });
+
+      it("should return false for non-sanctioned address in database mode", async () => {
+        const address = "0x1234567890abcdef1234567890abcdef12345678";
+        vi.mocked(mockDbRepository.isSanctioned).mockResolvedValueOnce(false);
+
+        const result = await watchlistService.isAddressSanctioned(address);
+
+        expect(result).toBe(false);
+        expect(mockDbRepository.isSanctioned).toHaveBeenCalledWith(
+          address.toLowerCase(),
+        );
+      });
+
+      it("should throw on database error", async () => {
+        const address = "0x1234567890abcdef1234567890abcdef12345678";
+        const dbError = new Error("Database connection failed");
+        vi.mocked(mockDbRepository.isSanctioned).mockRejectedValueOnce(dbError);
+
+        await expect(
+          watchlistService.isAddressSanctioned(address),
+        ).rejects.toThrow("Database connection failed");
+      });
+    });
+
+    describe("Hybrid", () => {
+      beforeEach(() => {
+        watchlistService = new WalletWatchlist(
+          {
+            watchlist: {
+              mode: "hybrid",
+              apiUrl: "https://public.chainalysis.com/api/v1/address",
+              apiKey: "test-api-key",
+            },
+          },
+          logger,
+          mockDbRepository,
+          TEST_RETRY_CONFIG,
+        );
+      });
+
+      it("should use API first in hybrid mode", async () => {
+        const address = "0x1234567890abcdef1234567890abcdef12345678";
+        mockFetch.mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            identifications: [],
+          }),
+        });
+
+        const result = await watchlistService.isAddressSanctioned(address);
+
+        expect(result).toBe(false);
+        expect(mockFetch).toHaveBeenCalled();
+        expect(mockDbRepository.isSanctioned).not.toHaveBeenCalled();
+      });
+
+      it("should fallback to database when API fails in hybrid mode", async () => {
+        const address = SANCTIONED_TEST_ADDRESSES[0];
+
+        // Mock API failures for all retry attempts
+        mockFetch
+          .mockResolvedValueOnce({
+            ok: false,
+            status: 500,
+            statusText: "Internal Server Error",
+          })
+          .mockResolvedValueOnce({
+            ok: false,
+            status: 500,
+            statusText: "Internal Server Error",
+          })
+          .mockResolvedValueOnce({
+            ok: false,
+            status: 500,
+            statusText: "Internal Server Error",
+          });
+
+        // Mock database returning sanctioned
+        vi.mocked(mockDbRepository.isSanctioned).mockResolvedValueOnce(true);
+
+        const result = await watchlistService.isAddressSanctioned(address!);
+
+        expect(result).toBe(true);
+        expect(mockFetch).toHaveBeenCalled();
+        expect(mockDbRepository.isSanctioned).toHaveBeenCalledWith(
+          address?.toLowerCase(),
+        );
+      }, 6000);
+
+      it("should fallback to database when API times out", async () => {
+        const address = "0x1234567890abcdef1234567890abcdef12345678";
+
+        // Mock timeout errors for all retry attempts
+        const abortError = new Error("This operation was aborted");
+        abortError.name = "AbortError";
+
+        mockFetch
+          .mockRejectedValueOnce(abortError)
+          .mockRejectedValueOnce(abortError)
+          .mockRejectedValueOnce(abortError);
+
+        // Mock database returning not sanctioned
+        vi.mocked(mockDbRepository.isSanctioned).mockResolvedValueOnce(false);
+
+        const result = await watchlistService.isAddressSanctioned(address);
+
+        expect(result).toBe(false);
+        expect(mockDbRepository.isSanctioned).toHaveBeenCalled();
+      }, 6000);
+
+      it("should use database when API not configured in hybrid mode", async () => {
+        watchlistService = new WalletWatchlist(
+          {
+            watchlist: {
+              mode: "hybrid",
+              apiUrl: "https://public.chainalysis.com/api/v1/address",
+              apiKey: "", // No API key
+            },
+          },
+          logger,
+          mockDbRepository,
+          TEST_RETRY_CONFIG,
+        );
+
+        const address = SANCTIONED_TEST_ADDRESSES[1];
+        vi.mocked(mockDbRepository.isSanctioned).mockResolvedValueOnce(true);
+
+        const result = await watchlistService.isAddressSanctioned(address!);
+
+        expect(result).toBe(true);
+        expect(mockDbRepository.isSanctioned).toHaveBeenCalled();
+        expect(mockFetch).not.toHaveBeenCalled();
+      });
+
+      it("should throw when both API and database fail in hybrid mode", async () => {
+        const address = "0x1234567890abcdef1234567890abcdef12345678";
+
+        // Mock API failures
+        mockFetch
+          .mockResolvedValueOnce({
+            ok: false,
+            status: 500,
+            statusText: "Internal Server Error",
+          })
+          .mockResolvedValueOnce({
+            ok: false,
+            status: 500,
+            statusText: "Internal Server Error",
+          })
+          .mockResolvedValueOnce({
+            ok: false,
+            status: 500,
+            statusText: "Internal Server Error",
+          });
+
+        // Mock database failure
+        const dbError = new Error("Database connection failed");
+        vi.mocked(mockDbRepository.isSanctioned).mockRejectedValueOnce(dbError);
+
+        await expect(
+          watchlistService.isAddressSanctioned(address),
+        ).rejects.toThrow("Database connection failed");
+      }, 6000);
+    });
+
+    describe("None", () => {
+      beforeEach(() => {
+        watchlistService = new WalletWatchlist(
+          {
+            watchlist: {
+              mode: "none",
+              apiUrl: "https://public.chainalysis.com/api/v1/address",
+              apiKey: "",
+            },
+          },
+          logger,
+          mockDbRepository,
+          TEST_RETRY_CONFIG,
+        );
+      });
+
+      it("should skip all checks and return false (not sanctioned)", async () => {
+        const address = "0x1234567890abcdef1234567890abcdef12345678";
+
+        const result = await watchlistService.isAddressSanctioned(address);
+
+        expect(result).toBe(false);
+        expect(mockFetch).not.toHaveBeenCalled();
+        expect(mockDbRepository.isSanctioned).not.toHaveBeenCalled();
+      });
+
+      it("should allow sanctioned addresses when checks are disabled", async () => {
+        const address = SANCTIONED_TEST_ADDRESSES[0]!;
+
+        const result = await watchlistService.isAddressSanctioned(address);
+
+        expect(result).toBe(false);
+        expect(mockFetch).not.toHaveBeenCalled();
+        expect(mockDbRepository.isSanctioned).not.toHaveBeenCalled();
+      });
+
+      it("should work with any address including invalid formats", async () => {
+        const invalidAddress = "not-a-valid-address";
+
+        const result =
+          await watchlistService.isAddressSanctioned(invalidAddress);
+
+        expect(result).toBe(false);
+        expect(mockFetch).not.toHaveBeenCalled();
+        expect(mockDbRepository.isSanctioned).not.toHaveBeenCalled();
+      });
+    });
+
+    it("should throw on invalid mode", async () => {
+      // Note: we want to test this breaking type safety
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const invalidMode = "invalid-mode" as any;
+      watchlistService = new WalletWatchlist(
+        { watchlist: { mode: invalidMode, apiUrl: "", apiKey: "" } },
         logger,
         mockDbRepository,
-        TEST_RETRY_CONFIG,
       );
-
-      const address = SANCTIONED_TEST_ADDRESSES[1];
-      vi.mocked(mockDbRepository.isSanctioned).mockResolvedValueOnce(true);
-
-      const result = await watchlistService.isAddressSanctioned(address!);
-
-      expect(result).toBe(true);
-      expect(mockDbRepository.isSanctioned).toHaveBeenCalled();
-      expect(mockFetch).not.toHaveBeenCalled();
-    });
-
-    it("should throw when both API and database fail in hybrid mode", async () => {
-      const address = "0x1234567890abcdef1234567890abcdef12345678";
-
-      // Mock API failures
-      mockFetch
-        .mockResolvedValueOnce({
-          ok: false,
-          status: 500,
-          statusText: "Internal Server Error",
-        })
-        .mockResolvedValueOnce({
-          ok: false,
-          status: 500,
-          statusText: "Internal Server Error",
-        })
-        .mockResolvedValueOnce({
-          ok: false,
-          status: 500,
-          statusText: "Internal Server Error",
-        });
-
-      // Mock database failure
-      const dbError = new Error("Database connection failed");
-      vi.mocked(mockDbRepository.isSanctioned).mockRejectedValueOnce(dbError);
 
       await expect(
-        watchlistService.isAddressSanctioned(address),
-      ).rejects.toThrow("Database connection failed");
-    }, 6000);
-  });
-
-  describe("None Mode", () => {
-    beforeEach(() => {
-      watchlistService = new WalletWatchlist(
-        {
-          watchlist: {
-            mode: "none",
-            apiUrl: "https://public.chainalysis.com/api/v1/address",
-            apiKey: "",
-          },
-        },
-        logger,
-        mockDbRepository,
-        TEST_RETRY_CONFIG,
-      );
-    });
-
-    it("should skip all checks and return false (not sanctioned)", async () => {
-      const address = "0x1234567890abcdef1234567890abcdef12345678";
-
-      const result = await watchlistService.isAddressSanctioned(address);
-
-      expect(result).toBe(false);
-      expect(mockFetch).not.toHaveBeenCalled();
-      expect(mockDbRepository.isSanctioned).not.toHaveBeenCalled();
-    });
-
-    it("should allow sanctioned addresses when checks are disabled", async () => {
-      const address = SANCTIONED_TEST_ADDRESSES[0]!;
-
-      const result = await watchlistService.isAddressSanctioned(address);
-
-      expect(result).toBe(false);
-      expect(mockFetch).not.toHaveBeenCalled();
-      expect(mockDbRepository.isSanctioned).not.toHaveBeenCalled();
-    });
-
-    it("should work with any address including invalid formats", async () => {
-      const invalidAddress = "not-a-valid-address";
-
-      const result = await watchlistService.isAddressSanctioned(invalidAddress);
-
-      expect(result).toBe(false);
-      expect(mockFetch).not.toHaveBeenCalled();
-      expect(mockDbRepository.isSanctioned).not.toHaveBeenCalled();
+        watchlistService.isAddressSanctioned("0x123..."),
+      ).rejects.toThrow("Unhandled watchlist mode");
     });
   });
 
