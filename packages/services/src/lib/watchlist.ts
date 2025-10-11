@@ -53,7 +53,7 @@ export interface WalletWatchlistConfig {
 
 /**
  * Wallet Address Watchlist
- * Checks wallet addresses against sanctions list using database, external API, or hybrid mode
+ * Checks wallet addresses against sanctions list using database, external API, hybrid mode, or no checks
  */
 export class WalletWatchlist {
   private readonly mode: WalletWatchlistMode;
@@ -95,12 +95,13 @@ export class WalletWatchlist {
     );
 
     // Validate configuration based on mode
-    if (this.mode === "api" && !this.apiKey) {
+    if (this.mode === "none") {
+      this.logger.info("Wallet watchlist checks disabled (mode: none)");
+    } else if (this.mode === "api" && !this.apiKey) {
       this.logger.warn(
         "API mode selected but API key not configured - checks will fail",
       );
-    }
-    if (
+    } else if (
       (this.mode === "database" || this.mode === "hybrid") &&
       !this.dbRepository
     ) {
@@ -159,6 +160,7 @@ export class WalletWatchlist {
           {
             address: normalizedAddress,
             identifications: data.identifications.filter(checkIsSanctioned),
+            source: "api",
           },
           "SANCTIONED ADDRESS DETECTED",
         );
@@ -190,7 +192,7 @@ export class WalletWatchlist {
             address: normalizedAddress,
             source: "database",
           },
-          "SANCTIONED ADDRESS DETECTED (database)",
+          "SANCTIONED ADDRESS DETECTED",
         );
       }
       return isSanctioned;
@@ -200,7 +202,7 @@ export class WalletWatchlist {
           address: normalizedAddress,
           error,
         },
-        "Error checking database",
+        "Error checking watchlist in database",
       );
       throw error;
     }
@@ -226,7 +228,7 @@ export class WalletWatchlist {
   /**
    * Check if a wallet address is sanctioned
    * @param address The wallet address to check (case-insensitive)
-   * @returns Promise<boolean> - true if sanctioned, false if clean
+   * @returns Promise<boolean> - true if sanctioned, false if clean (or if checks are disabled)
    * @throws Error if check fails and cannot be satisfied (fail closed for security)
    */
   async isAddressSanctioned(address: string): Promise<boolean> {
@@ -241,19 +243,24 @@ export class WalletWatchlist {
 
     try {
       switch (this.mode) {
+        case "none":
+          this.logger.debug(
+            {
+              address: normalizedAddress,
+            },
+            "Watchlist checks disabled - allowing address",
+          );
+          return false;
+
         case "database":
           return await this.checkDatabase(normalizedAddress);
 
         case "api":
-          if (!this.isConfigured()) {
-            this.logger.warn("API mode selected but not configured");
-            return false;
-          }
           return await this.checkApi(normalizedAddress);
 
+        // Try API first, and then fallback to database if it fails
         case "hybrid":
-          // Try API first, fall back to database if it fails
-          if (this.isConfigured()) {
+          if (this.isApiConfigured()) {
             try {
               return await this.checkApi(normalizedAddress);
             } catch (apiError) {
@@ -262,15 +269,15 @@ export class WalletWatchlist {
                   address: normalizedAddress,
                   error: apiError,
                 },
-                "API check failed, falling back to database",
+                "Watchlist API check failed, falling back to database",
               );
 
               return await this.checkDatabase(normalizedAddress);
             }
           } else {
-            // API not configured, use database only
+            // API not configured; use database only
             this.logger.debug(
-              "API not configured in hybrid mode, using database",
+              "Watchlist API not configured in hybrid mode, using database",
             );
             return await this.checkDatabase(normalizedAddress);
           }
@@ -296,7 +303,7 @@ export class WalletWatchlist {
    * Check if the service is properly configured
    * @returns boolean - true if API key is configured
    */
-  isConfigured(): boolean {
+  isApiConfigured(): boolean {
     return !!this.apiKey;
   }
 
@@ -307,7 +314,7 @@ export class WalletWatchlist {
   getStatus() {
     return {
       mode: this.mode,
-      apiConfigured: this.isConfigured(),
+      apiConfigured: this.isApiConfigured(),
       databaseConfigured: !!this.dbRepository,
       baseUrl: this.baseUrl,
       timeout: this.requestTimeout,

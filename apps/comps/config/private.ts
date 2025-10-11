@@ -29,8 +29,7 @@ const configSchema = z.strictObject({
     .custom<typeof specificChainTokens>()
     .default(specificChainTokens),
   watchlist: z.object({
-    enabled: z.boolean().default(false),
-    mode: z.enum(["database", "api", "hybrid"]).default("api"),
+    mode: z.enum(["none", "database", "api", "hybrid"]).default("none"),
     apiUrl: z.url().default("https://public.chainalysis.com/api/v1/address"),
     apiKey: z.string().default(""),
   }),
