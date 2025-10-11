@@ -82,7 +82,6 @@ export class WalletWatchlist {
     };
     this.retryConfig = { ...retryConfig, isRetryable };
 
-    // Log configuration status
     this.logger.info(
       {
         mode: this.mode,
@@ -93,20 +92,25 @@ export class WalletWatchlist {
       "WalletWatchlist initialized",
     );
 
-    // Validate configuration based on mode
-    if (this.mode === "none") {
-      this.logger.info("Wallet watchlist checks disabled (mode: none)");
-    } else if (this.mode === "api" && !this.apiKey) {
-      this.logger.warn(
-        "API mode selected but API key not configured - checks will fail",
-      );
-    } else if (
-      (this.mode === "database" || this.mode === "hybrid") &&
-      !this.dbRepository
-    ) {
-      this.logger.warn(
-        `${this.mode} mode selected but database repository not provided`,
-      );
+    switch (this.mode) {
+      case "none":
+        this.logger.info("Wallet watchlist checks disabled (mode: none)");
+        break;
+      case "api":
+        if (!this.apiKey) {
+          this.logger.warn(
+            "Wallet watchlist API mode selected but no key configured (checks will fail)",
+          );
+        }
+        break;
+      case "database":
+      case "hybrid":
+        if (!this.dbRepository) {
+          this.logger.warn(
+            `Wallet watchlist ${this.mode} mode selected but database repository not provided`,
+          );
+        }
+        break;
     }
   }
 
@@ -178,7 +182,7 @@ export class WalletWatchlist {
    */
   private async checkDatabase(normalizedAddress: string): Promise<boolean> {
     if (!this.dbRepository) {
-      this.logger.warn("Database repository not configured");
+      this.logger.warn("Wallet watchlist database repository not configured");
       return false;
     }
 
