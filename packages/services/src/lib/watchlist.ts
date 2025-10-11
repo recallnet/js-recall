@@ -2,6 +2,7 @@ import { Logger } from "pino";
 
 import type { SanctionedWalletRepository } from "@recallnet/db/repositories/sanctioned-wallet";
 
+import { WalletWatchlistMode } from "../types/index.js";
 import {
   DEFAULT_RETRY_CONFIG,
   MaybeHttpError,
@@ -14,14 +15,6 @@ import {
  * categories are informational.
  */
 type Category = "sanctions" | string | null;
-
-/**
- * Wallet watchlist mode
- * - database: Only use a local database table that stores sanctioned addresses
- * - api: Only use external API (e.g., Chainalysis, or an API with the same response shape)
- * - hybrid: Use API first, fallback to database on error
- */
-type WalletWatchlistMode = "database" | "api" | "hybrid";
 
 /**
  * Interface for Chainalysis API response

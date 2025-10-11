@@ -10,6 +10,7 @@ import {
   CoinGeckoMode,
   CrossChainTradingType,
   PriceProvider,
+  WalletWatchlistMode,
 } from "@recallnet/services/types";
 
 import { createSentryConfig } from "@/lib/sentry-config.js";
@@ -272,7 +273,8 @@ export const config = {
     // - database: Only use local database table
     // - api: Only use external API (Chainalysis)
     // - hybrid: Use API first, fallback to database on error
-    mode: process.env.WALLET_WATCHLIST_MODE || "hybrid",
+    mode: (process.env.WALLET_WATCHLIST_MODE ||
+      "hybrid") as WalletWatchlistMode,
     // External API URL (defaults to Chainalysis)
     apiUrl:
       process.env.WALLET_WATCHLIST_API_URL ||
