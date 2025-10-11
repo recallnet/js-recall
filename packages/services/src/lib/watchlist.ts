@@ -266,7 +266,7 @@ export class WalletWatchlist {
         address: normalizedAddress,
         mode: this.mode,
       },
-      "Checking address",
+      "Watchlist checking address",
     );
 
     try {
