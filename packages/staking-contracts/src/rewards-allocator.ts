@@ -45,11 +45,13 @@ class RewardsAllocator {
   private publicClient: PublicClient;
   private contractAddress: Hex;
   private timeout?: number;
+  private tokenAddress: Hex;
 
   constructor(
     privateKey: Hex,
     rpcProviderUrl: string,
     contractAddress: Hex,
+    tokenAddress: Hex,
     network: Network = Network.BaseSepolia,
     options?: Options,
   ) {
@@ -79,11 +81,11 @@ class RewardsAllocator {
 
     this.contractAddress = contractAddress;
     this.timeout = options?.timeout;
+    this.tokenAddress = tokenAddress;
   }
 
   async allocate(
     root: string,
-    tokenAddress: string,
     totalAmount: bigint,
     startTimestamp: number,
   ): Promise<AllocationResult> {
@@ -92,7 +94,7 @@ class RewardsAllocator {
       address: this.contractAddress,
       abi: abi,
       functionName: "addAllocation",
-      args: [root, tokenAddress, totalAmount, startTimestamp],
+      args: [root, this.tokenAddress, totalAmount, startTimestamp],
       chain: this.walletClient.chain,
     });
 
@@ -101,16 +103,17 @@ class RewardsAllocator {
       timeout: this.timeout,
     });
 
-    if (receipt.status === "success") {
-      return {
-        transactionHash: hash,
-        blockNumber: receipt.blockNumber,
-        gasUsed: receipt.gasUsed,
-      };
+    if (receipt.status !== "success") {
+      throw new Error(
+        "Transaction failed. Receipt: " + JSON.stringify(receipt),
+      );
     }
 
-    /* c8 ignore next */
-    throw new Error("Transaction failed. Receipt: " + JSON.stringify(receipt));
+    return {
+      transactionHash: hash,
+      blockNumber: receipt.blockNumber,
+      gasUsed: receipt.gasUsed,
+    };
   }
 }
 

@@ -648,16 +648,21 @@ describe("splitPrizePool", () => {
   it("should split 1000 amount among 10 competitors with decay rate 0.5", () => {
     const amount = 1000n; // Using bigint for WEI
     const leaderBoard = [
-      { competitor: "competitor1", rank: 1, wallet: "0xabc" },
-      { competitor: "competitor2", rank: 2, wallet: "0xdef" },
-      { competitor: "competitor3", rank: 3, wallet: "0xghi" },
-      { competitor: "competitor4", rank: 4, wallet: "0xjkl" },
-      { competitor: "competitor5", rank: 5, wallet: "0xmnop" },
-      { competitor: "competitor6", rank: 6, wallet: "0xqrst" },
-      { competitor: "competitor7", rank: 7, wallet: "0xuvw" },
-      { competitor: "competitor8", rank: 8, wallet: "0xyz" },
-      { competitor: "competitor9", rank: 9, wallet: "0xabc" },
-      { competitor: "competitor10", rank: 10, wallet: "0xdef" },
+      { competitor: "competitor1", rank: 1, wallet: "0xabc", owner: "owner1" },
+      { competitor: "competitor2", rank: 2, wallet: "0xdef", owner: "owner2" },
+      { competitor: "competitor3", rank: 3, wallet: "0xghi", owner: "owner3" },
+      { competitor: "competitor4", rank: 4, wallet: "0xjkl", owner: "owner4" },
+      { competitor: "competitor5", rank: 5, wallet: "0xmnop", owner: "owner5" },
+      { competitor: "competitor6", rank: 6, wallet: "0xqrst", owner: "owner6" },
+      { competitor: "competitor7", rank: 7, wallet: "0xuvw", owner: "owner7" },
+      { competitor: "competitor8", rank: 8, wallet: "0xyz", owner: "owner8" },
+      { competitor: "competitor9", rank: 9, wallet: "0xabc", owner: "owner9" },
+      {
+        competitor: "competitor10",
+        rank: 10,
+        wallet: "0xdef",
+        owner: "owner10",
+      },
     ];
     const r = 0.5;
 
@@ -738,9 +743,9 @@ describe("splitPrizePool", () => {
   it("should handle ties correctly by splitting combined pools equally among tied competitors", () => {
     const amount = 1000n; // Using bigint for WEI
     const leaderBoard = [
-      { competitor: "A", rank: 1, wallet: "0x123" }, // Tied for 1st place
-      { competitor: "B", rank: 1, wallet: "0x456" }, // Tied for 1st place
-      { competitor: "C", rank: 3, wallet: "0x789" }, // 3rd place
+      { competitor: "A", rank: 1, wallet: "0x123", owner: "ownerA" }, // Tied for 1st place
+      { competitor: "B", rank: 1, wallet: "0x456", owner: "ownerB" }, // Tied for 1st place
+      { competitor: "C", rank: 3, wallet: "0x789", owner: "ownerC" }, // 3rd place
     ];
     const r = 0.5;
 
@@ -818,11 +823,11 @@ describe("splitPrizePool", () => {
   it("should handle multiple ties at different ranks correctly", () => {
     const amount = 1000n;
     const leaderBoard = [
-      { competitor: "A", rank: 1, wallet: "0x1" }, // Tied for 1st place
-      { competitor: "B", rank: 1, wallet: "0x2" }, // Tied for 1st place
-      { competitor: "C", rank: 3, wallet: "0x3" }, // Tied for 3rd place
-      { competitor: "D", rank: 3, wallet: "0x4" }, // Tied for 3rd place
-      { competitor: "E", rank: 3, wallet: "0x5" }, // Tied for 3rd place
+      { competitor: "A", rank: 1, wallet: "0x1", owner: "ownerA" }, // Tied for 1st place
+      { competitor: "B", rank: 1, wallet: "0x2", owner: "ownerB" }, // Tied for 1st place
+      { competitor: "C", rank: 3, wallet: "0x3", owner: "ownerC" }, // Tied for 3rd place
+      { competitor: "D", rank: 3, wallet: "0x4", owner: "ownerD" }, // Tied for 3rd place
+      { competitor: "E", rank: 3, wallet: "0x5", owner: "ownerE" }, // Tied for 3rd place
     ];
     const r = 0.5;
 

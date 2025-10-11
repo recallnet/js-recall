@@ -16,6 +16,8 @@ import { AgentCard } from "@/components/user-agents/agent-card";
 import type { RouterOutputs } from "@/rpc/router";
 import { formatDate } from "@/utils/format";
 
+import RewardsTGE from "../rewards-tge";
+
 interface ChooseAgentModalProps {
   isOpen: boolean;
   agent?: RouterOutputs["user"]["getUserAgents"]["agents"][number];
@@ -103,7 +105,24 @@ export const ConfirmAgentEntryModal: React.FC<ChooseAgentModalProps> = ({
                   Prize Pool
                 </span>
                 <span className="text-primary-foreground flex">
-                  [<Rewards rewards={competition?.rewards || []} compact />]
+                  {competition?.rewardsTge ? (
+                    <RewardsTGE
+                      key="rewards-tge"
+                      rewards={{
+                        agentPrizePool: BigInt(
+                          competition?.rewardsTge.agentPool,
+                        ),
+                        userPrizePool: BigInt(competition?.rewardsTge.userPool),
+                      }}
+                      compact
+                    />
+                  ) : (
+                    <Rewards
+                      key="rewards"
+                      rewards={competition?.rewards || []}
+                      compact
+                    />
+                  )}
                 </span>
               </li>
               <li>

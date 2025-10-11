@@ -75,7 +75,7 @@
       },
       "include": ["src/**/*.ts"],
       "exclude": ["src/**/*.test.ts", "src/**/*.spec.ts", "contracts/**/*"],
-      "testFramework": "c8"
+      "testFramework": "vitest"
     }
   }
 }

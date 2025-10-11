@@ -9,7 +9,7 @@ import {
   SelectRewardsRoot,
   SelectRewardsTree,
 } from "../schema/voting/types.js";
-import { Database } from "../types.js";
+import { Database, Transaction } from "../types.js";
 
 export class RewardsRepository {
   readonly #db: Database;
@@ -23,13 +23,16 @@ export class RewardsRepository {
   /**
    * Get all rewards for a specific competition
    * @param competitionId The competition ID (UUID) to get rewards for
+   * @param tx Optional database transaction to use for the operation
    * @returns Array of rewards for the competition
    */
   async getRewardsByCompetition(
     competitionId: string,
+    tx?: Transaction,
   ): Promise<SelectReward[]> {
     try {
-      return await this.#db
+      const executor = tx || this.#db;
+      return await executor
         .select()
         .from(rewards)
         .where(eq(rewards.competitionId, competitionId));
@@ -42,13 +45,16 @@ export class RewardsRepository {
   /**
    * Insert multiple rewards
    * @param rewardsToInsert Array of rewards to insert
+   * @param tx Optional database transaction to use for the operation
    * @returns Array of inserted rewards
    */
   async insertRewards(
     rewardsToInsert: InsertReward[],
+    tx?: Transaction,
   ): Promise<SelectReward[]> {
     try {
-      return await this.#db.insert(rewards).values(rewardsToInsert).returning();
+      const executor = tx || this.#db;
+      return await executor.insert(rewards).values(rewardsToInsert).returning();
     } catch (error) {
       this.#logger.error("Error in insertRewards:", error);
       throw error;

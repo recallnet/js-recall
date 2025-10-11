@@ -96,6 +96,10 @@ export interface Competition {
     reward: number;
     agentId?: string;
   }[];
+  rewardsTge?: {
+    agentPool: string;
+    userPool: string;
+  };
   // Registration limit fields
   maxParticipants: number | null;
   registeredParticipants: number;

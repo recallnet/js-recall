@@ -79,22 +79,33 @@ export function calculateRewardsForUsers(
 
   const competitorTotals: Record<string, Decimal> = {};
   const userTotals: Record<string, Record<string, Decimal>> = {};
+  const userIds: Record<string, string> = {};
 
-  for (const { user, competitor, boost, timestamp } of boostAllocations) {
+  for (const {
+    user_wallet,
+    user_id,
+    competitor,
+    boost,
+    timestamp,
+  } of boostAllocations) {
     competitorTotals[competitor] = (
       competitorTotals[competitor] || new Decimal(0)
     ).add(new Decimal(boost.toString()));
 
-    if (!userTotals[user]) {
-      userTotals[user] = {};
+    if (!userTotals[user_wallet]) {
+      userTotals[user_wallet] = {};
+    }
+
+    if (!userIds[user_wallet]) {
+      userIds[user_wallet] = user_id;
     }
 
     const effectiveBoost = boostDecayFn(timestamp).times(
       new Decimal(boost.toString()),
     );
 
-    userTotals[user]![competitor] = (
-      userTotals[user]![competitor] || new Decimal(0)
+    userTotals[user_wallet]![competitor] = (
+      userTotals[user_wallet]![competitor] || new Decimal(0)
     ).add(effectiveBoost);
   }
 
@@ -102,7 +113,7 @@ export function calculateRewardsForUsers(
   hook({ competitorTotals: competitorTotals });
 
   const rewards: Reward[] = [];
-  for (const [user, competitors] of Object.entries(userTotals)) {
+  for (const [user_wallet, competitors] of Object.entries(userTotals)) {
     let payoutSum = new Decimal(0);
 
     for (const [competitor, effectiveBoost] of Object.entries(competitors)) {
@@ -126,7 +137,11 @@ export function calculateRewardsForUsers(
     if (payoutSum.gt(0)) {
       // Convert Decimal to bigint by rounding to nearest integer
       const payoutBigInt = BigInt(payoutSum.toFixed(0, Decimal.ROUND_DOWN));
-      rewards.push({ address: user, amount: payoutBigInt });
+      rewards.push({
+        address: user_wallet,
+        amount: payoutBigInt,
+        owner: userIds[user_wallet]!,
+      });
     }
   }
   hook({ rewards: rewards });
@@ -167,16 +182,26 @@ export function calculateRewardsForCompetitors(
 
   // Build competitor to wallet mapping from leaderboard
   const competitorToWalletMap: Record<string, string> = {};
+  const competitorToOwnerMap: Record<string, string> = {};
   for (const placement of leaderBoard) {
     competitorToWalletMap[placement.competitor] = placement.wallet;
+    competitorToOwnerMap[placement.competitor] = placement.owner;
   }
 
   const rewards: Reward[] = [];
   for (const [competitor, split] of Object.entries(prizePoolSplits)) {
+    const owner = competitorToOwnerMap[competitor];
+    /* c8 ignore start */
+    if (!owner) {
+      continue;
+    }
+    /* c8 ignore end */
     const walletAddress = competitorToWalletMap[competitor]!;
     rewards.push({
       address: walletAddress,
       amount: BigInt(split.toFixed(0, Decimal.ROUND_DOWN)),
+      owner,
+      competitor,
     });
   }
   hook({ rewards: rewards });

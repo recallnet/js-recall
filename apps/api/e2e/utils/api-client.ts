@@ -459,6 +459,10 @@ export class ApiClient {
             selfFundingThreshold?: number;
             apiUrl?: string;
           };
+          prizePools?: {
+            agent: number;
+            users: number;
+          };
         }
       | string,
     description?: string,
@@ -528,6 +532,7 @@ export class ApiClient {
     tradingConstraints,
     rewards,
     perpsProvider,
+    prizePools,
   }: {
     name?: string;
     description?: string;
@@ -550,6 +555,10 @@ export class ApiClient {
       initialCapital: number;
       selfFundingThreshold: number;
       apiUrl?: string;
+    };
+    prizePools?: {
+      agent: number;
+      users: number;
     };
   }): Promise<CreateCompetitionResponse | ErrorResponse> {
     const competitionName = name || `Test competition ${Date.now()}`;
@@ -574,6 +583,7 @@ export class ApiClient {
           tradingConstraints,
           rewards,
           perpsProvider,
+          prizePools,
         },
       );
 
@@ -599,6 +609,7 @@ export class ApiClient {
       tradingConstraints,
       rewards,
       perpsProvider,
+      prizePools,
     }: {
       name?: string;
       description?: string;
@@ -614,6 +625,10 @@ export class ApiClient {
         initialCapital?: number;
         selfFundingThreshold?: number;
         apiUrl?: string;
+      };
+      prizePools?: {
+        agent: number;
+        users: number;
       };
     },
   ): Promise<UpdateCompetitionResponse | ErrorResponse> {
@@ -631,6 +646,7 @@ export class ApiClient {
           tradingConstraints,
           rewards,
           perpsProvider,
+          prizePools,
         },
       );
 

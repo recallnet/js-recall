@@ -19,6 +19,7 @@ import { getCompetitionSkills } from "@/utils/competition-utils";
 import { formatDate } from "@/utils/format";
 
 import { CompetitionStateSummary } from "./competition-state-summary";
+import { RewardsTGE } from "./rewards-tge";
 
 export interface CompetitionInfoProps {
   competition: RouterOutputs["competitions"]["getById"];
@@ -122,7 +123,14 @@ export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
           {/* Rewards Row */}
           <div className="flex items-center gap-6 border-b px-6 py-6">
             <CellTitle className="uppercase tracking-wider">Rewards</CellTitle>
-            {competition.rewards && competition.rewards.length > 0 ? (
+            {competition.rewardsTge ? (
+              <RewardsTGE
+                rewards={{
+                  agentPrizePool: BigInt(competition.rewardsTge.agentPool),
+                  userPrizePool: BigInt(competition.rewardsTge.userPool),
+                }}
+              />
+            ) : competition.rewards && competition.rewards.length > 0 ? (
               <div className="flex flex-1 items-center gap-6">
                 {competition.rewards
                   .sort((a, b) => a.rank - b.rank)

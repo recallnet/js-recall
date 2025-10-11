@@ -32,6 +32,12 @@ export const rewards = pgTable(
     competitionId: uuid("competition_id")
       .notNull()
       .references(() => competitions.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    agentId: uuid("agent_id").references(() => agents.id, {
+      onDelete: "cascade",
+    }),
     address: blockchainAddress("address").notNull(),
     amount: tokenAmount("amount").notNull(),
     leafHash: bytea("leaf_hash").notNull(),
@@ -45,7 +51,13 @@ export const rewards = pgTable(
   },
   (table) => [
     index("idx_rewards_competition_id").on(table.competitionId),
+    index("idx_rewards_user_id").on(table.userId),
+    index("idx_rewards_agent_id").on(table.agentId),
     index("idx_rewards_address").on(table.address),
+    uniqueIndex("uq_rewards_competition_id_address").on(
+      table.competitionId,
+      table.address,
+    ),
   ],
 );
 

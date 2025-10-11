@@ -25,7 +25,6 @@ describe("LeaderboardService", () => {
     mockRepo = {
       getStatsForCompetitionType: vi.fn(),
       getGlobalAgentMetrics: vi.fn(),
-      getGlobalStatsAllTypes: vi.fn(),
       getTotalActiveAgents: vi.fn(),
     } as unknown as MockedObject<LeaderboardRepository>;
 
@@ -202,17 +201,6 @@ describe("LeaderboardService", () => {
           totalCount: 44,
         });
 
-        // Mock global stats
-        mockRepo.getGlobalStatsAllTypes.mockResolvedValueOnce({
-          activeAgents: 44,
-          totalCompetitions: 5,
-          totalTrades: 100,
-          totalPositions: 0,
-          totalVolume: 1000000,
-          totalVotes: 50,
-          competitionIds: ["comp-1"],
-        });
-
         const result = await service.getUnifiedLeaderboard(benchmarkData);
 
         // Verify structure
@@ -301,17 +289,6 @@ describe("LeaderboardService", () => {
           totalCount: 25,
         });
 
-        // Mock global stats
-        mockRepo.getGlobalStatsAllTypes.mockResolvedValueOnce({
-          activeAgents: 25,
-          totalCompetitions: 3,
-          totalTrades: 0,
-          totalPositions: 150,
-          totalVolume: 500000,
-          totalVotes: 20,
-          competitionIds: ["comp-2"],
-        });
-
         const result = await service.getUnifiedLeaderboard(benchmarkData);
 
         // Verify perpetual_futures skill
@@ -368,17 +345,6 @@ describe("LeaderboardService", () => {
           totalCount: 25,
         });
 
-        // Mock global stats
-        mockRepo.getGlobalStatsAllTypes.mockResolvedValue({
-          activeAgents: 69,
-          totalCompetitions: 8,
-          totalTrades: 100,
-          totalPositions: 150,
-          totalVolume: 1500000,
-          totalVotes: 70,
-          competitionIds: ["comp-1", "comp-2"],
-        });
-
         const result = await service.getUnifiedLeaderboard(benchmarkData);
 
         // Verify both skills exist
@@ -418,16 +384,6 @@ describe("LeaderboardService", () => {
         mockRepo.getGlobalAgentMetrics.mockResolvedValue({
           agents: [],
           totalCount: 0,
-        });
-
-        mockRepo.getGlobalStatsAllTypes.mockResolvedValue({
-          activeAgents: 0,
-          totalCompetitions: 0,
-          totalTrades: 0,
-          totalPositions: 0,
-          totalVolume: 0,
-          totalVotes: 0,
-          competitionIds: [],
         });
 
         const result = await service.getUnifiedLeaderboard(benchmarkData);
@@ -565,16 +521,6 @@ describe("LeaderboardService", () => {
         mockRepo.getGlobalAgentMetrics.mockResolvedValue({
           agents: mockAgents, // Only return 100
           totalCount: 500, // But total is 500
-        });
-
-        mockRepo.getGlobalStatsAllTypes.mockResolvedValue({
-          activeAgents: 500,
-          totalCompetitions: 10,
-          totalTrades: 1000,
-          totalPositions: 0,
-          totalVolume: 5000000,
-          totalVotes: 200,
-          competitionIds: ["comp-1"],
         });
 
         const result = await service.getUnifiedLeaderboard(benchmarkData);

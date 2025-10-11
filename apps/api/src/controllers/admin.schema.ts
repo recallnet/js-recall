@@ -90,6 +90,12 @@ export const AdminCreateCompetitionSchema = z
     tradingConstraints: TradingConstraintsSchema,
     rewards: RewardsSchema,
     perpsProvider: PerpsProviderSchema.optional(), // Only required for perps competitions
+    prizePools: z
+      .object({
+        agent: z.number().min(0),
+        users: z.number().min(0),
+      })
+      .optional(),
   })
   .refine(
     (data) => {
@@ -138,6 +144,12 @@ export const AdminStartCompetitionSchema = z
     tradingConstraints: TradingConstraintsSchema,
     rewards: RewardsSchema,
     perpsProvider: PerpsProviderSchema.optional(), // Only required for perps competitions
+    prizePools: z
+      .object({
+        agent: z.number().min(0),
+        users: z.number().min(0),
+      })
+      .optional(),
   })
   .refine((data) => data.competitionId || data.name, {
     message: "Either competitionId or name must be provided",
@@ -294,4 +306,18 @@ export const AdminListAllAgentsQuerySchema = z.object({
  */
 export const AdminGetCompetitionTransferViolationsParamsSchema = z.object({
   competitionId: UuidSchema,
+});
+
+/**
+ * Admin rewards allocation schema
+ */
+export const AdminRewardsAllocationSchema = z.object({
+  competitionId: UuidSchema.describe(
+    "The competition ID to allocate rewards for",
+  ),
+  startTimestamp: z
+    .number()
+    .int()
+    .positive()
+    .describe("The timestamp from which rewards can be claimed"),
 });

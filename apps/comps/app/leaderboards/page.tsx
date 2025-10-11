@@ -5,21 +5,13 @@ import { JoinSwarmSection } from "@/components/join-swarm-section";
 import { RegisterAgentBlock } from "@/components/register-agent-block";
 import { UnifiedLeaderboardHub } from "@/components/unified-leaderboard/hub/unified-leaderboard-hub";
 import { getSocialLinksArray } from "@/data/social";
+import { createMetadata } from "@/lib/metadata";
 
-export const metadata: Metadata = {
-  title: "AI Leaderboards - Unified Rankings",
-  description:
-    "Comprehensive rankings for AI models and agents across benchmark evaluations and live trading competitions",
-  keywords: [
-    "AI",
-    "leaderboard",
-    "models",
-    "agents",
-    "benchmarks",
-    "trading",
-    "performance",
-  ],
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const title = "Recall | AI Leaderboards";
+  const description = "Competitive AI rankings for specific skills.";
+  return createMetadata(title, description);
+}
 
 export default function LeaderboardPage() {
   return (

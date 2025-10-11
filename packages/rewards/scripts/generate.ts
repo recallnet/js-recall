@@ -26,13 +26,16 @@ interface GeneratedData {
   leaderBoard: Array<{
     competitor: string;
     rank: number;
+    wallet: string;
+    owner: string;
   }>;
   window: {
     start: string;
     end: string;
   };
   boostAllocations: Array<{
-    user: string;
+    user_id: string;
+    user_wallet: string;
     competitor: string;
     boost: number;
     timestamp: string;
@@ -62,26 +65,49 @@ function randomTimestamp(start: Date, end: Date): string {
 }
 
 /**
- * Generate competitor names with ranks
+ * Generate a random wallet address
+ */
+function generateWalletAddress(): string {
+  const chars = "0123456789abcdef";
+  let address = "0x";
+  for (let i = 0; i < 40; i++) {
+    address += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return address;
+}
+
+/**
+ * Generate competitor names with ranks, wallets, and owners
  */
 function generateCompetitors(numCompetitors: number): Array<{
   competitor: string;
   rank: number;
+  wallet: string;
+  owner: string;
 }> {
-  const competitors: Array<{ competitor: string; rank: number }> = [];
+  const competitors: Array<{
+    competitor: string;
+    rank: number;
+    wallet: string;
+    owner: string;
+  }> = [];
   for (let i = 1; i <= numCompetitors; i++) {
     competitors.push({
       competitor: `Competitor ${String.fromCharCode(64 + i)}`, // A, B, C, etc.
       rank: i,
+      wallet: generateWalletAddress(),
+      owner: `owner-${String.fromCharCode(96 + i)}`, // a, b, c, etc.
     });
   }
   return competitors;
 }
 
 /**
- * Generate user names
+ * Generate user data with IDs and wallet addresses
  */
-function generateUsers(numUsers: number): string[] {
+function generateUsers(
+  numUsers: number,
+): Array<{ user_id: string; user_wallet: string }> {
   const adjectives = [
     "Swift",
     "Brave",
@@ -195,7 +221,7 @@ function generateUsers(numUsers: number): string[] {
     "Quartzite",
   ];
 
-  const users: string[] = [];
+  const users: Array<{ user_id: string; user_wallet: string }> = [];
   const usedNames = new Set<string>();
 
   for (let i = 0; i < numUsers; i++) {
@@ -218,7 +244,10 @@ function generateUsers(numUsers: number): string[] {
     }
 
     usedNames.add(userName);
-    users.push(userName);
+    users.push({
+      user_id: `${userName.toLowerCase()}-user-id`,
+      user_wallet: generateWalletAddress(),
+    });
   }
 
   return users;
@@ -228,8 +257,13 @@ function generateUsers(numUsers: number): string[] {
  * Generate boost allocations
  */
 function generateBoostAllocations(
-  users: string[],
-  competitors: Array<{ competitor: string; rank: number }>,
+  users: Array<{ user_id: string; user_wallet: string }>,
+  competitors: Array<{
+    competitor: string;
+    rank: number;
+    wallet: string;
+    owner: string;
+  }>,
   windowStart: Date,
   windowEnd: Date,
   minBoostsPerUser: number,
@@ -237,13 +271,15 @@ function generateBoostAllocations(
   minBoostValue: number,
   maxBoostValue: number,
 ): Array<{
-  user: string;
+  user_id: string;
+  user_wallet: string;
   competitor: string;
   boost: number;
   timestamp: string;
 }> {
   const allocations: Array<{
-    user: string;
+    user_id: string;
+    user_wallet: string;
     competitor: string;
     boost: number;
     timestamp: string;
@@ -261,7 +297,8 @@ function generateBoostAllocations(
       const timestamp = randomTimestamp(windowStart, windowEnd);
 
       allocations.push({
-        user,
+        user_id: user.user_id,
+        user_wallet: user.user_wallet,
         competitor,
         boost,
         timestamp,
