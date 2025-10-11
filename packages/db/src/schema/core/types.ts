@@ -46,3 +46,5 @@ export type SelectCompetitionPrizePool =
   typeof defs.competitionPrizePools.$inferSelect;
 export type InsertCompetitionPrizePool =
   typeof defs.competitionPrizePools.$inferInsert;
+
+export type SelectSanctionedWallet = typeof defs.sanctionedWallets.$inferSelect;

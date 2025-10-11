@@ -142,6 +142,16 @@
         "default": "./dist/repositories/rewards.cjs"
       }
     },
+    "./repositories/sanctioned-wallet": {
+      "import": {
+        "types": "./dist/repositories/sanctioned-wallet.d.ts",
+        "default": "./dist/repositories/sanctioned-wallet.js"
+      },
+      "require": {
+        "types": "./dist/repositories/sanctioned-wallet.d.cts",
+        "default": "./dist/repositories/sanctioned-wallet.cjs"
+      }
+    },
     "./repositories/stakes": {
       "import": {
         "types": "./dist/repositories/stakes.d.ts",

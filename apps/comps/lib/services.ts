@@ -31,6 +31,7 @@ import {
   competitionRewardsRepository,
   leaderboardRepository,
   perpsRepository,
+  sanctionedWalletRepository,
   stakesRepository,
   tradeRepository,
   tradingConstraintsRepository,
@@ -46,9 +47,12 @@ const multichainProvider = new MultiChainProvider(
   createLogger("MultiChainProvider"),
 );
 
+const includeWatchlistDatabaseMode =
+  config.watchlist.mode === "database" || config.watchlist.mode === "hybrid";
 export const walletWatchList = new WalletWatchlist(
   config,
   createLogger("WalletWatchlist"),
+  includeWatchlistDatabaseMode ? sanctionedWalletRepository : undefined,
 );
 
 export const balanceService = new BalanceService(

@@ -10,6 +10,7 @@ import {
   CoinGeckoMode,
   CrossChainTradingType,
   PriceProvider,
+  WalletWatchlistMode,
 } from "@recallnet/services/types";
 
 import { createSentryConfig } from "@/lib/sentry-config.js";
@@ -266,9 +267,20 @@ export const config = {
       ? BigInt(process.env.NO_STAKE_BOOST_AMOUNT)
       : undefined,
   },
-  // Chainalysis API key
+  // Wallet watchlist configuration
   watchlist: {
-    chainalysisApiKey: process.env.CHAINALYSIS_API_KEY || "",
+    // Mode can be: 'none', 'api', 'database', or 'hybrid'
+    // - none: No watchlist checks will be performed
+    // - api: Only use external API (Chainalysis or compatible API)
+    // - database: Only use local database table
+    // - hybrid: Use API first, fallback to database on error
+    mode: (process.env.WALLET_WATCHLIST_MODE || "none") as WalletWatchlistMode,
+    // External API URL (defaults to Chainalysis)
+    apiUrl:
+      process.env.WALLET_WATCHLIST_API_URL ||
+      "https://public.chainalysis.com/api/v1/address",
+    // API key for external watchlist service, if applicable
+    apiKey: process.env.WALLET_WATCHLIST_API_KEY || "",
   },
   symphony: {
     apiUrl: process.env.SYMPHONY_API_URL || "https://api.symphony.io",

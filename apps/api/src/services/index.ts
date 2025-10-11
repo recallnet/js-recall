@@ -12,6 +12,7 @@ import { CompetitionRewardsRepository } from "@recallnet/db/repositories/competi
 import { LeaderboardRepository } from "@recallnet/db/repositories/leaderboard";
 import { PerpsRepository } from "@recallnet/db/repositories/perps";
 import { RewardsRepository } from "@recallnet/db/repositories/rewards";
+import { SanctionedWalletRepository } from "@recallnet/db/repositories/sanctioned-wallet";
 import { StakesRepository } from "@recallnet/db/repositories/stakes";
 import { TradeRepository } from "@recallnet/db/repositories/trade";
 import { TradingConstraintsRepository } from "@recallnet/db/repositories/trading-constraints";
@@ -175,8 +176,18 @@ class ServiceRegistry {
     );
     this._perpsRepository = new PerpsRepository(db, dbRead, repositoryLogger);
     const adminRepository = new AdminRepository(db, repositoryLogger);
-
-    const walletWatchlist = new WalletWatchlist(config, serviceLogger);
+    const sanctionedWalletRepository = new SanctionedWalletRepository(
+      db,
+      repositoryLogger,
+    );
+    const includeWatchlistDatabaseMode =
+      config.watchlist.mode === "database" ||
+      config.watchlist.mode === "hybrid";
+    const walletWatchlist = new WalletWatchlist(
+      config,
+      serviceLogger,
+      includeWatchlistDatabaseMode ? sanctionedWalletRepository : undefined,
+    );
 
     const multichainProvider = new MultiChainProvider(config, serviceLogger);
 

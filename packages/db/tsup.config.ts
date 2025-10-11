@@ -16,6 +16,7 @@ export default defineConfig({
     "src/repositories/leaderboard.ts",
     "src/repositories/perps.ts",
     "src/repositories/rewards.ts",
+    "src/repositories/sanctioned-wallet.ts",
     "src/repositories/stakes.ts",
     "src/repositories/trade.ts",
     "src/repositories/trading-constraints.ts",

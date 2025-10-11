@@ -1308,3 +1308,14 @@ export const LinkUserWalletSchema = z.strictObject({
 });
 
 export type LinkUserWallet = z.infer<typeof LinkUserWalletSchema>;
+
+/**
+ * Wallet watchlist mode
+ */
+export const WalletWatchlistModeSchema = z.enum([
+  "none",
+  "database",
+  "api",
+  "hybrid",
+]);
+export type WalletWatchlistMode = z.infer<typeof WalletWatchlistModeSchema>;
