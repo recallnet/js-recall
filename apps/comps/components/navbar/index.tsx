@@ -30,9 +30,11 @@ export const Navbar: React.FunctionComponent = () => {
   const [open, setOpen] = useState(false);
 
   const navItems = [
-    { label: "COMPETITIONS", href: "/competitions" },
-    { label: "LEADERBOARDS", href: "/leaderboards" },
-    ...(isAuthenticated ? [{ label: "STAKE RECALL", href: "/stake" }] : []),
+    { label: "COMPETITIONS", href: "/competitions", mobileOnly: false },
+    { label: "LEADERBOARDS", href: "/leaderboards", mobileOnly: false },
+    ...(isAuthenticated
+      ? [{ label: "STAKE RECALL", href: "/stake", mobileOnly: true }]
+      : []),
   ];
 
   return (
@@ -53,6 +55,7 @@ export const Navbar: React.FunctionComponent = () => {
           {/* Inline nav items for lg+ */}
           <div className="xs:flex hidden">
             {navItems
+              .filter((item) => !item.mobileOnly)
               .map((item) => {
                 const isActive = pathname.startsWith(item.href);
                 return (
@@ -71,8 +74,7 @@ export const Navbar: React.FunctionComponent = () => {
                     </span>
                   </Link>
                 );
-              })
-              .slice(0, 2)}
+              })}
           </div>
 
           {/* Dropdown trigger for <sm */}
