@@ -1,5 +1,14 @@
 import { randomUUID } from "crypto";
-import { and, count as drizzleCount, eq, ilike, ne, sql } from "drizzle-orm";
+import {
+  and,
+  count as drizzleCount,
+  eq,
+  ilike,
+  inArray,
+  ne,
+  or,
+  sql,
+} from "drizzle-orm";
 import { Logger } from "pino";
 
 import { users } from "../schema/core/defs.js";
@@ -124,6 +133,40 @@ export class UserRepository {
     } catch (error) {
       this.#logger.error(
         "[UserRepository] Error in findByWalletAddress:",
+        error,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Find users with specific wallet addresses
+   * Checks both walletAddress and embeddedWalletAddress columns
+   * @param addresses Array of wallet addresses to check (will be normalized to lowercase)
+   * @returns Array of users matching any of the addresses
+   */
+  async findUsersWithAddresses(addresses: string[]): Promise<SelectUser[]> {
+    try {
+      if (addresses.length === 0) {
+        return [];
+      }
+
+      const normalizedAddresses = addresses.map((addr) => addr.toLowerCase());
+
+      const result = await this.#db
+        .select()
+        .from(users)
+        .where(
+          or(
+            inArray(users.walletAddress, normalizedAddresses),
+            inArray(users.embeddedWalletAddress, normalizedAddresses),
+          ),
+        );
+
+      return result;
+    } catch (error) {
+      this.#logger.error(
+        "[UserRepository] Error in findUsersWithAddresses:",
         error,
       );
       throw error;
