@@ -17,7 +17,7 @@ import { useUserStakes } from "./useUserStakes";
  * Base hook result type for individual staking operations
  */
 export type StakingOperationResult = {
-  execute: (...args: any[]) => Promise<void>;
+  execute: (amount: bigint, duration: bigint) => Promise<void>;
   isPending: boolean;
   isConfirming: boolean;
   isConfirmed: boolean;
@@ -87,6 +87,7 @@ export const useStake = (): StakingOperationResult => {
       {
         hash: txHash,
         pollingInterval: 1000,
+        confirmations: 2,
       },
     );
 

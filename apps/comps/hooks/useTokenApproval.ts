@@ -58,6 +58,7 @@ export const useTokenApproval = (
   const { isLoading: isApprovalConfirming, isSuccess: isApprovalConfirmed } =
     useWaitForTransactionReceipt({
       hash: approvalTransactionHash,
+      confirmations: 2,
     });
 
   const approve = useCallback(
@@ -96,6 +97,7 @@ export const useTokenApproval = (
       {
         hash: txHash,
         pollingInterval: 1000,
+        confirmations: 2,
       },
     );
 

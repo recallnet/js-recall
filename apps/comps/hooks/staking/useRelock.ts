@@ -13,7 +13,11 @@ import { useStakingContractAddress } from "./useStakingContractAddress";
  * Base hook result type for individual staking operations
  */
 export type StakingOperationResult = {
-  execute: (...args: any[]) => Promise<void>;
+  execute: (
+    tokenId: bigint,
+    newLockDuration: bigint,
+    newLockAmount?: bigint,
+  ) => Promise<void>;
   isPending: boolean;
   isConfirming: boolean;
   isConfirmed: boolean;
@@ -40,6 +44,7 @@ export const useRelock = (): StakingOperationResult => {
   const { isLoading: isConfirming, isSuccess: isConfirmed } =
     useWaitForTransactionReceipt({
       hash: transactionHash,
+      confirmations: 2,
     });
 
   const execute = useCallback(
