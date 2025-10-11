@@ -351,6 +351,13 @@
       "when": 1760149044015,
       "tag": "0049_elite_dexter_bennett",
       "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1760150053564,
+      "tag": "0050_cultured_mulholland_black",
+      "breakpoints": true
     }
   ]
 }
