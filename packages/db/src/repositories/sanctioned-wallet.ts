@@ -16,7 +16,7 @@ export class SanctionedWalletRepository {
 
   /**
    * Check if a wallet address is sanctioned
-   * @param address The wallet address to check (will be normalized to lowercase)
+   * @param address The wallet address to check
    * @returns True if the address is sanctioned, false otherwise
    */
   async isSanctioned(address: string): Promise<boolean> {
@@ -36,7 +36,7 @@ export class SanctionedWalletRepository {
 
   /**
    * Add a wallet address to the sanctioned list
-   * @param address The wallet address to add (will be normalized to lowercase)
+   * @param address The wallet address to add (note: lowercased internally before insertion)
    * @returns The created sanctioned wallet record
    */
   async add(address: string): Promise<SelectSanctionedWallet> {
@@ -65,7 +65,7 @@ export class SanctionedWalletRepository {
 
   /**
    * Remove a wallet address from the sanctioned list
-   * @param address The wallet address to remove (will be normalized to lowercase)
+   * @param address The wallet address to remove
    * @returns True if a record was deleted, false otherwise
    */
   async remove(address: string): Promise<boolean> {
@@ -96,7 +96,7 @@ export class SanctionedWalletRepository {
 
   /**
    * Check if multiple addresses are sanctioned
-   * @param addresses Array of wallet addresses to check (will be normalized to lowercase)
+   * @param addresses Array of wallet addresses to check (note: lowercased internally)
    * @returns Map of normalized address to boolean indicating if sanctioned
    */
   async areSanctioned(addresses: string[]): Promise<Map<string, boolean>> {
