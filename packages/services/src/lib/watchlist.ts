@@ -58,8 +58,7 @@ export interface WalletWatchlistConfig {
 export class WalletWatchlist {
   private readonly mode: WalletWatchlistMode;
   private readonly apiKey: string;
-  private readonly baseUrl: string =
-    "https://public.chainalysis.com/api/v1/address";
+  private baseUrl: string = "https://public.chainalysis.com/api/v1/address";
   private readonly requestTimeout = 10_000;
   private readonly logger: Logger;
   private readonly dbRepository?: SanctionedWalletRepository;
