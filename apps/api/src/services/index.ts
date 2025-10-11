@@ -176,7 +176,10 @@ class ServiceRegistry {
     );
     this._perpsRepository = new PerpsRepository(db, dbRead, repositoryLogger);
     const adminRepository = new AdminRepository(db, repositoryLogger);
-    const sanctionedWalletRepository = new SanctionedWalletRepository(db);
+    const sanctionedWalletRepository = new SanctionedWalletRepository(
+      db,
+      repositoryLogger,
+    );
 
     const walletWatchlist = new WalletWatchlist(
       config,
