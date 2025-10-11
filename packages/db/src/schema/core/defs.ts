@@ -524,13 +524,9 @@ export const competitionPrizePools = pgTable(
  * Sanctioned wallet addresses for security and compliance.
  * Contains addresses that are blocked from using the platform.
  */
-export const sanctionedWallets = pgTable(
-  "sanctioned_wallets",
-  {
-    address: varchar("address", { length: 42 }).primaryKey().notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .defaultNow()
-      .notNull(),
-  },
-  (table) => [index("idx_sanctioned_wallets_address").on(table.address)],
-);
+export const sanctionedWallets = pgTable("sanctioned_wallets", {
+  address: varchar("address", { length: 42 }).primaryKey().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});

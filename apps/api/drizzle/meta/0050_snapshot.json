@@ -1,6 +1,6 @@
 {
-  "id": "a351b394-51c0-4228-8fda-d03f700872fc",
-  "prevId": "b5330145-b7ce-4b3f-816b-3cebf0ca6b8c",
+  "id": "1ff991ce-1920-403b-9b38-012cc245c901",
+  "prevId": "d84cae09-4928-463f-9935-2a9a03e880d2",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -1245,23 +1245,7 @@
           "default": "now()"
         }
       },
-      "indexes": {
-        "idx_sanctioned_wallets_address": {
-          "name": "idx_sanctioned_wallets_address",
-          "columns": [
-            {
-              "expression": "address",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "with": {},
-          "method": "btree",
-          "concurrently": false
-        }
-      },
+      "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
