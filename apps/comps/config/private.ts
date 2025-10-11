@@ -29,7 +29,10 @@ const configSchema = z.strictObject({
     .custom<typeof specificChainTokens>()
     .default(specificChainTokens),
   watchlist: z.object({
-    chainalysisApiKey: z.string().default(""),
+    enabled: z.boolean().default(false),
+    mode: z.enum(["database", "api", "hybrid"]).default("api"),
+    apiUrl: z.url().default("https://public.chainalysis.com/api/v1/address"),
+    apiKey: z.string().default(""),
   }),
   priceTracker: z.object({
     maxCacheSize: z.coerce.number().default(10000),
@@ -80,7 +83,11 @@ const configSchema = z.strictObject({
 export const rawConfig = {
   evmChains: parseEvmChains(),
   specificChainBalances: getSpecificChainBalances(),
-  watchlist: { chainalysisApiKey: process.env.WATCHLIST_CHAINALYSIS_API_KEY },
+  watchlist: {
+    mode: process.env.WALLET_WATCHLIST_MODE,
+    apiUrl: process.env.WALLET_WATCHLIST_API_URL,
+    apiKey: process.env.WALLET_WATCHLIST_API_KEY,
+  },
   priceTracker: {
     maxCacheSize: process.env.PRICE_TRACKER_MAX_CACHE_SIZE,
     priceTTLMs: process.env.PRICE_TRACKER_PRICE_TTL_MS,
