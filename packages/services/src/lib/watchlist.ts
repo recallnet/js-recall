@@ -16,6 +16,14 @@ import {
 type Category = "sanctions" | string | null;
 
 /**
+ * Wallet watchlist mode
+ * - database: Only use a local database table that stores sanctioned addresses
+ * - api: Only use external API (e.g., Chainalysis, or an API with the same response shape)
+ * - hybrid: Use API first, fallback to database on error
+ */
+type WalletWatchlistMode = "database" | "api" | "hybrid";
+
+/**
  * Interface for Chainalysis API response
  */
 interface ChainalysisIdentification {
@@ -44,7 +52,7 @@ function checkIsSanctioned(identification: ChainalysisIdentification): boolean {
 
 export interface WalletWatchlistConfig {
   watchlist: {
-    mode: "database" | "api" | "hybrid";
+    mode: WalletWatchlistMode;
     apiUrl: string;
     apiKey: string;
   };
@@ -55,9 +63,10 @@ export interface WalletWatchlistConfig {
  * Checks wallet addresses against sanctions list using database, external API, or hybrid mode
  */
 export class WalletWatchlist {
-  private readonly mode: "database" | "api" | "hybrid";
+  private readonly mode: WalletWatchlistMode;
   private readonly apiKey: string;
-  private readonly baseUrl: string;
+  private readonly baseUrl: string =
+    "https://public.chainalysis.com/api/v1/address";
   private readonly requestTimeout = 10_000;
   private readonly logger: Logger;
   private readonly dbRepository?: SanctionedWalletRepository;
@@ -85,6 +94,7 @@ export class WalletWatchlist {
     this.logger.info(
       {
         mode: this.mode,
+        baseUrl: this.baseUrl,
         apiConfigured: !!this.apiKey,
         dbConfigured: !!this.dbRepository,
       },
@@ -249,12 +259,11 @@ export class WalletWatchlist {
           return await this.checkApi(normalizedAddress);
 
         case "hybrid":
-          // Try API first
+          // Try API first, fall back to database if it fails
           if (this.isConfigured()) {
             try {
               return await this.checkApi(normalizedAddress);
             } catch (apiError) {
-              // API failed, fall back to database
               this.logger.warn(
                 {
                   address: normalizedAddress,
@@ -263,7 +272,6 @@ export class WalletWatchlist {
                 "API check failed, falling back to database",
               );
 
-              // Check database as fallback
               return await this.checkDatabase(normalizedAddress);
             }
           } else {
