@@ -36,11 +36,18 @@ export class SanctionedWalletRepository {
     const [created] = await this.#db
       .insert(sanctionedWallets)
       .values({ address: normalizedAddress })
+      .onConflictDoNothing()
       .returning();
-    if (!created) {
-      throw new Error("Failed to add sanctioned wallet");
-    }
-    return created;
+    if (created) return created;
+
+    const [existing] = await this.#db
+      .select()
+      .from(sanctionedWallets)
+      .where(eq(sanctionedWallets.address, normalizedAddress))
+      .limit(1);
+    if (!existing) throw new Error("Failed to add sanctioned wallet");
+
+    return existing;
   }
 
   /**
