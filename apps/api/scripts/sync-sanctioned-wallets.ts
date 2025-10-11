@@ -367,6 +367,6 @@ if (process.argv.includes("--run-once")) {
     });
 } else {
   logger.info(
-    "Sanctioned wallets sync scheduler started (runs daily at 1:24 AM UTC)",
+    "Sanctioned wallets sync scheduler started (runs daily at 00:00 AM UTC)",
   );
 }
