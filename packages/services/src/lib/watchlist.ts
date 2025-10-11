@@ -86,7 +86,7 @@ export class WalletWatchlist {
       {
         mode: this.mode,
         baseUrl: this.baseUrl,
-        apiConfigured: !!this.apiKey,
+        apiConfigured: this.isApiConfigured(),
         dbConfigured: !!this.dbRepository,
       },
       "WalletWatchlist initialized",
@@ -94,23 +94,48 @@ export class WalletWatchlist {
 
     switch (this.mode) {
       case "none":
-        this.logger.info("Wallet watchlist checks disabled (mode: none)");
+        this.logger.info("Watchlist checks disabled (mode: none)");
         break;
+
       case "api":
-        if (!this.apiKey) {
-          this.logger.warn(
-            "Wallet watchlist API mode selected but no key configured (checks will fail)",
+        if (!this.isApiConfigured()) {
+          throw new Error(
+            "Watchlist API mode requires apiKey to be configured",
           );
         }
         break;
+
       case "database":
+        if (!this.dbRepository) {
+          throw new Error(
+            "Watchlist database mode requires dbRepository to be provided",
+          );
+        }
+        break;
+
+      // Note: hybrid needs at least one of: external API or database queries
       case "hybrid":
+        if (!this.isApiConfigured() && !this.dbRepository) {
+          throw new Error(
+            "Watchlist hybrid mode requires API key or database connection",
+          );
+        }
+        if (!this.isApiConfigured()) {
+          this.logger.warn(
+            "Watchlist hybrid mode: API not configured, using database only",
+          );
+        }
         if (!this.dbRepository) {
           this.logger.warn(
-            `Wallet watchlist ${this.mode} mode selected but database repository not provided`,
+            "Watchlist hybrid mode: Database not configured, using API only",
           );
         }
         break;
+
+      default: {
+        const _exhaustive: never = this.mode;
+        throw new Error(`Unhandled watchlist mode: ${_exhaustive}`);
+      }
     }
   }
 
@@ -182,7 +207,7 @@ export class WalletWatchlist {
    */
   private async checkDatabase(normalizedAddress: string): Promise<boolean> {
     if (!this.dbRepository) {
-      this.logger.warn("Wallet watchlist database repository not configured");
+      this.logger.warn("Watchlist database repository not configured");
       return false;
     }
 
@@ -218,8 +243,8 @@ export class WalletWatchlist {
    * @throws Error if API is unavailable or network issues
    */
   private async checkApi(normalizedAddress: string): Promise<boolean> {
-    if (!this.apiKey) {
-      throw new Error("API key not configured");
+    if (!this.isApiConfigured()) {
+      throw new Error("Watchlist API key not configured");
     }
 
     return await withRetry(
@@ -284,11 +309,6 @@ export class WalletWatchlist {
             );
             return await this.checkDatabase(normalizedAddress);
           }
-
-        default: {
-          const _exhaustiveCheck: never = this.mode;
-          throw new Error(`Unhandled watchlist mode: ${_exhaustiveCheck}`);
-        }
       }
     } catch (error) {
       // Fail closed for security

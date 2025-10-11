@@ -73,12 +73,120 @@ describe("WatchlistService", () => {
     );
   });
 
+  describe("Constructor Validation", () => {
+    it("should throw when API mode has no API key", () => {
+      expect(() => {
+        new WalletWatchlist(
+          {
+            watchlist: {
+              mode: "api",
+              apiUrl: "https://public.chainalysis.com/api/v1/address",
+              apiKey: "",
+            },
+          },
+          logger,
+          mockDbRepository,
+          TEST_RETRY_CONFIG,
+        );
+      }).toThrow("Watchlist API mode requires apiKey to be configured");
+    });
+
+    it("should throw when database mode has no repository", () => {
+      expect(() => {
+        new WalletWatchlist(
+          {
+            watchlist: {
+              mode: "database",
+              apiUrl: "",
+              apiKey: "",
+            },
+          },
+          logger,
+          undefined, // No repository
+          TEST_RETRY_CONFIG,
+        );
+      }).toThrow(
+        "Watchlist database mode requires dbRepository to be provided",
+      );
+    });
+
+    it("should throw when hybrid mode has neither API key nor repository", () => {
+      expect(() => {
+        new WalletWatchlist(
+          {
+            watchlist: {
+              mode: "hybrid",
+              apiUrl: "",
+              apiKey: "",
+            },
+          },
+          logger,
+          undefined, // No repository
+          TEST_RETRY_CONFIG,
+        );
+      }).toThrow(
+        "Watchlist hybrid mode requires API key or database connection",
+      );
+    });
+
+    it("should allow hybrid mode with only API key", () => {
+      expect(() => {
+        new WalletWatchlist(
+          {
+            watchlist: {
+              mode: "hybrid",
+              apiUrl: "https://public.chainalysis.com/api/v1/address",
+              apiKey: "test-key",
+            },
+          },
+          logger,
+          undefined, // No repository
+          TEST_RETRY_CONFIG,
+        );
+      }).not.toThrow();
+    });
+
+    it("should allow hybrid mode with only database repository", () => {
+      expect(() => {
+        new WalletWatchlist(
+          {
+            watchlist: {
+              mode: "hybrid",
+              apiUrl: "",
+              apiKey: "",
+            },
+          },
+          logger,
+          mockDbRepository,
+          TEST_RETRY_CONFIG,
+        );
+      }).not.toThrow();
+    });
+
+    it("should allow none mode without any configuration", () => {
+      expect(() => {
+        new WalletWatchlist(
+          {
+            watchlist: {
+              mode: "none",
+              apiUrl: "",
+              apiKey: "",
+            },
+          },
+          logger,
+          undefined,
+          TEST_RETRY_CONFIG,
+        );
+      }).not.toThrow();
+    });
+  });
+
   describe("isApiConfigured", () => {
     it("should return false when API key is not set", () => {
       watchlistService = new WalletWatchlist(
         {
           watchlist: {
-            mode: "api",
+            mode: "none", // Use "none" mode to bypass constructor validation
             apiUrl: "https://public.chainalysis.com/api/v1/address",
             apiKey: "",
           },
@@ -133,20 +241,6 @@ describe("WatchlistService", () => {
   });
 
   describe("isAddressSanctioned", () => {
-    it("should throw error when API key is not configured for API mode", async () => {
-      watchlistService = new WalletWatchlist(
-        { watchlist: { apiKey: "", apiUrl: "", mode: "api" } },
-        logger,
-        mockDbRepository,
-        TEST_RETRY_CONFIG,
-      );
-
-      const result = watchlistService.isAddressSanctioned(
-        "0x1234567890abcdef1234567890abcdef12345678",
-      );
-      await expect(result).rejects.toThrow("API key not configured");
-    });
-
     it("should return false for clean address", async () => {
       const cleanAddress = "0x1234567890abcdef1234567890abcdef12345678";
       mockFetch.mockResolvedValueOnce({
@@ -462,29 +556,6 @@ describe("WatchlistService", () => {
         ).rejects.toThrow(RetryExhaustedError);
         expect(mockDbRepository.isSanctioned).not.toHaveBeenCalled();
       }, 6000);
-
-      it("should throw when API not configured in API mode", async () => {
-        watchlistService = new WalletWatchlist(
-          {
-            watchlist: {
-              mode: "api",
-              apiUrl: "https://public.chainalysis.com/api/v1/address",
-              apiKey: "", // No API key
-            },
-          },
-          logger,
-          mockDbRepository,
-          TEST_RETRY_CONFIG,
-        );
-
-        const address = "0x1234567890abcdef1234567890abcdef12345678";
-
-        await expect(
-          watchlistService.isAddressSanctioned(address),
-        ).rejects.toThrow("API key not configured");
-        expect(mockFetch).not.toHaveBeenCalled();
-        expect(mockDbRepository.isSanctioned).not.toHaveBeenCalled();
-      });
     });
 
     describe("Database", () => {
@@ -728,19 +799,18 @@ describe("WatchlistService", () => {
       });
     });
 
-    it("should throw on invalid mode", async () => {
-      // Note: we want to test this breaking type safety
+    it("should throw on invalid mode in constructor", () => {
+      // Note: we want to test exhaustive type checking at constructor time
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const invalidMode = "invalid-mode" as any;
-      watchlistService = new WalletWatchlist(
-        { watchlist: { mode: invalidMode, apiUrl: "", apiKey: "" } },
-        logger,
-        mockDbRepository,
-      );
 
-      await expect(
-        watchlistService.isAddressSanctioned("0x123..."),
-      ).rejects.toThrow("Unhandled watchlist mode");
+      expect(() => {
+        new WalletWatchlist(
+          { watchlist: { mode: invalidMode, apiUrl: "", apiKey: "" } },
+          logger,
+          mockDbRepository,
+        );
+      }).toThrow("Unhandled watchlist mode: invalid-mode");
     });
   });
 
