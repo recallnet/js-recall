@@ -61,6 +61,21 @@ export const useTokenApproval = (
       confirmations: 2,
     });
 
+  const refetchAllowance = async (txHash: `0x${string}`) => {
+    const transactionReceipt = await waitForTransactionReceipt(
+      clientConfig as any,
+      {
+        hash: txHash,
+        pollingInterval: 1000,
+        confirmations: 2,
+      },
+    );
+
+    if (transactionReceipt.status === "success") {
+      refetch();
+    }
+  };
+
   const approve = useCallback(
     async (amount: bigint): Promise<void> => {
       if (!tokenAddress || !spenderAddress) {
@@ -80,7 +95,7 @@ export const useTokenApproval = (
         },
       );
     },
-    [tokenAddress, spenderAddress, writeContract],
+    [tokenAddress, spenderAddress, writeContract, refetchAllowance],
   );
 
   const needsApproval = useCallback(
@@ -90,21 +105,6 @@ export const useTokenApproval = (
     },
     [allowance],
   );
-
-  const refetchAllowance = async (txHash: `0x${string}`) => {
-    const transactionReceipt = await waitForTransactionReceipt(
-      clientConfig as any,
-      {
-        hash: txHash,
-        pollingInterval: 1000,
-        confirmations: 2,
-      },
-    );
-
-    if (transactionReceipt.status === "success") {
-      refetch();
-    }
-  };
 
   const isParamsMissing = !address || !tokenAddress || !spenderAddress;
 

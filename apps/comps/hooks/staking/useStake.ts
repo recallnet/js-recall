@@ -48,6 +48,30 @@ export const useStake = (): StakingOperationResult => {
     reset,
   } = useWriteContract();
 
+  const refetchQueries = async (txHash: `0x${string}`) => {
+    const transactionReceipt = await waitForTransactionReceipt(
+      clientConfig as any,
+      {
+        hash: txHash,
+        pollingInterval: 1000,
+        confirmations: 2,
+      },
+    );
+
+    if (transactionReceipt.status === "success") {
+      setIsConfirmed(true);
+      queryClient.invalidateQueries({
+        queryKey: recallQueryKey,
+      });
+      queryClient.invalidateQueries({
+        queryKey: getUserStakesQueryKey,
+      });
+      queryClient.invalidateQueries({
+        queryKey: getTotalUserStakedQueryKey,
+      });
+    }
+  };
+
   // Enhanced execute function that simulates before executing
   const execute = useCallback(
     async (amount: bigint, duration: bigint) => {
@@ -78,32 +102,16 @@ export const useStake = (): StakingOperationResult => {
         );
       }
     },
-    [writeContract, config, contractAddress, address, reset],
+    [
+      writeContract,
+      config,
+      contractAddress,
+      address,
+      reset,
+      refetchQueries,
+      setIsConfirming,
+    ],
   );
-
-  const refetchQueries = async (txHash: `0x${string}`) => {
-    const transactionReceipt = await waitForTransactionReceipt(
-      clientConfig as any,
-      {
-        hash: txHash,
-        pollingInterval: 1000,
-        confirmations: 2,
-      },
-    );
-
-    if (transactionReceipt.status === "success") {
-      setIsConfirmed(true);
-      queryClient.invalidateQueries({
-        queryKey: recallQueryKey,
-      });
-      queryClient.invalidateQueries({
-        queryKey: getUserStakesQueryKey,
-      });
-      queryClient.invalidateQueries({
-        queryKey: getTotalUserStakedQueryKey,
-      });
-    }
-  };
 
   return useMemo(
     () => ({
