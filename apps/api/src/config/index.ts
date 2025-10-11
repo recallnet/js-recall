@@ -280,7 +280,7 @@ export const config = {
       process.env.WALLET_WATCHLIST_API_URL ||
       "https://public.chainalysis.com/api/v1/address",
     // API key for external watchlist service, if applicable
-    apiKey: process.env.CHAINALYSIS_API_KEY || "",
+    apiKey: process.env.WALLET_WATCHLIST_API_KEY || "",
   },
   symphony: {
     apiUrl: process.env.SYMPHONY_API_URL || "https://api.symphony.io",
