@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { attoValueToNumberValue } from "@recallnet/conversions/atto-conversions";
 import { Tooltip } from "@recallnet/ui2/components/tooltip";
 
-import { useTotalUserStaked } from "@/hooks/useStakingContract";
+import { useTotalUserStaked } from "@/hooks/staking";
 import { formatAmount, formatCompactNumber } from "@/utils/format";
 
 /**

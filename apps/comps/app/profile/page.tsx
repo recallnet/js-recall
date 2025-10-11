@@ -16,8 +16,13 @@ import { useSession } from "@/hooks/useSession";
 import { UpdateProfileRequest } from "@/types/profile";
 
 export default function ProfilePage() {
-  const { ready, isPending, backendUser, updateBackendUser, linkWallet } =
-    useSession();
+  const {
+    ready,
+    isPending,
+    backendUser,
+    updateBackendUser,
+    linkOrConnectWallet,
+  } = useSession();
   const router = useRouter();
   const pathname = usePathname();
   const { data: agents, isLoading } = useUserAgents({ limit: 100 });
@@ -39,7 +44,7 @@ export default function ProfilePage() {
   };
 
   const handleLinkWallet = async () => {
-    linkWallet();
+    linkOrConnectWallet();
   };
 
   return (

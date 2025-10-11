@@ -30,8 +30,8 @@ import { toast } from "@recallnet/ui2/components/toast";
 
 import { Pagination } from "@/components/pagination/index";
 import { config } from "@/config/public";
+import { useTotalUserStaked } from "@/hooks/staking";
 import { useSession } from "@/hooks/useSession";
-import { useTotalUserStaked } from "@/hooks/useStakingContract";
 import { useVote } from "@/hooks/useVote";
 import { openForBoosting } from "@/lib/open-for-boosting";
 import { tanstackClient } from "@/rpc/clients/tanstack-query";

@@ -4,6 +4,8 @@ import React, { useState } from "react";
 
 import { Button } from "@recallnet/ui2/components/button";
 
+import { AuthGuard } from "@/components/auth-guard";
+import { ConnectWallet } from "@/components/connect-wallet";
 import { FooterSection } from "@/components/footer-section";
 import { JoinSwarmSection } from "@/components/join-swarm-section";
 import StakeRecallModal from "@/components/modals/stake-recall";
@@ -13,10 +15,12 @@ import { StakeSummary } from "@/components/staking/StakeSummary";
 import { StakeSkeleton } from "@/components/staking/stake-skeleton";
 import { config } from "@/config/public";
 import { getSocialLinksArray } from "@/data/social";
+import { useUserStakes } from "@/hooks/staking";
 import { useRecall } from "@/hooks/useRecall";
-import { useUserStakes } from "@/hooks/useStakingContract";
+import { useSession } from "@/hooks/useSession";
 
 export default function StakePage() {
+  const { isWalletConnected } = useSession();
   const recall = useRecall();
   const { data: stakes, isLoading: stakesLoading } = useUserStakes();
   const [isStakeModalOpen, setIsStakeModalOpen] = useState(false);
@@ -32,92 +36,103 @@ export default function StakePage() {
   }
 
   return (
-    <div>
-      {/* Main Content */}
-      {isLoading ? (
-        <StakeSkeleton />
-      ) : (
-        <div className="mx-auto max-w-screen-xl px-4 sm:px-6 lg:px-8">
-          {/* Summary Cards */}
-          <StakeSummary onStakeClick={() => setIsStakeModalOpen(true)} />
+    <AuthGuard skeleton={<StakeSkeleton />}>
+      {isWalletConnected ? (
+        <>
+          <div className="mx-auto max-w-screen-xl px-4 sm:px-6 lg:px-8">
+            <StakeSummary onStakeClick={() => setIsStakeModalOpen(true)} />
 
-          {isZeroState ? (
-            <div className="mb-16">
-              <div className="mb-10">
-                <h2 className="text-primary-foreground mb-2 text-xl font-semibold">
-                  Acquire RECALL to get started.
-                </h2>
-                <p className="text-secondary-foreground text-sm">
-                  You need RECALL to Stake and start getting Boost.
-                </p>
-              </div>
+            {isZeroState ? (
+              <div className="mb-16">
+                <div className="mb-10">
+                  <h2 className="text-primary-foreground mb-2 text-xl font-semibold">
+                    Acquire RECALL to get started.
+                  </h2>
+                  <p className="text-secondary-foreground text-sm">
+                    You need RECALL to Stake and start getting Boost.
+                  </p>
+                </div>
 
-              <div>
-                <h3 className="text-primary-foreground mb-2 text-xl font-bold">
-                  Active Stakes
-                </h3>
-                <p className="text-secondary-foreground text-sm">
-                  No active stakes yet. Stake to earn Boost.
-                </p>
+                <div>
+                  <h3 className="text-primary-foreground mb-2 text-xl font-bold">
+                    Active Stakes
+                  </h3>
+                  <p className="text-secondary-foreground text-sm">
+                    No active stakes yet. Stake to earn Boost.
+                  </p>
+                </div>
               </div>
-            </div>
-          ) : hasBalanceNoStakes ? (
-            <div className="mb-20">
-              <div className="mb-10">
-                <h2 className="text-primary-foreground mb-2 text-xl font-semibold">
-                  Stake to get Boost!
-                </h2>
-                <p className="text-secondary-foreground text-sm">
-                  It looks like you have some RECALL in your wallet - great!{" "}
-                  <br />
-                  Now, stake it so you can start getting Boost each competition.
-                </p>
-                <Button
-                  onClick={() => setIsStakeModalOpen(true)}
-                  className="mt-4"
-                >
-                  STAKE NOW
-                </Button>
-              </div>
-
-              <div>
-                <h3 className="text-primary-foreground mb-2 text-xl font-bold">
-                  Active Stakes
-                </h3>
-                <p className="text-secondary-foreground text-sm">
-                  No active stakes yet. Stake to earn Boost.
-                </p>
-              </div>
-            </div>
-          ) : (
-            <>
-              {/* Missing Out Section */}
+            ) : hasBalanceNoStakes ? (
               <div className="mb-20">
-                <h2 className="text-primary-foreground mb-2 text-xl font-bold">
-                  More Stakes = more Boost!
-                </h2>
-                <p className="text-secondary-foreground text-base">
-                  With more RECALL, you can Boost your favorite agents even
-                  further!
-                </p>
+                <div className="mb-10">
+                  <h2 className="text-primary-foreground mb-2 text-xl font-semibold">
+                    Stake to get Boost!
+                  </h2>
+                  <p className="text-secondary-foreground text-sm">
+                    It looks like you have some RECALL in your wallet - great!{" "}
+                    <br />
+                    Now, stake it so you can start getting Boost each
+                    competition.
+                  </p>
+                  <Button
+                    onClick={() => setIsStakeModalOpen(true)}
+                    className="mt-4"
+                  >
+                    STAKE NOW
+                  </Button>
+                </div>
+
+                <div>
+                  <h3 className="text-primary-foreground mb-2 text-xl font-bold">
+                    Active Stakes
+                  </h3>
+                  <p className="text-secondary-foreground text-sm">
+                    No active stakes yet. Stake to earn Boost.
+                  </p>
+                </div>
               </div>
+            ) : (
+              <>
+                {/* Missing Out Section */}
+                <div className="mb-20">
+                  <h2 className="text-primary-foreground mb-2 text-xl font-bold">
+                    More Stakes = more Boost!
+                  </h2>
+                  <p className="text-secondary-foreground text-base">
+                    With more RECALL, you can Boost your favorite agents even
+                    further!
+                  </p>
+                </div>
 
-              {/* <InactiveStakes /> */}
+                {/* <InactiveStakes /> */}
 
-              <ActiveStakes />
-            </>
-          )}
+                <ActiveStakes />
+              </>
+            )}
+          </div>
+
+          <JoinSwarmSection socialLinks={getSocialLinksArray()} />
+          <FooterSection />
+
+          {/* Stake Modal */}
+          <StakeRecallModal
+            isOpen={isStakeModalOpen}
+            onClose={setIsStakeModalOpen}
+          />
+        </>
+      ) : (
+        <div className="flex min-h-screen items-center justify-center">
+          <div className="text-center">
+            <h2 className="text-primary-foreground mb-4 text-2xl font-bold">
+              Please connect your wallet
+            </h2>
+            <p className="text-secondary-foreground mb-6 text-sm">
+              Connect your wallet to start staking RECALL tokens
+            </p>
+            <ConnectWallet />
+          </div>
         </div>
       )}
-
-      <JoinSwarmSection socialLinks={getSocialLinksArray()} />
-      <FooterSection />
-
-      {/* Stake Modal */}
-      <StakeRecallModal
-        isOpen={isStakeModalOpen}
-        onClose={setIsStakeModalOpen}
-      />
-    </div>
+    </AuthGuard>
   );
 }

@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { waitForTransactionReceipt } from "@wagmi/core";
+import { useCallback, useMemo } from "react";
 import { type Address, erc20Abi } from "viem";
 import {
   useAccount,
@@ -6,6 +7,8 @@ import {
   useWaitForTransactionReceipt,
   useWriteContract,
 } from "wagmi";
+
+import { clientConfig } from "@/wagmi-config";
 
 export type UseTokenApprovalResult = {
   isLoading: boolean;
@@ -17,7 +20,6 @@ export type UseTokenApprovalResult = {
   approvalTransactionHash: `0x${string}` | undefined;
   approve: (amount: bigint) => Promise<void>;
   needsApproval: (amount: bigint) => boolean;
-  refetchAllowance: () => void;
 };
 
 /**
@@ -56,7 +58,23 @@ export const useTokenApproval = (
   const { isLoading: isApprovalConfirming, isSuccess: isApprovalConfirmed } =
     useWaitForTransactionReceipt({
       hash: approvalTransactionHash,
+      confirmations: 2,
     });
+
+  const refetchAllowance = async (txHash: `0x${string}`) => {
+    const transactionReceipt = await waitForTransactionReceipt(
+      clientConfig as any,
+      {
+        hash: txHash,
+        pollingInterval: 1000,
+        confirmations: 2,
+      },
+    );
+
+    if (transactionReceipt.status === "success") {
+      refetch();
+    }
+  };
 
   const approve = useCallback(
     async (amount: bigint): Promise<void> => {
@@ -65,14 +83,19 @@ export const useTokenApproval = (
           "Token address and spender address are required for approval",
         );
       }
-      return writeContract({
-        address: tokenAddress,
-        abi: erc20Abi,
-        functionName: "approve",
-        args: [spenderAddress, amount],
-      });
+      return writeContract(
+        {
+          address: tokenAddress,
+          abi: erc20Abi,
+          functionName: "approve",
+          args: [spenderAddress, amount],
+        },
+        {
+          onSuccess: (txHash) => refetchAllowance(txHash),
+        },
+      );
     },
-    [tokenAddress, spenderAddress, writeContract],
+    [tokenAddress, spenderAddress, writeContract, refetchAllowance],
   );
 
   const needsApproval = useCallback(
@@ -82,25 +105,6 @@ export const useTokenApproval = (
     },
     [allowance],
   );
-
-  const refetchAllowance = useCallback(() => {
-    if (address && tokenAddress && spenderAddress) {
-      void refetch();
-    }
-  }, [refetch, address, tokenAddress, spenderAddress]);
-
-  // Refetch allowance once per confirmed approval transaction
-  const lastConfirmedHashRef = useRef<`0x${string}` | undefined>(undefined);
-  useEffect(() => {
-    if (
-      isApprovalConfirmed &&
-      approvalTransactionHash &&
-      lastConfirmedHashRef.current !== approvalTransactionHash
-    ) {
-      refetchAllowance();
-      lastConfirmedHashRef.current = approvalTransactionHash;
-    }
-  }, [isApprovalConfirmed, approvalTransactionHash, refetchAllowance]);
 
   const isParamsMissing = !address || !tokenAddress || !spenderAddress;
 
@@ -115,7 +119,6 @@ export const useTokenApproval = (
       approvalTransactionHash,
       approve,
       needsApproval,
-      refetchAllowance,
     }),
     [
       isAllowanceLoading,
@@ -128,7 +131,6 @@ export const useTokenApproval = (
       approvalTransactionHash,
       approve,
       needsApproval,
-      refetchAllowance,
     ],
   );
 };
