@@ -1,9 +1,12 @@
 import { useContext } from "react";
 
+import { useCookieConsentState } from "@/components/cookie-consent-provider";
 import { SessionContext } from "@/providers/session-provider";
 
 export const useSession = () => {
   const context = useContext(SessionContext);
+  const { showCookieConsent } = useCookieConsentState();
+
   if (!context) {
     // Return default unauthenticated state when no provider is available (no consent yet)
     return {
@@ -13,7 +16,8 @@ export const useSession = () => {
       backendUser: null,
       user: null,
       login: () => {
-        console.warn("Authentication not available - consent required");
+        // When user tries to login without consent, show the cookie consent banner
+        showCookieConsent();
       },
       logout: () => {
         console.warn("Authentication not available - consent required");

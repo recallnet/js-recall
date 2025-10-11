@@ -6,11 +6,13 @@ import * as CookieConsent from "vanilla-cookieconsent";
 interface CookieConsentContextType {
   consent: boolean | null;
   isLoading: boolean;
+  showCookieConsent: () => void;
 }
 
 const CookieConsentContext = createContext<CookieConsentContextType>({
   consent: null,
   isLoading: true,
+  showCookieConsent: () => {},
 });
 
 export const useCookieConsentState = () => useContext(CookieConsentContext);
@@ -22,6 +24,26 @@ export function CookieConsentProvider({
 }) {
   const [consent, setConsent] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Function to show the cookie consent banner when user tries to sign in without consent
+  const showCookieConsent = () => {
+    // Check if functional cookies are already accepted
+    try {
+      const functionalAccepted = CookieConsent.acceptedCategory("functional");
+
+      if (functionalAccepted) {
+        // Already accepted, no need to show banner
+        setConsent(true);
+        return;
+      }
+    } catch {
+      // CookieConsent might not be initialized yet
+      console.log("CookieConsent not ready");
+    }
+
+    // Show the consent modal so user can accept cookies
+    CookieConsent.show(true);
+  };
 
   useEffect(() => {
     const initCookieConsent = async () => {
@@ -141,7 +163,9 @@ export function CookieConsentProvider({
   }, []);
 
   return (
-    <CookieConsentContext.Provider value={{ consent, isLoading }}>
+    <CookieConsentContext.Provider
+      value={{ consent, isLoading, showCookieConsent }}
+    >
       {children}
     </CookieConsentContext.Provider>
   );
