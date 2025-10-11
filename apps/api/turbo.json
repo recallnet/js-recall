@@ -94,6 +94,8 @@
         "RPC_PROVIDER",
         "NO_STAKE_BOOST_AMOUNT",
         "CHAINALYSIS_API_KEY",
+        "WALLET_WATCHLIST_MODE",
+        "WALLET_WATCHLIST_API_URL",
         "SYMPHONY_API_URL"
       ]
     }
