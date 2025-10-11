@@ -217,6 +217,8 @@ describe("BoostRepository.unawardedStakes() Integration Tests", () => {
       // Create an award for the first stake
       await repository.recordStakeBoostAward({
         stakeId: stakeId1,
+        baseAmount: 1000n,
+        multiplier: 1.5,
         boostChangeId: increaseResult.changeId,
         competitionId: testCompetitionId,
       });
@@ -279,6 +281,8 @@ describe("BoostRepository.unawardedStakes() Integration Tests", () => {
       // Create an award for the other competition
       await repository.recordStakeBoostAward({
         stakeId: stakeId,
+        baseAmount: 1500n,
+        multiplier: 2.0,
         boostChangeId: increaseResult2.changeId,
         competitionId: otherCompetitionId,
       });
@@ -458,6 +462,8 @@ describe("BoostRepository.unawardedStakes() Integration Tests", () => {
         await repository.recordStakeBoostAward(
           {
             stakeId: 8001n,
+            baseAmount: 2000n,
+            multiplier: 1.8,
             boostChangeId: increaseResult.changeId,
             competitionId: testCompetitionId,
           },

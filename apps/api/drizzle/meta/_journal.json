@@ -344,6 +344,13 @@
       "when": 1760019372088,
       "tag": "0048_lush_overlord",
       "breakpoints": true
+    },
+    {
+      "idx": 49,
+      "version": "7",
+      "when": 1760216633798,
+      "tag": "0049_puzzling_gauntlet",
+      "breakpoints": true
     }
   ]
 }
