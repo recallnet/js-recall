@@ -269,17 +269,17 @@ export const config = {
   },
   // Wallet watchlist configuration
   watchlist: {
-    // Mode can be: 'database', 'api', or 'hybrid'
+    // Mode can be: 'none', 'api', 'database', or 'hybrid'
+    // - none: No watchlist checks will be performed
+    // - api: Only use external API (Chainalysis or compatible API)
     // - database: Only use local database table
-    // - api: Only use external API (Chainalysis)
     // - hybrid: Use API first, fallback to database on error
-    mode: (process.env.WALLET_WATCHLIST_MODE ||
-      "hybrid") as WalletWatchlistMode,
+    mode: (process.env.WALLET_WATCHLIST_MODE || "none") as WalletWatchlistMode,
     // External API URL (defaults to Chainalysis)
     apiUrl:
       process.env.WALLET_WATCHLIST_API_URL ||
       "https://public.chainalysis.com/api/v1/address",
-    // API key for external watchlist service
+    // API key for external watchlist service, if applicable
     apiKey: process.env.CHAINALYSIS_API_KEY || "",
   },
   symphony: {

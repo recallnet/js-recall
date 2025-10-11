@@ -24,7 +24,7 @@ vi.mock("@/config/index.js", () => ({
     watchlist: {
       mode: "api",
       apiUrl: "https://public.chainalysis.com/api/v1/address",
-      apiKey: "",
+      apiKey: "test-api-key",
     },
     logging: {
       level: "info",
@@ -73,7 +73,7 @@ describe("WatchlistService", () => {
     );
   });
 
-  describe("isConfigured", () => {
+  describe("isApiConfigured", () => {
     it("should return false when API key is not set", () => {
       watchlistService = new WalletWatchlist(
         {
@@ -87,7 +87,7 @@ describe("WatchlistService", () => {
         mockDbRepository,
         TEST_RETRY_CONFIG,
       );
-      expect(watchlistService.isConfigured()).toBe(false);
+      expect(watchlistService.isApiConfigured()).toBe(false);
     });
 
     it("should return true when API key is set", async () => {
@@ -103,7 +103,7 @@ describe("WatchlistService", () => {
         mockDbRepository,
         TEST_RETRY_CONFIG,
       );
-      expect(watchlistService.isConfigured()).toBe(true);
+      expect(watchlistService.isApiConfigured()).toBe(true);
     });
   });
 
@@ -133,7 +133,7 @@ describe("WatchlistService", () => {
   });
 
   describe("isAddressSanctioned", () => {
-    it("should return false when API key is not configured", async () => {
+    it("should throw error when API key is not configured for API mode", async () => {
       watchlistService = new WalletWatchlist(
         { watchlist: { apiKey: "", apiUrl: "", mode: "api" } },
         logger,
@@ -141,11 +141,10 @@ describe("WatchlistService", () => {
         TEST_RETRY_CONFIG,
       );
 
-      const result = await watchlistService.isAddressSanctioned(
+      const result = watchlistService.isAddressSanctioned(
         "0x1234567890abcdef1234567890abcdef12345678",
       );
-      expect(result).toBe(false);
-      expect(mockFetch).not.toHaveBeenCalled();
+      await expect(result).rejects.toThrow("API key not configured");
     });
 
     it("should return false for clean address", async () => {
@@ -553,6 +552,53 @@ describe("WatchlistService", () => {
         watchlistService.isAddressSanctioned(address),
       ).rejects.toThrow("Database connection failed");
     }, 6000);
+  });
+
+  describe("None Mode", () => {
+    beforeEach(() => {
+      watchlistService = new WalletWatchlist(
+        {
+          watchlist: {
+            mode: "none",
+            apiUrl: "https://public.chainalysis.com/api/v1/address",
+            apiKey: "",
+          },
+        },
+        logger,
+        mockDbRepository,
+        TEST_RETRY_CONFIG,
+      );
+    });
+
+    it("should skip all checks and return false (not sanctioned)", async () => {
+      const address = "0x1234567890abcdef1234567890abcdef12345678";
+
+      const result = await watchlistService.isAddressSanctioned(address);
+
+      expect(result).toBe(false);
+      expect(mockFetch).not.toHaveBeenCalled();
+      expect(mockDbRepository.isSanctioned).not.toHaveBeenCalled();
+    });
+
+    it("should allow sanctioned addresses when checks are disabled", async () => {
+      const address = SANCTIONED_TEST_ADDRESSES[0]!;
+
+      const result = await watchlistService.isAddressSanctioned(address);
+
+      expect(result).toBe(false);
+      expect(mockFetch).not.toHaveBeenCalled();
+      expect(mockDbRepository.isSanctioned).not.toHaveBeenCalled();
+    });
+
+    it("should work with any address including invalid formats", async () => {
+      const invalidAddress = "not-a-valid-address";
+
+      const result = await watchlistService.isAddressSanctioned(invalidAddress);
+
+      expect(result).toBe(false);
+      expect(mockFetch).not.toHaveBeenCalled();
+      expect(mockDbRepository.isSanctioned).not.toHaveBeenCalled();
+    });
   });
 
   describe("Test Addresses", () => {

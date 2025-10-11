@@ -180,11 +180,13 @@ class ServiceRegistry {
       db,
       repositoryLogger,
     );
-
+    const includeWatchlistDatabaseMode =
+      config.watchlist.mode === "database" ||
+      config.watchlist.mode === "hybrid";
     const walletWatchlist = new WalletWatchlist(
       config,
       serviceLogger,
-      sanctionedWalletRepository,
+      includeWatchlistDatabaseMode ? sanctionedWalletRepository : undefined,
     );
 
     const multichainProvider = new MultiChainProvider(config, serviceLogger);
