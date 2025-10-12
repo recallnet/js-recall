@@ -38,10 +38,12 @@ export default function RootLayout({
         <Tracking />
         <Toaster position="top-right" />
         <Providers>
-          <Navbar />
-          <main className="mx-auto min-h-screen w-full max-w-screen-lg px-5 pt-10 sm:px-20">
-            {children}
-          </main>
+          <div className="flex h-screen flex-col">
+            <Navbar />
+            <main className="mx-auto w-full max-w-screen-lg flex-1 px-5 pt-10 sm:px-20">
+              {children}
+            </main>
+          </div>
         </Providers>
       </body>
     </html>
