@@ -495,7 +495,6 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
           expectedWalletAddress={backendUser?.walletAddress || ""}
         />
       )}
-
       {session.isAuthenticated &&
         isWalletConnected &&
         !isWrongWalletModalOpen &&
