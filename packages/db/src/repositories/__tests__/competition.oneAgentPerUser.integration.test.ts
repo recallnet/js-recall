@@ -126,8 +126,7 @@ describe("CompetitionRepository - One Agent Per User Integration", () => {
     expect(isActive).toBe(true);
   });
 
-  // TODO(hotfix): temporarily allow multiple agents per user
-  test.skip("should prevent user from registering second agent (transaction test)", async () => {
+  test("should prevent user from registering second agent (transaction test)", async () => {
     const testId = randomUUID().substring(0, 8);
 
     // Create user
@@ -219,8 +218,7 @@ describe("CompetitionRepository - One Agent Per User Integration", () => {
     expect(isAgent2Active).toBe(false);
   });
 
-  // TODO(hotfix): temporarily allow multiple agents per user
-  test.skip("should handle race condition with concurrent registration attempts", async () => {
+  test("should handle race condition with concurrent registration attempts", async () => {
     const testId = randomUUID().substring(0, 8);
 
     // Create user
@@ -323,8 +321,7 @@ describe("CompetitionRepository - One Agent Per User Integration", () => {
     expect(isAgent1Active && isAgent2Active).toBe(false);
   });
 
-  // TODO(hotfix): temporarily allow multiple agents per user
-  test.skip("should prevent deactivate/reactivate loophole", async () => {
+  test("should prevent deactivate/reactivate loophole", async () => {
     const testId = randomUUID().substring(0, 8);
 
     // Create user with two agents
