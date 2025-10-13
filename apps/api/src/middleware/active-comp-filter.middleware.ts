@@ -80,14 +80,14 @@ async function getActiveComp(): Promise<ActiveComp> {
       cached = { value, expiresAt };
       errorBackoffUntil = 0;
       return value;
+    } catch (err) {
+      // Set error backoff to prevent thundering herd
+      errorBackoffUntil = now + ERROR_BACKOFF_MS;
+      throw err;
     } finally {
       inFlight = null;
     }
-  })().catch((err) => {
-    // Set error backoff to prevent thundering herd
-    errorBackoffUntil = now + ERROR_BACKOFF_MS;
-    throw err;
-  });
+  })();
 
   return inFlight;
 }
