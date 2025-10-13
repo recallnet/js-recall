@@ -60,7 +60,7 @@ async function getActiveComp(): Promise<ActiveComp> {
   // Check if we're in error backoff period
   if (now < errorBackoffUntil) {
     middlewareLogger.debug("Active comp middleware: in error backoff period");
-    throw new Error("Database temporarily unavailable");
+    throw new Error("Active competition query rate limited");
   }
   if (inFlight) {
     return inFlight;
@@ -75,7 +75,7 @@ async function getActiveComp(): Promise<ActiveComp> {
         .from(competitions)
         .where(eq(competitions.status, "active"))
         .limit(1);
-      const value: ActiveComp = row ?? null;
+      const value: ActiveComp = row || null;
       const expiresAt = now + CACHE_ACTIVE_COMP_TTL_MS;
       cached = { value, expiresAt };
       errorBackoffUntil = 0;
