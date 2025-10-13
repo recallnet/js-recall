@@ -25,20 +25,17 @@ export const activeCompMiddleware = function () {
           },
           "Active comp middleware: No active competition found",
         );
-        throw new ApiError(403, "No active competition");
+        return next(new ApiError(403, "No active competition"));
       }
 
       req.competitionId = activeCompetition.id;
 
       next();
     } catch (error) {
-      // Only log error if it's not the one we're throwing above
-      if (!(error instanceof ApiError && error.statusCode === 403)) {
-        middlewareLogger.error(
-          { error, agentId: req.agentId },
-          `Active comp middleware: Error checking active competition`,
-        );
-      }
+      middlewareLogger.error(
+        { error, agentId: req.agentId },
+        `Active comp middleware: Error checking active competition`,
+      );
       next(error);
     }
   };
