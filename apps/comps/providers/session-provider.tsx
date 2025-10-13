@@ -480,13 +480,17 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
           expectedWalletAddress={backendUser?.walletAddress || ""}
         />
       )}
-      {isWrongChain && currentChainId && (
-        <WrongNetworkModal
-          isOpen
-          currentChainId={currentChainId}
-          expectedChainId={defaultChainId}
-        />
-      )}
+      {session.isAuthenticated &&
+        isWalletConnected &&
+        !isWrongWalletModalOpen &&
+        isWrongChain &&
+        currentChainId && (
+          <WrongNetworkModal
+            isOpen
+            currentChainId={currentChainId}
+            expectedChainId={defaultChainId}
+          />
+        )}
     </SessionContext.Provider>
   );
 }
