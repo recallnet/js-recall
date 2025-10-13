@@ -1,6 +1,6 @@
 {
-  "id": "9c80e557-4726-4f3a-947a-0dbaf69504fd",
-  "prevId": "3498ae12-aed4-41de-bd50-2ba5986683dc",
+  "id": "59ddc943-c63f-470c-b47a-5abb9e8b121f",
+  "prevId": "bd31550e-285b-421a-bb2c-2615776db6fc",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -949,6 +949,12 @@
           "primaryKey": false,
           "notNull": true,
           "default": 0
+        },
+        "minimum_stake": {
+          "name": "minimum_stake",
+          "type": "numeric(30, 15)",
+          "primaryKey": false,
+          "notNull": false
         },
         "status": {
           "name": "status",
@@ -5179,6 +5185,18 @@
         "stake_id": {
           "name": "stake_id",
           "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "base_amount": {
+          "name": "base_amount",
+          "type": "numeric(78, 0)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "multiplier": {
+          "name": "multiplier",
+          "type": "numeric(6, 4)",
           "primaryKey": false,
           "notNull": true
         },
