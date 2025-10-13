@@ -98,14 +98,14 @@ export const CalmarRatioChart: React.FC<CalmarRatioChartProps> = ({
       }));
   }, [chartDisplayAgents]);
 
-  // Create color mapping
+  // Create color mapping from all filtered agents for consistency
   const agentColorMap = useMemo(() => {
     const map: Record<string, string> = {};
-    chartDisplayAgents.forEach((agent, index) => {
+    filteredAgentsForLegend.forEach((agent, index) => {
       map[agent.name] = CHART_COLORS[index % CHART_COLORS.length]!;
     });
     return map;
-  }, [chartDisplayAgents]);
+  }, [filteredAgentsForLegend]);
 
   // Calmar ratio values for legend
   const calmarRatioValues = useMemo(() => {
@@ -254,12 +254,11 @@ export const CalmarRatioChart: React.FC<CalmarRatioChartProps> = ({
           </ResponsiveContainer>
         </div>
       </HoverContext.Provider>
-      <div className="border-t-1 my-2 w-full"></div>
+      <div className="my-2 w-full border-t"></div>
       <CustomLegend
         agents={filteredAgentsForLegend}
         colorMap={agentColorMap}
         currentValues={calmarRatioValues}
-        currentOrder={[]}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         onAgentHover={setLegendHoveredAgent}
