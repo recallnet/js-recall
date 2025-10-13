@@ -27,6 +27,7 @@ export interface CustomLegendProps {
   currentPage?: number;
   onPageChange?: (page: number) => void;
   onSearchPageChange?: (page: number) => void;
+  agentsPerPage?: number;
 }
 
 export interface PortfolioChartProps {

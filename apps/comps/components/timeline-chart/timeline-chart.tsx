@@ -9,6 +9,17 @@ import React, {
   useRef,
   useState,
 } from "react";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  ReferenceLine,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
 import { Button } from "@recallnet/ui2/components/button";
 import { cn } from "@recallnet/ui2/lib/utils";
@@ -38,6 +49,10 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
   onPageChange,
   suppressInternalLoading = false,
 }) => {
+  // Check if this is a perpetual futures competition
+  const isPerpsCompetition = competition.type === "perpetual_futures";
+  const effectiveAgentsPerPage = isPerpsCompetition ? 5 : LIMIT_AGENTS_PER_PAGE;
+
   const { data: timelineRaw, isLoading } = useCompetitionTimeline(
     competition.id,
     competition.status,
@@ -51,6 +66,7 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
     number
   > | null>(null);
   const [hoveredOrder, setHoveredOrder] = useState<string[]>([]);
+  const [hoveredBar, setHoveredBar] = useState<string | null>(null);
 
   // Use a ref to track the last hover data to prevent unnecessary updates
   const lastHoverDataRef = useRef<string>("");
@@ -358,12 +374,20 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
 
   // Filtered agents for the legend (based on search query)
   const filteredAgentsForLegend = useMemo(() => {
-    if (!debouncedSearchQuery) return allAgentsWithData;
+    // For perps, filter out agents without Calmar ratios first
+    const baseAgents = isPerpsCompetition
+      ? allAgentsWithData.filter(
+          (agent) =>
+            agent.calmarRatio !== null && agent.calmarRatio !== undefined,
+        )
+      : allAgentsWithData;
+
+    if (!debouncedSearchQuery) return baseAgents;
     const lowercaseQuery = debouncedSearchQuery.toLowerCase();
-    return allAgentsWithData.filter((agent) =>
+    return baseAgents.filter((agent) =>
       agent.name.toLowerCase().includes(lowercaseQuery),
     );
-  }, [allAgentsWithData, debouncedSearchQuery]);
+  }, [allAgentsWithData, debouncedSearchQuery, isPerpsCompetition]);
 
   // Current legend page state for search pagination tracking
   const [currentLegendPage, setCurrentLegendPage] = useState(1);
@@ -385,8 +409,8 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
       return allAgentsWithData;
     } else {
       // When searching, show agents from current search page
-      const startIndex = (currentLegendPage - 1) * LIMIT_AGENTS_PER_PAGE;
-      const endIndex = startIndex + LIMIT_AGENTS_PER_PAGE;
+      const startIndex = (currentLegendPage - 1) * effectiveAgentsPerPage;
+      const endIndex = startIndex + effectiveAgentsPerPage;
       return filteredAgentsForLegend.slice(startIndex, endIndex) || [];
     }
   }, [
@@ -394,15 +418,21 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
     filteredAgentsForLegend,
     debouncedSearchQuery,
     currentLegendPage,
+    effectiveAgentsPerPage,
   ]);
 
   // Get chart-visible agent keys (limited for performance)
   const chartVisibleAgentKeys = useMemo(() => {
+    if (isPerpsCompetition) {
+      // For perps, use chartDisplayAgents directly since we don't have timeline data
+      return chartDisplayAgents.map((agent) => agent.name);
+    }
+    // For regular timeline, filter based on allDataKeys
     const agentNamesSet = new Set(
       chartDisplayAgents.map((agent) => agent.name),
     );
     return allDataKeys.filter((agentName) => agentNamesSet.has(agentName));
-  }, [allDataKeys, chartDisplayAgents]);
+  }, [allDataKeys, chartDisplayAgents, isPerpsCompetition]);
 
   // Filter data keys based on search (limited to chart-visible agents)
   const filteredDataKeys = useMemo(() => {
@@ -444,22 +474,81 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
     setDateRangeIndex((prev) => Math.min(parsedData.length - 1, prev + 1));
   };
 
+  // Prepare data for perps bar chart
+  const perpsChartData = useMemo(() => {
+    if (!isPerpsCompetition) return [];
+
+    // Sort by Calmar ratio and prepare chart data
+    return chartDisplayAgents
+      .filter(
+        (agent) =>
+          agent.calmarRatio !== null && agent.calmarRatio !== undefined,
+      )
+      .sort((a, b) => (b.calmarRatio || 0) - (a.calmarRatio || 0))
+      .map((agent) => ({
+        name: agent.name,
+        handle: agent.handle,
+        calmarRatio: agent.calmarRatio || 0,
+        displayName:
+          agent.handle.length > 12
+            ? `${agent.handle.slice(0, 10)}...`
+            : agent.handle,
+      }));
+  }, [isPerpsCompetition, chartDisplayAgents]);
+
+  // Calmar ratio values for hover display
+  const calmarRatioValues = useMemo(() => {
+    if (!isPerpsCompetition) return {};
+    const values: Record<string, number> = {};
+    chartDisplayAgents.forEach((agent) => {
+      if (agent.calmarRatio !== null && agent.calmarRatio !== undefined) {
+        values[agent.name] = agent.calmarRatio;
+      }
+    });
+    return values;
+  }, [isPerpsCompetition, chartDisplayAgents]);
+
+  // Dynamic Y-axis domain for perps chart
+  const perpsYAxisDomain = useMemo(() => {
+    if (!perpsChartData.length) return [-5, 10];
+    const values = perpsChartData.map((d) => d.calmarRatio);
+    const min = Math.min(0, ...values);
+    const max = Math.max(0, ...values);
+    const padding = Math.max(Math.abs(min), Math.abs(max)) * 0.1;
+    return [
+      Math.floor((min - padding) * 10) / 10,
+      Math.ceil((max + padding) * 10) / 10,
+    ];
+  }, [perpsChartData]);
+
   return (
     <div className={cn("w-full rounded-lg border", className)}>
       <div className="bg-card flex items-center justify-between p-5">
         <div className="w-full">
           <h2
-            id="portfolio-timeline"
+            id={
+              isPerpsCompetition
+                ? "calmar-ratio-leaderboard"
+                : "portfolio-timeline"
+            }
             className="mb-2 text-2xl font-bold text-white"
           >
-            Portfolio Timeline
+            {isPerpsCompetition
+              ? "Calmar Ratio Leaderboard"
+              : "Portfolio Timeline"}
           </h2>
           <p className="text-gray-400">
-            Real-time trading performance of AI competitors
+            {isPerpsCompetition
+              ? "Risk-adjusted performance metric (Higher is better)"
+              : "Real-time trading performance of AI competitors"}
           </p>
         </div>
         <ShareModal
-          title="Share portfolio timeline"
+          title={
+            isPerpsCompetition
+              ? "Share Calmar ratio leaderboard"
+              : "Share portfolio timeline"
+          }
           url={`${config.frontendUrl}/competitions/${id}/chart`}
           size={20}
         />
@@ -527,30 +616,160 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
                 setHoveredAgent: setLegendHoveredAgent,
               }}
             >
-              <ChartWrapper
-                filteredData={filteredData}
-                filteredDataKeys={filteredDataKeys}
-                agentColorMap={agentColorMap}
-                shouldAnimate={shouldAnimate}
-                isFullRange={status === "ended"}
-                onHoverChange={handleHoverChange}
-              />
+              {isPerpsCompetition ? (
+                <div className="h-[400px] w-full px-6 py-4">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={perpsChartData}
+                      margin={{ right: 40 }}
+                      barCategoryGap="20%"
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+
+                      <XAxis
+                        dataKey="displayName"
+                        stroke="#9CA3AF"
+                        tick={false}
+                        axisLine={{ stroke: "#9CA3AF" }}
+                      />
+
+                      <YAxis
+                        stroke="#9CA3AF"
+                        fontSize={12}
+                        domain={perpsYAxisDomain}
+                        tickFormatter={(value) => value.toFixed(1)}
+                      />
+
+                      <Tooltip
+                        content={({ active, payload }) => {
+                          if (active && payload && payload[0]) {
+                            const data = payload[0].payload;
+                            return (
+                              <div className="bg-card z-50 rounded-lg border border-gray-600 p-3 shadow-lg">
+                                <p className="text-sm font-semibold text-white">
+                                  {data.name}
+                                </p>
+                                <p className="text-secondary-foreground text-xs">
+                                  @{data.handle}
+                                </p>
+                                <div className="my-2 w-full border-t border-gray-600"></div>
+                                <div className="flex items-center justify-between text-sm">
+                                  <span className="text-secondary-foreground">
+                                    Calmar Ratio:
+                                  </span>
+                                  <span
+                                    className={cn(
+                                      "font-bold",
+                                      data.calmarRatio > 0
+                                        ? "text-green-500"
+                                        : data.calmarRatio < 0
+                                          ? "text-red-500"
+                                          : "text-gray-400",
+                                    )}
+                                  >
+                                    {data.calmarRatio.toFixed(2)}
+                                  </span>
+                                </div>
+                              </div>
+                            );
+                          }
+                          return null;
+                        }}
+                      />
+
+                      <ReferenceLine
+                        y={0}
+                        stroke="#6B7280"
+                        strokeWidth={2}
+                        strokeDasharray="3 3"
+                      />
+
+                      <Bar
+                        dataKey="calmarRatio"
+                        radius={[4, 4, 0, 0]}
+                        onMouseEnter={(data) => {
+                          if (
+                            data &&
+                            typeof data === "object" &&
+                            "name" in data
+                          ) {
+                            setHoveredBar(data.name as string);
+                            setLegendHoveredAgent(data.name as string);
+                          }
+                        }}
+                        onMouseLeave={() => {
+                          setHoveredBar(null);
+                          setLegendHoveredAgent(null);
+                        }}
+                      >
+                        {perpsChartData.map((entry, index) => (
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={
+                              agentColorMap[entry.name] ||
+                              CHART_COLORS[index % CHART_COLORS.length]
+                            }
+                            opacity={
+                              hoveredBar && hoveredBar !== entry.name ? 0.5 : 1
+                            }
+                            style={{
+                              cursor: "default",
+                              transition: "opacity 0.2s",
+                            }}
+                          />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <ChartWrapper
+                  filteredData={filteredData}
+                  filteredDataKeys={filteredDataKeys}
+                  agentColorMap={agentColorMap}
+                  shouldAnimate={shouldAnimate}
+                  isFullRange={status === "ended"}
+                  onHoverChange={handleHoverChange}
+                />
+              )}
             </HoverContext.Provider>
           </div>
           <div className="border-t-1 my-2 w-full"></div>
           <CustomLegend
             agents={filteredAgentsForLegend}
             colorMap={agentColorMap}
-            currentValues={hoveredDataPoint || latestValues}
+            currentValues={
+              isPerpsCompetition
+                ? calmarRatioValues
+                : hoveredDataPoint || latestValues
+            }
             currentOrder={hoveredOrder}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
             onAgentHover={handleLegendHover}
-            totalAgents={totalAgents}
+            totalAgents={
+              isPerpsCompetition
+                ? agents?.filter(
+                    (a) =>
+                      a.calmarRatio !== null && a.calmarRatio !== undefined,
+                  ).length || 0
+                : totalAgents
+            }
             currentPage={currentPage}
             onPageChange={onPageChange}
             onSearchPageChange={handleSearchPageChange}
+            agentsPerPage={effectiveAgentsPerPage}
           />
+          {isPerpsCompetition && (
+            <div className="border-t px-6 py-3">
+              <p className="text-xs text-gray-500">
+                * Calmar Ratio = Annualized Return / Max Drawdown
+              </p>
+              <p className="text-xs text-gray-500">
+                * Agents need at least 2 snapshots for risk metrics calculation
+              </p>
+            </div>
+          )}
         </>
       )}
     </div>

@@ -25,6 +25,7 @@ export const CustomLegend = ({
   currentPage = 1,
   onPageChange,
   onSearchPageChange,
+  agentsPerPage = LIMIT_AGENTS_PER_PAGE,
 }: CustomLegendProps) => {
   // Internal pagination state for search results
   const [searchPage, setSearchPage] = useState(1);
@@ -84,8 +85,8 @@ export const CustomLegend = ({
   const { displayAgents, paginationProps } = useMemo(() => {
     if (searchQuery) {
       // When searching, paginate the sorted search results
-      const startIndex = (searchPage - 1) * LIMIT_AGENTS_PER_PAGE;
-      const endIndex = startIndex + LIMIT_AGENTS_PER_PAGE;
+      const startIndex = (searchPage - 1) * agentsPerPage;
+      const endIndex = startIndex + agentsPerPage;
       const paginatedSearchResults = sortedAgents.slice(startIndex, endIndex);
 
       return {
@@ -115,6 +116,7 @@ export const CustomLegend = ({
     currentPage,
     onPageChange,
     handleSearchPageChange,
+    agentsPerPage,
   ]);
 
   return (
@@ -160,11 +162,11 @@ export const CustomLegend = ({
       </div>
 
       {paginationProps.onPageChange &&
-        paginationProps.totalItems > LIMIT_AGENTS_PER_PAGE && (
+        paginationProps.totalItems > agentsPerPage && (
           <Pagination
             totalItems={paginationProps.totalItems}
             currentPage={paginationProps.currentPage}
-            itemsPerPage={LIMIT_AGENTS_PER_PAGE}
+            itemsPerPage={agentsPerPage}
             onPageChange={paginationProps.onPageChange}
           />
         )}
