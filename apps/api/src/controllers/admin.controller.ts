@@ -1354,6 +1354,15 @@ export function makeAdminController(services: ServiceRegistry) {
           });
         }
 
+        // Validate wallet address for perps competitions
+        if (competition.type === "perpetual_futures" && !agent.walletAddress) {
+          return res.status(400).json({
+            success: false,
+            error:
+              "Agent must have a wallet address to participate in perpetual futures competitions",
+          });
+        }
+
         // Check if agent is already in the competition
         const isInCompetition =
           await services.competitionService.isAgentInCompetition(

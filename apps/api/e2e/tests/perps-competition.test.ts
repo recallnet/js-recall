@@ -2815,6 +2815,78 @@ describe("Perps Competition", () => {
     await adminClient.endCompetition(competition.id);
   });
 
+  test("should prevent admin from adding agent without wallet to perps competition", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // First register a user with a normal agent
+    const { user } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Initial Agent Admin Test",
+    });
+
+    // Now create an agent WITHOUT a wallet address for this user
+    const agentNoWalletResponse = (await adminClient.registerAgent({
+      user: { id: user.id },
+      agent: {
+        name: "Admin Test No Wallet",
+        handle: generateTestHandle("Admin Test No Wallet"),
+        description: "Test agent without wallet for admin endpoint",
+        // Explicitly NOT providing walletAddress
+      },
+    })) as AdminAgentResponse;
+    const agentNoWallet = agentNoWalletResponse.agent;
+
+    // Create a perps competition
+    const competitionResponse = await adminClient.createCompetition({
+      name: `Admin Wallet Validation Test ${Date.now()}`,
+      type: "perpetual_futures",
+      startDate: new Date(Date.now() + 86400000).toISOString(), // Start tomorrow
+      endDate: new Date(Date.now() + 172800000).toISOString(), // End in 2 days
+      perpsProvider: {
+        provider: "symphony",
+        initialCapital: 1000,
+        selfFundingThreshold: 100,
+        apiUrl: "http://localhost:4567",
+      },
+    });
+
+    expect(competitionResponse.success).toBe(true);
+    const typedCompetitionResponse = competitionResponse as {
+      success: true;
+      competition: { id: string; status: string };
+    };
+    const competition = typedCompetitionResponse.competition;
+
+    // Admin should NOT be able to add agent without wallet to perps competition
+    const addAgentResponse = await adminClient.addAgentToCompetition(
+      competition.id,
+      agentNoWallet.id,
+    );
+
+    expect(addAgentResponse.success).toBe(false);
+    const addErrorResponse = addAgentResponse as ErrorResponse;
+    expect(addErrorResponse.error).toContain("wallet address");
+    expect(addErrorResponse.error).toContain("perpetual futures");
+
+    // Verify agent with wallet CAN be added by admin
+    const { agent: agentWithWallet } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Admin Test With Wallet",
+      agentWalletAddress: "0xabcdef1234567890123456789012345678901234",
+    });
+
+    const addWithWalletResponse = await adminClient.addAgentToCompetition(
+      competition.id,
+      agentWithWallet.id,
+    );
+
+    expect(addWithWalletResponse.success).toBe(true);
+
+    // Clean up
+    await adminClient.endCompetition(competition.id);
+  });
+
   test("should allow agents without wallets to join paper trading competitions", async () => {
     const adminClient = createTestClient(getBaseUrl());
     await adminClient.loginAsAdmin(adminApiKey);
