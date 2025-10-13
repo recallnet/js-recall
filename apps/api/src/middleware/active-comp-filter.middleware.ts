@@ -41,37 +41,47 @@ export const activeCompMiddleware = function () {
   };
 };
 
-// Cache for active competition check
-let cachedActiveCompetition: { id: string; name: string } | null = null;
-let lastQueryTime = 0;
+// Cache for active competition check (includes both positive and negative cases)
+type ActiveComp = { id: string; name: string } | null;
+
+let cached: { value: ActiveComp; expiresAt: number } | null = null;
+let inFlight: Promise<ActiveComp> | null = null;
 const CACHE_ACTIVE_COMP_TTL_MS = config.cache.activeCompetitionTtlMs;
 
-async function getActiveComp() {
+export async function getActiveComp(): Promise<ActiveComp> {
   // Check cache first
   const now = Date.now();
 
-  if (now - lastQueryTime < CACHE_ACTIVE_COMP_TTL_MS) {
-    middlewareLogger.debug("Active comp middleware: Using cached result");
-    return cachedActiveCompetition;
+  if (cached && now < cached.expiresAt) {
+    middlewareLogger.debug("Active comp middleware: using cached result");
+    return cached.value;
   }
-  // Check for active competition with efficient exists query
-  middlewareLogger.debug("Active comp middleware: Querying database");
-  const [activeComp] = await db
-    .select({ id: competitions.id, name: competitions.name })
-    .from(competitions)
-    .where(eq(competitions.status, "active"))
-    .limit(1);
-
-  // Update cache
-  if (!activeComp) {
-    return;
+  if (inFlight) {
+    return inFlight;
   }
 
-  cachedActiveCompetition = activeComp || null;
-  lastQueryTime = now;
-  return cachedActiveCompetition;
+  // Check database if cache is not available
+  middlewareLogger.debug("Active comp middleware: querying database");
+  inFlight = (async () => {
+    const [row] = await db
+      .select({ id: competitions.id, name: competitions.name })
+      .from(competitions)
+      .where(eq(competitions.status, "active"))
+      .limit(1);
+    const value: ActiveComp = row ?? null;
+    cached = { value, expiresAt: Date.now() + CACHE_ACTIVE_COMP_TTL_MS };
+    inFlight = null;
+
+    return value;
+  })().catch((err) => {
+    inFlight = null;
+    throw err;
+  });
+
+  return inFlight;
 }
 
 export function activeCompResetCache() {
-  lastQueryTime = 0;
+  cached = null;
+  inFlight = null;
 }
