@@ -173,7 +173,8 @@ describe("CompetitionService - joinCompetition", () => {
       );
     });
 
-    it("should reject when user already has another agent registered (user auth)", async () => {
+    // TODO(hotfix): temporarily allow multiple agents per user
+    it.skip("should reject when user already has another agent registered (user auth)", async () => {
       // Setup mocks
       agentService.getAgent.mockResolvedValue(mockAgent);
       competitionRepo.findById.mockResolvedValue(mockCompetition);
@@ -204,7 +205,8 @@ describe("CompetitionService - joinCompetition", () => {
       );
     });
 
-    it("should reject when user already has another agent registered (agent auth)", async () => {
+    // TODO(hotfix): temporarily allow multiple agents per user
+    it.skip("should reject when user already has another agent registered (agent auth)", async () => {
       // Setup mocks
       agentService.getAgent.mockResolvedValue(mockAgent);
       competitionRepo.findById.mockResolvedValue(mockCompetition);
@@ -235,7 +237,8 @@ describe("CompetitionService - joinCompetition", () => {
       );
     });
 
-    it("should return correct HTTP status code (409)", async () => {
+    // TODO(hotfix): temporarily allow multiple agents per user
+    it.skip("should return correct HTTP status code (409)", async () => {
       // Setup mocks
       agentService.getAgent.mockResolvedValue(mockAgent);
       competitionRepo.findById.mockResolvedValue(mockCompetition);
@@ -378,7 +381,8 @@ describe("CompetitionService - joinCompetition", () => {
       expect(competitionRepo.addAgentToCompetition).toHaveBeenCalledTimes(1);
     });
 
-    it("should handle race condition when two agents register simultaneously", async () => {
+    // TODO(hotfix): temporarily allow multiple agents per user
+    it.skip("should handle race condition when two agents register simultaneously", async () => {
       // Simulate race condition: first call succeeds, second call fails
       // because the transaction detects the user already has an agent
       const agent2Id = randomUUID();
