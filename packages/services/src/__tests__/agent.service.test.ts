@@ -9,7 +9,11 @@ import { LeaderboardRepository } from "@recallnet/db/repositories/leaderboard";
 import { PerpsRepository } from "@recallnet/db/repositories/perps";
 import { TradeRepository } from "@recallnet/db/repositories/trade";
 import { UserRepository } from "@recallnet/db/repositories/user";
-import { SelectCompetition } from "@recallnet/db/schema/core/types";
+import {
+  SelectAgent,
+  SelectCompetition,
+} from "@recallnet/db/schema/core/types";
+import { SelectPortfolioSnapshot } from "@recallnet/db/schema/trading/types";
 
 import { AgentService } from "../agent.service.js";
 import { BalanceService } from "../balance.service.js";
@@ -105,15 +109,23 @@ describe("AgentService", () => {
           [
             "perps-1",
             {
-              oldest: { totalValue: "1000" } as never,
-              newest: { totalValue: "1200" } as never,
+              oldest: {
+                totalValue: "1000",
+              } as unknown as SelectPortfolioSnapshot,
+              newest: {
+                totalValue: "1200",
+              } as unknown as SelectPortfolioSnapshot,
             },
           ],
           [
             "perps-2",
             {
-              oldest: { totalValue: "1000" } as never,
-              newest: { totalValue: "1100" } as never,
+              oldest: {
+                totalValue: "1000",
+              } as unknown as SelectPortfolioSnapshot,
+              newest: {
+                totalValue: "1100",
+              } as unknown as SelectPortfolioSnapshot,
             },
           ],
         ]),
@@ -181,15 +193,23 @@ describe("AgentService", () => {
           [
             "paper-1",
             {
-              oldest: { totalValue: "1000" } as never,
-              newest: { totalValue: "1500" } as never,
+              oldest: {
+                totalValue: "1000",
+              } as unknown as SelectPortfolioSnapshot,
+              newest: {
+                totalValue: "1500",
+              } as unknown as SelectPortfolioSnapshot,
             },
           ],
           [
             "paper-2",
             {
-              oldest: { totalValue: "1000" } as never,
-              newest: { totalValue: "1300" } as never,
+              oldest: {
+                totalValue: "1000",
+              } as unknown as SelectPortfolioSnapshot,
+              newest: {
+                totalValue: "1300",
+              } as unknown as SelectPortfolioSnapshot,
             },
           ],
         ]),
@@ -264,29 +284,45 @@ describe("AgentService", () => {
           [
             "perps-1",
             {
-              oldest: { totalValue: "1000" } as never,
-              newest: { totalValue: "1200" } as never,
+              oldest: {
+                totalValue: "1000",
+              } as unknown as SelectPortfolioSnapshot,
+              newest: {
+                totalValue: "1200",
+              } as unknown as SelectPortfolioSnapshot,
             },
           ],
           [
             "perps-2",
             {
-              oldest: { totalValue: "1000" } as never,
-              newest: { totalValue: "1150" } as never,
+              oldest: {
+                totalValue: "1000",
+              } as unknown as SelectPortfolioSnapshot,
+              newest: {
+                totalValue: "1150",
+              } as unknown as SelectPortfolioSnapshot,
             },
           ],
           [
             "paper-1",
             {
-              oldest: { totalValue: "1000" } as never,
-              newest: { totalValue: "1300" } as never,
+              oldest: {
+                totalValue: "1000",
+              } as unknown as SelectPortfolioSnapshot,
+              newest: {
+                totalValue: "1300",
+              } as unknown as SelectPortfolioSnapshot,
             },
           ],
           [
             "paper-2",
             {
-              oldest: { totalValue: "1000" } as never,
-              newest: { totalValue: "1250" } as never,
+              oldest: {
+                totalValue: "1000",
+              } as unknown as SelectPortfolioSnapshot,
+              newest: {
+                totalValue: "1250",
+              } as unknown as SelectPortfolioSnapshot,
             },
           ],
         ]),
@@ -374,29 +410,45 @@ describe("AgentService", () => {
           [
             "perps-1",
             {
-              oldest: { totalValue: "1000" } as never,
-              newest: { totalValue: "1200" } as never,
+              oldest: {
+                totalValue: "1000",
+              } as unknown as SelectPortfolioSnapshot,
+              newest: {
+                totalValue: "1200",
+              } as unknown as SelectPortfolioSnapshot,
             },
           ],
           [
             "perps-2",
             {
-              oldest: { totalValue: "1000" } as never,
-              newest: { totalValue: "1150" } as never,
+              oldest: {
+                totalValue: "1000",
+              } as unknown as SelectPortfolioSnapshot,
+              newest: {
+                totalValue: "1150",
+              } as unknown as SelectPortfolioSnapshot,
             },
           ],
           [
             "paper-1",
             {
-              oldest: { totalValue: "1000" } as never,
-              newest: { totalValue: "1300" } as never,
+              oldest: {
+                totalValue: "1000",
+              } as unknown as SelectPortfolioSnapshot,
+              newest: {
+                totalValue: "1300",
+              } as unknown as SelectPortfolioSnapshot,
             },
           ],
           [
             "paper-2",
             {
-              oldest: { totalValue: "1000" } as never,
-              newest: { totalValue: "1250" } as never,
+              oldest: {
+                totalValue: "1000",
+              } as unknown as SelectPortfolioSnapshot,
+              newest: {
+                totalValue: "1250",
+              } as unknown as SelectPortfolioSnapshot,
             },
           ],
         ]),
@@ -448,6 +500,208 @@ describe("AgentService", () => {
         expect(comp.totalTrades).toBeDefined();
         expect(comp.totalPositions).toBeDefined();
       }
+    });
+  });
+
+  describe("deactivateAgent", () => {
+    it("should successfully deactivate an agent", async () => {
+      const agentId = "test-agent-id";
+      const reason = "Terms of service violation";
+      const mockDeactivatedAgent = {
+        id: agentId,
+        name: "Test Agent",
+        status: "inactive",
+        deactivationReason: reason,
+        deactivationDate: new Date(),
+      } as unknown as SelectAgent;
+
+      vi.mocked(mockAgentRepo.deactivateAgent).mockResolvedValue(
+        mockDeactivatedAgent,
+      );
+
+      const result = await agentService.deactivateAgent(agentId, reason);
+
+      expect(result).toEqual(mockDeactivatedAgent);
+      expect(mockAgentRepo.deactivateAgent).toHaveBeenCalledWith(
+        agentId,
+        reason,
+      );
+    });
+
+    it("should return null when agent not found", async () => {
+      const agentId = "nonexistent-agent-id";
+      const reason = "Test reason";
+
+      vi.mocked(mockAgentRepo.deactivateAgent).mockResolvedValue(
+        null as unknown as SelectAgent,
+      );
+
+      const result = await agentService.deactivateAgent(agentId, reason);
+
+      expect(result).toBeNull();
+    });
+  });
+
+  describe("reactivateAgent", () => {
+    it("should successfully reactivate an agent", async () => {
+      const agentId = "test-agent-id";
+      const mockReactivatedAgent = {
+        id: agentId,
+        name: "Test Agent",
+        status: "active",
+        deactivationReason: null,
+        deactivationDate: null,
+      } as unknown as SelectAgent;
+
+      vi.mocked(mockAgentRepo.reactivateAgent).mockResolvedValue(
+        mockReactivatedAgent,
+      );
+
+      const result = await agentService.reactivateAgent(agentId);
+
+      expect(result).toEqual(mockReactivatedAgent);
+      expect(mockAgentRepo.reactivateAgent).toHaveBeenCalledWith(agentId);
+    });
+
+    it("should return null when agent not found", async () => {
+      const agentId = "nonexistent-agent-id";
+
+      vi.mocked(mockAgentRepo.reactivateAgent).mockResolvedValue(
+        null as unknown as SelectAgent,
+      );
+
+      const result = await agentService.reactivateAgent(agentId);
+
+      expect(result).toBeNull();
+    });
+  });
+
+  describe("deleteAgent", () => {
+    it("should successfully delete an agent and return true", async () => {
+      const agentId = "test-agent-id";
+      const mockAgent = {
+        id: agentId,
+        name: "Test Agent",
+        apiKey: "encrypted-key",
+      } as unknown as SelectAgent;
+
+      vi.mocked(mockAgentRepo.findById).mockResolvedValue(mockAgent);
+      vi.mocked(mockAgentRepo.deleteAgent).mockResolvedValue(true);
+
+      const result = await agentService.deleteAgent(agentId);
+
+      expect(result).toBe(true);
+      expect(mockAgentRepo.findById).toHaveBeenCalledWith(agentId);
+      expect(mockAgentRepo.deleteAgent).toHaveBeenCalledWith(agentId);
+    });
+
+    it("should return false when agent not found", async () => {
+      const agentId = "nonexistent-agent-id";
+
+      vi.mocked(mockAgentRepo.findById).mockResolvedValue(undefined);
+
+      const result = await agentService.deleteAgent(agentId);
+
+      expect(result).toBe(false);
+      expect(mockAgentRepo.findById).toHaveBeenCalledWith(agentId);
+      expect(mockAgentRepo.deleteAgent).not.toHaveBeenCalled();
+    });
+
+    it("should return false when deletion fails", async () => {
+      const agentId = "test-agent-id";
+      const mockAgent = {
+        id: agentId,
+        name: "Test Agent",
+        apiKey: "encrypted-key",
+      } as unknown as SelectAgent;
+
+      vi.mocked(mockAgentRepo.findById).mockResolvedValue(mockAgent);
+      vi.mocked(mockAgentRepo.deleteAgent).mockResolvedValue(false);
+
+      const result = await agentService.deleteAgent(agentId);
+
+      expect(result).toBe(false);
+    });
+  });
+
+  describe("getAgentPerformanceForComp", () => {
+    it("should calculate performance metrics with profit", async () => {
+      const agentId = "test-agent-id";
+      const competitionId = "test-comp-id";
+
+      vi.mocked(mockCompetitionRepo.getBoundedSnapshots).mockResolvedValue({
+        oldest: { totalValue: "1000" } as unknown as SelectPortfolioSnapshot,
+        newest: { totalValue: "1500" } as unknown as SelectPortfolioSnapshot,
+      });
+
+      const result = await agentService.getAgentPerformanceForComp(
+        agentId,
+        competitionId,
+      );
+
+      expect(result.portfolioValue).toBe(1500);
+      expect(result.startingValue).toBe(1000);
+      expect(result.pnl).toBe(500);
+      expect(result.pnlPercent).toBe(50);
+    });
+
+    it("should calculate performance metrics with loss", async () => {
+      const agentId = "test-agent-id";
+      const competitionId = "test-comp-id";
+
+      vi.mocked(mockCompetitionRepo.getBoundedSnapshots).mockResolvedValue({
+        oldest: { totalValue: "1000" } as unknown as SelectPortfolioSnapshot,
+        newest: { totalValue: "800" } as unknown as SelectPortfolioSnapshot,
+      });
+
+      const result = await agentService.getAgentPerformanceForComp(
+        agentId,
+        competitionId,
+      );
+
+      expect(result.portfolioValue).toBe(800);
+      expect(result.startingValue).toBe(1000);
+      expect(result.pnl).toBe(-200);
+      expect(result.pnlPercent).toBe(-20);
+    });
+
+    it("should handle zero starting value", async () => {
+      const agentId = "test-agent-id";
+      const competitionId = "test-comp-id";
+
+      vi.mocked(mockCompetitionRepo.getBoundedSnapshots).mockResolvedValue({
+        oldest: { totalValue: "0" } as unknown as SelectPortfolioSnapshot,
+        newest: { totalValue: "500" } as unknown as SelectPortfolioSnapshot,
+      });
+
+      const result = await agentService.getAgentPerformanceForComp(
+        agentId,
+        competitionId,
+      );
+
+      expect(result.portfolioValue).toBe(500);
+      expect(result.startingValue).toBe(0);
+      expect(result.pnl).toBe(500);
+      expect(result.pnlPercent).toBe(0);
+    });
+
+    it("should handle no snapshots", async () => {
+      const agentId = "test-agent-id";
+      const competitionId = "test-comp-id";
+
+      vi.mocked(mockCompetitionRepo.getBoundedSnapshots).mockResolvedValue(
+        null,
+      );
+
+      const result = await agentService.getAgentPerformanceForComp(
+        agentId,
+        competitionId,
+      );
+
+      expect(result.portfolioValue).toBe(0);
+      expect(result.startingValue).toBe(0);
+      expect(result.pnl).toBe(0);
+      expect(result.pnlPercent).toBe(0);
     });
   });
 });
