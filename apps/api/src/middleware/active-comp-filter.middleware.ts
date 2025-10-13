@@ -15,15 +15,17 @@ import { middlewareLogger } from "@/lib/logger.js";
  * is found, it responds with a 403 Forbidden error.
  */
 export const activeCompMiddleware = function () {
-  return async function (req: Request, res: Response, next: NextFunction) {
+  return async function (req: Request, _: Response, next: NextFunction) {
     try {
       const activeCompetition = await getActiveComp();
       if (!activeCompetition) {
-        console.log("NO ACTIVE COMP!!");
         middlewareLogger.debug(
+          {
+            agentId: req.agentId,
+          },
           "Active comp middleware: No active competition found",
         );
-        throw new ApiError(403, "No active competition");
+        return next(new ApiError(403, "No active competition"));
       }
 
       req.competitionId = activeCompetition.id;
@@ -31,8 +33,8 @@ export const activeCompMiddleware = function () {
       next();
     } catch (error) {
       middlewareLogger.error(
-        `Active comp middleware: Error checking active competition:`,
-        error,
+        { error, agentId: req.agentId },
+        `Active comp middleware: Error checking active competition`,
       );
       next(error);
     }
