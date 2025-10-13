@@ -86,6 +86,9 @@ importers:
       '@types/node':
         specifier: ^18.15.0
         version: 18.19.101
+      adm-zip:
+        specifier: ^0.5.16
+        version: 0.5.16
       axios:
         specifier: ^1.6.0
         version: 1.9.0
@@ -164,6 +167,9 @@ importers:
       viem:
         specifier: ^2.37.8
         version: 2.37.9(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76)
+      xml2js:
+        specifier: ^0.6.2
+        version: 0.6.2
       zod:
         specifier: 3.25.76
         version: 3.25.76
@@ -177,6 +183,9 @@ importers:
       '@recallnet/typescript-config':
         specifier: workspace:*
         version: link:../../packages/typescript-config
+      '@types/adm-zip':
+        specifier: ^0.5.7
+        version: 0.5.7
       '@types/bcrypt':
         specifier: ^5.0.0
         version: 5.0.2
@@ -198,6 +207,9 @@ importers:
       '@types/uuid':
         specifier: ^9.0.1
         version: 9.0.8
+      '@types/xml2js':
+        specifier: ^0.4.14
+        version: 0.4.14
       '@vitejs/plugin-react':
         specifier: ^5.0.2
         version: 5.0.2(vite@6.3.5(@types/node@18.19.101)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.0)(tsx@4.19.4)(yaml@2.8.1))
@@ -6031,6 +6043,9 @@ packages:
     resolution: {integrity: sha512-Kqo+gKJleFB+GkKiSHCCb4RB46VDBTWRKdp08RQ4rtL60+SU89M6F7gpTGG/4nL2eYD98mOKp3Lyzfk/Auht7A==}
     hasBin: true
 
+  '@types/adm-zip@0.5.7':
+    resolution: {integrity: sha512-DNEs/QvmyRLurdQPChqq0Md4zGvPwHerAJYWk9l2jCbD1VPpnzRJorOdiq4zsw09NFbYnhfsoEhWtxIzXpn2yw==}
+
   '@types/babel__core@7.20.5':
     resolution: {integrity: sha512-qoQprZvz5wQFJwMDqeseRXWv3rqMvhgpbXFfVyWhbx9X47POIA6i/+dXefEmZKoAgOaTdaIgNSMqMIU61yRyzA==}
 
@@ -6279,6 +6294,9 @@ packages:
 
   '@types/ws@8.18.1':
     resolution: {integrity: sha512-ThVF6DCVhA8kUGy+aazFQ4kXQ7E1Ty7A3ypFOe0IcJV8O/M511G99AW24irKrW56Wt44yG9+ij8FaqoBGkuBXg==}
+
+  '@types/xml2js@0.4.14':
+    resolution: {integrity: sha512-4YnrRemBShWRO2QjvUin8ESA41rH+9nQGLUGZV/1IDhi3SL9OhdpNC/MrulTWuptXKwhx/aDxE7toV0f/ypIXQ==}
 
   '@typescript-eslint/eslint-plugin@8.32.1':
     resolution: {integrity: sha512-6u6Plg9nP/J1GRpe/vcjjabo6Uc5YQPAMxsgQyGC/I0RuukiG1wIe3+Vtg3IrSCVJDmqK3j8adrtzXSENRtFgg==}
@@ -6722,6 +6740,10 @@ packages:
   adm-zip@0.4.16:
     resolution: {integrity: sha512-TFi4HBKSGfIKsK5YCkKaaFG2m4PEDyViZmEwof3MTIgzimHLto6muaHVpbrljdIvIrFZzEq/p4nafOeLcYegrg==}
     engines: {node: '>=0.3.0'}
+
+  adm-zip@0.5.16:
+    resolution: {integrity: sha512-TGw5yVi4saajsSEgz25grObGHEUaDrniwvA2qwSC060KfqGPdglhvPMA2lPIoxs3PQIItj2iag35fONcQqgUaQ==}
+    engines: {node: '>=12.0'}
 
   aes-js@4.0.0-beta.5:
     resolution: {integrity: sha512-G965FqalsNyrPqgEGON7nIx1e/OVENSgiEIzyC63haUMuvNnwIgIjMs52hlTCKhkBny7A2ORNlfY9Zu+jmGk1Q==}
@@ -11546,6 +11568,9 @@ packages:
     resolution: {integrity: sha512-3C/laIeE6UUe9A+iQ0A48ywPVCCMKCNSTU5Os101Vhgsjd3AAxGNjyq0uAA8kulMPK5n0csn8JlxPN9riXEjLA==}
     engines: {node: '>=16'}
 
+  sax@1.4.1:
+    resolution: {integrity: sha512-+aWOz7yVScEGoKNd4PA10LZ8sk0A/z5+nXQG5giUO5rprX9jgYsTdov9qCchZiPIZezbZH+jRut8nPodFAX4Jg==}
+
   saxes@6.0.0:
     resolution: {integrity: sha512-xAg7SOnEhrm5zI3puOOKyy1OMcMlIJZYNJY7xLBwSze0UjhPLnWfj2GF2EpT0jmzaJKIWKHLsaSSajf35bcYnA==}
     engines: {node: '>=v12.22.7'}
@@ -13163,6 +13188,14 @@ packages:
   xml-name-validator@5.0.0:
     resolution: {integrity: sha512-EvGK8EJ3DhaHfbRlETOWAS5pO9MZITeauHKJyb8wyajUfQUenkIg2MvLDTZ4T/TgIcm3HU0TFBgWWboAZ30UHg==}
     engines: {node: '>=18'}
+
+  xml2js@0.6.2:
+    resolution: {integrity: sha512-T4rieHaC1EXcES0Kxxj4JWgaUQHDk+qwHcYOCFHfiwKz7tOVPLq7Hjq9dM1WCMhylqMEfP7hMcOIChvotiZegA==}
+    engines: {node: '>=4.0.0'}
+
+  xmlbuilder@11.0.1:
+    resolution: {integrity: sha512-fDlsI/kFEx7gLvbecc0/ohLG50fugQp8ryHzMTuW9vSa1GJ0XYWKnhsUx7oie3G98+r56aTQIUB4kht42R3JvA==}
+    engines: {node: '>=4.0'}
 
   xmlchars@2.2.0:
     resolution: {integrity: sha512-JZnDKK8B0RCDw84FNdDAIpZK+JuJw+s7Lz8nksI7SIuU3UXJJslUthsi+uWBUYOwPFwW7W7PRLRfUKpxjtjFCw==}
@@ -20931,6 +20964,10 @@ snapshots:
       semver: 7.6.2
       update-check: 1.5.4
 
+  '@types/adm-zip@0.5.7':
+    dependencies:
+      '@types/node': 24.3.0
+
   '@types/babel__core@7.20.5':
     dependencies:
       '@babel/parser': 7.28.0
@@ -21222,6 +21259,10 @@ snapshots:
       '@types/node': 24.3.0
 
   '@types/ws@8.18.1':
+    dependencies:
+      '@types/node': 24.3.0
+
+  '@types/xml2js@0.4.14':
     dependencies:
       '@types/node': 24.3.0
 
@@ -22553,6 +22594,8 @@ snapshots:
   acorn@8.15.0: {}
 
   adm-zip@0.4.16: {}
+
+  adm-zip@0.5.16: {}
 
   aes-js@4.0.0-beta.5: {}
 
@@ -28103,6 +28146,8 @@ snapshots:
       postcss-value-parser: 4.2.0
       yoga-wasm-web: 0.3.3
 
+  sax@1.4.1: {}
+
   saxes@6.0.0:
     dependencies:
       xmlchars: 2.2.0
@@ -30339,6 +30384,13 @@ snapshots:
       is-wsl: 3.1.0
 
   xml-name-validator@5.0.0: {}
+
+  xml2js@0.6.2:
+    dependencies:
+      sax: 1.4.1
+      xmlbuilder: 11.0.1
+
+  xmlbuilder@11.0.1: {}
 
   xmlchars@2.2.0: {}
 
