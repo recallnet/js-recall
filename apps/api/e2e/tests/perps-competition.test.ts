@@ -5,7 +5,9 @@ import { portfolioSnapshots } from "@recallnet/db/schema/trading/defs";
 
 import config from "@/config/index.js";
 import { db } from "@/database/db.js";
+import { ApiClient } from "@/e2e/utils/api-client.js";
 import {
+  type AdminAgentResponse,
   type AdminCompetitionTransferViolationsResponse,
   type AgentCompetitionsResponse,
   type AgentPerpsPositionsResponse,
@@ -24,6 +26,7 @@ import {
 import { getBaseUrl } from "@/e2e/utils/server.js";
 import {
   createTestClient,
+  generateTestHandle,
   getAdminApiKey,
   registerUserAndAgentAndGetClient,
   startPerpsTestCompetition,
@@ -2714,5 +2717,234 @@ describe("Perps Competition", () => {
     expect(competitionDetails.competition).toBeDefined();
     const stats = competitionDetails.competition.stats;
     expect(stats?.totalVolume).toBeGreaterThanOrEqual(75000);
+  });
+
+  test("should require wallet address for agents joining perps competitions", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // First register a user with a normal agent
+    const { user } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Initial Agent",
+    });
+
+    // Now create an agent WITHOUT a wallet address for this user
+    const agentNoWalletResponse = (await adminClient.registerAgent({
+      user: { id: user.id },
+      agent: {
+        name: "Agent Without Wallet",
+        handle: generateTestHandle("Agent Without Wallet"),
+        description: "Test agent without wallet",
+        // Explicitly NOT providing walletAddress
+      },
+    })) as AdminAgentResponse;
+    const agentNoWallet = agentNoWalletResponse.agent;
+    const agentNoWalletClient = new ApiClient(agentNoWallet.apiKey);
+
+    // Register an agent WITH a wallet address for comparison
+    const { agent: agentWithWallet, client: agentWithWalletClient } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Agent With Wallet",
+        agentWalletAddress: "0x1234567890123456789012345678901234567890",
+      });
+
+    // Create a perps competition
+    const competitionResponse = await adminClient.createCompetition({
+      name: `Wallet Validation Test ${Date.now()}`,
+      type: "perpetual_futures",
+      startDate: new Date(Date.now() + 86400000).toISOString(), // Start tomorrow
+      endDate: new Date(Date.now() + 172800000).toISOString(), // End in 2 days
+      perpsProvider: {
+        provider: "symphony",
+        initialCapital: 1000,
+        selfFundingThreshold: 100,
+        apiUrl: "http://localhost:4567",
+      },
+    });
+
+    expect(competitionResponse.success).toBe(true);
+    const typedCompetitionResponse = competitionResponse as {
+      success: true;
+      competition: { id: string; status: string };
+    };
+    const competition = typedCompetitionResponse.competition;
+
+    // Test 1: Agent WITHOUT wallet should FAIL to join perps competition
+    const joinNoWalletResponse = await agentNoWalletClient.joinCompetition(
+      competition.id,
+      agentNoWallet.id,
+    );
+    expect(joinNoWalletResponse.success).toBe(false);
+    const joinErrorResponse = joinNoWalletResponse as ErrorResponse;
+    expect(joinErrorResponse.status).toBe(400);
+    expect(joinErrorResponse.error).toContain("wallet address");
+    expect(joinErrorResponse.error).toContain("perpetual futures");
+
+    // Test 2: Agent WITH wallet should SUCCEED to join
+    const joinWithWalletResponse = await agentWithWalletClient.joinCompetition(
+      competition.id,
+      agentWithWallet.id,
+    );
+    expect(joinWithWalletResponse.success).toBe(true);
+
+    // Test 3: Try to start competition with agent without wallet - should FAIL
+    const startWithNoWalletResponse = await adminClient.startCompetition({
+      competitionId: competition.id,
+      agentIds: [agentNoWallet.id, agentWithWallet.id],
+    });
+    expect(startWithNoWalletResponse.success).toBe(false);
+    const startErrorResponse = startWithNoWalletResponse as ErrorResponse;
+    expect(startErrorResponse.error).toContain("wallet address");
+    expect(startErrorResponse.error).toContain(agentNoWallet.name);
+
+    // Test 4: Starting with only the agent WITH wallet should SUCCEED
+    const startWithWalletResponse = await adminClient.startCompetition({
+      competitionId: competition.id,
+      agentIds: [agentWithWallet.id],
+    });
+    expect(startWithWalletResponse.success).toBe(true);
+    const typedStartResponse = startWithWalletResponse as {
+      success: true;
+      competition: { status: string };
+    };
+    expect(typedStartResponse.competition.status).toBe("active");
+
+    // End the competition to clean up
+    await adminClient.endCompetition(competition.id);
+  });
+
+  test("should prevent admin from adding agent without wallet to perps competition", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // First register a user with a normal agent
+    const { user } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Initial Agent Admin Test",
+    });
+
+    // Now create an agent WITHOUT a wallet address for this user
+    const agentNoWalletResponse = (await adminClient.registerAgent({
+      user: { id: user.id },
+      agent: {
+        name: "Admin Test No Wallet",
+        handle: generateTestHandle("Admin Test No Wallet"),
+        description: "Test agent without wallet for admin endpoint",
+        // Explicitly NOT providing walletAddress
+      },
+    })) as AdminAgentResponse;
+    const agentNoWallet = agentNoWalletResponse.agent;
+
+    // Create a perps competition
+    const competitionResponse = await adminClient.createCompetition({
+      name: `Admin Wallet Validation Test ${Date.now()}`,
+      type: "perpetual_futures",
+      startDate: new Date(Date.now() + 86400000).toISOString(), // Start tomorrow
+      endDate: new Date(Date.now() + 172800000).toISOString(), // End in 2 days
+      perpsProvider: {
+        provider: "symphony",
+        initialCapital: 1000,
+        selfFundingThreshold: 100,
+        apiUrl: "http://localhost:4567",
+      },
+    });
+
+    expect(competitionResponse.success).toBe(true);
+    const typedCompetitionResponse = competitionResponse as {
+      success: true;
+      competition: { id: string; status: string };
+    };
+    const competition = typedCompetitionResponse.competition;
+
+    // Admin should NOT be able to add agent without wallet to perps competition
+    const addAgentResponse = await adminClient.addAgentToCompetition(
+      competition.id,
+      agentNoWallet.id,
+    );
+
+    expect(addAgentResponse.success).toBe(false);
+    const addErrorResponse = addAgentResponse as ErrorResponse;
+    expect(addErrorResponse.error).toContain("wallet address");
+    expect(addErrorResponse.error).toContain("perpetual futures");
+
+    // Verify agent with wallet CAN be added by admin
+    const { agent: agentWithWallet } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Admin Test With Wallet",
+      agentWalletAddress: "0xabcdef1234567890123456789012345678901234",
+    });
+
+    const addWithWalletResponse = await adminClient.addAgentToCompetition(
+      competition.id,
+      agentWithWallet.id,
+    );
+
+    expect(addWithWalletResponse.success).toBe(true);
+
+    // Clean up
+    await adminClient.endCompetition(competition.id);
+  });
+
+  test("should allow agents without wallets to join paper trading competitions", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // First register a user with a normal agent
+    const { user } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Initial Paper Agent",
+    });
+
+    // Now create an agent WITHOUT a wallet address for this user
+    const agentNoWalletResponse = (await adminClient.registerAgent({
+      user: { id: user.id },
+      agent: {
+        name: "Paper Trading Agent No Wallet",
+        handle: generateTestHandle("Paper Trading Agent No Wallet"),
+        description: "Test paper trading agent without wallet",
+        // Explicitly NOT providing walletAddress
+      },
+    })) as AdminAgentResponse;
+    const agentNoWallet = agentNoWalletResponse.agent;
+    const agentNoWalletClient = new ApiClient(agentNoWallet.apiKey);
+
+    // Create a PAPER TRADING competition (not perps)
+    const competitionResponse = await adminClient.createCompetition({
+      name: `Paper Trading No Wallet Test ${Date.now()}`,
+      type: "trading", // Paper trading, not perps
+      startDate: new Date(Date.now() + 86400000).toISOString(),
+      endDate: new Date(Date.now() + 172800000).toISOString(),
+    });
+
+    expect(competitionResponse.success).toBe(true);
+    const typedCompetitionResponse = competitionResponse as {
+      success: true;
+      competition: { id: string; status: string };
+    };
+    const competition = typedCompetitionResponse.competition;
+
+    // Agent WITHOUT wallet should SUCCEED to join paper trading competition
+    const joinResponse = await agentNoWalletClient.joinCompetition(
+      competition.id,
+      agentNoWallet.id,
+    );
+    expect(joinResponse.success).toBe(true);
+
+    // Should also be able to start the competition
+    const startResponse = await adminClient.startCompetition({
+      competitionId: competition.id,
+      agentIds: [agentNoWallet.id],
+    });
+    expect(startResponse.success).toBe(true);
+    const typedStartResponse = startResponse as {
+      success: true;
+      competition: { status: string };
+    };
+    expect(typedStartResponse.competition.status).toBe("active");
+
+    // Clean up
+    await adminClient.endCompetition(competition.id);
   });
 });
