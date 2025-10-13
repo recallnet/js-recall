@@ -7,6 +7,7 @@ import { AgentScoreRepository } from "@recallnet/db/repositories/agent-score";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { PerpsRepository } from "@recallnet/db/repositories/perps";
 import {
+  SelectAgent,
   SelectCompetition,
   SelectCompetitionReward,
   UpdateCompetition,
@@ -619,6 +620,35 @@ export class CompetitionService {
   }
 
   /**
+   * Validates that agents have wallet addresses for perpetual futures competitions
+   * @param agents Array of agents to validate
+   * @param competitionType The type of competition
+   * @throws ApiError if any agents lack wallet addresses for a perps competition
+   */
+  private validateAgentsForPerpsCompetition(
+    agents: SelectAgent[],
+    competitionType: CompetitionType,
+  ): void {
+    // Early return for non-perps competitions for efficiency
+    if (competitionType !== "perpetual_futures") {
+      return;
+    }
+
+    const agentsWithoutWallets = agents.filter((a) => !a.walletAddress);
+
+    if (agentsWithoutWallets.length > 0) {
+      const agentDescriptions = agentsWithoutWallets
+        .map((a) => `${a.name} (${a.id})`)
+        .join(", ");
+
+      throw new ApiError(
+        400,
+        `Cannot proceed with perpetual futures competition: The following agents have no wallet address: ${agentDescriptions}`,
+      );
+    }
+  }
+
+  /**
    * Gets pre-registered agent IDs for a competition
    * @param competitionId The competition ID
    * @returns Array of pre-registered agent IDs
@@ -685,6 +715,12 @@ export class CompetitionService {
     // Check if we have any agents
     if (finalAgentIds.length === 0) {
       throw new ApiError(400, `Cannot start competition: no registered agents`);
+    }
+
+    // For perps competitions, validate all agents have wallet addresses
+    if (competition.type === "perpetual_futures") {
+      const agents = await this.agentService.getAgentsByIds(finalAgentIds);
+      this.validateAgentsForPerpsCompetition(agents, competition.type);
     }
 
     // Process all agent additions and activations
@@ -2019,6 +2055,14 @@ export class CompetitionService {
     // Check agent status is eligible
     if (agent.status === "deleted" || agent.status === "suspended") {
       throw new ApiError(403, "Agent is not eligible to join competitions");
+    }
+
+    // Validate wallet address for perps competitions
+    if (competition.type === "perpetual_futures" && !agent.walletAddress) {
+      throw new ApiError(
+        400,
+        "Agent must have a wallet address to participate in perpetual futures competitions",
+      );
     }
 
     // Check if competition status is pending
