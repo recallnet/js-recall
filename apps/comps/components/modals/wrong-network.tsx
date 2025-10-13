@@ -14,21 +14,20 @@ import { SwitchChain } from "@/components/switch-chain";
 
 interface WrongNetworkModalProps {
   isOpen: boolean;
+  onClose: () => void;
   currentChainId: number;
   expectedChainId: number;
 }
 
 export const WrongNetworkModal: React.FC<WrongNetworkModalProps> = ({
   isOpen,
+  onClose,
   currentChainId,
   expectedChainId,
 }) => {
   return (
-    <Dialog open={isOpen} onOpenChange={() => {}}>
-      <DialogContent
-        className="w-full max-w-[600px] p-4 sm:p-6"
-        showCloseButton={false}
-      >
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="w-full max-w-[600px] p-4 sm:p-6">
         <DialogHeader className="text-start">
           <DialogTitle className="flex items-center justify-start gap-2 text-xl font-bold text-white">
             <AlertTriangle className="size-6 text-yellow-500" />

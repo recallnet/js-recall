@@ -108,6 +108,14 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [linkOrConnectWalletError, setLinkOrConnectWalletError] =
     useState<Error | null>(null);
   const [isWrongWalletModalOpen, setIsWrongWalletModalOpen] = useState(false);
+  const [isWrongNetworkModalDismissed, setIsWrongNetworkModalDismissed] =
+    useState(() => {
+      // Persist dismissed state in sessionStorage
+      if (typeof window !== "undefined") {
+        return sessionStorage.getItem("wrongNetworkModalDismissed") === "true";
+      }
+      return false;
+    });
 
   const { login: loginInner } = useLogin({
     onComplete: async ({ user, isNewUser }) => {
@@ -242,7 +250,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   });
 
   const linkOrConnectWallet = useCallback(
-    (options?: ConnectWalletModalOptions | MouseEvent<any, any>) => {
+    (options?: ConnectWalletModalOptions | MouseEvent<HTMLElement>) => {
       setLinkOrConnectWalletError(null);
 
       if (!backendUser) return;
@@ -258,11 +266,12 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         case "external-linked":
           connectWallet(options);
           return;
-        case "unknown":
+        case "unknown": {
           const message = `Unknown wallet state for user ID: ${backendUser.id}`;
           setLinkOrConnectWalletError(new Error(message));
           console.error(message);
           return;
+        }
       }
     },
     [linkWallet, setLinkOrConnectWalletError, connectWallet, backendUser],
@@ -304,8 +313,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       console.error("Failed to sync active wallet:", error);
     }
   }, [
-    backendUser?.walletAddress,
-    backendUser?.embeddedWalletAddress,
+    backendUser,
     connectedExternalWallets,
     readyWallets,
     setActiveWallet,
@@ -331,6 +339,24 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       setShouldLinkWallet(false);
     }
   }, [backendUser, shouldLinkWallet, linkOrConnectWallet]);
+
+  // Reset wrong network modal dismissed state when user switches to correct network
+  useEffect(() => {
+    if (!isWrongChain && isWrongNetworkModalDismissed) {
+      setIsWrongNetworkModalDismissed(false);
+      if (typeof window !== "undefined") {
+        sessionStorage.removeItem("wrongNetworkModalDismissed");
+      }
+    }
+  }, [isWrongChain, isWrongNetworkModalDismissed]);
+
+  // Persist dismissed state to sessionStorage
+  const handleDismissWrongNetworkModal = useCallback(() => {
+    setIsWrongNetworkModalDismissed(true);
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("wrongNetworkModalDismissed", "true");
+    }
+  }, []);
 
   // Mutation for updating user data
   const {
@@ -471,13 +497,17 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
           expectedWalletAddress={backendUser?.walletAddress || ""}
         />
       )}
-      {isWrongChain && currentChainId && (
-        <WrongNetworkModal
-          isOpen
-          currentChainId={currentChainId}
-          expectedChainId={defaultChainId}
-        />
-      )}
+      {isWrongChain &&
+        currentChainId &&
+        !isWrongNetworkModalDismissed &&
+        session.isAuthenticated && (
+          <WrongNetworkModal
+            isOpen
+            onClose={handleDismissWrongNetworkModal}
+            currentChainId={currentChainId}
+            expectedChainId={defaultChainId}
+          />
+        )}
     </SessionContext.Provider>
   );
 }
