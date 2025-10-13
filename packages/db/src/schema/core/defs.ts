@@ -262,6 +262,11 @@ export const competitions = pgTable(
     registeredParticipants: integer("registered_participants")
       .default(0)
       .notNull(),
+    minimumStake: numeric("minimum_stake", {
+      precision: 30,
+      scale: 15,
+      mode: "number",
+    }),
     status: competitionStatus("status").notNull(),
     sandboxMode: boolean("sandbox_mode").notNull().default(false),
     createdAt: timestamp("created_at", {

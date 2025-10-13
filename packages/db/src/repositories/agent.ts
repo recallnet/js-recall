@@ -65,6 +65,7 @@ export const COMPUTED_SORT_FIELDS = [
   "portfolioValue",
   "pnl",
   "totalTrades",
+  "totalPositions",
   "rank",
   "agentName",
   "agentHandle",
