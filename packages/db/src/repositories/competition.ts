@@ -480,6 +480,8 @@ export class CompetitionRepository {
 
         // Check if this owner already has any OTHER agent (regardless of status) in the competition
         // We allow re-adding the same agent (idempotent), but block different agents for same user
+        // TODO(hotfix): temporarily allow multiple agents per user
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const existingAgents = await tx
           .select({ agentId: competitionAgents.agentId })
           .from(competitionAgents)
@@ -493,11 +495,12 @@ export class CompetitionRepository {
           )
           .limit(1);
 
-        if (existingAgents.length > 0) {
-          throw new Error(
-            "User already has an agent registered in this competition",
-          );
-        }
+        // TODO(hotfix): temporarily allow multiple agents per user
+        // if (existingAgents.length > 0) {
+        //   throw new Error(
+        //     "User already has an agent registered in this competition",
+        //   );
+        // }
 
         // Attempt to add the agent to the competition
         const insertResult = await tx
