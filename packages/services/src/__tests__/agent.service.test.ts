@@ -528,17 +528,17 @@ describe("AgentService", () => {
       );
     });
 
-    it("should return null when agent not found", async () => {
+    it("should throw error when agent not found", async () => {
       const agentId = "nonexistent-agent-id";
       const reason = "Test reason";
 
-      vi.mocked(mockAgentRepo.deactivateAgent).mockResolvedValue(
-        null as unknown as SelectAgent,
+      vi.mocked(mockAgentRepo.deactivateAgent).mockRejectedValue(
+        new Error("Failed to deactivate agent - no result returned"),
       );
 
-      const result = await agentService.deactivateAgent(agentId, reason);
-
-      expect(result).toBeNull();
+      await expect(
+        agentService.deactivateAgent(agentId, reason),
+      ).rejects.toThrow("Failed to deactivate agent");
     });
   });
 
@@ -563,16 +563,16 @@ describe("AgentService", () => {
       expect(mockAgentRepo.reactivateAgent).toHaveBeenCalledWith(agentId);
     });
 
-    it("should return null when agent not found", async () => {
+    it("should throw error when agent not found", async () => {
       const agentId = "nonexistent-agent-id";
 
-      vi.mocked(mockAgentRepo.reactivateAgent).mockResolvedValue(
-        null as unknown as SelectAgent,
+      vi.mocked(mockAgentRepo.reactivateAgent).mockRejectedValue(
+        new Error("Failed to reactivate agent - no result returned"),
       );
 
-      const result = await agentService.reactivateAgent(agentId);
-
-      expect(result).toBeNull();
+      await expect(agentService.reactivateAgent(agentId)).rejects.toThrow(
+        "Failed to reactivate agent",
+      );
     });
   });
 
@@ -621,6 +621,24 @@ describe("AgentService", () => {
       const result = await agentService.deleteAgent(agentId);
 
       expect(result).toBe(false);
+    });
+
+    it("should throw error when deletion encounters unexpected error", async () => {
+      const agentId = "test-agent-id";
+      const mockAgent = {
+        id: agentId,
+        name: "Test Agent",
+        apiKey: "encrypted-key",
+      } as unknown as SelectAgent;
+
+      vi.mocked(mockAgentRepo.findById).mockResolvedValue(mockAgent);
+      vi.mocked(mockAgentRepo.deleteAgent).mockRejectedValue(
+        new Error("Database connection failed"),
+      );
+
+      await expect(agentService.deleteAgent(agentId)).rejects.toThrow(
+        "Failed to delete agent",
+      );
     });
   });
 
