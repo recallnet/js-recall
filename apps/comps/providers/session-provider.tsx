@@ -109,6 +109,15 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     useState<Error | null>(null);
   const [isWrongWalletModalOpen, setIsWrongWalletModalOpen] = useState(false);
 
+  const handleCloseWrongWalletModal = useCallback(
+    (open: boolean) => {
+      disconnect(undefined, {
+        onSuccess: () => setIsWrongWalletModalOpen(open),
+      });
+    },
+    [setIsWrongWalletModalOpen, disconnect],
+  );
+
   const { login: loginInner } = useLogin({
     onComplete: async ({ user, isNewUser }) => {
       // Note: Privy has a known issue where embedded wallets are, sometimes, not created for a
@@ -467,7 +476,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       {isWrongWalletModalOpen && session.isAuthenticated && (
         <WrongWalletModal
           isOpen
-          onClose={setIsWrongWalletModalOpen}
+          onClose={handleCloseWrongWalletModal}
           expectedWalletAddress={backendUser?.walletAddress || ""}
         />
       )}
