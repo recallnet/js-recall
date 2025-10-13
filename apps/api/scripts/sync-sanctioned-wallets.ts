@@ -280,17 +280,15 @@ async function syncSanctionedWallets(): Promise<void> {
       { totalDBAddresses: dbAddresses.length },
       "Current database addresses",
     );
+
     // Step 3: Find new addresses
-
     const newAddresses = findNewAddresses(ofacAddresses, dbAddresses);
-
     if (newAddresses.length === 0) {
       logger.info("No new sanctioned addresses found - database is up to date");
       const duration = Date.now() - startTime;
       logger.info({ duration }, "Sync completed");
       return;
     }
-
     logger.info(
       { count: newAddresses.length, addresses: newAddresses },
       "New sanctioned addresses found",
