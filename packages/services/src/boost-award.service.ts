@@ -65,22 +65,22 @@ export class BoostAwardService {
     const canUnstakeAfter = stake.canUnstakeAfter.valueOf();
     const votingEndDate = competition.votingEndDate.valueOf();
     const votingStartDate = competition.votingStartDate.valueOf();
-    let multiplier: bigint;
+    let multiplier: number;
     // Before voting starts
     if (stakedAt < votingStartDate) {
       // And covers the voting period
       if (canUnstakeAfter >= votingEndDate) {
         // Means can not unstake before the voting ends
-        multiplier = 2n;
+        multiplier = 2;
       } else {
         // Can unstake during the voting period
-        multiplier = 1n;
+        multiplier = 1;
       }
     } else {
       // Staked after the voting starts
-      multiplier = 1n;
+      multiplier = 1;
     }
-    return stake.amount * multiplier;
+    return { boostAmount: stake.amount * BigInt(multiplier), multiplier };
   }
 
   async availableStakeAwards(wallet: string, competitionId: string) {
@@ -106,7 +106,7 @@ export class BoostAwardService {
           ...stake,
           wallet,
         };
-        const awardAmount = this.awardAmountForStake(stakePosition, {
+        const { boostAmount } = this.awardAmountForStake(stakePosition, {
           id,
           votingStartDate,
           votingEndDate,
@@ -114,9 +114,9 @@ export class BoostAwardService {
 
         acc.stakes.push({
           ...stake,
-          awardAmount,
+          awardAmount: boostAmount,
         });
-        acc.totalAwardAmount += awardAmount;
+        acc.totalAwardAmount += boostAmount;
 
         return acc;
       },
@@ -147,7 +147,10 @@ export class BoostAwardService {
       };
     }
     const userId = user.id;
-    const boostAmount = this.awardAmountForStake(stake, competition);
+    const { boostAmount, multiplier } = this.awardAmountForStake(
+      stake,
+      competition,
+    );
     const increaseRes = await this.#boostRepository.increase(
       {
         userId: userId,
@@ -167,6 +170,8 @@ export class BoostAwardService {
           competitionId: competition.id,
           stakeId: stake.id,
           boostChangeId: increaseRes.changeId,
+          baseAmount: stake.amount,
+          multiplier: multiplier,
         },
         tx,
       );

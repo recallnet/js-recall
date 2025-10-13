@@ -5,6 +5,7 @@ import {
   index,
   integer,
   jsonb,
+  numeric,
   pgTable,
   serial,
   text,
@@ -222,6 +223,12 @@ export const stakeBoostAwards = pgTable(
     stakeId: bigint("stake_id", { mode: "bigint" })
       .notNull()
       .references(() => stakes.id, { onDelete: "cascade" }),
+    baseAmount: tokenAmount("base_amount").notNull(),
+    multiplier: numeric("multiplier", {
+      precision: 6,
+      scale: 4,
+      mode: "number",
+    }).notNull(),
     boostChangeId: uuid("boost_change_id")
       .notNull()
       .references(() => boostChanges.id, { onDelete: "cascade" }),
