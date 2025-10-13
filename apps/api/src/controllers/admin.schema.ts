@@ -87,6 +87,7 @@ export const AdminCreateCompetitionSchema = z
     joinStartDate: z.iso.datetime().pipe(z.coerce.date()).optional(),
     joinEndDate: z.iso.datetime().pipe(z.coerce.date()).optional(),
     maxParticipants: z.number().int().min(1).optional(),
+    minimumStake: z.number().min(0).optional(),
     tradingConstraints: TradingConstraintsSchema,
     rewards: RewardsSchema,
     perpsProvider: PerpsProviderSchema.optional(), // Only required for perps competitions
@@ -141,6 +142,7 @@ export const AdminStartCompetitionSchema = z
     votingEndDate: z.iso.datetime().pipe(z.coerce.date()).optional(),
     joinStartDate: z.iso.datetime().pipe(z.coerce.date()).optional(),
     joinEndDate: z.iso.datetime().pipe(z.coerce.date()).optional(),
+    minimumStake: z.number().min(0).optional(),
     tradingConstraints: TradingConstraintsSchema,
     rewards: RewardsSchema,
     perpsProvider: PerpsProviderSchema.optional(), // Only required for perps competitions
