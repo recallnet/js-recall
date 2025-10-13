@@ -212,13 +212,14 @@ describe("WatchlistService", () => {
       await expect(
         watchlistService.isAddressSanctioned(address),
       ).rejects.toThrow(RetryExhaustedError);
-    }, 6000); // 6 second timeout (TEST_RETRY_CONFIG maxElapsedTime is 5 seconds)
+    }, 6000);
 
     it("should retry on 403 from Chainalysis", async () => {
       const address = "0x1234567890abcdef1234567890abcdef12345678";
       watchlistService = new WalletWatchlist(
         { watchlist: { chainalysisApiKey: "test-api-key" } },
         logger,
+        TEST_RETRY_CONFIG,
       );
 
       // Mock 403 responses for all attempts (initial + maxRetries from DEFAULT_RETRY_CONFIG)
@@ -233,9 +234,9 @@ describe("WatchlistService", () => {
         watchlistService.isAddressSanctioned(address),
       ).rejects.toThrow();
 
-      // Should be called 4 times (initial + 3 retries from DEFAULT_RETRY_CONFIG)
-      expect(mockFetch).toHaveBeenCalledTimes(4);
-    });
+      // Should be called 3 times (initial + 2 retries from TEST_RETRY_CONFIG)
+      expect(mockFetch).toHaveBeenCalledTimes(3);
+    }, 7000);
 
     it("should throw on network error", async () => {
       const address = "0x1234567890abcdef1234567890abcdef12345678";
@@ -249,7 +250,7 @@ describe("WatchlistService", () => {
       await expect(
         watchlistService.isAddressSanctioned(address),
       ).rejects.toThrow(RetryExhaustedError);
-    }, 6000); // 6 second timeout (TEST_RETRY_CONFIG maxElapsedTime is 5 seconds)
+    }, 6000);
 
     it("should handle timeout with AbortController", async () => {
       const address = "0x1234567890abcdef1234567890abcdef12345678";
@@ -273,7 +274,7 @@ describe("WatchlistService", () => {
           signal: expect.any(AbortSignal),
         }),
       );
-    }, 6000); // 6 second timeout (TEST_RETRY_CONFIG maxElapsedTime is 5 seconds)
+    }, 6000);
 
     it("should handle empty identifications array", async () => {
       const address = "0x1234567890abcdef1234567890abcdef12345678";
