@@ -19,6 +19,7 @@ import { RouterOutputs } from "@/rpc/router";
 import { formatDate } from "@/utils/format";
 
 import { ShareModal } from "../share-modal";
+import { CalmarRatioChart } from "./calmar-ratio-chart";
 import { ChartSkeleton } from "./chart-skeleton";
 import { ChartWrapper } from "./chart-wrapper";
 import { CHART_COLORS, HoverContext, LIMIT_AGENTS_PER_PAGE } from "./constants";
@@ -38,6 +39,8 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
   onPageChange,
   suppressInternalLoading = false,
 }) => {
+  const isPerpsCompetition = competition.type === "perpetual_futures";
+
   const { data: timelineRaw, isLoading } = useCompetitionTimeline(
     competition.id,
     competition.status,
@@ -443,6 +446,40 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
   const handleNextRange = () => {
     setDateRangeIndex((prev) => Math.min(parsedData.length - 1, prev + 1));
   };
+
+  // For perps competitions, render the CalmarRatioChart instead
+  if (isPerpsCompetition) {
+    return (
+      <div
+        className={cn("bg-card rounded-lg border border-zinc-900", className)}
+      >
+        <div className="flex flex-row justify-between border-b px-6 pb-4 pt-6">
+          <div className="w-full">
+            <h2
+              id="calmar-ratio-leaderboard"
+              className="mb-2 text-2xl font-bold text-white"
+            >
+              Calmar Ratio Leaderboard
+            </h2>
+            <p className="text-gray-400">
+              Risk-adjusted performance metric (Higher is better)
+            </p>
+          </div>
+          <ShareModal
+            title="Share Calmar ratio leaderboard"
+            url={`${config.frontendUrl}/competitions/${id}/chart`}
+            size={20}
+          />
+        </div>
+        <CalmarRatioChart
+          agents={agents || []}
+          totalAgents={totalAgents}
+          currentPage={currentPage}
+          onPageChange={onPageChange}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className={cn("w-full rounded-lg border", className)}>
