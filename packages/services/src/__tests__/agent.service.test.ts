@@ -44,6 +44,7 @@ function createMockCompetition(
     sandboxMode: false,
     maxParticipants: null,
     registeredParticipants: 0,
+    minimumStake: null,
     ...overrides,
   };
 }
