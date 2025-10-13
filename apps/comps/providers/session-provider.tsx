@@ -78,9 +78,9 @@ type Session = {
   linkWalletToBackendError: Error | null;
 
   // Sync active wallet state
-  isSyncActiveWalletPending: boolean;
-  syncActiveWalletError: Error | null;
-  isSyncActiveWalletError: boolean;
+  // isSyncActiveWalletPending: boolean;
+  // syncActiveWalletError: Error | null;
+  // isSyncActiveWalletError: boolean;
 
   // Combined state
   isAuthenticated: boolean;
@@ -285,16 +285,13 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   /**
    * Synchronize wagmi's active wallet with the backend user's wallet address
    */
-  const {
-    mutate: syncActiveWallet,
-    isPending: isSyncActiveWalletPending,
-    error: syncActiveWalletError,
-    isError: isSyncActiveWalletError,
-  } = useMutation({
-    mutationFn: async () => {
-      if (!readyWallets || !backendUser) return;
+  const syncActiveWallet = useCallback(async () => {
+    try {
+      if (!readyWallets) return;
 
-      const walletState = userWalletState(backendUser);
+      const walletState = backendUser
+        ? userWalletState(backendUser)
+        : undefined;
       const userExternalWalletAddress =
         walletState?.type === "external-linked" ||
         walletState?.type === "external-not-linked"
@@ -317,15 +314,43 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       } else {
         setIsWalletConnected(false);
       }
-    },
-  });
+    } catch (error) {
+      console.error("Failed to sync active wallet:", error);
+    }
+  }, [
+    backendUser?.walletAddress,
+    backendUser?.embeddedWalletAddress,
+    connectedExternalWallets,
+    readyWallets,
+    setActiveWallet,
+    setIsWrongWalletModalOpen,
+    setIsWalletConnected,
+  ]);
+
+  /**
+   * Synchronize wagmi's active wallet with the backend user's wallet address
+   */
+  // const {
+  //   mutate: syncActiveWalletx,
+  //   isPending: isSyncActiveWalletPending,
+  //   error: syncActiveWalletError,
+  //   isError: isSyncActiveWalletError,
+  // } = useMutation({
+  //   mutationFn: syncActiveWallet,
+  // });
 
   // Sync active wallet when backend user data is available
   useEffect(() => {
-    if (backendUser) {
-      syncActiveWallet();
+    if (backendUser?.walletAddress && readyWallets) {
+      // Small delay to ensure the wallet state is stable
+      const timeoutId = setTimeout(() => {
+        syncActiveWallet();
+      }, 200);
+
+      return () => clearTimeout(timeoutId);
+      // syncActiveWallet();
     }
-  }, [backendUser, syncActiveWallet]);
+  }, [backendUser?.walletAddress, syncActiveWallet, readyWallets]);
 
   useEffect(() => {
     if (backendUser && shouldLinkWallet) {
@@ -439,9 +464,9 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     linkWalletToBackendError,
 
     // Sync active wallet state
-    isSyncActiveWalletPending,
-    syncActiveWalletError,
-    isSyncActiveWalletError,
+    // isSyncActiveWalletPending,
+    // syncActiveWalletError,
+    // isSyncActiveWalletError,
 
     // Combined state
     isAuthenticated: authenticated && backendUser?.status === "active",
@@ -451,24 +476,21 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       isFetchBackendUserLoading ||
       isLoginToBackendPending ||
       isUpdateBackendUserPending ||
-      isLinkWalletToBackendPending ||
-      isSyncActiveWalletPending,
+      isLinkWalletToBackendPending,
     isError:
       !!loginError ||
       !!linkOrConnectWalletError ||
       isFetchBackendUserError ||
       isLoginToBackendError ||
       isUpdateBackendUserError ||
-      isLinkWalletToBackendError ||
-      isSyncActiveWalletError,
+      isLinkWalletToBackendError,
     error:
       loginError ||
       linkOrConnectWalletError ||
       fetchBackendUserError ||
       loginToBackendError ||
       updateBackendUserError ||
-      linkWalletToBackendError ||
-      syncActiveWalletError,
+      linkWalletToBackendError,
   };
 
   return (
