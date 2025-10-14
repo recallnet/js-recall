@@ -65,13 +65,17 @@ export class BoostAwardService {
     const canUnstakeAfter = stake.canUnstakeAfter.valueOf();
     const votingEndDate = competition.votingEndDate.valueOf();
     const votingStartDate = competition.votingStartDate.valueOf();
+
+    // TODO: we decided to remove the multipler for the time being,
+    // but I'm keeping the logic to avoid a bigger refactoring at this point
+
     let multiplier: number;
     // Before voting starts
     if (stakedAt < votingStartDate) {
       // And covers the voting period
       if (canUnstakeAfter >= votingEndDate) {
         // Means can not unstake before the voting ends
-        multiplier = 2;
+        multiplier = 1;
       } else {
         // Can unstake during the voting period
         multiplier = 1;

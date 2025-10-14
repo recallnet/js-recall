@@ -45,12 +45,6 @@ const ActiveStakeEntry: React.FunctionComponent<ActiveStakeEntryProps> = ({
     return value ? formatAmount(value, 0, true) : "0";
   }, [amount]);
 
-  // TODO: change this based on the locked period
-  const boostMultiplier = isLocked ? "x2" : undefined;
-  const boostAmountWithMultiplier = isLocked
-    ? `${formatAmount(attoValueToNumberValue(amount) * 2, 0, true)}`
-    : boostAmount;
-
   const stakedDate = useMemo(() => {
     return formatDate(new Date(Number(startTime) * 1000));
   }, [startTime]);
@@ -102,15 +96,7 @@ const ActiveStakeEntry: React.FunctionComponent<ActiveStakeEntryProps> = ({
               </div>
               <div className="flex items-center gap-1 text-yellow-400">
                 <BoostIcon fill />
-                <span className="font-bold">
-                  {boostAmount}
-                  {boostMultiplier && (
-                    <span className="text-blue-300">
-                      {" "}
-                      {boostMultiplier} ({boostAmountWithMultiplier})
-                    </span>
-                  )}
-                </span>
+                <span className="font-bold">{boostAmount}</span>
                 <span className="text-gray-400">per competition.</span>
               </div>
             </div>
