@@ -7,7 +7,7 @@ export default function Landing() {
     <div
       className="flex h-full flex-col items-center justify-center gap-14"
       style={{
-        backgroundImage: `radial-gradient(ellipse 700px 600px at center bottom, rgba(0,0,0,0.2) 0%, rgba(0,0,0,1) 100%), url(${Distribution.src})`,
+        backgroundImage: `radial-gradient(ellipse 700px 500px at center bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,1) 100%), url(${Distribution.src})`,
         backgroundSize: "max(100%, 1100px) auto, max(100%, 1100px) auto",
         backgroundPosition: "center bottom, center bottom",
         backgroundRepeat: "no-repeat, no-repeat",
