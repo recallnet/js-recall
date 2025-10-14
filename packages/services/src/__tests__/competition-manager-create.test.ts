@@ -422,4 +422,70 @@ describe("CompetitionService - createCompetition", () => {
       tradingConstraints: expect.any(Object),
     });
   });
+
+  test("should create perps competition with minFundingThreshold", async () => {
+    mockDb.transaction.mockImplementation(async (callback) => {
+      const mockTx = mock<Transaction>();
+      return await callback(mockTx);
+    });
+
+    const result = await competitionService.createCompetition({
+      name: "Perps Competition",
+      description: "Test perps competition with min funding",
+      type: "perpetual_futures",
+      sandboxMode: false,
+      perpsProvider: {
+        provider: "symphony",
+        initialCapital: 500,
+        selfFundingThreshold: 0,
+        minFundingThreshold: 100, // NEW: Test the field
+      },
+    });
+
+    // Verify perps config was created with minFundingThreshold
+    expect(perpsRepo.createPerpsCompetitionConfig).toHaveBeenCalledWith(
+      expect.objectContaining({
+        competitionId: expect.any(String),
+        initialCapital: "500",
+        selfFundingThresholdUsd: "0",
+        minFundingThreshold: "100", // NEW: Verify it's passed
+      }),
+      expect.any(Object), // The transaction object
+    );
+
+    expect(result.name).toBe("Perps Competition");
+  });
+
+  test("should create perps competition without minFundingThreshold", async () => {
+    mockDb.transaction.mockImplementation(async (callback) => {
+      const mockTx = mock<Transaction>();
+      return await callback(mockTx);
+    });
+
+    const result = await competitionService.createCompetition({
+      name: "Perps Competition No Min",
+      description: "Test perps competition without min funding",
+      type: "perpetual_futures",
+      sandboxMode: false,
+      perpsProvider: {
+        provider: "hyperliquid",
+        initialCapital: 1000,
+        selfFundingThreshold: 0,
+        // minFundingThreshold not provided - should be null
+      },
+    });
+
+    // Verify perps config was created with null minFundingThreshold
+    expect(perpsRepo.createPerpsCompetitionConfig).toHaveBeenCalledWith(
+      expect.objectContaining({
+        competitionId: expect.any(String),
+        initialCapital: "1000",
+        selfFundingThresholdUsd: "0",
+        minFundingThreshold: null, // Should be null when not provided
+      }),
+      expect.any(Object),
+    );
+
+    expect(result.name).toBe("Perps Competition No Min");
+  });
 });

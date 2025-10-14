@@ -118,6 +118,7 @@ describe("PerpsDataProcessor - processPerpsCompetition", () => {
     },
     selfFundingThresholdUsd: "100",
     initialCapital: "10000",
+    minFundingThreshold: null,
     createdAt: new Date(),
     updatedAt: new Date(),
     inactivityHours: null,

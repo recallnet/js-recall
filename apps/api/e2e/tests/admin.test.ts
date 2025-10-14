@@ -9,7 +9,10 @@ import {
   competitionRewards,
   competitions,
 } from "@recallnet/db/schema/core/defs";
-import { tradingConstraints } from "@recallnet/db/schema/trading/defs";
+import {
+  perpsCompetitionConfig,
+  tradingConstraints,
+} from "@recallnet/db/schema/trading/defs";
 
 import { db } from "@/database/db.js";
 import {
@@ -1876,6 +1879,157 @@ describe("Admin API", () => {
     expect(Array.isArray(startResponse.competition.agentIds)).toBe(true);
     expect(startResponse.competition.agentIds).toContain(agent1.id);
     expect(startResponse.competition.agentIds).toContain(agent2.id);
+  });
+
+  test("should create a perps competition with minFundingThreshold", async () => {
+    const client = createTestClient(getBaseUrl());
+    await client.loginAsAdmin(adminApiKey);
+
+    // Create a perps competition with minFundingThreshold
+    const response = await createPerpsTestCompetition({
+      adminClient: client,
+      name: "Perps Competition with Min Funding Threshold",
+      perpsProvider: {
+        provider: "symphony",
+        initialCapital: 1000,
+        selfFundingThreshold: 0,
+        minFundingThreshold: 250, // Set minimum portfolio balance to $250
+        apiUrl: "http://localhost:4567",
+      },
+    });
+
+    expect(response.success).toBe(true);
+    expect(response.competition).toBeDefined();
+    expect(response.competition.name).toBe(
+      "Perps Competition with Min Funding Threshold",
+    );
+    expect(response.competition.type).toBe("perpetual_futures");
+
+    // Verify the minFundingThreshold was saved by checking the competition details
+    const competitionId = response.competition.id;
+    const detailsResponse = await client.getCompetition(competitionId);
+    expect(detailsResponse.success).toBe(true);
+
+    // Note: The perpsConfig details are NOT returned in the public API,
+    // so we'll verify the competition was created successfully
+    expect((detailsResponse as CompetitionDetailResponse).competition.id).toBe(
+      competitionId,
+    );
+    expect(
+      (detailsResponse as CompetitionDetailResponse).competition.type,
+    ).toBe("perpetual_futures");
+
+    // Verify the minFundingThreshold was saved in the database
+    const perpsConfig = await db
+      .select()
+      .from(perpsCompetitionConfig)
+      .where(eq(perpsCompetitionConfig.competitionId, competitionId));
+
+    expect(perpsConfig).toHaveLength(1);
+    expect(perpsConfig[0]).toBeDefined();
+    expect(perpsConfig[0]?.minFundingThreshold).toBe("250"); // Stored as string in DB
+  });
+
+  test("should update perps competition to add minFundingThreshold", async () => {
+    const client = createTestClient(getBaseUrl());
+    await client.loginAsAdmin(adminApiKey);
+
+    // First create a perps competition without minFundingThreshold
+    const createResponse = await createPerpsTestCompetition({
+      adminClient: client,
+      name: "Perps Competition to Update Min Funding",
+      perpsProvider: {
+        provider: "hyperliquid",
+        initialCapital: 500,
+        selfFundingThreshold: 100,
+        // No minFundingThreshold initially
+        apiUrl: "http://localhost:4567",
+      },
+    });
+
+    expect(createResponse.success).toBe(true);
+    const competitionId = createResponse.competition.id;
+
+    // Update the competition to add minFundingThreshold
+    const updateResponse = await client.updateCompetition(competitionId, {
+      perpsProvider: {
+        provider: "hyperliquid",
+        initialCapital: 500,
+        selfFundingThreshold: 100,
+        minFundingThreshold: 150,
+        apiUrl: "http://localhost:4567",
+      },
+    });
+
+    expect(updateResponse.success).toBe(true);
+    expect((updateResponse as UpdateCompetitionResponse).competition.type).toBe(
+      "perpetual_futures",
+    );
+
+    // Verify the minFundingThreshold was updated in the database
+    const perpsConfig = await db
+      .select()
+      .from(perpsCompetitionConfig)
+      .where(eq(perpsCompetitionConfig.competitionId, competitionId));
+
+    expect(perpsConfig).toHaveLength(1);
+    expect(perpsConfig[0]).toBeDefined();
+    expect(perpsConfig[0]?.minFundingThreshold).toBe("150"); // Stored as string in DB
+  });
+
+  test("should start a perps competition with minFundingThreshold", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agents for the competition
+    const { agent: agent1 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Perps Agent with Min Funding 1",
+    });
+    const { agent: agent2 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Perps Agent with Min Funding 2",
+    });
+
+    // Start a perps competition with minFundingThreshold
+    const competitionName = `Perps Min Funding Competition ${Date.now()}`;
+    const startResponse = await startPerpsTestCompetition({
+      adminClient,
+      name: competitionName,
+      agentIds: [agent1.id, agent2.id],
+      perpsProvider: {
+        provider: "symphony",
+        initialCapital: 1000,
+        selfFundingThreshold: 50,
+        minFundingThreshold: 100, // $100 minimum portfolio balance
+        apiUrl: "http://localhost:4567",
+      },
+    });
+
+    // Verify the competition was started successfully
+    expect(startResponse.success).toBe(true);
+    expect(startResponse.competition).toBeDefined();
+    expect(startResponse.competition.name).toBe(competitionName);
+    expect(startResponse.competition.type).toBe("perpetual_futures");
+    expect(startResponse.competition.status).toBe("active");
+
+    // Verify agents are participating
+    expect(startResponse.competition.agentIds).toBeDefined();
+    expect(Array.isArray(startResponse.competition.agentIds)).toBe(true);
+    expect(startResponse.competition.agentIds).toContain(agent1.id);
+    expect(startResponse.competition.agentIds).toContain(agent2.id);
+
+    // Verify the minFundingThreshold was saved in the database
+    const perpsConfig = await db
+      .select()
+      .from(perpsCompetitionConfig)
+      .where(
+        eq(perpsCompetitionConfig.competitionId, startResponse.competition.id),
+      );
+
+    expect(perpsConfig).toHaveLength(1);
+    expect(perpsConfig[0]).toBeDefined();
+    expect(perpsConfig[0]?.minFundingThreshold).toBe("100"); // Stored as string in DB
   });
 
   test("should atomically rollback competition update when rewards fail", async () => {

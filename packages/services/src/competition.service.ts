@@ -82,6 +82,7 @@ export interface CreateCompetitionParams {
     provider: "symphony" | "hyperliquid";
     initialCapital: number; // Required - Zod default ensures this is set
     selfFundingThreshold: number; // Required - Zod default ensures this is set
+    minFundingThreshold?: number; // Optional - minimum portfolio balance
     apiUrl?: string;
   };
   prizePools?: {
@@ -514,6 +515,8 @@ export class CompetitionService {
           initialCapital: perpsProvider.initialCapital.toString(),
           selfFundingThresholdUsd:
             perpsProvider.selfFundingThreshold.toString(),
+          minFundingThreshold:
+            perpsProvider.minFundingThreshold?.toString() || null,
         };
 
         await this.perpsRepo.createPerpsCompetitionConfig(perpsConfig, tx);
@@ -1801,6 +1804,7 @@ export class CompetitionService {
       provider: "symphony" | "hyperliquid";
       initialCapital: number; // Required - Zod default ensures this is set
       selfFundingThreshold: number; // Required - Zod default ensures this is set
+      minFundingThreshold?: number;
       apiUrl?: string;
     },
     prizePools?: {
@@ -1889,6 +1893,8 @@ export class CompetitionService {
             initialCapital: perpsProvider.initialCapital.toString(),
             selfFundingThresholdUsd:
               perpsProvider.selfFundingThreshold.toString(),
+            minFundingThreshold:
+              perpsProvider.minFundingThreshold?.toString() || null,
           };
 
           await this.perpsRepo.createPerpsCompetitionConfig(perpsConfig, tx);
@@ -1922,6 +1928,8 @@ export class CompetitionService {
             initialCapital: perpsProvider.initialCapital.toString(),
             selfFundingThresholdUsd:
               perpsProvider.selfFundingThreshold.toString(),
+            minFundingThreshold:
+              perpsProvider.minFundingThreshold?.toString() || null,
           },
           tx,
         );

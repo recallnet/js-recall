@@ -65,6 +65,7 @@ export const PerpsProviderSchema = z.object({
   provider: z.enum(["symphony", "hyperliquid"]).default("symphony"),
   initialCapital: z.number().positive().default(500), // Default $500 initial capital
   selfFundingThreshold: z.number().min(0).default(0), // Default 0 (no self-funding allowed)
+  minFundingThreshold: z.number().min(0).optional(), // Optional minimum portfolio balance
   apiUrl: z.string().url().optional(),
 });
 

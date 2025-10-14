@@ -323,6 +323,7 @@ export const perpsCompetitionConfig = tradingComps.table(
     selfFundingThresholdUsd: numeric("self_funding_threshold_usd").default(
       "10.00",
     ),
+    minFundingThreshold: numeric("min_funding_threshold"),
     inactivityHours: integer("inactivity_hours").default(24),
 
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
