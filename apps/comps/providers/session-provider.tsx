@@ -265,7 +265,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   });
 
   const linkOrConnectWallet = useCallback(
-    (options?: ConnectWalletModalOptions | MouseEvent<any, any>) => {
+    (options?: ConnectWalletModalOptions | MouseEvent<HTMLElement>) => {
       setLinkOrConnectWalletError(null);
 
       if (!backendUser) return;
@@ -281,11 +281,12 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         case "external-linked":
           connectWallet(options);
           return;
-        case "unknown":
+        case "unknown": {
           const message = `Unknown wallet state for user ID: ${backendUser.id}`;
           setLinkOrConnectWalletError(new Error(message));
           console.error(message);
           return;
+        }
       }
     },
     [linkWallet, setLinkOrConnectWalletError, connectWallet, backendUser],
@@ -327,8 +328,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       console.error("Failed to sync active wallet:", error);
     }
   }, [
-    backendUser?.walletAddress,
-    backendUser?.embeddedWalletAddress,
+    backendUser,
     connectedExternalWallets,
     readyWallets,
     setActiveWallet,
