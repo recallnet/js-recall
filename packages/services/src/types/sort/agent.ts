@@ -39,6 +39,9 @@ export const AGENT_COMPUTED_FIELDS = [
   "change24h",
   "change24hPercent",
   "voteCount",
+  "calmarRatio",
+  "simpleReturn",
+  "maxDrawdown",
 ] as const;
 
 /**

@@ -553,7 +553,7 @@ export function configureCompetitionsRoutes(
    *             Optional field(s) to sort by. Supports single or multiple fields separated by commas.
    *             Prefix with '-' for descending order (e.g., '-name' or '-rank').
    *             Default is 'rank' ascending.
-   *           enum: [rank, -rank, score, -score, pnl, -pnl, pnlPercent, -pnlPercent, change24h, -change24h, change24hPercent, -change24hPercent, voteCount, -voteCount, name, -name]
+   *           enum: [rank, -rank, score, -score, pnl, -pnl, pnlPercent, -pnlPercent, change24h, -change24h, change24hPercent, -change24hPercent, voteCount, -voteCount, calmarRatio, -calmarRatio, simpleReturn, -simpleReturn, maxDrawdown, -maxDrawdown, name, -name]
    *           default: rank
    *         required: false
    *         description: Sort order for results
