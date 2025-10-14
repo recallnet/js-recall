@@ -194,7 +194,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
   const showClaimBoost = useMemo(() => {
     if (config.publicFlags.tge) {
       return (
-        isOpenForBoosting && (availableBoostAwards?.totalAwardAmount || 0n > 0n)
+        isOpenForBoosting && (availableBoostAwards?.totalAwardAmount ?? 0n) > 0n
       );
     } else {
       return (
