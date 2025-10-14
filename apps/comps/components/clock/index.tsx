@@ -116,7 +116,7 @@ export const CountdownClock: React.FC<CountdownClockProps> = ({
   }
 
   return (
-    <span className={cn("text-2xl text-white", className)}>
+    <span className={cn("text-2xl tabular-nums text-white", className)}>
       {addLeadingZeros(timeLeft.hours)}:{addLeadingZeros(timeLeft.minutes)}:
       {addLeadingZeros(timeLeft.seconds)}
     </span>
