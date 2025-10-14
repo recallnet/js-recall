@@ -206,9 +206,10 @@ export const SkillDetailLeaderboardTableMobile: React.FC<
                   {isModel &&
                     (participant as BenchmarkModel).context_length && (
                       <button
-                        onClick={() =>
-                          setSelectedModel(participant as BenchmarkModel)
-                        }
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedModel(participant as BenchmarkModel);
+                        }}
                         className="flex items-center gap-1 rounded-md bg-gray-100 px-2 py-1 transition-colors hover:bg-gray-200"
                       >
                         <BarChart3 size={12} className="text-gray-600" />

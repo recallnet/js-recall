@@ -320,6 +320,7 @@ export const SkillDetailLeaderboardTable: React.FC<
                             }
                           >
                             <button
+                              onClick={(e) => e.stopPropagation()}
                               className="flex h-4 w-4 cursor-help touch-manipulation items-center justify-center rounded-full bg-gray-700/50 text-gray-400 transition-colors hover:bg-gray-600/50 hover:text-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-400 focus:ring-offset-1 focus:ring-offset-gray-900 active:bg-gray-600"
                               aria-label={`View statistics for ${(participant as BenchmarkModel).name}`}
                               type="button"
