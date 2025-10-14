@@ -489,3 +489,746 @@ describe("CompetitionService - createCompetition", () => {
     expect(result.name).toBe("Perps Competition No Min");
   });
 });
+
+describe("CompetitionService - startCompetition with minFundingThreshold", () => {
+  let competitionService: CompetitionService;
+  let balanceService: MockProxy<BalanceService>;
+  let tradeSimulatorService: MockProxy<TradeSimulatorService>;
+  let portfolioSnapshotterService: MockProxy<PortfolioSnapshotterService>;
+  let agentService: MockProxy<AgentService>;
+  let agentRankService: MockProxy<AgentRankService>;
+  let voteService: MockProxy<VoteService>;
+  let tradingConstraintsService: MockProxy<TradingConstraintsService>;
+  let competitionRewardService: MockProxy<CompetitionRewardService>;
+  let perpsDataProcessor: MockProxy<PerpsDataProcessor>;
+  let agentRepo: MockProxy<AgentRepository>;
+  let agentScoreRepo: MockProxy<AgentScoreRepository>;
+  let perpsRepo: MockProxy<PerpsRepository>;
+  let competitionRepo: MockProxy<CompetitionRepository>;
+  let stakesRepo: MockProxy<StakesRepository>;
+  let userRepo: MockProxy<UserRepository>;
+  let mockDb: MockProxy<Database>;
+  let logger: MockProxy<Logger>;
+
+  const mockCompetitionId = randomUUID();
+
+  beforeEach(() => {
+    // Create all mocks
+    balanceService = mock<BalanceService>();
+    tradeSimulatorService = mock<TradeSimulatorService>();
+    portfolioSnapshotterService = mock<PortfolioSnapshotterService>();
+    agentService = mock<AgentService>();
+    agentRankService = mock<AgentRankService>();
+    voteService = mock<VoteService>();
+    tradingConstraintsService = mock<TradingConstraintsService>();
+    competitionRewardService = mock<CompetitionRewardService>();
+    perpsDataProcessor = mock<PerpsDataProcessor>();
+    agentRepo = mock<AgentRepository>();
+    agentScoreRepo = mock<AgentScoreRepository>();
+    perpsRepo = mock<PerpsRepository>();
+    competitionRepo = mock<CompetitionRepository>();
+    stakesRepo = mock<StakesRepository>();
+    userRepo = mock<UserRepository>();
+    mockDb = mock<Database>();
+    logger = mock<Logger>();
+
+    // Create service instance
+    competitionService = new CompetitionService(
+      balanceService,
+      tradeSimulatorService,
+      portfolioSnapshotterService,
+      agentService,
+      agentRankService,
+      voteService,
+      tradingConstraintsService,
+      competitionRewardService,
+      perpsDataProcessor,
+      agentRepo,
+      agentScoreRepo,
+      perpsRepo,
+      competitionRepo,
+      stakesRepo,
+      userRepo,
+      mockDb,
+      {
+        evmChains: ["eth", "polygon", "base", "arbitrum", "optimism"],
+        maxTradePercentage: 25,
+        rateLimiting: {
+          windowMs: 60000,
+          maxRequests: 100,
+        },
+        specificChainBalances: {},
+      },
+      logger,
+    );
+  });
+
+  test("should remove agents below minFundingThreshold during perps competition start", async () => {
+    const agent1Id = randomUUID();
+    const agent2Id = randomUUID();
+    const agent3Id = randomUUID();
+
+    // Mock competition
+    const mockCompetition = {
+      id: mockCompetitionId,
+      name: "Test Perps Competition",
+      description: null,
+      type: "perpetual_futures" as const,
+      status: "pending" as const,
+      externalUrl: null,
+      imageUrl: null,
+      startDate: null,
+      endDate: null,
+      joinStartDate: null,
+      joinEndDate: null,
+      votingStartDate: null,
+      votingEndDate: null,
+      requiresAgoraId: false,
+      maxParticipants: null,
+      registeredParticipants: 3,
+      minimumStake: null,
+      sandboxMode: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      competitionId: mockCompetitionId,
+      crossChainTradingType: "allow" as const,
+    };
+
+    // Mock perps config with minFundingThreshold
+    const mockPerpsConfig = {
+      competitionId: mockCompetitionId,
+      minFundingThreshold: "250", // $250 threshold
+      initialCapital: "500",
+      selfFundingThresholdUsd: "0",
+      dataSource: "external_api" as const,
+      dataSourceConfig: {
+        type: "external_api" as const,
+        provider: "symphony" as const,
+      },
+      inactivityHours: null,
+      createdAt: null,
+      updatedAt: null,
+    };
+
+    // Mock portfolio snapshots - agent2 below threshold, agent3 has no snapshot
+    const mockSnapshots = [
+      {
+        agentId: agent1Id,
+        totalValue: 500,
+        competitionId: mockCompetitionId,
+        timestamp: new Date(),
+        id: 1,
+      }, // Above threshold
+      {
+        agentId: agent2Id,
+        totalValue: 100,
+        competitionId: mockCompetitionId,
+        timestamp: new Date(),
+        id: 2,
+      }, // Below threshold
+      // agent3 has no snapshot (sync failed)
+    ];
+
+    // Setup mocks
+    competitionRepo.findById.mockResolvedValue(mockCompetition);
+    competitionRepo.getCompetitionAgents.mockResolvedValue([
+      agent1Id,
+      agent2Id,
+      agent3Id,
+    ]);
+    competitionRepo.getLatestPortfolioSnapshots.mockResolvedValue(
+      mockSnapshots,
+    );
+    agentService.getAgentsForCompetition.mockResolvedValue({
+      agents: [],
+      total: 0,
+    });
+
+    // Mock agent service for agent validation
+    agentService.getAgentsByIds.mockResolvedValue([
+      {
+        id: agent1Id,
+        name: "Agent 1",
+        description: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        status: "active",
+        walletAddress: "0x" + agent1Id.replace(/-/g, "").substring(0, 40),
+        handle: "agent1",
+        email: null,
+        ownerId: randomUUID(),
+        imageUrl: null,
+        apiKey: "test-key-1",
+        apiKeyHash: null,
+        metadata: null,
+        deactivationReason: null,
+        deactivationDate: null,
+      },
+      {
+        id: agent2Id,
+        name: "Agent 2",
+        description: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        status: "active",
+        walletAddress: "0x" + agent2Id.replace(/-/g, "").substring(0, 40),
+        handle: "agent2",
+        email: null,
+        ownerId: randomUUID(),
+        imageUrl: null,
+        apiKey: "test-key-2",
+        apiKeyHash: null,
+        metadata: null,
+        deactivationReason: null,
+        deactivationDate: null,
+      },
+      {
+        id: agent3Id,
+        name: "Agent 3",
+        description: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        status: "active",
+        walletAddress: "0x" + agent3Id.replace(/-/g, "").substring(0, 40),
+        handle: "agent3",
+        email: null,
+        ownerId: randomUUID(),
+        imageUrl: null,
+        apiKey: "test-key-3",
+        apiKeyHash: null,
+        metadata: null,
+        deactivationReason: null,
+        deactivationDate: null,
+      },
+    ]);
+    competitionRepo.getAgentCompetitionRecord.mockResolvedValue({
+      status: "active",
+      deactivationReason: null,
+      deactivatedAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }); // Agent is IN the competition
+    competitionRepo.updateAgentCompetitionStatus.mockResolvedValue(true); // For removeAgentFromCompetition
+    competitionRepo.update.mockResolvedValue({
+      ...mockCompetition,
+      status: "active",
+    });
+
+    perpsRepo.getPerpsCompetitionConfig.mockResolvedValue(mockPerpsConfig);
+
+    // Mock successful perps sync
+    perpsDataProcessor.processPerpsCompetition.mockResolvedValue({
+      syncResult: {
+        successful: [
+          {
+            agentId: agent1Id,
+            positions: [],
+            summary: {
+              id: "1",
+              agentId: agent1Id,
+              competitionId: mockCompetitionId,
+              totalEquity: "500",
+              initialCapital: "500",
+              availableBalance: "500",
+              marginUsed: "0",
+              totalPnl: "0",
+              totalRealizedPnl: "0",
+              totalUnrealizedPnl: "0",
+              totalVolume: "0",
+              totalFeesPaid: "0",
+              totalTrades: 0,
+              averageTradeSize: "0",
+              openPositionsCount: 0,
+              closedPositionsCount: 0,
+              liquidatedPositionsCount: 0,
+              roi: "0",
+              roiPercent: "0",
+              accountStatus: "active",
+              timestamp: new Date(),
+              rawData: null,
+            },
+          },
+          {
+            agentId: agent2Id,
+            positions: [],
+            summary: {
+              id: "2",
+              agentId: agent2Id,
+              competitionId: mockCompetitionId,
+              totalEquity: "100",
+              initialCapital: "100",
+              availableBalance: "100",
+              marginUsed: "0",
+              totalPnl: "0",
+              totalRealizedPnl: "0",
+              totalUnrealizedPnl: "0",
+              totalVolume: "0",
+              totalFeesPaid: "0",
+              totalTrades: 0,
+              averageTradeSize: "0",
+              openPositionsCount: 0,
+              closedPositionsCount: 0,
+              liquidatedPositionsCount: 0,
+              roi: "0",
+              roiPercent: "0",
+              accountStatus: "active",
+              timestamp: new Date(),
+              rawData: null,
+            },
+          },
+        ],
+        failed: [{ agentId: agent3Id, error: new Error("API timeout") }], // agent3 failed to sync
+      },
+    });
+
+    // Call startCompetition
+    const result = await competitionService.startCompetition(
+      mockCompetitionId,
+      [agent1Id, agent2Id, agent3Id],
+    );
+
+    // Verify agent2 was removed for being below threshold
+    expect(competitionRepo.updateAgentCompetitionStatus).toHaveBeenCalledWith(
+      mockCompetitionId,
+      agent2Id,
+      "disqualified",
+      expect.stringContaining("Insufficient initial funding"),
+    );
+
+    // Verify agent3 was NOT removed (no snapshot due to sync failure)
+    expect(
+      competitionRepo.updateAgentCompetitionStatus,
+    ).not.toHaveBeenCalledWith(
+      mockCompetitionId,
+      agent3Id,
+      expect.any(String),
+      expect.any(String),
+    );
+
+    // Verify final agent list only has agent1 and agent3
+    expect(result.agentIds).toEqual([agent1Id, agent3Id]);
+
+    // Verify logs
+    expect(logger.info).toHaveBeenCalledWith(
+      expect.stringContaining("Enforcing minimum funding threshold of $250"),
+    );
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.stringContaining(
+        `Agent ${agent2Id} has portfolio value $100.00, below threshold $250`,
+      ),
+    );
+  });
+
+  test("should not enforce threshold when minFundingThreshold is not set", async () => {
+    const agent1Id = randomUUID();
+    const agent2Id = randomUUID();
+
+    // Mock competition
+    const mockCompetition = {
+      id: mockCompetitionId,
+      name: "Test Perps Competition",
+      description: null,
+      type: "perpetual_futures" as const,
+      status: "pending" as const,
+      externalUrl: null,
+      imageUrl: null,
+      startDate: null,
+      endDate: null,
+      joinStartDate: null,
+      joinEndDate: null,
+      votingStartDate: null,
+      votingEndDate: null,
+      requiresAgoraId: false,
+      maxParticipants: null,
+      registeredParticipants: 2,
+      minimumStake: null,
+      sandboxMode: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      competitionId: mockCompetitionId,
+      crossChainTradingType: "allow" as const,
+    };
+
+    // Mock perps config WITHOUT minFundingThreshold
+    const mockPerpsConfig = {
+      competitionId: mockCompetitionId,
+      minFundingThreshold: null, // No threshold
+      initialCapital: "500",
+      selfFundingThresholdUsd: "0",
+      dataSource: "external_api" as const,
+      dataSourceConfig: {
+        type: "external_api" as const,
+        provider: "symphony" as const,
+      },
+      inactivityHours: null,
+      createdAt: null,
+      updatedAt: null,
+    };
+
+    // Setup mocks
+    competitionRepo.findById.mockResolvedValue(mockCompetition);
+    competitionRepo.getCompetitionAgents.mockResolvedValue([
+      agent1Id,
+      agent2Id,
+    ]);
+    competitionRepo.update.mockResolvedValue({
+      ...mockCompetition,
+      status: "active",
+    });
+
+    // Mock agent service - return empty pre-registered agents
+    agentService.getAgentsForCompetition.mockResolvedValue({
+      agents: [],
+      total: 0,
+    });
+
+    // Mock agent service for agent validation
+    agentService.getAgentsByIds.mockResolvedValue([
+      {
+        id: agent1Id,
+        name: "Agent 1",
+        description: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        status: "active",
+        walletAddress: "0x" + agent1Id.replace(/-/g, "").substring(0, 40),
+        handle: "agent1",
+        email: null,
+        ownerId: randomUUID(),
+        imageUrl: null,
+        apiKey: "test-key-1",
+        apiKeyHash: null,
+        metadata: null,
+        deactivationReason: null,
+        deactivationDate: null,
+      },
+      {
+        id: agent2Id,
+        name: "Agent 2",
+        description: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        status: "active",
+        walletAddress: "0x" + agent2Id.replace(/-/g, "").substring(0, 40),
+        handle: "agent2",
+        email: null,
+        ownerId: randomUUID(),
+        imageUrl: null,
+        apiKey: "test-key-2",
+        apiKeyHash: null,
+        metadata: null,
+        deactivationReason: null,
+        deactivationDate: null,
+      },
+    ]);
+
+    perpsRepo.getPerpsCompetitionConfig.mockResolvedValue(mockPerpsConfig);
+
+    // Mock successful perps sync
+    perpsDataProcessor.processPerpsCompetition.mockResolvedValue({
+      syncResult: {
+        successful: [
+          {
+            agentId: agent1Id,
+            positions: [],
+            summary: {
+              id: "1",
+              agentId: agent1Id,
+              competitionId: mockCompetitionId,
+              totalEquity: "500",
+              initialCapital: "500",
+              availableBalance: "500",
+              marginUsed: "0",
+              totalPnl: "0",
+              totalRealizedPnl: "0",
+              totalUnrealizedPnl: "0",
+              totalVolume: "0",
+              totalFeesPaid: "0",
+              totalTrades: 0,
+              averageTradeSize: "0",
+              openPositionsCount: 0,
+              closedPositionsCount: 0,
+              liquidatedPositionsCount: 0,
+              roi: "0",
+              roiPercent: "0",
+              accountStatus: "active",
+              timestamp: new Date(),
+              rawData: null,
+            },
+          },
+          {
+            agentId: agent2Id,
+            positions: [],
+            summary: {
+              id: "2",
+              agentId: agent2Id,
+              competitionId: mockCompetitionId,
+              totalEquity: "300",
+              initialCapital: "300",
+              availableBalance: "300",
+              marginUsed: "0",
+              totalPnl: "0",
+              totalRealizedPnl: "0",
+              totalUnrealizedPnl: "0",
+              totalVolume: "0",
+              totalFeesPaid: "0",
+              totalTrades: 0,
+              averageTradeSize: "0",
+              openPositionsCount: 0,
+              closedPositionsCount: 0,
+              liquidatedPositionsCount: 0,
+              roi: "0",
+              roiPercent: "0",
+              accountStatus: "active",
+              timestamp: new Date(),
+              rawData: null,
+            },
+          },
+        ],
+        failed: [],
+      },
+    });
+
+    // Call startCompetition
+    const result = await competitionService.startCompetition(
+      mockCompetitionId,
+      [agent1Id, agent2Id],
+    );
+
+    // Verify no agents were removed
+    expect(competitionRepo.updateAgentCompetitionStatus).not.toHaveBeenCalled();
+
+    // Verify getLatestPortfolioSnapshots was not called (no threshold to check)
+    expect(competitionRepo.getLatestPortfolioSnapshots).not.toHaveBeenCalled();
+
+    // Verify all agents remain
+    expect(result.agentIds).toEqual([agent1Id, agent2Id]);
+  });
+
+  test("should handle agent exactly at threshold (boundary test)", async () => {
+    const agent1Id = randomUUID();
+    const agent2Id = randomUUID();
+
+    // Mock competition
+    const mockCompetition = {
+      id: mockCompetitionId,
+      name: "Test Perps Competition",
+      description: null,
+      type: "perpetual_futures" as const,
+      status: "pending" as const,
+      externalUrl: null,
+      imageUrl: null,
+      startDate: null,
+      endDate: null,
+      joinStartDate: null,
+      joinEndDate: null,
+      votingStartDate: null,
+      votingEndDate: null,
+      requiresAgoraId: false,
+      maxParticipants: null,
+      registeredParticipants: 2,
+      minimumStake: null,
+      sandboxMode: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      competitionId: mockCompetitionId,
+      crossChainTradingType: "allow" as const,
+    };
+
+    // Mock perps config with minFundingThreshold
+    const mockPerpsConfig = {
+      competitionId: mockCompetitionId,
+      minFundingThreshold: "250", // $250 threshold
+      initialCapital: "500",
+      selfFundingThresholdUsd: "0",
+      dataSource: "external_api" as const,
+      dataSourceConfig: {
+        type: "external_api" as const,
+        provider: "symphony" as const,
+      },
+      inactivityHours: null,
+      createdAt: null,
+      updatedAt: null,
+    };
+
+    // Mock portfolio snapshots - one exactly at threshold, one slightly below
+    const mockSnapshots = [
+      {
+        agentId: agent1Id,
+        totalValue: 250,
+        competitionId: mockCompetitionId,
+        timestamp: new Date(),
+        id: 1,
+      }, // Exactly at threshold
+      {
+        agentId: agent2Id,
+        totalValue: 249.99,
+        competitionId: mockCompetitionId,
+        timestamp: new Date(),
+        id: 2,
+      }, // Just below
+    ];
+
+    // Setup mocks
+    competitionRepo.findById.mockResolvedValue(mockCompetition);
+    competitionRepo.getCompetitionAgents.mockResolvedValue([
+      agent1Id,
+      agent2Id,
+    ]);
+    competitionRepo.getLatestPortfolioSnapshots.mockResolvedValue(
+      mockSnapshots,
+    );
+
+    // Mock agent service - return empty pre-registered agents
+    agentService.getAgentsForCompetition.mockResolvedValue({
+      agents: [],
+      total: 0,
+    });
+
+    // Mock agent service for agent validation
+    agentService.getAgentsByIds.mockResolvedValue([
+      {
+        id: agent1Id,
+        name: "Agent 1",
+        description: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        status: "active",
+        walletAddress: "0x" + agent1Id.replace(/-/g, "").substring(0, 40),
+        handle: "agent1",
+        email: null,
+        ownerId: randomUUID(),
+        imageUrl: null,
+        apiKey: "test-key-1",
+        apiKeyHash: null,
+        metadata: null,
+        deactivationReason: null,
+        deactivationDate: null,
+      },
+      {
+        id: agent2Id,
+        name: "Agent 2",
+        description: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        status: "active",
+        walletAddress: "0x" + agent2Id.replace(/-/g, "").substring(0, 40),
+        handle: "agent2",
+        email: null,
+        ownerId: randomUUID(),
+        imageUrl: null,
+        apiKey: "test-key-2",
+        apiKeyHash: null,
+        metadata: null,
+        deactivationReason: null,
+        deactivationDate: null,
+      },
+    ]);
+
+    competitionRepo.getAgentCompetitionRecord.mockResolvedValue({
+      status: "active",
+      deactivationReason: null,
+      deactivatedAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }); // Agent is IN the competition
+    competitionRepo.updateAgentCompetitionStatus.mockResolvedValue(true);
+    competitionRepo.update.mockResolvedValue({
+      ...mockCompetition,
+      status: "active",
+    });
+
+    perpsRepo.getPerpsCompetitionConfig.mockResolvedValue(mockPerpsConfig);
+
+    perpsDataProcessor.processPerpsCompetition.mockResolvedValue({
+      syncResult: {
+        successful: [
+          {
+            agentId: agent1Id,
+            positions: [],
+            summary: {
+              id: "1",
+              agentId: agent1Id,
+              competitionId: mockCompetitionId,
+              totalEquity: "250",
+              initialCapital: "250",
+              availableBalance: "250",
+              marginUsed: "0",
+              totalPnl: "0",
+              totalRealizedPnl: "0",
+              totalUnrealizedPnl: "0",
+              totalVolume: "0",
+              totalFeesPaid: "0",
+              totalTrades: 0,
+              averageTradeSize: "0",
+              openPositionsCount: 0,
+              closedPositionsCount: 0,
+              liquidatedPositionsCount: 0,
+              roi: "0",
+              roiPercent: "0",
+              accountStatus: "active",
+              timestamp: new Date(),
+              rawData: null,
+            },
+          },
+          {
+            agentId: agent2Id,
+            positions: [],
+            summary: {
+              id: "2",
+              agentId: agent2Id,
+              competitionId: mockCompetitionId,
+              totalEquity: "249.99",
+              initialCapital: "249.99",
+              availableBalance: "249.99",
+              marginUsed: "0",
+              totalPnl: "0",
+              totalRealizedPnl: "0",
+              totalUnrealizedPnl: "0",
+              totalVolume: "0",
+              totalFeesPaid: "0",
+              totalTrades: 0,
+              averageTradeSize: "0",
+              openPositionsCount: 0,
+              closedPositionsCount: 0,
+              liquidatedPositionsCount: 0,
+              roi: "0",
+              roiPercent: "0",
+              accountStatus: "active",
+              timestamp: new Date(),
+              rawData: null,
+            },
+          },
+        ],
+        failed: [],
+      },
+    });
+
+    // Call startCompetition
+    const result = await competitionService.startCompetition(
+      mockCompetitionId,
+      [agent1Id, agent2Id],
+    );
+
+    // Verify only agent2 was removed (below threshold)
+    expect(competitionRepo.updateAgentCompetitionStatus).toHaveBeenCalledWith(
+      mockCompetitionId,
+      agent2Id,
+      "disqualified",
+      expect.stringContaining("Insufficient initial funding: $249.99 < $250"),
+    );
+
+    // Verify agent1 was NOT removed (at threshold)
+    expect(
+      competitionRepo.updateAgentCompetitionStatus,
+    ).not.toHaveBeenCalledWith(
+      mockCompetitionId,
+      agent1Id,
+      expect.any(String),
+      expect.any(String),
+    );
+
+    // Verify final agent list only has agent1
+    expect(result.agentIds).toEqual([agent1Id]);
+  });
+});
