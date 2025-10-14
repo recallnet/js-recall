@@ -9,7 +9,8 @@ import { Tooltip } from "@recallnet/ui2/components/tooltip";
 
 import { Recall } from "@/components/Recall";
 import { useRelock, useUnstake } from "@/hooks/staking";
-import { useUserStakes } from "@/hooks/staking";
+import { useUserStakes } from "@/hooks/useStakingContract";
+import type { StakeInfoWithId } from "@/types/staking";
 import { formatAmount, formatDate } from "@/utils/format";
 
 import { BoostIcon } from "../BoostIcon";
@@ -201,7 +202,7 @@ export const ActiveStakes: React.FunctionComponent = () => {
     <div className="mb-8 flex flex-col gap-4">
       <h2 className="text-2xl font-bold text-white">Active Stakes</h2>
       <div className="flex flex-col gap-8">
-        {stakes.map((stake) => (
+        {stakes.map((stake: StakeInfoWithId) => (
           <ActiveStakeEntry
             key={stake.tokenId.toString()}
             tokenId={stake.tokenId}

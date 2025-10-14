@@ -1,8 +1,8 @@
 import { createConfig } from "@privy-io/wagmi";
 import { Config, http } from "wagmi";
 
+import { chainWithRpcUrl } from "@/config/chain";
 import { config } from "@/config/public";
-import { chainWithRpcUrl } from "@/providers/privy-provider";
 
 /**
  * Wagmi configuration for Privy integration.

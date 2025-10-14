@@ -1,5 +1,3 @@
-"use client";
-
 import * as dnum from "dnum";
 import {
   ArrowLeft,
@@ -14,7 +12,6 @@ import {
   Zap,
 } from "lucide-react";
 import React, { useEffect, useState } from "react";
-import { useAccount, useChainId } from "wagmi";
 
 import { Button } from "@recallnet/ui2/components/button";
 import {
@@ -37,8 +34,9 @@ import {
 
 import { Recall } from "@/components/Recall";
 import { useStake } from "@/hooks/staking";
-import { useStakingContractAddress } from "@/hooks/staking";
 import { useRecall } from "@/hooks/useRecall";
+import { useSafeAccount, useSafeChainId } from "@/hooks/useSafeWagmi";
+import { useStakingContractAddress } from "@/hooks/useStakingContract";
 import { useTokenApproval } from "@/hooks/useTokenApproval";
 import {
   handleApprovalError,
@@ -100,8 +98,8 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
   const [termsAccepted, setTermsAccepted] = useState<boolean>(false);
   const [isCollapsibleOpen, setIsCollapsibleOpen] = useState<boolean>(true);
 
-  const { address } = useAccount();
-  const chainId = useChainId();
+  const { address } = useSafeAccount();
+  const chainId = useSafeChainId();
   const recall = useRecall();
   const stakingContractAddress = useStakingContractAddress();
   const tokenApproval = useTokenApproval(recall.token, stakingContractAddress);

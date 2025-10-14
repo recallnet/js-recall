@@ -2,11 +2,14 @@
 
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef } from "react";
-import { useWaitForTransactionReceipt, useWriteContract } from "wagmi";
 
 import { StakingAbi } from "@/abi/Staking";
 
 import { useRecall } from "../useRecall";
+import {
+  useSafeWaitForTransactionReceipt,
+  useSafeWriteContract,
+} from "../useSafeWagmi";
 import { useStakingContractAddress } from "./useStakingContractAddress";
 
 /**
@@ -39,12 +42,11 @@ export const useRelock = (): StakingOperationResult => {
     isPending,
     error,
     data: transactionHash,
-  } = useWriteContract();
+  } = useSafeWriteContract();
 
   const { isLoading: isConfirming, isSuccess: isConfirmed } =
-    useWaitForTransactionReceipt({
+    useSafeWaitForTransactionReceipt({
       hash: transactionHash,
-      confirmations: 2,
     });
 
   const execute = useCallback(
@@ -53,6 +55,9 @@ export const useRelock = (): StakingOperationResult => {
       newLockDuration: bigint,
       newLockAmount?: bigint,
     ) => {
+      if (!contractAddress) {
+        throw new Error("Contract address not available");
+      }
       if (newLockAmount !== undefined) {
         return writeContract({
           address: contractAddress,
