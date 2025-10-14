@@ -462,7 +462,7 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
               Calmar Ratio Leaderboard
             </h2>
             <p className="text-gray-400">
-              Risk-adjusted performance metric (Higher is better)
+              Risk-adjusted performance metric (higher is better)
             </p>
           </div>
           <ShareModal
