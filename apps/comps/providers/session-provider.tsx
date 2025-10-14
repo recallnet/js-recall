@@ -77,11 +77,6 @@ type Session = {
   isLinkWalletToBackendError: boolean;
   linkWalletToBackendError: Error | null;
 
-  // Sync active wallet state
-  // isSyncActiveWalletPending: boolean;
-  // syncActiveWalletError: Error | null;
-  // isSyncActiveWalletError: boolean;
-
   // Combined state
   isAuthenticated: boolean;
   isWalletConnected: boolean;
@@ -327,18 +322,6 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     setIsWalletConnected,
   ]);
 
-  /**
-   * Synchronize wagmi's active wallet with the backend user's wallet address
-   */
-  // const {
-  //   mutate: syncActiveWalletx,
-  //   isPending: isSyncActiveWalletPending,
-  //   error: syncActiveWalletError,
-  //   isError: isSyncActiveWalletError,
-  // } = useMutation({
-  //   mutationFn: syncActiveWallet,
-  // });
-
   // Sync active wallet when backend user data is available
   useEffect(() => {
     if (backendUser?.walletAddress && readyWallets) {
@@ -462,11 +445,6 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     isLinkWalletToBackendPending,
     isLinkWalletToBackendError,
     linkWalletToBackendError,
-
-    // Sync active wallet state
-    // isSyncActiveWalletPending,
-    // syncActiveWalletError,
-    // isSyncActiveWalletError,
 
     // Combined state
     isAuthenticated: authenticated && backendUser?.status === "active",
