@@ -7,7 +7,17 @@ import { InsertTrade } from "../schema/trading/types.js";
 import { Database } from "../types.js";
 import { isDeadlockError, withRetry } from "../utils/with-retry.js";
 import { BalanceRepository } from "./balance.js";
-import { SpecificChainSchema } from "./types/index.js";
+import { SpecificChain, SpecificChainSchema } from "./types/index.js";
+
+/**
+ * Token reference for consistent lock ordering in trades
+ */
+interface TokenForLocking {
+  address: string;
+  specificChain: SpecificChain;
+  symbol: string;
+  isFrom: boolean;
+}
 
 /**
  * Trade Repository
@@ -46,16 +56,16 @@ export class TradeRepository {
       async () => {
         return await this.#db.transaction(async (tx) => {
           // Sort tokens alphabetically to ensure consistent lock ordering
-          const tokens = [
+          const tokens: TokenForLocking[] = [
             {
               address: trade.fromToken,
-              chain: SpecificChainSchema.parse(trade.fromSpecificChain),
+              specificChain: SpecificChainSchema.parse(trade.fromSpecificChain),
               symbol: trade.fromTokenSymbol,
               isFrom: true,
             },
             {
               address: trade.toToken,
-              chain: SpecificChainSchema.parse(trade.toSpecificChain),
+              specificChain: SpecificChainSchema.parse(trade.toSpecificChain),
               symbol: trade.toTokenSymbol,
               isFrom: false,
             },
@@ -84,7 +94,7 @@ export class TradeRepository {
                   trade.agentId,
                   token.address,
                   trade.fromAmount,
-                  token.chain,
+                  token.specificChain,
                   token.symbol,
                 );
 
@@ -99,7 +109,7 @@ export class TradeRepository {
                   trade.agentId,
                   token.address,
                   trade.toAmount,
-                  token.chain,
+                  token.specificChain,
                   token.symbol,
                 );
 
