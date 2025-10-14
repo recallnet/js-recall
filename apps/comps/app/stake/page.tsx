@@ -8,7 +8,7 @@ import Stakes from "./stakes";
 
 export default async function Page() {
   const client = await createSafeClient();
-  const [error, user] = await client.user.getProfile();
+  const [, user] = await client.user.getProfile();
 
   return (
     <>

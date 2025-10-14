@@ -17,7 +17,7 @@ export default function SignInOrConnectButton() {
     if (isWalletConnected) {
       router.refresh();
     }
-  }, [isWalletConnected]);
+  }, [isWalletConnected, router]);
 
   if (!isAuthenticated) {
     return (
