@@ -822,9 +822,10 @@ export class CompetitionService {
       );
 
       // Pass skipMonitoring=true for initial sync during competition startup
+      const SKIP_MONITORING = true; // Skip self-funding monitoring during initial sync
       const result = await this.perpsDataProcessor.processPerpsCompetition(
         competitionId,
-        true,
+        SKIP_MONITORING,
       );
 
       const successCount = result.syncResult.successful.length;

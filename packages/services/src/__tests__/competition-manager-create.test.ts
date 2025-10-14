@@ -471,7 +471,7 @@ describe("CompetitionService - createCompetition", () => {
         provider: "hyperliquid",
         initialCapital: 1000,
         selfFundingThreshold: 0,
-        // minFundingThreshold not provided - should be null
+        // minFundingThreshold not provided - should default to null, meaning no threshold enforcement
       },
     });
 
