@@ -1,10 +1,8 @@
 import { z } from "zod";
 
-import { base } from "@/rpc/context/base";
 import { authMiddleware } from "@/rpc/middleware/auth";
 
-export const userBoosts = base
-  .use(authMiddleware)
+export const userBoosts = authMiddleware
   .input(z.object({ competitionId: z.string() }))
   .handler(async ({ input, context, errors }) => {
     const res = await context.boostService.getUserBoosts(

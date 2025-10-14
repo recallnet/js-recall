@@ -3,19 +3,16 @@ import { z } from "zod";
 
 import { ApiError } from "@recallnet/services/types";
 
-import { base } from "@/rpc/context/base";
 import { authMiddleware } from "@/rpc/middleware/auth";
 
-export const availableAwards = base
-  .use(authMiddleware)
+export const availableAwards = authMiddleware
   .input(z.object({ competitionId: z.string() }))
   .handler(async ({ input, context, errors }) => {
     try {
-      const res = await context.boostAwardService.availableStakeAwards(
+      return await context.boostAwardService.availableStakeAwards(
         context.user.walletAddress,
         input.competitionId,
       );
-      return res;
     } catch (error) {
       // Re-throw if already an oRPC error
       if (error instanceof ORPCError) {

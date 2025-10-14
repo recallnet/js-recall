@@ -2,20 +2,16 @@ import { ORPCError } from "@orpc/server";
 
 import { ApiError, PagingParamsSchema } from "@recallnet/services/types";
 
-import { base } from "@/rpc/context/base";
 import { authMiddleware } from "@/rpc/middleware/auth";
 
-export const getUserAgents = base
-  .use(authMiddleware)
+export const getUserAgents = authMiddleware
   .input(PagingParamsSchema)
   .handler(async ({ input, context, errors }) => {
     try {
-      const paging = input;
-
       // Get agents owned by this user
       const agents = await context.agentService.getAgentsByOwner(
         context.user.id,
-        paging,
+        input,
       );
 
       // Remove sensitive fields and attach metrics

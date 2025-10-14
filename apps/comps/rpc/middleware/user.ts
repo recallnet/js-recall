@@ -1,13 +1,10 @@
-import { base } from "@/rpc/context/base";
-
 import { privyUserMiddleware } from "./privy-user";
 
-export const userMiddleware = base
-  .middleware(privyUserMiddleware)
-  .concat(async ({ context, next }) => {
+export const userMiddleware = privyUserMiddleware.use(
+  async ({ context, next }) => {
     const privyId = context.privyUser?.id;
     if (!privyId) {
-      return await next({
+      return next({
         context: {
           user: undefined,
         },
@@ -16,9 +13,10 @@ export const userMiddleware = base
 
     const user = await context.userService.getUserByPrivyId(privyId);
 
-    return await next({
+    return next({
       context: {
         user: user || undefined,
       },
     });
-  });
+  },
+);

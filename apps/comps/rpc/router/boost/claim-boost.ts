@@ -1,12 +1,10 @@
 import { z } from "zod";
 
 import { config } from "@/config/public";
-import { base } from "@/rpc/context/base";
 import { authMiddleware } from "@/rpc/middleware/auth";
 import { assertNever } from "@/rpc/router/utils/assert-never";
 
-export const claimBoost = base
-  .use(authMiddleware)
+export const claimBoost = authMiddleware
   .errors({
     BOOST_ALREADY_CLAIMED: {
       message: "Boost already claimed",

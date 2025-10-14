@@ -2,15 +2,13 @@ import { ORPCError } from "@orpc/server";
 
 import { UpdateUserProfileBodySchema } from "@recallnet/services/types";
 
-import { base } from "@/rpc/context/base";
 import { authMiddleware } from "@/rpc/middleware/auth";
 import { serializeUser } from "@/rpc/router/utils/serialize-user";
 
 const SANCTIONED_WALLET_ERROR =
   "This wallet address is not permitted for use on this platform";
 
-export const updateProfile = base
-  .use(authMiddleware)
+export const updateProfile = authMiddleware
   .input(UpdateUserProfileBodySchema)
   .errors({
     FORBIDDEN: {

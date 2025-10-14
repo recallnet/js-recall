@@ -6,11 +6,9 @@ import {
   ApiError,
 } from "@recallnet/services/types";
 
-import { base } from "@/rpc/context/base";
 import { authMiddleware } from "@/rpc/middleware/auth";
 
-export const getCompetitions = base
-  .use(authMiddleware)
+export const getCompetitions = authMiddleware
   .input(AgentCompetitionsParamsSchema)
   .handler(async ({ input, context, errors }) => {
     try {
