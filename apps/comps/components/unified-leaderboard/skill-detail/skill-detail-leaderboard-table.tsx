@@ -439,7 +439,7 @@ export const SkillDetailLeaderboardTable: React.FC<
                       href={`https://openrouter.ai/models/${participant.id}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="block rounded-lg transition-colors hover:bg-gray-700/50"
+                      className="block rounded-lg px-2 py-1 transition-colors hover:bg-gray-700/50"
                     >
                       {rowContent}
                       {barSection}
@@ -447,7 +447,7 @@ export const SkillDetailLeaderboardTable: React.FC<
                   ) : (
                     <Link
                       href={`/agents/${participant.id}`}
-                      className="block rounded-lg transition-colors hover:bg-gray-700/50"
+                      className="block rounded-lg px-2 py-1 transition-colors hover:bg-gray-700/50"
                     >
                       {rowContent}
                       {barSection}
