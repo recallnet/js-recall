@@ -13,6 +13,8 @@ export default function LinkWallet({
   user: ProfileResponse["user"];
   onLinkWallet: () => void;
 }) {
+  if (!user) return null;
+
   const customWalletAddress = user.walletAddress;
   const embeddedWalletAddress = user.embeddedWalletAddress;
   const walletLastVerifiedAt = user.walletLastVerifiedAt;
