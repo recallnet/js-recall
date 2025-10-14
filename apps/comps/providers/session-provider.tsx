@@ -41,7 +41,7 @@ import { userWalletState } from "@/lib/user-wallet-state";
 import { tanstackClient } from "@/rpc/clients/tanstack-query";
 import { User as BackendUser, UpdateProfileRequest } from "@/types";
 
-type Session = {
+export type Session = {
   // Login to Privy state
   ready: boolean;
   login: (options?: LoginModalOptions | MouseEvent<HTMLElement>) => void;
