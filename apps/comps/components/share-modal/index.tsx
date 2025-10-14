@@ -84,14 +84,17 @@ export const ShareModal: React.FunctionComponent<Props> = ({
       />
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent aria-describedby="share-modal" className="w-150">
+        <DialogContent
+          aria-describedby="share-modal"
+          className="max-w-150 w-full"
+        >
           <DialogDescription className="hidden"></DialogDescription>
           <DialogHeader>
             <DialogTitle className="text-lg text-white">{title}</DialogTitle>
             {subtitle && subtitle}
           </DialogHeader>
 
-          <div className="h-15 w-140 mt-4 flex flex-wrap justify-between">
+          <div className="min-h-15 mt-4 flex w-full flex-wrap justify-between">
             {shareLinks.map((link) => (
               <a
                 key={link.name}
@@ -109,7 +112,7 @@ export const ShareModal: React.FunctionComponent<Props> = ({
           <div className="mt-1 border-t" />
 
           <div className="text-xl font-bold text-white">Copy Link</div>
-          <Clipboard text={url} className="w-140" />
+          <Clipboard text={url} className="w-full" />
         </DialogContent>
       </Dialog>
     </>
