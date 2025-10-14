@@ -9,6 +9,7 @@ import { Card } from "@recallnet/ui2/components/card";
 
 import { useSession } from "@/hooks/useSession";
 
+import { ConnectPrivyModal } from "./modals/connect-privy";
 import { SetupAgentModal } from "./modals/setup-agent";
 
 export const RegisterAgentBlock: React.FC = () => {
@@ -66,6 +67,10 @@ export const RegisterAgentBlock: React.FC = () => {
       </div>
 
       {/* Modals */}
+      <ConnectPrivyModal
+        isOpen={activeModal === "connectAccount"}
+        onClose={() => setActiveModal(null)}
+      />
       <SetupAgentModal
         isOpen={activeModal === "setupAgent"}
         onClose={() => setActiveModal(null)}
