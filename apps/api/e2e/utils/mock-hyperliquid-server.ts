@@ -392,6 +392,51 @@ export class MockHyperliquidServer {
       ],
       transfers: [],
     });
+
+    // Test wallets for minFundingThreshold testing
+    // Agent with exactly $250 (typical threshold amount)
+    this.setAgentData("0xaaaa222222222222222222222222222222222222", {
+      totalEquity: 250,
+      availableBalance: 250,
+      marginUsed: 0,
+      totalNtlPos: 0,
+      openPositions: [],
+      recentFills: [],
+      transfers: [],
+    });
+
+    // Agent with $100 (below typical threshold)
+    this.setAgentData("0xbbbb222222222222222222222222222222222222", {
+      totalEquity: 100,
+      availableBalance: 100,
+      marginUsed: 0,
+      totalNtlPos: 0,
+      openPositions: [],
+      recentFills: [],
+      transfers: [],
+    });
+
+    // Agent with $500 (above typical threshold)
+    this.setAgentData("0xcccc222222222222222222222222222222222222", {
+      totalEquity: 500,
+      availableBalance: 500,
+      marginUsed: 0,
+      totalNtlPos: 0,
+      openPositions: [],
+      recentFills: [],
+      transfers: [],
+    });
+
+    // Agent with $249.99 (just below typical threshold)
+    this.setAgentData("0xdddd222222222222222222222222222222222222", {
+      totalEquity: 249.99,
+      availableBalance: 249.99,
+      marginUsed: 0,
+      totalNtlPos: 0,
+      openPositions: [],
+      recentFills: [],
+      transfers: [],
+    });
   }
 
   /**

@@ -166,6 +166,55 @@ export class MockSymphonyServer {
         },
       ],
     });
+
+    // Test wallets for minFundingThreshold testing
+    // Agent with exactly $250 (typical threshold amount)
+    this.setAgentData("0xaaaa111111111111111111111111111111111111", {
+      initialCapital: 250,
+      totalEquity: 250,
+      availableBalance: 250,
+      marginUsed: 0,
+      totalVolume: 0,
+      totalTrades: 0,
+      openPositions: [],
+      transfers: [],
+    });
+
+    // Agent with $100 (below typical threshold)
+    this.setAgentData("0xbbbb111111111111111111111111111111111111", {
+      initialCapital: 100,
+      totalEquity: 100,
+      availableBalance: 100,
+      marginUsed: 0,
+      totalVolume: 0,
+      totalTrades: 0,
+      openPositions: [],
+      transfers: [],
+    });
+
+    // Agent with $500 (above typical threshold)
+    this.setAgentData("0xcccc111111111111111111111111111111111111", {
+      initialCapital: 500,
+      totalEquity: 500,
+      availableBalance: 500,
+      marginUsed: 0,
+      totalVolume: 0,
+      totalTrades: 0,
+      openPositions: [],
+      transfers: [],
+    });
+
+    // Agent with $249.99 (just below typical threshold)
+    this.setAgentData("0xdddd111111111111111111111111111111111111", {
+      initialCapital: 249.99,
+      totalEquity: 249.99,
+      availableBalance: 249.99,
+      marginUsed: 0,
+      totalVolume: 0,
+      totalTrades: 0,
+      openPositions: [],
+      transfers: [],
+    });
   }
 
   /**

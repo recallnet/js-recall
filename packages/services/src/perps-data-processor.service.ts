@@ -654,6 +654,7 @@ export class PerpsDataProcessor {
    */
   async processPerpsCompetition(
     competitionId: string,
+    skipMonitoring: boolean = false,
   ): Promise<PerpsCompetitionProcessingResult> {
     let syncResult: BatchPerpsSyncResult = { successful: [], failed: [] };
 
@@ -689,14 +690,15 @@ export class PerpsDataProcessor {
         : null;
 
       // Validate and extract competition start date (needed for monitoring)
+      // Skip all monitoring-related checks during initial sync
       let competitionStartDate: Date | null = null;
-      if (this.shouldRunMonitoring(earlyThreshold)) {
+      if (!skipMonitoring && this.shouldRunMonitoring(earlyThreshold)) {
         if (!competition.startDate) {
           throw new Error(
             `Competition ${competitionId} has no start date, cannot process perps data`,
           );
         }
-        competitionStartDate = competition.startDate; // Now safely non-null
+        competitionStartDate = competition.startDate;
 
         if (competitionStartDate > new Date()) {
           this.logger.warn(
@@ -751,7 +753,9 @@ export class PerpsDataProcessor {
       let monitoringResult;
 
       // Use the threshold we already parsed earlier
+      // Skip monitoring during initial sync
       if (
+        !skipMonitoring &&
         this.shouldRunMonitoring(earlyThreshold) &&
         syncResult.successful.length > 0
       ) {

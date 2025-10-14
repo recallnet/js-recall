@@ -821,8 +821,11 @@ export class CompetitionService {
         `[CompetitionService] Syncing initial perps data from Symphony for ${finalAgentIds.length} agents (competition still pending)`,
       );
 
-      const result =
-        await this.perpsDataProcessor.processPerpsCompetition(competitionId);
+      // Pass skipMonitoring=true for initial sync during competition startup
+      const result = await this.perpsDataProcessor.processPerpsCompetition(
+        competitionId,
+        true,
+      );
 
       const successCount = result.syncResult.successful.length;
       const failedCount = result.syncResult.failed.length;
