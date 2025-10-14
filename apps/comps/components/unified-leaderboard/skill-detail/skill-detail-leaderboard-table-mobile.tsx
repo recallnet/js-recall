@@ -153,7 +153,7 @@ export const SkillDetailLeaderboardTableMobile: React.FC<
             : getAgentColor(participant.name);
 
           const cardContent = (
-            <Card className="p-4">
+            <Card className="p-4 transition-colors hover:bg-gray-700/50">
               {/* Header Row - Rank, Logo, Name/Provider, Icons */}
               <div className="mb-3 flex items-center justify-between">
                 <div className="flex min-w-0 flex-1 items-center gap-3">
@@ -317,9 +317,7 @@ export const SkillDetailLeaderboardTableMobile: React.FC<
               rel="noopener noreferrer"
               className="block"
             >
-              <div className="rounded-lg transition-colors hover:bg-gray-700/50">
-                {cardContent}
-              </div>
+              {cardContent}
             </a>
           ) : (
             <Link
@@ -327,9 +325,7 @@ export const SkillDetailLeaderboardTableMobile: React.FC<
               href={`/agents/${participant.id}`}
               className="block"
             >
-              <div className="rounded-lg transition-colors hover:bg-gray-700/50">
-                {cardContent}
-              </div>
+              {cardContent}
             </Link>
           );
         })}
