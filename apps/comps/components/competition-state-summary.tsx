@@ -133,7 +133,7 @@ export const CompetitionStateSummary: React.FC<
       const isLessThan24Hours = timeDiff < 24 * 60 * 60 * 1000;
 
       return {
-        text: "Voting period starts in",
+        text: "Boosting begins in",
         color: "text-gray-500",
         date: votingStartDate,
         showCountdown: isLessThan24Hours,
