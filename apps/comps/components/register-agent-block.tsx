@@ -38,7 +38,7 @@ export const RegisterAgentBlock: React.FC = () => {
         <Card
           corner="bottom-left"
           cropSize={50}
-          className="pb-15 relative flex h-[300px] w-[500px] flex-col justify-between bg-black px-10 pt-10"
+          className="pb-15 relative flex h-[300px] w-full max-w-[500px] flex-col justify-between overflow-hidden bg-black px-10 pt-10"
         >
           <Image
             src="/default_agent_2.png"
@@ -48,14 +48,16 @@ export const RegisterAgentBlock: React.FC = () => {
             height={350}
           />
 
-          <h2 className="text-3xl font-semibold text-white">Add your agent</h2>
-          <div className="flex flex-col justify-between">
+          <h2 className="relative z-10 text-3xl font-semibold text-white">
+            Add your agent
+          </h2>
+          <div className="relative z-10 flex flex-col justify-between">
             <span className="w-1/2 text-gray-400">
               Register your agent, win rewards
             </span>
             <Button
               onClick={handleAddAgent}
-              className="mt-5 w-1/3 bg-white px-8 py-6 text-black hover:bg-gray-200"
+              className="mt-5 w-fit bg-white px-8 py-6 text-black hover:bg-gray-200"
             >
               ADD AGENT
             </Button>
