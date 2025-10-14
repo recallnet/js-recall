@@ -318,6 +318,64 @@ describe("PerpsDataProcessor - processPerpsCompetition", () => {
       expect(result.monitoringResult).toBeUndefined();
     });
 
+    it("should process competition with minFundingThreshold configured", async () => {
+      // Test that processor handles configs with non-null minFundingThreshold
+      const configWithFundingThreshold = {
+        ...samplePerpsConfig,
+        minFundingThreshold: "250", // $250 minimum funding threshold
+        selfFundingThresholdUsd: "100", // Keep self-funding for monitoring
+      };
+
+      vi.mocked(mockCompetitionRepo.findById).mockResolvedValue(
+        sampleCompetition,
+      );
+      vi.mocked(mockPerpsRepo.getPerpsCompetitionConfig).mockResolvedValue(
+        configWithFundingThreshold,
+      );
+      vi.mocked(mockCompetitionRepo.getCompetitionAgents).mockResolvedValue([
+        "agent-1",
+        "agent-2",
+      ]);
+      vi.mocked(mockAgentRepo.findByIds).mockResolvedValue([
+        { agentId: "agent-1", identifier: "wallet1" },
+        { agentId: "agent-2", identifier: "wallet2" },
+      ]);
+
+      // Mock successful sync for both agents
+      vi.mocked(mockProvider.getAccountSummary).mockResolvedValue(
+        sampleAccountSummary,
+      );
+
+      // Mock batch sync to return both agents as successful
+      vi.mocked(mockPerpsRepo.batchSyncAgentsPerpsData).mockResolvedValue({
+        successful: [
+          {
+            agentId: "agent-1",
+            competitionId: "comp-1",
+            accountSummary: sampleAccountSummary,
+          },
+          {
+            agentId: "agent-2",
+            competitionId: "comp-1",
+            accountSummary: sampleAccountSummary,
+          },
+        ],
+        failed: [],
+      });
+
+      const result = await processor.processPerpsCompetition("comp-1");
+
+      // Should process successfully with minFundingThreshold configured
+      expect(result.syncResult.successful).toHaveLength(2);
+      expect(result.syncResult.failed).toHaveLength(0);
+
+      // The minFundingThreshold doesn't affect data processor behavior,
+      // it's used by CompetitionService during startup enforcement
+      expect(mockPerpsRepo.getPerpsCompetitionConfig).toHaveBeenCalledWith(
+        "comp-1",
+      );
+    });
+
     it("should process competition with monitoring when threshold is set", async () => {
       vi.mocked(mockCompetitionRepo.findById).mockResolvedValue(
         sampleCompetition,
