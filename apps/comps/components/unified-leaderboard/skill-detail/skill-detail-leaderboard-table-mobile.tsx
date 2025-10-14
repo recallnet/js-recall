@@ -1,6 +1,7 @@
 "use client";
 
 import { BarChart3, Info } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 
 import {
@@ -151,8 +152,8 @@ export const SkillDetailLeaderboardTableMobile: React.FC<
             ? getLabColor((participant as BenchmarkModel).provider)
             : getAgentColor(participant.name);
 
-          return (
-            <Card key={participant.id} className="p-4">
+          const cardContent = (
+            <Card className="p-4">
               {/* Header Row - Rank, Logo, Name/Provider, Icons */}
               <div className="mb-3 flex items-center justify-between">
                 <div className="flex min-w-0 flex-1 items-center gap-3">
@@ -306,6 +307,30 @@ export const SkillDetailLeaderboardTableMobile: React.FC<
                 )}
               </div>
             </Card>
+          );
+
+          return isModel ? (
+            <a
+              key={participant.id}
+              href={`https://openrouter.ai/models/${participant.id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block"
+            >
+              <div className="rounded-lg transition-colors hover:bg-gray-700/50">
+                {cardContent}
+              </div>
+            </a>
+          ) : (
+            <Link
+              key={participant.id}
+              href={`/agents/${participant.id}`}
+              className="block"
+            >
+              <div className="rounded-lg transition-colors hover:bg-gray-700/50">
+                {cardContent}
+              </div>
+            </Link>
           );
         })}
       </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { BarChart3, Info } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 
 import {
@@ -146,250 +147,243 @@ export const SkillDetailLeaderboardTable: React.FC<
               const confidenceRangeWidth =
                 confidenceUpperWidth - confidenceLowerWidth;
 
-              return (
-                <div key={participant.id} className="group">
-                  <div className="flex items-center gap-4 py-2">
-                    {/* Rank */}
-                    <div
-                      className={cn(
-                        "flex h-6 w-6 flex-shrink-0 items-center justify-center rounded text-xs font-bold",
-                        index === 0
-                          ? "bg-gradient-to-br from-yellow-300 to-yellow-600 text-yellow-900 shadow-md"
-                          : index === 1
-                            ? "bg-gradient-to-br from-gray-300 to-gray-500 text-gray-800 shadow-md"
-                            : index === 2
-                              ? "bg-gradient-to-br from-amber-600 to-amber-800 text-amber-100 shadow-md"
-                              : "bg-gray-700 text-gray-300",
-                      )}
-                    >
-                      {index + 1}
-                    </div>
+              const rowContent = (
+                <div className="flex items-center gap-4 py-2">
+                  {/* Rank */}
+                  <div
+                    className={cn(
+                      "flex h-6 w-6 flex-shrink-0 items-center justify-center rounded text-xs font-bold",
+                      index === 0
+                        ? "bg-gradient-to-br from-yellow-300 to-yellow-600 text-yellow-900 shadow-md"
+                        : index === 1
+                          ? "bg-gradient-to-br from-gray-300 to-gray-500 text-gray-800 shadow-md"
+                          : index === 2
+                            ? "bg-gradient-to-br from-amber-600 to-amber-800 text-amber-100 shadow-md"
+                            : "bg-gray-700 text-gray-300",
+                    )}
+                  >
+                    {index + 1}
+                  </div>
 
-                    {/* Model/Agent Name */}
-                    <div className="flex min-w-0 flex-1 items-center gap-3">
-                      {isModel ? (
-                        <LabLogo
-                          provider={(participant as BenchmarkModel).provider}
-                          size="sm"
-                        />
-                      ) : (
-                        <AgentAvatar
-                          agent={participant as LeaderboardAgent}
-                          size={20}
-                          showHover={false}
-                        />
-                      )}
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="truncate text-sm font-medium text-white">
-                            {participant.name}
-                          </span>
+                  {/* Model/Agent Name */}
+                  <div className="flex min-w-0 flex-1 items-center gap-3">
+                    {isModel ? (
+                      <LabLogo
+                        provider={(participant as BenchmarkModel).provider}
+                        size="sm"
+                      />
+                    ) : (
+                      <AgentAvatar
+                        agent={participant as LeaderboardAgent}
+                        size={20}
+                        showHover={false}
+                      />
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="truncate text-sm font-medium text-white">
+                          {participant.name}
+                        </span>
 
-                          {/* Model Statistics Icon */}
-                          {isModel && (
-                            <Tooltip
-                              content={
-                                <div className="max-w-sm space-y-3 p-4">
-                                  <div className="border-b border-gray-700 pb-2">
-                                    <h4 className="text-sm font-medium text-white">
-                                      Model Statistics
-                                    </h4>
+                        {/* Model Statistics Icon */}
+                        {isModel && (
+                          <Tooltip
+                            content={
+                              <div className="max-w-sm space-y-3 p-4">
+                                <div className="border-b border-gray-700 pb-2">
+                                  <h4 className="text-sm font-medium text-white">
+                                    Model Statistics
+                                  </h4>
+                                </div>
+
+                                <div className="space-y-2 text-xs">
+                                  {/* Provider */}
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-400">
+                                      Provider:
+                                    </span>
+                                    <span className="font-medium text-white">
+                                      {(participant as BenchmarkModel).provider}
+                                    </span>
                                   </div>
 
-                                  <div className="space-y-2 text-xs">
-                                    {/* Provider */}
+                                  {/* Model Family */}
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-400">
+                                      Family:
+                                    </span>
+                                    <span className="text-white">
+                                      {
+                                        (participant as BenchmarkModel)
+                                          .modelFamily
+                                      }
+                                    </span>
+                                  </div>
+
+                                  {/* Context Length */}
+                                  {(participant as BenchmarkModel)
+                                    .context_length && (
                                     <div className="flex justify-between">
                                       <span className="text-gray-400">
-                                        Provider:
+                                        Context:
                                       </span>
-                                      <span className="font-medium text-white">
-                                        {
-                                          (participant as BenchmarkModel)
-                                            .provider
-                                        }
+                                      <span className="text-white">
+                                        {(
+                                          participant as BenchmarkModel
+                                        ).context_length!.toLocaleString()}{" "}
+                                        tokens
                                       </span>
                                     </div>
+                                  )}
 
-                                    {/* Model Family */}
+                                  {/* Architecture */}
+                                  {(participant as BenchmarkModel).architecture
+                                    ?.tokenizer && (
                                     <div className="flex justify-between">
                                       <span className="text-gray-400">
-                                        Family:
+                                        Tokenizer:
                                       </span>
                                       <span className="text-white">
                                         {
                                           (participant as BenchmarkModel)
-                                            .modelFamily
+                                            .architecture!.tokenizer
                                         }
                                       </span>
                                     </div>
+                                  )}
 
-                                    {/* Context Length */}
-                                    {(participant as BenchmarkModel)
-                                      .context_length && (
+                                  {/* Input Modalities */}
+                                  {(participant as BenchmarkModel).architecture
+                                    ?.input_modalities && (
+                                    <div className="flex justify-between">
+                                      <span className="text-gray-400">
+                                        Input:
+                                      </span>
+                                      <span className="text-white">
+                                        {(
+                                          participant as BenchmarkModel
+                                        ).architecture!.input_modalities.join(
+                                          ", ",
+                                        )}
+                                      </span>
+                                    </div>
+                                  )}
+
+                                  {/* Pricing */}
+                                  {(participant as BenchmarkModel).pricing && (
+                                    <div className="space-y-1">
                                       <div className="flex justify-between">
                                         <span className="text-gray-400">
-                                          Context:
+                                          Input Price:
                                         </span>
-                                        <span className="text-white">
-                                          {(
-                                            participant as BenchmarkModel
-                                          ).context_length!.toLocaleString()}{" "}
-                                          tokens
-                                        </span>
-                                      </div>
-                                    )}
-
-                                    {/* Architecture */}
-                                    {(participant as BenchmarkModel)
-                                      .architecture?.tokenizer && (
-                                      <div className="flex justify-between">
-                                        <span className="text-gray-400">
-                                          Tokenizer:
-                                        </span>
-                                        <span className="text-white">
+                                        <span className="text-green-400">
+                                          $
                                           {
                                             (participant as BenchmarkModel)
-                                              .architecture!.tokenizer
+                                              .pricing!.prompt
                                           }
+                                          /1M tokens
                                         </span>
                                       </div>
-                                    )}
-
-                                    {/* Input Modalities */}
-                                    {(participant as BenchmarkModel)
-                                      .architecture?.input_modalities && (
                                       <div className="flex justify-between">
                                         <span className="text-gray-400">
-                                          Input:
+                                          Output Price:
                                         </span>
-                                        <span className="text-white">
-                                          {(
-                                            participant as BenchmarkModel
-                                          ).architecture!.input_modalities.join(
-                                            ", ",
-                                          )}
-                                        </span>
-                                      </div>
-                                    )}
-
-                                    {/* Pricing */}
-                                    {(participant as BenchmarkModel)
-                                      .pricing && (
-                                      <div className="space-y-1">
-                                        <div className="flex justify-between">
-                                          <span className="text-gray-400">
-                                            Input Price:
-                                          </span>
-                                          <span className="text-green-400">
-                                            $
-                                            {
-                                              (participant as BenchmarkModel)
-                                                .pricing!.prompt
-                                            }
-                                            /1M tokens
-                                          </span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                          <span className="text-gray-400">
-                                            Output Price:
-                                          </span>
-                                          <span className="text-green-400">
-                                            $
-                                            {
-                                              (participant as BenchmarkModel)
-                                                .pricing!.completion
-                                            }
-                                            /1M tokens
-                                          </span>
-                                        </div>
-                                      </div>
-                                    )}
-
-                                    {/* Creation Date */}
-                                    {(participant as BenchmarkModel)
-                                      .created && (
-                                      <div className="flex justify-between">
-                                        <span className="text-gray-400">
-                                          Created:
-                                        </span>
-                                        <span className="text-white">
-                                          {new Date(
+                                        <span className="text-green-400">
+                                          $
+                                          {
                                             (participant as BenchmarkModel)
-                                              .created! * 1000,
-                                          ).toLocaleDateString()}
+                                              .pricing!.completion
+                                          }
+                                          /1M tokens
                                         </span>
                                       </div>
-                                    )}
-                                  </div>
+                                    </div>
+                                  )}
+
+                                  {/* Creation Date */}
+                                  {(participant as BenchmarkModel).created && (
+                                    <div className="flex justify-between">
+                                      <span className="text-gray-400">
+                                        Created:
+                                      </span>
+                                      <span className="text-white">
+                                        {new Date(
+                                          (participant as BenchmarkModel)
+                                            .created! * 1000,
+                                        ).toLocaleDateString()}
+                                      </span>
+                                    </div>
+                                  )}
                                 </div>
+                              </div>
+                            }
+                          >
+                            <button
+                              className="flex h-4 w-4 cursor-help touch-manipulation items-center justify-center rounded-full bg-gray-700/50 text-gray-400 transition-colors hover:bg-gray-600/50 hover:text-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-400 focus:ring-offset-1 focus:ring-offset-gray-900 active:bg-gray-600"
+                              aria-label={`View statistics for ${(participant as BenchmarkModel).name}`}
+                              type="button"
+                            >
+                              <BarChart3 size={10} />
+                            </button>
+                          </Tooltip>
+                        )}
+
+                        {/* NEW badge for recent models */}
+                        {isModel &&
+                          (participant as BenchmarkModel).created &&
+                          new Date(
+                            (participant as BenchmarkModel).created! * 1000, // Convert unix timestamp to milliseconds
+                          ) >
+                            new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) && (
+                            <Badge className="bg-blue-600 text-xs text-white">
+                              NEW
+                            </Badge>
+                          )}
+                        {/* Notice tooltip for evaluation warnings/info */}
+                        {isModel &&
+                          skill.id in (participant as BenchmarkModel).scores &&
+                          (participant as BenchmarkModel).scores[skill.id]
+                            ?.notice && (
+                            <Tooltip
+                              content={
+                                (participant as BenchmarkModel).scores[skill.id]
+                                  ?.notice
                               }
                             >
-                              <button
-                                className="flex h-4 w-4 cursor-help touch-manipulation items-center justify-center rounded-full bg-gray-700/50 text-gray-400 transition-colors hover:bg-gray-600/50 hover:text-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-400 focus:ring-offset-1 focus:ring-offset-gray-900 active:bg-gray-600"
-                                aria-label={`View statistics for ${(participant as BenchmarkModel).name}`}
-                                type="button"
-                              >
-                                <BarChart3 size={10} />
-                              </button>
+                              <div className="flex h-4 w-4 items-center justify-center rounded-full bg-blue-500/20 text-blue-400 hover:bg-blue-500/30">
+                                <Info size={10} />
+                              </div>
                             </Tooltip>
                           )}
-
-                          {/* NEW badge for recent models */}
-                          {isModel &&
-                            (participant as BenchmarkModel).created &&
-                            new Date(
-                              (participant as BenchmarkModel).created! * 1000, // Convert unix timestamp to milliseconds
-                            ) >
-                              new Date(
-                                Date.now() - 30 * 24 * 60 * 60 * 1000,
-                              ) && (
-                              <Badge className="bg-blue-600 text-xs text-white">
-                                NEW
-                              </Badge>
-                            )}
-                          {/* Notice tooltip for evaluation warnings/info */}
-                          {isModel &&
-                            skill.id in
-                              (participant as BenchmarkModel).scores &&
-                            (participant as BenchmarkModel).scores[skill.id]
-                              ?.notice && (
-                              <Tooltip
-                                content={
-                                  (participant as BenchmarkModel).scores[
-                                    skill.id
-                                  ]?.notice
-                                }
-                              >
-                                <div className="flex h-4 w-4 items-center justify-center rounded-full bg-blue-500/20 text-blue-400 hover:bg-blue-500/30">
-                                  <Info size={10} />
-                                </div>
-                              </Tooltip>
-                            )}
+                      </div>
+                      {isModel && (
+                        <div className="text-xs text-gray-400">
+                          {(participant as BenchmarkModel).provider}
                         </div>
-                        {isModel && (
-                          <div className="text-xs text-gray-400">
-                            {(participant as BenchmarkModel).provider}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Score Display */}
-                    <div className="flex-shrink-0 text-right">
-                      <div className="font-mono text-sm font-semibold text-white">
-                        {participant.score.toFixed(0)}
-                        {confidenceInterval && (
-                          <span className="ml-1 text-xs text-gray-400">
-                            ±
-                            {(
-                              confidenceInterval[1] - confidenceInterval[0]
-                            ).toFixed(1)}
-                          </span>
-                        )}
-                      </div>
+                      )}
                     </div>
                   </div>
 
+                  {/* Score Display */}
+                  <div className="flex-shrink-0 text-right">
+                    <div className="font-mono text-sm font-semibold text-white">
+                      {participant.score.toFixed(0)}
+                      {confidenceInterval && (
+                        <span className="ml-1 text-xs text-gray-400">
+                          ±
+                          {(
+                            confidenceInterval[1] - confidenceInterval[0]
+                          ).toFixed(1)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+
+              const barSection = (
+                <>
                   {/* Horizontal Bar */}
                   <div className="mb-2 ml-10">
                     <div className="relative h-6 w-full rounded-full bg-gray-800">
@@ -434,6 +428,30 @@ export const SkillDetailLeaderboardTable: React.FC<
                       )}
                     </div>
                   </div>
+                </>
+              );
+
+              return (
+                <div key={participant.id} className="group">
+                  {isModel ? (
+                    <a
+                      href={`https://openrouter.ai/models/${participant.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block rounded-lg transition-colors hover:bg-gray-700/50"
+                    >
+                      {rowContent}
+                      {barSection}
+                    </a>
+                  ) : (
+                    <Link
+                      href={`/agents/${participant.id}`}
+                      className="block rounded-lg transition-colors hover:bg-gray-700/50"
+                    >
+                      {rowContent}
+                      {barSection}
+                    </Link>
+                  )}
                 </div>
               );
             })}
