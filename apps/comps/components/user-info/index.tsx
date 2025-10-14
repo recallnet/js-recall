@@ -1,5 +1,3 @@
-"use client";
-
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useClickAway } from "@uidotdev/usehooks";
 import Link from "next/link";
@@ -225,7 +223,7 @@ export default function UserInfoSection({
                 </div>
               ) : (
                 <FieldValue>
-                  {user.metadata?.website && (
+                  {user?.metadata?.website && (
                     <Link
                       href={user.metadata.website}
                       target="_blank"
