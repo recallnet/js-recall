@@ -324,15 +324,16 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   // Sync active wallet when backend user data is available
   useEffect(() => {
-    if (backendUser?.walletAddress) {
+    if (backendUser?.walletAddress && readyWallets) {
       // Small delay to ensure the wallet state is stable
       const timeoutId = setTimeout(() => {
         syncActiveWallet();
       }, 200);
 
       return () => clearTimeout(timeoutId);
+      // syncActiveWallet();
     }
-  }, [backendUser?.walletAddress, syncActiveWallet]);
+  }, [backendUser?.walletAddress, syncActiveWallet, readyWallets]);
 
   useEffect(() => {
     if (backendUser && shouldLinkWallet) {
