@@ -3231,7 +3231,7 @@ describe("Perps Competition", () => {
       agentWalletAddress: "0xaaaa111111111111111111111111111111111111", // $250
     });
 
-    // Start with 3 agents
+    // Start with 3 agents (one below threshold)
     const response = await startPerpsTestCompetition({
       adminClient,
       name: `Stats Update Test ${Date.now()}`,
@@ -3246,18 +3246,20 @@ describe("Perps Competition", () => {
     expect(response.success).toBe(true);
     const competition = response.competition;
 
-    // Initial agent count should be 3
-    expect(competition.agentIds).toHaveLength(3);
+    // After startup enforcement, only 2 agents should remain (agent100 removed for being below $250)
+    expect(competition.agentIds).toHaveLength(2);
 
-    // Wait for monitoring and removal
-    await wait(2000);
+    // Verify the removed agent is the one below threshold
+    expect(competition.agentIds).toContain(agent500.id); // $500 - should remain
+    expect(competition.agentIds).toContain(agent250.id); // $250 - exactly at threshold, should remain
+    expect(competition.agentIds).not.toContain(agent100.id); // $100 - below threshold, should be removed
 
-    // Get competition details after removal
+    // Get competition details to verify stats
     const detailsResponse = await adminClient.getCompetition(competition.id);
     expect(detailsResponse.success).toBe(true);
     const typedDetails = detailsResponse as CompetitionDetailResponse;
 
-    // Stats should reflect removal (only 2 agents remain)
+    // Stats should show only 2 agents
     expect(typedDetails.competition.stats?.totalAgents).toBe(2);
 
     // Verify through agents endpoint as well
@@ -3267,6 +3269,12 @@ describe("Perps Competition", () => {
     expect(agentsResponse.success).toBe(true);
     const typedAgents = agentsResponse as CompetitionAgentsResponse;
     expect(typedAgents.agents).toHaveLength(2);
+
+    // Verify the correct agents remain
+    const agentIds = typedAgents.agents.map((a) => a.id);
+    expect(agentIds).toContain(agent500.id);
+    expect(agentIds).toContain(agent250.id);
+    expect(agentIds).not.toContain(agent100.id);
 
     // Clean up
     await adminClient.endCompetition(competition.id);

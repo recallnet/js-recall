@@ -525,15 +525,18 @@ export class MockHyperliquidServer {
       const callIdx = this.callIndex.get(lowerAddress) || 0;
 
       // Equity progression for max drawdown testing
+      // NOTE: First pair consumed by startup sync in startCompetition
       const equityProgression = [
         1700,
-        1700, // Calls 1-2: Peak
+        1700, // Calls 1-2: STARTUP SYNC (consumed during competition start)
+        1700,
+        1700, // Calls 3-4: First test snapshot - Peak
         1200,
-        1200, // Calls 3-4: Trough (max drawdown)
+        1200, // Calls 5-6: Second test snapshot - Trough (max drawdown)
         1550,
-        1550, // Calls 5-6: Recovery
+        1550, // Calls 7-8: Third test snapshot - Recovery
         1550,
-        1550, // Calls 7+: Stable
+        1550, // Calls 9+: Stable
       ];
 
       currentEquity =
