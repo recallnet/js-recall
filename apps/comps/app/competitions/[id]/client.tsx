@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useDebounce, useWindowScroll } from "@uidotdev/usehooks";
 import { isFuture } from "date-fns";
 import { ChevronRight } from "lucide-react";
@@ -65,7 +65,7 @@ export default function CompetitionPageClient({
     error: agentsError,
   } = useQuery(
     tanstackClient.competitions.getAgents.queryOptions({
-      placeholderData: (prev) => prev,
+      placeholderData: keepPreviousData,
       input: {
         competitionId: id,
         paging: {
