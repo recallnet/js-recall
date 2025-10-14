@@ -68,8 +68,10 @@ export const CalmarRatioChart: React.FC<CalmarRatioChartProps> = ({
   // Chart display agents - should match what's shown in the legend's current page
   const chartDisplayAgents = useMemo(() => {
     if (!debouncedSearchQuery) {
-      // When not searching, use current page agents from filtered list
-      return agentsWithCalmar;
+      // When not searching, use pagination from parent component
+      const startIndex = (currentPage - 1) * LIMIT_AGENTS_PER_PAGE;
+      const endIndex = startIndex + LIMIT_AGENTS_PER_PAGE;
+      return agentsWithCalmar.slice(startIndex, endIndex);
     } else {
       // When searching, show agents from current search page
       const startIndex = (currentLegendPage - 1) * LIMIT_AGENTS_PER_PAGE;
@@ -81,6 +83,7 @@ export const CalmarRatioChart: React.FC<CalmarRatioChartProps> = ({
     filteredAgentsForLegend,
     debouncedSearchQuery,
     currentLegendPage,
+    currentPage,
   ]);
 
   // Prepare data for bar chart
@@ -256,15 +259,21 @@ export const CalmarRatioChart: React.FC<CalmarRatioChartProps> = ({
       </HoverContext.Provider>
       <div className="my-2 w-full border-t"></div>
       <CustomLegend
-        agents={filteredAgentsForLegend}
+        agents={
+          debouncedSearchQuery ? filteredAgentsForLegend : agentsWithCalmar
+        }
         colorMap={agentColorMap}
         currentValues={calmarRatioValues}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         onAgentHover={setLegendHoveredAgent}
-        totalAgents={totalAgents}
-        currentPage={currentPage}
-        onPageChange={onPageChange}
+        totalAgents={
+          debouncedSearchQuery ? filteredAgentsForLegend.length : totalAgents
+        }
+        currentPage={debouncedSearchQuery ? currentLegendPage : currentPage}
+        onPageChange={
+          debouncedSearchQuery ? handleSearchPageChange : onPageChange
+        }
         onSearchPageChange={handleSearchPageChange}
       />
       <div className="border-t px-6 py-3">
