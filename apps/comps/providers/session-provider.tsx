@@ -34,7 +34,6 @@ import {
   useSafeChainId,
   useSafeDisconnect,
 } from "@/hooks/useSafeWagmi";
-import { ApiClient } from "@/lib/api-client";
 import { mergeWithoutUndefined } from "@/lib/merge-without-undefined";
 import { userWalletState } from "@/lib/user-wallet-state";
 import { tanstackClient } from "@/rpc/clients/tanstack-query";
@@ -95,7 +94,6 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   const { user, ready, authenticated, logout, isModalOpen, createWallet } =
     usePrivy();
-  const { ready: walletsReady } = useWallets();
 
   const { disconnect } = useSafeDisconnect();
   const { isConnected, chainId: currentChainId } = useSafeAccount();
@@ -136,7 +134,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
           error: error?.message || String(error),
           privyAuthenticated: authenticated,
           privyReady: ready,
-          privyWalletsReady: walletsReady,
+          privyWalletsReady: readyWallets,
           browserOnline: navigator.onLine,
         });
 
@@ -146,7 +144,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
             extra: {
               privyAuthenticated: authenticated,
               privyReady: ready,
-              privyWalletsReady: walletsReady,
+              privyWalletsReady: readyWallets,
               browserOnline: navigator.onLine,
             },
           },
@@ -164,9 +162,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         const message = `Privy failed to create embedded wallet. Creating wallet for user DID: ${user.id}`;
         console.warn(message);
         Sentry.captureMessage(message, "warning");
-        const wallet = await createWallet();
-
-        console.log("Created wallet:", wallet);
+        await createWallet();
       }
 
       setShouldLinkWallet(isNewUser);
@@ -195,7 +191,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     tanstackClient.user.getProfile.queryOptions({
       enabled: authenticated && ready && isLoginToBackendSuccess,
       staleTime: 5 * 60 * 1000, // 5 minutes
-      gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
+      gcTime: 10 * 60 * 1000, // 10 minutes
       retry: (failureCount, error) => {
         // Don't retry on 401/403 errors (UNAUTHORIZED)
         if (
@@ -260,6 +256,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   const { connectWallet } = useConnectWallet({
     onError: (err) => {
+      if (err === "generic_connect_wallet_error") return;
       setLinkOrConnectWalletError(new Error(err));
     },
   });
@@ -413,7 +410,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
       // Disconnect from wagmi first to clear connection state
       if (isConnected) {
-        await disconnect();
+        disconnect();
       }
       // Then logout from Privy
       await logout();
