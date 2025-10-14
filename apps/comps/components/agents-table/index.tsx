@@ -85,10 +85,17 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
   const { data: totalStaked } = useTotalUserStaked();
 
   // Boost hooks
+
+  const { data: availableBoostAwards } = useQuery(
+    tanstackClient.boost.availableAwards.queryOptions({
+      input: { competitionId: competition.id },
+    }),
+  );
+
   const {
-    data: boostBalance,
-    isLoading: isLoadingBoostBalance,
-    isSuccess: isSuccessBoostBalance,
+    data: userBoostBalance,
+    isLoading: isLoadingUserBoostBalance,
+    isSuccess: isSuccessUserBoostBalance,
   } = useQuery(
     tanstackClient.boost.balance.queryOptions({
       input: { competitionId: competition.id },
@@ -126,10 +133,11 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
         ),
     }),
   );
+
   const {
-    data: boostTotals,
-    isLoading: isLoadingBoostTotals,
-    isSuccess: isSuccessBoostTotals,
+    data: agentBoostTotals,
+    isLoading: isLoadingAgentBoostTotals,
+    isSuccess: isSuccessAgentBoostTotals,
   } = useQuery(
     tanstackClient.boost.agentBoostTotals.queryOptions({
       input: { competitionId: competition.id },
@@ -176,18 +184,28 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
     [competition],
   );
 
+  const showStakeToBoost = useMemo(() => {
+    if (!config.publicFlags.tge) return false;
+    return totalStaked === 0n || userBoostBalance === 0;
+  }, [totalStaked, userBoostBalance]);
+
   const showClaimBoost = useMemo(() => {
-    return (
-      boostBalance === 0 &&
-      Object.keys(userBoosts || {}).length === 0 &&
-      isOpenForBoosting &&
-      (config.publicFlags.tge ? !!totalStaked : true)
-    );
-  }, [boostBalance, userBoosts, isOpenForBoosting, totalStaked]);
+    if (config.publicFlags.tge) {
+      return (
+        isOpenForBoosting && (availableBoostAwards?.totalAwardAmount ?? 0n) > 0n
+      );
+    } else {
+      return (
+        userBoostBalance === 0 &&
+        Object.keys(userBoosts || {}).length === 0 &&
+        isOpenForBoosting
+      );
+    }
+  }, [availableBoostAwards, userBoostBalance, userBoosts, isOpenForBoosting]);
 
   const showBoostBalance = useMemo(() => {
-    return boostBalance !== undefined && isOpenForBoosting;
-  }, [boostBalance, isOpenForBoosting]);
+    return userBoostBalance !== undefined && isOpenForBoosting;
+  }, [userBoostBalance, isOpenForBoosting]);
 
   const page =
     pagination.limit > 0
@@ -196,9 +214,12 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
 
   // Calculate total boost for percentage calculation
   const totalBoost = useMemo(() => {
-    if (!isSuccessBoostTotals) return 0;
-    return Object.values(boostTotals).reduce((sum, amount) => sum + amount, 0);
-  }, [boostTotals, isSuccessBoostTotals]);
+    if (!isSuccessAgentBoostTotals) return 0;
+    return Object.values(agentBoostTotals).reduce(
+      (sum, amount) => sum + amount,
+      0,
+    );
+  }, [agentBoostTotals, isSuccessAgentBoostTotals]);
 
   const isLegacyCompetition = useMemo(() => {
     return competition.stats.totalVotes > 0 && competition.status === "ended";
@@ -220,13 +241,15 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
 
   // Calculate total boost value (available + user spent) for progress bar
   const totalBoostValue = useMemo(() => {
-    const availableBalance = isSuccessBoostBalance ? boostBalance : 0;
+    const availableBalance = isSuccessUserBoostBalance ? userBoostBalance : 0;
     return availableBalance + userSpentBoost;
-  }, [boostBalance, userSpentBoost, isSuccessBoostBalance]);
+  }, [userBoostBalance, userSpentBoost, isSuccessUserBoostBalance]);
 
   // Check if boost data is loading
   const isBoostDataLoading =
-    isLoadingBoostBalance || isLoadingUserBoosts || isLoadingBoostTotals;
+    isLoadingUserBoostBalance ||
+    isLoadingUserBoosts ||
+    isLoadingAgentBoostTotals;
 
   const handleVote = async () => {
     if (!selectedAgent) return;
@@ -247,6 +270,10 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
         },
       },
     );
+  };
+
+  const handleStakeToBoost = () => {
+    router.push("/stake");
   };
 
   const handleClaimBoost = () => {
@@ -486,8 +513,8 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
         ),
         cell: ({ row }) => {
           if (hasBoostEnabled) {
-            const agentBoostTotal = isSuccessBoostTotals
-              ? boostTotals[row.original.id] || 0
+            const agentBoostTotal = isSuccessAgentBoostTotals
+              ? agentBoostTotals[row.original.id] || 0
               : 0;
 
             return (
@@ -552,7 +579,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                       size="sm"
                       variant="outline"
                       className="hover:bg-muted h-8 w-8 rounded-lg border border-yellow-500 p-0 hover:text-white"
-                      disabled={!boostBalance}
+                      disabled={!userBoostBalance}
                       onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                         e.stopPropagation();
                         handleBoost(row.original);
@@ -566,7 +593,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                     size="sm"
                     variant="outline"
                     className="hover:bg-muted h-8 rounded-lg border border-yellow-500 font-bold text-white"
-                    disabled={!boostBalance}
+                    disabled={!userBoostBalance}
                     onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                       e.stopPropagation();
                       handleBoost(row.original);
@@ -591,12 +618,12 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
       },
     ],
     [
-      boostTotals,
+      agentBoostTotals,
       userBoosts,
       isBoostDataLoading,
       totalBoost,
-      boostBalance,
-      isSuccessBoostTotals,
+      userBoostBalance,
+      isSuccessAgentBoostTotals,
       isOpenForBoosting,
       competition.type,
       isSuccessUserBoosts,
@@ -675,20 +702,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
           </div>*/}
         </div>
 
-        {/* Button to activate boost */}
-        {showClaimBoost && (
-          <Button
-            size="lg"
-            variant="outline"
-            className="hover:bg-muted h-8 self-end rounded-lg border border-yellow-500 font-bold text-white"
-            onClick={handleClaimBoost}
-          >
-            Start Boosting{" "}
-            <Zap className="ml-1 h-4 w-4 fill-yellow-500 text-yellow-500" />
-          </Button>
-        )}
-        {/* Available Boost Progress Bar */}
-        {showBoostBalance && !showClaimBoost && (
+        {showBoostBalance && (
           <div className="w-full md:w-1/2 lg:ml-8">
             <div className="rounded-2xl p-4">
               <div className="flex items-center gap-3">
@@ -697,7 +711,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                   <span className="font-bold">
                     {isBoostDataLoading
                       ? "..."
-                      : numberFormatter.format(boostBalance || 0)}
+                      : numberFormatter.format(userBoostBalance || 0)}
                   </span>
                   <span className="text-secondary-foreground text-sm font-medium">
                     available
@@ -708,10 +722,10 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                     className="h-full rounded-full bg-yellow-500 transition-all duration-300"
                     style={{
                       width:
-                        isSuccessBoostBalance &&
-                        boostBalance > 0 &&
+                        isSuccessUserBoostBalance &&
+                        userBoostBalance > 0 &&
                         totalBoostValue > 0
-                          ? `${Math.min(100, Number((boostBalance * 100) / totalBoostValue))}%`
+                          ? `${Math.min(100, Number((userBoostBalance * 100) / totalBoostValue))}%`
                           : "0%",
                     }}
                   />
@@ -720,6 +734,27 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
             </div>
           </div>
         )}
+        {showStakeToBoost ? (
+          <Button
+            size="lg"
+            variant="outline"
+            className="hover:bg-muted h-8 self-end rounded-lg border border-yellow-500 font-bold text-white"
+            onClick={handleStakeToBoost}
+          >
+            Stake to Boost{" "}
+            <Zap className="ml-1 h-4 w-4 fill-yellow-500 text-yellow-500" />
+          </Button>
+        ) : showClaimBoost ? (
+          <Button
+            size="lg"
+            variant="outline"
+            className="hover:bg-muted h-8 self-end rounded-lg border border-yellow-500 font-bold text-white"
+            onClick={handleClaimBoost}
+          >
+            Start Boosting{" "}
+            <Zap className="ml-1 h-4 w-4 fill-yellow-500 text-yellow-500" />
+          </Button>
+        ) : null}
       </div>
       <div
         ref={tableContainerRef}
@@ -839,10 +874,10 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
           if (!open) setSelectedAgent(null);
         }}
         agent={selectedAgent}
-        availableBoost={boostBalance || 0}
+        availableBoost={userBoostBalance || 0}
         currentAgentBoostTotal={
-          selectedAgent && isSuccessBoostTotals
-            ? boostTotals[selectedAgent.id] || 0
+          selectedAgent && isSuccessAgentBoostTotals
+            ? agentBoostTotals[selectedAgent.id] || 0
             : 0
         }
         currentUserBoostAmount={
