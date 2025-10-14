@@ -122,7 +122,7 @@ export function PostHogProviderWrapper({
     window.addEventListener("cc:onChange", handleConsentUpdate);
 
     // Also check periodically in case consent changed in same tab
-    const interval = setInterval(handleConsentChange, 1000);
+    const interval = setInterval(handleConsentChange, 30000);
 
     return () => {
       window.removeEventListener("storage", handleConsentChange);
