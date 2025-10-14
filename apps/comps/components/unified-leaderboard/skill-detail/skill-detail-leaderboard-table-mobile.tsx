@@ -1,6 +1,7 @@
 "use client";
 
 import { BarChart3, Info } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 
 import {
@@ -151,8 +152,8 @@ export const SkillDetailLeaderboardTableMobile: React.FC<
             ? getLabColor((participant as BenchmarkModel).provider)
             : getAgentColor(participant.name);
 
-          return (
-            <Card key={participant.id} className="p-4">
+          const cardContent = (
+            <Card className="p-4 transition-colors hover:bg-gray-700/50">
               {/* Header Row - Rank, Logo, Name/Provider, Icons */}
               <div className="mb-3 flex items-center justify-between">
                 <div className="flex min-w-0 flex-1 items-center gap-3">
@@ -205,9 +206,10 @@ export const SkillDetailLeaderboardTableMobile: React.FC<
                   {isModel &&
                     (participant as BenchmarkModel).context_length && (
                       <button
-                        onClick={() =>
-                          setSelectedModel(participant as BenchmarkModel)
-                        }
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedModel(participant as BenchmarkModel);
+                        }}
                         className="flex items-center gap-1 rounded-md bg-gray-100 px-2 py-1 transition-colors hover:bg-gray-200"
                       >
                         <BarChart3 size={12} className="text-gray-600" />
@@ -306,6 +308,26 @@ export const SkillDetailLeaderboardTableMobile: React.FC<
                 )}
               </div>
             </Card>
+          );
+
+          return isModel ? (
+            <a
+              key={participant.id}
+              href={`https://openrouter.ai/models/${participant.id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block"
+            >
+              {cardContent}
+            </a>
+          ) : (
+            <Link
+              key={participant.id}
+              href={`/agents/${participant.id}`}
+              className="block"
+            >
+              {cardContent}
+            </Link>
           );
         })}
       </div>
