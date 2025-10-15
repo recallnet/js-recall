@@ -19,7 +19,8 @@ export const createMetadata = (
   ogImageUrl?: string,
 ): Metadata => {
   const baseUrl = getBaseUrl();
-  const imageUrl = ogImageUrl || `${baseUrl}/og-image.png`;
+  // TODO: remove the version query param (temporary to force Twitter cache refresh)
+  const imageUrl = ogImageUrl || `${baseUrl}/og-image.png?v=2025-10-15`;
   return {
     title,
     description,
