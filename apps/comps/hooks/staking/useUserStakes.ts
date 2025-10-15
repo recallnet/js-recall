@@ -1,8 +1,10 @@
 "use client";
 
+import { useAccount } from "wagmi";
+import { useReadContract } from "wagmi";
+
 import { StakingAbi } from "@/abi/Staking";
 
-import { useSafeAccount, useSafeReadContract } from "../useSafeWagmi";
 import { useStakingContractAddress } from "./useStakingContractAddress";
 
 /**
@@ -10,10 +12,10 @@ import { useStakingContractAddress } from "./useStakingContractAddress";
  * @returns Read contract result with user stakes
  */
 export const useUserStakes = () => {
-  const { address, isConnected } = useSafeAccount();
+  const { address, isConnected } = useAccount();
   const contractAddress = useStakingContractAddress();
 
-  return useSafeReadContract({
+  return useReadContract({
     address: contractAddress,
     abi: StakingAbi,
     functionName: "getUserStakes",
