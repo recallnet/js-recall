@@ -172,6 +172,11 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
         queryClient.invalidateQueries({
           queryKey: tanstackClient.boost.balance.key(),
         });
+        queryClient.invalidateQueries({
+          queryKey: tanstackClient.boost.availableAwards.key({
+            input: { competitionId: competition.id },
+          }),
+        });
       },
       onError: (error) => {
         toast.error(error.message);
@@ -184,12 +189,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
     [competition],
   );
 
-  const showStakeToBoost = useMemo(() => {
-    if (!config.publicFlags.tge) return false;
-    return totalStaked === 0n || userBoostBalance === 0;
-  }, [totalStaked, userBoostBalance]);
-
-  const showClaimBoost = useMemo(() => {
+  const showActivateBoost = useMemo(() => {
     if (config.publicFlags.tge) {
       return (
         isOpenForBoosting && (availableBoostAwards?.totalAwardAmount ?? 0n) > 0n
@@ -202,6 +202,11 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
       );
     }
   }, [availableBoostAwards, userBoostBalance, userBoosts, isOpenForBoosting]);
+
+  const showStakeToBoost = useMemo(() => {
+    if (!config.publicFlags.tge) return false;
+    return totalStaked === 0n || userBoostBalance === 0;
+  }, [totalStaked, userBoostBalance]);
 
   const showBoostBalance = useMemo(() => {
     return userBoostBalance !== undefined && isOpenForBoosting;
@@ -734,7 +739,17 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
             </div>
           </div>
         )}
-        {showStakeToBoost ? (
+        {showActivateBoost ? (
+          <Button
+            size="lg"
+            variant="outline"
+            className="hover:bg-muted h-8 self-end rounded-lg border border-yellow-500 font-bold text-white"
+            onClick={handleClaimBoost}
+          >
+            {config.publicFlags.tge ? "Activate Boost" : "Start Boosting"}{" "}
+            <Zap className="ml-1 h-4 w-4 fill-yellow-500 text-yellow-500" />
+          </Button>
+        ) : showStakeToBoost ? (
           <Button
             size="lg"
             variant="outline"
@@ -742,16 +757,6 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
             onClick={handleStakeToBoost}
           >
             Stake to Boost{" "}
-            <Zap className="ml-1 h-4 w-4 fill-yellow-500 text-yellow-500" />
-          </Button>
-        ) : showClaimBoost ? (
-          <Button
-            size="lg"
-            variant="outline"
-            className="hover:bg-muted h-8 self-end rounded-lg border border-yellow-500 font-bold text-white"
-            onClick={handleClaimBoost}
-          >
-            Start Boosting{" "}
             <Zap className="ml-1 h-4 w-4 fill-yellow-500 text-yellow-500" />
           </Button>
         ) : null}
