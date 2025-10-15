@@ -80,7 +80,7 @@ export const CompetitionActions: React.FC<CompetitionActionsProps> = ({
         <div className="flex-1">
           <JoinCompetitionButton
             competitionId={competition.id}
-            className="border-blue-white w-full border border-white bg-white text-blue-500 hover:border-blue-500 hover:bg-blue-500 hover:text-white disabled:hover:border-white disabled:hover:bg-white disabled:hover:text-blue-500"
+            className="w-full border border-white bg-white text-blue-500 hover:border-blue-500 hover:bg-blue-500 hover:text-white disabled:hover:border-white disabled:hover:bg-white disabled:hover:text-blue-500"
             disabled={competition.status !== "pending"}
             size="lg"
           >

@@ -229,7 +229,7 @@ export default function CompetitionPageClient({
           <div className="mt-5 flex w-full flex-col gap-3 sm:flex-row sm:gap-4">
             <JoinCompetitionButton
               competitionId={id}
-              className="border-blue-white w-full justify-between border border-white bg-white text-blue-500 hover:border-blue-500 hover:bg-blue-500 hover:text-white disabled:hover:border-white disabled:hover:bg-white disabled:hover:text-blue-500 sm:w-1/2"
+              className="w-full justify-between border border-white bg-white text-blue-500 hover:border-blue-500 hover:bg-blue-500 hover:text-white disabled:hover:border-white disabled:hover:bg-white disabled:hover:text-blue-500 sm:w-1/2"
               disabled={competition.status !== "pending"}
               size="lg"
             >
