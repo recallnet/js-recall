@@ -324,15 +324,15 @@ describe("BoostRepository.mergeBoost() Integration Tests", () => {
         .orderBy(schema.boostChanges.createdAt);
 
       expect(changeRecords).toHaveLength(2);
-      // First change should be from target user (400n)
-      expect(changeRecords[0]?.deltaAmount).toBe(400n);
+      // First change should be from source user (600n) - created first chronologically
+      expect(changeRecords[0]?.deltaAmount).toBe(600n);
       expect(changeRecords[0]?.wallet).toEqual(
-        BlockchainAddressAsU8A.encode(testWallet2),
-      );
-      // Second change should be from source user (600n)
-      expect(changeRecords[1]?.deltaAmount).toBe(600n);
-      expect(changeRecords[1]?.wallet).toEqual(
         BlockchainAddressAsU8A.encode(testWallet1),
+      );
+      // Second change should be from target user (400n) - created second chronologically
+      expect(changeRecords[1]?.deltaAmount).toBe(400n);
+      expect(changeRecords[1]?.wallet).toEqual(
+        BlockchainAddressAsU8A.encode(testWallet2),
       );
     });
 
