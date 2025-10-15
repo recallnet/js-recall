@@ -86,9 +86,15 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
 
   // Boost hooks
 
+  const isOpenForBoosting = useMemo(
+    () => openForBoosting(competition),
+    [competition],
+  );
+
   const { data: availableBoostAwards } = useQuery(
     tanstackClient.boost.availableAwards.queryOptions({
       input: { competitionId: competition.id },
+      enabled: isOpenForBoosting,
     }),
   );
 
@@ -182,11 +188,6 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
         toast.error(error.message);
       },
     }),
-  );
-
-  const isOpenForBoosting = useMemo(
-    () => openForBoosting(competition),
-    [competition],
   );
 
   const showActivateBoost = useMemo(() => {
