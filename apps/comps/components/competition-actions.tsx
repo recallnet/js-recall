@@ -26,11 +26,14 @@ const VoteButton: React.FC<VoteButtonProps> = ({
     return (
       <Link href={`/competitions/${competitionId}`} className="w-full">
         <Button
-          variant="outline"
+          variant="default"
           size="lg"
-          className={cn("w-full uppercase", className)}
+          className={cn(
+            "border border-blue-500 bg-blue-500 uppercase text-white hover:border-white hover:bg-white hover:text-blue-500 disabled:hover:bg-blue-500 disabled:hover:text-white",
+            className,
+          )}
         >
-          Boost
+          <span className="font-semibold">Boost</span>
         </Button>
       </Link>
     );
@@ -38,12 +41,14 @@ const VoteButton: React.FC<VoteButtonProps> = ({
 
   return (
     <Button
-      variant="outline"
+      variant="default"
       size="lg"
-      className={cn("w-full uppercase", className)}
-      disabled
+      className={cn(
+        "border border-blue-500 bg-blue-500 uppercase text-white hover:bg-white hover:text-blue-500 disabled:hover:bg-blue-500 disabled:hover:text-white",
+        className,
+      )}
     >
-      Boost
+      <span className="font-semibold">Boost</span>
     </Button>
   );
 };

@@ -194,7 +194,7 @@ export default function CompetitionPageClient({
       disabled={!isVotingAvailable() || disabled}
       variant="default"
       className={cn(
-        "border border-blue-500 bg-blue-500 text-white hover:bg-white hover:text-blue-500 disabled:hover:bg-blue-500 disabled:hover:text-white",
+        "border border-blue-500 bg-blue-500 text-white hover:border-white hover:bg-white hover:text-blue-500 disabled:hover:bg-blue-500 disabled:hover:text-white",
         className,
       )}
       size="lg"
