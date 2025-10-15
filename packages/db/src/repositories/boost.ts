@@ -889,6 +889,16 @@ class BoostRepository {
               balanceId: bal.id,
             })
             .where(eq(schema.boostChanges.balanceId, fromBalance.id));
+
+          // Zero out the source balance since all changes have been transferred
+          await tx
+            .update(schema.boostBalances)
+            .set({
+              balance: 0n,
+              updatedAt: sql`now()`,
+            })
+            .where(eq(schema.boostBalances.id, fromBalance.id));
+
           return bal;
         }),
       );
