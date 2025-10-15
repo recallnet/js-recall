@@ -1091,6 +1091,30 @@ export class CompetitionRepository {
   }
 
   /**
+   * Find all competitions that are open for boosting
+   * @param tx Optional transaction
+   * @returns All competitions that are open for boosting (active or pending, and within voting period)
+   */
+  async findOpenForBoosting(tx?: Transaction) {
+    const now = new Date();
+    const executor = tx || this.#db;
+    const result = await executor
+      .select()
+      .from(competitions)
+      .where(
+        and(
+          or(
+            eq(competitions.status, "active"),
+            eq(competitions.status, "pending"),
+          ),
+          lt(competitions.votingStartDate, now),
+          gt(competitions.votingEndDate, now),
+        ),
+      );
+    return result;
+  }
+
+  /**
    * Create a portfolio snapshot
    * @param snapshot Portfolio snapshot data
    */

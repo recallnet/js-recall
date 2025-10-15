@@ -197,29 +197,31 @@ class EventProcessor {
         tx,
       );
       if (stake) {
-        const competition =
-          await this.#competitionService.getActiveCompetition();
-        if (
-          competition &&
-          competition.votingStartDate &&
-          competition.votingEndDate
-        ) {
-          await this.#boostAwardService.awardForStake(
-            {
-              id: tokenId,
-              wallet: staker,
-              amount: amount,
-              stakedAt: stake.stakedAt,
-              canUnstakeAfter: stake.canUnstakeAfter,
-            },
-            {
-              id: competition.id,
-              votingStartDate: competition.votingStartDate,
-              votingEndDate: competition.votingEndDate,
-            },
-            tx,
-          );
-        }
+        const competitions =
+          await this.#competitionService.getOpenForBoosting();
+        this.#logger.debug(
+          { compsOpenForBoosting: competitions.map((c) => c.id) },
+          `Found ${competitions.length} competitions open for boosting`,
+        );
+        await Promise.all(
+          competitions.map((competition) =>
+            this.#boostAwardService.awardForStake(
+              {
+                id: tokenId,
+                wallet: staker,
+                amount: amount,
+                stakedAt: stake.stakedAt,
+                canUnstakeAfter: stake.canUnstakeAfter,
+              },
+              {
+                id: competition.id,
+                votingStartDate: competition.votingStartDate!,
+                votingEndDate: competition.votingEndDate!,
+              },
+              tx,
+            ),
+          ),
+        );
       }
       return stake;
     });
