@@ -839,7 +839,10 @@ class BoostRepository {
 
       const res = Promise.all(
         fromBalances.map(async (fromBalance) => {
-          // Sum up all boost changes for the source balance changes
+          // Sum up all boost changes for the source balance changes.
+          // This isn't strictly necessary because we already have the current balance from the
+          //  boostBalances table, but we're double-checking here that the sum of the deltas
+          // matches the current balance, just to be extra defensive.
           const [fromBoostChangesSum] = await tx
             .select({
               sum: sql`sum(${schema.boostChanges.deltaAmount})`
@@ -848,12 +851,19 @@ class BoostRepository {
             })
             .from(schema.boostChanges)
             .where(eq(schema.boostChanges.balanceId, fromBalance.id));
+
+          if (fromBoostChangesSum?.sum !== fromBalance.balance) {
+            throw new Error(
+              `Boost changes sum for balance ${fromBalance.id} does not match balance amount`,
+            );
+          }
+
           // Upsert into the target user
           const [bal] = await tx
             .insert(schema.boostBalances)
             .values({
               userId: toUserId,
-              balance: fromBoostChangesSum?.sum ?? 0n,
+              balance: fromBalance.balance,
               competitionId: fromBalance.competitionId,
             })
             .onConflictDoUpdate({
