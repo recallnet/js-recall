@@ -2,6 +2,7 @@ import { Logger } from "pino";
 import { MockedObject, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AgentRepository } from "@recallnet/db/repositories/agent";
+import { BoostRepository } from "@recallnet/db/repositories/boost";
 import { UserRepository } from "@recallnet/db/repositories/user";
 import { VoteRepository } from "@recallnet/db/repositories/vote";
 import { SelectUser } from "@recallnet/db/schema/core/types";
@@ -36,6 +37,7 @@ describe("UserManager", () => {
     let mockUserRepo: UserRepository;
     let mockAgentRepo: AgentRepository;
     let mockVoteRepo: VoteRepository;
+    let mockBoostRepo: BoostRepository;
     let mockDb: Database;
     let mockLogger: Logger;
 
@@ -49,6 +51,7 @@ describe("UserManager", () => {
       mockUserRepo = {} as UserRepository;
       mockAgentRepo = {} as AgentRepository;
       mockVoteRepo = {} as VoteRepository;
+      mockBoostRepo = {} as BoostRepository;
       mockDb = {} as Database;
       mockLogger = {
         info: vi.fn(),
@@ -91,6 +94,7 @@ describe("UserManager", () => {
         mockAgentRepo,
         mockUserRepo,
         mockVoteRepo,
+        mockBoostRepo,
         mockWatchlistInstance as unknown as WalletWatchlist,
         mockDb,
         mockLogger,
