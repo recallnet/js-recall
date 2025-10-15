@@ -1,4 +1,7 @@
-import { StandardRPCJsonSerializer } from "@orpc/client/standard";
+import {
+  type StandardRPCJsonSerialized,
+  StandardRPCJsonSerializer,
+} from "@orpc/client/standard";
 import {
   Context,
   ErrorMap,
@@ -64,12 +67,16 @@ export function cacheMiddleware<
 
       // Create cached version of the next handler
       const cachedHandler = unstable_cache(
-        async () => {
+        async (): Promise<StandardRPCJsonSerialized> => {
           context.logger.debug(
             { cacheKey },
             "Cache middleware miss, invoking next()",
           );
-          return await next();
+          const result = await next();
+
+          // Serialize result to convert BigInt and other non-JSON types to safe formats
+          // Returns [json, meta, maps, blobs] tuple where json is JSON-safe
+          return serializer.serialize(result);
         },
         cacheKey,
         {
@@ -82,6 +89,18 @@ export function cacheMiddleware<
         { cacheKey, tags },
         "Cache middleware checking cache for key",
       );
-      return await cachedHandler();
+
+      // Get cached result (which is the serialized tuple)
+      const cachedResult = await cachedHandler();
+
+      // Deserialize to restore original types (BigInt, Date, etc.)
+      const [json, meta, maps, blobs] = cachedResult;
+      return serializer.deserialize(json, meta, maps, (index: number) => {
+        const blob = blobs[index];
+        if (!blob) {
+          throw new Error(`Missing blob at index ${index}`);
+        }
+        return blob;
+      }) as any;
     });
 }
