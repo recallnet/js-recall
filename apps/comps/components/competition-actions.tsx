@@ -97,6 +97,7 @@ export const CompetitionActions: React.FC<CompetitionActionsProps> = ({
         <BoostButton
           competitionId={competition.id}
           votingEnabled={isOpenForBoosting}
+          className="w-full"
         />
       </div>
     );
@@ -105,7 +106,7 @@ export const CompetitionActions: React.FC<CompetitionActionsProps> = ({
   if (competition.status === CompetitionStatus.Ended) {
     return (
       <div className={containerClasses}>
-        <Link href={`/competitions/${competition.id}`} className="">
+        <Link href={`/competitions/${competition.id}`} className="w-full">
           <Button variant="outline" size="lg" className="w-full uppercase">
             See Results
           </Button>
