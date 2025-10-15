@@ -231,6 +231,22 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     tanstackClient.user.linkWallet.mutationOptions({
       onSuccess: () => {
         refetchBackendUser();
+
+        // Invalidate boost-related queries (mergeBoost happens during wallet link)
+        queryClient.invalidateQueries({
+          queryKey: tanstackClient.boost.balance.key(),
+        });
+        queryClient.invalidateQueries({
+          queryKey: tanstackClient.boost.userBoosts.key(),
+        });
+        queryClient.invalidateQueries({
+          queryKey: tanstackClient.boost.availableAwards.key(),
+        });
+
+        // Invalidate user agents (agent ownership is transferred during merge)
+        queryClient.invalidateQueries({
+          queryKey: tanstackClient.user.getUserAgents.key(),
+        });
       },
     }),
   );
