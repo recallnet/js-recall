@@ -827,4 +827,63 @@ class BoostRepository {
       .orderBy(desc(stakes.createdAt));
     return res;
   }
+
+  async mergeBoost(fromUserId: string, toUserId: string, tx?: Transaction) {
+    const executor = tx || this.#db;
+    const res = executor.transaction(async (tx) => {
+      // Find all balances for the source user
+      const fromBalances = await tx
+        .select()
+        .from(schema.boostBalances)
+        .where(eq(schema.boostBalances.userId, fromUserId));
+
+      const res = Promise.all(
+        fromBalances.map(async (fromBalance) => {
+          // Sum up all boost changes for the source balance changes
+          const [fromBoostChangesSum] = await tx
+            .select({
+              sum: sql`sum(${schema.boostChanges.deltaAmount})`
+                .mapWith(BigInt)
+                .as("sum"),
+            })
+            .from(schema.boostChanges)
+            .where(eq(schema.boostChanges.balanceId, fromBalance.id));
+          // Upsert into the target user
+          const [bal] = await tx
+            .insert(schema.boostBalances)
+            .values({
+              userId: toUserId,
+              balance: fromBoostChangesSum?.sum ?? 0n,
+              competitionId: fromBalance.competitionId,
+            })
+            .onConflictDoUpdate({
+              target: [
+                schema.boostBalances.userId,
+                schema.boostBalances.competitionId,
+              ],
+              set: {
+                balance: sql`${schema.boostBalances.balance} + excluded.balance`,
+                updatedAt: sql`now()`,
+              },
+            })
+            .returning();
+          if (!bal) {
+            throw new Error(
+              `Failed to merge boost for user ${toUserId} from balance ${fromBalance.id}`,
+            );
+          }
+          // Update all changes to point to the new balance
+          await tx
+            .update(schema.boostChanges)
+            .set({
+              balanceId: bal.id,
+            })
+            .where(eq(schema.boostChanges.balanceId, fromBalance.id));
+          return bal;
+        }),
+      );
+      return res;
+    });
+    return res;
+  }
 }

@@ -87,6 +87,7 @@ export const userService = new UserService(
   agentRepository,
   userRepository,
   voteRepository,
+  boostRepository,
   walletWatchList,
   db,
   createLogger("UserService"),

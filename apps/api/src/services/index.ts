@@ -233,6 +233,7 @@ class ServiceRegistry {
       this._agentRepository,
       this._userRepository,
       voteRepository,
+      this._boostRepository,
       walletWatchlist,
       db,
       serviceLogger,

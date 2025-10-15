@@ -2,6 +2,7 @@ import { randomUUID } from "crypto";
 import { Logger } from "pino";
 
 import { AgentRepository } from "@recallnet/db/repositories/agent";
+import { BoostRepository } from "@recallnet/db/repositories/boost";
 import { UserRepository } from "@recallnet/db/repositories/user";
 import { VoteRepository } from "@recallnet/db/repositories/vote";
 import { InsertUser, SelectUser } from "@recallnet/db/schema/core/types";
@@ -25,6 +26,7 @@ export class UserService {
   private agentRepo: AgentRepository;
   private userRepo: UserRepository;
   private voteRepo: VoteRepository;
+  private boostRepo: BoostRepository;
   private walletWatchlist: WalletWatchlist;
   private db: Database;
   private logger: Logger;
@@ -34,6 +36,7 @@ export class UserService {
     agentRepo: AgentRepository,
     userRepo: UserRepository,
     voteRepo: VoteRepository,
+    boostRepo: BoostRepository,
     walletWatchlist: WalletWatchlist,
     db: Database,
     logger: Logger,
@@ -44,6 +47,7 @@ export class UserService {
     this.agentRepo = agentRepo;
     this.userRepo = userRepo;
     this.voteRepo = voteRepo;
+    this.boostRepo = boostRepo;
     this.walletWatchlist = walletWatchlist;
     this.db = db;
     this.logger = logger;
@@ -273,6 +277,15 @@ export class UserService {
             duplicateAccount.id,
             user.id,
             tx,
+          );
+          const mergeRes = await this.boostRepo.mergeBoost(
+            duplicateAccount.id,
+            user.id,
+            tx,
+          );
+          this.logger.info(
+            mergeRes,
+            `Merged boost balances from duplicate user ${duplicateAccount.id} into ${user.id}`,
           );
           await this.voteRepo.updateVotesOwner(
             duplicateAccount.id,
