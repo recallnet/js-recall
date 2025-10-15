@@ -1132,6 +1132,14 @@ export class CompetitionService {
   }
 
   /**
+   * Get all competitions that are open for boosting
+   * @returns Competitions that are open for boosting
+   */
+  async getOpenForBoosting() {
+    return this.competitionRepo.findOpenForBoosting();
+  }
+
+  /**
    * Check if a competition is active
    * @param competitionId The competition ID
    * @returns True if the competition is active
