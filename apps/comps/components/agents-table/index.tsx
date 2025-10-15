@@ -744,21 +744,21 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
           <Button
             size="lg"
             variant="outline"
-            className="hover:bg-muted h-8 self-end rounded-lg border border-yellow-500 font-bold text-white"
+            className="group h-8 self-end rounded-lg border border-yellow-500 bg-black font-bold text-white hover:bg-yellow-500 hover:text-black"
             onClick={handleClaimBoost}
           >
             {config.publicFlags.tge ? "Activate Boost" : "Start Boosting"}{" "}
-            <Zap className="ml-1 h-4 w-4 fill-yellow-500 text-yellow-500" />
+            <Zap className="ml-1 h-4 w-4 fill-yellow-500 text-yellow-500 group-hover:fill-black group-hover:text-black" />
           </Button>
         ) : showStakeToBoost ? (
           <Button
             size="lg"
             variant="outline"
-            className="hover:bg-muted h-8 self-end rounded-lg border border-yellow-500 font-bold text-white"
+            className="group h-8 self-end rounded-lg border border-yellow-500 bg-black font-bold text-white hover:bg-yellow-500 hover:text-black"
             onClick={handleStakeToBoost}
           >
             Stake to Boost{" "}
-            <Zap className="ml-1 h-4 w-4 fill-yellow-500 text-yellow-500" />
+            <Zap className="ml-1 h-4 w-4 fill-yellow-500 text-yellow-500 transition-all duration-300 ease-in-out group-hover:fill-black group-hover:text-black" />
           </Button>
         ) : null}
       </div>
