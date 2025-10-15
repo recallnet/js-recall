@@ -32,6 +32,17 @@ export const boostAgent = base
       idemKey: input.idemKey,
     });
     if (res.isErr()) {
+      context.logger.warn(
+        {
+          errorType: res.error.type,
+          error: res.error,
+          userId: context.user.id,
+          competitionId: input.competitionId,
+          agentId: input.agentId,
+        },
+        `Boost agent failed: ${res.error.type}`,
+      );
+
       switch (res.error.type) {
         case "RepositoryError":
           throw errors.INTERNAL({ message: res.error.message });
