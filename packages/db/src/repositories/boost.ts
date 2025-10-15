@@ -837,7 +837,7 @@ class BoostRepository {
         .from(schema.boostBalances)
         .where(eq(schema.boostBalances.userId, fromUserId));
 
-      const res = Promise.all(
+      const res = await Promise.all(
         fromBalances.map(async (fromBalance) => {
           // Sum up all boost changes for the source balance changes.
           // This isn't strictly necessary because we already have the current balance from the
