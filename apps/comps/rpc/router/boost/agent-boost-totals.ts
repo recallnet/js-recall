@@ -19,6 +19,11 @@ export const agentBoostTotals = base
     if (res.isErr()) {
       throw errors.INTERNAL({ message: res.error.message });
     } else {
-      return res.value;
+      // Convert BigInt values to strings for JSON serialization
+      const serializable: Record<string, string> = {};
+      for (const [agentId, total] of Object.entries(res.value)) {
+        serializable[agentId] = total.toString();
+      }
+      return serializable;
     }
   });
