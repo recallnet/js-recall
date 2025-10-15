@@ -23,7 +23,7 @@ const BoostButton: React.FC<BoostButtonProps> = ({
   className,
 }) => {
   const buttonStyles =
-    "border border-blue-500 bg-blue-500 uppercase text-white hover:border-white hover:bg-white hover:text-blue-500 disabled:hover:bg-blue-500 disabled:hover:text-white";
+    "border border-yellow-500 bg-black uppercase text-white hover:bg-yellow-500 hover:text-black disabled:hover:bg-black disabled:hover:text-white";
 
   if (votingEnabled) {
     return (
