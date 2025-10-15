@@ -96,7 +96,7 @@ export class BoostAwardService {
     const { id, votingStartDate, votingEndDate } = competition;
 
     if (!(votingStartDate && votingEndDate)) {
-      throw new Error("Competition has no boost window.");
+      return { stakes: [], totalAwardAmount: 0n };
     }
 
     const stakes = await this.#boostRepository.unawardedStakes(
