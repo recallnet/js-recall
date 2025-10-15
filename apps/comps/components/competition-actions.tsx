@@ -83,8 +83,9 @@ export const CompetitionActions: React.FC<CompetitionActionsProps> = ({
         />
         <JoinCompetitionButton
           competitionId={competition.id}
+          className="border-blue-white w-full justify-between border border-white bg-white text-blue-500 hover:border-blue-500 hover:bg-blue-500 hover:text-white disabled:hover:bg-white disabled:hover:text-blue-500 sm:w-1/2"
+          disabled={competition.status !== "pending"}
           size="lg"
-          className="w-full uppercase"
         >
           Join
         </JoinCompetitionButton>

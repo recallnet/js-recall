@@ -3,7 +3,7 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useDebounce, useWindowScroll } from "@uidotdev/usehooks";
 import { isFuture } from "date-fns";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Plus } from "lucide-react";
 import Link from "next/link";
 import React from "react";
 
@@ -229,12 +229,11 @@ export default function CompetitionPageClient({
           <div className="mt-5 flex w-full flex-col gap-3 sm:flex-row sm:gap-4">
             <JoinCompetitionButton
               competitionId={id}
-              variant="outline"
-              className="w-full justify-between border border-gray-700 sm:w-1/2"
+              className="border-blue-white w-full justify-between border border-white bg-white text-blue-500 hover:border-blue-500 hover:bg-blue-500 hover:text-white disabled:hover:bg-white disabled:hover:text-blue-500 sm:w-1/2"
               disabled={competition.status !== "pending"}
               size="lg"
             >
-              <span>COMPETE</span>{" "}
+              <span>COMPETE</span> <Plus className="ml-2" size={18} />
             </JoinCompetitionButton>
 
             <BoostAgentsBtn className="w-full justify-between uppercase sm:w-1/2" />
