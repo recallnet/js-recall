@@ -277,6 +277,44 @@ export default function CompetitionPageClient({
         />
       ) : null}
 
+      {agentsError || !agentsData ? (
+        <div className="my-12 rounded border border-red-500 bg-opacity-10 p-6 text-center">
+          <h2 className="text-xl font-semibold text-red-500">
+            Failed to load agents
+          </h2>
+          <p className="mt-2">
+            {agentsError?.message ||
+              "An error occurred while loading agents data"}
+          </p>
+        </div>
+      ) : (
+        <>
+          <AgentsTable
+            ref={agentsTableRef}
+            competition={competition}
+            agents={agentsData.agents}
+            onFilterChange={setAgentsFilter}
+            onSortChange={setAgentsSort}
+            pagination={agentsData.pagination}
+            totalVotes={competition.stats.totalVotes}
+            onPageChange={handleAgentsPageChange}
+          />
+          <TimelineChart
+            className="mt-5"
+            competition={competition}
+            agents={agentsData?.agents || []}
+            totalAgents={agentsData?.pagination?.total || 0}
+            currentPage={
+              Math.floor(
+                (agentsData?.pagination?.offset || 0) /
+                  (agentsData?.pagination?.limit || LIMIT_AGENTS_PER_PAGE),
+              ) + 1
+            }
+            onPageChange={handleAgentsPageChange}
+          />
+        </>
+      )}
+
       {isPerpsCompetition ? (
         <PositionsTable
           positions={positionsData?.positions || []}
@@ -305,44 +343,6 @@ export default function CompetitionPageClient({
           onPageChange={handleTradesPageChange}
           showSignInMessage={!isAuthenticated}
         />
-      )}
-
-      {agentsError || !agentsData ? (
-        <div className="my-12 rounded border border-red-500 bg-opacity-10 p-6 text-center">
-          <h2 className="text-xl font-semibold text-red-500">
-            Failed to load agents
-          </h2>
-          <p className="mt-2">
-            {agentsError?.message ||
-              "An error occurred while loading agents data"}
-          </p>
-        </div>
-      ) : (
-        <>
-          <TimelineChart
-            className="mt-5"
-            competition={competition}
-            agents={agentsData?.agents || []}
-            totalAgents={agentsData?.pagination?.total || 0}
-            currentPage={
-              Math.floor(
-                (agentsData?.pagination?.offset || 0) /
-                  (agentsData?.pagination?.limit || LIMIT_AGENTS_PER_PAGE),
-              ) + 1
-            }
-            onPageChange={handleAgentsPageChange}
-          />
-          <AgentsTable
-            ref={agentsTableRef}
-            competition={competition}
-            agents={agentsData.agents}
-            onFilterChange={setAgentsFilter}
-            onSortChange={setAgentsSort}
-            pagination={agentsData.pagination}
-            totalVotes={competition.stats.totalVotes}
-            onPageChange={handleAgentsPageChange}
-          />
-        </>
       )}
 
       <JoinSwarmSection socialLinks={getSocialLinksArray()} className="mt-12" />
