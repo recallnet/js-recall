@@ -19,7 +19,7 @@ export const createMetadata = (
   ogImageUrl?: string,
 ): Metadata => {
   const baseUrl = getBaseUrl();
-  const imageUrl = ogImageUrl || `${baseUrl}/og-image.png`;
+  const imageUrl = ogImageUrl || `${baseUrl}/og_image.png`;
   return {
     title,
     description,
