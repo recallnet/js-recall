@@ -3,7 +3,7 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useDebounce, useWindowScroll } from "@uidotdev/usehooks";
 import { isFuture } from "date-fns";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Plus } from "lucide-react";
 import Link from "next/link";
 import React from "react";
 
@@ -194,7 +194,7 @@ export default function CompetitionPageClient({
       disabled={!isVotingAvailable() || disabled}
       variant="default"
       className={cn(
-        "border border-blue-500 bg-blue-500 text-white hover:bg-white hover:text-blue-500 disabled:hover:bg-blue-500 disabled:hover:text-white",
+        "border border-yellow-500 bg-black text-white hover:bg-yellow-500 hover:text-black disabled:hover:bg-black disabled:hover:text-white",
         className,
       )}
       size="lg"
@@ -229,12 +229,11 @@ export default function CompetitionPageClient({
           <div className="mt-5 flex w-full flex-col gap-3 sm:flex-row sm:gap-4">
             <JoinCompetitionButton
               competitionId={id}
-              variant="outline"
-              className="w-full justify-between border border-gray-700 sm:w-1/2"
+              className="w-full justify-between border border-white bg-white text-blue-500 hover:border-blue-500 hover:bg-blue-500 hover:text-white disabled:hover:border-white disabled:hover:bg-white disabled:hover:text-blue-500 sm:w-1/2"
               disabled={competition.status !== "pending"}
               size="lg"
             >
-              <span>COMPETE</span>{" "}
+              <span>COMPETE</span> <Plus className="ml-2" size={18} />
             </JoinCompetitionButton>
 
             <BoostAgentsBtn className="w-full justify-between uppercase sm:w-1/2" />
@@ -277,6 +276,44 @@ export default function CompetitionPageClient({
         />
       ) : null}
 
+      {agentsError || !agentsData ? (
+        <div className="my-12 rounded border border-red-500 bg-opacity-10 p-6 text-center">
+          <h2 className="text-xl font-semibold text-red-500">
+            Failed to load agents
+          </h2>
+          <p className="mt-2">
+            {agentsError?.message ||
+              "An error occurred while loading agents data"}
+          </p>
+        </div>
+      ) : (
+        <>
+          <AgentsTable
+            ref={agentsTableRef}
+            competition={competition}
+            agents={agentsData.agents}
+            onFilterChange={setAgentsFilter}
+            onSortChange={setAgentsSort}
+            pagination={agentsData.pagination}
+            totalVotes={competition.stats.totalVotes}
+            onPageChange={handleAgentsPageChange}
+          />
+          <TimelineChart
+            className="mt-5"
+            competition={competition}
+            agents={agentsData?.agents || []}
+            totalAgents={agentsData?.pagination?.total || 0}
+            currentPage={
+              Math.floor(
+                (agentsData?.pagination?.offset || 0) /
+                  (agentsData?.pagination?.limit || LIMIT_AGENTS_PER_PAGE),
+              ) + 1
+            }
+            onPageChange={handleAgentsPageChange}
+          />
+        </>
+      )}
+
       {isPerpsCompetition ? (
         <PositionsTable
           positions={positionsData?.positions || []}
@@ -305,44 +342,6 @@ export default function CompetitionPageClient({
           onPageChange={handleTradesPageChange}
           showSignInMessage={!isAuthenticated}
         />
-      )}
-
-      {agentsError || !agentsData ? (
-        <div className="my-12 rounded border border-red-500 bg-opacity-10 p-6 text-center">
-          <h2 className="text-xl font-semibold text-red-500">
-            Failed to load agents
-          </h2>
-          <p className="mt-2">
-            {agentsError?.message ||
-              "An error occurred while loading agents data"}
-          </p>
-        </div>
-      ) : (
-        <>
-          <TimelineChart
-            className="mt-5"
-            competition={competition}
-            agents={agentsData?.agents || []}
-            totalAgents={agentsData?.pagination?.total || 0}
-            currentPage={
-              Math.floor(
-                (agentsData?.pagination?.offset || 0) /
-                  (agentsData?.pagination?.limit || LIMIT_AGENTS_PER_PAGE),
-              ) + 1
-            }
-            onPageChange={handleAgentsPageChange}
-          />
-          <AgentsTable
-            ref={agentsTableRef}
-            competition={competition}
-            agents={agentsData.agents}
-            onFilterChange={setAgentsFilter}
-            onSortChange={setAgentsSort}
-            pagination={agentsData.pagination}
-            totalVotes={competition.stats.totalVotes}
-            onPageChange={handleAgentsPageChange}
-          />
-        </>
       )}
 
       <JoinSwarmSection socialLinks={getSocialLinksArray()} className="mt-12" />
