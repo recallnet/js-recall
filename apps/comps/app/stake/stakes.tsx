@@ -22,7 +22,6 @@ export default function Stakes() {
     isLoginToBackendPending,
     isUpdateBackendUserPending,
     isLinkWalletToBackendPending,
-    // isSyncActiveWalletPending,
     user,
     backendUser,
   } = useSession();
@@ -42,7 +41,6 @@ export default function Stakes() {
     isLoginToBackendPending ||
     isUpdateBackendUserPending ||
     isLinkWalletToBackendPending;
-  // isSyncActiveWalletPending;
 
   if (!config.publicFlags.tge) {
     return null;
