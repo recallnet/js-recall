@@ -19,6 +19,32 @@ export class MockSymphonyServer {
   // Track portfolio snapshots for Calmar ratio test wallet simulation
   private snapshotIndex: Map<string, number> = new Map();
 
+  // Volume progression constants for test wallets
+  private static readonly INSUFFICIENT_VOLUME_PROGRESSION = [
+    0,
+    0, // Calls 1-2: Startup sync (volume = 0)
+    100,
+    100, // Calls 3-4: 24h later - INSUFFICIENT ($500 * 0.75 = $375 required)
+    100,
+    100, // Calls 5+: Agent should be removed before this
+  ];
+
+  private static readonly SUFFICIENT_VOLUME_PROGRESSION = [
+    0,
+    0, // Calls 1-2: Startup sync (volume = 0)
+    400,
+    400, // Calls 3-4: 24h later - SUFFICIENT ($500 * 0.75 = $375 required)
+    800,
+    800, // Calls 5-6: 48h later - still compliant
+  ];
+
+  private static readonly FAIRNESS_TEST_VOLUME_PROGRESSION = [
+    0,
+    0, // Calls 1-2: Startup sync
+    400,
+    400, // Calls 3-4: $400 volume (fair! uses start equity $500)
+  ];
+
   constructor(port: number = 4567) {
     this.port = port;
     this.app = express();
@@ -367,34 +393,26 @@ export class MockSymphonyServer {
       if (lowerAddress === "0xeeee111111111111111111111111111111111111") {
         // Agent with INSUFFICIENT volume
         const callIdx = this.snapshotIndex.get(lowerAddress) || 0;
-        const volumeProgression = [
-          0,
-          0, // Calls 1-2: Startup sync (volume = 0)
-          100,
-          100, // Calls 3-4: 24h later - INSUFFICIENT ($500 * 0.75 = $375 required)
-          100,
-          100, // Calls 5+: Agent should be removed before this
-        ];
         data.totalVolume =
-          volumeProgression[Math.min(callIdx, volumeProgression.length - 1)] ??
-          100;
+          MockSymphonyServer.INSUFFICIENT_VOLUME_PROGRESSION[
+            Math.min(
+              callIdx,
+              MockSymphonyServer.INSUFFICIENT_VOLUME_PROGRESSION.length - 1,
+            )
+          ] ?? 100;
         this.snapshotIndex.set(lowerAddress, callIdx + 1);
       } else if (
         lowerAddress === "0xffff111111111111111111111111111111111111"
       ) {
         // Agent with SUFFICIENT volume
         const callIdx = this.snapshotIndex.get(lowerAddress) || 0;
-        const volumeProgression = [
-          0,
-          0, // Calls 1-2: Startup sync (volume = 0)
-          400,
-          400, // Calls 3-4: 24h later - SUFFICIENT ($500 * 0.75 = $375 required)
-          800,
-          800, // Calls 5-6: 48h later - still compliant
-        ];
         data.totalVolume =
-          volumeProgression[Math.min(callIdx, volumeProgression.length - 1)] ??
-          800;
+          MockSymphonyServer.SUFFICIENT_VOLUME_PROGRESSION[
+            Math.min(
+              callIdx,
+              MockSymphonyServer.SUFFICIENT_VOLUME_PROGRESSION.length - 1,
+            )
+          ] ?? 800;
         this.snapshotIndex.set(lowerAddress, callIdx + 1);
       } else if (
         lowerAddress === "0xabcd111111111111111111111111111111111111"
@@ -414,15 +432,13 @@ export class MockSymphonyServer {
           2000;
 
         // Volume progression: trades $400 (enough for $500, not for $2000)
-        const volumeProgression = [
-          0,
-          0, // Calls 1-2: Startup sync
-          400,
-          400, // Calls 3-4: $400 volume (fair! uses start equity $500)
-        ];
         data.totalVolume =
-          volumeProgression[Math.min(callIdx, volumeProgression.length - 1)] ??
-          400;
+          MockSymphonyServer.FAIRNESS_TEST_VOLUME_PROGRESSION[
+            Math.min(
+              callIdx,
+              MockSymphonyServer.FAIRNESS_TEST_VOLUME_PROGRESSION.length - 1,
+            )
+          ] ?? 400;
 
         this.snapshotIndex.set(lowerAddress, callIdx + 1);
       }
