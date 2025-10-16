@@ -49,7 +49,7 @@ export function CookieConsentProvider({
     const initCookieConsent = async () => {
       await CookieConsent.run({
         cookie: {
-          name: "cc_cookie",
+          name: "cc",
           // Automatically use current domain
           domain: window.location.hostname,
           path: "/",
