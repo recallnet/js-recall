@@ -449,6 +449,8 @@ export class ApiClient {
           sandboxMode?: boolean;
           externalUrl?: string;
           imageUrl?: string;
+          startDate?: string;
+          endDate?: string;
           votingStartDate?: string;
           votingEndDate?: string;
           tradingConstraints?: TradingConstraints;

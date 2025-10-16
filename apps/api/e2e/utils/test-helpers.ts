@@ -707,6 +707,8 @@ export async function startPerpsTestCompetition({
   sandboxMode,
   externalUrl,
   imageUrl,
+  startDate,
+  endDate,
   tradingConstraints,
   rewards,
   perpsProvider = {
@@ -722,6 +724,8 @@ export async function startPerpsTestCompetition({
   sandboxMode?: boolean;
   externalUrl?: string;
   imageUrl?: string;
+  startDate?: string;
+  endDate?: string;
   tradingConstraints?: TradingConstraints;
   rewards?: Record<number, number>;
   perpsProvider?: {
@@ -741,6 +745,8 @@ export async function startPerpsTestCompetition({
     sandboxMode,
     externalUrl,
     imageUrl,
+    startDate,
+    endDate,
     tradingConstraints,
     rewards,
     perpsProvider,

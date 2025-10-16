@@ -33,6 +33,7 @@ class MockCompetitionRepository {
   batchCreatePortfolioSnapshots = vi.fn();
   getFirstAndLastSnapshots = vi.fn();
   calculateMaxDrawdownSQL = vi.fn();
+  updateAgentCompetitionStatus = vi.fn();
 }
 
 class MockPerpsRepository {
@@ -46,6 +47,7 @@ class MockPerpsRepository {
   getPerpsCompetitionStats = vi.fn();
   getPerpsPositions = vi.fn();
   getLatestPerpsAccountSummary = vi.fn();
+  getAccountSummaryAt = vi.fn();
   getCompetitionPerpsPositions = vi.fn();
 }
 
@@ -1149,6 +1151,361 @@ describe("PerpsDataProcessor - processPerpsCompetition", () => {
       expect(result.calmarRatioResult?.successful).toBe(25);
       expect(result.calmarRatioResult?.failed).toBe(0);
       expect(result.calmarRatioResult?.errors).toBeUndefined();
+    });
+  });
+
+  describe("Daily Volume Requirements", () => {
+    beforeEach(() => {
+      // Reset all mocks before each test
+      vi.clearAllMocks();
+
+      // Setup basic mocks that all tests need
+      vi.mocked(mockCompetitionRepo.findById).mockResolvedValue(
+        sampleCompetition,
+      );
+      vi.mocked(mockPerpsRepo.getPerpsCompetitionConfig).mockResolvedValue(
+        samplePerpsConfig,
+      );
+      vi.mocked(mockCompetitionRepo.getCompetitionAgents).mockResolvedValue([
+        "agent-1",
+      ]);
+      vi.mocked(mockAgentRepo.findByIds).mockResolvedValue([mockAgent]);
+      vi.mocked(mockPerpsRepo.batchSyncAgentsPerpsData).mockResolvedValue({
+        successful: [mockSyncResult],
+        failed: [],
+      });
+    });
+
+    it("should skip volume check when less than 24h since competition start", async () => {
+      // Set competition start to 12 hours ago
+      const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000);
+      vi.mocked(mockCompetitionRepo.findById).mockResolvedValue({
+        ...sampleCompetition,
+        startDate: twelveHoursAgo,
+      });
+
+      await processor.processPerpsCompetition("comp-1");
+
+      // Volume check methods should not be called
+      expect(mockPerpsRepo.getLatestPerpsAccountSummary).not.toHaveBeenCalled();
+      expect(mockPerpsRepo.getAccountSummaryAt).not.toHaveBeenCalled();
+      expect(
+        mockCompetitionRepo.updateAgentCompetitionStatus,
+      ).not.toHaveBeenCalled();
+    });
+
+    it("should skip volume check when not at 24h boundary", async () => {
+      // Set competition start to 26 hours ago (not at boundary)
+      const twentySixHoursAgo = new Date(Date.now() - 26 * 60 * 60 * 1000);
+      vi.mocked(mockCompetitionRepo.findById).mockResolvedValue({
+        ...sampleCompetition,
+        startDate: twentySixHoursAgo,
+      });
+
+      await processor.processPerpsCompetition("comp-1");
+
+      // Volume check methods should not be called
+      expect(mockPerpsRepo.getLatestPerpsAccountSummary).not.toHaveBeenCalled();
+      expect(mockPerpsRepo.getAccountSummaryAt).not.toHaveBeenCalled();
+      expect(
+        mockCompetitionRepo.updateAgentCompetitionStatus,
+      ).not.toHaveBeenCalled();
+    });
+
+    it("should check volume at 24h boundary and remove agent with insufficient volume", async () => {
+      // Set competition start to exactly 24 hours ago
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      vi.mocked(mockCompetitionRepo.findById).mockResolvedValue({
+        ...sampleCompetition,
+        startDate: twentyFourHoursAgo,
+      });
+
+      // Mock account summaries
+      const currentSummary: SelectPerpsAccountSummary = {
+        id: "summary-2",
+        agentId: "agent-1",
+        competitionId: "comp-1",
+        timestamp: new Date(),
+        totalEquity: "1000", // $1000 current
+        initialCapital: "500", // $500 initial
+        totalVolume: "100", // Only $100 volume total
+        totalUnrealizedPnl: null,
+        totalRealizedPnl: null,
+        totalPnl: null,
+        totalFeesPaid: null,
+        availableBalance: null,
+        marginUsed: null,
+        totalTrades: null,
+        openPositionsCount: null,
+        closedPositionsCount: null,
+        liquidatedPositionsCount: null,
+        roi: null,
+        roiPercent: null,
+        averageTradeSize: null,
+        accountStatus: null,
+        rawData: null,
+      };
+
+      const yesterdaySummary: SelectPerpsAccountSummary = {
+        ...currentSummary,
+        id: "summary-1",
+        timestamp: twentyFourHoursAgo,
+        totalEquity: "500", // Started at $500
+        totalVolume: "0", // No volume 24h ago
+      };
+
+      vi.mocked(mockPerpsRepo.getLatestPerpsAccountSummary).mockResolvedValue(
+        currentSummary,
+      );
+      vi.mocked(mockPerpsRepo.getAccountSummaryAt).mockResolvedValue(
+        yesterdaySummary,
+      );
+      vi.mocked(
+        mockCompetitionRepo.updateAgentCompetitionStatus,
+      ).mockResolvedValue(true);
+
+      await processor.processPerpsCompetition("comp-1");
+
+      // Should have checked volume
+      expect(mockPerpsRepo.getLatestPerpsAccountSummary).toHaveBeenCalledWith(
+        "agent-1",
+        "comp-1",
+      );
+      expect(mockPerpsRepo.getAccountSummaryAt).toHaveBeenCalled();
+
+      // Daily volume = 100 - 0 = $100
+      // Required = Max(500, 500 * 0.8) * 0.75 = 500 * 0.75 = $375
+      // $100 < $375 → Should be removed
+      expect(
+        mockCompetitionRepo.updateAgentCompetitionStatus,
+      ).toHaveBeenCalledWith(
+        "comp-1",
+        "agent-1",
+        "disqualified",
+        "Failed to meet minimum daily trading volume requirement (0.75x account equity)",
+      );
+    });
+
+    it("should keep agent who meets volume requirement", async () => {
+      // Set competition start to exactly 24 hours ago
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      vi.mocked(mockCompetitionRepo.findById).mockResolvedValue({
+        ...sampleCompetition,
+        startDate: twentyFourHoursAgo,
+      });
+
+      // Mock account summaries
+      const currentSummary: SelectPerpsAccountSummary = {
+        id: "summary-2",
+        agentId: "agent-1",
+        competitionId: "comp-1",
+        timestamp: new Date(),
+        totalEquity: "1000",
+        initialCapital: "500",
+        totalVolume: "500", // $500 total volume
+        totalUnrealizedPnl: null,
+        totalRealizedPnl: null,
+        totalPnl: null,
+        totalFeesPaid: null,
+        availableBalance: null,
+        marginUsed: null,
+        totalTrades: null,
+        openPositionsCount: null,
+        closedPositionsCount: null,
+        liquidatedPositionsCount: null,
+        roi: null,
+        roiPercent: null,
+        averageTradeSize: null,
+        accountStatus: null,
+        rawData: null,
+      };
+
+      const yesterdaySummary: SelectPerpsAccountSummary = {
+        ...currentSummary,
+        id: "summary-1",
+        timestamp: twentyFourHoursAgo,
+        totalEquity: "500",
+        totalVolume: "0", // No volume 24h ago
+      };
+
+      vi.mocked(mockPerpsRepo.getLatestPerpsAccountSummary).mockResolvedValue(
+        currentSummary,
+      );
+      vi.mocked(mockPerpsRepo.getAccountSummaryAt).mockResolvedValue(
+        yesterdaySummary,
+      );
+
+      await processor.processPerpsCompetition("comp-1");
+
+      // Daily volume = 500 - 0 = $500
+      // Required = Max(500, 500 * 0.8) * 0.75 = $375
+      // $500 >= $375 → Should NOT be removed
+      expect(
+        mockCompetitionRepo.updateAgentCompetitionStatus,
+      ).not.toHaveBeenCalled();
+    });
+
+    it("should use period start equity (fair calculation)", async () => {
+      // Set competition start to exactly 24 hours ago
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      vi.mocked(mockCompetitionRepo.findById).mockResolvedValue({
+        ...sampleCompetition,
+        startDate: twentyFourHoursAgo,
+      });
+
+      // Agent makes huge profit during the day
+      const currentSummary: SelectPerpsAccountSummary = {
+        id: "summary-2",
+        agentId: "agent-1",
+        competitionId: "comp-1",
+        timestamp: new Date(),
+        totalEquity: "5000", // Jumped to $5000!
+        initialCapital: "500",
+        totalVolume: "400", // $400 volume
+        totalUnrealizedPnl: null,
+        totalRealizedPnl: null,
+        totalPnl: null,
+        totalFeesPaid: null,
+        availableBalance: null,
+        marginUsed: null,
+        totalTrades: null,
+        openPositionsCount: null,
+        closedPositionsCount: null,
+        liquidatedPositionsCount: null,
+        roi: null,
+        roiPercent: null,
+        averageTradeSize: null,
+        accountStatus: null,
+        rawData: null,
+      };
+
+      const yesterdaySummary: SelectPerpsAccountSummary = {
+        ...currentSummary,
+        id: "summary-1",
+        timestamp: twentyFourHoursAgo,
+        totalEquity: "500", // Started at $500
+        totalVolume: "0",
+      };
+
+      vi.mocked(mockPerpsRepo.getLatestPerpsAccountSummary).mockResolvedValue(
+        currentSummary,
+      );
+      vi.mocked(mockPerpsRepo.getAccountSummaryAt).mockResolvedValue(
+        yesterdaySummary,
+      );
+
+      await processor.processPerpsCompetition("comp-1");
+
+      // Daily volume = 400 - 0 = $400
+      // Required = Max(500, 500 * 0.8) * 0.75 = $375 (uses START equity!)
+      // If we used current equity: Max(500, 5000 * 0.8) * 0.75 = $3000 (UNFAIR!)
+      // $400 >= $375 → Should NOT be removed (fair!)
+      expect(
+        mockCompetitionRepo.updateAgentCompetitionStatus,
+      ).not.toHaveBeenCalled();
+    });
+
+    it("should skip agent with missing historical data", async () => {
+      // Set competition start to exactly 24 hours ago
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      vi.mocked(mockCompetitionRepo.findById).mockResolvedValue({
+        ...sampleCompetition,
+        startDate: twentyFourHoursAgo,
+      });
+
+      // Current summary exists, but no historical data
+      const currentSummary: SelectPerpsAccountSummary = {
+        id: "summary-2",
+        agentId: "agent-1",
+        competitionId: "comp-1",
+        timestamp: new Date(),
+        totalEquity: "1000",
+        initialCapital: "500",
+        totalVolume: "100",
+        totalUnrealizedPnl: null,
+        totalRealizedPnl: null,
+        totalPnl: null,
+        totalFeesPaid: null,
+        availableBalance: null,
+        marginUsed: null,
+        totalTrades: null,
+        openPositionsCount: null,
+        closedPositionsCount: null,
+        liquidatedPositionsCount: null,
+        roi: null,
+        roiPercent: null,
+        averageTradeSize: null,
+        accountStatus: null,
+        rawData: null,
+      };
+
+      vi.mocked(mockPerpsRepo.getLatestPerpsAccountSummary).mockResolvedValue(
+        currentSummary,
+      );
+      vi.mocked(mockPerpsRepo.getAccountSummaryAt).mockResolvedValue(null); // No historical data
+
+      await processor.processPerpsCompetition("comp-1");
+
+      // Should not remove agent due to missing data
+      expect(
+        mockCompetitionRepo.updateAgentCompetitionStatus,
+      ).not.toHaveBeenCalled();
+    });
+
+    it("should check at ±5 minutes boundary (resilience test)", async () => {
+      // Set competition start to 24h 2min ago (within ±5 min window AFTER boundary)
+      const justPastTwentyFourHours = new Date(
+        Date.now() - (24 * 60 + 2) * 60 * 1000,
+      );
+      vi.mocked(mockCompetitionRepo.findById).mockResolvedValue({
+        ...sampleCompetition,
+        startDate: justPastTwentyFourHours,
+      });
+
+      const currentSummary: SelectPerpsAccountSummary = {
+        id: "summary-2",
+        agentId: "agent-1",
+        competitionId: "comp-1",
+        timestamp: new Date(),
+        totalEquity: "500",
+        initialCapital: "500",
+        totalVolume: "500",
+        totalUnrealizedPnl: null,
+        totalRealizedPnl: null,
+        totalPnl: null,
+        totalFeesPaid: null,
+        availableBalance: null,
+        marginUsed: null,
+        totalTrades: null,
+        openPositionsCount: null,
+        closedPositionsCount: null,
+        liquidatedPositionsCount: null,
+        roi: null,
+        roiPercent: null,
+        averageTradeSize: null,
+        accountStatus: null,
+        rawData: null,
+      };
+
+      const yesterdaySummary: SelectPerpsAccountSummary = {
+        ...currentSummary,
+        id: "summary-1",
+        timestamp: justPastTwentyFourHours,
+        totalVolume: "0",
+      };
+
+      vi.mocked(mockPerpsRepo.getLatestPerpsAccountSummary).mockResolvedValue(
+        currentSummary,
+      );
+      vi.mocked(mockPerpsRepo.getAccountSummaryAt).mockResolvedValue(
+        yesterdaySummary,
+      );
+
+      await processor.processPerpsCompetition("comp-1");
+
+      // Should trigger check within ±5 min window (24h 2min is within window)
+      expect(mockPerpsRepo.getLatestPerpsAccountSummary).toHaveBeenCalled();
+      expect(mockPerpsRepo.getAccountSummaryAt).toHaveBeenCalled();
     });
   });
 });

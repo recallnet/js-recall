@@ -809,7 +809,37 @@ export class PerpsDataProcessor {
         );
       }
 
-      // 5. Calculate Calmar Ratio for ranking (only for active competitions with successful agents)
+      // 5. Check daily volume requirements (only for active competitions)
+      if (competition.status === "active" && competition.startDate) {
+        try {
+          const violators = await this.checkDailyVolumeRequirements(
+            competitionId,
+            competition.startDate,
+          );
+
+          // Remove agents who don't meet volume requirements
+          for (const agentId of violators) {
+            await this.competitionRepo.updateAgentCompetitionStatus(
+              competitionId,
+              agentId,
+              "disqualified",
+              "Failed to meet minimum daily trading volume requirement (0.75x account equity)",
+            );
+
+            this.logger.info(
+              `[PerpsDataProcessor] Removed agent ${agentId} from competition ${competitionId} for insufficient trading volume`,
+            );
+          }
+        } catch (error) {
+          this.logger.error(
+            `[PerpsDataProcessor] Error checking daily volume requirements:`,
+            error,
+          );
+          // Don't fail the entire process if volume check fails
+        }
+      }
+
+      // 6. Calculate Calmar Ratio for ranking (only for active competitions with successful agents)
       let calmarRatioResult;
       if (competition.status === "active" && syncResult.successful.length > 0) {
         try {
@@ -865,6 +895,119 @@ export class PerpsDataProcessor {
    */
   private shouldRunMonitoring(threshold: number | null): boolean {
     return threshold !== null && !isNaN(threshold) && threshold >= 0;
+  }
+
+  /**
+   * Check daily volume requirements for all agents in a competition
+   * Compares current vs 24h-ago volume to enforce minimum trading activity
+   * @param competitionId Competition ID
+   * @param competitionStartDate Competition start date
+   * @returns Array of agent IDs that should be removed for insufficient volume
+   */
+  private async checkDailyVolumeRequirements(
+    competitionId: string,
+    competitionStartDate: Date,
+  ): Promise<string[]> {
+    // Static configuration - ALWAYS ENFORCED
+    const DAILY_VOLUME_MULTIPLIER = 0.75;
+
+    const now = new Date();
+    const daysSinceStart = Math.floor(
+      (now.getTime() - competitionStartDate.getTime()) / (1000 * 60 * 60 * 24),
+    );
+
+    // Only check after at least 1 full day
+    if (daysSinceStart < 1) {
+      return [];
+    }
+
+    // Check if we're near a 24-hour boundary (within ±5 minutes)
+    const hoursSinceStart =
+      (now.getTime() - competitionStartDate.getTime()) / (1000 * 60 * 60);
+    const remainder = hoursSinceStart % 24;
+    // 0.083 hours = 5 minutes, 23.917 hours = 23h 55min
+    // This catches the window on both sides: [23h 55m - 24h 5m]
+    if (remainder >= 0.083 && remainder <= 23.917) {
+      // Not within ±5 minutes of day boundary
+      return [];
+    }
+
+    this.logger.info(
+      `[PerpsDataProcessor] Running daily volume check for competition ${competitionId} (day ${daysSinceStart})`,
+    );
+
+    // Get all agents in competition
+    const agentIds =
+      await this.competitionRepo.getCompetitionAgents(competitionId);
+    const violators: string[] = [];
+
+    for (const agentId of agentIds) {
+      try {
+        // Get current and 24h ago summaries
+        const twentyFourHoursAgo = new Date(
+          now.getTime() - 24 * 60 * 60 * 1000,
+        );
+        const [current, yesterday] = await Promise.all([
+          this.perpsRepo.getLatestPerpsAccountSummary(agentId, competitionId),
+          this.perpsRepo.getAccountSummaryAt(
+            agentId,
+            competitionId,
+            twentyFourHoursAgo,
+          ),
+        ]);
+
+        if (!current || !yesterday) {
+          this.logger.debug(
+            `[PerpsDataProcessor] Skipping volume check for agent ${agentId}: missing historical data`,
+          );
+          continue;
+        }
+
+        // Calculate daily volume traded during the period
+        const dailyVolume =
+          Number(current.totalVolume || 0) - Number(yesterday.totalVolume || 0);
+
+        // Calculate requirement using START of period equity (fairer!)
+        // This prevents penalizing agents who make profits during the day
+        const initialCapital = Number(yesterday.initialCapital || 500);
+        const periodStartEquity = Number(yesterday.totalEquity || 0);
+        const baseEquity = Math.max(initialCapital, periodStartEquity * 0.8);
+        const requiredVolume = baseEquity * DAILY_VOLUME_MULTIPLIER;
+
+        if (dailyVolume < requiredVolume) {
+          this.logger.warn(
+            `[PerpsDataProcessor] Agent ${agentId} failed volume requirement: ` +
+              `${dailyVolume.toFixed(2)} < ${requiredVolume.toFixed(2)} required ` +
+              `(base equity: ${baseEquity.toFixed(2)}, period start: ${periodStartEquity.toFixed(2)})`,
+          );
+          violators.push(agentId);
+        } else {
+          this.logger.debug(
+            `[PerpsDataProcessor] Agent ${agentId} passed volume check: ` +
+              `${dailyVolume.toFixed(2)} >= ${requiredVolume.toFixed(2)} required`,
+          );
+        }
+      } catch (error) {
+        this.logger.error(
+          `[PerpsDataProcessor] Error checking volume for agent ${agentId}:`,
+          error,
+        );
+        // Skip this agent - don't remove them for errors in our system
+        continue;
+      }
+    }
+
+    if (violators.length > 0) {
+      this.logger.warn(
+        `[PerpsDataProcessor] Found ${violators.length} agents with insufficient trading volume`,
+      );
+    } else {
+      this.logger.info(
+        `[PerpsDataProcessor] All agents passed daily volume check`,
+      );
+    }
+
+    return violators;
   }
 
   /**

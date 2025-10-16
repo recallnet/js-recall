@@ -437,6 +437,40 @@ export class MockHyperliquidServer {
       recentFills: [],
       transfers: [],
     });
+
+    // Test wallets for volume enforcement testing
+    // Agent with insufficient volume ($500 equity, but only $100 volume over 24h)
+    this.setAgentData("0xeeee222222222222222222222222222222222222", {
+      totalEquity: 500,
+      availableBalance: 500,
+      marginUsed: 0,
+      totalNtlPos: 0,
+      openPositions: [],
+      recentFills: [], // Will vary based on call index for volume
+      transfers: [],
+    });
+
+    // Agent with sufficient volume ($500 equity, $400 volume over 24h)
+    this.setAgentData("0xffff222222222222222222222222222222222222", {
+      totalEquity: 500,
+      availableBalance: 500,
+      marginUsed: 0,
+      totalNtlPos: 0,
+      openPositions: [],
+      recentFills: [], // Will vary based on call index for volume
+      transfers: [],
+    });
+
+    // Agent tests period start equity fairness (makes profit during day)
+    this.setAgentData("0xabcd222222222222222222222222222222222222", {
+      totalEquity: 500, // Will jump to $2000 on later calls
+      availableBalance: 500,
+      marginUsed: 0,
+      totalNtlPos: 0,
+      openPositions: [],
+      recentFills: [], // Will vary based on call index for volume
+      transfers: [],
+    });
   }
 
   /**
@@ -557,6 +591,23 @@ export class MockHyperliquidServer {
       this.logger.info(
         `[MockHyperliquid] Calmar wallet call #${callIdx + 1}, equity=$${currentEquity} (${phase})`,
       );
+    } else if (lowerAddress === "0xabcd222222222222222222222222222222222222") {
+      // Fairness test: Agent makes big profit during day
+      const callIdx = this.callIndex.get(lowerAddress) || 0;
+      const equityProgression = [
+        500,
+        500, // Calls 1-2: Startup sync
+        2000,
+        2000, // Calls 3-4: 24h later - BIG PROFIT!
+      ];
+      currentEquity =
+        equityProgression[Math.min(callIdx, equityProgression.length - 1)] ??
+        2000;
+      this.callIndex.set(lowerAddress, callIdx + 1);
+
+      this.logger.info(
+        `[MockHyperliquid] Fairness test wallet call #${callIdx + 1}, equity=$${currentEquity}`,
+      );
     }
 
     // Build asset positions from mock data
@@ -600,9 +651,170 @@ export class MockHyperliquidServer {
     }
 
     const data = this.getAgentData(user);
+    const lowerAddress = user.toLowerCase();
+
+    // Handle volume enforcement test wallets with progressive fills
+    let fills = data.recentFills;
+
+    if (lowerAddress === "0xeeee222222222222222222222222222222222222") {
+      // Agent with INSUFFICIENT volume - returns fills totaling $100
+      const callIdx = this.callIndex.get(lowerAddress) || 0;
+      const fillsProgression = [
+        [], // Calls 1-2: Startup sync (no fills)
+        [], // Calls 1-2: Startup sync (no fills)
+        [
+          // Calls 3-4: 24h later - $100 total volume (INSUFFICIENT)
+          {
+            coin: "BTC",
+            px: "50000",
+            sz: "0.002", // $100 volume (50000 * 0.002)
+            side: "B" as const,
+            time: Date.now() - 12 * 60 * 60 * 1000,
+            startPosition: "0",
+            dir: "Open Long",
+            closedPnl: "0",
+            hash: "0xeeee_fill_1",
+            oid: 5001,
+            crossed: false,
+            fee: "0.05",
+            tid: 5001,
+            feeToken: "USDC",
+            builderFee: null,
+            cloid: null,
+          },
+        ],
+        [
+          // Calls 3-4: Same fills
+          {
+            coin: "BTC",
+            px: "50000",
+            sz: "0.002",
+            side: "B" as const,
+            time: Date.now() - 12 * 60 * 60 * 1000,
+            startPosition: "0",
+            dir: "Open Long",
+            closedPnl: "0",
+            hash: "0xeeee_fill_1",
+            oid: 5001,
+            crossed: false,
+            fee: "0.05",
+            tid: 5001,
+            feeToken: "USDC",
+            builderFee: null,
+            cloid: null,
+          },
+        ],
+      ];
+      fills =
+        fillsProgression[Math.min(callIdx, fillsProgression.length - 1)] ?? [];
+      this.callIndex.set(lowerAddress, callIdx + 1);
+    } else if (lowerAddress === "0xffff222222222222222222222222222222222222") {
+      // Agent with SUFFICIENT volume - returns fills totaling $400
+      const callIdx = this.callIndex.get(lowerAddress) || 0;
+      const fillsProgression = [
+        [], // Calls 1-2: Startup sync (no fills)
+        [], // Calls 1-2: Startup sync (no fills)
+        [
+          // Calls 3-4: 24h later - $400 total volume (SUFFICIENT)
+          {
+            coin: "BTC",
+            px: "50000",
+            sz: "0.008", // $400 volume (50000 * 0.008)
+            side: "B" as const,
+            time: Date.now() - 12 * 60 * 60 * 1000,
+            startPosition: "0",
+            dir: "Open Long",
+            closedPnl: "0",
+            hash: "0xffff_fill_1",
+            oid: 5002,
+            crossed: false,
+            fee: "0.20",
+            tid: 5002,
+            feeToken: "USDC",
+            builderFee: null,
+            cloid: null,
+          },
+        ],
+        [
+          // Calls 3-4: Same fills
+          {
+            coin: "BTC",
+            px: "50000",
+            sz: "0.008",
+            side: "B" as const,
+            time: Date.now() - 12 * 60 * 60 * 1000,
+            startPosition: "0",
+            dir: "Open Long",
+            closedPnl: "0",
+            hash: "0xffff_fill_1",
+            oid: 5002,
+            crossed: false,
+            fee: "0.20",
+            tid: 5002,
+            feeToken: "USDC",
+            builderFee: null,
+            cloid: null,
+          },
+        ],
+      ];
+      fills =
+        fillsProgression[Math.min(callIdx, fillsProgression.length - 1)] ?? [];
+      this.callIndex.set(lowerAddress, callIdx + 1);
+    } else if (lowerAddress === "0xabcd222222222222222222222222222222222222") {
+      // Agent tests FAIRNESS: makes big profit, trades $400 (enough for $500, not $2000)
+      const callIdx = this.callIndex.get(lowerAddress) || 0;
+      const fillsProgression = [
+        [], // Calls 1-2: Startup sync (no fills)
+        [], // Calls 1-2: Startup sync (no fills)
+        [
+          // Calls 3-4: 24h later - $400 volume (fair! requirement based on START equity $500)
+          {
+            coin: "BTC",
+            px: "50000",
+            sz: "0.008", // $400 volume
+            side: "B" as const,
+            time: Date.now() - 12 * 60 * 60 * 1000,
+            startPosition: "0",
+            dir: "Open Long",
+            closedPnl: "0",
+            hash: "0xabcd_fill_1",
+            oid: 5003,
+            crossed: false,
+            fee: "0.20",
+            tid: 5003,
+            feeToken: "USDC",
+            builderFee: null,
+            cloid: null,
+          },
+        ],
+        [
+          // Calls 3-4: Same fills
+          {
+            coin: "BTC",
+            px: "50000",
+            sz: "0.008",
+            side: "B" as const,
+            time: Date.now() - 12 * 60 * 60 * 1000,
+            startPosition: "0",
+            dir: "Open Long",
+            closedPnl: "0",
+            hash: "0xabcd_fill_1",
+            oid: 5003,
+            crossed: false,
+            fee: "0.20",
+            tid: 5003,
+            feeToken: "USDC",
+            builderFee: null,
+            cloid: null,
+          },
+        ],
+      ];
+      fills =
+        fillsProgression[Math.min(callIdx, fillsProgression.length - 1)] ?? [];
+      this.callIndex.set(lowerAddress, callIdx + 1);
+    }
 
     // Filter fills by start time if provided
-    let fills = data.recentFills;
     if (startTime) {
       fills = fills.filter((fill) => fill.time >= startTime);
     }

@@ -7,6 +7,7 @@ import {
   getTableColumns,
   gt,
   inArray,
+  lte,
   not,
   sql,
   sum,
@@ -439,6 +440,40 @@ export class PerpsRepository {
       return result || null;
     } catch (error) {
       this.#logger.error("Error in getLatestPerpsAccountSummary:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get account summary at or before a specific timestamp
+   * Used for daily volume requirement calculations
+   * @param agentId Agent ID
+   * @param competitionId Competition ID
+   * @param timestamp Timestamp to query (gets latest at or before this time)
+   * @returns Account summary or null if none exists before timestamp
+   */
+  async getAccountSummaryAt(
+    agentId: string,
+    competitionId: string,
+    timestamp: Date,
+  ): Promise<SelectPerpsAccountSummary | null> {
+    try {
+      const [result] = await this.#dbRead
+        .select()
+        .from(perpsAccountSummaries)
+        .where(
+          and(
+            eq(perpsAccountSummaries.agentId, agentId),
+            eq(perpsAccountSummaries.competitionId, competitionId),
+            lte(perpsAccountSummaries.timestamp, timestamp),
+          ),
+        )
+        .orderBy(desc(perpsAccountSummaries.timestamp))
+        .limit(1);
+
+      return result || null;
+    } catch (error) {
+      this.#logger.error("Error in getAccountSummaryAt:", error);
       throw error;
     }
   }

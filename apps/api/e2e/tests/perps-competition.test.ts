@@ -1,7 +1,12 @@
 import { randomUUID } from "crypto";
+import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, test } from "vitest";
 
-import { portfolioSnapshots } from "@recallnet/db/schema/trading/defs";
+import { competitions } from "@recallnet/db/schema/core/defs";
+import {
+  perpsAccountSummaries,
+  portfolioSnapshots,
+} from "@recallnet/db/schema/trading/defs";
 
 import config from "@/config/index.js";
 import { db } from "@/database/db.js";
@@ -3278,5 +3283,393 @@ describe("Perps Competition", () => {
 
     // Clean up
     await adminClient.endCompetition(competition.id);
+  });
+
+  describe("Daily Volume Requirements", () => {
+    test("should remove agent with insufficient daily volume after 24h (Symphony)", async () => {
+      const adminClient = createTestClient(getBaseUrl());
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Register agent with insufficient volume wallet
+      const { agent: agentLowVolume } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Low Volume Agent",
+        agentWalletAddress: "0xeeee111111111111111111111111111111111111", // $100 volume (insufficient)
+      });
+
+      // Start competition with startDate = 24 hours ago (key for triggering check!)
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      const response = await startPerpsTestCompetition({
+        adminClient,
+        name: `Volume Enforcement Test ${Date.now()}`,
+        agentIds: [agentLowVolume.id],
+        perpsProvider: {
+          provider: "symphony",
+          apiUrl: "http://localhost:4567",
+        },
+        startDate: twentyFourHoursAgo.toISOString(), // Start 24h ago!
+      });
+
+      expect(response.success).toBe(true);
+      const competition = response.competition;
+
+      // Manually update competition startDate to 24h ago (gets overwritten during start)
+      await db
+        .update(competitions)
+        .set({ startDate: twentyFourHoursAgo })
+        .where(eq(competitions.id, competition.id));
+
+      await wait(1000);
+
+      const services = new ServiceRegistry();
+
+      // First sync - creates initial snapshot at current time
+      await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+      await wait(500);
+
+      // Manually create a historical account summary from 24h ago
+      // This is the "yesterday" record the volume check will compare against
+      await db.insert(perpsAccountSummaries).values({
+        agentId: agentLowVolume.id,
+        competitionId: competition.id,
+        timestamp: twentyFourHoursAgo, // 24h ago - matches competition start
+        totalEquity: "500", // Started with $500
+        initialCapital: "500",
+        totalVolume: "0", // No volume 24h ago
+        totalUnrealizedPnl: null,
+        totalRealizedPnl: null,
+        totalPnl: null,
+        totalFeesPaid: null,
+        availableBalance: null,
+        marginUsed: null,
+        totalTrades: null,
+        openPositionsCount: null,
+        closedPositionsCount: null,
+        liquidatedPositionsCount: null,
+        roi: null,
+        roiPercent: null,
+        averageTradeSize: null,
+        accountStatus: null,
+        rawData: null,
+      });
+
+      await wait(100);
+
+      // Second sync - triggers 24h check (volume = $100, required = $375)
+      await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+      await wait(500);
+
+      // Verify agent was removed
+      const agentsResponse = await adminClient.getCompetitionAgents(
+        competition.id,
+      );
+      expect(agentsResponse.success).toBe(true);
+      const typedResponse = agentsResponse as CompetitionAgentsResponse;
+      expect(typedResponse.agents).toHaveLength(0); // Agent removed!
+
+      // Clean up
+      await adminClient.endCompetition(competition.id);
+    });
+
+    test("should keep agent with sufficient daily volume after 24h (Symphony)", async () => {
+      const adminClient = createTestClient(getBaseUrl());
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Register agent with sufficient volume wallet
+      const { agent: agentGoodVolume } = await registerUserAndAgentAndGetClient(
+        {
+          adminApiKey,
+          agentName: "Good Volume Agent",
+          agentWalletAddress: "0xffff111111111111111111111111111111111111", // $400 volume (sufficient)
+        },
+      );
+
+      // Start competition 24 hours ago
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      const response = await startPerpsTestCompetition({
+        adminClient,
+        name: `Volume Enforcement Pass Test ${Date.now()}`,
+        agentIds: [agentGoodVolume.id],
+        perpsProvider: {
+          provider: "symphony",
+          apiUrl: "http://localhost:4567",
+        },
+        startDate: twentyFourHoursAgo.toISOString(),
+      });
+
+      expect(response.success).toBe(true);
+      const competition = response.competition;
+
+      await wait(1000);
+
+      const services = new ServiceRegistry();
+
+      // First sync - creates initial snapshot (volume = 0)
+      await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+      await wait(500);
+
+      // Second sync - triggers 24h check (volume = $400, required = $375)
+      await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+      await wait(500);
+
+      // Verify agent was NOT removed
+      const agentsResponse = await adminClient.getCompetitionAgents(
+        competition.id,
+      );
+      expect(agentsResponse.success).toBe(true);
+      const typedResponse = agentsResponse as CompetitionAgentsResponse;
+      expect(typedResponse.agents).toHaveLength(1); // Agent still there!
+      expect(typedResponse.agents[0]?.id).toBe(agentGoodVolume.id);
+
+      // Clean up
+      await adminClient.endCompetition(competition.id);
+    });
+
+    test("should use period start equity for fairness (Symphony)", async () => {
+      const adminClient = createTestClient(getBaseUrl());
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Register agent that makes big profit during the day
+      const { agent: agentProfit } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Profitable Agent",
+        agentWalletAddress: "0xabcd111111111111111111111111111111111111", // $500 → $2000, $400 volume
+      });
+
+      // Start competition 24 hours ago
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      const response = await startPerpsTestCompetition({
+        adminClient,
+        name: `Volume Fairness Test ${Date.now()}`,
+        agentIds: [agentProfit.id],
+        perpsProvider: {
+          provider: "symphony",
+          apiUrl: "http://localhost:4567",
+        },
+        startDate: twentyFourHoursAgo.toISOString(),
+      });
+
+      expect(response.success).toBe(true);
+      const competition = response.competition;
+
+      await wait(1000);
+
+      const services = new ServiceRegistry();
+
+      // First sync - equity=$500, volume=0
+      await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+      await wait(500);
+
+      // Second sync - equity=$2000, volume=$400
+      // Requirement = Max($500, $500 * 0.8) * 0.75 = $375 (uses START equity!)
+      // If we used current equity: Max($500, $2000 * 0.8) * 0.75 = $1200 (UNFAIR!)
+      // $400 >= $375 → Should NOT be removed
+      await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+      await wait(500);
+
+      // Verify agent was NOT removed (fair calculation!)
+      const agentsResponse = await adminClient.getCompetitionAgents(
+        competition.id,
+      );
+      expect(agentsResponse.success).toBe(true);
+      const typedResponse = agentsResponse as CompetitionAgentsResponse;
+      expect(typedResponse.agents).toHaveLength(1);
+      expect(typedResponse.agents[0]?.id).toBe(agentProfit.id);
+
+      // Clean up
+      await adminClient.endCompetition(competition.id);
+    });
+
+    test("should remove agent with insufficient daily volume after 24h (Hyperliquid)", async () => {
+      const adminClient = createTestClient(getBaseUrl());
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Register agent with insufficient volume wallet
+      const { agent: agentLowVolume } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Hyperliquid Low Volume Agent",
+        agentWalletAddress: "0xeeee222222222222222222222222222222222222", // $100 volume (insufficient)
+      });
+
+      // Start competition 24 hours ago
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      const response = await startPerpsTestCompetition({
+        adminClient,
+        name: `Hyperliquid Volume Enforcement Test ${Date.now()}`,
+        agentIds: [agentLowVolume.id],
+        perpsProvider: {
+          provider: "hyperliquid",
+          apiUrl: "http://localhost:4568",
+        },
+        startDate: twentyFourHoursAgo.toISOString(),
+      });
+
+      expect(response.success).toBe(true);
+      const competition = response.competition;
+
+      // Manually update competition startDate to 24h ago (gets overwritten during start)
+      await db
+        .update(competitions)
+        .set({ startDate: twentyFourHoursAgo })
+        .where(eq(competitions.id, competition.id));
+
+      await wait(1000);
+
+      const services = new ServiceRegistry();
+
+      // First sync - creates initial snapshot at current time
+      await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+      await wait(500);
+
+      // Manually create a historical account summary from 24h ago
+      await db.insert(perpsAccountSummaries).values({
+        agentId: agentLowVolume.id,
+        competitionId: competition.id,
+        timestamp: twentyFourHoursAgo, // 24h ago - matches competition start
+        totalEquity: "500", // Started with $500
+        initialCapital: "500",
+        totalVolume: "0", // No volume 24h ago
+        totalUnrealizedPnl: null,
+        totalRealizedPnl: null,
+        totalPnl: null,
+        totalFeesPaid: null,
+        availableBalance: null,
+        marginUsed: null,
+        totalTrades: null,
+        openPositionsCount: null,
+        closedPositionsCount: null,
+        liquidatedPositionsCount: null,
+        roi: null,
+        roiPercent: null,
+        averageTradeSize: null,
+        accountStatus: null,
+        rawData: null,
+      });
+
+      await wait(100);
+
+      // Second sync - triggers 24h check (volume = $100, required = $375)
+      await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+      await wait(500);
+
+      // Verify agent was removed
+      const agentsResponse = await adminClient.getCompetitionAgents(
+        competition.id,
+      );
+      expect(agentsResponse.success).toBe(true);
+      const typedResponse = agentsResponse as CompetitionAgentsResponse;
+      expect(typedResponse.agents).toHaveLength(0); // Agent removed!
+
+      // Clean up
+      await adminClient.endCompetition(competition.id);
+    });
+
+    test("should keep agent with sufficient daily volume after 24h (Hyperliquid)", async () => {
+      const adminClient = createTestClient(getBaseUrl());
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Register agent with sufficient volume wallet
+      const { agent: agentGoodVolume } = await registerUserAndAgentAndGetClient(
+        {
+          adminApiKey,
+          agentName: "Hyperliquid Good Volume Agent",
+          agentWalletAddress: "0xffff222222222222222222222222222222222222", // $400 volume (sufficient)
+        },
+      );
+
+      // Start competition 24 hours ago
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      const response = await startPerpsTestCompetition({
+        adminClient,
+        name: `Hyperliquid Volume Pass Test ${Date.now()}`,
+        agentIds: [agentGoodVolume.id],
+        perpsProvider: {
+          provider: "hyperliquid",
+          apiUrl: "http://localhost:4568",
+        },
+        startDate: twentyFourHoursAgo.toISOString(),
+      });
+
+      expect(response.success).toBe(true);
+      const competition = response.competition;
+
+      await wait(1000);
+
+      const services = new ServiceRegistry();
+
+      // First sync - creates initial snapshot (volume = 0)
+      await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+      await wait(500);
+
+      // Second sync - triggers 24h check (volume = $400, required = $375)
+      await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+      await wait(500);
+
+      // Verify agent was NOT removed
+      const agentsResponse = await adminClient.getCompetitionAgents(
+        competition.id,
+      );
+      expect(agentsResponse.success).toBe(true);
+      const typedResponse = agentsResponse as CompetitionAgentsResponse;
+      expect(typedResponse.agents).toHaveLength(1);
+      expect(typedResponse.agents[0]?.id).toBe(agentGoodVolume.id);
+
+      // Clean up
+      await adminClient.endCompetition(competition.id);
+    });
+
+    test("should use period start equity for fairness (Hyperliquid)", async () => {
+      const adminClient = createTestClient(getBaseUrl());
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Register agent that makes big profit during the day
+      const { agent: agentProfit } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Hyperliquid Profitable Agent",
+        agentWalletAddress: "0xabcd222222222222222222222222222222222222", // $500 → $2000, $400 volume
+      });
+
+      // Start competition 24 hours ago
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      const response = await startPerpsTestCompetition({
+        adminClient,
+        name: `Hyperliquid Fairness Test ${Date.now()}`,
+        agentIds: [agentProfit.id],
+        perpsProvider: {
+          provider: "hyperliquid",
+          apiUrl: "http://localhost:4568",
+        },
+        startDate: twentyFourHoursAgo.toISOString(),
+      });
+
+      expect(response.success).toBe(true);
+      const competition = response.competition;
+
+      await wait(1000);
+
+      const services = new ServiceRegistry();
+
+      // First sync - equity=$500, volume=0
+      await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+      await wait(500);
+
+      // Second sync - equity=$2000, volume=$400
+      // Requirement = Max($500, $500 * 0.8) * 0.75 = $375 (uses START equity!)
+      // $400 >= $375 → Should NOT be removed (fair!)
+      await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+      await wait(500);
+
+      // Verify agent was NOT removed (fair calculation!)
+      const agentsResponse = await adminClient.getCompetitionAgents(
+        competition.id,
+      );
+      expect(agentsResponse.success).toBe(true);
+      const typedResponse = agentsResponse as CompetitionAgentsResponse;
+      expect(typedResponse.agents).toHaveLength(1);
+      expect(typedResponse.agents[0]?.id).toBe(agentProfit.id);
+
+      // Clean up
+      await adminClient.endCompetition(competition.id);
+    });
   });
 });
