@@ -1785,35 +1785,19 @@ export class AgentService {
     agentId: string,
     message: string,
     signature: string,
-  ): Promise<{
-    success: boolean;
-    walletAddress?: string;
-    error?: string;
-  }> {
+  ): Promise<string> {
     try {
       // Parse custom message format
-      const parseResult = this.parseVerificationMessage(message);
-      if (!parseResult.success) {
-        return { success: false, error: parseResult.error };
-      }
-
-      const { timestamp, domain, purpose, nonce } = parseResult;
+      const { timestamp, domain, purpose, nonce } =
+        this.parseVerificationMessage(message);
 
       // Validate message content using config
       if (domain !== this.apiDomain) {
-        return { success: false, error: "Invalid domain" };
+        throw new ApiError(400, "Invalid domain");
       }
 
       if (purpose !== "WALLET_VERIFICATION") {
-        return { success: false, error: "Invalid purpose" };
-      }
-
-      // Ensure we have all required fields (TypeScript safety)
-      if (!timestamp || !nonce) {
-        return {
-          success: false,
-          error: "Missing required fields in parsed message",
-        };
+        throw new ApiError(400, "Invalid purpose");
       }
 
       // Validate timestamp (5-minute window with clock skew tolerance)
@@ -1823,27 +1807,15 @@ export class AgentService {
       const clockSkewTolerance = new Date(now.getTime() + 30 * 1000); // 30 second tolerance for clock skew
 
       if (timestampDate < fiveMinutesAgo) {
-        return { success: false, error: "Message timestamp too old" };
+        throw new ApiError(400, "Message timestamp too old");
       }
 
       if (timestampDate > clockSkewTolerance) {
-        return {
-          success: false,
-          error: "Message timestamp too far in the future",
-        };
+        throw new ApiError(400, "Message timestamp too far in the future");
       }
 
       // Validate and consume nonce (now required)
-      const nonceValidation = await this.validateAndConsumeNonce(
-        agentId,
-        nonce,
-      );
-      if (!nonceValidation.success) {
-        return {
-          success: false,
-          error: nonceValidation.error || "Nonce validation failed",
-        };
-      }
+      await this.validateAndConsumeNonce(agentId, nonce);
 
       // Verify signature and recover wallet address
       let walletAddress: string;
@@ -1859,17 +1831,17 @@ export class AgentService {
           "[AgentManager] Error recovering wallet address:",
           error,
         );
-        return { success: false, error: "Invalid signature" };
+        throw new ApiError(400, "Invalid signature");
       }
 
       // Check cross-table uniqueness
       const existingUser =
         await this.userRepository.findByWalletAddress(walletAddress);
       if (existingUser) {
-        return {
-          success: false,
-          error: "Wallet address already associated with a user account",
-        };
+        throw new ApiError(
+          409,
+          "Wallet address already associated with a user account",
+        );
       }
 
       const existingAgents = await this.agentRepository.findByWallet({
@@ -1878,16 +1850,16 @@ export class AgentService {
       });
       const existingAgent = existingAgents[0];
       if (existingAgent && existingAgent.id !== agentId) {
-        return {
-          success: false,
-          error: "Wallet address already associated with another agent",
-        };
+        throw new ApiError(
+          409,
+          "Wallet address already associated with another agent",
+        );
       }
 
       // Get and update agent wallet address
       const agent = await this.getAgent(agentId);
       if (!agent) {
-        return { success: false, error: "Agent not found" };
+        throw new ApiError(404, "Agent not found");
       }
 
       const updatedAgent = await this.updateAgent({
@@ -1896,19 +1868,19 @@ export class AgentService {
       });
 
       if (!updatedAgent) {
-        return {
-          success: false,
-          error: "Failed to update agent wallet address",
-        };
+        throw new ApiError(500, "Failed to update agent wallet address");
       }
 
-      return { success: true, walletAddress };
+      return walletAddress;
     } catch (error) {
       this.logger.error(
         "[AgentManager] Error in verifyWalletOwnership:",
         error,
       );
-      return { success: false, error: "Verification failed" };
+      if (error instanceof ApiError) {
+        throw error;
+      }
+      throw new ApiError(500, "Verification failed");
     }
   }
 
@@ -1916,18 +1888,16 @@ export class AgentService {
    * Parse custom verification message format
    */
   private parseVerificationMessage(message: string): {
-    success: boolean;
-    timestamp?: string;
-    domain?: string;
-    purpose?: string;
-    nonce?: string;
-    error?: string;
+    timestamp: string;
+    domain: string;
+    purpose: string;
+    nonce: string;
   } {
     try {
       const lines = message.trim().split("\n");
 
       if (lines[0] !== "VERIFY_WALLET_OWNERSHIP") {
-        return { success: false, error: "Invalid message header" };
+        throw new ApiError(400, "Invalid message header");
       }
 
       const timestampLine = lines.find((line) =>
@@ -1938,11 +1908,11 @@ export class AgentService {
       const nonceLine = lines.find((line) => line.startsWith("Nonce: "));
 
       if (!timestampLine || !domainLine || !purposeLine) {
-        return { success: false, error: "Missing required message fields" };
+        throw new ApiError(400, "Missing required message fields");
       }
 
       if (!nonceLine) {
-        return { success: false, error: "Nonce is required" };
+        throw new ApiError(400, "Nonce is required");
       }
 
       const timestamp = timestampLine.replace("Timestamp: ", "");
@@ -1951,7 +1921,6 @@ export class AgentService {
       const nonce = nonceLine.replace("Nonce: ", "");
 
       return {
-        success: true,
         timestamp,
         domain,
         purpose,
@@ -1962,7 +1931,10 @@ export class AgentService {
         "[AgentManager] Error parsing verification message:",
         error,
       );
-      return { success: false, error: "Failed to parse message" };
+      if (error instanceof ApiError) {
+        throw error;
+      }
+      throw new ApiError(400, "Failed to parse message");
     }
   }
 
@@ -1971,11 +1943,7 @@ export class AgentService {
    * @param agentId The agent ID requesting a nonce
    * @returns Generated nonce
    */
-  async generateNonceForAgent(agentId: string): Promise<{
-    success: boolean;
-    nonce?: string;
-    error?: string;
-  }> {
+  async generateNonceForAgent(agentId: string): Promise<string> {
     try {
       // Generate a cryptographically secure nonce
       const nonce = generateNonce();
@@ -1994,10 +1962,10 @@ export class AgentService {
         expiresAt,
       });
 
-      return { success: true, nonce };
+      return nonce;
     } catch (error) {
       this.logger.error("[AgentManager] Error generating nonce:", error);
-      return { success: false, error: "Failed to generate nonce" };
+      throw new ApiError(500, "Failed to generate nonce");
     }
   }
 
@@ -2005,45 +1973,39 @@ export class AgentService {
    * Validate and consume a nonce for agent wallet verification
    * @param agentId The agent ID using the nonce
    * @param nonce The nonce to validate and consume
-   * @returns Validation result
    */
-  async validateAndConsumeNonce(
-    agentId: string,
-    nonce: string,
-  ): Promise<{
-    success: boolean;
-    error?: string;
-  }> {
+  async validateAndConsumeNonce(agentId: string, nonce: string): Promise<void> {
     try {
       // Find the nonce
       const nonceRecord = await this.agentNonceRepository.findByNonce(nonce);
 
       if (!nonceRecord) {
-        return { success: false, error: "Invalid nonce" };
+        throw new ApiError(400, "Invalid nonce");
       }
 
       // Check if nonce belongs to the agent
       if (nonceRecord.agentId !== agentId) {
-        return { success: false, error: "Nonce does not belong to this agent" };
+        throw new ApiError(400, "Nonce does not belong to this agent");
       }
 
       // Check if nonce is already used
       if (nonceRecord.usedAt) {
-        return { success: false, error: "Nonce already used" };
+        throw new ApiError(400, "Nonce already used");
       }
 
       // Check if nonce is expired
       if (new Date() > nonceRecord.expiresAt) {
-        return { success: false, error: "Nonce expired" };
+        throw new ApiError(400, "Nonce expired");
       }
 
       // Mark nonce as used
       await this.agentNonceRepository.markAsUsed(nonce);
-
-      return { success: true };
     } catch (error) {
       this.logger.error("[AgentManager] Error validating nonce:", error);
-      return { success: false, error: "Failed to validate nonce" };
+      if (error instanceof ApiError) {
+        throw error;
+      }
+      throw new ApiError(500, "Failed to validate nonce");
     }
   }
 
