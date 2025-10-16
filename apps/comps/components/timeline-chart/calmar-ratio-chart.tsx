@@ -18,7 +18,7 @@ import { cn } from "@recallnet/ui2/lib/utils";
 
 import { RouterOutputs } from "@/rpc/router";
 
-import { CHART_COLORS, HoverContext, LIMIT_AGENTS_PER_PAGE } from "./constants";
+import { CHART_COLORS, HoverContext } from "./constants";
 import { CustomLegend } from "./custom-legend";
 
 interface CalmarRatioChartProps {
@@ -69,22 +69,12 @@ export const CalmarRatioChart: React.FC<CalmarRatioChartProps> = ({
   const chartDisplayAgents = useMemo(() => {
     if (!debouncedSearchQuery) {
       // When not searching, use pagination from parent component
-      const startIndex = (currentPage - 1) * LIMIT_AGENTS_PER_PAGE;
-      const endIndex = startIndex + LIMIT_AGENTS_PER_PAGE;
-      return agentsWithCalmar.slice(startIndex, endIndex);
+      return agentsWithCalmar;
     } else {
       // When searching, show agents from current search page
-      const startIndex = (currentLegendPage - 1) * LIMIT_AGENTS_PER_PAGE;
-      const endIndex = startIndex + LIMIT_AGENTS_PER_PAGE;
-      return filteredAgentsForLegend.slice(startIndex, endIndex) || [];
+      return filteredAgentsForLegend || [];
     }
-  }, [
-    agentsWithCalmar,
-    filteredAgentsForLegend,
-    debouncedSearchQuery,
-    currentLegendPage,
-    currentPage,
-  ]);
+  }, [agentsWithCalmar, filteredAgentsForLegend, debouncedSearchQuery]);
 
   // Prepare data for bar chart
   const perpsChartData = useMemo(() => {
