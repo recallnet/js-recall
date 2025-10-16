@@ -130,7 +130,19 @@ export function CookieConsentProvider({
 
           // Reload page to properly initialize tracking scripts and auth
           if (analyticsAccepted || functionalAccepted) {
-            window.location.reload();
+            // Check if we've already reloaded to prevent infinite loop
+            const hasReloadedKey = "cc_has_reloaded";
+            const hasReloaded = sessionStorage.getItem(hasReloadedKey);
+
+            if (!hasReloaded) {
+              // Set flag before reload to prevent loop
+              sessionStorage.setItem(hasReloadedKey, "true");
+
+              // Small delay to ensure consent is persisted before reload
+              setTimeout(() => {
+                window.location.reload();
+              }, 100);
+            }
           }
         },
         onChange: () => {
@@ -143,8 +155,21 @@ export function CookieConsentProvider({
             const newConsent = analyticsAccepted || functionalAccepted;
 
             // Reload page if user just enabled analytics or functional cookies
-            if (!previousConsent && newConsent) {
-              window.location.reload();
+            // and this isn't triggered by the initial consent (which is handled by onFirstConsent)
+            if (!previousConsent && newConsent && previousConsent !== null) {
+              // Check if we've already reloaded to prevent infinite loop
+              const hasReloadedKey = "cc_has_reloaded";
+              const hasReloaded = sessionStorage.getItem(hasReloadedKey);
+
+              if (!hasReloaded) {
+                // Set flag before reload to prevent loop
+                sessionStorage.setItem(hasReloadedKey, "true");
+
+                // Small delay to ensure consent is persisted before reload
+                setTimeout(() => {
+                  window.location.reload();
+                }, 100);
+              }
             }
 
             return newConsent;
@@ -157,6 +182,10 @@ export function CookieConsentProvider({
       const functionalAccepted = CookieConsent.acceptedCategory("functional");
       setConsent(analyticsAccepted || functionalAccepted);
       setIsLoading(false);
+
+      // Clear the reload flag after successful initialization
+      // This allows future consent changes to trigger reloads again if needed
+      sessionStorage.removeItem("cc_has_reloaded");
     };
 
     initCookieConsent();
