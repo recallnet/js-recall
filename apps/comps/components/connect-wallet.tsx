@@ -23,8 +23,8 @@ export const ConnectWallet: React.FunctionComponent = () => {
         "h-14 rounded-none px-6 font-mono text-xs font-medium uppercase tracking-widest",
       )}
     >
-      <Wallet className="mr-2 h-4 w-4" />
-      Connect Wallet
+      <Wallet className="h-4 w-4 md:mr-2" />
+      <span className="hidden md:inline">Connect Wallet</span>
     </Button>
   );
 };
