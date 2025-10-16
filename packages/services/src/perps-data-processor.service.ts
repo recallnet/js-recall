@@ -931,10 +931,11 @@ export class PerpsDataProcessor {
     const TWENTY_THREE_FIFTY_FIVE_HOURS = 23 + 55 / 60; // 23.91666... hours
 
     // Skip check if NOT within ±5 minutes of 24h boundary
-    // Run check when: 0 ≤ remainder < 5min OR 23h55m < remainder < 24h
+    // Run check when: 0 ≤ remainder ≤ 5min OR 23h55m ≤ remainder < 24h
+    // Use strict inequalities to INCLUDE exact boundary times (23:55:00 and 00:05:00)
     if (
-      remainder >= FIVE_MINUTES_HOURS &&
-      remainder <= TWENTY_THREE_FIFTY_FIVE_HOURS
+      remainder > FIVE_MINUTES_HOURS &&
+      remainder < TWENTY_THREE_FIFTY_FIVE_HOURS
     ) {
       // Not within ±5 minutes of day boundary
       return [];
