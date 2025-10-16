@@ -1,5 +1,5 @@
 import { randomUUID } from "crypto";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { Logger } from "pino";
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { MockProxy, mock } from "vitest-mock-extended";
@@ -267,8 +267,10 @@ describe("TradeRepository - Concurrent Operations", () => {
       .select()
       .from(balances)
       .where(
-        eq(balances.agentId, testAgentId) &&
+        and(
+          eq(balances.agentId, testAgentId),
           eq(balances.tokenAddress, USDC_ADDRESS),
+        ),
       );
 
     expect(finalBalance[0]?.amount).toBe(initialBalance - 100 + 150); // 200050

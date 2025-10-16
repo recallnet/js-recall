@@ -72,6 +72,8 @@ export class TradeRepository {
           ].sort((a, b) => a.address.localeCompare(b.address));
 
           const [firstToken, secondToken] = tokens;
+          // TypeScript needs this check to know these values exist. Without it,
+          // they remain typed as TokenForLocking | undefined.
           if (!firstToken || !secondToken) {
             throw new Error("Invalid token configuration");
           }
