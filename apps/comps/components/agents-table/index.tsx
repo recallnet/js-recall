@@ -332,7 +332,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
         enableSorting: true,
         sortDescFirst: false, // Alphabetical order
         meta: {
-          className: "flex-1",
+          className: "flex-1 max-w-[520px]",
         },
       },
       // Show Calmar Ratio as primary metric for perps, Portfolio Value for others
@@ -393,14 +393,14 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                 </span>
               ),
               enableSorting: true,
-              size: 100,
+              size: 140,
             },
             {
               id: "maxDrawdown",
               accessorKey: "maxDrawdown",
               header: () => (
                 <span>
-                  <span className="hidden sm:inline">Max DD</span>
+                  <span className="hidden sm:inline">Max Drawdown</span>
                   <span className="sm:hidden">DD</span>
                 </span>
               ),
@@ -419,7 +419,10 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                 </span>
               ),
               enableSorting: true,
-              size: 100,
+              size: 140,
+              meta: {
+                className: "mr-4",
+              },
             },
           ]
         : [
@@ -505,7 +508,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                 );
               },
               enableSorting: true,
-              size: 100,
+              size: 140,
             },
           ]),
 
@@ -556,7 +559,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
           }
         },
         enableSorting: false,
-        size: 100,
+        size: 120,
         meta: {
           className: "flex justify-end",
         },

@@ -1,7 +1,8 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-# Location of all agent context files.
+# Location of all agent context files or tools.
 .agent
+.playwright-mcp/*
 
 # Ignore all fonts files since we pull them from a private repository at build time and generate source code.
 packages/fonts/src/*
