@@ -1,0 +1,1 @@
+ALTER TABLE "trading_comps"."perps_competition_config" ADD COLUMN "min_funding_threshold" numeric;

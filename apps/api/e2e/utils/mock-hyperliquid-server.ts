@@ -392,6 +392,51 @@ export class MockHyperliquidServer {
       ],
       transfers: [],
     });
+
+    // Test wallets for minFundingThreshold testing
+    // Agent with exactly $250 (typical threshold amount)
+    this.setAgentData("0xaaaa222222222222222222222222222222222222", {
+      totalEquity: 250,
+      availableBalance: 250,
+      marginUsed: 0,
+      totalNtlPos: 0,
+      openPositions: [],
+      recentFills: [],
+      transfers: [],
+    });
+
+    // Agent with $100 (below typical threshold)
+    this.setAgentData("0xbbbb222222222222222222222222222222222222", {
+      totalEquity: 100,
+      availableBalance: 100,
+      marginUsed: 0,
+      totalNtlPos: 0,
+      openPositions: [],
+      recentFills: [],
+      transfers: [],
+    });
+
+    // Agent with $500 (above typical threshold)
+    this.setAgentData("0xcccc222222222222222222222222222222222222", {
+      totalEquity: 500,
+      availableBalance: 500,
+      marginUsed: 0,
+      totalNtlPos: 0,
+      openPositions: [],
+      recentFills: [],
+      transfers: [],
+    });
+
+    // Agent with $249.99 (just below typical threshold)
+    this.setAgentData("0xdddd222222222222222222222222222222222222", {
+      totalEquity: 249.99,
+      availableBalance: 249.99,
+      marginUsed: 0,
+      totalNtlPos: 0,
+      openPositions: [],
+      recentFills: [],
+      transfers: [],
+    });
   }
 
   /**
@@ -480,15 +525,18 @@ export class MockHyperliquidServer {
       const callIdx = this.callIndex.get(lowerAddress) || 0;
 
       // Equity progression for max drawdown testing
+      // NOTE: First pair consumed by startup sync in startCompetition
       const equityProgression = [
         1700,
-        1700, // Calls 1-2: Peak
+        1700, // Calls 1-2: STARTUP SYNC (consumed during competition start)
+        1700,
+        1700, // Calls 3-4: First test snapshot - Peak
         1200,
-        1200, // Calls 3-4: Trough (max drawdown)
+        1200, // Calls 5-6: Second test snapshot - Trough (max drawdown)
         1550,
-        1550, // Calls 5-6: Recovery
+        1550, // Calls 7-8: Third test snapshot - Recovery
         1550,
-        1550, // Calls 7+: Stable
+        1550, // Calls 9+: Stable
       ];
 
       currentEquity =

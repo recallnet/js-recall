@@ -661,6 +661,7 @@ export async function createPerpsTestCompetition({
     provider: "symphony" | "hyperliquid";
     initialCapital: number;
     selfFundingThreshold: number;
+    minFundingThreshold?: number;
     apiUrl?: string;
   };
 }): Promise<CreateCompetitionResponse> {
@@ -727,6 +728,7 @@ export async function startPerpsTestCompetition({
     provider: "symphony" | "hyperliquid";
     initialCapital?: number;
     selfFundingThreshold?: number;
+    minFundingThreshold?: number;
     apiUrl?: string;
   };
 }): Promise<StartCompetitionResponse> {

@@ -16,6 +16,7 @@ import {
 } from "@recallnet/db/schema/core/types";
 import {
   PerpetualPositionWithAgent,
+  SelectPerpsCompetitionConfig,
   SelectTrade,
 } from "@recallnet/db/schema/trading/types";
 import type {
@@ -82,6 +83,7 @@ export interface CreateCompetitionParams {
     provider: "symphony" | "hyperliquid";
     initialCapital: number; // Required - Zod default ensures this is set
     selfFundingThreshold: number; // Required - Zod default ensures this is set
+    minFundingThreshold?: number; // Optional - minimum portfolio balance
     apiUrl?: string;
   };
   prizePools?: {
@@ -514,6 +516,8 @@ export class CompetitionService {
           initialCapital: perpsProvider.initialCapital.toString(),
           selfFundingThresholdUsd:
             perpsProvider.selfFundingThreshold.toString(),
+          minFundingThreshold:
+            perpsProvider.minFundingThreshold?.toString() || null,
         };
 
         await this.perpsRepo.createPerpsCompetitionConfig(perpsConfig, tx);
@@ -720,7 +724,7 @@ export class CompetitionService {
       await this.getPreRegisteredAgentIds(competitionId);
 
     // Combine agent lists (remove duplicates)
-    const finalAgentIds = [
+    let finalAgentIds = [
       ...new Set([...(agentIds ?? []), ...preRegisteredAgentIds]),
     ];
 
@@ -817,8 +821,12 @@ export class CompetitionService {
         `[CompetitionService] Syncing initial perps data from Symphony for ${finalAgentIds.length} agents (competition still pending)`,
       );
 
-      const result =
-        await this.perpsDataProcessor.processPerpsCompetition(competitionId);
+      // Pass skipMonitoring=true for initial sync during competition startup
+      const SKIP_MONITORING = true; // Skip self-funding monitoring during initial sync
+      const result = await this.perpsDataProcessor.processPerpsCompetition(
+        competitionId,
+        SKIP_MONITORING,
+      );
 
       const successCount = result.syncResult.successful.length;
       const failedCount = result.syncResult.failed.length;
@@ -834,6 +842,25 @@ export class CompetitionService {
         this.logger.warn(
           `[CompetitionService] Failed to sync ${failedCount} out of ${totalCount} agents during competition start: ${failedAgentIds.join(", ")}`,
         );
+      }
+
+      // Enforce minimum funding threshold after initial sync
+      // This must happen BEFORE competition goes active
+      const perpsConfig =
+        await this.perpsRepo.getPerpsCompetitionConfig(competitionId);
+
+      if (perpsConfig && perpsConfig.minFundingThreshold) {
+        const { removedAgents } = await this.enforceMinFundingThreshold(
+          competitionId,
+          perpsConfig,
+        );
+
+        // Remove the disqualified agents from finalAgentIds
+        if (removedAgents.length > 0) {
+          finalAgentIds = finalAgentIds.filter(
+            (id) => !removedAgents.includes(id),
+          );
+        }
       }
     } else {
       throw new Error(`Unknown competition type: ${competition.type}`);
@@ -865,6 +892,60 @@ export class CompetitionService {
       },
       agentIds: finalAgentIds,
     } as StartedCompetitionResult;
+  }
+
+  /**
+   * Check and enforce minimum funding threshold for perps competition
+   * Removes agents below the threshold from the competition
+   * @private
+   */
+  private async enforceMinFundingThreshold(
+    competitionId: string,
+    perpsConfig: SelectPerpsCompetitionConfig,
+  ): Promise<{ removedAgents: string[] }> {
+    // Only proceed if minFundingThreshold is configured
+    if (!perpsConfig.minFundingThreshold) {
+      return { removedAgents: [] };
+    }
+
+    const threshold = Number(perpsConfig.minFundingThreshold);
+    const removedAgents: string[] = [];
+
+    this.logger.info(
+      `[CompetitionService] Enforcing minimum funding threshold of $${threshold} for competition ${competitionId}`,
+    );
+
+    // Get the latest portfolio snapshots for all agents
+    const latestSnapshots =
+      await this.competitionRepo.getLatestPortfolioSnapshots(competitionId);
+
+    // Check each agent's portfolio value
+    for (const snapshot of latestSnapshots) {
+      const portfolioValue = Number(snapshot.totalValue);
+
+      if (portfolioValue < threshold) {
+        this.logger.warn(
+          `[CompetitionService] Agent ${snapshot.agentId} has portfolio value $${portfolioValue.toFixed(2)}, below threshold $${threshold}. Removing from competition.`,
+        );
+
+        // Remove agent using existing method
+        await this.removeAgentFromCompetition(
+          competitionId,
+          snapshot.agentId,
+          `Insufficient initial funding: $${portfolioValue.toFixed(2)} < $${threshold} minimum`,
+        );
+
+        removedAgents.push(snapshot.agentId);
+      }
+    }
+
+    if (removedAgents.length > 0) {
+      this.logger.info(
+        `[CompetitionService] Removed ${removedAgents.length} agents from competition ${competitionId} due to insufficient funding`,
+      );
+    }
+
+    return { removedAgents };
   }
 
   /**
@@ -1809,6 +1890,7 @@ export class CompetitionService {
       provider: "symphony" | "hyperliquid";
       initialCapital: number; // Required - Zod default ensures this is set
       selfFundingThreshold: number; // Required - Zod default ensures this is set
+      minFundingThreshold?: number;
       apiUrl?: string;
     },
     prizePools?: {
@@ -1897,6 +1979,8 @@ export class CompetitionService {
             initialCapital: perpsProvider.initialCapital.toString(),
             selfFundingThresholdUsd:
               perpsProvider.selfFundingThreshold.toString(),
+            minFundingThreshold:
+              perpsProvider.minFundingThreshold?.toString() || null,
           };
 
           await this.perpsRepo.createPerpsCompetitionConfig(perpsConfig, tx);
@@ -1930,6 +2014,8 @@ export class CompetitionService {
             initialCapital: perpsProvider.initialCapital.toString(),
             selfFundingThresholdUsd:
               perpsProvider.selfFundingThreshold.toString(),
+            minFundingThreshold:
+              perpsProvider.minFundingThreshold?.toString() || null,
           },
           tx,
         );

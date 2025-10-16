@@ -320,6 +320,10 @@ describe("HyperliquidPerpsProvider", () => {
 
   describe("getAccountSummary", () => {
     it("should fetch and transform account summary successfully", async () => {
+      // Mock Math.random to ensure consistent rawData behavior (avoid sampling)
+      const originalRandom = Math.random;
+      Math.random = vi.fn(() => 0.5); // Always return 0.5, which is > 0.01 sampling rate
+
       // Mock clearinghouseState
       mockAxiosInstance.post.mockImplementationOnce((url, body) => {
         if (
@@ -367,6 +371,9 @@ describe("HyperliquidPerpsProvider", () => {
       expect(result.averageTradeSize).toBeCloseTo(2038.33, 1); // 6115 / 3
       expect(result.accountStatus).toBe("active");
       expect(result.rawData).toBeUndefined();
+
+      // Restore original Math.random
+      Math.random = originalRandom;
     });
 
     it("should calculate correct ROI when initial capital is provided", async () => {

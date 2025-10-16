@@ -162,6 +162,11 @@ export function configureAdminRoutes(
    *                     type: number
    *                     description: Threshold for self-funding detection in USD
    *                     example: 0
+   *                   minFundingThreshold:
+   *                     type: number
+   *                     description: Minimum portfolio balance threshold in USD. Agents falling below will be disqualified
+   *                     minimum: 0
+   *                     example: 100
    *                   apiUrl:
    *                     type: string
    *                     description: Optional API URL override for the provider
@@ -717,6 +722,11 @@ export function configureAdminRoutes(
    *                     type: number
    *                     description: Threshold for self-funding detection in USD
    *                     example: 0
+   *                   minFundingThreshold:
+   *                     type: number
+   *                     description: Minimum portfolio balance threshold in USD. Agents falling below will be disqualified
+   *                     minimum: 0
+   *                     example: 100
    *                   apiUrl:
    *                     type: string
    *                     description: Optional API URL override for the provider

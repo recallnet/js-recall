@@ -457,6 +457,7 @@ export class ApiClient {
             provider: string;
             initialCapital?: number;
             selfFundingThreshold?: number;
+            minFundingThreshold?: number;
             apiUrl?: string;
           };
           prizePools?: {
@@ -556,6 +557,7 @@ export class ApiClient {
       provider: "symphony" | "hyperliquid";
       initialCapital: number;
       selfFundingThreshold: number;
+      minFundingThreshold?: number;
       apiUrl?: string;
     };
     prizePools?: {
@@ -629,6 +631,7 @@ export class ApiClient {
         provider: "symphony" | "hyperliquid";
         initialCapital?: number;
         selfFundingThreshold?: number;
+        minFundingThreshold?: number;
         apiUrl?: string;
       };
       prizePools?: {
