@@ -365,6 +365,13 @@
       "when": 1760451421665,
       "tag": "0051_equal_surge",
       "breakpoints": true
+    },
+    {
+      "idx": 52,
+      "version": "7",
+      "when": 1760637411971,
+      "tag": "0052_legal_war_machine",
+      "breakpoints": true
     }
   ]
 }
