@@ -3,20 +3,16 @@ import {
   valueToAttoString,
 } from "@recallnet/conversions/atto-conversions";
 
-import { client } from "@/rpc/clients/client-side";
 import {
   AgentCompetitionsResponse,
   CompetitionPerpsPositionsResponse,
   CompetitionResponse,
   CompetitionTradesResponse,
   CompetitionsResponse,
-  CreateVoteRequest,
-  EnrichedVotesResponse,
   GetAgentCompetitionsParams,
   GetCompetitionPerpsPositionsParams,
   GetCompetitionTradesParams,
   GetCompetitionsParams,
-  GetVotesParams,
   LinkWalletRequest,
   LoginResponse,
   NonceResponse,
@@ -24,9 +20,6 @@ import {
   UpdateProfileRequest,
   UserCompetitionsResponse,
   VerifyEmailResponse,
-  VoteResponse,
-  VotesResponse,
-  VotingStateResponse,
 } from "@/types";
 
 const PROXY_API_ENDPOINT = "/api/proxy";
@@ -330,75 +323,6 @@ export class ApiClient {
     const queryParams = this.formatQueryParams(params);
     return this.request<UserCompetitionsResponse>(
       `/user/competitions${queryParams}`,
-    );
-  }
-
-  /**
-   * Create a vote for an agent in a competition
-   * @param data - Vote creation data
-   * @returns Vote response
-   */
-  async createVote(data: CreateVoteRequest): Promise<VoteResponse> {
-    return this.request<VoteResponse>("/user/vote", {
-      method: "POST",
-      body: JSON.stringify(data),
-    });
-  }
-
-  /**
-   * Get user votes
-   * @param params - Query parameters
-   * @returns Votes response
-   */
-  async getVotes(params: GetVotesParams = {}): Promise<VotesResponse> {
-    const queryParams = this.formatQueryParams(params);
-    return this.request<VotesResponse>(`/user/votes${queryParams}`);
-  }
-
-  /**
-   * Get user votes with agent and competition data
-   * @param params - Query parameters
-   * @returns Votes response
-   */
-  async getEnrichedVotes(
-    params: GetVotesParams = {},
-  ): Promise<EnrichedVotesResponse> {
-    const queryParams = this.formatQueryParams(params);
-    const votes = await this.request<VotesResponse>(
-      `/user/votes${queryParams}`,
-    );
-
-    const enrichedVotes = await Promise.all(
-      votes.votes.map(async (vote) => {
-        const [competition, agentData] = await Promise.all([
-          this.getCompetition(vote.competitionId),
-          client.agent.getAgent({ agentId: vote.agentId }),
-        ]);
-
-        return {
-          id: vote.id,
-          createdAt: vote.createdAt,
-          agent: agentData.agent,
-          competition: competition.competition,
-        };
-      }),
-    );
-
-    return {
-      success: votes.success,
-      pagination: votes.pagination,
-      votes: enrichedVotes,
-    };
-  }
-
-  /**
-   * Get voting state for a competition
-   * @param competitionId - Competition ID
-   * @returns Voting state response
-   */
-  async getVotingState(competitionId: string): Promise<VotingStateResponse> {
-    return this.request<VotingStateResponse>(
-      `/user/votes/${competitionId}/state`,
     );
   }
 

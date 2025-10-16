@@ -19,12 +19,6 @@ export interface RawAgentMetricsQueryResult {
     completedCompetitions: number;
   }>;
 
-  /** Vote counts per agent */
-  voteCounts: Array<{
-    agentId: string;
-    totalVotes: number;
-  }>;
-
   /** Trade counts per agent */
   tradeCounts: Array<{
     agentId: string;

@@ -5,7 +5,6 @@ import { Logger } from "pino";
 import { AgentRepository } from "@recallnet/db/repositories/agent";
 import { BoostRepository } from "@recallnet/db/repositories/boost";
 import { UserRepository } from "@recallnet/db/repositories/user";
-import { VoteRepository } from "@recallnet/db/repositories/vote";
 import { InsertUser, SelectUser } from "@recallnet/db/schema/core/types";
 import { Database, Transaction } from "@recallnet/db/types";
 
@@ -29,7 +28,6 @@ export class UserService {
   private emailService: EmailService;
   private agentRepo: AgentRepository;
   private userRepo: UserRepository;
-  private voteRepo: VoteRepository;
   private boostRepo: BoostRepository;
   private walletWatchlist: WalletWatchlist;
   private db: Database;
@@ -39,7 +37,6 @@ export class UserService {
     emailService: EmailService,
     agentRepo: AgentRepository,
     userRepo: UserRepository,
-    voteRepo: VoteRepository,
     boostRepo: BoostRepository,
     walletWatchlist: WalletWatchlist,
     db: Database,
@@ -50,7 +47,6 @@ export class UserService {
     this.emailService = emailService;
     this.agentRepo = agentRepo;
     this.userRepo = userRepo;
-    this.voteRepo = voteRepo;
     this.boostRepo = boostRepo;
     this.walletWatchlist = walletWatchlist;
     this.db = db;
@@ -290,11 +286,6 @@ export class UserService {
           this.logger.info(
             mergeRes,
             `Merged boost balances from duplicate user ${duplicateAccount.id} into ${user.id}`,
-          );
-          await this.voteRepo.updateVotesOwner(
-            duplicateAccount.id,
-            user.id,
-            tx,
           );
           await this.deleteUser(duplicateAccount.id, tx);
         }

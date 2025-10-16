@@ -29,8 +29,6 @@ import {
   competitionsLeaderboard,
   users,
 } from "../schema/core/defs.js";
-// Import for enrichment functionality
-import { votes } from "../schema/core/defs.js";
 import {
   InsertCompetition,
   InsertCompetitionAgent,
@@ -1070,30 +1068,10 @@ export class CompetitionRepository {
     }
   }
 
-  async findVotingOpen(tx?: Transaction) {
-    try {
-      const now = new Date();
-      const executor = tx || this.#db;
-      const result = await executor
-        .select()
-        .from(competitions)
-        .where(
-          and(
-            lt(competitions.votingStartDate, now),
-            gt(competitions.votingEndDate, now),
-          ),
-        );
-      return result;
-    } catch (error) {
-      this.#logger.error("Error in findVotingOpen:", error);
-      throw error;
-    }
-  }
-
   /**
    * Find all competitions that are open for boosting
    * @param tx Optional transaction
-   * @returns All competitions that are open for boosting (active or pending, and within voting period)
+   * @returns All competitions that are open for boosting (active or pending, and within boosting period)
    */
   async findOpenForBoosting(tx?: Transaction) {
     const now = new Date();
@@ -2516,22 +2494,16 @@ export class CompetitionRepository {
   }
 
   /**
-   * Get enriched competition data with votes and trading constraints in a single query
-   * @param userId The user ID to get voting state for
+   * Get enriched competition data with trading constraints in a single query
    * @param competitionIds Array of competition IDs to enrich
-   * @returns Enriched competition data with voting and constraint information
+   * @returns Enriched competition data with constraint information
    */
-  async getEnrichedCompetitions(
-    userId: string,
-    competitionIds: string[],
-  ): Promise<
+  async getEnrichedCompetitions(competitionIds: string[]): Promise<
     {
       competitionId: string;
       competitionStatus: string;
       competitionVotingStartsAt: Date | null;
       competitionVotingEndsAt: Date | null;
-      userVoteAgentId: string | null;
-      userVoteCreatedAt: Date | null;
       minimumPairAgeHours: number | null;
       minimum24hVolumeUsd: number | null;
       minimumLiquidityUsd: number | null;
@@ -2552,10 +2524,6 @@ export class CompetitionRepository {
           competitionVotingStartsAt: competitions.votingStartDate,
           competitionVotingEndsAt: competitions.votingEndDate,
 
-          // User vote info
-          userVoteAgentId: votes.agentId,
-          userVoteCreatedAt: votes.createdAt,
-
           // Trading constraints
           minimumPairAgeHours: tradingConstraints.minimumPairAgeHours,
           minimum24hVolumeUsd: tradingConstraints.minimum24hVolumeUsd,
@@ -2564,13 +2532,6 @@ export class CompetitionRepository {
           minTradesPerDay: tradingConstraints.minTradesPerDay,
         })
         .from(competitions)
-        .leftJoin(
-          votes,
-          and(
-            eq(votes.competitionId, competitions.id),
-            eq(votes.userId, userId),
-          ),
-        )
         .leftJoin(
           tradingConstraints,
           eq(tradingConstraints.competitionId, competitions.id),
@@ -2582,8 +2543,6 @@ export class CompetitionRepository {
         competitionStatus: row.competitionStatus,
         competitionVotingStartsAt: row.competitionVotingStartsAt,
         competitionVotingEndsAt: row.competitionVotingEndsAt,
-        userVoteAgentId: row.userVoteAgentId,
-        userVoteCreatedAt: row.userVoteCreatedAt,
         minimumPairAgeHours: row.minimumPairAgeHours,
         minimum24hVolumeUsd: row.minimum24hVolumeUsd,
         minimumLiquidityUsd: row.minimumLiquidityUsd,
@@ -2592,61 +2551,6 @@ export class CompetitionRepository {
       }));
     } catch (error) {
       this.#logger.error("Error in getEnrichedCompetitions:", error);
-      throw error;
-    }
-  }
-
-  /**
-   * Get vote counts for multiple competitions in a single query
-   * @param competitionIds Array of competition IDs
-   * @returns Map of competition ID to Map of agent ID to vote count
-   */
-  async getBatchVoteCounts(
-    competitionIds: string[],
-  ): Promise<
-    Map<string, { agentVotes: Map<string, number>; totalVotes: number }>
-  > {
-    if (competitionIds.length === 0) {
-      return new Map();
-    }
-
-    try {
-      const voteCounts = await this.#db
-        .select({
-          competitionId: votes.competitionId,
-          agentId: votes.agentId,
-          voteCount: drizzleCount(),
-        })
-        .from(votes)
-        .where(inArray(votes.competitionId, competitionIds))
-        .groupBy(votes.competitionId, votes.agentId)
-        .orderBy(votes.competitionId, desc(drizzleCount()));
-
-      const competitionVoteMap = new Map<
-        string, // competitionId
-        { agentVotes: Map<string, number>; totalVotes: number }
-      >();
-
-      for (const { competitionId, agentId, voteCount } of voteCounts) {
-        if (!competitionVoteMap.has(competitionId)) {
-          competitionVoteMap.set(competitionId, {
-            agentVotes: new Map(),
-            totalVotes: 0,
-          });
-        }
-        const competition = competitionVoteMap.get(competitionId);
-        if (!competition) {
-          // This is only here to keep typescript and auto code review happy
-          // since the `has()` check above ensures the competition value exists
-          continue;
-        }
-        competition.agentVotes.set(agentId, voteCount);
-        competition.totalVotes += voteCount;
-      }
-
-      return competitionVoteMap;
-    } catch (error) {
-      this.#logger.error("Error in getBatchVoteCounts:", error);
       throw error;
     }
   }

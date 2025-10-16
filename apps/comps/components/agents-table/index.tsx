@@ -30,7 +30,6 @@ import { Pagination } from "@/components/pagination/index";
 import { config } from "@/config/public";
 import { useTotalUserStaked } from "@/hooks/staking";
 import { useSession } from "@/hooks/useSession";
-import { useVote } from "@/hooks/useVote";
 import { openForBoosting } from "@/lib/open-for-boosting";
 import { tanstackClient } from "@/rpc/clients/tanstack-query";
 import { RouterOutputs } from "@/rpc/router";
@@ -40,12 +39,10 @@ import { getSortState } from "@/utils/table";
 
 import { AgentAvatar } from "../agent-avatar";
 import BoostAgentModal from "../modals/boost-agent";
-import ConfirmVoteModal from "../modals/confirm-vote";
 import { RankBadge } from "./rank-badge";
 
 export interface AgentsTableProps {
   agents: RouterOutputs["competitions"]["getAgents"]["agents"];
-  totalVotes: number;
   competition: RouterOutputs["competitions"]["getById"];
   onFilterChange: (filter: string) => void;
   onSortChange: (sort: string) => void;
@@ -58,7 +55,6 @@ const numberFormatter = new Intl.NumberFormat();
 
 export const AgentsTable: React.FC<AgentsTableProps> = ({
   agents,
-  totalVotes,
   competition,
   //onFilterChange,
   onSortChange,
@@ -76,9 +72,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
   const [selectedAgent, setSelectedAgent] = useState<
     RouterOutputs["competitions"]["getAgents"]["agents"][number] | null
   >(null);
-  const [isVoteModalOpen, setIsVoteModalOpen] = useState(false);
   const [isBoostModalOpen, setIsBoostModalOpen] = useState(false);
-  const { mutate: vote, isPending: isPendingVote } = useVote();
 
   const queryClient = useQueryClient();
 
@@ -227,17 +221,11 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
     );
   }, [agentBoostTotals, isSuccessAgentBoostTotals]);
 
-  const isLegacyCompetition = useMemo(() => {
-    return competition.stats.totalVotes > 0 && competition.status === "ended";
-  }, [competition.stats.totalVotes, competition.status]);
-
-  const hasBoostEnabled = !isLegacyCompetition;
-
   useEffect(() => {
     setColumnVisibility({
-      yourShare: session.ready && session.isAuthenticated && hasBoostEnabled,
+      yourShare: session.ready && session.isAuthenticated,
     });
-  }, [session.ready, session.isAuthenticated, hasBoostEnabled]);
+  }, [session.ready, session.isAuthenticated]);
 
   // Calculate user's total spent boost for progress bar
   const userSpentBoost = useMemo(() => {
@@ -256,27 +244,6 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
     isLoadingUserBoostBalance ||
     isLoadingUserBoosts ||
     isLoadingAgentBoostTotals;
-
-  const handleVote = async () => {
-    if (!selectedAgent) return;
-
-    vote(
-      {
-        agentId: selectedAgent.id,
-        competitionId: competition.id,
-      },
-      {
-        onSuccess: () => {
-          toast.success("Vote cast successfully!");
-        },
-        onError: (error) => {
-          toast.error(
-            error instanceof Error ? error.message : "Failed to cast vote",
-          );
-        },
-      },
-    );
-  };
 
   const handleStakeToBoost = () => {
     router.push("/stake");
@@ -515,48 +482,25 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
       {
         id: "boostPool",
         accessorKey: "boostTotal",
-        header: () => (
-          <span className="whitespace-nowrap">
-            {hasBoostEnabled ? "Boost Pool" : "Votes"}
-          </span>
-        ),
+        header: () => <span className="whitespace-nowrap">Boost Pool</span>,
         cell: ({ row }) => {
-          if (hasBoostEnabled) {
-            const agentBoostTotal = isSuccessAgentBoostTotals
-              ? agentBoostTotals[row.original.id] || 0
-              : 0;
+          const agentBoostTotal = isSuccessAgentBoostTotals
+            ? agentBoostTotals[row.original.id] || 0
+            : 0;
 
-            return (
-              <div className="flex flex-col items-end">
-                <span className="text-secondary-foreground font-semibold">
-                  {isBoostDataLoading
-                    ? "..."
-                    : formatCompactNumber(agentBoostTotal)}
-                </span>
-                <span className="text-xs text-slate-400">
-                  (
-                  {formatPercentage(
-                    Number(agentBoostTotal),
-                    Number(totalBoost),
-                  )}
-                  )
-                </span>
-              </div>
-            );
-          } else {
-            // Show vote counts for old competitions without boost
-            const voteCount = row.original.voteCount || 0;
-            return (
-              <div className="flex flex-col items-end">
-                <span className="text-secondary-foreground font-semibold">
-                  {formatCompactNumber(voteCount)}
-                </span>
-                <span className="text-xs text-slate-400">
-                  ({formatPercentage(Number(voteCount), Number(totalVotes))})
-                </span>
-              </div>
-            );
-          }
+          return (
+            <div className="flex flex-col items-end">
+              <span className="text-secondary-foreground font-semibold">
+                {isBoostDataLoading
+                  ? "..."
+                  : formatCompactNumber(agentBoostTotal)}
+              </span>
+              <span className="text-xs text-slate-400">
+                ({formatPercentage(Number(agentBoostTotal), Number(totalBoost))}
+                )
+              </span>
+            </div>
+          );
         },
         enableSorting: false,
         size: 120,
@@ -636,8 +580,6 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
       isOpenForBoosting,
       competition.type,
       isSuccessUserBoosts,
-      hasBoostEnabled,
-      totalVotes,
     ],
   );
 
@@ -829,7 +771,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                   ref={(el) => rowVirtualizer.measureElement(el)}
                   data-index={virtualRow.index}
                   onClick={(e) => {
-                    // Don't navigate if clicking on the "Vote" button
+                    // Don't navigate if clicking on the "Boost" button
                     const target = e.target as HTMLElement;
                     const isInteractive = target.closest(
                       'button, [type="button"]',
@@ -863,17 +805,6 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
         currentPage={page}
         itemsPerPage={pagination.limit}
         onPageChange={onPageChange}
-      />
-
-      <ConfirmVoteModal
-        isOpen={isVoteModalOpen}
-        onClose={(open) => {
-          setIsVoteModalOpen(open);
-          if (!open) setSelectedAgent(null);
-        }}
-        agentName={selectedAgent?.name ?? ""}
-        onVote={handleVote}
-        isLoading={isPendingVote}
       />
 
       <BoostAgentModal

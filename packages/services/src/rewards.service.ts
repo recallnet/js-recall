@@ -420,7 +420,7 @@ export class RewardsService {
       leaderBoard,
     );
 
-    // in case an address is both a voter and a competitor, we need to sum the amounts
+    // in case an address is both a booster and a competitor, we need to sum the amounts
     // while keeping the references to owner and competitor
     const rewards = [...userRewards, ...competitorRewards];
     const rewardsByAddress = rewards.reduce(

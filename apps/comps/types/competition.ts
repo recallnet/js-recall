@@ -60,23 +60,12 @@ export interface Competition {
     totalTrades?: number; // Only for paper trading competitions
     totalAgents: number;
     totalVolume?: number; // May not be present for all competition types
-    totalVotes: number;
     uniqueTokens?: number; // Only for paper trading competitions
     totalPositions?: number; // Only for perpetual futures competitions
     averageEquity?: number; // Only for perpetual futures competitions
   };
-  votingEnabled: boolean;
   votingStartDate: string | null;
   votingEndDate: string | null;
-  userVotingInfo?: {
-    canVote: boolean;
-    reason?: string;
-    info: {
-      hasVoted: boolean;
-      agentId?: string;
-      votedAt?: string;
-    };
-  };
   portfolioValue?: number;
   pnl?: number;
   pnlPercent?: number;

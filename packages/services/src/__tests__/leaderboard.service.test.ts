@@ -176,7 +176,6 @@ describe("LeaderboardService", () => {
         score: 1600 - i * 50,
         type: "trading" as const,
         numCompetitions: 5,
-        voteCount: 10,
       }));
     };
 

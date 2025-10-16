@@ -222,7 +222,7 @@ export class BoostAwardService {
         return [];
       }
 
-      const competitions = await this.#competitionRepo.findVotingOpen(tx);
+      const competitions = await this.#competitionRepo.findOpenForBoosting(tx);
       if (competitions.length === 0) {
         return [];
       }
@@ -268,7 +268,7 @@ export class BoostAwardService {
       if (!amount) {
         throw new Error("No-stake boost amount not configured");
       }
-      const competitions = await this.#competitionRepo.findVotingOpen(tx);
+      const competitions = await this.#competitionRepo.findOpenForBoosting(tx);
 
       if (competitions.length === 0) {
         return [];

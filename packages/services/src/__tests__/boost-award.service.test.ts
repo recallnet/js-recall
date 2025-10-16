@@ -82,12 +82,12 @@ describe("BoostAwardService", () => {
         async (callback: (tx: Transaction) => Promise<unknown>) =>
           callback("mock-tx" as unknown as Transaction),
       );
-      mockCompetitionRepo.findVotingOpen.mockResolvedValue([]);
+      mockCompetitionRepo.findOpenForBoosting.mockResolvedValue([]);
 
       const result = await service.initNoStake(testUserId, testWallet);
 
       expect(result).toEqual([]);
-      expect(mockCompetitionRepo.findVotingOpen).toHaveBeenCalledWith(
+      expect(mockCompetitionRepo.findOpenForBoosting).toHaveBeenCalledWith(
         "mock-tx",
       );
     });
@@ -101,7 +101,7 @@ describe("BoostAwardService", () => {
         async (callback: (tx: Transaction) => Promise<unknown>) =>
           callback("mock-tx" as unknown as Transaction),
       );
-      mockCompetitionRepo.findVotingOpen.mockResolvedValue([competition]);
+      mockCompetitionRepo.findOpenForBoosting.mockResolvedValue([competition]);
       mockBoostRepo.increase.mockResolvedValue({
         type: "applied",
         changeId: "change-123",
@@ -144,7 +144,7 @@ describe("BoostAwardService", () => {
         async (callback: (tx: Transaction) => Promise<unknown>) =>
           callback("mock-tx" as unknown as Transaction),
       );
-      mockCompetitionRepo.findVotingOpen.mockResolvedValue([competition]);
+      mockCompetitionRepo.findOpenForBoosting.mockResolvedValue([competition]);
       mockBoostRepo.increase.mockResolvedValue({
         type: "noop",
         balance,
@@ -175,7 +175,7 @@ describe("BoostAwardService", () => {
         async (callback: (tx: Transaction) => Promise<unknown>) =>
           callback("mock-tx" as unknown as Transaction),
       );
-      mockCompetitionRepo.findVotingOpen.mockResolvedValue(competitions);
+      mockCompetitionRepo.findOpenForBoosting.mockResolvedValue(competitions);
 
       mockBoostRepo.increase.mockResolvedValue({
         type: "applied",
@@ -212,7 +212,7 @@ describe("BoostAwardService", () => {
         async (callback: (tx: Transaction) => Promise<unknown>) =>
           callback("mock-tx" as unknown as Transaction),
       );
-      mockCompetitionRepo.findVotingOpen.mockResolvedValue([]);
+      mockCompetitionRepo.findOpenForBoosting.mockResolvedValue([]);
 
       await service.initNoStake(testUserId, testWallet);
 
@@ -235,7 +235,7 @@ describe("BoostAwardService", () => {
         async (callback: (tx: Transaction) => Promise<unknown>) =>
           callback("mock-tx" as unknown as Transaction),
       );
-      mockCompetitionRepo.findVotingOpen.mockRejectedValue(error);
+      mockCompetitionRepo.findOpenForBoosting.mockRejectedValue(error);
 
       await expect(service.initNoStake(testUserId, testWallet)).rejects.toThrow(
         "Competition repository error",
@@ -254,7 +254,7 @@ describe("BoostAwardService", () => {
           callback("nested-tx" as unknown as Transaction),
       );
 
-      mockCompetitionRepo.findVotingOpen.mockResolvedValue([competition]);
+      mockCompetitionRepo.findOpenForBoosting.mockResolvedValue([competition]);
       mockBoostRepo.increase.mockResolvedValue({
         type: "applied",
         changeId: "change-123",
@@ -282,7 +282,7 @@ describe("BoostAwardService", () => {
         async (callback: (tx: Transaction) => Promise<unknown>) =>
           callback("mock-tx" as unknown as Transaction),
       );
-      mockCompetitionRepo.findVotingOpen.mockResolvedValue([competition]);
+      mockCompetitionRepo.findOpenForBoosting.mockResolvedValue([competition]);
       mockBoostRepo.increase.mockResolvedValue({
         type: "applied",
         changeId: "change-123",
@@ -360,7 +360,7 @@ describe("BoostAwardService", () => {
         testWallet,
         "mock-tx",
       );
-      expect(mockCompetitionRepo.findVotingOpen).not.toHaveBeenCalled();
+      expect(mockCompetitionRepo.findOpenForBoosting).not.toHaveBeenCalled();
     });
 
     it("returns empty array when no voting competitions are open", async () => {
@@ -371,7 +371,7 @@ describe("BoostAwardService", () => {
           callback("mock-tx" as unknown as Transaction),
       );
       mockStakesRepo.allStakedByWallet.mockResolvedValue([stake]);
-      mockCompetitionRepo.findVotingOpen.mockResolvedValue([]);
+      mockCompetitionRepo.findOpenForBoosting.mockResolvedValue([]);
 
       const result = await service.initForStake(testWallet);
 
@@ -380,7 +380,7 @@ describe("BoostAwardService", () => {
         testWallet,
         "mock-tx",
       );
-      expect(mockCompetitionRepo.findVotingOpen).toHaveBeenCalledWith(
+      expect(mockCompetitionRepo.findOpenForBoosting).toHaveBeenCalledWith(
         "mock-tx",
       );
     });
@@ -408,7 +408,7 @@ describe("BoostAwardService", () => {
           callback("mock-tx" as unknown as Transaction),
       );
       mockStakesRepo.allStakedByWallet.mockResolvedValue([stake1, stake2]);
-      mockCompetitionRepo.findVotingOpen.mockResolvedValue([
+      mockCompetitionRepo.findOpenForBoosting.mockResolvedValue([
         competition1,
         competition2,
       ]);
@@ -457,7 +457,7 @@ describe("BoostAwardService", () => {
           callback("mock-tx" as unknown as Transaction),
       );
       mockStakesRepo.allStakedByWallet.mockResolvedValue([stake]);
-      mockCompetitionRepo.findVotingOpen.mockResolvedValue([competition]);
+      mockCompetitionRepo.findOpenForBoosting.mockResolvedValue([competition]);
 
       await expect(service.initForStake(testWallet)).rejects.toThrow(
         "Competition missing voting dates",
@@ -487,7 +487,7 @@ describe("BoostAwardService", () => {
           callback("mock-tx" as unknown as Transaction),
       );
       mockStakesRepo.allStakedByWallet.mockResolvedValue([stake]);
-      mockCompetitionRepo.findVotingOpen.mockResolvedValue([competition]);
+      mockCompetitionRepo.findOpenForBoosting.mockResolvedValue([competition]);
       mockUserService.getUserByWalletAddress.mockResolvedValue(
         createMockUser(),
       );
@@ -527,7 +527,7 @@ describe("BoostAwardService", () => {
           callback("mock-tx" as unknown as Transaction),
       );
       mockStakesRepo.allStakedByWallet.mockResolvedValue([stake]);
-      mockCompetitionRepo.findVotingOpen.mockResolvedValue([competition]);
+      mockCompetitionRepo.findOpenForBoosting.mockResolvedValue([competition]);
       mockUserService.getUserByWalletAddress.mockResolvedValue(
         createMockUser(),
       );
@@ -592,7 +592,7 @@ describe("BoostAwardService", () => {
       competition.votingEndDate = new Date("2024-01-30");
 
       mockStakesRepo.allStakedByWallet.mockResolvedValue([stake]);
-      mockCompetitionRepo.findVotingOpen.mockResolvedValue([competition]);
+      mockCompetitionRepo.findOpenForBoosting.mockResolvedValue([competition]);
       mockUserService.getUserByWalletAddress.mockResolvedValue(
         createMockUser(),
       );

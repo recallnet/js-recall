@@ -20,7 +20,6 @@ import type { PerpsDataProcessor } from "../perps-data-processor.service.js";
 import type { PortfolioSnapshotterService } from "../portfolio-snapshotter.service.js";
 import type { TradeSimulatorService } from "../trade-simulator.service.js";
 import type { TradingConstraintsService } from "../trading-constraints.service.js";
-import type { VoteService } from "../vote.service.js";
 
 describe("CompetitionService - createCompetition", () => {
   let balanceService: MockProxy<BalanceService>;
@@ -28,7 +27,6 @@ describe("CompetitionService - createCompetition", () => {
   let portfolioSnapshotterService: MockProxy<PortfolioSnapshotterService>;
   let agentService: MockProxy<AgentService>;
   let agentRankService: MockProxy<AgentRankService>;
-  let voteService: MockProxy<VoteService>;
   let tradingConstraintsService: MockProxy<TradingConstraintsService>;
   let competitionRewardService: MockProxy<CompetitionRewardService>;
   let perpsDataProcessor: MockProxy<PerpsDataProcessor>;
@@ -49,7 +47,6 @@ describe("CompetitionService - createCompetition", () => {
     portfolioSnapshotterService = mock<PortfolioSnapshotterService>();
     agentService = mock<AgentService>();
     agentRankService = mock<AgentRankService>();
-    voteService = mock<VoteService>();
     tradingConstraintsService = mock<TradingConstraintsService>();
     competitionRewardService = mock<CompetitionRewardService>();
     perpsDataProcessor = mock<PerpsDataProcessor>();
@@ -105,7 +102,6 @@ describe("CompetitionService - createCompetition", () => {
       portfolioSnapshotterService,
       agentService,
       agentRankService,
-      voteService,
       tradingConstraintsService,
       competitionRewardService,
       perpsDataProcessor,
@@ -497,7 +493,6 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
   let portfolioSnapshotterService: MockProxy<PortfolioSnapshotterService>;
   let agentService: MockProxy<AgentService>;
   let agentRankService: MockProxy<AgentRankService>;
-  let voteService: MockProxy<VoteService>;
   let tradingConstraintsService: MockProxy<TradingConstraintsService>;
   let competitionRewardService: MockProxy<CompetitionRewardService>;
   let perpsDataProcessor: MockProxy<PerpsDataProcessor>;
@@ -519,7 +514,6 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
     portfolioSnapshotterService = mock<PortfolioSnapshotterService>();
     agentService = mock<AgentService>();
     agentRankService = mock<AgentRankService>();
-    voteService = mock<VoteService>();
     tradingConstraintsService = mock<TradingConstraintsService>();
     competitionRewardService = mock<CompetitionRewardService>();
     perpsDataProcessor = mock<PerpsDataProcessor>();
@@ -539,7 +533,6 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
       portfolioSnapshotterService,
       agentService,
       agentRankService,
-      voteService,
       tradingConstraintsService,
       competitionRewardService,
       perpsDataProcessor,

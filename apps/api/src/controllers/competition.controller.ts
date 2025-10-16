@@ -74,8 +74,6 @@ export function makeCompetitionController(services: ServiceRegistry) {
       next: NextFunction,
     ) {
       try {
-        const userId = req.userId;
-
         const status = req.query.status
           ? CompetitionStatusSchema.parse(req.query.status)
           : undefined;
@@ -86,8 +84,6 @@ export function makeCompetitionController(services: ServiceRegistry) {
         const cacheKey = generateCacheKey(req, "list", {
           status,
           ...pagingParams,
-          // Include userId in cache key since response includes user-specific voting data
-          ...(userId && { userId }),
         });
 
         if (shouldCacheResponse) {
@@ -102,7 +98,6 @@ export function makeCompetitionController(services: ServiceRegistry) {
           await services.competitionService.getEnrichedCompetitions({
             status,
             pagingParams,
-            userId,
           });
 
         // Cache the result

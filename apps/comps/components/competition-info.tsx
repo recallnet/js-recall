@@ -15,7 +15,6 @@ import { cn } from "@recallnet/ui2/lib/utils";
 
 import { useCompetitionRules } from "@/hooks";
 import { RouterOutputs } from "@/rpc/router";
-import { CompetitionStatus } from "@/types";
 import { getCompetitionSkills } from "@/utils/competition-utils";
 import { formatAmount, formatCompactNumber, formatDate } from "@/utils/format";
 
@@ -106,8 +105,8 @@ export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
 
       <TabsContent value="info" className="border">
         <div>
-          {/* Registration and Voting Status Bar - At the very top */}
-          {competition.status !== CompetitionStatus.Ended && (
+          {/* Registration and Boosting Status Bar - At the very top */}
+          {competition.status !== "ended" && (
             <div className="border-b bg-[#0C0D12] px-4 py-2">
               <CompetitionStateSummary competition={competition} />
             </div>

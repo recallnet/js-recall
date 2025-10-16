@@ -2619,30 +2619,6 @@ describe("Competition API", () => {
     ).toBeLessThanOrEqual(
       change24hPercentDescResponse.agents[2]!.change24hPercent,
     );
-
-    // Test sorting by vote count (ascending)
-    const voteCountAscResponse = (await client.getCompetitionAgents(
-      competitionId,
-      {
-        sort: "voteCount",
-      },
-    )) as CompetitionAgentsResponse;
-    expect(voteCountAscResponse.success).toBe(true);
-    expect(voteCountAscResponse.agents[0]!.voteCount).toBeGreaterThanOrEqual(
-      voteCountAscResponse.agents[1]!.voteCount,
-    );
-    expect(voteCountAscResponse.agents[1]!.voteCount).toBeGreaterThanOrEqual(
-      voteCountAscResponse.agents[2]!.voteCount,
-    );
-
-    // Test sorting by vote count (descending)
-    const voteCountDescResponse = (await client.getCompetitionAgents(
-      competitionId,
-      {
-        sort: "-voteCount",
-      },
-    )) as CompetitionAgentsResponse;
-    expect(voteCountDescResponse.success).toBe(true);
   });
 
   test("should handle computed sorting with pagination limits", async () => {
@@ -2714,7 +2690,6 @@ describe("Competition API", () => {
       "pnlPercent",
       "change24h",
       "change24hPercent",
-      "voteCount",
     ];
 
     for (const field of testFields) {

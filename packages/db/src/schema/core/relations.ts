@@ -14,12 +14,10 @@ import {
   competitions,
   competitionsLeaderboard,
   users,
-  votes,
 } from "./defs.js";
 
 export const usersRelations = relations(users, ({ many }) => ({
   agents: many(agents),
-  votes: many(votes),
 }));
 
 export const agentsRelations = relations(agents, ({ one, many }) => ({
@@ -31,7 +29,6 @@ export const agentsRelations = relations(agents, ({ one, many }) => ({
   trades: many(trades),
   portfolioSnapshots: many(portfolioSnapshots),
   competitionAgents: many(competitionAgents),
-  votes: many(votes),
 }));
 
 export const competitionsRelations = relations(
@@ -41,7 +38,6 @@ export const competitionsRelations = relations(
     trades: many(trades),
     portfolioSnapshots: many(portfolioSnapshots),
     competitionAgents: many(competitionAgents),
-    votes: many(votes),
     rewards: many(rewards),
     rewardsTree: many(rewardsTree),
     rewardsRoots: many(rewardsRoots),
@@ -61,21 +57,6 @@ export const competitionAgentsRelations = relations(
     }),
   }),
 );
-
-export const votesRelations = relations(votes, ({ one }) => ({
-  user: one(users, {
-    fields: [votes.userId],
-    references: [users.id],
-  }),
-  agent: one(agents, {
-    fields: [votes.agentId],
-    references: [agents.id],
-  }),
-  competition: one(competitions, {
-    fields: [votes.competitionId],
-    references: [competitions.id],
-  }),
-}));
 
 export const competitionsLeaderboardRelations = relations(
   competitionsLeaderboard,

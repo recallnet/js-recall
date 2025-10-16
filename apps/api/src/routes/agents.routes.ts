@@ -186,8 +186,6 @@ export function configureAgentsRoutes(
    *                         totalPositions:
    *                           type: integer
    *                           description: "Total number of positions across all perpetual futures competitions"
-   *                         totalVotes:
-   *                           type: integer
    *                         bestPlacement:
    *                           type: object
    *                           nullable: true

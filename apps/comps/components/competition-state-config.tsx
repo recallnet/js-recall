@@ -1,6 +1,6 @@
 import { RouterOutputs } from "@/rpc/router";
 
-type VotingStatusConfig = {
+type BoostingStatusConfig = {
   subTitle: string;
   description: string;
   variant: "green" | "blue" | "gray";
@@ -16,8 +16,7 @@ type VotingStatusConfig = {
  */
 export function getCompetitionStateConfig(
   competition: RouterOutputs["competitions"]["getById"],
-  hasVoted: boolean,
-): VotingStatusConfig {
+): BoostingStatusConfig {
   const {
     status,
     startDate,
@@ -28,48 +27,6 @@ export function getCompetitionStateConfig(
     joinEndDate,
   } = competition;
   const now = new Date();
-
-  if (hasVoted) {
-    if (status === "pending") {
-      return {
-        subTitle: "Counting boosts!",
-        description: startDate ? "Competition starts in..." : "",
-        variant: "gray",
-        untilTime: startDate,
-        phase: null,
-      };
-    }
-    if (status === "active") {
-      return {
-        subTitle: "Counting boosts!",
-        description: endDate ? "Competition ends in..." : "",
-        variant: "gray",
-        untilTime: endDate,
-        phase: null,
-      };
-    }
-    if (status === "ended") {
-      // NOTE: we should never get here since the banner is hidden if the
-      //  comp is ended.
-      return {
-        subTitle: "Boosts are counted!",
-        description: "Competition ended and the boosts are counted...",
-        variant: "gray",
-        untilTime: null,
-        phase: null,
-      };
-    }
-    // Should never get here
-    return {
-      subTitle: "Voting not available",
-      description: "",
-      variant: "gray",
-      untilTime: null,
-      phase: null,
-    };
-  }
-
-  // all states below here are for competitions that the user has not voted on yet
 
   // Flow #1
   if (
@@ -167,10 +124,10 @@ export function getCompetitionStateConfig(
   if (votingStartDate && now < votingStartDate) {
     return {
       subTitle: "Get ready!",
-      description: "Voting opens in...",
+      description: "Boosting opens in...",
       variant: "blue",
       untilTime: votingStartDate,
-      phase: "voting",
+      phase: "boosting",
     };
   }
 
