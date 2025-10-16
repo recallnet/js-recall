@@ -445,35 +445,102 @@ export class PerpsRepository {
   }
 
   /**
-   * Get account summary at or before a specific timestamp
-   * Used for daily volume requirement calculations
-   * @param agentId Agent ID
+   * Get agents who fail daily volume requirements using SQL aggregation
+   * Calculates volume delta and requirements entirely in database
    * @param competitionId Competition ID
-   * @param timestamp Timestamp to query (gets latest at or before this time)
-   * @returns Account summary or null if none exists before timestamp
+   * @param checkTimestamp Current timestamp for the check
+   * @param volumeMultiplier Daily volume multiplier (e.g., 0.75)
+   * @returns Array of agent IDs who should be disqualified
    */
-  async getAccountSummaryAt(
-    agentId: string,
+  async getAgentsWithInsufficientDailyVolume(
     competitionId: string,
-    timestamp: Date,
-  ): Promise<SelectPerpsAccountSummary | null> {
+    checkTimestamp: Date,
+    volumeMultiplier: number,
+  ): Promise<string[]> {
     try {
-      const [result] = await this.#dbRead
-        .select()
+      const twentyFourHoursAgo = new Date(
+        checkTimestamp.getTime() - 24 * 60 * 60 * 1000,
+      );
+
+      // Get active agents subquery
+      const activeAgents = this.getActiveAgentsSubquery(competitionId);
+
+      // Latest summary subquery (current)
+      const latestSummarySubquery = this.#dbRead
+        .select({
+          agentId: perpsAccountSummaries.agentId,
+          currentVolume: perpsAccountSummaries.totalVolume,
+          currentEquity: perpsAccountSummaries.totalEquity,
+          initialCapital: perpsAccountSummaries.initialCapital,
+        })
         .from(perpsAccountSummaries)
         .where(
           and(
-            eq(perpsAccountSummaries.agentId, agentId),
             eq(perpsAccountSummaries.competitionId, competitionId),
-            lte(perpsAccountSummaries.timestamp, timestamp),
+            sql`${perpsAccountSummaries.agentId} = ${activeAgents.agentId}`,
           ),
         )
         .orderBy(desc(perpsAccountSummaries.timestamp))
-        .limit(1);
+        .limit(1)
+        .as("latest_summary");
 
-      return result || null;
+      // Historical summary subquery (24h ago)
+      const historicalSummarySubquery = this.#dbRead
+        .select({
+          agentId: perpsAccountSummaries.agentId,
+          historicalVolume: perpsAccountSummaries.totalVolume,
+          historicalEquity: perpsAccountSummaries.totalEquity,
+          historicalInitialCapital: perpsAccountSummaries.initialCapital,
+        })
+        .from(perpsAccountSummaries)
+        .where(
+          and(
+            eq(perpsAccountSummaries.competitionId, competitionId),
+            sql`${perpsAccountSummaries.agentId} = ${activeAgents.agentId}`,
+            lte(perpsAccountSummaries.timestamp, twentyFourHoursAgo),
+          ),
+        )
+        .orderBy(desc(perpsAccountSummaries.timestamp))
+        .limit(1)
+        .as("historical_summary");
+
+      // Single query with all calculations in SQL
+      const results = await this.#dbRead
+        .select({
+          agentId: activeAgents.agentId,
+        })
+        .from(activeAgents)
+        .leftJoinLateral(latestSummarySubquery, sql`true`)
+        .leftJoinLateral(historicalSummarySubquery, sql`true`)
+        .where(
+          and(
+            // Both summaries must exist
+            sql`${latestSummarySubquery.currentVolume} IS NOT NULL`,
+            sql`${historicalSummarySubquery.historicalVolume} IS NOT NULL`,
+            // Calculate daily volume and requirement in SQL
+            sql`
+              (COALESCE(${latestSummarySubquery.currentVolume}::numeric, 0) - 
+               COALESCE(${historicalSummarySubquery.historicalVolume}::numeric, 0)) <
+              (GREATEST(
+                COALESCE(${historicalSummarySubquery.historicalInitialCapital}::numeric, 500),
+                COALESCE(${historicalSummarySubquery.historicalEquity}::numeric, 0) * 0.8
+              ) * ${volumeMultiplier})
+            `,
+          ),
+        );
+
+      const violatorIds = results.map((r) => r.agentId);
+
+      this.#logger.debug(
+        `[PerpsRepository] Found ${violatorIds.length} agents with insufficient daily volume in competition ${competitionId}`,
+      );
+
+      return violatorIds;
     } catch (error) {
-      this.#logger.error("Error in getAccountSummaryAt:", error);
+      this.#logger.error(
+        "Error in getAgentsWithInsufficientDailyVolume:",
+        error,
+      );
       throw error;
     }
   }

@@ -256,7 +256,7 @@ export class PerpsDataProcessor {
       let positions: PerpsPosition[];
 
       if (provider.getAccountDataBatch) {
-        // Provider supports batch fetching - more efficient
+        // Provider supports batch fetching
         const batchResult = await provider.getAccountDataBatch(
           walletAddress,
           initialCapital,
@@ -936,66 +936,12 @@ export class PerpsDataProcessor {
       `[PerpsDataProcessor] Running daily volume check for competition ${competitionId} (day ${daysSinceStart})`,
     );
 
-    // Get all agents in competition
-    const agentIds =
-      await this.competitionRepo.getCompetitionAgents(competitionId);
-    const violators: string[] = [];
-
-    for (const agentId of agentIds) {
-      try {
-        // Get current and 24h ago summaries
-        const twentyFourHoursAgo = new Date(
-          now.getTime() - 24 * 60 * 60 * 1000,
-        );
-        const [current, yesterday] = await Promise.all([
-          this.perpsRepo.getLatestPerpsAccountSummary(agentId, competitionId),
-          this.perpsRepo.getAccountSummaryAt(
-            agentId,
-            competitionId,
-            twentyFourHoursAgo,
-          ),
-        ]);
-
-        if (!current || !yesterday) {
-          this.logger.debug(
-            `[PerpsDataProcessor] Skipping volume check for agent ${agentId}: missing historical data`,
-          );
-          continue;
-        }
-
-        // Calculate daily volume traded during the period
-        const dailyVolume =
-          Number(current.totalVolume || 0) - Number(yesterday.totalVolume || 0);
-
-        // Calculate requirement using START of period equity (fairer!)
-        // This prevents penalizing agents who make profits during the day
-        const initialCapital = Number(yesterday.initialCapital || 500);
-        const periodStartEquity = Number(yesterday.totalEquity || 0);
-        const baseEquity = Math.max(initialCapital, periodStartEquity * 0.8);
-        const requiredVolume = baseEquity * DAILY_VOLUME_MULTIPLIER;
-
-        if (dailyVolume < requiredVolume) {
-          this.logger.warn(
-            `[PerpsDataProcessor] Agent ${agentId} failed volume requirement: ` +
-              `${dailyVolume.toFixed(2)} < ${requiredVolume.toFixed(2)} required ` +
-              `(base equity: ${baseEquity.toFixed(2)}, period start: ${periodStartEquity.toFixed(2)})`,
-          );
-          violators.push(agentId);
-        } else {
-          this.logger.debug(
-            `[PerpsDataProcessor] Agent ${agentId} passed volume check: ` +
-              `${dailyVolume.toFixed(2)} >= ${requiredVolume.toFixed(2)} required`,
-          );
-        }
-      } catch (error) {
-        this.logger.error(
-          `[PerpsDataProcessor] Error checking volume for agent ${agentId}:`,
-          error,
-        );
-        // Skip this agent - don't remove them for errors in our system
-        continue;
-      }
-    }
+    // Use single SQL query to find all violators (avoid N+1 queries)
+    const violators = await this.perpsRepo.getAgentsWithInsufficientDailyVolume(
+      competitionId,
+      now,
+      DAILY_VOLUME_MULTIPLIER,
+    );
 
     if (violators.length > 0) {
       this.logger.warn(
