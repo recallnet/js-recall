@@ -925,9 +925,17 @@ export class PerpsDataProcessor {
     const hoursSinceStart =
       (now.getTime() - competitionStartDate.getTime()) / (1000 * 60 * 60);
     const remainder = hoursSinceStart % 24;
-    // 0.083 hours = 5 minutes, 23.917 hours = 23h 55min
-    // This catches the window on both sides: [23h 55m - 24h 5m]
-    if (remainder >= 0.083 && remainder <= 23.917) {
+
+    // Precise boundary values for ±5 minute window
+    const FIVE_MINUTES_HOURS = 5 / 60; // 0.08333... hours
+    const TWENTY_THREE_FIFTY_FIVE_HOURS = 23 + 55 / 60; // 23.91666... hours
+
+    // Skip check if NOT within ±5 minutes of 24h boundary
+    // Run check when: 0 ≤ remainder < 5min OR 23h55m < remainder < 24h
+    if (
+      remainder >= FIVE_MINUTES_HOURS &&
+      remainder <= TWENTY_THREE_FIFTY_FIVE_HOURS
+    ) {
       // Not within ±5 minutes of day boundary
       return [];
     }

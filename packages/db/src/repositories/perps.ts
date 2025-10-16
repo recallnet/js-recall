@@ -447,6 +447,13 @@ export class PerpsRepository {
   /**
    * Get agents who fail daily volume requirements using SQL aggregation
    * Calculates volume delta and requirements entirely in database
+   *
+   * Base equity calculation uses hybrid approach:
+   * - Max(initialCapital, periodStartEquity * 0.8)
+   * - The 0.8 multiplier (80% floor) protects against loss exploitation
+   * - Agents who lose money can't reduce requirements below initial capital
+   * - Agents who gain money have requirements scale with 80% of period start equity
+   *
    * @param competitionId Competition ID
    * @param checkTimestamp Current timestamp for the check
    * @param volumeMultiplier Daily volume multiplier (e.g., 0.75)
@@ -461,6 +468,9 @@ export class PerpsRepository {
       const twentyFourHoursAgo = new Date(
         checkTimestamp.getTime() - 24 * 60 * 60 * 1000,
       );
+
+      // Hybrid base equity calculation constants
+      const PERIOD_START_EQUITY_MULTIPLIER = 0.8; // 80% floor protects against loss exploitation
 
       // Get active agents subquery
       const activeAgents = this.getActiveAgentsSubquery(competitionId);
@@ -518,12 +528,13 @@ export class PerpsRepository {
             sql`${latestSummarySubquery.currentVolume} IS NOT NULL`,
             sql`${historicalSummarySubquery.historicalVolume} IS NOT NULL`,
             // Calculate daily volume and requirement in SQL
+            // Base equity = Max(initialCapital, periodStartEquity * 80% floor)
             sql`
               (COALESCE(${latestSummarySubquery.currentVolume}::numeric, 0) - 
                COALESCE(${historicalSummarySubquery.historicalVolume}::numeric, 0)) <
               (GREATEST(
                 COALESCE(${historicalSummarySubquery.historicalInitialCapital}::numeric, 500),
-                COALESCE(${historicalSummarySubquery.historicalEquity}::numeric, 0) * 0.8
+                COALESCE(${historicalSummarySubquery.historicalEquity}::numeric, 0) * ${PERIOD_START_EQUITY_MULTIPLIER}
               ) * ${volumeMultiplier})
             `,
           ),
