@@ -16,7 +16,8 @@ import { Input } from "@recallnet/ui2/components/input";
 import { toast } from "@recallnet/ui2/components/toast";
 
 import { ConflictError } from "@/lib/api-client";
-import { ProfileResponse, UpdateProfileRequest } from "@/types/profile";
+import type { RouterOutputs } from "@/rpc/router";
+import { UpdateProfileRequest } from "@/types/profile";
 import { asOptionalStringWithoutEmpty } from "@/utils";
 
 import { EditButton } from "../edit-button";
@@ -61,7 +62,7 @@ const FieldValue = ({ children }: { children: React.ReactNode }) => (
 );
 
 interface UserInfoSectionProps {
-  user: ProfileResponse["user"];
+  user: RouterOutputs["user"]["getProfile"];
   onSave: (data: Partial<UpdateProfileRequest>) => Promise<void>;
   onLinkWallet: () => Promise<void>;
 }
@@ -85,7 +86,7 @@ export default function UserInfoSection({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: user?.name || "",
-      website: user?.metadata?.website || "",
+      website: (user?.metadata as { website?: string } | null)?.website || "",
     },
   });
 
@@ -93,10 +94,10 @@ export default function UserInfoSection({
   useEffect(() => {
     form.reset({
       name: user?.name || "",
-      website: user?.metadata?.website || "",
+      website: (user?.metadata as { website?: string } | null)?.website || "",
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.name, user?.metadata?.website]);
+  }, [user?.name, user?.metadata]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Escape") {
@@ -139,14 +140,14 @@ export default function UserInfoSection({
   return (
     <div className="flex w-full border">
       <ProfilePicture
-        image={user?.imageUrl}
+        image={user?.imageUrl ?? undefined}
         onSave={async (newUrl) => {
           await onSave({ imageUrl: newUrl });
         }}
         className="w-90 my-auto hidden sm:block"
         fallbackData={{
           walletAddress: user?.walletAddress,
-          name: user?.name,
+          name: user?.name ?? undefined,
         }}
       />
       <div className="flex w-full flex-col items-start justify-center gap-2 border-l p-4">
@@ -223,14 +224,16 @@ export default function UserInfoSection({
                 </div>
               ) : (
                 <FieldValue>
-                  {user?.metadata?.website && (
+                  {(user?.metadata as { website?: string } | null)?.website && (
                     <Link
-                      href={user.metadata.website}
+                      href={
+                        (user.metadata as { website?: string } | null)!.website!
+                      }
                       target="_blank"
                       rel="noopener noreferrer"
                       className="truncate underline hover:text-gray-300"
                     >
-                      {user.metadata.website}
+                      {(user.metadata as { website?: string } | null)!.website}
                     </Link>
                   )}
                   <EditButton

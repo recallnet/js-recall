@@ -75,9 +75,9 @@ export const PrivyAuthButton: React.FunctionComponent = () => {
 
   // Show authenticated state with dropdown
   if (backendUser && isAuthenticated) {
-    const displayName = backendUser.name;
+    const displayName = backendUser.name ?? undefined;
     const walletAddress = backendUser.walletAddress;
-    const avatarUrl = backendUser.imageUrl;
+    const avatarUrl = backendUser.imageUrl ?? undefined;
 
     return (
       <DropdownMenu>
