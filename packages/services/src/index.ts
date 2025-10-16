@@ -3,7 +3,7 @@ export * from "./agent.service.js";
 export * from "./agent-metrics-helper.js";
 export * from "./agentrank.service.js";
 export * from "./balance.service.js";
-export * from "./boost.js";
+export * from "./boost.service.js";
 export * from "./boost-award.service.js";
 export * from "./calmar-ratio.service.js";
 export * from "./competition-reward.service.js";
