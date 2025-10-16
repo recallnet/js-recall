@@ -33,10 +33,10 @@ export function createCompetitionPayload(config: CompetitionConfig = {}) {
   const joinEndDate = new Date(
     now.getTime() + joinWindowDays * 24 * 60 * 60 * 1000,
   );
-  const votingStartDate = new Date(
+  const boostStartDate = new Date(
     endDate.getTime() - votingWindowDays * 24 * 60 * 60 * 1000,
   );
-  const votingEndDate = new Date(endDate.getTime());
+  const boostEndDate = new Date(endDate.getTime());
 
   return {
     name,
@@ -45,8 +45,8 @@ export function createCompetitionPayload(config: CompetitionConfig = {}) {
     sandboxMode,
     type,
     endDate: endDate.toISOString(),
-    votingStartDate: votingStartDate.toISOString(),
-    votingEndDate: votingEndDate.toISOString(),
+    boostStartDate: boostStartDate.toISOString(),
+    boostEndDate: boostEndDate.toISOString(),
     joinStartDate: now.toISOString(),
     joinEndDate: joinEndDate.toISOString(),
     rewards,

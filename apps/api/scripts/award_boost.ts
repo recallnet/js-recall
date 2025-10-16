@@ -36,13 +36,13 @@ async function awardAllBoost() {
     );
     // Iterate over competitions
     for (const competition of upcomingCompetitions) {
-      const votingEndDate = competition.votingEndDate;
-      if (!votingEndDate) {
+      const boostEndDate = competition.boostEndDate;
+      if (!boostEndDate) {
         logger.warn(`No voting end date for competition: ${competition.id}`);
         continue;
       }
-      const votingStartDate = competition.votingStartDate;
-      if (!votingStartDate) {
+      const boostStartDate = competition.boostStartDate;
+      if (!boostStartDate) {
         logger.warn(`No voting start date for competition: ${competition.id}`);
         continue;
       }
@@ -68,8 +68,8 @@ async function awardAllBoost() {
             },
             {
               id: competition.id,
-              votingEndDate: votingEndDate,
-              votingStartDate: votingStartDate,
+              boostEndDate: boostEndDate,
+              boostStartDate: boostStartDate,
             },
           );
           if (diffResult.type === "applied") {

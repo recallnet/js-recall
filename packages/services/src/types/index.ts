@@ -472,8 +472,8 @@ export interface Competition {
   imageUrl?: string;
   startDate: Date | null;
   endDate: Date | null;
-  votingStartDate: Date | null;
-  votingEndDate: Date | null;
+  boostStartDate: Date | null;
+  boostEndDate: Date | null;
   joinStartDate: Date | null;
   joinEndDate: Date | null;
   status: CompetitionStatus;
@@ -717,8 +717,8 @@ export const CompetitionAllowedUpdateSchema = z.strictObject({
   imageUrl: z.string().optional(),
   startDate: z.date().optional(),
   endDate: z.date().optional(),
-  votingStartDate: z.date().optional(),
-  votingEndDate: z.date().optional(),
+  boostStartDate: z.date().optional(),
+  boostEndDate: z.date().optional(),
   joinStartDate: z.date().optional(),
   joinEndDate: z.date().optional(),
   rewards: z.record(z.number(), z.number()).optional(),

@@ -74,12 +74,12 @@ export function configureAdminRoutes(
    *                 format: date-time
    *                 description: End date for the competition (ISO 8601 format)
    *                 example: "2024-02-15T23:59:59Z"
-   *               votingStartDate:
+   *               boostStartDate:
    *                 type: string
    *                 format: date-time
    *                 description: Start date for voting (ISO 8601 format)
    *                 example: "2024-01-15T00:00:00Z"
-   *               votingEndDate:
+   *               boostEndDate:
    *                 type: string
    *                 format: date-time
    *                 description: End date for voting (ISO 8601 format)
@@ -340,12 +340,12 @@ export function configureAdminRoutes(
    *                 format: date-time
    *                 description: End date for the competition (ISO 8601 format)
    *                 example: "2024-02-15T23:59:59Z"
-   *               votingStartDate:
+   *               boostStartDate:
    *                 type: string
    *                 format: date-time
    *                 description: Start date for voting (ISO 8601 format, used when creating a new competition)
    *                 example: "2024-01-15T00:00:00Z"
-   *               votingEndDate:
+   *               boostEndDate:
    *                 type: string
    *                 format: date-time
    *                 description: End date for voting (ISO 8601 format, used when creating a new competition)
@@ -687,12 +687,12 @@ export function configureAdminRoutes(
    *                 type: string
    *                 description: URL to competition image
    *                 example: https://example.com/image.jpg
-   *               votingStartDate:
+   *               boostStartDate:
    *                 type: string
    *                 format: date-time
    *                 description: Voting start date
    *                 example: 2023-05-01T00:00:00Z
-   *               votingEndDate:
+   *               boostEndDate:
    *                 type: string
    *                 format: date-time
    *                 description: Voting end date
@@ -796,12 +796,12 @@ export function configureAdminRoutes(
    *                       format: date-time
    *                       description: Competition end date
    *                       nullable: true
-   *                     votingStartDate:
+   *                     boostStartDate:
    *                       type: string
    *                       format: date-time
    *                       description: Voting start date
    *                       nullable: true
-   *                     votingEndDate:
+   *                     boostEndDate:
    *                       type: string
    *                       format: date-time
    *                       description: Voting end date

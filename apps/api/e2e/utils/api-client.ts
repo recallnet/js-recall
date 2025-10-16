@@ -446,8 +446,8 @@ export class ApiClient {
           sandboxMode?: boolean;
           externalUrl?: string;
           imageUrl?: string;
-          votingStartDate?: string;
-          votingEndDate?: string;
+          boostStartDate?: string;
+          boostEndDate?: string;
           tradingConstraints?: TradingConstraints;
           rewards?: Record<number, number>;
           perpsProvider?: {
@@ -469,8 +469,8 @@ export class ApiClient {
     sandboxMode?: boolean,
     externalUrl?: string,
     imageUrl?: string,
-    votingStartDate?: string,
-    votingEndDate?: string,
+    boostStartDate?: string,
+    boostEndDate?: string,
     tradingConstraints?: TradingConstraints,
   ): Promise<StartCompetitionResponse | ErrorResponse> {
     try {
@@ -482,7 +482,7 @@ export class ApiClient {
 
       // Handle both object-based and individual parameter calls
       if (typeof params === "object") {
-        requestData = { votingStartDate: now, ...params };
+        requestData = { boostStartDate: now, ...params };
       } else {
         requestData = {
           name: params,
@@ -492,8 +492,8 @@ export class ApiClient {
           sandboxMode,
           externalUrl,
           imageUrl,
-          votingStartDate: votingStartDate || now,
-          votingEndDate,
+          boostStartDate: boostStartDate || now,
+          boostEndDate,
           tradingConstraints,
         };
       }
@@ -522,8 +522,8 @@ export class ApiClient {
     type,
     startDate,
     endDate,
-    votingStartDate,
-    votingEndDate,
+    boostStartDate,
+    boostEndDate,
     joinStartDate,
     joinEndDate,
     maxParticipants,
@@ -542,8 +542,8 @@ export class ApiClient {
     type?: string;
     startDate?: string;
     endDate?: string;
-    votingStartDate?: string;
-    votingEndDate?: string;
+    boostStartDate?: string;
+    boostEndDate?: string;
     joinStartDate?: string;
     joinEndDate?: string;
     maxParticipants?: number;
@@ -576,8 +576,8 @@ export class ApiClient {
           type,
           startDate,
           endDate,
-          votingStartDate,
-          votingEndDate,
+          boostStartDate,
+          boostEndDate,
           joinStartDate,
           joinEndDate,
           maxParticipants,
@@ -606,8 +606,8 @@ export class ApiClient {
       type,
       externalUrl,
       imageUrl,
-      votingStartDate,
-      votingEndDate,
+      boostStartDate,
+      boostEndDate,
       minimumStake,
       tradingConstraints,
       rewards,
@@ -619,8 +619,8 @@ export class ApiClient {
       type?: string;
       externalUrl?: string;
       imageUrl?: string;
-      votingStartDate?: string;
-      votingEndDate?: string;
+      boostStartDate?: string;
+      boostEndDate?: string;
       minimumStake?: number;
       tradingConstraints?: TradingConstraints;
       rewards?: Record<number, number>;
@@ -646,8 +646,8 @@ export class ApiClient {
           type,
           externalUrl,
           imageUrl,
-          votingStartDate,
-          votingEndDate,
+          boostStartDate,
+          boostEndDate,
           minimumStake,
           tradingConstraints,
           rewards,

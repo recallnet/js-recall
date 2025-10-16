@@ -21,8 +21,8 @@ export function getCompetitionStateConfig(
     status,
     startDate,
     endDate,
-    votingStartDate,
-    votingEndDate,
+    boostStartDate,
+    boostEndDate,
     joinStartDate,
     joinEndDate,
   } = competition;
@@ -34,8 +34,8 @@ export function getCompetitionStateConfig(
     endDate === null &&
     joinStartDate === null &&
     joinEndDate === null &&
-    votingStartDate === null &&
-    votingEndDate === null
+    boostStartDate === null &&
+    boostEndDate === null
   ) {
     return {
       subTitle: "Registration starting soon!",
@@ -110,7 +110,7 @@ export function getCompetitionStateConfig(
   }
 
   // Flow #5
-  if (joinEndDate && now >= joinEndDate && votingStartDate === null) {
+  if (joinEndDate && now >= joinEndDate && boostStartDate === null) {
     return {
       subTitle: "Registration is closed",
       description: "",
@@ -121,18 +121,18 @@ export function getCompetitionStateConfig(
   }
 
   // Flow #6
-  if (votingStartDate && now < votingStartDate) {
+  if (boostStartDate && now < boostStartDate) {
     return {
       subTitle: "Get ready!",
       description: "Boosting opens in...",
       variant: "blue",
-      untilTime: votingStartDate,
+      untilTime: boostStartDate,
       phase: "boosting",
     };
   }
 
   // Flow #7
-  if (votingStartDate && votingEndDate === null && now >= votingStartDate) {
+  if (boostStartDate && boostEndDate === null && now >= boostStartDate) {
     return {
       subTitle: "Boosting is closed!",
       description: "",
@@ -143,18 +143,18 @@ export function getCompetitionStateConfig(
   }
 
   // Flow #8
-  if (votingEndDate && now < votingEndDate) {
+  if (boostEndDate && now < boostEndDate) {
     return {
       subTitle: "Get ready!",
       description: "Boosting closes in...",
       variant: "blue",
-      untilTime: votingEndDate,
+      untilTime: boostEndDate,
       phase: "boosting",
     };
   }
 
   // Flow #9
-  if (votingEndDate && now >= votingEndDate) {
+  if (boostEndDate && now >= boostEndDate) {
     if (status === "pending") {
       return {
         subTitle: "Boosting is closed!",

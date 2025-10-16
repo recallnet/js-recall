@@ -35,8 +35,8 @@ describe("BoostAwardService", () => {
     imageUrl: null,
     startDate: new Date(),
     endDate: null,
-    votingStartDate: new Date(),
-    votingEndDate: null,
+    boostStartDate: new Date(),
+    boostEndDate: null,
     joinStartDate: new Date(),
     joinEndDate: null,
     maxParticipants: null,
@@ -389,12 +389,12 @@ describe("BoostAwardService", () => {
       const stake1 = createMockStake(1n, 1000000000000000000n);
       const stake2 = createMockStake(2n, 2000000000000000000n);
       const competition1 = createMockCompetition("comp-1", "Competition 1");
-      competition1.votingStartDate = new Date("2024-01-15");
-      competition1.votingEndDate = new Date("2024-01-30");
+      competition1.boostStartDate = new Date("2024-01-15");
+      competition1.boostEndDate = new Date("2024-01-30");
 
       const competition2 = createMockCompetition("comp-2", "Competition 2");
-      competition2.votingStartDate = new Date("2024-02-01");
-      competition2.votingEndDate = new Date("2024-02-15");
+      competition2.boostStartDate = new Date("2024-02-01");
+      competition2.boostEndDate = new Date("2024-02-15");
 
       const mockBoostResult = {
         type: "applied" as const,
@@ -450,7 +450,7 @@ describe("BoostAwardService", () => {
     it("throws error when competition missing voting dates", async () => {
       const stake = createMockStake(1n, 1000000000000000000n);
       const competition = createMockCompetition("comp-1");
-      competition.votingStartDate = null; // Missing voting start date
+      competition.boostStartDate = null; // Missing voting start date
 
       mockDb.transaction.mockImplementation(
         async (callback: (tx: Transaction) => Promise<unknown>) =>
@@ -472,8 +472,8 @@ describe("BoostAwardService", () => {
         new Date("2024-01-02"),
       );
       const competition = createMockCompetition("comp-1");
-      competition.votingStartDate = new Date("2024-01-15");
-      competition.votingEndDate = new Date("2024-01-30");
+      competition.boostStartDate = new Date("2024-01-15");
+      competition.boostEndDate = new Date("2024-01-30");
 
       const mockBoostResult = {
         type: "applied" as const,
@@ -513,8 +513,8 @@ describe("BoostAwardService", () => {
     it("handles noop boost results", async () => {
       const stake = createMockStake(1n, 1000000000000000000n);
       const competition = createMockCompetition("comp-1");
-      competition.votingStartDate = new Date("2024-01-15");
-      competition.votingEndDate = new Date("2024-01-30");
+      competition.boostStartDate = new Date("2024-01-15");
+      competition.boostEndDate = new Date("2024-01-30");
 
       const mockBoostResult = {
         type: "noop" as const,
@@ -588,8 +588,8 @@ describe("BoostAwardService", () => {
 
       const stake = createMockStake(1n, 1000000000000000000n);
       const competition = createMockCompetition("comp-1");
-      competition.votingStartDate = new Date("2024-01-15");
-      competition.votingEndDate = new Date("2024-01-30");
+      competition.boostStartDate = new Date("2024-01-15");
+      competition.boostEndDate = new Date("2024-01-30");
 
       mockStakesRepo.allStakedByWallet.mockResolvedValue([stake]);
       mockCompetitionRepo.findOpenForBoosting.mockResolvedValue([competition]);

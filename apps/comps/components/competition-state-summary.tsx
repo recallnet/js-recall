@@ -45,11 +45,11 @@ export const CompetitionStateSummary: React.FC<
   const joinEndDate = competition.joinEndDate
     ? new Date(competition.joinEndDate)
     : null;
-  const votingStartDate = competition.votingStartDate
-    ? new Date(competition.votingStartDate)
+  const boostStartDate = competition.boostStartDate
+    ? new Date(competition.boostStartDate)
     : null;
-  const votingEndDate = competition.votingEndDate
-    ? new Date(competition.votingEndDate)
+  const boostEndDate = competition.boostEndDate
+    ? new Date(competition.boostEndDate)
     : null;
 
   const isRegistered = hasAgents(competition) && competition.agents.length > 0;
@@ -117,27 +117,27 @@ export const CompetitionStateSummary: React.FC<
 
   const getBoostingState = () => {
     // Boosting period hasn't started (grey)
-    if (votingStartDate && isFuture(votingStartDate)) {
-      const timeDiff = votingStartDate.getTime() - now.getTime();
+    if (boostStartDate && isFuture(boostStartDate)) {
+      const timeDiff = boostStartDate.getTime() - now.getTime();
       const isLessThan24Hours = timeDiff < 24 * 60 * 60 * 1000;
 
       return {
         text: "Boosting begins in",
         color: "text-gray-500",
-        date: votingStartDate,
+        date: boostStartDate,
         showCountdown: isLessThan24Hours,
       };
     }
 
     // Boosting closes in [hh:mm:ss] (green)
-    if (votingEndDate && isFuture(votingEndDate)) {
-      const timeDiff = votingEndDate.getTime() - now.getTime();
+    if (boostEndDate && isFuture(boostEndDate)) {
+      const timeDiff = boostEndDate.getTime() - now.getTime();
       const isLessThan24Hours = timeDiff < 24 * 60 * 60 * 1000;
 
       return {
         text: "Boosting closes in",
         color: "text-green-500",
-        date: votingEndDate,
+        date: boostEndDate,
         showCountdown: isLessThan24Hours,
       };
     }

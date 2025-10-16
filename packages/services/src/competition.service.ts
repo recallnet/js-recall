@@ -70,8 +70,8 @@ export interface CreateCompetitionParams {
   type?: CompetitionType;
   startDate?: Date;
   endDate?: Date;
-  votingStartDate?: Date;
-  votingEndDate?: Date;
+  boostStartDate?: Date;
+  boostEndDate?: Date;
   joinStartDate?: Date;
   joinEndDate?: Date;
   maxParticipants?: number;
@@ -408,8 +408,8 @@ export class CompetitionService {
    * @param type Competition type (defaults to trading)
    * @param startDate Optional start date for the competition
    * @param endDate Optional end date for the competition
-   * @param votingStartDate Optional voting start date
-   * @param votingEndDate Optional voting end date
+   * @param boostStartDate Optional voting start date
+   * @param boostEndDate Optional voting end date
    * @param joinStartDate Optional start date for joining the competition
    * @param joinEndDate Optional end date for joining the competition
    * @param maxParticipants Optional maximum number of participants allowed
@@ -428,8 +428,8 @@ export class CompetitionService {
     type,
     startDate,
     endDate,
-    votingStartDate,
-    votingEndDate,
+    boostStartDate,
+    boostEndDate,
     joinStartDate,
     joinEndDate,
     maxParticipants,
@@ -449,8 +449,8 @@ export class CompetitionService {
       imageUrl,
       startDate: startDate ?? null,
       endDate: endDate ?? null,
-      votingStartDate: votingStartDate ?? null,
-      votingEndDate: votingEndDate ?? null,
+      boostStartDate: boostStartDate ?? null,
+      boostEndDate: boostEndDate ?? null,
       joinStartDate: joinStartDate ?? null,
       joinEndDate: joinEndDate ?? null,
       maxParticipants: maxParticipants ?? null,

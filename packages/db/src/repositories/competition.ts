@@ -1085,8 +1085,8 @@ export class CompetitionRepository {
             eq(competitions.status, "active"),
             eq(competitions.status, "pending"),
           ),
-          lt(competitions.votingStartDate, now),
-          gt(competitions.votingEndDate, now),
+          lt(competitions.boostStartDate, now),
+          gt(competitions.boostEndDate, now),
         ),
       );
     return result;
@@ -2521,8 +2521,8 @@ export class CompetitionRepository {
           // Competition fields
           competitionId: competitions.id,
           competitionStatus: competitions.status,
-          competitionVotingStartsAt: competitions.votingStartDate,
-          competitionVotingEndsAt: competitions.votingEndDate,
+          competitionVotingStartsAt: competitions.boostStartDate,
+          competitionVotingEndsAt: competitions.boostEndDate,
 
           // Trading constraints
           minimumPairAgeHours: tradingConstraints.minimumPairAgeHours,

@@ -215,8 +215,8 @@ class EventProcessor {
               },
               {
                 id: competition.id,
-                votingStartDate: competition.votingStartDate!,
-                votingEndDate: competition.votingEndDate!,
+                boostStartDate: competition.boostStartDate!,
+                boostEndDate: competition.boostEndDate!,
               },
               tx,
             ),

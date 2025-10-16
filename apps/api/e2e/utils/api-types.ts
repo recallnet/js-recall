@@ -352,8 +352,8 @@ export interface Competition {
     averageEquity?: number; // Optional - only for perps
     competitionType?: string; // Type indicator for clients
   };
-  votingStartDate: string | null;
-  votingEndDate: string | null;
+  boostStartDate: string | null;
+  boostEndDate: string | null;
   // Join date constraint fields
   joinStartDate: string | null;
   joinEndDate: string | null;

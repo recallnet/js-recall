@@ -64,8 +64,8 @@ export interface Competition {
     totalPositions?: number; // Only for perpetual futures competitions
     averageEquity?: number; // Only for perpetual futures competitions
   };
-  votingStartDate: string | null;
-  votingEndDate: string | null;
+  boostStartDate: string | null;
+  boostEndDate: string | null;
   portfolioValue?: number;
   pnl?: number;
   pnlPercent?: number;

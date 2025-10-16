@@ -18,8 +18,8 @@ type StakePosition = {
 
 type CompetitionPosition = {
   id: string;
-  votingStartDate: Date;
-  votingEndDate: Date;
+  boostStartDate: Date;
+  boostEndDate: Date;
 };
 
 type InitForStakeResult = BoostDiffResult & {
@@ -63,17 +63,17 @@ export class BoostAwardService {
   awardAmountForStake(stake: StakePosition, competition: CompetitionPosition) {
     const stakedAt = stake.stakedAt.valueOf();
     const canUnstakeAfter = stake.canUnstakeAfter.valueOf();
-    const votingEndDate = competition.votingEndDate.valueOf();
-    const votingStartDate = competition.votingStartDate.valueOf();
+    const boostEndDate = competition.boostEndDate.valueOf();
+    const boostStartDate = competition.boostStartDate.valueOf();
 
     // TODO: we decided to remove the multipler for the time being,
     // but I'm keeping the logic to avoid a bigger refactoring at this point
 
     let multiplier: number;
     // Before voting starts
-    if (stakedAt < votingStartDate) {
+    if (stakedAt < boostStartDate) {
       // And covers the voting period
-      if (canUnstakeAfter >= votingEndDate) {
+      if (canUnstakeAfter >= boostEndDate) {
         // Means can not unstake before the voting ends
         multiplier = 1;
       } else {
@@ -93,9 +93,9 @@ export class BoostAwardService {
       throw new Error("Competition not found.");
     }
 
-    const { id, votingStartDate, votingEndDate } = competition;
+    const { id, boostStartDate, boostEndDate } = competition;
 
-    if (!(votingStartDate && votingEndDate)) {
+    if (!(boostStartDate && boostEndDate)) {
       return { stakes: [], totalAwardAmount: 0n };
     }
 
@@ -112,8 +112,8 @@ export class BoostAwardService {
         };
         const { boostAmount } = this.awardAmountForStake(stakePosition, {
           id,
-          votingStartDate,
-          votingEndDate,
+          boostStartDate,
+          boostEndDate,
         });
 
         acc.stakes.push({
@@ -229,8 +229,8 @@ export class BoostAwardService {
 
       return Promise.all(
         competitions.flatMap((competition) => {
-          const { votingStartDate, votingEndDate } = competition;
-          if (!votingStartDate || !votingEndDate) {
+          const { boostStartDate, boostEndDate } = competition;
+          if (!boostStartDate || !boostEndDate) {
             throw new Error("Competition missing voting dates");
           }
           return stakes.map(async (stake) => {
@@ -241,8 +241,8 @@ export class BoostAwardService {
               },
               {
                 ...competition,
-                votingStartDate,
-                votingEndDate,
+                boostStartDate,
+                boostEndDate,
               },
               tx,
             );

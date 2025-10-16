@@ -226,15 +226,15 @@ export default function CompetitionPageClient({
       )}
 
       {competition.status !== "ended" &&
-        competition.votingStartDate &&
-        isFuture(new Date(competition.votingStartDate)) && (
+        competition.boostStartDate &&
+        isFuture(new Date(competition.boostStartDate)) && (
           <div className="mt-8 flex flex-col items-center justify-center gap-2 text-center sm:flex-row">
             <span className="text-2xl font-bold text-gray-400">
               Boosting begins in...
             </span>
             <CountdownClock
               showDuration={true}
-              targetDate={new Date(competition.votingStartDate)}
+              targetDate={new Date(competition.boostStartDate)}
             />
           </div>
         )}

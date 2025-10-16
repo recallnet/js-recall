@@ -97,7 +97,7 @@ export class RewardsService {
         throw new Error("Competition not found");
       }
 
-      if (!competition.votingStartDate || !competition.votingEndDate) {
+      if (!competition.boostStartDate || !competition.boostEndDate) {
         throw new Error("Voting start or end date not found");
       }
 
@@ -106,8 +106,8 @@ export class RewardsService {
       }
 
       const boostAllocationWindow = {
-        start: competition.votingStartDate,
-        end: competition.votingEndDate,
+        start: competition.boostStartDate,
+        end: competition.boostEndDate,
       };
 
       const leaderboardWithWallets =
