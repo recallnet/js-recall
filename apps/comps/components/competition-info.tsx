@@ -10,6 +10,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@recallnet/ui2/components/tabs";
+import { Tooltip } from "@recallnet/ui2/components/tooltip";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { useCompetitionRules } from "@/hooks";
@@ -183,16 +184,19 @@ export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
           {/* Minimum Stake and Registration Limit Row */}
           <div className="grid grid-cols-2 border-b">
             <div className="flex flex-col items-start gap-2 border-r p-4 sm:p-[25px]">
-              <CellTitle>Minimum Stake</CellTitle>
-              <p className="font-bold">
-                {competition.minimumStake ? (
-                  <span className="flex items-center gap-2">
-                    {formatAmount(competition.minimumStake, 0, true)} <Recall />
-                  </span>
-                ) : (
-                  "N/A"
-                )}
-              </p>
+              <CellTitle>Minimum Agent Stake</CellTitle>
+              <Tooltip content="Amount of staked RECALL required for an agent to compete in this competition">
+                <p className="font-bold">
+                  {competition.minimumStake ? (
+                    <span className="flex items-center gap-2">
+                      {formatAmount(competition.minimumStake, 0, true)}{" "}
+                      <Recall />
+                    </span>
+                  ) : (
+                    "N/A"
+                  )}
+                </p>
+              </Tooltip>
             </div>
             <div className="flex flex-col items-start gap-2 p-4 sm:p-[25px]">
               <CellTitle>Registration Limit</CellTitle>
