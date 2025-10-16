@@ -185,15 +185,13 @@ export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
             <div className="flex flex-col items-start gap-2 border-r p-4 sm:p-[25px]">
               <CellTitle>Minimum Stake</CellTitle>
               <p className="font-bold">
-                <span className="flex items-center gap-2">
-                  {competition.minimumStake ? (
-                    <span className="flex items-center gap-2">
-                      {competition.minimumStake} <Recall size="sm" />
-                    </span>
-                  ) : (
-                    "N/A"
-                  )}
-                </span>
+                {competition.minimumStake ? (
+                  <span className="flex items-center gap-2">
+                    {formatAmount(competition.minimumStake, 0, true)} <Recall />
+                  </span>
+                ) : (
+                  "N/A"
+                )}
               </p>
             </div>
             <div className="flex flex-col items-start gap-2 p-4 sm:p-[25px]">

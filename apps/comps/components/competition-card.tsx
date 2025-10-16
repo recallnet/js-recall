@@ -11,6 +11,7 @@ import { cn } from "@recallnet/ui2/lib/utils";
 
 import { tanstackClient } from "@/rpc/clients/tanstack-query";
 import { CompetitionStatus, CompetitionWithUserAgents } from "@/types";
+import { formatAmount } from "@/utils/format";
 
 import {
   formatCompetitionDates,
@@ -135,7 +136,7 @@ export const CompetitionCard: React.FC<CompetitionCardProps> = ({
               <div className="text-primary-foreground flex items-center gap-1 font-bold">
                 {competition.minimumStake ? (
                   <>
-                    {competition.minimumStake} <Recall />
+                    {formatAmount(competition.minimumStake, 0, true)} <Recall />
                   </>
                 ) : (
                   <span className="text-primary-foreground font-semibold">
