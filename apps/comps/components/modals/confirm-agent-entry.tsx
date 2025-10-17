@@ -140,7 +140,6 @@ export const ConfirmAgentEntryModal: React.FC<ChooseAgentModalProps> = ({
                       <Recall />
                     </div>
                   </span>
-                  <span className="text-primary-foreground flex"></span>{" "}
                 </li>
               )}
               <li>
