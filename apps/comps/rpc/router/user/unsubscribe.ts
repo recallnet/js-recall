@@ -2,12 +2,10 @@ import { ORPCError } from "@orpc/server";
 
 import { ApiError } from "@recallnet/services/types";
 
-import { base } from "@/rpc/context/base";
 import { authMiddleware } from "@/rpc/middleware/auth";
 
-export const unsubscribe = base
-  .use(authMiddleware)
-  .handler(async ({ context, errors }) => {
+export const unsubscribe = authMiddleware.handler(
+  async ({ context, errors }) => {
     try {
       const user = context.user;
 
@@ -73,4 +71,5 @@ export const unsubscribe = base
       // Unknown error type
       throw errors.INTERNAL({ message: "Failed to unsubscribe" });
     }
-  });
+  },
+);

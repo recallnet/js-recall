@@ -3,12 +3,10 @@ import { z } from "zod";
 
 import { ApiError } from "@recallnet/services/types";
 
-import { base } from "@/rpc/context/base";
 import { userAgentMiddleware } from "@/rpc/middleware/user-agent";
 
-export const getUserAgent = base
+export const getUserAgent = userAgentMiddleware
   .input(z.object({ agentId: z.string().uuid() }))
-  .use(userAgentMiddleware, (input) => ({ agentId: input.agentId }))
   .handler(async ({ context, errors }) => {
     try {
       const { agent } = context;
@@ -17,14 +15,12 @@ export const getUserAgent = base
       const sanitizedAgent = context.agentService.sanitizeAgent(agent);
       const agentWithMetrics =
         await context.agentService.attachAgentMetrics(sanitizedAgent);
-      const computedAgent = {
+      return {
         ...agentWithMetrics,
         email: agent.email,
         deactivationReason: agent.deactivationReason,
         deactivationDate: agent.deactivationDate,
       };
-
-      return computedAgent;
     } catch (error) {
       // Re-throw if already an oRPC error
       if (error instanceof ORPCError) {

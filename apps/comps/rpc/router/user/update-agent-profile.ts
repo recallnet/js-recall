@@ -4,7 +4,6 @@ import { z } from "zod";
 import { ApiError } from "@recallnet/services/types";
 
 import { CacheTags, invalidateCacheTags } from "@/lib/cache-tags";
-import { base } from "@/rpc/context/base";
 import { userAgentMiddleware } from "@/rpc/middleware/user-agent";
 
 /**
@@ -42,9 +41,8 @@ const UpdateAgentProfileInputSchema = z
   })
   .strict();
 
-export const updateAgentProfile = base
+export const updateAgentProfile = userAgentMiddleware
   .input(UpdateAgentProfileInputSchema)
-  .use(userAgentMiddleware, (input) => ({ agentId: input.agentId }))
   .handler(async ({ input, context, errors }) => {
     try {
       const { agent } = context;

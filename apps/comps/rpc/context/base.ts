@@ -10,6 +10,22 @@
  *   - Database instance for data access
  *
  * It also standardizes common error types for use in RPC responses.
+ *
+ * ## Error Handling & Sentry Integration
+ *
+ * Sentry error capture is integrated via the sentryMiddleware, which wraps ALL
+ * RPC handlers extending from this base context. This middleware runs BEFORE
+ * oRPC's internal error handling, ensuring unexpected errors are captured.
+ *
+ * **Error Types:**
+ * - **Expected/Business Logic Errors**: Use `errors.NOT_FOUND`, `errors.UNAUTHORIZED`, etc.
+ *   These are handled by oRPC and returned as proper JSON-RPC error responses.
+ *   They are NOT sent to Sentry as they represent expected application behavior.
+ *
+ * - **Unexpected Errors**: Thrown exceptions (database failures, uncaught errors, etc.)
+ *   are captured by sentryMiddleware with context including:
+ *   - Input parameters
+ *   - User ID and email (if authenticated)
  */
 import { os } from "@orpc/server";
 import { PrivyClient } from "@privy-io/server-auth";
@@ -25,6 +41,8 @@ import {
   LeaderboardService,
   UserService,
 } from "@recallnet/services";
+
+import { sentryMiddleware } from "@/rpc/middleware/sentry";
 
 /**
  * The base context object for RPC procedures. The properties included
@@ -76,4 +94,5 @@ export const base = os
     SERVICE_UNAVAILABLE: {
       message: "External service unavailable",
     },
-  });
+  })
+  .use(sentryMiddleware);

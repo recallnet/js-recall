@@ -4,12 +4,10 @@ import { z } from "zod/v4";
 import { buildPaginationResponse } from "@recallnet/services/lib";
 import { ApiError, PagingParamsSchema } from "@recallnet/services/types";
 
-import { base } from "@/rpc/context/base";
 import { authMiddleware } from "@/rpc/middleware/auth";
 import { cacheMiddleware } from "@/rpc/middleware/cache";
 
-export const getTrades = base
-  .use(authMiddleware)
+export const getTrades = authMiddleware
   .use(
     cacheMiddleware({
       revalidateSecs: 30,

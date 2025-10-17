@@ -4,12 +4,10 @@ import { z } from "zod";
 import { verifyPrivyUserHasLinkedWallet } from "@recallnet/services/lib";
 
 import { config } from "@/config/private";
-import { base } from "@/rpc/context/base";
 import { authMiddleware } from "@/rpc/middleware/auth";
 import { serializeUser } from "@/rpc/router/utils/serialize-user";
 
-export const linkWallet = base
-  .use(authMiddleware)
+export const linkWallet = authMiddleware
   .input(z.object({ walletAddress: z.string() }))
   .handler(async ({ input, context, errors }) => {
     try {

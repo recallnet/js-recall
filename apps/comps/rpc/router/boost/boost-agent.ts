@@ -1,12 +1,10 @@
 import { z } from "zod";
 
 import { CacheTags, invalidateCacheTags } from "@/lib/cache-tags";
-import { base } from "@/rpc/context/base";
 import { authMiddleware } from "@/rpc/middleware/auth";
 import { assertNever } from "@/rpc/router/utils/assert-never";
 
-export const boostAgent = base
-  .use(authMiddleware)
+export const boostAgent = authMiddleware
   .input(
     z.object({
       competitionId: z.string(),

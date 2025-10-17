@@ -1,11 +1,9 @@
 import { z } from "zod";
 
-import { base } from "@/rpc/context/base";
 import { authMiddleware } from "@/rpc/middleware/auth";
 import { assertNever } from "@/rpc/router/utils/assert-never";
 
-export const balance = base
-  .use(authMiddleware)
+export const balance = authMiddleware
   .input(z.object({ competitionId: z.string() }))
   .handler(async ({ input, context, errors }) => {
     const res = await context.boostService.getUserBoostBalance(

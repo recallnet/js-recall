@@ -7,11 +7,9 @@ import {
   PagingParamsSchema,
 } from "@recallnet/services/types";
 
-import { base } from "@/rpc/context/base";
 import { userMiddleware } from "@/rpc/middleware/user";
 
-export const listEnriched = base
-  .use(userMiddleware)
+export const listEnriched = userMiddleware
   .input(
     z.object({
       status: CompetitionStatusSchema,
@@ -20,12 +18,11 @@ export const listEnriched = base
   )
   .handler(async ({ context, input, errors }) => {
     try {
-      const res = await context.competitionService.getEnrichedCompetitions({
+      return await context.competitionService.getEnrichedCompetitions({
         status: input.status,
         userId: context.user?.id,
         pagingParams: input.paging || PagingParamsSchema.parse({}),
       });
-      return res;
     } catch (error) {
       // Re-throw if already an oRPC error
       if (error instanceof ORPCError) {

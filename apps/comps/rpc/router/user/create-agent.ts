@@ -3,11 +3,9 @@ import { ORPCError } from "@orpc/server";
 import { ApiError, CreateAgentBodySchema } from "@recallnet/services/types";
 
 import { CacheTags, invalidateCacheTags } from "@/lib/cache-tags";
-import { base } from "@/rpc/context/base";
 import { authMiddleware } from "@/rpc/middleware/auth";
 
-export const createAgent = base
-  .use(authMiddleware)
+export const createAgent = authMiddleware
   .input(CreateAgentBodySchema)
   .handler(async ({ input, context, errors }) => {
     try {

@@ -4,11 +4,9 @@ import { z } from "zod/v4";
 import { ApiError } from "@recallnet/services/types";
 
 import { CacheTags, invalidateCacheTags } from "@/lib/cache-tags";
-import { base } from "@/rpc/context/base";
 import { authMiddleware } from "@/rpc/middleware/auth";
 
-export const join = base
-  .use(authMiddleware)
+export const join = authMiddleware
   .input(
     z.object({
       competitionId: z.uuid(),

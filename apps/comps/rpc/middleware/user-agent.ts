@@ -1,7 +1,3 @@
-import { AgentService } from "@recallnet/services";
-
-import { base } from "@/rpc/context/base";
-
 import { authMiddleware } from "./auth";
 
 /**
@@ -9,11 +5,12 @@ import { authMiddleware } from "./auth";
  * Requires authenticated user in context
  * Takes agentId as input and adds the verified agent to context
  */
-export const userAgentMiddleware = base
-  .middleware(authMiddleware)
-  .concat(async ({ context, next, errors }, input: { agentId: string }) => {
+export const userAgentMiddleware = authMiddleware.use(
+  async ({ context, next, errors }, input) => {
+    const { agentId } = input as { agentId: string };
+
     // Get the agent
-    const agent = await context.agentService.getAgent(input.agentId);
+    const agent = await context.agentService.getAgent(agentId);
 
     if (!agent) {
       throw errors.NOT_FOUND({ message: "Agent not found" });
@@ -26,9 +23,10 @@ export const userAgentMiddleware = base
       });
     }
 
-    return await next({
+    return next({
       context: {
         agent,
       },
     });
-  });
+  },
+);

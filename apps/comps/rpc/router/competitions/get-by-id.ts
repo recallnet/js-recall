@@ -3,11 +3,9 @@ import { z } from "zod/v4";
 
 import { ApiError } from "@recallnet/services/types";
 
-import { base } from "@/rpc/context/base";
 import { userMiddleware } from "@/rpc/middleware/user";
 
-export const getById = base
-  .use(userMiddleware)
+export const getById = userMiddleware
   .input(
     z.object({
       id: z.uuid(),

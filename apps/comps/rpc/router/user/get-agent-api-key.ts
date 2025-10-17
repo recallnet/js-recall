@@ -3,12 +3,10 @@ import { z } from "zod";
 
 import { ApiError } from "@recallnet/services/types";
 
-import { base } from "@/rpc/context/base";
 import { userAgentMiddleware } from "@/rpc/middleware/user-agent";
 
-export const getAgentApiKey = base
+export const getAgentApiKey = userAgentMiddleware
   .input(z.object({ agentId: z.string().uuid() }))
-  .use(userAgentMiddleware, (input) => ({ agentId: input.agentId }))
   .handler(async ({ context, errors }) => {
     try {
       const { agent } = context;
