@@ -24,7 +24,7 @@ export class RewardsService {
   private rewardsRepo: RewardsRepository;
   private competitionRepository: CompetitionRepository;
   private boostRepository: BoostRepository;
-  private rewardsAllocator: RewardsAllocator;
+  private rewardsAllocator?: RewardsAllocator;
   private db: Database;
   private logger: Logger;
 
@@ -32,14 +32,14 @@ export class RewardsService {
     rewardsRepo: RewardsRepository,
     competitionRepository: CompetitionRepository,
     boostRepository: BoostRepository,
-    rewardsAllocator: RewardsAllocator,
+    rewardsAllocator: RewardsAllocator | null | undefined,
     db: Database,
     logger: Logger,
   ) {
     this.rewardsRepo = rewardsRepo;
     this.competitionRepository = competitionRepository;
     this.boostRepository = boostRepository;
-    this.rewardsAllocator = rewardsAllocator;
+    this.rewardsAllocator = rewardsAllocator ?? undefined;
     this.db = db;
     this.logger = logger;
   }
@@ -151,7 +151,7 @@ export class RewardsService {
         userId: reward.owner,
         agentId: reward.competitor ?? null,
         competitionId: competitionId,
-        address: reward.address,
+        address: reward.address.toLowerCase(),
         amount: reward.amount,
         leafHash: hexToBytes(
           createLeafNode(reward.address as Hex, reward.amount),
@@ -249,19 +249,31 @@ export class RewardsService {
     const rootHash = merkleTree.getHexRoot();
 
     const executeWithTransaction = async (transaction: Transaction) => {
-      this.logger.info(
-        `[RewardsService] Publishing root hash ${rootHash} to blockchain for competition ${competitionId}`,
-      );
+      let transactionHash: string;
 
-      const result = await this.rewardsAllocator.allocate(
-        rootHash as Hex,
-        allocationAmount,
-        startTimestamp,
-      );
+      if (this.rewardsAllocator) {
+        this.logger.info(
+          `[RewardsService] Publishing root hash ${rootHash} to blockchain for competition ${competitionId}`,
+        );
 
-      this.logger.info(
-        `[RewardsService] Successfully published root hash to blockchain. Transaction: ${result.transactionHash}`,
-      );
+        const result = await this.rewardsAllocator.allocate(
+          rootHash as Hex,
+          allocationAmount,
+          startTimestamp,
+        );
+
+        transactionHash = result.transactionHash;
+
+        this.logger.info(
+          `[RewardsService] Successfully published root hash to blockchain. Transaction: ${transactionHash}`,
+        );
+      } else {
+        // When allocator is not provided, proceed with off-chain allocation and record a placeholder tx value
+        transactionHash = "offchain";
+        this.logger.warn(
+          `[RewardsService] RewardsAllocator not provided. Skipping on-chain publish for competition ${competitionId}. Recording tx="${transactionHash}"`,
+        );
+      }
 
       await runWithConcurrencyLimit(treeNodes, 1000, 10, async (batch) => {
         await transaction.insert(rewardsTree).values(batch);
@@ -271,7 +283,7 @@ export class RewardsService {
         id: crypto.randomUUID(),
         competitionId: competitionId,
         rootHash: new Uint8Array(merkleTree.getRoot()),
-        tx: result.transactionHash,
+        tx: transactionHash,
       });
     };
 

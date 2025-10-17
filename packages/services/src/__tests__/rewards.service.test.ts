@@ -1214,7 +1214,7 @@ describe("RewardsService", () => {
       );
     });
 
-    it("should throw runtime error when allocator is null", async () => {
+    it("should proceed with off-chain allocation when allocator is null", async () => {
       const competitionId = "comp-123";
       const startTimestamp = 1640995200;
 
@@ -1243,14 +1243,25 @@ describe("RewardsService", () => {
         mockRewardsRepo,
         mockCompetitionRepository,
         mockBoostRepository,
-        null as unknown as RewardsAllocator, // Explicitly pass null to test runtime behavior
+        null as unknown as RewardsAllocator,
         mockDb,
         mockLogger,
       );
 
-      await expect(
-        service.allocate(competitionId, startTimestamp),
-      ).rejects.toThrow();
+      await service.allocate(competitionId, startTimestamp);
+
+      // Should not call blockchain allocator
+      expect(mockRewardsAllocator.allocate).not.toHaveBeenCalled();
+
+      // Verify database inserts occurred
+      expect(mockDb.transaction).toHaveBeenCalledOnce();
+
+      // Second values() call should insert root with tx set to 'offchain'
+      const valuesCalls = mockTransaction.values.mock.calls;
+      expect(valuesCalls.length).toBeGreaterThanOrEqual(2);
+      const rootInsertArgs = valuesCalls[valuesCalls.length - 1]?.[0];
+      expect(rootInsertArgs).toBeDefined();
+      expect(rootInsertArgs.tx).toBe("offchain");
     });
   });
 

@@ -7,6 +7,7 @@ import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { CompetitionRewardsRepository } from "@recallnet/db/repositories/competition-rewards";
 import { LeaderboardRepository } from "@recallnet/db/repositories/leaderboard";
 import { PerpsRepository } from "@recallnet/db/repositories/perps";
+import { RewardsRepository } from "@recallnet/db/repositories/rewards";
 import { StakesRepository } from "@recallnet/db/repositories/stakes";
 import { TradeRepository } from "@recallnet/db/repositories/trade";
 import { TradingConstraintsRepository } from "@recallnet/db/repositories/trading-constraints";
@@ -81,4 +82,9 @@ export const userRepository = new UserRepository(
 export const voteRepository = new VoteRepository(
   db,
   createLogger("VoteRepository"),
+);
+
+export const rewardsRepository = new RewardsRepository(
+  db,
+  createLogger("RewardsRepository"),
 );

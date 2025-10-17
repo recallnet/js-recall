@@ -4,6 +4,7 @@ import { router as agent } from "./agent";
 import { router as boost } from "./boost";
 import { router as competitions } from "./competitions";
 import { router as leaderboard } from "./leaderboard";
+import { router as rewards } from "./rewards";
 import { router as user } from "./user";
 
 export const router = {
@@ -12,6 +13,7 @@ export const router = {
   competitions,
   leaderboard,
   user,
+  rewards,
 } as const;
 
 export type RouterOutputs = InferRouterOutputs<typeof router>;

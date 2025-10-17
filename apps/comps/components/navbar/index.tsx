@@ -14,9 +14,10 @@ import { ConnectWallet } from "@/components/connect-wallet";
 import { PrivyAuthButton } from "@/components/privy-auth-button";
 import { config } from "@/config/public";
 import { useSession } from "@/hooks";
+import { useClaim } from "@/hooks/useClaim";
 
+import { Claim } from "./Claim";
 import { NonStakeBoost } from "./NonStakeBoost";
-//import { Claim } from "./Claim";
 //import { GetRecall } from "./GetRecall";
 import { RecallToken } from "./RecallToken";
 import { StakeBoost } from "./StakeBoost";
@@ -27,6 +28,7 @@ export const Navbar: React.FunctionComponent = () => {
   const pathname = usePathname();
 
   const { isAuthenticated, isWalletConnected } = useSession();
+  const { totalClaimable } = useClaim();
 
   const [open, setOpen] = useState(false);
 
@@ -129,7 +131,7 @@ export const Navbar: React.FunctionComponent = () => {
               {config.publicFlags.tge ? <StakeBoost /> : <NonStakeBoost />}
               {/* <GetRecall /> */}
               {/* <StakeRecall /> */}
-              {/* <Claim /> */}
+              {totalClaimable > 0n && <Claim />}
             </div>
           )}
           {isAuthenticated && !isWalletConnected && (

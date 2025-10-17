@@ -8,6 +8,7 @@ import {
   useChainId as useWagmiChainId,
   useDisconnect as useWagmiDisconnect,
   useReadContract as useWagmiReadContract,
+  useReadContracts as useWagmiReadContracts,
   useWaitForTransactionReceipt as useWagmiWaitForTransactionReceipt,
   useWriteContract as useWagmiWriteContract,
 } from "wagmi";
@@ -100,6 +101,51 @@ export function useSafeReadContract(params?: any): any {
 
   // eslint-disable-next-line react-hooks/rules-of-hooks
   return useWagmiReadContract(params);
+}
+
+/**
+ * Safe wrapper for useReadContracts that handles missing WagmiProvider
+ */
+export function useSafeReadContracts(params?: any): any {
+  const wagmiAvailable = isWagmiAvailable();
+
+  // Create a stable default result
+  const defaultResult = useMemo(
+    () => ({
+      data: undefined,
+      error: null,
+      isError: false,
+      isPending: false,
+      isLoading: false,
+      isSuccess: false,
+      isLoadingError: false,
+      isRefetchError: false,
+      isRefetching: false,
+      isFetched: false,
+      isFetchedAfterMount: false,
+      isFetching: false,
+      isPlaceholderData: false,
+      isStale: false,
+      dataUpdatedAt: 0,
+      errorUpdateCount: 0,
+      errorUpdatedAt: 0,
+      failureCount: 0,
+      failureReason: null,
+      fetchStatus: "idle" as const,
+      refetch: async () => ({}) as any,
+      remove: () => {},
+      status: "pending" as const,
+      queryKey: [] as readonly unknown[],
+    }),
+    [],
+  );
+
+  if (!wagmiAvailable || !params) {
+    return defaultResult as any;
+  }
+
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  return useWagmiReadContracts(params);
 }
 
 /**
