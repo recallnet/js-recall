@@ -1,4 +1,4 @@
-import { User } from "@/types";
+import type { RouterOutputs } from "@/rpc/router";
 
 export type UserWalletState =
   | { type: "only-embedded" }
@@ -10,7 +10,9 @@ export type UserWalletState =
   | { type: "external-not-linked"; address: string }
   | { type: "unknown" };
 
-export function userWalletState(user: User): UserWalletState {
+export function userWalletState(
+  user: RouterOutputs["user"]["getProfile"],
+): UserWalletState {
   const { walletAddress, embeddedWalletAddress, walletLastVerifiedAt } = user;
   if (walletAddress !== embeddedWalletAddress && !walletLastVerifiedAt) {
     return {
@@ -21,7 +23,7 @@ export function userWalletState(user: User): UserWalletState {
     return {
       type: "external-linked",
       address: walletAddress,
-      lastVerifiedAt: walletLastVerifiedAt,
+      lastVerifiedAt: walletLastVerifiedAt.toISOString(),
     };
   } else if (walletAddress === embeddedWalletAddress) {
     return { type: "only-embedded" };

@@ -6,6 +6,7 @@ import { AgentRepository } from "@recallnet/db/repositories/agent";
 import { BoostRepository } from "@recallnet/db/repositories/boost";
 import { UserRepository } from "@recallnet/db/repositories/user";
 import { VoteRepository } from "@recallnet/db/repositories/vote";
+import { type UserMetadata } from "@recallnet/db/schema/core/defs";
 import { InsertUser, SelectUser } from "@recallnet/db/schema/core/types";
 import { Database, Transaction } from "@recallnet/db/types";
 
@@ -14,7 +15,7 @@ import { checkUserUniqueConstraintViolation } from "./lib/error-utils.js";
 import { verifyAndGetPrivyUserInfo } from "./lib/privy-verification.js";
 import { WalletWatchlist } from "./lib/watchlist.js";
 import { ApiError } from "./types/index.js";
-import { UserMetadata, UserSearchParams } from "./types/index.js";
+import { UserSearchParams } from "./types/index.js";
 
 /**
  * User Service

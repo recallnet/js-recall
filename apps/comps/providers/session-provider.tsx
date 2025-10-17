@@ -37,7 +37,8 @@ import {
 import { mergeWithoutUndefined } from "@/lib/merge-without-undefined";
 import { userWalletState } from "@/lib/user-wallet-state";
 import { tanstackClient } from "@/rpc/clients/tanstack-query";
-import { User as BackendUser, UpdateProfileRequest } from "@/types";
+import type { RouterOutputs } from "@/rpc/router";
+import { UpdateProfileRequest } from "@/types";
 
 export type Session = {
   // Login to Privy state
@@ -54,14 +55,16 @@ export type Session = {
   linkOrConnectWalletError: Error | null;
 
   // Fetch user state
-  backendUser: BackendUser | undefined;
+  backendUser: RouterOutputs["user"]["getProfile"] | undefined;
   isFetchBackendUserLoading: boolean;
   isFetchBackendUserError: boolean;
   fetchBackendUserError: Error | null;
   // Allow caller to manually refetch user data
   refetchBackendUser: (
     options?: RefetchOptions,
-  ) => Promise<QueryObserverResult<BackendUser | undefined, Error>>;
+  ) => Promise<
+    QueryObserverResult<RouterOutputs["user"]["getProfile"] | undefined, Error>
+  >;
 
   // Login to backend state
   isLoginToBackendPending: boolean;
@@ -69,7 +72,9 @@ export type Session = {
   loginToBackendError: Error | null;
 
   // Update backendUser state
-  updateBackendUser: (updates: UpdateProfileRequest) => Promise<BackendUser>;
+  updateBackendUser: (
+    updates: UpdateProfileRequest,
+  ) => Promise<RouterOutputs["user"]["updateProfile"]>;
   isUpdateBackendUserPending: boolean;
   isUpdateBackendUserError: boolean;
   updateBackendUserError: Error | null;
@@ -367,13 +372,19 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         await queryClient.cancelQueries({ queryKey: queryKey });
 
         // Snapshot the previous value
-        const previousUser = queryClient.getQueryData<BackendUser>(queryKey);
+        const previousUser =
+          queryClient.getQueryData<RouterOutputs["user"]["getProfile"]>(
+            queryKey,
+          );
 
         // Optimistically update the cache
-        queryClient.setQueryData<BackendUser>(queryKey, (old) => {
-          if (!old) return undefined;
-          return mergeWithoutUndefined(old, updates);
-        });
+        queryClient.setQueryData<RouterOutputs["user"]["getProfile"]>(
+          queryKey,
+          (old) => {
+            if (!old) return undefined;
+            return mergeWithoutUndefined(old, updates);
+          },
+        );
 
         // Return a context object with the snapshotted value
         return { previousUser: previousUser };
@@ -389,7 +400,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       },
       onSuccess: (updatedUser) => {
         // Update cache with the actual server response
-        queryClient.setQueryData<BackendUser>(
+        queryClient.setQueryData<RouterOutputs["user"]["getProfile"]>(
           tanstackClient.user.getProfile.key(),
           updatedUser,
         );
