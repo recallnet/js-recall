@@ -1,5 +1,6 @@
 import {
   UseQueryResult,
+  skipToken,
   useMutation,
   useQuery,
   useQueryClient,
@@ -36,13 +37,15 @@ export const useUserAgents = (
 ): UseQueryResult<RouterOutputs["user"]["getUserAgents"], Error> => {
   const { isAuthenticated } = useSession();
 
-  return useQuery(
-    tanstackClient.user.getUserAgents.queryOptions({
-      input: params,
-      enabled: isAuthenticated,
-      placeholderData: (prev) => prev,
-    }),
-  );
+  const options = tanstackClient.user.getUserAgents.queryOptions({
+    input: params,
+    placeholderData: (prev) => prev,
+  });
+
+  return useQuery({
+    ...options,
+    queryFn: isAuthenticated ? options.queryFn : skipToken,
+  });
 };
 
 /**

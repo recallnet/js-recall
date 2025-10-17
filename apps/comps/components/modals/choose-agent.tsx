@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { skipToken, useQuery } from "@tanstack/react-query";
 import { ArrowLeft, ArrowRight, Bot } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -36,12 +36,14 @@ export const ChooseAgentModal: React.FC<ChooseAgentModalProps> = ({
   onContinue,
   competition,
 }) => {
-  const { data: compAgents } = useQuery(
-    tanstackClient.competitions.getAgents.queryOptions({
-      input: { competitionId: competition?.id ?? "" },
-      enabled: !!competition,
-    }),
-  );
+  const options = tanstackClient.competitions.getAgents.queryOptions({
+    input: { competitionId: competition?.id ?? "" },
+  });
+
+  const { data: compAgents } = useQuery({
+    ...options,
+    queryFn: competition ? options.queryFn : skipToken,
+  });
   const [selectedIndex, setSelectedIndex] = useState(0);
   const pathname = usePathname();
 

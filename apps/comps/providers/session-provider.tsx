@@ -14,6 +14,7 @@ import * as Sentry from "@sentry/nextjs";
 import {
   QueryObserverResult,
   RefetchOptions,
+  skipToken,
   useMutation,
   useQuery,
   useQueryClient,
@@ -186,31 +187,36 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     [loginInner, setLoginError],
   );
   // Query for BackendUser session data
+  const options = tanstackClient.user.getProfile.queryOptions({
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
+    retry: (failureCount, error) => {
+      // Don't retry on 401/403 errors (UNAUTHORIZED)
+      if (
+        error &&
+        typeof error === "object" &&
+        "code" in error &&
+        error.code === "UNAUTHORIZED"
+      ) {
+        return false;
+      }
+      return failureCount < 3;
+    },
+  });
+
   const {
     data: backendUser,
     isLoading: isFetchBackendUserLoading,
     isError: isFetchBackendUserError,
     error: fetchBackendUserError,
     refetch: refetchBackendUser,
-  } = useQuery(
-    tanstackClient.user.getProfile.queryOptions({
-      enabled: authenticated && ready && isLoginToBackendSuccess,
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      gcTime: 10 * 60 * 1000, // 10 minutes
-      retry: (failureCount, error) => {
-        // Don't retry on 401/403 errors (UNAUTHORIZED)
-        if (
-          error &&
-          typeof error === "object" &&
-          "code" in error &&
-          error.code === "UNAUTHORIZED"
-        ) {
-          return false;
-        }
-        return failureCount < 3;
-      },
-    }),
-  );
+  } = useQuery({
+    ...options,
+    queryFn:
+      authenticated && ready && isLoginToBackendSuccess
+        ? options.queryFn
+        : skipToken,
+  });
 
   // Iterate through all the connected wallets and filter out the embedded Privy wallet.
   const connectedExternalWallets = useMemo(() => {
