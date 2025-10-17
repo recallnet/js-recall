@@ -2,14 +2,13 @@
 
 import {
   ArrowLeft,
-  Calendar,
+  ChartNoAxesColumn,
   ChevronDown,
   ChevronRight,
   ExternalLink,
   Info,
   Loader2,
-  Target,
-  TrendingUp,
+  Trophy,
   Users,
 } from "lucide-react";
 import Link from "next/link";
@@ -19,7 +18,6 @@ import ReactMarkdown from "react-markdown";
 import { Badge } from "@recallnet/ui2/components/badge";
 import { Button } from "@recallnet/ui2/components/button";
 import { Card } from "@recallnet/ui2/components/card";
-import { Tooltip } from "@recallnet/ui2/components/tooltip";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { useUnifiedLeaderboard } from "@/hooks/useUnifiedLeaderboard";
@@ -227,7 +225,7 @@ export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
               {skillData.stats.topScore && (
                 <div>
                   <div className="mb-1 flex items-center justify-center gap-1">
-                    <Target size={16} className="text-green-400" />
+                    <Trophy size={16} className="text-green-400" />
                     <span className="text-lg font-bold text-green-400">
                       {typeof skillData.stats.topScore === "number"
                         ? skillData.stats.topScore.toFixed(0)
@@ -241,7 +239,7 @@ export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
               {skillData.stats.avgScore && (
                 <div>
                   <div className="mb-1 flex items-center justify-center gap-1">
-                    <TrendingUp size={16} className="text-blue-400" />
+                    <ChartNoAxesColumn size={16} className="text-blue-400" />
                     <span className="text-lg font-bold text-blue-400">
                       {skillData.stats.avgScore.toFixed(0)}
                     </span>
@@ -254,7 +252,7 @@ export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
         </div>
 
         {/* Stats Overview - Desktop */}
-        <div className="hidden grid-cols-4 gap-6 md:grid">
+        <div className="hidden grid-cols-3 gap-6 md:grid">
           <Card className="p-6 text-center">
             <div className="mb-2 flex items-center justify-center gap-2">
               <Users size={20} className="text-gray-400" />
@@ -270,7 +268,7 @@ export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
           {skillData.stats.topScore && (
             <Card className="p-6 text-center">
               <div className="mb-2 flex items-center justify-center gap-2">
-                <TrendingUp size={20} className="text-green-400" />
+                <Trophy size={20} className="text-green-400" />
                 <span className="text-2xl font-bold text-green-400">
                   {typeof skillData.stats.topScore === "number"
                     ? skillData.stats.topScore.toFixed(0)
@@ -284,7 +282,7 @@ export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
           {skillData.stats.avgScore && (
             <Card className="p-6 text-center">
               <div className="mb-2 flex items-center justify-center gap-2">
-                <TrendingUp size={20} className="text-blue-400" />
+                <ChartNoAxesColumn size={20} className="text-blue-400" />
                 <span className="text-2xl font-bold text-blue-400">
                   {skillData.stats.avgScore.toFixed(0)}
                 </span>
@@ -292,32 +290,6 @@ export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
               <div className="text-sm text-gray-400">Average Score</div>
             </Card>
           )}
-
-          <Card className="p-6 text-center">
-            <div className="mb-2 flex items-center justify-center gap-2">
-              <Calendar size={20} className="text-purple-400" />
-              <span className="text-2xl font-bold text-purple-400">
-                {skillData.stats.modelCount + skillData.stats.agentCount}
-              </span>
-            </div>
-            <Tooltip
-              content={
-                <div className="space-y-1">
-                  <div>
-                    <span className="font-semibold">M</span> = Models
-                  </div>
-                  <div>
-                    <span className="font-semibold">A</span> = Agents
-                  </div>
-                </div>
-              }
-              position="bottom"
-            >
-              <div className="cursor-help text-sm text-gray-400">
-                {skillData.stats.modelCount}M + {skillData.stats.agentCount}A
-              </div>
-            </Tooltip>
-          </Card>
         </div>
 
         {/* Leaderboard Table */}
