@@ -5,7 +5,7 @@ import { BoostRepository } from "@recallnet/db/repositories/boost";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { RewardsRepository } from "@recallnet/db/repositories/rewards";
 import { competitions } from "@recallnet/db/schema/core/defs";
-import { InsertReward } from "@recallnet/db/schema/voting/types";
+import { InsertReward } from "@recallnet/db/schema/rewards/types";
 import { RewardsService, createLeafNode } from "@recallnet/services";
 
 import { db } from "@/database/db.js";

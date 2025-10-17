@@ -13,19 +13,19 @@ import { JoinCompetitionButton } from "./join-competition-button";
 
 interface BoostButtonProps {
   competitionId: string;
-  votingEnabled: boolean;
+  boostingEnabled: boolean;
   className?: string;
 }
 
 const BoostButton: React.FC<BoostButtonProps> = ({
   competitionId,
-  votingEnabled,
+  boostingEnabled,
   className,
 }) => {
   const buttonStyles =
     "border border-yellow-500 bg-black uppercase text-white hover:bg-yellow-500 hover:text-black disabled:hover:bg-black disabled:hover:text-white";
 
-  if (votingEnabled) {
+  if (boostingEnabled) {
     return (
       <Link href={`/competitions/${competitionId}`} className={className}>
         <Button
@@ -73,7 +73,7 @@ export const CompetitionActions: React.FC<CompetitionActionsProps> = ({
         <div className="flex-1">
           <BoostButton
             competitionId={competition.id}
-            votingEnabled={isOpenForBoosting}
+            boostingEnabled={isOpenForBoosting}
             className="w-full"
           />
         </div>
@@ -96,7 +96,7 @@ export const CompetitionActions: React.FC<CompetitionActionsProps> = ({
       <div className={containerClasses}>
         <BoostButton
           competitionId={competition.id}
-          votingEnabled={isOpenForBoosting}
+          boostingEnabled={isOpenForBoosting}
           className="w-full"
         />
       </div>

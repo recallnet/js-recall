@@ -27,7 +27,6 @@ import {
   type SpecificChain,
   type SpecificChainBalances,
 } from "../types/index.js";
-import type { VoteService } from "../vote.service.js";
 
 describe("CompetitionService - joinCompetition", () => {
   let competitionService: CompetitionService;
@@ -36,7 +35,6 @@ describe("CompetitionService - joinCompetition", () => {
   let portfolioSnapshotterService: MockProxy<PortfolioSnapshotterService>;
   let agentService: MockProxy<AgentService>;
   let agentRankService: MockProxy<AgentRankService>;
-  let voteService: MockProxy<VoteService>;
   let tradingConstraintsService: MockProxy<TradingConstraintsService>;
   let competitionRewardService: MockProxy<CompetitionRewardService>;
   let perpsDataProcessor: MockProxy<PerpsDataProcessor>;
@@ -85,8 +83,8 @@ describe("CompetitionService - joinCompetition", () => {
     updatedAt: new Date(),
     imageUrl: null,
     externalUrl: null,
-    votingStartDate: null,
-    votingEndDate: null,
+    boostStartDate: null,
+    boostEndDate: null,
     joinStartDate: null,
     joinEndDate: null,
     maxParticipants: null,
@@ -103,7 +101,6 @@ describe("CompetitionService - joinCompetition", () => {
     portfolioSnapshotterService = mock<PortfolioSnapshotterService>();
     agentService = mock<AgentService>();
     agentRankService = mock<AgentRankService>();
-    voteService = mock<VoteService>();
     tradingConstraintsService = mock<TradingConstraintsService>();
     competitionRewardService = mock<CompetitionRewardService>();
     perpsDataProcessor = mock<PerpsDataProcessor>();
@@ -143,7 +140,6 @@ describe("CompetitionService - joinCompetition", () => {
       portfolioSnapshotterService,
       agentService,
       agentRankService,
-      voteService,
       tradingConstraintsService,
       competitionRewardService,
       perpsDataProcessor,

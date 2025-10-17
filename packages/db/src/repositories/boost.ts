@@ -3,13 +3,13 @@ import { randomBytes } from "node:crypto";
 import { z } from "zod";
 
 import { BlockchainAddressAsU8A } from "../coders/index.js";
-import { stakes } from "../schema/indexing/defs.js";
-import * as schema from "../schema/voting/defs.js";
+import * as schema from "../schema/boost/defs.js";
 import {
   InsertStakeBoostAward,
   SelectAgentBoost,
   SelectAgentBoostTotal,
-} from "../schema/voting/types.js";
+} from "../schema/boost/types.js";
+import { stakes } from "../schema/indexing/defs.js";
 import type { Transaction } from "../types.js";
 import { Database } from "../types.js";
 
@@ -108,7 +108,7 @@ type BoostAgentResult =
  * BoostRepository
  *
  * Off-chain accounting for the "Boost"s.
- * Tables (see schema/voting/defs.ts):
+ * Tables (see schema/boost/defs.ts):
  *  - boost_balances: current mutable balance per wallet (CHECK balance >= 0)
  *  - boost_changes: immutable append-only journal of deltas with an idempotency key
  *

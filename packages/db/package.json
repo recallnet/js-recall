@@ -182,16 +182,6 @@
         "default": "./dist/repositories/user.cjs"
       }
     },
-    "./repositories/vote": {
-      "import": {
-        "types": "./dist/repositories/vote.d.ts",
-        "default": "./dist/repositories/vote.js"
-      },
-      "require": {
-        "types": "./dist/repositories/vote.d.cts",
-        "default": "./dist/repositories/vote.cjs"
-      }
-    },
     "./types": {
       "import": {
         "types": "./dist/types.d.ts",
@@ -220,6 +210,26 @@
       "require": {
         "types": "./dist/schema/core/defs.d.cts",
         "default": "./dist/schema/core/defs.cjs"
+      }
+    },
+    "./schema/boost/defs": {
+      "import": {
+        "types": "./dist/schema/boost/defs.d.ts",
+        "default": "./dist/schema/boost/defs.js"
+      },
+      "require": {
+        "types": "./dist/schema/boost/defs.d.cts",
+        "default": "./dist/schema/boost/defs.cjs"
+      }
+    },
+    "./schema/boost/types": {
+      "import": {
+        "types": "./dist/schema/boost/types.d.ts",
+        "default": "./dist/schema/boost/types.js"
+      },
+      "require": {
+        "types": "./dist/schema/boost/types.d.cts",
+        "default": "./dist/schema/boost/types.cjs"
       }
     },
     "./schema/core/relations": {
@@ -292,6 +302,36 @@
         "default": "./dist/schema/ranking/types.cjs"
       }
     },
+    "./schema/rewards/defs": {
+      "import": {
+        "types": "./dist/schema/rewards/defs.d.ts",
+        "default": "./dist/schema/rewards/defs.js"
+      },
+      "require": {
+        "types": "./dist/schema/rewards/defs.d.cts",
+        "default": "./dist/schema/rewards/defs.cjs"
+      }
+    },
+    "./schema/rewards/relations": {
+      "import": {
+        "types": "./dist/schema/rewards/relations.d.ts",
+        "default": "./dist/schema/rewards/relations.js"
+      },
+      "require": {
+        "types": "./dist/schema/rewards/relations.d.cts",
+        "default": "./dist/schema/rewards/relations.cjs"
+      }
+    },
+    "./schema/rewards/types": {
+      "import": {
+        "types": "./dist/schema/rewards/types.d.ts",
+        "default": "./dist/schema/rewards/types.js"
+      },
+      "require": {
+        "types": "./dist/schema/rewards/types.d.cts",
+        "default": "./dist/schema/rewards/types.cjs"
+      }
+    },
     "./schema/trading/defs": {
       "import": {
         "types": "./dist/schema/trading/defs.d.ts",
@@ -320,36 +360,6 @@
       "require": {
         "types": "./dist/schema/trading/types.d.cts",
         "default": "./dist/schema/trading/types.cjs"
-      }
-    },
-    "./schema/voting/defs": {
-      "import": {
-        "types": "./dist/schema/voting/defs.d.ts",
-        "default": "./dist/schema/voting/defs.js"
-      },
-      "require": {
-        "types": "./dist/schema/voting/defs.d.cts",
-        "default": "./dist/schema/voting/defs.cjs"
-      }
-    },
-    "./schema/voting/relations": {
-      "import": {
-        "types": "./dist/schema/voting/relations.d.ts",
-        "default": "./dist/schema/voting/relations.js"
-      },
-      "require": {
-        "types": "./dist/schema/voting/relations.d.cts",
-        "default": "./dist/schema/voting/relations.cjs"
-      }
-    },
-    "./schema/voting/types": {
-      "import": {
-        "types": "./dist/schema/voting/types.d.ts",
-        "default": "./dist/schema/voting/types.js"
-      },
-      "require": {
-        "types": "./dist/schema/voting/types.d.cts",
-        "default": "./dist/schema/voting/types.cjs"
       }
     }
   },

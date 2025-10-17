@@ -71,12 +71,13 @@ export const ConfirmAgentEntryModal: React.FC<ChooseAgentModalProps> = ({
                   [{agent?.stats.bestPlacement?.rank || 0}]
                 </span>
               </li>
-              <li>
-                Total Votes{" "}
+              {/* // TODO: Re-implement with boosts */}
+              {/* <li>
+                Total Boosts{" "}
                 <span className="text-primary-foreground">
                   [{agent?.stats.totalVotes || 0}]
                 </span>
-              </li>
+              </li> */}
               <li>
                 Completed Comps{" "}
                 <span className="text-primary-foreground">

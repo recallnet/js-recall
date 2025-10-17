@@ -128,39 +128,6 @@ export function configureCompetitionsRoutes(
    *                               type: string
    *                               description: Agent ID of the reward
    *                               example: "123e4567-e89b-12d3-a456-426614174000"
-   *                       votingEnabled:
-   *                         type: boolean
-   *                         description: Whether voting is enabled for this competition (only present for authenticated users)
-   *                       totalVotes:
-   *                         type: integer
-   *                         description: Total number of votes cast in this competition (only present for authenticated users)
-   *                       userVotingInfo:
-   *                         type: object
-   *                         nullable: true
-   *                         description: User's voting state for this competition (only present for authenticated users)
-   *                         properties:
-   *                           canVote:
-   *                             type: boolean
-   *                             description: Whether the user can vote in this competition
-   *                           reason:
-   *                             type: string
-   *                             nullable: true
-   *                             description: Reason why voting is not allowed (if canVote is false)
-   *                           info:
-   *                             type: object
-   *                             properties:
-   *                               hasVoted:
-   *                                 type: boolean
-   *                                 description: Whether the user has already voted in this competition
-   *                               agentId:
-   *                                 type: string
-   *                                 nullable: true
-   *                                 description: ID of the agent the user voted for (if hasVoted is true)
-   *                               votedAt:
-   *                                 type: string
-   *                                 format: date-time
-   *                                 nullable: true
-   *                                 description: When the user cast their vote (if hasVoted is true)
    *                       tradingConstraints:
    *                         type: object
    *                         description: Trading constraints for the competition (only present for authenticated users)
@@ -400,9 +367,6 @@ export function configureCompetitionsRoutes(
    *                         totalVolume:
    *                           type: number
    *                           description: Total volume in USD
-   *                         totalVotes:
-   *                           type: integer
-   *                           description: Total number of votes cast in this competition
    *                         uniqueTokens:
    *                           type: number
    *                           description: Total number of unique tokens traded (only for paper trading competitions)
@@ -445,36 +409,6 @@ export function configureCompetitionsRoutes(
    *                             type: string
    *                             description: Agent ID of the reward
    *                             example: "123e4567-e89b-12d3-a456-426614174000"
-   *                     votingEnabled:
-   *                       type: boolean
-   *                       description: Whether voting is enabled for this competition (only present for authenticated users)
-   *                     userVotingInfo:
-   *                       type: object
-   *                       nullable: true
-   *                       description: User's voting state for this competition (only present for authenticated users)
-   *                       properties:
-   *                         canVote:
-   *                           type: boolean
-   *                           description: Whether the user can vote in this competition
-   *                         reason:
-   *                           type: string
-   *                           nullable: true
-   *                           description: Reason why voting is not allowed (if canVote is false)
-   *                         info:
-   *                           type: object
-   *                           properties:
-   *                             hasVoted:
-   *                               type: boolean
-   *                               description: Whether the user has already voted in this competition
-   *                             agentId:
-   *                               type: string
-   *                               nullable: true
-   *                               description: ID of the agent the user voted for (if hasVoted is true)
-   *                             votedAt:
-   *                               type: string
-   *                               format: date-time
-   *                               nullable: true
-   *                               description: When the user cast their vote (if hasVoted is true)
    *                     tradingConstraints:
    *                       type: object
    *                       description: Trading constraints for the competition
@@ -553,7 +487,7 @@ export function configureCompetitionsRoutes(
    *             Optional field(s) to sort by. Supports single or multiple fields separated by commas.
    *             Prefix with '-' for descending order (e.g., '-name' or '-rank').
    *             Default is 'rank' ascending.
-   *           enum: [rank, -rank, score, -score, pnl, -pnl, pnlPercent, -pnlPercent, change24h, -change24h, change24hPercent, -change24hPercent, voteCount, -voteCount, calmarRatio, -calmarRatio, simpleReturn, -simpleReturn, maxDrawdown, -maxDrawdown, portfolioValue, -portfolioValue, id, -id, ownerId, -ownerId, walletAddress, -walletAddress, handle, -handle, status, -status, createdAt, -createdAt, updatedAt, -updatedAt, name, -name]
+   *           enum: [rank, -rank, score, -score, pnl, -pnl, pnlPercent, -pnlPercent, change24h, -change24h, change24hPercent, -change24hPercent, calmarRatio, -calmarRatio, simpleReturn, -simpleReturn, maxDrawdown, -maxDrawdown, portfolioValue, -portfolioValue, id, -id, ownerId, -ownerId, walletAddress, -walletAddress, handle, -handle, status, -status, createdAt, -createdAt, updatedAt, -updatedAt, name, -name]
    *           default: rank
    *         required: false
    *         description: Sort order for results
@@ -648,9 +582,6 @@ export function configureCompetitionsRoutes(
    *                       change24hPercent:
    *                         type: number
    *                         description: 24h change as percentage
-   *                       voteCount:
-   *                         type: integer
-   *                         description: Number of votes this agent has received in the competition
    *                       calmarRatio:
    *                         type: number
    *                         nullable: true
