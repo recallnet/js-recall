@@ -2754,11 +2754,10 @@ export class CompetitionService {
         params.pagingParams,
       );
 
-      // If user is authenticated, enrich competitions with trading constraint information
+      // Enrich competitions with trading constraint information
       let enrichedCompetitions = competitions;
       const competitionIds = competitions.map((c) => c.id);
 
-      // Fetch all data in parallel with batch queries
       const enrichmentData =
         await this.competitionRepo.getEnrichedCompetitions(competitionIds);
 

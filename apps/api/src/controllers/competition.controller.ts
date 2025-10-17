@@ -133,10 +133,6 @@ export function makeCompetitionController(services: ServiceRegistry) {
           throw new ApiError(400, "Competition ID is required");
         }
 
-        competitionLogger.debug(
-          `Unauthenticated request for competition details (public access)`,
-        );
-
         // Check cache
         const shouldCacheResponse = checkShouldCacheResponse(req);
         const cacheKey = generateCacheKey(req, "byId", {
