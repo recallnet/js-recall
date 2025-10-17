@@ -180,7 +180,7 @@ export class RewardsRepository {
         .where(
           and(
             eq(rewards.competitionId, competitionId),
-            eq(rewards.address, address),
+            eq(rewards.address, address.toLowerCase()),
             eq(rewards.amount, amount),
           ),
         )
@@ -205,7 +205,7 @@ export class RewardsRepository {
         .from(rewards)
         .where(
           and(
-            eq(rewards.address, address.toLocaleLowerCase()),
+            eq(rewards.address, address.toLowerCase()),
             eq(rewards.claimed, false),
           ),
         );
@@ -242,7 +242,7 @@ export class RewardsRepository {
         )
         .where(
           and(
-            eq(rewards.address, address.toLocaleLowerCase()),
+            eq(rewards.address, address.toLowerCase()),
             eq(rewards.claimed, false),
           ),
         );

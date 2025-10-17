@@ -38,7 +38,6 @@ type UseRecallReturn = UseRecallLoading | UseRecallLoaded;
  */
 export const useRecall = (): UseRecallReturn => {
   const { address } = useSafeAccount();
-  const chainId = useSafeChainId();
 
   const token = getAddress(config.blockchain.tokenContractAddress);
 
