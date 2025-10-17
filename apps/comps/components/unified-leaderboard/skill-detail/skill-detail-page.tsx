@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  ArrowLeft,
   ChartNoAxesColumn,
   ChevronDown,
   ChevronRight,
@@ -11,7 +10,6 @@ import {
   Trophy,
   Users,
 } from "lucide-react";
-import Link from "next/link";
 import React, { useCallback, useState } from "react";
 import ReactMarkdown from "react-markdown";
 
@@ -20,6 +18,7 @@ import { Button } from "@recallnet/ui2/components/button";
 import { Card } from "@recallnet/ui2/components/card";
 import { cn } from "@recallnet/ui2/lib/utils";
 
+import { BreadcrumbNav } from "@/components/breadcrumb-nav";
 import { useUnifiedLeaderboard } from "@/hooks/useUnifiedLeaderboard";
 import { client } from "@/rpc/clients/client-side";
 import { LeaderboardAgent } from "@/types/agent";
@@ -76,14 +75,23 @@ export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
 
   if (error) {
     return (
-      <Card className="p-8 text-center">
-        <h3 className="mb-2 text-lg font-semibold text-red-400">
-          Error Loading Skill
-        </h3>
-        <p className="text-gray-400">
-          Unable to load skill data. Please try again later.
-        </p>
-      </Card>
+      <div className="space-y-8 pb-16">
+        <BreadcrumbNav
+          items={[
+            { label: "Recall", href: "/" },
+            { label: "Leaderboards", href: "/leaderboards" },
+          ]}
+          className="mb-10"
+        />
+        <Card className="p-8 text-center">
+          <h3 className="mb-2 text-lg font-semibold text-red-400">
+            Error Loading Skill
+          </h3>
+          <p className="text-gray-400">
+            Unable to load skill data. Please try again later.
+          </p>
+        </Card>
+      </div>
     );
   }
 
@@ -107,39 +115,37 @@ export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
 
   if (!skill || !skillData) {
     return (
-      <Card className="p-8 text-center">
-        <h3 className="mb-2 text-lg font-semibold text-yellow-400">
-          Skill Not Found
-        </h3>
-        <p className="text-gray-400">
-          The requested skill could not be found or is not currently available.
-        </p>
-        <Link href="/leaderboards">
-          <Button variant="outline" className="mt-4">
-            <ArrowLeft size={16} className="mr-2" />
-            Back to Leaderboards
-          </Button>
-        </Link>
-      </Card>
+      <div className="space-y-8 pb-16">
+        <BreadcrumbNav
+          items={[
+            { label: "Recall", href: "/" },
+            { label: "Leaderboards", href: "/leaderboards" },
+          ]}
+          className="mb-10"
+        />
+        <Card className="p-8 text-center">
+          <h3 className="mb-2 text-lg font-semibold text-yellow-400">
+            Skill Not Found
+          </h3>
+          <p className="text-gray-400">
+            The requested skill could not be found or is not currently
+            available.
+          </p>
+        </Card>
+      </div>
     );
   }
 
   const isAgentSkill = checkIsAgentSkill(skill.category);
   return (
     <div className="space-y-8 pb-16">
-      {/* Header */}
-      <div className="mb-6 flex items-center gap-4">
-        <Link href="/leaderboards">
-          <Button
-            variant="outline"
-            size="sm"
-            className="border-gray-600 text-gray-300 hover:border-gray-500 hover:bg-gray-800 hover:text-white"
-          >
-            <ArrowLeft size={16} className="mr-2" />
-            Leaderboards
-          </Button>
-        </Link>
-      </div>
+      <BreadcrumbNav
+        items={[
+          { label: "Recall", href: "/" },
+          { label: "Leaderboards", href: "/leaderboards" },
+        ]}
+        className="mb-10"
+      />
 
       {/* Skill Info */}
       <div className="space-y-6">
