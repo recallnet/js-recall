@@ -4,6 +4,7 @@ import { useCallback, useMemo } from "react";
 import { type Address } from "viem";
 import {
   UseBalanceParameters,
+  UseReadContractParameters,
   useAccount as useWagmiAccount,
   useBalance as useWagmiBalance,
   useChainId as useWagmiChainId,
@@ -61,7 +62,7 @@ export function useSafeChainId(): number | undefined {
 /**
  * Safe wrapper for useReadContract that handles missing WagmiProvider
  */
-export function useSafeReadContract(params?: any): any {
+export function useSafeReadContract(params?: UseReadContractParameters): any {
   const wagmiAvailable = isWagmiAvailable();
 
   // Create a stable default result

@@ -94,7 +94,7 @@ export const formatAmount = (
  * Checks if a bigint amount should be displayed in compact format through comparison.
  * @param n - The bigint amount to check.
  * @param decimals - The number of decimals of the amount (e.g., 18 for RECALL).
- * @param compareTo - If the value is greater than the this value, the amount should be displayed in compact format (default: 1_000_000n).
+ * @param compareTo - If the value is greater than this value, the amount should be displayed in compact format (default: 1_000_000n).
  * @returns True if the amount should be displayed in compact format.
  */
 export const shouldShowCompact = (
