@@ -3654,8 +3654,8 @@ describe("Perps Competition", () => {
       await wait(500);
 
       // Second sync - equity=$2000, volume=$400
-      // Requirement = Max($500, $500 * 0.8) * 0.75 = $375 (uses START equity!)
-      // $400 >= $375 → Should NOT be removed (fair!)
+      // Requirement = Max($500, $500 * 0.8) * 0.5 = $250 (uses START equity!)
+      // $400 >= $250 → Should NOT be removed (fair!)
       await services.perpsDataProcessor.processPerpsCompetition(competition.id);
       await wait(500);
 

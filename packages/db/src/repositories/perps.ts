@@ -457,7 +457,7 @@ export class PerpsRepository {
    *
    * @param competitionId Competition ID
    * @param checkTimestamp Current timestamp for the check
-   * @param volumeMultiplier Daily volume multiplier (e.g., 0.75)
+   * @param volumeMultiplier Daily volume multiplier (e.g., 0.5)
    * @returns Array of agent IDs who should be disqualified
    */
   async getAgentsWithInsufficientDailyVolume(
