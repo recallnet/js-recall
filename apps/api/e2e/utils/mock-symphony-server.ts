@@ -24,7 +24,7 @@ export class MockSymphonyServer {
     0,
     0, // Calls 1-2: Startup sync (volume = 0)
     100,
-    100, // Calls 3-4: 24h later - INSUFFICIENT ($500 * 0.75 = $375 required)
+    100, // Calls 3-4: 24h later - INSUFFICIENT ($500 * 0.5 = $250 required)
     100,
     100, // Calls 5+: Agent should be removed before this
   ];
@@ -33,7 +33,7 @@ export class MockSymphonyServer {
     0,
     0, // Calls 1-2: Startup sync (volume = 0)
     400,
-    400, // Calls 3-4: 24h later - SUFFICIENT ($500 * 0.75 = $375 required)
+    400, // Calls 3-4: 24h later - SUFFICIENT ($500 * 0.5 = $250 required)
     800,
     800, // Calls 5-6: 48h later - still compliant
   ];

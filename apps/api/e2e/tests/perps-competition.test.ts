@@ -3355,7 +3355,7 @@ describe("Perps Competition", () => {
 
       await wait(100);
 
-      // Second sync - triggers 24h check (volume = $100, required = $375)
+      // Second sync - triggers 24h check (volume = $100, required = $250)
       await services.perpsDataProcessor.processPerpsCompetition(competition.id);
       await wait(500);
 
@@ -3408,7 +3408,7 @@ describe("Perps Competition", () => {
       await services.perpsDataProcessor.processPerpsCompetition(competition.id);
       await wait(500);
 
-      // Second sync - triggers 24h check (volume = $400, required = $375)
+      // Second sync - triggers 24h check (volume = $400, required = $250)
       await services.perpsDataProcessor.processPerpsCompetition(competition.id);
       await wait(500);
 
@@ -3461,9 +3461,9 @@ describe("Perps Competition", () => {
       await wait(500);
 
       // Second sync - equity=$2000, volume=$400
-      // Requirement = Max($500, $500 * 0.8) * 0.75 = $375 (uses START equity!)
-      // If we used current equity: Max($500, $2000 * 0.8) * 0.75 = $1200 (UNFAIR!)
-      // $400 >= $375 → Should NOT be removed
+      // Requirement = Max($500, $500 * 0.8) * 0.5 = $250 (uses START equity!)
+      // If we used current equity: Max($500, $2000 * 0.8) * 0.5 = $800 (UNFAIR!)
+      // $400 >= $250 → Should NOT be removed
       await services.perpsDataProcessor.processPerpsCompetition(competition.id);
       await wait(500);
 
@@ -3548,7 +3548,7 @@ describe("Perps Competition", () => {
 
       await wait(100);
 
-      // Second sync - triggers 24h check (volume = $100, required = $375)
+      // Second sync - triggers 24h check (volume = $100, required = $250)
       await services.perpsDataProcessor.processPerpsCompetition(competition.id);
       await wait(500);
 
@@ -3601,7 +3601,7 @@ describe("Perps Competition", () => {
       await services.perpsDataProcessor.processPerpsCompetition(competition.id);
       await wait(500);
 
-      // Second sync - triggers 24h check (volume = $400, required = $375)
+      // Second sync - triggers 24h check (volume = $400, required = $250)
       await services.perpsDataProcessor.processPerpsCompetition(competition.id);
       await wait(500);
 

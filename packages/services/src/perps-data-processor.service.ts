@@ -823,7 +823,7 @@ export class PerpsDataProcessor {
               competitionId,
               agentId,
               "disqualified",
-              "Failed to meet minimum daily trading volume requirement (0.75x account equity)",
+              "Failed to meet minimum daily trading volume requirement (0.5x account equity)",
             );
 
             this.logger.info(
@@ -909,7 +909,7 @@ export class PerpsDataProcessor {
     competitionStartDate: Date,
   ): Promise<string[]> {
     // Static configuration - ALWAYS ENFORCED
-    const DAILY_VOLUME_MULTIPLIER = 0.75;
+    const DAILY_VOLUME_MULTIPLIER = 0.5;
 
     const now = new Date();
     const daysSinceStart = Math.floor(

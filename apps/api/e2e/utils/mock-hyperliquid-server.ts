@@ -23,7 +23,7 @@ export class MockHyperliquidServer {
   private static readonly INSUFFICIENT_VOLUME_FILLS_PROGRESSION = [
     [],
     [], // Calls 1-2: Startup sync (no fills)
-    // Calls 3-4: 24h later - $100 total volume (INSUFFICIENT)
+    // Calls 3-4: 24h later - $100 total volume (INSUFFICIENT - $500 * 0.5 = $250 required)
     [
       {
         coin: "BTC",
@@ -69,7 +69,7 @@ export class MockHyperliquidServer {
   private static readonly SUFFICIENT_VOLUME_FILLS_PROGRESSION = [
     [],
     [], // Calls 1-2: Startup sync (no fills)
-    // Calls 3-4: 24h later - $400 total volume (SUFFICIENT)
+    // Calls 3-4: 24h later - $400 total volume (SUFFICIENT - $500 * 0.5 = $250 required)
     [
       {
         coin: "BTC",

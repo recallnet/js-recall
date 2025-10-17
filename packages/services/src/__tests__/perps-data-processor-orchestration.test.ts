@@ -1240,7 +1240,7 @@ describe("PerpsDataProcessor - processPerpsCompetition", () => {
       // Should have called the SQL aggregation method
       expect(
         mockPerpsRepo.getAgentsWithInsufficientDailyVolume,
-      ).toHaveBeenCalledWith("comp-1", expect.any(Date), 0.75);
+      ).toHaveBeenCalledWith("comp-1", expect.any(Date), 0.5);
 
       // Should have removed the violating agent
       expect(
@@ -1249,7 +1249,7 @@ describe("PerpsDataProcessor - processPerpsCompetition", () => {
         "comp-1",
         "agent-1",
         "disqualified",
-        "Failed to meet minimum daily trading volume requirement (0.75x account equity)",
+        "Failed to meet minimum daily trading volume requirement (0.5x account equity)",
       );
     });
 
@@ -1271,7 +1271,7 @@ describe("PerpsDataProcessor - processPerpsCompetition", () => {
       // Should have called the SQL method
       expect(
         mockPerpsRepo.getAgentsWithInsufficientDailyVolume,
-      ).toHaveBeenCalledWith("comp-1", expect.any(Date), 0.75);
+      ).toHaveBeenCalledWith("comp-1", expect.any(Date), 0.5);
 
       // Should NOT have removed any agents
       expect(
