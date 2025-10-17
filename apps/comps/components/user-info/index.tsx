@@ -86,7 +86,7 @@ export default function UserInfoSection({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: user?.name || "",
-      website: (user?.metadata as { website?: string } | null)?.website || "",
+      website: user?.metadata?.website || "",
     },
   });
 
@@ -94,7 +94,7 @@ export default function UserInfoSection({
   useEffect(() => {
     form.reset({
       name: user?.name || "",
-      website: (user?.metadata as { website?: string } | null)?.website || "",
+      website: user?.metadata?.website || "",
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.name, user?.metadata]);
@@ -224,16 +224,14 @@ export default function UserInfoSection({
                 </div>
               ) : (
                 <FieldValue>
-                  {(user?.metadata as { website?: string } | null)?.website && (
+                  {user?.metadata?.website && (
                     <Link
-                      href={
-                        (user.metadata as { website?: string } | null)!.website!
-                      }
+                      href={user.metadata.website}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="truncate underline hover:text-gray-300"
                     >
-                      {(user.metadata as { website?: string } | null)!.website}
+                      {user.metadata.website}
                     </Link>
                   )}
                   <EditButton

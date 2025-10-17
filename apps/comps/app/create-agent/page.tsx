@@ -48,9 +48,7 @@ function CreateAgentView() {
           email: backendUser.email ?? "",
           name: backendUser.name ?? undefined,
           imageUrl: backendUser.imageUrl ?? undefined,
-          metadata: backendUser.metadata
-            ? (backendUser.metadata as Record<string, unknown>)
-            : undefined,
+          metadata: backendUser.metadata ?? undefined,
           privyId: backendUser.privyId ?? undefined,
           embeddedWalletAddress: backendUser.embeddedWalletAddress ?? undefined,
         });
