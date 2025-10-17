@@ -6,9 +6,9 @@ import { base } from "@/rpc/context/base";
 import { cacheMiddleware } from "@/rpc/middleware/cache";
 
 /**
- * Get global leaderboard across all relevant competitions
+ * Get global leaderboard across all relevant competitions matching a specific competition type
  *
- * Note: LeaderboardService.getGlobalLeaderboard never throws errors.
+ * Note: LeaderboardService.getGlobalLeaderboardForType never throws errors.
  * It returns an empty response as fallback on any failure.
  */
 export const getGlobal = base
@@ -20,7 +20,9 @@ export const getGlobal = base
   .input(LeaderboardParamsSchema)
   .handler(async ({ input, context, errors }) => {
     try {
-      return await context.leaderboardService.getGlobalLeaderboard(input);
+      return await context.leaderboardService.getGlobalLeaderboardForType(
+        input,
+      );
     } catch (error) {
       // Re-throw if already an oRPC error
       if (error instanceof ORPCError) {

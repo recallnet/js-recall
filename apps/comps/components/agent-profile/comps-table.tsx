@@ -146,7 +146,7 @@ export function CompetitionTable({
                             {comp.calmarRatio !== null &&
                             comp.calmarRatio !== undefined
                               ? Number(comp.calmarRatio).toFixed(2)
-                              : "n/a"}
+                              : "N/A"}
                           </span>
                           <span className="text-xs text-gray-500">
                             Risk-Adjusted
@@ -156,7 +156,7 @@ export function CompetitionTable({
                         <div className="flex h-full items-center">
                           {typeof comp.portfolioValue === "number"
                             ? `$${comp.portfolioValue.toFixed(2)}`
-                            : "n/a"}
+                            : "N/A"}
                           <span className="ml-2 text-xs">USDC</span>
                         </div>
                       )}
@@ -165,7 +165,7 @@ export function CompetitionTable({
                       <span className="text-secondary-foreground flex flex-col">
                         {typeof comp.pnlPercent === "number"
                           ? `${Math.round(comp.pnlPercent)}%`
-                          : "n/a"}
+                          : "N/A"}
                       </span>
                     </TableCell>
                     <TableCell className="w-30 text-md text-secondary-foreground flex items-center text-center font-normal">
