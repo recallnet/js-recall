@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, Info, TrendingUp, Users } from "lucide-react";
+import { Info, TrendingUp, Users } from "lucide-react";
 import Link from "next/link";
 
 import { BenchmarkModel } from "@recallnet/services/types";
@@ -77,10 +77,6 @@ export const SkillOverviewCard: React.FC<SkillOverviewCardProps> = ({
             >
               {isAgentSkill ? "AGENT" : "MODEL"}
             </Badge>
-            <ArrowRight
-              size={16}
-              className="text-gray-400 transition-transform group-hover:translate-x-1 md:h-[18px] md:w-[18px]"
-            />
           </div>
         </div>
 
