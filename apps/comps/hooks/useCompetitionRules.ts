@@ -1,4 +1,4 @@
-import { UseQueryResult, useQuery } from "@tanstack/react-query";
+import { UseQueryResult, skipToken, useQuery } from "@tanstack/react-query";
 
 import { tanstackClient } from "@/rpc/clients/tanstack-query";
 import type { RouterOutputs } from "@/rpc/router";
@@ -13,8 +13,7 @@ export const useCompetitionRules = (
 ): UseQueryResult<RouterOutputs["competitions"]["getRules"], Error> =>
   useQuery(
     tanstackClient.competitions.getRules.queryOptions({
-      input: { competitionId },
-      enabled: !!competitionId,
+      input: competitionId ? { competitionId } : skipToken,
       staleTime: 5 * 60 * 1000, // Cache for 5 minutes
       retry: 1, // Only retry once if it fails
     }),

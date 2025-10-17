@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { skipToken, useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 
 import {
@@ -20,12 +20,13 @@ export default function UserCompetitionsSection() {
 
   const { data, isLoading, isFetching } = useQuery(
     tanstackClient.user.getCompetitions.queryOptions({
-      input: {
-        limit,
-        offset,
-        sort,
-      },
-      enabled: isAuthenticated,
+      input: isAuthenticated
+        ? {
+            limit,
+            offset,
+            sort,
+          }
+        : skipToken,
       placeholderData: (prev) => prev,
     }),
   );
