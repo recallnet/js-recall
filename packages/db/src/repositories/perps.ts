@@ -530,11 +530,15 @@ export class PerpsRepository {
             isNotNull(historicalSummarySubquery.historicalVolume),
             // Calculate daily volume and requirement in SQL
             // Base equity = Max(initialCapital, periodStartEquity * 80% floor)
+            // If initialCapital is missing/0, fall back to periodStartEquity
             sql`
               (COALESCE(${latestSummarySubquery.currentVolume}::numeric, 0) - 
                COALESCE(${historicalSummarySubquery.historicalVolume}::numeric, 0)) <
               (GREATEST(
-                COALESCE(${historicalSummarySubquery.historicalInitialCapital}::numeric, 500),
+                COALESCE(
+                  NULLIF(${historicalSummarySubquery.historicalInitialCapital}::numeric, 0),
+                  ${historicalSummarySubquery.historicalEquity}::numeric
+                ),
                 COALESCE(${historicalSummarySubquery.historicalEquity}::numeric, 0) * ${PERIOD_START_EQUITY_MULTIPLIER}
               ) * ${volumeMultiplier})
             `,

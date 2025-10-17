@@ -3671,5 +3671,90 @@ describe("Perps Competition", () => {
       // Clean up
       await adminClient.endCompetition(competition.id);
     });
+
+    test("should handle missing/zero initialCapital gracefully", async () => {
+      const adminClient = createTestClient(getBaseUrl());
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Register agent
+      const { agent } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Zero Initial Capital Agent",
+        agentWalletAddress: "0xffff111111111111111111111111111111111111",
+      });
+
+      // Start competition 24 hours ago
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      const response = await startPerpsTestCompetition({
+        adminClient,
+        name: `Zero InitCap Test ${Date.now()}`,
+        agentIds: [agent.id],
+        perpsProvider: {
+          provider: "symphony",
+          apiUrl: "http://localhost:4567",
+        },
+        startDate: twentyFourHoursAgo.toISOString(),
+      });
+
+      expect(response.success).toBe(true);
+      const competition = response.competition;
+
+      // Update competition startDate
+      await db
+        .update(competitions)
+        .set({ startDate: twentyFourHoursAgo })
+        .where(eq(competitions.id, competition.id));
+
+      await wait(1000);
+
+      const services = new ServiceRegistry();
+      await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+      await wait(500);
+
+      // Manually create historical summary with initialCapital = 0 (edge case)
+      await db.insert(perpsAccountSummaries).values({
+        agentId: agent.id,
+        competitionId: competition.id,
+        timestamp: twentyFourHoursAgo,
+        totalEquity: "500", // $500 equity
+        initialCapital: "0", // Provider failed to get initial capital
+        totalVolume: "0",
+        totalUnrealizedPnl: null,
+        totalRealizedPnl: null,
+        totalPnl: null,
+        totalFeesPaid: null,
+        availableBalance: null,
+        marginUsed: null,
+        totalTrades: null,
+        openPositionsCount: null,
+        closedPositionsCount: null,
+        liquidatedPositionsCount: null,
+        roi: null,
+        roiPercent: null,
+        averageTradeSize: null,
+        accountStatus: null,
+        rawData: null,
+      });
+
+      await wait(100);
+
+      // Second sync - volume = $400
+      // With initialCapital=0, should fall back to equity ($500)
+      // Requirement = Max($500, $500 * 0.8) * 0.5 = $250
+      // NOT Max($500 default!, $500 * 0.8) which would be wrong
+      await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+      await wait(500);
+
+      // Agent should NOT be removed (has $400 volume, needs $250)
+      const agentsResponse = await adminClient.getCompetitionAgents(
+        competition.id,
+      );
+      expect(agentsResponse.success).toBe(true);
+      const typedResponse = agentsResponse as CompetitionAgentsResponse;
+      expect(typedResponse.agents).toHaveLength(1);
+
+      // Clean up
+      await adminClient.endCompetition(competition.id);
+    });
   });
 });
