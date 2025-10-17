@@ -33,6 +33,7 @@ class MockCompetitionRepository {
   batchCreatePortfolioSnapshots = vi.fn();
   getFirstAndLastSnapshots = vi.fn();
   calculateMaxDrawdownSQL = vi.fn();
+  updateAgentCompetitionStatus = vi.fn();
 }
 
 class MockPerpsRepository {
@@ -46,6 +47,7 @@ class MockPerpsRepository {
   getPerpsCompetitionStats = vi.fn();
   getPerpsPositions = vi.fn();
   getLatestPerpsAccountSummary = vi.fn();
+  getAgentsWithInsufficientDailyVolume = vi.fn();
   getCompetitionPerpsPositions = vi.fn();
 }
 
@@ -1149,6 +1151,279 @@ describe("PerpsDataProcessor - processPerpsCompetition", () => {
       expect(result.calmarRatioResult?.successful).toBe(25);
       expect(result.calmarRatioResult?.failed).toBe(0);
       expect(result.calmarRatioResult?.errors).toBeUndefined();
+    });
+  });
+
+  describe("Daily Volume Requirements", () => {
+    beforeEach(() => {
+      // Reset all mocks before each test
+      vi.clearAllMocks();
+
+      // Setup basic mocks that all tests need
+      vi.mocked(mockCompetitionRepo.findById).mockResolvedValue(
+        sampleCompetition,
+      );
+      vi.mocked(mockPerpsRepo.getPerpsCompetitionConfig).mockResolvedValue(
+        samplePerpsConfig,
+      );
+      vi.mocked(mockCompetitionRepo.getCompetitionAgents).mockResolvedValue([
+        "agent-1",
+      ]);
+      vi.mocked(mockAgentRepo.findByIds).mockResolvedValue([mockAgent]);
+      vi.mocked(mockPerpsRepo.batchSyncAgentsPerpsData).mockResolvedValue({
+        successful: [mockSyncResult],
+        failed: [],
+      });
+      // Default: no volume violators
+      vi.mocked(
+        mockPerpsRepo.getAgentsWithInsufficientDailyVolume,
+      ).mockResolvedValue([]);
+    });
+
+    it("should skip volume check when less than 24h since competition start", async () => {
+      // Set competition start to 12 hours ago
+      const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000);
+      vi.mocked(mockCompetitionRepo.findById).mockResolvedValue({
+        ...sampleCompetition,
+        startDate: twelveHoursAgo,
+      });
+
+      await processor.processPerpsCompetition("comp-1");
+
+      // Volume check method should not be called
+      expect(
+        mockPerpsRepo.getAgentsWithInsufficientDailyVolume,
+      ).not.toHaveBeenCalled();
+      expect(
+        mockCompetitionRepo.updateAgentCompetitionStatus,
+      ).not.toHaveBeenCalled();
+    });
+
+    it("should skip volume check when not at 24h boundary", async () => {
+      // Set competition start to 26 hours ago (not at boundary)
+      const twentySixHoursAgo = new Date(Date.now() - 26 * 60 * 60 * 1000);
+      vi.mocked(mockCompetitionRepo.findById).mockResolvedValue({
+        ...sampleCompetition,
+        startDate: twentySixHoursAgo,
+      });
+
+      await processor.processPerpsCompetition("comp-1");
+
+      // Volume check method should not be called
+      expect(
+        mockPerpsRepo.getAgentsWithInsufficientDailyVolume,
+      ).not.toHaveBeenCalled();
+      expect(
+        mockCompetitionRepo.updateAgentCompetitionStatus,
+      ).not.toHaveBeenCalled();
+    });
+
+    it("should check volume at 24h boundary and remove agent with insufficient volume", async () => {
+      // Set competition start to exactly 24 hours ago
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      vi.mocked(mockCompetitionRepo.findById).mockResolvedValue({
+        ...sampleCompetition,
+        startDate: twentyFourHoursAgo,
+      });
+
+      // Mock SQL query to return agent-1 as violator (insufficient volume)
+      vi.mocked(
+        mockPerpsRepo.getAgentsWithInsufficientDailyVolume,
+      ).mockResolvedValue(["agent-1"]);
+
+      vi.mocked(
+        mockCompetitionRepo.updateAgentCompetitionStatus,
+      ).mockResolvedValue(true);
+
+      await processor.processPerpsCompetition("comp-1");
+
+      // Should have called the SQL aggregation method
+      expect(
+        mockPerpsRepo.getAgentsWithInsufficientDailyVolume,
+      ).toHaveBeenCalledWith("comp-1", expect.any(Date), 0.5);
+
+      // Should have removed the violating agent
+      expect(
+        mockCompetitionRepo.updateAgentCompetitionStatus,
+      ).toHaveBeenCalledWith(
+        "comp-1",
+        "agent-1",
+        "disqualified",
+        "Failed to meet minimum daily trading volume requirement (0.5x account equity)",
+      );
+    });
+
+    it("should keep agent who meets volume requirement", async () => {
+      // Set competition start to exactly 24 hours ago
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      vi.mocked(mockCompetitionRepo.findById).mockResolvedValue({
+        ...sampleCompetition,
+        startDate: twentyFourHoursAgo,
+      });
+
+      // Mock SQL query to return empty array (no violators)
+      vi.mocked(
+        mockPerpsRepo.getAgentsWithInsufficientDailyVolume,
+      ).mockResolvedValue([]);
+
+      await processor.processPerpsCompetition("comp-1");
+
+      // Should have called the SQL method
+      expect(
+        mockPerpsRepo.getAgentsWithInsufficientDailyVolume,
+      ).toHaveBeenCalledWith("comp-1", expect.any(Date), 0.5);
+
+      // Should NOT have removed any agents
+      expect(
+        mockCompetitionRepo.updateAgentCompetitionStatus,
+      ).not.toHaveBeenCalled();
+    });
+
+    it("should use period start equity fairness (SQL calculation test)", async () => {
+      // Set competition start to exactly 24 hours ago
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      vi.mocked(mockCompetitionRepo.findById).mockResolvedValue({
+        ...sampleCompetition,
+        startDate: twentyFourHoursAgo,
+      });
+
+      // SQL query returns empty (agent passes because fairness calculation in SQL)
+      vi.mocked(
+        mockPerpsRepo.getAgentsWithInsufficientDailyVolume,
+      ).mockResolvedValue([]);
+
+      await processor.processPerpsCompetition("comp-1");
+
+      // Verify SQL method was called (actual fairness tested in repository integration tests)
+      expect(
+        mockPerpsRepo.getAgentsWithInsufficientDailyVolume,
+      ).toHaveBeenCalled();
+      expect(
+        mockCompetitionRepo.updateAgentCompetitionStatus,
+      ).not.toHaveBeenCalled();
+    });
+
+    it("should handle agents with missing historical data (SQL handles gracefully)", async () => {
+      // Set competition start to exactly 24 hours ago
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      vi.mocked(mockCompetitionRepo.findById).mockResolvedValue({
+        ...sampleCompetition,
+        startDate: twentyFourHoursAgo,
+      });
+
+      // SQL query skips agents with missing data (returns empty)
+      vi.mocked(
+        mockPerpsRepo.getAgentsWithInsufficientDailyVolume,
+      ).mockResolvedValue([]);
+
+      await processor.processPerpsCompetition("comp-1");
+
+      // SQL method called but agent not removed (missing data handled in SQL)
+      expect(
+        mockPerpsRepo.getAgentsWithInsufficientDailyVolume,
+      ).toHaveBeenCalled();
+      expect(
+        mockCompetitionRepo.updateAgentCompetitionStatus,
+      ).not.toHaveBeenCalled();
+    });
+
+    it("should check at ±5 minutes boundary (resilience test)", async () => {
+      // Set competition start to 24h 2min ago (within ±5 min window AFTER boundary)
+      const justPastTwentyFourHours = new Date(
+        Date.now() - (24 * 60 + 2) * 60 * 1000,
+      );
+      vi.mocked(mockCompetitionRepo.findById).mockResolvedValue({
+        ...sampleCompetition,
+        startDate: justPastTwentyFourHours,
+      });
+
+      // Mock SQL to return no violators
+      vi.mocked(
+        mockPerpsRepo.getAgentsWithInsufficientDailyVolume,
+      ).mockResolvedValue([]);
+
+      await processor.processPerpsCompetition("comp-1");
+
+      // Should trigger check within ±5 min window (24h 2min is within window)
+      expect(
+        mockPerpsRepo.getAgentsWithInsufficientDailyVolume,
+      ).toHaveBeenCalled();
+    });
+
+    it("should run check at exactly 24h 0min (proves logic is correct)", async () => {
+      // remainder = 24 % 24 = 0
+      // 0 >= 5/60? NO → Don't skip → RUN check ✓
+      const exactlyTwentyFourHours = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      vi.mocked(mockCompetitionRepo.findById).mockResolvedValue({
+        ...sampleCompetition,
+        startDate: exactlyTwentyFourHours,
+      });
+
+      vi.mocked(
+        mockPerpsRepo.getAgentsWithInsufficientDailyVolume,
+      ).mockResolvedValue([]);
+
+      await processor.processPerpsCompetition("comp-1");
+
+      expect(
+        mockPerpsRepo.getAgentsWithInsufficientDailyVolume,
+      ).toHaveBeenCalled();
+    });
+
+    it("should run check at 48h 4min (before second 24h boundary)", async () => {
+      // 48h 4min ago = day 2, within ±5min window after second boundary
+      // hoursSinceStart = 48.0667, remainder = 48.0667 % 24 = 0.0667
+      // daysSinceStart = floor(48.0667 / 24) = 2 ✓
+      // 0.0667 > 5/60 (0.0833)? NO → Don't skip → RUN check ✓
+      const secondBoundary = new Date(Date.now() - (48 * 60 + 4) * 60 * 1000);
+      vi.mocked(mockCompetitionRepo.findById).mockResolvedValue({
+        ...sampleCompetition,
+        startDate: secondBoundary,
+      });
+
+      vi.mocked(
+        mockPerpsRepo.getAgentsWithInsufficientDailyVolume,
+      ).mockResolvedValue([]);
+
+      await processor.processPerpsCompetition("comp-1");
+
+      expect(
+        mockPerpsRepo.getAgentsWithInsufficientDailyVolume,
+      ).toHaveBeenCalled();
+    });
+
+    it("should skip check at 24h 10min (proves window boundaries work)", async () => {
+      // remainder = 24.1667 % 24 = 0.1667
+      // 0.1667 >= 5/60 (0.0833)? YES, and 0.1667 <= 23.9167? YES → Skip ✓
+      const outsideWindow = new Date(Date.now() - (24 * 60 + 10) * 60 * 1000);
+      vi.mocked(mockCompetitionRepo.findById).mockResolvedValue({
+        ...sampleCompetition,
+        startDate: outsideWindow,
+      });
+
+      await processor.processPerpsCompetition("comp-1");
+
+      // Should NOT run (outside window)
+      expect(
+        mockPerpsRepo.getAgentsWithInsufficientDailyVolume,
+      ).not.toHaveBeenCalled();
+    });
+
+    it("should skip check at 23h 50min (proves before-window boundary)", async () => {
+      // remainder = 23.8333 % 24 = 23.8333
+      // 23.8333 >= 5/60? YES, and 23.8333 <= 23.9167? YES → Skip ✓
+      const beforeWindow = new Date(Date.now() - (23 * 60 + 50) * 60 * 1000);
+      vi.mocked(mockCompetitionRepo.findById).mockResolvedValue({
+        ...sampleCompetition,
+        startDate: beforeWindow,
+      });
+
+      await processor.processPerpsCompetition("comp-1");
+
+      // Should NOT run (outside window)
+      expect(
+        mockPerpsRepo.getAgentsWithInsufficientDailyVolume,
+      ).not.toHaveBeenCalled();
     });
   });
 });

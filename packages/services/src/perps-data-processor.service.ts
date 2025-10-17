@@ -256,7 +256,7 @@ export class PerpsDataProcessor {
       let positions: PerpsPosition[];
 
       if (provider.getAccountDataBatch) {
-        // Provider supports batch fetching - more efficient
+        // Provider supports batch fetching
         const batchResult = await provider.getAccountDataBatch(
           walletAddress,
           initialCapital,
@@ -809,7 +809,37 @@ export class PerpsDataProcessor {
         );
       }
 
-      // 5. Calculate Calmar Ratio for ranking (only for active competitions with successful agents)
+      // 5. Check daily volume requirements (only for active competitions)
+      if (competition.status === "active" && competition.startDate) {
+        try {
+          const violators = await this.checkDailyVolumeRequirements(
+            competitionId,
+            competition.startDate,
+          );
+
+          // Remove agents who don't meet volume requirements
+          for (const agentId of violators) {
+            await this.competitionRepo.updateAgentCompetitionStatus(
+              competitionId,
+              agentId,
+              "disqualified",
+              "Failed to meet minimum daily trading volume requirement (0.5x account equity)",
+            );
+
+            this.logger.info(
+              `[PerpsDataProcessor] Removed agent ${agentId} from competition ${competitionId} for insufficient trading volume`,
+            );
+          }
+        } catch (error) {
+          this.logger.error(
+            `[PerpsDataProcessor] Error checking daily volume requirements:`,
+            error,
+          );
+          // Don't fail the entire process if volume check fails
+        }
+      }
+
+      // 6. Calculate Calmar Ratio for ranking (only for active competitions with successful agents)
       let calmarRatioResult;
       if (competition.status === "active" && syncResult.successful.length > 0) {
         try {
@@ -865,6 +895,74 @@ export class PerpsDataProcessor {
    */
   private shouldRunMonitoring(threshold: number | null): boolean {
     return threshold !== null && !isNaN(threshold) && threshold >= 0;
+  }
+
+  /**
+   * Check daily volume requirements for all agents in a competition
+   * Compares current vs 24h-ago volume to enforce minimum trading activity
+   * @param competitionId Competition ID
+   * @param competitionStartDate Competition start date
+   * @returns Array of agent IDs that should be removed for insufficient volume
+   */
+  private async checkDailyVolumeRequirements(
+    competitionId: string,
+    competitionStartDate: Date,
+  ): Promise<string[]> {
+    // Static configuration - ALWAYS ENFORCED
+    const DAILY_VOLUME_MULTIPLIER = 0.5;
+
+    const now = new Date();
+    const daysSinceStart = Math.floor(
+      (now.getTime() - competitionStartDate.getTime()) / (1000 * 60 * 60 * 24),
+    );
+
+    // Only check after at least 1 full day
+    if (daysSinceStart < 1) {
+      return [];
+    }
+
+    // Check if we're near a 24-hour boundary (within ±5 minutes)
+    const hoursSinceStart =
+      (now.getTime() - competitionStartDate.getTime()) / (1000 * 60 * 60);
+    const remainder = hoursSinceStart % 24;
+
+    // Precise boundary values for ±5 minute window
+    const FIVE_MINUTES_HOURS = 5 / 60; // 0.08333... hours
+    const TWENTY_THREE_FIFTY_FIVE_HOURS = 23 + 55 / 60; // 23.91666... hours
+
+    // Skip check if NOT within ±5 minutes of 24h boundary
+    // Run check when: 0 ≤ remainder ≤ 5min OR 23h55m ≤ remainder < 24h
+    // Use strict inequalities to INCLUDE exact boundary times (23:55:00 and 00:05:00)
+    if (
+      remainder > FIVE_MINUTES_HOURS &&
+      remainder < TWENTY_THREE_FIFTY_FIVE_HOURS
+    ) {
+      // Not within ±5 minutes of day boundary
+      return [];
+    }
+
+    this.logger.info(
+      `[PerpsDataProcessor] Running daily volume check for competition ${competitionId} (day ${daysSinceStart})`,
+    );
+
+    // Use single SQL query to find all violators (avoid N+1 queries)
+    const violators = await this.perpsRepo.getAgentsWithInsufficientDailyVolume(
+      competitionId,
+      now,
+      DAILY_VOLUME_MULTIPLIER,
+    );
+
+    if (violators.length > 0) {
+      this.logger.warn(
+        `[PerpsDataProcessor] Found ${violators.length} agents with insufficient trading volume`,
+      );
+    } else {
+      this.logger.info(
+        `[PerpsDataProcessor] All agents passed daily volume check`,
+      );
+    }
+
+    return violators;
   }
 
   /**

@@ -7,6 +7,8 @@ import {
   getTableColumns,
   gt,
   inArray,
+  isNotNull,
+  lte,
   not,
   sql,
   sum,
@@ -439,6 +441,122 @@ export class PerpsRepository {
       return result || null;
     } catch (error) {
       this.#logger.error("Error in getLatestPerpsAccountSummary:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get agents who fail daily volume requirements using SQL aggregation
+   * Calculates volume delta and requirements entirely in database
+   *
+   * Base equity calculation uses hybrid approach:
+   * - Max(initialCapital, periodStartEquity * 0.8)
+   * - The 0.8 multiplier (80% floor) protects against loss exploitation
+   * - Agents who lose money can't reduce requirements below initial capital
+   * - Agents who gain money have requirements scale with 80% of period start equity
+   *
+   * @param competitionId Competition ID
+   * @param checkTimestamp Current timestamp for the check
+   * @param volumeMultiplier Daily volume multiplier (e.g., 0.5)
+   * @returns Array of agent IDs who should be disqualified
+   */
+  async getAgentsWithInsufficientDailyVolume(
+    competitionId: string,
+    checkTimestamp: Date,
+    volumeMultiplier: number,
+  ): Promise<string[]> {
+    try {
+      const twentyFourHoursAgo = new Date(
+        checkTimestamp.getTime() - 24 * 60 * 60 * 1000,
+      );
+
+      // Hybrid base equity calculation constants
+      const PERIOD_START_EQUITY_MULTIPLIER = 0.8; // 80% floor protects against loss exploitation
+
+      // Get active agents subquery
+      const activeAgents = this.getActiveAgentsSubquery(competitionId);
+
+      // Latest summary subquery (current)
+      const latestSummarySubquery = this.#dbRead
+        .select({
+          agentId: perpsAccountSummaries.agentId,
+          currentVolume: perpsAccountSummaries.totalVolume,
+          currentEquity: perpsAccountSummaries.totalEquity,
+          initialCapital: perpsAccountSummaries.initialCapital,
+        })
+        .from(perpsAccountSummaries)
+        .where(
+          and(
+            eq(perpsAccountSummaries.competitionId, competitionId),
+            sql`${perpsAccountSummaries.agentId} = ${activeAgents.agentId}`,
+          ),
+        )
+        .orderBy(desc(perpsAccountSummaries.timestamp))
+        .limit(1)
+        .as("latest_summary");
+
+      // Historical summary subquery (24h ago)
+      const historicalSummarySubquery = this.#dbRead
+        .select({
+          agentId: perpsAccountSummaries.agentId,
+          historicalVolume: perpsAccountSummaries.totalVolume,
+          historicalEquity: perpsAccountSummaries.totalEquity,
+          historicalInitialCapital: perpsAccountSummaries.initialCapital,
+        })
+        .from(perpsAccountSummaries)
+        .where(
+          and(
+            eq(perpsAccountSummaries.competitionId, competitionId),
+            sql`${perpsAccountSummaries.agentId} = ${activeAgents.agentId}`,
+            lte(perpsAccountSummaries.timestamp, twentyFourHoursAgo),
+          ),
+        )
+        .orderBy(desc(perpsAccountSummaries.timestamp))
+        .limit(1)
+        .as("historical_summary");
+
+      // Single query with all calculations in SQL
+      const results = await this.#dbRead
+        .select({
+          agentId: activeAgents.agentId,
+        })
+        .from(activeAgents)
+        .leftJoinLateral(latestSummarySubquery, sql`true`)
+        .leftJoinLateral(historicalSummarySubquery, sql`true`)
+        .where(
+          and(
+            // Both summaries must exist
+            isNotNull(latestSummarySubquery.currentVolume),
+            isNotNull(historicalSummarySubquery.historicalVolume),
+            // Calculate daily volume and requirement in SQL
+            // Base equity = Max(initialCapital, periodStartEquity * 80% floor)
+            // If initialCapital is missing/0, fall back to periodStartEquity
+            sql`
+              (COALESCE(${latestSummarySubquery.currentVolume}::numeric, 0) - 
+               COALESCE(${historicalSummarySubquery.historicalVolume}::numeric, 0)) <
+              (GREATEST(
+                COALESCE(
+                  NULLIF(${historicalSummarySubquery.historicalInitialCapital}::numeric, 0),
+                  ${historicalSummarySubquery.historicalEquity}::numeric
+                ),
+                COALESCE(${historicalSummarySubquery.historicalEquity}::numeric, 0) * ${PERIOD_START_EQUITY_MULTIPLIER}
+              ) * ${volumeMultiplier})
+            `,
+          ),
+        );
+
+      const violatorIds = results.map((r) => r.agentId);
+
+      this.#logger.debug(
+        `[PerpsRepository] Found ${violatorIds.length} agents with insufficient daily volume in competition ${competitionId}`,
+      );
+
+      return violatorIds;
+    } catch (error) {
+      this.#logger.error(
+        "Error in getAgentsWithInsufficientDailyVolume:",
+        error,
+      );
       throw error;
     }
   }

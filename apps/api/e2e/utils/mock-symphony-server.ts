@@ -19,6 +19,32 @@ export class MockSymphonyServer {
   // Track portfolio snapshots for Calmar ratio test wallet simulation
   private snapshotIndex: Map<string, number> = new Map();
 
+  // Volume progression constants for test wallets
+  private static readonly INSUFFICIENT_VOLUME_PROGRESSION = [
+    0,
+    0, // Calls 1-2: Startup sync (volume = 0)
+    100,
+    100, // Calls 3-4: 24h later - INSUFFICIENT ($500 * 0.5 = $250 required)
+    100,
+    100, // Calls 5+: Agent should be removed before this
+  ];
+
+  private static readonly SUFFICIENT_VOLUME_PROGRESSION = [
+    0,
+    0, // Calls 1-2: Startup sync (volume = 0)
+    400,
+    400, // Calls 3-4: 24h later - SUFFICIENT ($500 * 0.5 = $250 required)
+    800,
+    800, // Calls 5-6: 48h later - still compliant
+  ];
+
+  private static readonly FAIRNESS_TEST_VOLUME_PROGRESSION = [
+    0,
+    0, // Calls 1-2: Startup sync
+    400,
+    400, // Calls 3-4: $400 volume (fair! uses start equity $500)
+  ];
+
   constructor(port: number = 4567) {
     this.port = port;
     this.app = express();
@@ -215,6 +241,43 @@ export class MockSymphonyServer {
       openPositions: [],
       transfers: [],
     });
+
+    // Test wallets for volume enforcement testing
+    // Agent with insufficient volume ($500 equity, but only $100 volume over 24h)
+    this.setAgentData("0xeeee111111111111111111111111111111111111", {
+      initialCapital: 500,
+      totalEquity: 500,
+      availableBalance: 500,
+      marginUsed: 0,
+      totalVolume: 0, // Will vary based on call index
+      totalTrades: 0,
+      openPositions: [],
+      transfers: [],
+    });
+
+    // Agent with sufficient volume ($500 equity, $400 volume over 24h)
+    this.setAgentData("0xffff111111111111111111111111111111111111", {
+      initialCapital: 500,
+      totalEquity: 500,
+      availableBalance: 500,
+      marginUsed: 0,
+      totalVolume: 0, // Will vary based on call index
+      totalTrades: 0,
+      openPositions: [],
+      transfers: [],
+    });
+
+    // Agent tests period start equity fairness (makes profit during day)
+    this.setAgentData("0xabcd111111111111111111111111111111111111", {
+      initialCapital: 500,
+      totalEquity: 500, // Will jump to $2000 on later calls
+      availableBalance: 500,
+      marginUsed: 0,
+      totalVolume: 0, // Will vary based on call index
+      totalTrades: 0,
+      openPositions: [],
+      transfers: [],
+    });
   }
 
   /**
@@ -324,6 +387,60 @@ export class MockSymphonyServer {
         this.logger.info(
           `[MockSymphony] Calmar wallet call #${callIdx + 1}, equity=$${currentEquity} (${phase})`,
         );
+      }
+
+      // Handle volume enforcement test wallets
+      if (lowerAddress === "0xeeee111111111111111111111111111111111111") {
+        // Agent with INSUFFICIENT volume
+        const callIdx = this.snapshotIndex.get(lowerAddress) || 0;
+        data.totalVolume =
+          MockSymphonyServer.INSUFFICIENT_VOLUME_PROGRESSION[
+            Math.min(
+              callIdx,
+              MockSymphonyServer.INSUFFICIENT_VOLUME_PROGRESSION.length - 1,
+            )
+          ] ?? 100;
+        this.snapshotIndex.set(lowerAddress, callIdx + 1);
+      } else if (
+        lowerAddress === "0xffff111111111111111111111111111111111111"
+      ) {
+        // Agent with SUFFICIENT volume
+        const callIdx = this.snapshotIndex.get(lowerAddress) || 0;
+        data.totalVolume =
+          MockSymphonyServer.SUFFICIENT_VOLUME_PROGRESSION[
+            Math.min(
+              callIdx,
+              MockSymphonyServer.SUFFICIENT_VOLUME_PROGRESSION.length - 1,
+            )
+          ] ?? 800;
+        this.snapshotIndex.set(lowerAddress, callIdx + 1);
+      } else if (
+        lowerAddress === "0xabcd111111111111111111111111111111111111"
+      ) {
+        // Agent tests FAIRNESS: makes big profit during day
+        const callIdx = this.snapshotIndex.get(lowerAddress) || 0;
+
+        // Equity progression: starts $500, jumps to $2000
+        const equityProgression = [
+          500,
+          500, // Calls 1-2: Startup sync
+          2000,
+          2000, // Calls 3-4: 24h later - BIG PROFIT!
+        ];
+        currentEquity =
+          equityProgression[Math.min(callIdx, equityProgression.length - 1)] ??
+          2000;
+
+        // Volume progression: trades $400 (enough for $500, not for $2000)
+        data.totalVolume =
+          MockSymphonyServer.FAIRNESS_TEST_VOLUME_PROGRESSION[
+            Math.min(
+              callIdx,
+              MockSymphonyServer.FAIRNESS_TEST_VOLUME_PROGRESSION.length - 1,
+            )
+          ] ?? 400;
+
+        this.snapshotIndex.set(lowerAddress, callIdx + 1);
       }
 
       res.json({
