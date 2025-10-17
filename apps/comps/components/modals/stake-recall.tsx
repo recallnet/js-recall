@@ -130,21 +130,24 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
   const unlockDate = getUnlockDate(selectedDuration);
   const stakeDuration = STAKE_DURATIONS[selectedDuration];
 
-  // Formatted values
+  // Formatted values for the staking modal
+  const getCompactAmount = (amount: bigint) => {
+    return shouldShowCompact(amount, decimals, 1_000_000n);
+  };
   const formattedAvailable = formatBigintAmount(
     availableRaw,
     decimals,
-    shouldShowCompact(availableRaw),
+    getCompactAmount(availableRaw),
   );
   const formattedStakeAmount = formatBigintAmount(
     stakeAmountRaw,
     decimals,
-    shouldShowCompact(stakeAmountRaw),
+    getCompactAmount(stakeAmountRaw),
   );
   const formattedBoostAmount = formatBigintAmount(
     boostAmountRaw,
     decimals,
-    shouldShowCompact(boostAmountRaw),
+    getCompactAmount(boostAmountRaw),
   );
 
   // Check if approval is currently pending (loading or confirming)
