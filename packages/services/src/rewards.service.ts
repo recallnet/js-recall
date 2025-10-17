@@ -5,7 +5,7 @@ import { Hex, bytesToHex, encodePacked, hexToBytes, keccak256 } from "viem";
 import { BoostRepository } from "@recallnet/db/repositories/boost";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { RewardsRepository } from "@recallnet/db/repositories/rewards";
-import { rewardsRoots, rewardsTree } from "@recallnet/db/schema/voting/defs";
+import { rewardsRoots, rewardsTree } from "@recallnet/db/schema/rewards/defs";
 import { Database, Transaction } from "@recallnet/db/types";
 import {
   BoostAllocation,
@@ -98,7 +98,7 @@ export class RewardsService {
       }
 
       if (!competition.boostStartDate || !competition.boostEndDate) {
-        throw new Error("Voting start or end date not found");
+        throw new Error("Boost start or end date not found");
       }
 
       if (competition.status !== "ended") {

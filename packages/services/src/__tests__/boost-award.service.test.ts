@@ -77,7 +77,7 @@ describe("BoostAwardService", () => {
   });
 
   describe("initNoStake", () => {
-    it("returns empty array when no voting competitions are open", async () => {
+    it("returns empty array when no boosting competitions are open", async () => {
       mockDb.transaction.mockImplementation(
         async (callback: (tx: Transaction) => Promise<unknown>) =>
           callback("mock-tx" as unknown as Transaction),
@@ -92,7 +92,7 @@ describe("BoostAwardService", () => {
       );
     });
 
-    it("awards boost for each open voting competition", async () => {
+    it("awards boost for each open boosting competition", async () => {
       const competition = createMockCompetition("comp-1");
       const balanceAfter = noStakeBoostAmount;
       const idemKey = new Uint8Array([1, 2, 3, 4]);
@@ -363,7 +363,7 @@ describe("BoostAwardService", () => {
       expect(mockCompetitionRepo.findOpenForBoosting).not.toHaveBeenCalled();
     });
 
-    it("returns empty array when no voting competitions are open", async () => {
+    it("returns empty array when no boosting competitions are open", async () => {
       const stake = createMockStake(1n, 1000000000000000000n);
 
       mockDb.transaction.mockImplementation(
@@ -447,10 +447,10 @@ describe("BoostAwardService", () => {
       expect(mockBoostRepo.increase).toHaveBeenCalledTimes(4);
     });
 
-    it("throws error when competition missing voting dates", async () => {
+    it("throws error when competition missing boosting dates", async () => {
       const stake = createMockStake(1n, 1000000000000000000n);
       const competition = createMockCompetition("comp-1");
-      competition.boostStartDate = null; // Missing voting start date
+      competition.boostStartDate = null; // Missing boosting start date
 
       mockDb.transaction.mockImplementation(
         async (callback: (tx: Transaction) => Promise<unknown>) =>
@@ -460,7 +460,7 @@ describe("BoostAwardService", () => {
       mockCompetitionRepo.findOpenForBoosting.mockResolvedValue([competition]);
 
       await expect(service.initForStake(testWallet)).rejects.toThrow(
-        "Competition missing voting dates",
+        "Competition missing boosting dates",
       );
     });
 

@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, test } from "vitest";
 
 import { competitions, users } from "@recallnet/db/schema/core/defs";
-import { rewards, rewardsRoots } from "@recallnet/db/schema/voting/defs";
+import { rewards, rewardsRoots } from "@recallnet/db/schema/rewards/defs";
 
 import { db } from "@/database/db.js";
 import { EventData } from "@/indexing/blockchain-types.js";

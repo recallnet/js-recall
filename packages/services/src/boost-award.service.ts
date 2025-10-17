@@ -70,18 +70,18 @@ export class BoostAwardService {
     // but I'm keeping the logic to avoid a bigger refactoring at this point
 
     let multiplier: number;
-    // Before voting starts
+    // Before boosting starts
     if (stakedAt < boostStartDate) {
-      // And covers the voting period
+      // And covers the boosting period
       if (canUnstakeAfter >= boostEndDate) {
-        // Means can not unstake before the voting ends
+        // Means can not unstake before the boosting ends
         multiplier = 1;
       } else {
-        // Can unstake during the voting period
+        // Can unstake during the boosting period
         multiplier = 1;
       }
     } else {
-      // Staked after the voting starts
+      // Staked after the boosting starts
       multiplier = 1;
     }
     return { boostAmount: stake.amount * BigInt(multiplier), multiplier };
@@ -231,7 +231,7 @@ export class BoostAwardService {
         competitions.flatMap((competition) => {
           const { boostStartDate, boostEndDate } = competition;
           if (!boostStartDate || !boostEndDate) {
-            throw new Error("Competition missing voting dates");
+            throw new Error("Competition missing boosting dates");
           }
           return stakes.map(async (stake) => {
             const awardRes = await this.awardForStake(

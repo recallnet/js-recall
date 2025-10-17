@@ -2502,8 +2502,8 @@ export class CompetitionRepository {
     {
       competitionId: string;
       competitionStatus: string;
-      competitionVotingStartsAt: Date | null;
-      competitionVotingEndsAt: Date | null;
+      competitionBoostingStartsAt: Date | null;
+      competitionBoostingEndsAt: Date | null;
       minimumPairAgeHours: number | null;
       minimum24hVolumeUsd: number | null;
       minimumLiquidityUsd: number | null;
@@ -2521,8 +2521,8 @@ export class CompetitionRepository {
           // Competition fields
           competitionId: competitions.id,
           competitionStatus: competitions.status,
-          competitionVotingStartsAt: competitions.boostStartDate,
-          competitionVotingEndsAt: competitions.boostEndDate,
+          competitionBoostingStartsAt: competitions.boostStartDate,
+          competitionBoostingEndsAt: competitions.boostEndDate,
 
           // Trading constraints
           minimumPairAgeHours: tradingConstraints.minimumPairAgeHours,
@@ -2541,8 +2541,8 @@ export class CompetitionRepository {
       return result.map((row) => ({
         competitionId: row.competitionId,
         competitionStatus: row.competitionStatus,
-        competitionVotingStartsAt: row.competitionVotingStartsAt,
-        competitionVotingEndsAt: row.competitionVotingEndsAt,
+        competitionBoostingStartsAt: row.competitionBoostingStartsAt,
+        competitionBoostingEndsAt: row.competitionBoostingEndsAt,
         minimumPairAgeHours: row.minimumPairAgeHours,
         minimum24hVolumeUsd: row.minimum24hVolumeUsd,
         minimumLiquidityUsd: row.minimumLiquidityUsd,

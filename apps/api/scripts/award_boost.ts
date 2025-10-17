@@ -38,12 +38,12 @@ async function awardAllBoost() {
     for (const competition of upcomingCompetitions) {
       const boostEndDate = competition.boostEndDate;
       if (!boostEndDate) {
-        logger.warn(`No voting end date for competition: ${competition.id}`);
+        logger.warn(`No boost end date for competition: ${competition.id}`);
         continue;
       }
       const boostStartDate = competition.boostStartDate;
       if (!boostStartDate) {
-        logger.warn(`No voting start date for competition: ${competition.id}`);
+        logger.warn(`No boost start date for competition: ${competition.id}`);
         continue;
       }
       // Iterate over Stakes pages

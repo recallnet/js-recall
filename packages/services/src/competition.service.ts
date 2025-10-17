@@ -408,8 +408,8 @@ export class CompetitionService {
    * @param type Competition type (defaults to trading)
    * @param startDate Optional start date for the competition
    * @param endDate Optional end date for the competition
-   * @param boostStartDate Optional voting start date
-   * @param boostEndDate Optional voting end date
+   * @param boostStartDate Optional boost start date
+   * @param boostEndDate Optional boost end date
    * @param joinStartDate Optional start date for joining the competition
    * @param joinEndDate Optional end date for joining the competition
    * @param maxParticipants Optional maximum number of participants allowed
@@ -2819,7 +2819,6 @@ export class CompetitionService {
    */
   async getCompetitionById(params: {
     competitionId: string;
-    userId?: string;
   }): Promise<CompetitionDetailsData> {
     try {
       // Fetch all data pieces first

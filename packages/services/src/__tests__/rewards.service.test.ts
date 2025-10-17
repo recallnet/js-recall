@@ -9,7 +9,7 @@ import { RewardsRepository } from "@recallnet/db/repositories/rewards";
 import type {
   SelectReward,
   SelectRewardsTree,
-} from "@recallnet/db/schema/voting/types";
+} from "@recallnet/db/schema/rewards/types";
 import { Database } from "@recallnet/db/types";
 import type { Leaderboard } from "@recallnet/rewards";
 import RewardsAllocator from "@recallnet/staking-contracts/rewards-allocator";

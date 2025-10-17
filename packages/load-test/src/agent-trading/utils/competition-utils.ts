@@ -8,7 +8,7 @@ export interface CompetitionConfig {
   type?: "trading" | "perpetual_futures";
   durationDays?: number;
   joinWindowDays?: number;
-  votingWindowDays?: number;
+  boostingWindowDays?: number;
   rewards?: Record<string, number>;
 }
 
@@ -25,7 +25,7 @@ export function createCompetitionPayload(config: CompetitionConfig = {}) {
     type = "trading",
     durationDays = 7,
     joinWindowDays = 2,
-    votingWindowDays = 1,
+    boostingWindowDays: boostingWindowDays = 1,
     rewards = { "1": 1000, "2": 500, "3": 250 },
   } = config;
 
@@ -34,7 +34,7 @@ export function createCompetitionPayload(config: CompetitionConfig = {}) {
     now.getTime() + joinWindowDays * 24 * 60 * 60 * 1000,
   );
   const boostStartDate = new Date(
-    endDate.getTime() - votingWindowDays * 24 * 60 * 60 * 1000,
+    endDate.getTime() - boostingWindowDays * 24 * 60 * 60 * 1000,
   );
   const boostEndDate = new Date(endDate.getTime());
 

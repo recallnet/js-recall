@@ -1,12 +1,12 @@
 import { relations } from "drizzle-orm/relations";
 
+import { rewards, rewardsRoots, rewardsTree } from "../rewards/defs.js";
 import {
   balances,
   portfolioSnapshots,
   trades,
   tradingCompetitions,
 } from "../trading/defs.js";
-import { rewards, rewardsRoots, rewardsTree } from "../voting/defs.js";
 import {
   agents,
   competitionAgents,

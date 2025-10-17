@@ -127,30 +127,20 @@ export function makeCompetitionController(services: ServiceRegistry) {
       next: NextFunction,
     ) {
       try {
-        const userId = req.userId;
         const competitionId = ensureUuid(req.params.competitionId);
 
         if (!competitionId) {
           throw new ApiError(400, "Competition ID is required");
         }
 
-        // Authentication check
-        if (userId) {
-          competitionLogger.debug(
-            `User ${userId} requesting competition details`,
-          );
-        } else {
-          competitionLogger.debug(
-            `Unauthenticated request for competition details (public access)`,
-          );
-        }
+        competitionLogger.debug(
+          `Unauthenticated request for competition details (public access)`,
+        );
 
         // Check cache
         const shouldCacheResponse = checkShouldCacheResponse(req);
         const cacheKey = generateCacheKey(req, "byId", {
           competitionId,
-          // Include userId in cache key since response includes user-specific voting data
-          ...(userId && { userId }),
         });
 
         if (shouldCacheResponse) {
@@ -163,7 +153,6 @@ export function makeCompetitionController(services: ServiceRegistry) {
 
         const result = await services.competitionService.getCompetitionById({
           competitionId,
-          userId,
         });
 
         // Cache the result
