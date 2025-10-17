@@ -7,6 +7,7 @@ import {
   getTableColumns,
   gt,
   inArray,
+  isNotNull,
   lte,
   not,
   sql,
@@ -525,8 +526,8 @@ export class PerpsRepository {
         .where(
           and(
             // Both summaries must exist
-            sql`${latestSummarySubquery.currentVolume} IS NOT NULL`,
-            sql`${historicalSummarySubquery.historicalVolume} IS NOT NULL`,
+            isNotNull(latestSummarySubquery.currentVolume),
+            isNotNull(historicalSummarySubquery.historicalVolume),
             // Calculate daily volume and requirement in SQL
             // Base equity = Max(initialCapital, periodStartEquity * 80% floor)
             sql`
