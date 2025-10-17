@@ -1,4 +1,4 @@
-import { UseQueryResult, useQuery } from "@tanstack/react-query";
+import { UseQueryResult, skipToken, useQuery } from "@tanstack/react-query";
 
 import { tanstackClient } from "@/rpc/clients/tanstack-query";
 import type { RouterOutputs } from "@/rpc/router";
@@ -10,13 +10,16 @@ import type { RouterOutputs } from "@/rpc/router";
  */
 export const useUserAgent = (
   id?: string,
-): UseQueryResult<RouterOutputs["user"]["getUserAgent"], Error> =>
-  useQuery(
-    tanstackClient.user.getUserAgent.queryOptions({
-      input: { agentId: id || "" },
-      enabled: !!id,
-    }),
-  );
+): UseQueryResult<RouterOutputs["user"]["getUserAgent"], Error> => {
+  const options = tanstackClient.user.getUserAgent.queryOptions({
+    input: { agentId: id || "" },
+  });
+
+  return useQuery({
+    ...options,
+    queryFn: id ? options.queryFn : skipToken,
+  });
+};
 
 /**
  * Hook to fetch a single agent by ID (public, unauthenticated)
@@ -25,10 +28,13 @@ export const useUserAgent = (
  */
 export const useAgent = (
   id?: string,
-): UseQueryResult<RouterOutputs["agent"]["getAgent"], Error> =>
-  useQuery(
-    tanstackClient.agent.getAgent.queryOptions({
-      input: { agentId: id || "" },
-      enabled: !!id,
-    }),
-  );
+): UseQueryResult<RouterOutputs["agent"]["getAgent"], Error> => {
+  const options = tanstackClient.agent.getAgent.queryOptions({
+    input: { agentId: id || "" },
+  });
+
+  return useQuery({
+    ...options,
+    queryFn: id ? options.queryFn : skipToken,
+  });
+};

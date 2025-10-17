@@ -1,4 +1,4 @@
-import { UseQueryResult, useQuery } from "@tanstack/react-query";
+import { UseQueryResult, skipToken, useQuery } from "@tanstack/react-query";
 
 import { CompetitionStatus } from "@recallnet/services/types";
 
@@ -18,24 +18,26 @@ export const useAgentCompetitions = (
 ): UseQueryResult<RouterOutputs["agent"]["getCompetitions"], Error> => {
   const { status, claimed, sort, limit = 10, offset = 0 } = params;
 
-  return useQuery(
-    tanstackClient.agent.getCompetitions.queryOptions({
-      input: {
-        agentId: agentId ?? "",
-        filters: {
-          status: status as CompetitionStatus | undefined,
-          claimed,
-        },
-        paging: {
-          sort,
-          limit,
-          offset,
-        },
+  const options = tanstackClient.agent.getCompetitions.queryOptions({
+    input: {
+      agentId: agentId ?? "",
+      filters: {
+        status: status as CompetitionStatus | undefined,
+        claimed,
       },
-      enabled: !!agentId,
-      placeholderData: (prev) => prev,
-    }),
-  );
+      paging: {
+        sort,
+        limit,
+        offset,
+      },
+    },
+    placeholderData: (prev) => prev,
+  });
+
+  return useQuery({
+    ...options,
+    queryFn: agentId ? options.queryFn : skipToken,
+  });
 };
 
 export type AgentCompetitionsResult = RouterOutputs["agent"]["getCompetitions"];

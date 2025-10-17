@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { skipToken, useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 
 import {
@@ -18,17 +18,19 @@ export default function UserCompetitionsSection() {
   const limit = 10;
   const { isAuthenticated } = useSession();
 
-  const { data, isLoading, isFetching } = useQuery(
-    tanstackClient.user.getCompetitions.queryOptions({
-      input: {
-        limit,
-        offset,
-        sort,
-      },
-      enabled: isAuthenticated,
-      placeholderData: (prev) => prev,
-    }),
-  );
+  const options = tanstackClient.user.getCompetitions.queryOptions({
+    input: {
+      limit,
+      offset,
+      sort,
+    },
+    placeholderData: (prev) => prev,
+  });
+
+  const { data, isLoading, isFetching } = useQuery({
+    ...options,
+    queryFn: isAuthenticated ? options.queryFn : skipToken,
+  });
 
   // Infer competition type from RPC response
   type Competition = NonNullable<typeof data>["competitions"][number];
