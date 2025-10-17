@@ -5,6 +5,7 @@ import { getProfile } from "./get-profile";
 import { getUserAgent } from "./get-user-agent";
 import { getUserAgents } from "./get-user-agents";
 import { linkWallet } from "./link-wallet";
+import { login } from "./login";
 import { subscribe } from "./subscribe";
 import { unsubscribe } from "./unsubscribe";
 import { updateAgentProfile } from "./update-agent-profile";
@@ -14,6 +15,7 @@ export const router = {
   getProfile,
   updateProfile,
   linkWallet,
+  login,
   subscribe,
   unsubscribe,
   getCompetitions,

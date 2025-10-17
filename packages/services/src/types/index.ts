@@ -1,6 +1,7 @@
 import { z } from "zod/v4";
 
 import {
+  type UserMetadata,
   actorStatus,
   competitionAgentStatus,
   competitionStatus,
@@ -292,14 +293,6 @@ export interface AgentRef {
   name: string;
   version: string;
   url?: string;
-}
-
-/**
- * User's metadata interface
- */
-export interface UserMetadata {
-  website?: string;
-  [key: string]: unknown;
 }
 
 /**
@@ -631,7 +624,7 @@ export function toApiUser(dbUser: SelectUser): User {
     isSubscribed: dbUser.isSubscribed,
     privyId: dbUser.privyId ?? undefined,
     imageUrl: dbUser.imageUrl ?? undefined,
-    metadata: dbUser.metadata ? (dbUser.metadata as UserMetadata) : undefined,
+    metadata: dbUser.metadata ?? undefined,
     status: dbUser.status as ActorStatus,
     createdAt: dbUser.createdAt,
     updatedAt: dbUser.updatedAt,

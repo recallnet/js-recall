@@ -20,6 +20,13 @@ import { tokenAmount } from "../custom-types.js";
 export const MAX_HANDLE_LENGTH = 15;
 
 /**
+ * User metadata stored in the metadata JSONB field
+ */
+export type UserMetadata = {
+  website?: string;
+};
+
+/**
  * Statuses for users, agents, and admins.
  */
 export const actorStatus = pgEnum("actor_status", [
@@ -88,7 +95,7 @@ export const users = pgTable(
     email: varchar({ length: 100 }).unique(),
     isSubscribed: boolean("is_subscribed").notNull().default(false),
     imageUrl: text("image_url"),
-    metadata: jsonb(),
+    metadata: jsonb().$type<UserMetadata>(),
     status: actorStatus("status").default("active").notNull(),
     createdAt: timestamp("created_at", {
       withTimezone: true,
