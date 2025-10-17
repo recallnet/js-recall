@@ -24,7 +24,7 @@ describe("LeaderboardService", () => {
     // Create mock repository
     mockRepo = {
       getStatsForCompetitionType: vi.fn(),
-      getGlobalAgentMetrics: vi.fn(),
+      getGlobalAgentMetricsForType: vi.fn(),
       getTotalActiveAgents: vi.fn(),
     } as unknown as MockedObject<LeaderboardRepository>;
 
@@ -196,7 +196,7 @@ describe("LeaderboardService", () => {
         mockRepo.getTotalActiveAgents.mockResolvedValue(44);
 
         // Mock agent metrics
-        mockRepo.getGlobalAgentMetrics.mockResolvedValueOnce({
+        mockRepo.getGlobalAgentMetricsForType.mockResolvedValueOnce({
           agents: mockAgents,
           totalCount: 44,
         });
@@ -262,7 +262,7 @@ describe("LeaderboardService", () => {
         );
         expect(mockRepo.getStatsForCompetitionType).toHaveBeenCalledTimes(1);
         expect(mockRepo.getTotalActiveAgents).toHaveBeenCalledTimes(1);
-        expect(mockRepo.getGlobalAgentMetrics).toHaveBeenCalledWith({
+        expect(mockRepo.getGlobalAgentMetricsForType).toHaveBeenCalledWith({
           type: "trading",
           limit: 100,
           offset: 0,
@@ -284,7 +284,7 @@ describe("LeaderboardService", () => {
         mockRepo.getTotalActiveAgents.mockResolvedValue(25);
 
         // Mock agent metrics for futures
-        mockRepo.getGlobalAgentMetrics.mockResolvedValueOnce({
+        mockRepo.getGlobalAgentMetricsForType.mockResolvedValueOnce({
           agents: mockFuturesAgents,
           totalCount: 25,
         });
@@ -304,7 +304,7 @@ describe("LeaderboardService", () => {
         expect(mockRepo.getStatsForCompetitionType).toHaveBeenCalledWith(
           "perpetual_futures",
         );
-        expect(mockRepo.getGlobalAgentMetrics).toHaveBeenCalledWith({
+        expect(mockRepo.getGlobalAgentMetricsForType).toHaveBeenCalledWith({
           type: "perpetual_futures",
           limit: 100,
           offset: 0,
@@ -334,13 +334,13 @@ describe("LeaderboardService", () => {
         mockRepo.getTotalActiveAgents.mockResolvedValue(69);
 
         // Mock trading agent metrics
-        mockRepo.getGlobalAgentMetrics.mockResolvedValueOnce({
+        mockRepo.getGlobalAgentMetricsForType.mockResolvedValueOnce({
           agents: mockTradingAgents,
           totalCount: 44,
         });
 
         // Mock futures agent metrics
-        mockRepo.getGlobalAgentMetrics.mockResolvedValueOnce({
+        mockRepo.getGlobalAgentMetricsForType.mockResolvedValueOnce({
           agents: mockFuturesAgents,
           totalCount: 25,
         });
@@ -381,7 +381,7 @@ describe("LeaderboardService", () => {
 
         mockRepo.getTotalActiveAgents.mockResolvedValue(0);
 
-        mockRepo.getGlobalAgentMetrics.mockResolvedValue({
+        mockRepo.getGlobalAgentMetricsForType.mockResolvedValue({
           agents: [],
           totalCount: 0,
         });
@@ -518,7 +518,7 @@ describe("LeaderboardService", () => {
         // Mock total active agents (500 total across platform)
         mockRepo.getTotalActiveAgents.mockResolvedValue(500);
 
-        mockRepo.getGlobalAgentMetrics.mockResolvedValue({
+        mockRepo.getGlobalAgentMetricsForType.mockResolvedValue({
           agents: mockAgents, // Only return 100
           totalCount: 500, // But total is 500
         });

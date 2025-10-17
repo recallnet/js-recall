@@ -421,7 +421,7 @@ export class LeaderboardRepository {
    * @param params Pagination parameters (limit and offset)
    * @returns Object containing paginated agent metrics and total count
    */
-  async getGlobalAgentMetrics(params: {
+  async getGlobalAgentMetricsForType(params: {
     type: CompetitionType;
     limit: number;
     offset: number;
@@ -446,7 +446,7 @@ export class LeaderboardRepository {
         limit: params.limit,
         offset: params.offset,
       },
-      `getGlobalAgentMetrics called with params`,
+      `getGlobalAgentMetricsForType called with params`,
     );
 
     try {
@@ -546,7 +546,7 @@ export class LeaderboardRepository {
         {
           error,
         },
-        "Error in getGlobalAgentMetrics",
+        "Error in getGlobalAgentMetricsForType",
       );
       throw error;
     }

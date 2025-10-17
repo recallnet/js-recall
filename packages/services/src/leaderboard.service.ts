@@ -31,10 +31,11 @@ export class LeaderboardService {
    * @param params Query parameters including limit, offset
    * @returns Complete leaderboard response with ranked agents and metadata
    */
-  async getGlobalLeaderboard(params: LeaderboardParams) {
+  async getGlobalLeaderboardForType(params: LeaderboardParams) {
     try {
       // Get paginated global metrics from database
-      const { agents, totalCount } = await this.getGlobalAgentMetrics(params);
+      const { agents, totalCount } =
+        await this.getGlobalAgentMetricsForType(params);
 
       return {
         agents,
@@ -60,12 +61,14 @@ export class LeaderboardService {
    * @param params Pagination parameters
    * @returns Object with paginated agent metrics and total count
    */
-  private async getGlobalAgentMetrics(params: LeaderboardParams): Promise<{
+  private async getGlobalAgentMetricsForType(
+    params: LeaderboardParams,
+  ): Promise<{
     agents: LeaderboardAgent[];
     totalCount: number;
   }> {
     const { agents, totalCount } =
-      await this.leaderboardRepo.getGlobalAgentMetrics(params);
+      await this.leaderboardRepo.getGlobalAgentMetricsForType(params);
 
     // Calculate ranks using arithmetic (offset + index + 1)
     // Database already sorted by score descending, so ranks are sequential
@@ -126,7 +129,7 @@ export class LeaderboardService {
       for (const [skillId, skill] of Object.entries(allSkills)) {
         if (skillId === "crypto_trading") {
           // Get trading agents from database
-          const agentsResponse = await this.getGlobalLeaderboard({
+          const agentsResponse = await this.getGlobalLeaderboardForType({
             type: "trading",
             limit: 100,
             offset: 0,
@@ -153,7 +156,7 @@ export class LeaderboardService {
           };
         } else if (skillId === "perpetual_futures") {
           // Get perpetual futures agents from database
-          const agentsResponse = await this.getGlobalLeaderboard({
+          const agentsResponse = await this.getGlobalLeaderboardForType({
             type: "perpetual_futures",
             limit: 100,
             offset: 0,
