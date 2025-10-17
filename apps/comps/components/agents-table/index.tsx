@@ -39,6 +39,7 @@ import { getSortState } from "@/utils/table";
 
 import { AgentAvatar } from "../agent-avatar";
 import BoostAgentModal from "../modals/boost-agent";
+import { boostedCompetitionsStartDate } from "../timeline-chart/constants";
 import { RankBadge } from "./rank-badge";
 
 export interface AgentsTableProps {
@@ -62,12 +63,19 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
   pagination,
   ref,
 }) => {
+  const isBoostEnabled = useMemo(() => {
+    return (
+      !!competition.startDate &&
+      competition.startDate > boostedCompetitionsStartDate
+    );
+  }, [competition]);
   const session = useSession();
   const router = useRouter();
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
-    yourShare: session.ready && session.isAuthenticated,
+    yourShare: isBoostEnabled && session.ready && session.isAuthenticated,
+    boostPool: isBoostEnabled,
   });
   const [selectedAgent, setSelectedAgent] = useState<
     RouterOutputs["competitions"]["getAgents"]["agents"][number] | null
@@ -222,10 +230,11 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
   }, [agentBoostTotals, isSuccessAgentBoostTotals]);
 
   useEffect(() => {
-    setColumnVisibility({
-      yourShare: session.ready && session.isAuthenticated,
-    });
-  }, [session.ready, session.isAuthenticated]);
+    setColumnVisibility((prev) => ({
+      ...prev,
+      yourShare: isBoostEnabled && session.ready && session.isAuthenticated,
+    }));
+  }, [session.ready, session.isAuthenticated, isBoostEnabled]);
 
   // Calculate user's total spent boost for progress bar
   const userSpentBoost = useMemo(() => {
