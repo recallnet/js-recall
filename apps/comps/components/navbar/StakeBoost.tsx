@@ -24,7 +24,7 @@ export const StakeBoost = () => {
       return "0";
     }
 
-    if (value < 1_000_000) {
+    if (value < 1_000) {
       return formatAmount(value, 0, true);
     }
 
