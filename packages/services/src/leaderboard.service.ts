@@ -210,9 +210,9 @@ export class LeaderboardService {
         }
       }
 
-      // Get total active agents across all competition types
-      const totalActiveAgents =
-        await this.leaderboardRepo.getTotalActiveAgents();
+      // Get total ranked agents across all competition types
+      const totalRankedAgents =
+        await this.leaderboardRepo.getTotalRankedAgents();
 
       return {
         skills: allSkills,
@@ -220,7 +220,7 @@ export class LeaderboardService {
         globalStats: {
           totalSkills: Object.keys(allSkills).length,
           totalModels: benchmarkData.models.length,
-          totalAgents: totalActiveAgents,
+          totalAgents: totalRankedAgents,
         },
       };
     } catch (error) {
