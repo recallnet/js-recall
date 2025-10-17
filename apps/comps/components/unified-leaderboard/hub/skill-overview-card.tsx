@@ -126,7 +126,7 @@ export const SkillOverviewCard: React.FC<SkillOverviewCardProps> = ({
               return (
                 <div
                   key={participant.id}
-                  className="flex items-center gap-2 rounded p-1.5 hover:bg-gray-800/30 md:gap-3 md:p-2"
+                  className="flex items-center gap-2 rounded p-1.5 md:gap-3 md:p-2"
                 >
                   {/* Rank */}
                   <div className="flex h-5 w-5 items-center justify-center rounded bg-gray-600 text-xs font-medium text-white">
