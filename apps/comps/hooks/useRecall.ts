@@ -49,6 +49,7 @@ export const useRecall = (): UseRecallReturn => {
   } = useSafeBalance({
     address,
     token,
+    chainId,
     query: { enabled: Boolean(address && token), refetchInterval: 10_000 },
   });
 

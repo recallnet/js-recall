@@ -3,6 +3,7 @@
 import { useCallback, useMemo } from "react";
 import { type Address } from "viem";
 import {
+  UseBalanceParameters,
   useAccount as useWagmiAccount,
   useBalance as useWagmiBalance,
   useChainId as useWagmiChainId,
@@ -227,7 +228,7 @@ export function useSafeDisconnect() {
 /**
  * Safe wrapper for useBalance that handles missing WagmiProvider
  */
-export function useSafeBalance(params?: any): any {
+export function useSafeBalance(params?: UseBalanceParameters): any {
   const wagmiAvailable = isWagmiAvailable();
 
   const defaultResult = useMemo(
