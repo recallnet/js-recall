@@ -1,4 +1,5 @@
 import { format, isValid, parseISO } from "date-fns";
+import { cmp, format as formatBigint } from "dnum";
 
 /**
  * Formats a number as a percentage string
@@ -87,4 +88,40 @@ export const formatAmount = (
     maximumFractionDigits: maxDecimals,
     useGrouping: thousandsSeparator,
   }).format(amount);
+};
+
+/**
+ * Checks if a bigint amount should be displayed in compact format through comparison.
+ * @param n - The bigint amount to check.
+ * @param decimals - The number of decimals of the amount (e.g., 18 for RECALL).
+ * @param compareTo - If the value is greater than the this value, the amount should be displayed in compact format (default: 1_000_000n).
+ * @returns True if the amount should be displayed in compact format.
+ */
+export const shouldShowCompact = (
+  amount: bigint,
+  decimals: number = 18,
+  compareTo: bigint = 1_000_000n,
+): boolean => cmp([amount, decimals], compareTo) === 1;
+
+/**
+ * Formats a bigint amount for display, showing up to a specified number of decimal places
+ * without adding unnecessary trailing zeros.
+ * @param amount - The bigint amount to format.
+ * @param decimals - The number of decimals of the amount (e.g., 18 for RECALL).
+ * @param maxDecimals - The maximum number of decimal places to show (default: 2).
+ * @param thousandsSeparator - Whether to use a thousands separator (default: false).
+ * @returns A formatted bigint amount string.
+ */
+export const formatBigintAmount = (
+  amount: bigint,
+  decimals: number = 18,
+  compact: boolean = true,
+  maxDecimals: number = 2,
+): string => {
+  return formatBigint([amount, decimals], {
+    compact,
+    decimalsRounding: "ROUND_DOWN",
+    trailingZeros: false,
+    digits: maxDecimals,
+  });
 };
