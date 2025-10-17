@@ -14,8 +14,10 @@ import {
 import Rewards from "@/components/rewards";
 import { AgentCard } from "@/components/user-agents/agent-card";
 import type { RouterOutputs } from "@/rpc/router";
+import { formatAmount } from "@/utils/format";
 import { formatDate } from "@/utils/format";
 
+import { Recall } from "../Recall";
 import RewardsTGE from "../rewards-tge";
 
 interface ChooseAgentModalProps {
@@ -61,7 +63,7 @@ export const ConfirmAgentEntryModal: React.FC<ChooseAgentModalProps> = ({
                 onClick={() => {}}
               />
             )}
-            <div className="text-secondary-foreground ml-50 flex flex-1 flex-col justify-center space-y-2 px-5 text-lg text-gray-300">
+            <div className="text-secondary-foreground ml-50 flex flex-1 flex-col justify-center space-y-2 px-5 text-lg">
               <li className="text-primary-foreground">[{agent?.name}]</li>
               <li>
                 Best Placement{" "}
@@ -94,7 +96,7 @@ export const ConfirmAgentEntryModal: React.FC<ChooseAgentModalProps> = ({
             <h3 className="mb-3 text-lg font-semibold text-white">
               Competition Details
             </h3>
-            <div className="text-secondary-foreground space-y-2 rounded-lg border border-gray-700 px-6 py-4 text-gray-300">
+            <div className="text-secondary-foreground space-y-2 rounded-lg border border-gray-700 px-6 py-4">
               <li>[{competition?.name}]</li>
               <li className="flex items-center gap-1">
                 <span className="flex items-center">
@@ -102,7 +104,7 @@ export const ConfirmAgentEntryModal: React.FC<ChooseAgentModalProps> = ({
                     className="mr-4 flex-shrink-0 rounded-full bg-current"
                     style={{ width: 5, height: 5 }}
                   ></span>
-                  Prize Pool
+                  Prize Pool:
                 </span>
                 <span className="text-primary-foreground flex">
                   {competition?.rewardsTge ? (
@@ -125,6 +127,21 @@ export const ConfirmAgentEntryModal: React.FC<ChooseAgentModalProps> = ({
                   )}
                 </span>
               </li>
+              {competition?.minimumStake && (
+                <li className="flex items-center gap-1">
+                  <span className="flex items-center">
+                    <span
+                      className="mr-4 flex-shrink-0 rounded-full bg-current"
+                      style={{ width: 5, height: 5 }}
+                    ></span>
+                    Minimum agent stake to compete:
+                    <div className="text-primary-foreground ml-1 flex items-center gap-1 font-bold">
+                      {formatAmount(competition.minimumStake, 0, true)}{" "}
+                      <Recall />
+                    </div>
+                  </span>
+                </li>
+              )}
               <li>
                 {"Registration Deadline "}
                 <span className="text-primary-foreground">

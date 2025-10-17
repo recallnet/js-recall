@@ -220,7 +220,7 @@ export default function CompetitionPageClient({
           { label: "Competitions", href: "/competitions" },
           { label: competition.name },
         ]}
-        className="mb-10 mt-10"
+        className="mb-10"
       />
       <div className="mb-10 flex w-full flex-col gap-3 sm:mb-20 sm:gap-5 md:flex-row">
         <BasicCompetitionCard competition={competition} className="md:w-1/2" />

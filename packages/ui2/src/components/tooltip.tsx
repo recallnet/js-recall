@@ -32,7 +32,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
             side={position}
             sideOffset={8}
             className={cn(
-              "z-50 rounded-xl bg-gray-900 px-3 py-2 text-sm text-white shadow-lg",
+              "z-50 max-w-xs rounded-xl bg-gray-900 px-3 py-2 text-sm text-white shadow-lg",
               tooltipClassName,
             )}
           >
