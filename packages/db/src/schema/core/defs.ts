@@ -107,7 +107,6 @@ export const users = pgTable(
     index("idx_users_privy_id").on(table.privyId),
     index("idx_users_status").on(table.status),
     unique("users_wallet_address_key").on(table.walletAddress),
-    unique("users_privy_id_key").on(table.privyId),
   ],
 );
 
@@ -201,7 +200,6 @@ export const agents = pgTable(
     unique("agents_owner_id_name_key").on(table.ownerId, table.name),
     unique("agents_handle_key").on(table.handle),
     unique("agents_api_key_key").on(table.apiKey),
-    unique("agents_wallet_address_key").on(table.walletAddress),
   ],
 );
 
