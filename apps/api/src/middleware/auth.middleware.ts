@@ -88,7 +88,7 @@ export const authMiddleware = (
       }
 
       /**
-       * API Key Authentication
+       * API Key Authentication for Agents and Admins.
        *
        * This section attempts to authenticate the request using an API key provided in the
        * 'Authorization: Bearer <API_KEY>' header. It tries agent API keys first, then admin API keys.
