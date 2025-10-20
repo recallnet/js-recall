@@ -8,7 +8,6 @@ import {
 } from "@recallnet/services/types";
 
 import { base } from "@/rpc/context/base";
-import { userMiddleware } from "@/rpc/middleware/user";
 
 export const listEnriched = base
   .input(

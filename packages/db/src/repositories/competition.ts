@@ -1928,30 +1928,23 @@ export class CompetitionRepository {
   }) {
     try {
       // Count query
-      const countResult = await (() => {
-        if (status) {
-          return this.#db
-            .select({ count: drizzleCount() })
-            .from(tradingCompetitions)
-            .innerJoin(
-              competitions,
-              eq(tradingCompetitions.competitionId, competitions.id),
-            )
-            .where(eq(competitions.status, status));
-        } else {
-          return this.#db
-            .select({ count: drizzleCount() })
-            .from(tradingCompetitions)
-            .innerJoin(
-              competitions,
-              eq(tradingCompetitions.competitionId, competitions.id),
-            );
-        }
-      })();
+      let countQuery = this.#db
+        .select({ count: drizzleCount() })
+        .from(tradingCompetitions)
+        .innerJoin(
+          competitions,
+          eq(tradingCompetitions.competitionId, competitions.id),
+        )
+        .$dynamic();
 
+      if (status) {
+        countQuery = countQuery.where(eq(competitions.status, status));
+      }
+
+      const countResult = await countQuery;
       const total = countResult[0]?.count ?? 0;
 
-      // Data query with dynamic building
+      // Data query
       let dataQuery = this.buildCompetitionWithRewardsQuery().$dynamic();
 
       if (status) {

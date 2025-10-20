@@ -20,16 +20,16 @@ async function awardAllBoost() {
   const startTime = Date.now();
   logger.info("Starting award Boost task...");
 
-  const competitionManager = services.competitionService;
+  const competitionRepository = services.competitionRepository;
   const stakesRepository = services.stakesRepository;
   const userManager = services.userService;
   const boostAwardService = services.boostAwardService;
 
   try {
-    const upcomingCompetitionsRes = await competitionManager.getCompetitions(
-      "pending",
-      { limit: 100, offset: 0, sort: "" },
-    );
+    const upcomingCompetitionsRes = await competitionRepository.findByStatus({
+      status: "pending",
+      params: { limit: 100, offset: 0, sort: "" },
+    });
     const upcomingCompetitions = upcomingCompetitionsRes.competitions;
     logger.info(
       `${upcomingCompetitions.length} competitions need Boost awarded to the users`,
