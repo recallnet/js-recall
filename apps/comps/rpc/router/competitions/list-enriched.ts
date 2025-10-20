@@ -7,13 +7,21 @@ import {
   PagingParamsSchema,
 } from "@recallnet/services/types";
 
+import { CacheTags } from "@/lib/cache-tags";
 import { base } from "@/rpc/context/base";
+import { cacheMiddleware } from "@/rpc/middleware/cache";
 
 export const listEnriched = base
   .input(
     z.object({
       status: CompetitionStatusSchema,
       paging: PagingParamsSchema.optional(),
+    }),
+  )
+  .use(
+    cacheMiddleware({
+      revalidateSecs: 30, // 30 seconds
+      getTags: () => [CacheTags.competitionList()],
     }),
   )
   .handler(async ({ context, input, errors }) => {
