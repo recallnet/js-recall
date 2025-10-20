@@ -5,13 +5,14 @@ import {
   CompetitionDetailResponse,
   CreateCompetitionResponse,
   SnapshotResponse,
-} from "@/e2e/utils/api-types.js";
+} from "@recallnet/test-utils";
 import {
   createTestClient,
   getAdminApiKey,
   registerUserAndAgentAndGetClient,
   wait,
-} from "@/e2e/utils/test-helpers.js";
+} from "@recallnet/test-utils";
+
 import { ServiceRegistry } from "@/services/index.js";
 
 describe("Competition Start Date Processing", () => {

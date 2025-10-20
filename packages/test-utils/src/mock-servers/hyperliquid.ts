@@ -1,7 +1,7 @@
 import express, { Express, Request, Response } from "express";
 import { Server } from "http";
 
-import { createLogger } from "@/lib/logger.js";
+import { createLogger } from "../logger.js";
 
 /**
  * Mock Hyperliquid API server for E2E testing

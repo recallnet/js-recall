@@ -2,14 +2,12 @@ import { beforeEach, describe, expect, test } from "vitest";
 
 import { MultiChainProvider } from "@recallnet/services/providers";
 import { BlockchainType, PriceReport } from "@recallnet/services/types";
-
-import config, { features } from "@/config/index.js";
 import {
   BalancesResponse,
   SpecificChain,
   TradeHistoryResponse,
   TradeResponse,
-} from "@/e2e/utils/api-types.js";
+} from "@recallnet/test-utils";
 import {
   createTestClient,
   getAdminApiKey,
@@ -17,7 +15,9 @@ import {
   registerUserAndAgentAndGetClient,
   startTestCompetition,
   wait,
-} from "@/e2e/utils/test-helpers.js";
+} from "@recallnet/test-utils";
+
+import config, { features } from "@/config/index.js";
 import { logger } from "@/lib/logger.js";
 
 describe("Base Chain Trading", () => {

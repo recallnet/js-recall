@@ -2,16 +2,14 @@ import axios from "axios";
 import { beforeEach, describe, expect, test } from "vitest";
 
 import { BlockchainType } from "@recallnet/services/types";
-
-import config from "@/config/index.js";
-import { ApiClient } from "@/e2e/utils/api-client.js";
+import { ApiClient } from "@recallnet/test-utils";
 import {
   AgentProfileResponse,
   BalancesResponse,
   SpecificChain,
   TradeResponse,
-} from "@/e2e/utils/api-types.js";
-import { getBaseUrl } from "@/e2e/utils/server.js";
+} from "@recallnet/test-utils";
+import { getBaseUrl } from "@recallnet/test-utils";
 import {
   createTestClient,
   getAdminApiKey,
@@ -19,7 +17,9 @@ import {
   registerUserAndAgentAndGetClient,
   startTestCompetition,
   wait,
-} from "@/e2e/utils/test-helpers.js";
+} from "@recallnet/test-utils";
+
+import config from "@/config/index.js";
 
 describe("Multi-Agent Competition", () => {
   let adminApiKey: string;

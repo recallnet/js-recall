@@ -6,14 +6,15 @@ import {
   CompetitionTimelineResponse,
   ErrorResponse,
   StartCompetitionResponse,
-} from "@/e2e/utils/api-types.js";
-import { getBaseUrl } from "@/e2e/utils/server.js";
+} from "@recallnet/test-utils";
+import { getBaseUrl } from "@recallnet/test-utils";
 import {
   createTestClient,
   getAdminApiKey,
   registerUserAndAgentAndGetClient,
   startTestCompetition,
-} from "@/e2e/utils/test-helpers.js";
+} from "@recallnet/test-utils";
+
 import ServiceRegistry from "@/services/index.js";
 
 describe("Competition Timeline API", () => {

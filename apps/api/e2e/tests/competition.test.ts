@@ -3,9 +3,6 @@ import { and, eq } from "drizzle-orm";
 import { beforeEach, describe, expect, test } from "vitest";
 
 import { agents, competitionAgents } from "@recallnet/db/schema/core/defs";
-
-import { config } from "@/config/index.js";
-import { db } from "@/database/db.js";
 import {
   AgentCompetitionsResponse,
   AgentProfileResponse,
@@ -27,8 +24,8 @@ import {
   UpcomingCompetitionsResponse,
   UserAgentApiKeyResponse,
   UserCompetitionsResponse,
-} from "@/e2e/utils/api-types.js";
-import { getBaseUrl } from "@/e2e/utils/server.js";
+} from "@recallnet/test-utils";
+import { getBaseUrl } from "@recallnet/test-utils";
 import {
   createPerpsTestCompetition,
   createPrivyAuthenticatedClient,
@@ -41,8 +38,11 @@ import {
   startExistingTestCompetition,
   startTestCompetition,
   strictTradingConstraints,
-} from "@/e2e/utils/test-helpers.js";
-import { wait } from "@/e2e/utils/test-helpers.js";
+} from "@recallnet/test-utils";
+import { wait } from "@recallnet/test-utils";
+
+import { config } from "@/config/index.js";
+import { db } from "@/database/db.js";
 import { ServiceRegistry } from "@/services/index.js";
 
 describe("Competition API", () => {

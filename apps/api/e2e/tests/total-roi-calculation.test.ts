@@ -1,20 +1,21 @@
 import { sql } from "drizzle-orm";
 import { beforeEach, describe, expect, test } from "vitest";
 
-import { config } from "@/config/index.js";
-import { db } from "@/database/db.js";
 import {
   CROSS_CHAIN_TRADING_TYPE,
   GetUserAgentsResponse,
   StartCompetitionResponse,
-} from "@/e2e/utils/api-types.js";
+} from "@recallnet/test-utils";
 import {
   createTestClient,
   getAdminApiKey,
   getStartingValue,
   registerUserAndAgentAndGetClient,
   wait,
-} from "@/e2e/utils/test-helpers.js";
+} from "@recallnet/test-utils";
+
+import { config } from "@/config/index.js";
+import { db } from "@/database/db.js";
 
 // Type definitions for database query results
 interface LeaderboardEntry {
