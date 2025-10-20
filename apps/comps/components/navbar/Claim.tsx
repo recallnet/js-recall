@@ -11,7 +11,10 @@ export const Claim = () => {
   const { totalClaimable, claim, isPending, isConfirming, isConfirmed, error } =
     useClaim();
 
-  const display = dnum.format([totalClaimable, 18], { compact: true });
+  const display = dnum.format([totalClaimable, 18], {
+    compact: true,
+    digits: 5,
+  });
 
   const isProcessing = isPending || isConfirming;
   const disabled = totalClaimable === 0n || isProcessing;
