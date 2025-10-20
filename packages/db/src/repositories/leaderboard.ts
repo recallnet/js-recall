@@ -391,12 +391,32 @@ export class LeaderboardRepository {
   }
 
   /**
+   * Get count of distinct agent IDs across all competition types
+   * @returns Total number of unique active agents across the platform
+   */
+  async getTotalRankedAgents(): Promise<number> {
+    this.#logger.debug("getTotalRankedAgents called");
+
+    try {
+      const result = await this.#dbRead
+        .select({
+          totalRankedAgents: countDistinct(agentScore.agentId),
+        })
+        .from(agentScore);
+      return result[0]?.totalRankedAgents ?? 0;
+    } catch (error) {
+      this.#logger.error({ error }, "Error in getTotalRankedAgents");
+      throw error;
+    }
+  }
+
+  /**
    * Get global agent metrics with pagination
    * Uses separate aggregation queries to avoid Cartesian product issues
    * @param params Pagination parameters (limit and offset)
    * @returns Object containing paginated agent metrics and total count
    */
-  async getGlobalAgentMetrics(params: {
+  async getGlobalAgentMetricsForType(params: {
     type: CompetitionType;
     limit: number;
     offset: number;
@@ -420,7 +440,7 @@ export class LeaderboardRepository {
         limit: params.limit,
         offset: params.offset,
       },
-      `getGlobalAgentMetrics called with params`,
+      `getGlobalAgentMetricsForType called with params`,
     );
 
     try {
@@ -506,7 +526,7 @@ export class LeaderboardRepository {
         {
           error,
         },
-        "Error in getGlobalAgentMetrics",
+        "Error in getGlobalAgentMetricsForType",
       );
       throw error;
     }
