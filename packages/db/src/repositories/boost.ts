@@ -719,14 +719,17 @@ class BoostRepository {
         };
       }
 
-      // Atomically upsert the boost total - no lock needed!
+      // Atomically upsert the boost total
       const [updatedAgentBoostTotal] = await tx
+        // first try to insert a new row, there a unique constraint on
+        // compId+agentId so this will fail if the row already exists
         .insert(schema.agentBoostTotals)
         .values({
           agentId,
           competitionId,
           total: amount,
         })
+        // if the row exists, atomically increment the value of `total`
         .onConflictDoUpdate({
           target: [
             schema.agentBoostTotals.agentId,
