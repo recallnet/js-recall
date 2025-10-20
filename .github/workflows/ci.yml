@@ -613,6 +613,7 @@ jobs:
           TEST_MODE: true
           CI: true
           DATABASE_URL: postgresql://postgres:postgres@${{ steps.detect-env.outputs.db_host }}:5432/trading_simulator_test
+          POSTGRES_URL: postgresql://postgres:postgres@${{ steps.detect-env.outputs.db_host }}:5432/trading_simulator_test
           TEST_HOST: ${{ steps.detect-env.outputs.test_host }}
           DB_CONNECTION_TIMEOUT: 5000
           DB_IDLE_TIMEOUT: 1000

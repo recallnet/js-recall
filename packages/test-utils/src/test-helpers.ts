@@ -3,7 +3,6 @@ import * as crypto from "crypto";
 import { and, asc, eq } from "drizzle-orm";
 import { getAddress } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { expect } from "vitest";
 
 import { portfolioSnapshots } from "@recallnet/db/schema/trading/defs";
 
@@ -523,7 +522,9 @@ Nonce: ${nonce}`;
 export async function generateTestCompetitions(adminApiKey: string) {
   const adminClient = createTestClient();
   const loginSuccess = await adminClient.loginAsAdmin(adminApiKey);
-  expect(loginSuccess).toBe(true);
+  if (!loginSuccess) {
+    throw new Error("Failed to login as admin");
+  }
 
   // Create an agent and user
   const {
@@ -615,7 +616,9 @@ export async function getAdminApiKey() {
   });
 
   const adminApiKey = response.data.admin.apiKey;
-  expect(adminApiKey).toBeDefined();
+  if (!adminApiKey) {
+    throw new Error("Failed to get admin API key from setup response");
+  }
 
   return adminApiKey;
 }

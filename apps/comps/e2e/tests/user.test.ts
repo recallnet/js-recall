@@ -4,6 +4,7 @@ import {
   type UserProfileResponse,
   createMockPrivyToken,
   createTestClient,
+  createTestPrivyUser,
   getAdminApiKey,
   registerUserAndAgentAndGetClient,
 } from "@recallnet/test-utils";
@@ -48,19 +49,24 @@ describe("User RPC", () => {
     expect(user.lastLoginAt).toBeDefined();
     expect(apiKey).toBeDefined();
 
-    // Create Privy token for the user
-    const privyToken = await createMockPrivyToken(user.privyId);
+    // Create Privy token for the user (same pattern as API tests)
+    const privyUser = createTestPrivyUser({
+      privyId: user.privyId,
+      name: user.name || undefined,
+      email: user.email || undefined,
+      walletAddress: user.walletAddress,
+      provider: "email",
+    });
+    const privyToken = await createMockPrivyToken(privyUser);
 
     // Create RPC client with user's Privy token
     const rpcClient = await createTestRpcClient(privyToken);
 
     // Verify user can authenticate and get profile via RPC
-    const profileResult = await rpcClient.user.getProfile();
-
-    // Check the result
-    expect(profileResult.data).toBeDefined();
-    expect(profileResult.data?.id).toBe(user.id);
-    expect(profileResult.data?.name).toBe(userName);
-    expect(profileResult.data?.email).toBe(userEmail);
+    const profileResponse = await rpcClient.user.getProfile();
+    expect(profileResponse).toBeDefined();
+    expect(profileResponse.id).toBe(user.id);
+    expect(profileResponse.name).toBe(userName);
+    expect(profileResponse.email).toBe(userEmail);
   });
 });

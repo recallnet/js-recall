@@ -52,6 +52,7 @@
     "connectkit": "^1.9.1",
     "cookie": "^1.0.2",
     "date-fns": "^4.1.0",
+    "dotenv": "^16.0.3",
     "dnum": "^2.15.0",
     "drizzle-orm": "^0.43.1",
     "embla-carousel-auto-scroll": "^8.6.0",

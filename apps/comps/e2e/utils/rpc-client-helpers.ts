@@ -6,8 +6,9 @@
 import { type RouterClient, createRouterClient } from "@orpc/server";
 import { type ReadonlyRequestCookies } from "next/dist/server/web/spec-extension/adapters/request-cookies";
 
-import { createLogger } from "@/lib/logger";
-import { privyClient } from "@/lib/privy-client";
+import { MockPrivyClient } from "@recallnet/services/lib";
+
+import { createLogger } from "../../lib/logger.js";
 import {
   agentService,
   boostAwardService,
@@ -16,8 +17,8 @@ import {
   emailService,
   leaderboardService,
   userService,
-} from "@/lib/services";
-import { router } from "@/rpc/router/index";
+} from "../../lib/services.js";
+import { router } from "../../rpc/router/index.js";
 
 /**
  * Create a mock cookies object for testing
@@ -26,7 +27,7 @@ function createMockCookies(privyToken?: string): ReadonlyRequestCookies {
   const cookieStore = new Map<string, string>();
 
   if (privyToken) {
-    cookieStore.set("privy-token", privyToken);
+    cookieStore.set("privy-id-token", privyToken);
   }
 
   return {
@@ -65,10 +66,16 @@ function createMockCookies(privyToken?: string): ReadonlyRequestCookies {
 export async function createTestRpcClient(
   privyToken?: string,
 ): Promise<RouterClient<typeof router>> {
+  // Use MockPrivyClient for tests instead of real PrivyClient
+  const mockPrivyClient = new MockPrivyClient(
+    process.env.PRIVY_APP_ID || "test-app-id",
+    process.env.PRIVY_APP_SECRET || "test-app-secret",
+  );
+
   return createRouterClient(router, {
     context: {
       cookies: createMockCookies(privyToken),
-      privyClient,
+      privyClient: mockPrivyClient as any, // MockPrivyClient implements subset of PrivyClient interface
       boostService,
       boostAwardService,
       userService,

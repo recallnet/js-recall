@@ -105,7 +105,15 @@ export async function migrateDb() {
       console.log("Acquired migration lock, running migrations...");
 
       // Find the drizzle migrations folder - it's in apps/api/drizzle
-      const migrationsFolder = path.resolve(process.cwd(), "apps/api/drizzle");
+      // Need to find the workspace root first
+      const workspaceRoot = process.cwd().includes("/apps/")
+        ? path.resolve(process.cwd(), "../..")
+        : process.cwd();
+      const migrationsFolder = path.resolve(workspaceRoot, "apps/api/drizzle");
+
+      console.log(
+        `Looking for migrations in: ${migrationsFolder} (workspace root: ${workspaceRoot})`,
+      );
 
       await migrate(db, {
         migrationsFolder,
