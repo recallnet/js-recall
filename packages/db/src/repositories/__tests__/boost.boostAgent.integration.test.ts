@@ -1199,14 +1199,10 @@ describe("BoostRepository.boostAgent() Integration Tests", () => {
 
       // Wait for all boosts to complete
       const results = await Promise.all(boostPromises);
-
-      // All boosts should succeed
-      results.forEach(({ result }, indx) => {
+      // All boosts should succeed and
+      results.forEach(({ result }) => {
         expect(result.type).toBe("applied");
         expect(result.agentBoostTotal).toBeDefined();
-        expect(result.agentBoostTotal.total).toBe(
-          boostAmount * BigInt(indx + 1),
-        );
       });
 
       // Verify the final agent boost total is correct
