@@ -47,7 +47,7 @@ export function formatCompetitionDates(
  * @returns List of competitions with their associated agents
  */
 export function mergeCompetitionsWithUserData(
-  competitions: RouterOutputs["competitions"]["listEnriched"]["competitions"],
+  competitions: RouterOutputs["competitions"]["list"]["competitions"],
   userCompetitions: UserCompetition[],
 ) {
   return competitions.map((competition) => {

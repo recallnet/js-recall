@@ -11,7 +11,7 @@ import { CacheTags } from "@/lib/cache-tags";
 import { base } from "@/rpc/context/base";
 import { cacheMiddleware } from "@/rpc/middleware/cache";
 
-export const listEnriched = base
+export const list = base
   .input(
     z.object({
       status: CompetitionStatusSchema,
@@ -59,4 +59,4 @@ export const listEnriched = base
     }
   });
 
-export type ListEnrichedType = typeof listEnriched;
+export type ListType = typeof list;
