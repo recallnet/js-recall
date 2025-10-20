@@ -59,8 +59,8 @@ export const Navbar: React.FunctionComponent = () => {
             </Avatar>
           </Link>
 
-          {/* Inline nav items for lg+ */}
-          <div className="xs:flex hidden">
+          {/* Inline nav items for sm+ */}
+          <div className="hidden sm:flex">
             {navItems
               .filter((item) => !item.mobileOnly)
               .map((item) => {
@@ -85,7 +85,7 @@ export const Navbar: React.FunctionComponent = () => {
           </div>
 
           {/* Dropdown trigger for <sm */}
-          <div className="xs:hidden">
+          <div className="sm:hidden">
             <DropdownMenu.Root open={open} onOpenChange={setOpen}>
               <DropdownMenu.Trigger asChild>
                 <Button className="bg-transparent text-white hover:bg-transparent">
@@ -119,7 +119,7 @@ export const Navbar: React.FunctionComponent = () => {
 
         <div className="flex h-full items-center gap-4">
           {isAuthenticated && isWalletConnected && (
-            <div className="xs:flex hidden h-full items-center gap-4">
+            <div className="hidden h-full items-center gap-4 sm:flex">
               <div
                 className={cn(
                   "flex h-full items-center",

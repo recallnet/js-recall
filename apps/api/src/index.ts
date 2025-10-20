@@ -16,7 +16,6 @@ import { makePriceController } from "@/controllers/price.controller.js";
 import { makeRewardsController } from "@/controllers/rewards.controller.js";
 import { makeTradeController } from "@/controllers/trade.controller.js";
 import { makeUserController } from "@/controllers/user.controller.js";
-import { makeVoteController } from "@/controllers/vote.controller.js";
 import { closeDb, migrateDb } from "@/database/db.js";
 import { apiLogger } from "@/lib/logger.js";
 import { initSentry } from "@/lib/sentry.js";
@@ -177,7 +176,6 @@ const userController = makeUserController(
 );
 const agentController = makeAgentController(services);
 const leaderboardController = makeLeaderboardController(services);
-const voteController = makeVoteController(services);
 const boostController = makeBoostController(services);
 
 const adminRoutes = configureAdminRoutes(adminController, adminMiddleware);
@@ -193,11 +191,7 @@ const docsRoutes = configureDocsRoutes(docsController);
 const healthRoutes = configureHealthRoutes(healthController);
 const priceRoutes = configurePriceRoutes(priceController);
 const tradeRoutes = configureTradeRoutes(tradeController);
-const userRoutes = configureUserRoutes(
-  userController,
-  voteController,
-  rewardsController,
-);
+const userRoutes = configureUserRoutes(userController, rewardsController);
 const agentRoutes = configureAgentRoutes(agentController);
 const agentsRoutes = configureAgentsRoutes(agentController);
 const leaderboardRoutes = configureLeaderboardRoutes(leaderboardController);

@@ -22,11 +22,11 @@ import { JoinSwarmSection } from "@/components/join-swarm-section";
 import { PositionsTable } from "@/components/positions-table";
 import { TimelineChart } from "@/components/timeline-chart/index";
 import { TradesTable } from "@/components/trades-table";
-import { UserVote } from "@/components/user-vote";
 import { getSocialLinksArray } from "@/data/social";
 import { useCompetitionPerpsPositions } from "@/hooks/useCompetitionPerpsPositions";
 import { useCompetitionTrades } from "@/hooks/useCompetitionTrades";
 import { useSession } from "@/hooks/useSession";
+import { openForBoosting } from "@/lib/open-for-boosting";
 import { tanstackClient } from "@/rpc/clients/tanstack-query";
 
 const LIMIT_AGENTS_PER_PAGE = 10;
@@ -155,34 +155,6 @@ export default function CompetitionPageClient({
     );
   }
 
-  // Helper function to determine if voting is actually available
-  const isVotingAvailable = () => {
-    // For authenticated users, trust server validation
-    if (competition.userVotingInfo) {
-      return competition.userVotingInfo.canVote ?? false;
-    }
-
-    // For unauthenticated users, check client-side
-    if (!competition.votingEnabled) return false;
-    if (competition.status === "ended") return false;
-
-    const now = new Date();
-    const votingStart = competition.votingStartDate
-      ? new Date(competition.votingStartDate)
-      : null;
-    const votingEnd = competition.votingEndDate
-      ? new Date(competition.votingEndDate)
-      : null;
-
-    // If voting start date is set and we haven't reached it yet
-    if (votingStart && now < votingStart) return false;
-
-    // If voting end date is set and we've passed it
-    if (votingEnd && now > votingEnd) return false;
-
-    return true;
-  };
-
   const BoostAgentsBtn = ({
     className,
     disabled,
@@ -191,7 +163,7 @@ export default function CompetitionPageClient({
     disabled?: boolean;
   }) => (
     <Button
-      disabled={!isVotingAvailable() || disabled}
+      disabled={!openForBoosting(competition) || disabled}
       variant="default"
       className={cn(
         "border border-yellow-500 bg-black text-white hover:bg-yellow-500 hover:text-black disabled:hover:bg-black disabled:hover:text-white",
@@ -254,27 +226,18 @@ export default function CompetitionPageClient({
       )}
 
       {competition.status !== "ended" &&
-        !competition.votingEnabled &&
-        competition.votingStartDate &&
-        isFuture(new Date(competition.votingStartDate)) && (
+        competition.boostStartDate &&
+        isFuture(new Date(competition.boostStartDate)) && (
           <div className="mt-8 flex flex-col items-center justify-center gap-2 text-center sm:flex-row">
             <span className="text-2xl font-bold text-gray-400">
-              Voting begins in...
+              Boosting begins in...
             </span>
             <CountdownClock
               showDuration={true}
-              targetDate={new Date(competition.votingStartDate)}
+              targetDate={new Date(competition.boostStartDate)}
             />
           </div>
         )}
-
-      {competition.userVotingInfo?.info.agentId ? (
-        <UserVote
-          agentId={competition.userVotingInfo.info.agentId}
-          competitionId={id}
-          totalVotes={competition.stats.totalVotes}
-        />
-      ) : null}
 
       {agentsError || !agentsData ? (
         <div className="my-12 rounded border border-red-500 bg-opacity-10 p-6 text-center">
@@ -295,7 +258,6 @@ export default function CompetitionPageClient({
             onFilterChange={setAgentsFilter}
             onSortChange={setAgentsSort}
             pagination={agentsData.pagination}
-            totalVotes={competition.stats.totalVotes}
             onPageChange={handleAgentsPageChange}
           />
           <TimelineChart

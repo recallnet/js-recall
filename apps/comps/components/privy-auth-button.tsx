@@ -75,9 +75,9 @@ export const PrivyAuthButton: React.FunctionComponent = () => {
 
   // Show authenticated state with dropdown
   if (backendUser && isAuthenticated) {
-    const displayName = backendUser.name;
+    const displayName = backendUser.name ?? undefined;
     const walletAddress = backendUser.walletAddress;
-    const avatarUrl = backendUser.imageUrl;
+    const avatarUrl = backendUser.imageUrl ?? undefined;
 
     return (
       <DropdownMenu>
@@ -101,7 +101,7 @@ export const PrivyAuthButton: React.FunctionComponent = () => {
                 />
               </AvatarFallback>
             </Avatar>
-            <div className="ml-3 hidden font-mono text-xs font-medium uppercase tracking-widest text-white sm:block">
+            <div className="ml-3 hidden font-mono text-xs font-medium uppercase tracking-widest text-white md:block">
               {displayName && displayName.length > 15
                 ? displayName.slice(0, 15) + "..."
                 : displayName ||

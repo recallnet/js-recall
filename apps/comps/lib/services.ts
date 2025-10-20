@@ -16,7 +16,6 @@ import {
   TradeSimulatorService,
   TradingConstraintsService,
   UserService,
-  VoteService,
 } from "@recallnet/services";
 import { WalletWatchlist } from "@recallnet/services/lib";
 import { MultiChainProvider } from "@recallnet/services/providers";
@@ -37,7 +36,6 @@ import {
   tradeRepository,
   tradingConstraintsRepository,
   userRepository,
-  voteRepository,
 } from "@/lib/repositories";
 
 import { db } from "./db";
@@ -88,7 +86,6 @@ export const userService = new UserService(
   emailService,
   agentRepository,
   userRepository,
-  voteRepository,
   boostRepository,
   walletWatchList,
   db,
@@ -136,13 +133,6 @@ export const agentRankService = new AgentRankService(
   createLogger("AgentRankService"),
 );
 
-export const voteService = new VoteService(
-  agentRepository,
-  competitionRepository,
-  voteRepository,
-  createLogger("VoteService"),
-);
-
 export const tradingConstraintsService = new TradingConstraintsService(
   tradingConstraintsRepository,
   config,
@@ -177,7 +167,6 @@ export const competitionService = new CompetitionService(
   portfolioSnapshotterService,
   agentService,
   agentRankService,
-  voteService,
   tradingConstraintsService,
   competitionRewardsService,
   perpsDataProcessor,

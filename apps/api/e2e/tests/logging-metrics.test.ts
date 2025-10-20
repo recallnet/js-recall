@@ -459,7 +459,6 @@ describe("Logging and Metrics API", () => {
     // These operations happen internally during various API calls:
     // - isAgentActiveInCompetition (should be "SELECT")
     // - markAgentAsWithdrawn (should be "UPDATE")
-    // - hasUserVotedInCompetition (should be "SELECT")
 
     // End the competition to trigger more operations
     const endCompResult = await client.endCompetition(competitionId);
@@ -538,7 +537,6 @@ describe("Logging and Metrics API", () => {
     const methodClassifications = [
       // These should be classified as SELECT (boolean/check methods)
       { pattern: 'method="isAgentActiveInCompetition"', expectedOp: "SELECT" },
-      { pattern: 'method="hasUserVotedInCompetition"', expectedOp: "SELECT" },
 
       // These should be classified as SELECT (query methods)
       { pattern: 'method="findById"', expectedOp: "SELECT" },
@@ -572,7 +570,6 @@ describe("Logging and Metrics API", () => {
 
       // These should be classified as INSERT (creation methods)
       { pattern: 'method="create"', expectedOp: "INSERT" },
-      { pattern: 'method="createVote"', expectedOp: "INSERT" },
       { pattern: 'method="createPortfolioSnapshot"', expectedOp: "INSERT" },
       {
         pattern: 'method="createEmailVerificationToken"',

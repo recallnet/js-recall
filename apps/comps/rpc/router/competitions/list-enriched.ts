@@ -11,7 +11,6 @@ import { base } from "@/rpc/context/base";
 import { userMiddleware } from "@/rpc/middleware/user";
 
 export const listEnriched = base
-  .use(userMiddleware)
   .input(
     z.object({
       status: CompetitionStatusSchema,
@@ -22,7 +21,6 @@ export const listEnriched = base
     try {
       const res = await context.competitionService.getEnrichedCompetitions({
         status: input.status,
-        userId: context.user?.id,
         pagingParams: input.paging || PagingParamsSchema.parse({}),
       });
       return res;

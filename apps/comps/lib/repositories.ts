@@ -12,7 +12,6 @@ import { StakesRepository } from "@recallnet/db/repositories/stakes";
 import { TradeRepository } from "@recallnet/db/repositories/trade";
 import { TradingConstraintsRepository } from "@recallnet/db/repositories/trading-constraints";
 import { UserRepository } from "@recallnet/db/repositories/user";
-import { VoteRepository } from "@recallnet/db/repositories/vote";
 
 import { config } from "@/config/private";
 
@@ -77,11 +76,6 @@ export const tradeRepository = new TradeRepository(
 export const userRepository = new UserRepository(
   db,
   createLogger("UserRepository"),
-);
-
-export const voteRepository = new VoteRepository(
-  db,
-  createLogger("VoteRepository"),
 );
 
 export const rewardsRepository = new RewardsRepository(

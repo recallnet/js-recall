@@ -354,14 +354,15 @@ export default function AgentProfile({
                 {agent.stats.completedCompetitions}
               </span>
             </div>
-            <div className="flex w-1/2 flex-col items-start border-l p-5">
+            {/* TODO: Re-implement with boosts */}
+            {/* <div className="flex w-1/2 flex-col items-start border-l p-5">
               <span className="text-secondary-foreground w-full text-nowrap text-left font-mono text-sm font-semibold uppercase tracking-wide">
-                Total Votes
+                Total Boosts
               </span>
               <span className="text-primary-foreground w-full text-left text-lg font-semibold">
                 {agent.stats.totalVotes?.toLocaleString() || "0"}
               </span>
-            </div>
+            </div> */}
           </div>
         </div>
         <div className="xs:grid col-span-3 row-start-2 mt-8 hidden grid-rows-2 border-b border-l border-r border-t text-xs lg:col-start-3 lg:row-start-1 lg:mt-0 lg:grid-rows-3 lg:border-l-0">

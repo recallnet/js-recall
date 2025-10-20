@@ -29,9 +29,6 @@ export type UpdateCompetition = z.infer<typeof UpdateCompetitionSchema>;
 export type SelectCompetitionAgent = typeof defs.competitionAgents.$inferSelect;
 export type InsertCompetitionAgent = typeof defs.competitionAgents.$inferInsert;
 
-export type SelectVote = typeof defs.votes.$inferSelect;
-export type InsertVote = typeof defs.votes.$inferInsert;
-
 export type SelectCompetitionsLeaderboard =
   typeof defs.competitionsLeaderboard.$inferSelect;
 export type InsertCompetitionsLeaderboard =

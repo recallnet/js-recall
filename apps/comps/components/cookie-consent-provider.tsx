@@ -48,6 +48,18 @@ export function CookieConsentProvider({
   useEffect(() => {
     const initCookieConsent = async () => {
       await CookieConsent.run({
+        cookie: {
+          name: "cc",
+          // Automatically use current domain
+          domain: window.location.hostname,
+          path: "/",
+          sameSite: "Lax",
+          // Set secure only on HTTPS to ensure cookies work in all environments
+          secure: window.location.protocol === "https:",
+          expiresAfterDays: 365,
+          // Use localStorage as primary storage to avoid cookie domain/secure issues
+          useLocalStorage: true,
+        },
         categories: {
           necessary: {
             enabled: true,

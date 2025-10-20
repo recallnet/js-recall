@@ -56,7 +56,6 @@ import {
   AgentDbSortFields,
   AgentQueryParams,
 } from "./types/sort/agent.js";
-import { VoteService } from "./vote.service.js";
 
 /**
  * Parameters for creating a new competition
@@ -71,8 +70,8 @@ export interface CreateCompetitionParams {
   type?: CompetitionType;
   startDate?: Date;
   endDate?: Date;
-  votingStartDate?: Date;
-  votingEndDate?: Date;
+  boostStartDate?: Date;
+  boostEndDate?: Date;
   joinStartDate?: Date;
   joinEndDate?: Date;
   maxParticipants?: number;
@@ -163,17 +162,6 @@ type EnrichedCompetition = Awaited<
     minimumFdvUsd: number | null;
     minTradesPerDay: number | null;
   };
-  votingEnabled?: boolean;
-  userVotingInfo?: {
-    canVote: boolean;
-    reason?: string;
-    info: {
-      hasVoted: boolean;
-      agentId?: string;
-      votedAt?: Date;
-    };
-  };
-  totalVotes?: number;
 };
 
 /**
@@ -198,7 +186,6 @@ type CompetitionDetailsData = {
   competition: SelectCompetition & {
     stats: {
       totalAgents: number;
-      totalVotes: number;
       // Paper trading stats
       totalTrades?: number;
       totalVolume?: number;
@@ -223,16 +210,6 @@ type CompetitionDetailsData = {
       agentPool: string;
       userPool: string;
     };
-    votingEnabled?: boolean;
-    userVotingInfo?: {
-      canVote: boolean;
-      reason?: string;
-      info: {
-        hasVoted: boolean;
-        agentId?: string;
-        votedAt?: Date;
-      };
-    };
   };
 };
 
@@ -255,7 +232,6 @@ type CompetitionAgentsData = {
     deactivationReason: string | null;
     rank: number | null;
     score: number | null;
-    voteCount: number;
     // Performance metrics
     pnl: number;
     pnlPercent: number;
@@ -370,7 +346,6 @@ export class CompetitionService {
   private portfolioSnapshotterService: PortfolioSnapshotterService;
   private agentService: AgentService;
   private agentRankService: AgentRankService;
-  private voteService: VoteService;
   private tradingConstraintsService: TradingConstraintsService;
   private competitionRewardService: CompetitionRewardService;
   private perpsDataProcessor: PerpsDataProcessor;
@@ -390,7 +365,6 @@ export class CompetitionService {
     portfolioSnapshotterService: PortfolioSnapshotterService,
     agentService: AgentService,
     agentRankService: AgentRankService,
-    voteService: VoteService,
     tradingConstraintsService: TradingConstraintsService,
     competitionRewardService: CompetitionRewardService,
     perpsDataProcessor: PerpsDataProcessor,
@@ -409,7 +383,6 @@ export class CompetitionService {
     this.portfolioSnapshotterService = portfolioSnapshotterService;
     this.agentService = agentService;
     this.agentRankService = agentRankService;
-    this.voteService = voteService;
     this.tradingConstraintsService = tradingConstraintsService;
     this.competitionRewardService = competitionRewardService;
     this.perpsDataProcessor = perpsDataProcessor;
@@ -435,8 +408,8 @@ export class CompetitionService {
    * @param type Competition type (defaults to trading)
    * @param startDate Optional start date for the competition
    * @param endDate Optional end date for the competition
-   * @param votingStartDate Optional voting start date
-   * @param votingEndDate Optional voting end date
+   * @param boostStartDate Optional boost start date
+   * @param boostEndDate Optional boost end date
    * @param joinStartDate Optional start date for joining the competition
    * @param joinEndDate Optional end date for joining the competition
    * @param maxParticipants Optional maximum number of participants allowed
@@ -455,8 +428,8 @@ export class CompetitionService {
     type,
     startDate,
     endDate,
-    votingStartDate,
-    votingEndDate,
+    boostStartDate,
+    boostEndDate,
     joinStartDate,
     joinEndDate,
     maxParticipants,
@@ -476,8 +449,8 @@ export class CompetitionService {
       imageUrl,
       startDate: startDate ?? null,
       endDate: endDate ?? null,
-      votingStartDate: votingStartDate ?? null,
-      votingEndDate: votingEndDate ?? null,
+      boostStartDate: boostStartDate ?? null,
+      boostEndDate: boostEndDate ?? null,
       joinStartDate: joinStartDate ?? null,
       joinEndDate: joinEndDate ?? null,
       maxParticipants: maxParticipants ?? null,
@@ -1302,10 +1275,6 @@ export class CompetitionService {
       ]),
     );
 
-    // Get vote counts for all agents in this competition
-    const voteCountsMap =
-      await this.voteService.getVoteCountsByCompetition(competitionId);
-
     // Build the response with agent details and competition data using bulk metrics
     const agentIds = agents.map((agent) => agent.id);
     const currentValues = new Map(
@@ -1335,7 +1304,6 @@ export class CompetitionService {
       );
       const score = leaderboardData?.score ?? 0;
       const rank = leaderboardData?.rank ?? 0;
-      const voteCount = voteCountsMap.get(agent.id) ?? 0;
       const metrics = bulkMetrics.get(agent.id) || {
         pnl: 0,
         pnlPercent: 0,
@@ -1358,7 +1326,6 @@ export class CompetitionService {
         pnlPercent: metrics.pnlPercent,
         change24h: metrics.change24h,
         change24hPercent: metrics.change24hPercent,
-        voteCount,
         // Risk metrics from leaderboard (perps competitions only)
         calmarRatio: leaderboardEntry?.calmarRatio ?? null,
         simpleReturn: leaderboardEntry?.simpleReturn ?? null,
@@ -2772,14 +2739,13 @@ export class CompetitionService {
   }
 
   /**
-   * Get enriched competitions with user voting data
+   * Get enriched competitions with trading constraint data
    * @param params Parameters for competitions request
    * @returns Enriched competitions list
    */
   async getEnrichedCompetitions(params: {
     status?: CompetitionStatus;
     pagingParams: PagingParams;
-    userId?: string;
   }): Promise<EnrichedCompetitionsData> {
     try {
       // Get competitions
@@ -2788,64 +2754,37 @@ export class CompetitionService {
         params.pagingParams,
       );
 
-      // If user is authenticated, enrich competitions with voting information
+      // Enrich competitions with trading constraint information
       let enrichedCompetitions = competitions;
-      if (params.userId) {
-        const competitionIds = competitions.map((c) => c.id);
+      const competitionIds = competitions.map((c) => c.id);
 
-        // Fetch all data in parallel with batch queries
-        const [enrichmentData, voteCountsMap] = await Promise.all([
-          this.competitionRepo.getEnrichedCompetitions(
-            params.userId,
-            competitionIds,
-          ),
-          this.competitionRepo.getBatchVoteCounts(competitionIds),
-        ]);
+      const enrichmentData =
+        await this.competitionRepo.getEnrichedCompetitions(competitionIds);
 
-        // Create lookup maps for efficient access
-        const enrichmentMap = new Map(
-          enrichmentData.map((data) => [data.competitionId, data]),
-        );
+      // Create lookup maps for efficient access
+      const enrichmentMap = new Map(
+        enrichmentData.map((data) => [data.competitionId, data]),
+      );
 
-        enrichedCompetitions = competitions.map((competition) => {
-          const enrichment = enrichmentMap.get(competition.id);
-          if (!enrichment) {
-            throw new ApiError(500, "invalid competition state");
-          }
+      enrichedCompetitions = competitions.map((competition) => {
+        const enrichment = enrichmentMap.get(competition.id);
+        if (!enrichment) {
+          throw new ApiError(500, "invalid competition state");
+        }
 
-          const hasVoted = !!enrichment.userVoteAgentId;
-          const compVotingStatus =
-            this.voteService.checkCompetitionVotingEligibility(competition);
+        const tradingConstraints = {
+          minimumPairAgeHours: enrichment.minimumPairAgeHours,
+          minimum24hVolumeUsd: enrichment.minimum24hVolumeUsd,
+          minimumLiquidityUsd: enrichment.minimumLiquidityUsd,
+          minimumFdvUsd: enrichment.minimumFdvUsd,
+          minTradesPerDay: enrichment.minTradesPerDay,
+        };
 
-          const votingState = {
-            canVote: compVotingStatus.canVote,
-            reason: compVotingStatus.reason,
-            info: {
-              hasVoted,
-              agentId: enrichment.userVoteAgentId || undefined,
-              votedAt: enrichment.userVoteCreatedAt || undefined,
-            },
-          };
-
-          const totalVotes = voteCountsMap.get(competition.id)?.totalVotes || 0;
-
-          const tradingConstraints = {
-            minimumPairAgeHours: enrichment.minimumPairAgeHours,
-            minimum24hVolumeUsd: enrichment.minimum24hVolumeUsd,
-            minimumLiquidityUsd: enrichment.minimumLiquidityUsd,
-            minimumFdvUsd: enrichment.minimumFdvUsd,
-            minTradesPerDay: enrichment.minTradesPerDay,
-          };
-
-          return {
-            ...competition,
-            tradingConstraints,
-            votingEnabled: votingState.canVote || votingState.info.hasVoted,
-            userVotingInfo: votingState,
-            totalVotes,
-          };
-        });
-      }
+        return {
+          ...competition,
+          tradingConstraints,
+        };
+      });
 
       // Calculate hasMore based on total and current page
       const hasMore =
@@ -2879,17 +2818,14 @@ export class CompetitionService {
    */
   async getCompetitionById(params: {
     competitionId: string;
-    userId?: string;
   }): Promise<CompetitionDetailsData> {
     try {
       // Fetch all data pieces first
       const [
         competition,
         tradeMetrics,
-        voteCountsMap,
         rewards,
         tradingConstraints,
-        votingState,
         prizePools,
       ] = await Promise.all([
         // Get competition details
@@ -2898,8 +2834,6 @@ export class CompetitionService {
         this.tradeSimulatorService.getCompetitionTradeMetrics(
           params.competitionId,
         ),
-        // Get vote counts for this competition
-        this.voteService.getVoteCountsByCompetition(params.competitionId),
         // Get reward structure
         this.competitionRewardService.getRewardsByCompetition(
           params.competitionId,
@@ -2908,14 +2842,6 @@ export class CompetitionService {
         this.tradingConstraintsService.getConstraintsWithDefaults(
           params.competitionId,
         ),
-        // Get voting state if user is authenticated
-        params.userId
-          ? this.voteService.getCompetitionVotingState(
-              params.userId,
-              params.competitionId,
-            )
-          : Promise.resolve(null),
-
         this.competitionRepo.getCompetitionPrizePools(params.competitionId),
       ]);
 
@@ -2923,16 +2849,9 @@ export class CompetitionService {
         throw new ApiError(404, "Competition not found");
       }
 
-      // Calculate total votes
-      const totalVotes = Array.from(voteCountsMap.values()).reduce(
-        (sum, count) => sum + count,
-        0,
-      );
-
       // Build stats based on competition type
       let stats: {
         totalAgents: number;
-        totalVotes: number;
         totalTrades?: number;
         totalVolume?: number;
         uniqueTokens?: number;
@@ -2947,7 +2866,6 @@ export class CompetitionService {
         );
         stats = {
           totalAgents: competition.registeredParticipants,
-          totalVotes,
           totalPositions: perpsStatsData?.totalPositions ?? 0,
           totalVolume: perpsStatsData?.totalVolume ?? 0,
           averageEquity: perpsStatsData?.averageEquity ?? 0,
@@ -2959,7 +2877,6 @@ export class CompetitionService {
           totalTrades: tradeMetrics.totalTrades,
           totalAgents: competition.registeredParticipants,
           totalVolume: tradeMetrics.totalVolume,
-          totalVotes,
           uniqueTokens: tradeMetrics.uniqueTokens,
           totalPositions: 0, // Not applicable for paper trading, but include for consistency
         };
@@ -2989,10 +2906,6 @@ export class CompetitionService {
           tradingConstraints,
           rewards: formattedRewards,
           rewardsTge: formattedPrizePools,
-          votingEnabled: votingState
-            ? votingState.canVote || votingState.info.hasVoted
-            : false,
-          userVotingInfo: votingState || undefined,
         },
       };
 

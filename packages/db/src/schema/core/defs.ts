@@ -20,6 +20,13 @@ import { tokenAmount } from "../custom-types.js";
 export const MAX_HANDLE_LENGTH = 15;
 
 /**
+ * User metadata stored in the metadata JSONB field
+ */
+export type UserMetadata = {
+  website?: string;
+};
+
+/**
  * Statuses for users, agents, and admins.
  */
 export const actorStatus = pgEnum("actor_status", [
@@ -88,7 +95,7 @@ export const users = pgTable(
     email: varchar({ length: 100 }).unique(),
     isSubscribed: boolean("is_subscribed").notNull().default(false),
     imageUrl: text("image_url"),
-    metadata: jsonb(),
+    metadata: jsonb().$type<UserMetadata>(),
     status: actorStatus("status").default("active").notNull(),
     createdAt: timestamp("created_at", {
       withTimezone: true,
@@ -252,8 +259,8 @@ export const competitions = pgTable(
     imageUrl: text("image_url"),
     startDate: timestamp("start_date", { withTimezone: true }),
     endDate: timestamp("end_date", { withTimezone: true }),
-    votingStartDate: timestamp("voting_start_date", { withTimezone: true }),
-    votingEndDate: timestamp("voting_end_date", { withTimezone: true }),
+    boostStartDate: timestamp("boost_start_date", { withTimezone: true }),
+    boostEndDate: timestamp("boost_end_date", { withTimezone: true }),
     joinStartDate: timestamp("join_start_date", { withTimezone: true }),
     joinEndDate: timestamp("join_end_date", { withTimezone: true }),
     maxParticipants: integer("max_participants"),
@@ -362,58 +369,6 @@ export const agentNonces = pgTable(
       foreignColumns: [agents.id],
       name: "agent_nonces_agent_id_fkey",
     }).onDelete("cascade"),
-  ],
-);
-/**
- * Votes cast by users for agents in competitions - TEMPORARY
- */
-
-export const votes = pgTable(
-  "votes",
-  {
-    id: uuid().primaryKey().notNull(),
-    userId: uuid("user_id").notNull(),
-    agentId: uuid("agent_id").notNull(),
-    competitionId: uuid("competition_id").notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .defaultNow()
-      .notNull(),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
-      .defaultNow()
-      .notNull(),
-  },
-  (table) => [
-    // Foreign key constraints
-    foreignKey({
-      columns: [table.userId],
-      foreignColumns: [users.id],
-      name: "votes_user_id_fkey",
-    }).onDelete("cascade"),
-    foreignKey({
-      columns: [table.agentId],
-      foreignColumns: [agents.id],
-      name: "votes_agent_id_fkey",
-    }).onDelete("cascade"),
-    foreignKey({
-      columns: [table.competitionId],
-      foreignColumns: [competitions.id],
-      name: "votes_competition_id_fkey",
-    }).onDelete("cascade"),
-    // Indexes for performance
-    index("idx_votes_competition_id").on(table.competitionId),
-    index("idx_votes_agent_competition").on(table.agentId, table.competitionId),
-    index("idx_votes_user_created").on(table.userId, table.createdAt),
-    index("idx_votes_user_competition_created").on(
-      table.userId,
-      table.competitionId,
-      table.createdAt,
-    ),
-    // Unique constraint to prevent duplicate votes
-    unique("votes_user_agent_competition_key").on(
-      table.userId,
-      table.agentId,
-      table.competitionId,
-    ),
   ],
 );
 

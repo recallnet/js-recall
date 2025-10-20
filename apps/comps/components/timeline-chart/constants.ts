@@ -25,3 +25,5 @@ export const HoverContext = createContext<{
   hoveredAgent: null,
   setHoveredAgent: () => {},
 });
+
+export const boostedCompetitionsStartDate = new Date("2025-10-20T00:00:00Z");

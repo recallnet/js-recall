@@ -2,8 +2,6 @@ import { Router } from "express";
 
 import { RewardsController } from "@/controllers/rewards.controller.js";
 import { UserController } from "@/controllers/user.controller.js";
-import { VoteController } from "@/controllers/vote.controller.js";
-import { configureVoteRoutes } from "@/routes/vote.routes.js";
 
 /**
  * Configure User Routes
@@ -12,7 +10,6 @@ import { configureVoteRoutes } from "@/routes/vote.routes.js";
  */
 export function configureUserRoutes(
   userController: UserController,
-  voteController: VoteController,
   rewardsController: RewardsController,
 ): Router {
   const router = Router();
@@ -442,8 +439,6 @@ export function configureUserRoutes(
    *                           totalPositions:
    *                             type: integer
    *                             description: "Total number of positions across all perpetual futures competitions"
-   *                           totalVotes:
-   *                             type: integer
    *                           bestPlacement:
    *                             type: object
    *                             nullable: true
@@ -580,8 +575,6 @@ export function configureUserRoutes(
    *                         totalPositions:
    *                           type: integer
    *                           description: "Total number of positions across all perpetual futures competitions"
-   *                         totalVotes:
-   *                           type: integer
    *                         bestPlacement:
    *                           type: object
    *                           nullable: true
@@ -1276,9 +1269,6 @@ export function configureUserRoutes(
    *                   example: "Internal server error"
    */
   router.get("/rewards/proofs", rewardsController.getRewardsWithProofs);
-
-  // Include vote routes under user namespace
-  router.use(configureVoteRoutes(voteController));
 
   return router;
 }

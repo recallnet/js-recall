@@ -5,7 +5,7 @@ import { Hex, bytesToHex, encodePacked, hexToBytes, keccak256 } from "viem";
 import { BoostRepository } from "@recallnet/db/repositories/boost";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { RewardsRepository } from "@recallnet/db/repositories/rewards";
-import { rewardsRoots, rewardsTree } from "@recallnet/db/schema/voting/defs";
+import { rewardsRoots, rewardsTree } from "@recallnet/db/schema/rewards/defs";
 import { Database, Transaction } from "@recallnet/db/types";
 import {
   BoostAllocation,
@@ -97,8 +97,8 @@ export class RewardsService {
         throw new Error("Competition not found");
       }
 
-      if (!competition.votingStartDate || !competition.votingEndDate) {
-        throw new Error("Voting start or end date not found");
+      if (!competition.boostStartDate || !competition.boostEndDate) {
+        throw new Error("Boost start or end date not found");
       }
 
       if (competition.status !== "ended") {
@@ -106,8 +106,8 @@ export class RewardsService {
       }
 
       const boostAllocationWindow = {
-        start: competition.votingStartDate,
-        end: competition.votingEndDate,
+        start: competition.boostStartDate,
+        end: competition.boostEndDate,
       };
 
       const leaderboardWithWallets =
@@ -432,7 +432,7 @@ export class RewardsService {
       leaderBoard,
     );
 
-    // in case an address is both a voter and a competitor, we need to sum the amounts
+    // in case an address is both a booster and a competitor, we need to sum the amounts
     // while keeping the references to owner and competitor
     const rewards = [...userRewards, ...competitorRewards];
     const rewardsByAddress = rewards.reduce(

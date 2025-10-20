@@ -12,7 +12,6 @@ import {
 import { connectToDb } from "@/e2e/utils/db-manager.js";
 import {
   createPerpsTestCompetition,
-  createPrivyAuthenticatedClient,
   createTestClient,
   getAdminApiKey,
   registerUserAndAgentAndGetClient,
@@ -86,7 +85,6 @@ describe("Leaderboard API", () => {
       expect(agent.score).toBeDefined();
       expect(agent.numCompetitions).toBe(1);
       expect(agent.rank).toBeDefined();
-      expect(agent.voteCount).toBeDefined();
     }
 
     // Verify agents are ordered by rank
@@ -255,101 +253,6 @@ describe("Leaderboard API", () => {
     expect(leaderboard.agents[1]?.score).toBe(1425.0675004914583);
     expect(leaderboard.agents[0]?.rank).toBe(1);
     expect(leaderboard.agents[1]?.rank).toBe(2);
-  });
-
-  test("should get leaderboard votes per agent and total votes", async () => {
-    // Setup admin client
-    const adminClient = createTestClient();
-    await adminClient.loginAsAdmin(adminApiKey);
-
-    // Register multiple agents
-    const { agent: agent1 } = await registerUserAndAgentAndGetClient({
-      adminApiKey,
-      agentName: "Agent One",
-    });
-    const { agent: agent2 } = await registerUserAndAgentAndGetClient({
-      adminApiKey,
-      agentName: "Agent Two",
-    });
-
-    // Create competition with proper voting dates
-    const competitionName = `Agents Test Competition ${Date.now()}`;
-    const now = new Date();
-    const votingStartDate = new Date(now.getTime() - 60 * 60 * 1000); // 1 hour ago
-    const votingEndDate = new Date(now.getTime() + 60 * 60 * 1000); // 1 hour from now
-
-    const createResponse = await adminClient.createCompetition({
-      name: competitionName,
-      description: "Test competition for leaderboard votes",
-      tradingType: CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
-      type: "trading", // type
-      votingStartDate: votingStartDate.toISOString(),
-      votingEndDate: votingEndDate.toISOString(),
-    });
-
-    expect(createResponse.success).toBe(true);
-    const competition = (createResponse as CreateCompetitionResponse)
-      .competition;
-
-    // Start the competition with agents
-    await adminClient.startExistingCompetition({
-      competitionId: competition.id,
-      agentIds: [agent1.id, agent2.id],
-    });
-    const firstCompetitionId = competition.id;
-
-    // Create 2 users and vote for agent 1 and agent 2, respectively
-    const { client: siweClient1 } = await createPrivyAuthenticatedClient({
-      userName: "Privy Test User",
-      userEmail: "siwe-test@example.com",
-    });
-    const { client: siweClient2 } = await createPrivyAuthenticatedClient({
-      userName: "Privy Test User 2",
-      userEmail: "siwe-test2@example.com",
-    });
-    // Vote for each agent in the first competition
-    await siweClient1.castVote(agent1.id, firstCompetitionId);
-    await siweClient2.castVote(agent2.id, firstCompetitionId);
-
-    // End competition, create a new one, and vote again
-    await adminClient.endCompetition(firstCompetitionId);
-
-    // Create second competition with proper voting dates
-    const newCompetitionName = `Agents Test Competition ${Date.now()}`;
-    const createResponse2 = await adminClient.createCompetition({
-      name: newCompetitionName,
-      description: "Second test competition for leaderboard votes",
-      tradingType: CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
-      type: "trading", // type
-      votingStartDate: votingStartDate.toISOString(),
-      votingEndDate: votingEndDate.toISOString(),
-    });
-
-    expect(createResponse2.success).toBe(true);
-    const competition2 = (createResponse2 as CreateCompetitionResponse)
-      .competition;
-
-    // Start the second competition with agents
-    await adminClient.startExistingCompetition({
-      competitionId: competition2.id,
-      agentIds: [agent1.id, agent2.id],
-    });
-    const secondCompetitionId = competition2.id;
-
-    // Vote for the *same* agent in the second competition
-    await siweClient1.castVote(agent1.id, secondCompetitionId);
-    await siweClient2.castVote(agent1.id, secondCompetitionId);
-
-    // End second competition
-    await adminClient.endCompetition(secondCompetitionId);
-
-    // Verify votes are counted correctly
-    const leaderboard =
-      (await siweClient1.getGlobalLeaderboard()) as GlobalLeaderboardResponse;
-    expect(leaderboard.success).toBe(true);
-    const agents = leaderboard.agents.sort((a, b) => b.voteCount - a.voteCount);
-    expect(agents[0]?.voteCount).toBe(3);
-    expect(agents[1]?.voteCount).toBe(1);
   });
 
   test("should get leaderboard by type with correct pagination total", async () => {

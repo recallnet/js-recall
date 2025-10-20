@@ -15,7 +15,7 @@ export const useCompetition = (
     tanstackClient.competitions.getById.queryOptions({
       input: { id: id || "" },
       enabled: !!id,
-      staleTime: 30 * 1000, // 30 seconds - shorter cache for real-time voting updates
+      staleTime: 30 * 1000, // 30 seconds - shorter cache for real-time updates
       refetchInterval: 60 * 1000, // Refetch every minute to keep data fresh
     }),
   );

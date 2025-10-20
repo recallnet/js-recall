@@ -278,8 +278,8 @@ export async function createTestCompetition({
   tradingType,
   startDate,
   endDate,
-  votingStartDate,
-  votingEndDate,
+  boostStartDate,
+  boostEndDate,
   joinStartDate,
   joinEndDate,
   maxParticipants,
@@ -295,8 +295,8 @@ export async function createTestCompetition({
   tradingType?: CrossChainTradingType;
   startDate?: string;
   endDate?: string;
-  votingStartDate?: string;
-  votingEndDate?: string;
+  boostStartDate?: string;
+  boostEndDate?: string;
   joinStartDate?: string;
   joinEndDate?: string;
   maxParticipants?: number;
@@ -314,8 +314,8 @@ export async function createTestCompetition({
     type,
     startDate,
     endDate,
-    votingStartDate,
-    votingEndDate,
+    boostStartDate,
+    boostEndDate,
     joinStartDate,
     joinEndDate,
     maxParticipants,
@@ -633,8 +633,8 @@ export async function createPerpsTestCompetition({
   imageUrl,
   startDate,
   endDate,
-  votingStartDate,
-  votingEndDate,
+  boostStartDate,
+  boostEndDate,
   joinStartDate,
   joinEndDate,
   maxParticipants,
@@ -650,8 +650,8 @@ export async function createPerpsTestCompetition({
   imageUrl?: string;
   startDate?: string;
   endDate?: string;
-  votingStartDate?: string;
-  votingEndDate?: string;
+  boostStartDate?: string;
+  boostEndDate?: string;
   joinStartDate?: string;
   joinEndDate?: string;
   maxParticipants?: number;
@@ -675,8 +675,8 @@ export async function createPerpsTestCompetition({
     imageUrl,
     startDate,
     endDate,
-    votingStartDate,
-    votingEndDate,
+    boostStartDate,
+    boostEndDate,
     joinStartDate,
     joinEndDate,
     maxParticipants,
