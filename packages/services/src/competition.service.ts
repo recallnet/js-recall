@@ -152,10 +152,17 @@ type CompetitionRulesData = {
 /**
  * Enriched competition data structure
  */
-type EnrichedCompetition = Awaited<
-  ReturnType<typeof CompetitionRepository.prototype.findByStatus>
->["competitions"][number] & {
-  tradingConstraints?: {
+type EnrichedCompetition = Omit<
+  Awaited<
+    ReturnType<typeof CompetitionRepository.prototype.findByStatus>
+  >["competitions"][number],
+  | "minimumPairAgeHours"
+  | "minimum24hVolumeUsd"
+  | "minimumLiquidityUsd"
+  | "minimumFdvUsd"
+  | "minTradesPerDay"
+> & {
+  tradingConstraints: {
     minimumPairAgeHours: number | null;
     minimum24hVolumeUsd: number | null;
     minimumLiquidityUsd: number | null;
@@ -2732,60 +2739,42 @@ export class CompetitionService {
     pagingParams: PagingParams;
   }): Promise<EnrichedCompetitionsData> {
     try {
-      // Get competitions
       const { competitions, total } = await this.competitionRepo.findByStatus({
         status: params.status,
         params: params.pagingParams,
       });
 
-      // Enrich competitions with trading constraint information
-      let enrichedCompetitions = competitions;
-      const competitionIds = competitions.map((c) => c.id);
-
-      const enrichmentData =
-        await this.competitionRepo.getEnrichedCompetitions(competitionIds);
-
-      // Create lookup maps for efficient access
-      const enrichmentMap = new Map(
-        enrichmentData.map((data) => [data.competitionId, data]),
-      );
-
-      enrichedCompetitions = competitions.map((competition) => {
-        const enrichment = enrichmentMap.get(competition.id);
-        if (!enrichment) {
-          throw new ApiError(500, "invalid competition state");
-        }
-
-        const tradingConstraints = {
-          minimumPairAgeHours: enrichment.minimumPairAgeHours,
-          minimum24hVolumeUsd: enrichment.minimum24hVolumeUsd,
-          minimumLiquidityUsd: enrichment.minimumLiquidityUsd,
-          minimumFdvUsd: enrichment.minimumFdvUsd,
-          minTradesPerDay: enrichment.minTradesPerDay,
-        };
+      const enrichedCompetitions = competitions.map((competition) => {
+        const {
+          minimumPairAgeHours,
+          minimum24hVolumeUsd,
+          minimumLiquidityUsd,
+          minimumFdvUsd,
+          minTradesPerDay,
+          ...competitionData
+        } = competition;
 
         return {
-          ...competition,
-          tradingConstraints,
+          ...competitionData,
+          tradingConstraints: {
+            minimumPairAgeHours,
+            minimum24hVolumeUsd,
+            minimumLiquidityUsd,
+            minimumFdvUsd,
+            minTradesPerDay,
+          },
         };
       });
 
-      // Calculate hasMore based on total and current page
-      const hasMore =
-        params.pagingParams.offset + params.pagingParams.limit < total;
-
-      const result = {
+      return {
         success: true,
         competitions: enrichedCompetitions,
-        pagination: {
-          total: total,
-          limit: params.pagingParams.limit,
-          offset: params.pagingParams.offset,
-          hasMore: hasMore,
-        },
+        pagination: buildPaginationResponse(
+          total,
+          params.pagingParams.limit,
+          params.pagingParams.offset,
+        ),
       };
-
-      return result;
     } catch (error) {
       this.logger.error(
         `[CompetitionService] Error getting enriched competitions:`,
