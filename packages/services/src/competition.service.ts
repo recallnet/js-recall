@@ -150,42 +150,6 @@ type CompetitionRulesData = {
 };
 
 /**
- * Enriched competition data structure
- */
-type EnrichedCompetition = Omit<
-  Awaited<
-    ReturnType<typeof CompetitionRepository.prototype.findByStatus>
-  >["competitions"][number],
-  | "minimumPairAgeHours"
-  | "minimum24hVolumeUsd"
-  | "minimumLiquidityUsd"
-  | "minimumFdvUsd"
-  | "minTradesPerDay"
-> & {
-  tradingConstraints: {
-    minimumPairAgeHours: number | null;
-    minimum24hVolumeUsd: number | null;
-    minimumLiquidityUsd: number | null;
-    minimumFdvUsd: number | null;
-    minTradesPerDay: number | null;
-  };
-};
-
-/**
- * Enriched competitions list data structure
- */
-type EnrichedCompetitionsData = {
-  success: boolean;
-  competitions: Array<EnrichedCompetition>;
-  pagination: {
-    total: number;
-    limit: number;
-    offset: number;
-    hasMore: boolean;
-  };
-};
-
-/**
  * Competition details with enriched data
  */
 type CompetitionDetailsData = {
@@ -2737,7 +2701,7 @@ export class CompetitionService {
   async getEnrichedCompetitions(params: {
     status?: CompetitionStatus;
     pagingParams: PagingParams;
-  }): Promise<EnrichedCompetitionsData> {
+  }) {
     try {
       const { competitions, total } = await this.competitionRepo.findByStatus({
         status: params.status,
