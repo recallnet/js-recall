@@ -1,9 +1,8 @@
 "use client";
 
-import { useReadContract } from "wagmi";
-
 import { StakingAbi } from "@/abi/Staking";
 
+import { useSafeReadContract } from "../useSafeWagmi";
 import { useStakingContractAddress } from "./useStakingContractAddress";
 
 /**
@@ -14,7 +13,7 @@ import { useStakingContractAddress } from "./useStakingContractAddress";
 export const useStakeInfo = (tokenId: bigint) => {
   const contractAddress = useStakingContractAddress();
 
-  return useReadContract({
+  return useSafeReadContract({
     address: contractAddress,
     abi: StakingAbi,
     functionName: "stakeInfo",

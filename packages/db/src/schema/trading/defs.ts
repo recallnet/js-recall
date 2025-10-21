@@ -1,4 +1,4 @@
-import { sql } from "drizzle-orm";
+import { desc, sql } from "drizzle-orm";
 import {
   boolean,
   foreignKey,
@@ -235,7 +235,7 @@ export const portfolioSnapshots = tradingComps.table(
     index("idx_portfolio_snapshots_competition_agent_timestamp").on(
       table.competitionId,
       table.agentId,
-      table.timestamp,
+      desc(table.timestamp),
     ),
     foreignKey({
       columns: [table.agentId],
@@ -323,6 +323,7 @@ export const perpsCompetitionConfig = tradingComps.table(
     selfFundingThresholdUsd: numeric("self_funding_threshold_usd").default(
       "10.00",
     ),
+    minFundingThreshold: numeric("min_funding_threshold"),
     inactivityHours: integer("inactivity_hours").default(24),
 
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),

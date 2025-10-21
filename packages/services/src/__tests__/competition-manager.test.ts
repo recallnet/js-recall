@@ -7,6 +7,8 @@ import { AgentRepository } from "@recallnet/db/repositories/agent";
 import { AgentScoreRepository } from "@recallnet/db/repositories/agent-score";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { PerpsRepository } from "@recallnet/db/repositories/perps";
+import { StakesRepository } from "@recallnet/db/repositories/stakes";
+import { UserRepository } from "@recallnet/db/repositories/user";
 import {
   SelectCompetition,
   SelectCompetitionReward,
@@ -28,7 +30,6 @@ import type { PerpsDataProcessor } from "../perps-data-processor.service.js";
 import type { PortfolioSnapshotterService } from "../portfolio-snapshotter.service.js";
 import type { TradeSimulatorService } from "../trade-simulator.service.js";
 import type { TradingConstraintsService } from "../trading-constraints.service.js";
-import type { VoteService } from "../vote.service.js";
 
 describe("CompetitionService", () => {
   let competitionService: CompetitionService;
@@ -37,7 +38,6 @@ describe("CompetitionService", () => {
   let portfolioSnapshotterService: MockProxy<PortfolioSnapshotterService>;
   let agentService: MockProxy<AgentService>;
   let agentRankService: MockProxy<AgentRankService>;
-  let voteService: MockProxy<VoteService>;
   let tradingConstraintsService: MockProxy<TradingConstraintsService>;
   let competitionRewardService: MockProxy<CompetitionRewardService>;
   let perpsDataProcessor: MockProxy<PerpsDataProcessor>;
@@ -45,6 +45,8 @@ describe("CompetitionService", () => {
   let agentScoreRepo: MockProxy<AgentScoreRepository>;
   let perpsRepo: MockProxy<PerpsRepository>;
   let competitionRepo: MockProxy<CompetitionRepository>;
+  let stakesRepo: MockProxy<StakesRepository>;
+  let userRepo: MockProxy<UserRepository>;
   let mockDb: MockProxy<Database>;
   let logger: MockProxy<Logger>;
 
@@ -63,12 +65,13 @@ describe("CompetitionService", () => {
     updatedAt: new Date(),
     imageUrl: null,
     externalUrl: null,
-    votingStartDate: null,
-    votingEndDate: null,
+    boostStartDate: null,
+    boostEndDate: null,
     joinStartDate: null,
     joinEndDate: null,
     maxParticipants: null,
     registeredParticipants: 0,
+    minimumStake: null,
     sandboxMode: false,
     competitionId: mockCompeitionId,
     crossChainTradingType: "allow",
@@ -108,7 +111,6 @@ describe("CompetitionService", () => {
     portfolioSnapshotterService = mock<PortfolioSnapshotterService>();
     agentService = mock<AgentService>();
     agentRankService = mock<AgentRankService>();
-    voteService = mock<VoteService>();
     tradingConstraintsService = mock<TradingConstraintsService>();
     competitionRewardService = mock<CompetitionRewardService>();
     perpsDataProcessor = mock<PerpsDataProcessor>();
@@ -116,6 +118,8 @@ describe("CompetitionService", () => {
     agentScoreRepo = mock<AgentScoreRepository>();
     perpsRepo = mock<PerpsRepository>();
     competitionRepo = mock<CompetitionRepository>();
+    stakesRepo = mock<StakesRepository>();
+    userRepo = mock<UserRepository>();
     mockDb = mock<Database>();
     logger = mock<Logger>();
 
@@ -134,7 +138,6 @@ describe("CompetitionService", () => {
       portfolioSnapshotterService,
       agentService,
       agentRankService,
-      voteService,
       tradingConstraintsService,
       competitionRewardService,
       perpsDataProcessor,
@@ -142,6 +145,8 @@ describe("CompetitionService", () => {
       agentScoreRepo,
       perpsRepo,
       competitionRepo,
+      stakesRepo,
+      userRepo,
       mockDb,
       {
         evmChains: [

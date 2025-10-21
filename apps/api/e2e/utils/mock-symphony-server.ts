@@ -166,6 +166,55 @@ export class MockSymphonyServer {
         },
       ],
     });
+
+    // Test wallets for minFundingThreshold testing
+    // Agent with exactly $250 (typical threshold amount)
+    this.setAgentData("0xaaaa111111111111111111111111111111111111", {
+      initialCapital: 250,
+      totalEquity: 250,
+      availableBalance: 250,
+      marginUsed: 0,
+      totalVolume: 0,
+      totalTrades: 0,
+      openPositions: [],
+      transfers: [],
+    });
+
+    // Agent with $100 (below typical threshold)
+    this.setAgentData("0xbbbb111111111111111111111111111111111111", {
+      initialCapital: 100,
+      totalEquity: 100,
+      availableBalance: 100,
+      marginUsed: 0,
+      totalVolume: 0,
+      totalTrades: 0,
+      openPositions: [],
+      transfers: [],
+    });
+
+    // Agent with $500 (above typical threshold)
+    this.setAgentData("0xcccc111111111111111111111111111111111111", {
+      initialCapital: 500,
+      totalEquity: 500,
+      availableBalance: 500,
+      marginUsed: 0,
+      totalVolume: 0,
+      totalTrades: 0,
+      openPositions: [],
+      transfers: [],
+    });
+
+    // Agent with $249.99 (just below typical threshold)
+    this.setAgentData("0xdddd111111111111111111111111111111111111", {
+      initialCapital: 249.99,
+      totalEquity: 249.99,
+      availableBalance: 249.99,
+      marginUsed: 0,
+      totalVolume: 0,
+      totalTrades: 0,
+      openPositions: [],
+      transfers: [],
+    });
   }
 
   /**
@@ -239,15 +288,18 @@ export class MockSymphonyServer {
 
         // Simple progression: Return different values on each pair of calls
         // This ensures consistent equity values regardless of setup calls
+        // NOTE: First pair consumed by startup sync in startCompetition
         const equityProgression = [
           1700,
-          1700, // Calls 1-2: First snapshot - PEAK
-          1200,
-          1200, // Calls 3-4: Second snapshot - TROUGH (max drawdown)
-          1550,
-          1550, // Calls 5-6: Third snapshot - RECOVERY
+          1700, // Calls 1-2: STARTUP SYNC (consumed during competition start)
           1700,
-          1700, // Calls 7-8: For subsequent tests
+          1700, // Calls 3-4: First test snapshot - PEAK
+          1200,
+          1200, // Calls 5-6: Second test snapshot - TROUGH (max drawdown)
+          1550,
+          1550, // Calls 7-8: Third test snapshot - RECOVERY
+          1700,
+          1700, // Calls 9-10: For subsequent tests
           1700,
           1700, // Calls 9-10: For subsequent tests
           1700,

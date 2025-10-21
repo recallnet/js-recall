@@ -344,6 +344,41 @@
       "when": 1760019372088,
       "tag": "0048_lush_overlord",
       "breakpoints": true
+    },
+    {
+      "idx": 49,
+      "version": "7",
+      "when": 1760216633798,
+      "tag": "0049_puzzling_gauntlet",
+      "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1760383868057,
+      "tag": "0050_woozy_brother_voodoo",
+      "breakpoints": true
+    },
+    {
+      "idx": 51,
+      "version": "7",
+      "when": 1760451421665,
+      "tag": "0051_equal_surge",
+      "breakpoints": true
+    },
+    {
+      "idx": 52,
+      "version": "7",
+      "when": 1760637411971,
+      "tag": "0052_legal_war_machine",
+      "breakpoints": true
+    },
+    {
+      "idx": 53,
+      "version": "7",
+      "when": 1760672055252,
+      "tag": "0053_confused_donald_blake",
+      "breakpoints": true
     }
   ]
 }

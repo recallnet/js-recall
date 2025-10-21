@@ -20,7 +20,7 @@ export const boostAgent = base
   )
   .errors({
     OUTSIDE_BOOST_WINDOW: {},
-    COMPETITION_MISSING_VOTING_DATES: {},
+    COMPETITION_MISSING_BOOST_DATES: {},
     ALREADY_BOOSTED_AGENT: {},
   })
   .handler(async ({ input, context, errors }) => {
@@ -32,6 +32,17 @@ export const boostAgent = base
       idemKey: input.idemKey,
     });
     if (res.isErr()) {
+      context.logger.warn(
+        {
+          errorType: res.error.type,
+          error: res.error,
+          userId: context.user.id,
+          competitionId: input.competitionId,
+          agentId: input.agentId,
+        },
+        `Boost agent failed: ${res.error.type}`,
+      );
+
       switch (res.error.type) {
         case "RepositoryError":
           throw errors.INTERNAL({ message: res.error.message });
@@ -39,8 +50,8 @@ export const boostAgent = base
           throw errors.NOT_FOUND();
         case "CompetitionNotFound":
           throw errors.NOT_FOUND();
-        case "CompetitionMissingVotingDates":
-          throw errors.COMPETITION_MISSING_VOTING_DATES();
+        case "CompetitionMissingBoostDates":
+          throw errors.COMPETITION_MISSING_BOOST_DATES();
         case "OutsideCompetitionBoostWindow":
           throw errors.OUTSIDE_BOOST_WINDOW();
         case "AlreadyBoostedAgent":

@@ -9,7 +9,8 @@ import { Tooltip } from "@recallnet/ui2/components/tooltip";
 
 import { Recall } from "@/components/Recall";
 import { useRelock, useUnstake } from "@/hooks/staking";
-import { useUserStakes } from "@/hooks/staking";
+import { useUserStakes } from "@/hooks/useStakingContract";
+import type { StakeInfoWithId } from "@/types/staking";
 import { formatAmount, formatDate } from "@/utils/format";
 
 import { BoostIcon } from "../BoostIcon";
@@ -44,12 +45,6 @@ const ActiveStakeEntry: React.FunctionComponent<ActiveStakeEntryProps> = ({
     const value = attoValueToNumberValue(amount);
     return value ? formatAmount(value, 0, true) : "0";
   }, [amount]);
-
-  // TODO: change this based on the locked period
-  const boostMultiplier = isLocked ? "x2" : undefined;
-  const boostAmountWithMultiplier = isLocked
-    ? `${formatAmount(attoValueToNumberValue(amount) * 2, 0, true)}`
-    : boostAmount;
 
   const stakedDate = useMemo(() => {
     return formatDate(new Date(Number(startTime) * 1000));
@@ -102,15 +97,7 @@ const ActiveStakeEntry: React.FunctionComponent<ActiveStakeEntryProps> = ({
               </div>
               <div className="flex items-center gap-1 text-yellow-400">
                 <BoostIcon fill />
-                <span className="font-bold">
-                  {boostAmount}
-                  {boostMultiplier && (
-                    <span className="text-blue-300">
-                      {" "}
-                      {boostMultiplier} ({boostAmountWithMultiplier})
-                    </span>
-                  )}
-                </span>
+                <span className="font-bold">{boostAmount}</span>
                 <span className="text-gray-400">per competition.</span>
               </div>
             </div>
@@ -213,14 +200,9 @@ export const ActiveStakes: React.FunctionComponent = () => {
 
   return (
     <div className="mb-8 flex flex-col gap-4">
-      <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-baseline sm:gap-4">
-        <h2 className="text-2xl font-bold text-white">Active Stakes</h2>
-        <p className="text-sm text-gray-400">
-          While Locked, your staked RECALL earns you 2x Boost!
-        </p>
-      </div>
+      <h2 className="text-2xl font-bold text-white">Active Stakes</h2>
       <div className="flex flex-col gap-8">
-        {stakes.map((stake) => (
+        {stakes.map((stake: StakeInfoWithId) => (
           <ActiveStakeEntry
             key={stake.tokenId.toString()}
             tokenId={stake.tokenId}

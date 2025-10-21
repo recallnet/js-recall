@@ -74,15 +74,15 @@ export function configureAdminRoutes(
    *                 format: date-time
    *                 description: End date for the competition (ISO 8601 format)
    *                 example: "2024-02-15T23:59:59Z"
-   *               votingStartDate:
+   *               boostStartDate:
    *                 type: string
    *                 format: date-time
-   *                 description: Start date for voting (ISO 8601 format)
+   *                 description: Start date for boosting (ISO 8601 format)
    *                 example: "2024-01-15T00:00:00Z"
-   *               votingEndDate:
+   *               boostEndDate:
    *                 type: string
    *                 format: date-time
-   *                 description: End date for voting (ISO 8601 format)
+   *                 description: End date for boosting (ISO 8601 format)
    *                 example: "2024-01-30T23:59:59Z"
    *               joinStartDate:
    *                 type: string
@@ -99,6 +99,11 @@ export function configureAdminRoutes(
    *                 minimum: 1
    *                 description: Maximum number of participants allowed to register for this competition. If not specified, there is no limit.
    *                 example: 50
+   *               minimumStake:
+   *                 type: number
+   *                 minimum: 0
+   *                 description: Minimum stake amount required to join the competition (in USD)
+   *                 example: 100
    *               tradingConstraints:
    *                 type: object
    *                 description: Trading constraints for the competition (used when creating a new competition)
@@ -157,6 +162,11 @@ export function configureAdminRoutes(
    *                     type: number
    *                     description: Threshold for self-funding detection in USD
    *                     example: 0
+   *                   minFundingThreshold:
+   *                     type: number
+   *                     description: Minimum portfolio balance threshold in USD. Agents falling below will be disqualified
+   *                     minimum: 0
+   *                     example: 100
    *                   apiUrl:
    *                     type: string
    *                     description: Optional API URL override for the provider
@@ -231,6 +241,11 @@ export function configureAdminRoutes(
    *                       nullable: true
    *                       description: Maximum number of participants allowed to register for this competition. null means no limit.
    *                       example: 50
+   *                     minimumStake:
+   *                       type: number
+   *                       nullable: true
+   *                       description: Minimum stake amount required to join the competition (in USD). null means no minimum stake.
+   *                       example: 100
    *                     rewards:
    *                       type: array
    *                       description: Rewards for competition placements
@@ -325,15 +340,15 @@ export function configureAdminRoutes(
    *                 format: date-time
    *                 description: End date for the competition (ISO 8601 format)
    *                 example: "2024-02-15T23:59:59Z"
-   *               votingStartDate:
+   *               boostStartDate:
    *                 type: string
    *                 format: date-time
-   *                 description: Start date for voting (ISO 8601 format, used when creating a new competition)
+   *                 description: Start date for boosting (ISO 8601 format, used when creating a new competition)
    *                 example: "2024-01-15T00:00:00Z"
-   *               votingEndDate:
+   *               boostEndDate:
    *                 type: string
    *                 format: date-time
-   *                 description: End date for voting (ISO 8601 format, used when creating a new competition)
+   *                 description: End date for boosting (ISO 8601 format, used when creating a new competition)
    *                 example: "2024-01-30T23:59:59Z"
    *               agentIds:
    *                 type: array
@@ -672,15 +687,15 @@ export function configureAdminRoutes(
    *                 type: string
    *                 description: URL to competition image
    *                 example: https://example.com/image.jpg
-   *               votingStartDate:
+   *               boostStartDate:
    *                 type: string
    *                 format: date-time
-   *                 description: Voting start date
+   *                 description: Boosting start date
    *                 example: 2023-05-01T00:00:00Z
-   *               votingEndDate:
+   *               boostEndDate:
    *                 type: string
    *                 format: date-time
-   *                 description: Voting end date
+   *                 description: Boosting end date
    *                 example: 2023-05-07T23:59:59Z
    *               rewards:
    *                 type: object
@@ -707,6 +722,11 @@ export function configureAdminRoutes(
    *                     type: number
    *                     description: Threshold for self-funding detection in USD
    *                     example: 0
+   *                   minFundingThreshold:
+   *                     type: number
+   *                     description: Minimum portfolio balance threshold in USD. Agents falling below will be disqualified
+   *                     minimum: 0
+   *                     example: 100
    *                   apiUrl:
    *                     type: string
    *                     description: Optional API URL override for the provider
@@ -725,6 +745,12 @@ export function configureAdminRoutes(
    *                     minimum: 0
    *                     description: User prize pool amount
    *                     example: 500
+   *               minimumStake:
+   *                 type: number
+   *                 minimum: 0
+   *                 nullable: true
+   *                 description: Minimum stake amount required to join the competition (in USD)
+   *                 example: 100
    *     responses:
    *       200:
    *         description: Competition updated successfully
@@ -770,15 +796,15 @@ export function configureAdminRoutes(
    *                       format: date-time
    *                       description: Competition end date
    *                       nullable: true
-   *                     votingStartDate:
+   *                     boostStartDate:
    *                       type: string
    *                       format: date-time
-   *                       description: Voting start date
+   *                       description: Boosting start date
    *                       nullable: true
-   *                     votingEndDate:
+   *                     boostEndDate:
    *                       type: string
    *                       format: date-time
-   *                       description: Voting end date
+   *                       description: Boosting end date
    *                       nullable: true
    *                     status:
    *                       type: string
@@ -798,6 +824,11 @@ export function configureAdminRoutes(
    *                             type: number
    *                             description: Reward amount for the given rank
    *                             example: 1000
+   *                     minimumStake:
+   *                       type: number
+   *                       nullable: true
+   *                       description: Minimum stake amount required to join the competition (in USD). null means no minimum stake.
+   *                       example: 100
    *                     createdAt:
    *                       type: string
    *                       format: date-time

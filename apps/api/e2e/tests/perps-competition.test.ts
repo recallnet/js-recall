@@ -117,7 +117,7 @@ describe("Perps Competition", () => {
     const comp = typedDetailResponse.competition as EnhancedCompetition;
 
     expect(comp?.stats?.totalPositions).toBeDefined();
-    expect(comp.stats?.totalTrades).toBeUndefined();
+    expect(comp.stats?.totalTrades).toBe(0);
 
     // Verify perps competitions include volume and average equity stats
     expect(comp?.stats?.totalVolume).toBeDefined();
@@ -261,7 +261,7 @@ describe("Perps Competition", () => {
     expect(perpsComp?.type).toBe("perpetual_futures");
     expect(perpsComp?.name).toBe(competitionName);
     expect(perpsComp?.totalPositions).toBeDefined();
-    expect(perpsComp?.totalTrades).toBeUndefined();
+    expect(perpsComp?.totalTrades).toBe(0);
   });
 
   test("should prevent paper trading endpoints during perps competition", async () => {
@@ -2943,6 +2943,338 @@ describe("Perps Competition", () => {
       competition: { status: string };
     };
     expect(typedStartResponse.competition.status).toBe("active");
+
+    // Clean up
+    await adminClient.endCompetition(competition.id);
+  });
+
+  test("should enforce minFundingThreshold during competition startup with Symphony provider", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agents with specific wallet addresses that have known equity values
+    const { agent: agentAbove } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Agent Above Threshold",
+      agentWalletAddress: "0xcccc111111111111111111111111111111111111", // $500
+    });
+
+    const { agent: agentBelow } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Agent Below Threshold",
+      agentWalletAddress: "0xbbbb111111111111111111111111111111111111", // $100
+    });
+
+    const { agent: agentExact } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Agent Exactly At Threshold",
+      agentWalletAddress: "0xaaaa111111111111111111111111111111111111", // $250
+    });
+
+    // Start competition with minFundingThreshold of $250
+    const response = await startPerpsTestCompetition({
+      adminClient,
+      name: `Min Funding Threshold Test ${Date.now()}`,
+      agentIds: [agentAbove.id, agentBelow.id, agentExact.id],
+      perpsProvider: {
+        provider: "symphony",
+        initialCapital: 1000,
+        minFundingThreshold: 250, // Set the threshold
+        apiUrl: "http://localhost:4567",
+      },
+    });
+
+    expect(response.success).toBe(true);
+    const competition = response.competition;
+
+    // Wait for the monitoring to complete
+    await wait(2000);
+
+    // Get the updated competition agents list
+    const agentsResponse = await adminClient.getCompetitionAgents(
+      competition.id,
+    );
+    expect(agentsResponse.success).toBe(true);
+    const typedResponse = agentsResponse as CompetitionAgentsResponse;
+
+    // Agent above threshold should remain
+    const remainingAbove = typedResponse.agents.find(
+      (a) => a.id === agentAbove.id,
+    );
+    expect(remainingAbove).toBeDefined();
+
+    // Agent below threshold should be removed
+    const remainingBelow = typedResponse.agents.find(
+      (a) => a.id === agentBelow.id,
+    );
+    expect(remainingBelow).toBeUndefined();
+
+    // Agent exactly at threshold should remain (not < threshold)
+    const remainingExact = typedResponse.agents.find(
+      (a) => a.id === agentExact.id,
+    );
+    expect(remainingExact).toBeDefined();
+
+    // Clean up
+    await adminClient.endCompetition(competition.id);
+  });
+
+  test("should enforce minFundingThreshold during competition startup with Hyperliquid provider", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agents with specific Hyperliquid wallet addresses
+    const { agent: agentAbove } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Hyperliquid Agent Above",
+      agentWalletAddress: "0xcccc222222222222222222222222222222222222", // $500
+    });
+
+    const { agent: agentBelow } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Hyperliquid Agent Below",
+      agentWalletAddress: "0xbbbb222222222222222222222222222222222222", // $100
+    });
+
+    const { agent: agentJustBelow } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Hyperliquid Agent Just Below",
+      agentWalletAddress: "0xdddd222222222222222222222222222222222222", // $249.99
+    });
+
+    // Start competition with minFundingThreshold
+    const response = await startPerpsTestCompetition({
+      adminClient,
+      name: `Hyperliquid Min Funding Test ${Date.now()}`,
+      agentIds: [agentAbove.id, agentBelow.id, agentJustBelow.id],
+      perpsProvider: {
+        provider: "hyperliquid",
+        minFundingThreshold: 250,
+        apiUrl: "http://localhost:4568",
+      },
+    });
+
+    expect(response.success).toBe(true);
+    const competition = response.competition;
+
+    // Wait for monitoring
+    await wait(2000);
+
+    // Get updated agents list
+    const agentsResponse = await adminClient.getCompetitionAgents(
+      competition.id,
+    );
+    expect(agentsResponse.success).toBe(true);
+    const typedResponse = agentsResponse as CompetitionAgentsResponse;
+
+    // Agent above should remain
+    const remainingAbove = typedResponse.agents.find(
+      (a) => a.id === agentAbove.id,
+    );
+    expect(remainingAbove).toBeDefined();
+
+    // Agent below should be removed
+    const remainingBelow = typedResponse.agents.find(
+      (a) => a.id === agentBelow.id,
+    );
+    expect(remainingBelow).toBeUndefined();
+
+    // Agent just below ($249.99) should be removed
+    const remainingJustBelow = typedResponse.agents.find(
+      (a) => a.id === agentJustBelow.id,
+    );
+    expect(remainingJustBelow).toBeUndefined();
+
+    // Clean up
+    await adminClient.endCompetition(competition.id);
+  });
+
+  test("should not enforce threshold when minFundingThreshold is not set", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agents with low balances
+    const { agent: agentLow1 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Low Balance Agent 1",
+      agentWalletAddress: "0xbbbb111111111111111111111111111111111111", // $100
+    });
+
+    const { agent: agentLow2 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Low Balance Agent 2",
+      agentWalletAddress: "0xdddd111111111111111111111111111111111111", // $249.99
+    });
+
+    // Start competition WITHOUT minFundingThreshold
+    const response = await startPerpsTestCompetition({
+      adminClient,
+      name: `No Threshold Test ${Date.now()}`,
+      agentIds: [agentLow1.id, agentLow2.id],
+      perpsProvider: {
+        provider: "symphony",
+        initialCapital: 1000,
+        // NOT setting minFundingThreshold
+        apiUrl: "http://localhost:4567",
+      },
+    });
+
+    expect(response.success).toBe(true);
+    const competition = response.competition;
+
+    // Wait for monitoring
+    await wait(2000);
+
+    // Get agents list
+    const agentsResponse = await adminClient.getCompetitionAgents(
+      competition.id,
+    );
+    expect(agentsResponse.success).toBe(true);
+    const typedResponse = agentsResponse as CompetitionAgentsResponse;
+
+    // Both agents should remain (no threshold enforcement)
+    expect(typedResponse.agents).toHaveLength(2);
+
+    const agent1Present = typedResponse.agents.find(
+      (a) => a.id === agentLow1.id,
+    );
+    expect(agent1Present).toBeDefined();
+
+    const agent2Present = typedResponse.agents.find(
+      (a) => a.id === agentLow2.id,
+    );
+    expect(agent2Present).toBeDefined();
+
+    // Clean up
+    await adminClient.endCompetition(competition.id);
+  });
+
+  test("should handle agents that fail to sync when checking minFundingThreshold", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agent with known wallet
+    const { agent: agentWithData } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Agent With Data",
+      agentWalletAddress: "0xcccc111111111111111111111111111111111111", // $500
+    });
+
+    // Register agent with a wallet that has no mock data (will fail to sync)
+    const { agent: agentNoData } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Agent Without Sync Data",
+      agentWalletAddress: "0xeeee111111111111111111111111111111111111", // Not in mock data
+    });
+
+    // Start competition with minFundingThreshold
+    const response = await startPerpsTestCompetition({
+      adminClient,
+      name: `Failed Sync Threshold Test ${Date.now()}`,
+      agentIds: [agentWithData.id, agentNoData.id],
+      perpsProvider: {
+        provider: "symphony",
+        minFundingThreshold: 250,
+        apiUrl: "http://localhost:4567",
+      },
+    });
+
+    expect(response.success).toBe(true);
+    const competition = response.competition;
+
+    // Wait for monitoring
+    await wait(2000);
+
+    // Get agents list
+    const agentsResponse = await adminClient.getCompetitionAgents(
+      competition.id,
+    );
+    expect(agentsResponse.success).toBe(true);
+    const typedResponse = agentsResponse as CompetitionAgentsResponse;
+
+    // Agent with data above threshold should remain
+    const agentWithDataPresent = typedResponse.agents.find(
+      (a) => a.id === agentWithData.id,
+    );
+    expect(agentWithDataPresent).toBeDefined();
+
+    // Agent without sync data should remain (no snapshot = not checked)
+    const agentNoDataPresent = typedResponse.agents.find(
+      (a) => a.id === agentNoData.id,
+    );
+    expect(agentNoDataPresent).toBeDefined();
+
+    // Clean up
+    await adminClient.endCompetition(competition.id);
+  });
+
+  test("should properly track removed agents in competition stats", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register multiple agents
+    const { agent: agent500 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Agent 500",
+      agentWalletAddress: "0xcccc111111111111111111111111111111111111", // $500
+    });
+
+    const { agent: agent100 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Agent 100",
+      agentWalletAddress: "0xbbbb111111111111111111111111111111111111", // $100
+    });
+
+    const { agent: agent250 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Agent 250",
+      agentWalletAddress: "0xaaaa111111111111111111111111111111111111", // $250
+    });
+
+    // Start with 3 agents (one below threshold)
+    const response = await startPerpsTestCompetition({
+      adminClient,
+      name: `Stats Update Test ${Date.now()}`,
+      agentIds: [agent500.id, agent100.id, agent250.id],
+      perpsProvider: {
+        provider: "symphony",
+        minFundingThreshold: 250,
+        apiUrl: "http://localhost:4567",
+      },
+    });
+
+    expect(response.success).toBe(true);
+    const competition = response.competition;
+
+    // After startup enforcement, only 2 agents should remain (agent100 removed for being below $250)
+    expect(competition.agentIds).toHaveLength(2);
+
+    // Verify the removed agent is the one below threshold
+    expect(competition.agentIds).toContain(agent500.id); // $500 - should remain
+    expect(competition.agentIds).toContain(agent250.id); // $250 - exactly at threshold, should remain
+    expect(competition.agentIds).not.toContain(agent100.id); // $100 - below threshold, should be removed
+
+    // Get competition details to verify stats
+    const detailsResponse = await adminClient.getCompetition(competition.id);
+    expect(detailsResponse.success).toBe(true);
+    const typedDetails = detailsResponse as CompetitionDetailResponse;
+
+    // Stats should show only 2 agents
+    expect(typedDetails.competition.stats?.totalAgents).toBe(2);
+
+    // Verify through agents endpoint as well
+    const agentsResponse = await adminClient.getCompetitionAgents(
+      competition.id,
+    );
+    expect(agentsResponse.success).toBe(true);
+    const typedAgents = agentsResponse as CompetitionAgentsResponse;
+    expect(typedAgents.agents).toHaveLength(2);
+
+    // Verify the correct agents remain
+    const agentIds = typedAgents.agents.map((a) => a.id);
+    expect(agentIds).toContain(agent500.id);
+    expect(agentIds).toContain(agent250.id);
+    expect(agentIds).not.toContain(agent100.id);
 
     // Clean up
     await adminClient.endCompetition(competition.id);

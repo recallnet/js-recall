@@ -10,9 +10,9 @@ import {
 } from "vitest";
 
 import { BlockchainAddressAsU8A } from "../../coders/index.js";
+import * as schema from "../../schema/boost/defs.js";
 import * as coreSchema from "../../schema/core/defs.js";
 import { stakes } from "../../schema/indexing/defs.js";
-import * as schema from "../../schema/voting/defs.js";
 import { dropAllSchemas } from "../../utils/drop-all-schemas.js";
 import { pushSchema } from "../../utils/push-schema.js";
 import { BoostRepository } from "../boost.js";
@@ -138,6 +138,8 @@ describe("BoostRepository.recordStakeBoostAward() Integration Tests", () => {
     test("should create stake boost award record", async () => {
       const awardData = {
         stakeId: testStakeId,
+        baseAmount: 1000n,
+        multiplier: 1.5,
         boostChangeId: testBoostChangeId,
         competitionId: testCompetitionId,
       };
@@ -147,6 +149,8 @@ describe("BoostRepository.recordStakeBoostAward() Integration Tests", () => {
       expect(result).toHaveLength(1);
       expect(result[0]).toMatchObject({
         stakeId: testStakeId,
+        baseAmount: 1000n,
+        multiplier: 1.5,
         boostChangeId: testBoostChangeId,
         competitionId: testCompetitionId,
       });
@@ -166,6 +170,8 @@ describe("BoostRepository.recordStakeBoostAward() Integration Tests", () => {
 
       expect(awardRecords).toHaveLength(1);
       expect(awardRecords[0]?.stakeId).toBe(testStakeId);
+      expect(awardRecords[0]?.baseAmount).toBe(1000n);
+      expect(awardRecords[0]?.multiplier).toBe(1.5);
       expect(awardRecords[0]?.boostChangeId).toBe(testBoostChangeId);
       expect(awardRecords[0]?.competitionId).toBe(testCompetitionId);
     });
@@ -198,12 +204,16 @@ describe("BoostRepository.recordStakeBoostAward() Integration Tests", () => {
       // Create awards for both stakes
       const award1 = {
         stakeId: testStakeId,
+        baseAmount: 1000n,
+        multiplier: 1.5,
         boostChangeId: testBoostChangeId,
         competitionId: testCompetitionId,
       };
 
       const award2 = {
         stakeId: testStakeId2,
+        baseAmount: 2000n,
+        multiplier: 2.0,
         boostChangeId: increaseResult2.changeId,
         competitionId: testCompetitionId,
       };
@@ -228,6 +238,8 @@ describe("BoostRepository.recordStakeBoostAward() Integration Tests", () => {
     test("should work within a transaction", async () => {
       const awardData = {
         stakeId: testStakeId,
+        baseAmount: 1000n,
+        multiplier: 1.5,
         boostChangeId: testBoostChangeId,
         competitionId: testCompetitionId,
       };
@@ -260,6 +272,8 @@ describe("BoostRepository.recordStakeBoostAward() Integration Tests", () => {
       const nonExistentStakeId = 99999n;
       const awardData = {
         stakeId: nonExistentStakeId,
+        baseAmount: 1000n,
+        multiplier: 1.5,
         boostChangeId: testBoostChangeId,
         competitionId: testCompetitionId,
       };
@@ -281,6 +295,8 @@ describe("BoostRepository.recordStakeBoostAward() Integration Tests", () => {
       const nonExistentBoostChangeId = "00000000-0000-0000-0000-000000000000";
       const awardData = {
         stakeId: testStakeId,
+        baseAmount: 1000n,
+        multiplier: 1.5,
         boostChangeId: nonExistentBoostChangeId,
         competitionId: testCompetitionId,
       };
@@ -304,6 +320,8 @@ describe("BoostRepository.recordStakeBoostAward() Integration Tests", () => {
       const nonExistentCompetitionId = "00000000-0000-0000-0000-000000000000";
       const awardData = {
         stakeId: testStakeId,
+        baseAmount: 1000n,
+        multiplier: 1.5,
         boostChangeId: testBoostChangeId,
         competitionId: nonExistentCompetitionId,
       };
@@ -350,12 +368,16 @@ describe("BoostRepository.recordStakeBoostAward() Integration Tests", () => {
       // Create awards for same stake in different competitions
       const award1 = {
         stakeId: testStakeId,
+        baseAmount: 1000n,
+        multiplier: 1.5,
         boostChangeId: testBoostChangeId,
         competitionId: testCompetitionId,
       };
 
       const award2 = {
         stakeId: testStakeId,
+        baseAmount: 500n,
+        multiplier: 2.0,
         boostChangeId: increaseResult2.changeId,
         competitionId: testCompetitionId2,
       };

@@ -3,6 +3,7 @@ import { type ComponentProps, type ReactNode, useState } from "react";
 
 import { Button } from "@recallnet/ui2/components/button";
 import { toast } from "@recallnet/ui2/components/toast";
+import { cn } from "@recallnet/ui2/lib/utils";
 
 import { useUserAgents } from "@/hooks/useAgents";
 import { useCompetition } from "@/hooks/useCompetition";
@@ -20,6 +21,7 @@ interface JoinCompetitionButtonProps
   extends Omit<ComponentProps<typeof Button>, "variant"> {
   competitionId: string;
   variant?: ComponentProps<typeof Button>["variant"];
+  className?: string;
   children?: ReactNode;
 }
 
@@ -193,6 +195,7 @@ export function JoinCompetitionButton({
         variant={variant}
         {...props}
         onClick={handleClick}
+        className={cn("font-semibold uppercase", props.className)}
         disabled={isJoining || props.disabled || !canJoin()}
       >
         {children}

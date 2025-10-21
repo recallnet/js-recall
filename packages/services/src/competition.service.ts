@@ -6,6 +6,8 @@ import { AgentRepository } from "@recallnet/db/repositories/agent";
 import { AgentScoreRepository } from "@recallnet/db/repositories/agent-score";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { PerpsRepository } from "@recallnet/db/repositories/perps";
+import { StakesRepository } from "@recallnet/db/repositories/stakes";
+import { UserRepository } from "@recallnet/db/repositories/user";
 import {
   SelectAgent,
   SelectCompetition,
@@ -14,6 +16,7 @@ import {
 } from "@recallnet/db/schema/core/types";
 import {
   PerpetualPositionWithAgent,
+  SelectPerpsCompetitionConfig,
   SelectTrade,
 } from "@recallnet/db/schema/trading/types";
 import type {
@@ -53,7 +56,6 @@ import {
   AgentDbSortFields,
   AgentQueryParams,
 } from "./types/sort/agent.js";
-import { VoteService } from "./vote.service.js";
 
 /**
  * Parameters for creating a new competition
@@ -68,17 +70,19 @@ export interface CreateCompetitionParams {
   type?: CompetitionType;
   startDate?: Date;
   endDate?: Date;
-  votingStartDate?: Date;
-  votingEndDate?: Date;
+  boostStartDate?: Date;
+  boostEndDate?: Date;
   joinStartDate?: Date;
   joinEndDate?: Date;
   maxParticipants?: number;
   tradingConstraints?: TradingConstraintsInput;
   rewards?: Record<number, number>;
+  minimumStake?: number;
   perpsProvider?: {
     provider: "symphony" | "hyperliquid";
     initialCapital: number; // Required - Zod default ensures this is set
     selfFundingThreshold: number; // Required - Zod default ensures this is set
+    minFundingThreshold?: number; // Optional - minimum portfolio balance
     apiUrl?: string;
   };
   prizePools?: {
@@ -158,17 +162,6 @@ type EnrichedCompetition = Awaited<
     minimumFdvUsd: number | null;
     minTradesPerDay: number | null;
   };
-  votingEnabled?: boolean;
-  userVotingInfo?: {
-    canVote: boolean;
-    reason?: string;
-    info: {
-      hasVoted: boolean;
-      agentId?: string;
-      votedAt?: Date;
-    };
-  };
-  totalVotes?: number;
 };
 
 /**
@@ -193,7 +186,6 @@ type CompetitionDetailsData = {
   competition: SelectCompetition & {
     stats: {
       totalAgents: number;
-      totalVotes: number;
       // Paper trading stats
       totalTrades?: number;
       totalVolume?: number;
@@ -218,16 +210,6 @@ type CompetitionDetailsData = {
       agentPool: string;
       userPool: string;
     };
-    votingEnabled?: boolean;
-    userVotingInfo?: {
-      canVote: boolean;
-      reason?: string;
-      info: {
-        hasVoted: boolean;
-        agentId?: string;
-        votedAt?: Date;
-      };
-    };
   };
 };
 
@@ -250,7 +232,6 @@ type CompetitionAgentsData = {
     deactivationReason: string | null;
     rank: number | null;
     score: number | null;
-    voteCount: number;
     // Performance metrics
     pnl: number;
     pnlPercent: number;
@@ -365,7 +346,6 @@ export class CompetitionService {
   private portfolioSnapshotterService: PortfolioSnapshotterService;
   private agentService: AgentService;
   private agentRankService: AgentRankService;
-  private voteService: VoteService;
   private tradingConstraintsService: TradingConstraintsService;
   private competitionRewardService: CompetitionRewardService;
   private perpsDataProcessor: PerpsDataProcessor;
@@ -373,6 +353,8 @@ export class CompetitionService {
   private agentScoreRepo: AgentScoreRepository;
   private perpsRepo: PerpsRepository;
   private competitionRepo: CompetitionRepository;
+  private stakesRepo: StakesRepository;
+  private userRepo: UserRepository;
   private db: Database;
   private config: CompetitionServiceConfig;
   private logger: Logger;
@@ -383,7 +365,6 @@ export class CompetitionService {
     portfolioSnapshotterService: PortfolioSnapshotterService,
     agentService: AgentService,
     agentRankService: AgentRankService,
-    voteService: VoteService,
     tradingConstraintsService: TradingConstraintsService,
     competitionRewardService: CompetitionRewardService,
     perpsDataProcessor: PerpsDataProcessor,
@@ -391,6 +372,8 @@ export class CompetitionService {
     agentScoreRepo: AgentScoreRepository,
     perpsRepo: PerpsRepository,
     competitionRepo: CompetitionRepository,
+    stakesRepo: StakesRepository,
+    userRepo: UserRepository,
     db: Database,
     config: CompetitionServiceConfig,
     logger: Logger,
@@ -400,7 +383,6 @@ export class CompetitionService {
     this.portfolioSnapshotterService = portfolioSnapshotterService;
     this.agentService = agentService;
     this.agentRankService = agentRankService;
-    this.voteService = voteService;
     this.tradingConstraintsService = tradingConstraintsService;
     this.competitionRewardService = competitionRewardService;
     this.perpsDataProcessor = perpsDataProcessor;
@@ -408,6 +390,8 @@ export class CompetitionService {
     this.agentScoreRepo = agentScoreRepo;
     this.perpsRepo = perpsRepo;
     this.competitionRepo = competitionRepo;
+    this.stakesRepo = stakesRepo;
+    this.userRepo = userRepo;
     this.db = db;
     this.config = config;
     this.logger = logger;
@@ -424,13 +408,14 @@ export class CompetitionService {
    * @param type Competition type (defaults to trading)
    * @param startDate Optional start date for the competition
    * @param endDate Optional end date for the competition
-   * @param votingStartDate Optional voting start date
-   * @param votingEndDate Optional voting end date
+   * @param boostStartDate Optional boost start date
+   * @param boostEndDate Optional boost end date
    * @param joinStartDate Optional start date for joining the competition
    * @param joinEndDate Optional end date for joining the competition
    * @param maxParticipants Optional maximum number of participants allowed
    * @param tradingConstraints Optional trading constraints for the competition
    * @param rewards Optional rewards for the competition
+   * @param minimumStake Optional minimum stake amount
    * @returns The created competition
    */
   async createCompetition({
@@ -443,13 +428,14 @@ export class CompetitionService {
     type,
     startDate,
     endDate,
-    votingStartDate,
-    votingEndDate,
+    boostStartDate,
+    boostEndDate,
     joinStartDate,
     joinEndDate,
     maxParticipants,
     tradingConstraints,
     rewards,
+    minimumStake,
     perpsProvider,
     prizePools,
   }: CreateCompetitionParams) {
@@ -463,11 +449,12 @@ export class CompetitionService {
       imageUrl,
       startDate: startDate ?? null,
       endDate: endDate ?? null,
-      votingStartDate: votingStartDate ?? null,
-      votingEndDate: votingEndDate ?? null,
+      boostStartDate: boostStartDate ?? null,
+      boostEndDate: boostEndDate ?? null,
       joinStartDate: joinStartDate ?? null,
       joinEndDate: joinEndDate ?? null,
       maxParticipants: maxParticipants ?? null,
+      minimumStake: minimumStake ?? null,
       status: "pending",
       crossChainTradingType: tradingType ?? "disallowAll",
       sandboxMode: sandboxMode ?? false,
@@ -502,6 +489,8 @@ export class CompetitionService {
           initialCapital: perpsProvider.initialCapital.toString(),
           selfFundingThresholdUsd:
             perpsProvider.selfFundingThreshold.toString(),
+          minFundingThreshold:
+            perpsProvider.minFundingThreshold?.toString() || null,
         };
 
         await this.perpsRepo.createPerpsCompetitionConfig(perpsConfig, tx);
@@ -708,7 +697,7 @@ export class CompetitionService {
       await this.getPreRegisteredAgentIds(competitionId);
 
     // Combine agent lists (remove duplicates)
-    const finalAgentIds = [
+    let finalAgentIds = [
       ...new Set([...(agentIds ?? []), ...preRegisteredAgentIds]),
     ];
 
@@ -805,8 +794,12 @@ export class CompetitionService {
         `[CompetitionService] Syncing initial perps data from Symphony for ${finalAgentIds.length} agents (competition still pending)`,
       );
 
-      const result =
-        await this.perpsDataProcessor.processPerpsCompetition(competitionId);
+      // Pass skipMonitoring=true for initial sync during competition startup
+      const SKIP_MONITORING = true; // Skip self-funding monitoring during initial sync
+      const result = await this.perpsDataProcessor.processPerpsCompetition(
+        competitionId,
+        SKIP_MONITORING,
+      );
 
       const successCount = result.syncResult.successful.length;
       const failedCount = result.syncResult.failed.length;
@@ -822,6 +815,25 @@ export class CompetitionService {
         this.logger.warn(
           `[CompetitionService] Failed to sync ${failedCount} out of ${totalCount} agents during competition start: ${failedAgentIds.join(", ")}`,
         );
+      }
+
+      // Enforce minimum funding threshold after initial sync
+      // This must happen BEFORE competition goes active
+      const perpsConfig =
+        await this.perpsRepo.getPerpsCompetitionConfig(competitionId);
+
+      if (perpsConfig && perpsConfig.minFundingThreshold) {
+        const { removedAgents } = await this.enforceMinFundingThreshold(
+          competitionId,
+          perpsConfig,
+        );
+
+        // Remove the disqualified agents from finalAgentIds
+        if (removedAgents.length > 0) {
+          finalAgentIds = finalAgentIds.filter(
+            (id) => !removedAgents.includes(id),
+          );
+        }
       }
     } else {
       throw new Error(`Unknown competition type: ${competition.type}`);
@@ -853,6 +865,60 @@ export class CompetitionService {
       },
       agentIds: finalAgentIds,
     } as StartedCompetitionResult;
+  }
+
+  /**
+   * Check and enforce minimum funding threshold for perps competition
+   * Removes agents below the threshold from the competition
+   * @private
+   */
+  private async enforceMinFundingThreshold(
+    competitionId: string,
+    perpsConfig: SelectPerpsCompetitionConfig,
+  ): Promise<{ removedAgents: string[] }> {
+    // Only proceed if minFundingThreshold is configured
+    if (!perpsConfig.minFundingThreshold) {
+      return { removedAgents: [] };
+    }
+
+    const threshold = Number(perpsConfig.minFundingThreshold);
+    const removedAgents: string[] = [];
+
+    this.logger.info(
+      `[CompetitionService] Enforcing minimum funding threshold of $${threshold} for competition ${competitionId}`,
+    );
+
+    // Get the latest portfolio snapshots for all agents
+    const latestSnapshots =
+      await this.competitionRepo.getLatestPortfolioSnapshots(competitionId);
+
+    // Check each agent's portfolio value
+    for (const snapshot of latestSnapshots) {
+      const portfolioValue = Number(snapshot.totalValue);
+
+      if (portfolioValue < threshold) {
+        this.logger.warn(
+          `[CompetitionService] Agent ${snapshot.agentId} has portfolio value $${portfolioValue.toFixed(2)}, below threshold $${threshold}. Removing from competition.`,
+        );
+
+        // Remove agent using existing method
+        await this.removeAgentFromCompetition(
+          competitionId,
+          snapshot.agentId,
+          `Insufficient initial funding: $${portfolioValue.toFixed(2)} < $${threshold} minimum`,
+        );
+
+        removedAgents.push(snapshot.agentId);
+      }
+    }
+
+    if (removedAgents.length > 0) {
+      this.logger.info(
+        `[CompetitionService] Removed ${removedAgents.length} agents from competition ${competitionId} due to insufficient funding`,
+      );
+    }
+
+    return { removedAgents };
   }
 
   /**
@@ -1120,6 +1186,14 @@ export class CompetitionService {
   }
 
   /**
+   * Get all competitions that are open for boosting
+   * @returns Competitions that are open for boosting
+   */
+  async getOpenForBoosting() {
+    return this.competitionRepo.findOpenForBoosting();
+  }
+
+  /**
    * Check if a competition is active
    * @param competitionId The competition ID
    * @returns True if the competition is active
@@ -1201,10 +1275,6 @@ export class CompetitionService {
       ]),
     );
 
-    // Get vote counts for all agents in this competition
-    const voteCountsMap =
-      await this.voteService.getVoteCountsByCompetition(competitionId);
-
     // Build the response with agent details and competition data using bulk metrics
     const agentIds = agents.map((agent) => agent.id);
     const currentValues = new Map(
@@ -1234,7 +1304,6 @@ export class CompetitionService {
       );
       const score = leaderboardData?.score ?? 0;
       const rank = leaderboardData?.rank ?? 0;
-      const voteCount = voteCountsMap.get(agent.id) ?? 0;
       const metrics = bulkMetrics.get(agent.id) || {
         pnl: 0,
         pnlPercent: 0,
@@ -1257,7 +1326,6 @@ export class CompetitionService {
         pnlPercent: metrics.pnlPercent,
         change24h: metrics.change24h,
         change24hPercent: metrics.change24hPercent,
-        voteCount,
         // Risk metrics from leaderboard (perps competitions only)
         calmarRatio: leaderboardEntry?.calmarRatio ?? null,
         simpleReturn: leaderboardEntry?.simpleReturn ?? null,
@@ -1776,6 +1844,7 @@ export class CompetitionService {
    * @param updates The core competition fields to update
    * @param tradingConstraints Optional trading constraints to update
    * @param rewards Optional rewards to replace
+   * @param minimumStake Optional minimum stake amount
    * @param perpsProvider Optional perps provider config (required when changing to perps type)
    * @returns The updated competition with constraints and rewards
    */
@@ -1788,6 +1857,7 @@ export class CompetitionService {
       provider: "symphony" | "hyperliquid";
       initialCapital: number; // Required - Zod default ensures this is set
       selfFundingThreshold: number; // Required - Zod default ensures this is set
+      minFundingThreshold?: number;
       apiUrl?: string;
     },
     prizePools?: {
@@ -1876,6 +1946,8 @@ export class CompetitionService {
             initialCapital: perpsProvider.initialCapital.toString(),
             selfFundingThresholdUsd:
               perpsProvider.selfFundingThreshold.toString(),
+            minFundingThreshold:
+              perpsProvider.minFundingThreshold?.toString() || null,
           };
 
           await this.perpsRepo.createPerpsCompetitionConfig(perpsConfig, tx);
@@ -1909,6 +1981,8 @@ export class CompetitionService {
             initialCapital: perpsProvider.initialCapital.toString(),
             selfFundingThresholdUsd:
               perpsProvider.selfFundingThreshold.toString(),
+            minFundingThreshold:
+              perpsProvider.minFundingThreshold?.toString() || null,
           },
           tx,
         );
@@ -2084,6 +2158,22 @@ export class CompetitionService {
         403,
         "Agent is already actively registered for this competition",
       );
+    }
+
+    if (competition.minimumStake && competition.minimumStake > 0) {
+      const user = await this.userRepo.findById(validatedUserId);
+      if (!user) {
+        throw new ApiError(404, `User not found: ${validatedUserId}`);
+      }
+      const totalStaked: bigint = await this.stakesRepo.getTotalStakedByWallet(
+        user.walletAddress,
+      );
+      if (totalStaked < valueToAttoBigInt(competition.minimumStake)) {
+        throw new ApiError(
+          403,
+          `The minimum stake requirement (${competition.minimumStake.toLocaleString()}) to join this competition is not met`,
+        );
+      }
     }
 
     // Atomically add agent to competition with participant limit check
@@ -2649,14 +2739,13 @@ export class CompetitionService {
   }
 
   /**
-   * Get enriched competitions with user voting data
+   * Get enriched competitions with trading constraint data
    * @param params Parameters for competitions request
    * @returns Enriched competitions list
    */
   async getEnrichedCompetitions(params: {
     status?: CompetitionStatus;
     pagingParams: PagingParams;
-    userId?: string;
   }): Promise<EnrichedCompetitionsData> {
     try {
       // Get competitions
@@ -2665,64 +2754,37 @@ export class CompetitionService {
         params.pagingParams,
       );
 
-      // If user is authenticated, enrich competitions with voting information
+      // Enrich competitions with trading constraint information
       let enrichedCompetitions = competitions;
-      if (params.userId) {
-        const competitionIds = competitions.map((c) => c.id);
+      const competitionIds = competitions.map((c) => c.id);
 
-        // Fetch all data in parallel with batch queries
-        const [enrichmentData, voteCountsMap] = await Promise.all([
-          this.competitionRepo.getEnrichedCompetitions(
-            params.userId,
-            competitionIds,
-          ),
-          this.competitionRepo.getBatchVoteCounts(competitionIds),
-        ]);
+      const enrichmentData =
+        await this.competitionRepo.getEnrichedCompetitions(competitionIds);
 
-        // Create lookup maps for efficient access
-        const enrichmentMap = new Map(
-          enrichmentData.map((data) => [data.competitionId, data]),
-        );
+      // Create lookup maps for efficient access
+      const enrichmentMap = new Map(
+        enrichmentData.map((data) => [data.competitionId, data]),
+      );
 
-        enrichedCompetitions = competitions.map((competition) => {
-          const enrichment = enrichmentMap.get(competition.id);
-          if (!enrichment) {
-            throw new ApiError(500, "invalid competition state");
-          }
+      enrichedCompetitions = competitions.map((competition) => {
+        const enrichment = enrichmentMap.get(competition.id);
+        if (!enrichment) {
+          throw new ApiError(500, "invalid competition state");
+        }
 
-          const hasVoted = !!enrichment.userVoteAgentId;
-          const compVotingStatus =
-            this.voteService.checkCompetitionVotingEligibility(competition);
+        const tradingConstraints = {
+          minimumPairAgeHours: enrichment.minimumPairAgeHours,
+          minimum24hVolumeUsd: enrichment.minimum24hVolumeUsd,
+          minimumLiquidityUsd: enrichment.minimumLiquidityUsd,
+          minimumFdvUsd: enrichment.minimumFdvUsd,
+          minTradesPerDay: enrichment.minTradesPerDay,
+        };
 
-          const votingState = {
-            canVote: compVotingStatus.canVote,
-            reason: compVotingStatus.reason,
-            info: {
-              hasVoted,
-              agentId: enrichment.userVoteAgentId || undefined,
-              votedAt: enrichment.userVoteCreatedAt || undefined,
-            },
-          };
-
-          const totalVotes = voteCountsMap.get(competition.id)?.totalVotes || 0;
-
-          const tradingConstraints = {
-            minimumPairAgeHours: enrichment.minimumPairAgeHours,
-            minimum24hVolumeUsd: enrichment.minimum24hVolumeUsd,
-            minimumLiquidityUsd: enrichment.minimumLiquidityUsd,
-            minimumFdvUsd: enrichment.minimumFdvUsd,
-            minTradesPerDay: enrichment.minTradesPerDay,
-          };
-
-          return {
-            ...competition,
-            tradingConstraints,
-            votingEnabled: votingState.canVote || votingState.info.hasVoted,
-            userVotingInfo: votingState,
-            totalVotes,
-          };
-        });
-      }
+        return {
+          ...competition,
+          tradingConstraints,
+        };
+      });
 
       // Calculate hasMore based on total and current page
       const hasMore =
@@ -2756,17 +2818,14 @@ export class CompetitionService {
    */
   async getCompetitionById(params: {
     competitionId: string;
-    userId?: string;
   }): Promise<CompetitionDetailsData> {
     try {
       // Fetch all data pieces first
       const [
         competition,
         tradeMetrics,
-        voteCountsMap,
         rewards,
         tradingConstraints,
-        votingState,
         prizePools,
       ] = await Promise.all([
         // Get competition details
@@ -2775,8 +2834,6 @@ export class CompetitionService {
         this.tradeSimulatorService.getCompetitionTradeMetrics(
           params.competitionId,
         ),
-        // Get vote counts for this competition
-        this.voteService.getVoteCountsByCompetition(params.competitionId),
         // Get reward structure
         this.competitionRewardService.getRewardsByCompetition(
           params.competitionId,
@@ -2785,14 +2842,6 @@ export class CompetitionService {
         this.tradingConstraintsService.getConstraintsWithDefaults(
           params.competitionId,
         ),
-        // Get voting state if user is authenticated
-        params.userId
-          ? this.voteService.getCompetitionVotingState(
-              params.userId,
-              params.competitionId,
-            )
-          : Promise.resolve(null),
-
         this.competitionRepo.getCompetitionPrizePools(params.competitionId),
       ]);
 
@@ -2800,16 +2849,9 @@ export class CompetitionService {
         throw new ApiError(404, "Competition not found");
       }
 
-      // Calculate total votes
-      const totalVotes = Array.from(voteCountsMap.values()).reduce(
-        (sum, count) => sum + count,
-        0,
-      );
-
       // Build stats based on competition type
       let stats: {
         totalAgents: number;
-        totalVotes: number;
         totalTrades?: number;
         totalVolume?: number;
         uniqueTokens?: number;
@@ -2824,10 +2866,10 @@ export class CompetitionService {
         );
         stats = {
           totalAgents: competition.registeredParticipants,
-          totalVotes,
           totalPositions: perpsStatsData?.totalPositions ?? 0,
           totalVolume: perpsStatsData?.totalVolume ?? 0,
           averageEquity: perpsStatsData?.averageEquity ?? 0,
+          totalTrades: 0, // Not applicable for perps, but include for consistency
         };
       } else {
         // For paper trading competitions, include trade metrics
@@ -2835,8 +2877,8 @@ export class CompetitionService {
           totalTrades: tradeMetrics.totalTrades,
           totalAgents: competition.registeredParticipants,
           totalVolume: tradeMetrics.totalVolume,
-          totalVotes,
           uniqueTokens: tradeMetrics.uniqueTokens,
+          totalPositions: 0, // Not applicable for paper trading, but include for consistency
         };
       }
 
@@ -2864,10 +2906,6 @@ export class CompetitionService {
           tradingConstraints,
           rewards: formattedRewards,
           rewardsTge: formattedPrizePools,
-          votingEnabled: votingState
-            ? votingState.canVote || votingState.info.hasVoted
-            : false,
-          userVotingInfo: votingState || undefined,
         },
       };
 

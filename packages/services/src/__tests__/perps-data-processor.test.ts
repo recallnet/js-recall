@@ -1206,8 +1206,8 @@ describe("PerpsDataProcessor", () => {
         endDate: new Date(),
         joinStartDate: null,
         joinEndDate: null,
-        votingStartDate: null,
-        votingEndDate: null,
+        boostStartDate: null,
+        boostEndDate: null,
         requiresAgoraId: false,
         maxParticipants: null,
         registeredParticipants: 0,
@@ -1220,6 +1220,7 @@ describe("PerpsDataProcessor", () => {
         canceledAt: null,
         cancelReason: null,
         crossChainTradingType: "allow" as const,
+        minimumStake: null,
       };
 
       vi.mocked(mockCompetitionRepo.findById).mockResolvedValue(
@@ -1242,8 +1243,8 @@ describe("PerpsDataProcessor", () => {
         endDate: new Date(),
         joinStartDate: null,
         joinEndDate: null,
-        votingStartDate: null,
-        votingEndDate: null,
+        boostStartDate: null,
+        boostEndDate: null,
         requiresAgoraId: false,
         maxParticipants: null,
         registeredParticipants: 0,
@@ -1256,6 +1257,7 @@ describe("PerpsDataProcessor", () => {
         canceledAt: null,
         cancelReason: null,
         crossChainTradingType: "allow" as const,
+        minimumStake: null,
       };
 
       vi.mocked(mockCompetitionRepo.findById).mockResolvedValue(

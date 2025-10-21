@@ -1,6 +1,7 @@
 "use client";
 
 import { BarChart3, Info } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 
 import {
@@ -57,7 +58,6 @@ type ParticipantEntry = (BenchmarkModel | LeaderboardAgent) & {
 export const SkillDetailLeaderboardTableMobile: React.FC<
   SkillDetailLeaderboardTableMobileProps
 > = ({ skill, skillData }) => {
-  const [showType, setShowType] = useState<"all" | "models" | "agents">("all");
   const [selectedModel, setSelectedModel] = useState<BenchmarkModel | null>(
     null,
   );
@@ -78,69 +78,22 @@ export const SkillDetailLeaderboardTableMobile: React.FC<
     })),
   ].sort((a, b) => b.score - a.score);
 
-  // Apply filters
-  const filteredParticipants = allParticipants.filter((participant) => {
-    if (showType === "all") return true;
-    if (showType === "models") return participant.type === "model";
-    if (showType === "agents") return participant.type === "agent";
-    return true;
-  });
-
   // Calculate max score for bar scaling
   const maxPossibleScore = Math.max(
-    ...filteredParticipants.map(
-      (p) => getParticipantMetrics(p, skill.id).maxScore,
-    ),
+    ...allParticipants.map((p) => getParticipantMetrics(p, skill.id).maxScore),
     1,
   );
   const maxScaleScore = maxPossibleScore * 1.1;
 
   return (
     <div className="space-y-4">
-      {/* Mobile Filters - Horizontal scroll */}
-      <div className="flex gap-2 overflow-x-auto pb-2">
-        <button
-          className={cn(
-            "whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
-            showType === "all"
-              ? "bg-white text-black"
-              : "bg-gray-800 text-gray-300 hover:bg-gray-700",
-          )}
-          onClick={() => setShowType("all")}
-        >
-          All ({allParticipants.length})
-        </button>
-        <button
-          className={cn(
-            "whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
-            showType === "models"
-              ? "bg-white text-black"
-              : "bg-gray-800 text-gray-300 hover:bg-gray-700",
-          )}
-          onClick={() => setShowType("models")}
-        >
-          Models ({skillData.stats.modelCount})
-        </button>
-        <button
-          className={cn(
-            "whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
-            showType === "agents"
-              ? "bg-white text-black"
-              : "bg-gray-800 text-gray-300 hover:bg-gray-700",
-          )}
-          onClick={() => setShowType("agents")}
-        >
-          Agents ({skillData.stats.agentCount})
-        </button>
-      </div>
-
       {/* Mobile Performance Cards */}
       <div className="space-y-3">
         <h3 className="text-lg font-semibold text-white">
           Performance Comparison
         </h3>
 
-        {filteredParticipants.map((participant, index) => {
+        {allParticipants.map((participant, index) => {
           const metrics = getParticipantMetrics(participant, skill.id);
           const isModel = metrics.isModel;
           const confidenceInterval = metrics.confidenceInterval;
@@ -151,8 +104,8 @@ export const SkillDetailLeaderboardTableMobile: React.FC<
             ? getLabColor((participant as BenchmarkModel).provider)
             : getAgentColor(participant.name);
 
-          return (
-            <Card key={participant.id} className="p-4">
+          const cardContent = (
+            <Card className="p-4 transition-colors hover:bg-gray-700/50">
               {/* Header Row - Rank, Logo, Name/Provider, Icons */}
               <div className="mb-3 flex items-center justify-between">
                 <div className="flex min-w-0 flex-1 items-center gap-3">
@@ -205,9 +158,10 @@ export const SkillDetailLeaderboardTableMobile: React.FC<
                   {isModel &&
                     (participant as BenchmarkModel).context_length && (
                       <button
-                        onClick={() =>
-                          setSelectedModel(participant as BenchmarkModel)
-                        }
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedModel(participant as BenchmarkModel);
+                        }}
                         className="flex items-center gap-1 rounded-md bg-gray-100 px-2 py-1 transition-colors hover:bg-gray-200"
                       >
                         <BarChart3 size={12} className="text-gray-600" />
@@ -306,6 +260,26 @@ export const SkillDetailLeaderboardTableMobile: React.FC<
                 )}
               </div>
             </Card>
+          );
+
+          return isModel ? (
+            <a
+              key={participant.id}
+              href={`https://openrouter.ai/models/${participant.id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block"
+            >
+              {cardContent}
+            </a>
+          ) : (
+            <Link
+              key={participant.id}
+              href={`/agents/${participant.id}`}
+              className="block"
+            >
+              {cardContent}
+            </Link>
           );
         })}
       </div>

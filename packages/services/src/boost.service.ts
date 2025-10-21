@@ -105,8 +105,8 @@ export class BoostService {
           throw new Error("Competition not found");
         }
 
-        if (!competition.votingStartDate || !competition.votingEndDate) {
-          throw new Error("Competition missing voting dates");
+        if (!competition.boostStartDate || !competition.boostEndDate) {
+          throw new Error("Competition missing boost dates");
         }
 
         let balance = 0n;
@@ -121,8 +121,8 @@ export class BoostService {
             },
             {
               id: competition.id,
-              votingStartDate: competition.votingStartDate,
-              votingEndDate: competition.votingEndDate,
+              boostStartDate: competition.boostStartDate,
+              boostEndDate: competition.boostEndDate,
             },
             tx,
           );
@@ -261,21 +261,19 @@ export class BoostService {
         if (!competition) {
           return errAsync({ type: "CompetitionNotFound" } as const);
         }
-        // Validate voting dates are set
+        // Validate boost dates are set
         if (
-          competition.votingStartDate == null ||
-          competition.votingEndDate == null
+          competition.boostStartDate == null ||
+          competition.boostEndDate == null
         ) {
           return errAsync({
-            type: "CompetitionMissingVotingDates",
+            type: "CompetitionMissingBoostDates",
           } as const);
         }
-        // Validate we're within the voting time window
+        // Validate we're within the boost time window
         const now = new Date();
         if (
-          !(
-            competition.votingStartDate < now && now < competition.votingEndDate
-          )
+          !(competition.boostStartDate < now && now < competition.boostEndDate)
         ) {
           return errAsync({
             type: "OutsideCompetitionBoostWindow",

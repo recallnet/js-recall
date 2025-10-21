@@ -3,13 +3,13 @@ import { randomBytes } from "node:crypto";
 import { z } from "zod";
 
 import { BlockchainAddressAsU8A } from "../coders/index.js";
-import { stakes } from "../schema/indexing/defs.js";
-import * as schema from "../schema/voting/defs.js";
+import * as schema from "../schema/boost/defs.js";
 import {
   InsertStakeBoostAward,
   SelectAgentBoost,
   SelectAgentBoostTotal,
-} from "../schema/voting/types.js";
+} from "../schema/boost/types.js";
+import { stakes } from "../schema/indexing/defs.js";
 import type { Transaction } from "../types.js";
 import { Database } from "../types.js";
 
@@ -108,7 +108,7 @@ type BoostAgentResult =
  * BoostRepository
  *
  * Off-chain accounting for the "Boost"s.
- * Tables (see schema/voting/defs.ts):
+ * Tables (see schema/boost/defs.ts):
  *  - boost_balances: current mutable balance per wallet (CHECK balance >= 0)
  *  - boost_changes: immutable append-only journal of deltas with an idempotency key
  *
@@ -825,6 +825,85 @@ class BoostRepository {
         ),
       )
       .orderBy(desc(stakes.createdAt));
+    return res;
+  }
+
+  async mergeBoost(fromUserId: string, toUserId: string, tx?: Transaction) {
+    const executor = tx || this.#db;
+    const res = executor.transaction(async (tx) => {
+      // Find all balances for the source user
+      const fromBalances = await tx
+        .select()
+        .from(schema.boostBalances)
+        .where(eq(schema.boostBalances.userId, fromUserId));
+
+      const res = await Promise.all(
+        fromBalances.map(async (fromBalance) => {
+          // Sum up all boost changes for the source balance changes.
+          // This isn't strictly necessary because we already have the current balance from the
+          //  boostBalances table, but we're double-checking here that the sum of the deltas
+          // matches the current balance, just to be extra defensive.
+          const [fromBoostChangesSum] = await tx
+            .select({
+              sum: sql`sum(${schema.boostChanges.deltaAmount})`
+                .mapWith(BigInt)
+                .as("sum"),
+            })
+            .from(schema.boostChanges)
+            .where(eq(schema.boostChanges.balanceId, fromBalance.id));
+
+          if (fromBoostChangesSum?.sum !== fromBalance.balance) {
+            throw new Error(
+              `Boost changes sum for balance ${fromBalance.id} does not match balance amount`,
+            );
+          }
+
+          // Upsert into the target user
+          const [bal] = await tx
+            .insert(schema.boostBalances)
+            .values({
+              userId: toUserId,
+              balance: fromBalance.balance,
+              competitionId: fromBalance.competitionId,
+            })
+            .onConflictDoUpdate({
+              target: [
+                schema.boostBalances.userId,
+                schema.boostBalances.competitionId,
+              ],
+              set: {
+                balance: sql`${schema.boostBalances.balance} + excluded.balance`,
+                updatedAt: sql`now()`,
+              },
+            })
+            .returning();
+          if (!bal) {
+            throw new Error(
+              `Failed to merge boost for user ${toUserId} from balance ${fromBalance.id}`,
+            );
+          }
+          // Update all changes to point to the new balance
+          await tx
+            .update(schema.boostChanges)
+            .set({
+              balanceId: bal.id,
+            })
+            .where(eq(schema.boostChanges.balanceId, fromBalance.id));
+
+          // Zero out the source balance since all changes have been transferred
+          await tx
+            .update(schema.boostBalances)
+            .set({
+              balance: 0n,
+              updatedAt: sql`now()`,
+            })
+            .where(eq(schema.boostBalances.id, fromBalance.id));
+
+          return bal;
+        }),
+      );
+      return res;
+    });
     return res;
   }
 }

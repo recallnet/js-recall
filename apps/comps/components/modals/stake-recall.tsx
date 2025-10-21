@@ -1,5 +1,3 @@
-"use client";
-
 import * as dnum from "dnum";
 import {
   ArrowLeft,
@@ -14,7 +12,6 @@ import {
   Zap,
 } from "lucide-react";
 import React, { useEffect, useState } from "react";
-import { useAccount, useChainId } from "wagmi";
 
 import { Button } from "@recallnet/ui2/components/button";
 import {
@@ -37,13 +34,15 @@ import {
 
 import { Recall } from "@/components/Recall";
 import { useStake } from "@/hooks/staking";
-import { useStakingContractAddress } from "@/hooks/staking";
 import { useRecall } from "@/hooks/useRecall";
+import { useSafeAccount, useSafeChainId } from "@/hooks/useSafeWagmi";
+import { useStakingContractAddress } from "@/hooks/useStakingContract";
 import { useTokenApproval } from "@/hooks/useTokenApproval";
 import {
   handleApprovalError,
   handleStakeTransactionError,
 } from "@/lib/error-handling";
+import { formatBigintAmount, shouldShowCompact } from "@/utils/format";
 
 import { BoostIcon } from "../BoostIcon";
 
@@ -100,8 +99,8 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
   const [termsAccepted, setTermsAccepted] = useState<boolean>(false);
   const [isCollapsibleOpen, setIsCollapsibleOpen] = useState<boolean>(true);
 
-  const { address } = useAccount();
-  const chainId = useChainId();
+  const { address } = useSafeAccount();
+  const chainId = useSafeChainId();
   const recall = useRecall();
   const stakingContractAddress = useStakingContractAddress();
   const tokenApproval = useTokenApproval(recall.token, stakingContractAddress);
@@ -131,12 +130,25 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
   const unlockDate = getUnlockDate(selectedDuration);
   const stakeDuration = STAKE_DURATIONS[selectedDuration];
 
-  // Format helper: enable compact only for values > 1,000,000 tokens
-  const formatAmount = (rawValue: bigint): string => {
-    const isGreaterThanMillion =
-      dnum.cmp([rawValue, decimals], 1_000_000) === 1;
-    return dnum.format([rawValue, decimals], { compact: isGreaterThanMillion });
+  // Formatted values for the staking modal
+  const getCompactAmount = (amount: bigint) => {
+    return shouldShowCompact(amount, decimals, 1_000_000n);
   };
+  const formattedAvailable = formatBigintAmount(
+    availableRaw,
+    decimals,
+    getCompactAmount(availableRaw),
+  );
+  const formattedStakeAmount = formatBigintAmount(
+    stakeAmountRaw,
+    decimals,
+    getCompactAmount(stakeAmountRaw),
+  );
+  const formattedBoostAmount = formatBigintAmount(
+    boostAmountRaw,
+    decimals,
+    getCompactAmount(boostAmountRaw),
+  );
 
   // Check if approval is currently pending (loading or confirming)
   const isApprovalPending =
@@ -288,8 +300,8 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
   };
 
   const handleShareOnX = () => {
-    const formattedStake = formatAmount(stakeAmountRaw);
-    const formattedBoost = formatAmount(boostAmountRaw);
+    const formattedStake = formatBigintAmount(stakeAmountRaw);
+    const formattedBoost = formatBigintAmount(boostAmountRaw);
     const shareText = `I just staked ${formattedStake} $RECALL tokens and got ${formattedBoost} boost ⚡️`;
 
     const currentUrl = window.location.origin;
@@ -341,7 +353,7 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
               <div className="space-y-4">
                 <div className="flex justify-between">
                   <div className="flex items-center justify-center gap-2 text-5xl font-bold">
-                    {formatAmount(stakeAmountRaw)}
+                    {formattedStakeAmount}
                     <Recall size="md" />
                   </div>
                   <div
@@ -351,7 +363,7 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
                     <div className="text-secondary-foreground flex items-center justify-center gap-2 text-xl font-bold">
                       <Wallet className="text-secondary-foreground h-5 w-5" />
                       <span className="text-primary-foreground">
-                        {formatAmount(availableRaw)}
+                        {formattedAvailable}
                       </span>
                     </div>
                     <span className="text-secondary-foreground text-sm font-bold">
@@ -402,7 +414,7 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
                 {/* Boost Display */}
                 <div className="xs:m-0 m-auto flex w-fit items-center justify-center gap-2 rounded-lg bg-gray-800 p-3">
                   <span className="text-primary-foreground text-xl font-bold">
-                    +{formatAmount(boostAmountRaw)}
+                    +{formattedBoostAmount}
                   </span>
                   <BoostIcon className="size-4" fill />
                   <span className="text-secondary-foreground text-sm font-bold">
@@ -437,7 +449,7 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
                     </span>
                     <div className="flex items-center gap-2">
                       <span className="text-4xl font-bold">
-                        {formatAmount(stakeAmountRaw)}
+                        {formattedStakeAmount}
                       </span>
                       <Recall size="md" />
                     </div>
@@ -449,7 +461,7 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
                     </span>
                     <div className="flex items-center gap-2">
                       <span className="text-4xl font-bold">
-                        {formatAmount(boostAmountRaw)}
+                        {formattedBoostAmount}
                       </span>
                       <BoostIcon className="size-5" />
                     </div>
@@ -661,7 +673,7 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
                       </span>
                       <div className="flex items-center gap-2">
                         <span className="text-4xl font-bold">
-                          {formatAmount(stakeAmountRaw)}
+                          {formattedStakeAmount}
                         </span>
                         <Recall size="md" />
                       </div>
@@ -673,7 +685,7 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
                       </span>
                       <div className="flex items-center gap-2">
                         <span className="text-4xl font-bold">
-                          {formatAmount(boostAmountRaw)}
+                          {formattedBoostAmount}
                         </span>
                         <BoostIcon className="size-5" />
                       </div>

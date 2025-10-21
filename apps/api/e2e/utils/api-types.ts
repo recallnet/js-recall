@@ -136,7 +136,6 @@ export interface AgentResponse {
     completedCompetitions: number;
     totalTrades: number;
     totalPositions?: number; // For perps competitions
-    totalVotes: number;
     bestPlacement?: {
       competitionId: string;
       rank: number;
@@ -349,22 +348,19 @@ export interface Competition {
     totalPositions?: number; // Optional - only for perps
     totalAgents: number;
     totalVolume?: number; // Optional - may not be present for all competition types
-    totalVotes: number;
     uniqueTokens?: number; // Optional - only for paper trading
     averageEquity?: number; // Optional - only for perps
     competitionType?: string; // Type indicator for clients
   };
-  // Vote-related fields
-  votingStartDate: string | null;
-  votingEndDate: string | null;
-  votingEnabled?: boolean;
-  userVotingInfo?: CompetitionVotingState;
+  boostStartDate: string | null;
+  boostEndDate: string | null;
   // Join date constraint fields
   joinStartDate: string | null;
   joinEndDate: string | null;
   // Participant limit field
   maxParticipants: number | null;
   registeredParticipants: number;
+  minimumStake?: string | null; // Minimum stake required to join competition (in atto units as string)
   tradingConstraints?: TradingConstraints;
   rewards?: {
     rank: number;
@@ -515,7 +511,6 @@ export interface CompetitionAgent {
   pnlPercent: number; // PnL as percentage of starting value
   change24h: number; // Portfolio value change in last 24 hours (USD)
   change24hPercent: number; // 24h change as percentage
-  voteCount: number; // Number of votes this agent has received
   // Risk-adjusted metrics (primarily for perps competitions)
   calmarRatio?: number | null;
   simpleReturn?: number | null;
@@ -744,7 +739,6 @@ export interface LeaderboardAgent {
   score: number;
   type: CompetitionType;
   numCompetitions: number;
-  voteCount: number;
 }
 
 // Global leaderboard response
@@ -770,67 +764,6 @@ export interface CompetitionTimelineResponse extends ApiResponse {
       totalValue: number;
     }>;
   }>;
-}
-
-// ===========================
-// ---------------------------
-// Vote-related types
-// ---------------------------
-
-/**
- * Response type for casting a vote
- */
-export interface VoteResponse extends ApiResponse {
-  vote: {
-    id: string;
-    userId: string;
-    agentId: string;
-    competitionId: string;
-    createdAt: string;
-  };
-}
-
-/**
- * Response type for getting user votes
- */
-export interface UserVotesResponse extends ApiResponse {
-  votes: Array<{
-    id: string;
-    agentId: string;
-    competitionId: string;
-    createdAt: string;
-  }>;
-  pagination?: {
-    total: number;
-    limit: number;
-    offset: number;
-    hasMore: boolean;
-  };
-}
-
-/**
- * User vote info object
- */
-export interface UserVoteInfo {
-  hasVoted: boolean;
-  agentId?: string;
-  votedAt?: string;
-}
-
-/**
- * Competition voting state object
- */
-export interface CompetitionVotingState {
-  canVote: boolean;
-  reason?: string;
-  info: UserVoteInfo;
-}
-
-/**
- * Response type for getting voting state
- */
-export interface VotingStateResponse extends ApiResponse {
-  votingState: CompetitionVotingState;
 }
 
 /**

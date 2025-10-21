@@ -65,6 +65,7 @@ export const PerpsProviderSchema = z.object({
   provider: z.enum(["symphony", "hyperliquid"]).default("symphony"),
   initialCapital: z.number().positive().default(500), // Default $500 initial capital
   selfFundingThreshold: z.number().min(0).default(0), // Default 0 (no self-funding allowed)
+  minFundingThreshold: z.number().min(0).optional(), // Optional minimum portfolio balance
   apiUrl: z.string().url().optional(),
 });
 
@@ -82,11 +83,12 @@ export const AdminCreateCompetitionSchema = z
     type: CompetitionTypeSchema.optional(),
     startDate: z.iso.datetime().pipe(z.coerce.date()).optional(),
     endDate: z.iso.datetime().pipe(z.coerce.date()).optional(),
-    votingStartDate: z.iso.datetime().pipe(z.coerce.date()).optional(),
-    votingEndDate: z.iso.datetime().pipe(z.coerce.date()).optional(),
+    boostStartDate: z.iso.datetime().pipe(z.coerce.date()).optional(),
+    boostEndDate: z.iso.datetime().pipe(z.coerce.date()).optional(),
     joinStartDate: z.iso.datetime().pipe(z.coerce.date()).optional(),
     joinEndDate: z.iso.datetime().pipe(z.coerce.date()).optional(),
     maxParticipants: z.number().int().min(1).optional(),
+    minimumStake: z.number().min(0).optional(),
     tradingConstraints: TradingConstraintsSchema,
     rewards: RewardsSchema,
     perpsProvider: PerpsProviderSchema.optional(), // Only required for perps competitions
@@ -137,10 +139,11 @@ export const AdminStartCompetitionSchema = z
     type: CompetitionTypeSchema.optional(),
     startDate: z.iso.datetime().pipe(z.coerce.date()).optional(),
     endDate: z.iso.datetime().pipe(z.coerce.date()).optional(),
-    votingStartDate: z.iso.datetime().pipe(z.coerce.date()).optional(),
-    votingEndDate: z.iso.datetime().pipe(z.coerce.date()).optional(),
+    boostStartDate: z.iso.datetime().pipe(z.coerce.date()).optional(),
+    boostEndDate: z.iso.datetime().pipe(z.coerce.date()).optional(),
     joinStartDate: z.iso.datetime().pipe(z.coerce.date()).optional(),
     joinEndDate: z.iso.datetime().pipe(z.coerce.date()).optional(),
+    minimumStake: z.number().min(0).optional(),
     tradingConstraints: TradingConstraintsSchema,
     rewards: RewardsSchema,
     perpsProvider: PerpsProviderSchema.optional(), // Only required for perps competitions

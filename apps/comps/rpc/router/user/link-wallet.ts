@@ -6,7 +6,6 @@ import { verifyPrivyUserHasLinkedWallet } from "@recallnet/services/lib";
 import { config } from "@/config/private";
 import { base } from "@/rpc/context/base";
 import { authMiddleware } from "@/rpc/middleware/auth";
-import { serializeUser } from "@/rpc/router/utils/serialize-user";
 
 export const linkWallet = base
   .use(authMiddleware)
@@ -42,7 +41,7 @@ export const linkWallet = base
         await context.boostAwardService.initForStake(updatedUser.walletAddress);
       }
 
-      return serializeUser(updatedUser);
+      return updatedUser;
     } catch (error) {
       // Re-throw if already an oRPC error
       if (error instanceof ORPCError) {

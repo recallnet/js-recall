@@ -1,9 +1,9 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useDebounce, useWindowScroll } from "@uidotdev/usehooks";
 import { isFuture } from "date-fns";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Plus } from "lucide-react";
 import Link from "next/link";
 import React from "react";
 
@@ -22,11 +22,11 @@ import { JoinSwarmSection } from "@/components/join-swarm-section";
 import { PositionsTable } from "@/components/positions-table";
 import { TimelineChart } from "@/components/timeline-chart/index";
 import { TradesTable } from "@/components/trades-table";
-import { UserVote } from "@/components/user-vote";
 import { getSocialLinksArray } from "@/data/social";
 import { useCompetitionPerpsPositions } from "@/hooks/useCompetitionPerpsPositions";
 import { useCompetitionTrades } from "@/hooks/useCompetitionTrades";
 import { useSession } from "@/hooks/useSession";
+import { openForBoosting } from "@/lib/open-for-boosting";
 import { tanstackClient } from "@/rpc/clients/tanstack-query";
 
 const LIMIT_AGENTS_PER_PAGE = 10;
@@ -65,7 +65,7 @@ export default function CompetitionPageClient({
     error: agentsError,
   } = useQuery(
     tanstackClient.competitions.getAgents.queryOptions({
-      placeholderData: (prev) => prev,
+      placeholderData: keepPreviousData,
       input: {
         competitionId: id,
         paging: {
@@ -155,34 +155,6 @@ export default function CompetitionPageClient({
     );
   }
 
-  // Helper function to determine if voting is actually available
-  const isVotingAvailable = () => {
-    // For authenticated users, trust server validation
-    if (competition.userVotingInfo) {
-      return competition.userVotingInfo.canVote ?? false;
-    }
-
-    // For unauthenticated users, check client-side
-    if (!competition.votingEnabled) return false;
-    if (competition.status === "ended") return false;
-
-    const now = new Date();
-    const votingStart = competition.votingStartDate
-      ? new Date(competition.votingStartDate)
-      : null;
-    const votingEnd = competition.votingEndDate
-      ? new Date(competition.votingEndDate)
-      : null;
-
-    // If voting start date is set and we haven't reached it yet
-    if (votingStart && now < votingStart) return false;
-
-    // If voting end date is set and we've passed it
-    if (votingEnd && now > votingEnd) return false;
-
-    return true;
-  };
-
   const BoostAgentsBtn = ({
     className,
     disabled,
@@ -191,10 +163,10 @@ export default function CompetitionPageClient({
     disabled?: boolean;
   }) => (
     <Button
-      disabled={!isVotingAvailable() || disabled}
+      disabled={!openForBoosting(competition) || disabled}
       variant="default"
       className={cn(
-        "border border-blue-500 bg-blue-500 text-white hover:bg-white hover:text-blue-500 disabled:hover:bg-blue-500 disabled:hover:text-white",
+        "border border-yellow-500 bg-black text-white hover:bg-yellow-500 hover:text-black disabled:hover:bg-black disabled:hover:text-white",
         className,
       )}
       size="lg"
@@ -220,7 +192,7 @@ export default function CompetitionPageClient({
           { label: "Competitions", href: "/competitions" },
           { label: competition.name },
         ]}
-        className="mb-10 mt-10"
+        className="mb-10"
       />
       <div className="mb-10 flex w-full flex-col gap-3 sm:mb-20 sm:gap-5 md:flex-row">
         <BasicCompetitionCard competition={competition} className="md:w-1/2" />
@@ -229,12 +201,11 @@ export default function CompetitionPageClient({
           <div className="mt-5 flex w-full flex-col gap-3 sm:flex-row sm:gap-4">
             <JoinCompetitionButton
               competitionId={id}
-              variant="outline"
-              className="w-full justify-between border border-gray-700 sm:w-1/2"
+              className="w-full justify-between border border-white bg-white text-blue-500 hover:border-blue-500 hover:bg-blue-500 hover:text-white disabled:hover:border-white disabled:hover:bg-white disabled:hover:text-blue-500 sm:w-1/2"
               disabled={competition.status !== "pending"}
               size="lg"
             >
-              <span>COMPETE</span>{" "}
+              <span>COMPETE</span> <Plus className="ml-2" size={18} />
             </JoinCompetitionButton>
 
             <BoostAgentsBtn className="w-full justify-between uppercase sm:w-1/2" />
@@ -255,27 +226,55 @@ export default function CompetitionPageClient({
       )}
 
       {competition.status !== "ended" &&
-        !competition.votingEnabled &&
-        competition.votingStartDate &&
-        isFuture(new Date(competition.votingStartDate)) && (
+        competition.boostStartDate &&
+        isFuture(new Date(competition.boostStartDate)) && (
           <div className="mt-8 flex flex-col items-center justify-center gap-2 text-center sm:flex-row">
             <span className="text-2xl font-bold text-gray-400">
-              Voting begins in...
+              Boosting begins in...
             </span>
             <CountdownClock
               showDuration={true}
-              targetDate={new Date(competition.votingStartDate)}
+              targetDate={new Date(competition.boostStartDate)}
             />
           </div>
         )}
 
-      {competition.userVotingInfo?.info.agentId ? (
-        <UserVote
-          agentId={competition.userVotingInfo.info.agentId}
-          competitionId={id}
-          totalVotes={competition.stats.totalVotes}
-        />
-      ) : null}
+      {agentsError || !agentsData ? (
+        <div className="my-12 rounded border border-red-500 bg-opacity-10 p-6 text-center">
+          <h2 className="text-xl font-semibold text-red-500">
+            Failed to load agents
+          </h2>
+          <p className="mt-2">
+            {agentsError?.message ||
+              "An error occurred while loading agents data"}
+          </p>
+        </div>
+      ) : (
+        <>
+          <AgentsTable
+            ref={agentsTableRef}
+            competition={competition}
+            agents={agentsData.agents}
+            onFilterChange={setAgentsFilter}
+            onSortChange={setAgentsSort}
+            pagination={agentsData.pagination}
+            onPageChange={handleAgentsPageChange}
+          />
+          <TimelineChart
+            className="mt-5"
+            competition={competition}
+            agents={agentsData?.agents || []}
+            totalAgents={agentsData?.pagination?.total || 0}
+            currentPage={
+              Math.floor(
+                (agentsData?.pagination?.offset || 0) /
+                  (agentsData?.pagination?.limit || LIMIT_AGENTS_PER_PAGE),
+              ) + 1
+            }
+            onPageChange={handleAgentsPageChange}
+          />
+        </>
+      )}
 
       {isPerpsCompetition ? (
         <PositionsTable
@@ -305,44 +304,6 @@ export default function CompetitionPageClient({
           onPageChange={handleTradesPageChange}
           showSignInMessage={!isAuthenticated}
         />
-      )}
-
-      {agentsError || !agentsData ? (
-        <div className="my-12 rounded border border-red-500 bg-opacity-10 p-6 text-center">
-          <h2 className="text-xl font-semibold text-red-500">
-            Failed to load agents
-          </h2>
-          <p className="mt-2">
-            {agentsError?.message ||
-              "An error occurred while loading agents data"}
-          </p>
-        </div>
-      ) : (
-        <>
-          <TimelineChart
-            className="mt-5"
-            competition={competition}
-            agents={agentsData?.agents || []}
-            totalAgents={agentsData?.pagination?.total || 0}
-            currentPage={
-              Math.floor(
-                (agentsData?.pagination?.offset || 0) /
-                  (agentsData?.pagination?.limit || LIMIT_AGENTS_PER_PAGE),
-              ) + 1
-            }
-            onPageChange={handleAgentsPageChange}
-          />
-          <AgentsTable
-            ref={agentsTableRef}
-            competition={competition}
-            agents={agentsData.agents}
-            onFilterChange={setAgentsFilter}
-            onSortChange={setAgentsSort}
-            pagination={agentsData.pagination}
-            totalVotes={competition.stats.totalVotes}
-            onPageChange={handleAgentsPageChange}
-          />
-        </>
       )}
 
       <JoinSwarmSection socialLinks={getSocialLinksArray()} className="mt-12" />

@@ -10,14 +10,15 @@ import {
   TabsList,
   TabsTrigger,
 } from "@recallnet/ui2/components/tabs";
+import { Tooltip } from "@recallnet/ui2/components/tooltip";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { useCompetitionRules } from "@/hooks";
 import { RouterOutputs } from "@/rpc/router";
-import { CompetitionStatus } from "@/types";
 import { getCompetitionSkills } from "@/utils/competition-utils";
-import { formatDate } from "@/utils/format";
+import { formatAmount, formatCompactNumber, formatDate } from "@/utils/format";
 
+import { Recall } from "./Recall";
 import { CompetitionStateSummary } from "./competition-state-summary";
 import { RewardsTGE } from "./rewards-tge";
 
@@ -51,6 +52,20 @@ export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
   const [rateLimitsExpanded, setRateLimitsExpanded] = useState(false);
   const { data: rules, isLoading: rulesLoading } = useCompetitionRules(
     competition.id,
+  );
+
+  // Helper to render responsive numbers (full on desktop, compact on mobile)
+  const renderNumber = (value: number, prefix = "") => (
+    <>
+      <span className="hidden sm:inline">
+        {prefix}
+        {formatAmount(value, 0, true)}
+      </span>
+      <span className="sm:hidden">
+        {prefix}
+        {formatCompactNumber(value)}
+      </span>
+    </>
   );
 
   const startDate = competition.startDate
@@ -90,8 +105,8 @@ export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
 
       <TabsContent value="info" className="border">
         <div>
-          {/* Registration and Voting Status Bar - At the very top */}
-          {competition.status !== CompetitionStatus.Ended && (
+          {/* Registration and Boosting Status Bar - At the very top */}
+          {competition.status !== "ended" && (
             <div className="border-b bg-[#0C0D12] px-4 py-2">
               <CompetitionStateSummary competition={competition} />
             </div>
@@ -121,8 +136,10 @@ export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
           </div>
 
           {/* Rewards Row */}
-          <div className="flex items-center gap-6 border-b px-6 py-6">
-            <CellTitle className="uppercase tracking-wider">Rewards</CellTitle>
+          <div className="flex items-center gap-2 border-b px-3 py-4 sm:gap-6 sm:px-6 sm:py-6">
+            <CellTitle className="shrink-0 uppercase tracking-wider">
+              Rewards
+            </CellTitle>
             {competition.rewardsTge ? (
               <RewardsTGE
                 rewards={{
@@ -131,32 +148,66 @@ export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
                 }}
               />
             ) : competition.rewards && competition.rewards.length > 0 ? (
-              <div className="flex flex-1 items-center gap-6">
+              <div className="flex min-w-0 flex-1 items-center justify-start gap-4 overflow-hidden sm:gap-8">
                 {competition.rewards
                   .sort((a, b) => a.rank - b.rank)
                   .slice(0, 3)
                   .map((r) => (
-                    <div key={r.rank} className="flex items-center gap-2">
+                    <div
+                      key={r.rank}
+                      className="flex min-w-0 items-center gap-1 sm:gap-2"
+                    >
                       <span
-                        className={
+                        className={cn(
+                          "shrink-0 text-xs sm:text-base",
                           r.rank === 1
                             ? "text-[#FBD362]"
                             : r.rank === 2
                               ? "text-[#93A5BA]"
-                              : "text-[#C76E29]"
-                        }
+                              : "text-[#C76E29]",
+                        )}
                       >
                         {r.rank === 1 ? "1st" : r.rank === 2 ? "2nd" : "3rd"}
                       </span>
-                      <span className="font-bold text-gray-100">
-                        ${r.reward.toLocaleString()}
+                      <span className="min-w-0 font-bold text-gray-100">
+                        {renderNumber(r.reward, "$")}
                       </span>
                     </div>
                   ))}
               </div>
             ) : (
-              <p className="text-xl font-semibold">TBA</p>
+              <p className="font-bold">TBA</p>
             )}
+          </div>
+
+          {/* Minimum Stake and Registration Limit Row */}
+          <div className="grid grid-cols-2 border-b">
+            <div className="flex flex-col items-start gap-2 border-r p-4 sm:p-[25px]">
+              <CellTitle>Minimum Agent Stake</CellTitle>
+              <Tooltip content="Amount of staked RECALL required for an agent to compete in this competition">
+                <p className="font-bold">
+                  {competition.minimumStake ? (
+                    <span className="flex items-center gap-2">
+                      {formatAmount(competition.minimumStake, 0, true)}{" "}
+                      <Recall />
+                    </span>
+                  ) : (
+                    "N/A"
+                  )}
+                </p>
+              </Tooltip>
+            </div>
+            <div className="flex flex-col items-start gap-2 p-4 sm:p-[25px]">
+              <CellTitle>Registration Limit</CellTitle>
+              <p className="font-bold">
+                <span className="flex items-center gap-2">
+                  {competition.maxParticipants
+                    ? competition.maxParticipants
+                    : "Unlimited"}{" "}
+                  participants
+                </span>
+              </p>
+            </div>
           </div>
 
           {/* About Section */}
@@ -164,6 +215,7 @@ export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
             <CellTitle className="mb-3 uppercase tracking-wider">
               About
             </CellTitle>
+            {/* Description */}
             <div
               className={`relative ${expanded ? "max-h-40 overflow-y-auto" : "max-h-16 overflow-hidden"}`}
             >
@@ -174,15 +226,6 @@ export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
                 <div className="pointer-events-none absolute bottom-0 left-0 h-8 w-full bg-gradient-to-t from-black to-transparent" />
               )}
             </div>
-
-            {/* Registration Limit */}
-            {competition.maxParticipants &&
-              competition.registeredParticipants <
-                competition.maxParticipants && (
-                <p className="mt-3 text-sm text-gray-400">
-                  Registration limit: {competition.maxParticipants} participants
-                </p>
-              )}
 
             <p className="mt-2 text-sm text-gray-400">
               {competition.externalUrl &&
@@ -226,32 +269,27 @@ export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
           </div>
 
           <div className="grid grid-cols-3">
-            <div className="flex flex-col items-start justify-center gap-2 border-r p-4 sm:p-[25px]">
+            <div className="flex min-w-0 flex-col items-start justify-center gap-2 border-r p-3 sm:p-[25px]">
               <CellTitle>
                 {competition.type === "perpetual_futures"
                   ? "Total Positions"
                   : "Total Trades"}
               </CellTitle>
               <span className="font-bold">
-                {competition.type === "perpetual_futures"
-                  ? (competition.stats.totalPositions ?? 0)
-                  : (competition.stats.totalTrades ?? 0)}
-              </span>
-            </div>
-            <div className="flex flex-col items-start justify-center gap-2 border-r p-4 sm:p-[25px]">
-              <CellTitle>Volume</CellTitle>
-              <span className="font-bold">
-                $
-                {(competition.stats.totalVolume ?? 0).toLocaleString(
-                  undefined,
-                  {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  },
+                {renderNumber(
+                  competition.type === "perpetual_futures"
+                    ? (competition.stats.totalPositions ?? 0)
+                    : (competition.stats.totalTrades ?? 0),
                 )}
               </span>
             </div>
-            <div className="flex flex-col items-start justify-center gap-2 p-4 sm:p-[25px]">
+            <div className="flex min-w-0 flex-col items-start justify-center gap-2 border-r p-3 sm:p-[25px]">
+              <CellTitle>Volume</CellTitle>
+              <span className="font-bold">
+                {renderNumber(competition.stats.totalVolume ?? 0, "$")}
+              </span>
+            </div>
+            <div className="flex min-w-0 flex-col items-start justify-center gap-2 p-3 sm:p-[25px]">
               <CellTitle>
                 {competition.type === "perpetual_futures"
                   ? "Average Equity"
@@ -259,14 +297,8 @@ export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
               </CellTitle>
               <span className="font-bold">
                 {competition.type === "perpetual_futures"
-                  ? `$${(competition.stats.averageEquity ?? 0).toLocaleString(
-                      undefined,
-                      {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      },
-                    )}`
-                  : (competition.stats.uniqueTokens ?? 0)}
+                  ? renderNumber(competition.stats.averageEquity ?? 0, "$")
+                  : renderNumber(competition.stats.uniqueTokens ?? 0)}
               </span>
             </div>
           </div>

@@ -1,5 +1,3 @@
-"use client";
-
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ColumnDef,
@@ -32,7 +30,6 @@ import { Pagination } from "@/components/pagination/index";
 import { config } from "@/config/public";
 import { useTotalUserStaked } from "@/hooks/staking";
 import { useSession } from "@/hooks/useSession";
-import { useVote } from "@/hooks/useVote";
 import { openForBoosting } from "@/lib/open-for-boosting";
 import { tanstackClient } from "@/rpc/clients/tanstack-query";
 import { RouterOutputs } from "@/rpc/router";
@@ -42,12 +39,11 @@ import { getSortState } from "@/utils/table";
 
 import { AgentAvatar } from "../agent-avatar";
 import BoostAgentModal from "../modals/boost-agent";
-import ConfirmVoteModal from "../modals/confirm-vote";
+import { boostedCompetitionsStartDate } from "../timeline-chart/constants";
 import { RankBadge } from "./rank-badge";
 
 export interface AgentsTableProps {
   agents: RouterOutputs["competitions"]["getAgents"]["agents"];
-  totalVotes: number;
   competition: RouterOutputs["competitions"]["getById"];
   onFilterChange: (filter: string) => void;
   onSortChange: (sort: string) => void;
@@ -60,7 +56,6 @@ const numberFormatter = new Intl.NumberFormat();
 
 export const AgentsTable: React.FC<AgentsTableProps> = ({
   agents,
-  totalVotes,
   competition,
   //onFilterChange,
   onSortChange,
@@ -68,29 +63,47 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
   pagination,
   ref,
 }) => {
+  const isBoostEnabled = useMemo(() => {
+    return (
+      !!competition.startDate &&
+      competition.startDate > boostedCompetitionsStartDate
+    );
+  }, [competition]);
   const session = useSession();
   const router = useRouter();
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
-    yourShare: session.ready && session.isAuthenticated,
+    yourShare: isBoostEnabled && session.ready && session.isAuthenticated,
+    boostPool: isBoostEnabled,
   });
   const [selectedAgent, setSelectedAgent] = useState<
     RouterOutputs["competitions"]["getAgents"]["agents"][number] | null
   >(null);
-  const [isVoteModalOpen, setIsVoteModalOpen] = useState(false);
   const [isBoostModalOpen, setIsBoostModalOpen] = useState(false);
-  const { mutate: vote, isPending: isPendingVote } = useVote();
 
   const queryClient = useQueryClient();
 
   const { data: totalStaked } = useTotalUserStaked();
 
   // Boost hooks
+
+  const isOpenForBoosting = useMemo(
+    () => openForBoosting(competition),
+    [competition],
+  );
+
+  const { data: availableBoostAwards } = useQuery(
+    tanstackClient.boost.availableAwards.queryOptions({
+      input: { competitionId: competition.id },
+      enabled: isOpenForBoosting,
+    }),
+  );
+
   const {
-    data: boostBalance,
-    isLoading: isLoadingBoostBalance,
-    isSuccess: isSuccessBoostBalance,
+    data: userBoostBalance,
+    isLoading: isLoadingUserBoostBalance,
+    isSuccess: isSuccessUserBoostBalance,
   } = useQuery(
     tanstackClient.boost.balance.queryOptions({
       input: { competitionId: competition.id },
@@ -128,10 +141,11 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
         ),
     }),
   );
+
   const {
-    data: boostTotals,
-    isLoading: isLoadingBoostTotals,
-    isSuccess: isSuccessBoostTotals,
+    data: agentBoostTotals,
+    isLoading: isLoadingAgentBoostTotals,
+    isSuccess: isSuccessAgentBoostTotals,
   } = useQuery(
     tanstackClient.boost.agentBoostTotals.queryOptions({
       input: { competitionId: competition.id },
@@ -166,6 +180,11 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
         queryClient.invalidateQueries({
           queryKey: tanstackClient.boost.balance.key(),
         });
+        queryClient.invalidateQueries({
+          queryKey: tanstackClient.boost.availableAwards.key({
+            input: { competitionId: competition.id },
+          }),
+        });
       },
       onError: (error) => {
         toast.error(error.message);
@@ -173,23 +192,28 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
     }),
   );
 
-  const isOpenForBoosting = useMemo(
-    () => openForBoosting(competition),
-    [competition],
-  );
+  const showActivateBoost = useMemo(() => {
+    if (config.publicFlags.tge) {
+      return (
+        isOpenForBoosting && (availableBoostAwards?.totalAwardAmount ?? 0n) > 0n
+      );
+    } else {
+      return (
+        userBoostBalance === 0 &&
+        Object.keys(userBoosts || {}).length === 0 &&
+        isOpenForBoosting
+      );
+    }
+  }, [availableBoostAwards, userBoostBalance, userBoosts, isOpenForBoosting]);
 
-  const showClaimBoost = useMemo(() => {
-    return (
-      boostBalance === 0 &&
-      Object.keys(userBoosts || {}).length === 0 &&
-      isOpenForBoosting &&
-      (config.publicFlags.tge ? !!totalStaked : true)
-    );
-  }, [boostBalance, userBoosts, isOpenForBoosting, totalStaked]);
+  const showStakeToBoost = useMemo(() => {
+    if (!config.publicFlags.tge) return false;
+    return totalStaked === 0n || userBoostBalance === 0;
+  }, [totalStaked, userBoostBalance]);
 
   const showBoostBalance = useMemo(() => {
-    return boostBalance !== undefined && isOpenForBoosting;
-  }, [boostBalance, isOpenForBoosting]);
+    return userBoostBalance !== undefined && isOpenForBoosting;
+  }, [userBoostBalance, isOpenForBoosting]);
 
   const page =
     pagination.limit > 0
@@ -198,21 +222,19 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
 
   // Calculate total boost for percentage calculation
   const totalBoost = useMemo(() => {
-    if (!isSuccessBoostTotals) return 0;
-    return Object.values(boostTotals).reduce((sum, amount) => sum + amount, 0);
-  }, [boostTotals, isSuccessBoostTotals]);
-
-  const isLegacyCompetition = useMemo(() => {
-    return competition.stats.totalVotes > 0 && competition.status === "ended";
-  }, [competition.stats.totalVotes, competition.status]);
-
-  const hasBoostEnabled = !isLegacyCompetition;
+    if (!isSuccessAgentBoostTotals) return 0;
+    return Object.values(agentBoostTotals).reduce(
+      (sum, amount) => sum + amount,
+      0,
+    );
+  }, [agentBoostTotals, isSuccessAgentBoostTotals]);
 
   useEffect(() => {
-    setColumnVisibility({
-      yourShare: session.ready && session.isAuthenticated && hasBoostEnabled,
-    });
-  }, [session.ready, session.isAuthenticated, hasBoostEnabled]);
+    setColumnVisibility((prev) => ({
+      ...prev,
+      yourShare: isBoostEnabled && session.ready && session.isAuthenticated,
+    }));
+  }, [session.ready, session.isAuthenticated, isBoostEnabled]);
 
   // Calculate user's total spent boost for progress bar
   const userSpentBoost = useMemo(() => {
@@ -222,33 +244,18 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
 
   // Calculate total boost value (available + user spent) for progress bar
   const totalBoostValue = useMemo(() => {
-    const availableBalance = isSuccessBoostBalance ? boostBalance : 0;
+    const availableBalance = isSuccessUserBoostBalance ? userBoostBalance : 0;
     return availableBalance + userSpentBoost;
-  }, [boostBalance, userSpentBoost, isSuccessBoostBalance]);
+  }, [userBoostBalance, userSpentBoost, isSuccessUserBoostBalance]);
 
   // Check if boost data is loading
   const isBoostDataLoading =
-    isLoadingBoostBalance || isLoadingUserBoosts || isLoadingBoostTotals;
+    isLoadingUserBoostBalance ||
+    isLoadingUserBoosts ||
+    isLoadingAgentBoostTotals;
 
-  const handleVote = async () => {
-    if (!selectedAgent) return;
-
-    vote(
-      {
-        agentId: selectedAgent.id,
-        competitionId: competition.id,
-      },
-      {
-        onSuccess: () => {
-          toast.success("Vote cast successfully!");
-        },
-        onError: (error) => {
-          toast.error(
-            error instanceof Error ? error.message : "Failed to cast vote",
-          );
-        },
-      },
-    );
+  const handleStakeToBoost = () => {
+    router.push("/stake");
   };
 
   const handleClaimBoost = () => {
@@ -301,7 +308,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
         enableSorting: true,
         sortDescFirst: false, // Alphabetical order
         meta: {
-          className: "flex-1",
+          className: "flex-1 max-w-[520px]",
         },
       },
       // Show Calmar Ratio as primary metric for perps, Portfolio Value for others
@@ -362,14 +369,14 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                 </span>
               ),
               enableSorting: true,
-              size: 100,
+              size: 140,
             },
             {
               id: "maxDrawdown",
               accessorKey: "maxDrawdown",
               header: () => (
                 <span>
-                  <span className="hidden sm:inline">Max DD</span>
+                  <span className="hidden sm:inline">Max Drawdown</span>
                   <span className="sm:hidden">DD</span>
                 </span>
               ),
@@ -388,7 +395,10 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                 </span>
               ),
               enableSorting: true,
-              size: 100,
+              size: 140,
+              meta: {
+                className: "mr-4",
+              },
             },
           ]
         : [
@@ -474,58 +484,35 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                 );
               },
               enableSorting: true,
-              size: 100,
+              size: 140,
             },
           ]),
 
       {
         id: "boostPool",
         accessorKey: "boostTotal",
-        header: () => (
-          <span className="whitespace-nowrap">
-            {hasBoostEnabled ? "Boost Pool" : "Votes"}
-          </span>
-        ),
+        header: () => <span className="whitespace-nowrap">Boost Pool</span>,
         cell: ({ row }) => {
-          if (hasBoostEnabled) {
-            const agentBoostTotal = isSuccessBoostTotals
-              ? boostTotals[row.original.id] || 0
-              : 0;
+          const agentBoostTotal = isSuccessAgentBoostTotals
+            ? agentBoostTotals[row.original.id] || 0
+            : 0;
 
-            return (
-              <div className="flex flex-col items-end">
-                <span className="text-secondary-foreground font-semibold">
-                  {isBoostDataLoading
-                    ? "..."
-                    : formatCompactNumber(agentBoostTotal)}
-                </span>
-                <span className="text-xs text-slate-400">
-                  (
-                  {formatPercentage(
-                    Number(agentBoostTotal),
-                    Number(totalBoost),
-                  )}
-                  )
-                </span>
-              </div>
-            );
-          } else {
-            // Show vote counts for old competitions without boost
-            const voteCount = row.original.voteCount || 0;
-            return (
-              <div className="flex flex-col items-end">
-                <span className="text-secondary-foreground font-semibold">
-                  {formatCompactNumber(voteCount)}
-                </span>
-                <span className="text-xs text-slate-400">
-                  ({formatPercentage(Number(voteCount), Number(totalVotes))})
-                </span>
-              </div>
-            );
-          }
+          return (
+            <div className="flex flex-col items-end">
+              <span className="text-secondary-foreground font-semibold">
+                {isBoostDataLoading
+                  ? "..."
+                  : formatCompactNumber(agentBoostTotal)}
+              </span>
+              <span className="text-xs text-slate-400">
+                ({formatPercentage(Number(agentBoostTotal), Number(totalBoost))}
+                )
+              </span>
+            </div>
+          );
         },
         enableSorting: false,
-        size: 100,
+        size: 120,
         meta: {
           className: "flex justify-end",
         },
@@ -554,7 +541,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                       size="sm"
                       variant="outline"
                       className="hover:bg-muted h-8 w-8 rounded-lg border border-yellow-500 p-0 hover:text-white"
-                      disabled={!boostBalance}
+                      disabled={!userBoostBalance}
                       onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                         e.stopPropagation();
                         handleBoost(row.original);
@@ -568,7 +555,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                     size="sm"
                     variant="outline"
                     className="hover:bg-muted h-8 rounded-lg border border-yellow-500 font-bold text-white"
-                    disabled={!boostBalance}
+                    disabled={!userBoostBalance}
                     onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                       e.stopPropagation();
                       handleBoost(row.original);
@@ -593,17 +580,15 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
       },
     ],
     [
-      boostTotals,
+      agentBoostTotals,
       userBoosts,
       isBoostDataLoading,
       totalBoost,
-      boostBalance,
-      isSuccessBoostTotals,
+      userBoostBalance,
+      isSuccessAgentBoostTotals,
       isOpenForBoosting,
       competition.type,
       isSuccessUserBoosts,
-      hasBoostEnabled,
-      totalVotes,
     ],
   );
 
@@ -677,20 +662,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
           </div>*/}
         </div>
 
-        {/* Button to activate boost */}
-        {showClaimBoost && (
-          <Button
-            size="lg"
-            variant="outline"
-            className="hover:bg-muted h-8 self-end rounded-lg border border-yellow-500 font-bold text-white"
-            onClick={handleClaimBoost}
-          >
-            Start Boosting{" "}
-            <Zap className="ml-1 h-4 w-4 fill-yellow-500 text-yellow-500" />
-          </Button>
-        )}
-        {/* Available Boost Progress Bar */}
-        {showBoostBalance && !showClaimBoost && (
+        {showBoostBalance && (
           <div className="w-full md:w-1/2 lg:ml-8">
             <div className="rounded-2xl p-4">
               <div className="flex items-center gap-3">
@@ -699,7 +671,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                   <span className="font-bold">
                     {isBoostDataLoading
                       ? "..."
-                      : numberFormatter.format(boostBalance || 0)}
+                      : numberFormatter.format(userBoostBalance || 0)}
                   </span>
                   <span className="text-secondary-foreground text-sm font-medium">
                     available
@@ -710,10 +682,10 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                     className="h-full rounded-full bg-yellow-500 transition-all duration-300"
                     style={{
                       width:
-                        isSuccessBoostBalance &&
-                        boostBalance > 0 &&
+                        isSuccessUserBoostBalance &&
+                        userBoostBalance > 0 &&
                         totalBoostValue > 0
-                          ? `${Math.min(100, Number((boostBalance * 100) / totalBoostValue))}%`
+                          ? `${Math.min(100, Number((userBoostBalance * 100) / totalBoostValue))}%`
                           : "0%",
                     }}
                   />
@@ -722,6 +694,27 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
             </div>
           </div>
         )}
+        {showActivateBoost ? (
+          <Button
+            size="lg"
+            variant="outline"
+            className="group h-8 self-end rounded-lg border border-yellow-500 bg-black font-bold text-white hover:bg-yellow-500 hover:text-black"
+            onClick={handleClaimBoost}
+          >
+            {config.publicFlags.tge ? "Activate Boost" : "Start Boosting"}{" "}
+            <Zap className="ml-1 h-4 w-4 fill-yellow-500 text-yellow-500 group-hover:fill-black group-hover:text-black" />
+          </Button>
+        ) : showStakeToBoost ? (
+          <Button
+            size="lg"
+            variant="outline"
+            className="group h-8 self-end rounded-lg border border-yellow-500 bg-black font-bold text-white hover:bg-yellow-500 hover:text-black"
+            onClick={handleStakeToBoost}
+          >
+            Stake to Boost{" "}
+            <Zap className="ml-1 h-4 w-4 fill-yellow-500 text-yellow-500 transition-all duration-300 ease-in-out group-hover:fill-black group-hover:text-black" />
+          </Button>
+        ) : null}
       </div>
       <div
         ref={tableContainerRef}
@@ -787,7 +780,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                   ref={(el) => rowVirtualizer.measureElement(el)}
                   data-index={virtualRow.index}
                   onClick={(e) => {
-                    // Don't navigate if clicking on the "Vote" button
+                    // Don't navigate if clicking on the "Boost" button
                     const target = e.target as HTMLElement;
                     const isInteractive = target.closest(
                       'button, [type="button"]',
@@ -823,17 +816,6 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
         onPageChange={onPageChange}
       />
 
-      <ConfirmVoteModal
-        isOpen={isVoteModalOpen}
-        onClose={(open) => {
-          setIsVoteModalOpen(open);
-          if (!open) setSelectedAgent(null);
-        }}
-        agentName={selectedAgent?.name ?? ""}
-        onVote={handleVote}
-        isLoading={isPendingVote}
-      />
-
       <BoostAgentModal
         isOpen={isBoostModalOpen}
         onClose={(open) => {
@@ -841,10 +823,10 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
           if (!open) setSelectedAgent(null);
         }}
         agent={selectedAgent}
-        availableBoost={boostBalance || 0}
+        availableBoost={userBoostBalance || 0}
         currentAgentBoostTotal={
-          selectedAgent && isSuccessBoostTotals
-            ? boostTotals[selectedAgent.id] || 0
+          selectedAgent && isSuccessAgentBoostTotals
+            ? agentBoostTotals[selectedAgent.id] || 0
             : 0
         }
         currentUserBoostAmount={

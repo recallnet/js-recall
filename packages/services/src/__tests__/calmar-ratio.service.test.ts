@@ -24,8 +24,8 @@ describe("CalmarRatioService", () => {
     imageUrl: null,
     startDate,
     endDate: endDate !== undefined ? endDate : null,
-    votingStartDate: null,
-    votingEndDate: null,
+    boostStartDate: null,
+    boostEndDate: null,
     joinStartDate: null,
     joinEndDate: null,
     maxParticipants: null,
@@ -36,6 +36,7 @@ describe("CalmarRatioService", () => {
     updatedAt: new Date(),
     creatorId: "creator-123",
     crossChainTradingType: "disallowAll" as const,
+    minimumStake: null,
   });
 
   // Helper to create mock portfolio snapshots

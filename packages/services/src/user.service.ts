@@ -1,15 +1,20 @@
+import type { PrivyClient } from "@privy-io/server-auth";
 import { randomUUID } from "crypto";
 import { Logger } from "pino";
 
 import { AgentRepository } from "@recallnet/db/repositories/agent";
+import { BoostRepository } from "@recallnet/db/repositories/boost";
 import { UserRepository } from "@recallnet/db/repositories/user";
-import { VoteRepository } from "@recallnet/db/repositories/vote";
+import { type UserMetadata } from "@recallnet/db/schema/core/defs";
 import { InsertUser, SelectUser } from "@recallnet/db/schema/core/types";
 import { Database, Transaction } from "@recallnet/db/types";
 
 import { EmailService } from "./email.service.js";
+import { checkUserUniqueConstraintViolation } from "./lib/error-utils.js";
+import { verifyAndGetPrivyUserInfo } from "./lib/privy-verification.js";
 import { WalletWatchlist } from "./lib/watchlist.js";
-import { UserMetadata, UserSearchParams } from "./types/index.js";
+import { ApiError } from "./types/index.js";
+import { UserSearchParams } from "./types/index.js";
 
 /**
  * User Service
@@ -24,7 +29,7 @@ export class UserService {
   private emailService: EmailService;
   private agentRepo: AgentRepository;
   private userRepo: UserRepository;
-  private voteRepo: VoteRepository;
+  private boostRepo: BoostRepository;
   private walletWatchlist: WalletWatchlist;
   private db: Database;
   private logger: Logger;
@@ -33,7 +38,7 @@ export class UserService {
     emailService: EmailService,
     agentRepo: AgentRepository,
     userRepo: UserRepository,
-    voteRepo: VoteRepository,
+    boostRepo: BoostRepository,
     walletWatchlist: WalletWatchlist,
     db: Database,
     logger: Logger,
@@ -43,7 +48,7 @@ export class UserService {
     this.emailService = emailService;
     this.agentRepo = agentRepo;
     this.userRepo = userRepo;
-    this.voteRepo = voteRepo;
+    this.boostRepo = boostRepo;
     this.walletWatchlist = walletWatchlist;
     this.db = db;
     this.logger = logger;
@@ -274,10 +279,14 @@ export class UserService {
             user.id,
             tx,
           );
-          await this.voteRepo.updateVotesOwner(
+          const mergeRes = await this.boostRepo.mergeBoost(
             duplicateAccount.id,
             user.id,
             tx,
+          );
+          this.logger.info(
+            mergeRes,
+            `Merged boost balances from duplicate user ${duplicateAccount.id} into ${user.id}`,
           );
           await this.deleteUser(duplicateAccount.id, tx);
         }
@@ -402,6 +411,91 @@ export class UserService {
         error,
       );
       return null;
+    }
+  }
+
+  /**
+   * Authenticate user with Privy identity token and update/create user record.
+   *
+   * Handles the following scenarios:
+   * 1. Post-Privy users with existing privyId in database
+   * 2. Post-legacy but pre-Privy users (email exists)
+   * 3. Legacy users (only wallet address exists)
+   * 4. Brand new users (creates new record)
+   *
+   * @param identityToken - The Privy identity token to verify
+   * @param privyClient - The Privy client instance for user verification
+   * @returns The authenticated user record
+   * @throws {ApiError} 409 if unique constraint is violated (duplicate email/wallet/privyId)
+   */
+  async loginWithPrivyToken(
+    identityToken: string,
+    privyClient: PrivyClient,
+  ): Promise<SelectUser> {
+    try {
+      const { privyId, name, email, embeddedWallet, customWallets } =
+        await verifyAndGetPrivyUserInfo(identityToken, privyClient);
+      const embeddedWalletAddress = embeddedWallet.address;
+      const now = new Date();
+
+      // 1. Handle post-Privy migration users
+      const existingUserWithPrivyId = await this.getUserByPrivyId(privyId);
+      if (existingUserWithPrivyId) {
+        return await this.updateUser({
+          id: existingUserWithPrivyId.id,
+          lastLoginAt: now,
+        });
+      }
+
+      // 2. Handle post-legacy but pre-Privy users (an `email` always exists via legacy Loops emails)
+      // Note: we skip the explicit email branch and rely on repository UPSERT (email idempotency)
+      // in `registerUser` (called in the fallback below) to handle this case.
+
+      // 3. Handle legacy users (only a `walletAddress` exists, but it might not be connected to Privy)
+      // This is an edge case where a user never logged in nor set up an email, so our best guess is to
+      // use the "latest" connected wallet as the primary wallet address and see if the user exists.
+      const customWalletAddress = customWallets.sort(
+        (a, b) =>
+          (b.latestVerifiedAt?.getTime() ?? 0) -
+          (a.latestVerifiedAt?.getTime() ?? 0),
+      )[0]?.address;
+      if (customWalletAddress) {
+        const existingUserWithWallet =
+          await this.getUserByWalletAddress(customWalletAddress);
+        if (existingUserWithWallet) {
+          return await this.updateUser({
+            id: existingUserWithWallet.id,
+            name: existingUserWithWallet.name ?? name,
+            email,
+            privyId,
+            embeddedWalletAddress,
+            lastLoginAt: now,
+          });
+        }
+      }
+
+      // 4. Create completely new user, using the embedded wallet address as the primary wallet address
+      return await this.registerUser(
+        embeddedWalletAddress,
+        name,
+        email,
+        undefined,
+        undefined,
+        privyId,
+        embeddedWalletAddress,
+      );
+    } catch (error) {
+      // Check for unique constraint violations
+      const violatedField = checkUserUniqueConstraintViolation(error);
+      if (violatedField) {
+        throw new ApiError(
+          409,
+          `A user with this ${violatedField} already exists`,
+        );
+      }
+
+      // Re-throw other errors
+      throw error;
     }
   }
 

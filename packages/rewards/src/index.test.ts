@@ -394,7 +394,7 @@ describe("calculate rewards for users", () => {
     ).toThrow("Invalid boost time decay rate");
   });
 
-  it("should handle users who voted for competitors not in leaderboard (disqualified/removed)", () => {
+  it("should handle users who boosted for competitors not in leaderboard (disqualified/removed)", () => {
     const prizePool = 1000n * 10n ** 18n; // 1000 ETH in WEI
     const leaderBoard: Leaderboard = [
       {
@@ -415,9 +415,9 @@ describe("calculate rewards for users", () => {
       end: new Date("2024-01-05T00:00:00Z"),
     };
 
-    // Boost allocations where some users voted for competitors not in the leaderboard
+    // Boost allocations where some users boosted for competitors not in the leaderboard
     const boostAllocations: BoostAllocation[] = [
-      // Alice voted for valid competitors
+      // Alice boosted valid competitors
       {
         user_id: "alice-id",
         user_wallet: "Alice",
@@ -433,7 +433,7 @@ describe("calculate rewards for users", () => {
         timestamp: new Date("2024-01-02T12:00:00Z"),
       },
 
-      // Bob voted for a valid competitor and a disqualified one
+      // Bob boosted a valid competitor and a disqualified one
       {
         user_id: "bob-id",
         user_wallet: "Bob",
@@ -449,7 +449,7 @@ describe("calculate rewards for users", () => {
         timestamp: new Date("2024-01-02T12:00:00Z"),
       },
 
-      // Charlie only voted for disqualified competitors
+      // Charlie only boosted disqualified competitors
       {
         user_id: "charlie-id",
         user_wallet: "Charlie",
@@ -482,7 +482,7 @@ describe("calculate rewards for users", () => {
       a.address.localeCompare(b.address),
     );
 
-    // Verify only users who voted for valid competitors get rewards
+    // Verify only users who boosted for valid competitors get rewards
     const addresses = sortedRewards.map((r) => r.address);
     expect(addresses).toContain("Alice");
     expect(addresses).toContain("Bob");

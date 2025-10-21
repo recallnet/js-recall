@@ -4,7 +4,7 @@ import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { Menu } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { Avatar, AvatarImage } from "@recallnet/ui2/components/avatar";
 import { Button } from "@recallnet/ui2/components/button";
@@ -30,13 +30,17 @@ export const Navbar: React.FunctionComponent = () => {
 
   const [open, setOpen] = useState(false);
 
-  const navItems = [
-    { label: "COMPETITIONS", href: "/competitions", mobileOnly: false },
-    { label: "LEADERBOARDS", href: "/leaderboards", mobileOnly: false },
-    ...(isAuthenticated
-      ? [{ label: "STAKE RECALL", href: "/stake", mobileOnly: true }]
-      : []),
-  ];
+  const navItems = useMemo(() => {
+    return [
+      { label: "COMPETITIONS", href: "/competitions", mobileOnly: false },
+      { label: "LEADERBOARDS", href: "/leaderboards", mobileOnly: false },
+      {
+        label: "STAKE RECALL",
+        href: "/stake",
+        mobileOnly: isWalletConnected,
+      },
+    ];
+  }, [isWalletConnected]);
 
   return (
     <nav className="flex w-full justify-center border-b bg-black">
@@ -53,8 +57,8 @@ export const Navbar: React.FunctionComponent = () => {
             </Avatar>
           </Link>
 
-          {/* Inline nav items for lg+ */}
-          <div className="xs:flex hidden">
+          {/* Inline nav items for sm+ */}
+          <div className="hidden sm:flex">
             {navItems
               .filter((item) => !item.mobileOnly)
               .map((item) => {
@@ -79,7 +83,7 @@ export const Navbar: React.FunctionComponent = () => {
           </div>
 
           {/* Dropdown trigger for <sm */}
-          <div className="xs:hidden">
+          <div className="sm:hidden">
             <DropdownMenu.Root open={open} onOpenChange={setOpen}>
               <DropdownMenu.Trigger asChild>
                 <Button className="bg-transparent text-white hover:bg-transparent">
@@ -113,7 +117,7 @@ export const Navbar: React.FunctionComponent = () => {
 
         <div className="flex h-full items-center gap-4">
           {isAuthenticated && isWalletConnected && (
-            <div className="xs:flex hidden h-full items-center gap-4">
+            <div className="hidden h-full items-center gap-4 sm:flex">
               <div
                 className={cn(
                   "flex h-full items-center",

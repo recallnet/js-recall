@@ -11,39 +11,37 @@ import { CompetitionStatus, CompetitionWithUserAgents } from "@/types";
 
 import { JoinCompetitionButton } from "./join-competition-button";
 
-interface VoteButtonProps {
+interface BoostButtonProps {
   competitionId: string;
-  votingEnabled: boolean;
+  boostingEnabled: boolean;
   className?: string;
 }
 
-const VoteButton: React.FC<VoteButtonProps> = ({
+const BoostButton: React.FC<BoostButtonProps> = ({
   competitionId,
-  votingEnabled,
+  boostingEnabled,
   className,
 }) => {
-  if (votingEnabled) {
+  const buttonStyles =
+    "border border-yellow-500 bg-black uppercase text-white hover:bg-yellow-500 hover:text-black disabled:hover:bg-black disabled:hover:text-white";
+
+  if (boostingEnabled) {
     return (
-      <Link href={`/competitions/${competitionId}`} className="w-full">
+      <Link href={`/competitions/${competitionId}`} className={className}>
         <Button
-          variant="outline"
+          variant="default"
           size="lg"
-          className={cn("w-full uppercase", className)}
+          className={cn(buttonStyles, className)}
         >
-          Boost
+          <span className="font-semibold">Boost</span>
         </Button>
       </Link>
     );
   }
 
   return (
-    <Button
-      variant="outline"
-      size="lg"
-      className={cn("w-full uppercase", className)}
-      disabled
-    >
-      Boost
+    <Button variant="default" size="lg" className={cn(buttonStyles, className)}>
+      <span className="font-semibold">Boost</span>
     </Button>
   );
 };
@@ -72,17 +70,23 @@ export const CompetitionActions: React.FC<CompetitionActionsProps> = ({
   if (competition.status === CompetitionStatus.Pending) {
     return (
       <div className={containerClasses}>
-        <VoteButton
-          competitionId={competition.id}
-          votingEnabled={isOpenForBoosting}
-        />
-        <JoinCompetitionButton
-          competitionId={competition.id}
-          size="lg"
-          className="w-full uppercase"
-        >
-          Join
-        </JoinCompetitionButton>
+        <div className="flex-1">
+          <BoostButton
+            competitionId={competition.id}
+            boostingEnabled={isOpenForBoosting}
+            className="w-full"
+          />
+        </div>
+        <div className="flex-1">
+          <JoinCompetitionButton
+            competitionId={competition.id}
+            className="w-full border border-white bg-white text-blue-500 hover:border-blue-500 hover:bg-blue-500 hover:text-white disabled:hover:border-white disabled:hover:bg-white disabled:hover:text-blue-500"
+            disabled={competition.status !== "pending"}
+            size="lg"
+          >
+            Join
+          </JoinCompetitionButton>
+        </div>
       </div>
     );
   }
@@ -90,9 +94,10 @@ export const CompetitionActions: React.FC<CompetitionActionsProps> = ({
   if (competition.status === CompetitionStatus.Active) {
     return (
       <div className={containerClasses}>
-        <VoteButton
+        <BoostButton
           competitionId={competition.id}
-          votingEnabled={isOpenForBoosting}
+          boostingEnabled={isOpenForBoosting}
+          className="w-full"
         />
       </div>
     );
@@ -101,7 +106,7 @@ export const CompetitionActions: React.FC<CompetitionActionsProps> = ({
   if (competition.status === CompetitionStatus.Ended) {
     return (
       <div className={containerClasses}>
-        <Link href={`/competitions/${competition.id}`} className="">
+        <Link href={`/competitions/${competition.id}`} className="w-full">
           <Button variant="outline" size="lg" className="w-full uppercase">
             See Results
           </Button>

@@ -182,9 +182,6 @@ class EventProcessor {
     const lockupEndTime = Number(decodedEvent.args.lockupEndTime); // seconds;
     const duration = lockupEndTime - stakedAt;
     const isStakeAdded = await this.#db.transaction(async (tx) => {
-      this.#logger.debug(
-        `Staking ${amount} tokens for ${staker} at ${event.blockNumber} (${event.transactionHash})`,
-      );
       const stake = await this.#stakesRepository.stake(
         {
           stakeId: tokenId,
@@ -200,35 +197,31 @@ class EventProcessor {
         tx,
       );
       if (stake) {
+        const competitions =
+          await this.#competitionService.getOpenForBoosting();
         this.#logger.debug(
-          `Staked ${amount} tokens for ${staker} at ${event.blockNumber} (${event.transactionHash})`,
+          { compsOpenForBoosting: competitions.map((c) => c.id) },
+          `Found ${competitions.length} competitions open for boosting`,
         );
-        const competition =
-          await this.#competitionService.getActiveCompetition();
-        if (
-          competition &&
-          competition.votingStartDate &&
-          competition.votingEndDate
-        ) {
-          this.#logger.debug(
-            `Awarding for stake ${tokenId} at ${event.blockNumber} (${event.transactionHash})`,
-          );
-          await this.#boostAwardService.awardForStake(
-            {
-              id: tokenId,
-              wallet: staker,
-              amount: amount,
-              stakedAt: stake.stakedAt,
-              canUnstakeAfter: stake.canUnstakeAfter,
-            },
-            {
-              id: competition.id,
-              votingStartDate: competition.votingStartDate,
-              votingEndDate: competition.votingEndDate,
-            },
-            tx,
-          );
-        }
+        await Promise.all(
+          competitions.map((competition) =>
+            this.#boostAwardService.awardForStake(
+              {
+                id: tokenId,
+                wallet: staker,
+                amount: amount,
+                stakedAt: stake.stakedAt,
+                canUnstakeAfter: stake.canUnstakeAfter,
+              },
+              {
+                id: competition.id,
+                boostStartDate: competition.boostStartDate!,
+                boostEndDate: competition.boostEndDate!,
+              },
+              tx,
+            ),
+          ),
+        );
       }
       return stake;
     });

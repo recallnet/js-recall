@@ -120,7 +120,7 @@ function SortableTableHeader({
     >
       <div className="flex items-center gap-2">
         <span>{props.children}</span>
-        {getSortIcon()}
+        <span className="flex-shrink-0">{getSortIcon()}</span>
       </div>
     </TableHead>
   );

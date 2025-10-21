@@ -16,7 +16,6 @@ import { StakesRepository } from "@recallnet/db/repositories/stakes";
 import { TradeRepository } from "@recallnet/db/repositories/trade";
 import { TradingConstraintsRepository } from "@recallnet/db/repositories/trading-constraints";
 import { UserRepository } from "@recallnet/db/repositories/user";
-import { VoteRepository } from "@recallnet/db/repositories/vote";
 import {
   AdminService,
   AgentRankService,
@@ -37,7 +36,6 @@ import {
   TradeSimulatorService,
   TradingConstraintsService,
   UserService,
-  VoteService,
 } from "@recallnet/services";
 import { MockPrivyClient, MockRewardsAllocator } from "@recallnet/services/lib";
 import { WalletWatchlist } from "@recallnet/services/lib";
@@ -79,7 +77,6 @@ class ServiceRegistry {
   private _adminService: AdminService;
   private _portfolioSnapshotterService: PortfolioSnapshotterService;
   private _leaderboardService: LeaderboardService;
-  private _voteService: VoteService;
   private _agentRankService: AgentRankService;
   private _emailService: EmailService;
   private _tradingConstraintsService: TradingConstraintsService;
@@ -167,7 +164,6 @@ class ServiceRegistry {
     );
     const tradingConstraintsRepository = new TradingConstraintsRepository(db);
     const agentScoreRepository = new AgentScoreRepository(db, repositoryLogger);
-    const voteRepository = new VoteRepository(db, repositoryLogger);
     const agentNonceRepository = new AgentNonceRepository(db);
     const leaderboardRepository = new LeaderboardRepository(
       dbRead,
@@ -216,14 +212,6 @@ class ServiceRegistry {
       serviceLogger,
     );
 
-    // Initialize vote service (no dependencies)
-    this._voteService = new VoteService(
-      this._agentRepository,
-      this._competitionRepository,
-      voteRepository,
-      serviceLogger,
-    );
-
     // Initialize email service (no dependencies)
     this._emailService = new EmailService(config, serviceLogger);
 
@@ -232,7 +220,7 @@ class ServiceRegistry {
       this._emailService,
       this._agentRepository,
       this._userRepository,
-      voteRepository,
+      this._boostRepository,
       walletWatchlist,
       db,
       serviceLogger,
@@ -289,7 +277,6 @@ class ServiceRegistry {
       this._portfolioSnapshotterService,
       this._agentService,
       this._agentRankService,
-      this._voteService,
       this._tradingConstraintsService,
       this._competitionRewardService,
       this._perpsDataProcessor,
@@ -297,6 +284,8 @@ class ServiceRegistry {
       agentScoreRepository,
       this._perpsRepository,
       this._competitionRepository,
+      this._stakesRepository,
+      this._userRepository,
       db,
       config,
       serviceLogger,
@@ -415,10 +404,6 @@ class ServiceRegistry {
     return this._adminService;
   }
 
-  get voteService(): VoteService {
-    return this._voteService;
-  }
-
   get agentRankService(): AgentRankService {
     return this._agentRankService;
   }
@@ -501,7 +486,6 @@ export {
   TradeSimulatorService,
   TradingConstraintsService,
   UserService,
-  VoteService,
 };
 
 export default ServiceRegistry;

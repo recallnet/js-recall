@@ -9,7 +9,7 @@ import { RewardsRepository } from "@recallnet/db/repositories/rewards";
 import type {
   SelectReward,
   SelectRewardsTree,
-} from "@recallnet/db/schema/voting/types";
+} from "@recallnet/db/schema/rewards/types";
 import { Database } from "@recallnet/db/types";
 import type { Leaderboard } from "@recallnet/rewards";
 import RewardsAllocator from "@recallnet/staking-contracts/rewards-allocator";
@@ -51,8 +51,8 @@ describe("RewardsService", () => {
     imageUrl: null,
     startDate: new Date("2024-01-01"),
     endDate: new Date("2024-01-31"),
-    votingStartDate: new Date("2024-01-01"),
-    votingEndDate: new Date("2024-01-31"),
+    boostStartDate: new Date("2024-01-01"),
+    boostEndDate: new Date("2024-01-31"),
     joinStartDate: new Date("2024-01-01"),
     joinEndDate: new Date("2024-01-31"),
     maxParticipants: 100,
@@ -62,6 +62,7 @@ describe("RewardsService", () => {
     createdAt: new Date("2024-01-01"),
     updatedAt: new Date("2024-01-01"),
     crossChainTradingType: "disallowAll" as const,
+    minimumStake: null,
   });
 
   // Helper function to create a mock leaderboard entry
