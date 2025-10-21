@@ -133,13 +133,15 @@ export class CompetitionRepository {
   }
 
   /**
-   * Builds the base competition query with rewards included
-   * @returns A query builder for competitions with rewards
+   * Builds the full competition query with rewards and trading constraints
+   * @returns A query builder for competitions with all enrichment data
    */
-  buildCompetitionWithRewardsQuery() {
+  buildFullCompetitionQuery() {
     return this.#db
       .select({
-        crossChainTradingType: tradingCompetitions.crossChainTradingType,
+        ...getTableColumns(competitions),
+        ...getTableColumns(tradingConstraints),
+        ...getTableColumns(tradingCompetitions),
         rewards: sql<
           | Array<{ rank: number; reward: number; agentId: string | null }>
           | undefined
@@ -172,12 +174,15 @@ export class CompetitionRepository {
           WHERE cpp.competition_id = ${competitions.id}
         )
       `.as("rewards_tge"),
-        ...getTableColumns(competitions),
       })
       .from(tradingCompetitions)
       .innerJoin(
         competitions,
         eq(tradingCompetitions.competitionId, competitions.id),
+      )
+      .leftJoin(
+        tradingConstraints,
+        eq(tradingConstraints.competitionId, competitions.id),
       );
   }
 
@@ -1928,31 +1933,24 @@ export class CompetitionRepository {
   }) {
     try {
       // Count query
-      const countResult = await (() => {
-        if (status) {
-          return this.#db
-            .select({ count: drizzleCount() })
-            .from(tradingCompetitions)
-            .innerJoin(
-              competitions,
-              eq(tradingCompetitions.competitionId, competitions.id),
-            )
-            .where(eq(competitions.status, status));
-        } else {
-          return this.#db
-            .select({ count: drizzleCount() })
-            .from(tradingCompetitions)
-            .innerJoin(
-              competitions,
-              eq(tradingCompetitions.competitionId, competitions.id),
-            );
-        }
-      })();
+      let countQuery = this.#db
+        .select({ count: drizzleCount() })
+        .from(tradingCompetitions)
+        .innerJoin(
+          competitions,
+          eq(tradingCompetitions.competitionId, competitions.id),
+        )
+        .$dynamic();
 
+      if (status) {
+        countQuery = countQuery.where(eq(competitions.status, status));
+      }
+
+      const countResult = await countQuery;
       const total = countResult[0]?.count ?? 0;
 
-      // Data query with dynamic building
-      let dataQuery = this.buildCompetitionWithRewardsQuery().$dynamic();
+      // Data query
+      let dataQuery = this.buildFullCompetitionQuery().$dynamic();
 
       if (status) {
         dataQuery = dataQuery.where(eq(competitions.status, status));
@@ -2489,68 +2487,6 @@ export class CompetitionRepository {
       }));
     } catch (error) {
       this.#logger.error("Error in getAgentPortfolioTimeline:", error);
-      throw error;
-    }
-  }
-
-  /**
-   * Get enriched competition data with trading constraints in a single query
-   * @param competitionIds Array of competition IDs to enrich
-   * @returns Enriched competition data with constraint information
-   */
-  async getEnrichedCompetitions(competitionIds: string[]): Promise<
-    {
-      competitionId: string;
-      competitionStatus: string;
-      competitionBoostingStartsAt: Date | null;
-      competitionBoostingEndsAt: Date | null;
-      minimumPairAgeHours: number | null;
-      minimum24hVolumeUsd: number | null;
-      minimumLiquidityUsd: number | null;
-      minimumFdvUsd: number | null;
-      minTradesPerDay: number | null;
-    }[]
-  > {
-    if (competitionIds.length === 0) {
-      return [];
-    }
-
-    try {
-      const result = await this.#db
-        .select({
-          // Competition fields
-          competitionId: competitions.id,
-          competitionStatus: competitions.status,
-          competitionBoostingStartsAt: competitions.boostStartDate,
-          competitionBoostingEndsAt: competitions.boostEndDate,
-
-          // Trading constraints
-          minimumPairAgeHours: tradingConstraints.minimumPairAgeHours,
-          minimum24hVolumeUsd: tradingConstraints.minimum24hVolumeUsd,
-          minimumLiquidityUsd: tradingConstraints.minimumLiquidityUsd,
-          minimumFdvUsd: tradingConstraints.minimumFdvUsd,
-          minTradesPerDay: tradingConstraints.minTradesPerDay,
-        })
-        .from(competitions)
-        .leftJoin(
-          tradingConstraints,
-          eq(tradingConstraints.competitionId, competitions.id),
-        )
-        .where(inArray(competitions.id, competitionIds));
-
-      return result.map((row) => ({
-        competitionId: row.competitionId,
-        competitionStatus: row.competitionStatus,
-        competitionBoostingStartsAt: row.competitionBoostingStartsAt,
-        competitionBoostingEndsAt: row.competitionBoostingEndsAt,
-        minimumPairAgeHours: row.minimumPairAgeHours,
-        minimum24hVolumeUsd: row.minimum24hVolumeUsd,
-        minimumLiquidityUsd: row.minimumLiquidityUsd,
-        minimumFdvUsd: row.minimumFdvUsd,
-        minTradesPerDay: row.minTradesPerDay,
-      }));
-    } catch (error) {
-      this.#logger.error("Error in getEnrichedCompetitions:", error);
       throw error;
     }
   }

@@ -44,7 +44,7 @@ export default function CompetitionsPageClient() {
 
   const { data: activeCompetitions, isLoading: isLoadingActiveCompetitions } =
     useQuery(
-      tanstackClient.competitions.listEnriched.queryOptions({
+      tanstackClient.competitions.list.queryOptions({
         input: { status: "active", paging: { sort: "startDate" } },
       }),
     );
@@ -53,14 +53,14 @@ export default function CompetitionsPageClient() {
     data: upcomingCompetitions,
     isLoading: isLoadingUpcomingCompetitions,
   } = useQuery(
-    tanstackClient.competitions.listEnriched.queryOptions({
+    tanstackClient.competitions.list.queryOptions({
       input: { status: "pending", paging: { sort: "startDate" } },
     }),
   );
 
   const { data: endedCompetitions, isLoading: isLoadingEndedCompetitions } =
     useQuery(
-      tanstackClient.competitions.listEnriched.queryOptions({
+      tanstackClient.competitions.list.queryOptions({
         input: { status: "ended", paging: { sort: "-startDate" } },
       }),
     );

@@ -43,7 +43,7 @@ export const PrivyAuthButton: React.FunctionComponent = () => {
       queryKey: tanstackClient.user.getCompetitions.key(),
     });
     queryClient.invalidateQueries({
-      queryKey: tanstackClient.competitions.listEnriched.key(),
+      queryKey: tanstackClient.competitions.list.key(),
     });
     queryClient.invalidateQueries({
       queryKey: tanstackClient.competitions.getById.key(),

@@ -38,6 +38,24 @@ export const CacheTags = {
    * @returns Cache tag string
    */
   agentList: (): string => `agent-list`,
+
+  /**
+   * Cache tag for a specific competition by ID
+   *
+   * @param competitionId - The competition UUID
+   * @returns Cache tag string
+   */
+  competition: (competitionId: string): string =>
+    `competition:${competitionId}`,
+
+  /**
+   * Cache tag for all competition lists
+   *
+   * Invalidating this tag will invalidate all paginated competition list queries across all statuses
+   *
+   * @returns Cache tag string
+   */
+  competitionList: (): string => `competition-list`,
 } as const;
 
 /**
