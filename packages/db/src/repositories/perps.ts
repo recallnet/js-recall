@@ -907,9 +907,10 @@ export class PerpsRepository {
         .leftJoinLateral(latestSummarySubquery, sql`true`)
         .leftJoinLateral(riskMetricsSubquery, sql`true`)
         .orderBy(
-          // Sort by: has risk metrics first, then by calmar ratio, then by equity
+          // Sort by: has risk metrics first, then by calmar ratio, then by return (tiebreaker), then by equity
           sql`CASE WHEN ${riskMetricsSubquery.calmarRatio} IS NOT NULL THEN 0 ELSE 1 END`,
           desc(sql`${riskMetricsSubquery.calmarRatio}`),
+          desc(sql`${riskMetricsSubquery.simpleReturn}`), // Tiebreaker for same Calmar
           desc(sql`${latestSummarySubquery.totalEquity}`),
         )
         .limit(limit)
@@ -1455,7 +1456,10 @@ export class PerpsRepository {
         .from(perpsRiskMetrics)
         .leftJoin(agents, eq(perpsRiskMetrics.agentId, agents.id))
         .where(eq(perpsRiskMetrics.competitionId, competitionId))
-        .orderBy(desc(perpsRiskMetrics.calmarRatio))
+        .orderBy(
+          desc(perpsRiskMetrics.calmarRatio),
+          desc(perpsRiskMetrics.simpleReturn), // Tiebreaker for same Calmar
+        )
         .limit(limit)
         .offset(offset);
 

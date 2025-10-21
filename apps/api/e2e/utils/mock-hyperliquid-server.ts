@@ -437,6 +437,43 @@ export class MockHyperliquidServer {
       recentFills: [],
       transfers: [],
     });
+
+    // Agents for testing secondary ranking by simpleReturn with identical Calmar ratios
+    // All three agents will have the same Calmar ratio but different returns
+    // Calmar = Return / MaxDrawdown, so we need same ratio but different values
+
+    // Agent EEEE: 20% return, 10% drawdown → Calmar = 2.0
+    this.setAgentData("0xeeee333333333333333333333333333333333333", {
+      totalEquity: 1200, // Will vary based on call index
+      availableBalance: 1200,
+      marginUsed: 0,
+      totalNtlPos: 0,
+      openPositions: [],
+      recentFills: [],
+      transfers: [],
+    });
+
+    // Agent FFFF: 10% return, 5% drawdown → Calmar = 2.0
+    this.setAgentData("0xffff333333333333333333333333333333333333", {
+      totalEquity: 1100, // Will vary based on call index
+      availableBalance: 1100,
+      marginUsed: 0,
+      totalNtlPos: 0,
+      openPositions: [],
+      recentFills: [],
+      transfers: [],
+    });
+
+    // Agent DDDD: 30% return, 15% drawdown → Calmar = 2.0
+    this.setAgentData("0xdddd333333333333333333333333333333333333", {
+      totalEquity: 1300, // Will vary based on call index
+      availableBalance: 1300,
+      marginUsed: 0,
+      totalNtlPos: 0,
+      openPositions: [],
+      recentFills: [],
+      transfers: [],
+    });
   }
 
   /**
@@ -557,6 +594,64 @@ export class MockHyperliquidServer {
       this.logger.info(
         `[MockHyperliquid] Calmar wallet call #${callIdx + 1}, equity=$${currentEquity} (${phase})`,
       );
+    }
+
+    // Handle test wallets for identical Calmar ratio testing
+    // Agent EEEE: 20% return, 10% drawdown → Calmar = 2.0
+    if (lowerAddress === "0xeeee333333333333333333333333333333333333") {
+      const callIdx = this.callIndex.get(lowerAddress) || 0;
+      const equityProgression = [
+        1000,
+        1000, // Startup sync
+        1000,
+        1000, // Initial value
+        900,
+        900, // 10% drawdown
+        1200,
+        1200, // Final: 20% return from initial
+      ];
+      currentEquity =
+        equityProgression[Math.min(callIdx, equityProgression.length - 1)] ??
+        1200;
+      this.callIndex.set(lowerAddress, callIdx + 1);
+    }
+
+    // Agent FFFF: 10% return, 5% drawdown → Calmar = 2.0
+    if (lowerAddress === "0xffff333333333333333333333333333333333333") {
+      const callIdx = this.callIndex.get(lowerAddress) || 0;
+      const equityProgression = [
+        1000,
+        1000, // Startup sync
+        1000,
+        1000, // Initial value
+        950,
+        950, // 5% drawdown
+        1100,
+        1100, // Final: 10% return from initial
+      ];
+      currentEquity =
+        equityProgression[Math.min(callIdx, equityProgression.length - 1)] ??
+        1100;
+      this.callIndex.set(lowerAddress, callIdx + 1);
+    }
+
+    // Agent DDDD: 30% return, 15% drawdown → Calmar = 2.0
+    if (lowerAddress === "0xdddd333333333333333333333333333333333333") {
+      const callIdx = this.callIndex.get(lowerAddress) || 0;
+      const equityProgression = [
+        1000,
+        1000, // Startup sync
+        1000,
+        1000, // Initial value
+        850,
+        850, // 15% drawdown
+        1300,
+        1300, // Final: 30% return from initial
+      ];
+      currentEquity =
+        equityProgression[Math.min(callIdx, equityProgression.length - 1)] ??
+        1300;
+      this.callIndex.set(lowerAddress, callIdx + 1);
     }
 
     // Build asset positions from mock data

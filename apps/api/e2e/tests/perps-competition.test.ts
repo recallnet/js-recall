@@ -3279,4 +3279,193 @@ describe("Perps Competition", () => {
     // Clean up
     await adminClient.endCompetition(competition.id);
   });
+
+  test("should use simpleReturn as tiebreaker when agents have identical Calmar ratios", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register three agents with wallets configured for identical Calmar ratios but different returns
+    // All will have Calmar = 2.0 but different simple returns
+    const { agent: agent30Percent } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Agent 30% Return (15% DD)",
+      agentWalletAddress: "0xdddd333333333333333333333333333333333333", // 30% return, 15% drawdown
+    });
+
+    const { agent: agent20Percent } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Agent 20% Return (10% DD)",
+      agentWalletAddress: "0xeeee333333333333333333333333333333333333", // 20% return, 10% drawdown
+    });
+
+    const { agent: agent10Percent } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Agent 10% Return (5% DD)",
+      agentWalletAddress: "0xffff333333333333333333333333333333333333", // 10% return, 5% drawdown
+    });
+
+    // Start Hyperliquid perps competition
+    const response = await startPerpsTestCompetition({
+      adminClient,
+      name: `Identical Calmar Tiebreaker Test ${Date.now()}`,
+      agentIds: [agent30Percent.id, agent20Percent.id, agent10Percent.id],
+      perpsProvider: {
+        provider: "hyperliquid",
+        apiUrl: "http://localhost:4568",
+      },
+    });
+
+    expect(response.success).toBe(true);
+    const competition = response.competition;
+
+    // Wait for competition to be fully started
+    await wait(1000);
+
+    // Trigger sync to establish initial state
+    const services = new ServiceRegistry();
+    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+    await wait(500);
+
+    // Second sync for drawdown phase
+    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+    await wait(500);
+
+    // Third sync for final values
+    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+    await wait(1000);
+
+    // Get the leaderboard
+    const leaderboardResponse = await adminClient.getCompetitionAgents(
+      competition.id,
+      { sort: "rank" },
+    );
+
+    expect(leaderboardResponse.success).toBe(true);
+    const typedResponse = leaderboardResponse as CompetitionAgentsResponse;
+
+    // Verify we have all three agents
+    expect(typedResponse.agents).toHaveLength(3);
+
+    // Find each agent in the leaderboard
+    const agent30Entry = typedResponse.agents.find(
+      (e) => e.id === agent30Percent.id,
+    );
+    const agent20Entry = typedResponse.agents.find(
+      (e) => e.id === agent20Percent.id,
+    );
+    const agent10Entry = typedResponse.agents.find(
+      (e) => e.id === agent10Percent.id,
+    );
+
+    expect(agent30Entry).toBeDefined();
+    expect(agent20Entry).toBeDefined();
+    expect(agent10Entry).toBeDefined();
+
+    // Verify all have risk metrics calculated
+    expect(agent30Entry?.hasRiskMetrics).toBe(true);
+    expect(agent20Entry?.hasRiskMetrics).toBe(true);
+    expect(agent10Entry?.hasRiskMetrics).toBe(true);
+
+    // Verify Calmar ratios are approximately equal (2.0)
+    // 30% return / 15% drawdown = 2.0
+    // 20% return / 10% drawdown = 2.0
+    // 10% return / 5% drawdown = 2.0
+    expect(agent30Entry?.calmarRatio).toBeCloseTo(2.0, 1);
+    expect(agent20Entry?.calmarRatio).toBeCloseTo(2.0, 1);
+    expect(agent10Entry?.calmarRatio).toBeCloseTo(2.0, 1);
+
+    // Verify simple returns are different
+    expect(agent30Entry?.simpleReturn).toBeCloseTo(0.3, 2); // 30% return
+    expect(agent20Entry?.simpleReturn).toBeCloseTo(0.2, 2); // 20% return
+    expect(agent10Entry?.simpleReturn).toBeCloseTo(0.1, 2); // 10% return
+
+    // CRITICAL: Verify ranking uses simpleReturn as tiebreaker
+    // With identical Calmar ratios, agents should be ranked by simpleReturn (highest first)
+    expect(agent30Entry?.rank).toBe(1); // Highest return (30%) ranks first
+    expect(agent20Entry?.rank).toBe(2); // Middle return (20%) ranks second
+    expect(agent10Entry?.rank).toBe(3); // Lowest return (10%) ranks third
+
+    // Double-check the ordering in the response array
+    // The API returns agents sorted by rank
+    expect(typedResponse.agents[0]?.id).toBe(agent30Percent.id);
+    expect(typedResponse.agents[1]?.id).toBe(agent20Percent.id);
+    expect(typedResponse.agents[2]?.id).toBe(agent10Percent.id);
+
+    // Verify portfolio values reflect the expected returns
+    expect(agent30Entry?.portfolioValue).toBe(1300); // 30% gain from 1000
+    expect(agent20Entry?.portfolioValue).toBe(1200); // 20% gain from 1000
+    expect(agent10Entry?.portfolioValue).toBe(1100); // 10% gain from 1000
+
+    // Clean up by ending the competition
+    await adminClient.endCompetition(competition.id);
+
+    // CRITICAL: Verify ranking is preserved after competition ends
+    // This ensures the leaderboard data is correctly saved and retrieved
+    await wait(1000); // Wait for end competition processing
+
+    // Query the ended competition's leaderboard
+    const endedLeaderboardResponse = await adminClient.getCompetitionAgents(
+      competition.id,
+      { sort: "rank" },
+    );
+
+    expect(endedLeaderboardResponse.success).toBe(true);
+    const endedTypedResponse =
+      endedLeaderboardResponse as CompetitionAgentsResponse;
+
+    // Verify we still have all three agents
+    expect(endedTypedResponse.agents).toHaveLength(3);
+
+    // Find each agent in the ended competition leaderboard
+    const endedAgent30Entry = endedTypedResponse.agents.find(
+      (e) => e.id === agent30Percent.id,
+    );
+    const endedAgent20Entry = endedTypedResponse.agents.find(
+      (e) => e.id === agent20Percent.id,
+    );
+    const endedAgent10Entry = endedTypedResponse.agents.find(
+      (e) => e.id === agent10Percent.id,
+    );
+
+    // Verify all agents are still present
+    expect(endedAgent30Entry).toBeDefined();
+    expect(endedAgent20Entry).toBeDefined();
+    expect(endedAgent10Entry).toBeDefined();
+
+    // Verify risk metrics are preserved
+    expect(endedAgent30Entry?.hasRiskMetrics).toBe(true);
+    expect(endedAgent20Entry?.hasRiskMetrics).toBe(true);
+    expect(endedAgent10Entry?.hasRiskMetrics).toBe(true);
+
+    // Verify Calmar ratios are still approximately equal and preserved
+    expect(endedAgent30Entry?.calmarRatio).toBeCloseTo(2.0, 1);
+    expect(endedAgent20Entry?.calmarRatio).toBeCloseTo(2.0, 1);
+    expect(endedAgent10Entry?.calmarRatio).toBeCloseTo(2.0, 1);
+
+    // Verify simple returns are preserved
+    expect(endedAgent30Entry?.simpleReturn).toBeCloseTo(0.3, 2); // 30% return
+    expect(endedAgent20Entry?.simpleReturn).toBeCloseTo(0.2, 2); // 20% return
+    expect(endedAgent10Entry?.simpleReturn).toBeCloseTo(0.1, 2); // 10% return
+
+    // MOST CRITICAL: Verify ranking is STILL using simpleReturn as tiebreaker
+    // This proves the saved leaderboard data maintains the correct ordering
+    expect(endedAgent30Entry?.rank).toBe(1); // Highest return (30%) still ranks first
+    expect(endedAgent20Entry?.rank).toBe(2); // Middle return (20%) still ranks second
+    expect(endedAgent10Entry?.rank).toBe(3); // Lowest return (10%) still ranks third
+
+    // Double-check the ordering in the ended competition response array
+    expect(endedTypedResponse.agents[0]?.id).toBe(agent30Percent.id);
+    expect(endedTypedResponse.agents[1]?.id).toBe(agent20Percent.id);
+    expect(endedTypedResponse.agents[2]?.id).toBe(agent10Percent.id);
+
+    // Verify portfolio values are preserved
+    expect(endedAgent30Entry?.portfolioValue).toBe(1300); // 30% gain from 1000
+    expect(endedAgent20Entry?.portfolioValue).toBe(1200); // 20% gain from 1000
+    expect(endedAgent10Entry?.portfolioValue).toBe(1100); // 10% gain from 1000
+
+    // Final verification: Compare rankings before and after competition end
+    expect(endedAgent30Entry?.rank).toBe(agent30Entry?.rank);
+    expect(endedAgent20Entry?.rank).toBe(agent20Entry?.rank);
+    expect(endedAgent10Entry?.rank).toBe(agent10Entry?.rank);
+  });
 });
