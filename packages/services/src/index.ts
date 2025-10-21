@@ -19,4 +19,3 @@ export * from "./simulated-trade-execution.service.js";
 export * from "./trade-simulator.service.js";
 export * from "./trading-constraints.service.js";
 export * from "./user.service.js";
-export * from "./vote.service.js";

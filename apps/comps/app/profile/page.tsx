@@ -10,7 +10,6 @@ import ProfileSkeleton from "@/components/profile-skeleton";
 import UserAgentsSection from "@/components/user-agents";
 import UserCompetitionsSection from "@/components/user-competitions";
 import UserInfoSection from "@/components/user-info";
-import UserVotesSection from "@/components/user-votes";
 import { useUserAgents } from "@/hooks";
 import { useSession } from "@/hooks/useSession";
 import { UpdateProfileRequest } from "@/types/profile";
@@ -62,7 +61,6 @@ export default function ProfilePage() {
       />
       <UserCompetitionsSection />
       <UserAgentsSection agents={agents?.agents || []} />
-      <UserVotesSection />
       <FooterSection />
     </AuthGuard>
   );

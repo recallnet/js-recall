@@ -915,7 +915,6 @@ describe("Agent API", () => {
     expect(agentData.agent.stats).toBeDefined();
     expect(agentData.agent.stats?.completedCompetitions).toBe(0);
     expect(agentData.agent.stats?.totalTrades).toBe(0);
-    expect(agentData.agent.stats?.totalVotes).toBe(0);
     expect(agentData.agent.stats?.bestPlacement).toBeUndefined();
     expect(agentData.agent.stats?.rank).toBeUndefined();
     expect(agentData.agent.stats?.score).toBeUndefined();
@@ -1835,7 +1834,6 @@ Purpose: WALLET_VERIFICATION`;
     expect(agentProfile.success).toBe(true);
     expect(agentProfile.agent.stats?.completedCompetitions).toBeGreaterThan(0);
     expect(agentProfile.agent.stats?.totalTrades).toBeGreaterThan(0);
-    expect(agentProfile.agent.stats?.totalVotes).toBe(0);
     expect(agentProfile.agent.stats?.bestPlacement).toBeDefined();
     expect(agentProfile.agent.stats?.bestPlacement?.competitionId).toBe(
       firstCompetitionId,

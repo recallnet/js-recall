@@ -17,7 +17,6 @@ import {
   competitionAgents,
   competitions,
   competitionsLeaderboard,
-  votes,
 } from "../schema/core/defs.js";
 import { agentScore } from "../schema/ranking/defs.js";
 import {
@@ -55,7 +54,6 @@ export class LeaderboardRepository {
     totalTrades: number;
     totalVolume: number;
     totalCompetitions: number;
-    totalVotes: number;
     competitionIds: string[];
   }> {
     this.#logger.debug("getGlobalStats called for type:", type);
@@ -74,7 +72,6 @@ export class LeaderboardRepository {
         totalTrades: 0,
         totalVolume: 0,
         totalCompetitions: 0,
-        totalVotes: 0,
         competitionIds: [],
       };
     }
@@ -89,13 +86,6 @@ export class LeaderboardRepository {
       })
       .from(trades)
       .where(inArray(trades.competitionId, relevantCompetitionIds));
-
-    const voteStatsResult = await this.#dbRead
-      .select({
-        totalVotes: drizzleCount(votes.id),
-      })
-      .from(votes)
-      .where(inArray(votes.competitionId, relevantCompetitionIds));
 
     // agents remain 'active' in completed competitions
     // count distinct active agents in these competitions.
@@ -116,7 +106,6 @@ export class LeaderboardRepository {
       totalTrades: tradeStatsResult[0]?.totalTrades ?? 0,
       totalVolume: tradeStatsResult[0]?.totalVolume ?? 0,
       totalCompetitions: relevantCompetitions.length,
-      totalVotes: voteStatsResult[0]?.totalVotes ?? 0,
       competitionIds: relevantCompetitionIds,
     };
   }
@@ -136,7 +125,6 @@ export class LeaderboardRepository {
       return {
         agentRanks: [],
         competitionCounts: [],
-        voteCounts: [],
         tradeCounts: [],
         positionCounts: [],
         bestPlacements: [],
@@ -184,17 +172,7 @@ export class LeaderboardRepository {
         )
         .groupBy(competitionAgents.agentId);
 
-      // Query 3: Vote counts
-      const voteCountsQuery = this.#dbRead
-        .select({
-          agentId: votes.agentId,
-          totalVotes: drizzleCount(),
-        })
-        .from(votes)
-        .where(inArray(votes.agentId, agentIds))
-        .groupBy(votes.agentId);
-
-      // Query 4: Trade counts
+      // Query 3: Trade counts
       const tradeCountsQuery = this.#dbRead
         .select({
           agentId: trades.agentId,
@@ -204,7 +182,7 @@ export class LeaderboardRepository {
         .where(inArray(trades.agentId, agentIds))
         .groupBy(trades.agentId);
 
-      // Query 4b: Position counts (for perpetual futures competitions)
+      // Query 3b: Position counts (for perpetual futures competitions)
       const positionCountsQuery = this.#dbRead
         .select({
           agentId: perpetualPositions.agentId,
@@ -214,7 +192,7 @@ export class LeaderboardRepository {
         .where(inArray(perpetualPositions.agentId, agentIds))
         .groupBy(perpetualPositions.agentId);
 
-      // Query 5: Best placements - get the best rank for each agent
+      // Query 4: Best placements - get the best rank for each agent
       const bestPlacementsSubquery = this.#dbRead
         .select({
           agentId: competitionsLeaderboard.agentId,
@@ -243,7 +221,7 @@ export class LeaderboardRepository {
         )
         .where(inArray(competitionsLeaderboard.agentId, agentIds));
 
-      // Query 6: Best Profit/Loss
+      // Query 5: Best Profit/Loss
       const bestPnlQuery = this.#dbRead
         .selectDistinctOn([competitionsLeaderboard.agentId], {
           competitionId: competitionsLeaderboard.competitionId,
@@ -264,7 +242,7 @@ export class LeaderboardRepository {
           desc(tradingCompetitionsLeaderboard.pnl),
         );
 
-      // Query 7: Total ROI - calculate ROI percentage across all finished competitions
+      // Query 6: Total ROI - calculate ROI percentage across all finished competitions
       const totalRoiQuery = this.#dbRead
         .select({
           agentId: competitionsLeaderboard.agentId,
@@ -293,7 +271,7 @@ export class LeaderboardRepository {
         )
         .groupBy(competitionsLeaderboard.agentId);
 
-      // Query 8: Get all agent scores for rank calculation in service layer
+      // Query 7: Get all agent scores for rank calculation in service layer
       const allAgentScoresQuery = this.#dbRead
         .select({
           agentId: agentScore.agentId,
@@ -306,7 +284,6 @@ export class LeaderboardRepository {
       const [
         agentRanks,
         competitionCounts,
-        voteCounts,
         tradeCounts,
         positionCounts,
         bestPlacements,
@@ -316,7 +293,6 @@ export class LeaderboardRepository {
       ] = await Promise.all([
         agentRanksQuery,
         competitionCountsQuery,
-        voteCountsQuery,
         tradeCountsQuery,
         positionCountsQuery,
         bestPlacementsQuery,
@@ -333,7 +309,6 @@ export class LeaderboardRepository {
       return {
         agentRanks,
         competitionCounts,
-        voteCounts,
         tradeCounts,
         positionCounts,
         bestPlacements,
@@ -416,12 +391,32 @@ export class LeaderboardRepository {
   }
 
   /**
+   * Get count of distinct agent IDs across all competition types
+   * @returns Total number of unique active agents across the platform
+   */
+  async getTotalRankedAgents(): Promise<number> {
+    this.#logger.debug("getTotalRankedAgents called");
+
+    try {
+      const result = await this.#dbRead
+        .select({
+          totalRankedAgents: countDistinct(agentScore.agentId),
+        })
+        .from(agentScore);
+      return result[0]?.totalRankedAgents ?? 0;
+    } catch (error) {
+      this.#logger.error({ error }, "Error in getTotalRankedAgents");
+      throw error;
+    }
+  }
+
+  /**
    * Get global agent metrics with pagination
    * Uses separate aggregation queries to avoid Cartesian product issues
    * @param params Pagination parameters (limit and offset)
    * @returns Object containing paginated agent metrics and total count
    */
-  async getGlobalAgentMetrics(params: {
+  async getGlobalAgentMetricsForType(params: {
     type: CompetitionType;
     limit: number;
     offset: number;
@@ -436,7 +431,6 @@ export class LeaderboardRepository {
       score: number;
       type: CompetitionType;
       numCompetitions: number;
-      voteCount: number;
     }>;
     totalCount: number;
   }> {
@@ -446,7 +440,7 @@ export class LeaderboardRepository {
         limit: params.limit,
         offset: params.offset,
       },
-      `getGlobalAgentMetrics called with params`,
+      `getGlobalAgentMetricsForType called with params`,
     );
 
     try {
@@ -495,29 +489,15 @@ export class LeaderboardRepository {
         .where(inArray(competitionAgents.agentId, agentIds))
         .groupBy(competitionAgents.agentId);
 
-      // Get vote counts for paginated agents in one query
-      const voteCounts = await this.#dbRead
-        .select({
-          agentId: votes.agentId,
-          voteCount: drizzleCount(votes.id),
-        })
-        .from(votes)
-        .where(inArray(votes.agentId, agentIds))
-        .groupBy(votes.agentId);
-
       // Create lookup maps for efficient merging
       const competitionCountMap = new Map(
         competitionCounts.map((c) => [c.agentId, c.numCompetitions]),
-      );
-      const voteCountMap = new Map(
-        voteCounts.map((v) => [v.agentId, v.voteCount]),
       );
 
       // Combine all data
       const enrichedAgents = agentsWithScores.map((agent) => ({
         ...agent,
         numCompetitions: competitionCountMap.get(agent.id) ?? 0,
-        voteCount: voteCountMap.get(agent.id) ?? 0,
       }));
 
       // Now get the total count of all agents, needed for pagination
@@ -546,7 +526,7 @@ export class LeaderboardRepository {
         {
           error,
         },
-        "Error in getGlobalAgentMetrics",
+        "Error in getGlobalAgentMetricsForType",
       );
       throw error;
     }

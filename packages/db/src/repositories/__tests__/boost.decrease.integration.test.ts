@@ -10,8 +10,8 @@ import {
 } from "vitest";
 
 import { BlockchainAddressAsU8A } from "../../coders/index.js";
+import * as schema from "../../schema/boost/defs.js";
 import * as coreSchema from "../../schema/core/defs.js";
-import * as schema from "../../schema/voting/defs.js";
 import { dropAllSchemas } from "../../utils/drop-all-schemas.js";
 import { pushSchema } from "../../utils/push-schema.js";
 import { BoostRepository } from "../boost.js";

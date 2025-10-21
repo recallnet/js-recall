@@ -41,10 +41,6 @@ export class AgentMetricsHelper {
       ]),
     );
 
-    const voteCountsMap = new Map(
-      rawResults.voteCounts.map((row) => [row.agentId, row.totalVotes]),
-    );
-
     const tradeCountsMap = new Map(
       rawResults.tradeCounts.map((row) => [row.agentId, row.totalTrades]),
     );
@@ -115,7 +111,6 @@ export class AgentMetricsHelper {
       return {
         agentId,
         completedCompetitions: competitionCountsMap.get(agentId) ?? 0,
-        totalVotes: voteCountsMap.get(agentId) ?? 0,
         totalTrades: tradeCountsMap.get(agentId) ?? 0,
         totalPositions: positionCountsMap.get(agentId) ?? 0,
         bestPlacement: bestPlacementMap.get(agentId) ?? null,
@@ -164,7 +159,6 @@ export class AgentMetricsHelper {
   static transformToStats(metrics: AgentMetricsData): AgentStats {
     return {
       completedCompetitions: metrics.completedCompetitions,
-      totalVotes: metrics.totalVotes,
       totalTrades: metrics.totalTrades,
       totalPositions: metrics.totalPositions,
       bestPlacement: metrics.bestPlacement ?? undefined,
@@ -208,7 +202,6 @@ export class AgentMetricsHelper {
     return {
       agentId,
       completedCompetitions: 0,
-      totalVotes: 0,
       totalTrades: 0,
       totalPositions: 0,
       bestPlacement: null,

@@ -11,8 +11,8 @@ import {
   rewards,
   rewardsRoots,
   rewardsTree,
-} from "@recallnet/db/schema/voting/defs";
-import { InsertReward } from "@recallnet/db/schema/voting/types";
+} from "@recallnet/db/schema/rewards/defs";
+import { InsertReward } from "@recallnet/db/schema/rewards/types";
 import {
   RewardsService,
   createFauxLeafNode,

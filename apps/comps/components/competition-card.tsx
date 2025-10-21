@@ -11,11 +11,13 @@ import { cn } from "@recallnet/ui2/lib/utils";
 
 import { tanstackClient } from "@/rpc/clients/tanstack-query";
 import { CompetitionStatus, CompetitionWithUserAgents } from "@/types";
+import { formatAmount } from "@/utils/format";
 
 import {
   formatCompetitionDates,
   formatCompetitionType,
 } from "../utils/competition-utils";
+import { Recall } from "./Recall";
 import { CompetitionActions } from "./competition-actions";
 import { CompetitionStateSummary } from "./competition-state-summary";
 import { CompetitionStatusBanner } from "./competition-status-banner";
@@ -58,7 +60,7 @@ export const CompetitionCard: React.FC<CompetitionCardProps> = ({
               href={`/competitions/${competition.id}`}
               className="group inline-block p-6"
             >
-              <h1 className="text-3xl font-bold group-hover:underline">
+              <h1 className="text-primary-foreground text-3xl font-bold group-hover:underline">
                 {competition.name}
               </h1>
             </Link>
@@ -104,9 +106,12 @@ export const CompetitionCard: React.FC<CompetitionCardProps> = ({
               <h3 className="text-secondary-foreground mb-1 text-xs font-semibold uppercase">
                 Duration
               </h3>
-              <p className="font-semibold">{duration}</p>
+              <p className="text-primary-foreground font-semibold">
+                {duration}
+              </p>
             </div>
             <div className="w-full p-6">
+              {/* Rewards (token or legacy) */}
               <h3 className="text-secondary-foreground mb-1 text-xs font-semibold uppercase">
                 Reward
               </h3>
@@ -121,8 +126,24 @@ export const CompetitionCard: React.FC<CompetitionCardProps> = ({
               ) : competition.rewards ? (
                 <Rewards rewards={competition.rewards} compact />
               ) : (
-                <p className="font-semibold">TBA</p>
+                <p className="text-primary-foreground font-semibold">TBA</p>
               )}
+              {/* Minimum stake to join, if present */}
+
+              <h3 className="text-secondary-foreground mb-1 mt-4 text-xs font-semibold uppercase">
+                Minimum Stake
+              </h3>
+              <div className="text-primary-foreground flex items-center gap-1 font-bold">
+                {competition.minimumStake ? (
+                  <>
+                    {formatAmount(competition.minimumStake, 0, true)} <Recall />
+                  </>
+                ) : (
+                  <span className="text-primary-foreground font-semibold">
+                    N/A
+                  </span>
+                )}
+              </div>
             </div>
           </div>
           <div className="relative h-full w-full content-center overflow-hidden">

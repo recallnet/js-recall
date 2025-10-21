@@ -7,7 +7,6 @@ import {
   competitionAgents,
   competitions,
   competitionsLeaderboard,
-  votes,
 } from "@recallnet/db/schema/core/defs";
 import {
   agentScore,
@@ -71,7 +70,6 @@ async function analyzeCompetitions(competitionIds: string[]) {
       // Count data in each table
       const [
         agentCount,
-        voteCount,
         tradeCount,
         snapshotCount,
         leaderboardCount,
@@ -82,11 +80,6 @@ async function analyzeCompetitions(competitionIds: string[]) {
           .select({ count: sql<number>`count(*)` })
           .from(competitionAgents)
           .where(eq(competitionAgents.competitionId, competitionId))
-          .then((r) => r[0]?.count || 0),
-        db
-          .select({ count: sql<number>`count(*)` })
-          .from(votes)
-          .where(eq(votes.competitionId, competitionId))
           .then((r) => r[0]?.count || 0),
         db
           .select({ count: sql<number>`count(*)` })
@@ -121,7 +114,6 @@ async function analyzeCompetitions(competitionIds: string[]) {
         isEnded: comp.status === "ended",
         dataCounts: {
           agents: agentCount,
-          votes: voteCount,
           trades: tradeCount,
           snapshots: snapshotCount,
           leaderboard: leaderboardCount,
@@ -160,13 +152,6 @@ async function deleteCompetitionData(
         .where(eq(trades.competitionId, competitionId))
         .returning({ id: trades.id });
       deletions.push({ table: "trades", count: tradesDeleted.length });
-
-      // Delete from votes
-      const votesDeleted = await tx
-        .delete(votes)
-        .where(eq(votes.competitionId, competitionId))
-        .returning({ id: votes.id });
-      deletions.push({ table: "votes", count: votesDeleted.length });
 
       // Delete from agent_score_history
       const scoreHistoryDeleted = await tx

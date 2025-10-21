@@ -24,8 +24,8 @@ describe("LeaderboardService", () => {
     // Create mock repository
     mockRepo = {
       getStatsForCompetitionType: vi.fn(),
-      getGlobalAgentMetrics: vi.fn(),
-      getTotalActiveAgents: vi.fn(),
+      getGlobalAgentMetricsForType: vi.fn(),
+      getTotalRankedAgents: vi.fn(),
     } as unknown as MockedObject<LeaderboardRepository>;
 
     // Create mock logger
@@ -176,7 +176,6 @@ describe("LeaderboardService", () => {
         score: 1600 - i * 50,
         type: "trading" as const,
         numCompetitions: 5,
-        voteCount: 10,
       }));
     };
 
@@ -193,10 +192,10 @@ describe("LeaderboardService", () => {
         });
 
         // Mock total active agents across all types
-        mockRepo.getTotalActiveAgents.mockResolvedValue(44);
+        mockRepo.getTotalRankedAgents.mockResolvedValue(44);
 
         // Mock agent metrics
-        mockRepo.getGlobalAgentMetrics.mockResolvedValueOnce({
+        mockRepo.getGlobalAgentMetricsForType.mockResolvedValueOnce({
           agents: mockAgents,
           totalCount: 44,
         });
@@ -261,8 +260,8 @@ describe("LeaderboardService", () => {
           "trading",
         );
         expect(mockRepo.getStatsForCompetitionType).toHaveBeenCalledTimes(1);
-        expect(mockRepo.getTotalActiveAgents).toHaveBeenCalledTimes(1);
-        expect(mockRepo.getGlobalAgentMetrics).toHaveBeenCalledWith({
+        expect(mockRepo.getTotalRankedAgents).toHaveBeenCalledTimes(1);
+        expect(mockRepo.getGlobalAgentMetricsForType).toHaveBeenCalledWith({
           type: "trading",
           limit: 100,
           offset: 0,
@@ -281,10 +280,10 @@ describe("LeaderboardService", () => {
         });
 
         // Mock total active agents (25 since only futures in this test)
-        mockRepo.getTotalActiveAgents.mockResolvedValue(25);
+        mockRepo.getTotalRankedAgents.mockResolvedValue(25);
 
         // Mock agent metrics for futures
-        mockRepo.getGlobalAgentMetrics.mockResolvedValueOnce({
+        mockRepo.getGlobalAgentMetricsForType.mockResolvedValueOnce({
           agents: mockFuturesAgents,
           totalCount: 25,
         });
@@ -304,7 +303,7 @@ describe("LeaderboardService", () => {
         expect(mockRepo.getStatsForCompetitionType).toHaveBeenCalledWith(
           "perpetual_futures",
         );
-        expect(mockRepo.getGlobalAgentMetrics).toHaveBeenCalledWith({
+        expect(mockRepo.getGlobalAgentMetricsForType).toHaveBeenCalledWith({
           type: "perpetual_futures",
           limit: 100,
           offset: 0,
@@ -331,16 +330,16 @@ describe("LeaderboardService", () => {
         });
 
         // Mock total active agents across all types (69 = 44 trading + 25 futures, assuming no overlap)
-        mockRepo.getTotalActiveAgents.mockResolvedValue(69);
+        mockRepo.getTotalRankedAgents.mockResolvedValue(69);
 
         // Mock trading agent metrics
-        mockRepo.getGlobalAgentMetrics.mockResolvedValueOnce({
+        mockRepo.getGlobalAgentMetricsForType.mockResolvedValueOnce({
           agents: mockTradingAgents,
           totalCount: 44,
         });
 
         // Mock futures agent metrics
-        mockRepo.getGlobalAgentMetrics.mockResolvedValueOnce({
+        mockRepo.getGlobalAgentMetricsForType.mockResolvedValueOnce({
           agents: mockFuturesAgents,
           totalCount: 25,
         });
@@ -379,9 +378,9 @@ describe("LeaderboardService", () => {
           totalAgents: 0,
         });
 
-        mockRepo.getTotalActiveAgents.mockResolvedValue(0);
+        mockRepo.getTotalRankedAgents.mockResolvedValue(0);
 
-        mockRepo.getGlobalAgentMetrics.mockResolvedValue({
+        mockRepo.getGlobalAgentMetricsForType.mockResolvedValue({
           agents: [],
           totalCount: 0,
         });
@@ -403,7 +402,7 @@ describe("LeaderboardService", () => {
         const benchmarkData = createMockBenchmarkData(false, false);
 
         // Mock total active agents (could still have agents even without trading skills in JSON)
-        mockRepo.getTotalActiveAgents.mockResolvedValue(0);
+        mockRepo.getTotalRankedAgents.mockResolvedValue(0);
 
         const result = await service.getUnifiedLeaderboard(benchmarkData);
 
@@ -422,7 +421,7 @@ describe("LeaderboardService", () => {
       it("should filter models correctly by skill", async () => {
         const benchmarkData = createMockBenchmarkData(false, false);
 
-        mockRepo.getTotalActiveAgents.mockResolvedValue(0);
+        mockRepo.getTotalRankedAgents.mockResolvedValue(0);
 
         const result = await service.getUnifiedLeaderboard(benchmarkData);
 
@@ -455,7 +454,7 @@ describe("LeaderboardService", () => {
           },
         });
 
-        mockRepo.getTotalActiveAgents.mockResolvedValue(0);
+        mockRepo.getTotalRankedAgents.mockResolvedValue(0);
 
         const result = await service.getUnifiedLeaderboard(benchmarkData);
 
@@ -472,7 +471,7 @@ describe("LeaderboardService", () => {
         const benchmarkData = createMockBenchmarkData(true, false);
 
         // Mock total active agents
-        mockRepo.getTotalActiveAgents.mockResolvedValue(44);
+        mockRepo.getTotalRankedAgents.mockResolvedValue(44);
 
         // Mock database error
         mockRepo.getStatsForCompetitionType.mockRejectedValue(
@@ -493,7 +492,7 @@ describe("LeaderboardService", () => {
       it("should log debug message on successful call", async () => {
         const benchmarkData = createMockBenchmarkData(false, false);
 
-        mockRepo.getTotalActiveAgents.mockResolvedValue(0);
+        mockRepo.getTotalRankedAgents.mockResolvedValue(0);
 
         await service.getUnifiedLeaderboard(benchmarkData);
 
@@ -516,9 +515,9 @@ describe("LeaderboardService", () => {
         });
 
         // Mock total active agents (500 total across platform)
-        mockRepo.getTotalActiveAgents.mockResolvedValue(500);
+        mockRepo.getTotalRankedAgents.mockResolvedValue(500);
 
-        mockRepo.getGlobalAgentMetrics.mockResolvedValue({
+        mockRepo.getGlobalAgentMetricsForType.mockResolvedValue({
           agents: mockAgents, // Only return 100
           totalCount: 500, // But total is 500
         });

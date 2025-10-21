@@ -171,7 +171,7 @@ function getOperationFromMethod(methodName: string): string {
     name.includes("compute") ||
     name.includes("analyze") ||
     name.includes("is") || // isAgentActiveInCompetition
-    name.includes("has") || // hasUserVotedInCompetition
+    name.includes("has") ||
     name.includes("check") ||
     name.includes("exists") ||
     name.includes("validate") ||

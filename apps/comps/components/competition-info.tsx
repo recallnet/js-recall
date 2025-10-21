@@ -10,14 +10,15 @@ import {
   TabsList,
   TabsTrigger,
 } from "@recallnet/ui2/components/tabs";
+import { Tooltip } from "@recallnet/ui2/components/tooltip";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { useCompetitionRules } from "@/hooks";
 import { RouterOutputs } from "@/rpc/router";
-import { CompetitionStatus } from "@/types";
 import { getCompetitionSkills } from "@/utils/competition-utils";
 import { formatAmount, formatCompactNumber, formatDate } from "@/utils/format";
 
+import { Recall } from "./Recall";
 import { CompetitionStateSummary } from "./competition-state-summary";
 import { RewardsTGE } from "./rewards-tge";
 
@@ -104,8 +105,8 @@ export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
 
       <TabsContent value="info" className="border">
         <div>
-          {/* Registration and Voting Status Bar - At the very top */}
-          {competition.status !== CompetitionStatus.Ended && (
+          {/* Registration and Boosting Status Bar - At the very top */}
+          {competition.status !== "ended" && (
             <div className="border-b bg-[#0C0D12] px-4 py-2">
               <CompetitionStateSummary competition={competition} />
             </div>
@@ -175,8 +176,38 @@ export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
                   ))}
               </div>
             ) : (
-              <p className="text-xl font-semibold">TBA</p>
+              <p className="font-bold">TBA</p>
             )}
+          </div>
+
+          {/* Minimum Stake and Registration Limit Row */}
+          <div className="grid grid-cols-2 border-b">
+            <div className="flex flex-col items-start gap-2 border-r p-4 sm:p-[25px]">
+              <CellTitle>Minimum Agent Stake</CellTitle>
+              <Tooltip content="Amount of staked RECALL required for an agent to compete in this competition">
+                <p className="font-bold">
+                  {competition.minimumStake ? (
+                    <span className="flex items-center gap-2">
+                      {formatAmount(competition.minimumStake, 0, true)}{" "}
+                      <Recall />
+                    </span>
+                  ) : (
+                    "N/A"
+                  )}
+                </p>
+              </Tooltip>
+            </div>
+            <div className="flex flex-col items-start gap-2 p-4 sm:p-[25px]">
+              <CellTitle>Registration Limit</CellTitle>
+              <p className="font-bold">
+                <span className="flex items-center gap-2">
+                  {competition.maxParticipants
+                    ? competition.maxParticipants
+                    : "Unlimited"}{" "}
+                  participants
+                </span>
+              </p>
+            </div>
           </div>
 
           {/* About Section */}
@@ -184,6 +215,7 @@ export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
             <CellTitle className="mb-3 uppercase tracking-wider">
               About
             </CellTitle>
+            {/* Description */}
             <div
               className={`relative ${expanded ? "max-h-40 overflow-y-auto" : "max-h-16 overflow-hidden"}`}
             >
@@ -194,26 +226,6 @@ export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
                 <div className="pointer-events-none absolute bottom-0 left-0 h-8 w-full bg-gradient-to-t from-black to-transparent" />
               )}
             </div>
-
-            {/* Registration Limit */}
-            {competition.maxParticipants &&
-              competition.registeredParticipants <
-                competition.maxParticipants && (
-                <p className="mt-3 text-sm text-gray-400">
-                  Registration limit: {competition.maxParticipants} participants
-                </p>
-              )}
-
-            {/* Minimum Stake */}
-            {competition.minimumStake && (
-              <p className="mt-3 text-sm text-gray-400">
-                Minimum Stake:{" "}
-                {competition.minimumStake?.toLocaleString(undefined, {
-                  minimumFractionDigits: 0,
-                  maximumFractionDigits: 2,
-                })}
-              </p>
-            )}
 
             <p className="mt-2 text-sm text-gray-400">
               {competition.externalUrl &&
