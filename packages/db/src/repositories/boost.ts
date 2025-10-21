@@ -689,25 +689,25 @@ class BoostRepository {
   ): Promise<BoostAgentResult> {
     const executor = tx || this.#db;
     return await executor.transaction(async (tx) => {
-      // 1) Lock the agent boost total row if it exists
-      const [agentBoostTotal] = await tx
-        .select()
-        .from(schema.agentBoostTotals)
-        .where(
-          and(
-            eq(schema.agentBoostTotals.agentId, agentId),
-            eq(schema.agentBoostTotals.competitionId, competitionId),
-          ),
-        )
-        .limit(1)
-        .for("update"); // locks this row until tx ends
-
-      // Decrease the user's boost balance
+      // First, try to decrease the user's boost balance
       const diffRes = await this.decrease(
         { userId, amount, competitionId, wallet, idemKey },
         tx,
       );
+
+      // If it's a noop (idempotent), fetch the current total and return
       if (diffRes.type === "noop") {
+        const [agentBoostTotal] = await tx
+          .select()
+          .from(schema.agentBoostTotals)
+          .where(
+            and(
+              eq(schema.agentBoostTotals.agentId, agentId),
+              eq(schema.agentBoostTotals.competitionId, competitionId),
+            ),
+          )
+          .limit(1);
+
         if (!agentBoostTotal) {
           throw new Error(
             `Boost deduction already executed from wallet ${wallet} for competition ${competitionId}, but no agent boost total record exists for agent ${agentId}`,
@@ -719,14 +719,17 @@ class BoostRepository {
         };
       }
 
-      // Upsert into the agent boost totals table
+      // Atomically upsert the boost total
       const [updatedAgentBoostTotal] = await tx
+        // first try to insert a new row, there a unique constraint on
+        // compId+agentId so this will fail if the row already exists
         .insert(schema.agentBoostTotals)
         .values({
           agentId,
           competitionId,
           total: amount,
         })
+        // if the row exists, atomically increment the value of `total`
         .onConflictDoUpdate({
           target: [
             schema.agentBoostTotals.agentId,
