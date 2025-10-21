@@ -199,26 +199,11 @@ export class CalmarRatioService {
     periodReturn: Decimal,
     maxDrawdown: number,
   ): Decimal {
-    // Handle edge cases
-    if (maxDrawdown === 0) {
-      // No drawdown
-      if (periodReturn.greaterThan(0)) {
-        // Positive return with no drawdown - cap at 100
-        this.logger.debug(
-          `[CalmarRatio] No drawdown with positive return, capping Calmar at 100`,
-        );
-        return new Decimal(100);
-      } else if (periodReturn.lessThan(0)) {
-        // Negative return with no drawdown - shouldn't happen but handle it
-        return new Decimal(-100);
-      } else {
-        // Zero return, zero drawdown
-        return new Decimal(0);
-      }
-    }
+    // Use minimum drawdown of 0.01 to avoid division by zero
+    // and handle edge cases cleanly
+    if (maxDrawdown > 0) throw new Error("invalid max drawdown");
+    const adjustedMaxDrawdown = Math.max(Math.abs(maxDrawdown), 0.001);
 
-    // Normal case: divide return by absolute value of drawdown
-    // Since drawdown is negative, we use Math.abs
-    return periodReturn.dividedBy(Math.abs(maxDrawdown));
+    return periodReturn.dividedBy(adjustedMaxDrawdown);
   }
 }
