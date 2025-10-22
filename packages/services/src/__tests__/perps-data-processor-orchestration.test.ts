@@ -15,6 +15,7 @@ import { CalmarRatioService } from "../calmar-ratio.service.js";
 import { PerpsDataProcessor } from "../perps-data-processor.service.js";
 import { PerpsMonitoringService } from "../perps-monitoring.service.js";
 import { PerpsProviderFactory } from "../providers/perps-provider.factory.js";
+import { SortinoRatioService } from "../sortino-ratio.service.js";
 import type {
   IPerpsDataProvider,
   PerpsAccountSummary,
@@ -77,6 +78,7 @@ describe("PerpsDataProcessor - processPerpsCompetition", () => {
   let mockCompetitionRepo: MockCompetitionRepository;
   let mockPerpsRepo: MockPerpsRepository;
   let mockCalmarRatioService: MockCalmarRatioService;
+  let mockSortinoRatioService: SortinoRatioService;
   let mockLogger: MockLogger;
 
   // Competition object that matches what findById returns
@@ -105,6 +107,7 @@ describe("PerpsDataProcessor - processPerpsCompetition", () => {
     canceledAt: null,
     cancelReason: null,
     crossChainTradingType: "allow" as const,
+    evaluationMetric: "calmar_ratio" as const,
   };
 
   // Perps competition config that matches SelectPerpsCompetitionConfig
@@ -225,11 +228,18 @@ describe("PerpsDataProcessor - processPerpsCompetition", () => {
     mockCompetitionRepo = new MockCompetitionRepository();
     mockPerpsRepo = new MockPerpsRepository();
     mockCalmarRatioService = new MockCalmarRatioService();
+    mockSortinoRatioService = {
+      calculateAndSaveSortinoRatio: vi.fn().mockResolvedValue({
+        metrics: { id: "metrics-1", sortinoRatio: "1.2" },
+        success: true,
+      }),
+    } as unknown as SortinoRatioService;
     mockLogger = new MockLogger();
 
     // Create processor with dependencies
     processor = new PerpsDataProcessor(
       mockCalmarRatioService as unknown as CalmarRatioService,
+      mockSortinoRatioService,
       mockAgentRepo as unknown as AgentRepository,
       mockCompetitionRepo as unknown as CompetitionRepository,
       mockPerpsRepo as unknown as PerpsRepository,

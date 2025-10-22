@@ -149,7 +149,24 @@ export class CalmarRatioService {
 
       const savedMetrics = await this.perpsRepo.saveRiskMetrics(metricsData);
 
-      this.logger.info(`[CalmarRatio] Saved risk metrics for agent ${agentId}`);
+      // 7. Also save to time-series risk metrics snapshot table
+      await this.perpsRepo.batchCreateRiskMetricsSnapshots([
+        {
+          agentId,
+          competitionId,
+          timestamp: endSnapshot.timestamp, // Use the latest snapshot timestamp
+          calmarRatio: calmarRatio.toFixed(8),
+          sortinoRatio: null, // Will be calculated by SortinoRatioService
+          simpleReturn: simpleReturn.toFixed(8),
+          annualizedReturn: periodReturn.toFixed(8),
+          maxDrawdown: maxDrawdown.toFixed(8),
+          downsideDeviation: null, // Will be calculated by SortinoRatioService
+        },
+      ]);
+
+      this.logger.info(
+        `[CalmarRatio] Saved risk metrics and snapshot for agent ${agentId}`,
+      );
 
       return { metrics: savedMetrics };
     } catch (error) {

@@ -11,6 +11,38 @@ dotenv.config({ path: path.resolve(process.cwd(), ".env") });
 const services = new ServiceRegistry();
 const logger = createLogger("PortfolioSnapshots");
 
+// Track last snapshot time for each competition
+const lastSnapshotTimes = new Map<string, Date>();
+
+/**
+ * Determine if we should take a snapshot based on competition type and timing
+ * - Perps competitions: Every 1 minute
+ * - Trading competitions: Every 5 minutes
+ */
+function shouldTakeSnapshot(competition: {
+  id: string;
+  type: string;
+}): boolean {
+  const now = new Date();
+  const lastSnapshot = lastSnapshotTimes.get(competition.id);
+
+  if (!lastSnapshot) {
+    // No previous snapshot, take one now
+    return true;
+  }
+
+  const minutesSinceLastSnapshot =
+    (now.getTime() - lastSnapshot.getTime()) / (1000 * 60);
+
+  if (competition.type === "perpetual_futures") {
+    // Perps competitions: snapshot every 1 minute
+    return minutesSinceLastSnapshot >= 1;
+  } else {
+    // Trading competitions: snapshot every 5 minutes
+    return minutesSinceLastSnapshot >= 5;
+  }
+}
+
 /**
  * Take portfolio snapshots for the active competition
  * Routes to appropriate processor based on competition type
@@ -32,6 +64,15 @@ async function takePortfolioSnapshots() {
       return;
     }
 
+    // Check if we should take a snapshot based on competition type and timing
+    if (!shouldTakeSnapshot(activeCompetition)) {
+      const duration = Date.now() - startTime;
+      logger.debug(
+        `Skipping snapshot for ${activeCompetition.type} competition ${activeCompetition.id} - not time yet (took ${duration}ms)`,
+      );
+      return;
+    }
+
     // Display competition details
     logger.info("Active Competition Details");
     logger.info(
@@ -43,6 +84,9 @@ async function takePortfolioSnapshots() {
       },
       "Active Competition Details",
     );
+
+    // Update last snapshot time
+    lastSnapshotTimes.set(activeCompetition.id, new Date());
 
     // Route based on competition type
     if (activeCompetition.type === "perpetual_futures") {
@@ -122,8 +166,10 @@ async function takePortfolioSnapshots() {
   }
 }
 
-// Schedule the task to run every 5 minutes
-cron.schedule("*/5 * * * *", async () => {
+// Schedule the task to run every minute for perps competitions
+// and every 5 minutes for other competitions
+// This runs every minute but internally decides what to snapshot
+cron.schedule("* * * * *", async () => {
   logger.info("Running scheduled portfolio snapshots task");
   await takePortfolioSnapshots();
 });

@@ -37,6 +37,7 @@ describe("CalmarRatioService", () => {
     creatorId: "creator-123",
     crossChainTradingType: "disallowAll" as const,
     minimumStake: null,
+    evaluationMetric: "calmar_ratio" as const,
   });
 
   // Helper to create mock portfolio snapshots
@@ -66,6 +67,8 @@ describe("CalmarRatioService", () => {
     calmarRatio: "3.00000000",
     annualizedReturn: "2.40000000",
     maxDrawdown: "-0.20000000",
+    sortinoRatio: null,
+    downsideDeviation: null,
     snapshotCount: 2,
     calculationTimestamp: new Date(),
   });

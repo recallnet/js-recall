@@ -12,6 +12,7 @@ import {
   PerpsDataProcessor,
   PortfolioSnapshotterService,
   PriceTrackerService,
+  SortinoRatioService,
   TradeSimulatorService,
   TradingConstraintsService,
   UserService,
@@ -146,8 +147,15 @@ export const calmarRatioService = new CalmarRatioService(
   createLogger("CalmarRatioService"),
 );
 
+export const sortinoRatioService = new SortinoRatioService(
+  competitionRepository,
+  perpsRepository,
+  createLogger("SortinoRatioService"),
+);
+
 const perpsDataProcessor = new PerpsDataProcessor(
   calmarRatioService,
+  sortinoRatioService,
   agentRepository,
   competitionRepository,
   perpsRepository,

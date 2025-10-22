@@ -46,6 +46,7 @@ describe("BoostAwardService", () => {
     createdAt: new Date(),
     updatedAt: null,
     minimumStake: null,
+    evaluationMetric: "calmar_ratio" as const,
   });
 
   beforeEach(() => {

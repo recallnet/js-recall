@@ -14,6 +14,7 @@ import type {
 
 import { CalmarRatioService } from "../calmar-ratio.service.js";
 import { PerpsDataProcessor } from "../perps-data-processor.service.js";
+import { SortinoRatioService } from "../sortino-ratio.service.js";
 import type { AgentPerpsSyncData } from "../types/perps.js";
 import type {
   IPerpsDataProvider,
@@ -34,6 +35,7 @@ describe("PerpsDataProcessor", () => {
   let mockCompetitionRepo: CompetitionRepository;
   let mockPerpsRepo: PerpsRepository;
   let mockCalmarRatioService: CalmarRatioService;
+  let mockSortinoRatioService: SortinoRatioService;
   let mockLogger: Logger;
 
   // Sample data that matches what the provider returns
@@ -151,6 +153,7 @@ describe("PerpsDataProcessor", () => {
     mockCompetitionRepo = {} as CompetitionRepository;
     mockPerpsRepo = {} as PerpsRepository;
     mockCalmarRatioService = {} as CalmarRatioService;
+    mockSortinoRatioService = {} as SortinoRatioService;
     mockLogger = {
       info: vi.fn(),
       error: vi.fn(),
@@ -267,6 +270,7 @@ describe("PerpsDataProcessor", () => {
 
     processor = new PerpsDataProcessor(
       mockCalmarRatioService,
+      mockSortinoRatioService,
       mockAgentRepo,
       mockCompetitionRepo,
       mockPerpsRepo,
@@ -1221,6 +1225,7 @@ describe("PerpsDataProcessor", () => {
         cancelReason: null,
         crossChainTradingType: "allow" as const,
         minimumStake: null,
+        evaluationMetric: "calmar_ratio" as const,
       };
 
       vi.mocked(mockCompetitionRepo.findById).mockResolvedValue(
@@ -1258,6 +1263,7 @@ describe("PerpsDataProcessor", () => {
         cancelReason: null,
         crossChainTradingType: "allow" as const,
         minimumStake: null,
+        evaluationMetric: "calmar_ratio" as const,
       };
 
       vi.mocked(mockCompetitionRepo.findById).mockResolvedValue(

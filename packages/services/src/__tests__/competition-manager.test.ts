@@ -73,6 +73,7 @@ describe("CompetitionService", () => {
     registeredParticipants: 0,
     minimumStake: null,
     sandboxMode: false,
+    evaluationMetric: "calmar_ratio",
     competitionId: mockCompeitionId,
     crossChainTradingType: "allow",
   };

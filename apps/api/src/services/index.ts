@@ -33,6 +33,7 @@ import {
   PriceTrackerService,
   RewardsService,
   SimulatedTradeExecutionService,
+  SortinoRatioService,
   TradeSimulatorService,
   TradingConstraintsService,
   UserService,
@@ -262,9 +263,15 @@ class ServiceRegistry {
       this._perpsRepository,
       serviceLogger,
     );
+    const sortinoRatioService = new SortinoRatioService(
+      this._competitionRepository,
+      this._perpsRepository,
+      serviceLogger,
+    );
     // Initialize PerpsDataProcessor before CompetitionManager (as it's a dependency)
     this._perpsDataProcessor = new PerpsDataProcessor(
       calmarRatioService,
+      sortinoRatioService,
       this._agentRepository,
       this._competitionRepository,
       this._perpsRepository,

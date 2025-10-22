@@ -159,6 +159,7 @@ describe("CompetitionService - createCompetition", () => {
       registeredParticipants: 0,
       sandboxMode: false,
       crossChainTradingType: "disallowAll",
+      evaluationMetric: "calmar_ratio",
     }));
   });
 
@@ -585,6 +586,7 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
       updatedAt: new Date(),
       competitionId: mockCompetitionId,
       crossChainTradingType: "allow" as const,
+      evaluationMetric: "calmar_ratio" as const,
     };
 
     // Mock perps config with minFundingThreshold
@@ -840,6 +842,7 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
       updatedAt: new Date(),
       competitionId: mockCompetitionId,
       crossChainTradingType: "allow" as const,
+      evaluationMetric: "calmar_ratio" as const,
     };
 
     // Mock perps config WITHOUT minFundingThreshold
@@ -1026,6 +1029,7 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
       updatedAt: new Date(),
       competitionId: mockCompetitionId,
       crossChainTradingType: "allow" as const,
+      evaluationMetric: "calmar_ratio" as const,
     };
 
     // Mock perps config with minFundingThreshold
