@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { skipToken, useQuery } from "@tanstack/react-query";
 import AutoScroll from "embla-carousel-auto-scroll";
 import useEmblaCarousel from "embla-carousel-react";
 import Link from "next/link";
@@ -68,8 +68,7 @@ export default function CompetitionsPageClient() {
   const { data: userCompetitions, isLoading: isLoadingUserCompetitions } =
     useQuery(
       tanstackClient.user.getCompetitions.queryOptions({
-        input: {},
-        enabled: isAuthenticated,
+        input: isAuthenticated ? {} : skipToken,
         placeholderData: (prev) => prev,
       }),
     );
