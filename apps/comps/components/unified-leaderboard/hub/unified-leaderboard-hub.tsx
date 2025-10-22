@@ -64,16 +64,16 @@ export const UnifiedLeaderboardHub: React.FC = () => {
             <div className="text-sm text-gray-400">Skills</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-blue-400">
-              {data.globalStats.totalModels}
-            </div>
-            <div className="text-sm text-gray-400">Models</div>
-          </div>
-          <div className="text-center">
             <div className="text-2xl font-bold text-green-400">
               {data.globalStats.totalAgents}
             </div>
             <div className="text-sm text-gray-400">Agents</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-blue-400">
+              {data.globalStats.totalModels}
+            </div>
+            <div className="text-sm text-gray-400">Models</div>
           </div>
         </div>
       </div>

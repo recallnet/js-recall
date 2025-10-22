@@ -1,4 +1,4 @@
-import { UseQueryResult, useQuery } from "@tanstack/react-query";
+import { UseQueryResult, skipToken, useQuery } from "@tanstack/react-query";
 
 import { CompetitionStatus } from "@recallnet/services/types";
 
@@ -20,19 +20,20 @@ export const useAgentCompetitions = (
 
   return useQuery(
     tanstackClient.agent.getCompetitions.queryOptions({
-      input: {
-        agentId: agentId ?? "",
-        filters: {
-          status: status as CompetitionStatus | undefined,
-          claimed,
-        },
-        paging: {
-          sort,
-          limit,
-          offset,
-        },
-      },
-      enabled: !!agentId,
+      input: agentId
+        ? {
+            agentId,
+            filters: {
+              status: status as CompetitionStatus | undefined,
+              claimed,
+            },
+            paging: {
+              sort,
+              limit,
+              offset,
+            },
+          }
+        : skipToken,
       placeholderData: (prev) => prev,
     }),
   );

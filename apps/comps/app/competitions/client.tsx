@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { skipToken, useQuery } from "@tanstack/react-query";
 import AutoScroll from "embla-carousel-auto-scroll";
 import useEmblaCarousel from "embla-carousel-react";
 import Link from "next/link";
@@ -44,7 +44,7 @@ export default function CompetitionsPageClient() {
 
   const { data: activeCompetitions, isLoading: isLoadingActiveCompetitions } =
     useQuery(
-      tanstackClient.competitions.listEnriched.queryOptions({
+      tanstackClient.competitions.list.queryOptions({
         input: { status: "active", paging: { sort: "startDate" } },
       }),
     );
@@ -53,14 +53,14 @@ export default function CompetitionsPageClient() {
     data: upcomingCompetitions,
     isLoading: isLoadingUpcomingCompetitions,
   } = useQuery(
-    tanstackClient.competitions.listEnriched.queryOptions({
+    tanstackClient.competitions.list.queryOptions({
       input: { status: "pending", paging: { sort: "startDate" } },
     }),
   );
 
   const { data: endedCompetitions, isLoading: isLoadingEndedCompetitions } =
     useQuery(
-      tanstackClient.competitions.listEnriched.queryOptions({
+      tanstackClient.competitions.list.queryOptions({
         input: { status: "ended", paging: { sort: "-startDate" } },
       }),
     );
@@ -68,8 +68,7 @@ export default function CompetitionsPageClient() {
   const { data: userCompetitions, isLoading: isLoadingUserCompetitions } =
     useQuery(
       tanstackClient.user.getCompetitions.queryOptions({
-        input: {},
-        enabled: isAuthenticated,
+        input: isAuthenticated ? {} : skipToken,
         placeholderData: (prev) => prev,
       }),
     );

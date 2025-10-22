@@ -1,7 +1,7 @@
 import { RouterOutputs } from "@/rpc/router";
 
 export function openForBoosting(competition: {
-  status: RouterOutputs["competitions"]["listEnriched"]["competitions"][number]["status"];
+  status: RouterOutputs["competitions"]["list"]["competitions"][number]["status"];
   boostStartDate: Date | null;
   boostEndDate: Date | null;
 }): boolean {

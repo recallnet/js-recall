@@ -37,7 +37,7 @@ export const useJoinCompetition = () => {
           queryKey: tanstackClient.leaderboard.getGlobal.key(),
         });
         queryClient.invalidateQueries({
-          queryKey: tanstackClient.competitions.listEnriched.key(),
+          queryKey: tanstackClient.competitions.list.key(),
         });
         queryClient.invalidateQueries({
           queryKey: tanstackClient.competitions.getById.key({

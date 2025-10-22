@@ -58,7 +58,6 @@ type ParticipantEntry = (BenchmarkModel | LeaderboardAgent) & {
 export const SkillDetailLeaderboardTableMobile: React.FC<
   SkillDetailLeaderboardTableMobileProps
 > = ({ skill, skillData }) => {
-  const [showType, setShowType] = useState<"all" | "models" | "agents">("all");
   const [selectedModel, setSelectedModel] = useState<BenchmarkModel | null>(
     null,
   );
@@ -79,69 +78,22 @@ export const SkillDetailLeaderboardTableMobile: React.FC<
     })),
   ].sort((a, b) => b.score - a.score);
 
-  // Apply filters
-  const filteredParticipants = allParticipants.filter((participant) => {
-    if (showType === "all") return true;
-    if (showType === "models") return participant.type === "model";
-    if (showType === "agents") return participant.type === "agent";
-    return true;
-  });
-
   // Calculate max score for bar scaling
   const maxPossibleScore = Math.max(
-    ...filteredParticipants.map(
-      (p) => getParticipantMetrics(p, skill.id).maxScore,
-    ),
+    ...allParticipants.map((p) => getParticipantMetrics(p, skill.id).maxScore),
     1,
   );
   const maxScaleScore = maxPossibleScore * 1.1;
 
   return (
     <div className="space-y-4">
-      {/* Mobile Filters - Horizontal scroll */}
-      <div className="flex gap-2 overflow-x-auto pb-2">
-        <button
-          className={cn(
-            "whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
-            showType === "all"
-              ? "bg-white text-black"
-              : "bg-gray-800 text-gray-300 hover:bg-gray-700",
-          )}
-          onClick={() => setShowType("all")}
-        >
-          All ({allParticipants.length})
-        </button>
-        <button
-          className={cn(
-            "whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
-            showType === "models"
-              ? "bg-white text-black"
-              : "bg-gray-800 text-gray-300 hover:bg-gray-700",
-          )}
-          onClick={() => setShowType("models")}
-        >
-          Models ({skillData.stats.modelCount})
-        </button>
-        <button
-          className={cn(
-            "whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
-            showType === "agents"
-              ? "bg-white text-black"
-              : "bg-gray-800 text-gray-300 hover:bg-gray-700",
-          )}
-          onClick={() => setShowType("agents")}
-        >
-          Agents ({skillData.stats.agentCount})
-        </button>
-      </div>
-
       {/* Mobile Performance Cards */}
       <div className="space-y-3">
         <h3 className="text-lg font-semibold text-white">
           Performance Comparison
         </h3>
 
-        {filteredParticipants.map((participant, index) => {
+        {allParticipants.map((participant, index) => {
           const metrics = getParticipantMetrics(participant, skill.id);
           const isModel = metrics.isModel;
           const confidenceInterval = metrics.confidenceInterval;

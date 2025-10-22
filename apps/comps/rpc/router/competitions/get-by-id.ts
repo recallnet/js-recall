@@ -3,12 +3,20 @@ import { z } from "zod/v4";
 
 import { ApiError } from "@recallnet/services/types";
 
+import { CacheTags } from "@/lib/cache-tags";
 import { base } from "@/rpc/context/base";
+import { cacheMiddleware } from "@/rpc/middleware/cache";
 
 export const getById = base
   .input(
     z.object({
       id: z.uuid(),
+    }),
+  )
+  .use(
+    cacheMiddleware({
+      revalidateSecs: 30,
+      getTags: (input) => [CacheTags.competition(input.id)],
     }),
   )
   .handler(async ({ context, input, errors }) => {

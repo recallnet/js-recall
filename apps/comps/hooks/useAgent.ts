@@ -1,4 +1,4 @@
-import { UseQueryResult, useQuery } from "@tanstack/react-query";
+import { UseQueryResult, skipToken, useQuery } from "@tanstack/react-query";
 
 import { tanstackClient } from "@/rpc/clients/tanstack-query";
 import type { RouterOutputs } from "@/rpc/router";
@@ -13,8 +13,7 @@ export const useUserAgent = (
 ): UseQueryResult<RouterOutputs["user"]["getUserAgent"], Error> =>
   useQuery(
     tanstackClient.user.getUserAgent.queryOptions({
-      input: { agentId: id || "" },
-      enabled: !!id,
+      input: id ? { agentId: id } : skipToken,
     }),
   );
 
@@ -28,7 +27,6 @@ export const useAgent = (
 ): UseQueryResult<RouterOutputs["agent"]["getAgent"], Error> =>
   useQuery(
     tanstackClient.agent.getAgent.queryOptions({
-      input: { agentId: id || "" },
-      enabled: !!id,
+      input: id ? { agentId: id } : skipToken,
     }),
   );
