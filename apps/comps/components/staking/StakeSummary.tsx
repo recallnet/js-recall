@@ -2,13 +2,14 @@ import React from "react";
 
 import { Button } from "@recallnet/ui2/components/button";
 
+import { BoostIcon } from "@/components/BoostIcon";
+import { Claim } from "@/components/Claim";
 import { Recall } from "@/components/Recall";
 import { useUserStakes } from "@/hooks/staking";
+import { useClaim } from "@/hooks/useClaim";
 import { useRecall } from "@/hooks/useRecall";
 import type { StakeInfoWithId } from "@/types/staking";
 import { formatBigintAmount, shouldShowCompact } from "@/utils/format";
-
-import { BoostIcon } from "../BoostIcon";
 
 interface StakeSummaryProps {
   onStakeClick: () => void;
@@ -18,6 +19,7 @@ export const StakeSummary: React.FunctionComponent<StakeSummaryProps> = ({
   onStakeClick,
 }) => {
   const recall = useRecall();
+  const { totalClaimable } = useClaim();
   const { data: stakes } = useUserStakes();
 
   const decimals =
@@ -56,9 +58,12 @@ export const StakeSummary: React.FunctionComponent<StakeSummaryProps> = ({
           <div className="mb-2 text-sm font-bold uppercase text-gray-400">
             Total
           </div>
-          <div className="flex items-center gap-2">
-            <Recall size="md" />
-            <span className="text-2xl font-bold text-white">{total}</span>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Recall size="md" />
+              <span className="text-2xl font-bold text-white">{total}</span>
+            </div>
+            {totalClaimable > 0n && <Claim className="sm:hidden" />}
           </div>
         </div>
 

@@ -37,8 +37,7 @@ type UseRecallReturn = UseRecallLoading | UseRecallLoaded;
  * @returns Object containing token value and decimals
  */
 export const useRecall = (): UseRecallReturn => {
-  const { address } = useSafeAccount();
-  const chainId = useSafeChainId();
+  const { address, chainId } = useSafeAccount();
 
   const token = getAddress(config.blockchain.tokenContractAddress);
 

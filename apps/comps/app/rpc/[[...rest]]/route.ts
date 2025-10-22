@@ -10,6 +10,7 @@ import {
   competitionService,
   emailService,
   leaderboardService,
+  rewardsService,
   userService,
 } from "@/lib/services";
 import { router } from "@/rpc/router/index";
@@ -29,6 +30,7 @@ async function handleRequest(request: Request) {
       agentService,
       emailService,
       leaderboardService,
+      rewardsService,
       logger: createLogger("RpcHandler"),
     },
   });
