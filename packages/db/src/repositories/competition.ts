@@ -1580,6 +1580,110 @@ export class CompetitionRepository {
   }
 
   /**
+   * Calculate Sortino ratio metrics using database-level computations
+   * @param agentId Agent ID
+   * @param competitionId Competition ID
+   * @param mar Minimum Acceptable Return (default 0 for crypto)
+   * @returns Object with average return, downside deviation, and simple return
+   */
+  async calculateSortinoMetricsSQL(
+    agentId: string,
+    competitionId: string,
+    mar = 0,
+  ): Promise<{
+    avgReturn: number;
+    downsideDeviation: number;
+    simpleReturn: number;
+    snapshotCount: number;
+  }> {
+    try {
+      // Calculate period returns and downside deviation in a single query
+      const result = await this.#dbRead.execute<{
+        avg_return: number | null;
+        downside_deviation: number | null;
+        simple_return: number | null;
+        snapshot_count: number;
+      }>(sql`
+        WITH ordered_snapshots AS (
+          SELECT 
+            ${portfolioSnapshots.totalValue},
+            ${portfolioSnapshots.timestamp},
+            LAG(${portfolioSnapshots.totalValue}) OVER (ORDER BY ${portfolioSnapshots.timestamp}) as prev_value,
+            FIRST_VALUE(${portfolioSnapshots.totalValue}) OVER (ORDER BY ${portfolioSnapshots.timestamp}) as first_value,
+            LAST_VALUE(${portfolioSnapshots.totalValue}) OVER (ORDER BY ${portfolioSnapshots.timestamp} ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) as last_value,
+            COUNT(*) OVER () as total_snapshots
+          FROM ${portfolioSnapshots}
+          WHERE ${portfolioSnapshots.agentId} = ${agentId}
+            AND ${portfolioSnapshots.competitionId} = ${competitionId}
+          ORDER BY ${portfolioSnapshots.timestamp}
+        ),
+        period_returns AS (
+          SELECT 
+            CASE 
+              WHEN prev_value IS NOT NULL AND prev_value != 0 
+              THEN (${portfolioSnapshots.totalValue} - prev_value) / prev_value
+              ELSE NULL
+            END as return_rate,
+            first_value,
+            last_value,
+            total_snapshots
+          FROM ordered_snapshots
+        ),
+        metrics AS (
+          SELECT 
+            AVG(return_rate) as avg_return,
+            -- Downside deviation: sqrt of average squared negative deviations from MAR
+            SQRT(AVG(
+              CASE 
+                WHEN return_rate < ${mar} 
+                THEN POWER(return_rate - ${mar}, 2) 
+                ELSE 0 
+              END
+            )) as downside_deviation,
+            -- Simple return from first to last
+            CASE 
+              WHEN MAX(first_value) > 0 
+              THEN (MAX(last_value) - MAX(first_value)) / MAX(first_value)
+              ELSE 0
+            END as simple_return,
+            MAX(total_snapshots) as snapshot_count
+          FROM period_returns
+          WHERE return_rate IS NOT NULL
+        )
+        SELECT 
+          COALESCE(avg_return, 0) as avg_return,
+          COALESCE(downside_deviation, 0) as downside_deviation,
+          COALESCE(simple_return, 0) as simple_return,
+          COALESCE(snapshot_count, 0) as snapshot_count
+        FROM metrics
+      `);
+
+      const metrics = result.rows[0];
+      if (!metrics) {
+        throw new Error("No metrics calculated - insufficient data");
+      }
+
+      this.#logger.debug(
+        `[CompetitionRepository] Calculated Sortino metrics for agent ${agentId}: ` +
+          `Avg Return=${(Number(metrics.avg_return || 0) * 100).toFixed(2)}%, ` +
+          `Downside Dev=${(Number(metrics.downside_deviation || 0) * 100).toFixed(2)}%, ` +
+          `Simple Return=${(Number(metrics.simple_return || 0) * 100).toFixed(2)}%, ` +
+          `Snapshots=${metrics.snapshot_count}`,
+      );
+
+      return {
+        avgReturn: Number(metrics.avg_return || 0),
+        downsideDeviation: Number(metrics.downside_deviation || 0),
+        simpleReturn: Number(metrics.simple_return || 0),
+        snapshotCount: Number(metrics.snapshot_count || 0),
+      };
+    } catch (error) {
+      this.#logger.error("Error in calculateSortinoMetricsSQL:", error);
+      throw error;
+    }
+  }
+
+  /**
    * Get the newest and oldest portfolio snapshots for an agent in a competition
    * @param competitionId Competition ID
    * @param agentId Agent ID
