@@ -57,7 +57,6 @@ describe("LeaderboardRepository.getBulkAgentMetrics() Integration Tests", () => 
     const result = await repository.getBulkAgentMetrics([]);
 
     expect(result).toEqual({
-      agentInfo: [],
       agentRanks: [],
       competitionCounts: [],
       tradeCounts: [],
@@ -100,13 +99,6 @@ describe("LeaderboardRepository.getBulkAgentMetrics() Integration Tests", () => 
     });
 
     const result = await repository.getBulkAgentMetrics([agentId]);
-
-    // Agent info should be returned (without score)
-    expect(result.agentInfo).toHaveLength(1);
-    expect(result.agentInfo[0]).toMatchObject({
-      agentId,
-      name: "Agent A",
-    });
 
     // Agent ranks should include type, score, and rank (calculated in SQL)
     expect(result.agentRanks).toHaveLength(1);
@@ -219,13 +211,6 @@ describe("LeaderboardRepository.getBulkAgentMetrics() Integration Tests", () => 
 
     // Query for Agent C who has scores in BOTH competition types
     const result = await repository.getBulkAgentMetrics([agentCId]);
-
-    // Agent info should be returned
-    expect(result.agentInfo).toHaveLength(1);
-    expect(result.agentInfo[0]).toMatchObject({
-      agentId: agentCId,
-      name: "Agent C",
-    });
 
     // Agent C should have ranks for BOTH competition types with ranks calculated in SQL
     expect(result.agentRanks).toHaveLength(2);
@@ -412,13 +397,6 @@ describe("LeaderboardRepository.getBulkAgentMetrics() Integration Tests", () => 
 
     const result = await repository.getBulkAgentMetrics([agentId]);
 
-    // Agent info should be returned
-    expect(result.agentInfo).toHaveLength(1);
-    expect(result.agentInfo[0]).toMatchObject({
-      agentId,
-      name: "Agent No Score",
-    });
-
     // Agent should have no ranks
     expect(result.agentRanks).toHaveLength(0);
   });
@@ -516,9 +494,6 @@ describe("LeaderboardRepository.getBulkAgentMetrics() Integration Tests", () => 
       bothTypesId,
       noScoresId,
     ]);
-
-    // All agent info should be returned
-    expect(result.agentInfo).toHaveLength(4);
 
     // Verify total ranks: trading-only (1) + perpetual-only (1) + both-types (2) = 4
     expect(result.agentRanks).toHaveLength(4);

@@ -124,7 +124,6 @@ export class LeaderboardRepository {
   ): Promise<RawAgentMetricsQueryResult> {
     if (agentIds.length === 0) {
       return {
-        agentInfo: [],
         agentRanks: [],
         competitionCounts: [],
         tradeCounts: [],
@@ -140,19 +139,7 @@ export class LeaderboardRepository {
     );
 
     try {
-      // Query 1: Agent basic info (name, description, etc.)
-      const agentInfoQuery = this.#dbRead
-        .select({
-          agentId: agents.id,
-          name: agents.name,
-          description: agents.description,
-          imageUrl: agents.imageUrl,
-          metadata: agents.metadata,
-        })
-        .from(agents)
-        .where(inArray(agents.id, agentIds));
-
-      // Query 2: Agent ranks by competition type with rank calculated in SQL
+      // Query 1: Agent ranks by competition type with rank calculated in SQL
       // Use a subquery to calculate ranks across ALL agents, then filter to requested agents
       const rankedAgentsSubquery = this.#dbRead
         .select({
@@ -176,7 +163,7 @@ export class LeaderboardRepository {
         .from(rankedAgentsSubquery)
         .where(inArray(rankedAgentsSubquery.agentId, agentIds));
 
-      // Query 3: Competition counts (only completed competitions)
+      // Query 2: Competition counts (only completed competitions)
       const competitionCountsQuery = this.#dbRead
         .select({
           agentId: competitionAgents.agentId,
@@ -195,7 +182,7 @@ export class LeaderboardRepository {
         )
         .groupBy(competitionAgents.agentId);
 
-      // Query 4: Trade counts
+      // Query 3: Trade counts
       const tradeCountsQuery = this.#dbRead
         .select({
           agentId: trades.agentId,
@@ -205,7 +192,7 @@ export class LeaderboardRepository {
         .where(inArray(trades.agentId, agentIds))
         .groupBy(trades.agentId);
 
-      // Query 5: Position counts (for perpetual futures competitions)
+      // Query 4: Position counts (for perpetual futures competitions)
       const positionCountsQuery = this.#dbRead
         .select({
           agentId: perpetualPositions.agentId,
@@ -215,7 +202,7 @@ export class LeaderboardRepository {
         .where(inArray(perpetualPositions.agentId, agentIds))
         .groupBy(perpetualPositions.agentId);
 
-      // Query 6: Best placements - get the best rank for each agent
+      // Query 5: Best placements - get the best rank for each agent
       const bestPlacementsSubquery = this.#dbRead
         .select({
           agentId: competitionsLeaderboard.agentId,
@@ -244,7 +231,7 @@ export class LeaderboardRepository {
         )
         .where(inArray(competitionsLeaderboard.agentId, agentIds));
 
-      // Query 7: Best Profit/Loss
+      // Query 6: Best Profit/Loss
       const bestPnlQuery = this.#dbRead
         .selectDistinctOn([competitionsLeaderboard.agentId], {
           competitionId: competitionsLeaderboard.competitionId,
@@ -265,7 +252,7 @@ export class LeaderboardRepository {
           desc(tradingCompetitionsLeaderboard.pnl),
         );
 
-      // Query 8: Total ROI - calculate ROI percentage across all finished competitions
+      // Query 7: Total ROI - calculate ROI percentage across all finished competitions
       const totalRoiQuery = this.#dbRead
         .select({
           agentId: competitionsLeaderboard.agentId,
@@ -296,7 +283,6 @@ export class LeaderboardRepository {
 
       // Execute all queries in parallel
       const [
-        agentInfo,
         agentRanks,
         competitionCounts,
         tradeCounts,
@@ -305,7 +291,6 @@ export class LeaderboardRepository {
         bestPnls,
         totalRois,
       ] = await Promise.all([
-        agentInfoQuery,
         agentRanksQuery,
         competitionCountsQuery,
         tradeCountsQuery,
@@ -321,7 +306,6 @@ export class LeaderboardRepository {
       );
 
       return {
-        agentInfo,
         agentRanks,
         competitionCounts,
         tradeCounts,

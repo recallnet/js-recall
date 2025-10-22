@@ -3,15 +3,6 @@
  * This represents the unprocessed data returned from database queries
  */
 export interface RawAgentMetricsQueryResult {
-  /** Basic agent information (name, description, etc.) */
-  agentInfo: Array<{
-    agentId: string;
-    name: string;
-    description: string | null;
-    imageUrl: string | null;
-    metadata: unknown;
-  }>;
-
   /** Agent ranks by competition type with rank calculated in SQL */
   agentRanks: Array<{
     agentId: string;
