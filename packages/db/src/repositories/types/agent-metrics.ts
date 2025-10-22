@@ -3,14 +3,21 @@
  * This represents the unprocessed data returned from database queries
  */
 export interface RawAgentMetricsQueryResult {
-  /** Basic agent information with global scores */
-  agentRanks: Array<{
+  /** Basic agent information (name, description, etc.) */
+  agentInfo: Array<{
     agentId: string;
     name: string;
     description: string | null;
     imageUrl: string | null;
     metadata: unknown;
-    globalScore: number | null;
+  }>;
+
+  /** Agent ranks by competition type with rank calculated in SQL */
+  agentRanks: Array<{
+    agentId: string;
+    type: string;
+    ordinal: number;
+    rank: number;
   }>;
 
   /** Competition participation counts per agent */
@@ -52,11 +59,5 @@ export interface RawAgentMetricsQueryResult {
     agentId: string;
     totalPnl: string | null;
     totalStartingValue: string | null;
-  }>;
-
-  /** All agent scores for rank calculation - raw data from agentScore table */
-  allAgentScores: Array<{
-    agentId: string;
-    ordinal: number | null;
   }>;
 }

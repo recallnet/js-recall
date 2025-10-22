@@ -182,6 +182,16 @@
         "default": "./dist/repositories/user.cjs"
       }
     },
+    "./repositories/types": {
+      "import": {
+        "types": "./dist/repositories/types/index.d.ts",
+        "default": "./dist/repositories/types/index.js"
+      },
+      "require": {
+        "types": "./dist/repositories/types/index.d.cts",
+        "default": "./dist/repositories/types/index.cjs"
+      }
+    },
     "./types": {
       "import": {
         "types": "./dist/types.d.ts",

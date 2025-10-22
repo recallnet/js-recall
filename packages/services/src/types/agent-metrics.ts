@@ -5,65 +5,17 @@ export type { AgentPublic } from "./index.js";
 
 /**
  * Raw query results from repository layer for bulk agent metrics
- * This represents the unprocessed data returned from database queries
+ * Re-exported from @recallnet/db for convenience
  */
-export interface RawAgentMetricsQueryResult {
-  /** Basic agent information with global scores */
-  agentRanks: Array<{
-    agentId: string;
-    name: string;
-    description: string | null;
-    imageUrl: string | null;
-    metadata: unknown;
-    globalScore: number | null;
-  }>;
+export type { RawAgentMetricsQueryResult } from "@recallnet/db/repositories/types";
 
-  /** Competition participation counts per agent */
-  competitionCounts: Array<{
-    agentId: string;
-    completedCompetitions: number;
-  }>;
-
-  /** Trade counts per agent (paper trading) */
-  tradeCounts: Array<{
-    agentId: string;
-    totalTrades: number;
-  }>;
-
-  /** Position counts per agent (perpetual futures) */
-  positionCounts: Array<{
-    agentId: string;
-    totalPositions: number;
-  }>;
-
-  /** Best placement data per agent */
-  bestPlacements: Array<{
-    agentId: string;
-    competitionId: string;
-    rank: number;
-    score: number;
-    totalAgents: number;
-  }>;
-
-  /** Best PnL data per agent */
-  bestPnls: Array<{
-    agentId: string;
-    competitionId: string;
-    pnl: number;
-  }>;
-
-  /** Total ROI raw data per agent */
-  totalRois: Array<{
-    agentId: string;
-    totalPnl: string | null;
-    totalStartingValue: string | null;
-  }>;
-
-  /** All agent scores for rank calculation - raw data from agentScore table */
-  allAgentScores: Array<{
-    agentId: string;
-    ordinal: number | null;
-  }>;
+/**
+ * Score information for a specific competition type
+ */
+export interface AgentRankByType {
+  type: string;
+  rank: number;
+  score: number;
 }
 
 /**
@@ -74,6 +26,14 @@ export interface RawAgentMetricsQueryResult {
  * where NULL represents the absence of data. This differs from the public API
  * schema (AgentStats) which uses `undefined` for optional fields to minimize
  * JSON payload size and follow REST best practices.
+ * @param agentId Agent ID
+ * @param completedCompetitions Number of competitions completed
+ * @param totalTrades Number of trades
+ * @param totalPositions Number of positions
+ * @param bestPlacement Best placement
+ * @param bestPnl Best PnL
+ * @param totalRoi Total ROI
+ * @param scores Scores by competition type (e.g., trading, perpetual_futures)
  */
 export interface AgentMetricsData {
   agentId: string;
@@ -88,8 +48,7 @@ export interface AgentMetricsData {
   } | null;
   bestPnl: number | null;
   totalRoi: number | null;
-  globalRank: number | null;
-  globalScore: number | null;
+  ranks: AgentRankByType[];
 }
 
 /**

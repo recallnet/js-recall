@@ -170,3 +170,6 @@ export const AgentCompetitionsParamsSchema = PagingParamsSchema.extend({
 export type AgentCompetitionsParams = z.infer<
   typeof AgentCompetitionsParamsSchema
 >;
+
+// Export agent metrics types
+export type { RawAgentMetricsQueryResult } from "./agent-metrics.js";
