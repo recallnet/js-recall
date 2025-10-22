@@ -10,6 +10,7 @@ import { clientConfig } from "@/wagmi-config";
 
 import {
   useSafeAccount,
+  useSafeBlock,
   useSafeReadContracts,
   useSafeWaitForTransactionReceipt,
   useSafeWriteContract,
@@ -19,6 +20,13 @@ type ClaimItem = {
   merkleRoot: string;
   amount: string; // wei string
   proof: string[];
+};
+
+type AllocationInfo = {
+  token: string;
+  allocatedAmount: bigint;
+  claimedAmount: bigint;
+  startTimestamp: bigint;
 };
 
 /**
@@ -89,6 +97,46 @@ export function useClaim(): ClaimOperationResult {
       },
     });
 
+  // Check if there are any unclaimed allocations
+  const hasUnclaimed = useMemo(() => {
+    if (!allClaims || !claimedStatus) return false;
+    return allClaims.some((_, index) => {
+      const result = claimedStatus[index];
+      return result?.status === "success" && result.result === false;
+    });
+  }, [allClaims, claimedStatus]);
+
+  // Fetch latest block (only when there are unclaimed allocations)
+  const { data: block } = useSafeBlock({
+    chainId: publicConfig.blockchain.chain.id,
+    query: {
+      enabled: Boolean(address) && hasUnclaimed,
+      refetchInterval: 10_000,
+    },
+  });
+
+  const blockTimestamp = block?.timestamp;
+
+  // Create contract calls to fetch allocation info for each merkle root
+  const allocInfoContracts = useMemo(() => {
+    if (!allClaims) return [];
+
+    return allClaims.map((claim) => ({
+      address: publicConfig.blockchain.rewardAllocationContractAddress as Hex,
+      abi: RewardAllocationAbi,
+      functionName: "allocInfo" as const,
+      args: [claim.merkleRoot as Hex] as const,
+      chainId: publicConfig.blockchain.chain.id,
+    }));
+  }, [allClaims]);
+
+  const { data: allocInfoResults } = useSafeReadContracts({
+    contracts: allocInfoContracts,
+    query: {
+      enabled: allocInfoContracts.length > 0,
+    },
+  });
+
   useEffect(() => {
     if (isConfirmed) {
       queryClient.invalidateQueries({
@@ -97,16 +145,40 @@ export function useClaim(): ClaimOperationResult {
     }
   }, [isConfirmed, claimedStatusQueryKey, queryClient]);
 
-  // Filter out claims that have already been claimed
-  const claims = useMemo(() => {
-    if (!allClaims || !claimedStatus) return [];
+  // Filter claims based on claimed status and startTimestamp
+  const { claims, notYetActiveClaims } = useMemo(() => {
+    if (!allClaims || !claimedStatus || !allocInfoResults || !blockTimestamp) {
+      return { claims: [], notYetActiveClaims: [] };
+    }
 
-    return allClaims.filter((_, index) => {
-      const result = claimedStatus[index];
-      // If the result is successful and the value is false, the claim hasn't been claimed yet
-      return result?.status === "success" && result.result === false;
+    const eligible: ClaimItem[] = [];
+    const notActive: ClaimItem[] = [];
+
+    allClaims.forEach((claim, index) => {
+      const claimedResult = claimedStatus[index];
+      const allocInfoResult = allocInfoResults[index];
+
+      // Check if claim has not been claimed yet
+      const isNotClaimed =
+        claimedResult?.status === "success" && claimedResult.result === false;
+
+      if (!isNotClaimed) return;
+
+      // Check if allocation info exists
+      if (allocInfoResult?.status !== "success") return;
+
+      const allocInfo = allocInfoResult.result as AllocationInfo;
+      const isActive = blockTimestamp >= allocInfo.startTimestamp;
+
+      if (isActive) {
+        eligible.push(claim);
+      } else {
+        notActive.push(claim);
+      }
     });
-  }, [allClaims, claimedStatus]);
+
+    return { claims: eligible, notYetActiveClaims: notActive };
+  }, [allClaims, claimedStatus, allocInfoResults, blockTimestamp]);
 
   const totalClaimable = useMemo(() => {
     if (!claims || claims.length === 0) return 0n;
@@ -117,14 +189,36 @@ export function useClaim(): ClaimOperationResult {
   const claim = useCallback(
     async (item: ClaimItem | ClaimItem[]) => {
       // Normalize input to array of targets
-      const targets = Array.isArray(item) ? item : [item];
+      const requestedTargets = Array.isArray(item) ? item : [item];
 
       // Reset the write contract hook
       reset();
 
+      // Filter to only eligible claims (claims that are in the eligible list)
+      const eligibleTargets = requestedTargets.filter((target) =>
+        claims.some((c) => c.merkleRoot === target.merkleRoot),
+      );
+
+      // Check if any targets are eligible
+      if (eligibleTargets.length === 0) {
+        const hasInactiveClaims = requestedTargets.some((target) =>
+          notYetActiveClaims.some((c) => c.merkleRoot === target.merkleRoot),
+        );
+
+        if (hasInactiveClaims) {
+          console.info(
+            "Cannot claim rewards: claim period has not started yet",
+          );
+          return;
+        }
+
+        console.info("No eligible rewards to claim");
+        return;
+      }
+
       // Use multicall for multiple claims
-      if (targets.length > 1) {
-        const encodedCalls = targets.map((t) =>
+      if (eligibleTargets.length > 1) {
+        const encodedCalls = eligibleTargets.map((t) =>
           encodeFunctionData({
             abi: RewardAllocationAbi,
             functionName: "claim",
@@ -149,8 +243,11 @@ export function useClaim(): ClaimOperationResult {
       }
 
       // Single claim path
-      const target = targets[0];
-      if (!target) throw new Error("No claimable rewards");
+      const target = eligibleTargets[0];
+      if (!target) {
+        console.info("No eligible rewards to claim");
+        return;
+      }
 
       const root = target.merkleRoot as Hex;
       const amount = BigInt(target.amount);
@@ -168,7 +265,7 @@ export function useClaim(): ClaimOperationResult {
       // If simulation succeeds, execute the actual transaction
       writeContract(simulationResult.request);
     },
-    [writeContract, config, address, reset],
+    [writeContract, config, address, reset, claims, notYetActiveClaims],
   );
 
   // @ts-expect-error - error is not typed correctly
@@ -182,6 +279,7 @@ export function useClaim(): ClaimOperationResult {
       isConfirmed,
       error,
       transactionHash,
+      notYetActiveClaims: notYetActiveClaims ?? [],
     }),
     [
       claims,
@@ -192,6 +290,7 @@ export function useClaim(): ClaimOperationResult {
       isConfirmed,
       error,
       transactionHash,
+      notYetActiveClaims,
     ],
   );
 }
