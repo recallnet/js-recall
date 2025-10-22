@@ -10,13 +10,13 @@ import { Avatar, AvatarImage } from "@recallnet/ui2/components/avatar";
 import { Button } from "@recallnet/ui2/components/button";
 import { cn } from "@recallnet/ui2/lib/utils";
 
+import { Claim } from "@/components/Claim";
 import { ConnectWallet } from "@/components/connect-wallet";
 import { PrivyAuthButton } from "@/components/privy-auth-button";
 import { config } from "@/config/public";
 import { useSession } from "@/hooks";
 import { useClaim } from "@/hooks/useClaim";
 
-import { Claim } from "./Claim";
 import { NonStakeBoost } from "./NonStakeBoost";
 //import { GetRecall } from "./GetRecall";
 import { RecallToken } from "./RecallToken";
