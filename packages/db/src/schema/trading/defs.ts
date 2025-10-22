@@ -513,6 +513,10 @@ export const perpsRiskMetrics = tradingComps.table(
     annualizedReturn: numeric("annualized_return").notNull(),
     maxDrawdown: numeric("max_drawdown").notNull(),
 
+    // Sortino ratio metrics
+    sortinoRatio: numeric("sortino_ratio"),
+    downsideDeviation: numeric("downside_deviation"),
+
     // Note: transferCount and periodCount removed - transfers are violations
 
     // Metadata
@@ -532,10 +536,64 @@ export const perpsRiskMetrics = tradingComps.table(
       table.competitionId,
       table.calmarRatio.desc(),
     ),
+    index("idx_perps_metrics_sortino").on(
+      table.competitionId,
+      table.sortinoRatio.desc(),
+    ),
   ],
 );
 
 // NOTE: The system uses simple returns since mid-competition transfers are prohibited
+
+/**
+ * Time-series table for risk metrics snapshots
+ * Stores historical risk metrics for each agent at regular intervals
+ * Unlike perps_risk_metrics, this table has NO unique constraint on (agent_id, competition_id)
+ * allowing multiple snapshots over time
+ */
+export const riskMetricsSnapshots = tradingComps.table(
+  "risk_metrics_snapshots",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    agentId: uuid("agent_id")
+      .notNull()
+      .references(() => agents.id),
+    competitionId: uuid("competition_id").notNull(),
+
+    // Timestamp for this snapshot
+    timestamp: timestamp("timestamp", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+
+    // Risk metrics at this point in time
+    calmarRatio: numeric("calmar_ratio"),
+    sortinoRatio: numeric("sortino_ratio"),
+    simpleReturn: numeric("simple_return"),
+    annualizedReturn: numeric("annualized_return"),
+    maxDrawdown: numeric("max_drawdown"),
+    downsideDeviation: numeric("downside_deviation"), // For Sortino calculation
+  },
+  (table) => [
+    // Index for querying by agent and competition
+    index("idx_risk_snapshots_agent_comp").on(
+      table.agentId,
+      table.competitionId,
+    ),
+    // Index for time-based queries
+    index("idx_risk_snapshots_timestamp").on(table.timestamp.desc()),
+    // Composite index for competition time series queries
+    index("idx_risk_snapshots_comp_time").on(
+      table.competitionId,
+      table.timestamp.desc(),
+    ),
+    // Index for agent time series within a competition
+    index("idx_risk_snapshots_agent_comp_time").on(
+      table.agentId,
+      table.competitionId,
+      table.timestamp.desc(),
+    ),
+  ],
+);
 
 export const perpsSelfFundingAlerts = tradingComps.table(
   "perps_self_funding_alerts",

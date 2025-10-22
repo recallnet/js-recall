@@ -274,6 +274,9 @@ export const competitions = pgTable(
     }),
     status: competitionStatus("status").notNull(),
     sandboxMode: boolean("sandbox_mode").notNull().default(false),
+    evaluationMetric: varchar("evaluation_metric", { length: 20 })
+      .default("calmar_ratio")
+      .notNull(),
     createdAt: timestamp("created_at", {
       withTimezone: true,
     }).defaultNow(),

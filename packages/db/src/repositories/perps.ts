@@ -6,7 +6,9 @@ import {
   eq,
   getTableColumns,
   gt,
+  gte,
   inArray,
+  lte,
   not,
   sql,
   sum,
@@ -21,6 +23,7 @@ import {
   perpsRiskMetrics,
   perpsSelfFundingAlerts,
   perpsTransferHistory,
+  riskMetricsSnapshots,
 } from "../schema/trading/defs.js";
 import {
   InsertPerpetualPosition,
@@ -29,6 +32,7 @@ import {
   InsertPerpsRiskMetrics,
   InsertPerpsSelfFundingAlert,
   InsertPerpsTransferHistory,
+  InsertRiskMetricsSnapshot,
   PerpetualPositionWithAgent,
   RiskAdjustedLeaderboardEntry,
   SelectPerpetualPosition,
@@ -37,6 +41,7 @@ import {
   SelectPerpsRiskMetrics,
   SelectPerpsSelfFundingAlert,
   SelectPerpsTransferHistory,
+  SelectRiskMetricsSnapshot,
 } from "../schema/trading/types.js";
 import { Database, Transaction } from "../types.js";
 
@@ -1372,7 +1377,7 @@ export class PerpsRepository {
   // =============================================================================
 
   /**
-   * Upsert risk metrics for an agent
+   * Upsert risk metrics for an agent (latest values only)
    * @param metrics Risk metrics to save/update
    * @param tx Optional transaction
    * @returns Saved risk metrics
@@ -1393,6 +1398,8 @@ export class PerpsRepository {
             calmarRatio: metrics.calmarRatio,
             annualizedReturn: metrics.annualizedReturn,
             maxDrawdown: metrics.maxDrawdown,
+            sortinoRatio: metrics.sortinoRatio,
+            downsideDeviation: metrics.downsideDeviation,
             snapshotCount: metrics.snapshotCount,
             calculationTimestamp: sql`CURRENT_TIMESTAMP`,
           },
@@ -1410,6 +1417,112 @@ export class PerpsRepository {
       return result;
     } catch (error) {
       this.#logger.error("Error in upsertRiskMetrics:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Batch create risk metrics snapshots for time series data
+   * Following the same pattern as batchCreatePortfolioSnapshots
+   * @param snapshots Array of risk metrics snapshot data
+   * @returns Array of created snapshots
+   */
+  async batchCreateRiskMetricsSnapshots(
+    snapshots: InsertRiskMetricsSnapshot[],
+  ): Promise<SelectRiskMetricsSnapshot[]> {
+    if (snapshots.length === 0) {
+      return [];
+    }
+
+    try {
+      this.#logger.debug(
+        `[PerpsRepository] Batch creating ${snapshots.length} risk metrics snapshots`,
+      );
+
+      const now = new Date();
+      const results = await this.#db
+        .insert(riskMetricsSnapshots)
+        .values(
+          snapshots.map((snapshot) => ({
+            ...snapshot,
+            timestamp: snapshot.timestamp || now,
+          })),
+        )
+        .returning();
+
+      this.#logger.debug(
+        `[PerpsRepository] Successfully created ${results.length} risk metrics snapshots`,
+      );
+
+      return results;
+    } catch (error) {
+      this.#logger.error("Error in batchCreateRiskMetricsSnapshots:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get risk metrics time series data for a competition
+   * @param competitionId Competition ID
+   * @param agentId Optional agent ID to filter by
+   * @param startDate Optional start date
+   * @param endDate Optional end date
+   * @param limit Optional limit for the number of snapshots to return
+   * @param offset Optional offset for pagination
+   * @returns Array of risk metrics snapshots
+   */
+  async getRiskMetricsTimeSeries(
+    competitionId: string,
+    agentId?: string,
+    startDate?: Date,
+    endDate?: Date,
+    limit?: number,
+    offset?: number,
+  ): Promise<SelectRiskMetricsSnapshot[]> {
+    try {
+      const conditions = [
+        eq(riskMetricsSnapshots.competitionId, competitionId),
+      ];
+
+      if (agentId) {
+        conditions.push(eq(riskMetricsSnapshots.agentId, agentId));
+      }
+
+      if (startDate) {
+        conditions.push(gte(riskMetricsSnapshots.timestamp, startDate));
+      }
+
+      if (endDate) {
+        conditions.push(lte(riskMetricsSnapshots.timestamp, endDate));
+      }
+
+      const query = this.#dbRead
+        .select()
+        .from(riskMetricsSnapshots)
+        .where(and(...conditions))
+        .orderBy(desc(riskMetricsSnapshots.timestamp));
+
+      // Apply pagination if specified
+      let results: SelectRiskMetricsSnapshot[];
+      if (limit !== undefined && limit > 0) {
+        if (offset !== undefined && offset > 0) {
+          results = await query.limit(limit).offset(offset);
+        } else {
+          results = await query.limit(limit);
+        }
+      } else if (offset !== undefined && offset > 0) {
+        results = await query.offset(offset);
+      } else {
+        results = await query;
+      }
+
+      this.#logger.debug(
+        `[PerpsRepository] Retrieved ${results.length} risk metrics snapshots for competition ${competitionId}`,
+      );
+
+      return results;
+    } catch (error) {
+      this.#logger.error("Error in getRiskMetricsTimeSeries:", error);
       throw error;
     }
   }
@@ -1444,6 +1557,8 @@ export class PerpsRepository {
           calmarRatio: perpsRiskMetrics.calmarRatio,
           annualizedReturn: perpsRiskMetrics.annualizedReturn,
           maxDrawdown: perpsRiskMetrics.maxDrawdown,
+          sortinoRatio: perpsRiskMetrics.sortinoRatio,
+          downsideDeviation: perpsRiskMetrics.downsideDeviation,
           calculationTimestamp: perpsRiskMetrics.calculationTimestamp,
           snapshotCount: perpsRiskMetrics.snapshotCount,
           agent: {

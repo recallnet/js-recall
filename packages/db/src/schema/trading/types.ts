@@ -49,6 +49,11 @@ export type InsertPerpsTransferHistory =
 export type SelectPerpsRiskMetrics = typeof defs.perpsRiskMetrics.$inferSelect;
 export type InsertPerpsRiskMetrics = typeof defs.perpsRiskMetrics.$inferInsert;
 
+export type SelectRiskMetricsSnapshot =
+  typeof defs.riskMetricsSnapshots.$inferSelect;
+export type InsertRiskMetricsSnapshot =
+  typeof defs.riskMetricsSnapshots.$inferInsert;
+
 /**
  * Perpetual position with embedded agent information
  */
