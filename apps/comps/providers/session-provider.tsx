@@ -14,6 +14,7 @@ import * as Sentry from "@sentry/nextjs";
 import {
   QueryObserverResult,
   RefetchOptions,
+  skipToken,
   useMutation,
   useQuery,
   useQueryClient,
@@ -194,7 +195,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     refetch: refetchBackendUser,
   } = useQuery(
     tanstackClient.user.getProfile.queryOptions({
-      enabled: authenticated && ready && isLoginToBackendSuccess,
+      input: authenticated && ready && isLoginToBackendSuccess ? {} : skipToken,
       staleTime: 5 * 60 * 1000, // 5 minutes
       gcTime: 10 * 60 * 1000, // 10 minutes
       retry: (failureCount, error) => {

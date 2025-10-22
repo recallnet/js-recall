@@ -1,4 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  skipToken,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import {
   ColumnDef,
   SortingState,
@@ -95,8 +100,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
 
   const { data: availableBoostAwards } = useQuery(
     tanstackClient.boost.availableAwards.queryOptions({
-      input: { competitionId: competition.id },
-      enabled: isOpenForBoosting,
+      input: isOpenForBoosting ? { competitionId: competition.id } : skipToken,
     }),
   );
 
@@ -106,14 +110,15 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
     isSuccess: isSuccessUserBoostBalance,
   } = useQuery(
     tanstackClient.boost.balance.queryOptions({
-      input: { competitionId: competition.id },
+      input: session.isAuthenticated
+        ? { competitionId: competition.id }
+        : skipToken,
       queryKey: [
         ...tanstackClient.boost.balance.queryKey({
           input: { competitionId: competition.id },
         }),
         session.user?.id ?? "unauthenticated",
       ],
-      enabled: session.isAuthenticated,
       select: (data) => attoValueToNumberValue(data),
     }),
   );
@@ -124,14 +129,15 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
     isSuccess: isSuccessUserBoosts,
   } = useQuery(
     tanstackClient.boost.userBoosts.queryOptions({
-      input: { competitionId: competition.id },
+      input: session.isAuthenticated
+        ? { competitionId: competition.id }
+        : skipToken,
       queryKey: [
         ...tanstackClient.boost.userBoosts.queryKey({
           input: { competitionId: competition.id },
         }),
         session.user?.id ?? "unauthenticated",
       ],
-      enabled: session.isAuthenticated,
       select: (data) =>
         Object.fromEntries(
           Object.entries(data).map(([key, value]) => [

@@ -140,7 +140,7 @@ describe("CalmarRatioService", () => {
       );
     });
 
-    it("should handle zero drawdown by capping Calmar ratio", async () => {
+    it("should handle zero drawdown by using minimum value", async () => {
       const agentId = "agent-456";
       const competitionId = "comp-123";
 
@@ -148,22 +148,22 @@ describe("CalmarRatioService", () => {
         createMockCompetition(new Date("2025-01-20")),
       );
       mockCompeitionRepo.getFirstAndLastSnapshots.mockResolvedValue(
-        createMockSnapshots(1000, 1500), // 50% return
+        createMockSnapshots(1000, 2500), // 150% return
       );
       mockCompeitionRepo.calculateMaxDrawdownSQL.mockResolvedValue(0); // No drawdown
       mockPerpsRepo.saveRiskMetrics.mockResolvedValue(createMockSavedMetrics());
 
       await service.calculateAndSaveCalmarRatio(agentId, competitionId);
 
-      // Calmar should be capped at 100 when there's no drawdown
+      // Should use minimum drawdown of 0.001: 1.50 / 0.001 = 1500
       expect(mockPerpsRepo.saveRiskMetrics).toHaveBeenCalledWith(
         expect.objectContaining({
-          calmarRatio: "100.00000000",
+          calmarRatio: "1500.00000000",
         }),
       );
     });
 
-    it("should handle negative returns with zero drawdown", async () => {
+    it("should handle negative returns with drawdown", async () => {
       const agentId = "agent-456";
       const competitionId = "comp-123";
 
@@ -173,15 +173,15 @@ describe("CalmarRatioService", () => {
       mockCompeitionRepo.getFirstAndLastSnapshots.mockResolvedValue(
         createMockSnapshots(1000, 900), // -10% return
       );
-      mockCompeitionRepo.calculateMaxDrawdownSQL.mockResolvedValue(0); // No drawdown (weird but possible)
+      mockCompeitionRepo.calculateMaxDrawdownSQL.mockResolvedValue(-0.1); // 10% drawdown (must exist with negative return)
       mockPerpsRepo.saveRiskMetrics.mockResolvedValue(createMockSavedMetrics());
 
       await service.calculateAndSaveCalmarRatio(agentId, competitionId);
 
-      // Should cap at -100 for negative return with no drawdown
+      // Should calculate normally: -0.10 / 0.10 = -1.0
       expect(mockPerpsRepo.saveRiskMetrics).toHaveBeenCalledWith(
         expect.objectContaining({
-          calmarRatio: "-100.00000000",
+          calmarRatio: "-1.00000000",
         }),
       );
     });
