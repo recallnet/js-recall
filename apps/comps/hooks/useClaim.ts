@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { simulateContract, waitForTransactionReceipt } from "@wagmi/core";
-import { useCallback, useMemo, useState } from "react";
-import { Hex, encodePacked, keccak256 } from "viem";
+import { WriteContractErrorType, simulateContract } from "@wagmi/core";
+import { useCallback, useEffect, useMemo } from "react";
+import { Hex, encodeFunctionData, encodePacked, keccak256 } from "viem";
 
 import { RewardAllocationAbi } from "@/abi/RewardAllocation";
 import { config as publicConfig } from "@/config/public";
@@ -11,6 +11,7 @@ import { clientConfig } from "@/wagmi-config";
 import {
   useSafeAccount,
   useSafeReadContracts,
+  useSafeWaitForTransactionReceipt,
   useSafeWriteContract,
 } from "./useSafeWagmi";
 
@@ -26,21 +27,21 @@ type ClaimItem = {
 export type ClaimOperationResult = {
   claims: ClaimItem[];
   totalClaimable: bigint;
-  claim: (item?: ClaimItem) => Promise<void>;
+  claim: (item: ClaimItem | ClaimItem[]) => Promise<void>;
   isPending: boolean;
   isConfirming: boolean;
   isConfirmed: boolean;
-  error: Error | null;
+  error: WriteContractErrorType | null;
   transactionHash: `0x${string}` | undefined;
 };
 
 /**
  * Hook for claiming rewards
- * @returns Claim operation result with transaction hash and state
+ * @returns Claim operation result with transaction hash and state. The `claim` function accepts:
+ * - `ClaimItem`: Claims a specific reward
+ * - `ClaimItem[]`: Claims multiple rewards in a single multicall transaction
  */
 export function useClaim(): ClaimOperationResult {
-  const [isConfirming, setIsConfirming] = useState(false);
-  const [isConfirmed, setIsConfirmed] = useState(false);
   const { address } = useSafeAccount();
   const queryClient = useQueryClient();
   const config = clientConfig;
@@ -52,6 +53,11 @@ export function useClaim(): ClaimOperationResult {
     data: transactionHash,
     reset,
   } = useSafeWriteContract();
+  const { isLoading: isConfirming, isSuccess: isConfirmed } =
+    useSafeWaitForTransactionReceipt({
+      hash: transactionHash,
+      confirmations: 2,
+    });
 
   const { data: allClaims } = useQuery<ClaimItem[]>(
     tanstackClient.rewards.getClaimData.queryOptions({
@@ -83,6 +89,14 @@ export function useClaim(): ClaimOperationResult {
       },
     });
 
+  useEffect(() => {
+    if (isConfirmed) {
+      queryClient.invalidateQueries({
+        queryKey: claimedStatusQueryKey,
+      });
+    }
+  }, [isConfirmed, claimedStatusQueryKey, queryClient]);
+
   // Filter out claims that have already been claimed
   const claims = useMemo(() => {
     if (!allClaims || !claimedStatus) return [];
@@ -99,73 +113,65 @@ export function useClaim(): ClaimOperationResult {
     return claims.reduce((acc, c) => acc + BigInt(c.amount), 0n);
   }, [claims]);
 
-  const refetchQueries = async (txHash: `0x${string}`) => {
-    const transactionReceipt = await waitForTransactionReceipt(
-      clientConfig as any,
-      {
-        hash: txHash,
-        pollingInterval: 1000,
-      },
-    );
-
-    if (transactionReceipt.status === "success") {
-      setIsConfirmed(true);
-      setIsConfirming(false);
-      queryClient.invalidateQueries({
-        queryKey: tanstackClient.rewards.getClaimData.key(),
-      });
-      queryClient.invalidateQueries({
-        queryKey: claimedStatusQueryKey,
-      });
-    }
-  };
-
   // Execute function that simulates before claiming
   const claim = useCallback(
-    async (item?: ClaimItem) => {
-      try {
-        const target = item ?? claims?.[0];
-        if (!target) throw new Error("No claimable rewards");
+    async (item: ClaimItem | ClaimItem[]) => {
+      // Normalize input to array of targets
+      const targets = Array.isArray(item) ? item : [item];
 
-        // Reset the write contract hook
-        reset();
+      // Reset the write contract hook
+      reset();
 
-        const root = target.merkleRoot as Hex;
-        const amount = BigInt(target.amount);
-        const proof = target.proof as Hex[];
+      // Use multicall for multiple claims
+      if (targets.length > 1) {
+        const encodedCalls = targets.map((t) =>
+          encodeFunctionData({
+            abi: RewardAllocationAbi,
+            functionName: "claim",
+            args: [t.merkleRoot as Hex, BigInt(t.amount), t.proof as Hex[]],
+          }),
+        );
 
-        // First simulate the transaction
+        // Simulate the multicall transaction
         const simulationResult = await simulateContract(config as any, {
           address: publicConfig.blockchain
             .rewardAllocationContractAddress as Hex,
           abi: RewardAllocationAbi,
-          functionName: "claim",
-          args: [root, amount, proof],
+          functionName: "multicall",
+          args: [encodedCalls],
           account: address,
         });
 
         // If simulation succeeds, execute the actual transaction
-        writeContract(simulationResult.request, {
-          onSuccess: (txHash) => {
-            refetchQueries(txHash);
-          },
-          onError: (error) => {
-            setIsConfirming(false);
-            throw new Error(error.message);
-          },
-        });
-        setIsConfirming(true);
-      } catch (simulationError) {
-        setIsConfirming(false);
-        // Re-throw simulation errors with a clear message
-        throw new Error(
-          `Transaction simulation failed: ${simulationError instanceof Error ? simulationError.message : "Unknown error"}`,
-        );
+        writeContract(simulationResult.request);
+
+        return;
       }
+
+      // Single claim path
+      const target = targets[0];
+      if (!target) throw new Error("No claimable rewards");
+
+      const root = target.merkleRoot as Hex;
+      const amount = BigInt(target.amount);
+      const proof = target.proof as Hex[];
+
+      // First simulate the transaction
+      const simulationResult = await simulateContract(config as any, {
+        address: publicConfig.blockchain.rewardAllocationContractAddress as Hex,
+        abi: RewardAllocationAbi,
+        functionName: "claim",
+        args: [root, amount, proof],
+        account: address,
+      });
+
+      // If simulation succeeds, execute the actual transaction
+      writeContract(simulationResult.request);
     },
-    [claims, writeContract, config, address, reset, refetchQueries],
+    [writeContract, config, address, reset],
   );
 
+  // @ts-expect-error - error is not typed correctly
   return useMemo(
     () => ({
       claims: claims ?? [],
