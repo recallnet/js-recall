@@ -921,19 +921,20 @@ export class PerpsRepository {
         .leftJoinLateral(riskMetricsSubquery, sql`true`)
         .orderBy(
           // Dynamic sorting based on evaluation metric
+          // Use SQL template to add NULLS LAST - agents WITHOUT metrics rank after agents WITH metrics
           ...(evaluationMetric === "sortino_ratio"
             ? [
-                desc(riskMetricsSubquery.sortinoRatio),
+                sql`${riskMetricsSubquery.sortinoRatio} DESC NULLS LAST`,
                 desc(latestSummarySubquery.totalEquity),
               ]
             : evaluationMetric === "simple_return"
               ? [
-                  desc(riskMetricsSubquery.simpleReturn),
+                  sql`${riskMetricsSubquery.simpleReturn} DESC NULLS LAST`,
                   desc(latestSummarySubquery.totalEquity),
                 ]
               : [
                   // Default to calmar_ratio sorting
-                  desc(riskMetricsSubquery.calmarRatio),
+                  sql`${riskMetricsSubquery.calmarRatio} DESC NULLS LAST`,
                   desc(latestSummarySubquery.totalEquity),
                 ]),
         )

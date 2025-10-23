@@ -101,8 +101,10 @@ export const perpsCompetitionsLeaderboard = tradingComps.table(
         onUpdate: "cascade",
       }),
     calmarRatio: numeric("calmar_ratio", { mode: "number" }), // Returns as JS number
+    sortinoRatio: numeric("sortino_ratio", { mode: "number" }), // Returns as JS number
     simpleReturn: numeric("simple_return", { mode: "number" }), // Returns as JS number
     maxDrawdown: numeric("max_drawdown", { mode: "number" }), // Returns as JS number
+    downsideDeviation: numeric("downside_deviation", { mode: "number" }), // Returns as JS number
     totalEquity: numeric("total_equity", { mode: "number" }).notNull(), // Returns as JS number
     totalPnl: numeric("total_pnl", { mode: "number" }), // Returns as JS number
     hasRiskMetrics: boolean("has_risk_metrics").default(false),

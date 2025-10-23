@@ -13,6 +13,8 @@ CREATE TABLE "trading_comps"."risk_metrics_snapshots" (
 );
 --> statement-breakpoint
 ALTER TABLE "competitions" ADD COLUMN "evaluation_metric" "evaluation_metric" DEFAULT 'calmar_ratio' NOT NULL;--> statement-breakpoint
+ALTER TABLE "trading_comps"."perps_competitions_leaderboard" ADD COLUMN "sortino_ratio" numeric;--> statement-breakpoint
+ALTER TABLE "trading_comps"."perps_competitions_leaderboard" ADD COLUMN "downside_deviation" numeric;--> statement-breakpoint
 ALTER TABLE "trading_comps"."perps_risk_metrics" ADD COLUMN "sortino_ratio" numeric;--> statement-breakpoint
 ALTER TABLE "trading_comps"."perps_risk_metrics" ADD COLUMN "downside_deviation" numeric;--> statement-breakpoint
 ALTER TABLE "trading_comps"."risk_metrics_snapshots" ADD CONSTRAINT "risk_metrics_snapshots_agent_id_agents_id_fk" FOREIGN KEY ("agent_id") REFERENCES "public"."agents"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint

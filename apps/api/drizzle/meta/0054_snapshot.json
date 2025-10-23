@@ -1,5 +1,5 @@
 {
-  "id": "cc2ad91c-3689-426b-bfe0-4130ab3a8c98",
+  "id": "d1494b3a-fe95-4583-a6bb-2be83a411b74",
   "prevId": "dd8289a2-6f28-40b3-83c9-c38c2aded904",
   "version": "7",
   "dialect": "postgresql",
@@ -3913,6 +3913,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "sortino_ratio": {
+          "name": "sortino_ratio",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
         "simple_return": {
           "name": "simple_return",
           "type": "numeric",
@@ -3921,6 +3927,12 @@
         },
         "max_drawdown": {
           "name": "max_drawdown",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "downside_deviation": {
+          "name": "downside_deviation",
           "type": "numeric",
           "primaryKey": false,
           "notNull": false

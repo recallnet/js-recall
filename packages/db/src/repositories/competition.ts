@@ -93,8 +93,10 @@ type LeaderboardEntry = InsertCompetitionsLeaderboard & {
   startingValue?: number;
   // For perps competitions (all numeric fields return as numbers with mode: "number")
   calmarRatio?: number | null;
+  sortinoRatio?: number | null;
   simpleReturn?: number | null;
   maxDrawdown?: number | null;
+  downsideDeviation?: number | null;
   totalEquity?: number;
   totalPnl?: number | null;
   hasRiskMetrics?: boolean | null;
@@ -2198,8 +2200,10 @@ export class CompetitionRepository {
               return {
                 competitionsLeaderboardId: entry.id,
                 calmarRatio: entry.calmarRatio,
+                sortinoRatio: entry.sortinoRatio,
                 simpleReturn: entry.simpleReturn,
                 maxDrawdown: entry.maxDrawdown,
+                downsideDeviation: entry.downsideDeviation,
                 totalEquity: entry.totalEquity ?? DEFAULT_ZERO_VALUE, // Required field, default to 0 if undefined
                 totalPnl: entry.totalPnl,
                 hasRiskMetrics: entry.hasRiskMetrics,
@@ -2216,8 +2220,10 @@ export class CompetitionRepository {
             return {
               ...r,
               calmarRatio: perps.calmarRatio,
+              sortinoRatio: perps.sortinoRatio,
               simpleReturn: perps.simpleReturn,
               maxDrawdown: perps.maxDrawdown,
+              downsideDeviation: perps.downsideDeviation,
               totalEquity: perps.totalEquity,
               totalPnl: perps.totalPnl,
               hasRiskMetrics: perps.hasRiskMetrics,
@@ -2309,8 +2315,10 @@ export class CompetitionRepository {
           agentId: competitionsLeaderboard.agentId,
           value: perpsCompetitionsLeaderboard.totalEquity, // Alias totalEquity as value for API compatibility
           calmarRatio: perpsCompetitionsLeaderboard.calmarRatio,
+          sortinoRatio: perpsCompetitionsLeaderboard.sortinoRatio,
           simpleReturn: perpsCompetitionsLeaderboard.simpleReturn,
           maxDrawdown: perpsCompetitionsLeaderboard.maxDrawdown,
+          downsideDeviation: perpsCompetitionsLeaderboard.downsideDeviation,
           totalEquity: perpsCompetitionsLeaderboard.totalEquity,
           totalPnl: perpsCompetitionsLeaderboard.totalPnl,
           hasRiskMetrics: perpsCompetitionsLeaderboard.hasRiskMetrics,

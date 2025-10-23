@@ -1,4 +1,5 @@
 import { randomUUID } from "crypto";
+import { and, eq } from "drizzle-orm";
 import { beforeEach, describe, expect, test } from "vitest";
 
 import {
@@ -21,6 +22,8 @@ import {
   type CompetitionAgentsResponse,
   type CompetitionAllPerpsPositionsResponse,
   type CompetitionDetailResponse,
+  type CompetitionTimelineResponse,
+  type CreateCompetitionResponse,
   type EnhancedCompetition,
   type ErrorResponse,
   type GetUserAgentsResponse,
@@ -3905,5 +3908,516 @@ describe("Perps Competition", () => {
 
     // Clean up
     await adminClient.endCompetition(competition.id);
+  });
+
+  test("should get competition timeline via HTTP endpoint with risk metrics for perps", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Create and start a perps competition
+    const { agent } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Timeline HTTP Test Agent",
+      agentWalletAddress: "0x5555555555555555555555555555555555555555",
+    });
+
+    const competition = await startPerpsTestCompetition({
+      adminClient,
+      name: "Timeline HTTP Test Competition",
+      agentIds: [agent.id],
+    });
+
+    // Add portfolio snapshots spaced 35 minutes apart for different buckets
+    const now = new Date();
+    const snapshots = [];
+    for (let i = 0; i < 3; i++) {
+      snapshots.push({
+        agentId: agent.id,
+        competitionId: competition.competition.id,
+        totalValue: 1000 + i * 50,
+        timestamp: new Date(now.getTime() - (3 - i) * 35 * 60000),
+      });
+    }
+
+    await db.insert(portfolioSnapshots).values(snapshots);
+
+    // Add corresponding risk metrics snapshots
+    const riskSnapshots = snapshots.map((snapshot, i) => ({
+      agentId: agent.id,
+      competitionId: competition.competition.id,
+      timestamp: snapshot.timestamp,
+      calmarRatio: (1.5 + i * 0.1).toFixed(8),
+      sortinoRatio: (1.2 + i * 0.15).toFixed(8),
+      simpleReturn: (0.05 * (i + 1)).toFixed(8),
+      annualizedReturn: (0.1 * (i + 1)).toFixed(8),
+      maxDrawdown: (-0.1 - i * 0.02).toFixed(8),
+      downsideDeviation: (0.05 + i * 0.01).toFixed(8),
+    }));
+
+    await db.insert(riskMetricsSnapshots).values(riskSnapshots);
+
+    // Call the HTTP API endpoint
+    const timelineResponse = await adminClient.getCompetitionTimeline(
+      competition.competition.id,
+      30, // bucket size
+    );
+
+    expect(timelineResponse.success).toBe(true);
+    const typedResponse = timelineResponse as CompetitionTimelineResponse;
+
+    // Find our specific agent's timeline
+    const agentTimelineData = typedResponse.timeline.find(
+      (agentData) => agentData.agentId === agent.id,
+    );
+
+    // Verify we got timeline data for the agent
+    expect(agentTimelineData).toBeDefined();
+    expect(agentTimelineData?.timeline).toBeDefined();
+    expect(agentTimelineData?.timeline.length).toBeGreaterThanOrEqual(3);
+
+    // Verify each timeline entry includes risk metrics for perps competition
+    agentTimelineData?.timeline.slice(0, 3).forEach((entry) => {
+      expect(entry.timestamp).toBeDefined();
+      expect(entry.totalValue).toBeDefined();
+
+      // Risk metrics should be included via HTTP endpoint for perps
+      expect(entry.calmarRatio).toBeDefined();
+      expect(entry.sortinoRatio).toBeDefined();
+      expect(entry.simpleReturn).toBeDefined();
+      expect(entry.annualizedReturn).toBeDefined();
+      expect(entry.maxDrawdown).toBeDefined();
+      expect(entry.downsideDeviation).toBeDefined();
+    });
+  });
+
+  test("should NOT include risk metrics in timeline via HTTP endpoint for paper trading", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Create and start a paper trading competition
+    const { agent } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Paper Trading Timeline HTTP Agent",
+    });
+
+    const competition = await startTestCompetition({
+      adminClient,
+      name: "Paper Trading Timeline HTTP Test",
+      agentIds: [agent.id],
+    });
+
+    // Add portfolio snapshots
+    const now = new Date();
+    const snapshots = [];
+    for (let i = 0; i < 3; i++) {
+      snapshots.push({
+        agentId: agent.id,
+        competitionId: competition.competition.id,
+        totalValue: 1000000 + i * 50000,
+        timestamp: new Date(now.getTime() - (3 - i) * 35 * 60000),
+      });
+    }
+
+    await db.insert(portfolioSnapshots).values(snapshots);
+
+    // Call the HTTP API endpoint
+    const timelineResponse = await adminClient.getCompetitionTimeline(
+      competition.competition.id,
+      30,
+    );
+
+    expect(timelineResponse.success).toBe(true);
+    const typedResponse = timelineResponse as CompetitionTimelineResponse;
+
+    // Find our specific agent's timeline
+    const agentTimelineData = typedResponse.timeline.find(
+      (agentData) => agentData.agentId === agent.id,
+    );
+
+    expect(agentTimelineData).toBeDefined();
+    expect(agentTimelineData?.timeline).toBeDefined();
+    expect(agentTimelineData?.timeline.length).toBeGreaterThanOrEqual(3);
+
+    // Verify risk metrics are NOT included for paper trading
+    agentTimelineData?.timeline.slice(0, 3).forEach((entry) => {
+      expect(entry.timestamp).toBeDefined();
+      expect(entry.totalValue).toBeDefined();
+
+      // Risk metrics should NOT be included via HTTP endpoint for paper trading
+      expect(entry.calmarRatio).toBeUndefined();
+      expect(entry.sortinoRatio).toBeUndefined();
+      expect(entry.simpleReturn).toBeUndefined();
+      expect(entry.annualizedReturn).toBeUndefined();
+      expect(entry.maxDrawdown).toBeUndefined();
+      expect(entry.downsideDeviation).toBeUndefined();
+    });
+  });
+
+  test("should preserve original evaluation metric and rankings when competition ends", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Use new wallets with equity progressions that produce different Sortino vs Calmar rankings
+    // Agent 1: Good Sortino, Poor Calmar (progression: 1000 → 1600 → 1200)
+    const { agent: agent1 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Good Sortino Agent",
+      agentWalletAddress: "0xeeee111111111111111111111111111111111111",
+    });
+
+    // Agent 2: Poor Sortino, Good Calmar (progression: 1000 → 1020 → 990 → 1010 → 980 → 1050)
+    const { agent: agent2 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Good Calmar Agent",
+      agentWalletAddress: "0xffff111111111111111111111111111111111111",
+    });
+
+    // Start a perps competition with sortino_ratio as evaluation metric
+    const competition = await startPerpsTestCompetition({
+      adminClient,
+      name: "Evaluation Metric Preservation Test",
+      agentIds: [agent1.id, agent2.id],
+      evaluationMetric: "sortino_ratio", // Rank by Sortino
+    });
+
+    const competitionId = competition.competition.id;
+    await wait(1000);
+
+    // Process multiple times to create the equity progression snapshots
+    // Agent 1 needs 3 snapshots (1000 → 1600 → 1200)
+    // Agent 2 needs 6 snapshots (1000 → 1020 → 990 → 1010 → 980 → 1050)
+    const services = new ServiceRegistry();
+
+    // Snapshot 1
+    await services.perpsDataProcessor.processPerpsCompetition(competitionId);
+    await wait(500);
+
+    // Snapshot 2
+    await services.perpsDataProcessor.processPerpsCompetition(competitionId);
+    await wait(500);
+
+    // Snapshot 3
+    await services.perpsDataProcessor.processPerpsCompetition(competitionId);
+    await wait(500);
+
+    // Snapshot 4
+    await services.perpsDataProcessor.processPerpsCompetition(competitionId);
+    await wait(500);
+
+    // Snapshot 5 (final for agent 2)
+    await services.perpsDataProcessor.processPerpsCompetition(competitionId);
+    await wait(1500);
+
+    // Get leaderboard before ending - should be sorted by Sortino
+    const activeLeaderboard = await adminClient.getCompetitionAgents(
+      competitionId,
+      { sort: "rank" },
+    );
+    expect(activeLeaderboard.success).toBe(true);
+    const activeAgents = (activeLeaderboard as CompetitionAgentsResponse)
+      .agents;
+
+    // Store original rankings and metrics
+    const agent1Active = activeAgents.find((a) => a.id === agent1.id);
+    const agent2Active = activeAgents.find((a) => a.id === agent2.id);
+
+    expect(agent1Active).toBeDefined();
+    expect(agent2Active).toBeDefined();
+
+    const originalRankings = {
+      agent1: {
+        rank: agent1Active?.rank,
+        sortino: agent1Active?.sortinoRatio,
+        calmar: agent1Active?.calmarRatio,
+      },
+      agent2: {
+        rank: agent2Active?.rank,
+        sortino: agent2Active?.sortinoRatio,
+        calmar: agent2Active?.calmarRatio,
+      },
+    };
+
+    // End the competition - this triggers calculateAndPersistFinalLeaderboard
+    await adminClient.endCompetition(competitionId);
+    await wait(2000);
+
+    // Try to update the competition's evaluation metric AFTER it has ended
+    await adminClient.updateCompetition(competitionId, {
+      evaluationMetric: "calmar_ratio", // Try to change to Calmar
+    });
+
+    // Get leaderboard after the update attempt
+    const endedLeaderboard =
+      await adminClient.getCompetitionAgents(competitionId);
+    expect(endedLeaderboard.success).toBe(true);
+    const endedAgents = (endedLeaderboard as CompetitionAgentsResponse).agents;
+
+    // Rankings should be PRESERVED (still using Sortino-based rankings from when it ended)
+    const agent1Ended = endedAgents.find((a) => a.id === agent1.id);
+    const agent2Ended = endedAgents.find((a) => a.id === agent2.id);
+
+    expect(agent1Ended?.rank).toBe(originalRankings.agent1.rank);
+    expect(agent2Ended?.rank).toBe(originalRankings.agent2.rank);
+
+    // Metrics should be preserved as they were
+    expect(agent1Ended?.sortinoRatio).toBe(originalRankings.agent1.sortino);
+    expect(agent1Ended?.calmarRatio).toBe(originalRankings.agent1.calmar);
+    expect(agent2Ended?.sortinoRatio).toBe(originalRankings.agent2.sortino);
+    expect(agent2Ended?.calmarRatio).toBe(originalRankings.agent2.calmar);
+  });
+
+  test("should verify different bucket sizes return appropriate timeline granularity", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Create and start a perps competition
+    const { agent } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Bucket Size Test Agent",
+      agentWalletAddress: "0x1111111111111111111111111111111111111111",
+    });
+
+    const competition = await startPerpsTestCompetition({
+      adminClient,
+      name: "Bucket Size Test Competition",
+      agentIds: [agent.id],
+    });
+
+    // Add many snapshots over 3 hours (every 10 minutes = 18 snapshots)
+    const now = new Date();
+    const snapshots = [];
+    for (let i = 0; i < 18; i++) {
+      snapshots.push({
+        agentId: agent.id,
+        competitionId: competition.competition.id,
+        totalValue: 1000 + i * 10,
+        timestamp: new Date(now.getTime() - (18 - i) * 10 * 60000),
+      });
+    }
+
+    await db.insert(portfolioSnapshots).values(snapshots);
+
+    // Test 1: Small bucket (10 minutes) - should return more data points
+    const timeline10min = await adminClient.getCompetitionTimeline(
+      competition.competition.id,
+      10,
+    );
+    expect(timeline10min.success).toBe(true);
+    const typed10min = timeline10min as CompetitionTimelineResponse;
+    const agentData10min = typed10min.timeline.find(
+      (agentData) => agentData.agentId === agent.id,
+    );
+    const count10min = agentData10min?.timeline.length || 0;
+
+    // Test 2: Larger bucket (30 minutes) - should return fewer data points
+    const timeline30min = await adminClient.getCompetitionTimeline(
+      competition.competition.id,
+      30,
+    );
+    expect(timeline30min.success).toBe(true);
+    const typed30min = timeline30min as CompetitionTimelineResponse;
+    const agentData30min = typed30min.timeline.find(
+      (agentData) => agentData.agentId === agent.id,
+    );
+    const count30min = agentData30min?.timeline.length || 0;
+
+    // Test 3: Very large bucket (60 minutes) - should return even fewer
+    const timeline60min = await adminClient.getCompetitionTimeline(
+      competition.competition.id,
+      60,
+    );
+    expect(timeline60min.success).toBe(true);
+    const typed60min = timeline60min as CompetitionTimelineResponse;
+    const agentData60min = typed60min.timeline.find(
+      (agentData) => agentData.agentId === agent.id,
+    );
+    const count60min = agentData60min?.timeline.length || 0;
+
+    // Verify bucket size affects granularity: smaller bucket = more data points
+    expect(count10min).toBeGreaterThan(count30min);
+    expect(count30min).toBeGreaterThan(count60min);
+  });
+
+  test("should correctly handle mixed metrics state in leaderboard", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Create 3 agents
+    const { agent: agentGoodMetrics } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Agent With Good Metrics",
+      agentWalletAddress: "0x3333333333333333333333333333333333333333", // $1100 equity
+    });
+
+    const { agent: agentPoorMetrics } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Agent With Poor Metrics",
+      agentWalletAddress: "0x2222222222222222222222222222222222222222", // $950 equity
+    });
+
+    const { agent: agentHighEquityNoMetrics } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Agent High Equity No Metrics",
+        agentWalletAddress: "0x1111111111111111111111111111111111111111", // $1250 equity on Symphony (HIGHEST)
+      });
+
+    // Start perps competition with calmar_ratio
+    const competition = await startPerpsTestCompetition({
+      adminClient,
+      name: "Mixed Metrics State Competition",
+      agentIds: [
+        agentGoodMetrics.id,
+        agentPoorMetrics.id,
+        agentHighEquityNoMetrics.id,
+      ],
+      evaluationMetric: "calmar_ratio",
+    });
+
+    await wait(1000);
+
+    // Process competition - this will calculate risk metrics for all agents
+    const services = new ServiceRegistry();
+    await services.perpsDataProcessor.processPerpsCompetition(
+      competition.competition.id,
+    );
+    await wait(1500);
+
+    // Now manually DELETE risk metrics for the high equity agent to simulate mixed state
+    await db
+      .delete(perpsRiskMetrics)
+      .where(
+        and(
+          eq(perpsRiskMetrics.agentId, agentHighEquityNoMetrics.id),
+          eq(perpsRiskMetrics.competitionId, competition.competition.id),
+        ),
+      );
+
+    // Get leaderboard
+    const leaderboardResponse = await adminClient.getCompetitionAgents(
+      competition.competition.id,
+      { sort: "rank" },
+    );
+
+    expect(leaderboardResponse.success).toBe(true);
+    const typedResponse = leaderboardResponse as CompetitionAgentsResponse;
+    expect(typedResponse.agents).toHaveLength(3);
+
+    // Find each agent
+    const goodMetrics = typedResponse.agents.find(
+      (a) => a.id === agentGoodMetrics.id,
+    );
+    const poorMetrics = typedResponse.agents.find(
+      (a) => a.id === agentPoorMetrics.id,
+    );
+    const noMetrics = typedResponse.agents.find(
+      (a) => a.id === agentHighEquityNoMetrics.id,
+    );
+
+    expect(goodMetrics).toBeDefined();
+    expect(poorMetrics).toBeDefined();
+    expect(noMetrics).toBeDefined();
+
+    // Agents with metrics should rank by Calmar ratio
+    expect(goodMetrics?.hasRiskMetrics).toBe(true);
+    expect(poorMetrics?.hasRiskMetrics).toBe(true);
+
+    // Agent without metrics should rank LAST despite having highest equity
+    expect(noMetrics?.hasRiskMetrics).toBe(false);
+    expect(noMetrics?.portfolioValue).toBe(1250); // Highest portfolio
+    expect(noMetrics?.rank).toBe(3); // But ranks LAST due to NULL metrics
+
+    // Agents with metrics should rank 1-2 by their Calmar ratios
+    expect(goodMetrics?.rank).toBeLessThan(3);
+    expect(poorMetrics?.rank).toBeLessThan(3);
+  });
+
+  test("should allow updating evaluation metric on active competition", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agent
+    const { agent } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Active Competition Metric Change Agent",
+      agentWalletAddress: "0x1111111111111111111111111111111111111111",
+    });
+
+    // Start competition with calmar_ratio
+    const competition = await startPerpsTestCompetition({
+      adminClient,
+      name: "Active Competition Metric Test",
+      agentIds: [agent.id],
+      evaluationMetric: "calmar_ratio",
+    });
+
+    expect(competition.success).toBe(true);
+    expect(competition.competition.status).toBe("active");
+    expect(competition.competition.evaluationMetric).toBe("calmar_ratio");
+
+    // Update evaluation metric while competition is active
+    const updateResponse = await adminClient.updateCompetition(
+      competition.competition.id,
+      {
+        evaluationMetric: "sortino_ratio",
+      },
+    );
+
+    // Verify update succeeded
+    expect(updateResponse.success).toBe(true);
+
+    // Verify the competition's metric was updated
+    const detailsResponse = await adminClient.getCompetition(
+      competition.competition.id,
+    );
+    expect(detailsResponse.success).toBe(true);
+    const details = detailsResponse as CompetitionDetailResponse;
+    expect(details.competition.evaluationMetric).toBe("sortino_ratio");
+    expect(details.competition.status).toBe("active");
+  });
+
+  test("should return empty timeline for competition with no snapshots", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agent
+    const { agent } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "No Snapshots Timeline Agent",
+    });
+
+    // Create a pending perps competition (not started yet)
+    const createResponse = await adminClient.createCompetition({
+      name: "No Snapshots Timeline Test",
+      type: "perpetual_futures",
+      perpsProvider: {
+        provider: "symphony",
+        initialCapital: 500,
+        selfFundingThreshold: 0,
+        apiUrl: "http://localhost:4567",
+      },
+    });
+
+    expect(createResponse.success).toBe(true);
+    const competitionId = (createResponse as CreateCompetitionResponse)
+      .competition.id;
+
+    // Add agent to competition but don't start it
+    await adminClient.addAgentToCompetition(competitionId, agent.id);
+
+    // Try to get timeline - should return empty or minimal data
+    const timelineResponse = await adminClient.getCompetitionTimeline(
+      competitionId,
+      30,
+    );
+
+    expect(timelineResponse.success).toBe(true);
+    const typedResponse = timelineResponse as CompetitionTimelineResponse;
+
+    // Timeline should be empty or have no data
+    expect(typedResponse.timeline).toBeDefined();
+    expect(Array.isArray(typedResponse.timeline)).toBe(true);
+    // Should be empty since competition hasn't started and has no snapshots
+    expect(typedResponse.timeline.length).toBe(0);
   });
 });

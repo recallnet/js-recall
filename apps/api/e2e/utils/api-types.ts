@@ -765,7 +765,7 @@ export interface CompetitionTimelineResponse extends ApiResponse {
     agentId: string;
     agentName: string;
     timeline: Array<{
-      date: string;
+      timestamp: string;
       totalValue: number;
       // Risk metrics (only for perps competitions)
       calmarRatio?: number | null;
