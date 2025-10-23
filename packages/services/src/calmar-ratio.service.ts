@@ -102,7 +102,7 @@ export class CalmarRatioService {
       // 3. Calculate Max Drawdown using SQL
       // Use the same time period as the return calculation (snapshot dates, not competition dates)
       // This ensures consistent risk metrics over the same time window
-      const maxDrawdown = await this.competitionRepo.calculateMaxDrawdownSQL(
+      const maxDrawdown = await this.competitionRepo.calculateMaxDrawdown(
         agentId,
         competitionId,
         startSnapshot.timestamp, // Use first snapshot date

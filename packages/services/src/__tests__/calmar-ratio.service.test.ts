@@ -79,7 +79,7 @@ describe("CalmarRatioService", () => {
 
       mockCompeitionRepo.findById.mockResolvedValue(competition);
       mockCompeitionRepo.getFirstAndLastSnapshots.mockResolvedValue(snapshots);
-      mockCompeitionRepo.calculateMaxDrawdownSQL.mockResolvedValue(maxDrawdown);
+      mockCompeitionRepo.calculateMaxDrawdown.mockResolvedValue(maxDrawdown);
 
       const result = await service.calculateCalmarRatio(agentId, competitionId);
 
@@ -94,7 +94,7 @@ describe("CalmarRatioService", () => {
       );
 
       // Verify max drawdown calculation uses snapshot dates for consistency
-      expect(mockCompeitionRepo.calculateMaxDrawdownSQL).toHaveBeenCalledWith(
+      expect(mockCompeitionRepo.calculateMaxDrawdown).toHaveBeenCalledWith(
         agentId,
         competitionId,
         snapshots.first?.timestamp,
@@ -121,7 +121,7 @@ describe("CalmarRatioService", () => {
       mockCompeitionRepo.getFirstAndLastSnapshots.mockResolvedValue(
         createMockSnapshots(1000, 2500), // 150% return
       );
-      mockCompeitionRepo.calculateMaxDrawdownSQL.mockResolvedValue(0); // No drawdown
+      mockCompeitionRepo.calculateMaxDrawdown.mockResolvedValue(0); // No drawdown
 
       const result = await service.calculateCalmarRatio(agentId, competitionId);
 
@@ -141,7 +141,7 @@ describe("CalmarRatioService", () => {
       mockCompeitionRepo.getFirstAndLastSnapshots.mockResolvedValue(
         createMockSnapshots(1000, 900), // -10% return
       );
-      mockCompeitionRepo.calculateMaxDrawdownSQL.mockResolvedValue(-0.1); // 10% drawdown (must exist with negative return)
+      mockCompeitionRepo.calculateMaxDrawdown.mockResolvedValue(-0.1); // 10% drawdown (must exist with negative return)
 
       const result = await service.calculateCalmarRatio(agentId, competitionId);
 
@@ -177,7 +177,7 @@ describe("CalmarRatioService", () => {
           timestamp: new Date("2025-01-20T14:00:00Z"), // 4 hours later
         },
       });
-      mockCompeitionRepo.calculateMaxDrawdownSQL.mockResolvedValue(-0.005); // 0.5% drawdown
+      mockCompeitionRepo.calculateMaxDrawdown.mockResolvedValue(-0.005); // 0.5% drawdown
 
       const result = await service.calculateCalmarRatio(agentId, competitionId);
 
@@ -201,13 +201,13 @@ describe("CalmarRatioService", () => {
       mockCompeitionRepo.getFirstAndLastSnapshots.mockResolvedValue(
         mockSnapshots,
       );
-      mockCompeitionRepo.calculateMaxDrawdownSQL.mockResolvedValue(-0.05);
+      mockCompeitionRepo.calculateMaxDrawdown.mockResolvedValue(-0.05);
 
       const result = await service.calculateCalmarRatio(agentId, competitionId);
 
       // Verify max drawdown was called with snapshot dates for consistency
       // This ensures return and drawdown are calculated over the same time period
-      expect(mockCompeitionRepo.calculateMaxDrawdownSQL).toHaveBeenCalledWith(
+      expect(mockCompeitionRepo.calculateMaxDrawdown).toHaveBeenCalledWith(
         agentId,
         competitionId,
         mockSnapshots.first?.timestamp,
@@ -291,7 +291,7 @@ describe("CalmarRatioService", () => {
       mockCompeitionRepo.getFirstAndLastSnapshots.mockResolvedValue(
         createMockSnapshots(1000, 800), // -20% return
       );
-      mockCompeitionRepo.calculateMaxDrawdownSQL.mockResolvedValue(-0.25); // 25% drawdown
+      mockCompeitionRepo.calculateMaxDrawdown.mockResolvedValue(-0.25); // 25% drawdown
 
       const result = await service.calculateCalmarRatio(agentId, competitionId);
 

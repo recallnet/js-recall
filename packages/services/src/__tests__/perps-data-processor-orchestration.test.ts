@@ -35,7 +35,7 @@ class MockCompetitionRepository {
   createPortfolioSnapshot = vi.fn();
   batchCreatePortfolioSnapshots = vi.fn();
   getFirstAndLastSnapshots = vi.fn();
-  calculateMaxDrawdownSQL = vi.fn();
+  calculateMaxDrawdown = vi.fn();
   getAgentPortfolioSnapshots = vi.fn();
 }
 

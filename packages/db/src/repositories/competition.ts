@@ -64,6 +64,16 @@ import { getSort } from "./util/query.js";
 import { PartialExcept } from "./util/types.js";
 
 /**
+ * Result of Sortino metrics calculation
+ */
+interface SortinoMetricsResult {
+  avgReturn: number;
+  downsideDeviation: number;
+  simpleReturn: number;
+  snapshotCount: number;
+}
+
+/**
  * Competition Repository
  * Handles database operations for competitions
  */
@@ -1514,7 +1524,7 @@ export class CompetitionRepository {
    * @param endDate End of calculation period
    * @returns Maximum drawdown as a decimal (e.g., -0.20 for 20% drawdown)
    */
-  async calculateMaxDrawdownSQL(
+  async calculateMaxDrawdown(
     agentId: string,
     competitionId: string,
     startDate?: Date,
@@ -1576,7 +1586,7 @@ export class CompetitionRepository {
 
       return Number(maxDrawdown);
     } catch (error) {
-      this.#logger.error("Error in calculateMaxDrawdownSQL:", error);
+      this.#logger.error("Error in calculateMaxDrawdown:", error);
       throw error;
     }
   }
@@ -1588,16 +1598,11 @@ export class CompetitionRepository {
    * @param mar Minimum Acceptable Return (default 0 for crypto)
    * @returns Object with average return, downside deviation, and simple return
    */
-  async calculateSortinoMetricsSQL(
+  async calculateSortinoMetrics(
     agentId: string,
     competitionId: string,
     mar = 0,
-  ): Promise<{
-    avgReturn: number;
-    downsideDeviation: number;
-    simpleReturn: number;
-    snapshotCount: number;
-  }> {
+  ): Promise<SortinoMetricsResult> {
     try {
       // Calculate period returns and downside deviation in a single query
       const result = await this.#dbRead.execute<{
@@ -1680,7 +1685,7 @@ export class CompetitionRepository {
         snapshotCount: Number(metrics.snapshot_count || 0),
       };
     } catch (error) {
-      this.#logger.error("Error in calculateSortinoMetricsSQL:", error);
+      this.#logger.error("Error in calculateSortinoMetrics:", error);
       throw error;
     }
   }

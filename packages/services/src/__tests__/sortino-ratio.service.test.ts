@@ -72,7 +72,7 @@ describe("SortinoRatioService", () => {
       const sortinoMetrics = createMockSortinoMetrics();
 
       mockCompetitionRepo.findById.mockResolvedValue(competition);
-      mockCompetitionRepo.calculateSortinoMetricsSQL.mockResolvedValue(
+      mockCompetitionRepo.calculateSortinoMetrics.mockResolvedValue(
         sortinoMetrics,
       );
 
@@ -86,9 +86,7 @@ describe("SortinoRatioService", () => {
       expect(result.downsideDeviation).toBe("0.01000000");
 
       // Verify SQL calculation was called with correct parameters
-      expect(
-        mockCompetitionRepo.calculateSortinoMetricsSQL,
-      ).toHaveBeenCalledWith(
+      expect(mockCompetitionRepo.calculateSortinoMetrics).toHaveBeenCalledWith(
         agentId,
         competitionId,
         0, // MAR is always 0 for crypto competitions
@@ -102,7 +100,7 @@ describe("SortinoRatioService", () => {
       mockCompetitionRepo.findById.mockResolvedValue(
         createMockCompetition(new Date("2025-01-20")),
       );
-      mockCompetitionRepo.calculateSortinoMetricsSQL.mockResolvedValue(
+      mockCompetitionRepo.calculateSortinoMetrics.mockResolvedValue(
         createMockSortinoMetrics(0.05, 0, 0.5, 100), // Zero downside deviation, positive return
       );
 
@@ -125,7 +123,7 @@ describe("SortinoRatioService", () => {
       mockCompetitionRepo.findById.mockResolvedValue(
         createMockCompetition(new Date("2025-01-20")),
       );
-      mockCompetitionRepo.calculateSortinoMetricsSQL.mockResolvedValue(
+      mockCompetitionRepo.calculateSortinoMetrics.mockResolvedValue(
         createMockSortinoMetrics(-0.01, 0.02, -0.1, 100), // Negative return, higher downside deviation
       );
 
@@ -148,7 +146,7 @@ describe("SortinoRatioService", () => {
       mockCompetitionRepo.findById.mockResolvedValue(
         createMockCompetition(new Date("2025-01-20")),
       );
-      mockCompetitionRepo.calculateSortinoMetricsSQL.mockResolvedValue(
+      mockCompetitionRepo.calculateSortinoMetrics.mockResolvedValue(
         createMockSortinoMetrics(),
       );
 
@@ -175,7 +173,7 @@ describe("SortinoRatioService", () => {
       ).rejects.toThrow(`Competition ${competitionId} not found`);
 
       expect(
-        mockCompetitionRepo.calculateSortinoMetricsSQL,
+        mockCompetitionRepo.calculateSortinoMetrics,
       ).not.toHaveBeenCalled();
     });
 
@@ -199,7 +197,7 @@ describe("SortinoRatioService", () => {
       mockCompetitionRepo.findById.mockResolvedValue(
         createMockCompetition(new Date("2025-01-20")),
       );
-      mockCompetitionRepo.calculateSortinoMetricsSQL.mockResolvedValue(
+      mockCompetitionRepo.calculateSortinoMetrics.mockResolvedValue(
         createMockSortinoMetrics(0, 0, 0, 1), // Only 1 snapshot
       );
 
@@ -215,7 +213,7 @@ describe("SortinoRatioService", () => {
       mockCompetitionRepo.findById.mockResolvedValue(
         createMockCompetition(new Date("2025-01-20")),
       );
-      mockCompetitionRepo.calculateSortinoMetricsSQL.mockResolvedValue(
+      mockCompetitionRepo.calculateSortinoMetrics.mockResolvedValue(
         createMockSortinoMetrics(0, 0, 0, 100), // Zero return, zero downside deviation
       );
 
@@ -238,7 +236,7 @@ describe("SortinoRatioService", () => {
       mockCompetitionRepo.findById.mockResolvedValue(
         createMockCompetition(new Date("2025-01-20")),
       );
-      mockCompetitionRepo.calculateSortinoMetricsSQL.mockResolvedValue(
+      mockCompetitionRepo.calculateSortinoMetrics.mockResolvedValue(
         createMockSortinoMetrics(-0.01, 0, -0.1, 100), // Negative return, zero downside deviation (shouldn't happen)
       );
 
@@ -262,7 +260,7 @@ describe("SortinoRatioService", () => {
       mockCompetitionRepo.findById.mockResolvedValue(
         createMockCompetition(new Date("2025-01-20"), endDate),
       );
-      mockCompetitionRepo.calculateSortinoMetricsSQL.mockResolvedValue(
+      mockCompetitionRepo.calculateSortinoMetrics.mockResolvedValue(
         createMockSortinoMetrics(),
       );
       // Mock existing Calmar metrics (Sortino requires Calmar to run first)
@@ -285,7 +283,7 @@ describe("SortinoRatioService", () => {
       mockCompetitionRepo.findById.mockResolvedValue(
         createMockCompetition(new Date("2025-01-20")), // No end date
       );
-      mockCompetitionRepo.calculateSortinoMetricsSQL.mockResolvedValue(
+      mockCompetitionRepo.calculateSortinoMetrics.mockResolvedValue(
         createMockSortinoMetrics(),
       );
       // Mock existing Calmar metrics (Sortino requires Calmar to run first)

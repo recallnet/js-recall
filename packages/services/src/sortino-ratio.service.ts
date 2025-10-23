@@ -77,7 +77,7 @@ export class SortinoRatioService {
       );
 
       // 2. Calculate all metrics at database level using window functions
-      const metrics = await this.competitionRepo.calculateSortinoMetricsSQL(
+      const metrics = await this.competitionRepo.calculateSortinoMetrics(
         agentId,
         competitionId,
         this.MAR,
