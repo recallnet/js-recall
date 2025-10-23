@@ -1,7 +1,11 @@
 import { randomUUID } from "crypto";
 import { beforeEach, describe, expect, test } from "vitest";
 
-import { portfolioSnapshots } from "@recallnet/db/schema/trading/defs";
+import {
+  perpsRiskMetrics,
+  portfolioSnapshots,
+  riskMetricsSnapshots,
+} from "@recallnet/db/schema/trading/defs";
 
 import config from "@/config/index.js";
 import { db } from "@/database/db.js";
@@ -3024,6 +3028,322 @@ describe("Perps Competition", () => {
     const snapshotTime = new Date(latestSnapshot!.timestamp);
     const timeDiff = Date.now() - snapshotTime.getTime();
     expect(timeDiff).toBeLessThan(60000); // Within last minute
+  });
+
+  test("should sort leaderboard by simple_return when configured", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Create agents with different returns
+    const { agent: agent1 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Simple Return Agent 1",
+      agentWalletAddress: "0x1111111111111111111111111111111111111111",
+    });
+
+    const { agent: agent2 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Simple Return Agent 2",
+      agentWalletAddress: "0x2222222222222222222222222222222222222222",
+    });
+
+    // Start a perps competition with simple_return as evaluation metric
+    const competition = await startPerpsTestCompetition({
+      adminClient,
+      name: "Simple Return Sorting Competition",
+      agentIds: [agent1.id, agent2.id],
+      evaluationMetric: "simple_return", // Explicitly set to simple_return
+    });
+
+    // Manually insert perps risk metrics with different simple returns
+    // Agent 1: Higher simple return (20%) but lower Calmar (0.5)
+    // Agent 2: Lower simple return (10%) but higher Calmar (2.0)
+    await db.insert(perpsRiskMetrics).values([
+      {
+        agentId: agent1.id,
+        competitionId: competition.competition.id,
+        simpleReturn: "0.20000000", // 20% return
+        annualizedReturn: "0.40000000",
+        maxDrawdown: "-0.40000000", // Large drawdown
+        calmarRatio: "0.50000000", // Low Calmar due to large drawdown
+        sortinoRatio: "1.00000000",
+        downsideDeviation: "0.20000000",
+        snapshotCount: 10, // Required field
+      },
+      {
+        agentId: agent2.id,
+        competitionId: competition.competition.id,
+        simpleReturn: "0.10000000", // 10% return
+        annualizedReturn: "0.20000000",
+        maxDrawdown: "-0.10000000", // Small drawdown
+        calmarRatio: "2.00000000", // High Calmar due to small drawdown
+        sortinoRatio: "1.50000000",
+        downsideDeviation: "0.10000000",
+        snapshotCount: 10, // Required field
+      },
+    ]);
+
+    // Get the leaderboard
+    const leaderboardResponse = await adminClient.getCompetitionAgents(
+      competition.competition.id,
+      { sort: "rank" },
+    );
+
+    expect(leaderboardResponse.success).toBe(true);
+    const leaderboard = leaderboardResponse as CompetitionAgentsResponse;
+
+    // Verify leaderboard is sorted by simple_return (not Calmar)
+    expect(leaderboard.agents).toHaveLength(2);
+    expect(leaderboard.agents[0]?.id).toBe(agent1.id); // Agent 1 should be first (20% return)
+    expect(leaderboard.agents[1]?.id).toBe(agent2.id); // Agent 2 should be second (10% return)
+
+    // Verify the metrics are included
+    expect(leaderboard.agents[0]?.simpleReturn).toBe(0.2);
+    expect(leaderboard.agents[0]?.calmarRatio).toBe(0.5);
+    expect(leaderboard.agents[1]?.simpleReturn).toBe(0.1);
+    expect(leaderboard.agents[1]?.calmarRatio).toBe(2);
+  });
+
+  test("should sort leaderboard by sortino_ratio when configured", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Create agents
+    const { agent: agent1 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Sortino Agent 1",
+      agentWalletAddress: "0x3333333333333333333333333333333333333333",
+    });
+
+    const { agent: agent2 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Sortino Agent 2",
+      agentWalletAddress: "0x4444444444444444444444444444444444444444",
+    });
+
+    // Start a perps competition with sortino_ratio as evaluation metric
+    const competition = await startPerpsTestCompetition({
+      adminClient,
+      name: "Sortino Ratio Sorting Competition",
+      agentIds: [agent1.id, agent2.id],
+      evaluationMetric: "sortino_ratio", // Explicitly set to sortino_ratio
+    });
+
+    // Insert risk metrics with different Sortino ratios
+    // Agent 1: Lower Sortino (0.8) but higher Calmar (2.0)
+    // Agent 2: Higher Sortino (1.5) but lower Calmar (1.0)
+    await db.insert(perpsRiskMetrics).values([
+      {
+        agentId: agent1.id,
+        competitionId: competition.competition.id,
+        simpleReturn: "0.15000000",
+        annualizedReturn: "0.30000000",
+        maxDrawdown: "-0.15000000",
+        calmarRatio: "2.00000000", // High Calmar
+        sortinoRatio: "0.80000000", // Lower Sortino
+        downsideDeviation: "0.18750000",
+        snapshotCount: 10, // Required field
+      },
+      {
+        agentId: agent2.id,
+        competitionId: competition.competition.id,
+        simpleReturn: "0.12000000",
+        annualizedReturn: "0.24000000",
+        maxDrawdown: "-0.24000000",
+        calmarRatio: "1.00000000", // Lower Calmar
+        sortinoRatio: "1.50000000", // Higher Sortino
+        downsideDeviation: "0.08000000",
+        snapshotCount: 10, // Required field
+      },
+    ]);
+
+    // Get the leaderboard
+    const leaderboardResponse = await adminClient.getCompetitionAgents(
+      competition.competition.id,
+      { sort: "rank" },
+    );
+
+    expect(leaderboardResponse.success).toBe(true);
+    const leaderboard = leaderboardResponse as CompetitionAgentsResponse;
+
+    // Verify leaderboard is sorted by sortino_ratio
+    expect(leaderboard.agents).toHaveLength(2);
+    expect(leaderboard.agents[0]?.id).toBe(agent2.id); // Agent 2 should be first (1.5 Sortino)
+    expect(leaderboard.agents[1]?.id).toBe(agent1.id); // Agent 1 should be second (0.8 Sortino)
+
+    // Verify the metrics
+    expect(leaderboard.agents[0]?.sortinoRatio).toBe(1.5);
+    expect(leaderboard.agents[0]?.calmarRatio).toBe(1);
+    expect(leaderboard.agents[1]?.sortinoRatio).toBe(0.8);
+    expect(leaderboard.agents[1]?.calmarRatio).toBe(2);
+  });
+
+  test("should include risk metrics in timeline for perps competition", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Create and start a perps competition
+    const { agent } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Timeline Risk Metrics Agent",
+      agentWalletAddress: "0x5555555555555555555555555555555555555555",
+    });
+
+    const competition = await startPerpsTestCompetition({
+      adminClient,
+      name: "Timeline Risk Metrics Competition",
+      agentIds: [agent.id],
+    });
+
+    // Add portfolio snapshots - space them 35 minutes apart to ensure different buckets
+    const now = new Date();
+    const snapshots = [];
+    for (let i = 0; i < 3; i++) {
+      snapshots.push({
+        agentId: agent.id,
+        competitionId: competition.competition.id,
+        totalValue: 1000 + i * 50,
+        cash: 500,
+        timestamp: new Date(now.getTime() - (3 - i) * 35 * 60000), // 35 minutes apart
+      });
+    }
+
+    await db.insert(portfolioSnapshots).values(snapshots);
+
+    // Add corresponding risk metrics snapshots
+    const riskSnapshots = snapshots.map((snapshot, i) => ({
+      agentId: agent.id,
+      competitionId: competition.competition.id,
+      timestamp: snapshot.timestamp,
+      calmarRatio: (1.5 + i * 0.1).toFixed(8),
+      sortinoRatio: (1.2 + i * 0.15).toFixed(8),
+      simpleReturn: (0.05 * (i + 1)).toFixed(8),
+      annualizedReturn: (0.1 * (i + 1)).toFixed(8),
+      maxDrawdown: (-0.1 - i * 0.02).toFixed(8),
+      downsideDeviation: (0.05 + i * 0.01).toFixed(8),
+    }));
+
+    await db.insert(riskMetricsSnapshots).values(riskSnapshots);
+
+    // Get timeline data using the service directly
+    const services = new ServiceRegistry();
+    const rawTimeline =
+      await services.portfolioSnapshotterService.getAgentPortfolioTimeline(
+        competition.competition.id,
+        30, // bucket size
+        true, // includeRiskMetrics for perps competition
+      );
+
+    // Filter for our specific agent and cast to include risk metrics
+    const timeline = rawTimeline.filter(
+      (entry) => entry.agentId === agent.id,
+    ) as Array<{
+      timestamp: string;
+      agentId: string;
+      agentName: string;
+      competitionId: string;
+      totalValue: number;
+      calmarRatio?: number;
+      sortinoRatio?: number;
+      simpleReturn?: number;
+      annualizedReturn?: number;
+      maxDrawdown?: number;
+      downsideDeviation?: number;
+    }>;
+
+    // Verify timeline includes risk metrics for perps competition
+    expect(timeline).toBeDefined();
+    expect(timeline.length).toBeGreaterThanOrEqual(3);
+
+    // Check that each timeline entry includes risk metrics
+    timeline.slice(0, 3).forEach((entry) => {
+      expect(entry.timestamp).toBeDefined();
+      expect(entry.totalValue).toBeDefined();
+
+      // Risk metrics should be included for perps competition
+      expect(entry.calmarRatio).toBeDefined();
+      expect(entry.sortinoRatio).toBeDefined();
+      expect(entry.simpleReturn).toBeDefined();
+      expect(entry.annualizedReturn).toBeDefined();
+      expect(entry.maxDrawdown).toBeDefined();
+      expect(entry.downsideDeviation).toBeDefined();
+    });
+  });
+
+  test("should NOT include risk metrics in timeline for paper trading competition", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Create and start a paper trading competition
+    const { agent } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Paper Trading Timeline Agent",
+    });
+
+    const competition = await startTestCompetition({
+      adminClient,
+      name: "Paper Trading Timeline Competition",
+      agentIds: [agent.id],
+    });
+
+    // Add portfolio snapshots - space them 35 minutes apart to ensure different buckets
+    const now = new Date();
+    const snapshots = [];
+    for (let i = 0; i < 3; i++) {
+      snapshots.push({
+        agentId: agent.id,
+        competitionId: competition.competition.id,
+        totalValue: 1000000 + i * 50000,
+        cash: 500000,
+        timestamp: new Date(now.getTime() - (3 - i) * 35 * 60000),
+      });
+    }
+
+    await db.insert(portfolioSnapshots).values(snapshots);
+
+    // Get timeline data for paper trading competition using service directly
+    const services = new ServiceRegistry();
+    const rawTimeline =
+      await services.portfolioSnapshotterService.getAgentPortfolioTimeline(
+        competition.competition.id,
+        30, // bucket size
+        false, // includeRiskMetrics should be false for paper trading
+      );
+
+    // Filter for our specific agent - cast to type with optional risk metrics
+    const timeline = rawTimeline.filter(
+      (entry) => entry.agentId === agent.id,
+    ) as Array<{
+      timestamp: string;
+      agentId: string;
+      agentName: string;
+      competitionId: string;
+      totalValue: number;
+      calmarRatio?: number;
+      sortinoRatio?: number;
+      simpleReturn?: number;
+      annualizedReturn?: number;
+      maxDrawdown?: number;
+      downsideDeviation?: number;
+    }>;
+
+    // Verify timeline does NOT include risk metrics for paper trading
+    expect(timeline).toBeDefined();
+    expect(timeline.length).toBeGreaterThanOrEqual(3);
+
+    // Check that risk metrics are NOT included
+    timeline.slice(0, 3).forEach((entry) => {
+      expect(entry.timestamp).toBeDefined();
+      expect(entry.totalValue).toBeDefined();
+
+      // Risk metrics should NOT be included for paper trading
+      expect(entry.calmarRatio).toBeUndefined();
+      expect(entry.sortinoRatio).toBeUndefined();
+      expect(entry.simpleReturn).toBeUndefined();
+      expect(entry.annualizedReturn).toBeUndefined();
+      expect(entry.maxDrawdown).toBeUndefined();
+      expect(entry.downsideDeviation).toBeUndefined();
+    });
   });
 
   test("should require wallet address for agents joining perps competitions", async () => {

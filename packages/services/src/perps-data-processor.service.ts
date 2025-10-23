@@ -1048,17 +1048,18 @@ export class PerpsDataProcessor {
               await new Promise((resolve) => setTimeout(resolve, backoffDelay));
             }
 
-            // Calculate both Calmar and Sortino ratios
-            await Promise.all([
-              this.calmarRatioService.calculateAndSaveCalmarRatio(
-                agent.agentId,
-                competitionId,
-              ),
-              this.sortinoRatioService.calculateAndSaveSortinoRatio(
-                agent.agentId,
-                competitionId,
-              ),
-            ]);
+            // Calculate Calmar first, then Sortino (must be sequential to avoid race condition)
+            // CalmarRatioService establishes maxDrawdown and calmarRatio
+            // SortinoRatioService reads those values and adds sortinoRatio/downsideDeviation
+            await this.calmarRatioService.calculateAndSaveCalmarRatio(
+              agent.agentId,
+              competitionId,
+            );
+
+            await this.sortinoRatioService.calculateAndSaveSortinoRatio(
+              agent.agentId,
+              competitionId,
+            );
 
             // Fetch the combined risk metrics after both calculations complete
             // Each service updates its own fields in the database

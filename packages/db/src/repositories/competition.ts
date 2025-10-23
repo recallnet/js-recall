@@ -1529,7 +1529,7 @@ export class CompetitionRepository {
         conditions.push(gte(portfolioSnapshots.timestamp, startDate));
       }
       if (endDate) {
-        conditions.push(lt(portfolioSnapshots.timestamp, endDate));
+        conditions.push(lte(portfolioSnapshots.timestamp, endDate));
       }
 
       // Drizzle doesn't yet support window functions directly, so we use raw SQL
