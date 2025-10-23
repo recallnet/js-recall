@@ -9,7 +9,10 @@ import {
 } from "@recallnet/db/schema/core/defs";
 import { MAX_HANDLE_LENGTH } from "@recallnet/db/schema/core/defs";
 import { SelectAgent, SelectUser } from "@recallnet/db/schema/core/types";
-import { crossChainTradingType } from "@recallnet/db/schema/trading/defs";
+import {
+  crossChainTradingType,
+  evaluationMetricEnum,
+} from "@recallnet/db/schema/trading/defs";
 
 import { specificChainTokens } from "../lib/config-utils.js";
 
@@ -701,6 +704,16 @@ export const CompetitionTypeSchema = z.enum(competitionType.enumValues);
  * Status of a competition.
  */
 export type CompetitionType = z.infer<typeof CompetitionTypeSchema>;
+
+/**
+ * Zod schema for evaluation metrics used in perps competitions.
+ */
+export const EvaluationMetricSchema = z.enum(evaluationMetricEnum.enumValues);
+
+/**
+ * Evaluation metrics for perps competitions.
+ */
+export type EvaluationMetric = z.infer<typeof EvaluationMetricSchema>;
 
 export const CompetitionAllowedUpdateSchema = z.strictObject({
   name: z.string().optional(),

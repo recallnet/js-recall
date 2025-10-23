@@ -44,6 +44,7 @@ import {
   CompetitionType,
   CrossChainTradingType,
   EnrichedLeaderboardEntry,
+  EvaluationMetric,
   PagingParams,
   PerpsEnrichedLeaderboardEntry,
   SpecificChain,
@@ -78,7 +79,7 @@ export interface CreateCompetitionParams {
   tradingConstraints?: TradingConstraintsInput;
   rewards?: Record<number, number>;
   minimumStake?: number;
-  evaluationMetric?: "calmar_ratio" | "sortino_ratio" | "simple_return";
+  evaluationMetric?: EvaluationMetric;
   perpsProvider?: {
     provider: "symphony" | "hyperliquid";
     initialCapital: number; // Required - Zod default ensures this is set
@@ -1881,7 +1882,7 @@ export class CompetitionService {
     updates: UpdateCompetition,
     tradingConstraints?: TradingConstraintsInput,
     rewards?: Record<number, number>,
-    evaluationMetric?: "calmar_ratio" | "sortino_ratio" | "simple_return",
+    evaluationMetric?: EvaluationMetric,
     perpsProvider?: {
       provider: "symphony" | "hyperliquid";
       initialCapital: number; // Required - Zod default ensures this is set
@@ -2009,7 +2010,7 @@ export class CompetitionService {
           initialCapital?: string;
           selfFundingThresholdUsd?: string;
           minFundingThreshold?: string | null;
-          evaluationMetric?: "calmar_ratio" | "sortino_ratio" | "simple_return";
+          evaluationMetric?: EvaluationMetric;
         } = {};
 
         if (perpsProvider) {

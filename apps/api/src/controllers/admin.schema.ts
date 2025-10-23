@@ -5,6 +5,7 @@ import {
   AgentMetadataSchema,
   CompetitionTypeSchema,
   CrossChainTradingTypeSchema,
+  EvaluationMetricSchema,
   TradingConstraintsSchema,
   UuidSchema,
 } from "@recallnet/services/types";
@@ -24,15 +25,6 @@ export const AdminSetupSchema = z.object({
 export const WalletAddressSchema = z
   .string()
   .regex(/^0x[0-9a-fA-F]{40}$/, "Invalid wallet address");
-
-/**
- * Evaluation metric schema for perps competitions
- */
-export const EvaluationMetricSchema = z.enum([
-  "calmar_ratio",
-  "sortino_ratio",
-  "simple_return",
-]);
 
 /**
  * Admin register user schema for creating users and optionally their first agent
