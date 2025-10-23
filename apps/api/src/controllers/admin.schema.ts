@@ -26,6 +26,15 @@ export const WalletAddressSchema = z
   .regex(/^0x[0-9a-fA-F]{40}$/, "Invalid wallet address");
 
 /**
+ * Evaluation metric schema for perps competitions
+ */
+export const EvaluationMetricSchema = z.enum([
+  "calmar_ratio",
+  "sortino_ratio",
+  "simple_return",
+]);
+
+/**
  * Admin register user schema for creating users and optionally their first agent
  */
 export const AdminRegisterUserSchema = z.object({
@@ -91,12 +100,9 @@ export const AdminCreateCompetitionSchema = z
     minimumStake: z.number().min(0).optional(),
     tradingConstraints: TradingConstraintsSchema,
     rewards: RewardsSchema,
-    evaluationMetric: z
-      .enum(["calmar_ratio", "sortino_ratio", "simple_return"])
-      .optional()
-      .describe(
-        "Metric used for ranking agents. Defaults to calmar_ratio for perps, simple_return for spot trading",
-      ),
+    evaluationMetric: EvaluationMetricSchema.optional().describe(
+      "Metric used for ranking agents. Defaults to calmar_ratio for perps, simple_return for spot trading",
+    ),
     perpsProvider: PerpsProviderSchema.optional(), // Only required for perps competitions
     prizePools: z
       .object({
@@ -152,12 +158,9 @@ export const AdminStartCompetitionSchema = z
     minimumStake: z.number().min(0).optional(),
     tradingConstraints: TradingConstraintsSchema,
     rewards: RewardsSchema,
-    evaluationMetric: z
-      .enum(["calmar_ratio", "sortino_ratio", "simple_return"])
-      .optional()
-      .describe(
-        "Metric used for ranking agents. Defaults to calmar_ratio for perps, simple_return for spot trading",
-      ),
+    evaluationMetric: EvaluationMetricSchema.optional().describe(
+      "Metric used for ranking agents. Defaults to calmar_ratio for perps, simple_return for spot trading",
+    ),
     perpsProvider: PerpsProviderSchema.optional(), // Only required for perps competitions
     prizePools: z
       .object({
