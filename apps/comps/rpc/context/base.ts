@@ -23,6 +23,7 @@ import {
   CompetitionService,
   EmailService,
   LeaderboardService,
+  RewardsService,
   UserService,
 } from "@recallnet/services";
 
@@ -39,6 +40,7 @@ import {
  * @property agentService - Service for agent management operations
  * @property emailService - Service for email operations
  * @property leaderboardService - Service for leaderboard operations
+ * @property rewardsService - Service for reward operations
  *
  * Standard errors:
  *   - NOT_FOUND: Resource not found
@@ -57,6 +59,7 @@ export const base = os
     agentService: AgentService;
     emailService: EmailService;
     leaderboardService: LeaderboardService;
+    rewardsService: RewardsService;
     logger: Logger;
   }>()
   .errors({

@@ -12,6 +12,7 @@ import {
   PerpsDataProcessor,
   PortfolioSnapshotterService,
   PriceTrackerService,
+  RewardsService,
   SortinoRatioService,
   TradeSimulatorService,
   TradingConstraintsService,
@@ -31,6 +32,7 @@ import {
   competitionRewardsRepository,
   leaderboardRepository,
   perpsRepository,
+  rewardsRepository,
   stakesRepository,
   tradeRepository,
   tradingConstraintsRepository,
@@ -185,4 +187,13 @@ export const competitionService = new CompetitionService(
   db,
   config,
   createLogger("CompetitionService"),
+);
+
+export const rewardsService = new RewardsService(
+  rewardsRepository,
+  competitionRepository,
+  boostRepository,
+  null,
+  db,
+  createLogger("RewardsService"),
 );
