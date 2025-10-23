@@ -1,7 +1,7 @@
 "use client";
 
 import { useDebounce } from "@uidotdev/usehooks";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   Bar,
   BarChart,
@@ -23,16 +23,10 @@ import { CustomLegend } from "./custom-legend";
 
 interface CalmarRatioChartProps {
   agents: RouterOutputs["competitions"]["getAgents"]["agents"];
-  totalAgents: number;
-  currentPage: number;
-  onPageChange?: (page: number) => void;
 }
 
 export const CalmarRatioChart: React.FC<CalmarRatioChartProps> = ({
   agents,
-  totalAgents,
-  currentPage,
-  onPageChange,
 }) => {
   const [hoveredBar, setHoveredBar] = useState<string | null>(null);
   const [legendHoveredAgent, setLegendHoveredAgent] = useState<string | null>(
@@ -40,7 +34,6 @@ export const CalmarRatioChart: React.FC<CalmarRatioChartProps> = ({
   );
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
-  const [currentLegendPage, setCurrentLegendPage] = useState(1);
 
   // Filter agents with valid Calmar ratios
   const agentsWithCalmar = useMemo(() => {
@@ -60,18 +53,11 @@ export const CalmarRatioChart: React.FC<CalmarRatioChartProps> = ({
     );
   }, [agentsWithCalmar, debouncedSearchQuery]);
 
-  // Reset legend page when search query changes
-  useEffect(() => {
-    setCurrentLegendPage(1);
-  }, [debouncedSearchQuery]);
-
-  // Chart display agents - should match what's shown in the legend's current page
+  // Chart display agents - all agents with valid Calmar ratios
   const chartDisplayAgents = useMemo(() => {
     if (!debouncedSearchQuery) {
-      // When not searching, use pagination from parent component
       return agentsWithCalmar;
     } else {
-      // When searching, show agents from current search page
       return filteredAgentsForLegend || [];
     }
   }, [agentsWithCalmar, filteredAgentsForLegend, debouncedSearchQuery]);
@@ -134,10 +120,6 @@ export const CalmarRatioChart: React.FC<CalmarRatioChartProps> = ({
       Math.ceil((domainMax + padding) * 10) / 10,
     ];
   }, [perpsChartData]);
-
-  const handleSearchPageChange = useCallback((page: number) => {
-    setCurrentLegendPage(page);
-  }, []);
 
   return (
     <>
@@ -257,14 +239,6 @@ export const CalmarRatioChart: React.FC<CalmarRatioChartProps> = ({
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         onAgentHover={setLegendHoveredAgent}
-        totalAgents={
-          debouncedSearchQuery ? filteredAgentsForLegend.length : totalAgents
-        }
-        currentPage={debouncedSearchQuery ? currentLegendPage : currentPage}
-        onPageChange={
-          debouncedSearchQuery ? handleSearchPageChange : onPageChange
-        }
-        onSearchPageChange={handleSearchPageChange}
       />
       <div className="border-t px-6 py-3">
         <p className="text-xs text-gray-500">

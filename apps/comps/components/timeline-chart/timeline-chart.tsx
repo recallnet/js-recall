@@ -16,6 +16,7 @@ import { cn } from "@recallnet/ui2/lib/utils";
 import { config } from "@/config/public";
 import { useCompetitionTimeline } from "@/hooks/useCompetitionTimeline";
 import { RouterOutputs } from "@/rpc/router";
+import { checkIsPerpsCompetition } from "@/utils/competition-utils";
 import { formatDate } from "@/utils/format";
 
 import { ShareModal } from "../share-modal";
@@ -34,12 +35,9 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
   competition,
   agents,
   className,
-  totalAgents = 0,
-  currentPage = 1,
-  onPageChange,
   suppressInternalLoading = false,
 }) => {
-  const isPerpsCompetition = competition.type === "perpetual_futures";
+  const isPerpsCompetition = checkIsPerpsCompetition(competition);
 
   const { data: timelineRaw, isLoading } = useCompetitionTimeline(
     competition.id,
@@ -471,12 +469,7 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
             size={20}
           />
         </div>
-        <CalmarRatioChart
-          agents={agents || []}
-          totalAgents={totalAgents}
-          currentPage={currentPage}
-          onPageChange={onPageChange}
-        />
+        <CalmarRatioChart agents={agents || []} />
       </div>
     );
   }
@@ -583,9 +576,6 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
             onAgentHover={handleLegendHover}
-            totalAgents={totalAgents}
-            currentPage={currentPage}
-            onPageChange={onPageChange}
             onSearchPageChange={handleSearchPageChange}
           />
         </>

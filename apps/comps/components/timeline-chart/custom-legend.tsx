@@ -21,9 +21,6 @@ export const CustomLegend = ({
   searchQuery,
   onSearchChange,
   onAgentHover,
-  totalAgents = 0,
-  currentPage = 1,
-  onPageChange,
   onSearchPageChange,
 }: CustomLegendProps) => {
   // Internal pagination state for search results
@@ -80,7 +77,7 @@ export const CustomLegend = ({
     });
   }, [agents, currentOrder, currentValues]);
 
-  // Handle pagination for search vs normal mode
+  // Handle pagination for search results only
   const { displayAgents, paginationProps } = useMemo(() => {
     if (searchQuery) {
       // When searching, paginate the sorted search results
@@ -97,25 +94,13 @@ export const CustomLegend = ({
         },
       };
     } else {
-      // When not searching, use parent pagination (agents already paginated)
+      // When not searching, show all agents (no pagination needed)
       return {
         displayAgents: sortedAgents,
-        paginationProps: {
-          totalItems: totalAgents,
-          currentPage: currentPage,
-          onPageChange: onPageChange,
-        },
+        paginationProps: null,
       };
     }
-  }, [
-    sortedAgents,
-    searchQuery,
-    searchPage,
-    totalAgents,
-    currentPage,
-    onPageChange,
-    handleSearchPageChange,
-  ]);
+  }, [sortedAgents, searchQuery, searchPage, handleSearchPageChange]);
 
   return (
     <div className="p-5">
@@ -159,7 +144,8 @@ export const CustomLegend = ({
         })}
       </div>
 
-      {paginationProps.onPageChange &&
+      {paginationProps &&
+        paginationProps.onPageChange &&
         paginationProps.totalItems > LIMIT_AGENTS_PER_PAGE && (
           <Pagination
             totalItems={paginationProps.totalItems}

@@ -39,18 +39,19 @@ import { openForBoosting } from "@/lib/open-for-boosting";
 import { tanstackClient } from "@/rpc/clients/tanstack-query";
 import { RouterOutputs } from "@/rpc/router";
 import { PaginationResponse } from "@/types";
+import { checkIsPerpsCompetition } from "@/utils/competition-utils";
 import { formatCompactNumber, formatPercentage } from "@/utils/format";
 import { getSortState } from "@/utils/table";
 
 import { AgentAvatar } from "../agent-avatar";
 import BoostAgentModal from "../modals/boost-agent";
+import { RewardsTGE } from "../rewards-tge";
 import { boostedCompetitionsStartDate } from "../timeline-chart/constants";
 import { RankBadge } from "./rank-badge";
 
 export interface AgentsTableProps {
   agents: RouterOutputs["competitions"]["getAgents"]["agents"];
   competition: RouterOutputs["competitions"]["getById"];
-  onFilterChange: (filter: string) => void;
   onSortChange: (sort: string) => void;
   pagination: PaginationResponse;
   ref: React.RefObject<HTMLDivElement | null>;
@@ -318,7 +319,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
         },
       },
       // Show Calmar Ratio as primary metric for perps, Portfolio Value for others
-      ...(competition.type === "perpetual_futures"
+      ...(checkIsPerpsCompetition(competition)
         ? [
             {
               id: "calmarRatio",
@@ -593,8 +594,8 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
       userBoostBalance,
       isSuccessAgentBoostTotals,
       isOpenForBoosting,
-      competition.type,
       isSuccessUserBoosts,
+      competition,
     ],
   );
 
@@ -651,21 +652,52 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
 
   return (
     <div className="mt-12 w-full" ref={ref}>
-      <div className="mb-5 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="w-full md:w-1/2">
-          <h2 className="text-2xl font-bold">
-            Competition {competitionTitles[competition.status]}
-            {/*({pagination.total})*/}
-          </h2>
-          {/*<div className="flex w-full items-center gap-2 rounded-2xl border px-3 py-2">
-            <Search className="text-secondary-foreground mr-1 h-5" />
-            <Input
-              className="border-none bg-transparent p-0 focus-visible:ring-0 focus-visible:ring-offset-0"
-              placeholder="Search for an agent..."
-              onChange={(e) => onFilterChange(e.target.value)}
-              aria-label="Search for an agent"
-            />
-          </div>*/}
+      <div className="mb-5 flex flex-col gap-4">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="w-full md:w-1/2">
+            <h2 className="text-2xl font-bold">
+              Competition {competitionTitles[competition.status]}
+            </h2>
+          </div>
+          <div className="ml-auto">
+            {showActivateBoost ? (
+              <Button
+                size="lg"
+                variant="outline"
+                className="group h-8 rounded-lg border border-yellow-500 bg-black font-bold text-white hover:bg-yellow-500 hover:text-black"
+                onClick={handleClaimBoost}
+              >
+                {config.publicFlags.tge ? "Activate Boost" : "Start Boosting"}{" "}
+                <Zap className="ml-1 h-4 w-4 fill-yellow-500 text-yellow-500 group-hover:fill-black group-hover:text-black" />
+              </Button>
+            ) : showStakeToBoost ? (
+              <Button
+                size="lg"
+                variant="outline"
+                className="group h-8 rounded-lg border border-yellow-500 bg-black font-bold text-white hover:bg-yellow-500 hover:text-black"
+                onClick={handleStakeToBoost}
+              >
+                Stake to Boost{" "}
+                <Zap className="ml-1 h-4 w-4 fill-yellow-500 text-yellow-500 transition-all duration-300 ease-in-out group-hover:fill-black group-hover:text-black" />
+              </Button>
+            ) : null}
+          </div>
+        </div>
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          {/* Rewards section */}
+          {competition.rewardsTge && (
+            <div className="flex items-center gap-2">
+              <span className="mr-4 text-xs font-semibold uppercase tracking-wider text-gray-400">
+                Rewards
+              </span>
+              <RewardsTGE
+                rewards={{
+                  agentPrizePool: BigInt(competition.rewardsTge.agentPool),
+                  userPrizePool: BigInt(competition.rewardsTge.userPool),
+                }}
+              />
+            </div>
+          )}
         </div>
 
         {showBoostBalance && (
@@ -700,27 +732,6 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
             </div>
           </div>
         )}
-        {showActivateBoost ? (
-          <Button
-            size="lg"
-            variant="outline"
-            className="group h-8 self-end rounded-lg border border-yellow-500 bg-black font-bold text-white hover:bg-yellow-500 hover:text-black"
-            onClick={handleClaimBoost}
-          >
-            {config.publicFlags.tge ? "Activate Boost" : "Start Boosting"}{" "}
-            <Zap className="ml-1 h-4 w-4 fill-yellow-500 text-yellow-500 group-hover:fill-black group-hover:text-black" />
-          </Button>
-        ) : showStakeToBoost ? (
-          <Button
-            size="lg"
-            variant="outline"
-            className="group h-8 self-end rounded-lg border border-yellow-500 bg-black font-bold text-white hover:bg-yellow-500 hover:text-black"
-            onClick={handleStakeToBoost}
-          >
-            Stake to Boost{" "}
-            <Zap className="ml-1 h-4 w-4 fill-yellow-500 text-yellow-500 transition-all duration-300 ease-in-out group-hover:fill-black group-hover:text-black" />
-          </Button>
-        ) : null}
       </div>
       <div
         ref={tableContainerRef}
