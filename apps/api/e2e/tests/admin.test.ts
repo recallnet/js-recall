@@ -2533,6 +2533,134 @@ describe("Admin API", () => {
     ).toHaveLength(2);
   });
 
+  // ===== Evaluation Metric Tests =====
+
+  test("should create perps competition with specific evaluationMetric", async () => {
+    const client = createTestClient(getBaseUrl());
+    await client.loginAsAdmin(adminApiKey);
+
+    // Create a perps competition with sortino_ratio as evaluation metric
+    const response = await createPerpsTestCompetition({
+      adminClient: client,
+      name: "Test Sortino Perps Competition",
+      evaluationMetric: "sortino_ratio",
+      perpsProvider: {
+        provider: "symphony",
+        initialCapital: 500,
+        selfFundingThreshold: 0,
+        apiUrl: "http://localhost:4567",
+      },
+    });
+
+    expect(response.success).toBe(true);
+    expect(response.competition).toBeDefined();
+    expect(response.competition.name).toBe("Test Sortino Perps Competition");
+    expect(response.competition.type).toBe("perpetual_futures");
+    expect(response.competition.evaluationMetric).toBe("sortino_ratio");
+  });
+
+  test("should default to calmar_ratio for perps competition without explicit evaluationMetric", async () => {
+    const client = createTestClient(getBaseUrl());
+    await client.loginAsAdmin(adminApiKey);
+
+    // Create a perps competition without specifying evaluationMetric
+    const response = await createPerpsTestCompetition({
+      adminClient: client,
+      name: "Test Default Metric Perps Competition",
+      perpsProvider: {
+        provider: "symphony",
+        initialCapital: 500,
+        selfFundingThreshold: 0,
+        apiUrl: "http://localhost:4567",
+      },
+    });
+
+    expect(response.success).toBe(true);
+    expect(response.competition).toBeDefined();
+    expect(response.competition.evaluationMetric).toBe("calmar_ratio"); // Should default to calmar_ratio for perps
+  });
+
+  test("should update evaluationMetric on existing perps competition", async () => {
+    const client = createTestClient(getBaseUrl());
+    await client.loginAsAdmin(adminApiKey);
+
+    // First create a perps competition with calmar_ratio
+    const createResponse = (await client.createCompetition({
+      name: "Perps Competition for Metric Update",
+      type: "perpetual_futures",
+      evaluationMetric: "calmar_ratio",
+      perpsProvider: {
+        provider: "symphony",
+        initialCapital: 1000,
+        selfFundingThreshold: 100,
+        apiUrl: "http://localhost:4567",
+      },
+    })) as CreateCompetitionResponse;
+
+    expect(createResponse.success).toBe(true);
+    const competitionId = createResponse.competition.id;
+    expect(createResponse.competition.evaluationMetric).toBe("calmar_ratio");
+
+    // Update the evaluationMetric to sortino_ratio
+    const updateResponse = (await client.updateCompetition(competitionId, {
+      evaluationMetric: "sortino_ratio",
+    })) as UpdateCompetitionResponse;
+
+    expect(updateResponse.success).toBe(true);
+    expect(updateResponse.competition.evaluationMetric).toBe("sortino_ratio");
+  });
+
+  test("should start perps competition with simple_return evaluationMetric", async () => {
+    const client = createTestClient(getBaseUrl());
+    await client.loginAsAdmin(adminApiKey);
+
+    // Register test agents
+    const { agent: agent1 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Simple Return Agent 1",
+    });
+
+    const { agent: agent2 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Simple Return Agent 2",
+    });
+
+    // Start a perps competition with simple_return as evaluation metric
+    const startResponse = await startPerpsTestCompetition({
+      adminClient: client,
+      name: "Simple Return Perps Competition",
+      agentIds: [agent1.id, agent2.id],
+      evaluationMetric: "simple_return",
+      perpsProvider: {
+        provider: "symphony",
+        initialCapital: 1000,
+        selfFundingThreshold: 0,
+        apiUrl: "http://localhost:4567",
+      },
+    });
+
+    expect(startResponse.success).toBe(true);
+    expect(startResponse.competition.status).toBe("active");
+    expect(startResponse.competition.evaluationMetric).toBe("simple_return");
+    expect(startResponse.competition.type).toBe("perpetual_futures");
+  });
+
+  test("should default to simple_return for paper trading competition", async () => {
+    const client = createTestClient(getBaseUrl());
+    await client.loginAsAdmin(adminApiKey);
+
+    // Create a paper trading competition without specifying evaluationMetric
+    const createResponse = (await client.createCompetition({
+      name: "Paper Trading Default Metric",
+      type: "trading",
+      // Not specifying evaluationMetric
+    })) as CreateCompetitionResponse;
+
+    expect(createResponse.success).toBe(true);
+    expect(createResponse.competition.type).toBe("trading");
+    expect(createResponse.competition.evaluationMetric).toBe("simple_return"); // Should default to simple_return for paper trading
+  });
+
   // ===== Prize Pool Tests =====
 
   test("should create competition with prizePools.agent and prizePools.users", async () => {

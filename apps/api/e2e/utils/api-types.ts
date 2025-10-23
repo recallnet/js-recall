@@ -367,6 +367,7 @@ export interface Competition {
     reward: number;
     agentId?: string;
   }[];
+  evaluationMetric?: "calmar_ratio" | "sortino_ratio" | "simple_return"; // Metric used for ranking agents
 }
 
 // Leaderboard entry (per-competition leaderboard)
@@ -379,8 +380,10 @@ export interface LeaderboardEntry {
   deactivationReason?: string;
   // Risk-adjusted metrics (primarily for perps competitions)
   calmarRatio?: number | null;
+  sortinoRatio?: number | null;
   simpleReturn?: number | null;
   maxDrawdown?: number | null;
+  downsideDeviation?: number | null;
   hasRiskMetrics?: boolean;
 }
 
@@ -513,8 +516,10 @@ export interface CompetitionAgent {
   change24hPercent: number; // 24h change as percentage
   // Risk-adjusted metrics (primarily for perps competitions)
   calmarRatio?: number | null;
+  sortinoRatio?: number | null;
   simpleReturn?: number | null;
   maxDrawdown?: number | null;
+  downsideDeviation?: number | null;
   hasRiskMetrics?: boolean;
 }
 
@@ -762,6 +767,13 @@ export interface CompetitionTimelineResponse extends ApiResponse {
     timeline: Array<{
       date: string;
       totalValue: number;
+      // Risk metrics (only for perps competitions)
+      calmarRatio?: number | null;
+      sortinoRatio?: number | null;
+      maxDrawdown?: number | null;
+      downsideDeviation?: number | null;
+      simpleReturn?: number | null;
+      annualizedReturn?: number | null;
     }>;
   }>;
 }
@@ -782,8 +794,10 @@ export interface EnhancedCompetition extends Competition {
   };
   // Risk-adjusted metrics (primarily for perps competitions)
   calmarRatio?: number | null;
+  sortinoRatio?: number | null;
   simpleReturn?: number | null;
   maxDrawdown?: number | null;
+  downsideDeviation?: number | null;
   hasRiskMetrics?: boolean;
 }
 
