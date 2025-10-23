@@ -4420,4 +4420,148 @@ describe("Perps Competition", () => {
     // Should be empty since competition hasn't started and has no snapshots
     expect(typedResponse.timeline.length).toBe(0);
   });
+
+  test("should preserve calmar_ratio rankings when competition with calmar evaluation ends", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Use existing wallets with known performance
+    const { agent: agent1 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Calmar Preservation Agent 1",
+      agentWalletAddress: "0x3333333333333333333333333333333333333333", // $1100, steady growth
+    });
+
+    const { agent: agent2 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Calmar Preservation Agent 2",
+      agentWalletAddress: "0x2222222222222222222222222222222222222222", // $950, negative return
+    });
+
+    // Start competition with calmar_ratio (default)
+    const competition = await startPerpsTestCompetition({
+      adminClient,
+      name: "Calmar Preservation Test",
+      agentIds: [agent1.id, agent2.id],
+      evaluationMetric: "calmar_ratio",
+    });
+
+    await wait(1000);
+
+    // Process to calculate metrics
+    const services = new ServiceRegistry();
+    await services.perpsDataProcessor.processPerpsCompetition(
+      competition.competition.id,
+    );
+    await wait(1500);
+
+    // Get active leaderboard
+    const activeLeaderboard = await adminClient.getCompetitionAgents(
+      competition.competition.id,
+      { sort: "rank" },
+    );
+    expect(activeLeaderboard.success).toBe(true);
+    const activeAgents = (activeLeaderboard as CompetitionAgentsResponse)
+      .agents;
+
+    const agent1Active = activeAgents.find((a) => a.id === agent1.id);
+    const agent2Active = activeAgents.find((a) => a.id === agent2.id);
+
+    const originalCalmar1 = agent1Active?.calmarRatio;
+    const originalCalmar2 = agent2Active?.calmarRatio;
+    const originalRank1 = agent1Active?.rank;
+    const originalRank2 = agent2Active?.rank;
+
+    // End competition
+    await adminClient.endCompetition(competition.competition.id);
+    await wait(2000);
+
+    // Get ended leaderboard
+    const endedLeaderboard = await adminClient.getCompetitionAgents(
+      competition.competition.id,
+    );
+    expect(endedLeaderboard.success).toBe(true);
+    const endedAgents = (endedLeaderboard as CompetitionAgentsResponse).agents;
+
+    const agent1Ended = endedAgents.find((a) => a.id === agent1.id);
+    const agent2Ended = endedAgents.find((a) => a.id === agent2.id);
+
+    // Rankings and metrics should be preserved
+    expect(agent1Ended?.rank).toBe(originalRank1);
+    expect(agent2Ended?.rank).toBe(originalRank2);
+    expect(agent1Ended?.calmarRatio).toBe(originalCalmar1);
+    expect(agent2Ended?.calmarRatio).toBe(originalCalmar2);
+  });
+
+  test("should preserve simple_return rankings when competition with simple_return evaluation ends", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Use wallets with different returns
+    const { agent: agent1 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Simple Return Preservation Agent 1",
+      agentWalletAddress: "0x1111111111111111111111111111111111111111", // $1250, good return
+    });
+
+    const { agent: agent2 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Simple Return Preservation Agent 2",
+      agentWalletAddress: "0x3333333333333333333333333333333333333333", // $1100, moderate return
+    });
+
+    // Start competition with simple_return
+    const competition = await startPerpsTestCompetition({
+      adminClient,
+      name: "Simple Return Preservation Test",
+      agentIds: [agent1.id, agent2.id],
+      evaluationMetric: "simple_return",
+    });
+
+    await wait(1000);
+
+    // Process to calculate metrics
+    const services = new ServiceRegistry();
+    await services.perpsDataProcessor.processPerpsCompetition(
+      competition.competition.id,
+    );
+    await wait(1500);
+
+    // Get active leaderboard
+    const activeLeaderboard = await adminClient.getCompetitionAgents(
+      competition.competition.id,
+      { sort: "rank" },
+    );
+    expect(activeLeaderboard.success).toBe(true);
+    const activeAgents = (activeLeaderboard as CompetitionAgentsResponse)
+      .agents;
+
+    const agent1Active = activeAgents.find((a) => a.id === agent1.id);
+    const agent2Active = activeAgents.find((a) => a.id === agent2.id);
+
+    const originalReturn1 = agent1Active?.simpleReturn;
+    const originalReturn2 = agent2Active?.simpleReturn;
+    const originalRank1 = agent1Active?.rank;
+    const originalRank2 = agent2Active?.rank;
+
+    // End competition
+    await adminClient.endCompetition(competition.competition.id);
+    await wait(2000);
+
+    // Get ended leaderboard
+    const endedLeaderboard = await adminClient.getCompetitionAgents(
+      competition.competition.id,
+    );
+    expect(endedLeaderboard.success).toBe(true);
+    const endedAgents = (endedLeaderboard as CompetitionAgentsResponse).agents;
+
+    const agent1Ended = endedAgents.find((a) => a.id === agent1.id);
+    const agent2Ended = endedAgents.find((a) => a.id === agent2.id);
+
+    // Rankings and metrics should be preserved
+    expect(agent1Ended?.rank).toBe(originalRank1);
+    expect(agent2Ended?.rank).toBe(originalRank2);
+    expect(agent1Ended?.simpleReturn).toBe(originalReturn1);
+    expect(agent2Ended?.simpleReturn).toBe(originalReturn2);
+  });
 });
