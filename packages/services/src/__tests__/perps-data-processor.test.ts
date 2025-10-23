@@ -12,9 +12,8 @@ import type {
   SelectPerpsAccountSummary,
 } from "@recallnet/db/schema/trading/types";
 
-import { CalmarRatioService } from "../calmar-ratio.service.js";
 import { PerpsDataProcessor } from "../perps-data-processor.service.js";
-import { SortinoRatioService } from "../sortino-ratio.service.js";
+import { RiskMetricsService } from "../risk-metrics.service.js";
 import type { AgentPerpsSyncData } from "../types/perps.js";
 import type {
   IPerpsDataProvider,
@@ -26,7 +25,7 @@ import type {
 vi.mock("@recallnet/db/repositories/agent");
 vi.mock("@recallnet/db/repositories/competition");
 vi.mock("@recallnet/db/repositories/perps");
-vi.mock("../calmar-ratio.service.js");
+vi.mock("../risk-metrics.service.js");
 
 describe("PerpsDataProcessor", () => {
   let processor: PerpsDataProcessor;
@@ -34,8 +33,7 @@ describe("PerpsDataProcessor", () => {
   let mockAgentRepo: AgentRepository;
   let mockCompetitionRepo: CompetitionRepository;
   let mockPerpsRepo: PerpsRepository;
-  let mockCalmarRatioService: CalmarRatioService;
-  let mockSortinoRatioService: SortinoRatioService;
+  let mockRiskMetricsService: RiskMetricsService;
   let mockLogger: Logger;
 
   // Sample data that matches what the provider returns
@@ -152,8 +150,7 @@ describe("PerpsDataProcessor", () => {
     mockAgentRepo = {} as AgentRepository;
     mockCompetitionRepo = {} as CompetitionRepository;
     mockPerpsRepo = {} as PerpsRepository;
-    mockCalmarRatioService = {} as CalmarRatioService;
-    mockSortinoRatioService = {} as SortinoRatioService;
+    mockRiskMetricsService = {} as RiskMetricsService;
     mockLogger = {
       info: vi.fn(),
       error: vi.fn(),
@@ -269,8 +266,7 @@ describe("PerpsDataProcessor", () => {
     mockAgentRepo.findByIds = vi.fn().mockResolvedValue([]);
 
     processor = new PerpsDataProcessor(
-      mockCalmarRatioService,
-      mockSortinoRatioService,
+      mockRiskMetricsService,
       mockAgentRepo,
       mockCompetitionRepo,
       mockPerpsRepo,

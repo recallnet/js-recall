@@ -9,10 +9,9 @@ import type {
   InsertPerpsAccountSummary,
 } from "@recallnet/db/schema/trading/types";
 
-import { CalmarRatioService } from "./calmar-ratio.service.js";
 import { PerpsMonitoringService } from "./perps-monitoring.service.js";
 import { PerpsProviderFactory } from "./providers/perps-provider.factory.js";
-import { SortinoRatioService } from "./sortino-ratio.service.js";
+import { RiskMetricsService } from "./risk-metrics.service.js";
 import type {
   AgentPerpsSyncResult,
   BatchPerpsSyncResult,
@@ -43,23 +42,20 @@ Decimal.set({
  * Orchestrates fetching data from providers and storing in database
  */
 export class PerpsDataProcessor {
-  private calmarRatioService: CalmarRatioService;
-  private sortinoRatioService: SortinoRatioService;
+  private riskMetricsService: RiskMetricsService;
   private agentRepo: AgentRepository;
   private competitionRepo: CompetitionRepository;
   private perpsRepo: PerpsRepository;
   private logger: Logger;
 
   constructor(
-    calmarRatioService: CalmarRatioService,
-    sortinoRatioService: SortinoRatioService,
+    riskMetricsService: RiskMetricsService,
     agentRepo: AgentRepository,
     competitionRepo: CompetitionRepository,
     perpsRepo: PerpsRepository,
     logger: Logger,
   ) {
-    this.calmarRatioService = calmarRatioService;
-    this.sortinoRatioService = sortinoRatioService;
+    this.riskMetricsService = riskMetricsService;
     this.agentRepo = agentRepo;
     this.competitionRepo = competitionRepo;
     this.perpsRepo = perpsRepo;
@@ -1048,60 +1044,12 @@ export class PerpsDataProcessor {
               await new Promise((resolve) => setTimeout(resolve, backoffDelay));
             }
 
-            // Calculate Calmar first, then Sortino (must be sequential to avoid race condition)
-            // CalmarRatioService establishes maxDrawdown and calmarRatio
-            // SortinoRatioService reads those values and adds sortinoRatio/downsideDeviation
-            await this.calmarRatioService.calculateAndSaveCalmarRatio(
+            // Calculate all risk metrics atomically using orchestrator service
+            // RiskMetricsService wraps Calmar + Sortino + snapshot in a single transaction
+            await this.riskMetricsService.calculateAndSaveAllRiskMetrics(
               agent.agentId,
               competitionId,
             );
-
-            await this.sortinoRatioService.calculateAndSaveSortinoRatio(
-              agent.agentId,
-              competitionId,
-            );
-
-            // Fetch the combined risk metrics after both calculations complete
-            // Each service updates its own fields in the database
-            const metricsMap = await this.perpsRepo.getBulkAgentRiskMetrics(
-              agent.agentId,
-              [competitionId],
-            );
-
-            const updatedMetrics = metricsMap.get(competitionId);
-
-            if (updatedMetrics) {
-              // Get this agent's latest portfolio snapshot for the timestamp
-              const agentSnapshots =
-                await this.competitionRepo.getAgentPortfolioSnapshots(
-                  competitionId,
-                  agent.agentId,
-                  1, // Only need the latest one
-                );
-
-              const latestSnapshot = agentSnapshots[0];
-
-              if (latestSnapshot) {
-                // Save combined risk metrics snapshot with all metrics from both services
-                await this.perpsRepo.batchCreateRiskMetricsSnapshots([
-                  {
-                    agentId: agent.agentId,
-                    competitionId,
-                    timestamp: latestSnapshot.timestamp,
-                    calmarRatio: updatedMetrics.calmarRatio,
-                    sortinoRatio: updatedMetrics.sortinoRatio,
-                    simpleReturn: updatedMetrics.simpleReturn,
-                    annualizedReturn: updatedMetrics.annualizedReturn,
-                    maxDrawdown: updatedMetrics.maxDrawdown,
-                    downsideDeviation: updatedMetrics.downsideDeviation,
-                  },
-                ]);
-
-                this.logger.info(
-                  `[PerpsDataProcessor] Saved combined risk metrics snapshot for agent ${agent.agentId}`,
-                );
-              }
-            }
 
             // Success! Log if it was a retry
             if (attempt > 1) {

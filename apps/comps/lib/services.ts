@@ -13,6 +13,7 @@ import {
   PortfolioSnapshotterService,
   PriceTrackerService,
   RewardsService,
+  RiskMetricsService,
   SortinoRatioService,
   TradeSimulatorService,
   TradingConstraintsService,
@@ -145,19 +146,25 @@ export const competitionRewardsService = new CompetitionRewardService(
 
 export const calmarRatioService = new CalmarRatioService(
   competitionRepository,
-  perpsRepository,
   createLogger("CalmarRatioService"),
 );
 
 export const sortinoRatioService = new SortinoRatioService(
   competitionRepository,
-  perpsRepository,
   createLogger("SortinoRatioService"),
 );
 
-const perpsDataProcessor = new PerpsDataProcessor(
+const riskMetricsService = new RiskMetricsService(
   calmarRatioService,
   sortinoRatioService,
+  perpsRepository,
+  competitionRepository,
+  db,
+  createLogger("RiskMetricsService"),
+);
+
+const perpsDataProcessor = new PerpsDataProcessor(
+  riskMetricsService,
   agentRepository,
   competitionRepository,
   perpsRepository,

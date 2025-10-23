@@ -1452,10 +1452,13 @@ export class PerpsRepository {
    */
   async batchCreateRiskMetricsSnapshots(
     snapshots: InsertRiskMetricsSnapshot[],
+    tx?: Transaction,
   ): Promise<SelectRiskMetricsSnapshot[]> {
     if (snapshots.length === 0) {
       return [];
     }
+
+    const executor = tx || this.#db;
 
     try {
       this.#logger.debug(
@@ -1463,7 +1466,7 @@ export class PerpsRepository {
       );
 
       const now = new Date();
-      const results = await this.#db
+      const results = await executor
         .insert(riskMetricsSnapshots)
         .values(
           snapshots.map((snapshot) => ({
@@ -1557,8 +1560,9 @@ export class PerpsRepository {
    */
   async saveRiskMetrics(
     metrics: InsertPerpsRiskMetrics,
+    tx?: Transaction,
   ): Promise<SelectPerpsRiskMetrics> {
-    return this.upsertRiskMetrics(metrics);
+    return this.upsertRiskMetrics(metrics, tx);
   }
 
   /**

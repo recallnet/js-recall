@@ -2,17 +2,21 @@ import { Decimal } from "decimal.js";
 import { Logger } from "pino";
 
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
-import { PerpsRepository } from "@recallnet/db/repositories/perps";
-import type {
-  InsertPerpsRiskMetrics,
-  SelectPerpsRiskMetrics,
-} from "@recallnet/db/schema/trading/types";
 
 /**
- * Result of calculating and saving Sortino ratio metrics
+ * Calculated Sortino metrics
  */
-export interface SortinoMetricsResult {
-  metrics: SelectPerpsRiskMetrics;
+export interface SortinoMetrics {
+  agentId: string;
+  competitionId: string;
+  sortinoRatio: string;
+  downsideDeviation: string;
+  annualizedReturn: string;
+  simpleReturn: string;
+  snapshotCount: number;
+  // Also include Calmar metrics that must be preserved
+  calmarRatio?: string;
+  maxDrawdown?: string;
 }
 
 /**
@@ -27,34 +31,28 @@ export interface SortinoMetricsResult {
  */
 export class SortinoRatioService {
   private competitionRepo: CompetitionRepository;
-  private perpsRepo: PerpsRepository;
   private logger: Logger;
 
   // Minimum Acceptable Return for crypto competitions (0%)
   private readonly MAR = 0;
 
-  constructor(
-    competitionRepo: CompetitionRepository,
-    perpsRepo: PerpsRepository,
-    logger: Logger,
-  ) {
+  constructor(competitionRepo: CompetitionRepository, logger: Logger) {
     this.competitionRepo = competitionRepo;
-    this.perpsRepo = perpsRepo;
     this.logger = logger;
   }
 
   /**
-   * Calculate and persist Sortino Ratio with downside deviation
+   * Calculate Sortino Ratio metrics (without persisting)
    * Uses database-level window functions
    *
    * @param agentId Agent ID
    * @param competitionId Competition ID
-   * @returns Saved risk metrics with Sortino ratio
+   * @returns Calculated metrics
    */
-  async calculateAndSaveSortinoRatio(
+  async calculateSortinoRatio(
     agentId: string,
     competitionId: string,
-  ): Promise<SortinoMetricsResult> {
+  ): Promise<SortinoMetrics> {
     try {
       this.logger.info(
         `[SortinoRatio] Calculating Sortino Ratio for agent ${agentId} in competition ${competitionId}`,
@@ -102,20 +100,6 @@ export class SortinoRatioService {
         downsideDeviation,
       );
 
-      // 4. Get existing metrics to preserve Calmar ratio and max drawdown
-      // CalmarRatioService MUST run first to establish these values
-      const riskMetrics = await this.perpsRepo.getBulkAgentRiskMetrics(
-        agentId,
-        [competitionId],
-      );
-      const existingMetrics = riskMetrics.get(competitionId);
-
-      if (!existingMetrics?.calmarRatio || !existingMetrics?.maxDrawdown) {
-        throw new Error(
-          `Cannot calculate Sortino for agent ${agentId}: Missing Calmar metrics. CalmarRatioService must run first.`,
-        );
-      }
-
       this.logger.info(
         `[SortinoRatio] Calculated metrics for agent ${agentId}: ` +
           `Sortino=${sortinoRatio.toFixed(4)}, ` +
@@ -124,26 +108,18 @@ export class SortinoRatioService {
           `Simple Return=${(simpleReturn.toNumber() * 100).toFixed(2)}%`,
       );
 
-      // 5. Save risk metrics (update existing - Calmar already established)
-      const metricsData: InsertPerpsRiskMetrics = {
+      // Return calculated metrics
+      const calculatedMetrics: SortinoMetrics = {
         agentId,
         competitionId,
-        simpleReturn: simpleReturn.toFixed(8),
-        calmarRatio: existingMetrics.calmarRatio, // Preserved from CalmarRatioService
-        annualizedReturn: avgReturn.toFixed(8),
-        maxDrawdown: existingMetrics.maxDrawdown, // Preserved from CalmarRatioService
         sortinoRatio: sortinoRatio.toFixed(8),
         downsideDeviation: downsideDeviation.toFixed(8),
+        annualizedReturn: avgReturn.toFixed(8),
+        simpleReturn: simpleReturn.toFixed(8),
         snapshotCount: metrics.snapshotCount,
       };
 
-      const savedMetrics = await this.perpsRepo.upsertRiskMetrics(metricsData);
-
-      this.logger.info(
-        `[SortinoRatio] Saved risk metrics and snapshot for agent ${agentId}`,
-      );
-
-      return { metrics: savedMetrics };
+      return calculatedMetrics;
     } catch (error) {
       this.logger.error(
         `[SortinoRatio] Error calculating Sortino Ratio for agent ${agentId}:`,
