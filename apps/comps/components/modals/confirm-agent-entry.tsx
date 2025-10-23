@@ -18,6 +18,7 @@ import { formatAmount } from "@/utils/format";
 import { formatDate } from "@/utils/format";
 
 import { Recall } from "../Recall";
+import BigNumberDisplay from "../bignumber";
 import RewardsTGE from "../rewards-tge";
 
 interface ChooseAgentModalProps {
@@ -94,7 +95,14 @@ export const ConfirmAgentEntryModal: React.FC<ChooseAgentModalProps> = ({
               <li>
                 Best Score{" "}
                 <span className="text-primary-foreground">
-                  [{topRankForCompetitionType.toLocaleString()}]
+                  [
+                  <BigNumberDisplay
+                    value={topRankForCompetitionType.toString()}
+                    decimals={0}
+                    displayDecimals={0}
+                    compact={false}
+                  />
+                  ]
                 </span>
               </li>
             </div>
