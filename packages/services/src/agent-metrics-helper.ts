@@ -1,8 +1,10 @@
+import type { RawAgentMetricsQueryResult } from "@recallnet/db/repositories/types";
+
 import type {
   AgentMetricsData,
   AgentPublic,
+  AgentRankByType,
   AgentWithMetrics,
-  RawAgentMetricsQueryResult,
 } from "./types/agent-metrics.js";
 import type { AgentMetadata, AgentStats, AgentTrophy } from "./types/index.js";
 
@@ -82,10 +84,7 @@ export class AgentMetricsHelper {
     );
 
     // Build ranks map for each agent (ranks now calculated in SQL)
-    const agentRanksMap = new Map<
-      string,
-      Array<{ type: string; rank: number; score: number }>
-    >();
+    const agentRanksMap = new Map<string, AgentRankByType[]>();
 
     rawResults.agentRanks.forEach((rankData) => {
       if (!agentRanksMap.has(rankData.agentId)) {
@@ -218,7 +217,7 @@ export class AgentMetricsHelper {
       bestPlacement: null,
       bestPnl: null,
       totalRoi: null,
-      ranks: [],
+      ranks: null,
     };
   }
 }

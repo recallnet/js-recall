@@ -1,19 +1,19 @@
+import type {
+  CompetitionType,
+  RawAgentMetricsQueryResult,
+} from "@recallnet/db/repositories/types";
+
 import type { AgentPublic, AgentStats, AgentTrophy } from "./index.js";
 
 // Re-export for convenience
 export type { AgentPublic } from "./index.js";
-
-/**
- * Raw query results from repository layer for bulk agent metrics
- * Re-exported from @recallnet/db for convenience
- */
-export type { RawAgentMetricsQueryResult } from "@recallnet/db/repositories/types";
+export type { RawAgentMetricsQueryResult };
 
 /**
  * Score information for a specific competition type
  */
 export interface AgentRankByType {
-  type: string;
+  type: CompetitionType;
   rank: number;
   score: number;
 }
@@ -33,7 +33,7 @@ export interface AgentRankByType {
  * @param bestPlacement Best placement
  * @param bestPnl Best PnL
  * @param totalRoi Total ROI
- * @param scores Scores by competition type (e.g., trading, perpetual_futures)
+ * @param ranks Ranks by competition type
  */
 export interface AgentMetricsData {
   agentId: string;
