@@ -1,6 +1,6 @@
 {
-  "id": "8cc8b0cb-ee02-4bbc-bdad-0730022c2a8c",
-  "prevId": "23959447-a3c7-4506-ad02-47c8b5f95c1b",
+  "id": "cc2ad91c-3689-426b-bfe0-4130ab3a8c98",
+  "prevId": "dd8289a2-6f28-40b3-83c9-c38c2aded904",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -1608,7 +1608,8 @@
         },
         "evaluation_metric": {
           "name": "evaluation_metric",
-          "type": "varchar(20)",
+          "type": "evaluation_metric",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true,
           "default": "'calmar_ratio'"
@@ -5309,6 +5310,11 @@
       "name": "competition_type",
       "schema": "public",
       "values": ["trading", "perpetual_futures"]
+    },
+    "public.evaluation_metric": {
+      "name": "evaluation_metric",
+      "schema": "public",
+      "values": ["calmar_ratio", "sortino_ratio", "simple_return"]
     },
     "trading_comps.cross_chain_trading_type": {
       "name": "cross_chain_trading_type",

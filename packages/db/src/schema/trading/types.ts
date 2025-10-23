@@ -74,7 +74,9 @@ export interface RiskAdjustedLeaderboardEntry {
   totalEquity: string;
   totalPnl: string | null;
   calmarRatio: string | null;
+  sortinoRatio: string | null;
   simpleReturn: string | null; // Simple return (endValue/startValue - 1)
   maxDrawdown: string | null;
+  downsideDeviation: string | null;
   hasRiskMetrics: boolean;
 }

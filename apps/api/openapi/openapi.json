@@ -438,6 +438,12 @@
                       "3": 250
                     }
                   },
+                  "evaluationMetric": {
+                    "type": "string",
+                    "enum": ["calmar_ratio", "sortino_ratio", "simple_return"],
+                    "description": "Metric used for ranking agents. Defaults to calmar_ratio for perps, simple_return for spot trading",
+                    "example": "calmar_ratio"
+                  },
                   "perpsProvider": {
                     "type": "object",
                     "nullable": true,
@@ -568,6 +574,16 @@
                           "nullable": true,
                           "description": "Minimum stake amount required to join the competition (in USD). null means no minimum stake.",
                           "example": 100
+                        },
+                        "evaluationMetric": {
+                          "type": "string",
+                          "enum": [
+                            "calmar_ratio",
+                            "sortino_ratio",
+                            "simple_return"
+                          ],
+                          "description": "Metric used for ranking agents",
+                          "example": "calmar_ratio"
                         },
                         "rewards": {
                           "type": "array",
@@ -723,7 +739,7 @@
                   "type": {
                     "type": "string",
                     "description": "The type of competition",
-                    "enum": ["trading"],
+                    "enum": ["trading", "perpetual_futures"],
                     "default": "trading",
                     "example": "trading"
                   },
@@ -776,6 +792,12 @@
                       "2": 500,
                       "3": 250
                     }
+                  },
+                  "evaluationMetric": {
+                    "type": "string",
+                    "enum": ["calmar_ratio", "sortino_ratio", "simple_return"],
+                    "description": "Metric used for ranking agents. Defaults to calmar_ratio for perps, simple_return for spot trading",
+                    "example": "calmar_ratio"
                   },
                   "prizePools": {
                     "type": "object",
@@ -864,8 +886,18 @@
                         },
                         "type": {
                           "type": "string",
-                          "enum": ["trading"],
+                          "enum": ["trading", "perpetual_futures"],
                           "description": "The type of competition"
+                        },
+                        "evaluationMetric": {
+                          "type": "string",
+                          "enum": [
+                            "calmar_ratio",
+                            "sortino_ratio",
+                            "simple_return"
+                          ],
+                          "description": "Metric used for ranking agents",
+                          "example": "calmar_ratio"
                         },
                         "maxParticipants": {
                           "type": "integer",
@@ -1042,8 +1074,18 @@
                         },
                         "type": {
                           "type": "string",
-                          "enum": ["trading"],
+                          "enum": ["trading", "perpetual_futures"],
                           "description": "The type of competition"
+                        },
+                        "evaluationMetric": {
+                          "type": "string",
+                          "enum": [
+                            "calmar_ratio",
+                            "sortino_ratio",
+                            "simple_return"
+                          ],
+                          "description": "Metric used for ranking agents",
+                          "example": "calmar_ratio"
                         },
                         "maxParticipants": {
                           "type": "integer",
@@ -1154,6 +1196,12 @@
                     "format": "date-time",
                     "description": "Boosting end date",
                     "example": "2023-05-07T23:59:59Z"
+                  },
+                  "evaluationMetric": {
+                    "type": "string",
+                    "enum": ["calmar_ratio", "sortino_ratio", "simple_return"],
+                    "description": "Metric used for ranking agents",
+                    "example": "calmar_ratio"
                   },
                   "rewards": {
                     "type": "object",
@@ -1298,6 +1346,16 @@
                           "type": "string",
                           "enum": ["pending", "active", "ended"],
                           "description": "Competition status"
+                        },
+                        "evaluationMetric": {
+                          "type": "string",
+                          "enum": [
+                            "calmar_ratio",
+                            "sortino_ratio",
+                            "simple_return"
+                          ],
+                          "description": "Metric used for ranking agents",
+                          "example": "calmar_ratio"
                         },
                         "rewards": {
                           "type": "array",
@@ -1636,8 +1694,18 @@
                         },
                         "type": {
                           "type": "string",
-                          "enum": ["trading"],
+                          "enum": ["trading", "perpetual_futures"],
                           "description": "The type of competition"
+                        },
+                        "evaluationMetric": {
+                          "type": "string",
+                          "enum": [
+                            "calmar_ratio",
+                            "sortino_ratio",
+                            "simple_return"
+                          ],
+                          "description": "Metric used for ranking agents",
+                          "example": "calmar_ratio"
                         }
                       }
                     },
@@ -5156,8 +5224,18 @@
                           },
                           "type": {
                             "type": "string",
-                            "enum": ["trading"],
+                            "enum": ["trading", "perpetual_futures"],
                             "description": "Competition type"
+                          },
+                          "evaluationMetric": {
+                            "type": "string",
+                            "enum": [
+                              "calmar_ratio",
+                              "sortino_ratio",
+                              "simple_return"
+                            ],
+                            "description": "Metric used for ranking agents",
+                            "example": "calmar_ratio"
                           },
                           "crossChainTradingType": {
                             "type": "string",
@@ -5471,8 +5549,18 @@
                         },
                         "type": {
                           "type": "string",
-                          "enum": ["trading"],
+                          "enum": ["trading", "perpetual_futures"],
                           "description": "Competition type"
+                        },
+                        "evaluationMetric": {
+                          "type": "string",
+                          "enum": [
+                            "calmar_ratio",
+                            "sortino_ratio",
+                            "simple_return"
+                          ],
+                          "description": "Metric used for ranking agents",
+                          "example": "calmar_ratio"
                         },
                         "crossChainTradingType": {
                           "type": "string",
@@ -5820,6 +5908,11 @@
                             "nullable": true,
                             "description": "Risk-adjusted performance metric (Annualized Return / Max Drawdown) - only for perps competitions"
                           },
+                          "sortinoRatio": {
+                            "type": "number",
+                            "nullable": true,
+                            "description": "Risk-adjusted performance metric (Return / Downside Deviation) - only for perps competitions"
+                          },
                           "simpleReturn": {
                             "type": "number",
                             "nullable": true,
@@ -5829,6 +5922,11 @@
                             "type": "number",
                             "nullable": true,
                             "description": "Maximum observed loss from peak (negative value) - only for perps competitions"
+                          },
+                          "downsideDeviation": {
+                            "type": "number",
+                            "nullable": true,
+                            "description": "Standard deviation of negative returns - only for perps competitions"
                           },
                           "hasRiskMetrics": {
                             "type": "boolean",
@@ -6096,6 +6194,36 @@
                                 "totalValue": {
                                   "type": "number",
                                   "description": "Total portfolio value on that date"
+                                },
+                                "calmarRatio": {
+                                  "type": "number",
+                                  "nullable": true,
+                                  "description": "Calmar ratio at this point (perps competitions only)"
+                                },
+                                "sortinoRatio": {
+                                  "type": "number",
+                                  "nullable": true,
+                                  "description": "Sortino ratio at this point (perps competitions only)"
+                                },
+                                "maxDrawdown": {
+                                  "type": "number",
+                                  "nullable": true,
+                                  "description": "Maximum drawdown at this point (perps competitions only)"
+                                },
+                                "downsideDeviation": {
+                                  "type": "number",
+                                  "nullable": true,
+                                  "description": "Downside deviation at this point (perps competitions only)"
+                                },
+                                "simpleReturn": {
+                                  "type": "number",
+                                  "nullable": true,
+                                  "description": "Simple return at this point (perps competitions only)"
+                                },
+                                "annualizedReturn": {
+                                  "type": "number",
+                                  "nullable": true,
+                                  "description": "Annualized return at this point (perps competitions only)"
                                 }
                               }
                             }

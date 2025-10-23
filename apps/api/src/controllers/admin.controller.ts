@@ -226,6 +226,7 @@ export function makeAdminController(services: ServiceRegistry) {
           minimumStake,
           tradingConstraints,
           rewards,
+          evaluationMetric,
           perpsProvider,
           prizePools,
         } = result.data;
@@ -252,6 +253,7 @@ export function makeAdminController(services: ServiceRegistry) {
             minimumStake,
             tradingConstraints,
             rewards,
+            evaluationMetric,
             perpsProvider,
             prizePools,
           },
@@ -299,6 +301,7 @@ export function makeAdminController(services: ServiceRegistry) {
           joinStartDate,
           joinEndDate,
           rewards,
+          evaluationMetric,
           perpsProvider,
           prizePools,
         } = result.data;
@@ -326,6 +329,7 @@ export function makeAdminController(services: ServiceRegistry) {
                   joinStartDate,
                   joinEndDate,
                   rewards,
+                  evaluationMetric,
                   perpsProvider,
                   prizePools,
                 },

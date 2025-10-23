@@ -856,6 +856,10 @@ export class PerpsRepository {
     competitionId: string,
     limit = 50,
     offset = 0,
+    evaluationMetric:
+      | "calmar_ratio"
+      | "sortino_ratio"
+      | "simple_return" = "calmar_ratio",
   ): Promise<RiskAdjustedLeaderboardEntry[]> {
     try {
       // Get active agents subquery
@@ -885,8 +889,10 @@ export class PerpsRepository {
         .select({
           agentId: perpsRiskMetrics.agentId,
           calmarRatio: perpsRiskMetrics.calmarRatio,
+          sortinoRatio: perpsRiskMetrics.sortinoRatio,
           simpleReturn: perpsRiskMetrics.simpleReturn,
           maxDrawdown: perpsRiskMetrics.maxDrawdown,
+          downsideDeviation: perpsRiskMetrics.downsideDeviation,
         })
         .from(perpsRiskMetrics)
         .where(
@@ -905,17 +911,31 @@ export class PerpsRepository {
           totalEquity: latestSummarySubquery.totalEquity,
           totalPnl: latestSummarySubquery.totalPnl,
           calmarRatio: riskMetricsSubquery.calmarRatio,
+          sortinoRatio: riskMetricsSubquery.sortinoRatio,
           simpleReturn: riskMetricsSubquery.simpleReturn,
           maxDrawdown: riskMetricsSubquery.maxDrawdown,
+          downsideDeviation: riskMetricsSubquery.downsideDeviation,
         })
         .from(activeAgents)
         .leftJoinLateral(latestSummarySubquery, sql`true`)
         .leftJoinLateral(riskMetricsSubquery, sql`true`)
         .orderBy(
-          // Sort by: has risk metrics first, then by calmar ratio, then by equity
-          sql`CASE WHEN ${riskMetricsSubquery.calmarRatio} IS NOT NULL THEN 0 ELSE 1 END`,
-          desc(sql`${riskMetricsSubquery.calmarRatio}`),
-          desc(sql`${latestSummarySubquery.totalEquity}`),
+          // Dynamic sorting based on evaluation metric
+          ...(evaluationMetric === "sortino_ratio"
+            ? [
+                desc(riskMetricsSubquery.sortinoRatio),
+                desc(latestSummarySubquery.totalEquity),
+              ]
+            : evaluationMetric === "simple_return"
+              ? [
+                  desc(riskMetricsSubquery.simpleReturn),
+                  desc(latestSummarySubquery.totalEquity),
+                ]
+              : [
+                  // Default to calmar_ratio sorting
+                  desc(riskMetricsSubquery.calmarRatio),
+                  desc(latestSummarySubquery.totalEquity),
+                ]),
         )
         .limit(limit)
         .offset(offset);
@@ -928,9 +948,11 @@ export class PerpsRepository {
           totalEquity: row.totalEquity || "0",
           totalPnl: row.totalPnl,
           calmarRatio: row.calmarRatio,
+          sortinoRatio: row.sortinoRatio,
           simpleReturn: row.simpleReturn,
           maxDrawdown: row.maxDrawdown,
-          hasRiskMetrics: row.calmarRatio !== null,
+          downsideDeviation: row.downsideDeviation,
+          hasRiskMetrics: row.calmarRatio !== null || row.sortinoRatio !== null,
         }));
 
       this.#logger.debug(

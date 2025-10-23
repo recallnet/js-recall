@@ -1004,8 +1004,10 @@ export interface PerpsEnrichedLeaderboardEntry {
   totalAgents: number;
   score: number;
   calmarRatio: number | null;
+  sortinoRatio: number | null;
   simpleReturn: number | null;
   maxDrawdown: number | null;
+  downsideDeviation: number | null;
   totalEquity: number;
   totalPnl: number | null;
   hasRiskMetrics: true;

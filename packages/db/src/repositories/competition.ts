@@ -2541,54 +2541,152 @@ export class CompetitionRepository {
    * Get portfolio timeline for agents in a competition
    * @param competitionId Competition ID
    * @param bucket Time bucket interval in minutes (default: 30)
-   * @returns Array of portfolio timelines per agent
+   * @param includeRiskMetrics Whether to include risk metrics (for perps competitions)
+   * @returns Array of portfolio timelines per agent with optional risk metrics
    */
-  async getAgentPortfolioTimeline(competitionId: string, bucket: number = 30) {
+  async getAgentPortfolioTimeline(
+    competitionId: string,
+    bucket: number = 30,
+    includeRiskMetrics = false,
+  ) {
     try {
-      const result = await this.#dbRead.execute<{
-        timestamp: string;
-        agent_id: string;
-        agent_name: string;
-        competition_id: string;
-        total_value: number;
-      }>(sql`
-      SELECT
-        timestamp,
-        agent_id,
-        name AS agent_name,
-        competition_id,
-        total_value
-      FROM (
+      if (includeRiskMetrics) {
+        // Query with risk metrics for perps competitions
+        const result = await this.#dbRead.execute<{
+          timestamp: string;
+          agent_id: string;
+          agent_name: string;
+          competition_id: string;
+          total_value: number;
+          calmar_ratio: string | null;
+          sortino_ratio: string | null;
+          max_drawdown: string | null;
+          downside_deviation: string | null;
+          simple_return: string | null;
+          annualized_return: string | null;
+        }>(sql`
         SELECT
-          ROW_NUMBER() OVER (
-            PARTITION BY ps.agent_id, ps.competition_id,FLOOR(EXTRACT(EPOCH FROM (ps.timestamp - c.start_date)) / 60 / ${bucket})
-            ORDER BY ps.timestamp DESC
-          ) AS rn,
-          ps.timestamp,
-          ps.agent_id,
-          a.name,
-          ps.competition_id,
-          ps.total_value
-        FROM competition_agents ca
-        JOIN trading_comps.portfolio_snapshots ps
-          ON ps.agent_id = ca.agent_id
-          AND ps.competition_id = ca.competition_id
-        JOIN agents a ON a.id = ca.agent_id
-        JOIN competitions c ON c.id = ca.competition_id
-        WHERE ca.competition_id = ${competitionId}
-          AND ca.status = ${"active"}
-      ) AS ranked_snapshots
-      WHERE rn = 1
-    `);
+          timestamp,
+          agent_id,
+          name AS agent_name,
+          competition_id,
+          total_value,
+          calmar_ratio,
+          sortino_ratio,
+          max_drawdown,
+          downside_deviation,
+          simple_return,
+          annualized_return
+        FROM (
+          SELECT
+            ROW_NUMBER() OVER (
+              PARTITION BY ps.agent_id, ps.competition_id, FLOOR(EXTRACT(EPOCH FROM (ps.timestamp - c.start_date)) / 60 / ${bucket})
+              ORDER BY ps.timestamp DESC
+            ) AS rn,
+            ps.timestamp,
+            ps.agent_id,
+            a.name,
+            ps.competition_id,
+            ps.total_value,
+            rms.calmar_ratio,
+            rms.sortino_ratio,
+            rms.max_drawdown,
+            rms.downside_deviation,
+            rms.simple_return,
+            rms.annualized_return
+          FROM competition_agents ca
+          JOIN trading_comps.portfolio_snapshots ps
+            ON ps.agent_id = ca.agent_id
+            AND ps.competition_id = ca.competition_id
+          JOIN agents a ON a.id = ca.agent_id
+          JOIN competitions c ON c.id = ca.competition_id
+          LEFT JOIN LATERAL (
+            SELECT 
+              calmar_ratio,
+              sortino_ratio,
+              max_drawdown,
+              downside_deviation,
+              simple_return,
+              annualized_return
+            FROM trading_comps.risk_metrics_snapshots rms
+            WHERE rms.agent_id = ps.agent_id
+              AND rms.competition_id = ps.competition_id
+              AND ABS(EXTRACT(EPOCH FROM (rms.timestamp - ps.timestamp))) < 300
+            ORDER BY ABS(EXTRACT(EPOCH FROM (rms.timestamp - ps.timestamp)))
+            LIMIT 1
+          ) rms ON true
+          WHERE ca.competition_id = ${competitionId}
+            AND ca.status = ${"active"}
+        ) AS ranked_snapshots
+        WHERE rn = 1
+        ORDER BY timestamp, agent_id
+      `);
 
-      // Convert snake_case to camelCase
-      return result.rows.map((row) => ({
-        timestamp: row.timestamp,
-        agentId: row.agent_id,
-        agentName: row.agent_name,
-        competitionId: row.competition_id,
-        totalValue: Number(row.total_value),
-      }));
+        // Convert snake_case to camelCase with risk metrics
+        return result.rows.map((row) => ({
+          timestamp: row.timestamp,
+          agentId: row.agent_id,
+          agentName: row.agent_name,
+          competitionId: row.competition_id,
+          totalValue: Number(row.total_value),
+          calmarRatio: row.calmar_ratio ? Number(row.calmar_ratio) : null,
+          sortinoRatio: row.sortino_ratio ? Number(row.sortino_ratio) : null,
+          maxDrawdown: row.max_drawdown ? Number(row.max_drawdown) : null,
+          downsideDeviation: row.downside_deviation
+            ? Number(row.downside_deviation)
+            : null,
+          simpleReturn: row.simple_return ? Number(row.simple_return) : null,
+          annualizedReturn: row.annualized_return
+            ? Number(row.annualized_return)
+            : null,
+        }));
+      } else {
+        // Original query without risk metrics
+        const result = await this.#dbRead.execute<{
+          timestamp: string;
+          agent_id: string;
+          agent_name: string;
+          competition_id: string;
+          total_value: number;
+        }>(sql`
+        SELECT
+          timestamp,
+          agent_id,
+          name AS agent_name,
+          competition_id,
+          total_value
+        FROM (
+          SELECT
+            ROW_NUMBER() OVER (
+              PARTITION BY ps.agent_id, ps.competition_id,FLOOR(EXTRACT(EPOCH FROM (ps.timestamp - c.start_date)) / 60 / ${bucket})
+              ORDER BY ps.timestamp DESC
+            ) AS rn,
+            ps.timestamp,
+            ps.agent_id,
+            a.name,
+            ps.competition_id,
+            ps.total_value
+          FROM competition_agents ca
+          JOIN trading_comps.portfolio_snapshots ps
+            ON ps.agent_id = ca.agent_id
+            AND ps.competition_id = ca.competition_id
+          JOIN agents a ON a.id = ca.agent_id
+          JOIN competitions c ON c.id = ca.competition_id
+          WHERE ca.competition_id = ${competitionId}
+            AND ca.status = ${"active"}
+        ) AS ranked_snapshots
+        WHERE rn = 1
+      `);
+
+        // Convert snake_case to camelCase
+        return result.rows.map((row) => ({
+          timestamp: row.timestamp,
+          agentId: row.agent_id,
+          agentName: row.agent_name,
+          competitionId: row.competition_id,
+          totalValue: Number(row.total_value),
+        }));
+      }
     } catch (error) {
       this.#logger.error("Error in getAgentPortfolioTimeline:", error);
       throw error;

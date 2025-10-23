@@ -91,6 +91,12 @@ export const AdminCreateCompetitionSchema = z
     minimumStake: z.number().min(0).optional(),
     tradingConstraints: TradingConstraintsSchema,
     rewards: RewardsSchema,
+    evaluationMetric: z
+      .enum(["calmar_ratio", "sortino_ratio", "simple_return"])
+      .optional()
+      .describe(
+        "Metric used for ranking agents. Defaults to calmar_ratio for perps, simple_return for spot trading",
+      ),
     perpsProvider: PerpsProviderSchema.optional(), // Only required for perps competitions
     prizePools: z
       .object({
@@ -146,6 +152,12 @@ export const AdminStartCompetitionSchema = z
     minimumStake: z.number().min(0).optional(),
     tradingConstraints: TradingConstraintsSchema,
     rewards: RewardsSchema,
+    evaluationMetric: z
+      .enum(["calmar_ratio", "sortino_ratio", "simple_return"])
+      .optional()
+      .describe(
+        "Metric used for ranking agents. Defaults to calmar_ratio for perps, simple_return for spot trading",
+      ),
     perpsProvider: PerpsProviderSchema.optional(), // Only required for perps competitions
     prizePools: z
       .object({

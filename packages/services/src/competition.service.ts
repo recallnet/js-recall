@@ -78,6 +78,7 @@ export interface CreateCompetitionParams {
   tradingConstraints?: TradingConstraintsInput;
   rewards?: Record<number, number>;
   minimumStake?: number;
+  evaluationMetric?: "calmar_ratio" | "sortino_ratio" | "simple_return";
   perpsProvider?: {
     provider: "symphony" | "hyperliquid";
     initialCapital: number; // Required - Zod default ensures this is set
@@ -120,8 +121,10 @@ interface LeaderboardEntry {
   pnl: number; // Profit/Loss amount (0 if not calculated)
   // Risk-adjusted metrics (optional, primarily for perps competitions)
   calmarRatio?: number | null;
+  sortinoRatio?: number | null;
   simpleReturn?: number | null;
   maxDrawdown?: number | null;
+  downsideDeviation?: number | null;
   hasRiskMetrics?: boolean; // Indicates if agent has risk metrics calculated
 }
 
@@ -223,7 +226,17 @@ type CompetitionAgentsData = {
 type CompetitionTimelineEntry = {
   agentId: string;
   agentName: string;
-  timeline: Array<{ timestamp: string; totalValue: number }>;
+  timeline: Array<{
+    timestamp: string;
+    totalValue: number;
+    // Risk metrics (only for perps competitions)
+    calmarRatio?: number | null;
+    sortinoRatio?: number | null;
+    maxDrawdown?: number | null;
+    downsideDeviation?: number | null;
+    simpleReturn?: number | null;
+    annualizedReturn?: number | null;
+  }>;
 };
 
 /**
@@ -304,8 +317,8 @@ export interface CompetitionServiceConfig {
   };
 }
 
-// Sentinel value for perps competitions with risk metrics but no Calmar ratio
-const SENTINEL_SCORE_NO_CALMAR = -999999;
+// Sentinel value for perps competitions with risk metrics but no evaluation metric value
+const SENTINEL_SCORE_NO_METRIC = -999999;
 
 /**
  * Competition Service
@@ -407,10 +420,18 @@ export class CompetitionService {
     tradingConstraints,
     rewards,
     minimumStake,
+    evaluationMetric,
     perpsProvider,
     prizePools,
   }: CreateCompetitionParams) {
     const id = randomUUID();
+
+    // Determine the default evaluation metric based on competition type
+    const competitionType = type ?? "trading";
+    const defaultEvaluationMetric =
+      competitionType === "perpetual_futures"
+        ? "calmar_ratio"
+        : "simple_return";
 
     const competition: Parameters<typeof this.competitionRepo.create>[0] = {
       id,
@@ -429,7 +450,8 @@ export class CompetitionService {
       status: "pending",
       crossChainTradingType: tradingType ?? "disallowAll",
       sandboxMode: sandboxMode ?? false,
-      type: type ?? "trading",
+      type: competitionType,
+      evaluationMetric: evaluationMetric ?? defaultEvaluationMetric,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -968,13 +990,43 @@ export class CompetitionService {
           competitionId,
         );
 
-      // Determine the score based on competition type and metrics availability
+      // Determine the score based on competition type and evaluation metric
       let score: number;
       if (competition?.type === "perpetual_futures" && entry.hasRiskMetrics) {
-        if (entry.calmarRatio !== null && entry.calmarRatio !== undefined) {
-          score = entry.calmarRatio;
-        } else {
-          score = SENTINEL_SCORE_NO_CALMAR; // Sentinel for "has metrics but no Calmar"
+        // Use the competition's evaluation metric to determine the score
+        const evaluationMetric = competition.evaluationMetric || "calmar_ratio";
+
+        switch (evaluationMetric) {
+          case "sortino_ratio":
+            if (
+              entry.sortinoRatio !== null &&
+              entry.sortinoRatio !== undefined
+            ) {
+              score = entry.sortinoRatio;
+            } else {
+              score = SENTINEL_SCORE_NO_METRIC; // Sentinel for "has metrics but no ratio"
+            }
+            break;
+
+          case "simple_return":
+            if (
+              entry.simpleReturn !== null &&
+              entry.simpleReturn !== undefined
+            ) {
+              score = entry.simpleReturn;
+            } else {
+              score = SENTINEL_SCORE_NO_METRIC; // Sentinel for "has metrics but no return"
+            }
+            break;
+
+          case "calmar_ratio":
+          default:
+            if (entry.calmarRatio !== null && entry.calmarRatio !== undefined) {
+              score = entry.calmarRatio;
+            } else {
+              score = SENTINEL_SCORE_NO_METRIC; // Sentinel for "has metrics but no Calmar"
+            }
+            break;
         }
       } else {
         score = entry.value; // Portfolio value for spot trading or perps without metrics
@@ -991,8 +1043,10 @@ export class CompetitionService {
           totalAgents,
           score,
           calmarRatio: entry.calmarRatio ?? null,
+          sortinoRatio: entry.sortinoRatio ?? null,
           simpleReturn: entry.simpleReturn ?? null,
           maxDrawdown: entry.maxDrawdown ?? null,
+          downsideDeviation: entry.downsideDeviation ?? null,
           totalEquity: entry.value, // Store portfolio value as totalEquity
           totalPnl: entry.pnl ?? null,
           hasRiskMetrics: true,
@@ -1299,8 +1353,10 @@ export class CompetitionService {
         change24hPercent: metrics.change24hPercent,
         // Risk metrics from leaderboard (perps competitions only)
         calmarRatio: leaderboardEntry?.calmarRatio ?? null,
+        sortinoRatio: leaderboardEntry?.sortinoRatio ?? null,
         simpleReturn: leaderboardEntry?.simpleReturn ?? null,
         maxDrawdown: leaderboardEntry?.maxDrawdown ?? null,
+        downsideDeviation: leaderboardEntry?.downsideDeviation ?? null,
         hasRiskMetrics: leaderboardEntry?.hasRiskMetrics ?? false,
       };
     });
@@ -1340,17 +1396,20 @@ export class CompetitionService {
 
     if (competition?.type === "perpetual_futures") {
       // For perps: Fetch risk-adjusted leaderboard which includes risk metrics
+      // Pass the evaluation metric to the repository for SQL-level sorting
+      const evaluationMetric = competition.evaluationMetric || "calmar_ratio";
       const riskAdjustedLeaderboard =
         await this.perpsRepo.getRiskAdjustedLeaderboard(
           competitionId,
           500, // Reasonable limit
           0,
+          evaluationMetric,
         );
 
       // Combine snapshot data with risk metrics
       const orderedResults: LeaderboardEntry[] = [];
 
-      // Add all agents from riskAdjustedLeaderboard in their correct order
+      // Add all agents from riskAdjustedLeaderboard (already sorted by SQL)
       for (const entry of riskAdjustedLeaderboard) {
         const snapshot = snapshots.find((s) => s.agentId === entry.agentId);
 
@@ -1364,8 +1423,12 @@ export class CompetitionService {
           value: portfolioValue,
           pnl: Number(entry.totalPnl) || 0, // Use PnL from risk-adjusted leaderboard
           calmarRatio: entry.calmarRatio ? Number(entry.calmarRatio) : null,
+          sortinoRatio: entry.sortinoRatio ? Number(entry.sortinoRatio) : null,
           simpleReturn: entry.simpleReturn ? Number(entry.simpleReturn) : null,
           maxDrawdown: entry.maxDrawdown ? Number(entry.maxDrawdown) : null,
+          downsideDeviation: entry.downsideDeviation
+            ? Number(entry.downsideDeviation)
+            : null,
           hasRiskMetrics: entry.hasRiskMetrics,
         });
       }
@@ -1404,22 +1467,30 @@ export class CompetitionService {
       // 1. Agents with Calmar ratio (sorted by Calmar DESC)
       // 2. Agents without Calmar ratio (sorted by equity DESC)
 
+      // Pass the evaluation metric to the repository for SQL-level sorting
+      const evaluationMetric = competition.evaluationMetric || "calmar_ratio";
       const riskAdjustedLeaderboard =
         await this.perpsRepo.getRiskAdjustedLeaderboard(
           competitionId,
           500, // Reasonable limit - most competitions won't have more agents
           0,
+          evaluationMetric,
         );
 
       // Transform to LeaderboardEntry format, including risk metrics
+      // Already sorted by SQL, no need for additional sorting
       return riskAdjustedLeaderboard.map((entry) => ({
         agentId: entry.agentId,
         value: Number(entry.totalEquity) || 0, // Keep as portfolio value for API compatibility
         pnl: Number(entry.totalPnl) || 0,
         // Include risk-adjusted metrics
         calmarRatio: entry.calmarRatio ? Number(entry.calmarRatio) : null,
+        sortinoRatio: entry.sortinoRatio ? Number(entry.sortinoRatio) : null,
         simpleReturn: entry.simpleReturn ? Number(entry.simpleReturn) : null,
         maxDrawdown: entry.maxDrawdown ? Number(entry.maxDrawdown) : null,
+        downsideDeviation: entry.downsideDeviation
+          ? Number(entry.downsideDeviation)
+          : null,
         hasRiskMetrics: entry.hasRiskMetrics,
       }));
     }
@@ -2918,22 +2989,19 @@ export class CompetitionService {
         throw new ApiError(404, "Competition not found");
       }
 
+      // Check if this is a perps competition to include risk metrics
+      const includeRiskMetrics = competition.type === "perpetual_futures";
+
       // Get timeline data from portfolio snapshotter
       const rawData =
         await this.portfolioSnapshotterService.getAgentPortfolioTimeline(
           competitionId,
           bucket,
+          includeRiskMetrics,
         );
 
       // Transform into the required structure
-      const agentsMap = new Map<
-        string,
-        {
-          agentId: string;
-          agentName: string;
-          timeline: Array<{ timestamp: string; totalValue: number }>;
-        }
-      >();
+      const agentsMap = new Map<string, CompetitionTimelineEntry>();
 
       for (const item of rawData) {
         if (!agentsMap.has(item.agentId)) {
@@ -2944,10 +3012,35 @@ export class CompetitionService {
           });
         }
 
-        agentsMap.get(item.agentId)!.timeline.push({
+        // Build timeline entry with optional risk metrics
+        const timelineEntry: CompetitionTimelineEntry["timeline"][0] = {
           timestamp: item.timestamp,
           totalValue: item.totalValue,
-        });
+        };
+
+        // Add risk metrics if this is a perps competition and they exist in the data
+        if (includeRiskMetrics) {
+          // Use type assertion to access risk metrics properties that might exist
+          const itemWithMetrics = item as typeof item & {
+            calmarRatio?: number | null;
+            sortinoRatio?: number | null;
+            maxDrawdown?: number | null;
+            downsideDeviation?: number | null;
+            simpleReturn?: number | null;
+            annualizedReturn?: number | null;
+          };
+
+          timelineEntry.calmarRatio = itemWithMetrics.calmarRatio ?? null;
+          timelineEntry.sortinoRatio = itemWithMetrics.sortinoRatio ?? null;
+          timelineEntry.maxDrawdown = itemWithMetrics.maxDrawdown ?? null;
+          timelineEntry.downsideDeviation =
+            itemWithMetrics.downsideDeviation ?? null;
+          timelineEntry.simpleReturn = itemWithMetrics.simpleReturn ?? null;
+          timelineEntry.annualizedReturn =
+            itemWithMetrics.annualizedReturn ?? null;
+        }
+
+        agentsMap.get(item.agentId)!.timeline.push(timelineEntry);
       }
 
       return Array.from(agentsMap.values());
