@@ -1,3 +1,5 @@
+import type { CompetitionType } from "../types/index.js";
+
 /**
  * Raw query results from repository layer for bulk agent metrics
  * This represents the unprocessed data returned from database queries
@@ -6,7 +8,7 @@ export interface RawAgentMetricsQueryResult {
   /** Agent ranks by competition type with rank calculated in SQL */
   agentRanks: Array<{
     agentId: string;
-    type: string;
+    type: CompetitionType;
     ordinal: number;
     rank: number;
   }>;

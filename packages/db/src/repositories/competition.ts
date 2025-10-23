@@ -1794,7 +1794,7 @@ export class CompetitionRepository {
         .map((c) => c.id);
 
       const activeOrPendingCompetitionIds = competitionStatuses
-        .filter((c) => c.status != "ended")
+        .filter((c) => c.status !== "ended")
         .map((c) => c.id);
 
       const rankingsMap = new Map<

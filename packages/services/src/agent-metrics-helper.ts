@@ -176,11 +176,7 @@ export class AgentMetricsHelper {
       bestPlacement: metrics.bestPlacement ?? undefined,
       totalRoi: metrics.totalRoi ?? undefined,
       bestPnl: metrics.bestPnl ?? undefined,
-      ranks: metrics.ranks.map((rank) => ({
-        type: rank.type,
-        rank: rank.rank,
-        score: rank.score,
-      })),
+      ranks: metrics.ranks ?? undefined,
     };
   }
 
