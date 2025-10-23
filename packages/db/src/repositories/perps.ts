@@ -81,6 +81,14 @@ export interface PerpsSelfFundingAlertReview {
   actionTaken: string | null;
 }
 
+export interface RiskMetricsTimeSeriesOptions {
+  agentId?: string;
+  startDate?: Date;
+  endDate?: Date;
+  limit?: number;
+  offset?: number;
+}
+
 /**
  * Perps Repository
  * Handles database operations for perpetual futures competitions
@@ -1490,36 +1498,28 @@ export class PerpsRepository {
   /**
    * Get risk metrics time series data for a competition
    * @param competitionId Competition ID
-   * @param agentId Optional agent ID to filter by
-   * @param startDate Optional start date
-   * @param endDate Optional end date
-   * @param limit Optional limit for the number of snapshots to return
-   * @param offset Optional offset for pagination
+   * @param options Optional parameters for filtering and pagination
    * @returns Array of risk metrics snapshots
    */
   async getRiskMetricsTimeSeries(
     competitionId: string,
-    agentId?: string,
-    startDate?: Date,
-    endDate?: Date,
-    limit?: number,
-    offset?: number,
+    options?: RiskMetricsTimeSeriesOptions,
   ): Promise<SelectRiskMetricsSnapshot[]> {
     try {
       const conditions = [
         eq(riskMetricsSnapshots.competitionId, competitionId),
       ];
 
-      if (agentId) {
-        conditions.push(eq(riskMetricsSnapshots.agentId, agentId));
+      if (options?.agentId) {
+        conditions.push(eq(riskMetricsSnapshots.agentId, options.agentId));
       }
 
-      if (startDate) {
-        conditions.push(gte(riskMetricsSnapshots.timestamp, startDate));
+      if (options?.startDate) {
+        conditions.push(gte(riskMetricsSnapshots.timestamp, options.startDate));
       }
 
-      if (endDate) {
-        conditions.push(lte(riskMetricsSnapshots.timestamp, endDate));
+      if (options?.endDate) {
+        conditions.push(lte(riskMetricsSnapshots.timestamp, options.endDate));
       }
 
       const query = this.#dbRead
@@ -1530,14 +1530,14 @@ export class PerpsRepository {
 
       // Apply pagination if specified
       let results: SelectRiskMetricsSnapshot[];
-      if (limit !== undefined && limit > 0) {
-        if (offset !== undefined && offset > 0) {
-          results = await query.limit(limit).offset(offset);
+      if (options?.limit !== undefined && options.limit > 0) {
+        if (options?.offset !== undefined && options.offset > 0) {
+          results = await query.limit(options.limit).offset(options.offset);
         } else {
-          results = await query.limit(limit);
+          results = await query.limit(options.limit);
         }
-      } else if (offset !== undefined && offset > 0) {
-        results = await query.offset(offset);
+      } else if (options?.offset !== undefined && options.offset > 0) {
+        results = await query.offset(options.offset);
       } else {
         results = await query;
       }
@@ -1548,7 +1548,7 @@ export class PerpsRepository {
 
       return results;
     } catch (error) {
-      this.#logger.error({ error }, "Error in getRiskMetricsTimeSeries")
+      this.#logger.error({ error }, "Error in getRiskMetricsTimeSeries");
       throw error;
     }
   }

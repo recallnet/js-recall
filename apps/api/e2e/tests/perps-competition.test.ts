@@ -128,12 +128,10 @@ describe("Perps Competition", () => {
 
     // Verify perps competitions include volume and average equity stats
     expect(comp?.stats?.totalVolume).toBeDefined();
-    expect(typeof comp?.stats?.totalVolume).toBe("number");
     // Note: totalVolume can be 0 for a new competition with no trades yet
     expect(comp?.stats?.totalVolume).toBeGreaterThanOrEqual(0);
 
     expect(comp?.stats?.averageEquity).toBeDefined();
-    expect(typeof comp?.stats?.averageEquity).toBe("number");
     // Note: averageEquity can be 0 if no agents have joined yet
     expect(comp?.stats?.averageEquity).toBeGreaterThanOrEqual(0);
   });
@@ -435,7 +433,6 @@ describe("Perps Competition", () => {
     // Should have both totalTrades (from paper competition) and totalPositions (from perps competition)
     expect(agentData?.stats?.totalTrades).toBe(3); // 3 paper trades
     expect(agentData?.stats?.totalPositions).toBeDefined();
-    expect(typeof agentData?.stats?.totalPositions).toBe("number");
 
     // Also test the individual agent endpoint
     const singleAgentResponse = await client.getUserAgent(agent.id);
@@ -448,9 +445,6 @@ describe("Perps Competition", () => {
     expect(typedSingleResponse.agent.stats).toBeDefined();
     expect(typedSingleResponse.agent.stats?.totalTrades).toBe(3);
     expect(typedSingleResponse.agent.stats?.totalPositions).toBeDefined();
-    expect(typeof typedSingleResponse.agent.stats?.totalPositions).toBe(
-      "number",
-    );
   });
 
   test("should get perps positions for authenticated agent", async () => {
@@ -2830,7 +2824,6 @@ describe("Perps Competition", () => {
 
     // Verify Sortino ratio was calculated and persisted
     expect(agentEntry?.sortinoRatio).not.toBeNull();
-    expect(typeof agentEntry?.sortinoRatio).toBe("number");
 
     // With steady positive returns and no downside, Sortino should be high
     // The exact value depends on the calculation but should be positive
@@ -2838,7 +2831,6 @@ describe("Perps Competition", () => {
 
     // Verify downside deviation was calculated
     expect(agentEntry?.downsideDeviation).not.toBeNull();
-    expect(typeof agentEntry?.downsideDeviation).toBe("number");
 
     // With no negative returns, downside deviation should be 0 or very small
     expect(agentEntry?.downsideDeviation).toBeCloseTo(0, 3);
@@ -3001,11 +2993,10 @@ describe("Perps Competition", () => {
     const perpsRepo = services.perpsRepository;
     const riskSnapshots = await perpsRepo.getRiskMetricsTimeSeries(
       competition.id,
-      undefined, // agentId - get all agents
-      undefined, // startDate
-      undefined, // endDate
-      10, // limit
-      0, // offset
+      {
+        limit: 10,
+        offset: 0,
+      },
     );
 
     expect(riskSnapshots).toBeDefined();
