@@ -63,6 +63,7 @@ describe("PerpsMonitoringService", () => {
     dataSourceConfig: { type: "external_api", provider: "symphony" },
     selfFundingThresholdUsd: "100", // String in DB
     minFundingThreshold: null,
+    evaluationMetric: "calmar_ratio",
     createdAt: new Date(),
     updatedAt: new Date(),
     inactivityHours: null,

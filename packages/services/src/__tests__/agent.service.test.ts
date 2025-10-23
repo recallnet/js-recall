@@ -45,7 +45,6 @@ function createMockCompetition(
     maxParticipants: null,
     registeredParticipants: 0,
     minimumStake: null,
-    evaluationMetric: "calmar_ratio" as const,
     ...overrides,
   };
 }

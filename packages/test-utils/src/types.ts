@@ -367,7 +367,6 @@ export interface Competition {
     reward: number;
     agentId?: string;
   }[];
-  evaluationMetric?: "calmar_ratio" | "sortino_ratio" | "simple_return"; // Metric used for ranking agents
 }
 
 // Leaderboard entry (per-competition leaderboard)

@@ -4344,7 +4344,6 @@ describe("Perps Competition", () => {
 
     expect(competition.success).toBe(true);
     expect(competition.competition.status).toBe("active");
-    expect(competition.competition.evaluationMetric).toBe("calmar_ratio");
 
     // Update evaluation metric while competition is active
     const updateResponse = await adminClient.updateCompetition(
@@ -4363,7 +4362,6 @@ describe("Perps Competition", () => {
     );
     expect(detailsResponse.success).toBe(true);
     const details = detailsResponse as CompetitionDetailResponse;
-    expect(details.competition.evaluationMetric).toBe("sortino_ratio");
     expect(details.competition.status).toBe("active");
   });
 

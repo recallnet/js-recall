@@ -251,11 +251,6 @@ export function configureAdminRoutes(
    *                       nullable: true
    *                       description: Minimum stake amount required to join the competition (in USD). null means no minimum stake.
    *                       example: 100
-   *                     evaluationMetric:
-   *                       type: string
-   *                       enum: [calmar_ratio, sortino_ratio, simple_return]
-   *                       description: Metric used for ranking agents
-   *                       example: calmar_ratio
    *                     rewards:
    *                       type: array
    *                       description: Rewards for competition placements
@@ -496,11 +491,6 @@ export function configureAdminRoutes(
    *                       type: string
    *                       enum: [trading, perpetual_futures]
    *                       description: The type of competition
-   *                     evaluationMetric:
-   *                       type: string
-   *                       enum: [calmar_ratio, sortino_ratio, simple_return]
-   *                       description: Metric used for ranking agents
-   *                       example: calmar_ratio
    *                     maxParticipants:
    *                       type: integer
    *                       nullable: true
@@ -635,11 +625,6 @@ export function configureAdminRoutes(
    *                       type: string
    *                       enum: [trading, perpetual_futures]
    *                       description: The type of competition
-   *                     evaluationMetric:
-   *                       type: string
-   *                       enum: [calmar_ratio, sortino_ratio, simple_return]
-   *                       description: Metric used for ranking agents
-   *                       example: calmar_ratio
    *                     maxParticipants:
    *                       type: integer
    *                       nullable: true
@@ -840,11 +825,6 @@ export function configureAdminRoutes(
    *                       type: string
    *                       enum: [pending, active, ended]
    *                       description: Competition status
-   *                     evaluationMetric:
-   *                       type: string
-   *                       enum: [calmar_ratio, sortino_ratio, simple_return]
-   *                       description: Metric used for ranking agents
-   *                       example: calmar_ratio
    *                     rewards:
    *                       type: array
    *                       description: Rewards for competition placements
@@ -1101,11 +1081,6 @@ export function configureAdminRoutes(
    *                       type: string
    *                       enum: [trading, perpetual_futures]
    *                       description: The type of competition
-   *                     evaluationMetric:
-   *                       type: string
-   *                       enum: [calmar_ratio, sortino_ratio, simple_return]
-   *                       description: Metric used for ranking agents
-   *                       example: calmar_ratio
    *                 leaderboard:
    *                   type: array
    *                   description: Ranked list of active agents

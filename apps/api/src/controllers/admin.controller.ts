@@ -374,11 +374,12 @@ export function makeAdminController(services: ServiceRegistry) {
         const {
           rewards,
           tradingConstraints,
+          evaluationMetric,
           perpsProvider,
           prizePools,
           ...competitionUpdates
         } = flatParse(AdminUpdateCompetitionSchema, req.body);
-        // Extract rewards, tradingConstraints, and perpsProvider from the validated data
+        // Extract rewards, tradingConstraints, evaluationMetric, and perpsProvider from the validated data
         const updates = competitionUpdates;
 
         // Check if there are any updates to apply
@@ -386,6 +387,7 @@ export function makeAdminController(services: ServiceRegistry) {
           Object.keys(updates).length === 0 &&
           !rewards &&
           !tradingConstraints &&
+          !evaluationMetric &&
           !perpsProvider &&
           !prizePools
         ) {
@@ -399,6 +401,7 @@ export function makeAdminController(services: ServiceRegistry) {
             updates,
             tradingConstraints,
             rewards,
+            evaluationMetric,
             perpsProvider,
             prizePools,
           );

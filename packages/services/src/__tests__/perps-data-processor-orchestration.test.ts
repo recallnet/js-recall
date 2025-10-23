@@ -122,7 +122,6 @@ describe("PerpsDataProcessor - processPerpsCompetition", () => {
     canceledAt: null,
     cancelReason: null,
     crossChainTradingType: "allow" as const,
-    evaluationMetric: "calmar_ratio" as const,
   };
 
   // Perps competition config that matches SelectPerpsCompetitionConfig
@@ -137,6 +136,7 @@ describe("PerpsDataProcessor - processPerpsCompetition", () => {
     selfFundingThresholdUsd: "100",
     initialCapital: "10000",
     minFundingThreshold: null,
+    evaluationMetric: "calmar_ratio",
     createdAt: new Date(),
     updatedAt: new Date(),
     inactivityHours: null,

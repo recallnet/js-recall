@@ -426,12 +426,7 @@ export class CompetitionService {
   }: CreateCompetitionParams) {
     const id = randomUUID();
 
-    // Determine the default evaluation metric based on competition type
     const competitionType = type ?? "trading";
-    const defaultEvaluationMetric =
-      competitionType === "perpetual_futures"
-        ? "calmar_ratio"
-        : "simple_return";
 
     const competition: Parameters<typeof this.competitionRepo.create>[0] = {
       id,
@@ -451,7 +446,6 @@ export class CompetitionService {
       crossChainTradingType: tradingType ?? "disallowAll",
       sandboxMode: sandboxMode ?? false,
       type: competitionType,
-      evaluationMetric: evaluationMetric ?? defaultEvaluationMetric,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -484,6 +478,7 @@ export class CompetitionService {
             perpsProvider.selfFundingThreshold.toString(),
           minFundingThreshold:
             perpsProvider.minFundingThreshold?.toString() || null,
+          evaluationMetric: evaluationMetric ?? ("calmar_ratio" as const),
         };
 
         await this.perpsRepo.createPerpsCompetitionConfig(perpsConfig, tx);
@@ -993,8 +988,11 @@ export class CompetitionService {
       // Determine the score based on competition type and evaluation metric
       let score: number;
       if (competition?.type === "perpetual_futures" && entry.hasRiskMetrics) {
-        // Use the competition's evaluation metric to determine the score
-        const evaluationMetric = competition.evaluationMetric || "calmar_ratio";
+        // Fetch the evaluation metric from perps config
+        const perpsConfig =
+          await this.perpsRepo.getPerpsCompetitionConfig(competitionId);
+        const evaluationMetric =
+          perpsConfig?.evaluationMetric ?? "calmar_ratio";
 
         switch (evaluationMetric) {
           case "sortino_ratio":
@@ -1396,8 +1394,10 @@ export class CompetitionService {
 
     if (competition?.type === "perpetual_futures") {
       // For perps: Fetch risk-adjusted leaderboard which includes risk metrics
-      // Pass the evaluation metric to the repository for SQL-level sorting
-      const evaluationMetric = competition.evaluationMetric || "calmar_ratio";
+      // Get the evaluation metric from perps config for SQL-level sorting
+      const perpsConfig =
+        await this.perpsRepo.getPerpsCompetitionConfig(competitionId);
+      const evaluationMetric = perpsConfig?.evaluationMetric ?? "calmar_ratio";
       const riskAdjustedLeaderboard =
         await this.perpsRepo.getRiskAdjustedLeaderboard(
           competitionId,
@@ -1467,8 +1467,10 @@ export class CompetitionService {
       // 1. Agents with Calmar ratio (sorted by Calmar DESC)
       // 2. Agents without Calmar ratio (sorted by equity DESC)
 
-      // Pass the evaluation metric to the repository for SQL-level sorting
-      const evaluationMetric = competition.evaluationMetric || "calmar_ratio";
+      // Get the evaluation metric from perps config for SQL-level sorting
+      const perpsConfig =
+        await this.perpsRepo.getPerpsCompetitionConfig(competitionId);
+      const evaluationMetric = perpsConfig?.evaluationMetric ?? "calmar_ratio";
       const riskAdjustedLeaderboard =
         await this.perpsRepo.getRiskAdjustedLeaderboard(
           competitionId,
@@ -1879,6 +1881,7 @@ export class CompetitionService {
     updates: UpdateCompetition,
     tradingConstraints?: TradingConstraintsInput,
     rewards?: Record<number, number>,
+    evaluationMetric?: "calmar_ratio" | "sortino_ratio" | "simple_return",
     perpsProvider?: {
       provider: "symphony" | "hyperliquid";
       initialCapital: number; // Required - Zod default ensures this is set
@@ -1974,6 +1977,7 @@ export class CompetitionService {
               perpsProvider.selfFundingThreshold.toString(),
             minFundingThreshold:
               perpsProvider.minFundingThreshold?.toString() || null,
+            evaluationMetric: evaluationMetric ?? ("calmar_ratio" as const),
           };
 
           await this.perpsRepo.createPerpsCompetitionConfig(perpsConfig, tx);
@@ -1989,27 +1993,46 @@ export class CompetitionService {
         }
       } else if (
         existingCompetition.type === "perpetual_futures" &&
-        perpsProvider
+        (perpsProvider || evaluationMetric)
       ) {
         // Update perps config for existing perps competition
         this.logger.info(
           `[CompetitionService] Updating perps config for competition ${competitionId}`,
         );
 
+        const configUpdates: {
+          dataSourceConfig?: {
+            type: "external_api";
+            provider: "symphony" | "hyperliquid";
+            apiUrl?: string;
+          };
+          initialCapital?: string;
+          selfFundingThresholdUsd?: string;
+          minFundingThreshold?: string | null;
+          evaluationMetric?: "calmar_ratio" | "sortino_ratio" | "simple_return";
+        } = {};
+
+        if (perpsProvider) {
+          configUpdates.dataSourceConfig = {
+            type: "external_api" as const,
+            provider: perpsProvider.provider,
+            apiUrl: perpsProvider.apiUrl,
+          };
+          configUpdates.initialCapital =
+            perpsProvider.initialCapital.toString();
+          configUpdates.selfFundingThresholdUsd =
+            perpsProvider.selfFundingThreshold.toString();
+          configUpdates.minFundingThreshold =
+            perpsProvider.minFundingThreshold?.toString() || null;
+        }
+
+        if (evaluationMetric) {
+          configUpdates.evaluationMetric = evaluationMetric;
+        }
+
         const updatedConfig = await this.perpsRepo.updatePerpsCompetitionConfig(
           competitionId,
-          {
-            dataSourceConfig: {
-              type: "external_api" as const,
-              provider: perpsProvider.provider,
-              apiUrl: perpsProvider.apiUrl,
-            },
-            initialCapital: perpsProvider.initialCapital.toString(),
-            selfFundingThresholdUsd:
-              perpsProvider.selfFundingThreshold.toString(),
-            minFundingThreshold:
-              perpsProvider.minFundingThreshold?.toString() || null,
-          },
+          configUpdates,
           tx,
         );
 
@@ -2018,10 +2041,19 @@ export class CompetitionService {
             `[CompetitionService] No perps config found to update for competition ${competitionId}`,
           );
         } else {
+          const updateDetails = [];
+          if (perpsProvider) {
+            updateDetails.push(
+              `threshold=${perpsProvider.selfFundingThreshold}`,
+              `capital=${perpsProvider.initialCapital}`,
+            );
+          }
+          if (evaluationMetric) {
+            updateDetails.push(`evaluationMetric=${evaluationMetric}`);
+          }
           this.logger.debug(
             `[CompetitionService] Updated perps config for competition ${competitionId}: ` +
-              `threshold=${perpsProvider.selfFundingThreshold}, ` +
-              `capital=${perpsProvider.initialCapital}`,
+              updateDetails.join(", "),
           );
         }
       }

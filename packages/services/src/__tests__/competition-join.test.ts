@@ -91,7 +91,6 @@ describe("CompetitionService - joinCompetition", () => {
     registeredParticipants: 0,
     sandboxMode: false,
     minimumStake: null,
-    evaluationMetric: "calmar_ratio",
     crossChainTradingType: "allow",
   };
 

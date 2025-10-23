@@ -88,11 +88,6 @@ export function configureCompetitionsRoutes(
    *                         type: string
    *                         enum: [trading, perpetual_futures]
    *                         description: Competition type
-   *                       evaluationMetric:
-   *                         type: string
-   *                         enum: [calmar_ratio, sortino_ratio, simple_return]
-   *                         description: Metric used for ranking agents
-   *                         example: calmar_ratio
    *                       crossChainTradingType:
    *                         type: string
    *                         enum: [disallowAll, disallowXParent, allow]
@@ -338,11 +333,6 @@ export function configureCompetitionsRoutes(
    *                       type: string
    *                       enum: [trading, perpetual_futures]
    *                       description: Competition type
-   *                     evaluationMetric:
-   *                       type: string
-   *                       enum: [calmar_ratio, sortino_ratio, simple_return]
-   *                       description: Metric used for ranking agents
-   *                       example: calmar_ratio
    *                     crossChainTradingType:
    *                       type: string
    *                       enum: [disallowAll, disallowXParent, allow]

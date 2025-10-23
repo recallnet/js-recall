@@ -36,6 +36,15 @@ export const crossChainTradingType = tradingComps.enum(
 );
 
 /**
+ * Enum for evaluation metrics used in perps competitions.
+ */
+export const evaluationMetricEnum = tradingComps.enum("evaluation_metric", [
+  "calmar_ratio",
+  "sortino_ratio",
+  "simple_return",
+]);
+
+/**
  * Table for trading competitions.
  */
 export const tradingCompetitions = tradingComps.table(
@@ -317,6 +326,11 @@ export const perpsCompetitionConfig = tradingComps.table(
     dataSourceConfig: jsonb("data_source_config").notNull(),
     // For external_api: { provider: "symphony", apiUrl: "...", ... }
     // For onchain_indexing: { protocol: "gmx", chains: ["arbitrum"], ... }
+
+    // Evaluation metric for ranking
+    evaluationMetric: evaluationMetricEnum("evaluation_metric")
+      .default("calmar_ratio")
+      .notNull(),
 
     // Competition parameters (generic)
     initialCapital: numeric("initial_capital").notNull().default("500.00"),

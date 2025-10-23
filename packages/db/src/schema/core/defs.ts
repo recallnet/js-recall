@@ -46,12 +46,6 @@ export const competitionStatus = pgEnum("competition_status", [
   "ended",
 ]);
 
-export const evaluationMetricEnum = pgEnum("evaluation_metric", [
-  "calmar_ratio",
-  "sortino_ratio",
-  "simple_return",
-]);
-
 /**
  * Defines the possible types for competitions.
  */
@@ -280,9 +274,6 @@ export const competitions = pgTable(
     }),
     status: competitionStatus("status").notNull(),
     sandboxMode: boolean("sandbox_mode").notNull().default(false),
-    evaluationMetric: evaluationMetricEnum("evaluation_metric")
-      .default("calmar_ratio")
-      .notNull(),
     createdAt: timestamp("created_at", {
       withTimezone: true,
     }).defaultNow(),

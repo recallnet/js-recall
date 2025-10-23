@@ -1,5 +1,5 @@
 {
-  "id": "d1494b3a-fe95-4583-a6bb-2be83a411b74",
+  "id": "5ccd95f2-297a-4cd9-b2fd-10b5abb6b0a8",
   "prevId": "dd8289a2-6f28-40b3-83c9-c38c2aded904",
   "version": "7",
   "dialect": "postgresql",
@@ -1605,14 +1605,6 @@
           "primaryKey": false,
           "notNull": true,
           "default": false
-        },
-        "evaluation_metric": {
-          "name": "evaluation_metric",
-          "type": "evaluation_metric",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'calmar_ratio'"
         },
         "created_at": {
           "name": "created_at",
@@ -3837,6 +3829,14 @@
           "primaryKey": false,
           "notNull": true
         },
+        "evaluation_metric": {
+          "name": "evaluation_metric",
+          "type": "evaluation_metric",
+          "typeSchema": "trading_comps",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'calmar_ratio'"
+        },
         "initial_capital": {
           "name": "initial_capital",
           "type": "numeric",
@@ -5323,15 +5323,15 @@
       "schema": "public",
       "values": ["trading", "perpetual_futures"]
     },
-    "public.evaluation_metric": {
-      "name": "evaluation_metric",
-      "schema": "public",
-      "values": ["calmar_ratio", "sortino_ratio", "simple_return"]
-    },
     "trading_comps.cross_chain_trading_type": {
       "name": "cross_chain_trading_type",
       "schema": "trading_comps",
       "values": ["disallowAll", "disallowXParent", "allow"]
+    },
+    "trading_comps.evaluation_metric": {
+      "name": "evaluation_metric",
+      "schema": "trading_comps",
+      "values": ["calmar_ratio", "sortino_ratio", "simple_return"]
     },
     "trading_comps.perps_data_source": {
       "name": "perps_data_source",

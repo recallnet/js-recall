@@ -575,16 +575,6 @@
                           "description": "Minimum stake amount required to join the competition (in USD). null means no minimum stake.",
                           "example": 100
                         },
-                        "evaluationMetric": {
-                          "type": "string",
-                          "enum": [
-                            "calmar_ratio",
-                            "sortino_ratio",
-                            "simple_return"
-                          ],
-                          "description": "Metric used for ranking agents",
-                          "example": "calmar_ratio"
-                        },
                         "rewards": {
                           "type": "array",
                           "description": "Rewards for competition placements",
@@ -889,16 +879,6 @@
                           "enum": ["trading", "perpetual_futures"],
                           "description": "The type of competition"
                         },
-                        "evaluationMetric": {
-                          "type": "string",
-                          "enum": [
-                            "calmar_ratio",
-                            "sortino_ratio",
-                            "simple_return"
-                          ],
-                          "description": "Metric used for ranking agents",
-                          "example": "calmar_ratio"
-                        },
                         "maxParticipants": {
                           "type": "integer",
                           "nullable": true,
@@ -1076,16 +1056,6 @@
                           "type": "string",
                           "enum": ["trading", "perpetual_futures"],
                           "description": "The type of competition"
-                        },
-                        "evaluationMetric": {
-                          "type": "string",
-                          "enum": [
-                            "calmar_ratio",
-                            "sortino_ratio",
-                            "simple_return"
-                          ],
-                          "description": "Metric used for ranking agents",
-                          "example": "calmar_ratio"
                         },
                         "maxParticipants": {
                           "type": "integer",
@@ -1346,16 +1316,6 @@
                           "type": "string",
                           "enum": ["pending", "active", "ended"],
                           "description": "Competition status"
-                        },
-                        "evaluationMetric": {
-                          "type": "string",
-                          "enum": [
-                            "calmar_ratio",
-                            "sortino_ratio",
-                            "simple_return"
-                          ],
-                          "description": "Metric used for ranking agents",
-                          "example": "calmar_ratio"
                         },
                         "rewards": {
                           "type": "array",
@@ -1696,16 +1656,6 @@
                           "type": "string",
                           "enum": ["trading", "perpetual_futures"],
                           "description": "The type of competition"
-                        },
-                        "evaluationMetric": {
-                          "type": "string",
-                          "enum": [
-                            "calmar_ratio",
-                            "sortino_ratio",
-                            "simple_return"
-                          ],
-                          "description": "Metric used for ranking agents",
-                          "example": "calmar_ratio"
                         }
                       }
                     },
@@ -5227,16 +5177,6 @@
                             "enum": ["trading", "perpetual_futures"],
                             "description": "Competition type"
                           },
-                          "evaluationMetric": {
-                            "type": "string",
-                            "enum": [
-                              "calmar_ratio",
-                              "sortino_ratio",
-                              "simple_return"
-                            ],
-                            "description": "Metric used for ranking agents",
-                            "example": "calmar_ratio"
-                          },
                           "crossChainTradingType": {
                             "type": "string",
                             "enum": ["disallowAll", "disallowXParent", "allow"],
@@ -5551,16 +5491,6 @@
                           "type": "string",
                           "enum": ["trading", "perpetual_futures"],
                           "description": "Competition type"
-                        },
-                        "evaluationMetric": {
-                          "type": "string",
-                          "enum": [
-                            "calmar_ratio",
-                            "sortino_ratio",
-                            "simple_return"
-                          ],
-                          "description": "Metric used for ranking agents",
-                          "example": "calmar_ratio"
                         },
                         "crossChainTradingType": {
                           "type": "string",
