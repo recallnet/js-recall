@@ -18,7 +18,7 @@ async function gracefulShutdown(signal: string) {
     `\n[${signal}] Received shutdown signal, closing servers gracefully...`,
   );
 
-  await indexingService.close();
+  await indexingService?.close();
 }
 
 process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
@@ -26,7 +26,7 @@ process.on("SIGINT", () => gracefulShutdown("SIGINT"));
 process.on("SIGUSR2", () => gracefulShutdown("SIGUSR2")); // nodemon restart
 
 function main() {
-  indexingService.start();
+  indexingService?.start();
 }
 
 main();
