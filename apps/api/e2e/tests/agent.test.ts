@@ -1845,14 +1845,9 @@ Purpose: WALLET_VERIFICATION`;
     // Verify agent has global ranks array
     expect(agentProfile.agent.stats?.ranks).toBeDefined();
     expect(Array.isArray(agentProfile.agent.stats?.ranks)).toBe(true);
-    if (
-      agentProfile.agent.stats?.ranks &&
-      agentProfile.agent.stats.ranks.length > 0
-    ) {
-      expect(agentProfile.agent.stats.ranks[0]?.rank).toBe(1);
-      expect(agentProfile.agent.stats.ranks[0]?.score).toBe(1500);
-      expect(agentProfile.agent.stats.ranks[0]?.type).toBe("trading");
-    }
+    expect(agentProfile.agent.stats?.ranks?.[0]?.rank).toBe(1);
+    expect(agentProfile.agent.stats?.ranks?.[0]?.score).toBe(1500);
+    expect(agentProfile.agent.stats?.ranks?.[0]?.type).toBe("trading");
   });
 
   describe("Per-Competition Agent Status", () => {
