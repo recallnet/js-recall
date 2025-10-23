@@ -346,7 +346,7 @@ export class CompetitionRepository {
       });
       return result;
     } catch (error) {
-      this.#logger.error("Error in update:", error);
+      this.#logger.error({ error }, "Error in update");
       throw error;
     }
   }
@@ -380,7 +380,7 @@ export class CompetitionRepository {
 
       return result;
     } catch (error) {
-      this.#logger.error("Error in updateOne:", error);
+      this.#logger.error({ error }, "Error in updateOne");
       throw error;
     }
   }
@@ -412,7 +412,7 @@ export class CompetitionRepository {
 
       return updated || null;
     } catch (error) {
-      this.#logger.error("Error marking competition as ending:", error);
+      this.#logger.error({ error }, "Error marking competition as ending");
       throw error;
     }
   }
@@ -447,7 +447,7 @@ export class CompetitionRepository {
 
       return updated || null;
     } catch (error) {
-      this.#logger.error("Error marking competition as ended:", error);
+      this.#logger.error({ error }, "Error marking competition as ended");
       throw error;
     }
   }
@@ -693,7 +693,7 @@ export class CompetitionRepository {
         );
       });
     } catch (error) {
-      this.#logger.error("Error in addAgents:", error);
+      this.#logger.error({ error }, "Error in addAgents");
       throw error;
     }
   }
@@ -724,7 +724,7 @@ export class CompetitionRepository {
 
       return result.map((row) => row.agentId);
     } catch (error) {
-      this.#logger.error("Error in getAgents:", error);
+      this.#logger.error({ error }, "Error in getAgents");
       throw error;
     }
   }
@@ -768,7 +768,7 @@ export class CompetitionRepository {
 
       return result.length > 0;
     } catch (error) {
-      this.#logger.error("Error in isAgentActiveInCompetition:", error);
+      this.#logger.error({ error }, "Error in isAgentActiveInCompetition");
       throw error;
     }
   }
@@ -797,7 +797,7 @@ export class CompetitionRepository {
 
       return result.length > 0 ? result[0]!.status : null;
     } catch (error) {
-      this.#logger.error("Error in getAgentCompetitionStatus:", error);
+      this.#logger.error({ error }, "Error in getAgentCompetitionStatus");
       throw error;
     }
   }
@@ -838,7 +838,7 @@ export class CompetitionRepository {
 
       return result.length > 0 ? result[0]! : null;
     } catch (error) {
-      this.#logger.error("Error in getAgentCompetitionRecord:", error);
+      this.#logger.error({ error }, "Error in getAgentCompetitionRecord");
       throw error;
     }
   }
@@ -1581,12 +1581,16 @@ export class CompetitionRepository {
       const maxDrawdown = result.rows[0]?.max_drawdown ?? 0;
 
       this.#logger.debug(
-        `[CompetitionRepository] Calculated max drawdown for agent ${agentId}: ${(maxDrawdown * 100).toFixed(2)}%`,
+        {
+          agentId,
+          maxDrawdown: `${(maxDrawdown * 100).toFixed(2)}%`,
+        },
+        "[CompetitionRepository] Calculated max drawdown",
       );
 
       return Number(maxDrawdown);
     } catch (error) {
-      this.#logger.error("Error in calculateMaxDrawdown:", error);
+      this.#logger.error({ error }, "Error in calculateMaxDrawdown");
       throw error;
     }
   }
@@ -1671,11 +1675,14 @@ export class CompetitionRepository {
       }
 
       this.#logger.debug(
-        `[CompetitionRepository] Calculated Sortino metrics for agent ${agentId}: ` +
-          `Avg Return=${(Number(metrics.avg_return || 0) * 100).toFixed(2)}%, ` +
-          `Downside Dev=${(Number(metrics.downside_deviation || 0) * 100).toFixed(2)}%, ` +
-          `Simple Return=${(Number(metrics.simple_return || 0) * 100).toFixed(2)}%, ` +
-          `Snapshots=${metrics.snapshot_count}`,
+        {
+          agentId,
+          avgReturn: `${(Number(metrics.avg_return || 0) * 100).toFixed(2)}%`,
+          downsideDeviation: `${(Number(metrics.downside_deviation || 0) * 100).toFixed(2)}%`,
+          simpleReturn: `${(Number(metrics.simple_return || 0) * 100).toFixed(2)}%`,
+          snapshotCount: metrics.snapshot_count,
+        },
+        "[CompetitionRepository] Calculated Sortino metrics",
       );
 
       return {
@@ -1685,7 +1692,7 @@ export class CompetitionRepository {
         snapshotCount: Number(metrics.snapshot_count || 0),
       };
     } catch (error) {
-      this.#logger.error("Error in calculateSortinoMetrics:", error);
+      this.#logger.error({ error }, "Error in calculateSortinoMetrics");
       throw error;
     }
   }
