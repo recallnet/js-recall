@@ -114,7 +114,7 @@ export class EventsRepository {
    * - `IndexingService.loop()` uses this to resume with `fromBlock = last`.
    *
    * Fallback:
-   * - If no rows exist, falls back to `config.stakingIndex.startBlock`.
+   * - If no rows exist, falls back to `config.stakingIndex.eventStartBlock`.
    *
    * Returns:
    * - bigint block number (never undefined).
@@ -130,7 +130,8 @@ export class EventsRepository {
       .orderBy(desc(indexingEvents.blockNumber))
       .limit(1);
 
-    const lastBlockNumber = row?.blockNumber ?? config.stakingIndex.startBlock;
+    const lastBlockNumber =
+      row?.blockNumber ?? config.stakingIndex.eventStartBlock;
     return BigInt(lastBlockNumber);
   }
 }
