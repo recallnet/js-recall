@@ -103,16 +103,16 @@ export class SortinoRatioService {
       );
 
       // 4. Get existing metrics to preserve Calmar ratio and max drawdown
-      let existingMetrics: SelectPerpsRiskMetrics | null = null;
-      try {
-        const riskMetrics = await this.perpsRepo.getBulkAgentRiskMetrics(
-          agentId,
-          [competitionId],
-        );
-        existingMetrics = riskMetrics.get(competitionId) || null;
-      } catch {
-        this.logger.debug(
-          `[SortinoRatio] No existing metrics found for agent ${agentId}, will create new`,
+      // CalmarRatioService MUST run first to establish these values
+      const riskMetrics = await this.perpsRepo.getBulkAgentRiskMetrics(
+        agentId,
+        [competitionId],
+      );
+      const existingMetrics = riskMetrics.get(competitionId);
+
+      if (!existingMetrics?.calmarRatio || !existingMetrics?.maxDrawdown) {
+        throw new Error(
+          `Cannot calculate Sortino for agent ${agentId}: Missing Calmar metrics. CalmarRatioService must run first.`,
         );
       }
 
@@ -124,14 +124,14 @@ export class SortinoRatioService {
           `Simple Return=${(simpleReturn.toNumber() * 100).toFixed(2)}%`,
       );
 
-      // 5. Save risk metrics (update existing or create new)
+      // 5. Save risk metrics (update existing - Calmar already established)
       const metricsData: InsertPerpsRiskMetrics = {
         agentId,
         competitionId,
         simpleReturn: simpleReturn.toFixed(8),
-        calmarRatio: existingMetrics?.calmarRatio || new Decimal(0).toFixed(8), // Preserve existing Calmar
+        calmarRatio: existingMetrics.calmarRatio, // Preserved from CalmarRatioService
         annualizedReturn: avgReturn.toFixed(8),
-        maxDrawdown: existingMetrics?.maxDrawdown || new Decimal(0).toFixed(8), // Preserve existing Max Drawdown
+        maxDrawdown: existingMetrics.maxDrawdown, // Preserved from CalmarRatioService
         sortinoRatio: sortinoRatio.toFixed(8),
         downsideDeviation: downsideDeviation.toFixed(8),
         snapshotCount: metrics.snapshotCount,
