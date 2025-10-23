@@ -125,9 +125,9 @@ describe("CalmarRatioService", () => {
 
       const result = await service.calculateCalmarRatio(agentId, competitionId);
 
-      // Should use minimum drawdown of 0.001: 1.50 / 0.001 = 1500
+      // Should use minimum drawdown of 0.0001: 1.50 / 0.0001 = 15000
       expect(result).toMatchObject({
-        calmarRatio: "1500.00000000",
+        calmarRatio: "15000.00000000",
       });
     });
 

@@ -193,7 +193,7 @@ export class CalmarRatioService {
     periodReturn: Decimal,
     maxDrawdown: number,
   ): Decimal {
-    // Use minimum drawdown of 0.001 to avoid division by zero
+    // Use minimum drawdown of 0.0001 to avoid division by zero
     // and handle edge cases cleanly
     if (maxDrawdown > 0) {
       this.logger.error(
@@ -203,7 +203,7 @@ export class CalmarRatioService {
         `Invalid max drawdown: expected negative or zero, got ${maxDrawdown}`,
       );
     }
-    const adjustedMaxDrawdown = Math.max(Math.abs(maxDrawdown), 0.001);
+    const adjustedMaxDrawdown = Math.max(Math.abs(maxDrawdown), 0.0001);
 
     return periodReturn.dividedBy(adjustedMaxDrawdown);
   }
