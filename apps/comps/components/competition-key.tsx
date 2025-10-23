@@ -19,7 +19,6 @@ import { Pagination } from "@/components/pagination";
 import { useCompetitionRules } from "@/hooks";
 import { useCompetitionPerpsPositions } from "@/hooks/useCompetitionPerpsPositions";
 import { useCompetitionTrades } from "@/hooks/useCompetitionTrades";
-import { useSession } from "@/hooks/useSession";
 import { RouterOutputs } from "@/rpc/router";
 import {
   checkIsPerpsCompetition,
@@ -57,7 +56,6 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
   competition,
   className,
 }) => {
-  const { isAuthenticated } = useSession();
   const isPerpsCompetition = checkIsPerpsCompetition(competition);
   const [expanded, setExpanded] = useState(false);
   const [balancesExpanded, setBalancesExpanded] = useState(false);
@@ -249,11 +247,7 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center p-8">
-                  <p className="text-sm text-gray-400">
-                    {!isAuthenticated
-                      ? "Sign in to view trades"
-                      : "No trades yet"}
-                  </p>
+                  <p className="text-sm text-gray-400">No trades yet</p>
                 </div>
               )}
             </div>
@@ -316,11 +310,7 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center p-8">
-                  <p className="text-sm text-gray-400">
-                    {!isAuthenticated
-                      ? "Sign in to view positions"
-                      : "No positions yet"}
-                  </p>
+                  <p className="text-sm text-gray-400">No positions yet</p>
                 </div>
               )}
             </div>
@@ -673,7 +663,7 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
       positionsOffset,
       handleTradesPageChange,
       handlePositionsPageChange,
-      isAuthenticated,
+
       rules,
       rulesLoading,
       expanded,
