@@ -139,12 +139,16 @@ export interface AgentResponse {
     bestPlacement?: {
       competitionId: string;
       rank: number;
+      score: number;
       totalAgents: number;
     };
-    bestPnl: number;
-    rank?: number;
-    score?: number;
-    totalRoi: number | null;
+    bestPnl?: number;
+    totalRoi?: number;
+    ranks?: Array<{
+      type: string;
+      rank: number;
+      score: number;
+    }>;
   };
   skills?: string[];
   hasUnclaimedRewards?: boolean;

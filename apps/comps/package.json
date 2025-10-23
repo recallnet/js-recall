@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint --max-warnings 0",
+    "check-types": "tsc --noEmit",
     "format": "prettier --write . --ignore-path=../../.prettierignore",
     "format:check": "prettier --check . --ignore-path=../../.prettierignore",
     "clean": "rm -rf .turbo .next node_modules",

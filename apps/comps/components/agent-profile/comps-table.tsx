@@ -176,8 +176,9 @@ export function CompetitionTable({
                     </TableCell>
                     <TableCell className="w-30 text-secondary-foreground flex items-center text-center">
                       {comp.bestPlacement?.rank &&
-                        comp.bestPlacement?.totalAgents &&
-                        `${comp.bestPlacement.rank}/${comp.bestPlacement.totalAgents}`}
+                      comp.bestPlacement?.totalAgents
+                        ? `${comp.bestPlacement.rank}/${comp.bestPlacement.totalAgents}`
+                        : "N/A"}
                     </TableCell>
                     <TableCell className="h-25 ml-1 flex items-center gap-2">
                       {comp.trophies.length > 0 ? (
@@ -185,9 +186,7 @@ export function CompetitionTable({
                           <TrophyBadge size={50} key={i} trophy={trophy} />
                         ))
                       ) : (
-                        <span className="text-secondary-foreground">
-                          No trophies
-                        </span>
+                        <span className="text-secondary-foreground">N/A</span>
                       )}
                     </TableCell>
                     {canClaim && (
