@@ -21,6 +21,7 @@ import {
   useUpdateSandboxAgent,
 } from "@/hooks/useSandbox";
 import type { RouterOutputs } from "@/rpc/router";
+import { formatCompetitionType } from "@/utils/competition-utils";
 
 import BigNumberDisplay from "../bignumber";
 import { BreadcrumbNav } from "../breadcrumb-nav";
@@ -66,6 +67,11 @@ export default function AgentProfile({
   const [offset, setOffset] = React.useState(0);
   const skills = agent?.skills || [];
   const trophies = sortTrophies((agent.trophies || []) as Trophy[]);
+
+  // Sort ranks and scores for display on agent profile & tooltip
+  const sortedRanks =
+    agent.stats.ranks?.slice().sort((a, b) => a.rank - b.rank) || [];
+  const topRank = sortedRanks[0];
 
   const { data: userAgents } = useUserAgents({ limit: 100 });
   const isUserAgent = userAgents?.agents.some((a) => a.id === id) || false;
@@ -241,23 +247,50 @@ export default function AgentProfile({
         </Card>
         <div className="flex-2 xs:col-span-2 xs:col-start-2 xs:row-start-1 xs:mt-0 col-span-3 row-start-2 mt-5 flex shrink flex-col border lg:col-span-1 lg:col-start-2">
           <div className="relative flex w-full grow flex-col border-b p-6">
+            {/* Display best rank with tooltip showing all ranks */}
             <div className="flex gap-3 font-mono text-lg font-semibold">
-              {agent.stats.score != null && agent.stats.score > 0 && (
-                <Tooltip content="Global Score">
-                  <BigNumberDisplay
-                    decimals={0}
-                    value={agent.stats.score.toString()}
-                    displayDecimals={0}
-                    compact={false}
-                  />
-                </Tooltip>
-              )}
-              {agent.stats.rank && (
-                <Tooltip content="Global Rank">
-                  <span className="text-secondary-foreground">
-                    #{agent.stats.rank}
-                  </span>
-                </Tooltip>
+              {topRank && (
+                <>
+                  <Tooltip
+                    content={
+                      <div className="space-y-2 p-2">
+                        {sortedRanks.map((rankData) => (
+                          <div
+                            key={rankData.type}
+                            className="flex items-center justify-between gap-4"
+                          >
+                            <span className="text-xs font-medium uppercase text-gray-300">
+                              {formatCompetitionType(rankData.type)}
+                            </span>
+                            <div className="flex items-center gap-2 font-mono text-sm">
+                              <span className="font-semibold text-white">
+                                <BigNumberDisplay
+                                  decimals={0}
+                                  value={rankData.score.toString()}
+                                  displayDecimals={0}
+                                  compact={false}
+                                />
+                              </span>
+                              <span className="text-gray-400">
+                                #{rankData.rank}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    }
+                  >
+                    <BigNumberDisplay
+                      decimals={0}
+                      value={topRank.score.toString()}
+                      displayDecimals={0}
+                      compact={false}
+                    />
+                    <span className="text-secondary-foreground ml-3">
+                      #{topRank.rank}
+                    </span>
+                  </Tooltip>
+                </>
               )}
             </div>
             {isUserAgent ? (

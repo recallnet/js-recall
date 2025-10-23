@@ -37,6 +37,13 @@ export const ConfirmAgentEntryModal: React.FC<ChooseAgentModalProps> = ({
   onBack,
   competition,
 }) => {
+  // Get best rank's score for the competition type
+  const topRankForCompetitionType =
+    agent?.stats.ranks && agent.stats.ranks.length > 0
+      ? agent.stats.ranks.find((rank) => rank.type === competition?.type)
+          ?.score || 0
+      : 0;
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="w-full max-w-[700px] p-4 sm:p-6">
@@ -85,9 +92,9 @@ export const ConfirmAgentEntryModal: React.FC<ChooseAgentModalProps> = ({
                 </span>
               </li>
               <li>
-                ELO{" "}
+                Best Score{" "}
                 <span className="text-primary-foreground">
-                  [{agent?.stats.score || 0}]
+                  [{topRankForCompetitionType.toLocaleString()}]
                 </span>
               </li>
             </div>
