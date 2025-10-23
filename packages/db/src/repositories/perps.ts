@@ -1548,7 +1548,7 @@ export class PerpsRepository {
 
       return results;
     } catch (error) {
-      this.#logger.error("Error in getRiskMetricsTimeSeries:", error);
+      this.#logger.error({ error }, "Error in getRiskMetricsTimeSeries")
       throw error;
     }
   }
