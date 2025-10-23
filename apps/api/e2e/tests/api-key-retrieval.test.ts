@@ -1,15 +1,15 @@
 import axios from "axios";
 import { beforeEach, describe, expect, test } from "vitest";
 
-import { AgentApiKeyResponse, ErrorResponse } from "@/e2e/utils/api-types.js";
-import { getBaseUrl } from "@/e2e/utils/server.js";
+import { AgentApiKeyResponse, ErrorResponse } from "@recallnet/test-utils";
+import { getBaseUrl } from "@recallnet/test-utils";
 import {
   ADMIN_EMAIL,
   ADMIN_PASSWORD,
   ADMIN_USERNAME,
   createTestClient,
   registerUserAndAgentAndGetClient,
-} from "@/e2e/utils/test-helpers.js";
+} from "@recallnet/test-utils";
 
 describe("API Key Retrieval", () => {
   let adminApiKey: string;

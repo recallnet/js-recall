@@ -13,8 +13,6 @@ import {
   perpsCompetitionConfig,
   tradingConstraints,
 } from "@recallnet/db/schema/trading/defs";
-
-import { db } from "@/database/db.js";
 import {
   AdminAgentResponse,
   AdminAgentsListResponse,
@@ -31,9 +29,9 @@ import {
   StartCompetitionResponse,
   UpdateCompetitionResponse,
   UserRegistrationResponse,
-} from "@/e2e/utils/api-types.js";
-import { generateRandomPrivyId } from "@/e2e/utils/privy.js";
-import { getBaseUrl } from "@/e2e/utils/server.js";
+} from "@recallnet/test-utils";
+import { generateRandomPrivyId } from "@recallnet/test-utils";
+import { getBaseUrl } from "@recallnet/test-utils";
 import {
   ADMIN_EMAIL,
   createPerpsTestCompetition,
@@ -46,7 +44,9 @@ import {
   startPerpsTestCompetition,
   startTestCompetition,
   wait,
-} from "@/e2e/utils/test-helpers.js";
+} from "@recallnet/test-utils";
+
+import { db } from "@/database/db.js";
 
 describe("Admin API", () => {
   let adminApiKey: string;

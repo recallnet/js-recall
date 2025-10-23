@@ -6,7 +6,8 @@ import {
   registerUserAndAgentAndGetClient,
   startTestCompetition,
   wait,
-} from "@/e2e/utils/test-helpers.js";
+} from "@recallnet/test-utils";
+
 import { ServiceRegistry } from "@/services/index.js";
 
 describe("get24hSnapshots Repository Function", () => {

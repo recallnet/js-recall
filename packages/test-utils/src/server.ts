@@ -9,9 +9,15 @@ let serverProcess: ChildProcess | null = null;
 const PORT = process.env.TEST_PORT || "3001";
 // Allow configuring the host from environment (0.0.0.0 for Docker)
 const HOST = process.env.TEST_HOST || "localhost";
-// Include API prefix in base URL if set
-const API_PREFIX = process.env.API_PREFIX;
-const BASE_URL = `http://${HOST}:${PORT}${API_PREFIX ? `/${API_PREFIX}` : ""}`;
+
+/**
+ * Get the base URL for the test server.
+ * Constructs URL at runtime to pick up API_PREFIX after env vars are loaded.
+ */
+function getBaseUrlInternal(): string {
+  const apiPrefix = process.env.API_PREFIX;
+  return `http://${HOST}:${PORT}${apiPrefix ? `/${apiPrefix}` : ""}`;
+}
 
 /**
  * Start the server for testing
@@ -27,8 +33,21 @@ export async function startServer(): Promise<void> {
 
   console.log(`Starting test server on ${testHost}:${PORT}...`);
 
+  // Find the workspace root and API directory
+  const currentDir = process.cwd();
+  const workspaceRoot = currentDir.includes("/apps/")
+    ? currentDir.split("/apps/")[0]
+    : currentDir;
+  const apiDir = `${workspaceRoot}/apps/api`;
+
+  console.log(
+    `Starting API server from: ${apiDir}/src/index.ts (cwd: ${apiDir})`,
+  );
+
   // Start the server script in a sub-process
+  // IMPORTANT: Must run from apps/api directory so path aliases (@/) resolve correctly
   serverProcess = spawn("npx", ["tsx", "src/index.ts"], {
+    cwd: apiDir,
     env: {
       ...process.env,
       NODE_ENV: "test",
@@ -93,21 +112,17 @@ async function waitForServerReady(
   maxRetries = 30,
   interval = 500,
 ): Promise<void> {
-  console.log(`⏳ Waiting for server to be ready at ${BASE_URL}/health...`);
+  const baseUrl = getBaseUrlInternal();
+  const healthUrl = `${baseUrl}/api/health`;
+  console.log(`⏳ Waiting for server to be ready at ${healthUrl}...`);
 
   let retries = 0;
   while (retries < maxRetries) {
     try {
       // Try to reach the health endpoint
-      const response = await axios.get(`${BASE_URL}/health`);
+      const response = await axios.get(healthUrl);
       if (response.status === 200) {
         console.log("✅ Server is ready");
-
-        // Verify admin setup endpoint is available
-        const adminSetupResponse = await axios.get(`${BASE_URL}/api/health`);
-        console.log(
-          `Admin API health check: ${adminSetupResponse.status === 200 ? "OK" : "Failed"}`,
-        );
 
         // Verify metrics server is available (always on localhost for security)
         const metricsPort = process.env.METRICS_PORT || "3003";
@@ -138,8 +153,9 @@ async function waitForServerReady(
 }
 
 /**
- * Get the base URL for the test server
+ * Get the base URL for the test server.
+ * Constructs URL at runtime to pick up API_PREFIX after env vars are loaded.
  */
 export function getBaseUrl(): string {
-  return BASE_URL;
+  return getBaseUrlInternal();
 }

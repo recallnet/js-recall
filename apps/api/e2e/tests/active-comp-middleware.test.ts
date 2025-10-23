@@ -1,15 +1,15 @@
 import { describe, expect, test } from "vitest";
 
 import { BlockchainType } from "@recallnet/services/types";
-
-import { config } from "@/config/index.js";
-import { ErrorResponse } from "@/e2e/utils/api-types.js";
+import { ErrorResponse } from "@recallnet/test-utils";
 import {
   createTestClient,
   getAdminApiKey,
   registerUserAndAgentAndGetClient,
   wait,
-} from "@/e2e/utils/test-helpers.js";
+} from "@recallnet/test-utils";
+
+import { config } from "@/config/index.js";
 
 describe("Active Competition Middleware", () => {
   test("GET /api/price returns 403 when no active competition exists", async () => {
