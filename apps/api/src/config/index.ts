@@ -236,9 +236,15 @@ export const config = {
     isEnabled: process.env.INDEXING_ENABLED === "true",
     stakingContract: process.env.INDEXING_STAKING_CONTRACT,
     rewardsContract: process.env.INDEXING_REWARDS_CONTRACT,
-    startBlock: process.env.INDEXING_START_BLOCK
-      ? parseInt(process.env.INDEXING_START_BLOCK, 10)
+    convictionClaimsContract:
+      process.env.INDEXING_CONVICTION_CLAIMS_CONTRACT ||
+      "0x6A3044c1Cf077F386c9345eF84f2518A2682Dfff",
+    eventStartBlock: process.env.INDEXING_EVENTS_START_BLOCK
+      ? parseInt(process.env.INDEXING_EVENTS_START_BLOCK, 10)
       : 27459229,
+    transactionsStartBlock: process.env.INDEXING_TRANSACTIONS_START_BLOCK
+      ? parseInt(process.env.INDEXING_TRANSACTIONS_START_BLOCK, 10)
+      : 36800000,
     hypersyncUrl: process.env.INDEXING_HYPERSYNC_URL,
     hypersyncBearerToken: process.env.INDEXING_HYPERSYNC_BEARER_TOKEN,
     delayMs: process.env.INDEXING_DELAY

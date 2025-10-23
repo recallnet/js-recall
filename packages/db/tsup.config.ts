@@ -25,6 +25,7 @@ export default defineConfig({
     "src/repositories/user.ts",
     "src/schema/boost/defs.ts",
     "src/schema/boost/types.ts",
+    "src/schema/conviction-claims/defs.ts",
     "src/schema/core/defs.ts",
     "src/schema/core/relations.ts",
     "src/schema/core/types.ts",
