@@ -75,6 +75,9 @@ const configSchema = z.strictObject({
     ),
     sandboxAdminApiKey: z.string().optional(),
   }),
+  healthCheck: z.object({
+    apiKey: z.string().optional(),
+  }),
 });
 
 export const rawConfig = {
@@ -114,6 +117,9 @@ export const rawConfig = {
     baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL,
     sandboxApiUrl: process.env.NEXT_PUBLIC_SANDBOX_API_URL,
     sandboxAdminApiKey: process.env.SANDBOX_ADMIN_API_KEY,
+  },
+  healthCheck: {
+    apiKey: process.env.HEALTH_CHECK_API_KEY,
   },
 };
 
