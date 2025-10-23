@@ -1,10 +1,11 @@
 import axios from "axios";
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 
+import { ApiClient } from "@recallnet/test-utils";
+import { getBaseUrl } from "@recallnet/test-utils";
+import { createTestClient, getAdminApiKey } from "@recallnet/test-utils";
+
 import { config } from "@/config/index.js";
-import { ApiClient } from "@/e2e/utils/api-client.js";
-import { getBaseUrl } from "@/e2e/utils/server.js";
-import { createTestClient, getAdminApiKey } from "@/e2e/utils/test-helpers.js";
 
 describe("CORS Configuration", () => {
   const baseUrl = getBaseUrl();

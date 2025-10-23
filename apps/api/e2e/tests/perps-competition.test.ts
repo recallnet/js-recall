@@ -2,10 +2,7 @@ import { randomUUID } from "crypto";
 import { beforeEach, describe, expect, test } from "vitest";
 
 import { portfolioSnapshots } from "@recallnet/db/schema/trading/defs";
-
-import config from "@/config/index.js";
-import { db } from "@/database/db.js";
-import { ApiClient } from "@/e2e/utils/api-client.js";
+import { ApiClient } from "@recallnet/test-utils";
 import {
   type AdminAgentResponse,
   type AdminCompetitionTransferViolationsResponse,
@@ -22,8 +19,8 @@ import {
   type GetUserAgentsResponse,
   type PerpsAccountResponse,
   type PerpsPositionsResponse,
-} from "@/e2e/utils/api-types.js";
-import { getBaseUrl } from "@/e2e/utils/server.js";
+} from "@recallnet/test-utils";
+import { getBaseUrl } from "@recallnet/test-utils";
 import {
   createTestClient,
   generateTestHandle,
@@ -32,7 +29,10 @@ import {
   startPerpsTestCompetition,
   startTestCompetition,
   wait,
-} from "@/e2e/utils/test-helpers.js";
+} from "@recallnet/test-utils";
+
+import config from "@/config/index.js";
+import { db } from "@/database/db.js";
 import { ServiceRegistry } from "@/services/index.js";
 
 describe("Perps Competition", () => {

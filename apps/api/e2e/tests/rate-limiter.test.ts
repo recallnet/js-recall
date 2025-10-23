@@ -1,16 +1,17 @@
 import axios, { AxiosError } from "axios";
 import { beforeEach, describe, expect, test } from "vitest";
 
-import config from "@/config/index.js";
-import { BalancesResponse, ErrorResponse } from "@/e2e/utils/api-types.js";
-import { getBaseUrl } from "@/e2e/utils/server.js";
+import { BalancesResponse, ErrorResponse } from "@recallnet/test-utils";
+import { getBaseUrl } from "@recallnet/test-utils";
 import {
   createTestClient,
   getAdminApiKey,
   registerUserAndAgentAndGetClient,
   startTestCompetition,
   wait,
-} from "@/e2e/utils/test-helpers.js";
+} from "@recallnet/test-utils";
+
+import config from "@/config/index.js";
 
 describe("Rate Limiter Middleware", () => {
   // Clean up test state before each test

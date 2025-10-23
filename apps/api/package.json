@@ -121,6 +121,7 @@
   "devDependencies": {
     "@elizaos/core": "^0.25.9",
     "@recallnet/eslint-config": "workspace:^",
+    "@recallnet/test-utils": "workspace:*",
     "@recallnet/typescript-config": "workspace:*",
     "@types/bcrypt": "^5.0.0",
     "@types/cors": "^2.8.13",

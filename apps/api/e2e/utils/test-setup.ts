@@ -16,10 +16,9 @@ import client from "prom-client";
 import { afterAll, afterEach, beforeAll, beforeEach, vi } from "vitest";
 
 import { MockPrivyClient } from "@recallnet/services/lib";
+import { dbManager, setupPrivyTestEnvironment } from "@recallnet/test-utils";
 
 import { mockHyperliquidServer, mockSymphonyServer } from "../setup.js";
-import { dbManager } from "./db-manager.js";
-import { setupPrivyTestEnvironment } from "./privy.js";
 
 // TODO: is this log file needed if we use Pino?
 // Path to log file

@@ -10,24 +10,23 @@ import {
 } from "vitest";
 
 import { agents, users } from "@recallnet/db/schema/core/defs";
-
 import {
   ErrorResponse,
   LinkUserWalletResponse,
   LoginResponse,
   UserProfileResponse,
   UserRegistrationResponse,
-} from "@/e2e/utils/api-types.js";
-import { connectToDb } from "@/e2e/utils/db-manager.js";
-
-import { ApiClient } from "../utils/api-client.js";
-import { createMockPrivyToken, createTestPrivyUser } from "../utils/privy.js";
+} from "@recallnet/test-utils";
+import { connectToDb } from "@recallnet/test-utils";
 import {
+  ApiClient,
+  createMockPrivyToken,
   createPrivyAuthenticatedClient,
   createTestClient,
+  createTestPrivyUser,
+  generateRandomEthAddress,
   getAdminApiKey,
-} from "../utils/test-helpers.js";
-import { generateRandomEthAddress } from "../utils/test-helpers.js";
+} from "@recallnet/test-utils";
 
 describe("Privy Authentication", () => {
   test("should authenticate user with Privy JWT and sync profile", async () => {
