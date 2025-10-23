@@ -41,37 +41,59 @@ export const activeCompMiddleware = function () {
   };
 };
 
-// Cache for active competition check
-let cachedActiveCompetition: { id: string; name: string } | null = null;
-let lastQueryTime = 0;
-const CACHE_ACTIVE_COMP_TTL_MS = config.cache.activeCompetitionTtlMs;
+// Cache for active competition check (includes both positive and negative cases)
+type ActiveComp = { id: string; name: string } | null;
 
-async function getActiveComp() {
+const CACHE_ACTIVE_COMP_TTL_MS = config.cache.activeCompetitionTtlMs;
+const ERROR_BACKOFF_MS = 1000; // Prevent thundering herd on errors
+let cached: { value: ActiveComp; expiresAt: number } | null = null;
+let inFlight: Promise<ActiveComp> | null = null;
+let errorBackoffUntil = 0;
+
+async function getActiveComp(): Promise<ActiveComp> {
   // Check cache first
   const now = Date.now();
-
-  if (now - lastQueryTime < CACHE_ACTIVE_COMP_TTL_MS) {
-    middlewareLogger.debug("Active comp middleware: Using cached result");
-    return cachedActiveCompetition;
+  if (cached && now < cached.expiresAt) {
+    middlewareLogger.debug("Active comp middleware: using cached result");
+    return cached.value;
   }
-  // Check for active competition with efficient exists query
-  middlewareLogger.debug("Active comp middleware: Querying database");
-  const [activeComp] = await db
-    .select({ id: competitions.id, name: competitions.name })
-    .from(competitions)
-    .where(eq(competitions.status, "active"))
-    .limit(1);
-
-  // Update cache
-  if (!activeComp) {
-    return;
+  // Check if we're in error backoff period
+  if (now < errorBackoffUntil) {
+    middlewareLogger.debug("Active comp middleware: in error backoff period");
+    throw new Error("Active competition query rate limited");
+  }
+  if (inFlight) {
+    return inFlight;
   }
 
-  cachedActiveCompetition = activeComp || null;
-  lastQueryTime = now;
-  return cachedActiveCompetition;
+  // Check database if cache is not available
+  middlewareLogger.debug("Active comp middleware: querying database");
+  inFlight = (async () => {
+    try {
+      const [row] = await db
+        .select({ id: competitions.id, name: competitions.name })
+        .from(competitions)
+        .where(eq(competitions.status, "active"))
+        .limit(1);
+      const value: ActiveComp = row || null;
+      const expiresAt = now + CACHE_ACTIVE_COMP_TTL_MS;
+      cached = { value, expiresAt };
+      errorBackoffUntil = 0;
+      return value;
+    } catch (err) {
+      // Set error backoff to prevent thundering herd
+      errorBackoffUntil = now + ERROR_BACKOFF_MS;
+      throw err;
+    } finally {
+      inFlight = null;
+    }
+  })();
+
+  return inFlight;
 }
 
 export function activeCompResetCache() {
-  lastQueryTime = 0;
+  cached = null;
+  inFlight = null;
+  errorBackoffUntil = 0;
 }
