@@ -121,7 +121,6 @@ describe("SortinoRatioService", () => {
       );
       mockPerpsRepo.getBulkAgentRiskMetrics.mockResolvedValue(existingMetrics);
       mockPerpsRepo.upsertRiskMetrics.mockResolvedValue(savedMetrics);
-      mockPerpsRepo.batchCreateRiskMetricsSnapshots.mockResolvedValue([]);
 
       const result = await service.calculateAndSaveSortinoRatio(
         agentId,
@@ -161,22 +160,6 @@ describe("SortinoRatioService", () => {
           snapshotCount: 100,
         }),
       );
-
-      // Verify time-series snapshot was created
-      expect(
-        mockPerpsRepo.batchCreateRiskMetricsSnapshots,
-      ).toHaveBeenCalledWith([
-        expect.objectContaining({
-          agentId,
-          competitionId,
-          sortinoRatio: "0.20000000",
-          downsideDeviation: "0.01000000",
-          simpleReturn: "0.15000000",
-          annualizedReturn: "0.00200000",
-          calmarRatio: "2.50000000", // From existing metrics
-          maxDrawdown: "-0.15000000", // From existing metrics
-        }),
-      ]);
     });
 
     it("should handle zero downside deviation by capping at 100", async () => {
@@ -193,7 +176,6 @@ describe("SortinoRatioService", () => {
       mockPerpsRepo.upsertRiskMetrics.mockResolvedValue(
         createMockSavedMetrics(),
       );
-      mockPerpsRepo.batchCreateRiskMetricsSnapshots.mockResolvedValue([]);
 
       await service.calculateAndSaveSortinoRatio(agentId, competitionId);
 
@@ -220,7 +202,6 @@ describe("SortinoRatioService", () => {
       mockPerpsRepo.upsertRiskMetrics.mockResolvedValue(
         createMockSavedMetrics(),
       );
-      mockPerpsRepo.batchCreateRiskMetricsSnapshots.mockResolvedValue([]);
 
       await service.calculateAndSaveSortinoRatio(agentId, competitionId);
 
@@ -247,7 +228,6 @@ describe("SortinoRatioService", () => {
       mockPerpsRepo.upsertRiskMetrics.mockResolvedValue(
         createMockSavedMetrics(),
       );
-      mockPerpsRepo.batchCreateRiskMetricsSnapshots.mockResolvedValue([]);
 
       await service.calculateAndSaveSortinoRatio(agentId, competitionId);
 
@@ -319,7 +299,6 @@ describe("SortinoRatioService", () => {
       mockPerpsRepo.upsertRiskMetrics.mockResolvedValue(
         createMockSavedMetrics(),
       );
-      mockPerpsRepo.batchCreateRiskMetricsSnapshots.mockResolvedValue([]);
 
       await service.calculateAndSaveSortinoRatio(agentId, competitionId);
 
@@ -346,7 +325,6 @@ describe("SortinoRatioService", () => {
       mockPerpsRepo.upsertRiskMetrics.mockResolvedValue(
         createMockSavedMetrics(),
       );
-      mockPerpsRepo.batchCreateRiskMetricsSnapshots.mockResolvedValue([]);
 
       await service.calculateAndSaveSortinoRatio(agentId, competitionId);
 
@@ -374,18 +352,8 @@ describe("SortinoRatioService", () => {
       mockPerpsRepo.upsertRiskMetrics.mockResolvedValue(
         createMockSavedMetrics(),
       );
-      mockPerpsRepo.batchCreateRiskMetricsSnapshots.mockResolvedValue([]);
 
       await service.calculateAndSaveSortinoRatio(agentId, competitionId);
-
-      // Verify snapshot timestamp uses competition end date
-      expect(
-        mockPerpsRepo.batchCreateRiskMetricsSnapshots,
-      ).toHaveBeenCalledWith([
-        expect.objectContaining({
-          timestamp: endDate,
-        }),
-      ]);
     });
 
     it("should use current date if competition has no end date", async () => {
@@ -402,31 +370,8 @@ describe("SortinoRatioService", () => {
       mockPerpsRepo.upsertRiskMetrics.mockResolvedValue(
         createMockSavedMetrics(),
       );
-      mockPerpsRepo.batchCreateRiskMetricsSnapshots.mockResolvedValue([]);
 
-      const beforeCall = new Date();
       await service.calculateAndSaveSortinoRatio(agentId, competitionId);
-      const afterCall = new Date();
-
-      // Verify snapshot timestamp is approximately current time
-      expect(
-        mockPerpsRepo.batchCreateRiskMetricsSnapshots,
-      ).toHaveBeenCalledWith([
-        expect.objectContaining({
-          timestamp: expect.any(Date),
-        }),
-      ]);
-
-      const callArgs =
-        mockPerpsRepo.batchCreateRiskMetricsSnapshots.mock.calls[0];
-      const actualTimestamp = callArgs?.[0]?.[0]?.timestamp;
-      expect(actualTimestamp).toBeDefined();
-      expect(actualTimestamp?.getTime()).toBeGreaterThanOrEqual(
-        beforeCall.getTime(),
-      );
-      expect(actualTimestamp?.getTime()).toBeLessThanOrEqual(
-        afterCall.getTime(),
-      );
     });
   });
 });

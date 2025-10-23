@@ -34,6 +34,7 @@ class MockCompetitionRepository {
   batchCreatePortfolioSnapshots = vi.fn();
   getFirstAndLastSnapshots = vi.fn();
   calculateMaxDrawdownSQL = vi.fn();
+  getAgentPortfolioSnapshots = vi.fn();
 }
 
 class MockPerpsRepository {
@@ -47,6 +48,8 @@ class MockPerpsRepository {
   getPerpsCompetitionStats = vi.fn();
   getPerpsPositions = vi.fn();
   getLatestPerpsAccountSummary = vi.fn();
+  getBulkAgentRiskMetrics = vi.fn();
+  batchCreateRiskMetricsSnapshots = vi.fn();
   getCompetitionPerpsPositions = vi.fn();
 }
 
@@ -284,6 +287,31 @@ describe("PerpsDataProcessor - processPerpsCompetition", () => {
     mockCompetitionRepo.batchCreatePortfolioSnapshots.mockResolvedValue([
       mockPortfolioSnapshot,
     ]);
+
+    // Add mocks for risk metrics snapshot creation
+    mockPerpsRepo.getBulkAgentRiskMetrics.mockResolvedValue(
+      new Map([
+        [
+          "comp-1",
+          {
+            agentId: "agent-1",
+            competitionId: "comp-1",
+            calmarRatio: "1.5",
+            sortinoRatio: "1.2",
+            simpleReturn: "0.05",
+            annualizedReturn: "0.20",
+            maxDrawdown: "-0.10",
+            downsideDeviation: "0.08",
+          },
+        ],
+      ]),
+    );
+
+    mockCompetitionRepo.getAgentPortfolioSnapshots.mockResolvedValue([
+      mockPortfolioSnapshot,
+    ]);
+
+    mockPerpsRepo.batchCreateRiskMetricsSnapshots.mockResolvedValue([]);
   });
 
   describe("successful orchestration", () => {

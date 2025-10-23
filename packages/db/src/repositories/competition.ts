@@ -1621,7 +1621,7 @@ export class CompetitionRepository {
           SELECT 
             CASE 
               WHEN prev_value IS NOT NULL AND prev_value != 0 
-              THEN (${portfolioSnapshots.totalValue} - prev_value) / prev_value
+              THEN (total_value - prev_value) / prev_value
               ELSE NULL
             END as return_rate,
             first_value,

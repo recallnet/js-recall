@@ -1060,6 +1060,48 @@ export class PerpsDataProcessor {
               ),
             ]);
 
+            // Fetch the combined risk metrics after both calculations complete
+            // Each service updates its own fields in the database
+            const metricsMap = await this.perpsRepo.getBulkAgentRiskMetrics(
+              agent.agentId,
+              [competitionId],
+            );
+
+            const updatedMetrics = metricsMap.get(competitionId);
+
+            if (updatedMetrics) {
+              // Get this agent's latest portfolio snapshot for the timestamp
+              const agentSnapshots =
+                await this.competitionRepo.getAgentPortfolioSnapshots(
+                  competitionId,
+                  agent.agentId,
+                  1, // Only need the latest one
+                );
+
+              const latestSnapshot = agentSnapshots[0];
+
+              if (latestSnapshot) {
+                // Save combined risk metrics snapshot with all metrics from both services
+                await this.perpsRepo.batchCreateRiskMetricsSnapshots([
+                  {
+                    agentId: agent.agentId,
+                    competitionId,
+                    timestamp: latestSnapshot.timestamp,
+                    calmarRatio: updatedMetrics.calmarRatio,
+                    sortinoRatio: updatedMetrics.sortinoRatio,
+                    simpleReturn: updatedMetrics.simpleReturn,
+                    annualizedReturn: updatedMetrics.annualizedReturn,
+                    maxDrawdown: updatedMetrics.maxDrawdown,
+                    downsideDeviation: updatedMetrics.downsideDeviation,
+                  },
+                ]);
+
+                this.logger.info(
+                  `[PerpsDataProcessor] Saved combined risk metrics snapshot for agent ${agent.agentId}`,
+                );
+              }
+            }
+
             // Success! Log if it was a retry
             if (attempt > 1) {
               this.logger.info(

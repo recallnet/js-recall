@@ -2719,6 +2719,313 @@ describe("Perps Competition", () => {
     expect(stats?.totalVolume).toBeGreaterThanOrEqual(75000);
   });
 
+  // ===== Risk Metrics Calculation Tests =====
+
+  test("should calculate and persist Sortino ratio after sufficient snapshots", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agent with known wallet for risk metrics testing
+    const { agent, client: agentClient } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Sortino Ratio Test Agent",
+        agentWalletAddress: "0x3333333333333333333333333333333333333333", // Steady growth wallet
+      });
+
+    // Start perps competition
+    const response = await startPerpsTestCompetition({
+      adminClient,
+      name: `Sortino Ratio Calculation Test ${Date.now()}`,
+      agentIds: [agent.id],
+      evaluationMetric: "sortino_ratio", // Test with Sortino as primary metric
+    });
+
+    expect(response.success).toBe(true);
+    const competition = response.competition;
+
+    // Wait for competition to be fully started
+    await wait(1000);
+
+    // Create initial snapshot
+    const services = new ServiceRegistry();
+    await services.portfolioSnapshotterService.takePortfolioSnapshots(
+      competition.id,
+    );
+    await wait(100);
+
+    // Insert historical snapshots to establish return pattern
+    // Agent 0x3333 has $1100 current equity, let's simulate steady 10% growth
+    const now = new Date();
+    const minutesAgo = (minutes: number) =>
+      new Date(now.getTime() - minutes * 60 * 1000);
+
+    await db.insert(portfolioSnapshots).values([
+      {
+        agentId: agent.id,
+        competitionId: competition.id,
+        totalValue: 1000,
+        timestamp: minutesAgo(60),
+      },
+      {
+        agentId: agent.id,
+        competitionId: competition.id,
+        totalValue: 1020,
+        timestamp: minutesAgo(50),
+      },
+      {
+        agentId: agent.id,
+        competitionId: competition.id,
+        totalValue: 1040,
+        timestamp: minutesAgo(40),
+      },
+      {
+        agentId: agent.id,
+        competitionId: competition.id,
+        totalValue: 1060,
+        timestamp: minutesAgo(30),
+      },
+      {
+        agentId: agent.id,
+        competitionId: competition.id,
+        totalValue: 1080,
+        timestamp: minutesAgo(20),
+      },
+      {
+        agentId: agent.id,
+        competitionId: competition.id,
+        totalValue: 1100,
+        timestamp: minutesAgo(10),
+      },
+    ]);
+
+    // Process to calculate risk metrics including Sortino
+    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+
+    // Wait for calculations to complete and propagate to read replica
+    await wait(1500);
+
+    // Get competition agents with risk metrics
+    const leaderboardResponse = await agentClient.getCompetitionAgents(
+      competition.id,
+      { sort: "rank" },
+    );
+
+    expect(leaderboardResponse.success).toBe(true);
+    const typedResponse = leaderboardResponse as CompetitionAgentsResponse;
+
+    const agentEntry = typedResponse.agents.find(
+      (entry) => entry.id === agent.id,
+    );
+
+    expect(agentEntry).toBeDefined();
+    expect(agentEntry?.hasRiskMetrics).toBe(true);
+
+    // Verify Sortino ratio was calculated and persisted
+    expect(agentEntry?.sortinoRatio).not.toBeNull();
+    expect(typeof agentEntry?.sortinoRatio).toBe("number");
+
+    // With steady positive returns and no downside, Sortino should be high
+    // The exact value depends on the calculation but should be positive
+    expect(agentEntry?.sortinoRatio).toBeGreaterThan(0);
+
+    // Verify downside deviation was calculated
+    expect(agentEntry?.downsideDeviation).not.toBeNull();
+    expect(typeof agentEntry?.downsideDeviation).toBe("number");
+
+    // With no negative returns, downside deviation should be 0 or very small
+    expect(agentEntry?.downsideDeviation).toBeCloseTo(0, 3);
+
+    // Calmar should also still be calculated
+    expect(agentEntry?.calmarRatio).not.toBeNull();
+    expect(agentEntry?.simpleReturn).not.toBeNull();
+    expect(agentEntry?.maxDrawdown).not.toBeNull();
+
+    // Simple return should be 10% (1100/1000 - 1)
+    expect(agentEntry?.simpleReturn).toBeCloseTo(0.1, 3);
+  });
+
+  test("should calculate Sortino ratio with negative returns correctly", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Use wallet with negative PnL
+    const { agent, client: agentClient } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Negative Sortino Test Agent",
+        agentWalletAddress: "0x2222222222222222222222222222222222222222", // $950 equity
+      });
+
+    // Start perps competition
+    const response = await startPerpsTestCompetition({
+      adminClient,
+      name: `Negative Sortino Test ${Date.now()}`,
+      agentIds: [agent.id],
+    });
+
+    expect(response.success).toBe(true);
+    const competition = response.competition;
+
+    await wait(1000);
+
+    // Create snapshots showing decline
+    const services = new ServiceRegistry();
+    const now = new Date();
+    const minutesAgo = (minutes: number) =>
+      new Date(now.getTime() - minutes * 60 * 1000);
+
+    await db.insert(portfolioSnapshots).values([
+      {
+        agentId: agent.id,
+        competitionId: competition.id,
+        totalValue: 1000,
+        timestamp: minutesAgo(60),
+      },
+      {
+        agentId: agent.id,
+        competitionId: competition.id,
+        totalValue: 990,
+        timestamp: minutesAgo(45),
+      },
+      {
+        agentId: agent.id,
+        competitionId: competition.id,
+        totalValue: 970,
+        timestamp: minutesAgo(30),
+      },
+      {
+        agentId: agent.id,
+        competitionId: competition.id,
+        totalValue: 950,
+        timestamp: minutesAgo(15),
+      },
+    ]);
+
+    // Process to calculate risk metrics
+    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+    await wait(1500);
+
+    // Get competition agents with risk metrics
+    const leaderboardResponse = await agentClient.getCompetitionAgents(
+      competition.id,
+      { sort: "rank" },
+    );
+
+    expect(leaderboardResponse.success).toBe(true);
+    const typedResponse = leaderboardResponse as CompetitionAgentsResponse;
+
+    const agentEntry = typedResponse.agents.find(
+      (entry) => entry.id === agent.id,
+    );
+
+    expect(agentEntry).toBeDefined();
+    expect(agentEntry?.hasRiskMetrics).toBe(true);
+
+    // With consistent negative returns, Sortino should be negative
+    expect(agentEntry?.sortinoRatio).not.toBeNull();
+    expect(agentEntry?.sortinoRatio).toBeLessThan(0);
+
+    // Downside deviation should be positive (measuring negative returns)
+    expect(agentEntry?.downsideDeviation).not.toBeNull();
+    expect(agentEntry?.downsideDeviation).toBeGreaterThan(0);
+
+    // Simple return should be -5% (950/1000 - 1)
+    expect(agentEntry?.simpleReturn).toBeCloseTo(-0.05, 3);
+  });
+
+  test("should save both Calmar and Sortino to time-series risk_metrics_snapshots table", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agent for time-series testing
+    const { agent } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Time Series Risk Metrics Agent",
+      agentWalletAddress: "0x1111111111111111111111111111111111111111", // Has positions
+    });
+
+    // Start perps competition
+    const response = await startPerpsTestCompetition({
+      adminClient,
+      name: `Risk Metrics Time Series Test ${Date.now()}`,
+      agentIds: [agent.id],
+    });
+
+    expect(response.success).toBe(true);
+    const competition = response.competition;
+
+    await wait(1000);
+
+    // Create historical snapshots
+    const services = new ServiceRegistry();
+    const now = new Date();
+    const minutesAgo = (minutes: number) =>
+      new Date(now.getTime() - minutes * 60 * 1000);
+
+    // Insert 3 snapshots to establish a pattern
+    await db.insert(portfolioSnapshots).values([
+      {
+        agentId: agent.id,
+        competitionId: competition.id,
+        totalValue: 1200,
+        timestamp: minutesAgo(30),
+      },
+      {
+        agentId: agent.id,
+        competitionId: competition.id,
+        totalValue: 1225,
+        timestamp: minutesAgo(20),
+      },
+      {
+        agentId: agent.id,
+        competitionId: competition.id,
+        totalValue: 1250,
+        timestamp: minutesAgo(10),
+      },
+    ]);
+
+    // Process competition - this should calculate and save risk metrics
+    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+    await wait(1500);
+
+    // Query risk_metrics_snapshots table directly to verify time-series storage
+    // Note: Need to access the repository from ServiceRegistry properly
+    const perpsRepo = services.perpsRepository;
+    const riskSnapshots = await perpsRepo.getRiskMetricsTimeSeries(
+      competition.id,
+      undefined, // agentId - get all agents
+      undefined, // startDate
+      undefined, // endDate
+      10, // limit
+      0, // offset
+    );
+
+    expect(riskSnapshots).toBeDefined();
+    expect(riskSnapshots.length).toBeGreaterThan(0);
+
+    const latestSnapshot = riskSnapshots[0];
+    expect(latestSnapshot).toBeDefined();
+    expect(latestSnapshot?.agentId).toBe(agent.id);
+    expect(latestSnapshot?.competitionId).toBe(competition.id);
+
+    // Both Calmar and Sortino should be saved
+    expect(latestSnapshot?.calmarRatio).not.toBeNull();
+    expect(latestSnapshot?.sortinoRatio).not.toBeNull();
+
+    // Other metrics should also be present
+    expect(latestSnapshot?.simpleReturn).not.toBeNull();
+    expect(latestSnapshot?.maxDrawdown).not.toBeNull();
+    expect(latestSnapshot?.downsideDeviation).not.toBeNull();
+    expect(latestSnapshot?.annualizedReturn).not.toBeNull();
+
+    // Timestamp should be recent
+    expect(latestSnapshot?.timestamp).toBeDefined();
+    const snapshotTime = new Date(latestSnapshot!.timestamp);
+    const timeDiff = Date.now() - snapshotTime.getTime();
+    expect(timeDiff).toBeLessThan(60000); // Within last minute
+  });
+
   test("should require wallet address for agents joining perps competitions", async () => {
     const adminClient = createTestClient(getBaseUrl());
     await adminClient.loginAsAdmin(adminApiKey);

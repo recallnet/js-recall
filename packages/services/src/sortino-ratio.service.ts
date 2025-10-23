@@ -139,21 +139,6 @@ export class SortinoRatioService {
 
       const savedMetrics = await this.perpsRepo.upsertRiskMetrics(metricsData);
 
-      // 6. Save time-series risk metrics snapshot
-      await this.perpsRepo.batchCreateRiskMetricsSnapshots([
-        {
-          agentId,
-          competitionId,
-          timestamp: endDate,
-          calmarRatio: existingMetrics?.calmarRatio || null,
-          sortinoRatio: sortinoRatio.toFixed(8),
-          simpleReturn: simpleReturn.toFixed(8),
-          annualizedReturn: avgReturn.toFixed(8),
-          maxDrawdown: existingMetrics?.maxDrawdown || null,
-          downsideDeviation: downsideDeviation.toFixed(8),
-        },
-      ]);
-
       this.logger.info(
         `[SortinoRatio] Saved risk metrics and snapshot for agent ${agentId}`,
       );
