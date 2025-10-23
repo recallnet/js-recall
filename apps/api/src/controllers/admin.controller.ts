@@ -735,7 +735,7 @@ export function makeAdminController(services: ServiceRegistry) {
           });
         }
       } catch (error) {
-        adminLogger.error("Error deleting agent:", error);
+        adminLogger.error({ error }, "Error deleting agent");
         next(error);
       }
     },
@@ -1395,7 +1395,7 @@ export function makeAdminController(services: ServiceRegistry) {
           competitionId,
         });
       } catch (error) {
-        adminLogger.error("Error allocating rewards:", error);
+        adminLogger.error({ error }, "Error allocating rewards");
         next(error);
       }
     },

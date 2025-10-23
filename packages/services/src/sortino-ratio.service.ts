@@ -122,8 +122,8 @@ export class SortinoRatioService {
       return calculatedMetrics;
     } catch (error) {
       this.logger.error(
-        `[SortinoRatio] Error calculating Sortino Ratio for agent ${agentId}:`,
-        error,
+        { error },
+        `[SortinoRatio] Error calculating Sortino Ratio for agent ${agentId}`,
       );
       throw error;
     }

@@ -134,8 +134,8 @@ export class RiskMetricsService {
       return { metrics: result };
     } catch (error) {
       this.logger.error(
-        `[RiskMetrics] Error calculating risk metrics for agent ${agentId}:`,
-        error,
+        { error },
+        `[RiskMetrics] Error calculating risk metrics for agent ${agentId}`,
       );
       throw error;
     }

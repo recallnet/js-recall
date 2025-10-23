@@ -148,8 +148,8 @@ export class CalmarRatioService {
       return metrics;
     } catch (error) {
       this.logger.error(
-        `[CalmarRatio] Error calculating Calmar Ratio for agent ${agentId}:`,
-        error,
+        { error },
+        `[CalmarRatio] Error calculating Calmar Ratio for agent ${agentId}`,
       );
       throw error;
     }

@@ -111,7 +111,10 @@ export class TradeSimulatorService {
 
       return trades;
     } catch (error) {
-      this.logger.error(`[TradeSimulator] Error getting agent trades:`, error);
+      this.logger.error(
+        { error },
+        `[TradeSimulator] Error getting agent trades`,
+      );
       return [];
     }
   }
@@ -387,7 +390,10 @@ export class TradeSimulatorService {
         },
       };
     } catch (error) {
-      this.logger.error(`[TradeSimulator] Error getting trade quote:`, error);
+      this.logger.error(
+        { error },
+        `[TradeSimulator] Error getting trade quote`,
+      );
       throw error;
     }
   }
