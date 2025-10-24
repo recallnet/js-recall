@@ -156,6 +156,10 @@ export class SortinoRatioService {
       : downsideDeviation;
 
     if (downsideDeviation.isZero()) {
+      // Zero downside deviation means either:
+      // 1. All returns are >= MAR (no negative deviations)
+      // 2. Only 1-2 snapshots (insufficient variation to calculate deviation)
+      // Using minimum threshold maintains consistency with Calmar approach
       this.logger.debug(
         {
           avgReturn: avgReturn.toString(),
@@ -163,7 +167,7 @@ export class SortinoRatioService {
           adjustedDownsideDeviation: adjustedDownsideDeviation.toString(),
           minThreshold: this.MIN_DOWNSIDE_DEVIATION,
         },
-        `[SortinoRatio] Zero downside deviation detected, using minimum threshold of ${this.MIN_DOWNSIDE_DEVIATION}`,
+        `[SortinoRatio] Zero downside deviation detected (all returns >= MAR or insufficient data points), using minimum threshold of ${this.MIN_DOWNSIDE_DEVIATION}`,
       );
     }
 
