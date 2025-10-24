@@ -36,6 +36,10 @@ export class SortinoRatioService {
   // Minimum Acceptable Return for crypto competitions (0%)
   private readonly MAR = 0;
 
+  // Minimum downside deviation threshold to avoid division by zero
+  // Consistent with Calmar ratio's minimum drawdown approach
+  private readonly MIN_DOWNSIDE_DEVIATION = 0.0001;
+
   constructor(competitionRepo: CompetitionRepository, logger: Logger) {
     this.competitionRepo = competitionRepo;
     this.logger = logger;
@@ -132,8 +136,8 @@ export class SortinoRatioService {
   /**
    * Compute Sortino Ratio with proper edge case handling
    * Sortino = (Average Return - MAR) / Downside Deviation
-   * Uses minimum downside deviation of 0.0001 to avoid division by zero,
-   * consistent with Calmar ratio's approach
+   * Uses MIN_DOWNSIDE_DEVIATION threshold to avoid division by zero,
+   * consistent with Calmar ratio's minimum threshold approach
    *
    * @param avgReturn Average period return as Decimal
    * @param downsideDeviation Downside deviation as Decimal
@@ -145,10 +149,10 @@ export class SortinoRatioService {
   ): Decimal {
     const mar = new Decimal(this.MAR);
 
-    // Use minimum downside deviation of 0.0001 to avoid division by zero
+    // Use minimum downside deviation to avoid division by zero
     // This matches the pattern used in Calmar ratio calculation
     const adjustedDownsideDeviation = downsideDeviation.isZero()
-      ? new Decimal(0.0001)
+      ? new Decimal(this.MIN_DOWNSIDE_DEVIATION)
       : downsideDeviation;
 
     if (downsideDeviation.isZero()) {
@@ -157,8 +161,9 @@ export class SortinoRatioService {
           avgReturn: avgReturn.toString(),
           mar: this.MAR,
           adjustedDownsideDeviation: adjustedDownsideDeviation.toString(),
+          minThreshold: this.MIN_DOWNSIDE_DEVIATION,
         },
-        "[SortinoRatio] Zero downside deviation detected, using minimum threshold of 0.0001",
+        `[SortinoRatio] Zero downside deviation detected, using minimum threshold of ${this.MIN_DOWNSIDE_DEVIATION}`,
       );
     }
 

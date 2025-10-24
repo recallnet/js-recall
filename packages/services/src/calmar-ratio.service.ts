@@ -27,6 +27,10 @@ export class CalmarRatioService {
   private competitionRepo: CompetitionRepository;
   private logger: Logger;
 
+  // Minimum drawdown threshold to avoid division by zero
+  // Prevents infinite Calmar ratios while maintaining meaningful comparisons
+  private readonly MIN_DRAWDOWN = 0.0001;
+
   constructor(competitionRepo: CompetitionRepository, logger: Logger) {
     this.competitionRepo = competitionRepo;
     this.logger = logger;
@@ -193,7 +197,7 @@ export class CalmarRatioService {
     periodReturn: Decimal,
     maxDrawdown: number,
   ): Decimal {
-    // Use minimum drawdown of 0.0001 to avoid division by zero
+    // Use minimum drawdown threshold to avoid division by zero
     // and handle edge cases cleanly
     if (maxDrawdown > 0) {
       this.logger.error(
@@ -203,7 +207,10 @@ export class CalmarRatioService {
         `Invalid max drawdown: expected negative or zero, got ${maxDrawdown}`,
       );
     }
-    const adjustedMaxDrawdown = Math.max(Math.abs(maxDrawdown), 0.0001);
+    const adjustedMaxDrawdown = Math.max(
+      Math.abs(maxDrawdown),
+      this.MIN_DRAWDOWN,
+    );
 
     return periodReturn.dividedBy(adjustedMaxDrawdown);
   }
