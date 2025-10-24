@@ -11,20 +11,18 @@ dotenv.config({ path: path.resolve(process.cwd(), ".env") });
 const services = new ServiceRegistry();
 const logger = createLogger("PortfolioSnapshots");
 
-// Track last snapshot time for each competition
-const lastSnapshotTimes = new Map<string, Date>();
-
 /**
- * Determine if we should take a snapshot based on competition type and timing
- * - Perps competitions: Every 1 minute
- * - Trading competitions: Every 5 minutes
+ * Determine if we should take a snapshot based on timing
+ * Trading competitions: Every 5 minutes
  */
-function shouldTakeSnapshot(competition: {
-  id: string;
-  type: string;
-}): boolean {
+async function shouldTakeSnapshot(competitionId: string): Promise<boolean> {
   const now = new Date();
-  const lastSnapshot = lastSnapshotTimes.get(competition.id);
+
+  // Get last portfolio snapshot time from database
+  const lastSnapshot =
+    await services.competitionRepository.getLatestPortfolioSnapshotTime(
+      competitionId,
+    );
 
   if (!lastSnapshot) {
     // No previous snapshot, take one now
@@ -34,18 +32,13 @@ function shouldTakeSnapshot(competition: {
   const minutesSinceLastSnapshot =
     (now.getTime() - lastSnapshot.getTime()) / (1000 * 60);
 
-  if (competition.type === "perpetual_futures") {
-    // Perps competitions: snapshot every 1 minute
-    return minutesSinceLastSnapshot >= 1;
-  } else {
-    // Trading competitions: snapshot every 5 minutes
-    return minutesSinceLastSnapshot >= 5;
-  }
+  // Trading competitions: snapshot every 5 minutes
+  return minutesSinceLastSnapshot >= 5;
 }
 
 /**
- * Take portfolio snapshots for the active competition
- * Routes to appropriate processor based on competition type
+ * Take portfolio snapshots for trading competitions only
+ * Perps competitions are handled by process-perps-competitions.ts
  */
 async function takePortfolioSnapshots() {
   const startTime = Date.now();
@@ -64,17 +57,22 @@ async function takePortfolioSnapshots() {
       return;
     }
 
-    // Check if we should take a snapshot based on competition type and timing
-    if (!shouldTakeSnapshot(activeCompetition)) {
+    // Skip perps competitions - handled by separate script
+    if (activeCompetition.type === "perpetual_futures") {
+      return;
+    }
+
+    // Check if we should take a snapshot based on timing
+    const shouldTake = await shouldTakeSnapshot(activeCompetition.id);
+    if (!shouldTake) {
       const duration = Date.now() - startTime;
       logger.debug(
-        `Skipping snapshot for ${activeCompetition.type} competition ${activeCompetition.id} - not time yet (took ${duration}ms)`,
+        `Skipping snapshot for trading competition ${activeCompetition.id} - not time yet (took ${duration}ms)`,
       );
       return;
     }
 
     // Display competition details
-    logger.info("Active Competition Details");
     logger.info(
       {
         id: activeCompetition.id,
@@ -82,57 +80,11 @@ async function takePortfolioSnapshots() {
         status: activeCompetition.status,
         type: activeCompetition.type,
       },
-      "Active Competition Details",
+      "Processing trading competition",
     );
 
-    // Update last snapshot time
-    lastSnapshotTimes.set(activeCompetition.id, new Date());
-
-    // Route based on competition type
-    if (activeCompetition.type === "perpetual_futures") {
-      // Process perps competition
-      logger.info("Processing perpetual futures competition...");
-
-      try {
-        // This single call orchestrates everything:
-        // - Fetches data from Symphony provider
-        // - Stores account summaries, positions, sync data
-        // - Creates portfolio snapshots
-        // - Runs self-funding monitoring
-        // - Stores any alerts
-        const result =
-          await services.perpsDataProcessor.processPerpsCompetition(
-            activeCompetition.id,
-          );
-
-        const successfulCount = result.syncResult.successful.length;
-        const failedCount = result.syncResult.failed.length;
-        const totalCount = successfulCount + failedCount;
-
-        logger.info(
-          `Perps processing complete: ${successfulCount}/${totalCount} agents processed successfully`,
-        );
-
-        if (failedCount > 0) {
-          logger.warn(`Failed to process ${failedCount} agents`);
-        }
-
-        if (result.monitoringResult) {
-          const alertsCreated = result.monitoringResult.alertsCreated;
-          if (alertsCreated > 0) {
-            logger.warn(
-              `Self-funding monitoring created ${alertsCreated} alerts`,
-            );
-          }
-        }
-      } catch (perpsError) {
-        logger.error(
-          "Error processing perps competition:",
-          perpsError instanceof Error ? perpsError.message : String(perpsError),
-        );
-        throw perpsError;
-      }
-    } else if (activeCompetition.type === "trading") {
+    // Only process trading competitions
+    if (activeCompetition.type === "trading") {
       // Take paper trading portfolio snapshots
       logger.info("Taking paper trading portfolio snapshots...");
 
@@ -166,10 +118,8 @@ async function takePortfolioSnapshots() {
   }
 }
 
-// Schedule the task to run every minute for perps competitions
-// and every 5 minutes for other competitions
-// This runs every minute but internally decides what to snapshot
-cron.schedule("* * * * *", async () => {
+// Schedule the task to run every 5 minutes
+cron.schedule("*/5 * * * *", async () => {
   logger.info("Running scheduled portfolio snapshots task");
   await takePortfolioSnapshots();
 });

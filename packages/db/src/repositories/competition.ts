@@ -1252,6 +1252,32 @@ export class CompetitionRepository {
   }
 
   /**
+   * Get the latest portfolio snapshot timestamp for a competition
+   * @param competitionId Competition ID
+   * @returns Latest snapshot timestamp or null if no snapshots exist
+   */
+  async getLatestPortfolioSnapshotTime(
+    competitionId: string,
+  ): Promise<Date | null> {
+    try {
+      const result = await this.#dbRead
+        .select({ timestamp: portfolioSnapshots.timestamp })
+        .from(portfolioSnapshots)
+        .where(eq(portfolioSnapshots.competitionId, competitionId))
+        .orderBy(desc(portfolioSnapshots.timestamp))
+        .limit(1);
+
+      return result[0]?.timestamp ?? null;
+    } catch (error) {
+      this.#logger.error(
+        { error, competitionId },
+        "Error in getLatestPortfolioSnapshotTime",
+      );
+      throw error;
+    }
+  }
+
+  /**
    * Get latest portfolio snapshots for all active agents in a competition
    * @param competitionId Competition ID
    */
