@@ -93,6 +93,7 @@ export class RiskMetricsService {
           simpleReturn: calmarMetrics.simpleReturn, // Should be same, but preserve Calmar's for consistency
           // Note: We keep Sortino's snapshotCount as it reflects actual snapshots used
           // (Calmar always returns 2 since it only uses first and last)
+          snapshotCount: sortinoMetrics.snapshotCount,
         };
 
         // Single atomic save
