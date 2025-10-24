@@ -9,8 +9,8 @@ import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 export interface SortinoMetrics {
   agentId: string;
   competitionId: string;
-  sortinoRatio: string;
-  downsideDeviation: string;
+  sortinoRatio: string | null;
+  downsideDeviation: string | null;
   annualizedReturn: string;
   simpleReturn: string;
   snapshotCount: number;
@@ -102,7 +102,7 @@ export class SortinoRatioService {
 
       this.logger.info(
         `[SortinoRatio] Calculated metrics for agent ${agentId}: ` +
-          `Sortino=${sortinoRatio.toFixed(4)}, ` +
+          `Sortino=${sortinoRatio ? sortinoRatio.toFixed(4) : "null"}, ` +
           `Avg Return=${(avgReturn.toNumber() * 100).toFixed(2)}%, ` +
           `Downside Dev=${(downsideDeviation.toNumber() * 100).toFixed(2)}%, ` +
           `Simple Return=${(simpleReturn.toNumber() * 100).toFixed(2)}%`,
@@ -112,7 +112,7 @@ export class SortinoRatioService {
       const calculatedMetrics: SortinoMetrics = {
         agentId,
         competitionId,
-        sortinoRatio: sortinoRatio.toFixed(8),
+        sortinoRatio: sortinoRatio ? sortinoRatio.toFixed(8) : null,
         downsideDeviation: downsideDeviation.toFixed(8),
         annualizedReturn: avgReturn.toFixed(8),
         simpleReturn: simpleReturn.toFixed(8),
@@ -135,12 +135,12 @@ export class SortinoRatioService {
    *
    * @param avgReturn Average period return as Decimal
    * @param downsideDeviation Downside deviation as Decimal
-   * @returns Sortino ratio as Decimal
+   * @returns Sortino ratio as Decimal, or null if insufficient data
    */
   private computeSortinoRatio(
     avgReturn: Decimal,
     downsideDeviation: Decimal,
-  ): Decimal {
+  ): Decimal | null {
     const mar = new Decimal(this.MAR);
 
     if (downsideDeviation.isZero()) {
@@ -150,12 +150,20 @@ export class SortinoRatioService {
           `[SortinoRatio] No downside deviation with positive return, capping Sortino at 100`,
         );
         return new Decimal(100);
-      } else if (avgReturn.lessThan(mar)) {
-        // Negative return with no downside deviation - shouldn't happen but handle it
-        return new Decimal(-100);
       } else {
-        // Zero return, zero downside deviation
-        return new Decimal(0);
+        // avgReturn <= MAR with zero downside deviation
+        // This occurs with insufficient data (1-2 snapshots) where we can't calculate meaningful volatility
+        // The ranking system handles NULL metrics by using NULLS LAST and falling back to totalEquity
+        this.logger.debug(
+          {
+            avgReturn: avgReturn.toString(),
+            mar: this.MAR,
+            downsideDeviation: downsideDeviation.toString(),
+          },
+          "[SortinoRatio] Insufficient data for Sortino calculation (likely 1-2 snapshots), returning null",
+        );
+        // Return null to indicate insufficient data - the DB and ranking system handle this gracefully
+        return null;
       }
     }
 
