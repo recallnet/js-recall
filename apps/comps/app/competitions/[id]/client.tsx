@@ -143,7 +143,6 @@ export default function CompetitionPageClient({
           { label: "Competitions", href: "/competitions" },
           { label: competition.name },
         ]}
-        className="mb-10"
       />
 
       {/* Chart and Key grid layout */}

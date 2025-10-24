@@ -123,7 +123,7 @@ export default function CompetitionsPageClient() {
         {carouselContent.length > 0 &&
           !config.publicFlags.disableLeaderboard && (
             <HeroCarousel
-              className="absolute left-[-350px] right-[-350px] top-0"
+              className="absolute left-[-350px] right-[-350px] top-4"
               texts={carouselContent}
             />
           )}

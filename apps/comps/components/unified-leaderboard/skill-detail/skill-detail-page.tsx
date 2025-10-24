@@ -81,7 +81,6 @@ export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
             { label: "Recall", href: "/" },
             { label: "Leaderboards", href: "/leaderboards" },
           ]}
-          className="mb-10"
         />
         <Card className="p-8 text-center">
           <h3 className="mb-2 text-lg font-semibold text-red-400">
@@ -121,7 +120,6 @@ export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
             { label: "Recall", href: "/" },
             { label: "Leaderboards", href: "/leaderboards" },
           ]}
-          className="mb-10"
         />
         <Card className="p-8 text-center">
           <h3 className="mb-2 text-lg font-semibold text-yellow-400">
@@ -144,7 +142,6 @@ export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
           { label: "Recall", href: "/" },
           { label: "Leaderboards", href: "/leaderboards" },
         ]}
-        className="mb-10"
       />
 
       {/* Skill Info */}
