@@ -7,7 +7,7 @@ import { Input } from "@recallnet/ui2/components/input";
 
 import { AgentAvatar } from "../agent-avatar";
 import { Pagination } from "../pagination";
-import { CHART_COLORS, LIMIT_AGENTS_PER_PAGE } from "./constants";
+import { CHART_COLORS, LIMIT_AGENTS_PER_CHART } from "./constants";
 import { CustomLegendProps } from "./types";
 
 /**
@@ -81,8 +81,8 @@ export const CustomLegend = ({
   const { displayAgents, paginationProps } = useMemo(() => {
     if (searchQuery) {
       // When searching, paginate the sorted search results
-      const startIndex = (searchPage - 1) * LIMIT_AGENTS_PER_PAGE;
-      const endIndex = startIndex + LIMIT_AGENTS_PER_PAGE;
+      const startIndex = (searchPage - 1) * LIMIT_AGENTS_PER_CHART;
+      const endIndex = startIndex + LIMIT_AGENTS_PER_CHART;
       const paginatedSearchResults = sortedAgents.slice(startIndex, endIndex);
 
       return {
@@ -146,11 +146,11 @@ export const CustomLegend = ({
 
       {paginationProps &&
         paginationProps.onPageChange &&
-        paginationProps.totalItems > LIMIT_AGENTS_PER_PAGE && (
+        paginationProps.totalItems > LIMIT_AGENTS_PER_CHART && (
           <Pagination
             totalItems={paginationProps.totalItems}
             currentPage={paginationProps.currentPage}
-            itemsPerPage={LIMIT_AGENTS_PER_PAGE}
+            itemsPerPage={LIMIT_AGENTS_PER_CHART}
             onPageChange={paginationProps.onPageChange}
           />
         )}

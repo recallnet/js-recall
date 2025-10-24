@@ -16,13 +16,14 @@ import CompetitionSkeleton from "@/components/competition-skeleton";
 import { FooterSection } from "@/components/footer-section";
 import { JoinCompetitionButton } from "@/components/join-competition-button";
 import { JoinSwarmSection } from "@/components/join-swarm-section";
+import {
+  LIMIT_AGENTS_PER_CHART,
+  LIMIT_AGENTS_PER_PAGE,
+} from "@/components/timeline-chart/constants";
 import { TimelineChart } from "@/components/timeline-chart/index";
 import { getSocialLinksArray } from "@/data/social";
 import { openForBoosting } from "@/lib/open-for-boosting";
 import { tanstackClient } from "@/rpc/clients/tanstack-query";
-
-const LIMIT_AGENTS_PER_PAGE = 20;
-const LIMIT_CHART_AGENTS = 20;
 
 export type CompetitionPageClientProps = {
   params: Promise<{ id: string }>;
@@ -53,7 +54,7 @@ export default function CompetitionPageClient({
         paging: {
           sort: "rank",
           offset: 0,
-          limit: LIMIT_CHART_AGENTS,
+          limit: LIMIT_AGENTS_PER_CHART,
         },
       },
     }),

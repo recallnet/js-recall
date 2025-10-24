@@ -28,7 +28,11 @@ import { formatDate } from "@/utils/format";
 import { ShareModal } from "../share-modal";
 import { ChartSkeleton } from "./chart-skeleton";
 import { ChartWrapper } from "./chart-wrapper";
-import { CHART_COLORS, HoverContext, LIMIT_AGENTS_PER_PAGE } from "./constants";
+import {
+  CHART_COLORS,
+  HoverContext,
+  LIMIT_AGENTS_PER_CHART,
+} from "./constants";
 import { CustomLegend } from "./custom-legend";
 import { MetricTimelineChart } from "./metric-timeline-chart";
 import { PortfolioChartProps, TimelineViewRecord } from "./types";
@@ -393,8 +397,8 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
       return allAgentsWithData;
     } else {
       // When searching, show agents from current search page
-      const startIndex = (currentLegendPage - 1) * LIMIT_AGENTS_PER_PAGE;
-      const endIndex = startIndex + LIMIT_AGENTS_PER_PAGE;
+      const startIndex = (currentLegendPage - 1) * LIMIT_AGENTS_PER_CHART;
+      const endIndex = startIndex + LIMIT_AGENTS_PER_CHART;
       return filteredAgentsForLegend.slice(startIndex, endIndex) || [];
     }
   }, [
@@ -466,25 +470,25 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
             <TabsList className="flex flex-wrap gap-2">
               <TabsTrigger
                 value="account-value"
-                className="border border-white bg-black px-3 py-1.5 text-xs font-semibold uppercase text-white transition-colors hover:bg-white hover:text-black data-[state=active]:bg-white data-[state=active]:text-black"
+                className="border border-white bg-black px-4 py-2 text-xs font-semibold uppercase text-white transition-colors duration-200 hover:bg-white hover:text-black data-[state=active]:bg-white data-[state=active]:text-black"
               >
                 Account Value
               </TabsTrigger>
               <TabsTrigger
                 value="calmar-ratio"
-                className="border border-white bg-black px-3 py-1.5 text-xs font-semibold uppercase text-white transition-colors hover:bg-white hover:text-black data-[state=active]:bg-white data-[state=active]:text-black"
+                className="border border-white bg-black px-4 py-2 text-xs font-semibold uppercase text-white transition-colors duration-200 hover:bg-white hover:text-black data-[state=active]:bg-white data-[state=active]:text-black"
               >
                 Calmar Ratio
               </TabsTrigger>
               <TabsTrigger
                 value="max-drawdown"
-                className="border border-white bg-black px-3 py-1.5 text-xs font-semibold uppercase text-white transition-colors hover:bg-white hover:text-black data-[state=active]:bg-white data-[state=active]:text-black"
+                className="border border-white bg-black px-4 py-2 text-xs font-semibold uppercase text-white transition-colors duration-200 hover:bg-white hover:text-black data-[state=active]:bg-white data-[state=active]:text-black"
               >
                 Max Drawdown
               </TabsTrigger>
               <TabsTrigger
                 value="sortino-ratio"
-                className="border border-white bg-black px-3 py-1.5 text-xs font-semibold uppercase text-white transition-colors hover:bg-white hover:text-black data-[state=active]:bg-white data-[state=active]:text-black"
+                className="border border-white bg-black px-4 py-2 text-xs font-semibold uppercase text-white transition-colors duration-200 hover:bg-white hover:text-black data-[state=active]:bg-white data-[state=active]:text-black"
               >
                 Sortino Ratio
               </TabsTrigger>
@@ -564,13 +568,13 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
           <TabsList className="flex flex-wrap gap-2">
             <TabsTrigger
               value="account-value"
-              className="border border-white bg-black px-3 py-1.5 text-xs font-semibold uppercase text-white transition-colors hover:bg-white hover:text-black data-[state=active]:bg-white data-[state=active]:text-black"
+              className="border border-white bg-black px-4 py-2 text-xs font-semibold uppercase text-white transition-colors duration-200 hover:bg-white hover:text-black data-[state=active]:bg-white data-[state=active]:text-black"
             >
               Account Value
             </TabsTrigger>
             <TabsTrigger
               value="percent-gain"
-              className="border border-white bg-black px-3 py-1.5 text-xs font-semibold uppercase text-white transition-colors hover:bg-white hover:text-black data-[state=active]:bg-white data-[state=active]:text-black"
+              className="border border-white bg-black px-4 py-2 text-xs font-semibold uppercase text-white transition-colors duration-200 hover:bg-white hover:text-black data-[state=active]:bg-white data-[state=active]:text-black"
             >
               % Gain
             </TabsTrigger>
