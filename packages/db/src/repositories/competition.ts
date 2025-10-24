@@ -169,24 +169,28 @@ export class CompetitionRepository {
 
   /**
    * Convert snake_case database row to camelCase object for portfolio snapshots with risk metrics
-   * Used by getAgentPortfolioTimeline when includeRiskMetrics is true
+   * Used by getAgentPortfolioTimeline
    * @private
    * @param row Database row with snake_case fields and optional risk metrics
+   * @param includeRiskMetrics Whether to include risk metrics in the output
    * @returns Object with camelCase fields including risk metrics
    */
-  private convertEnrichedSnapshotRow(row: {
-    timestamp: string;
-    agent_id: string;
-    agent_name: string;
-    competition_id: string;
-    total_value: number;
-    calmar_ratio?: string | null;
-    sortino_ratio?: string | null;
-    max_drawdown?: string | null;
-    downside_deviation?: string | null;
-    simple_return?: string | null;
-    annualized_return?: string | null;
-  }) {
+  private convertEnrichedSnapshotRow(
+    row: {
+      timestamp: string;
+      agent_id: string;
+      agent_name: string;
+      competition_id: string;
+      total_value: number;
+      calmar_ratio?: string | null;
+      sortino_ratio?: string | null;
+      max_drawdown?: string | null;
+      downside_deviation?: string | null;
+      simple_return?: string | null;
+      annualized_return?: string | null;
+    },
+    includeRiskMetrics = false,
+  ) {
     // Build base object that's always present
     const base = {
       timestamp: row.timestamp,
@@ -196,8 +200,8 @@ export class CompetitionRepository {
       totalValue: Number(row.total_value),
     };
 
-    // Only add risk metrics if calmar_ratio field exists (indicates risk metrics query)
-    if (row.calmar_ratio !== undefined) {
+    // Only add risk metrics if explicitly requested
+    if (includeRiskMetrics) {
       return {
         ...base,
         calmarRatio: row.calmar_ratio ? Number(row.calmar_ratio) : null,
@@ -2736,7 +2740,9 @@ export class CompetitionRepository {
       `);
 
       // Use the helper to convert snake_case to camelCase
-      return result.rows.map((row) => this.convertEnrichedSnapshotRow(row));
+      return result.rows.map((row) =>
+        this.convertEnrichedSnapshotRow(row, includeRiskMetrics),
+      );
     } catch (error) {
       this.#logger.error("Error in getAgentPortfolioTimeline:", error);
       throw error;
