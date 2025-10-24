@@ -16,7 +16,7 @@ export const CHART_COLORS = [
   "#6366f1", // Indigo
   "#ff9933", // Orange
   "#00ffff", // Cyan
-];
+] as const;
 
 /**
  * Number of agents per paginated page (e.g., tables)

@@ -24,7 +24,6 @@ import {
   HoverContext,
   LIMIT_AGENTS_PER_CHART,
 } from "./constants";
-import { CustomLegend } from "./custom-legend";
 import { datesByWeek, formatDateShort } from "./utils";
 
 interface MetricTimelineChartProps {
@@ -35,7 +34,9 @@ interface MetricTimelineChartProps {
     | "sortinoRatio"
     | "simpleReturn"
     | "annualizedReturn"
-    | "maxDrawdown";
+    | "maxDrawdown"
+    | "totalValue";
+  yAxisType?: "currency" | "percentage" | "number";
   isLoading?: boolean;
   status: "pending" | "active" | "ending" | "ended";
   startDate?: Date | null;
@@ -49,10 +50,14 @@ const AgentAvatarDot = ({
   agent,
   cx,
   cy,
+  onMouseEnter,
+  onMouseLeave,
 }: {
   agent: RouterOutputs["competitions"]["getAgents"]["agents"][number];
   cx: number;
   cy: number;
+  onMouseEnter?: () => void;
+  onMouseLeave?: () => void;
 }) => {
   // Use larger container size to accommodate hover scaling over agent avatar
   const containerSize = 40;
@@ -75,12 +80,26 @@ const AgentAvatarDot = ({
             alignItems: "center",
             justifyContent: "center",
           }}
+          onMouseEnter={onMouseEnter}
+          onMouseLeave={onMouseLeave}
         >
           <AgentAvatar agent={agent} size={avatarSize} />
         </div>
       </foreignObject>
     </g>
   );
+};
+
+const CustomDot = ({
+  cx,
+  cy,
+  stroke,
+}: {
+  cx: number;
+  cy: number;
+  stroke: string;
+}) => {
+  return <circle cx={cx} cy={cy} r={3} fill={stroke} />;
 };
 
 /**
@@ -90,18 +109,28 @@ export const MetricTimelineChart: React.FC<MetricTimelineChartProps> = ({
   timelineData,
   agents,
   metric,
+  yAxisType = "number",
   isLoading = false,
   status,
   startDate,
   endDate,
 }) => {
   const [dateRangeIndex, setDateRangeIndex] = useState(0);
-  const [legendHoveredAgent, setLegendHoveredAgent] = useState<string | null>(
-    null,
+  const [lineOrAgentAvatarHovered, setLineOrAgentAvatarHovered] = useState<
+    string | null
+  >(null);
+
+  // Handle line or agent avatar hover
+  const handleLineOrAgentAvatarHover = useCallback(
+    (agentName: string | null) => {
+      setLineOrAgentAvatarHovered(agentName);
+    },
+    [],
   );
 
-  const handleLegendHover = useCallback((agentName: string | null) => {
-    setLegendHoveredAgent(agentName);
+  // Handle line or agent avatar leave
+  const handleLineOrAgentAvatarLeave = useCallback(() => {
+    setLineOrAgentAvatarHovered(null);
   }, []);
 
   // Parse timeline data for the specific metric
@@ -345,14 +374,14 @@ export const MetricTimelineChart: React.FC<MetricTimelineChartProps> = ({
       <div className="h-120 relative">
         <HoverContext.Provider
           value={{
-            hoveredAgent: legendHoveredAgent,
-            setHoveredAgent: setLegendHoveredAgent,
+            hoveredAgent: lineOrAgentAvatarHovered,
+            setHoveredAgent: setLineOrAgentAvatarHovered,
           }}
         >
           <ResponsiveContainer width="100%" height="100%">
             <LineChart
               data={filteredData}
-              margin={{ top: 20, right: 30, left: 0, bottom: 20 }}
+              margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
             >
               <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
               <XAxis
@@ -368,7 +397,13 @@ export const MetricTimelineChart: React.FC<MetricTimelineChartProps> = ({
                 stroke="#9CA3AF"
                 fontSize={12}
                 tick={{ fill: "#9CA3AF" }}
-                tickFormatter={(value) => value.toFixed(2)}
+                tickFormatter={(value) =>
+                  yAxisType === "currency"
+                    ? `$${(value / 1000).toFixed(1)}k`
+                    : yAxisType === "percentage"
+                      ? `${value.toFixed(2)}%`
+                      : value.toFixed(2)
+                }
               />
               <Tooltip
                 content={({ active, payload }) => {
@@ -398,7 +433,11 @@ export const MetricTimelineChart: React.FC<MetricTimelineChartProps> = ({
                                 </span>
                               </div>
                               <span className="font-bold text-white">
-                                {(entry.value as number).toFixed(2)}
+                                {yAxisType === "currency"
+                                  ? `$${((entry.value as number) * 100).toFixed(2)}`
+                                  : yAxisType === "percentage"
+                                    ? `${(entry.value as number).toFixed(2)}%`
+                                    : (entry.value as number).toFixed(2)}
                               </span>
                             </div>
                           ))}
@@ -428,44 +467,50 @@ export const MetricTimelineChart: React.FC<MetricTimelineChartProps> = ({
 
                 return (
                   <Line
+                    className="cursor-pointer"
                     key={agentName}
                     type="monotone"
                     dataKey={agentName}
-                    stroke={agentColorMap[agentName] || CHART_COLORS[0]}
-                    strokeWidth={legendHoveredAgent === agentName ? 3 : 2}
+                    stroke={agentColorMap[agentName] ?? CHART_COLORS[0]}
+                    strokeWidth={lineOrAgentAvatarHovered === agentName ? 4 : 3}
+                    connectNulls={true}
+                    opacity={
+                      lineOrAgentAvatarHovered === null
+                        ? 1
+                        : lineOrAgentAvatarHovered === agentName
+                          ? 1
+                          : 0.3
+                    }
+                    isAnimationActive={false}
                     dot={(props) => {
-                      const payload = props.payload as { timestamp?: string };
-                      const timestamp = payload?.timestamp;
-                      if (
-                        agent &&
-                        isLastPoint(timestamp) &&
-                        props.cx &&
-                        props.cy
-                      ) {
+                      const timestamp = (
+                        props.payload as { timestamp?: string }
+                      )?.timestamp;
+                      if (agent && isLastPoint(timestamp)) {
+                        // Only render avatar for last point, no dot underneath
                         return (
                           <AgentAvatarDot
                             agent={agent}
                             cx={props.cx}
                             cy={props.cy}
+                            onMouseEnter={() =>
+                              handleLineOrAgentAvatarHover(agentName)
+                            }
+                            onMouseLeave={() => handleLineOrAgentAvatarLeave()}
                           />
                         );
                       }
+                      // Regular dot for all other points
                       return (
-                        <circle
+                        <CustomDot
                           cx={props.cx}
                           cy={props.cy}
-                          r={3}
-                          fill={props.stroke}
+                          stroke={agentColorMap[agentName] ?? CHART_COLORS[0]}
                         />
                       );
                     }}
-                    connectNulls={true}
-                    opacity={
-                      legendHoveredAgent && legendHoveredAgent !== agentName
-                        ? 0.3
-                        : 1
-                    }
-                    isAnimationActive={false}
+                    onMouseEnter={() => handleLineOrAgentAvatarHover(agentName)}
+                    onMouseLeave={() => handleLineOrAgentAvatarLeave()}
                   />
                 );
               })}
@@ -473,14 +518,6 @@ export const MetricTimelineChart: React.FC<MetricTimelineChartProps> = ({
           </ResponsiveContainer>
         </HoverContext.Provider>
       </div>
-
-      <div className="border-t-1 my-2 w-full"></div>
-      <CustomLegend
-        agents={topAgents}
-        colorMap={agentColorMap}
-        currentValues={latestValues}
-        onAgentHover={handleLegendHover}
-      />
     </>
   );
 };

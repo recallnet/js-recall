@@ -152,7 +152,6 @@ export default function CompetitionPageClient({
           <TimelineChart
             competition={competition}
             agents={chartAgentsData?.agents || []}
-            suppressInternalLoading={false}
           />
         </div>
         <div className="md:col-span-1">

@@ -27,7 +27,6 @@ export interface PortfolioChartProps {
   competition: RouterOutputs["competitions"]["getById"];
   agents: RouterOutputs["competitions"]["getAgents"]["agents"]; // Top agents to display in chart
   className?: string;
-  suppressInternalLoading?: boolean; // Skip internal loading skeleton when parent handles loading
 }
 
 export interface ChartWrapperProps {
