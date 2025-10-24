@@ -450,6 +450,7 @@ export class ApiClient {
           boostEndDate?: string;
           tradingConstraints?: TradingConstraints;
           rewards?: Record<number, number>;
+          evaluationMetric?: "calmar_ratio" | "sortino_ratio" | "simple_return";
           perpsProvider?: {
             provider: string;
             initialCapital?: number;
@@ -530,6 +531,7 @@ export class ApiClient {
     minimumStake,
     tradingConstraints,
     rewards,
+    evaluationMetric,
     perpsProvider,
     prizePools,
   }: {
@@ -550,6 +552,7 @@ export class ApiClient {
     minimumStake?: number;
     tradingConstraints?: TradingConstraints;
     rewards?: Record<number, number>;
+    evaluationMetric?: "calmar_ratio" | "sortino_ratio" | "simple_return";
     perpsProvider?: {
       provider: "symphony" | "hyperliquid";
       initialCapital: number;
@@ -584,6 +587,7 @@ export class ApiClient {
           minimumStake,
           tradingConstraints,
           rewards,
+          evaluationMetric,
           perpsProvider,
           prizePools,
         },
@@ -611,6 +615,7 @@ export class ApiClient {
       minimumStake,
       tradingConstraints,
       rewards,
+      evaluationMetric,
       perpsProvider,
       prizePools,
     }: {
@@ -624,6 +629,7 @@ export class ApiClient {
       minimumStake?: number;
       tradingConstraints?: TradingConstraints;
       rewards?: Record<number, number>;
+      evaluationMetric?: "calmar_ratio" | "sortino_ratio" | "simple_return";
       perpsProvider?: {
         provider: "symphony" | "hyperliquid";
         initialCapital?: number;
@@ -651,6 +657,7 @@ export class ApiClient {
           minimumStake,
           tradingConstraints,
           rewards,
+          evaluationMetric,
           perpsProvider,
           prizePools,
         },

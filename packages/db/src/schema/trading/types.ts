@@ -49,6 +49,11 @@ export type InsertPerpsTransferHistory =
 export type SelectPerpsRiskMetrics = typeof defs.perpsRiskMetrics.$inferSelect;
 export type InsertPerpsRiskMetrics = typeof defs.perpsRiskMetrics.$inferInsert;
 
+export type SelectRiskMetricsSnapshot =
+  typeof defs.riskMetricsSnapshots.$inferSelect;
+export type InsertRiskMetricsSnapshot =
+  typeof defs.riskMetricsSnapshots.$inferInsert;
+
 /**
  * Perpetual position with embedded agent information
  */
@@ -69,7 +74,9 @@ export interface RiskAdjustedLeaderboardEntry {
   totalEquity: string;
   totalPnl: string | null;
   calmarRatio: string | null;
+  sortinoRatio: string | null;
   simpleReturn: string | null; // Simple return (endValue/startValue - 1)
   maxDrawdown: string | null;
+  downsideDeviation: string | null;
   hasRiskMetrics: boolean;
 }

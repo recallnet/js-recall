@@ -170,7 +170,7 @@ export class UserService {
       return savedUser;
     } catch (error) {
       if (error instanceof Error) {
-        this.logger.error("[UserManager] Error registering user:", error);
+        this.logger.error({ error }, "[UserManager] Error registering user");
         throw error;
       }
 
@@ -228,7 +228,7 @@ export class UserService {
 
       return users;
     } catch (error) {
-      this.logger.error("[UserManager] Error retrieving all users:", error);
+      this.logger.error({ error }, "[UserManager] Error retrieving all users");
       return [];
     }
   }
@@ -303,7 +303,10 @@ export class UserService {
       this.logger.debug(`[UserManager] Updated user: ${user.id}`);
       return updatedUser;
     } catch (error) {
-      this.logger.error(`[UserManager] Error updating user ${user.id}:`, error);
+      this.logger.error(
+        { error },
+        `[UserManager] Error updating user ${user.id}`,
+      );
       throw new Error(
         `Failed to update user: ${error instanceof Error ? error.message : error}`,
       );
@@ -337,7 +340,10 @@ export class UserService {
 
       return deleted;
     } catch (error) {
-      this.logger.error(`[UserManager] Error deleting user ${userId}:`, error);
+      this.logger.error(
+        { error },
+        `[UserManager] Error deleting user ${userId}`,
+      );
       throw new Error(
         `Failed to delete user: ${error instanceof Error ? error.message : error}`,
       );
@@ -542,7 +548,7 @@ export class UserService {
 
       return users;
     } catch (error) {
-      this.logger.error("[UserManager] Error searching users:", error);
+      this.logger.error({ error }, "[UserManager] Error searching users");
       return [];
     }
   }

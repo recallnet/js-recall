@@ -5,6 +5,7 @@ import {
   AgentMetadataSchema,
   CompetitionTypeSchema,
   CrossChainTradingTypeSchema,
+  EvaluationMetricSchema,
   TradingConstraintsSchema,
   UuidSchema,
 } from "@recallnet/services/types";
@@ -91,6 +92,9 @@ export const AdminCreateCompetitionSchema = z
     minimumStake: z.number().min(0).optional(),
     tradingConstraints: TradingConstraintsSchema,
     rewards: RewardsSchema,
+    evaluationMetric: EvaluationMetricSchema.optional().describe(
+      "Metric used for ranking agents. Defaults to calmar_ratio for perps, simple_return for spot trading",
+    ),
     perpsProvider: PerpsProviderSchema.optional(), // Only required for perps competitions
     prizePools: z
       .object({
@@ -146,6 +150,9 @@ export const AdminStartCompetitionSchema = z
     minimumStake: z.number().min(0).optional(),
     tradingConstraints: TradingConstraintsSchema,
     rewards: RewardsSchema,
+    evaluationMetric: EvaluationMetricSchema.optional().describe(
+      "Metric used for ranking agents. Defaults to calmar_ratio for perps, simple_return for spot trading",
+    ),
     perpsProvider: PerpsProviderSchema.optional(), // Only required for perps competitions
     prizePools: z
       .object({

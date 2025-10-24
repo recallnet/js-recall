@@ -188,7 +188,7 @@ export const authMiddleware = (
         "Invalid API key. This key may have been reset or is no longer associated with an active account. Please ensure you're using your most recent API key.",
       );
     } catch (error) {
-      authLogger.error(`Error in authentication:`, error);
+      authLogger.error({ error }, `Error in authentication`);
       next(error);
     }
   };

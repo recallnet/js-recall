@@ -642,6 +642,7 @@ export async function createPerpsTestCompetition({
   maxParticipants,
   tradingConstraints,
   rewards,
+  evaluationMetric,
   perpsProvider,
 }: {
   adminClient: ApiClient;
@@ -659,6 +660,7 @@ export async function createPerpsTestCompetition({
   maxParticipants?: number;
   tradingConstraints?: TradingConstraints;
   rewards?: Record<number, number>;
+  evaluationMetric?: "calmar_ratio" | "sortino_ratio" | "simple_return";
   perpsProvider?: {
     provider: "symphony" | "hyperliquid";
     initialCapital: number;
@@ -684,6 +686,7 @@ export async function createPerpsTestCompetition({
     maxParticipants,
     tradingConstraints,
     rewards,
+    evaluationMetric,
     perpsProvider: perpsProvider || {
       provider: "symphony",
       initialCapital: 500,
@@ -711,6 +714,7 @@ export async function startPerpsTestCompetition({
   imageUrl,
   tradingConstraints,
   rewards,
+  evaluationMetric,
   perpsProvider = {
     provider: "symphony" as const,
     initialCapital: 500,
@@ -726,6 +730,7 @@ export async function startPerpsTestCompetition({
   imageUrl?: string;
   tradingConstraints?: TradingConstraints;
   rewards?: Record<number, number>;
+  evaluationMetric?: "calmar_ratio" | "sortino_ratio" | "simple_return";
   perpsProvider?: {
     provider: "symphony" | "hyperliquid";
     initialCapital?: number;
@@ -745,6 +750,7 @@ export async function startPerpsTestCompetition({
     imageUrl,
     tradingConstraints,
     rewards,
+    evaluationMetric,
     perpsProvider,
   });
 

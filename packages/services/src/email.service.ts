@@ -186,7 +186,7 @@ export class EmailService {
       }
       return { success: true };
     } catch (error) {
-      this.logger.error("[EmailService] Error updating contact:", error);
+      this.logger.error({ error }, "[EmailService] Error updating contact");
       return {
         success: false,
         error: error instanceof Error ? error.message : "Network error",

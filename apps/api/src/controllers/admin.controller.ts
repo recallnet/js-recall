@@ -206,6 +206,7 @@ export function makeAdminController(services: ServiceRegistry) {
           minimumStake,
           tradingConstraints,
           rewards,
+          evaluationMetric,
           perpsProvider,
           prizePools,
         } = flatParse(AdminCreateCompetitionSchema, req.body);
@@ -232,6 +233,7 @@ export function makeAdminController(services: ServiceRegistry) {
             minimumStake,
             tradingConstraints,
             rewards,
+            evaluationMetric,
             perpsProvider,
             prizePools,
           },
@@ -274,6 +276,7 @@ export function makeAdminController(services: ServiceRegistry) {
           joinStartDate,
           joinEndDate,
           rewards,
+          evaluationMetric,
           perpsProvider,
           prizePools,
         } = flatParse(AdminStartCompetitionSchema, req.body);
@@ -301,6 +304,7 @@ export function makeAdminController(services: ServiceRegistry) {
                   joinStartDate,
                   joinEndDate,
                   rewards,
+                  evaluationMetric,
                   perpsProvider,
                   prizePools,
                 },
@@ -370,11 +374,12 @@ export function makeAdminController(services: ServiceRegistry) {
         const {
           rewards,
           tradingConstraints,
+          evaluationMetric,
           perpsProvider,
           prizePools,
           ...competitionUpdates
         } = flatParse(AdminUpdateCompetitionSchema, req.body);
-        // Extract rewards, tradingConstraints, and perpsProvider from the validated data
+        // Extract rewards, tradingConstraints, evaluationMetric, and perpsProvider from the validated data
         const updates = competitionUpdates;
 
         // Check if there are any updates to apply
@@ -382,6 +387,7 @@ export function makeAdminController(services: ServiceRegistry) {
           Object.keys(updates).length === 0 &&
           !rewards &&
           !tradingConstraints &&
+          !evaluationMetric &&
           !perpsProvider &&
           !prizePools
         ) {
@@ -395,6 +401,7 @@ export function makeAdminController(services: ServiceRegistry) {
             updates,
             tradingConstraints,
             rewards,
+            evaluationMetric,
             perpsProvider,
             prizePools,
           );
@@ -728,7 +735,7 @@ export function makeAdminController(services: ServiceRegistry) {
           });
         }
       } catch (error) {
-        adminLogger.error("Error deleting agent:", error);
+        adminLogger.error({ error }, "Error deleting agent");
         next(error);
       }
     },
@@ -1388,7 +1395,7 @@ export function makeAdminController(services: ServiceRegistry) {
           competitionId,
         });
       } catch (error) {
-        adminLogger.error("Error allocating rewards:", error);
+        adminLogger.error({ error }, "Error allocating rewards");
         next(error);
       }
     },
