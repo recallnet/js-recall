@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, test } from "vitest";
 
+import { specificChainTokens } from "@recallnet/services/lib";
 import { ApiClient } from "@recallnet/test-utils";
 import {
   AdminSearchUsersAndAgentsResponse,
@@ -30,7 +31,6 @@ import {
 } from "@recallnet/test-utils";
 import { generateRandomPrivyId } from "@recallnet/test-utils";
 
-import { config } from "@/config/index.js";
 import { ServiceRegistry } from "@/services/index.js";
 
 describe("User API", () => {
@@ -1328,7 +1328,7 @@ describe("User API", () => {
     // Make trades with different outcomes to create distinct rankings
     // Agent 1: Bad trade (loses most money) - should be ranked 3rd (worst)
     await client1.executeTrade({
-      fromToken: config.specificChainTokens.eth.usdc,
+      fromToken: specificChainTokens.eth.usdc,
       toToken: "0x0000000000000000000000000000000000000000", // Zero address trade
       amount: "1000",
       reason: "Bad trade for Agent 1",
@@ -1336,7 +1336,7 @@ describe("User API", () => {
 
     // Agent 2: Good trade (loses least money) - should be ranked 1st (best)
     await client2.executeTrade({
-      fromToken: config.specificChainTokens.eth.usdc,
+      fromToken: specificChainTokens.eth.usdc,
       toToken: "0x0000000000000000000000000000000000000000",
       amount: "10",
       reason: "Good trade for Agent 2",
@@ -1344,7 +1344,7 @@ describe("User API", () => {
 
     // Agent 3: Medium trade (loses some money) - should be ranked 2nd (middle)
     await client3.executeTrade({
-      fromToken: config.specificChainTokens.eth.usdc,
+      fromToken: specificChainTokens.eth.usdc,
       toToken: "0x0000000000000000000000000000000000000000",
       amount: "100",
       reason: "Medium trade for Agent 3",
@@ -1962,15 +1962,15 @@ describe("User API", () => {
       // Create ranking differences using burn address pattern
       // Agent 1: Small loss (best rank)
       await agent1Client.executeTrade({
-        fromToken: config.specificChainTokens.eth.usdc,
-        toToken: config.specificChainTokens.eth.eth, // ETH - should maintain/increase value
+        fromToken: specificChainTokens.eth.usdc,
+        toToken: specificChainTokens.eth.eth, // ETH - should maintain/increase value
         amount: "50",
         reason: "Agent 1 small trade - USDC to ETH",
       });
 
       // Agent 2: Medium loss (middle rank)
       await agent2Client.executeTrade({
-        fromToken: config.specificChainTokens.eth.usdc,
+        fromToken: specificChainTokens.eth.usdc,
         toToken: "0x000000000000000000000000000000000000dead", // Burn - bad trade
         amount: "25",
         reason: "Agent 2 bad trade - burning tokens",
@@ -1978,7 +1978,7 @@ describe("User API", () => {
 
       // Agent 3: Large loss (worst rank)
       await agent3Client.executeTrade({
-        fromToken: config.specificChainTokens.eth.usdc,
+        fromToken: specificChainTokens.eth.usdc,
         toToken: "0x000000000000000000000000000000000000dead", // Burn address
         amount: "50",
         reason: "Agent 3 terrible trade - burning large amount",
@@ -2377,15 +2377,15 @@ describe("User API", () => {
         if (i === 0) {
           // Best performer: keep valuable assets
           await agentClient.executeTrade({
-            fromToken: config.specificChainTokens.eth.usdc,
-            toToken: config.specificChainTokens.eth.eth,
+            fromToken: specificChainTokens.eth.usdc,
+            toToken: specificChainTokens.eth.eth,
             amount: "100",
             reason: "Smart trade - buying ETH",
           });
         } else {
           // Poor performer: burn tokens to create lower rank
           await agentClient.executeTrade({
-            fromToken: config.specificChainTokens.eth.usdc,
+            fromToken: specificChainTokens.eth.usdc,
             toToken: "0x000000000000000000000000000000000000dead", // Burn address
             amount: "150",
             reason: "Bad trade - burning tokens",
@@ -2721,7 +2721,7 @@ describe("User API", () => {
     // Alpha Agent: (3 small bad trades)
     for (let i = 0; i < 3; i++) {
       await agentClients[0]?.executeTrade({
-        fromToken: config.specificChainTokens.eth.usdc,
+        fromToken: specificChainTokens.eth.usdc,
         toToken: "0x000000000000000000000000000000000000dead",
         amount: "10",
         reason: `Alpha Agent smart trade ${i + 1} - buying ETH`,
@@ -2732,7 +2732,7 @@ describe("User API", () => {
     // Bravo Agent: (2 small bad trades)
     for (let i = 0; i < 2; i++) {
       await agentClients[1]?.executeTrade({
-        fromToken: config.specificChainTokens.eth.usdc,
+        fromToken: specificChainTokens.eth.usdc,
         toToken: "0x000000000000000000000000000000000000dead",
         amount: "100",
         reason: `Bravo Agent good trade ${i + 1}`,
@@ -2742,7 +2742,7 @@ describe("User API", () => {
 
     // Charlie Agent: (1 medium bad trade)
     await agentClients[2]?.executeTrade({
-      fromToken: config.specificChainTokens.eth.usdc,
+      fromToken: specificChainTokens.eth.usdc,
       toToken: "0x000000000000000000000000000000000000dead",
       amount: "1000",
       reason: "Charlie Agent trade",
@@ -2751,7 +2751,7 @@ describe("User API", () => {
 
     // Delta Agent: (1 large bad trade)
     await agentClients[3]?.executeTrade({
-      fromToken: config.specificChainTokens.eth.usdc,
+      fromToken: specificChainTokens.eth.usdc,
       toToken: "0x000000000000000000000000000000000000dead", // Burn address
       amount: "2000",
       reason: "Delta Agent bad trade - burning tokens",
@@ -2761,7 +2761,7 @@ describe("User API", () => {
     // Echo Agent: Worst performer (2 bad trades)
     for (let i = 0; i < 2; i++) {
       await agentClients[4]?.executeTrade({
-        fromToken: config.specificChainTokens.eth.usdc,
+        fromToken: specificChainTokens.eth.usdc,
         toToken: "0x000000000000000000000000000000000000dead",
         amount: "2000",
         reason: `Echo Agent terrible trade ${i + 1} - burning tokens`,
@@ -2912,15 +2912,15 @@ describe("User API", () => {
 
     // Agent 1: Make stable trade (USDC to ETH) - will win comp1
     await agent1Client.executeTrade({
-      fromToken: config.specificChainTokens.eth.usdc,
-      toToken: config.specificChainTokens.eth.eth,
+      fromToken: specificChainTokens.eth.usdc,
+      toToken: specificChainTokens.eth.eth,
       amount: "1000",
       reason: `Agent Foxtrot trade - stable USDC to ETH`,
     });
 
     // Agent 2: Make bad trade - will lose comp1
     await agent2Client.executeTrade({
-      fromToken: config.specificChainTokens.eth.usdc,
+      fromToken: specificChainTokens.eth.usdc,
       toToken: "0x000000000000000000000000000000000000dead",
       amount: "1000",
       reason: "Agent Hotel trade - volatile USDC to burn",
@@ -2953,7 +2953,7 @@ describe("User API", () => {
     // REVERSE THE TRADING PATTERNS
     // Agent 1: make bad trade - will lose comp2
     await agent1Client.executeTrade({
-      fromToken: config.specificChainTokens.eth.usdc,
+      fromToken: specificChainTokens.eth.usdc,
       toToken: "0x000000000000000000000000000000000000dead",
       amount: "1200",
       reason: "Agent Foxtrot volatile trade - USDC to burn",
@@ -2961,8 +2961,8 @@ describe("User API", () => {
 
     // Agent 2: Now make stable trade (USDC to ETH) - will win comp2
     await agent2Client.executeTrade({
-      fromToken: config.specificChainTokens.eth.usdc,
-      toToken: config.specificChainTokens.eth.eth,
+      fromToken: specificChainTokens.eth.usdc,
+      toToken: specificChainTokens.eth.eth,
       amount: "1200",
       reason: `Agent Hotel stable trade - stable USDC to ETH`,
     });
