@@ -455,57 +455,45 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
   // For perps competitions, render charts with tabs
   if (isPerpsCompetition) {
     return (
-      <div
-        className={cn("bg-card rounded-lg border border-zinc-900", className)}
-      >
+      <div className={cn("w-full", className)}>
         <Tabs
           value={activeChartTab}
           onValueChange={setActiveChartTab}
           className="w-full"
         >
           {/* Chart Tabs Header */}
-          <div className="flex flex-col gap-4 border-b px-6 pb-4 pt-6 sm:flex-row sm:items-center sm:justify-between">
-            <div className="w-full">
-              <h2 className="mb-2 text-2xl font-bold text-white">
-                Performance Metrics
-              </h2>
-              <p className="text-gray-400">
-                Risk-adjusted performance analysis
-              </p>
-            </div>
-            <div className="flex items-center gap-4">
-              <TabsList className="flex flex-wrap gap-2">
-                <TabsTrigger
-                  value="account-value"
-                  className="border border-white bg-black px-3 py-1.5 text-xs font-semibold uppercase text-white transition-colors hover:bg-white hover:text-black data-[state=active]:bg-white data-[state=active]:text-black"
-                >
-                  Account Value
-                </TabsTrigger>
-                <TabsTrigger
-                  value="calmar-ratio"
-                  className="border border-white bg-black px-3 py-1.5 text-xs font-semibold uppercase text-white transition-colors hover:bg-white hover:text-black data-[state=active]:bg-white data-[state=active]:text-black"
-                >
-                  Calmar Ratio
-                </TabsTrigger>
-                <TabsTrigger
-                  value="max-drawdown"
-                  className="border border-white bg-black px-3 py-1.5 text-xs font-semibold uppercase text-white transition-colors hover:bg-white hover:text-black data-[state=active]:bg-white data-[state=active]:text-black"
-                >
-                  Max Drawdown
-                </TabsTrigger>
-                <TabsTrigger
-                  value="sortino-ratio"
-                  className="border border-white bg-black px-3 py-1.5 text-xs font-semibold uppercase text-white transition-colors hover:bg-white hover:text-black data-[state=active]:bg-white data-[state=active]:text-black"
-                >
-                  Sortino Ratio
-                </TabsTrigger>
-              </TabsList>
-              <ShareModal
-                title="Share performance metrics"
-                url={`${config.frontendUrl}/competitions/${id}/chart`}
-                size={20}
-              />
-            </div>
+          <div className="flex items-center justify-between px-6 pb-2">
+            <TabsList className="flex flex-wrap gap-2">
+              <TabsTrigger
+                value="account-value"
+                className="border border-white bg-black px-3 py-1.5 text-xs font-semibold uppercase text-white transition-colors hover:bg-white hover:text-black data-[state=active]:bg-white data-[state=active]:text-black"
+              >
+                Account Value
+              </TabsTrigger>
+              <TabsTrigger
+                value="calmar-ratio"
+                className="border border-white bg-black px-3 py-1.5 text-xs font-semibold uppercase text-white transition-colors hover:bg-white hover:text-black data-[state=active]:bg-white data-[state=active]:text-black"
+              >
+                Calmar Ratio
+              </TabsTrigger>
+              <TabsTrigger
+                value="max-drawdown"
+                className="border border-white bg-black px-3 py-1.5 text-xs font-semibold uppercase text-white transition-colors hover:bg-white hover:text-black data-[state=active]:bg-white data-[state=active]:text-black"
+              >
+                Max Drawdown
+              </TabsTrigger>
+              <TabsTrigger
+                value="sortino-ratio"
+                className="border border-white bg-black px-3 py-1.5 text-xs font-semibold uppercase text-white transition-colors hover:bg-white hover:text-black data-[state=active]:bg-white data-[state=active]:text-black"
+              >
+                Sortino Ratio
+              </TabsTrigger>
+            </TabsList>
+            <ShareModal
+              title="Share performance metrics"
+              url={`${config.frontendUrl}/competitions/${id}/chart`}
+              size={20}
+            />
           </div>
 
           {/* Account Value Tab */}
@@ -565,46 +553,33 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
   }
 
   return (
-    <div className={cn("w-full rounded-lg border", className)}>
+    <div className={cn("w-full", className)}>
       <Tabs
         value={activeChartTab}
         onValueChange={setActiveChartTab}
         className="w-full"
       >
         {/* Chart Tabs Header */}
-        <div className="bg-card flex flex-col gap-4 border-b p-5 sm:flex-row sm:items-center sm:justify-between">
-          <div className="w-full">
-            <h2
-              id="portfolio-timeline"
-              className="mb-2 text-2xl font-bold text-white"
+        <div className="flex items-center justify-between px-6 pb-2">
+          <TabsList className="flex flex-wrap gap-2">
+            <TabsTrigger
+              value="account-value"
+              className="border border-white bg-black px-3 py-1.5 text-xs font-semibold uppercase text-white transition-colors hover:bg-white hover:text-black data-[state=active]:bg-white data-[state=active]:text-black"
             >
-              Portfolio Timeline
-            </h2>
-            <p className="text-gray-400">
-              Real-time trading performance of AI competitors
-            </p>
-          </div>
-          <div className="flex items-center gap-4">
-            <TabsList className="flex flex-wrap gap-2">
-              <TabsTrigger
-                value="account-value"
-                className="border border-white bg-black px-3 py-1.5 text-xs font-semibold uppercase text-white transition-colors hover:bg-white hover:text-black data-[state=active]:bg-white data-[state=active]:text-black"
-              >
-                Account Value
-              </TabsTrigger>
-              <TabsTrigger
-                value="percent-gain"
-                className="border border-white bg-black px-3 py-1.5 text-xs font-semibold uppercase text-white transition-colors hover:bg-white hover:text-black data-[state=active]:bg-white data-[state=active]:text-black"
-              >
-                % Gain
-              </TabsTrigger>
-            </TabsList>
-            <ShareModal
-              title="Share portfolio timeline"
-              url={`${config.frontendUrl}/competitions/${id}/chart`}
-              size={20}
-            />
-          </div>
+              Account Value
+            </TabsTrigger>
+            <TabsTrigger
+              value="percent-gain"
+              className="border border-white bg-black px-3 py-1.5 text-xs font-semibold uppercase text-white transition-colors hover:bg-white hover:text-black data-[state=active]:bg-white data-[state=active]:text-black"
+            >
+              % Gain
+            </TabsTrigger>
+          </TabsList>
+          <ShareModal
+            title="Share portfolio timeline"
+            url={`${config.frontendUrl}/competitions/${id}/chart`}
+            size={20}
+          />
         </div>
 
         {/* Account Value Tab */}
