@@ -9,16 +9,7 @@ import { Skeleton } from "@recallnet/ui2/components/skeleton";
  */
 export const ChartSkeleton = () => {
   return (
-    <div className="w-full rounded-lg border">
-      {/* Header skeleton */}
-      <div className="bg-card flex items-center justify-between p-5">
-        <div className="w-full">
-          <Skeleton className="mb-2 h-8 w-48" />
-          <Skeleton className="h-4 w-80" />
-        </div>
-        <Skeleton className="h-5 w-5" />
-      </div>
-
+    <div className="w-full">
       {/* Chart area skeleton */}
       <div className="h-120 relative p-6">
         <Skeleton className="h-full w-full" />
@@ -39,11 +30,6 @@ export const ChartSkeleton = () => {
               <Skeleton className="h-4 flex-1" />
             </div>
           ))}
-        </div>
-
-        {/* Pagination skeleton */}
-        <div className="mt-4 flex justify-center">
-          <Skeleton className="h-8 w-32" />
         </div>
       </div>
     </div>
