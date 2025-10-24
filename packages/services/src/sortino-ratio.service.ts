@@ -9,8 +9,8 @@ import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 export interface SortinoMetrics {
   agentId: string;
   competitionId: string;
-  sortinoRatio: string | null;
-  downsideDeviation: string | null;
+  sortinoRatio: string;
+  downsideDeviation: string;
   annualizedReturn: string;
   simpleReturn: string;
   snapshotCount: number;
@@ -102,7 +102,7 @@ export class SortinoRatioService {
 
       this.logger.info(
         `[SortinoRatio] Calculated metrics for agent ${agentId}: ` +
-          `Sortino=${sortinoRatio ? sortinoRatio.toFixed(4) : "null"}, ` +
+          `Sortino=${sortinoRatio.toFixed(4)}, ` +
           `Avg Return=${(avgReturn.toNumber() * 100).toFixed(2)}%, ` +
           `Downside Dev=${(downsideDeviation.toNumber() * 100).toFixed(2)}%, ` +
           `Simple Return=${(simpleReturn.toNumber() * 100).toFixed(2)}%`,
@@ -112,7 +112,7 @@ export class SortinoRatioService {
       const calculatedMetrics: SortinoMetrics = {
         agentId,
         competitionId,
-        sortinoRatio: sortinoRatio ? sortinoRatio.toFixed(8) : null,
+        sortinoRatio: sortinoRatio.toFixed(8),
         downsideDeviation: downsideDeviation.toFixed(8),
         annualizedReturn: avgReturn.toFixed(8),
         simpleReturn: simpleReturn.toFixed(8),
@@ -132,41 +132,36 @@ export class SortinoRatioService {
   /**
    * Compute Sortino Ratio with proper edge case handling
    * Sortino = (Average Return - MAR) / Downside Deviation
+   * Uses minimum downside deviation of 0.0001 to avoid division by zero,
+   * consistent with Calmar ratio's approach
    *
    * @param avgReturn Average period return as Decimal
    * @param downsideDeviation Downside deviation as Decimal
-   * @returns Sortino ratio as Decimal, or null if insufficient data
+   * @returns Sortino ratio as Decimal
    */
   private computeSortinoRatio(
     avgReturn: Decimal,
     downsideDeviation: Decimal,
-  ): Decimal | null {
+  ): Decimal {
     const mar = new Decimal(this.MAR);
 
+    // Use minimum downside deviation of 0.0001 to avoid division by zero
+    // This matches the pattern used in Calmar ratio calculation
+    const adjustedDownsideDeviation = downsideDeviation.isZero()
+      ? new Decimal(0.0001)
+      : downsideDeviation;
+
     if (downsideDeviation.isZero()) {
-      if (avgReturn.greaterThan(mar)) {
-        // Positive return with no downside deviation - cap at a high value
-        this.logger.debug(
-          `[SortinoRatio] No downside deviation with positive return, capping Sortino at 100`,
-        );
-        return new Decimal(100);
-      } else {
-        // avgReturn <= MAR with zero downside deviation
-        // This occurs with insufficient data (1-2 snapshots) where we can't calculate meaningful volatility
-        // The ranking system handles NULL metrics by using NULLS LAST and falling back to totalEquity
-        this.logger.debug(
-          {
-            avgReturn: avgReturn.toString(),
-            mar: this.MAR,
-            downsideDeviation: downsideDeviation.toString(),
-          },
-          "[SortinoRatio] Insufficient data for Sortino calculation (likely 1-2 snapshots), returning null",
-        );
-        // Return null to indicate insufficient data - the DB and ranking system handle this gracefully
-        return null;
-      }
+      this.logger.debug(
+        {
+          avgReturn: avgReturn.toString(),
+          mar: this.MAR,
+          adjustedDownsideDeviation: adjustedDownsideDeviation.toString(),
+        },
+        "[SortinoRatio] Zero downside deviation detected, using minimum threshold of 0.0001",
+      );
     }
 
-    return avgReturn.minus(mar).dividedBy(downsideDeviation);
+    return avgReturn.minus(mar).dividedBy(adjustedDownsideDeviation);
   }
 }

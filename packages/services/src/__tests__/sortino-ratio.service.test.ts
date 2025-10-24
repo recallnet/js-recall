@@ -93,7 +93,7 @@ describe("SortinoRatioService", () => {
       );
     });
 
-    it("should handle zero downside deviation by capping at 100", async () => {
+    it("should handle zero downside deviation using minimum threshold", async () => {
       const agentId = "agent-456";
       const competitionId = "comp-123";
 
@@ -109,9 +109,9 @@ describe("SortinoRatioService", () => {
         competitionId,
       );
 
-      // Should cap at 100 when downside deviation is 0 and return is positive
+      // Should use minimum downside deviation of 0.0001: 0.05 / 0.0001 = 500
       expect(result).toMatchObject({
-        sortinoRatio: "100.00000000",
+        sortinoRatio: "500.00000000",
         downsideDeviation: "0.00000000",
       });
     });
@@ -245,7 +245,7 @@ describe("SortinoRatioService", () => {
         competitionId,
       );
 
-      // Should cap at -100 when downside deviation is 0 and return is negative
+      // Should use minimum downside deviation of 0.0001: -0.01 / 0.0001 = -100
       expect(result).toMatchObject({
         sortinoRatio: "-100.00000000",
         downsideDeviation: "0.00000000",
