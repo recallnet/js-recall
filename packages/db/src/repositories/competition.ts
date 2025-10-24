@@ -145,6 +145,78 @@ export class CompetitionRepository {
   }
 
   /**
+   * Convert snake_case database row to camelCase object for basic portfolio snapshots
+   * Used by multiple methods that fetch portfolio snapshots from raw SQL
+   * @private
+   * @param row Database row with snake_case fields
+   * @returns Object with camelCase fields matching SelectPortfolioSnapshot
+   */
+  private convertBasicSnapshotRow(row: {
+    id: number;
+    agent_id: string;
+    competition_id: string;
+    timestamp: Date;
+    total_value: number | string;
+  }): SelectPortfolioSnapshot {
+    return {
+      id: row.id,
+      agentId: row.agent_id,
+      competitionId: row.competition_id,
+      timestamp: row.timestamp,
+      totalValue: Number(row.total_value),
+    };
+  }
+
+  /**
+   * Convert snake_case database row to camelCase object for portfolio snapshots with risk metrics
+   * Used by getAgentPortfolioTimeline when includeRiskMetrics is true
+   * @private
+   * @param row Database row with snake_case fields and optional risk metrics
+   * @returns Object with camelCase fields including risk metrics
+   */
+  private convertEnrichedSnapshotRow(row: {
+    timestamp: string;
+    agent_id: string;
+    agent_name: string;
+    competition_id: string;
+    total_value: number;
+    calmar_ratio?: string | null;
+    sortino_ratio?: string | null;
+    max_drawdown?: string | null;
+    downside_deviation?: string | null;
+    simple_return?: string | null;
+    annualized_return?: string | null;
+  }) {
+    // Build base object that's always present
+    const base = {
+      timestamp: row.timestamp,
+      agentId: row.agent_id,
+      agentName: row.agent_name,
+      competitionId: row.competition_id,
+      totalValue: Number(row.total_value),
+    };
+
+    // Only add risk metrics if calmar_ratio field exists (indicates risk metrics query)
+    if (row.calmar_ratio !== undefined) {
+      return {
+        ...base,
+        calmarRatio: row.calmar_ratio ? Number(row.calmar_ratio) : null,
+        sortinoRatio: row.sortino_ratio ? Number(row.sortino_ratio) : null,
+        maxDrawdown: row.max_drawdown ? Number(row.max_drawdown) : null,
+        downsideDeviation: row.downside_deviation
+          ? Number(row.downside_deviation)
+          : null,
+        simpleReturn: row.simple_return ? Number(row.simple_return) : null,
+        annualizedReturn: row.annualized_return
+          ? Number(row.annualized_return)
+          : null,
+      };
+    }
+
+    return base;
+  }
+
+  /**
    * Builds the full competition query with rewards and trading constraints
    * @returns A query builder for competitions with all enrichment data
    */
@@ -1205,13 +1277,7 @@ export class CompetitionRepository {
     `);
 
       // Convert snake_case to camelCase to match Drizzle `SelectPortfolioSnapshot` type
-      return result.rows.map((row) => ({
-        id: row.id,
-        agentId: row.agent_id,
-        competitionId: row.competition_id,
-        timestamp: row.timestamp,
-        totalValue: Number(row.total_value), // Convert string to number for numeric fields
-      }));
+      return result.rows.map((row) => this.convertBasicSnapshotRow(row));
     } catch (error) {
       this.#logger.error("Error in getLatestPortfolioSnapshots:", error);
       throw error;
@@ -1262,13 +1328,7 @@ export class CompetitionRepository {
       );
 
       // Convert snake_case to camelCase to match Drizzle SelectPortfolioSnapshot type
-      return result.rows.map((row) => ({
-        id: row.id,
-        agentId: row.agent_id,
-        competitionId: row.competition_id,
-        timestamp: row.timestamp,
-        totalValue: Number(row.total_value),
-      }));
+      return result.rows.map((row) => this.convertBasicSnapshotRow(row));
     } catch (error) {
       this.#logger.error("Error in getBulkLatestPortfolioSnapshots:", error);
       throw error;
@@ -1615,58 +1675,62 @@ export class CompetitionRepository {
         simple_return: number | null;
         snapshot_count: number;
       }>(sql`
-        WITH ordered_snapshots AS (
+        WITH snapshot_bounds AS (
+          -- Get first, last, and count in one efficient scan
           SELECT 
-            ${portfolioSnapshots.totalValue},
-            ${portfolioSnapshots.timestamp},
-            LAG(${portfolioSnapshots.totalValue}) OVER (ORDER BY ${portfolioSnapshots.timestamp}) as prev_value,
-            FIRST_VALUE(${portfolioSnapshots.totalValue}) OVER (ORDER BY ${portfolioSnapshots.timestamp}) as first_value,
-            LAST_VALUE(${portfolioSnapshots.totalValue}) OVER (ORDER BY ${portfolioSnapshots.timestamp} ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) as last_value,
-            COUNT(*) OVER () as total_snapshots
-          FROM ${portfolioSnapshots}
-          WHERE ${portfolioSnapshots.agentId} = ${agentId}
-            AND ${portfolioSnapshots.competitionId} = ${competitionId}
-          ORDER BY ${portfolioSnapshots.timestamp}
+            MIN(${portfolioSnapshots.totalValue}) FILTER (WHERE rn = 1) as first_value,
+            MAX(${portfolioSnapshots.totalValue}) FILTER (WHERE rn = snapshot_count) as last_value,
+            MAX(snapshot_count) as total_snapshots
+          FROM (
+            SELECT 
+              ${portfolioSnapshots.totalValue},
+              ROW_NUMBER() OVER (ORDER BY ${portfolioSnapshots.timestamp}) as rn,
+              COUNT(*) OVER () as snapshot_count
+            FROM ${portfolioSnapshots}
+            WHERE ${portfolioSnapshots.agentId} = ${agentId}
+              AND ${portfolioSnapshots.competitionId} = ${competitionId}
+          ) numbered
         ),
         period_returns AS (
+          -- Calculate period returns with LAG
           SELECT 
             CASE 
               WHEN prev_value IS NOT NULL AND prev_value != 0 
-              THEN (total_value - prev_value) / prev_value
+              THEN (${portfolioSnapshots.totalValue} - prev_value) / prev_value
               ELSE NULL
-            END as return_rate,
-            first_value,
-            last_value,
-            total_snapshots
-          FROM ordered_snapshots
-        ),
-        metrics AS (
-          SELECT 
-            AVG(return_rate) as avg_return,
-            -- Downside deviation: sqrt of average squared negative deviations from MAR
-            SQRT(AVG(
-              CASE 
-                WHEN return_rate < ${mar} 
-                THEN POWER(return_rate - ${mar}, 2) 
-                ELSE 0 
-              END
-            )) as downside_deviation,
-            -- Simple return from first to last
-            CASE 
-              WHEN MAX(first_value) > 0 
-              THEN (MAX(last_value) - MAX(first_value)) / MAX(first_value)
-              ELSE 0
-            END as simple_return,
-            MAX(total_snapshots) as snapshot_count
-          FROM period_returns
-          WHERE return_rate IS NOT NULL
+            END as return_rate
+          FROM (
+            SELECT 
+              ${portfolioSnapshots.totalValue},
+              LAG(${portfolioSnapshots.totalValue}) OVER (ORDER BY ${portfolioSnapshots.timestamp}) as prev_value
+            FROM ${portfolioSnapshots}
+            WHERE ${portfolioSnapshots.agentId} = ${agentId}
+              AND ${portfolioSnapshots.competitionId} = ${competitionId}
+          ) with_lag
         )
         SELECT 
-          COALESCE(avg_return, 0) as avg_return,
-          COALESCE(downside_deviation, 0) as downside_deviation,
-          COALESCE(simple_return, 0) as simple_return,
-          COALESCE(snapshot_count, 0) as snapshot_count
-        FROM metrics
+          -- Average return
+          COALESCE(AVG(pr.return_rate), 0) as avg_return,
+          -- Downside deviation: sqrt of average squared negative deviations from MAR
+          COALESCE(SQRT(AVG(
+            CASE 
+              WHEN pr.return_rate < ${mar} 
+              THEN POWER(pr.return_rate - ${mar}, 2) 
+              ELSE 0 
+            END
+          )), 0) as downside_deviation,
+          -- Simple return from first to last
+          COALESCE(
+            CASE 
+              WHEN sb.first_value IS NOT NULL AND sb.first_value > 0 
+              THEN (sb.last_value - sb.first_value) / sb.first_value
+              ELSE 0
+            END, 0
+          ) as simple_return,
+          -- Total snapshot count
+          COALESCE(sb.total_snapshots, 0) as snapshot_count
+        FROM period_returns pr
+        CROSS JOIN snapshot_bounds sb
       `);
 
       const metrics = result.rows[0];
@@ -2643,23 +2707,7 @@ export class CompetitionRepository {
       `);
 
         // Convert snake_case to camelCase with risk metrics
-        return result.rows.map((row) => ({
-          timestamp: row.timestamp,
-          agentId: row.agent_id,
-          agentName: row.agent_name,
-          competitionId: row.competition_id,
-          totalValue: Number(row.total_value),
-          calmarRatio: row.calmar_ratio ? Number(row.calmar_ratio) : null,
-          sortinoRatio: row.sortino_ratio ? Number(row.sortino_ratio) : null,
-          maxDrawdown: row.max_drawdown ? Number(row.max_drawdown) : null,
-          downsideDeviation: row.downside_deviation
-            ? Number(row.downside_deviation)
-            : null,
-          simpleReturn: row.simple_return ? Number(row.simple_return) : null,
-          annualizedReturn: row.annualized_return
-            ? Number(row.annualized_return)
-            : null,
-        }));
+        return result.rows.map((row) => this.convertEnrichedSnapshotRow(row));
       } else {
         // Original query without risk metrics
         const result = await this.#dbRead.execute<{
@@ -2699,13 +2747,7 @@ export class CompetitionRepository {
       `);
 
         // Convert snake_case to camelCase
-        return result.rows.map((row) => ({
-          timestamp: row.timestamp,
-          agentId: row.agent_id,
-          agentName: row.agent_name,
-          competitionId: row.competition_id,
-          totalValue: Number(row.total_value),
-        }));
+        return result.rows.map((row) => this.convertEnrichedSnapshotRow(row));
       }
     } catch (error) {
       this.#logger.error("Error in getAgentPortfolioTimeline:", error);
