@@ -31,6 +31,7 @@ import {
 } from "@recallnet/test-utils";
 import { generateRandomPrivyId } from "@recallnet/test-utils";
 
+// IDE shows error because e2e is excluded from main tsconfig, but path resolves correctly at runtime via Vitest
 import { portfolioSnapshotterService } from "@/lib/services";
 
 describe("User API", () => {
