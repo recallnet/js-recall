@@ -497,6 +497,7 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
               title="Share performance metrics"
               url={`${config.frontendUrl}/competitions/${id}/chart`}
               size={20}
+              className="hidden sm:block"
             />
           </div>
 
@@ -580,9 +581,10 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
             </TabsTrigger>
           </TabsList>
           <ShareModal
-            title="Share portfolio timeline"
+            title="Share performance metrics"
             url={`${config.frontendUrl}/competitions/${id}/chart`}
             size={20}
+            className="hidden sm:block"
           />
         </div>
 
