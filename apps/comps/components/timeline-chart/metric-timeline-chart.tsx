@@ -1,6 +1,5 @@
 "use client";
 
-import { useDebounce } from "@uidotdev/usehooks";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -15,11 +14,16 @@ import {
 
 import { Button } from "@recallnet/ui2/components/button";
 
+import { AgentAvatar } from "@/components/agent-avatar";
 import { RouterOutputs } from "@/rpc/router";
 import { formatDate } from "@/utils/format";
 
 import { ChartSkeleton } from "./chart-skeleton";
-import { CHART_COLORS, HoverContext } from "./constants";
+import {
+  CHART_COLORS,
+  HoverContext,
+  LIMIT_AGENTS_PER_CHART,
+} from "./constants";
 import { CustomLegend } from "./custom-legend";
 import { datesByWeek, formatDateShort } from "./utils";
 
@@ -39,6 +43,47 @@ interface MetricTimelineChartProps {
 }
 
 /**
+ * Agent avatar dot component for the timeline chart
+ */
+const AgentAvatarDot = ({
+  agent,
+  cx,
+  cy,
+}: {
+  agent: RouterOutputs["competitions"]["getAgents"]["agents"][number];
+  cx: number;
+  cy: number;
+}) => {
+  // Use larger container size to accommodate hover scaling over agent avatar
+  const containerSize = 40;
+  const avatarSize = 32;
+  const offset = containerSize / 2;
+
+  return (
+    <g>
+      <foreignObject
+        x={cx - offset}
+        y={cy - offset}
+        width={containerSize}
+        height={containerSize}
+      >
+        <div
+          style={{
+            width: containerSize,
+            height: containerSize,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <AgentAvatar agent={agent} size={avatarSize} />
+        </div>
+      </foreignObject>
+    </g>
+  );
+};
+
+/**
  * Generic metric timeline chart component that displays progression of a specific metric over time
  */
 export const MetricTimelineChart: React.FC<MetricTimelineChartProps> = ({
@@ -51,8 +96,6 @@ export const MetricTimelineChart: React.FC<MetricTimelineChartProps> = ({
   endDate,
 }) => {
   const [dateRangeIndex, setDateRangeIndex] = useState(0);
-  const [searchQuery, setSearchQuery] = useState("");
-  const debouncedSearchQuery = useDebounce(searchQuery, 300);
   const [legendHoveredAgent, setLegendHoveredAgent] = useState<string | null>(
     null,
   );
@@ -184,86 +227,7 @@ export const MetricTimelineChart: React.FC<MetricTimelineChartProps> = ({
     }));
   }, [parsedData, dateRangeIndex, status, startDate, endDate]);
 
-  const allDataKeys = useMemo(() => {
-    if (!timelineData) return [];
-    // Get all unique agent names from the timeline data
-    return Array.from(new Set(timelineData.map((agent) => agent.agentName)));
-  }, [timelineData]);
-
-  const allTimelineAgents = useMemo(() => {
-    if (!timelineData) return [];
-
-    const agentNames = new Set<string>();
-    timelineData.forEach((agentTimeline) => {
-      agentNames.add(agentTimeline.agentName);
-    });
-
-    return Array.from(agentNames)
-      .map((agentName) => agents?.find((agent) => agent.name === agentName))
-      .filter(
-        (
-          agent,
-        ): agent is RouterOutputs["competitions"]["getAgents"]["agents"][number] =>
-          agent !== undefined,
-      );
-  }, [timelineData, agents]);
-
-  const allAgentsWithData = useMemo(() => {
-    if (debouncedSearchQuery) {
-      return allTimelineAgents.filter((agent) =>
-        allDataKeys.some((agentName) => agentName === agent?.name),
-      );
-    }
-
-    if (!agents || agents.length === 0) return [];
-    return agents.filter((agent) =>
-      allDataKeys.some((agentName) => agentName === agent.name),
-    );
-  }, [agents, allDataKeys, allTimelineAgents, debouncedSearchQuery]);
-
-  const filteredAgentsForLegend = useMemo(() => {
-    if (!debouncedSearchQuery) return allAgentsWithData;
-    const lowercaseQuery = debouncedSearchQuery.toLowerCase();
-    return allAgentsWithData.filter((agent) =>
-      agent.name.toLowerCase().includes(lowercaseQuery),
-    );
-  }, [allAgentsWithData, debouncedSearchQuery]);
-
-  const handleSearchPageChange = useCallback(() => {
-    // Placeholder for search page changes
-  }, []);
-
-  const chartDisplayAgents = useMemo(() => {
-    if (!debouncedSearchQuery) {
-      return allAgentsWithData;
-    } else {
-      return filteredAgentsForLegend || [];
-    }
-  }, [allAgentsWithData, filteredAgentsForLegend, debouncedSearchQuery]);
-
-  const chartVisibleAgentKeys = useMemo(() => {
-    const agentNamesSet = new Set(
-      chartDisplayAgents.map((agent) => agent.name),
-    );
-    return allDataKeys.filter((agentName) => agentNamesSet.has(agentName));
-  }, [allDataKeys, chartDisplayAgents]);
-
-  const filteredDataKeys = useMemo(() => {
-    if (!debouncedSearchQuery) return chartVisibleAgentKeys;
-    const lowercaseQuery = debouncedSearchQuery.toLowerCase();
-    return chartVisibleAgentKeys.filter((agent) =>
-      agent.toLowerCase().includes(lowercaseQuery),
-    );
-  }, [chartVisibleAgentKeys, debouncedSearchQuery]);
-
-  const agentColorMap = useMemo(() => {
-    const map: Record<string, string> = {};
-    chartVisibleAgentKeys.forEach((agentName, index) => {
-      map[agentName] = CHART_COLORS[index % CHART_COLORS.length]!;
-    });
-    return map;
-  }, [chartVisibleAgentKeys]);
-
+  // Get all latest metric values
   const latestValues = useMemo(() => {
     if (!filteredData || filteredData.length === 0) return {};
     const lastDataPoint = filteredData[filteredData.length - 1];
@@ -276,6 +240,33 @@ export const MetricTimelineChart: React.FC<MetricTimelineChartProps> = ({
     });
     return values;
   }, [filteredData]);
+
+  // Get top agents based on the metric value
+  const topAgents = useMemo(() => {
+    const agentsWithValues = agents
+      .map((agent) => ({
+        agent,
+        value: latestValues[agent.name] ?? -Infinity,
+      }))
+      .filter(({ value }) => value !== -Infinity && value !== null)
+      .sort((a, b) => b.value - a.value)
+      .slice(0, LIMIT_AGENTS_PER_CHART)
+      .map(({ agent }) => agent);
+
+    return agentsWithValues;
+  }, [agents, latestValues]);
+
+  const topAgentNames = useMemo(() => {
+    return topAgents.map((agent) => agent.name);
+  }, [topAgents]);
+
+  const agentColorMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    topAgentNames.forEach((agentName, index) => {
+      map[agentName] = CHART_COLORS[index % CHART_COLORS.length]!;
+    });
+    return map;
+  }, [topAgentNames]);
 
   const handlePrevRange = () => {
     setDateRangeIndex((prev) => Math.max(0, prev - 1));
@@ -423,23 +414,61 @@ export const MetricTimelineChart: React.FC<MetricTimelineChartProps> = ({
                   return null;
                 }}
               />
-              {filteredDataKeys.map((agentName) => (
-                <Line
-                  key={agentName}
-                  type="monotone"
-                  dataKey={agentName}
-                  stroke={agentColorMap[agentName] || CHART_COLORS[0]}
-                  strokeWidth={legendHoveredAgent === agentName ? 3 : 2}
-                  dot={{ r: 3 }}
-                  connectNulls={true}
-                  opacity={
-                    legendHoveredAgent && legendHoveredAgent !== agentName
-                      ? 0.3
-                      : 1
-                  }
-                  isAnimationActive={false}
-                />
-              ))}
+              {topAgentNames.map((agentName) => {
+                const agent = topAgents.find((a) => a.name === agentName);
+                const isLastPoint = (timestamp: string | undefined) => {
+                  // Check if this is the last data point for this agent
+                  if (!timestamp || !filteredData || filteredData.length === 0)
+                    return false;
+                  const currentIndex = filteredData.findIndex(
+                    (d) => d.timestamp === timestamp,
+                  );
+                  return currentIndex === filteredData.length - 1;
+                };
+
+                return (
+                  <Line
+                    key={agentName}
+                    type="monotone"
+                    dataKey={agentName}
+                    stroke={agentColorMap[agentName] || CHART_COLORS[0]}
+                    strokeWidth={legendHoveredAgent === agentName ? 3 : 2}
+                    dot={(props) => {
+                      const payload = props.payload as { timestamp?: string };
+                      const timestamp = payload?.timestamp;
+                      if (
+                        agent &&
+                        isLastPoint(timestamp) &&
+                        props.cx &&
+                        props.cy
+                      ) {
+                        return (
+                          <AgentAvatarDot
+                            agent={agent}
+                            cx={props.cx}
+                            cy={props.cy}
+                          />
+                        );
+                      }
+                      return (
+                        <circle
+                          cx={props.cx}
+                          cy={props.cy}
+                          r={3}
+                          fill={props.stroke}
+                        />
+                      );
+                    }}
+                    connectNulls={true}
+                    opacity={
+                      legendHoveredAgent && legendHoveredAgent !== agentName
+                        ? 0.3
+                        : 1
+                    }
+                    isAnimationActive={false}
+                  />
+                );
+              })}
             </LineChart>
           </ResponsiveContainer>
         </HoverContext.Provider>
@@ -447,13 +476,10 @@ export const MetricTimelineChart: React.FC<MetricTimelineChartProps> = ({
 
       <div className="border-t-1 my-2 w-full"></div>
       <CustomLegend
-        agents={filteredAgentsForLegend}
+        agents={topAgents}
         colorMap={agentColorMap}
         currentValues={latestValues}
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
         onAgentHover={handleLegendHover}
-        onSearchPageChange={handleSearchPageChange}
       />
     </>
   );

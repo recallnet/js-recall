@@ -1,6 +1,5 @@
 "use client";
 
-import { useDebounce } from "@uidotdev/usehooks";
 import React, { useMemo, useState } from "react";
 import {
   Bar,
@@ -32,8 +31,6 @@ export const CalmarRatioChart: React.FC<CalmarRatioChartProps> = ({
   const [legendHoveredAgent, setLegendHoveredAgent] = useState<string | null>(
     null,
   );
-  const [searchQuery, setSearchQuery] = useState("");
-  const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
   // Filter agents with valid Calmar ratios
   const agentsWithCalmar = useMemo(() => {
@@ -42,29 +39,9 @@ export const CalmarRatioChart: React.FC<CalmarRatioChartProps> = ({
     );
   }, [agents]);
 
-  // Filtered agents for the legend (based on search query)
-  const filteredAgentsForLegend = useMemo(() => {
-    if (!debouncedSearchQuery) return agentsWithCalmar;
-    const lowercaseQuery = debouncedSearchQuery.toLowerCase();
-    return agentsWithCalmar.filter(
-      (agent) =>
-        agent.name.toLowerCase().includes(lowercaseQuery) ||
-        agent.handle.toLowerCase().includes(lowercaseQuery),
-    );
-  }, [agentsWithCalmar, debouncedSearchQuery]);
-
-  // Chart display agents - all agents with valid Calmar ratios
-  const chartDisplayAgents = useMemo(() => {
-    if (!debouncedSearchQuery) {
-      return agentsWithCalmar;
-    } else {
-      return filteredAgentsForLegend || [];
-    }
-  }, [agentsWithCalmar, filteredAgentsForLegend, debouncedSearchQuery]);
-
   // Prepare data for bar chart
   const perpsChartData = useMemo(() => {
-    return chartDisplayAgents
+    return agentsWithCalmar
       .sort((a, b) => (b.calmarRatio || 0) - (a.calmarRatio || 0))
       .map((agent) => ({
         name: agent.name,
@@ -75,27 +52,27 @@ export const CalmarRatioChart: React.FC<CalmarRatioChartProps> = ({
             ? `${agent.handle.slice(0, 10)}...`
             : agent.handle,
       }));
-  }, [chartDisplayAgents]);
+  }, [agentsWithCalmar]);
 
   // Create color mapping from all filtered agents for consistency
   const agentColorMap = useMemo(() => {
     const map: Record<string, string> = {};
-    filteredAgentsForLegend.forEach((agent, index) => {
+    agentsWithCalmar.forEach((agent, index) => {
       map[agent.name] = CHART_COLORS[index % CHART_COLORS.length]!;
     });
     return map;
-  }, [filteredAgentsForLegend]);
+  }, [agentsWithCalmar]);
 
   // Calmar ratio values for legend
   const calmarRatioValues = useMemo(() => {
     const values: Record<string, number> = {};
-    chartDisplayAgents.forEach((agent) => {
+    agentsWithCalmar.forEach((agent) => {
       if (agent.calmarRatio !== null && agent.calmarRatio !== undefined) {
         values[agent.name] = agent.calmarRatio;
       }
     });
     return values;
-  }, [chartDisplayAgents]);
+  }, [agentsWithCalmar]);
 
   // Dynamic Y-axis domain
   const perpsYAxisDomain = useMemo(() => {
@@ -231,13 +208,9 @@ export const CalmarRatioChart: React.FC<CalmarRatioChartProps> = ({
       </HoverContext.Provider>
       <div className="my-2 w-full border-t"></div>
       <CustomLegend
-        agents={
-          debouncedSearchQuery ? filteredAgentsForLegend : agentsWithCalmar
-        }
+        agents={agentsWithCalmar}
         colorMap={agentColorMap}
         currentValues={calmarRatioValues}
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
         onAgentHover={setLegendHoveredAgent}
       />
       <div className="border-t px-6 py-3">

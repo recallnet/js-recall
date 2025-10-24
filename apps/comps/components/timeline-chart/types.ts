@@ -20,10 +20,7 @@ export interface CustomLegendProps {
   colorMap: Record<string, string>;
   currentValues?: Record<string, number>;
   currentOrder?: string[];
-  searchQuery: string;
-  onSearchChange: (query: string) => void;
   onAgentHover?: (agentName: string | null) => void;
-  onSearchPageChange?: (page: number) => void;
 }
 
 export interface PortfolioChartProps {

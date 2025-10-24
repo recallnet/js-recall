@@ -1,6 +1,5 @@
 "use client";
 
-import { useDebounce } from "@uidotdev/usehooks";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import React, {
   useCallback,
@@ -21,18 +20,13 @@ import { cn } from "@recallnet/ui2/lib/utils";
 
 import { config } from "@/config/public";
 import { useCompetitionTimeline } from "@/hooks/useCompetitionTimeline";
-import { RouterOutputs } from "@/rpc/router";
 import { checkIsPerpsCompetition } from "@/utils/competition-utils";
 import { formatDate } from "@/utils/format";
 
 import { ShareModal } from "../share-modal";
 import { ChartSkeleton } from "./chart-skeleton";
 import { ChartWrapper } from "./chart-wrapper";
-import {
-  CHART_COLORS,
-  HoverContext,
-  LIMIT_AGENTS_PER_CHART,
-} from "./constants";
+import { CHART_COLORS, HoverContext } from "./constants";
 import { CustomLegend } from "./custom-legend";
 import { MetricTimelineChart } from "./metric-timeline-chart";
 import { PortfolioChartProps, TimelineViewRecord } from "./types";
@@ -55,8 +49,6 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
     competition.status,
   );
   const [dateRangeIndex, setDateRangeIndex] = useState(0);
-  const [searchQuery, setSearchQuery] = useState("");
-  const debouncedSearchQuery = useDebounce(searchQuery, 300);
   const [shouldAnimate] = useState(false); // Disable animation for better performance
   const [hoveredDataPoint, setHoveredDataPoint] = useState<Record<
     string,
@@ -331,99 +323,18 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
     return Object.keys(res);
   }, [filteredData]);
 
-  // All agents that have timeline data (for search functionality)
-  const allTimelineAgents = useMemo(() => {
-    if (!timelineRaw) return [];
-
-    // Extract all unique agent names from timeline data
-    const agentNames = new Set<string>();
-    timelineRaw.forEach((agentTimeline) => {
-      agentNames.add(agentTimeline.agentName);
-    });
-
-    // Map timeline agents to our format, only including agents that exist in the agents prop
-    return Array.from(agentNames)
-      .map((agentName) => agents?.find((agent) => agent.name === agentName))
-      .filter(
-        (
-          agent,
-        ): agent is RouterOutputs["competitions"]["getAgents"]["agents"][number] =>
-          agent !== undefined,
-      );
-  }, [timelineRaw, agents]);
-
-  // Current page agents with data - only show agents from the current pagination page when NOT searching
+  // Current page agents with data
   const allAgentsWithData = useMemo(() => {
-    // If searching, use all timeline agents for filtering
-    if (debouncedSearchQuery) {
-      return allTimelineAgents.filter((agent) =>
-        allDataKeys.some((agentName) => agentName === agent?.name),
-      );
-    }
-
-    // If not searching, use current page agents
     if (!agents || agents.length === 0) return [];
     return agents.filter((agent) =>
       allDataKeys.some((agentName) => agentName === agent.name),
     );
-  }, [agents, allDataKeys, allTimelineAgents, debouncedSearchQuery]);
+  }, [agents, allDataKeys]);
 
-  // Filtered agents for the legend (based on search query)
-  const filteredAgentsForLegend = useMemo(() => {
-    if (!debouncedSearchQuery) return allAgentsWithData;
-    const lowercaseQuery = debouncedSearchQuery.toLowerCase();
-    return allAgentsWithData.filter((agent) =>
-      agent.name.toLowerCase().includes(lowercaseQuery),
-    );
-  }, [allAgentsWithData, debouncedSearchQuery]);
-
-  // Current legend page state for search pagination tracking
-  const [currentLegendPage, setCurrentLegendPage] = useState(1);
-
-  // Handle search page changes from CustomLegend
-  const handleSearchPageChange = useCallback((page: number) => {
-    setCurrentLegendPage(page);
-  }, []);
-
-  // Reset legend page when search query changes
-  useEffect(() => {
-    setCurrentLegendPage(1);
-  }, [debouncedSearchQuery]);
-
-  // Chart display agents - should match what's shown in the legend's current page
-  const chartDisplayAgents = useMemo(() => {
-    if (!debouncedSearchQuery) {
-      // When not searching, use current page agents
-      return allAgentsWithData;
-    } else {
-      // When searching, show agents from current search page
-      const startIndex = (currentLegendPage - 1) * LIMIT_AGENTS_PER_CHART;
-      const endIndex = startIndex + LIMIT_AGENTS_PER_CHART;
-      return filteredAgentsForLegend.slice(startIndex, endIndex) || [];
-    }
-  }, [
-    allAgentsWithData,
-    filteredAgentsForLegend,
-    debouncedSearchQuery,
-    currentLegendPage,
-  ]);
-
-  // Get chart-visible agent keys (limited for performance)
   const chartVisibleAgentKeys = useMemo(() => {
-    const agentNamesSet = new Set(
-      chartDisplayAgents.map((agent) => agent.name),
-    );
+    const agentNamesSet = new Set(allAgentsWithData.map((agent) => agent.name));
     return allDataKeys.filter((agentName) => agentNamesSet.has(agentName));
-  }, [allDataKeys, chartDisplayAgents]);
-
-  // Filter data keys based on search (limited to chart-visible agents)
-  const filteredDataKeys = useMemo(() => {
-    if (!debouncedSearchQuery) return chartVisibleAgentKeys;
-    const lowercaseQuery = debouncedSearchQuery.toLowerCase();
-    return chartVisibleAgentKeys.filter((agent) =>
-      agent.toLowerCase().includes(lowercaseQuery),
-    );
-  }, [chartVisibleAgentKeys, debouncedSearchQuery]);
+  }, [allDataKeys, allAgentsWithData]);
 
   // Create a consistent color mapping for chart-visible agents
   const agentColorMap = useMemo(() => {
@@ -659,7 +570,7 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
                 >
                   <ChartWrapper
                     filteredData={filteredData}
-                    filteredDataKeys={filteredDataKeys}
+                    filteredDataKeys={chartVisibleAgentKeys}
                     agentColorMap={agentColorMap}
                     shouldAnimate={shouldAnimate}
                     isFullRange={status === "ended"}
@@ -669,14 +580,11 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
               </div>
               <div className="border-t-1 my-2 w-full"></div>
               <CustomLegend
-                agents={filteredAgentsForLegend}
+                agents={allAgentsWithData}
                 colorMap={agentColorMap}
                 currentValues={hoveredDataPoint || latestValues}
                 currentOrder={hoveredOrder}
-                searchQuery={searchQuery}
-                onSearchChange={setSearchQuery}
                 onAgentHover={handleLegendHover}
-                onSearchPageChange={handleSearchPageChange}
               />
             </>
           )}

@@ -1,13 +1,9 @@
 "use client";
 
-import { Search } from "lucide-react";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-
-import { Input } from "@recallnet/ui2/components/input";
+import React, { useMemo } from "react";
 
 import { AgentAvatar } from "../agent-avatar";
-import { Pagination } from "../pagination";
-import { CHART_COLORS, LIMIT_AGENTS_PER_CHART } from "./constants";
+import { CHART_COLORS } from "./constants";
 import { CustomLegendProps } from "./types";
 
 /**
@@ -18,29 +14,8 @@ export const CustomLegend = ({
   colorMap,
   currentValues,
   currentOrder,
-  searchQuery,
-  onSearchChange,
   onAgentHover,
-  onSearchPageChange,
 }: CustomLegendProps) => {
-  // Internal pagination state for search results
-  const [searchPage, setSearchPage] = useState(1);
-
-  // Reset search page when search query changes
-  useEffect(() => {
-    setSearchPage(1);
-    onSearchPageChange?.(1);
-  }, [searchQuery, onSearchPageChange]);
-
-  // Create a wrapper for search page changes that notifies parent
-  const handleSearchPageChange = useCallback(
-    (page: number) => {
-      setSearchPage(page);
-      onSearchPageChange?.(page);
-    },
-    [onSearchPageChange],
-  );
-
   // Sort agents by the exact order from the current hover payload, if available.
   // Fallback to sorting by value desc, then by name for stability.
   const sortedAgents = useMemo(() => {
@@ -77,46 +52,10 @@ export const CustomLegend = ({
     });
   }, [agents, currentOrder, currentValues]);
 
-  // Handle pagination for search results only
-  const { displayAgents, paginationProps } = useMemo(() => {
-    if (searchQuery) {
-      // When searching, paginate the sorted search results
-      const startIndex = (searchPage - 1) * LIMIT_AGENTS_PER_CHART;
-      const endIndex = startIndex + LIMIT_AGENTS_PER_CHART;
-      const paginatedSearchResults = sortedAgents.slice(startIndex, endIndex);
-
-      return {
-        displayAgents: paginatedSearchResults,
-        paginationProps: {
-          totalItems: sortedAgents.length,
-          currentPage: searchPage,
-          onPageChange: handleSearchPageChange,
-        },
-      };
-    } else {
-      // When not searching, show all agents (no pagination needed)
-      return {
-        displayAgents: sortedAgents,
-        paginationProps: null,
-      };
-    }
-  }, [sortedAgents, searchQuery, searchPage, handleSearchPageChange]);
-
   return (
     <div className="p-5">
-      <div className="text-secondary-foreground relative mb-4 max-w-[500px]">
-        <Input
-          type="text"
-          placeholder="Search for an agent..."
-          value={searchQuery}
-          onChange={(e) => onSearchChange(e.target.value)}
-          className="w-full rounded-full"
-        />
-        <Search className="absolute bottom-3 right-5" size={16} />
-      </div>
-
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-        {displayAgents.map((agent) => {
+        {sortedAgents.map((agent) => {
           return (
             <div
               key={agent.name}
@@ -143,17 +82,6 @@ export const CustomLegend = ({
           );
         })}
       </div>
-
-      {paginationProps &&
-        paginationProps.onPageChange &&
-        paginationProps.totalItems > LIMIT_AGENTS_PER_CHART && (
-          <Pagination
-            totalItems={paginationProps.totalItems}
-            currentPage={paginationProps.currentPage}
-            itemsPerPage={LIMIT_AGENTS_PER_CHART}
-            onPageChange={paginationProps.onPageChange}
-          />
-        )}
     </div>
   );
 };
