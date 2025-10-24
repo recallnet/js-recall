@@ -2637,21 +2637,41 @@ export class CompetitionRepository {
       // Extract the complex bucketing expression to avoid duplication
       const bucketExpression = sql`FLOOR(EXTRACT(EPOCH FROM (ps.timestamp - c.start_date)) / 60 / ${bucket})`;
 
-      if (includeRiskMetrics) {
-        // Query with risk metrics for perps competitions
-        const result = await this.#dbRead.execute<{
-          timestamp: string;
-          agent_id: string;
-          agent_name: string;
-          competition_id: string;
-          total_value: number;
-          calmar_ratio: string | null;
-          sortino_ratio: string | null;
-          max_drawdown: string | null;
-          downside_deviation: string | null;
-          simple_return: string | null;
-          annualized_return: string | null;
-        }>(sql`
+      // Build conditional fragments for the single query approach
+      // Column selections - either from rms table or NULL
+      const calmarColumn = includeRiskMetrics
+        ? sql`rms.calmar_ratio`
+        : sql`NULL::numeric`;
+      const sortinoColumn = includeRiskMetrics
+        ? sql`rms.sortino_ratio`
+        : sql`NULL::numeric`;
+      const maxDrawdownColumn = includeRiskMetrics
+        ? sql`rms.max_drawdown`
+        : sql`NULL::numeric`;
+      const downsideDeviationColumn = includeRiskMetrics
+        ? sql`rms.downside_deviation`
+        : sql`NULL::numeric`;
+      const simpleReturnColumn = includeRiskMetrics
+        ? sql`rms.simple_return`
+        : sql`NULL::numeric`;
+      const annualizedReturnColumn = includeRiskMetrics
+        ? sql`rms.annualized_return`
+        : sql`NULL::numeric`;
+
+      // Single unified query with conditional columns
+      const result = await this.#dbRead.execute<{
+        timestamp: string;
+        agent_id: string;
+        agent_name: string;
+        competition_id: string;
+        total_value: number;
+        calmar_ratio: string | null;
+        sortino_ratio: string | null;
+        max_drawdown: string | null;
+        downside_deviation: string | null;
+        simple_return: string | null;
+        annualized_return: string | null;
+      }>(sql`
         SELECT
           timestamp,
           agent_id,
@@ -2675,18 +2695,21 @@ export class CompetitionRepository {
             a.name,
             ps.competition_id,
             ps.total_value,
-            rms.calmar_ratio,
-            rms.sortino_ratio,
-            rms.max_drawdown,
-            rms.downside_deviation,
-            rms.simple_return,
-            rms.annualized_return
+            ${calmarColumn} AS calmar_ratio,
+            ${sortinoColumn} AS sortino_ratio,
+            ${maxDrawdownColumn} AS max_drawdown,
+            ${downsideDeviationColumn} AS downside_deviation,
+            ${simpleReturnColumn} AS simple_return,
+            ${annualizedReturnColumn} AS annualized_return
           FROM competition_agents ca
           JOIN trading_comps.portfolio_snapshots ps
             ON ps.agent_id = ca.agent_id
             AND ps.competition_id = ca.competition_id
           JOIN agents a ON a.id = ca.agent_id
           JOIN competitions c ON c.id = ca.competition_id
+          ${
+            includeRiskMetrics
+              ? sql`
           LEFT JOIN LATERAL (
             SELECT 
               calmar_ratio,
@@ -2702,6 +2725,9 @@ export class CompetitionRepository {
             ORDER BY ABS(EXTRACT(EPOCH FROM (rms.timestamp - ps.timestamp)))
             LIMIT 1
           ) rms ON true
+          `
+              : sql``
+          }
           WHERE ca.competition_id = ${competitionId}
             AND ca.status = ${"active"}
         ) AS ranked_snapshots
@@ -2709,49 +2735,8 @@ export class CompetitionRepository {
         ORDER BY timestamp, agent_id
       `);
 
-        // Convert snake_case to camelCase with risk metrics
-        return result.rows.map((row) => this.convertEnrichedSnapshotRow(row));
-      } else {
-        // Original query without risk metrics
-        const result = await this.#dbRead.execute<{
-          timestamp: string;
-          agent_id: string;
-          agent_name: string;
-          competition_id: string;
-          total_value: number;
-        }>(sql`
-        SELECT
-          timestamp,
-          agent_id,
-          name AS agent_name,
-          competition_id,
-          total_value
-        FROM (
-          SELECT
-            ROW_NUMBER() OVER (
-              PARTITION BY ps.agent_id, ps.competition_id, ${bucketExpression}
-              ORDER BY ps.timestamp DESC
-            ) AS rn,
-            ps.timestamp,
-            ps.agent_id,
-            a.name,
-            ps.competition_id,
-            ps.total_value
-          FROM competition_agents ca
-          JOIN trading_comps.portfolio_snapshots ps
-            ON ps.agent_id = ca.agent_id
-            AND ps.competition_id = ca.competition_id
-          JOIN agents a ON a.id = ca.agent_id
-          JOIN competitions c ON c.id = ca.competition_id
-          WHERE ca.competition_id = ${competitionId}
-            AND ca.status = ${"active"}
-        ) AS ranked_snapshots
-        WHERE rn = 1
-      `);
-
-        // Convert snake_case to camelCase
-        return result.rows.map((row) => this.convertEnrichedSnapshotRow(row));
-      }
+      // Use the helper to convert snake_case to camelCase
+      return result.rows.map((row) => this.convertEnrichedSnapshotRow(row));
     } catch (error) {
       this.#logger.error("Error in getAgentPortfolioTimeline:", error);
       throw error;
