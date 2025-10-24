@@ -1708,17 +1708,17 @@ export class CompetitionRepository {
         WITH snapshot_bounds AS (
           -- Get first, last, and count in one efficient scan
           SELECT 
-            MIN(${portfolioSnapshots.totalValue}) FILTER (WHERE rn = 1) as first_value,
-            MAX(${portfolioSnapshots.totalValue}) FILTER (WHERE rn = snapshot_count) as last_value,
+            MIN(total_value) FILTER (WHERE rn = 1) as first_value,
+            MAX(total_value) FILTER (WHERE rn = snapshot_count) as last_value,
             MAX(snapshot_count) as total_snapshots
           FROM (
             SELECT 
-              ${portfolioSnapshots.totalValue},
-              ROW_NUMBER() OVER (ORDER BY ${portfolioSnapshots.timestamp}) as rn,
+              total_value,
+              ROW_NUMBER() OVER (ORDER BY timestamp) as rn,
               COUNT(*) OVER () as snapshot_count
-            FROM ${portfolioSnapshots}
-            WHERE ${portfolioSnapshots.agentId} = ${agentId}
-              AND ${portfolioSnapshots.competitionId} = ${competitionId}
+            FROM ${portfolioSnapshots} ps
+            WHERE ps.agent_id = ${agentId}
+              AND ps.competition_id = ${competitionId}
           ) numbered
         ),
         period_returns AS (
@@ -1726,41 +1726,39 @@ export class CompetitionRepository {
           SELECT 
             CASE 
               WHEN prev_value IS NOT NULL AND prev_value != 0 
-              THEN (${portfolioSnapshots.totalValue} - prev_value) / prev_value
+              THEN (total_value - prev_value) / prev_value
               ELSE NULL
             END as return_rate
           FROM (
             SELECT 
-              ${portfolioSnapshots.totalValue},
-              LAG(${portfolioSnapshots.totalValue}) OVER (ORDER BY ${portfolioSnapshots.timestamp}) as prev_value
-            FROM ${portfolioSnapshots}
-            WHERE ${portfolioSnapshots.agentId} = ${agentId}
-              AND ${portfolioSnapshots.competitionId} = ${competitionId}
+              total_value,
+              LAG(total_value) OVER (ORDER BY timestamp) as prev_value
+            FROM ${portfolioSnapshots} ps
+            WHERE ps.agent_id = ${agentId}
+              AND ps.competition_id = ${competitionId}
           ) with_lag
         )
         SELECT 
-          -- Average return
-          COALESCE(AVG(pr.return_rate), 0) as avg_return,
+          -- Average return (using subquery with COALESCE to handle empty CTE)
+          COALESCE((SELECT AVG(return_rate) FROM period_returns), 0) as avg_return,
           -- Downside deviation: sqrt of average squared negative deviations from MAR
-          COALESCE(SQRT(AVG(
+          COALESCE((SELECT SQRT(AVG(
             CASE 
-              WHEN pr.return_rate < ${mar} 
-              THEN POWER(pr.return_rate - ${mar}, 2) 
+              WHEN return_rate < ${mar} 
+              THEN POWER(return_rate - ${mar}, 2) 
               ELSE 0 
             END
-          )), 0) as downside_deviation,
-          -- Simple return from first to last
-          COALESCE(
+          )) FROM period_returns), 0) as downside_deviation,
+          -- Simple return from first to last (using subquery to handle empty CTE)
+          COALESCE((SELECT 
             CASE 
-              WHEN sb.first_value IS NOT NULL AND sb.first_value > 0 
-              THEN (sb.last_value - sb.first_value) / sb.first_value
+              WHEN first_value IS NOT NULL AND first_value > 0 
+              THEN (last_value - first_value) / first_value
               ELSE 0
-            END, 0
+            END FROM snapshot_bounds), 0
           ) as simple_return,
-          -- Total snapshot count
-          COALESCE(sb.total_snapshots, 0) as snapshot_count
-        FROM period_returns pr
-        CROSS JOIN snapshot_bounds sb
+          -- Total snapshot count (using subquery to handle empty CTE)
+          COALESCE((SELECT total_snapshots FROM snapshot_bounds), 0) as snapshot_count
       `);
 
       const metrics = result.rows[0];
