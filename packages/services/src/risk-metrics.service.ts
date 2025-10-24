@@ -76,13 +76,23 @@ export class RiskMetricsService {
             competitionId,
           );
 
-        // Combine metrics into single record
+        // Both services calculate annualizedReturn differently:
+        // - Calmar: Uses overall period return (total return from start to end)
+        // - Sortino: Uses average of individual period returns
+        // We must preserve Calmar's calculation for the annualizedReturn field
+        // since that's what the database schema expects for this field.
+        // Sortino's average return is already stored separately in its own context.
         const combinedMetrics = {
-          ...calmarMetrics,
           ...sortinoMetrics,
+          ...calmarMetrics,
           // Ensure we don't duplicate common fields
           agentId,
           competitionId,
+          // Explicitly preserve fields that have different calculations between services
+          annualizedReturn: calmarMetrics.annualizedReturn, // Overall period return
+          simpleReturn: calmarMetrics.simpleReturn, // Should be same, but preserve Calmar's for consistency
+          // Note: We keep Sortino's snapshotCount as it reflects actual snapshots used
+          // (Calmar always returns 2 since it only uses first and last)
         };
 
         // Single atomic save
