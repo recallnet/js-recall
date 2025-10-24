@@ -18,11 +18,8 @@ import { useSession } from "@/hooks";
 import { useClaim } from "@/hooks/useClaim";
 
 import { NonStakeBoost } from "./NonStakeBoost";
-//import { GetRecall } from "./GetRecall";
 import { RecallToken } from "./RecallToken";
 import { StakeBoost } from "./StakeBoost";
-
-//import { StakeRecall } from "./StakeRecall";
 
 export const Navbar: React.FunctionComponent = () => {
   const pathname = usePathname();

@@ -11,6 +11,12 @@ import React, {
 } from "react";
 
 import { Button } from "@recallnet/ui2/components/button";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@recallnet/ui2/components/tabs";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { config } from "@/config/public";
@@ -20,11 +26,11 @@ import { checkIsPerpsCompetition } from "@/utils/competition-utils";
 import { formatDate } from "@/utils/format";
 
 import { ShareModal } from "../share-modal";
-import { CalmarRatioChart } from "./calmar-ratio-chart";
 import { ChartSkeleton } from "./chart-skeleton";
 import { ChartWrapper } from "./chart-wrapper";
 import { CHART_COLORS, HoverContext, LIMIT_AGENTS_PER_PAGE } from "./constants";
 import { CustomLegend } from "./custom-legend";
+import { MetricTimelineChart } from "./metric-timeline-chart";
 import { PortfolioChartProps, TimelineViewRecord } from "./types";
 import { datesByWeek, formatDateShort } from "./utils";
 
@@ -38,6 +44,7 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
   suppressInternalLoading = false,
 }) => {
   const isPerpsCompetition = checkIsPerpsCompetition(competition);
+  const [activeChartTab, setActiveChartTab] = useState("account-value");
 
   const { data: timelineRaw, isLoading } = useCompetitionTimeline(
     competition.id,
@@ -445,141 +452,268 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
     setDateRangeIndex((prev) => Math.min(parsedData.length - 1, prev + 1));
   };
 
-  // For perps competitions, render the CalmarRatioChart instead
+  // For perps competitions, render charts with tabs
   if (isPerpsCompetition) {
     return (
       <div
         className={cn("bg-card rounded-lg border border-zinc-900", className)}
       >
-        <div className="flex flex-row justify-between border-b px-6 pb-4 pt-6">
-          <div className="w-full">
-            <h2
-              id="calmar-ratio-leaderboard"
-              className="mb-2 text-2xl font-bold text-white"
-            >
-              Calmar Ratio Leaderboard
-            </h2>
-            <p className="text-gray-400">
-              Risk-adjusted performance metric (higher is better)
-            </p>
+        <Tabs
+          value={activeChartTab}
+          onValueChange={setActiveChartTab}
+          className="w-full"
+        >
+          {/* Chart Tabs Header */}
+          <div className="flex flex-col gap-4 border-b px-6 pb-4 pt-6 sm:flex-row sm:items-center sm:justify-between">
+            <div className="w-full">
+              <h2 className="mb-2 text-2xl font-bold text-white">
+                Performance Metrics
+              </h2>
+              <p className="text-gray-400">
+                Risk-adjusted performance analysis
+              </p>
+            </div>
+            <div className="flex items-center gap-4">
+              <TabsList className="flex flex-wrap gap-2">
+                <TabsTrigger
+                  value="account-value"
+                  className="border border-white bg-black px-3 py-1.5 text-xs font-semibold uppercase text-white transition-colors hover:bg-white hover:text-black data-[state=active]:bg-white data-[state=active]:text-black"
+                >
+                  Account Value
+                </TabsTrigger>
+                <TabsTrigger
+                  value="calmar-ratio"
+                  className="border border-white bg-black px-3 py-1.5 text-xs font-semibold uppercase text-white transition-colors hover:bg-white hover:text-black data-[state=active]:bg-white data-[state=active]:text-black"
+                >
+                  Calmar Ratio
+                </TabsTrigger>
+                <TabsTrigger
+                  value="max-drawdown"
+                  className="border border-white bg-black px-3 py-1.5 text-xs font-semibold uppercase text-white transition-colors hover:bg-white hover:text-black data-[state=active]:bg-white data-[state=active]:text-black"
+                >
+                  Max Drawdown
+                </TabsTrigger>
+                <TabsTrigger
+                  value="sortino-ratio"
+                  className="border border-white bg-black px-3 py-1.5 text-xs font-semibold uppercase text-white transition-colors hover:bg-white hover:text-black data-[state=active]:bg-white data-[state=active]:text-black"
+                >
+                  Sortino Ratio
+                </TabsTrigger>
+              </TabsList>
+              <ShareModal
+                title="Share performance metrics"
+                url={`${config.frontendUrl}/competitions/${id}/chart`}
+                size={20}
+              />
+            </div>
           </div>
-          <ShareModal
-            title="Share Calmar ratio leaderboard"
-            url={`${config.frontendUrl}/competitions/${id}/chart`}
-            size={20}
-          />
-        </div>
-        <CalmarRatioChart agents={agents || []} />
+
+          {/* Account Value Tab */}
+          <TabsContent value="account-value" className="m-0">
+            <MetricTimelineChart
+              timelineData={timelineRaw || []}
+              agents={agents || []}
+              metric="simpleReturn"
+              isLoading={isLoading}
+              status={competition.status}
+              startDate={competition.startDate}
+              endDate={competition.endDate}
+            />
+          </TabsContent>
+
+          {/* Calmar Ratio Tab */}
+          <TabsContent value="calmar-ratio" className="m-0">
+            <MetricTimelineChart
+              timelineData={timelineRaw || []}
+              agents={agents || []}
+              metric="calmarRatio"
+              isLoading={isLoading}
+              status={competition.status}
+              startDate={competition.startDate}
+              endDate={competition.endDate}
+            />
+          </TabsContent>
+
+          {/* Max Drawdown Tab */}
+          <TabsContent value="max-drawdown" className="m-0">
+            <MetricTimelineChart
+              timelineData={timelineRaw || []}
+              agents={agents || []}
+              metric="maxDrawdown"
+              isLoading={isLoading}
+              status={competition.status}
+              startDate={competition.startDate}
+              endDate={competition.endDate}
+            />
+          </TabsContent>
+
+          {/* Sortino Ratio Tab */}
+          <TabsContent value="sortino-ratio" className="m-0">
+            <MetricTimelineChart
+              timelineData={timelineRaw || []}
+              agents={agents || []}
+              metric="sortinoRatio"
+              isLoading={isLoading}
+              status={competition.status}
+              startDate={competition.startDate}
+              endDate={competition.endDate}
+            />
+          </TabsContent>
+        </Tabs>
       </div>
     );
   }
 
   return (
     <div className={cn("w-full rounded-lg border", className)}>
-      <div className="bg-card flex items-center justify-between p-5">
-        <div className="w-full">
-          <h2
-            id="portfolio-timeline"
-            className="mb-2 text-2xl font-bold text-white"
-          >
-            Portfolio Timeline
-          </h2>
-          <p className="text-gray-400">
-            Real-time trading performance of AI competitors
-          </p>
-        </div>
-        <ShareModal
-          title="Share portfolio timeline"
-          url={`${config.frontendUrl}/competitions/${id}/chart`}
-          size={20}
-        />
-      </div>
-      {isLoading && !suppressInternalLoading ? (
-        <ChartSkeleton />
-      ) : (timelineRaw && timelineRaw?.length <= 0) || status === "pending" ? (
-        <div className="h-30 flex w-full flex-col items-center justify-center p-10">
-          <span className="text-primary-foreground">
-            {status === "pending"
-              ? "Competition hasn't started yet"
-              : "No agents competing yet"}
-          </span>
-          <span className="text-secondary-foreground text-sm">
-            {status === "pending" && startDate
-              ? `The competition will start on ${formatDate(startDate)}.`
-              : "Agents will appear here as soon as the competition starts."}
-          </span>
-        </div>
-      ) : (
-        <>
-          {status !== "ended" && filteredData.length > 0 && (
-            <div className="flex w-full items-center justify-end px-6 py-4">
-              <div className="text-secondary-foreground flex items-center gap-3 text-sm">
-                <Button
-                  onClick={handlePrevRange}
-                  disabled={dateRangeIndex <= 0}
-                  variant="outline"
-                  className="hover:text-primary-foreground border-none p-0 hover:bg-black"
-                >
-                  <ChevronLeft strokeWidth={1.5} />
-                </Button>
-                <div className="flex items-center gap-2">
-                  <span>
-                    {filteredData[0]?.originalTimestamp
-                      ? formatDateShort(filteredData[0].originalTimestamp)
-                      : formatDateShort(filteredData[0]?.timestamp as string)}
-                  </span>
-                  <span className="text-secondary-foreground">/</span>
-                  <span>
-                    {(() => {
-                      const lastItem = filteredData[filteredData.length - 1];
-                      return lastItem?.originalTimestamp
-                        ? formatDateShort(lastItem.originalTimestamp)
-                        : formatDateShort(lastItem?.timestamp as string);
-                    })()}
-                  </span>
-                </div>
-                <Button
-                  onClick={handleNextRange}
-                  disabled={dateRangeIndex >= parsedData.length - 1}
-                  variant="outline"
-                  className="hover:text-primary-foreground border-none p-0 hover:bg-black"
-                >
-                  <ChevronRight strokeWidth={1.5} />
-                </Button>
-              </div>
-            </div>
-          )}
-
-          <div className="h-120 relative">
-            <HoverContext.Provider
-              value={{
-                hoveredAgent: legendHoveredAgent,
-                setHoveredAgent: setLegendHoveredAgent,
-              }}
+      <Tabs
+        value={activeChartTab}
+        onValueChange={setActiveChartTab}
+        className="w-full"
+      >
+        {/* Chart Tabs Header */}
+        <div className="bg-card flex flex-col gap-4 border-b p-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="w-full">
+            <h2
+              id="portfolio-timeline"
+              className="mb-2 text-2xl font-bold text-white"
             >
-              <ChartWrapper
-                filteredData={filteredData}
-                filteredDataKeys={filteredDataKeys}
-                agentColorMap={agentColorMap}
-                shouldAnimate={shouldAnimate}
-                isFullRange={status === "ended"}
-                onHoverChange={handleHoverChange}
-              />
-            </HoverContext.Provider>
+              Portfolio Timeline
+            </h2>
+            <p className="text-gray-400">
+              Real-time trading performance of AI competitors
+            </p>
           </div>
-          <div className="border-t-1 my-2 w-full"></div>
-          <CustomLegend
-            agents={filteredAgentsForLegend}
-            colorMap={agentColorMap}
-            currentValues={hoveredDataPoint || latestValues}
-            currentOrder={hoveredOrder}
-            searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
-            onAgentHover={handleLegendHover}
-            onSearchPageChange={handleSearchPageChange}
+          <div className="flex items-center gap-4">
+            <TabsList className="flex flex-wrap gap-2">
+              <TabsTrigger
+                value="account-value"
+                className="border border-white bg-black px-3 py-1.5 text-xs font-semibold uppercase text-white transition-colors hover:bg-white hover:text-black data-[state=active]:bg-white data-[state=active]:text-black"
+              >
+                Account Value
+              </TabsTrigger>
+              <TabsTrigger
+                value="percent-gain"
+                className="border border-white bg-black px-3 py-1.5 text-xs font-semibold uppercase text-white transition-colors hover:bg-white hover:text-black data-[state=active]:bg-white data-[state=active]:text-black"
+              >
+                % Gain
+              </TabsTrigger>
+            </TabsList>
+            <ShareModal
+              title="Share portfolio timeline"
+              url={`${config.frontendUrl}/competitions/${id}/chart`}
+              size={20}
+            />
+          </div>
+        </div>
+
+        {/* Account Value Tab */}
+        <TabsContent value="account-value" className="m-0">
+          {isLoading && !suppressInternalLoading ? (
+            <ChartSkeleton />
+          ) : (timelineRaw && timelineRaw?.length <= 0) ||
+            status === "pending" ? (
+            <div className="h-30 flex w-full flex-col items-center justify-center p-10">
+              <span className="text-primary-foreground">
+                {status === "pending"
+                  ? "Competition hasn't started yet"
+                  : "No agents competing yet"}
+              </span>
+              <span className="text-secondary-foreground text-sm">
+                {status === "pending" && startDate
+                  ? `The competition will start on ${formatDate(startDate)}.`
+                  : "Agents will appear here as soon as the competition starts."}
+              </span>
+            </div>
+          ) : (
+            <>
+              {status !== "ended" && filteredData.length > 0 && (
+                <div className="flex w-full items-center justify-end px-6 py-4">
+                  <div className="text-secondary-foreground flex items-center gap-3 text-sm">
+                    <Button
+                      onClick={handlePrevRange}
+                      disabled={dateRangeIndex <= 0}
+                      variant="outline"
+                      className="hover:text-primary-foreground border-none p-0 hover:bg-black"
+                    >
+                      <ChevronLeft strokeWidth={1.5} />
+                    </Button>
+                    <div className="flex items-center gap-2">
+                      <span>
+                        {filteredData[0]?.originalTimestamp
+                          ? formatDateShort(filteredData[0].originalTimestamp)
+                          : formatDateShort(
+                              filteredData[0]?.timestamp as string,
+                            )}
+                      </span>
+                      <span className="text-secondary-foreground">/</span>
+                      <span>
+                        {(() => {
+                          const lastItem =
+                            filteredData[filteredData.length - 1];
+                          return lastItem?.originalTimestamp
+                            ? formatDateShort(lastItem.originalTimestamp)
+                            : formatDateShort(lastItem?.timestamp as string);
+                        })()}
+                      </span>
+                    </div>
+                    <Button
+                      onClick={handleNextRange}
+                      disabled={dateRangeIndex >= parsedData.length - 1}
+                      variant="outline"
+                      className="hover:text-primary-foreground border-none p-0 hover:bg-black"
+                    >
+                      <ChevronRight strokeWidth={1.5} />
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              <div className="h-120 relative">
+                <HoverContext.Provider
+                  value={{
+                    hoveredAgent: legendHoveredAgent,
+                    setHoveredAgent: setLegendHoveredAgent,
+                  }}
+                >
+                  <ChartWrapper
+                    filteredData={filteredData}
+                    filteredDataKeys={filteredDataKeys}
+                    agentColorMap={agentColorMap}
+                    shouldAnimate={shouldAnimate}
+                    isFullRange={status === "ended"}
+                    onHoverChange={handleHoverChange}
+                  />
+                </HoverContext.Provider>
+              </div>
+              <div className="border-t-1 my-2 w-full"></div>
+              <CustomLegend
+                agents={filteredAgentsForLegend}
+                colorMap={agentColorMap}
+                currentValues={hoveredDataPoint || latestValues}
+                currentOrder={hoveredOrder}
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+                onAgentHover={handleLegendHover}
+                onSearchPageChange={handleSearchPageChange}
+              />
+            </>
+          )}
+        </TabsContent>
+
+        {/* % Gain Tab */}
+        <TabsContent value="percent-gain" className="m-0">
+          <MetricTimelineChart
+            timelineData={timelineRaw || []}
+            agents={agents || []}
+            metric="simpleReturn"
+            isLoading={isLoading}
+            status={competition.status}
+            startDate={competition.startDate}
+            endDate={competition.endDate}
           />
-        </>
-      )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
