@@ -31,7 +31,7 @@ import {
 } from "@recallnet/test-utils";
 import { generateRandomPrivyId } from "@recallnet/test-utils";
 
-import { ServiceRegistry } from "@/services/index.js";
+import { portfolioSnapshotterService } from "@/lib/services";
 
 describe("User API", () => {
   // Clean up test state before each test
@@ -1351,10 +1351,7 @@ describe("User API", () => {
     });
 
     // Trigger portfolio snapshots
-    const services = new ServiceRegistry();
-    await services.portfolioSnapshotterService.takePortfolioSnapshots(
-      competition.id,
-    );
+    await portfolioSnapshotterService.takePortfolioSnapshots(competition.id);
 
     // Get agent competitions for each user
     const response1 =
