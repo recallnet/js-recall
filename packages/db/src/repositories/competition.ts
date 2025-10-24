@@ -2634,6 +2634,9 @@ export class CompetitionRepository {
     includeRiskMetrics = false,
   ) {
     try {
+      // Extract the complex bucketing expression to avoid duplication
+      const bucketExpression = sql`FLOOR(EXTRACT(EPOCH FROM (ps.timestamp - c.start_date)) / 60 / ${bucket})`;
+
       if (includeRiskMetrics) {
         // Query with risk metrics for perps competitions
         const result = await this.#dbRead.execute<{
@@ -2664,7 +2667,7 @@ export class CompetitionRepository {
         FROM (
           SELECT
             ROW_NUMBER() OVER (
-              PARTITION BY ps.agent_id, ps.competition_id, FLOOR(EXTRACT(EPOCH FROM (ps.timestamp - c.start_date)) / 60 / ${bucket})
+              PARTITION BY ps.agent_id, ps.competition_id, ${bucketExpression}
               ORDER BY ps.timestamp DESC
             ) AS rn,
             ps.timestamp,
@@ -2726,7 +2729,7 @@ export class CompetitionRepository {
         FROM (
           SELECT
             ROW_NUMBER() OVER (
-              PARTITION BY ps.agent_id, ps.competition_id,FLOOR(EXTRACT(EPOCH FROM (ps.timestamp - c.start_date)) / 60 / ${bucket})
+              PARTITION BY ps.agent_id, ps.competition_id, ${bucketExpression}
               ORDER BY ps.timestamp DESC
             ) AS rn,
             ps.timestamp,
