@@ -280,7 +280,10 @@ export const MetricTimelineChart: React.FC<MetricTimelineChartProps> = ({
               stroke="#9CA3AF"
               fontSize={12}
               tick={{ fill: "#9CA3AF" }}
-              domain={["auto", "auto"]}
+              domain={[
+                (dataMin: number) => dataMin * 0.95,
+                (dataMax: number) => dataMax * 1.05,
+              ]}
               tickFormatter={(value) =>
                 yAxisType === "currency"
                   ? `$${(value / 1000).toFixed(1)}k`
