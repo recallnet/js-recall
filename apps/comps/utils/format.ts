@@ -5,7 +5,7 @@ import { cmp, format as formatBigint } from "dnum";
  * Formats a number as a percentage string.
  * Calculates percentage as (value / total) * 100 to match legacy callers.
  * @param value - The value to convert to percentage
- * @param total - The total value to calculate percentage from (defaults to 1)
+ * @param total - The total value to calculate percentage from (defaults to 100—i.e., assume it's already a percentage)
  * @param maxDecimals - Maximum decimal places in the output (defaults to 0)
  * @returns A formatted percentage string (e.g. "50%", "12.34%")
  */
