@@ -239,32 +239,19 @@ export const MetricTimelineChart: React.FC<MetricTimelineChartProps> = ({
         // percentReturn is computed from first totalValue per agent
         if (metric === "percentReturn") {
           const firstPoint = agent.timeline[0];
-          const startValue =
-            firstPoint && typeof firstPoint.totalValue === "number"
-              ? firstPoint.totalValue
-              : null;
-          const currentValue =
-            typeof point.totalValue === "number" ? point.totalValue : null;
+          const startValue = firstPoint?.totalValue ?? null;
+          const currentValue = point.totalValue ?? null;
 
-          if (
-            startValue !== null &&
-            Number.isFinite(startValue) &&
-            currentValue !== null &&
-            Number.isFinite(currentValue) &&
-            startValue !== 0
-          ) {
+          if (startValue && currentValue && startValue !== 0) {
             const pct = ((currentValue - startValue) / startValue) * 100;
-            dataPoint[agent.agentName] = Number.isFinite(pct) ? pct : null;
+            dataPoint[agent.agentName] = pct ?? null;
           } else {
             dataPoint[agent.agentName] = null;
           }
         } else {
           // API metric key: take numeric finite value from the point
-          const metricValue = (point as Record<string, unknown>)[metric];
-          const numericValue =
-            typeof metricValue === "number" && Number.isFinite(metricValue)
-              ? metricValue
-              : null;
+          const metricValue = point[metric];
+          const numericValue = metricValue ?? null;
           dataPoint[agent.agentName] = numericValue;
         }
       });
