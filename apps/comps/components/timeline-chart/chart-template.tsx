@@ -40,10 +40,8 @@ interface MetricTimelineChartProps {
   dateRange?: "all" | "72h";
 }
 
-interface AgentAvatarDotProps {
+interface AgentAvatarDotProps extends ActiveDotProps {
   agent: RouterOutputs["competitions"]["getAgents"]["agents"][number];
-  cx: number;
-  cy: number;
   onMouseEnter?: () => void;
   onMouseLeave?: () => void;
   onClick?: () => void;
@@ -54,12 +52,11 @@ interface AgentAvatarDotProps {
  */
 const AgentAvatarDot = ({
   agent,
-  cx,
-  cy,
   onMouseEnter,
   onMouseLeave,
   onClick,
   isHovered = false,
+  ...props
 }: AgentAvatarDotProps) => {
   // Use larger container size to accommodate hover scaling over agent avatar
   const containerSize = 44;
@@ -69,8 +66,8 @@ const AgentAvatarDot = ({
   return (
     <g>
       <foreignObject
-        x={cx - offset}
-        y={cy - offset}
+        x={props.cx - offset}
+        y={props.cy - offset}
         width={containerSize}
         height={containerSize}
       >
@@ -101,6 +98,7 @@ interface CustomDotProps extends ActiveDotProps {
   payload: {
     timestamp?: string;
   };
+  value: number | null;
 }
 
 const CustomDot = ({
@@ -224,8 +222,10 @@ export const MetricTimelineChart: React.FC<MetricTimelineChartProps> = ({
         const point = agent.timeline.find((p) => p.timestamp === timestamp);
         if (point) {
           const metricValue = point[metric];
-          // Include the value even if it's null - connectNulls will handle it
-          dataPoint[agent.agentName] = metricValue ?? null;
+          // Only include finite numeric values; treat non-finite as null
+          const numericValue =
+            metricValue && Number.isFinite(metricValue) ? metricValue : null;
+          dataPoint[agent.agentName] = numericValue;
         } else {
           dataPoint[agent.agentName] = null;
         }
@@ -240,6 +240,29 @@ export const MetricTimelineChart: React.FC<MetricTimelineChartProps> = ({
       displayTimestamp: formatDateShort(data.timestamp, true),
     }));
   }, [timelineData, metric, dateRange]);
+
+  // Map of last valid (non-null, finite) timestamp per agent for avatar placement
+  const lastValidTimestampByAgent = useMemo(() => {
+    const lastMap: Record<string, string | null> = {};
+    if (!filteredData || filteredData.length === 0) return lastMap;
+
+    for (let i = filteredData.length - 1; i >= 0; i--) {
+      const dataPoint = filteredData[i];
+      if (!dataPoint) continue;
+
+      Object.entries(dataPoint).forEach(([key, value]) => {
+        if (key.includes("timestamp")) return;
+        if (lastMap[key] !== undefined) return;
+        if (typeof value === "number" && Number.isFinite(value)) {
+          lastMap[key] = dataPoint.timestamp;
+        } else if (lastMap[key] === undefined) {
+          lastMap[key] = null;
+        }
+      });
+    }
+
+    return lastMap;
+  }, [filteredData]);
 
   // Get all latest metric values
   const latestValues = useMemo(() => {
@@ -275,7 +298,6 @@ export const MetricTimelineChart: React.FC<MetricTimelineChartProps> = ({
         agent,
         value: latestValues[agent.name] ?? -Infinity,
       }))
-      .filter(({ value }) => value !== -Infinity && value !== null)
       .sort((a, b) => b.value - a.value)
       .slice(0, LIMIT_AGENTS_PER_CHART)
       .map(({ agent }) => agent);
@@ -377,14 +399,12 @@ export const MetricTimelineChart: React.FC<MetricTimelineChartProps> = ({
             />
             {sortedAgentNames.map((agentName) => {
               const agent = topAgents.find((a) => a.name === agentName);
-              const isLastPoint = (timestamp: string | undefined) => {
-                // Check if this is the last data point for this agent
-                if (!timestamp || !filteredData || filteredData.length === 0)
-                  return false;
-                const currentIndex = filteredData.findIndex(
-                  (d) => d.timestamp === timestamp,
-                );
-                return currentIndex === filteredData.length - 1;
+              const isAgentsLastValidPoint = (
+                agentKey: string,
+                timestamp: string | undefined,
+              ) => {
+                if (!timestamp) return false;
+                return lastValidTimestampByAgent[agentKey] === timestamp;
               };
 
               const activeAgent = selectedAgent || lineOrAgentAvatarHovered;
@@ -414,14 +434,25 @@ export const MetricTimelineChart: React.FC<MetricTimelineChartProps> = ({
                     const timestamp = props.payload?.timestamp;
                     const dotKey = `${agentName}-${timestamp || props.cx}-${props.cy}`;
 
-                    if (agent && isLastPoint(timestamp)) {
+                    // Determine if this point has a valid numeric value
+                    const numericValue =
+                      typeof props.value === "number" &&
+                      Number.isFinite(props.value)
+                        ? props.value
+                        : null;
+
+                    // Skip rendering dots for non-numeric or out-of-range values
+                    if (numericValue === null) {
+                      return <g key={dotKey} />;
+                    }
+
+                    if (agent && isAgentsLastValidPoint(agentName, timestamp)) {
                       // Only render avatar for last point
                       return (
                         <g key={dotKey}>
                           <AgentAvatarDot
                             agent={agent}
-                            cx={props.cx}
-                            cy={props.cy}
+                            {...props}
                             onMouseEnter={() =>
                               handleLineOrAgentAvatarHover(agentName)
                             }
