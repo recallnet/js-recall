@@ -1,7 +1,6 @@
 "use client";
 
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import {
   CartesianGrid,
   Line,
@@ -12,19 +11,14 @@ import {
   YAxis,
 } from "recharts";
 
-import { Button } from "@recallnet/ui2/components/button";
-
 import { AgentAvatar } from "@/components/agent-avatar";
 import { RouterOutputs } from "@/rpc/router";
 import { formatDate } from "@/utils/format";
 
 import { ChartSkeleton } from "./chart-skeleton";
-import {
-  CHART_COLORS,
-  HoverContext,
-  LIMIT_AGENTS_PER_CHART,
-} from "./constants";
-import { datesByWeek, formatDateShort } from "./utils";
+import { CHART_COLORS, LIMIT_AGENTS_PER_CHART } from "./constants";
+import { MetricTooltip } from "./custom-tooltip";
+import { formatDateShort } from "./utils";
 
 interface MetricTimelineChartProps {
   timelineData: RouterOutputs["competitions"]["getTimeline"];
@@ -40,7 +34,15 @@ interface MetricTimelineChartProps {
   isLoading?: boolean;
   status: "pending" | "active" | "ending" | "ended";
   startDate?: Date | null;
-  endDate?: Date | null;
+  dateRange?: "all" | "72h";
+}
+
+interface AgentAvatarDotProps {
+  agent: RouterOutputs["competitions"]["getAgents"]["agents"][number];
+  cx: number;
+  cy: number;
+  onMouseEnter?: () => void;
+  onMouseLeave?: () => void;
 }
 
 /**
@@ -52,13 +54,7 @@ const AgentAvatarDot = ({
   cy,
   onMouseEnter,
   onMouseLeave,
-}: {
-  agent: RouterOutputs["competitions"]["getAgents"]["agents"][number];
-  cx: number;
-  cy: number;
-  onMouseEnter?: () => void;
-  onMouseLeave?: () => void;
-}) => {
+}: AgentAvatarDotProps) => {
   // Use larger container size to accommodate hover scaling over agent avatar
   const containerSize = 40;
   const avatarSize = 32;
@@ -73,17 +69,11 @@ const AgentAvatarDot = ({
         height={containerSize}
       >
         <div
-          style={{
-            width: containerSize,
-            height: containerSize,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
+          className="flex h-full w-full items-center justify-center"
           onMouseEnter={onMouseEnter}
           onMouseLeave={onMouseLeave}
         >
-          <AgentAvatar agent={agent} size={avatarSize} />
+          <AgentAvatar agent={agent} size={avatarSize} showHover={false} />
         </div>
       </foreignObject>
     </g>
@@ -113,9 +103,8 @@ export const MetricTimelineChart: React.FC<MetricTimelineChartProps> = ({
   isLoading = false,
   status,
   startDate,
-  endDate,
+  dateRange = "all",
 }) => {
-  const [dateRangeIndex, setDateRangeIndex] = useState(0);
   const [lineOrAgentAvatarHovered, setLineOrAgentAvatarHovered] = useState<
     string | null
   >(null);
@@ -133,8 +122,8 @@ export const MetricTimelineChart: React.FC<MetricTimelineChartProps> = ({
     setLineOrAgentAvatarHovered(null);
   }, []);
 
-  // Parse timeline data for the specific metric
-  const parsedData = useMemo(() => {
+  // Parse timeline data for the specific metric and filter based on date range
+  const filteredData = useMemo(() => {
     if (!timelineData) return [];
 
     // Build a map of all timestamps across all agents
@@ -150,10 +139,20 @@ export const MetricTimelineChart: React.FC<MetricTimelineChartProps> = ({
       (a, b) => new Date(a).getTime() - new Date(b).getTime(),
     );
 
+    // Filter timestamps based on date range
+    let timestampsToShow = sortedTimestamps;
+    if (dateRange === "72h" && sortedTimestamps.length > 0) {
+      const now = new Date();
+      const seventyTwoHoursAgo = new Date(now.getTime() - 72 * 60 * 60 * 1000);
+      timestampsToShow = sortedTimestamps.filter(
+        (timestamp) => new Date(timestamp) >= seventyTwoHoursAgo,
+      );
+    }
+
     const result: Array<{
       timestamp: string;
       [key: string]: string | number | null;
-    }> = sortedTimestamps.map((timestamp) => {
+    }> = timestampsToShow.map((timestamp) => {
       const dataPoint: {
         timestamp: string;
         [key: string]: string | number | null;
@@ -174,87 +173,12 @@ export const MetricTimelineChart: React.FC<MetricTimelineChartProps> = ({
       return dataPoint;
     });
 
-    return datesByWeek(result);
-  }, [timelineData, metric]);
-
-  // Intelligent date range selection
-  useEffect(() => {
-    if (!parsedData.length) return;
-
-    const now = new Date();
-    let targetIndex = parsedData.length - 1;
-
-    if (status === "active") {
-      const currentWeekData = parsedData.findIndex((weekData) => {
-        if (!weekData || !weekData.length) return false;
-        const weekStart = new Date(weekData[0]!.timestamp);
-        const weekEnd = new Date(weekData[weekData.length - 1]!.timestamp);
-        return weekStart <= now && weekEnd >= now;
-      });
-
-      if (currentWeekData !== -1) {
-        targetIndex = currentWeekData;
-      }
-    } else if (status === "ended") {
-      if (endDate) {
-        const endWeekData = parsedData.findIndex((weekData) => {
-          if (!weekData || !weekData.length) return false;
-          const weekEnd = new Date(weekData[weekData.length - 1]!.timestamp);
-          return weekEnd >= endDate;
-        });
-
-        if (endWeekData !== -1) {
-          targetIndex = endWeekData;
-        }
-      }
-    }
-
-    setDateRangeIndex(targetIndex);
-  }, [parsedData, status, startDate, endDate]);
-
-  const filteredData = useMemo(() => {
-    if (status === "ended" && parsedData.length > 0) {
-      const allData = parsedData.flat();
-      const durationInDays =
-        startDate && endDate
-          ? Math.ceil(
-              (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
-            )
-          : 0;
-
-      if (durationInDays <= 2) {
-        const sortedData = allData.sort(
-          (a, b) =>
-            new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
-        );
-
-        return sortedData.map((data) => ({
-          ...data,
-          originalTimestamp: data.timestamp,
-          displayTimestamp: formatDateShort(data.timestamp),
-        }));
-      } else {
-        const uniqueDates = new Map();
-        allData.forEach((data) => {
-          const dateKey = formatDateShort(data.timestamp);
-          uniqueDates.set(dateKey, {
-            ...data,
-            timestamp: data.timestamp,
-            originalTimestamp: data.timestamp,
-            displayTimestamp: dateKey,
-          });
-        });
-        return Array.from(uniqueDates.values());
-      }
-    }
-
-    return (parsedData[dateRangeIndex] || []).map((data) => ({
+    return result.map((data) => ({
       ...data,
       originalTimestamp: data.timestamp,
-      timestamp: data.timestamp,
-      displayTimestamp: formatDateShort(data.timestamp),
+      displayTimestamp: formatDateShort(data.timestamp, true),
     }));
-  }, [parsedData, dateRangeIndex, status, startDate, endDate]);
+  }, [timelineData, metric, dateRange]);
 
   // Get all latest metric values
   const latestValues = useMemo(() => {
@@ -297,13 +221,15 @@ export const MetricTimelineChart: React.FC<MetricTimelineChartProps> = ({
     return map;
   }, [topAgentNames]);
 
-  const handlePrevRange = () => {
-    setDateRangeIndex((prev) => Math.max(0, prev - 1));
-  };
+  // Sort agent names so hovered agent is rendered last (appears on top in SVG)
+  const sortedAgentNames = useMemo(() => {
+    if (!lineOrAgentAvatarHovered) return topAgentNames;
 
-  const handleNextRange = () => {
-    setDateRangeIndex((prev) => Math.min(parsedData.length - 1, prev + 1));
-  };
+    return [
+      ...topAgentNames.filter((name) => name !== lineOrAgentAvatarHovered),
+      lineOrAgentAvatarHovered,
+    ];
+  }, [topAgentNames, lineOrAgentAvatarHovered]);
 
   if (isLoading) {
     return (
@@ -332,191 +258,106 @@ export const MetricTimelineChart: React.FC<MetricTimelineChartProps> = ({
 
   return (
     <>
-      {status !== "ended" && filteredData.length > 0 && (
-        <div className="flex w-full items-center justify-end px-6 py-4">
-          <div className="text-secondary-foreground flex items-center gap-3 text-sm">
-            <Button
-              onClick={handlePrevRange}
-              disabled={dateRangeIndex <= 0}
-              variant="outline"
-              className="hover:text-primary-foreground border-none p-0 hover:bg-black"
-            >
-              <ChevronLeft strokeWidth={1.5} />
-            </Button>
-            <div className="flex items-center gap-2">
-              <span>
-                {filteredData[0]?.originalTimestamp
-                  ? formatDateShort(filteredData[0].originalTimestamp)
-                  : formatDateShort(filteredData[0]?.timestamp as string)}
-              </span>
-              <span className="text-secondary-foreground">/</span>
-              <span>
-                {(() => {
-                  const lastItem = filteredData[filteredData.length - 1];
-                  return lastItem?.originalTimestamp
-                    ? formatDateShort(lastItem.originalTimestamp)
-                    : formatDateShort(lastItem?.timestamp as string);
-                })()}
-              </span>
-            </div>
-            <Button
-              onClick={handleNextRange}
-              disabled={dateRangeIndex >= parsedData.length - 1}
-              variant="outline"
-              className="hover:text-primary-foreground border-none p-0 hover:bg-black"
-            >
-              <ChevronRight strokeWidth={1.5} />
-            </Button>
-          </div>
-        </div>
-      )}
-
       <div className="h-120 relative">
-        <HoverContext.Provider
-          value={{
-            hoveredAgent: lineOrAgentAvatarHovered,
-            setHoveredAgent: setLineOrAgentAvatarHovered,
-          }}
-        >
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart
-              data={filteredData}
-              margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-              <XAxis
-                dataKey="displayTimestamp"
-                stroke="#9CA3AF"
-                fontSize={12}
-                tick={{ fill: "#9CA3AF" }}
-                angle={-45}
-                textAnchor="end"
-                height={80}
-              />
-              <YAxis
-                stroke="#9CA3AF"
-                fontSize={12}
-                tick={{ fill: "#9CA3AF" }}
-                tickFormatter={(value) =>
-                  yAxisType === "currency"
-                    ? `$${(value / 1000).toFixed(1)}k`
-                    : yAxisType === "percentage"
-                      ? `${value.toFixed(2)}%`
-                      : value.toFixed(2)
-                }
-              />
-              <Tooltip
-                content={({ active, payload }) => {
-                  if (active && payload && payload.length) {
-                    const sortedPayload = [...payload].sort(
-                      (a, b) => (b.value as number) - (a.value as number),
-                    );
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart
+            data={filteredData}
+            margin={{ right: 30, bottom: 60, top: 20, left: 20 }}
+          >
+            <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+            <XAxis
+              dataKey="displayTimestamp"
+              stroke="#9CA3AF"
+              fontSize={12}
+              type="category"
+              interval={status === "ended" ? "preserveEnd" : 0}
+              tick={{ fill: "#9CA3AF", fontSize: 12 }}
+              angle={-45}
+              textAnchor="end"
+            />
+            <YAxis
+              stroke="#9CA3AF"
+              fontSize={12}
+              tick={{ fill: "#9CA3AF" }}
+              tickFormatter={(value) =>
+                yAxisType === "currency"
+                  ? `$${(value / 1000).toFixed(1)}k`
+                  : yAxisType === "percentage"
+                    ? `${value.toFixed(2)}%`
+                    : value.toFixed(2)
+              }
+            />
+            <Tooltip
+              content={(props) => (
+                <MetricTooltip
+                  {...props}
+                  yAxisType={yAxisType}
+                  hoveredAgent={lineOrAgentAvatarHovered}
+                />
+              )}
+            />
+            {sortedAgentNames.map((agentName) => {
+              const agent = topAgents.find((a) => a.name === agentName);
+              const isLastPoint = (timestamp: string | undefined) => {
+                // Check if this is the last data point for this agent
+                if (!timestamp || !filteredData || filteredData.length === 0)
+                  return false;
+                const currentIndex = filteredData.findIndex(
+                  (d) => d.timestamp === timestamp,
+                );
+                return currentIndex === filteredData.length - 1;
+              };
 
-                    return (
-                      <div className="bg-card z-50 rounded-lg border border-gray-600 p-3 shadow-lg">
-                        <p className="text-secondary-foreground mb-2 text-xs">
-                          {payload[0]?.payload?.displayTimestamp || ""}
-                        </p>
-                        <div className="space-y-1">
-                          {sortedPayload.slice(0, 5).map((entry, index) => (
-                            <div
-                              key={index}
-                              className="flex items-center justify-between gap-3 text-sm"
-                            >
-                              <div className="flex items-center gap-2">
-                                <div
-                                  className="h-2 w-2 rounded-full"
-                                  style={{ backgroundColor: entry.color }}
-                                />
-                                <span className="text-secondary-foreground">
-                                  {entry.dataKey}
-                                </span>
-                              </div>
-                              <span className="font-bold text-white">
-                                {yAxisType === "currency"
-                                  ? `$${((entry.value as number) * 100).toFixed(2)}`
-                                  : yAxisType === "percentage"
-                                    ? `${(entry.value as number).toFixed(2)}%`
-                                    : (entry.value as number).toFixed(2)}
-                              </span>
-                            </div>
-                          ))}
-                          {sortedPayload.length > 5 && (
-                            <p className="text-secondary-foreground text-xs">
-                              +{sortedPayload.length - 5} more
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    );
+              return (
+                <Line
+                  className="cursor-pointer"
+                  key={agentName}
+                  type="monotone"
+                  dataKey={agentName}
+                  stroke={agentColorMap[agentName] ?? CHART_COLORS[0]}
+                  strokeWidth={lineOrAgentAvatarHovered === agentName ? 4 : 3}
+                  connectNulls={true}
+                  opacity={
+                    lineOrAgentAvatarHovered === null ||
+                    lineOrAgentAvatarHovered === agentName
+                      ? 1
+                      : 0.3
                   }
-                  return null;
-                }}
-              />
-              {topAgentNames.map((agentName) => {
-                const agent = topAgents.find((a) => a.name === agentName);
-                const isLastPoint = (timestamp: string | undefined) => {
-                  // Check if this is the last data point for this agent
-                  if (!timestamp || !filteredData || filteredData.length === 0)
-                    return false;
-                  const currentIndex = filteredData.findIndex(
-                    (d) => d.timestamp === timestamp,
-                  );
-                  return currentIndex === filteredData.length - 1;
-                };
-
-                return (
-                  <Line
-                    className="cursor-pointer"
-                    key={agentName}
-                    type="monotone"
-                    dataKey={agentName}
-                    stroke={agentColorMap[agentName] ?? CHART_COLORS[0]}
-                    strokeWidth={lineOrAgentAvatarHovered === agentName ? 4 : 3}
-                    connectNulls={true}
-                    opacity={
-                      lineOrAgentAvatarHovered === null
-                        ? 1
-                        : lineOrAgentAvatarHovered === agentName
-                          ? 1
-                          : 0.3
-                    }
-                    isAnimationActive={false}
-                    dot={(props) => {
-                      const timestamp = (
-                        props.payload as { timestamp?: string }
-                      )?.timestamp;
-                      if (agent && isLastPoint(timestamp)) {
-                        // Only render avatar for last point, no dot underneath
-                        return (
-                          <AgentAvatarDot
-                            agent={agent}
-                            cx={props.cx}
-                            cy={props.cy}
-                            onMouseEnter={() =>
-                              handleLineOrAgentAvatarHover(agentName)
-                            }
-                            onMouseLeave={() => handleLineOrAgentAvatarLeave()}
-                          />
-                        );
-                      }
-                      // Regular dot for all other points
+                  isAnimationActive={false}
+                  activeDot={false}
+                  dot={(props) => {
+                    const timestamp = (props.payload as { timestamp?: string })
+                      ?.timestamp;
+                    if (agent && isLastPoint(timestamp)) {
+                      // Only render avatar for last point
                       return (
-                        <CustomDot
+                        <AgentAvatarDot
+                          agent={agent}
                           cx={props.cx}
                           cy={props.cy}
-                          stroke={agentColorMap[agentName] ?? CHART_COLORS[0]}
+                          onMouseEnter={() =>
+                            handleLineOrAgentAvatarHover(agentName)
+                          }
+                          onMouseLeave={() => handleLineOrAgentAvatarLeave()}
                         />
                       );
-                    }}
-                    onMouseEnter={() => handleLineOrAgentAvatarHover(agentName)}
-                    onMouseLeave={() => handleLineOrAgentAvatarLeave()}
-                  />
-                );
-              })}
-            </LineChart>
-          </ResponsiveContainer>
-        </HoverContext.Provider>
+                    }
+                    // Regular dot for all other points
+                    return (
+                      <CustomDot
+                        cx={props.cx}
+                        cy={props.cy}
+                        stroke={agentColorMap[agentName] ?? CHART_COLORS[0]}
+                      />
+                    );
+                  }}
+                  onMouseEnter={() => handleLineOrAgentAvatarHover(agentName)}
+                  onMouseLeave={() => handleLineOrAgentAvatarLeave()}
+                />
+              );
+            })}
+          </LineChart>
+        </ResponsiveContainer>
       </div>
     </>
   );

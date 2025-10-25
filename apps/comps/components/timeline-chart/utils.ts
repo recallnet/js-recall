@@ -7,7 +7,10 @@ import { DateArr } from "./types";
 /**
  * Format date to "Month dayth" style (e.g., "Jun 1st", "May 23rd")
  */
-export const formatDateShort = (dateStr: string | Date): string => {
+export const formatDateShort = (
+  dateStr: string | Date,
+  includeTime?: boolean,
+): string => {
   if (!dateStr) return "";
 
   const date = new Date(dateStr);
@@ -23,7 +26,18 @@ export const formatDateShort = (dateStr: string | Date): string => {
     return s[(v - 20) % 10] || s[v] || s[0];
   };
 
-  return `${month} ${day}${getOrdinalSuffix(day)}`;
+  let result = `${month} ${day}${getOrdinalSuffix(day)}`;
+
+  if (includeTime) {
+    const time = date.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: false,
+    });
+    result += ` ${time}`;
+  }
+
+  return result;
 };
 
 const copyDateWithoutTimezone = (timestamp: string) => {

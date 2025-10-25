@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 
+import { Button } from "@recallnet/ui2/components/button";
 import {
   Tabs,
   TabsContent,
@@ -28,6 +29,7 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
 }) => {
   const isPerpsCompetition = checkIsPerpsCompetition(competition);
   const [activeChartTab, setActiveChartTab] = useState("account-value");
+  const [dateRange, setDateRange] = useState<"all" | "72h">("72h");
 
   const { data: timelineRaw, isLoading } = useCompetitionTimeline(
     competition.id,
@@ -35,6 +37,7 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
   );
 
   const { id } = competition;
+  const showDateRange = competition.status !== "ended";
 
   // For perps competitions, render charts with tabs
   if (isPerpsCompetition) {
@@ -73,12 +76,42 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
                 Sortino Ratio
               </TabsTrigger>
             </TabsList>
-            <ShareModal
-              title="Share performance metrics"
-              url={`${config.frontendUrl}/competitions/${id}/chart`}
-              size={20}
-              className="hidden sm:block"
-            />
+            <div className="mr-6 flex items-center gap-4">
+              {showDateRange && (
+                <div className="flex items-center gap-2">
+                  <Button
+                    onClick={() => setDateRange("all")}
+                    variant="outline"
+                    size="sm"
+                    className={cn(
+                      (className =
+                        "border border-white bg-black px-4 py-2 text-xs font-semibold uppercase text-white transition-colors duration-200 hover:bg-white hover:text-black data-[state=active]:bg-white data-[state=active]:text-black"),
+                      dateRange === "all" && "bg-white text-black",
+                    )}
+                  >
+                    All
+                  </Button>
+                  <Button
+                    onClick={() => setDateRange("72h")}
+                    variant="outline"
+                    size="sm"
+                    className={cn(
+                      (className =
+                        "border border-white bg-black px-4 py-2 text-xs font-semibold uppercase text-white transition-colors duration-200 hover:bg-white hover:text-black data-[state=active]:bg-white data-[state=active]:text-black"),
+                      dateRange === "72h" && "bg-white text-black",
+                    )}
+                  >
+                    72h
+                  </Button>
+                </div>
+              )}
+              <ShareModal
+                title="Share performance metrics"
+                url={`${config.frontendUrl}/competitions/${id}/chart`}
+                size={20}
+                className="hidden sm:block"
+              />
+            </div>
           </div>
 
           {/* Account Value Tab */}
@@ -90,7 +123,7 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
               isLoading={isLoading}
               status={competition.status}
               startDate={competition.startDate}
-              endDate={competition.endDate}
+              dateRange={dateRange}
             />
           </TabsContent>
 
@@ -103,7 +136,7 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
               isLoading={isLoading}
               status={competition.status}
               startDate={competition.startDate}
-              endDate={competition.endDate}
+              dateRange={dateRange}
             />
           </TabsContent>
 
@@ -116,7 +149,7 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
               isLoading={isLoading}
               status={competition.status}
               startDate={competition.startDate}
-              endDate={competition.endDate}
+              dateRange={dateRange}
             />
           </TabsContent>
 
@@ -129,7 +162,7 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
               isLoading={isLoading}
               status={competition.status}
               startDate={competition.startDate}
-              endDate={competition.endDate}
+              dateRange={dateRange}
             />
           </TabsContent>
         </Tabs>
@@ -160,12 +193,40 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
               % Gain
             </TabsTrigger>
           </TabsList>
-          <ShareModal
-            title="Share performance metrics"
-            url={`${config.frontendUrl}/competitions/${id}/chart`}
-            size={20}
-            className="hidden sm:block"
-          />
+          <div className="flex items-center gap-4">
+            {showDateRange && (
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={() => setDateRange("72h")}
+                  variant="outline"
+                  size="sm"
+                  className={cn(
+                    "h-auto border border-white bg-black px-3 py-1.5 text-xs font-semibold uppercase text-white transition-colors duration-200 hover:bg-white hover:text-black",
+                    dateRange === "72h" && "bg-white text-black",
+                  )}
+                >
+                  Past 72 Hours
+                </Button>
+                <Button
+                  onClick={() => setDateRange("all")}
+                  variant="outline"
+                  size="sm"
+                  className={cn(
+                    "h-auto border border-white bg-black px-3 py-1.5 text-xs font-semibold uppercase text-white transition-colors duration-200 hover:bg-white hover:text-black",
+                    dateRange === "all" && "bg-white text-black",
+                  )}
+                >
+                  All
+                </Button>
+              </div>
+            )}
+            <ShareModal
+              title="Share performance metrics"
+              url={`${config.frontendUrl}/competitions/${id}/chart`}
+              size={20}
+              className="hidden sm:block"
+            />
+          </div>
         </div>
 
         {/* Account Value Tab */}
@@ -178,7 +239,7 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
             isLoading={isLoading}
             status={competition.status}
             startDate={competition.startDate}
-            endDate={competition.endDate}
+            dateRange={dateRange}
           />
         </TabsContent>
 
@@ -192,7 +253,7 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
             isLoading={isLoading}
             status={competition.status}
             startDate={competition.startDate}
-            endDate={competition.endDate}
+            dateRange={dateRange}
           />
         </TabsContent>
       </Tabs>

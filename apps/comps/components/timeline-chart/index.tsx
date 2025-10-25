@@ -17,6 +17,7 @@
 export { TimelineChart } from "./timeline-chart";
 export { ChartSkeleton } from "./chart-skeleton";
 export { MetricTimelineChart } from "./chart-template";
+export { MetricTooltip } from "./custom-tooltip";
 
 export type {
   PortfolioChartProps,
