@@ -159,6 +159,7 @@ type CompetitionRulesData = {
 type CompetitionDetailsData = {
   success: boolean;
   competition: SelectCompetition & {
+    evaluationMetric?: EvaluationMetric; // For perps competitions
     stats: {
       totalAgents: number;
       // Paper trading stats
@@ -2812,6 +2813,27 @@ export class CompetitionService {
         params: params.pagingParams,
       });
 
+      // Batch fetch perps configs for perps competitions
+      const perpsCompetitionIds = competitions
+        .filter((c) => c.type === "perpetual_futures")
+        .map((c) => c.id);
+
+      const perpsConfigsMap = new Map<string, EvaluationMetric>();
+      if (perpsCompetitionIds.length > 0) {
+        const perpsConfigs = await Promise.all(
+          perpsCompetitionIds.map(async (id) => {
+            const config = await this.perpsRepo.getPerpsCompetitionConfig(id);
+            return { id, evaluationMetric: config?.evaluationMetric };
+          }),
+        );
+
+        perpsConfigs.forEach(({ id, evaluationMetric }) => {
+          if (evaluationMetric) {
+            perpsConfigsMap.set(id, evaluationMetric);
+          }
+        });
+      }
+
       const enrichedCompetitions = competitions.map((competition) => {
         const {
           minimumPairAgeHours,
@@ -2822,8 +2844,11 @@ export class CompetitionService {
           ...competitionData
         } = competition;
 
+        const evaluationMetric = perpsConfigsMap.get(competition.id);
+
         return {
           ...competitionData,
+          ...(evaluationMetric ? { evaluationMetric } : {}),
           tradingConstraints: {
             minimumPairAgeHours,
             minimum24hVolumeUsd,
@@ -2890,6 +2915,15 @@ export class CompetitionService {
         throw new ApiError(404, "Competition not found");
       }
 
+      // Fetch evaluation metric for perps competitions
+      let evaluationMetric: EvaluationMetric | undefined;
+      if (competition.type === "perpetual_futures") {
+        const perpsConfig = await this.perpsRepo.getPerpsCompetitionConfig(
+          params.competitionId,
+        );
+        evaluationMetric = perpsConfig?.evaluationMetric;
+      }
+
       // Build stats based on competition type
       let stats: {
         totalAgents: number;
@@ -2943,6 +2977,7 @@ export class CompetitionService {
         success: true,
         competition: {
           ...competition,
+          ...(evaluationMetric ? { evaluationMetric } : {}),
           stats,
           tradingConstraints,
           rewards: formattedRewards,
