@@ -32,7 +32,7 @@ function TabsTrigger({ className, ref, ...props }: TabsTriggerProps) {
     <TabsPrimitive.Trigger
       ref={ref}
       className={cn(
-        "text-primary inline-flex whitespace-nowrap px-3 text-sm text-xs font-semibold transition-all focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50",
+        "text-primary inline-flex whitespace-nowrap px-3 text-xs font-semibold transition-all focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50",
         className,
       )}
       {...props}

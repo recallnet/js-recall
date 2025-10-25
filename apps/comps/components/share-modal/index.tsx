@@ -111,7 +111,7 @@ export const ShareModal: React.FunctionComponent<Props> = ({
 
           <div className="mt-1 border-t" />
 
-          <div className="text-xl font-bold text-white">Copy Link</div>
+          <div className="text-md font-semibold text-white">Copy Link</div>
           <Clipboard text={url} className="w-full" />
         </DialogContent>
       </Dialog>
