@@ -5,8 +5,8 @@ import {
   CartesianGrid,
   Line,
   LineChart,
+  Tooltip as RechartsTooltip,
   ResponsiveContainer,
-  Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
@@ -273,7 +273,7 @@ export const MetricTimelineChart: React.FC<MetricTimelineChartProps> = ({
 
   return (
     <>
-      <div className="h-150 relative">
+      <div className="h-150 relative [&_svg:focus]:outline-none">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
             data={filteredData}
@@ -305,7 +305,7 @@ export const MetricTimelineChart: React.FC<MetricTimelineChartProps> = ({
                     : value.toFixed(2)
               }
             />
-            <Tooltip
+            <RechartsTooltip
               content={(props) => (
                 <MetricTooltip
                   {...props}
