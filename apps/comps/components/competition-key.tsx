@@ -160,9 +160,9 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
       <Tabs
         value={activeTab}
         onValueChange={setActiveTab}
-        className={cn("text-white", className)}
+        className={cn("flex h-full flex-col text-white", className)}
       >
-        <TabsList className="mb-4 flex flex-wrap gap-2">
+        <TabsList className="mb-6.5 flex flex-shrink-0 flex-wrap gap-2">
           {!isPerpsCompetition && (
             <TabsTrigger
               value="trades"
@@ -203,8 +203,11 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
 
         {/* Trades Tab */}
         {!isPerpsCompetition && (
-          <TabsContent value="trades" className="border">
-            <div className="max-h-[600px] overflow-y-auto p-4">
+          <TabsContent
+            value="trades"
+            className="m-0 flex-1 overflow-hidden border"
+          >
+            <div className="h-full overflow-y-auto p-4">
               {isLoadingTrades ? (
                 <div className="flex items-center justify-center p-8">
                   <p className="text-sm text-gray-400">Loading trades...</p>
@@ -257,8 +260,11 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
 
         {/* Positions Tab */}
         {isPerpsCompetition && (
-          <TabsContent value="positions" className="border">
-            <div className="max-h-[600px] overflow-y-auto p-4">
+          <TabsContent
+            value="positions"
+            className="m-0 flex-1 overflow-hidden border"
+          >
+            <div className="h-full overflow-y-auto p-4">
               {isLoadingPositions ? (
                 <div className="flex items-center justify-center p-8">
                   <p className="text-sm text-gray-400">Loading positions...</p>
@@ -319,8 +325,11 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
         )}
 
         {/* Predictions Tab (Placeholder) */}
-        <TabsContent value="predictions" className="border">
-          <div className="flex flex-col items-center justify-center p-8">
+        <TabsContent
+          value="predictions"
+          className="m-0 flex-1 overflow-hidden border"
+        >
+          <div className="flex h-full flex-col items-center justify-center p-8">
             <p className="text-sm text-gray-400">
               Boost predictions coming soon...
             </p>
@@ -328,8 +337,8 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
         </TabsContent>
 
         {/* Info Tab */}
-        <TabsContent value="info" className="border">
-          <div className="max-h-[600px] overflow-y-auto">
+        <TabsContent value="info" className="m-0 flex-1 overflow-hidden border">
+          <div className="h-full overflow-y-auto">
             {competition.status !== "ended" && (
               <div className="border-b bg-[#0C0D12] px-4 py-2">
                 <CompetitionStateSummary competition={competition} />
@@ -475,8 +484,11 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
 
         {/* Rules Tab */}
         {!isPerpsCompetition && (
-          <TabsContent value="rules" className="border">
-            <div className="max-h-[600px] overflow-y-auto">
+          <TabsContent
+            value="rules"
+            className="m-0 flex-1 overflow-hidden border"
+          >
+            <div className="h-full overflow-y-auto">
               {rulesLoading ? (
                 <div className="p-4">
                   <p className="text-sm text-gray-400">Loading rules...</p>
@@ -683,8 +695,8 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
 
   return (
     <>
-      {/* Desktop view - always visible */}
-      <div className="hidden md:block">{keyContent}</div>
+      {/* Desktop view */}
+      <div className="h-120 hidden md:block">{keyContent}</div>
 
       {/* Mobile view - button and slide-in sidebar */}
       <div className="md:hidden">
