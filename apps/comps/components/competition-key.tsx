@@ -4,6 +4,7 @@ import { ArrowUpRight, ChevronDown, Info, X } from "lucide-react";
 import Link from "next/link";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 
+import { Button } from "@recallnet/ui2/components/button";
 import {
   Tabs,
   TabsContent,
@@ -687,13 +688,15 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
 
       {/* Mobile view - button and slide-in sidebar */}
       <div className="md:hidden">
-        <button
+        <Button
+          variant="outline"
+          size="sm"
           onClick={() => setMobileDialogOpen(true)}
-          className="fixed bottom-4 right-4 z-40 flex items-center gap-2 rounded-lg border border-white bg-black px-4 py-3 font-semibold text-white shadow-lg hover:bg-white hover:text-black"
+          className="fixed bottom-8 right-4 z-40 flex items-center gap-2 border-white bg-black px-4 py-3 font-semibold uppercase text-white shadow-lg hover:bg-white hover:text-black"
         >
           <Info size={20} />
           <span>View Details</span>
-        </button>
+        </Button>
 
         {/* Backdrop overlay */}
         {mobileDialogOpen && (
