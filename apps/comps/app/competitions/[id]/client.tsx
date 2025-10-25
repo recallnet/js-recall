@@ -46,7 +46,7 @@ export default function CompetitionPageClient({
     tanstackClient.competitions.getById.queryOptions({ input: { id } }),
   );
 
-  // Fetch top 20 agents for chart (independent of table pagination)
+  // Fetch top 12 agents for chart (independent of table pagination)
   const { data: chartAgentsData, isLoading: isLoadingChartAgents } = useQuery(
     tanstackClient.competitions.getAgents.queryOptions({
       input: {

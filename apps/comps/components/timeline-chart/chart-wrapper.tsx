@@ -205,7 +205,11 @@ export const ChartWrapper = memo(
           <YAxis
             stroke="#9CA3AF"
             fontSize={12}
-            domain={["dataMin - 100", "dataMax + 100"]}
+            domain={[
+              (dataMin: number) => dataMin * 0.95,
+              (dataMax: number) => dataMax * 1.05,
+            ]}
+            tick={{ fontSize: 12 }}
             tickFormatter={(value) => `$${(value / 1000).toFixed(1)}k`}
           />
           <Tooltip

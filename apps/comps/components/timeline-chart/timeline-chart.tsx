@@ -137,8 +137,7 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
                     variant="outline"
                     size="sm"
                     className={cn(
-                      (className =
-                        "border border-white bg-black px-4 py-2 text-xs font-semibold uppercase text-white transition-colors duration-200 hover:bg-white hover:text-black data-[state=active]:bg-white data-[state=active]:text-black"),
+                      "border border-white bg-black px-4 py-2 text-xs font-semibold uppercase text-white transition-colors duration-200 hover:bg-white hover:text-black data-[state=active]:bg-white data-[state=active]:text-black",
                       dateRange === "all" && "bg-white text-black",
                     )}
                   >
@@ -149,8 +148,7 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
                     variant="outline"
                     size="sm"
                     className={cn(
-                      (className =
-                        "border border-white bg-black px-4 py-2 text-xs font-semibold uppercase text-white transition-colors duration-200 hover:bg-white hover:text-black data-[state=active]:bg-white data-[state=active]:text-black"),
+                      "border border-white bg-black px-4 py-2 text-xs font-semibold uppercase text-white transition-colors duration-200 hover:bg-white hover:text-black data-[state=active]:bg-white data-[state=active]:text-black",
                       dateRange === "72h" && "bg-white text-black",
                     )}
                   >
@@ -284,7 +282,7 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
                   variant="outline"
                   size="sm"
                   className={cn(
-                    "h-auto border border-white bg-black px-3 py-1.5 text-xs font-semibold uppercase text-white transition-colors duration-200 hover:bg-white hover:text-black",
+                    "border border-white bg-black px-4 py-2 text-xs font-semibold uppercase text-white transition-colors duration-200 hover:bg-white hover:text-black data-[state=active]:bg-white data-[state=active]:text-black",
                     dateRange === "all" && "bg-white text-black",
                   )}
                 >
@@ -295,7 +293,7 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
                   variant="outline"
                   size="sm"
                   className={cn(
-                    "h-auto border border-white bg-black px-3 py-1.5 text-xs font-semibold uppercase text-white transition-colors duration-200 hover:bg-white hover:text-black",
+                    "border border-white bg-black px-4 py-2 text-xs font-semibold uppercase text-white transition-colors duration-200 hover:bg-white hover:text-black data-[state=active]:bg-white data-[state=active]:text-black",
                     dateRange === "72h" && "bg-white text-black",
                   )}
                 >
