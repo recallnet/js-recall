@@ -45,6 +45,8 @@ interface MetricTimelineChartProps {
   agents: RouterOutputs["competitions"]["getAgents"]["agents"];
   metric: SupportedMetricKey;
   yAxisType?: "currency" | "percentage" | "number";
+  // Controls decimal places on tick labels (applies to percentage and number types)
+  yAxisDecimals?: number;
   isLoading?: boolean;
   status: "pending" | "active" | "ending" | "ended";
   startDate?: Date | null;
@@ -134,6 +136,7 @@ export const MetricTimelineChart: React.FC<MetricTimelineChartProps> = ({
   agents,
   metric,
   yAxisType = "number",
+  yAxisDecimals = 2,
   isLoading = false,
   status,
   startDate,
@@ -249,10 +252,19 @@ export const MetricTimelineChart: React.FC<MetricTimelineChartProps> = ({
             dataPoint[agent.agentName] = null;
           }
         } else {
-          // API metric key: take numeric finite value from the point
-          const metricValue = point[metric];
-          const numericValue = metricValue ?? null;
-          dataPoint[agent.agentName] = numericValue;
+          // API metric key: take value from the point
+          const rawValue = point[metric];
+          // Convert fractional metrics to percentage points for consistency
+          if (
+            rawValue &&
+            (metric === "simpleReturn" ||
+              metric === "annualizedReturn" ||
+              metric === "maxDrawdown")
+          ) {
+            dataPoint[agent.agentName] = rawValue * 100;
+          } else {
+            dataPoint[agent.agentName] = rawValue ?? null;
+          }
         }
       });
 
@@ -409,8 +421,8 @@ export const MetricTimelineChart: React.FC<MetricTimelineChartProps> = ({
                 yAxisType === "currency"
                   ? `$${formatCompactNumber(value)}`
                   : yAxisType === "percentage"
-                    ? formatPercentage(value, 100, 2)
-                    : formatAmount(value, 2, true)
+                    ? formatPercentage(value, 100, yAxisDecimals)
+                    : formatAmount(value, yAxisDecimals, true)
               }
             />
             <RechartsTooltip
