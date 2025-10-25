@@ -243,13 +243,13 @@ export const MetricTimelineChart: React.FC<MetricTimelineChartProps> = ({
 
   if (!timelineData || timelineData.length === 0 || status === "pending") {
     return (
-      <div className="h-30 flex w-full flex-col items-center justify-center p-10">
-        <span className="text-primary-foreground">
+      <div className="h-150 flex w-full flex-col items-center justify-center p-10">
+        <span className="text-primary-foreground text-xl">
           {status === "pending"
             ? "Competition hasn't started yet"
             : "No data available"}
         </span>
-        <span className="text-secondary-foreground text-sm">
+        <span className="text-secondary-foreground text-md">
           {status === "pending" && startDate
             ? `The competition will start on ${formatDate(startDate)}.`
             : "Data will appear here as the competition progresses."}

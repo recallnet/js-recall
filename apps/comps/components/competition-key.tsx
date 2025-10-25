@@ -64,8 +64,10 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
   const [chainsExpanded, setChainsExpanded] = useState(false);
   const [rateLimitsExpanded, setRateLimitsExpanded] = useState(false);
   const [mobileDialogOpen, setMobileDialogOpen] = useState(false);
+  // Note: for pending comps, we show the "info" tab instead of the trades/positions tabs
+  const isPendingCompetition = competition.status === "pending";
   const [activeTab, setActiveTab] = useState(
-    isPerpsCompetition ? "positions" : "trades",
+    isPendingCompetition ? "info" : isPerpsCompetition ? "positions" : "trades",
   );
 
   const [tradesOffset, setTradesOffset] = useState(0);
@@ -250,7 +252,7 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
                   </div>
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center p-8">
+                <div className="flex h-full flex-col items-center justify-center p-8">
                   <p className="text-sm text-gray-400">No trades yet</p>
                 </div>
               )}
@@ -316,7 +318,7 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
                   </div>
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center p-8">
+                <div className="flex h-full flex-col items-center justify-center p-8">
                   <p className="text-sm text-gray-400">No positions yet</p>
                 </div>
               )}
