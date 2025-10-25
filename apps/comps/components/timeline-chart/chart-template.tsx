@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   CartesianGrid,
   Line,
@@ -11,6 +11,8 @@ import {
   YAxis,
 } from "recharts";
 import { ActiveDotProps } from "recharts/types/util/types";
+
+import { cn } from "@recallnet/ui2/lib/utils";
 
 import { AgentAvatar } from "@/components/agent-avatar";
 import { RouterOutputs } from "@/rpc/router";
@@ -44,6 +46,8 @@ interface AgentAvatarDotProps {
   cy: number;
   onMouseEnter?: () => void;
   onMouseLeave?: () => void;
+  onClick?: () => void;
+  isHovered?: boolean;
 }
 /**
  * Agent avatar dot component for the timeline chart
@@ -54,9 +58,11 @@ const AgentAvatarDot = ({
   cy,
   onMouseEnter,
   onMouseLeave,
+  onClick,
+  isHovered = false,
 }: AgentAvatarDotProps) => {
   // Use larger container size to accommodate hover scaling over agent avatar
-  const containerSize = 40;
+  const containerSize = 44;
   const avatarSize = 32;
   const offset = containerSize / 2;
 
@@ -69,11 +75,22 @@ const AgentAvatarDot = ({
         height={containerSize}
       >
         <div
-          className="flex h-full w-full items-center justify-center"
+          className="flex h-full w-full cursor-pointer items-center justify-center"
           onMouseEnter={onMouseEnter}
           onMouseLeave={onMouseLeave}
+          onClick={(e) => {
+            e.stopPropagation();
+            onClick?.();
+          }}
         >
-          <AgentAvatar agent={agent} size={avatarSize} />
+          <div
+            className={cn(
+              "transition-transform duration-200 ease-out",
+              isHovered && "scale-130",
+            )}
+          >
+            <AgentAvatar agent={agent} size={avatarSize} showHover={false} />
+          </div>
         </div>
       </foreignObject>
     </g>
@@ -116,19 +133,55 @@ export const MetricTimelineChart: React.FC<MetricTimelineChartProps> = ({
   const [lineOrAgentAvatarHovered, setLineOrAgentAvatarHovered] = useState<
     string | null
   >(null);
+  const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
 
   // Handle line or agent avatar hover
   const handleLineOrAgentAvatarHover = useCallback(
     (agentName: string | null) => {
-      setLineOrAgentAvatarHovered(agentName);
+      // Don't show hover state if an agent is selected
+      if (!selectedAgent) {
+        setLineOrAgentAvatarHovered(agentName);
+      }
     },
-    [],
+    [selectedAgent],
   );
 
   // Handle line or agent avatar leave
   const handleLineOrAgentAvatarLeave = useCallback(() => {
-    setLineOrAgentAvatarHovered(null);
-  }, []);
+    if (!selectedAgent) {
+      setLineOrAgentAvatarHovered(null);
+    }
+  }, [selectedAgent]);
+
+  // Handle line click to toggle selection
+  const handleLineClick = useCallback(
+    (agentName: string, event?: React.MouseEvent) => {
+      event?.stopPropagation();
+      setSelectedAgent((prev) => (prev === agentName ? null : agentName));
+      // Clear hover state when selecting
+      setLineOrAgentAvatarHovered(null);
+    },
+    [],
+  );
+
+  // Global click handler to deselect when clicking outside the chart
+  useEffect(() => {
+    if (!selectedAgent) return;
+
+    const handleGlobalClick = () => {
+      setSelectedAgent(null);
+    };
+
+    // Add listener on next tick to avoid immediately clearing selection
+    const timeoutId = setTimeout(() => {
+      document.addEventListener("click", handleGlobalClick);
+    }, 0);
+
+    return () => {
+      clearTimeout(timeoutId);
+      document.removeEventListener("click", handleGlobalClick);
+    };
+  }, [selectedAgent]);
 
   // Parse timeline data for the specific metric and filter based on date range
   const filteredData = useMemo(() => {
@@ -242,15 +295,17 @@ export const MetricTimelineChart: React.FC<MetricTimelineChartProps> = ({
     return map;
   }, [topAgentNames]);
 
-  // Sort agent names so hovered agent is rendered last (appears on top in SVG)
+  // Sort agent names so selected/hovered agent is rendered last (appears on top in SVG)
   const sortedAgentNames = useMemo(() => {
-    if (!lineOrAgentAvatarHovered) return topAgentNames;
+    // Priority: selectedAgent > hoveredAgent
+    const activeAgent = selectedAgent ?? lineOrAgentAvatarHovered;
+    if (!activeAgent) return topAgentNames;
 
     return [
-      ...topAgentNames.filter((name) => name !== lineOrAgentAvatarHovered),
-      lineOrAgentAvatarHovered,
+      ...topAgentNames.filter((name) => name !== activeAgent),
+      activeAgent,
     ];
-  }, [topAgentNames, lineOrAgentAvatarHovered]);
+  }, [topAgentNames, lineOrAgentAvatarHovered, selectedAgent]);
 
   if (isLoading) {
     return (
@@ -316,7 +371,7 @@ export const MetricTimelineChart: React.FC<MetricTimelineChartProps> = ({
                 <MetricTooltip
                   {...props}
                   yAxisType={yAxisType}
-                  hoveredAgent={lineOrAgentAvatarHovered}
+                  hoveredAgent={selectedAgent || lineOrAgentAvatarHovered}
                 />
               )}
             />
@@ -332,6 +387,10 @@ export const MetricTimelineChart: React.FC<MetricTimelineChartProps> = ({
                 return currentIndex === filteredData.length - 1;
               };
 
+              const activeAgent = selectedAgent || lineOrAgentAvatarHovered;
+              const isActive = activeAgent === agentName;
+              const isAnyActive = activeAgent !== null;
+
               return (
                 <Line
                   className="cursor-pointer"
@@ -339,16 +398,18 @@ export const MetricTimelineChart: React.FC<MetricTimelineChartProps> = ({
                   type="monotone"
                   dataKey={agentName}
                   stroke={agentColorMap[agentName] ?? CHART_COLORS[0]}
-                  strokeWidth={lineOrAgentAvatarHovered === agentName ? 4 : 3}
+                  strokeWidth={isActive ? 4 : 3}
                   connectNulls={true}
-                  opacity={
-                    lineOrAgentAvatarHovered === null ||
-                    lineOrAgentAvatarHovered === agentName
-                      ? 1
-                      : 0.3
-                  }
+                  opacity={!isAnyActive || isActive ? 1 : 0.3}
                   isAnimationActive={false}
                   activeDot={false}
+                  onClick={(e: unknown) => {
+                    // Stop propagation to prevent outer div from clearing selection
+                    if (e && typeof e === "object" && "stopPropagation" in e) {
+                      (e as { stopPropagation: () => void }).stopPropagation();
+                    }
+                    handleLineClick(agentName);
+                  }}
                   dot={(props: CustomDotProps) => {
                     const timestamp = props.payload?.timestamp;
                     const dotKey = `${agentName}-${timestamp || props.cx}-${props.cy}`;
@@ -365,16 +426,18 @@ export const MetricTimelineChart: React.FC<MetricTimelineChartProps> = ({
                               handleLineOrAgentAvatarHover(agentName)
                             }
                             onMouseLeave={() => handleLineOrAgentAvatarLeave()}
+                            onClick={() => handleLineClick(agentName)}
+                            isHovered={
+                              selectedAgent === agentName ||
+                              (!selectedAgent &&
+                                lineOrAgentAvatarHovered === agentName)
+                            }
                           />
                         </g>
                       );
                     }
                     // Regular dot for all other points
-                    const dotOpacity =
-                      lineOrAgentAvatarHovered === null ||
-                      lineOrAgentAvatarHovered === agentName
-                        ? 1
-                        : 0.3;
+                    const dotOpacity = !isAnyActive || isActive ? 1 : 0.3;
 
                     return (
                       <g key={dotKey}>
