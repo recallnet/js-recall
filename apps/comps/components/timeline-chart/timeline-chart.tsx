@@ -36,7 +36,7 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
 }) => {
   const isPerpsCompetition = checkIsPerpsCompetition(competition);
   const [activeChartTab, setActiveChartTab] = useState("account-value");
-  const [dateRange, setDateRange] = useState<"all" | "72h">("72h");
+  const [dateRange, setDateRange] = useState<"all" | "72h">("all");
 
   const { data: timelineRaw, isLoading } = useCompetitionTimeline(
     competition.id,

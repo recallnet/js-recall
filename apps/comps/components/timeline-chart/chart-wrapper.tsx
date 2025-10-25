@@ -12,7 +12,7 @@ import {
 } from "recharts";
 
 import { HoverContext } from "./constants";
-import { CustomTooltip } from "./custom-tooltip";
+import { MetricTooltip } from "./custom-tooltip";
 import { ChartLinesProps, ChartWrapperProps } from "./types";
 import { formatDateShort } from "./utils";
 
@@ -208,7 +208,7 @@ export const ChartWrapper = memo(
             tickFormatter={(value) => `$${(value / 1000).toFixed(1)}k`}
           />
           <Tooltip
-            content={CustomTooltip}
+            content={(props) => <MetricTooltip {...props} />}
             cursor={{
               stroke: "#9CA3AF",
               strokeWidth: 1,

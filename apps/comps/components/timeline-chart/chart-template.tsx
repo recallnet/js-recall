@@ -328,27 +328,33 @@ export const MetricTimelineChart: React.FC<MetricTimelineChartProps> = ({
                   dot={(props) => {
                     const timestamp = (props.payload as { timestamp?: string })
                       ?.timestamp;
+                    const dotKey = `${agentName}-${timestamp || props.cx}-${props.cy}`;
+
                     if (agent && isLastPoint(timestamp)) {
                       // Only render avatar for last point
                       return (
-                        <AgentAvatarDot
-                          agent={agent}
-                          cx={props.cx}
-                          cy={props.cy}
-                          onMouseEnter={() =>
-                            handleLineOrAgentAvatarHover(agentName)
-                          }
-                          onMouseLeave={() => handleLineOrAgentAvatarLeave()}
-                        />
+                        <g key={dotKey}>
+                          <AgentAvatarDot
+                            agent={agent}
+                            cx={props.cx}
+                            cy={props.cy}
+                            onMouseEnter={() =>
+                              handleLineOrAgentAvatarHover(agentName)
+                            }
+                            onMouseLeave={() => handleLineOrAgentAvatarLeave()}
+                          />
+                        </g>
                       );
                     }
                     // Regular dot for all other points
                     return (
-                      <CustomDot
-                        cx={props.cx}
-                        cy={props.cy}
-                        stroke={agentColorMap[agentName] ?? CHART_COLORS[0]}
-                      />
+                      <g key={dotKey}>
+                        <CustomDot
+                          cx={props.cx}
+                          cy={props.cy}
+                          stroke={agentColorMap[agentName] ?? CHART_COLORS[0]}
+                        />
+                      </g>
                     );
                   }}
                   onMouseEnter={() => handleLineOrAgentAvatarHover(agentName)}
