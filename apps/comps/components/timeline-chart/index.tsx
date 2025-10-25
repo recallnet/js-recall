@@ -32,4 +32,4 @@ export {
   LIMIT_AGENTS_PER_CHART,
   HoverContext,
 } from "./constants";
-export { formatDateShort, datesByWeek } from "./utils";
+export { datesByWeek } from "./utils";

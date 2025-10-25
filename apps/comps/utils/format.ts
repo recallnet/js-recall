@@ -125,3 +125,47 @@ export const formatBigintAmount = (
     digits: maxDecimals,
   });
 };
+
+/**
+ * Format date to "Month dayth" style (e.g., "Jun 1st", "May 23rd")
+ * @param dateStr - The date to format.
+ * @param includeTime - Whether to include the time in the formatted date.
+ * @returns A formatted date string.
+ * @example
+ * ```typescript
+ * formatDateShort("2025-06-01T00:00:00Z") // "Jun 1st"
+ * formatDateShort("2025-06-01T00:00:00Z", true) // "Jun 1st 12:00 AM"
+ * ```
+ */
+export const formatDateShort = (
+  dateStr: string | Date,
+  includeTime?: boolean,
+): string => {
+  if (!dateStr) return "";
+
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return "";
+
+  const month = date.toLocaleDateString("en-US", { month: "short" });
+  const day = date.getDate();
+
+  // Add ordinal suffix (st, nd, rd, th)
+  const getOrdinalSuffix = (n: number) => {
+    const s = ["th", "st", "nd", "rd"];
+    const v = n % 100;
+    return s[(v - 20) % 10] || s[v] || s[0];
+  };
+
+  let result = `${month} ${day}${getOrdinalSuffix(day)}`;
+
+  if (includeTime) {
+    const time = date.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: false,
+    });
+    result += ` ${time}`;
+  }
+
+  return result;
+};

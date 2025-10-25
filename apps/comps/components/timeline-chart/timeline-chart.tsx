@@ -276,7 +276,7 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="mr-6 flex items-center gap-4">
             {showDateRange && (
               <div className="flex items-center gap-2">
                 <Button

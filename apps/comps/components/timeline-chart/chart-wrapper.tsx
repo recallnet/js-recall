@@ -11,10 +11,11 @@ import {
   YAxis,
 } from "recharts";
 
+import { formatDateShort } from "@/utils/format";
+
 import { HoverContext } from "./constants";
 import { MetricTooltip } from "./custom-tooltip";
 import { ChartLinesProps, ChartWrapperProps } from "./types";
-import { formatDateShort } from "./utils";
 
 /**
  * Chart wrapper and lines components for the timeline chart

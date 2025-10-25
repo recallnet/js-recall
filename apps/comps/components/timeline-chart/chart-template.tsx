@@ -14,11 +14,11 @@ import {
 import { AgentAvatar } from "@/components/agent-avatar";
 import { RouterOutputs } from "@/rpc/router";
 import { formatDate } from "@/utils/format";
+import { formatDateShort } from "@/utils/format";
 
 import { ChartSkeleton } from "./chart-skeleton";
 import { CHART_COLORS, LIMIT_AGENTS_PER_CHART } from "./constants";
 import { MetricTooltip } from "./custom-tooltip";
-import { formatDateShort } from "./utils";
 
 interface MetricTimelineChartProps {
   timelineData: RouterOutputs["competitions"]["getTimeline"];
@@ -184,15 +184,28 @@ export const MetricTimelineChart: React.FC<MetricTimelineChartProps> = ({
 
   // Get all latest metric values
   const latestValues = useMemo(() => {
-    if (!filteredData || filteredData.length === 0) return {};
-    const lastDataPoint = filteredData[filteredData.length - 1];
-    if (!lastDataPoint) return {};
+    if (!filteredData || filteredData.length === 0) {
+      return {};
+    }
+
     const values: Record<string, number> = {};
-    Object.entries(lastDataPoint).forEach(([key, value]) => {
-      if (key !== "timestamp" && typeof value === "number") {
-        values[key] = value;
-      }
-    });
+
+    // Iterate through all data points from newest to oldest
+    // For each agent, record their most recent non-null value
+    for (let i = filteredData.length - 1; i >= 0; i--) {
+      const dataPoint = filteredData[i];
+      if (!dataPoint) continue;
+
+      Object.entries(dataPoint).forEach(([key, value]) => {
+        // Skip if already found a value for this agent, or if it's a timestamp field
+        if (values[key] !== undefined || key.includes("timestamp")) return;
+
+        if (typeof value === "number" && value !== null) {
+          values[key] = value;
+        }
+      });
+    }
+
     return values;
   }, [filteredData]);
 

@@ -25,15 +25,22 @@ import {
   checkIsPerpsCompetition,
   getCompetitionSkills,
 } from "@/utils/competition-utils";
-import { formatAmount, formatCompactNumber, formatDate } from "@/utils/format";
+import {
+  formatAmount,
+  formatCompactNumber,
+  formatDate,
+  formatDateShort,
+} from "@/utils/format";
+
+import { AgentAvatar } from "./agent-avatar";
 
 export interface CompetitionKeyProps {
   competition: RouterOutputs["competitions"]["getById"];
   className?: string;
 }
 
-const LIMIT_TRADES_PER_PAGE = 10;
-const LIMIT_POSITIONS_PER_PAGE = 10;
+const LIMIT_TRADES_PER_PAGE = 50;
+const LIMIT_POSITIONS_PER_PAGE = 50;
 
 const CellTitle: React.FC<{
   children: React.ReactNode;
@@ -220,23 +227,29 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
                     {tradesData.trades.map((trade, idx) => (
                       <div
                         key={idx}
-                        className="border-b border-gray-800 pb-3 last:border-0"
+                        className="flex items-start justify-between gap-4 border-b border-gray-800 pb-3 last:border-0"
                       >
-                        <div className="mb-1 flex items-center gap-2">
+                        {/* Left column: Agent info */}
+                        <div className="flex items-center gap-2">
+                          <AgentAvatar agent={trade.agent} showHover={false} />
                           <span className="text-sm font-semibold">
                             {trade.agent.name}
                           </span>
                         </div>
-                        <div className="text-xs text-gray-400">
-                          {formatAmount(trade.fromAmount)}{" "}
-                          {trade.fromTokenSymbol} →{" "}
-                          {formatAmount(trade.toAmount)} {trade.toTokenSymbol}
+
+                        {/* Right column: Trade details */}
+                        <div className="flex flex-col items-end gap-1 text-right">
+                          <span className="text-xs text-gray-400">
+                            {formatAmount(trade.fromAmount)}{" "}
+                            {trade.fromTokenSymbol} →{" "}
+                            {formatAmount(trade.toAmount)} {trade.toTokenSymbol}
+                          </span>
+                          {trade.timestamp && (
+                            <span className="text-xs text-gray-500">
+                              {formatDateShort(new Date(trade.timestamp), true)}
+                            </span>
+                          )}
                         </div>
-                        {trade.timestamp && (
-                          <div className="mt-1 text-xs text-gray-500">
-                            {formatDate(new Date(trade.timestamp))}
-                          </div>
-                        )}
                       </div>
                     ))}
                   </div>
@@ -277,31 +290,52 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
                     {positionsData.positions.map((position, idx) => (
                       <div
                         key={idx}
-                        className="border-b border-gray-800 pb-3 last:border-0"
+                        className="flex items-start justify-between gap-4 border-b border-gray-800 pb-3 last:border-0"
                       >
-                        <div className="mb-1 flex items-center justify-between">
-                          <span className="text-sm font-semibold">
-                            {position.agent?.name || "Unknown Agent"}
-                          </span>
-                          <span
-                            className={`text-xs ${position.isLong ? "text-green-500" : "text-red-500"}`}
-                          >
-                            {position.isLong ? "LONG" : "SHORT"}
-                          </span>
-                        </div>
-                        <div className="text-xs text-gray-400">
-                          {formatAmount(Number(position.positionSize))}{" "}
-                          {position.asset} @{" "}
-                          {formatAmount(Number(position.entryPrice))}
-                        </div>
-                        {position.pnlUsdValue && (
-                          <div
-                            className={`mt-1 text-xs ${Number(position.pnlUsdValue) >= 0 ? "text-green-500" : "text-red-500"}`}
-                          >
-                            PnL: {formatAmount(Number(position.pnlUsdValue))}{" "}
-                            USD
+                        {/* Left column: Agent info */}
+                        <div className="flex items-center gap-2">
+                          <AgentAvatar
+                            agent={position.agent}
+                            showHover={false}
+                          />
+                          <div className="flex flex-col">
+                            <span className="text-sm font-semibold">
+                              {position.agent.name}
+                            </span>
                           </div>
-                        )}
+                        </div>
+
+                        {/* Right column: Position details */}
+                        <div className="flex flex-col items-end gap-1 text-right">
+                          <span
+                            className={`text-xs font-semibold ${position.isLong ? "text-green-500" : "text-red-500"}`}
+                          >
+                            {position.isLong ? "LONG" : "SHORT"}{" "}
+                            {formatAmount(Number(position.positionSize))}{" "}
+                            {position.asset}
+                          </span>
+                          <span className="text-xs text-gray-400">
+                            {formatAmount(Number(position.leverage))}x leverage
+                            • {formatAmount(Number(position.collateralAmount))}{" "}
+                            collateral
+                          </span>
+                          {position.pnlUsdValue && (
+                            <span
+                              className={`text-xs ${Number(position.pnlUsdValue) >= 0 ? "text-green-500" : "text-red-500"}`}
+                            >
+                              PnL: {formatAmount(Number(position.pnlUsdValue))}{" "}
+                              USD
+                            </span>
+                          )}
+                          {position.capturedAt && (
+                            <span className="text-xs text-gray-500">
+                              {formatDateShort(
+                                new Date(position.capturedAt),
+                                true,
+                              )}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>
