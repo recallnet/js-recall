@@ -84,12 +84,14 @@ const CustomDot = ({
   cx,
   cy,
   stroke,
+  opacity = 1,
 }: {
   cx: number;
   cy: number;
   stroke: string;
+  opacity?: number;
 }) => {
-  return <circle cx={cx} cy={cy} r={3} fill={stroke} />;
+  return <circle cx={cx} cy={cy} r={3} fill={stroke} opacity={opacity} />;
 };
 
 /**
@@ -346,12 +348,19 @@ export const MetricTimelineChart: React.FC<MetricTimelineChartProps> = ({
                       );
                     }
                     // Regular dot for all other points
+                    const dotOpacity =
+                      lineOrAgentAvatarHovered === null ||
+                      lineOrAgentAvatarHovered === agentName
+                        ? 1
+                        : 0.3;
+
                     return (
                       <g key={dotKey}>
                         <CustomDot
                           cx={props.cx}
                           cy={props.cy}
                           stroke={agentColorMap[agentName] ?? CHART_COLORS[0]}
+                          opacity={dotOpacity}
                         />
                       </g>
                     );
