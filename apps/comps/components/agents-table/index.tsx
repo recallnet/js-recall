@@ -319,7 +319,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
         },
       },
       // Show Calmar Ratio as primary metric for perps, Portfolio Value for others
-      ...(checkIsPerpsCompetition(competition)
+      ...(checkIsPerpsCompetition(competition.type)
         ? [
             {
               id: "calmarRatio",
@@ -595,7 +595,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
       isSuccessAgentBoostTotals,
       isOpenForBoosting,
       isSuccessUserBoosts,
-      competition,
+      competition.type,
     ],
   );
 

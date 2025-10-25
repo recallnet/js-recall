@@ -64,7 +64,7 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
   competition,
   className,
 }) => {
-  const isPerpsCompetition = checkIsPerpsCompetition(competition);
+  const isPerpsCompetition = checkIsPerpsCompetition(competition.type);
   const [expanded, setExpanded] = useState(false);
   const [balancesExpanded, setBalancesExpanded] = useState(false);
   const [tradingRulesExpanded, setTradingRulesExpanded] = useState(false);
