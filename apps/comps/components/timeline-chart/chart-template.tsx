@@ -270,10 +270,9 @@ export const MetricTimelineChart: React.FC<MetricTimelineChartProps> = ({
               stroke="#9CA3AF"
               fontSize={12}
               type="category"
-              interval={status === "ended" ? "preserveEnd" : 0}
-              tick={{ fill: "#9CA3AF", fontSize: 12 }}
-              angle={-45}
-              textAnchor="end"
+              interval="equidistantPreserveStart"
+              tickMargin={10}
+              minTickGap={20}
             />
             <YAxis
               stroke="#9CA3AF"
