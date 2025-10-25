@@ -306,7 +306,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                 {row.original.name}
               </span>
 
-              <span className="text-secondary-foreground block w-full overflow-hidden text-ellipsis whitespace-nowrap text-xs">
+              <span className="text-secondary-foreground hidden w-full overflow-hidden text-ellipsis whitespace-nowrap text-xs sm:block">
                 {row.original.description}
               </span>
             </div>
@@ -315,7 +315,9 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
         enableSorting: true,
         sortDescFirst: false, // Alphabetical order
         meta: {
-          className: "flex-1 max-w-[520px]",
+          className: "flex-1 min-w-[120px]",
+          flex: true,
+          minWidth: 120,
         },
       },
       // Show Calmar Ratio as primary metric for perps, Portfolio Value for others
@@ -519,7 +521,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
           );
         },
         enableSorting: false,
-        size: 120,
+        size: 140,
         meta: {
           className: "flex justify-end",
         },
@@ -580,7 +582,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
             </div>
           );
         },
-        size: 120,
+        size: 140,
         meta: {
           className: "flex justify-end",
         },
@@ -733,20 +735,11 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
           </div>
         )}
       </div>
-      <div
-        ref={tableContainerRef}
-        style={{
-          overflowY: "auto",
-          position: "relative",
-        }}
-      >
-        <Table>
-          <TableHeader>
+      <div ref={tableContainerRef} className="overflow-x-auto overflow-y-auto">
+        <Table className="min-w-max table-fixed">
+          <TableHeader className="sticky top-0 z-10 bg-black">
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow
-                key={headerGroup.id}
-                style={{ display: "flex", width: "100%" }}
-              >
+              <TableRow key={headerGroup.id} style={{ display: "flex" }}>
                 {headerGroup.headers.map((header) =>
                   header.column.getCanSort() ? (
                     <SortableTableHeader
@@ -790,10 +783,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
               return (
                 <TableRow
                   key={row.id}
-                  style={{
-                    display: "flex",
-                    cursor: "pointer",
-                  }}
+                  style={{ display: "flex", cursor: "pointer" }}
                   ref={(el) => rowVirtualizer.measureElement(el)}
                   data-index={virtualRow.index}
                   onClick={(e) => {
@@ -812,7 +802,14 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                     <TableCell
                       key={cell.id}
                       className={`flex items-center ${cell.column.columnDef.meta?.className ?? ""}`}
-                      style={{ width: cell.column.getSize() }}
+                      style={{
+                        width: cell.column.getSize(),
+                        minWidth: (
+                          cell.column.columnDef.meta as
+                            | { minWidth?: number }
+                            | undefined
+                        )?.minWidth,
+                      }}
                     >
                       {flexRender(
                         cell.column.columnDef.cell,
