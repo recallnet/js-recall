@@ -94,7 +94,7 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
                     size="sm"
                     className="h-auto border border-white bg-black px-3 py-2.5 text-xs font-semibold uppercase text-white hover:bg-white hover:text-black"
                   >
-                    {activeChartTab === "account-value" && "Account Value"}
+                    {activeChartTab === "account-value" && "% Return"}
                     {activeChartTab === "calmar-ratio" && "Calmar Ratio"}
                     {activeChartTab === "max-drawdown" && "Max Drawdown"}
                     {activeChartTab === "sortino-ratio" && "Sortino Ratio"}
