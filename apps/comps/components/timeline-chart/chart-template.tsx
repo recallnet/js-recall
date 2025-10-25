@@ -486,11 +486,16 @@ export const MetricTimelineChart: React.FC<MetricTimelineChartProps> = ({
 
                     if (agent && isAgentsLastValidPoint(agentName, timestamp)) {
                       // Only render avatar for last point
+                      // Remove potential React 'key' prop from spread to avoid warnings
+                      const { key: _, ...safeDotProps } =
+                        (props as unknown as {
+                          key?: React.Key;
+                        } & CustomDotProps) || ({} as CustomDotProps);
                       return (
                         <g key={dotKey}>
                           <AgentAvatarDot
                             agent={agent}
-                            {...props}
+                            {...safeDotProps}
                             onMouseEnter={() =>
                               handleLineOrAgentAvatarHover(agentName)
                             }
