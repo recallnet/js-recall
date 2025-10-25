@@ -10,6 +10,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { ActiveDotProps } from "recharts/types/util/types";
 
 import { AgentAvatar } from "@/components/agent-avatar";
 import { RouterOutputs } from "@/rpc/router";
@@ -44,7 +45,6 @@ interface AgentAvatarDotProps {
   onMouseEnter?: () => void;
   onMouseLeave?: () => void;
 }
-
 /**
  * Agent avatar dot component for the timeline chart
  */
@@ -73,12 +73,18 @@ const AgentAvatarDot = ({
           onMouseEnter={onMouseEnter}
           onMouseLeave={onMouseLeave}
         >
-          <AgentAvatar agent={agent} size={avatarSize} showHover={false} />
+          <AgentAvatar agent={agent} size={avatarSize} />
         </div>
       </foreignObject>
     </g>
   );
 };
+
+interface CustomDotProps extends ActiveDotProps {
+  payload: {
+    timestamp?: string;
+  };
+}
 
 const CustomDot = ({
   cx,
@@ -343,9 +349,8 @@ export const MetricTimelineChart: React.FC<MetricTimelineChartProps> = ({
                   }
                   isAnimationActive={false}
                   activeDot={false}
-                  dot={(props) => {
-                    const timestamp = (props.payload as { timestamp?: string })
-                      ?.timestamp;
+                  dot={(props: CustomDotProps) => {
+                    const timestamp = props.payload?.timestamp;
                     const dotKey = `${agentName}-${timestamp || props.cx}-${props.cy}`;
 
                     if (agent && isLastPoint(timestamp)) {
