@@ -49,14 +49,11 @@ export const useStake = (): StakingOperationResult => {
   } = useSafeWriteContract();
 
   const refetchQueries = async (txHash: `0x${string}`) => {
-    const transactionReceipt = await waitForTransactionReceipt(
-      clientConfig as any,
-      {
-        hash: txHash,
-        pollingInterval: 1000,
-        confirmations: 2,
-      },
-    );
+    const transactionReceipt = await waitForTransactionReceipt(clientConfig, {
+      hash: txHash,
+      pollingInterval: 1000,
+      confirmations: 2,
+    });
 
     if (transactionReceipt.status === "success") {
       setIsConfirmed(true);
@@ -83,7 +80,7 @@ export const useStake = (): StakingOperationResult => {
         reset();
 
         // First simulate the transaction using the core action
-        const simulationResult = await simulateContract(config as any, {
+        const simulationResult = await simulateContract(config, {
           address: contractAddress,
           abi: StakingAbi,
           functionName: "stake",

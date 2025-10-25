@@ -227,7 +227,7 @@ export function useClaim(): ClaimOperationResult {
         );
 
         // Simulate the multicall transaction
-        const simulationResult = await simulateContract(config as any, {
+        const simulationResult = await simulateContract(config, {
           address: publicConfig.blockchain
             .rewardAllocationContractAddress as Hex,
           abi: RewardAllocationAbi,
@@ -254,7 +254,7 @@ export function useClaim(): ClaimOperationResult {
       const proof = target.proof as Hex[];
 
       // First simulate the transaction
-      const simulationResult = await simulateContract(config as any, {
+      const simulationResult = await simulateContract(config, {
         address: publicConfig.blockchain.rewardAllocationContractAddress as Hex,
         abi: RewardAllocationAbi,
         functionName: "claim",

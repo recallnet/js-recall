@@ -4,6 +4,7 @@
  * Utilities for creating server-side RPC clients for testing.
  */
 import { type RouterClient, createRouterClient } from "@orpc/server";
+import { type PrivyClient } from "@privy-io/server-auth";
 import { type ReadonlyRequestCookies } from "next/dist/server/web/spec-extension/adapters/request-cookies";
 
 import { MockPrivyClient } from "@recallnet/services/lib";
@@ -75,7 +76,7 @@ export async function createTestRpcClient(
   return createRouterClient(router, {
     context: {
       cookies: createMockCookies(privyToken),
-      privyClient: mockPrivyClient as any, // MockPrivyClient implements subset of PrivyClient interface
+      privyClient: mockPrivyClient as unknown as PrivyClient, // MockPrivyClient implements subset of PrivyClient interface
       boostService,
       boostAwardService,
       userService,

@@ -4,8 +4,13 @@ import { useCallback, useMemo } from "react";
 import { type Address } from "viem";
 import {
   UseBalanceParameters,
+  UseBalanceReturnType,
   UseBlockParameters,
+  UseBlockReturnType,
   UseReadContractParameters,
+  UseReadContractReturnType,
+  UseReadContractsReturnType,
+  UseWaitForTransactionReceiptReturnType,
   useAccount as useWagmiAccount,
   useBalance as useWagmiBalance,
   useBlock as useWagmiBlock,
@@ -65,7 +70,9 @@ export function useSafeChainId(): number | undefined {
 /**
  * Safe wrapper for useReadContract that handles missing WagmiProvider
  */
-export function useSafeReadContract(params?: UseReadContractParameters): any {
+export function useSafeReadContract(
+  params?: UseReadContractParameters,
+): UseReadContractReturnType {
   const wagmiAvailable = isWagmiAvailable();
 
   // Create a stable default result
@@ -91,7 +98,7 @@ export function useSafeReadContract(params?: UseReadContractParameters): any {
       failureCount: 0,
       failureReason: null,
       fetchStatus: "idle" as const,
-      refetch: async () => ({}) as any,
+      refetch: async () => ({}) as UseReadContractReturnType,
       remove: () => {},
       status: "pending" as const,
       queryKey: [] as readonly unknown[],
@@ -100,7 +107,7 @@ export function useSafeReadContract(params?: UseReadContractParameters): any {
   );
 
   if (!wagmiAvailable || !params) {
-    return defaultResult as any;
+    return defaultResult;
   }
 
   // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -110,7 +117,9 @@ export function useSafeReadContract(params?: UseReadContractParameters): any {
 /**
  * Safe wrapper for useReadContracts that handles missing WagmiProvider
  */
-export function useSafeReadContracts(params?: any): any {
+export function useSafeReadContracts(
+  params?: Parameters<typeof useWagmiReadContracts>[0],
+): UseReadContractsReturnType {
   const wagmiAvailable = isWagmiAvailable();
 
   // Create a stable default result
@@ -136,7 +145,7 @@ export function useSafeReadContracts(params?: any): any {
       failureCount: 0,
       failureReason: null,
       fetchStatus: "idle" as const,
-      refetch: async () => ({}) as any,
+      refetch: async () => ({}) as UseReadContractsReturnType,
       remove: () => {},
       status: "pending" as const,
       queryKey: [] as readonly unknown[],
@@ -145,7 +154,7 @@ export function useSafeReadContracts(params?: any): any {
   );
 
   if (!wagmiAvailable || !params) {
-    return defaultResult as any;
+    return defaultResult;
   }
 
   // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -194,7 +203,7 @@ export function useSafeWriteContract() {
  */
 export function useSafeWaitForTransactionReceipt(
   params?: Parameters<typeof useWagmiWaitForTransactionReceipt>[0],
-) {
+): UseWaitForTransactionReceiptReturnType {
   const wagmiAvailable = isWagmiAvailable();
 
   const defaultResult = useMemo(
@@ -219,7 +228,7 @@ export function useSafeWaitForTransactionReceipt(
       failureCount: 0,
       failureReason: null,
       fetchStatus: "idle" as const,
-      refetch: async () => ({}) as any,
+      refetch: async () => ({}) as UseWaitForTransactionReceiptReturnType,
       remove: () => {},
       status: "pending" as const,
       queryKey: [] as readonly unknown[],
@@ -228,7 +237,7 @@ export function useSafeWaitForTransactionReceipt(
   );
 
   if (!wagmiAvailable) {
-    return defaultResult as any;
+    return defaultResult;
   }
 
   // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -277,7 +286,9 @@ export function useSafeDisconnect() {
 /**
  * Safe wrapper for useBalance that handles missing WagmiProvider
  */
-export function useSafeBalance(params?: UseBalanceParameters): any {
+export function useSafeBalance(
+  params?: UseBalanceParameters,
+): UseBalanceReturnType {
   const wagmiAvailable = isWagmiAvailable();
 
   const defaultResult = useMemo(
@@ -302,7 +313,7 @@ export function useSafeBalance(params?: UseBalanceParameters): any {
       failureCount: 0,
       failureReason: null,
       fetchStatus: "idle" as const,
-      refetch: async () => ({}) as any,
+      refetch: async () => ({}) as UseBalanceReturnType,
       remove: () => {},
       status: "pending" as const,
       queryKey: [] as readonly unknown[],
@@ -321,7 +332,7 @@ export function useSafeBalance(params?: UseBalanceParameters): any {
 /**
  * Safe wrapper for useBlock that handles missing WagmiProvider
  */
-export function useSafeBlock(params?: UseBlockParameters): any {
+export function useSafeBlock(params?: UseBlockParameters): UseBlockReturnType {
   const wagmiAvailable = isWagmiAvailable();
 
   const defaultResult = useMemo(
@@ -346,7 +357,7 @@ export function useSafeBlock(params?: UseBlockParameters): any {
       failureCount: 0,
       failureReason: null,
       fetchStatus: "idle" as const,
-      refetch: async () => ({}) as any,
+      refetch: async () => ({}) as UseBlockReturnType,
       remove: () => {},
       status: "pending" as const,
       queryKey: [] as readonly unknown[],

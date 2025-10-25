@@ -62,14 +62,11 @@ export const useTokenApproval = (
     });
 
   const refetchAllowance = async (txHash: `0x${string}`) => {
-    const transactionReceipt = await waitForTransactionReceipt(
-      clientConfig as any,
-      {
-        hash: txHash,
-        pollingInterval: 1000,
-        confirmations: 2,
-      },
-    );
+    const transactionReceipt = await waitForTransactionReceipt(clientConfig, {
+      hash: txHash,
+      pollingInterval: 1000,
+      confirmations: 2,
+    });
 
     if (transactionReceipt.status === "success") {
       refetch();

@@ -33,7 +33,7 @@ export function cacheMiddleware<
   key?: string[];
   revalidateSecs?: number;
   getTags?: (input: TInput) => string[];
-  includeContext?: (context: TInContext) => Record<string, any>;
+  includeContext?: (context: TInContext) => Record<string, unknown>;
 }): Middleware<
   TInContext,
   Record<never, never>,
@@ -95,12 +95,18 @@ export function cacheMiddleware<
 
       // Deserialize to restore original types (BigInt, Date, etc.)
       const [json, meta, maps, blobs] = cachedResult;
-      return serializer.deserialize(json, meta, maps, (index: number) => {
-        const blob = blobs[index];
-        if (!blob) {
-          throw new Error(`Missing blob at index ${index}`);
-        }
-        return blob;
-      }) as any;
+      const result = serializer.deserialize(
+        json,
+        meta,
+        maps,
+        (index: number) => {
+          const blob = blobs[index];
+          if (!blob) {
+            throw new Error(`Missing blob at index ${index}`);
+          }
+          return blob;
+        },
+      );
+      return result as unknown as TOutput;
     });
 }
