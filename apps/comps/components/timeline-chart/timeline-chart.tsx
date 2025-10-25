@@ -239,10 +239,10 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
               Account Value
             </TabsTrigger>
             <TabsTrigger
-              value="percent-gain"
+              value="percent-return"
               className="border border-white bg-black px-4 py-2 font-semibold uppercase text-white transition-colors duration-200 hover:bg-white hover:text-black data-[state=active]:bg-white data-[state=active]:text-black"
             >
-              % Gain
+              % Return
             </TabsTrigger>
           </TabsList>
 
@@ -256,7 +256,7 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
                   className="h-auto border border-white bg-black px-3 py-2.5 text-xs font-semibold uppercase text-white hover:bg-white hover:text-black"
                 >
                   {activeChartTab === "account-value" && "Account Value"}
-                  {activeChartTab === "percent-gain" && "% Gain"}
+                  {activeChartTab === "percent-return" && "% Return"}
                   <ChevronDown className="ml-2 h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
@@ -268,10 +268,10 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
                   Account Value
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onClick={() => setActiveChartTab("percent-gain")}
+                  onClick={() => setActiveChartTab("percent-return")}
                   className="border-0.5 cursor-pointer border-b p-3 font-mono text-xs font-semibold uppercase hover:bg-gray-800"
                 >
-                  % Gain
+                  % Return
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -326,11 +326,11 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
         </TabsContent>
 
         {/* % Gain Tab */}
-        <TabsContent value="percent-gain" className="m-0">
+        <TabsContent value="percent-return" className="m-0">
           <MetricTimelineChart
             timelineData={timelineRaw || []}
             agents={agents || []}
-            metric="totalValue"
+            metric="percentReturn"
             yAxisType="percentage"
             isLoading={isLoading}
             status={competition.status}

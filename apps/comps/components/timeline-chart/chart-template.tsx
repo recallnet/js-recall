@@ -28,16 +28,22 @@ import { ChartSkeleton } from "./chart-skeleton";
 import { CHART_COLORS, LIMIT_AGENTS_PER_CHART } from "./constants";
 import { MetricTooltip } from "./custom-tooltip";
 
+type ApiMetricKey =
+  | "calmarRatio"
+  | "sortinoRatio"
+  | "simpleReturn"
+  | "annualizedReturn"
+  | "maxDrawdown"
+  | "totalValue";
+
+type ComputedMetricKey = "percentReturn";
+
+type SupportedMetricKey = ApiMetricKey | ComputedMetricKey;
+
 interface MetricTimelineChartProps {
   timelineData: RouterOutputs["competitions"]["getTimeline"];
   agents: RouterOutputs["competitions"]["getAgents"]["agents"];
-  metric:
-    | "calmarRatio"
-    | "sortinoRatio"
-    | "simpleReturn"
-    | "annualizedReturn"
-    | "maxDrawdown"
-    | "totalValue";
+  metric: SupportedMetricKey;
   yAxisType?: "currency" | "percentage" | "number";
   isLoading?: boolean;
   status: "pending" | "active" | "ending" | "ended";
@@ -222,17 +228,44 @@ export const MetricTimelineChart: React.FC<MetricTimelineChartProps> = ({
         [key: string]: string | number | null;
       } = { timestamp };
 
-      // For each agent, find their metric value at this timestamp
+      // For each agent, compute the metric value at this timestamp
       timelineData.forEach((agent) => {
         const point = agent.timeline.find((p) => p.timestamp === timestamp);
-        if (point) {
-          const metricValue = point[metric];
-          // Only include finite numeric values; treat non-finite as null
-          const numericValue =
-            metricValue && Number.isFinite(metricValue) ? metricValue : null;
-          dataPoint[agent.agentName] = numericValue;
-        } else {
+        if (!point) {
           dataPoint[agent.agentName] = null;
+          return;
+        }
+
+        // percentReturn is computed from first totalValue per agent
+        if (metric === "percentReturn") {
+          const firstPoint = agent.timeline[0];
+          const startValue =
+            firstPoint && typeof firstPoint.totalValue === "number"
+              ? firstPoint.totalValue
+              : null;
+          const currentValue =
+            typeof point.totalValue === "number" ? point.totalValue : null;
+
+          if (
+            startValue !== null &&
+            Number.isFinite(startValue) &&
+            currentValue !== null &&
+            Number.isFinite(currentValue) &&
+            startValue !== 0
+          ) {
+            const pct = ((currentValue - startValue) / startValue) * 100;
+            dataPoint[agent.agentName] = Number.isFinite(pct) ? pct : null;
+          } else {
+            dataPoint[agent.agentName] = null;
+          }
+        } else {
+          // API metric key: take numeric finite value from the point
+          const metricValue = (point as Record<string, unknown>)[metric];
+          const numericValue =
+            typeof metricValue === "number" && Number.isFinite(metricValue)
+              ? metricValue
+              : null;
+          dataPoint[agent.agentName] = numericValue;
         }
       });
 
