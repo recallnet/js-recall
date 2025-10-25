@@ -117,3 +117,9 @@ export function getCompetitionSkills(type: string): string[] {
 export function checkIsAgentSkill(skill: string): boolean {
   return skill === "trading" || skill === "perpetual_futures";
 }
+
+export function checkIsPerpsCompetition(
+  type: RouterOutputs["competitions"]["getById"]["type"],
+): boolean {
+  return type === "perpetual_futures";
+}

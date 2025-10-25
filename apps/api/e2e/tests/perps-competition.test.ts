@@ -26,6 +26,7 @@ import {
   type GetUserAgentsResponse,
   type PerpsAccountResponse,
   type PerpsPositionsResponse,
+  type UpcomingCompetitionsResponse,
 } from "@recallnet/test-utils";
 import { getBaseUrl } from "@recallnet/test-utils";
 import {
@@ -134,6 +135,91 @@ describe("Perps Competition", () => {
     expect(comp?.stats?.averageEquity).toBeDefined();
     // Note: averageEquity can be 0 if no agents have joined yet
     expect(comp?.stats?.averageEquity).toBeGreaterThanOrEqual(0);
+  });
+
+  test("should return evaluationMetric field for perps competitions", async () => {
+    // Setup admin client
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agents for this test
+    const { agent: agent1 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Evaluation Metric Test Agent",
+    });
+
+    // Start a perps competition with Sortino ratio as evaluation metric
+    const response = await startPerpsTestCompetition({
+      adminClient,
+      name: `Evaluation Metric Test ${Date.now()}`,
+      agentIds: [agent1.id],
+      evaluationMetric: "sortino_ratio",
+      perpsProvider: {
+        provider: "symphony",
+        initialCapital: 1000,
+        selfFundingThreshold: 100,
+        apiUrl: "http://localhost:4567",
+      },
+    });
+
+    expect(response.success).toBe(true);
+    const competition = response.competition;
+
+    // Get competition details via the detail endpoint
+    const detailResponse = await adminClient.getCompetition(competition.id);
+    expect(detailResponse.success).toBe(true);
+
+    // Type assertion and verify evaluationMetric is returned
+    const typedDetailResponse = detailResponse as CompetitionDetailResponse;
+    expect(typedDetailResponse.competition).toBeDefined();
+    expect(typedDetailResponse.competition.type).toBe("perpetual_futures");
+    expect(typedDetailResponse.competition.evaluationMetric).toBe(
+      "sortino_ratio",
+    );
+
+    // Also test the list endpoint to verify evaluationMetric is included there
+    const listResponse = await adminClient.getCompetitions("active");
+    expect(listResponse.success).toBe(true);
+
+    // Type assertion since we've verified success
+    const typedListResponse = listResponse as UpcomingCompetitionsResponse;
+    const perpsCompetition = typedListResponse.competitions.find(
+      (c) => c.id === competition.id,
+    );
+    expect(perpsCompetition).toBeDefined();
+    expect(perpsCompetition?.evaluationMetric).toBe("sortino_ratio");
+  });
+
+  test("should not return evaluationMetric for paper trading competitions", async () => {
+    // Setup admin client
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register an agent for this test
+    const { agent: agent1 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Paper Trading Test Agent",
+    });
+
+    // Start a PAPER TRADING competition (not perps)
+    const response = await startTestCompetition({
+      adminClient,
+      name: `Paper Trading Test ${Date.now()}`,
+      agentIds: [agent1.id],
+    });
+
+    expect(response.success).toBe(true);
+    const competition = response.competition;
+
+    // Get competition details
+    const detailResponse = await adminClient.getCompetition(competition.id);
+    expect(detailResponse.success).toBe(true);
+
+    // Type assertion and verify evaluationMetric is NOT returned for paper trading
+    const typedDetailResponse = detailResponse as CompetitionDetailResponse;
+    expect(typedDetailResponse.competition).toBeDefined();
+    expect(typedDetailResponse.competition.type).toBe("trading");
+    expect(typedDetailResponse.competition.evaluationMetric).toBeUndefined();
   });
 
   test("should get perps positions for an agent", async () => {
