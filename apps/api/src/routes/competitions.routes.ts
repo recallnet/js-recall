@@ -92,6 +92,10 @@ export function configureCompetitionsRoutes(
    *                         type: string
    *                         enum: [disallowAll, disallowXParent, allow]
    *                         description: The type of cross-chain trading allowed in this competition
+   *                       evaluationMetric:
+   *                         type: string
+   *                         enum: [calmar_ratio, sortino_ratio, simple_return, max_drawdown, total_pnl]
+   *                         description: Primary evaluation metric for perps competitions (only present for perpetual_futures type)
    *                       createdAt:
    *                         type: string
    *                         format: date-time
@@ -373,6 +377,10 @@ export function configureCompetitionsRoutes(
    *                         averageEquity:
    *                           type: number
    *                           description: Average equity across all agents (only for perpetual futures competitions)
+   *                     evaluationMetric:
+   *                       type: string
+   *                       enum: [calmar_ratio, sortino_ratio, simple_return, max_drawdown, total_pnl]
+   *                       description: Primary evaluation metric for perps competitions (only present for perpetual_futures type)
    *                     createdAt:
    *                       type: string
    *                       format: date-time

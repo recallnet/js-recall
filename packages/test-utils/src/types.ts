@@ -361,6 +361,12 @@ export interface Competition {
   maxParticipants: number | null;
   registeredParticipants: number;
   minimumStake?: string | null; // Minimum stake required to join competition (in atto units as string)
+  evaluationMetric?:
+    | "calmar_ratio"
+    | "sortino_ratio"
+    | "simple_return"
+    | "max_drawdown"
+    | "total_pnl"; // Primary evaluation metric for perps competitions
   tradingConstraints?: TradingConstraints;
   rewards?: {
     rank: number;
