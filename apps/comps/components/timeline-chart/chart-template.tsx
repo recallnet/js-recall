@@ -233,7 +233,7 @@ export const MetricTimelineChart: React.FC<MetricTimelineChartProps> = ({
 
   if (isLoading) {
     return (
-      <div className="h-120 w-full">
+      <div className="h-150 w-full">
         <ChartSkeleton />
       </div>
     );
@@ -258,7 +258,7 @@ export const MetricTimelineChart: React.FC<MetricTimelineChartProps> = ({
 
   return (
     <>
-      <div className="h-120 relative">
+      <div className="h-150 relative">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
             data={filteredData}

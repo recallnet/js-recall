@@ -147,7 +147,7 @@ export default function CompetitionPageClient({
       />
 
       {/* Chart and Key grid layout */}
-      <div className="mb-12 grid grid-cols-1 gap-6 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
         <div className="md:col-span-2">
           <TimelineChart
             competition={competition}
@@ -156,21 +156,20 @@ export default function CompetitionPageClient({
         </div>
         <div className="md:col-span-1">
           <CompetitionKey competition={competition} />
+          {/* Action buttons section */}
+          <div className="flex w-full gap-3 md:mt-12">
+            <JoinCompetitionButton
+              competitionId={id}
+              className="flex-1 justify-between border border-white bg-white text-blue-500 hover:border-blue-500 hover:bg-blue-500 hover:text-white disabled:hover:border-white disabled:hover:bg-white disabled:hover:text-blue-500"
+              disabled={competition.status !== "pending"}
+              size="lg"
+            >
+              <span>COMPETE</span> <Plus className="ml-2" size={18} />
+            </JoinCompetitionButton>
+
+            <BoostAgentsBtn className="flex-1 justify-between uppercase" />
+          </div>
         </div>
-      </div>
-
-      {/* Action buttons section */}
-      <div className="mb-6 flex w-full flex-col gap-3 sm:flex-row sm:gap-4">
-        <JoinCompetitionButton
-          competitionId={id}
-          className="w-full justify-between border border-white bg-white text-blue-500 hover:border-blue-500 hover:bg-blue-500 hover:text-white disabled:hover:border-white disabled:hover:bg-white disabled:hover:text-blue-500 sm:w-1/2 md:w-auto"
-          disabled={competition.status !== "pending"}
-          size="lg"
-        >
-          <span>COMPETE</span> <Plus className="ml-2" size={18} />
-        </JoinCompetitionButton>
-
-        <BoostAgentsBtn className="w-full justify-between uppercase sm:w-1/2 md:w-auto" />
       </div>
 
       {/* Standings table */}
