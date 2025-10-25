@@ -471,6 +471,10 @@ class ServiceRegistry {
     return this._convictionClaimsRepository;
   }
 
+  get transactionProcessor(): TransactionProcessor {
+    return this._transactionProcessor;
+  }
+
   get competitionRepository(): CompetitionRepository {
     return this._competitionRepository;
   }

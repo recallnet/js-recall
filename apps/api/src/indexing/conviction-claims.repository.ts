@@ -1,6 +1,6 @@
 import { and, desc, eq } from "drizzle-orm";
 
-import { BlockHashCoder, TxHashCoder } from "@recallnet/db/coders";
+import { TxHashCoder } from "@recallnet/db/coders";
 import { convictionClaims } from "@recallnet/db/schema/conviction-claims/defs";
 
 import { db } from "@/database/db.js";
@@ -78,13 +78,11 @@ export class ConvictionClaimsRepository {
     duration?: bigint;
     source?: "event" | "transaction";
     blockNumber: bigint;
-    blockHash: string;
     blockTimestamp: Date;
     transactionHash: string;
   }): Promise<boolean> {
     const account = params.account.toLowerCase();
     const txHash = TxHashCoder.encode(params.transactionHash);
-    const blockHash = BlockHashCoder.encode(params.blockHash);
 
     const rows = await this.#db
       .insert(convictionClaims)
@@ -96,7 +94,6 @@ export class ConvictionClaimsRepository {
         season: params.season,
         duration: params.duration,
         blockNumber: params.blockNumber,
-        blockHash,
         blockTimestamp: params.blockTimestamp,
         transactionHash: txHash,
         createdAt: new Date(),

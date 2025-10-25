@@ -39,7 +39,6 @@ export const convictionClaims = pgTable(
 
     // Blockchain metadata
     blockNumber: bigint("block_number", { mode: "bigint" }).notNull(),
-    blockHash: bytea("block_hash").notNull(),
     blockTimestamp: timestamp("block_timestamp", {
       withTimezone: false,
     }).notNull(),

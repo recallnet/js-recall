@@ -11,7 +11,6 @@ describe("ConvictionClaimsRepository", () => {
   let testAccount2: string;
   let testTxHash1: string;
   let testTxHash2: string;
-  let testBlockHash: string;
 
   beforeEach(async () => {
     // Clean up existing data
@@ -27,8 +26,6 @@ describe("ConvictionClaimsRepository", () => {
       "0xca9ffc8333904b0844df3e953057535185e96e89a5e28874cf17c5f76f9560d7";
     testTxHash2 =
       "0xda9ffc8333904b0844df3e953057535185e96e89a5e28874cf17c5f76f9560d8";
-    testBlockHash =
-      "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
   });
 
   test("saveConvictionClaim should save a new conviction claim", async () => {
@@ -39,7 +36,6 @@ describe("ConvictionClaimsRepository", () => {
       season: 0,
       duration: BigInt(31536000), // 1 year in seconds
       blockNumber: BigInt(36891706),
-      blockHash: testBlockHash,
       blockTimestamp: new Date("2025-10-15T23:59:19Z"),
       transactionHash: testTxHash1,
     };
@@ -68,7 +64,6 @@ describe("ConvictionClaimsRepository", () => {
       claimedAmount: BigInt("1000000000000000000"),
       season: 0,
       blockNumber: BigInt(36891706),
-      blockHash: testBlockHash,
       blockTimestamp: new Date("2025-10-15T23:59:19Z"),
       transactionHash: testTxHash1,
     };
@@ -99,7 +94,6 @@ describe("ConvictionClaimsRepository", () => {
       season: 0,
       duration: BigInt(7776000), // 90 days in seconds
       blockNumber: BigInt(36891706),
-      blockHash: testBlockHash,
       blockTimestamp: new Date("2025-10-15T23:59:19Z"),
       transactionHash: testTxHash1,
     };
@@ -126,7 +120,6 @@ describe("ConvictionClaimsRepository", () => {
       claimedAmount: BigInt("1000000000000000000"),
       season: 0,
       blockNumber: BigInt(36891706),
-      blockHash: testBlockHash,
       blockTimestamp: new Date("2025-10-15T23:59:19Z"),
       transactionHash: testTxHash1,
     });
@@ -137,7 +130,6 @@ describe("ConvictionClaimsRepository", () => {
       claimedAmount: BigInt("2000000000000000000"),
       season: 0,
       blockNumber: BigInt(36891707),
-      blockHash: testBlockHash,
       blockTimestamp: new Date("2025-10-16T00:00:00Z"),
       transactionHash: testTxHash2,
     });
@@ -167,7 +159,6 @@ describe("ConvictionClaimsRepository", () => {
       claimedAmount: BigInt("1000000000000000000"),
       season: 0,
       blockNumber: BigInt(36891706),
-      blockHash: testBlockHash,
       blockTimestamp: new Date("2025-10-15T23:59:19Z"),
       transactionHash: testTxHash1,
     });
@@ -178,7 +169,6 @@ describe("ConvictionClaimsRepository", () => {
       claimedAmount: BigInt("2000000000000000000"),
       season: 1,
       blockNumber: BigInt(36891707),
-      blockHash: testBlockHash,
       blockTimestamp: new Date("2025-10-16T00:00:00Z"),
       transactionHash: testTxHash2,
     });
@@ -217,7 +207,6 @@ describe("ConvictionClaimsRepository", () => {
       claimedAmount: BigInt("1000000000000000000"),
       season: 0,
       blockNumber: BigInt(36891706),
-      blockHash: testBlockHash,
       blockTimestamp: new Date("2025-10-15T23:59:19Z"),
       transactionHash: testTxHash1,
     });
@@ -228,7 +217,6 @@ describe("ConvictionClaimsRepository", () => {
       claimedAmount: BigInt("2500000000000000000"),
       season: 0,
       blockNumber: BigInt(36891707),
-      blockHash: testBlockHash,
       blockTimestamp: new Date("2025-10-16T00:00:00Z"),
       transactionHash: testTxHash2,
     });
@@ -265,7 +253,6 @@ describe("ConvictionClaimsRepository", () => {
       claimedAmount: BigInt("1000000000000000000"),
       season: 0,
       blockNumber: BigInt(36891706),
-      blockHash: testBlockHash,
       blockTimestamp: new Date("2025-10-15T23:59:19Z"),
       transactionHash: testTxHash1,
     });
@@ -276,7 +263,6 @@ describe("ConvictionClaimsRepository", () => {
       claimedAmount: BigInt("2000000000000000000"),
       season: 0,
       blockNumber: BigInt(36891707),
-      blockHash: testBlockHash,
       blockTimestamp: new Date("2025-10-16T00:00:00Z"),
       transactionHash: testTxHash2,
     });
@@ -301,7 +287,6 @@ describe("ConvictionClaimsRepository", () => {
         claimedAmount: BigInt((i + 1) * 1000000000000000000),
         season: 0,
         blockNumber: BigInt(36891706 + i),
-        blockHash: testBlockHash,
         blockTimestamp: new Date(`2025-10-1${5 + i}T00:00:00Z`),
         transactionHash: `0x${i}a9ffc8333904b0844df3e953057535185e96e89a5e28874cf17c5f76f9560d7`,
       });
@@ -340,7 +325,6 @@ describe("ConvictionClaimsRepository", () => {
       claimedAmount: BigInt("500000000000000000"),
       season: 0,
       blockNumber: BigInt(36891706),
-      blockHash: testBlockHash,
       blockTimestamp: new Date("2025-10-15T23:59:19Z"),
       transactionHash: testTxHash1,
     });
@@ -351,7 +335,6 @@ describe("ConvictionClaimsRepository", () => {
       claimedAmount: BigInt("1500000000000000000"),
       season: 0,
       blockNumber: BigInt(36891708), // Higher block number
-      blockHash: testBlockHash,
       blockTimestamp: new Date("2025-10-16T00:00:00Z"),
       transactionHash: testTxHash2,
     });
@@ -394,7 +377,6 @@ describe("ConvictionClaimsRepository", () => {
       season: 0,
       duration: undefined, // Test with optional duration
       blockNumber: BigInt(36891706),
-      blockHash: testBlockHash,
       blockTimestamp: new Date("2025-10-15T23:59:19Z"),
       transactionHash: testTxHash1,
     });

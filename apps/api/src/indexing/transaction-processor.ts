@@ -200,7 +200,9 @@ class TransactionProcessor {
         return null;
       }
 
-      // note: the first arg is `proof` and we don't need that.
+      // Extract the parameters from the decoded function call
+      // The claim function has 6 parameters: proof, to, amount, season, duration, signature
+      // We only need to, amount, season, and duration
       const [, to, amount, season, duration] = decoded.args;
 
       return {
@@ -245,7 +247,6 @@ class TransactionProcessor {
         season: season,
         duration: duration,
         blockNumber: blockNumber,
-        blockHash: "", // We don't have blockHash from transaction data, would need to get from blocks
         blockTimestamp: blockTimestamp || new Date(),
         transactionHash: transactionHash,
       });
@@ -262,8 +263,7 @@ class TransactionProcessor {
       }
     } catch (error) {
       this.#logger.error(
-        `Failed to insert conviction claim for tx ${transactionHash}:`,
-        error,
+        `Failed to insert conviction claim for tx ${transactionHash}: ${error}`,
       );
       throw error;
     }
