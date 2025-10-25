@@ -2,11 +2,6 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { tanstackClient } from "@/rpc/clients/tanstack-query";
 
-interface LeaveCompetitionArgs {
-  agentId: string;
-  competitionId: string;
-}
-
 /**
  * Hook to leave a competition with an agent
  * @returns Mutation for leaving a competition

@@ -1,9 +1,8 @@
-import { useMemo } from "react";
 import { type Address, getAddress } from "viem";
 
 import { config } from "@/config/public";
 
-import { useSafeAccount, useSafeBalance, useSafeChainId } from "./useSafeWagmi";
+import { useSafeAccount, useSafeBalance } from "./useSafeWagmi";
 
 /**
  * Hook return type for loading state
