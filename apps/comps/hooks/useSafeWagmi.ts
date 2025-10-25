@@ -340,7 +340,7 @@ export function useSafeBlock(params?: UseBlockParameters): UseBlockReturnType {
   try {
     // Always call the hook unconditionally
     const result = useWagmiBlock(params);
-    return params ? result : defaultResult;
+    return result;
   } catch {
     return defaultResult;
   }
