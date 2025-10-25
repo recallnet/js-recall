@@ -324,27 +324,6 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
       ...(checkIsPerpsCompetition(competition.type)
         ? [
             {
-              id: "calmarRatio",
-              accessorKey: "calmarRatio",
-              header: () => <span>Calmar Ratio</span>,
-              cell: ({
-                row,
-              }: {
-                row: {
-                  original: RouterOutputs["competitions"]["getAgents"]["agents"][number];
-                };
-              }) => (
-                <span className="text-secondary-foreground font-semibold">
-                  {row.original.calmarRatio !== null &&
-                  row.original.calmarRatio !== undefined
-                    ? Number(row.original.calmarRatio).toFixed(2)
-                    : "-"}
-                </span>
-              ),
-              enableSorting: true,
-              size: 120,
-            },
-            {
               id: "simpleReturn",
               accessorKey: "simpleReturn",
               header: () => (
@@ -379,6 +358,27 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
               ),
               enableSorting: true,
               size: 140,
+            },
+            {
+              id: "calmarRatio",
+              accessorKey: "calmarRatio",
+              header: () => <span>Calmar Ratio</span>,
+              cell: ({
+                row,
+              }: {
+                row: {
+                  original: RouterOutputs["competitions"]["getAgents"]["agents"][number];
+                };
+              }) => (
+                <span className="text-secondary-foreground font-semibold">
+                  {row.original.calmarRatio !== null &&
+                  row.original.calmarRatio !== undefined
+                    ? Number(row.original.calmarRatio).toFixed(2)
+                    : "-"}
+                </span>
+              ),
+              enableSorting: true,
+              size: 120,
             },
             {
               id: "maxDrawdown",

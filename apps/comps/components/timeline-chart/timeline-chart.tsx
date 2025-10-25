@@ -63,7 +63,7 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
                 value="account-value"
                 className="border border-white bg-black px-4 py-2 font-semibold uppercase text-white transition-colors duration-200 hover:bg-white hover:text-black data-[state=active]:bg-white data-[state=active]:text-black"
               >
-                Account Value
+                Return %
               </TabsTrigger>
               <TabsTrigger
                 value="calmar-ratio"
