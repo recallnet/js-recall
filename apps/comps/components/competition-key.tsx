@@ -740,7 +740,7 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
           variant="outline"
           size="sm"
           onClick={() => setMobileDialogOpen(true)}
-          className="fixed bottom-8 right-4 z-40 flex items-center gap-2 border-white bg-black px-4 py-3 font-semibold uppercase text-white shadow-lg hover:bg-white hover:text-black"
+          className="fixed bottom-10 right-6 z-40 flex items-center gap-2 border-white bg-black px-4 py-3 font-semibold uppercase text-white shadow-lg hover:bg-white hover:text-black"
         >
           <Info size={20} />
           <span>View Details</span>

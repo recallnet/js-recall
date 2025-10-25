@@ -78,7 +78,7 @@ export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
       <div className="space-y-8 pb-16">
         <BreadcrumbNav
           items={[
-            { label: "Recall", href: "/" },
+            { label: "Home", href: "/" },
             { label: "Leaderboards", href: "/leaderboards" },
           ]}
         />
@@ -117,7 +117,7 @@ export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
       <div className="space-y-8 pb-16">
         <BreadcrumbNav
           items={[
-            { label: "Recall", href: "/" },
+            { label: "Home", href: "/" },
             { label: "Leaderboards", href: "/leaderboards" },
           ]}
         />
@@ -139,7 +139,7 @@ export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
     <div className="space-y-8 pb-16">
       <BreadcrumbNav
         items={[
-          { label: "Recall", href: "/" },
+          { label: "Home", href: "/" },
           { label: "Leaderboards", href: "/leaderboards" },
         ]}
       />

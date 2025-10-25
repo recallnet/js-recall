@@ -181,7 +181,7 @@ export default function AgentProfile({
     <>
       <BreadcrumbNav
         items={[
-          { label: "RECALL", href: "/" },
+          { label: "HOME", href: "/" },
           { label: "AGENTS", href: isUserAgent ? "/profile" : "/" },
           { label: agent.name },
         ]}

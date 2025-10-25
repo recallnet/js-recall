@@ -140,7 +140,7 @@ export default function CompetitionPageClient({
     <div>
       <BreadcrumbNav
         items={[
-          { label: "Recall", href: "/" },
+          { label: "Home", href: "/" },
           { label: "Competitions", href: "/competitions" },
           { label: competition.name },
         ]}
