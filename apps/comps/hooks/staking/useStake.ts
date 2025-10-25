@@ -48,26 +48,34 @@ export const useStake = (): StakingOperationResult => {
     reset,
   } = useSafeWriteContract();
 
-  const refetchQueries = async (txHash: `0x${string}`) => {
-    const transactionReceipt = await waitForTransactionReceipt(clientConfig, {
-      hash: txHash,
-      pollingInterval: 1000,
-      confirmations: 2,
-    });
+  const refetchQueries = useCallback(
+    async (txHash: `0x${string}`) => {
+      const transactionReceipt = await waitForTransactionReceipt(clientConfig, {
+        hash: txHash,
+        pollingInterval: 1000,
+        confirmations: 2,
+      });
 
-    if (transactionReceipt.status === "success") {
-      setIsConfirmed(true);
-      queryClient.invalidateQueries({
-        queryKey: recallQueryKey,
-      });
-      queryClient.invalidateQueries({
-        queryKey: getUserStakesQueryKey,
-      });
-      queryClient.invalidateQueries({
-        queryKey: getTotalUserStakedQueryKey,
-      });
-    }
-  };
+      if (transactionReceipt.status === "success") {
+        setIsConfirmed(true);
+        queryClient.invalidateQueries({
+          queryKey: recallQueryKey,
+        });
+        queryClient.invalidateQueries({
+          queryKey: getUserStakesQueryKey,
+        });
+        queryClient.invalidateQueries({
+          queryKey: getTotalUserStakedQueryKey,
+        });
+      }
+    },
+    [
+      queryClient,
+      recallQueryKey,
+      getUserStakesQueryKey,
+      getTotalUserStakedQueryKey,
+    ],
+  );
 
   // Enhanced execute function that simulates before executing
   const execute = useCallback(
@@ -102,15 +110,7 @@ export const useStake = (): StakingOperationResult => {
         );
       }
     },
-    [
-      writeContract,
-      config,
-      contractAddress,
-      address,
-      reset,
-      refetchQueries,
-      setIsConfirming,
-    ],
+    [writeContract, config, contractAddress, address, reset, refetchQueries],
   );
 
   return useMemo(

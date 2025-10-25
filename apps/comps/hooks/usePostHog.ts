@@ -8,15 +8,9 @@ import { useCallback } from "react";
  * Provides a clean interface for capturing events with proper typing
  */
 export function useAnalytics() {
-  let posthog;
-
-  try {
-    // This will return undefined if PostHog provider is not available
-    posthog = usePostHog();
-  } catch (error) {
-    // PostHog provider not available (no consent yet)
-    posthog = undefined;
-  }
+  // Call hook unconditionally at the top level
+  // This will return undefined if PostHog provider is not available
+  const posthog = usePostHog();
 
   const trackEvent = useCallback(
     (eventName: string, properties?: Record<string, unknown>) => {

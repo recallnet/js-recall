@@ -61,17 +61,20 @@ export const useTokenApproval = (
       confirmations: 2,
     });
 
-  const refetchAllowance = async (txHash: `0x${string}`) => {
-    const transactionReceipt = await waitForTransactionReceipt(clientConfig, {
-      hash: txHash,
-      pollingInterval: 1000,
-      confirmations: 2,
-    });
+  const refetchAllowance = useCallback(
+    async (txHash: `0x${string}`) => {
+      const transactionReceipt = await waitForTransactionReceipt(clientConfig, {
+        hash: txHash,
+        pollingInterval: 1000,
+        confirmations: 2,
+      });
 
-    if (transactionReceipt.status === "success") {
-      refetch();
-    }
-  };
+      if (transactionReceipt.status === "success") {
+        refetch();
+      }
+    },
+    [refetch],
+  );
 
   const approve = useCallback(
     async (amount: bigint): Promise<void> => {

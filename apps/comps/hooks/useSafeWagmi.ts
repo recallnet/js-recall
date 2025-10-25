@@ -21,26 +21,14 @@ import {
   useWaitForTransactionReceipt as useWagmiWaitForTransactionReceipt,
   useWriteContract as useWagmiWriteContract,
 } from "wagmi";
-import { useConfig } from "wagmi";
-
-/**
- * Check if WagmiProvider is available by attempting to use the config
- */
-function isWagmiAvailable(): boolean {
-  try {
-    // This will throw if WagmiProvider is not available
-    useConfig();
-    return true;
-  } catch {
-    return false;
-  }
-}
 
 /**
  * Safe wrapper for useAccount that handles missing WagmiProvider
  */
 export function useSafeAccount() {
-  if (!isWagmiAvailable()) {
+  try {
+    return useWagmiAccount();
+  } catch {
     return {
       address: undefined as Address | undefined,
       addresses: undefined,
@@ -54,17 +42,17 @@ export function useSafeAccount() {
       status: "disconnected" as const,
     };
   }
-  return useWagmiAccount();
 }
 
 /**
  * Safe wrapper for useChainId that handles missing WagmiProvider
  */
 export function useSafeChainId(): number | undefined {
-  if (!isWagmiAvailable()) {
+  try {
+    return useWagmiChainId();
+  } catch {
     return undefined;
   }
-  return useWagmiChainId();
 }
 
 /**
@@ -73,8 +61,6 @@ export function useSafeChainId(): number | undefined {
 export function useSafeReadContract(
   params?: UseReadContractParameters,
 ): UseReadContractReturnType {
-  const wagmiAvailable = isWagmiAvailable();
-
   // Create a stable default result
   const defaultResult = useMemo(
     () => ({
@@ -106,12 +92,13 @@ export function useSafeReadContract(
     [],
   );
 
-  if (!wagmiAvailable || !params) {
+  try {
+    // Always call the hook unconditionally
+    const result = useWagmiReadContract(params);
+    return params ? result : defaultResult;
+  } catch {
     return defaultResult;
   }
-
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  return useWagmiReadContract(params);
 }
 
 /**
@@ -120,8 +107,6 @@ export function useSafeReadContract(
 export function useSafeReadContracts(
   params?: Parameters<typeof useWagmiReadContracts>[0],
 ): UseReadContractsReturnType {
-  const wagmiAvailable = isWagmiAvailable();
-
   // Create a stable default result
   const defaultResult = useMemo(
     () => ({
@@ -153,20 +138,19 @@ export function useSafeReadContracts(
     [],
   );
 
-  if (!wagmiAvailable || !params) {
+  try {
+    // Always call the hook unconditionally
+    const result = useWagmiReadContracts(params);
+    return params ? result : defaultResult;
+  } catch {
     return defaultResult;
   }
-
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  return useWagmiReadContracts(params);
 }
 
 /**
  * Safe wrapper for useWriteContract that handles missing WagmiProvider
  */
 export function useSafeWriteContract() {
-  const wagmiAvailable = isWagmiAvailable();
-
   // Create stable default functions and values
   const noOpWriteContract = useCallback(async () => {
     console.warn("Cannot write contract: WagmiProvider not available");
@@ -190,12 +174,11 @@ export function useSafeWriteContract() {
     [noOpWriteContract],
   );
 
-  if (!wagmiAvailable) {
+  try {
+    return useWagmiWriteContract();
+  } catch {
     return defaultResult;
   }
-
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  return useWagmiWriteContract();
 }
 
 /**
@@ -204,8 +187,6 @@ export function useSafeWriteContract() {
 export function useSafeWaitForTransactionReceipt(
   params?: Parameters<typeof useWagmiWaitForTransactionReceipt>[0],
 ): UseWaitForTransactionReceiptReturnType {
-  const wagmiAvailable = isWagmiAvailable();
-
   const defaultResult = useMemo(
     () => ({
       data: undefined,
@@ -236,20 +217,17 @@ export function useSafeWaitForTransactionReceipt(
     [],
   );
 
-  if (!wagmiAvailable) {
+  try {
+    return useWagmiWaitForTransactionReceipt(params);
+  } catch {
     return defaultResult;
   }
-
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  return useWagmiWaitForTransactionReceipt(params);
 }
 
 /**
  * Safe wrapper for useDisconnect that handles missing WagmiProvider
  */
 export function useSafeDisconnect() {
-  const wagmiAvailable = isWagmiAvailable();
-
   const noOpDisconnect = useCallback(() => {
     console.warn("Cannot disconnect: WagmiProvider not available");
   }, []);
@@ -275,12 +253,11 @@ export function useSafeDisconnect() {
     [noOpDisconnect, noOpDisconnectAsync],
   );
 
-  if (!wagmiAvailable) {
+  try {
+    return useWagmiDisconnect();
+  } catch {
     return defaultResult;
   }
-
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  return useWagmiDisconnect();
 }
 
 /**
@@ -289,8 +266,6 @@ export function useSafeDisconnect() {
 export function useSafeBalance(
   params?: UseBalanceParameters,
 ): UseBalanceReturnType {
-  const wagmiAvailable = isWagmiAvailable();
-
   const defaultResult = useMemo(
     () => ({
       data: undefined,
@@ -321,20 +296,17 @@ export function useSafeBalance(
     [],
   );
 
-  if (!wagmiAvailable) {
+  try {
+    return useWagmiBalance(params);
+  } catch {
     return defaultResult;
   }
-
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  return useWagmiBalance(params);
 }
 
 /**
  * Safe wrapper for useBlock that handles missing WagmiProvider
  */
 export function useSafeBlock(params?: UseBlockParameters): UseBlockReturnType {
-  const wagmiAvailable = isWagmiAvailable();
-
   const defaultResult = useMemo(
     () => ({
       data: undefined,
@@ -365,10 +337,11 @@ export function useSafeBlock(params?: UseBlockParameters): UseBlockReturnType {
     [],
   );
 
-  if (!wagmiAvailable || !params) {
+  try {
+    // Always call the hook unconditionally
+    const result = useWagmiBlock(params);
+    return params ? result : defaultResult;
+  } catch {
     return defaultResult;
   }
-
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  return useWagmiBlock(params);
 }
