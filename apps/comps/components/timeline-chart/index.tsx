@@ -16,6 +16,8 @@
 
 export { TimelineChart } from "./timeline-chart";
 export { ChartSkeleton } from "./chart-skeleton";
+export { MetricTimelineChart } from "./chart-template";
+export { MetricTooltip } from "./custom-tooltip";
 
 export type {
   PortfolioChartProps,
@@ -25,5 +27,9 @@ export type {
   ChartLinesProps,
 } from "./types";
 
-export { CHART_COLORS, LIMIT_AGENTS_PER_PAGE, HoverContext } from "./constants";
-export { formatDateShort, datesByWeek } from "./utils";
+export {
+  CHART_COLORS,
+  LIMIT_AGENTS_PER_CHART,
+  HoverContext,
+} from "./constants";
+export { datesByWeek } from "./utils";

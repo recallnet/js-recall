@@ -1,6 +1,5 @@
 import { UseQueryResult, skipToken, useQuery } from "@tanstack/react-query";
 
-import { useSession } from "@/hooks/useSession";
 import { tanstackClient } from "@/rpc/clients/tanstack-query";
 import type { RouterOutputs } from "@/rpc/router";
 import { GetCompetitionPerpsPositionsParams } from "@/types";
@@ -19,21 +18,18 @@ export const useCompetitionPerpsPositions = (
   RouterOutputs["competitions"]["getPerpsPositions"],
   Error
 > => {
-  const { isAuthenticated } = useSession();
-
   return useQuery(
     tanstackClient.competitions.getPerpsPositions.queryOptions({
-      input:
-        isAuthenticated && enabled
-          ? {
-              competitionId,
-              paging: {
-                limit: params.limit,
-                offset: params.offset,
-              },
-              status: params.status,
-            }
-          : skipToken,
+      input: enabled
+        ? {
+            competitionId,
+            paging: {
+              limit: params.limit,
+              offset: params.offset,
+            },
+            status: params.status,
+          }
+        : skipToken,
       placeholderData: (prev) => prev,
     }),
   );

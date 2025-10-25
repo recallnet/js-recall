@@ -123,21 +123,21 @@ export default function CompetitionsPageClient() {
         {carouselContent.length > 0 &&
           !config.publicFlags.disableLeaderboard && (
             <HeroCarousel
-              className="absolute left-[-350px] right-[-350px] top-0"
+              className="absolute left-[-350px] right-[-350px] top-6"
               texts={carouselContent}
             />
           )}
 
         <div
           className={cn(
-            `absolute bottom-[-20] left-[-350px] right-[-350px] top-0 z-10`,
+            `absolute bottom-[-20] left-[-350px] right-[-350px] top-6 z-10`,
             "bg-gradient-to-r",
             "md:from-8% from-black from-20% via-transparent via-35% to-transparent sm:from-15%",
           )}
         ></div>
         <div
           className={cn(
-            `absolute bottom-[-20] left-[-350px] right-[-350px] top-0 z-10`,
+            `absolute bottom-[-20] left-[-350px] right-[-350px] top-6 z-10`,
             "bg-gradient-to-l",
             "md:from-8% from-black from-20% via-transparent via-35% to-transparent sm:from-15%",
           )}

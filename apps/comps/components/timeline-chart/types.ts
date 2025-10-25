@@ -20,23 +20,13 @@ export interface CustomLegendProps {
   colorMap: Record<string, string>;
   currentValues?: Record<string, number>;
   currentOrder?: string[];
-  searchQuery: string;
-  onSearchChange: (query: string) => void;
   onAgentHover?: (agentName: string | null) => void;
-  totalAgents?: number;
-  currentPage?: number;
-  onPageChange?: (page: number) => void;
-  onSearchPageChange?: (page: number) => void;
 }
 
 export interface PortfolioChartProps {
   competition: RouterOutputs["competitions"]["getById"];
-  agents: RouterOutputs["competitions"]["getAgents"]["agents"]; // Current page agents from parent pagination
+  agents: RouterOutputs["competitions"]["getAgents"]["agents"]; // Top agents to display in chart
   className?: string;
-  totalAgents?: number; // Total number of agents for pagination
-  currentPage?: number; // Current page from parent
-  onPageChange?: (page: number) => void; // Page change handler
-  suppressInternalLoading?: boolean; // Skip internal loading skeleton when parent handles loading
 }
 
 export interface ChartWrapperProps {

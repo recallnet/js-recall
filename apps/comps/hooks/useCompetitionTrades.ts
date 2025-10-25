@@ -1,6 +1,5 @@
 import { UseQueryResult, skipToken, useQuery } from "@tanstack/react-query";
 
-import { useSession } from "@/hooks/useSession";
 import { tanstackClient } from "@/rpc/clients/tanstack-query";
 import type { RouterOutputs } from "@/rpc/router";
 import { GetCompetitionTradesParams } from "@/types";
@@ -16,20 +15,17 @@ export const useCompetitionTrades = (
   params: GetCompetitionTradesParams = {},
   enabled: boolean = true,
 ): UseQueryResult<RouterOutputs["competitions"]["getTrades"], Error> => {
-  const { isAuthenticated } = useSession();
-
   return useQuery(
     tanstackClient.competitions.getTrades.queryOptions({
-      input:
-        isAuthenticated && enabled
-          ? {
-              competitionId,
-              paging: {
-                limit: params.limit,
-                offset: params.offset,
-              },
-            }
-          : skipToken,
+      input: enabled
+        ? {
+            competitionId,
+            paging: {
+              limit: params.limit,
+              offset: params.offset,
+            },
+          }
+        : skipToken,
       placeholderData: (prev) => prev,
     }),
   );

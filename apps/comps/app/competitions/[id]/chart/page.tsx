@@ -10,7 +10,7 @@ import { Button } from "@recallnet/ui2/components/button";
 import { Skeleton } from "@recallnet/ui2/components/skeleton";
 
 import { ChartSkeleton, TimelineChart } from "@/components/timeline-chart";
-import { LIMIT_AGENTS_PER_PAGE } from "@/components/timeline-chart/constants";
+import { LIMIT_AGENTS_PER_CHART } from "@/components/timeline-chart/constants";
 import { tanstackClient } from "@/rpc/clients/tanstack-query";
 
 /**
@@ -39,7 +39,7 @@ export default function CompetitionChartPage({
   } = useQuery(
     tanstackClient.competitions.getAgents.queryOptions({
       placeholderData: (prev) => prev,
-      input: { competitionId: id, paging: { limit: 10 } },
+      input: { competitionId: id, paging: { limit: LIMIT_AGENTS_PER_CHART } },
     }),
   );
 
@@ -49,7 +49,6 @@ export default function CompetitionChartPage({
         <div className="mx-auto max-w-7xl">
           <div className="mb-4 text-center">
             <Skeleton className="mx-auto mb-1 mt-1 h-9 w-64" />
-            <Skeleton className="mx-auto h-5 w-40" />
           </div>
 
           <ChartSkeleton />
@@ -76,27 +75,19 @@ export default function CompetitionChartPage({
     notFound();
   }
 
-  const handlePageChange = () => {
-    // Note: For standalone chart, we don't implement pagination
-    // Users should go to the main competition page for full functionality
-  };
-
   return (
     <div className="bg-background min-h-screen p-4">
       <div className="mx-auto max-w-7xl">
         <div className="mb-4 text-center">
-          <h1 className="text-3xl font-bold text-white">{competition.name}</h1>
-          <p className="text-gray-400">Portfolio Timeline</p>
+          <h1 className="mb-8 text-3xl font-bold text-white">
+            {competition.name}
+          </h1>
         </div>
 
         <TimelineChart
           competition={competition}
           agents={agentsData?.agents || []}
-          totalAgents={LIMIT_AGENTS_PER_PAGE} // Only show the top 10 agents (no pagination)
-          currentPage={1}
-          onPageChange={handlePageChange}
           className="shadow-2xl"
-          suppressInternalLoading={false}
         />
 
         <div className="my-8 text-center">
