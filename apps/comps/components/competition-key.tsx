@@ -476,7 +476,7 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
               </div>
               {isLong && (
                 <button
-                  className="hover: mt-2 self-start transition-colors"
+                  className="mt-2 self-start transition-colors"
                   onClick={() => setExpanded((v) => !v)}
                   aria-expanded={expanded}
                 >

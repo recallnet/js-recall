@@ -259,7 +259,7 @@ export const CompetitionInfo: React.FC<CompetitionInfoProps> = ({
             </p>
             {isLong && (
               <button
-                className="hover: mt-2 self-start transition-colors"
+                className="mt-2 self-start transition-colors"
                 onClick={() => setExpanded((v) => !v)}
                 aria-expanded={expanded}
               >

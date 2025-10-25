@@ -2,18 +2,21 @@ import { format, isValid, parseISO } from "date-fns";
 import { cmp, format as formatBigint } from "dnum";
 
 /**
- * Formats a number as a percentage string
+ * Formats a number as a percentage string.
+ * Calculates percentage as (value / total) * 100 to match legacy callers.
  * @param value - The value to convert to percentage
- * @param total - The total value to calculate percentage from
- * @returns A formatted percentage string (e.g. "50%")
+ * @param total - The total value to calculate percentage from (defaults to 1)
+ * @param maxDecimals - Maximum decimal places in the output (defaults to 0)
+ * @returns A formatted percentage string (e.g. "50%", "12.34%")
  */
 export const formatPercentage = (
   value: number,
-  total: number = 1,
+  total: number = 100,
   maxDecimals: number = 0,
 ): string => {
   if (total === 0) return "0%";
-  return `${formatAmount(value / total, maxDecimals, true)}%`;
+  const pct = (value / total) * 100;
+  return `${formatAmount(pct, maxDecimals, true)}%`;
 };
 
 /**

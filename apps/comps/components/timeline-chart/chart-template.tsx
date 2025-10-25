@@ -422,7 +422,7 @@ export const MetricTimelineChart: React.FC<MetricTimelineChartProps> = ({
                 yAxisType === "currency"
                   ? `$${formatCompactNumber(value)}`
                   : yAxisType === "percentage"
-                    ? formatPercentage(value, 1, 2)
+                    ? formatPercentage(value, 100, 2)
                     : formatAmount(value, 2, true)
               }
             />
