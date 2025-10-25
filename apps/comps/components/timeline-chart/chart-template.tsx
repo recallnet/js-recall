@@ -264,7 +264,7 @@ export const MetricTimelineChart: React.FC<MetricTimelineChartProps> = ({
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
             data={filteredData}
-            margin={{ right: 30, bottom: 60, top: 20, left: 20 }}
+            margin={{ right: 30, bottom: 5, top: 20, left: 20 }}
           >
             <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
             <XAxis

@@ -696,7 +696,7 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
   return (
     <>
       {/* Desktop view */}
-      <div className="h-120 hidden md:block">{keyContent}</div>
+      <div className="h-140 hidden md:block">{keyContent}</div>
 
       {/* Mobile view - button and slide-in sidebar */}
       <div className="md:hidden">

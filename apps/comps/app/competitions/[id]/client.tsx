@@ -147,7 +147,7 @@ export default function CompetitionPageClient({
       />
 
       {/* Chart and Key grid layout */}
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+      <div className="mb-10 grid grid-cols-1 gap-6 md:grid-cols-3">
         <div className="md:col-span-2">
           <TimelineChart
             competition={competition}
@@ -157,7 +157,7 @@ export default function CompetitionPageClient({
         <div className="md:col-span-1">
           <CompetitionKey competition={competition} />
           {/* Action buttons section */}
-          <div className="flex w-full gap-3 md:mt-12">
+          <div className="mt-6 flex w-full gap-3">
             <JoinCompetitionButton
               competitionId={id}
               className="flex-1 justify-between border border-white bg-white text-blue-500 hover:border-blue-500 hover:bg-blue-500 hover:text-white disabled:hover:border-white disabled:hover:bg-white disabled:hover:text-blue-500"
