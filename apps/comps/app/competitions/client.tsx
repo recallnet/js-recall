@@ -157,7 +157,7 @@ export default function CompetitionsPageClient() {
             <div className="flex gap-1">
               <Link href="/leaderboards">
                 <Button className="border border-blue-500 bg-blue-500 p-6 uppercase text-white transition-colors duration-200 hover:border-white hover:bg-white hover:text-blue-500">
-                  Browse Leaderboard
+                  Browse Leaderboards
                 </Button>
               </Link>
               {!session.isAuthenticated && (
