@@ -16,7 +16,12 @@ import { cn } from "@recallnet/ui2/lib/utils";
 
 import { AgentAvatar } from "@/components/agent-avatar";
 import { RouterOutputs } from "@/rpc/router";
-import { formatDate } from "@/utils/format";
+import {
+  formatAmount,
+  formatCompactNumber,
+  formatDate,
+  formatPercentage,
+} from "@/utils/format";
 import { formatDateShort } from "@/utils/format";
 
 import { ChartSkeleton } from "./chart-skeleton";
@@ -382,10 +387,10 @@ export const MetricTimelineChart: React.FC<MetricTimelineChartProps> = ({
               ]}
               tickFormatter={(value) =>
                 yAxisType === "currency"
-                  ? `$${(value / 1000).toFixed(1)}k`
+                  ? `$${formatCompactNumber(value)}`
                   : yAxisType === "percentage"
-                    ? `${value.toFixed(2)}%`
-                    : value.toFixed(2)
+                    ? formatPercentage(value, 1, 2)
+                    : formatAmount(value, 2, true)
               }
             />
             <RechartsTooltip

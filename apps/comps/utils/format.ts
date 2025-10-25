@@ -7,9 +7,13 @@ import { cmp, format as formatBigint } from "dnum";
  * @param total - The total value to calculate percentage from
  * @returns A formatted percentage string (e.g. "50%")
  */
-export const formatPercentage = (value: number, total: number): string => {
+export const formatPercentage = (
+  value: number,
+  total: number = 1,
+  maxDecimals: number = 0,
+): string => {
   if (total === 0) return "0%";
-  return `${Math.round((value / total) * 100)}%`;
+  return `${formatAmount(value / total, maxDecimals, true)}%`;
 };
 
 /**
@@ -44,6 +48,12 @@ export const formatCompactNumber = (value: number): string => {
   return formatter.format(value);
 };
 
+/**
+ * Formats a date into a human-readable string (e.g. "June 1st, 2025")
+ * @param date - The date to format
+ * @param year - Whether to include the year in the formatted date
+ * @returns A formatted date string
+ */
 export const formatDate = (
   date: Date | string,
   year: boolean = false,
