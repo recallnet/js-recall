@@ -367,13 +367,13 @@ class BoostRepository {
       if (!balanceRow) {
         // A safety net for unexpected database behavior
         throw new Error(
-          `Can not decrease balance of non-existent wallet ${wallet} and competition ${competitionId}`,
+          `Can not decrease balance of non-existent wallet ${args.wallet} and competition ${competitionId}`,
         );
       }
       const currentBalance = balanceRow.balance;
       if (currentBalance < amount) {
         throw new Error(
-          `Can not decrease balance below zero for for wallet ${wallet} and competition ${competitionId}`,
+          `Can not decrease balance below zero for wallet ${args.wallet} and competition ${competitionId}`,
         );
       }
       // 2) Lock the (wallet, idemKey) change row if it exists
@@ -413,7 +413,7 @@ class BoostRepository {
 
       if (!updatedRow) {
         throw new Error(
-          `Can not decrease balance for wallet ${wallet} and competition ${competitionId}`,
+          `Can not decrease balance for wallet ${args.wallet} and competition ${competitionId}`,
         );
       }
 
@@ -434,7 +434,7 @@ class BoostRepository {
 
       if (!change) {
         throw new Error(
-          `Can not add change for wallet ${wallet}, competition ${competitionId} and delta -${amount}`,
+          `Can not add change for wallet ${args.wallet}, competition ${competitionId} and delta -${amount}`,
         );
       }
 
