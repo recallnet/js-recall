@@ -15,14 +15,15 @@ import { ActiveDotProps } from "recharts/types/util/types";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { AgentAvatar } from "@/components/agent-avatar";
+import { CountdownClock } from "@/components/clock";
 import { RouterOutputs } from "@/rpc/router";
 import {
   formatAmount,
   formatCompactNumber,
   formatDate,
+  formatDateShort,
   formatPercentage,
 } from "@/utils/format";
-import { formatDateShort } from "@/utils/format";
 
 import { ChartSkeleton } from "./chart-skeleton";
 import { CHART_COLORS, LIMIT_AGENTS_PER_CHART } from "./constants";
@@ -363,17 +364,41 @@ export const MetricTimelineChart: React.FC<MetricTimelineChartProps> = ({
   }
 
   if (!timelineData || timelineData.length === 0 || status === "pending") {
+    // Show countdown for pending competitions
+    if (status === "pending" && startDate) {
+      return (
+        <div className="h-150 flex w-full flex-col items-center justify-center p-10">
+          <div className="flex flex-col items-center justify-center space-y-6">
+            <div className="text-center">
+              <h3 className="mb-3 text-2xl font-bold uppercase tracking-wider text-white">
+                Competition Starts In
+              </h3>
+              <CountdownClock
+                targetDate={new Date(startDate)}
+                className="text-5xl font-bold tabular-nums text-white"
+                showDuration={true}
+                onFinish={() => {
+                  // Refresh to update competition status
+                  window.location.reload();
+                }}
+              />
+            </div>
+            <p className="text-md text-secondary-foreground">
+              {formatDate(startDate)}
+            </p>
+          </div>
+        </div>
+      );
+    }
+
+    // Default message for no data
     return (
       <div className="h-150 flex w-full flex-col items-center justify-center p-10">
         <span className="text-primary-foreground text-xl">
-          {status === "pending"
-            ? "Competition hasn't started yet"
-            : "No data available"}
+          No data available
         </span>
         <span className="text-secondary-foreground text-md">
-          {status === "pending" && startDate
-            ? `The competition will start on ${formatDate(startDate)}.`
-            : "Data will appear here as the competition progresses."}
+          Data will appear here as the competition progresses.
         </span>
       </div>
     );
