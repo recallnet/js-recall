@@ -74,13 +74,19 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
   const [mobileDialogOpen, setMobileDialogOpen] = useState(false);
   // Note: for pending comps, we show the "info" tab instead of the trades/positions tabs
   const isPendingCompetition = competition.status === "pending";
-  const [activeTab, setActiveTab] = useState(
-    isPendingCompetition
-      ? "info"
-      : isPerpsCompetition
-        ? "open-positions"
-        : "trades",
-  );
+
+  // Determine initial tab based on competition status and type
+  const getInitialTab = () => {
+    if (isPendingCompetition) {
+      return "info";
+    }
+    if (isPerpsCompetition) {
+      return "open-positions";
+    }
+    return "trades";
+  };
+
+  const [activeTab, setActiveTab] = useState(getInitialTab());
 
   const [tradesOffset, setTradesOffset] = useState(0);
   const [openPositionsOffset, setOpenPositionsOffset] = useState(0);

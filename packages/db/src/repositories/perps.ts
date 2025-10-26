@@ -1183,9 +1183,9 @@ export class PerpsRepository {
       const orderByClause =
         statusFilter === "Closed"
           ? desc(perpetualPositions.closedAt)
-          : statusFilter === "Open" || statusFilter === undefined
+          : statusFilter === "Open"
             ? desc(perpetualPositions.createdAt)
-            : desc(perpetualPositions.lastUpdatedAt); // Fallback for "all" or other statuses
+            : desc(perpetualPositions.lastUpdatedAt); // Fallback for "all", undefined, or other statuses
 
       const positionsQuery = this.#dbRead
         .select({
