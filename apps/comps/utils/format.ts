@@ -182,3 +182,41 @@ export const formatDateShort = (
 
   return result;
 };
+
+/**
+ * Format date as relative time (e.g., "2h ago", "3 days ago", "just now")
+ * @param dateStr - The date to format
+ * @returns A relative time string
+ * @example
+ * ```typescript
+ * formatRelativeTime(new Date()) // "just now"
+ * formatRelativeTime(new Date(Date.now() - 2 * 60 * 60 * 1000)) // "2h ago"
+ * formatRelativeTime(new Date(Date.now() - 3 * 24 * 60 * 60 * 1000)) // "3d ago"
+ * ```
+ */
+export const formatRelativeTime = (dateStr: string | Date): string => {
+  if (!dateStr) return "";
+
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return "";
+
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffSeconds = Math.floor(diffMs / 1000);
+  const diffMinutes = Math.floor(diffSeconds / 60);
+  const diffHours = Math.floor(diffMinutes / 60);
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffSeconds < 60) {
+    return "just now";
+  } else if (diffMinutes < 60) {
+    return `${diffMinutes}m ago`;
+  } else if (diffHours < 24) {
+    return `${diffHours}h ago`;
+  } else if (diffDays < 30) {
+    return `${diffDays}d ago`;
+  } else {
+    // Fall back to date format for older dates
+    return formatDateShort(date);
+  }
+};

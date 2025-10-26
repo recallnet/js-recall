@@ -30,6 +30,7 @@ import {
   formatCompactNumber,
   formatDate,
   formatDateShort,
+  formatRelativeTime,
 } from "@/utils/format";
 
 import { AgentAvatar } from "./agent-avatar";
@@ -73,12 +74,23 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
   const [mobileDialogOpen, setMobileDialogOpen] = useState(false);
   // Note: for pending comps, we show the "info" tab instead of the trades/positions tabs
   const isPendingCompetition = competition.status === "pending";
-  const [activeTab, setActiveTab] = useState(
-    isPendingCompetition ? "info" : isPerpsCompetition ? "positions" : "trades",
-  );
+
+  // Determine initial tab based on competition status and type
+  const getInitialTab = () => {
+    if (isPendingCompetition) {
+      return "info";
+    }
+    if (isPerpsCompetition) {
+      return "open-positions";
+    }
+    return "trades";
+  };
+
+  const [activeTab, setActiveTab] = useState(getInitialTab());
 
   const [tradesOffset, setTradesOffset] = useState(0);
-  const [positionsOffset, setPositionsOffset] = useState(0);
+  const [openPositionsOffset, setOpenPositionsOffset] = useState(0);
+  const [closedPositionsOffset, setClosedPositionsOffset] = useState(0);
 
   const { data: rules, isLoading: rulesLoading } = useCompetitionRules(
     competition.id,
@@ -93,12 +105,24 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
     !isPerpsCompetition,
   );
 
-  const { data: positionsData, isLoading: isLoadingPositions } =
+  const { data: openPositionsData, isLoading: isLoadingOpenPositions } =
     useCompetitionPerpsPositions(
       competition.id,
       {
-        offset: positionsOffset,
+        offset: openPositionsOffset,
         limit: LIMIT_POSITIONS_PER_PAGE,
+        status: "Open",
+      },
+      isPerpsCompetition,
+    );
+
+  const { data: closedPositionsData, isLoading: isLoadingClosedPositions } =
+    useCompetitionPerpsPositions(
+      competition.id,
+      {
+        offset: closedPositionsOffset,
+        limit: LIMIT_POSITIONS_PER_PAGE,
+        status: "Closed",
       },
       isPerpsCompetition,
     );
@@ -107,8 +131,12 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
     setTradesOffset(LIMIT_TRADES_PER_PAGE * (page - 1));
   }, []);
 
-  const handlePositionsPageChange = useCallback((page: number) => {
-    setPositionsOffset(LIMIT_POSITIONS_PER_PAGE * (page - 1));
+  const handleOpenPositionsPageChange = useCallback((page: number) => {
+    setOpenPositionsOffset(LIMIT_POSITIONS_PER_PAGE * (page - 1));
+  }, []);
+
+  const handleClosedPositionsPageChange = useCallback((page: number) => {
+    setClosedPositionsOffset(LIMIT_POSITIONS_PER_PAGE * (page - 1));
   }, []);
 
   // Handle escape key and body scroll lock for mobile sidebar
@@ -181,12 +209,20 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
             </TabsTrigger>
           )}
           {isPerpsCompetition && (
-            <TabsTrigger
-              value="positions"
-              className="border border-white bg-black px-4 py-2 text-xs font-semibold uppercase text-white transition-colors duration-200 hover:bg-white hover:text-black data-[state=active]:bg-white data-[state=active]:text-black"
-            >
-              Positions
-            </TabsTrigger>
+            <>
+              <TabsTrigger
+                value="open-positions"
+                className="border border-white bg-black px-4 py-2 text-xs font-semibold uppercase text-white transition-colors duration-200 hover:bg-white hover:text-black data-[state=active]:bg-white data-[state=active]:text-black"
+              >
+                Open Positions
+              </TabsTrigger>
+              <TabsTrigger
+                value="closed-positions"
+                className="border border-white bg-black px-4 py-2 text-xs font-semibold uppercase text-white transition-colors duration-200 hover:bg-white hover:text-black data-[state=active]:bg-white data-[state=active]:text-black"
+              >
+                Closed Positions
+              </TabsTrigger>
+            </>
           )}
           <TabsTrigger
             value="predictions"
@@ -273,21 +309,24 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
           </TabsContent>
         )}
 
-        {/* Positions Tab */}
+        {/* Open Positions Tab */}
         {isPerpsCompetition && (
           <TabsContent
-            value="positions"
+            value="open-positions"
             className="m-0 flex-1 overflow-hidden border"
           >
             <div className="h-full overflow-y-auto p-4">
-              {isLoadingPositions ? (
+              {isLoadingOpenPositions ? (
                 <div className="flex items-center justify-center p-8">
-                  <p className="text-sm text-gray-400">Loading positions...</p>
+                  <p className="text-sm text-gray-400">
+                    Loading open positions...
+                  </p>
                 </div>
-              ) : positionsData && positionsData.positions.length > 0 ? (
+              ) : openPositionsData &&
+                openPositionsData.positions.length > 0 ? (
                 <div>
                   <div className="space-y-3">
-                    {positionsData.positions.map((position, idx) => (
+                    {openPositionsData.positions.map((position, idx) => (
                       <div
                         key={idx}
                         className="flex items-start justify-between gap-4 border-b border-gray-800 pb-3 last:border-0"
@@ -327,12 +366,9 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
                               USD
                             </span>
                           )}
-                          {position.capturedAt && (
+                          {position.createdAt && (
                             <span className="text-xs text-gray-500">
-                              {formatDateShort(
-                                new Date(position.capturedAt),
-                                true,
-                              )}
+                              Opened {formatRelativeTime(position.createdAt)}
                             </span>
                           )}
                         </div>
@@ -341,19 +377,108 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
                   </div>
                   <div className="mt-4">
                     <Pagination
-                      totalItems={positionsData.pagination.total}
+                      totalItems={openPositionsData.pagination.total}
                       currentPage={
-                        Math.floor(positionsOffset / LIMIT_POSITIONS_PER_PAGE) +
-                        1
+                        Math.floor(
+                          openPositionsOffset / LIMIT_POSITIONS_PER_PAGE,
+                        ) + 1
                       }
                       itemsPerPage={LIMIT_POSITIONS_PER_PAGE}
-                      onPageChange={handlePositionsPageChange}
+                      onPageChange={handleOpenPositionsPageChange}
                     />
                   </div>
                 </div>
               ) : (
                 <div className="flex h-full flex-col items-center justify-center p-8">
-                  <p className="text-sm text-gray-400">No positions yet</p>
+                  <p className="text-sm text-gray-400">No open positions</p>
+                </div>
+              )}
+            </div>
+          </TabsContent>
+        )}
+
+        {/* Closed Positions Tab */}
+        {isPerpsCompetition && (
+          <TabsContent
+            value="closed-positions"
+            className="m-0 flex-1 overflow-hidden border"
+          >
+            <div className="h-full overflow-y-auto p-4">
+              {isLoadingClosedPositions ? (
+                <div className="flex items-center justify-center p-8">
+                  <p className="text-sm text-gray-400">
+                    Loading closed positions...
+                  </p>
+                </div>
+              ) : closedPositionsData &&
+                closedPositionsData.positions.length > 0 ? (
+                <div>
+                  <div className="space-y-3">
+                    {closedPositionsData.positions.map((position, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-start justify-between gap-4 border-b border-gray-800 pb-3 last:border-0"
+                      >
+                        {/* Left column: Agent info */}
+                        <div className="flex items-center gap-2">
+                          <AgentAvatar
+                            agent={position.agent}
+                            showHover={false}
+                          />
+                          <div className="flex flex-col">
+                            <span className="text-sm font-semibold">
+                              {position.agent.name}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Right column: Position details */}
+                        <div className="flex flex-col items-end gap-1 text-right">
+                          <span
+                            className={`text-xs font-semibold ${position.isLong ? "text-green-500" : "text-red-500"}`}
+                          >
+                            {position.isLong ? "LONG" : "SHORT"}{" "}
+                            {formatAmount(Number(position.positionSize))}{" "}
+                            {position.asset}
+                          </span>
+                          <span className="text-xs text-gray-400">
+                            {formatAmount(Number(position.leverage))}x leverage
+                            • {formatAmount(Number(position.collateralAmount))}{" "}
+                            collateral
+                          </span>
+                          {position.pnlUsdValue && (
+                            <span
+                              className={`text-xs ${Number(position.pnlUsdValue) >= 0 ? "text-green-500" : "text-red-500"}`}
+                            >
+                              PnL: {formatAmount(Number(position.pnlUsdValue))}{" "}
+                              USD
+                            </span>
+                          )}
+                          {position.closedAt && (
+                            <span className="text-xs text-gray-500">
+                              Closed {formatRelativeTime(position.closedAt)}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-4">
+                    <Pagination
+                      totalItems={closedPositionsData.pagination.total}
+                      currentPage={
+                        Math.floor(
+                          closedPositionsOffset / LIMIT_POSITIONS_PER_PAGE,
+                        ) + 1
+                      }
+                      itemsPerPage={LIMIT_POSITIONS_PER_PAGE}
+                      onPageChange={handleClosedPositionsPageChange}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="flex h-full flex-col items-center justify-center p-8">
+                  <p className="text-sm text-gray-400">No closed positions</p>
                 </div>
               )}
             </div>
@@ -706,12 +831,16 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
       isPerpsCompetition,
       tradesData,
       isLoadingTrades,
-      positionsData,
-      isLoadingPositions,
+      openPositionsData,
+      closedPositionsData,
+      isLoadingOpenPositions,
+      isLoadingClosedPositions,
       tradesOffset,
-      positionsOffset,
+      openPositionsOffset,
+      closedPositionsOffset,
       handleTradesPageChange,
-      handlePositionsPageChange,
+      handleOpenPositionsPageChange,
+      handleClosedPositionsPageChange,
 
       rules,
       rulesLoading,

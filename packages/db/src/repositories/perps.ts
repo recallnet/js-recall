@@ -1179,6 +1179,15 @@ export class PerpsRepository {
       }
 
       // Build the main query with agent join - following same pattern as getCompetitionTrades
+      // Sort based on status: Open positions by createdAt, Closed positions by closedAt
+      // Note: undefined defaults to "Open" (see filtering logic above)
+      const orderByClause =
+        statusFilter === "Closed"
+          ? desc(perpetualPositions.closedAt)
+          : statusFilter === "Open" || statusFilter === undefined
+            ? desc(perpetualPositions.createdAt)
+            : desc(perpetualPositions.lastUpdatedAt); // For "all" or other statuses
+
       const positionsQuery = this.#dbRead
         .select({
           ...getTableColumns(perpetualPositions),
@@ -1192,7 +1201,7 @@ export class PerpsRepository {
         .from(perpetualPositions)
         .innerJoin(agents, eq(perpetualPositions.agentId, agents.id))
         .where(and(...conditions))
-        .orderBy(desc(perpetualPositions.lastUpdatedAt));
+        .orderBy(orderByClause);
 
       // Apply pagination
       if (limit !== undefined) {
