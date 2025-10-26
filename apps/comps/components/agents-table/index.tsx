@@ -120,7 +120,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
         }),
         session.user?.id ?? "unauthenticated",
       ],
-      select: (data) => attoValueToNumberValue(data),
+      select: (data) => attoValueToNumberValue(data, "ROUND_DOWN", 0),
     }),
   );
 
@@ -143,7 +143,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
         Object.fromEntries(
           Object.entries(data).map(([key, value]) => [
             key,
-            attoValueToNumberValue(value),
+            attoValueToNumberValue(value, "ROUND_DOWN", 0),
           ]),
         ),
     }),
@@ -160,7 +160,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
         Object.fromEntries(
           Object.entries(data).map(([key, value]) => [
             key,
-            attoValueToNumberValue(value),
+            attoValueToNumberValue(value, "ROUND_DOWN", 0),
           ]),
         ),
     }),
