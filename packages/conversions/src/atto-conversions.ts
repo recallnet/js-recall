@@ -5,10 +5,11 @@ const attoDivisor = dnum.from("1000000000000000000");
 export function attoValueToNumberValue(
   attoValue: dnum.Numberish,
   rounding: dnum.Rounding = "ROUND_DOWN", // Default round down to avoid overestimating balance
+  decimals: number = 18,
 ) {
   const res = dnum.div(attoValue, attoDivisor, {
-    rounding: rounding,
-    decimals: 18,
+    rounding,
+    decimals,
   });
   return dnum.toNumber(res);
 }

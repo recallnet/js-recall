@@ -19,7 +19,7 @@ export const StakeBoost = () => {
       return "0";
     }
 
-    const value = attoValueToNumberValue(totalStaked);
+    const value = attoValueToNumberValue(totalStaked, "ROUND_DOWN", 0);
     if (value === null || value <= 0) {
       return "0";
     }
