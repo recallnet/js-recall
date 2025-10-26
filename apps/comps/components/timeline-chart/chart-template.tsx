@@ -40,6 +40,9 @@ type ComputedMetricKey = "percentReturn";
 
 type SupportedMetricKey = ApiMetricKey | ComputedMetricKey;
 
+// Metrics that are displayed as percentages, but must be multiplied by 100 since they're decimal values
+const FRACTIONAL_METRICS = ["simpleReturn", "annualizedReturn", "maxDrawdown"];
+
 interface MetricTimelineChartProps {
   timelineData: RouterOutputs["competitions"]["getTimeline"];
   agents: RouterOutputs["competitions"]["getAgents"]["agents"];
@@ -256,10 +259,9 @@ export const MetricTimelineChart: React.FC<MetricTimelineChartProps> = ({
           const rawValue = point[metric];
           // Convert fractional metrics to percentage points for consistency
           if (
-            rawValue &&
-            (metric === "simpleReturn" ||
-              metric === "annualizedReturn" ||
-              metric === "maxDrawdown")
+            rawValue !== undefined &&
+            rawValue !== null &&
+            FRACTIONAL_METRICS.includes(metric)
           ) {
             dataPoint[agent.agentName] = rawValue * 100;
           } else {
