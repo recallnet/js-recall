@@ -656,7 +656,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
     <div className="mt-12 w-full" ref={ref}>
       <div className="mb-5 flex flex-col gap-4">
         {/* Header row: title + primary action stay on one line until sm screens */}
-        <div className="xs:flex-row xs:items-center flex flex-col items-start justify-between gap-4">
+        <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
           <div className="min-w-0 flex-1">
             <h2 className="truncate text-2xl font-bold">
               Competition {competitionTitles[competition.status]}
@@ -718,7 +718,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                         available
                       </span>
                     </span>
-                    <div className="bg-muted sm:w-85 h-3 w-full overflow-hidden rounded-full">
+                    <div className="bg-muted h-3 w-full overflow-hidden rounded-full sm:w-80">
                       <div
                         className="h-full rounded-full bg-yellow-500 transition-all duration-300"
                         style={{

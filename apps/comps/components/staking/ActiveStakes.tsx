@@ -82,7 +82,7 @@ const ActiveStakeEntry: React.FunctionComponent<ActiveStakeEntryProps> = ({
   return (
     <div className="xs:p-4 rounded-lg border border-[#212C3A] bg-gray-900 p-3 transition-colors hover:bg-gray-800">
       <div className="flex flex-col items-stretch justify-between">
-        <div className="xs:flex-row xs:items-start flex flex-col justify-between gap-4">
+        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
           <div className="flex flex-col items-start gap-4 sm:flex-row">
             <StatusPill status={status} />
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
