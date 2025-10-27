@@ -695,7 +695,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
   };
 
   return (
-    <div className="mt-40 w-full" ref={ref}>
+    <div className="mt-40 w-full scroll-mt-10" ref={ref}>
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
         {/* Left column: Title, Button, Rewards, and Balance */}
         <div className="mb-5 md:col-span-1 md:col-start-1">
