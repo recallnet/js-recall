@@ -106,7 +106,7 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
                     onClick={() => setActiveChartTab("account-value")}
                     className="border-0.5 cursor-pointer border-b p-3 font-mono text-xs font-semibold uppercase hover:bg-gray-800"
                   >
-                    Account Value
+                    Return %
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => setActiveChartTab("calmar-ratio")}
