@@ -113,7 +113,7 @@ export const CompetitionCard: React.FC<CompetitionCardProps> = ({
             <div className="w-full p-6">
               {/* Rewards (token or legacy) */}
               <h3 className="text-secondary-foreground mb-1 text-xs font-semibold uppercase">
-                Reward
+                Rewards
               </h3>
               {competition.rewardsTge ? (
                 <RewardsTGE

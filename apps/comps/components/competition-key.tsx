@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowUpRight, ChevronDown, Info, X } from "lucide-react";
+import { Zap } from "lucide-react";
 import Link from "next/link";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -23,17 +24,18 @@ import { useCompetitionTrades } from "@/hooks/useCompetitionTrades";
 import { RouterOutputs } from "@/rpc/router";
 import {
   checkIsPerpsCompetition,
+  formatCompetitionDates,
   getCompetitionSkills,
 } from "@/utils/competition-utils";
 import {
   formatAmount,
   formatCompactNumber,
-  formatDate,
   formatDateShort,
   formatRelativeTime,
 } from "@/utils/format";
 
 import { AgentAvatar } from "./agent-avatar";
+import { RewardsTGE } from "./rewards-tge";
 
 export interface CompetitionKeyProps {
   competition: RouterOutputs["competitions"]["getById"];
@@ -177,13 +179,6 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
     [],
   );
 
-  const startDate = competition.startDate
-    ? formatDate(new Date(competition.startDate))
-    : "TBA";
-  const endDate = competition.endDate
-    ? formatDate(new Date(competition.endDate))
-    : "TBA";
-
   const SHORT_DESC_LENGTH = 120;
   const isLong =
     competition.description?.length &&
@@ -199,7 +194,7 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
         onValueChange={setActiveTab}
         className={cn("flex h-full flex-col text-white", className)}
       >
-        <TabsList className="mb-6.5 flex flex-shrink-0 flex-wrap gap-2">
+        <TabsList className="mb-6.5 flex flex-shrink-0 flex-wrap gap-2 px-4 md:px-0">
           {!isPerpsCompetition && (
             <TabsTrigger
               value="trades"
@@ -214,13 +209,13 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
                 value="open-positions"
                 className="border border-white bg-black px-4 py-2 text-xs font-semibold uppercase text-white transition-colors duration-200 hover:bg-white hover:text-black data-[state=active]:bg-white data-[state=active]:text-black"
               >
-                Open Positions
+                Open
               </TabsTrigger>
               <TabsTrigger
                 value="closed-positions"
                 className="border border-white bg-black px-4 py-2 text-xs font-semibold uppercase text-white transition-colors duration-200 hover:bg-white hover:text-black data-[state=active]:bg-white data-[state=active]:text-black"
               >
-                Closed Positions
+                Closed
               </TabsTrigger>
             </>
           )}
@@ -485,20 +480,22 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
           </TabsContent>
         )}
 
-        {/* Predictions Tab (Placeholder) */}
+        {/* Predictions Tab */}
         <TabsContent
           value="predictions"
           className="m-0 flex-1 overflow-hidden border"
         >
           <div className="flex h-full flex-col items-center justify-center p-8">
-            <p className="text-sm text-gray-400">
-              Boost predictions coming soon...
-            </p>
+            <Zap className="mb-4 size-8 fill-yellow-500 text-yellow-500" />
+            <p className="text-gray-400">Boost predictions coming soon...</p>
           </div>
         </TabsContent>
 
         {/* Info Tab */}
-        <TabsContent value="info" className="m-0 flex-1 overflow-hidden border">
+        <TabsContent
+          value="info"
+          className="m-0 flex-1 overflow-hidden md:border"
+        >
           <div className="h-full overflow-y-auto">
             {competition.status !== "ended" && (
               <div className="border-b bg-[#0C0D12] px-4 py-2">
@@ -506,8 +503,9 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
               </div>
             )}
 
-            <div className="grid grid-cols-2 border-b">
-              <div className="flex flex-col items-start gap-2 border-r p-4">
+            {/* Skills Row */}
+            <div className="grid grid-cols-1 border-b">
+              <div className="flex flex-col items-start gap-2 p-4">
                 <CellTitle>Skills</CellTitle>
                 <div className="flex flex-wrap gap-2">
                   {getCompetitionSkills(competition.type).map((skill) => (
@@ -520,14 +518,97 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
                   ))}
                 </div>
               </div>
+            </div>
+
+            {/* Rewards Row */}
+            <div className="flex flex-col items-start gap-2 border-b p-4">
+              <CellTitle className="shrink-0 uppercase tracking-wider">
+                Rewards
+              </CellTitle>
+              {competition.rewardsTge ? (
+                <RewardsTGE
+                  rewards={{
+                    agentPrizePool: BigInt(competition.rewardsTge.agentPool),
+                    userPrizePool: BigInt(competition.rewardsTge.userPool),
+                  }}
+                />
+              ) : competition.rewards && competition.rewards.length > 0 ? (
+                <div className="flex min-w-0 flex-1 items-center justify-start gap-4 overflow-hidden">
+                  {competition.rewards
+                    .sort((a, b) => a.rank - b.rank)
+                    .slice(0, 3)
+                    .map((r) => (
+                      <div
+                        key={r.rank}
+                        className="flex min-w-0 items-center gap-1 sm:gap-2"
+                      >
+                        <span
+                          className={cn(
+                            "shrink-0 text-xs sm:text-base",
+                            r.rank === 1
+                              ? "text-[#FBD362]"
+                              : r.rank === 2
+                                ? "text-[#93A5BA]"
+                                : "text-[#C76E29]",
+                          )}
+                        >
+                          {r.rank === 1 ? "1st" : r.rank === 2 ? "2nd" : "3rd"}
+                        </span>
+                        <span className="min-w-0 font-bold text-gray-100">
+                          {renderNumber(r.reward, "$")}
+                        </span>
+                      </div>
+                    ))}
+                </div>
+              ) : (
+                <p className="font-bold">TBA</p>
+              )}
+            </div>
+
+            {/* Duration and Boost Window Row */}
+            <div className="grid grid-cols-2 border-b">
+              <div className="flex flex-col items-start gap-2 border-r p-4">
+                <CellTitle>Duration</CellTitle>
+                <div className="flex flex-wrap gap-2">
+                  <span className="font-bold">
+                    <Tooltip
+                      content={formatCompetitionDates(
+                        competition.startDate,
+                        competition.endDate,
+                        true,
+                      )}
+                    >
+                      {formatCompetitionDates(
+                        competition.startDate,
+                        competition.endDate,
+                      )}
+                    </Tooltip>
+                  </span>
+                </div>
+              </div>
               <div className="flex flex-col items-start gap-2 p-4">
-                <CellTitle>Dates</CellTitle>
-                <div className="font-bold">
-                  {startDate} - {endDate}
+                <CellTitle>Boost Window</CellTitle>
+                <div className="flex flex-wrap gap-2">
+                  <span className="font-bold">
+                    <Tooltip
+                      className="cursor-tooltip"
+                      content={formatCompetitionDates(
+                        competition.boostStartDate,
+                        competition.boostEndDate,
+                        true,
+                      )}
+                    >
+                      {formatCompetitionDates(
+                        competition.boostStartDate,
+                        competition.boostEndDate,
+                      )}
+                    </Tooltip>
+                  </span>
                 </div>
               </div>
             </div>
 
+            {/* Minimum Agent Stake and Registration Limit Row */}
             <div className="grid grid-cols-2 border-b">
               <div className="flex flex-col items-start gap-2 border-r p-4">
                 <CellTitle>Minimum Agent Stake</CellTitle>
@@ -557,6 +638,7 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
               </div>
             </div>
 
+            {/* About Row */}
             <div className="border-b p-4">
               <CellTitle className="mb-3 uppercase tracking-wider">
                 About
@@ -610,7 +692,8 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
               )}
             </div>
 
-            <div className="grid grid-cols-3">
+            {/* Total Positions, Volume, and Average Equity/Tokens Traded Row */}
+            <div className="grid grid-cols-3 border-b">
               <div className="flex min-w-0 flex-col items-start justify-center gap-2 border-r p-3">
                 <CellTitle>
                   {isPerpsCompetition ? "Total Positions" : "Total Trades"}
@@ -850,8 +933,6 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
       chainsExpanded,
       rateLimitsExpanded,
       competition,
-      startDate,
-      endDate,
       shortDesc,
       isLong,
       renderNumber,

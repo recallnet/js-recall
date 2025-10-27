@@ -655,39 +655,42 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
   return (
     <div className="mt-12 w-full" ref={ref}>
       <div className="mb-5 flex flex-col gap-4">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="w-full md:w-1/2">
-            <h2 className="text-2xl font-bold">
+        {/* Header row: title + primary action stay on one line until sm screens */}
+        <div className="xs:flex-row xs:items-center flex flex-col items-start justify-between gap-4">
+          <div className="min-w-0 flex-1">
+            <h2 className="truncate text-2xl font-bold">
               Competition {competitionTitles[competition.status]}
             </h2>
           </div>
-          <div className="ml-auto">
-            {showActivateBoost ? (
-              <Button
-                size="lg"
-                variant="outline"
-                className="group h-8 rounded-lg border border-yellow-500 bg-black font-bold text-white hover:bg-yellow-500 hover:text-black"
-                onClick={handleClaimBoost}
-              >
-                {config.publicFlags.tge ? "Activate Boost" : "Start Boosting"}{" "}
-                <Zap className="ml-1 h-4 w-4 fill-yellow-500 text-yellow-500 group-hover:fill-black group-hover:text-black" />
-              </Button>
-            ) : showStakeToBoost ? (
-              <Button
-                size="lg"
-                variant="outline"
-                className="group h-8 rounded-lg border border-yellow-500 bg-black font-bold text-white hover:bg-yellow-500 hover:text-black"
-                onClick={handleStakeToBoost}
-              >
-                Stake to Boost{" "}
-                <Zap className="ml-1 h-4 w-4 fill-yellow-500 text-yellow-500 transition-all duration-300 ease-in-out group-hover:fill-black group-hover:text-black" />
-              </Button>
-            ) : null}
-          </div>
+          {competition.status !== "ended" && (
+            <div className="sm:ml-6">
+              {showActivateBoost ? (
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="group h-8 border border-yellow-500 bg-black font-semibold uppercase text-white hover:bg-yellow-500 hover:text-black"
+                  onClick={handleClaimBoost}
+                >
+                  {config.publicFlags.tge ? "Activate Boost" : "Start Boosting"}{" "}
+                  <Zap className="ml-1 h-4 w-4 fill-yellow-500 text-yellow-500 group-hover:fill-black group-hover:text-black" />
+                </Button>
+              ) : showStakeToBoost ? (
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="group h-8 border border-yellow-500 bg-black font-semibold uppercase text-white hover:bg-yellow-500 hover:text-black"
+                  onClick={handleStakeToBoost}
+                >
+                  Stake to Boost{" "}
+                  <Zap className="ml-1 h-4 w-4 fill-yellow-500 text-yellow-500 transition-all duration-300 ease-in-out group-hover:fill-black group-hover:text-black" />
+                </Button>
+              ) : null}
+            </div>
+          )}
         </div>
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          {/* Rewards section */}
-          {competition.rewardsTge && (
+        {/* Rewards row with available balance right-aligned on the same row */}
+        {competition.rewardsTge && (
+          <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-2">
               <span className="mr-4 text-xs font-semibold uppercase tracking-wider text-gray-400">
                 Rewards
@@ -699,41 +702,48 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                 }}
               />
             </div>
-          )}
-        </div>
 
-        {showBoostBalance && (
-          <div className="w-full md:w-1/2 lg:ml-8">
-            <div className="rounded-2xl p-4">
-              <div className="flex items-center gap-3">
-                <span className="flex items-center gap-2 whitespace-nowrap text-2xl font-bold">
-                  <Zap className="h-4 w-4 text-yellow-500" />
-                  <span className="font-bold">
-                    {isBoostDataLoading
-                      ? "..."
-                      : numberFormatter.format(userBoostBalance || 0)}
-                  </span>
-                  <span className="text-secondary-foreground text-sm font-medium">
-                    available
-                  </span>
-                </span>
-                <div className="bg-muted h-3 flex-1 overflow-hidden rounded-full">
-                  <div
-                    className="h-full rounded-full bg-yellow-500 transition-all duration-300"
-                    style={{
-                      width:
-                        isSuccessUserBoostBalance &&
-                        userBoostBalance > 0 &&
-                        totalBoostValue > 0
-                          ? `${Math.min(100, Number((userBoostBalance * 100) / totalBoostValue))}%`
-                          : "0%",
-                    }}
-                  />
+            {showBoostBalance && (
+              <div className="w-full sm:w-auto">
+                <div className="rounded-2xl p-0 sm:p-2">
+                  <div className="flex items-center gap-3 sm:justify-end">
+                    <span className="flex items-center gap-2 whitespace-nowrap text-2xl font-bold">
+                      <Zap className="h-4 w-4 text-yellow-500" />
+                      <span className="font-bold">
+                        {isBoostDataLoading
+                          ? "..."
+                          : numberFormatter.format(userBoostBalance || 0)}
+                      </span>
+                      <span className="text-secondary-foreground text-sm font-medium">
+                        available
+                      </span>
+                    </span>
+                    <div className="bg-muted hidden h-3 w-48 overflow-hidden rounded-full sm:block">
+                      <div
+                        className="h-full rounded-full bg-yellow-500 transition-all duration-300"
+                        style={{
+                          width:
+                            isSuccessUserBoostBalance &&
+                            userBoostBalance > 0 &&
+                            totalBoostValue > 0
+                              ? `${Math.min(
+                                  100,
+                                  Number(
+                                    (userBoostBalance * 100) / totalBoostValue,
+                                  ),
+                                )}%`
+                              : "0%",
+                        }}
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         )}
+
+        {/* Spacer below header rows */}
       </div>
       <div ref={tableContainerRef} className="overflow-x-auto overflow-y-auto">
         <Table className="min-w-max table-fixed">

@@ -69,20 +69,20 @@ export const RewardsTGE: React.FC<RewardsTGEProps> = ({
   }
 
   return (
-    <div className="flex flex-1 items-center gap-6">
+    <div className="flex flex-1 flex-row gap-6">
       <div className="flex items-center gap-2">
-        <span className="text-gray-100">Agents:</span>
-        <span className="font-bold text-gray-100">
+        <span className="text-sm text-gray-400">Agents</span>
+        <span className="flex items-center gap-1.5 font-bold text-white">
           {formattedRewards.agentPrizePool.toLocaleString()}
+          <Recall size="sm" />
         </span>
-        <Recall size="sm" />
       </div>
       <div className="flex items-center gap-2">
-        <span className="text-gray-100">Boosters:</span>
-        <span className="font-bold text-gray-100">
+        <span className="text-sm text-gray-400">Boosters</span>
+        <span className="flex items-center gap-1.5 font-bold text-white">
           {formattedRewards.userPrizePool.toLocaleString()}
+          <Recall size="sm" />
         </span>
-        <Recall />
       </div>
     </div>
   );

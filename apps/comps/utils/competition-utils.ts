@@ -3,7 +3,7 @@ import { CheckIcon, ClockIcon, Play } from "lucide-react";
 import { RouterOutputs } from "@/rpc/router";
 import { UserCompetition } from "@/types";
 
-import { formatDate } from "./format";
+import { formatDateShort } from "./format";
 
 export function iconForStatus(
   status: RouterOutputs["competitions"]["getById"]["status"],
@@ -31,9 +31,12 @@ export function iconForStatus(
 export function formatCompetitionDates(
   startDate?: Date | number | string | null,
   endDate?: Date | number | string | null,
+  includeTime: boolean = false,
 ): string {
-  const start = startDate ? formatDate(new Date(startDate)) : "TBA";
-  const end = endDate ? formatDate(new Date(endDate)) : "TBA";
+  const start = startDate
+    ? formatDateShort(new Date(startDate), includeTime)
+    : "TBA";
+  const end = endDate ? formatDateShort(new Date(endDate), includeTime) : "TBA";
 
   return `${start} - ${end}`;
 }
