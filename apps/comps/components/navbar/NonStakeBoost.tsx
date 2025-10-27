@@ -33,7 +33,7 @@ export const NonStakeBoost = () => {
         />
       </div>
       <Tooltip content="Boost available per competition">
-        <span className="text-right font-mono text-base font-semibold not-italic leading-6 tracking-[0.96px] text-[#FBD362]">
+        <span className="text-right font-mono text-base font-semibold not-italic leading-6 tracking-[0.96px] text-yellow-500">
           {boostValue}
         </span>
       </Tooltip>
