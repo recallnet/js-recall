@@ -563,7 +563,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                   <Button
                     size="sm"
                     variant="outline"
-                    className="hover:bg-muted h-8 rounded-lg border border-yellow-500 font-bold text-white"
+                    className="hover:bg-muted h-8 rounded-lg border border-yellow-500 font-bold uppercase text-white"
                     disabled={!userBoostBalance}
                     onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                       e.stopPropagation();
@@ -705,7 +705,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
 
             {showBoostBalance && (
               <div className="w-full sm:w-auto">
-                <div className="rounded-2xl p-0 sm:p-2">
+                <div className="rounded-2xl p-0 sm:px-0 sm:py-2">
                   <div className="flex items-center gap-3 sm:justify-end">
                     <span className="flex items-center gap-2 whitespace-nowrap text-2xl font-bold">
                       <Zap className="h-4 w-4 text-yellow-500" />
@@ -718,7 +718,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                         available
                       </span>
                     </span>
-                    <div className="bg-muted hidden h-3 w-48 overflow-hidden rounded-full sm:block">
+                    <div className="bg-muted sm:w-85 h-3 w-full overflow-hidden rounded-full">
                       <div
                         className="h-full rounded-full bg-yellow-500 transition-all duration-300"
                         style={{

@@ -521,7 +521,7 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
             </div>
 
             {/* Rewards Row */}
-            <div className="flex flex-col items-start gap-2 border-b p-4">
+            <div className="flex items-center gap-2 border-b p-4">
               <CellTitle className="shrink-0 uppercase tracking-wider">
                 Rewards
               </CellTitle>
