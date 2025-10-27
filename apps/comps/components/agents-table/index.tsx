@@ -655,7 +655,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
   return (
     <div className="mt-12 w-full" ref={ref}>
       <div className="mb-5 flex flex-col gap-4">
-        {/* Header row: title + primary action stay on one line until sm screens */}
+        {/* Header row: title + boost button */}
         <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
           <div className="min-w-0 flex-1">
             <h2 className="truncate text-2xl font-bold">
@@ -688,7 +688,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
             </div>
           )}
         </div>
-        {/* Rewards row with available balance right-aligned on the same row */}
+        {/* Rewards row */}
         {competition.rewardsTge && (
           <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-2">
@@ -742,9 +742,8 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
             )}
           </div>
         )}
-
-        {/* Spacer below header rows */}
       </div>
+
       <div ref={tableContainerRef} className="overflow-x-auto overflow-y-auto">
         <Table className="min-w-max table-fixed">
           <TableHeader className="sticky top-0 z-10 bg-black">
