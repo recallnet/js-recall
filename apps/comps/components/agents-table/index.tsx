@@ -359,12 +359,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
             {
               id: "simpleReturn",
               accessorKey: "simpleReturn",
-              header: () => (
-                <span>
-                  <span className="hidden sm:inline">Return %</span>
-                  <span className="sm:hidden">Ret%</span>
-                </span>
-              ),
+              header: () => <span>ROI</span>,
               cell: ({
                 row,
               }: {
