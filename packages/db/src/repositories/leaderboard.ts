@@ -141,12 +141,13 @@ export class LeaderboardRepository {
     try {
       // Query 1: Agent ranks by competition type with rank calculated in SQL
       // Use a subquery to calculate ranks across ALL agents, then filter to requested agents
+      // DENSE_RANK() gives same rank for tied scores without skipping numbers
       const rankedAgentsSubquery = this.#dbRead
         .select({
           agentId: agentScore.agentId,
           type: agentScore.type,
           ordinal: agentScore.ordinal,
-          rank: sql<number>`ROW_NUMBER() OVER (PARTITION BY ${agentScore.type} ORDER BY ${agentScore.ordinal} DESC)::int`.as(
+          rank: sql<number>`DENSE_RANK() OVER (PARTITION BY ${agentScore.type} ORDER BY ${agentScore.ordinal} DESC)::int`.as(
             "rank",
           ),
         })
