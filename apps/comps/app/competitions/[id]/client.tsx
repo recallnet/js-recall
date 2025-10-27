@@ -4,7 +4,7 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { ChevronRight, Plus } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import React from "react";
+import React, { useEffect } from "react";
 
 import { Button } from "@recallnet/ui2/components/button";
 import {
@@ -49,6 +49,12 @@ export default function CompetitionPageClient({
   const [activeTab, setActiveTab] = React.useState(
     searchParams.get("tab") || "activity",
   );
+
+  // Sync active tab with URL changes (browser back/forward)
+  useEffect(() => {
+    const tabFromUrl = searchParams.get("tab") || "activity";
+    setActiveTab(tabFromUrl);
+  }, [searchParams]);
 
   // Update URL when tab changes
   const handleTabChange = (value: string) => {

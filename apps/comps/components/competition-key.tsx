@@ -47,7 +47,8 @@ const LIMIT_POSITIONS_PER_PAGE = 50;
 
 // In the competition trade logs, we display a relative timestamp for the first 24 hours, then, we
 // display the month, day, and time.
-const TRADE_LOG_RELATIVE_TIMESTAMP = 24 * 60 * 60 * 1000;
+const HOURS_IN_MS = 60 * 60 * 1000;
+const TRADE_LOG_RELATIVE_TIMESTAMP = 24 * HOURS_IN_MS;
 const shouldShowRelativeTimestamp = (timestamp: Date) => {
   return timestamp > new Date(Date.now() - TRADE_LOG_RELATIVE_TIMESTAMP);
 };

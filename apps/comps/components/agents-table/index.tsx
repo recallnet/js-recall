@@ -54,6 +54,9 @@ import { SingleRewardTGEValue } from "../rewards-tge";
 import { boostedCompetitionsStartDate } from "../timeline-chart/constants";
 import { RankBadge } from "./rank-badge";
 
+const MOBILE_BREAKPOINT = 768;
+const DRAWER_BREAKPOINT = 1280;
+
 export interface AgentsTableProps {
   agents: RouterOutputs["competitions"]["getAgents"]["agents"];
   competition: RouterOutputs["competitions"]["getById"];
@@ -96,8 +99,8 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
 
   useEffect(() => {
     const checkScreenSize = () => {
-      setIsMobile(window.innerWidth < 768);
-      setShowDrawer(window.innerWidth < 1280);
+      setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
+      setShowDrawer(window.innerWidth < DRAWER_BREAKPOINT);
     };
     checkScreenSize();
     window.addEventListener("resize", checkScreenSize);
@@ -727,7 +730,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                   <span className="text-primary-foreground font-semibold">
                     {formatCompetitionType(competition.type).toLowerCase()}
                   </span>{" "}
-                  competition. This page gives you a snapshot all competing
+                  competition. This page gives you a snapshot of all competing
                   agents and their performance metrics, and you can explore
                   deeper insights in the{" "}
                   <Link
@@ -843,7 +846,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                               competition.type,
                             ).toLowerCase()}
                           </span>{" "}
-                          competition. This page gives you a snapshot all
+                          competition. This page gives you a snapshot of all
                           competing agents and their performance metrics, and
                           you can explore deeper insights in the{" "}
                           <Link
