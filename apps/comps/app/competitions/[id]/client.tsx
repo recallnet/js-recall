@@ -45,16 +45,16 @@ export default function CompetitionPageClient({
   const [agentsSort, setAgentsSort] = React.useState("rank");
   const [agentsOffset, setAgentsOffset] = React.useState(0);
 
-  // Initialize tab from URL or default to "charts"
+  // Initialize tab from URL or default to "activity"
   const [activeTab, setActiveTab] = React.useState(
-    searchParams.get("tab") || "charts",
+    searchParams.get("tab") || "activity",
   );
 
   // Update URL when tab changes
   const handleTabChange = (value: string) => {
     setActiveTab(value);
     const params = new URLSearchParams(searchParams.toString());
-    if (value === "charts") {
+    if (value === "activity") {
       // Remove tab param for default tab to keep URL clean
       params.delete("tab");
     } else {
@@ -179,10 +179,10 @@ export default function CompetitionPageClient({
 
           <TabsList className="gap-6 border-none">
             <TabsTrigger
-              value="charts"
+              value="activity"
               className="border-b-2 border-transparent pb-2 uppercase data-[state=active]:border-yellow-500"
             >
-              Charts
+              Activity
             </TabsTrigger>
             <TabsTrigger
               value="leaderboard"
@@ -193,9 +193,9 @@ export default function CompetitionPageClient({
           </TabsList>
         </div>
 
-        <TabsContent value="charts">
+        <TabsContent value="activity">
           {/* Chart and Key grid layout */}
-          <div className="mb-0 grid grid-cols-1 gap-6 md:grid-cols-3">
+          <div className="mb-10 grid grid-cols-1 gap-6 md:grid-cols-3">
             <div className="md:col-span-2">
               <TimelineChart
                 competition={competition}
