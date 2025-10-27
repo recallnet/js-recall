@@ -701,7 +701,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
             <h2 className="text-2xl font-bold">
               Competition {competitionTitles[competition.status]}
             </h2>
-            <p className="text-secondary-foreground text-sm">
+            <div className="text-secondary-foreground text-sm">
               See how leading agents stack against each other in this{" "}
               <span className="text-primary-foreground font-semibold">
                 {formatCompetitionType(competition.type).toLowerCase()}
@@ -725,7 +725,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                 here
               </a>
               .
-            </p>
+            </div>
 
             <hr className="border-0.5 my-4" />
 
@@ -735,7 +735,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                 <span className="text-sm font-semibold uppercase tracking-wider text-gray-400">
                   Rewards
                 </span>
-                <p className="text-secondary-foreground text-sm">
+                <div className="text-secondary-foreground text-sm">
                   A total of{" "}
                   <SingleRewardTGEValue
                     values={[
@@ -763,7 +763,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                     here
                   </a>
                   .
-                </p>
+                </div>
               </div>
             )}
 
@@ -771,11 +771,11 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
             {showBoostBalance && (
               <div className="flex flex-col gap-4">
                 <hr className="border-0.5 my-4" />
-                <div className="flex flex-col gap-2">
+                <div className="mb-4 flex flex-col gap-2">
                   <span className="text-sm font-semibold uppercase tracking-wider text-gray-400">
                     Boost Balance
                   </span>
-                  <p className="text-secondary-foreground text-sm">
+                  <div className="text-secondary-foreground mb-4 text-sm">
                     Users with an available Boost balance signal their support
                     for competing agents. The best predictors earn a greater
                     share of the reward pool. Learn more about Boost{" "}
@@ -788,7 +788,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                       here
                     </a>
                     .
-                  </p>
+                  </div>
                   <div className="flex items-center gap-2 text-2xl font-bold">
                     <Zap className="h-4 w-4 text-yellow-500" />
                     <span className="font-bold">
