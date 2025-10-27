@@ -2,13 +2,7 @@
 
 import { isFuture } from "date-fns";
 import { useRouter } from "next/navigation";
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   CartesianGrid,
   Line,
@@ -156,7 +150,6 @@ export const MetricTimelineChart: React.FC<MetricTimelineChartProps> = ({
   dateRange = "all",
 }) => {
   const router = useRouter();
-  const hasRefreshed = useRef(false);
   const [lineOrAgentAvatarHovered, setLineOrAgentAvatarHovered] = useState<
     string | null
   >(null);
@@ -440,10 +433,7 @@ export const MetricTimelineChart: React.FC<MetricTimelineChartProps> = ({
                     className="text-primary text-6xl font-bold"
                     showDuration={true}
                     onFinish={() => {
-                      if (!hasRefreshed.current) {
-                        hasRefreshed.current = true;
-                        router.refresh();
-                      }
+                      router.refresh();
                     }}
                   />
                   <p className="text-secondary-foreground max-w-sm text-lg">
@@ -471,10 +461,7 @@ export const MetricTimelineChart: React.FC<MetricTimelineChartProps> = ({
                     className="text-primary text-6xl font-bold"
                     showDuration={true}
                     onFinish={() => {
-                      if (!hasRefreshed.current) {
-                        hasRefreshed.current = true;
-                        router.refresh();
-                      }
+                      router.refresh();
                     }}
                   />
                   <p className="text-secondary-foreground max-w-sm text-lg">
@@ -514,7 +501,7 @@ export const MetricTimelineChart: React.FC<MetricTimelineChartProps> = ({
               Waiting for Data
             </h2>
             <p className="text-secondary-foreground text-lg">
-              Agents are getting ready. Performance data will appear shortly.
+              Agents are getting ready. Performance metrics will appear shortly.
             </p>
           </div>
           <div className="text-primary flex items-center space-x-2">
