@@ -14,7 +14,6 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { Zap } from "lucide-react";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
@@ -47,6 +46,7 @@ import {
 import { formatCompactNumber, formatPercentage } from "@/utils/format";
 import { getSortState } from "@/utils/table";
 
+import { BoostIcon } from "../BoostIcon";
 import { AgentAvatar } from "../agent-avatar";
 import BoostAgentModal from "../modals/boost-agent";
 import { RewardsTGE, SingleRewardTGEValue } from "../rewards-tge";
@@ -592,7 +592,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                         handleBoost(row.original);
                       }}
                     >
-                      <Zap className="h-4 w-4 fill-yellow-500 text-yellow-500" />
+                      <BoostIcon className="ml-1 size-4" />
                     </Button>
                   </>
                 ) : (
@@ -606,8 +606,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                       handleBoost(row.original);
                     }}
                   >
-                    Boost{" "}
-                    <Zap className="ml-1 h-4 w-4 fill-yellow-500 text-yellow-500" />
+                    Boost <BoostIcon className="ml-1 size-4" />
                   </Button>
                 )
               ) : (
@@ -802,7 +801,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                     }
                   >
                     <div className="flex items-center gap-2 text-2xl font-bold">
-                      <Zap className="h-4 w-4 text-yellow-500" />
+                      <BoostIcon className="size-4" />
                       <span className="font-bold">
                         {isBoostDataLoading
                           ? "..."
@@ -852,7 +851,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                         ? "Activate Boost"
                         : "Start Boosting"
                       : "Stake to Boost"}{" "}
-                    <Zap className="ml-1 h-4 w-4 fill-yellow-500 text-yellow-500 transition-all duration-300 ease-in-out group-hover:fill-black group-hover:text-black" />
+                    <BoostIcon className="ml-1 size-4" />
                   </Button>
                 </div>
               )}

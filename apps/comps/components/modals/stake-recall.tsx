@@ -9,7 +9,6 @@ import {
   TrendingUp,
   Wallet,
   X,
-  Zap,
 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 
@@ -556,7 +555,7 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
                       <div className="border-t"></div>
 
                       <div className="text-secondary-foreground flex items-center gap-2 px-4 py-3 text-sm">
-                        <Zap className="text-secondary-foreground size-4 flex-shrink-0" />
+                        <BoostIcon className="size-4" />
                         <div className="text-primary-foreground">
                           Use Boost to{" "}
                           <span className="text-yellow-400">

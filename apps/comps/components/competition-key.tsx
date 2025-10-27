@@ -1,7 +1,6 @@
 "use client";
 
 import { ArrowUpRight, ChevronDown, Info, X } from "lucide-react";
-import { Zap } from "lucide-react";
 import Link from "next/link";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -34,6 +33,7 @@ import {
   formatRelativeTime,
 } from "@/utils/format";
 
+import { BoostIcon } from "./BoostIcon";
 import { AgentAvatar } from "./agent-avatar";
 import { RewardsTGE } from "./rewards-tge";
 
@@ -504,7 +504,7 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
           className="m-0 flex-1 overflow-hidden border"
         >
           <div className="flex h-full flex-col items-center justify-center p-8">
-            <Zap className="mb-4 size-8 fill-yellow-500 text-yellow-500" />
+            <BoostIcon className="mb-4 size-8" fill={false} />
             <p className="text-gray-400">Boost predictions coming soon...</p>
           </div>
         </TabsContent>
