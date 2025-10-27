@@ -72,7 +72,7 @@ export const StakeSummary: React.FunctionComponent<StakeSummaryProps> = ({
           <div className="mb-2 text-sm font-bold uppercase text-gray-400">
             Locked
           </div>
-          <div className="xs:flex-row xs:items-center flex flex-col items-start gap-2">
+          <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center">
             <div className="flex items-center gap-2">
               <Recall size="md" />
               <span className="text-2xl font-bold text-white">{locked}</span>
