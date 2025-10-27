@@ -1,3 +1,5 @@
+import { Decimal } from "decimal.js";
+
 import type { RawAgentMetricsQueryResult } from "@recallnet/db/repositories/types";
 
 import type {
@@ -101,18 +103,20 @@ export class AgentMetricsHelper {
     // Calculate total ROI with business logic
     const totalRoiMap = new Map(
       rawResults.totalRois.map((row) => {
-        const totalPnl = row.totalPnl ? Number(row.totalPnl) : null;
-        const totalStartingValue = row.totalStartingValue
-          ? Number(row.totalStartingValue)
-          : null;
-
-        if (!this.isValidRoiData(totalPnl, totalStartingValue)) {
+        if (!row.totalPnl || !row.totalStartingValue) {
           return [row.agentId, null];
         }
-
-        // Calculate ROI as percentage in decimal format (e.g., 0.37 for 37%)
-        const roiPercent = totalPnl! / totalStartingValue!;
-        return [row.agentId, roiPercent];
+        try {
+          const totalPnl = new Decimal(row.totalPnl);
+          const totalStartingValue = new Decimal(row.totalStartingValue);
+          if (totalStartingValue.lessThanOrEqualTo(0)) {
+            return [row.agentId, null];
+          }
+          const roiPercent = totalPnl.dividedBy(totalStartingValue).toNumber();
+          return [row.agentId, roiPercent];
+        } catch {
+          return [row.agentId, null];
+        }
       }),
     );
 
@@ -131,25 +135,6 @@ export class AgentMetricsHelper {
         ranks,
       };
     });
-  }
-
-  /**
-   * Validate ROI data for calculation
-   * @param totalPnl Total profit/loss value
-   * @param totalStartingValue Total starting value
-   * @returns True if data is valid for ROI calculation
-   */
-  private static isValidRoiData(
-    totalPnl: number | null,
-    totalStartingValue: number | null,
-  ): boolean {
-    return (
-      typeof totalPnl === "number" &&
-      typeof totalStartingValue === "number" &&
-      !isNaN(totalPnl) &&
-      !isNaN(totalStartingValue) &&
-      totalStartingValue > 0
-    );
   }
 
   /**
