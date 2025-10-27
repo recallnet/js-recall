@@ -781,6 +781,17 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                   <span className="text-sm font-semibold uppercase tracking-wider text-gray-400">
                     Boost Balance
                   </span>{" "}
+                  <div className="flex items-center gap-2 text-2xl font-bold">
+                    <BoostIcon className="size-4" />
+                    <span className="font-bold">
+                      {isBoostDataLoading
+                        ? "..."
+                        : numberFormatter.format(userBoostBalance || 0)}
+                    </span>
+                    <span className="text-secondary-foreground text-sm font-medium">
+                      available
+                    </span>
+                  </div>
                   <Tooltip
                     className="cursor-help"
                     content={
@@ -800,17 +811,6 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                       </div>
                     }
                   >
-                    <div className="flex items-center gap-2 text-2xl font-bold">
-                      <BoostIcon className="size-4" />
-                      <span className="font-bold">
-                        {isBoostDataLoading
-                          ? "..."
-                          : numberFormatter.format(userBoostBalance || 0)}
-                      </span>
-                      <span className="text-secondary-foreground text-sm font-medium">
-                        available
-                      </span>
-                    </div>
                     <div className="bg-muted h-3 w-full overflow-hidden rounded-full">
                       <div
                         className="h-full rounded-full bg-yellow-500 transition-all duration-300"
