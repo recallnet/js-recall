@@ -14,7 +14,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { Info, X, Zap } from "lucide-react";
+import { Zap } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useMemo, useRef, useState } from "react";
@@ -31,7 +31,6 @@ import {
   TableRow,
 } from "@recallnet/ui2/components/table";
 import { toast } from "@recallnet/ui2/components/toast";
-import { cn } from "@recallnet/ui2/lib/utils";
 
 import { Pagination } from "@/components/pagination/index";
 import { config } from "@/config/public";
@@ -55,7 +54,6 @@ import { boostedCompetitionsStartDate } from "../timeline-chart/constants";
 import { RankBadge } from "./rank-badge";
 
 const MOBILE_BREAKPOINT = 768;
-const DRAWER_BREAKPOINT = 1280;
 
 export interface AgentsTableProps {
   agents: RouterOutputs["competitions"]["getAgents"]["agents"];
@@ -94,30 +92,15 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
 
   // Track screen size for responsive column visibility
   const [isMobile, setIsMobile] = useState(false);
-  const [showDrawer, setShowDrawer] = useState(false);
-  const [isInfoExpanded, setIsInfoExpanded] = useState(false);
 
   useEffect(() => {
-    const checkScreenSize = () => {
+    const checkMobile = () => {
       setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
-      setShowDrawer(window.innerWidth < DRAWER_BREAKPOINT);
     };
-    checkScreenSize();
-    window.addEventListener("resize", checkScreenSize);
-    return () => window.removeEventListener("resize", checkScreenSize);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
   }, []);
-
-  // Prevent body scroll when drawer is open
-  useEffect(() => {
-    if (showDrawer && isInfoExpanded) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [showDrawer, isInfoExpanded]);
 
   const [selectedAgent, setSelectedAgent] = useState<
     RouterOutputs["competitions"]["getAgents"]["agents"][number] | null
@@ -712,7 +695,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
   };
 
   return (
-    <div className="w-full" ref={ref}>
+    <div className="mt-40 w-full" ref={ref}>
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
         {/* Left column: Title, Button, Rewards, and Balance */}
         <div className="mb-5 md:col-span-1 md:col-start-1">
@@ -723,7 +706,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
             </h2>
 
             {/* Competition overview content */}
-            {!showDrawer && (
+            {!isMobile && (
               <>
                 <div className="text-secondary-foreground mt-2 text-sm">
                   See how leading agents stack against each other in this{" "}
@@ -792,154 +775,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
               </>
             )}
 
-            {/* Drawer view - button and slide-in drawer */}
-            {showDrawer && (
-              <>
-                {/* Floating button */}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsInfoExpanded(true)}
-                  className="fixed bottom-10 right-6 z-40 flex items-center gap-2 border-white bg-black px-4 py-3 font-semibold uppercase text-white shadow-lg hover:bg-white hover:text-black"
-                >
-                  <Info size={20} />
-                  <span>Learn More</span>
-                </Button>
-
-                {/* Backdrop overlay */}
-                {isInfoExpanded && (
-                  <div
-                    className="fixed inset-0 z-50 bg-black/50 transition-opacity duration-300"
-                    onClick={() => setIsInfoExpanded(false)}
-                  />
-                )}
-
-                {/* Slide-in drawer */}
-                <div
-                  className={cn(
-                    "fixed right-0 top-0 z-[60] h-full w-[85vw] max-w-md transform border-l border-gray-800 bg-black shadow-xl transition-transform duration-300 ease-in-out",
-                    isInfoExpanded ? "translate-x-0" : "translate-x-full",
-                  )}
-                >
-                  <div className="flex h-full flex-col">
-                    {/* Drawer header */}
-                    <div className="flex items-center justify-between border-b border-gray-800 p-4">
-                      <h2 className="text-lg font-bold text-white">
-                        Competition Details
-                      </h2>
-                      <button
-                        onClick={() => setIsInfoExpanded(false)}
-                        className="rounded-lg p-2 text-gray-400 hover:bg-gray-800 hover:text-white"
-                      >
-                        <X size={20} />
-                      </button>
-                    </div>
-
-                    {/* Drawer content */}
-                    <div className="flex-1 overflow-y-auto p-4">
-                      <div className="flex flex-col gap-6">
-                        <div className="text-secondary-foreground text-sm">
-                          See how leading agents stack against each other in
-                          this{" "}
-                          <span className="text-primary-foreground font-semibold">
-                            {formatCompetitionType(
-                              competition.type,
-                            ).toLowerCase()}
-                          </span>{" "}
-                          competition. This page gives you a snapshot of all
-                          competing agents and their performance metrics, and
-                          you can explore deeper insights in the{" "}
-                          <Link
-                            href="/leaderboards"
-                            className="text-primary-foreground hover:text-primary-foreground/80 font-semibold underline transition-all duration-200 ease-in-out"
-                            onClick={() => setIsInfoExpanded(false)}
-                          >
-                            global leaderboards
-                          </Link>
-                          . Learn more about it{" "}
-                          <a
-                            href="https://docs.recall.network/concepts"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-primary-foreground hover:text-primary-foreground/80 font-semibold underline transition-all duration-200 ease-in-out"
-                          >
-                            here
-                          </a>
-                          .
-                        </div>
-
-                        {/* Rewards TGE Info */}
-                        {competition.rewardsTge && (
-                          <div className="flex flex-col gap-2">
-                            <hr className="border-0.5 my-2" />
-                            <span className="text-sm font-semibold uppercase tracking-wider text-gray-400">
-                              Rewards
-                            </span>
-                            <div className="text-secondary-foreground text-sm">
-                              A total of{" "}
-                              <SingleRewardTGEValue
-                                values={[
-                                  competition.rewardsTge.agentPool,
-                                  competition.rewardsTge.userPool,
-                                ]}
-                              />{" "}
-                              is allocated to this competition&apos;s rewards
-                              pool. Agents receive{" "}
-                              <SingleRewardTGEValue
-                                values={[competition.rewardsTge.agentPool]}
-                              />{" "}
-                              of the pool based on their performance. Boosters
-                              receive{" "}
-                              <SingleRewardTGEValue
-                                values={[competition.rewardsTge.userPool]}
-                              />{" "}
-                              of the pool based on curated predictions. For more
-                              details, see{" "}
-                              <a
-                                href="https://docs.recall.network/competitions/rewards"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-primary-foreground hover:text-primary-foreground/80 font-semibold underline transition-all duration-200 ease-in-out"
-                              >
-                                here
-                              </a>
-                              .
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Boost Balance Info in drawer */}
-                        {showBoostBalance && (
-                          <div className="flex flex-col gap-2">
-                            <hr className="border-0.5 my-2" />
-                            <span className="text-sm font-semibold uppercase tracking-wider text-gray-400">
-                              About Boost
-                            </span>
-                            <div className="text-secondary-foreground text-sm">
-                              Users with an available Boost balance signal their
-                              support for competing agents. The best predictors
-                              earn a greater share of the reward pool. Learn
-                              more about Boost{" "}
-                              <a
-                                href="https://docs.recall.network/token/staking"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-primary-foreground hover:text-primary-foreground/80 font-semibold underline transition-all duration-200 ease-in-out"
-                              >
-                                here
-                              </a>
-                              .
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
-
-            {!showDrawer && <hr className="border-0.5 my-4" />}
+            {!isMobile && <hr className="border-0.5 my-4" />}
             {/* Boost Balance */}
             {showBoostBalance && (
               <div className="flex flex-col gap-4">
@@ -949,7 +785,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                   </span>
 
                   {/* Description only on desktop */}
-                  {!showDrawer && (
+                  {!isMobile && (
                     <div className="text-secondary-foreground mb-4 text-sm">
                       Users with an available Boost balance signal their support
                       for competing agents. The best predictors earn a greater
