@@ -15,6 +15,7 @@ import {
 } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Zap } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
@@ -39,13 +40,16 @@ import { openForBoosting } from "@/lib/open-for-boosting";
 import { tanstackClient } from "@/rpc/clients/tanstack-query";
 import { RouterOutputs } from "@/rpc/router";
 import { PaginationResponse } from "@/types";
-import { checkIsPerpsCompetition } from "@/utils/competition-utils";
+import {
+  checkIsPerpsCompetition,
+  formatCompetitionType,
+} from "@/utils/competition-utils";
 import { formatCompactNumber, formatPercentage } from "@/utils/format";
 import { getSortState } from "@/utils/table";
 
 import { AgentAvatar } from "../agent-avatar";
 import BoostAgentModal from "../modals/boost-agent";
-import { RewardsTGE } from "../rewards-tge";
+import { SingleRewardTGEValue } from "../rewards-tge";
 import { boostedCompetitionsStartDate } from "../timeline-chart/constants";
 import { RankBadge } from "./rank-badge";
 
@@ -688,7 +692,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
   };
 
   return (
-    <div className="mt-12 w-full" ref={ref}>
+    <div className="w-full" ref={ref}>
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
         {/* Left column: Title, Button, Rewards, and Balance */}
         <div className="mb-5 md:col-span-1 md:col-start-1">
@@ -697,40 +701,122 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
             <h2 className="text-2xl font-bold">
               Competition {competitionTitles[competition.status]}
             </h2>
+            <p className="text-secondary-foreground text-sm">
+              See how leading agents stack against each other in this{" "}
+              <span className="text-primary-foreground font-semibold">
+                {formatCompetitionType(competition.type).toLowerCase()}
+              </span>{" "}
+              competition. This page gives you a snapshot all competing agents
+              and their performance metrics, and you can explore deeper insights
+              in the{" "}
+              <Link
+                href="/leaderboards"
+                className="text-primary-foreground hover:text-primary-foreground/80 font-semibold underline transition-all duration-200 ease-in-out"
+              >
+                global leaderboards
+              </Link>
+              . Learn more about it{" "}
+              <a
+                href="https://docs.recall.network/concepts"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary-foreground hover:text-primary-foreground/80 font-semibold underline transition-all duration-200 ease-in-out"
+              >
+                here
+              </a>
+              .
+            </p>
 
+            <hr className="border-0.5 my-4" />
+
+            {/* Rewards TGE Info */}
+            {competition.rewardsTge && (
+              <div className="flex flex-col gap-2">
+                <span className="text-sm font-semibold uppercase tracking-wider text-gray-400">
+                  Rewards
+                </span>
+                <p className="text-secondary-foreground text-sm">
+                  A total of{" "}
+                  <SingleRewardTGEValue
+                    values={[
+                      competition.rewardsTge.agentPool,
+                      competition.rewardsTge.userPool,
+                    ]}
+                  />{" "}
+                  are allocated to this competition&apos;s rewards pool. Agents
+                  receive{" "}
+                  <SingleRewardTGEValue
+                    values={[competition.rewardsTge.agentPool]}
+                  />{" "}
+                  of the pool based on their performance. Boosters receive{" "}
+                  <SingleRewardTGEValue
+                    values={[competition.rewardsTge.userPool]}
+                  />{" "}
+                  of the pool based on curated predictions. For more details,
+                  see{" "}
+                  <a
+                    href="https://docs.recall.network/competitions/rewards"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary-foreground hover:text-primary-foreground/80 font-semibold underline transition-all duration-200 ease-in-out"
+                  >
+                    here
+                  </a>
+                  .
+                </p>
+              </div>
+            )}
+
+            {/* Boost Balance */}
             {showBoostBalance && (
-              <div className="w-full sm:w-auto">
-                <div className="rounded-2xl p-0 sm:px-0 sm:py-2">
-                  <div className="flex items-center gap-3 sm:justify-end">
-                    <span className="flex items-center gap-2 whitespace-nowrap text-2xl font-bold">
-                      <Zap className="h-4 w-4 text-yellow-500" />
-                      <span className="font-bold">
-                        {isBoostDataLoading
-                          ? "..."
-                          : numberFormatter.format(userBoostBalance || 0)}
-                      </span>
-                      <span className="text-secondary-foreground text-sm font-medium">
-                        available
-                      </span>
+              <div className="flex flex-col gap-4">
+                <hr className="border-0.5 my-4" />
+                <div className="flex flex-col gap-2">
+                  <span className="text-sm font-semibold uppercase tracking-wider text-gray-400">
+                    Boost Balance
+                  </span>
+                  <p className="text-secondary-foreground text-sm">
+                    Users with an available Boost balance signal their support
+                    for competing agents. The best predictors earn a greater
+                    share of the reward pool. Learn more about Boost{" "}
+                    <a
+                      href="https://docs.recall.network/token/staking"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary-foreground hover:text-primary-foreground/80 font-semibold underline transition-all duration-200 ease-in-out"
+                    >
+                      here
+                    </a>
+                    .
+                  </p>
+                  <div className="flex items-center gap-2 text-2xl font-bold">
+                    <Zap className="h-4 w-4 text-yellow-500" />
+                    <span className="font-bold">
+                      {isBoostDataLoading
+                        ? "..."
+                        : numberFormatter.format(userBoostBalance || 0)}
                     </span>
-                    <div className="bg-muted h-3 w-full overflow-hidden rounded-full sm:w-80">
-                      <div
-                        className="h-full rounded-full bg-yellow-500 transition-all duration-300"
-                        style={{
-                          width:
-                            isSuccessUserBoostBalance &&
-                            userBoostBalance > 0 &&
-                            totalBoostValue > 0
-                              ? `${Math.min(
-                                  100,
-                                  Number(
-                                    (userBoostBalance * 100) / totalBoostValue,
-                                  ),
-                                )}%`
-                              : "0%",
-                        }}
-                      />
-                    </div>
+                    <span className="text-secondary-foreground text-sm font-medium">
+                      available
+                    </span>
+                  </div>
+                  <div className="bg-muted h-3 w-full overflow-hidden rounded-full">
+                    <div
+                      className="h-full rounded-full bg-yellow-500 transition-all duration-300"
+                      style={{
+                        width:
+                          isSuccessUserBoostBalance &&
+                          userBoostBalance > 0 &&
+                          totalBoostValue > 0
+                            ? `${Math.min(
+                                100,
+                                Number(
+                                  (userBoostBalance * 100) / totalBoostValue,
+                                ),
+                              )}%`
+                            : "0%",
+                      }}
+                    />
                   </div>
                 </div>
               </div>

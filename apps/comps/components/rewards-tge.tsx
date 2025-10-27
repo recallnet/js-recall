@@ -26,6 +26,37 @@ export interface RewardsTGEProps {
   compact?: boolean;
 }
 
+export interface SingleRewardTGEValueProps {
+  values: string[];
+  className?: string;
+  compact?: boolean;
+}
+
+export const SingleRewardTGEValue: React.FC<SingleRewardTGEValueProps> = ({
+  values,
+  className,
+}) => {
+  const formattedValue = useMemo(() => {
+    const addedValues = values.reduce(
+      (acc, value) => acc + BigInt(value),
+      BigInt(0),
+    );
+    const val = attoValueToNumberValue(addedValues);
+    return val ? formatAmount(val, 0, true) : "0";
+  }, [values]);
+  return (
+    <span
+      className={cn(
+        "text-primary-foreground inline-flex items-center gap-1 font-bold",
+        className,
+      )}
+    >
+      {formattedValue}
+      <Recall size="sm" />
+    </span>
+  );
+};
+
 /**
  * Displays the total rewards and the 1st, 2nd, and 3rd place rewards in a responsive flex layout.
  *

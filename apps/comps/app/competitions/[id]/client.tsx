@@ -195,7 +195,7 @@ export default function CompetitionPageClient({
 
         <TabsContent value="charts">
           {/* Chart and Key grid layout */}
-          <div className="mb-10 grid grid-cols-1 gap-6 md:grid-cols-3">
+          <div className="mb-0 grid grid-cols-1 gap-6 md:grid-cols-3">
             <div className="md:col-span-2">
               <TimelineChart
                 competition={competition}
