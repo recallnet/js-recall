@@ -96,7 +96,7 @@ const ActiveStakeEntry: React.FunctionComponent<ActiveStakeEntryProps> = ({
                 <ArrowRightIcon />
               </div>
               <div className="flex items-center gap-1 text-yellow-400">
-                <BoostIcon fill />
+                <BoostIcon />
                 <span className="font-bold">{boostAmount}</span>
                 <span className="text-gray-400">per competition.</span>
               </div>

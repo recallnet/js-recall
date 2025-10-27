@@ -415,7 +415,7 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
                   <span className="text-primary-foreground text-xl font-bold">
                     +{formattedBoostAmount}
                   </span>
-                  <BoostIcon className="size-4" fill />
+                  <BoostIcon className="size-4" />
                   <span className="text-secondary-foreground text-sm font-bold">
                     BOOST
                   </span>
