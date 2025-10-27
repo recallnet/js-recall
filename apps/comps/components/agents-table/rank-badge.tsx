@@ -6,9 +6,15 @@ import { AwardIcon } from "./award-icon";
 
 interface RankBadgeProps {
   rank: number;
+  className?: string;
+  showIcon?: boolean;
 }
 
-export const RankBadge: React.FC<RankBadgeProps> = ({ rank }) => {
+export const RankBadge: React.FC<RankBadgeProps> = ({
+  rank,
+  className,
+  showIcon = true,
+}) => {
   return (
     <div
       className={cn(
@@ -19,9 +25,10 @@ export const RankBadge: React.FC<RankBadgeProps> = ({ rank }) => {
           "bg-trophy-third-bg": rank === 3,
           "bg-gray-700": rank > 3,
         },
+        className,
       )}
     >
-      {rank <= 3 ? (
+      {showIcon && rank <= 3 ? (
         <AwardIcon
           place={
             ["first", "second", "third"][rank - 1] as
