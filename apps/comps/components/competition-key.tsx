@@ -504,7 +504,7 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
           className="m-0 flex-1 overflow-hidden border"
         >
           <div className="flex h-full flex-col items-center justify-center p-8">
-            <BoostIcon className="mb-4 size-8" fill={false} />
+            <BoostIcon className="mb-4 size-8" />
             <p className="text-gray-400">Boost predictions coming soon...</p>
           </div>
         </TabsContent>

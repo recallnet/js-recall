@@ -1,6 +1,5 @@
 interface BoostIconProps {
   className?: string;
-  fill?: boolean;
   size?: number;
   color?: string;
   alt?: string;
@@ -9,7 +8,6 @@ interface BoostIconProps {
 /**
  * BoostIcon component that renders the Recall boost lightning bolt icon
  * @param className - Additional CSS classes to apply
- * @param fill - Whether to fill the icon (true) or use outline/stroke (false)
  * @param size - Width and height of the icon in pixels (default: 16)
  * @param color - Color of the icon (default: #FAC021 yellow)
  */
