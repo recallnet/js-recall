@@ -654,54 +654,14 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
 
   return (
     <div className="mt-12 w-full" ref={ref}>
-      <div className="mb-5 flex flex-col gap-4">
-        {/* Header row: title + boost button */}
-        <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
-          <div className="min-w-0 flex-1">
-            <h2 className="truncate text-2xl font-bold">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+        {/* Right column: Title, Button, Rewards, and Balance */}
+        <div className="mb-5 md:col-span-1 md:col-start-1">
+          <div className="flex flex-col gap-4">
+            {/* Title */}
+            <h2 className="text-2xl font-bold">
               Competition {competitionTitles[competition.status]}
             </h2>
-          </div>
-          {competition.status !== "ended" && (
-            <div className="sm:ml-6">
-              {showActivateBoost ? (
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="group h-8 border border-yellow-500 bg-black font-semibold uppercase text-white hover:bg-yellow-500 hover:text-black"
-                  onClick={handleClaimBoost}
-                >
-                  {config.publicFlags.tge ? "Activate Boost" : "Start Boosting"}{" "}
-                  <Zap className="ml-1 h-4 w-4 fill-yellow-500 text-yellow-500 group-hover:fill-black group-hover:text-black" />
-                </Button>
-              ) : showStakeToBoost ? (
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="group h-8 border border-yellow-500 bg-black font-semibold uppercase text-white hover:bg-yellow-500 hover:text-black"
-                  onClick={handleStakeToBoost}
-                >
-                  Stake to Boost{" "}
-                  <Zap className="ml-1 h-4 w-4 fill-yellow-500 text-yellow-500 transition-all duration-300 ease-in-out group-hover:fill-black group-hover:text-black" />
-                </Button>
-              ) : null}
-            </div>
-          )}
-        </div>
-        {/* Rewards row */}
-        {competition.rewardsTge && (
-          <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-2">
-              <span className="mr-4 text-xs font-semibold uppercase tracking-wider text-gray-400">
-                Rewards
-              </span>
-              <RewardsTGE
-                rewards={{
-                  agentPrizePool: BigInt(competition.rewardsTge.agentPool),
-                  userPrizePool: BigInt(competition.rewardsTge.userPool),
-                }}
-              />
-            </div>
 
             {showBoostBalance && (
               <div className="w-full sm:w-auto">
@@ -740,8 +700,30 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                 </div>
               </div>
             )}
+
+            {/* Stake to Boost button */}
+            {competition.status !== "ended" &&
+              (showActivateBoost || showStakeToBoost) && (
+                <div>
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="group h-8 w-full border border-yellow-500 bg-black font-semibold uppercase text-white hover:bg-yellow-500 hover:text-black"
+                    onClick={
+                      showActivateBoost ? handleClaimBoost : handleStakeToBoost
+                    }
+                  >
+                    {showActivateBoost
+                      ? config.publicFlags.tge
+                        ? "Activate Boost"
+                        : "Start Boosting"
+                      : "Stake to Boost"}{" "}
+                    <Zap className="ml-1 h-4 w-4 fill-yellow-500 text-yellow-500 transition-all duration-300 ease-in-out group-hover:fill-black group-hover:text-black" />
+                  </Button>
+                </div>
+              )}
           </div>
-        )}
+        </div>
       </div>
 
       <div ref={tableContainerRef} className="overflow-x-auto overflow-y-auto">
