@@ -597,7 +597,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                   <Button
                     size="sm"
                     variant="outline"
-                    className={`hover:bg-muted rounded-lg border border-yellow-500 font-bold uppercase text-white ${isMobile ? "h-7 px-2 text-xs" : "h-8"}`}
+                    className={`disabled:hover:text-primary-foreground rounded-lg border border-yellow-500 font-bold uppercase text-white ${isMobile ? "h-7 px-2 text-xs" : "h-8"}`}
                     disabled={!userBoostBalance}
                     onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                       e.stopPropagation();
