@@ -45,6 +45,13 @@ export interface CompetitionKeyProps {
 const LIMIT_TRADES_PER_PAGE = 50;
 const LIMIT_POSITIONS_PER_PAGE = 50;
 
+// In the competition trade logs, we display a relative timestamp for the first 24 hours, then, we
+// display the month, day, and time.
+const TRADE_LOG_RELATIVE_TIMESTAMP = 24 * 60 * 60 * 1000;
+const shouldShowRelativeTimestamp = (timestamp: Date) => {
+  return timestamp > new Date(Date.now() - TRADE_LOG_RELATIVE_TIMESTAMP);
+};
+
 const CellTitle: React.FC<{
   children: React.ReactNode;
   className?: string;
@@ -342,28 +349,33 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
                         {/* Right column: Position details */}
                         <div className="flex flex-col items-end gap-1 text-right">
                           <span
-                            className={`text-xs font-semibold ${position.isLong ? "text-green-500" : "text-red-500"}`}
+                            className={`text-xs font-semibold ${position.isLong ? "text-green-400" : "text-red-400"}`}
                           >
                             {position.isLong ? "LONG" : "SHORT"}{" "}
                             {formatAmount(Number(position.positionSize))}{" "}
                             {position.asset}
                           </span>
-                          <span className="text-xs text-gray-400">
+                          <span className="text-secondary-foreground text-xs">
                             {formatAmount(Number(position.leverage))}x leverage
                             • {formatAmount(Number(position.collateralAmount))}{" "}
                             collateral
                           </span>
                           {position.pnlUsdValue && (
-                            <span
-                              className={`text-xs ${Number(position.pnlUsdValue) >= 0 ? "text-green-500" : "text-red-500"}`}
-                            >
-                              PnL: {formatAmount(Number(position.pnlUsdValue))}{" "}
-                              USD
+                            <span className="text-secondary-foreground text-xs">
+                              PnL:{" "}
+                              <span
+                                className={`text-xs ${Number(position.pnlUsdValue) >= 0 ? "text-green-400" : "text-red-400"}`}
+                              >
+                                {formatAmount(Number(position.pnlUsdValue))} USD
+                              </span>
                             </span>
                           )}
                           {position.createdAt && (
-                            <span className="text-xs text-gray-500">
-                              Opened {formatRelativeTime(position.createdAt)}
+                            <span className="text-secondary-foreground text-xs">
+                              Opened{" "}
+                              {shouldShowRelativeTimestamp(position.createdAt)
+                                ? formatRelativeTime(position.createdAt)
+                                : formatDateShort(position.createdAt, true)}
                             </span>
                           )}
                         </div>
@@ -430,7 +442,7 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
                         {/* Right column: Position details */}
                         <div className="flex flex-col items-end gap-1 text-right">
                           <span
-                            className={`text-xs font-semibold ${position.isLong ? "text-green-500" : "text-red-500"}`}
+                            className={`text-xs font-semibold ${position.isLong ? "text-green-400" : "text-red-400"}`}
                           >
                             {position.isLong ? "LONG" : "SHORT"}{" "}
                             {formatAmount(Number(position.positionSize))}{" "}
@@ -442,16 +454,21 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
                             collateral
                           </span>
                           {position.pnlUsdValue && (
-                            <span
-                              className={`text-xs ${Number(position.pnlUsdValue) >= 0 ? "text-green-500" : "text-red-500"}`}
-                            >
-                              PnL: {formatAmount(Number(position.pnlUsdValue))}{" "}
-                              USD
+                            <span className="text-secondary-foreground text-xs">
+                              PnL:{" "}
+                              <span
+                                className={`text-xs ${Number(position.pnlUsdValue) >= 0 ? "text-green-400" : "text-red-400"}`}
+                              >
+                                {formatAmount(Number(position.pnlUsdValue))} USD
+                              </span>
                             </span>
                           )}
                           {position.closedAt && (
-                            <span className="text-xs text-gray-500">
-                              Closed {formatRelativeTime(position.closedAt)}
+                            <span className="text-secondary-foreground text-xs">
+                              Closed{" "}
+                              {shouldShowRelativeTimestamp(position.closedAt)
+                                ? formatRelativeTime(position.closedAt)
+                                : formatDateShort(position.closedAt, true)}
                             </span>
                           )}
                         </div>
