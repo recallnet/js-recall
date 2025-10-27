@@ -1,8 +1,6 @@
 "use client";
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { useDebounce, useWindowScroll } from "@uidotdev/usehooks";
-import { isFuture } from "date-fns";
 import { ChevronRight, Plus } from "lucide-react";
 import Link from "next/link";
 import React from "react";
@@ -11,27 +9,20 @@ import { Button } from "@recallnet/ui2/components/button";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { AgentsTable } from "@/components/agents-table";
-import { BasicCompetitionCard } from "@/components/basic-competition-card";
 import { BreadcrumbNav } from "@/components/breadcrumb-nav";
-import { CountdownClock } from "@/components/clock";
-import { CompetitionInfo } from "@/components/competition-info";
+import { CompetitionKey } from "@/components/competition-key";
 import CompetitionSkeleton from "@/components/competition-skeleton";
 import { FooterSection } from "@/components/footer-section";
 import { JoinCompetitionButton } from "@/components/join-competition-button";
 import { JoinSwarmSection } from "@/components/join-swarm-section";
-import { PositionsTable } from "@/components/positions-table";
+import {
+  LIMIT_AGENTS_PER_CHART,
+  LIMIT_AGENTS_PER_PAGE,
+} from "@/components/timeline-chart/constants";
 import { TimelineChart } from "@/components/timeline-chart/index";
-import { TradesTable } from "@/components/trades-table";
 import { getSocialLinksArray } from "@/data/social";
-import { useCompetitionPerpsPositions } from "@/hooks/useCompetitionPerpsPositions";
-import { useCompetitionTrades } from "@/hooks/useCompetitionTrades";
-import { useSession } from "@/hooks/useSession";
 import { openForBoosting } from "@/lib/open-for-boosting";
 import { tanstackClient } from "@/rpc/clients/tanstack-query";
-
-const LIMIT_AGENTS_PER_PAGE = 10;
-const LIMIT_TRADES_PER_PAGE = 10;
-const LIMIT_POSITIONS_PER_PAGE = 10;
 
 export type CompetitionPageClientProps = {
   params: Promise<{ id: string }>;
@@ -40,16 +31,10 @@ export type CompetitionPageClientProps = {
 export default function CompetitionPageClient({
   params,
 }: CompetitionPageClientProps) {
-  const { isAuthenticated } = useSession();
   const { id } = React.use(params);
   const agentsTableRef = React.useRef<HTMLDivElement>(null);
-  const [, scrollTo] = useWindowScroll();
-  const [agentsFilter, setAgentsFilter] = React.useState("");
   const [agentsSort, setAgentsSort] = React.useState("rank");
   const [agentsOffset, setAgentsOffset] = React.useState(0);
-  const [tradesOffset, setTradesOffset] = React.useState(0);
-  const [positionsOffset, setPositionsOffset] = React.useState(0);
-  const debouncedFilterTerm = useDebounce(agentsFilter, 300);
 
   const {
     data: competition,
@@ -59,6 +44,21 @@ export default function CompetitionPageClient({
     tanstackClient.competitions.getById.queryOptions({ input: { id } }),
   );
 
+  // Fetch top 12 agents for chart (independent of table pagination)
+  const { data: chartAgentsData, isLoading: isLoadingChartAgents } = useQuery(
+    tanstackClient.competitions.getAgents.queryOptions({
+      input: {
+        competitionId: id,
+        paging: {
+          sort: "rank",
+          offset: 0,
+          limit: LIMIT_AGENTS_PER_CHART,
+        },
+      },
+    }),
+  );
+
+  // Fetch agents for standings table (paginated)
   const {
     data: agentsData,
     isLoading: isLoadingAgents,
@@ -77,63 +77,13 @@ export default function CompetitionPageClient({
     }),
   );
 
-  // Determine if we're in a perps competition
-  const isPerpsCompetition = competition?.type === "perpetual_futures";
-
-  // Use appropriate hook based on competition type
-  // Note: both hooks will be called, but only one will actually fetch data based on enabled condition
-  const {
-    data: tradesData,
-    isLoading: isLoadingTrades,
-    error: tradesError,
-  } = useCompetitionTrades(
-    id,
-    {
-      offset: tradesOffset,
-      limit: LIMIT_TRADES_PER_PAGE,
-    },
-    !isPerpsCompetition, // enabled only for non-perps competitions
-  );
-
-  const {
-    data: positionsData,
-    isLoading: isLoadingPositions,
-    error: positionsError,
-  } = useCompetitionPerpsPositions(
-    id,
-    {
-      offset: positionsOffset,
-      limit: LIMIT_POSITIONS_PER_PAGE,
-    },
-    isPerpsCompetition, // enabled only for perps competitions
-  );
-
   const handleAgentsPageChange = (page: number) => {
     setAgentsOffset(LIMIT_AGENTS_PER_PAGE * (page - 1));
   };
 
-  const handleTradesPageChange = (page: number) => {
-    setTradesOffset(LIMIT_TRADES_PER_PAGE * (page - 1));
-  };
-
-  const handlePositionsPageChange = (page: number) => {
-    setPositionsOffset(LIMIT_POSITIONS_PER_PAGE * (page - 1));
-  };
-
   const isLoading =
-    isLoadingCompetition ||
-    isLoadingAgents ||
-    (!isPerpsCompetition && isLoadingTrades) ||
-    (isPerpsCompetition && isLoadingPositions);
-  const queryError =
-    competitionError ??
-    agentsError ??
-    (!isPerpsCompetition && tradesError) ??
-    (isPerpsCompetition && positionsError);
-
-  React.useEffect(() => {
-    handleAgentsPageChange(1);
-  }, [debouncedFilterTerm, agentsSort]);
+    isLoadingCompetition || isLoadingAgents || isLoadingChartAgents;
+  const queryError = competitionError ?? agentsError;
 
   if (isLoading) {
     return <CompetitionSkeleton />;
@@ -172,10 +122,7 @@ export default function CompetitionPageClient({
       size="lg"
       onClick={() => {
         if (agentsTableRef.current) {
-          scrollTo({
-            top: agentsTableRef.current.offsetTop,
-            behavior: "smooth",
-          });
+          agentsTableRef.current.scrollIntoView({ behavior: "smooth" });
         }
       }}
     >
@@ -188,57 +135,39 @@ export default function CompetitionPageClient({
     <div>
       <BreadcrumbNav
         items={[
-          { label: "Recall", href: "/" },
+          { label: "Home", href: "/" },
           { label: "Competitions", href: "/competitions" },
           { label: competition.name },
         ]}
-        className="mb-10"
       />
-      <div className="mb-10 flex w-full flex-col gap-3 sm:mb-20 sm:gap-5 md:flex-row">
-        <BasicCompetitionCard competition={competition} className="md:w-1/2" />
-        <div className="md:w-1/2">
-          <CompetitionInfo competition={competition} />
-          <div className="mt-5 flex w-full flex-col gap-3 sm:flex-row sm:gap-4">
+
+      {/* Chart and Key grid layout */}
+      <div className="mb-10 grid grid-cols-1 gap-6 md:grid-cols-3">
+        <div className="md:col-span-2">
+          <TimelineChart
+            competition={competition}
+            agents={chartAgentsData?.agents || []}
+          />
+        </div>
+        <div className="md:col-span-1">
+          <CompetitionKey competition={competition} />
+          {/* Action buttons section */}
+          <div className="mt-6 flex w-full gap-3">
             <JoinCompetitionButton
               competitionId={id}
-              className="w-full justify-between border border-white bg-white text-blue-500 hover:border-blue-500 hover:bg-blue-500 hover:text-white disabled:hover:border-white disabled:hover:bg-white disabled:hover:text-blue-500 sm:w-1/2"
+              className="flex-1 justify-between border border-white bg-white text-blue-500 hover:border-blue-500 hover:bg-blue-500 hover:text-white disabled:hover:border-white disabled:hover:bg-white disabled:hover:text-blue-500"
               disabled={competition.status !== "pending"}
               size="lg"
             >
               <span>COMPETE</span> <Plus className="ml-2" size={18} />
             </JoinCompetitionButton>
 
-            <BoostAgentsBtn className="w-full justify-between uppercase sm:w-1/2" />
+            <BoostAgentsBtn className="flex-1 justify-between uppercase" />
           </div>
         </div>
       </div>
 
-      {competition.status === "pending" && competition.startDate && (
-        <div className="mt-8 flex flex-col items-center justify-center gap-2 text-center sm:flex-row">
-          <span className="text-2xl font-bold text-gray-400">
-            Competition starts in...
-          </span>
-          <CountdownClock
-            showDuration={true}
-            targetDate={new Date(competition.startDate)}
-          />
-        </div>
-      )}
-
-      {competition.status !== "ended" &&
-        competition.boostStartDate &&
-        isFuture(new Date(competition.boostStartDate)) && (
-          <div className="mt-8 flex flex-col items-center justify-center gap-2 text-center sm:flex-row">
-            <span className="text-2xl font-bold text-gray-400">
-              Boosting begins in...
-            </span>
-            <CountdownClock
-              showDuration={true}
-              targetDate={new Date(competition.boostStartDate)}
-            />
-          </div>
-        )}
-
+      {/* Standings table */}
       {agentsError || !agentsData ? (
         <div className="my-12 rounded border border-red-500 bg-opacity-10 p-6 text-center">
           <h2 className="text-xl font-semibold text-red-500">
@@ -250,59 +179,13 @@ export default function CompetitionPageClient({
           </p>
         </div>
       ) : (
-        <>
-          <AgentsTable
-            ref={agentsTableRef}
-            competition={competition}
-            agents={agentsData.agents}
-            onFilterChange={setAgentsFilter}
-            onSortChange={setAgentsSort}
-            pagination={agentsData.pagination}
-            onPageChange={handleAgentsPageChange}
-          />
-          <TimelineChart
-            className="mt-5"
-            competition={competition}
-            agents={agentsData?.agents || []}
-            totalAgents={agentsData?.pagination?.total || 0}
-            currentPage={
-              Math.floor(
-                (agentsData?.pagination?.offset || 0) /
-                  (agentsData?.pagination?.limit || LIMIT_AGENTS_PER_PAGE),
-              ) + 1
-            }
-            onPageChange={handleAgentsPageChange}
-          />
-        </>
-      )}
-
-      {isPerpsCompetition ? (
-        <PositionsTable
-          positions={positionsData?.positions || []}
-          pagination={
-            positionsData?.pagination || {
-              total: 0,
-              limit: LIMIT_POSITIONS_PER_PAGE,
-              offset: positionsOffset,
-              hasMore: false,
-            }
-          }
-          onPageChange={handlePositionsPageChange}
-          showSignInMessage={!isAuthenticated}
-        />
-      ) : (
-        <TradesTable
-          trades={tradesData?.trades || []}
-          pagination={
-            tradesData?.pagination || {
-              total: 0,
-              limit: LIMIT_TRADES_PER_PAGE,
-              offset: tradesOffset,
-              hasMore: false,
-            }
-          }
-          onPageChange={handleTradesPageChange}
-          showSignInMessage={!isAuthenticated}
+        <AgentsTable
+          ref={agentsTableRef}
+          competition={competition}
+          agents={agentsData.agents}
+          onSortChange={setAgentsSort}
+          pagination={agentsData.pagination}
+          onPageChange={handleAgentsPageChange}
         />
       )}
 

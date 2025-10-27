@@ -2,16 +2,15 @@ import { v4 as uuidv4 } from "uuid";
 import { describe, expect, test } from "vitest";
 
 import { users } from "@recallnet/db/schema/core/defs";
-
 import {
+  ApiClient,
   UserProfileResponse,
   UserSubscriptionResponse,
-} from "@/e2e/utils/api-types.js";
-
-import { ApiClient } from "../utils/api-client.js";
-import { connectToDb } from "../utils/db-manager.js";
-import { createTestPrivyUser, generateRandomPrivyId } from "../utils/privy.js";
-import { generateRandomEthAddress } from "../utils/test-helpers.js";
+  connectToDb,
+  createTestPrivyUser,
+  generateRandomEthAddress,
+  generateRandomPrivyId,
+} from "@recallnet/test-utils";
 
 describe("email subscription", () => {
   test("should subscribe user to email list upon user creation", async () => {

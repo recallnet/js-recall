@@ -5,9 +5,6 @@ import { beforeEach, describe, expect, test } from "vitest";
 import { competitions } from "@recallnet/db/schema/core/defs";
 import { trades as tradesDef } from "@recallnet/db/schema/trading/defs";
 import { InsertTrade } from "@recallnet/db/schema/trading/types";
-
-import config from "@/config/index.js";
-import { db } from "@/database/db.js";
 import {
   BalancesResponse,
   BlockchainType,
@@ -22,15 +19,18 @@ import {
   TradeHistoryResponse,
   TradeResponse,
   TradeTransaction,
-} from "@/e2e/utils/api-types.js";
-import { connectToDb } from "@/e2e/utils/db-manager.js";
+} from "@recallnet/test-utils";
+import { connectToDb } from "@recallnet/test-utils";
 import {
   createTestClient,
   getAdminApiKey,
   looseTradingConstraints,
   registerUserAndAgentAndGetClient,
   startTestCompetition,
-} from "@/e2e/utils/test-helpers.js";
+} from "@recallnet/test-utils";
+
+import config from "@/config/index.js";
+import { db } from "@/database/db.js";
 import { ServiceRegistry } from "@/services/index.js";
 
 const reason = "trading end-to-end test";

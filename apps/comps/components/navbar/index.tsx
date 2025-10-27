@@ -18,11 +18,8 @@ import { useSession } from "@/hooks";
 import { useClaim } from "@/hooks/useClaim";
 
 import { NonStakeBoost } from "./NonStakeBoost";
-//import { GetRecall } from "./GetRecall";
 import { RecallToken } from "./RecallToken";
 import { StakeBoost } from "./StakeBoost";
-
-//import { StakeRecall } from "./StakeRecall";
 
 export const Navbar: React.FunctionComponent = () => {
   const pathname = usePathname();
@@ -45,8 +42,8 @@ export const Navbar: React.FunctionComponent = () => {
   }, [isWalletConnected]);
 
   return (
-    <nav className="flex w-full justify-center border-b bg-black">
-      <div className="mx-auto flex w-full max-w-screen-lg items-center justify-between px-5 sm:px-20">
+    <nav className="flex w-full justify-center border-b bg-black px-5 sm:px-12">
+      <div className="xs:pr-0 mx-auto flex w-full max-w-screen-2xl items-center justify-between">
         <div className="flex items-center">
           {/* Logo */}
           <Link href="/" className="flex items-center border-x p-1">

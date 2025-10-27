@@ -1,17 +1,18 @@
 import axios from "axios";
 import { beforeEach, describe, expect, test } from "vitest";
 
-import { config } from "@/config/index.js";
 import {
   CreateCompetitionResponse,
   ResetApiKeyResponse,
-} from "@/e2e/utils/api-types.js";
-import { getBaseUrl } from "@/e2e/utils/server.js";
+} from "@recallnet/test-utils";
+import { getBaseUrl } from "@recallnet/test-utils";
 import {
   createTestClient,
   getAdminApiKey,
   registerUserAndAgentAndGetClient,
-} from "@/e2e/utils/test-helpers.js";
+} from "@recallnet/test-utils";
+
+import { config } from "@/config/index.js";
 
 describe("Logging and Metrics API", () => {
   let adminApiKey: string;

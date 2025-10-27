@@ -6,7 +6,7 @@ import {
   getAdminApiKey,
   registerUserAndAgentAndGetClient,
   startTestCompetition,
-} from "@/e2e/utils/test-helpers.js";
+} from "@recallnet/test-utils";
 
 /**
  * Leaderboard Access Control Tests

@@ -7,21 +7,20 @@ import { RewardsRepository } from "@recallnet/db/repositories/rewards";
 import { competitions } from "@recallnet/db/schema/core/defs";
 import { InsertReward } from "@recallnet/db/schema/rewards/types";
 import { RewardsService, createLeafNode } from "@recallnet/services";
-
-import { db } from "@/database/db.js";
-import { ApiClient } from "@/e2e/utils/api-client.js";
+import { ApiClient } from "@recallnet/test-utils";
 import {
   RewardProof,
   RewardsProofsResponse,
   RewardsTotalResponse,
-} from "@/e2e/utils/api-types.js";
+} from "@recallnet/test-utils";
 import {
   createPrivyAuthenticatedClient,
   createTestClient,
-} from "@/e2e/utils/test-helpers.js";
-import { logger } from "@/lib/logger.js";
+} from "@recallnet/test-utils";
+import { TestPrivyUser } from "@recallnet/test-utils";
 
-import { TestPrivyUser } from "../utils/privy.js";
+import { db } from "@/database/db.js";
+import { logger } from "@/lib/logger.js";
 
 // Mock the RewardsAllocator class
 const mockRewardsAllocator = {

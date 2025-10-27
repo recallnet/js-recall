@@ -12,8 +12,8 @@ import type {
   SelectPerpsAccountSummary,
 } from "@recallnet/db/schema/trading/types";
 
-import { CalmarRatioService } from "../calmar-ratio.service.js";
 import { PerpsDataProcessor } from "../perps-data-processor.service.js";
+import { RiskMetricsService } from "../risk-metrics.service.js";
 import type { AgentPerpsSyncData } from "../types/perps.js";
 import type {
   IPerpsDataProvider,
@@ -25,7 +25,7 @@ import type {
 vi.mock("@recallnet/db/repositories/agent");
 vi.mock("@recallnet/db/repositories/competition");
 vi.mock("@recallnet/db/repositories/perps");
-vi.mock("../calmar-ratio.service.js");
+vi.mock("../risk-metrics.service.js");
 
 describe("PerpsDataProcessor", () => {
   let processor: PerpsDataProcessor;
@@ -33,7 +33,7 @@ describe("PerpsDataProcessor", () => {
   let mockAgentRepo: AgentRepository;
   let mockCompetitionRepo: CompetitionRepository;
   let mockPerpsRepo: PerpsRepository;
-  let mockCalmarRatioService: CalmarRatioService;
+  let mockRiskMetricsService: RiskMetricsService;
   let mockLogger: Logger;
 
   // Sample data that matches what the provider returns
@@ -150,7 +150,7 @@ describe("PerpsDataProcessor", () => {
     mockAgentRepo = {} as AgentRepository;
     mockCompetitionRepo = {} as CompetitionRepository;
     mockPerpsRepo = {} as PerpsRepository;
-    mockCalmarRatioService = {} as CalmarRatioService;
+    mockRiskMetricsService = {} as RiskMetricsService;
     mockLogger = {
       info: vi.fn(),
       error: vi.fn(),
@@ -266,7 +266,7 @@ describe("PerpsDataProcessor", () => {
     mockAgentRepo.findByIds = vi.fn().mockResolvedValue([]);
 
     processor = new PerpsDataProcessor(
-      mockCalmarRatioService,
+      mockRiskMetricsService,
       mockAgentRepo,
       mockCompetitionRepo,
       mockPerpsRepo,
@@ -1221,6 +1221,7 @@ describe("PerpsDataProcessor", () => {
         cancelReason: null,
         crossChainTradingType: "allow" as const,
         minimumStake: null,
+        evaluationMetric: "calmar_ratio" as const,
       };
 
       vi.mocked(mockCompetitionRepo.findById).mockResolvedValue(
@@ -1258,6 +1259,7 @@ describe("PerpsDataProcessor", () => {
         cancelReason: null,
         crossChainTradingType: "allow" as const,
         minimumStake: null,
+        evaluationMetric: "calmar_ratio" as const,
       };
 
       vi.mocked(mockCompetitionRepo.findById).mockResolvedValue(

@@ -3,13 +3,14 @@ import { beforeEach, describe, expect, test } from "vitest";
 import {
   CompetitionDetailResponse,
   CreateCompetitionResponse,
-} from "@/e2e/utils/api-types.js";
+} from "@recallnet/test-utils";
 import {
   createTestClient,
   getAdminApiKey,
   registerUserAndAgentAndGetClient,
   wait,
-} from "@/e2e/utils/test-helpers.js";
+} from "@recallnet/test-utils";
+
 import { ServiceRegistry } from "@/services/index.js";
 
 describe("Competition End Date Processing", () => {

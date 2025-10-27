@@ -184,12 +184,18 @@ export class PortfolioSnapshotterService {
    * Get portfolio timeline for agents in a competition
    * @param competitionId The competition ID
    * @param bucket Time bucket interval in minutes (default: 30)
+   * @param includeRiskMetrics Whether to include risk metrics (for perps competitions)
    * @returns Array of portfolio timelines per agent
    */
-  async getAgentPortfolioTimeline(competitionId: string, bucket: number = 30) {
+  async getAgentPortfolioTimeline(
+    competitionId: string,
+    bucket: number = 30,
+    includeRiskMetrics = false,
+  ) {
     return await this.competitionRepo.getAgentPortfolioTimeline(
       competitionId,
       bucket,
+      includeRiskMetrics,
     );
   }
 

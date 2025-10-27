@@ -2,14 +2,21 @@ import { format, isValid, parseISO } from "date-fns";
 import { cmp, format as formatBigint } from "dnum";
 
 /**
- * Formats a number as a percentage string
+ * Formats a number as a percentage string.
+ * Calculates percentage as (value / total) * 100 to match legacy callers.
  * @param value - The value to convert to percentage
- * @param total - The total value to calculate percentage from
- * @returns A formatted percentage string (e.g. "50%")
+ * @param total - The total value to calculate percentage from (defaults to 100—i.e., assume it's already a percentage)
+ * @param maxDecimals - Maximum decimal places in the output (defaults to 0)
+ * @returns A formatted percentage string (e.g. "50%", "12.34%")
  */
-export const formatPercentage = (value: number, total: number): string => {
+export const formatPercentage = (
+  value: number,
+  total: number = 100,
+  maxDecimals: number = 0,
+): string => {
   if (total === 0) return "0%";
-  return `${Math.round((value / total) * 100)}%`;
+  const pct = (value / total) * 100;
+  return `${formatAmount(pct, maxDecimals, true)}%`;
 };
 
 /**
@@ -44,6 +51,12 @@ export const formatCompactNumber = (value: number): string => {
   return formatter.format(value);
 };
 
+/**
+ * Formats a date into a human-readable string (e.g. "June 1st, 2025")
+ * @param date - The date to format
+ * @param year - Whether to include the year in the formatted date
+ * @returns A formatted date string
+ */
 export const formatDate = (
   date: Date | string,
   year: boolean = false,
@@ -124,4 +137,86 @@ export const formatBigintAmount = (
     trailingZeros: false,
     digits: maxDecimals,
   });
+};
+
+/**
+ * Format date to "Month dayth" style (e.g., "Jun 1st", "May 23rd")
+ * @param dateStr - The date to format.
+ * @param includeTime - Whether to include the time in the formatted date.
+ * @returns A formatted date string.
+ * @example
+ * ```typescript
+ * formatDateShort("2025-06-01T00:00:00Z") // "Jun 1st"
+ * formatDateShort("2025-06-01T00:00:00Z", true) // "Jun 1st 12:00 AM"
+ * ```
+ */
+export const formatDateShort = (
+  dateStr: string | Date,
+  includeTime?: boolean,
+): string => {
+  if (!dateStr) return "";
+
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return "";
+
+  const month = date.toLocaleDateString("en-US", { month: "short" });
+  const day = date.getDate();
+
+  // Add ordinal suffix (st, nd, rd, th)
+  const getOrdinalSuffix = (n: number) => {
+    const s = ["th", "st", "nd", "rd"];
+    const v = n % 100;
+    return s[(v - 20) % 10] || s[v] || s[0];
+  };
+
+  let result = `${month} ${day}${getOrdinalSuffix(day)}`;
+
+  if (includeTime) {
+    const time = date.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: false,
+    });
+    result += ` ${time}`;
+  }
+
+  return result;
+};
+
+/**
+ * Format date as relative time (e.g., "2h ago", "3 days ago", "just now")
+ * @param dateStr - The date to format
+ * @returns A relative time string
+ * @example
+ * ```typescript
+ * formatRelativeTime(new Date()) // "just now"
+ * formatRelativeTime(new Date(Date.now() - 2 * 60 * 60 * 1000)) // "2h ago"
+ * formatRelativeTime(new Date(Date.now() - 3 * 24 * 60 * 60 * 1000)) // "3d ago"
+ * ```
+ */
+export const formatRelativeTime = (dateStr: string | Date): string => {
+  if (!dateStr) return "";
+
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return "";
+
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffSeconds = Math.floor(diffMs / 1000);
+  const diffMinutes = Math.floor(diffSeconds / 60);
+  const diffHours = Math.floor(diffMinutes / 60);
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffSeconds < 60) {
+    return "just now";
+  } else if (diffMinutes < 60) {
+    return `${diffMinutes}m ago`;
+  } else if (diffHours < 24) {
+    return `${diffHours}h ago`;
+  } else if (diffDays < 30) {
+    return `${diffDays}d ago`;
+  } else {
+    // Fall back to date format for older dates
+    return formatDateShort(date);
+  }
 };

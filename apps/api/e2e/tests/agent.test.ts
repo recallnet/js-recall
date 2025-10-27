@@ -5,9 +5,7 @@ import { beforeEach, describe, expect, test } from "vitest";
 
 import { agents } from "@recallnet/db/schema/core/defs";
 import { generateHandleFromName, isValidHandle } from "@recallnet/services/lib";
-
-import { config } from "@/config/index.js";
-import { ApiClient } from "@/e2e/utils/api-client.js";
+import { ApiClient } from "@recallnet/test-utils";
 import {
   AdminAgentsListResponse,
   AdminSearchUsersAndAgentsResponse,
@@ -23,9 +21,9 @@ import {
   PublicAgentResponse,
   ResetApiKeyResponse,
   UserRegistrationResponse,
-} from "@/e2e/utils/api-types.js";
-import { dbManager } from "@/e2e/utils/db-manager.js";
-import { getBaseUrl } from "@/e2e/utils/server.js";
+} from "@recallnet/test-utils";
+import { dbManager } from "@recallnet/test-utils";
+import { getBaseUrl } from "@recallnet/test-utils";
 import {
   createAgentVerificationSignature,
   createPrivyAuthenticatedClient,
@@ -33,7 +31,9 @@ import {
   generateRandomEthAddress,
   getAdminApiKey,
   registerUserAndAgentAndGetClient,
-} from "@/e2e/utils/test-helpers.js";
+} from "@recallnet/test-utils";
+
+import { config } from "@/config/index.js";
 import { ServiceRegistry } from "@/services/index.js";
 
 describe("Agent API", () => {

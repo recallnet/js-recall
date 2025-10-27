@@ -3,10 +3,9 @@ import * as dotenv from "dotenv";
 import { sql } from "drizzle-orm";
 import * as path from "path";
 
-import { db } from "@/database/db.js";
+import { dbManager, getBaseUrl } from "@recallnet/test-utils";
 
-import { dbManager } from "./db-manager.js";
-import { getBaseUrl } from "./server.js";
+import { db } from "@/database/db.js";
 
 // Load test environment variables
 dotenv.config({ path: path.resolve(__dirname, "../../.env.test") });

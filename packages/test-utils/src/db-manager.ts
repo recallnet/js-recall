@@ -3,8 +3,8 @@ import { sql } from "drizzle-orm";
 import path from "path";
 import { Client } from "pg";
 
-// Import production initialization code
-import { closeDb, db, dropAll, migrateDb, resetDb } from "@/database/db.js";
+// Import test database utilities
+import { closeDb, db, dropAll, migrateDb, resetDb } from "./database.js";
 
 /**
  * Database Manager for E2E Tests

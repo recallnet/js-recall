@@ -64,6 +64,16 @@ import { getSort } from "./util/query.js";
 import { PartialExcept } from "./util/types.js";
 
 /**
+ * Result of Sortino metrics calculation
+ */
+interface SortinoMetricsResult {
+  avgReturn: number;
+  downsideDeviation: number;
+  simpleReturn: number;
+  snapshotCount: number;
+}
+
+/**
  * Competition Repository
  * Handles database operations for competitions
  */
@@ -93,8 +103,10 @@ type LeaderboardEntry = InsertCompetitionsLeaderboard & {
   startingValue?: number;
   // For perps competitions (all numeric fields return as numbers with mode: "number")
   calmarRatio?: number | null;
+  sortinoRatio?: number | null;
   simpleReturn?: number | null;
   maxDrawdown?: number | null;
+  downsideDeviation?: number | null;
   totalEquity?: number;
   totalPnl?: number | null;
   hasRiskMetrics?: boolean | null;
@@ -130,6 +142,82 @@ export class CompetitionRepository {
     this.#dbRead = readDatabase;
     this.#logger = logger;
     this.#snapshotCache = new Map<string, [number, Snapshot24hResult]>();
+  }
+
+  /**
+   * Convert snake_case database row to camelCase object for basic portfolio snapshots
+   * Used by multiple methods that fetch portfolio snapshots from raw SQL
+   * @private
+   * @param row Database row with snake_case fields
+   * @returns Object with camelCase fields matching SelectPortfolioSnapshot
+   */
+  private convertBasicSnapshotRow(row: {
+    id: number;
+    agent_id: string;
+    competition_id: string;
+    timestamp: Date;
+    total_value: number | string;
+  }): SelectPortfolioSnapshot {
+    return {
+      id: row.id,
+      agentId: row.agent_id,
+      competitionId: row.competition_id,
+      timestamp: row.timestamp,
+      totalValue: Number(row.total_value),
+    };
+  }
+
+  /**
+   * Convert snake_case database row to camelCase object for portfolio snapshots with risk metrics
+   * Used by getAgentPortfolioTimeline
+   * @private
+   * @param row Database row with snake_case fields and optional risk metrics
+   * @param includeRiskMetrics Whether to include risk metrics in the output
+   * @returns Object with camelCase fields including risk metrics
+   */
+  private convertEnrichedSnapshotRow(
+    row: {
+      timestamp: string;
+      agent_id: string;
+      agent_name: string;
+      competition_id: string;
+      total_value: number;
+      calmar_ratio?: string | null;
+      sortino_ratio?: string | null;
+      max_drawdown?: string | null;
+      downside_deviation?: string | null;
+      simple_return?: string | null;
+      annualized_return?: string | null;
+    },
+    includeRiskMetrics = false,
+  ) {
+    // Build base object that's always present
+    const base = {
+      timestamp: row.timestamp,
+      agentId: row.agent_id,
+      agentName: row.agent_name,
+      competitionId: row.competition_id,
+      totalValue: Number(row.total_value),
+    };
+
+    // Only add risk metrics if explicitly requested
+    if (includeRiskMetrics) {
+      return {
+        ...base,
+        calmarRatio: row.calmar_ratio ? Number(row.calmar_ratio) : null,
+        sortinoRatio: row.sortino_ratio ? Number(row.sortino_ratio) : null,
+        maxDrawdown: row.max_drawdown ? Number(row.max_drawdown) : null,
+        downsideDeviation: row.downside_deviation
+          ? Number(row.downside_deviation)
+          : null,
+        simpleReturn: row.simple_return ? Number(row.simple_return) : null,
+        annualizedReturn: row.annualized_return
+          ? Number(row.annualized_return)
+          : null,
+      };
+    }
+
+    return base;
   }
 
   /**
@@ -334,7 +422,7 @@ export class CompetitionRepository {
       });
       return result;
     } catch (error) {
-      this.#logger.error("Error in update:", error);
+      this.#logger.error({ error }, "Error in update");
       throw error;
     }
   }
@@ -368,7 +456,7 @@ export class CompetitionRepository {
 
       return result;
     } catch (error) {
-      this.#logger.error("Error in updateOne:", error);
+      this.#logger.error({ error }, "Error in updateOne");
       throw error;
     }
   }
@@ -400,7 +488,7 @@ export class CompetitionRepository {
 
       return updated || null;
     } catch (error) {
-      this.#logger.error("Error marking competition as ending:", error);
+      this.#logger.error({ error }, "Error marking competition as ending");
       throw error;
     }
   }
@@ -435,7 +523,7 @@ export class CompetitionRepository {
 
       return updated || null;
     } catch (error) {
-      this.#logger.error("Error marking competition as ended:", error);
+      this.#logger.error({ error }, "Error marking competition as ended");
       throw error;
     }
   }
@@ -681,7 +769,7 @@ export class CompetitionRepository {
         );
       });
     } catch (error) {
-      this.#logger.error("Error in addAgents:", error);
+      this.#logger.error({ error }, "Error in addAgents");
       throw error;
     }
   }
@@ -712,7 +800,7 @@ export class CompetitionRepository {
 
       return result.map((row) => row.agentId);
     } catch (error) {
-      this.#logger.error("Error in getAgents:", error);
+      this.#logger.error({ error }, "Error in getAgents");
       throw error;
     }
   }
@@ -756,7 +844,7 @@ export class CompetitionRepository {
 
       return result.length > 0;
     } catch (error) {
-      this.#logger.error("Error in isAgentActiveInCompetition:", error);
+      this.#logger.error({ error }, "Error in isAgentActiveInCompetition");
       throw error;
     }
   }
@@ -785,7 +873,7 @@ export class CompetitionRepository {
 
       return result.length > 0 ? result[0]!.status : null;
     } catch (error) {
-      this.#logger.error("Error in getAgentCompetitionStatus:", error);
+      this.#logger.error({ error }, "Error in getAgentCompetitionStatus");
       throw error;
     }
   }
@@ -826,7 +914,7 @@ export class CompetitionRepository {
 
       return result.length > 0 ? result[0]! : null;
     } catch (error) {
-      this.#logger.error("Error in getAgentCompetitionRecord:", error);
+      this.#logger.error({ error }, "Error in getAgentCompetitionRecord");
       throw error;
     }
   }
@@ -1164,6 +1252,32 @@ export class CompetitionRepository {
   }
 
   /**
+   * Get the latest portfolio snapshot timestamp for a competition
+   * @param competitionId Competition ID
+   * @returns Latest snapshot timestamp or null if no snapshots exist
+   */
+  async getLatestPortfolioSnapshotTime(
+    competitionId: string,
+  ): Promise<Date | null> {
+    try {
+      const result = await this.#dbRead
+        .select({ timestamp: portfolioSnapshots.timestamp })
+        .from(portfolioSnapshots)
+        .where(eq(portfolioSnapshots.competitionId, competitionId))
+        .orderBy(desc(portfolioSnapshots.timestamp))
+        .limit(1);
+
+      return result[0]?.timestamp ?? null;
+    } catch (error) {
+      this.#logger.error(
+        { error, competitionId },
+        "Error in getLatestPortfolioSnapshotTime",
+      );
+      throw error;
+    }
+  }
+
+  /**
    * Get latest portfolio snapshots for all active agents in a competition
    * @param competitionId Competition ID
    */
@@ -1193,13 +1307,7 @@ export class CompetitionRepository {
     `);
 
       // Convert snake_case to camelCase to match Drizzle `SelectPortfolioSnapshot` type
-      return result.rows.map((row) => ({
-        id: row.id,
-        agentId: row.agent_id,
-        competitionId: row.competition_id,
-        timestamp: row.timestamp,
-        totalValue: Number(row.total_value), // Convert string to number for numeric fields
-      }));
+      return result.rows.map((row) => this.convertBasicSnapshotRow(row));
     } catch (error) {
       this.#logger.error("Error in getLatestPortfolioSnapshots:", error);
       throw error;
@@ -1250,13 +1358,7 @@ export class CompetitionRepository {
       );
 
       // Convert snake_case to camelCase to match Drizzle SelectPortfolioSnapshot type
-      return result.rows.map((row) => ({
-        id: row.id,
-        agentId: row.agent_id,
-        competitionId: row.competition_id,
-        timestamp: row.timestamp,
-        totalValue: Number(row.total_value),
-      }));
+      return result.rows.map((row) => this.convertBasicSnapshotRow(row));
     } catch (error) {
       this.#logger.error("Error in getBulkLatestPortfolioSnapshots:", error);
       throw error;
@@ -1512,7 +1614,7 @@ export class CompetitionRepository {
    * @param endDate End of calculation period
    * @returns Maximum drawdown as a decimal (e.g., -0.20 for 20% drawdown)
    */
-  async calculateMaxDrawdownSQL(
+  async calculateMaxDrawdown(
     agentId: string,
     competitionId: string,
     startDate?: Date,
@@ -1529,7 +1631,7 @@ export class CompetitionRepository {
         conditions.push(gte(portfolioSnapshots.timestamp, startDate));
       }
       if (endDate) {
-        conditions.push(lt(portfolioSnapshots.timestamp, endDate));
+        conditions.push(lte(portfolioSnapshots.timestamp, endDate));
       }
 
       // Drizzle doesn't yet support window functions directly, so we use raw SQL
@@ -1569,12 +1671,120 @@ export class CompetitionRepository {
       const maxDrawdown = result.rows[0]?.max_drawdown ?? 0;
 
       this.#logger.debug(
-        `[CompetitionRepository] Calculated max drawdown for agent ${agentId}: ${(maxDrawdown * 100).toFixed(2)}%`,
+        {
+          agentId,
+          maxDrawdown: `${(maxDrawdown * 100).toFixed(2)}%`,
+        },
+        "[CompetitionRepository] Calculated max drawdown",
       );
 
       return Number(maxDrawdown);
     } catch (error) {
-      this.#logger.error("Error in calculateMaxDrawdownSQL:", error);
+      this.#logger.error({ error }, "Error in calculateMaxDrawdown");
+      throw error;
+    }
+  }
+
+  /**
+   * Calculate Sortino ratio metrics using database-level computations
+   * @param agentId Agent ID
+   * @param competitionId Competition ID
+   * @param mar Minimum Acceptable Return (default 0 for crypto)
+   * @returns Object with average return, downside deviation, and simple return
+   */
+  async calculateSortinoMetrics(
+    agentId: string,
+    competitionId: string,
+    mar = 0,
+  ): Promise<SortinoMetricsResult> {
+    try {
+      // Calculate period returns and downside deviation in a single query
+      const result = await this.#dbRead.execute<{
+        avg_return: number | null;
+        downside_deviation: number | null;
+        simple_return: number | null;
+        snapshot_count: number;
+      }>(sql`
+        WITH snapshot_bounds AS (
+          -- Get first, last, and count in one efficient scan
+          SELECT 
+            MIN(total_value) FILTER (WHERE rn = 1) as first_value,
+            MAX(total_value) FILTER (WHERE rn = snapshot_count) as last_value,
+            MAX(snapshot_count) as total_snapshots
+          FROM (
+            SELECT 
+              total_value,
+              ROW_NUMBER() OVER (ORDER BY timestamp) as rn,
+              COUNT(*) OVER () as snapshot_count
+            FROM ${portfolioSnapshots} ps
+            WHERE ps.agent_id = ${agentId}
+              AND ps.competition_id = ${competitionId}
+          ) numbered
+        ),
+        period_returns AS (
+          -- Calculate period returns with LAG
+          SELECT 
+            CASE 
+              WHEN prev_value IS NOT NULL AND prev_value != 0 
+              THEN (total_value - prev_value) / prev_value
+              ELSE NULL
+            END as return_rate
+          FROM (
+            SELECT 
+              total_value,
+              LAG(total_value) OVER (ORDER BY timestamp) as prev_value
+            FROM ${portfolioSnapshots} ps
+            WHERE ps.agent_id = ${agentId}
+              AND ps.competition_id = ${competitionId}
+          ) with_lag
+        )
+        SELECT 
+          -- Average return (using subquery with COALESCE to handle empty CTE)
+          COALESCE((SELECT AVG(return_rate) FROM period_returns), 0) as avg_return,
+          -- Downside deviation: sqrt of average squared negative deviations from MAR
+          COALESCE((SELECT SQRT(AVG(
+            CASE 
+              WHEN return_rate < ${mar} 
+              THEN POWER(return_rate - ${mar}, 2) 
+              ELSE 0 
+            END
+          )) FROM period_returns), 0) as downside_deviation,
+          -- Simple return from first to last (using subquery to handle empty CTE)
+          COALESCE((SELECT 
+            CASE 
+              WHEN first_value IS NOT NULL AND first_value > 0 
+              THEN (last_value - first_value) / first_value
+              ELSE 0
+            END FROM snapshot_bounds), 0
+          ) as simple_return,
+          -- Total snapshot count (using subquery to handle empty CTE)
+          COALESCE((SELECT total_snapshots FROM snapshot_bounds), 0) as snapshot_count
+      `);
+
+      const metrics = result.rows[0];
+      if (!metrics) {
+        throw new Error("No metrics calculated - insufficient data");
+      }
+
+      this.#logger.debug(
+        {
+          agentId,
+          avgReturn: `${(Number(metrics.avg_return || 0) * 100).toFixed(2)}%`,
+          downsideDeviation: `${(Number(metrics.downside_deviation || 0) * 100).toFixed(2)}%`,
+          simpleReturn: `${(Number(metrics.simple_return || 0) * 100).toFixed(2)}%`,
+          snapshotCount: metrics.snapshot_count,
+        },
+        "[CompetitionRepository] Calculated Sortino metrics",
+      );
+
+      return {
+        avgReturn: Number(metrics.avg_return || 0),
+        downsideDeviation: Number(metrics.downside_deviation || 0),
+        simpleReturn: Number(metrics.simple_return || 0),
+        snapshotCount: Number(metrics.snapshot_count || 0),
+      };
+    } catch (error) {
+      this.#logger.error({ error }, "Error in calculateSortinoMetrics");
       throw error;
     }
   }
@@ -2146,8 +2356,10 @@ export class CompetitionRepository {
               return {
                 competitionsLeaderboardId: entry.id,
                 calmarRatio: entry.calmarRatio,
+                sortinoRatio: entry.sortinoRatio,
                 simpleReturn: entry.simpleReturn,
                 maxDrawdown: entry.maxDrawdown,
+                downsideDeviation: entry.downsideDeviation,
                 totalEquity: entry.totalEquity ?? DEFAULT_ZERO_VALUE, // Required field, default to 0 if undefined
                 totalPnl: entry.totalPnl,
                 hasRiskMetrics: entry.hasRiskMetrics,
@@ -2164,8 +2376,10 @@ export class CompetitionRepository {
             return {
               ...r,
               calmarRatio: perps.calmarRatio,
+              sortinoRatio: perps.sortinoRatio,
               simpleReturn: perps.simpleReturn,
               maxDrawdown: perps.maxDrawdown,
+              downsideDeviation: perps.downsideDeviation,
               totalEquity: perps.totalEquity,
               totalPnl: perps.totalPnl,
               hasRiskMetrics: perps.hasRiskMetrics,
@@ -2257,8 +2471,10 @@ export class CompetitionRepository {
           agentId: competitionsLeaderboard.agentId,
           value: perpsCompetitionsLeaderboard.totalEquity, // Alias totalEquity as value for API compatibility
           calmarRatio: perpsCompetitionsLeaderboard.calmarRatio,
+          sortinoRatio: perpsCompetitionsLeaderboard.sortinoRatio,
           simpleReturn: perpsCompetitionsLeaderboard.simpleReturn,
           maxDrawdown: perpsCompetitionsLeaderboard.maxDrawdown,
+          downsideDeviation: perpsCompetitionsLeaderboard.downsideDeviation,
           totalEquity: perpsCompetitionsLeaderboard.totalEquity,
           totalPnl: perpsCompetitionsLeaderboard.totalPnl,
           hasRiskMetrics: perpsCompetitionsLeaderboard.hasRiskMetrics,
@@ -2489,54 +2705,120 @@ export class CompetitionRepository {
    * Get portfolio timeline for agents in a competition
    * @param competitionId Competition ID
    * @param bucket Time bucket interval in minutes (default: 30)
-   * @returns Array of portfolio timelines per agent
+   * @param includeRiskMetrics Whether to include risk metrics (for perps competitions)
+   * @returns Array of portfolio timelines per agent with optional risk metrics
    */
-  async getAgentPortfolioTimeline(competitionId: string, bucket: number = 30) {
+  async getAgentPortfolioTimeline(
+    competitionId: string,
+    bucket: number = 30,
+    includeRiskMetrics = false,
+  ) {
     try {
+      // Extract the complex bucketing expression to avoid duplication
+      const bucketExpression = sql`FLOOR(EXTRACT(EPOCH FROM (ps.timestamp - c.start_date)) / 60 / ${bucket})`;
+
+      // Build conditional fragments for the single query approach
+      // Column selections - either from rms table or NULL
+      const calmarColumn = includeRiskMetrics
+        ? sql`rms.calmar_ratio`
+        : sql`NULL::numeric`;
+      const sortinoColumn = includeRiskMetrics
+        ? sql`rms.sortino_ratio`
+        : sql`NULL::numeric`;
+      const maxDrawdownColumn = includeRiskMetrics
+        ? sql`rms.max_drawdown`
+        : sql`NULL::numeric`;
+      const downsideDeviationColumn = includeRiskMetrics
+        ? sql`rms.downside_deviation`
+        : sql`NULL::numeric`;
+      const simpleReturnColumn = includeRiskMetrics
+        ? sql`rms.simple_return`
+        : sql`NULL::numeric`;
+      const annualizedReturnColumn = includeRiskMetrics
+        ? sql`rms.annualized_return`
+        : sql`NULL::numeric`;
+
+      // Single unified query with conditional columns
       const result = await this.#dbRead.execute<{
         timestamp: string;
         agent_id: string;
         agent_name: string;
         competition_id: string;
         total_value: number;
+        calmar_ratio: string | null;
+        sortino_ratio: string | null;
+        max_drawdown: string | null;
+        downside_deviation: string | null;
+        simple_return: string | null;
+        annualized_return: string | null;
       }>(sql`
-      SELECT
-        timestamp,
-        agent_id,
-        name AS agent_name,
-        competition_id,
-        total_value
-      FROM (
         SELECT
-          ROW_NUMBER() OVER (
-            PARTITION BY ps.agent_id, ps.competition_id,FLOOR(EXTRACT(EPOCH FROM (ps.timestamp - c.start_date)) / 60 / ${bucket})
-            ORDER BY ps.timestamp DESC
-          ) AS rn,
-          ps.timestamp,
-          ps.agent_id,
-          a.name,
-          ps.competition_id,
-          ps.total_value
-        FROM competition_agents ca
-        JOIN trading_comps.portfolio_snapshots ps
-          ON ps.agent_id = ca.agent_id
-          AND ps.competition_id = ca.competition_id
-        JOIN agents a ON a.id = ca.agent_id
-        JOIN competitions c ON c.id = ca.competition_id
-        WHERE ca.competition_id = ${competitionId}
-          AND ca.status = ${"active"}
-      ) AS ranked_snapshots
-      WHERE rn = 1
-    `);
+          timestamp,
+          agent_id,
+          name AS agent_name,
+          competition_id,
+          total_value,
+          calmar_ratio,
+          sortino_ratio,
+          max_drawdown,
+          downside_deviation,
+          simple_return,
+          annualized_return
+        FROM (
+          SELECT
+            ROW_NUMBER() OVER (
+              PARTITION BY ps.agent_id, ps.competition_id, ${bucketExpression}
+              ORDER BY ps.timestamp DESC
+            ) AS rn,
+            ps.timestamp,
+            ps.agent_id,
+            a.name,
+            ps.competition_id,
+            ps.total_value,
+            ${calmarColumn} AS calmar_ratio,
+            ${sortinoColumn} AS sortino_ratio,
+            ${maxDrawdownColumn} AS max_drawdown,
+            ${downsideDeviationColumn} AS downside_deviation,
+            ${simpleReturnColumn} AS simple_return,
+            ${annualizedReturnColumn} AS annualized_return
+          FROM competition_agents ca
+          JOIN trading_comps.portfolio_snapshots ps
+            ON ps.agent_id = ca.agent_id
+            AND ps.competition_id = ca.competition_id
+          JOIN agents a ON a.id = ca.agent_id
+          JOIN competitions c ON c.id = ca.competition_id
+          ${
+            includeRiskMetrics
+              ? sql`
+          LEFT JOIN LATERAL (
+            SELECT 
+              calmar_ratio,
+              sortino_ratio,
+              max_drawdown,
+              downside_deviation,
+              simple_return,
+              annualized_return
+            FROM trading_comps.risk_metrics_snapshots rms
+            WHERE rms.agent_id = ps.agent_id
+              AND rms.competition_id = ps.competition_id
+              AND ABS(EXTRACT(EPOCH FROM (rms.timestamp - ps.timestamp))) < 300
+            ORDER BY ABS(EXTRACT(EPOCH FROM (rms.timestamp - ps.timestamp)))
+            LIMIT 1
+          ) rms ON true
+          `
+              : sql``
+          }
+          WHERE ca.competition_id = ${competitionId}
+            AND ca.status = ${"active"}
+        ) AS ranked_snapshots
+        WHERE rn = 1
+        ORDER BY timestamp, agent_id
+      `);
 
-      // Convert snake_case to camelCase
-      return result.rows.map((row) => ({
-        timestamp: row.timestamp,
-        agentId: row.agent_id,
-        agentName: row.agent_name,
-        competitionId: row.competition_id,
-        totalValue: Number(row.total_value),
-      }));
+      // Use the helper to convert snake_case to camelCase
+      return result.rows.map((row) =>
+        this.convertEnrichedSnapshotRow(row, includeRiskMetrics),
+      );
     } catch (error) {
       this.#logger.error("Error in getAgentPortfolioTimeline:", error);
       throw error;

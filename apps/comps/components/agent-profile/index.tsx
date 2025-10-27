@@ -187,11 +187,10 @@ export default function AgentProfile({
     <>
       <BreadcrumbNav
         items={[
-          { label: "RECALL", href: "/" },
+          { label: "HOME", href: "/" },
           { label: "AGENTS", href: isUserAgent ? "/profile" : "/" },
           { label: agent.name },
         ]}
-        className="mb-10"
       />
 
       <div className="xs:grid-rows-[550px_1fr] my-6 grid grid-cols-[300px_1fr_1fr] rounded-xl md:grid-cols-[400px_1fr_1fr]">

@@ -1,8 +1,5 @@
-import { sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
-import { migrate } from "drizzle-orm/node-postgres/migrator";
-import { isPgSchema } from "drizzle-orm/pg-core";
-import { reset, seed } from "drizzle-seed";
+import { seed } from "drizzle-seed";
 import fs from "fs";
 import path from "path";
 import { Pool } from "pg";
@@ -10,6 +7,12 @@ import client from "prom-client";
 import { fileURLToPath } from "url";
 
 import schema from "@recallnet/db/schema";
+import {
+  closeDb as closeDbUtil,
+  dropAll as dropAllUtil,
+  migrateDb as migrateDbUtil,
+  resetDb as resetDbUtil,
+} from "@recallnet/db/utils";
 
 import { config } from "@/config/index.js";
 import { wrapDatabaseWithSentry } from "@/database/sentry-wrapper.js";
@@ -275,67 +278,11 @@ baseDbRead.$client.on("error", (err: Error) => {
 });
 
 export async function resetDb() {
-  const maxRetries = 3;
-  let retryCount = 0;
-
-  while (retryCount < maxRetries) {
-    try {
-      // Wait a bit before each attempt to let any pending transactions complete
-      if (retryCount > 0) {
-        const delay = Math.pow(2, retryCount) * 100; // Exponential backoff: 200ms, 400ms, 800ms
-        pinoDbLogger.info(
-          `Retrying database reset (attempt ${retryCount + 1}/${maxRetries}) after ${delay}ms delay...`,
-        );
-        await new Promise((resolve) => setTimeout(resolve, delay));
-      }
-
-      await reset(db, schema);
-      return; // Success, exit the retry loop
-    } catch (error: unknown) {
-      retryCount++;
-
-      // Check if it's a deadlock error
-      const errorMessage = error instanceof Error ? error.message : "";
-      const errorCode =
-        error && typeof error === "object" && "code" in error ? error.code : "";
-      const isDeadlock =
-        errorMessage.includes("deadlock") ||
-        errorCode === "40P01" ||
-        errorCode === "40001";
-
-      if (isDeadlock && retryCount < maxRetries) {
-        console.warn(
-          `Database deadlock detected on attempt ${retryCount}/${maxRetries}, retrying...`,
-        );
-        continue;
-      }
-
-      // If it's not a deadlock or we've exhausted retries, throw the error
-      console.error(
-        `Database reset failed after ${retryCount} attempts:`,
-        error,
-      );
-      throw error;
-    }
-  }
+  return resetDbUtil(db, pinoDbLogger);
 }
 
 export async function dropAll() {
-  const schemas = Object.values(schema)
-    .filter(isPgSchema)
-    .map((s) => {
-      return isPgSchema(s) ? s.schemaName : "";
-    });
-  await db.transaction(async (tx) => {
-    if (schemas.length > 0) {
-      await tx.execute(
-        sql.raw(`drop schema if exists ${schemas.join(", ")} cascade`),
-      );
-    }
-    await tx.execute(sql.raw(`drop schema if exists public cascade`));
-    await tx.execute(sql.raw(`drop schema if exists drizzle cascade`));
-    await tx.execute(sql.raw(`create schema public`));
-  });
+  return dropAllUtil(db);
 }
 
 /**
@@ -343,50 +290,12 @@ export async function dropAll() {
  * Uses PostgreSQL advisory locks to ensure only one instance runs migrations
  */
 export async function migrateDb() {
-  const MIGRATION_LOCK_ID = 77; // Arbitrary but consistent lock ID
-  const MAX_WAIT_TIME = "5min";
-
-  try {
-    // Set lock timeout to match MAX_WAIT_TIME
-    await db.execute(sql.raw(`SET lock_timeout = '${MAX_WAIT_TIME}'`));
-
-    // Acquire the advisory lock (blocking with timeout)
-    pinoDbLogger.info("Acquiring migration lock...");
-    await db.execute(sql.raw(`SELECT pg_advisory_lock(${MIGRATION_LOCK_ID})`));
-
-    try {
-      pinoDbLogger.info("Acquired migration lock, running migrations...");
-
-      // Create a database instance with verbose logging for migrations only
-      const migrationDb = drizzle({
-        client: pool,
-        schema,
-        logger: {
-          logQuery: (query: string) => {
-            pinoDbLogger.info({
-              type: "migration",
-              query: query.substring(0, 200),
-              ...(query.length > 200 ? { queryTruncated: true } : {}),
-            });
-          },
-        },
-      });
-
-      await migrate(migrationDb, {
-        migrationsFolder: path.join(__dirname, "../../drizzle"),
-      });
-      pinoDbLogger.info("Migrations completed successfully");
-    } finally {
-      // Always release the lock
-      await db.execute(
-        sql.raw(`SELECT pg_advisory_unlock(${MIGRATION_LOCK_ID})`),
-      );
-      pinoDbLogger.info("Released migration lock");
-    }
-  } catch (error) {
-    pinoDbLogger.error("Error during migration lock process:", error);
-    throw error;
-  }
+  return migrateDbUtil(
+    db,
+    pool,
+    path.join(__dirname, "../../drizzle"),
+    pinoDbLogger,
+  );
 }
 
 export async function seedDb() {
@@ -398,24 +307,5 @@ export async function seedDb() {
  * This should be called during application shutdown to prevent connection leaks
  */
 export async function closeDb(): Promise<void> {
-  try {
-    pinoDbLogger.info("Closing database connections...");
-
-    // Close the main connection pool
-    if (pool) {
-      await pool.end();
-      pinoDbLogger.info("Main database connection pool closed");
-    }
-
-    // Close the read replica connection pool
-    if (readReplicaPool && readReplicaPool !== pool) {
-      await readReplicaPool.end();
-      pinoDbLogger.info("Read replica connection pool closed");
-    }
-
-    pinoDbLogger.info("All database connections closed successfully");
-  } catch (error) {
-    pinoDbLogger.error("Error closing database connections:", error);
-    throw error;
-  }
+  return closeDbUtil(pool, readReplicaPool, pinoDbLogger);
 }

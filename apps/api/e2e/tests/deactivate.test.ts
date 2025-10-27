@@ -2,21 +2,21 @@ import axios from "axios";
 import { beforeEach, describe, expect, test } from "vitest";
 
 import { BlockchainType } from "@recallnet/services/types";
-
-import config from "@/config/index.js";
 import {
   AdminAgentResponse,
   AdminAgentsListResponse,
   AgentProfileResponse,
   ErrorResponse,
-} from "@/e2e/utils/api-types.js";
+} from "@recallnet/test-utils";
 import {
   createTestClient,
   getAdminApiKey,
   registerUserAndAgentAndGetClient,
   startTestCompetition,
   wait,
-} from "@/e2e/utils/test-helpers.js";
+} from "@recallnet/test-utils";
+
+import config from "@/config/index.js";
 
 // TODO: need user deactivation test
 

@@ -86,12 +86,16 @@ export function configureCompetitionsRoutes(
    *                         description: Competition status (always PENDING)
    *                       type:
    *                         type: string
-   *                         enum: [trading]
+   *                         enum: [trading, perpetual_futures]
    *                         description: Competition type
    *                       crossChainTradingType:
    *                         type: string
    *                         enum: [disallowAll, disallowXParent, allow]
    *                         description: The type of cross-chain trading allowed in this competition
+   *                       evaluationMetric:
+   *                         type: string
+   *                         enum: [calmar_ratio, sortino_ratio, simple_return, max_drawdown, total_pnl]
+   *                         description: Primary evaluation metric for perps competitions (only present for perpetual_futures type)
    *                       createdAt:
    *                         type: string
    *                         format: date-time
@@ -331,7 +335,7 @@ export function configureCompetitionsRoutes(
    *                       description: Competition status
    *                     type:
    *                       type: string
-   *                       enum: [trading]
+   *                       enum: [trading, perpetual_futures]
    *                       description: Competition type
    *                     crossChainTradingType:
    *                       type: string
@@ -373,6 +377,10 @@ export function configureCompetitionsRoutes(
    *                         averageEquity:
    *                           type: number
    *                           description: Average equity across all agents (only for perpetual futures competitions)
+   *                     evaluationMetric:
+   *                       type: string
+   *                       enum: [calmar_ratio, sortino_ratio, simple_return, max_drawdown, total_pnl]
+   *                       description: Primary evaluation metric for perps competitions (only present for perpetual_futures type)
    *                     createdAt:
    *                       type: string
    *                       format: date-time
@@ -586,6 +594,10 @@ export function configureCompetitionsRoutes(
    *                         type: number
    *                         nullable: true
    *                         description: Risk-adjusted performance metric (Annualized Return / Max Drawdown) - only for perps competitions
+   *                       sortinoRatio:
+   *                         type: number
+   *                         nullable: true
+   *                         description: Risk-adjusted performance metric (Return / Downside Deviation) - only for perps competitions
    *                       simpleReturn:
    *                         type: number
    *                         nullable: true
@@ -594,6 +606,10 @@ export function configureCompetitionsRoutes(
    *                         type: number
    *                         nullable: true
    *                         description: Maximum observed loss from peak (negative value) - only for perps competitions
+   *                       downsideDeviation:
+   *                         type: number
+   *                         nullable: true
+   *                         description: Standard deviation of negative returns - only for perps competitions
    *                       hasRiskMetrics:
    *                         type: boolean
    *                         description: Whether risk metrics are available for this agent (perps only, requires 2+ snapshots)
@@ -825,6 +841,30 @@ export function configureCompetitionsRoutes(
    *                             totalValue:
    *                               type: number
    *                               description: Total portfolio value on that date
+   *                             calmarRatio:
+   *                               type: number
+   *                               nullable: true
+   *                               description: Calmar ratio at this point (perps competitions only)
+   *                             sortinoRatio:
+   *                               type: number
+   *                               nullable: true
+   *                               description: Sortino ratio at this point (perps competitions only)
+   *                             maxDrawdown:
+   *                               type: number
+   *                               nullable: true
+   *                               description: Maximum drawdown at this point (perps competitions only)
+   *                             downsideDeviation:
+   *                               type: number
+   *                               nullable: true
+   *                               description: Downside deviation at this point (perps competitions only)
+   *                             simpleReturn:
+   *                               type: number
+   *                               nullable: true
+   *                               description: Simple return at this point (perps competitions only)
+   *                             annualizedReturn:
+   *                               type: number
+   *                               nullable: true
+   *                               description: Annualized return at this point (perps competitions only)
    *       400:
    *         description: Bad request - Invalid competition ID format or invalid bucket parameter (must be between 1 and 1440 minutes, must be an integer)
    *       404:

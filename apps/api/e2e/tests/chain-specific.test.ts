@@ -2,22 +2,22 @@ import { and, desc, eq } from "drizzle-orm";
 import { beforeEach, describe, expect, test } from "vitest";
 
 import { trades } from "@recallnet/db/schema/trading/defs";
-
-import { config } from "@/config/index.js";
-import { db } from "@/database/db.js";
 import {
   BalancesResponse,
   BlockchainType,
   SpecificChain,
   TradeResponse,
-} from "@/e2e/utils/api-types.js";
+} from "@recallnet/test-utils";
 import {
   createTestClient,
   getAdminApiKey,
   noTradingConstraints,
   registerUserAndAgentAndGetClient,
   startTestCompetition,
-} from "@/e2e/utils/test-helpers.js";
+} from "@recallnet/test-utils";
+
+import { config } from "@/config/index.js";
+import { db } from "@/database/db.js";
 
 const reason = "chain specific end to end tests";
 

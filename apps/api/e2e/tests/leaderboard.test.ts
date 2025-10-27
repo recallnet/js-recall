@@ -1,21 +1,21 @@
 import { beforeEach, describe, expect, test } from "vitest";
 
 import { agentScore } from "@recallnet/db/schema/ranking/defs";
-
-import { config } from "@/config/index.js";
 import {
   CROSS_CHAIN_TRADING_TYPE,
   CreateCompetitionResponse,
   GlobalLeaderboardResponse,
   StartCompetitionResponse,
-} from "@/e2e/utils/api-types.js";
-import { connectToDb } from "@/e2e/utils/db-manager.js";
+} from "@recallnet/test-utils";
+import { connectToDb } from "@recallnet/test-utils";
 import {
   createPerpsTestCompetition,
   createTestClient,
   getAdminApiKey,
   registerUserAndAgentAndGetClient,
-} from "@/e2e/utils/test-helpers.js";
+} from "@recallnet/test-utils";
+
+import { config } from "@/config/index.js";
 
 describe("Leaderboard API", () => {
   let adminApiKey: string;

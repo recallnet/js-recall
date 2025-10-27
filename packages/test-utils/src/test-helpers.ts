@@ -3,13 +3,17 @@ import * as crypto from "crypto";
 import { and, asc, eq } from "drizzle-orm";
 import { getAddress } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { expect } from "vitest";
 
 import { portfolioSnapshots } from "@recallnet/db/schema/trading/defs";
 
-import { db } from "@/database/db.js";
-
 import { ApiClient } from "./api-client.js";
+import { db } from "./database.js";
+import {
+  createMockPrivyToken,
+  createTestPrivyUser,
+  generateRandomPrivyId,
+} from "./privy.js";
+import { getBaseUrl } from "./server.js";
 import {
   CreateCompetitionResponse,
   CrossChainTradingType,
@@ -17,13 +21,7 @@ import {
   StartCompetitionResponse,
   TradingConstraints,
   UserProfileResponse,
-} from "./api-types.js";
-import {
-  createMockPrivyToken,
-  createTestPrivyUser,
-  generateRandomPrivyId,
-} from "./privy.js";
-import { getBaseUrl } from "./server.js";
+} from "./types.js";
 
 // Configured test token address
 export const TEST_TOKEN_ADDRESS =
@@ -524,7 +522,9 @@ Nonce: ${nonce}`;
 export async function generateTestCompetitions(adminApiKey: string) {
   const adminClient = createTestClient();
   const loginSuccess = await adminClient.loginAsAdmin(adminApiKey);
-  expect(loginSuccess).toBe(true);
+  if (!loginSuccess) {
+    throw new Error("Failed to login as admin");
+  }
 
   // Create an agent and user
   const {
@@ -616,7 +616,9 @@ export async function getAdminApiKey() {
   });
 
   const adminApiKey = response.data.admin.apiKey;
-  expect(adminApiKey).toBeDefined();
+  if (!adminApiKey) {
+    throw new Error("Failed to get admin API key from setup response");
+  }
 
   return adminApiKey;
 }
@@ -640,6 +642,7 @@ export async function createPerpsTestCompetition({
   maxParticipants,
   tradingConstraints,
   rewards,
+  evaluationMetric,
   perpsProvider,
 }: {
   adminClient: ApiClient;
@@ -657,6 +660,7 @@ export async function createPerpsTestCompetition({
   maxParticipants?: number;
   tradingConstraints?: TradingConstraints;
   rewards?: Record<number, number>;
+  evaluationMetric?: "calmar_ratio" | "sortino_ratio" | "simple_return";
   perpsProvider?: {
     provider: "symphony" | "hyperliquid";
     initialCapital: number;
@@ -682,6 +686,7 @@ export async function createPerpsTestCompetition({
     maxParticipants,
     tradingConstraints,
     rewards,
+    evaluationMetric,
     perpsProvider: perpsProvider || {
       provider: "symphony",
       initialCapital: 500,
@@ -709,6 +714,7 @@ export async function startPerpsTestCompetition({
   imageUrl,
   tradingConstraints,
   rewards,
+  evaluationMetric,
   perpsProvider = {
     provider: "symphony" as const,
     initialCapital: 500,
@@ -724,6 +730,7 @@ export async function startPerpsTestCompetition({
   imageUrl?: string;
   tradingConstraints?: TradingConstraints;
   rewards?: Record<number, number>;
+  evaluationMetric?: "calmar_ratio" | "sortino_ratio" | "simple_return";
   perpsProvider?: {
     provider: "symphony" | "hyperliquid";
     initialCapital?: number;
@@ -743,6 +750,7 @@ export async function startPerpsTestCompetition({
     imageUrl,
     tradingConstraints,
     rewards,
+    evaluationMetric,
     perpsProvider,
   });
 

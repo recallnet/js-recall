@@ -12,6 +12,7 @@ COPY packages/ui2/package.json packages/ui2/
 COPY packages/db/package.json packages/db/
 COPY packages/conversions/package.json packages/conversions/
 COPY packages/services/package.json packages/services/
+COPY packages/test-utils/package.json packages/test-utils/
 COPY apps/comps/package.json apps/comps/
 
 RUN pnpm install --frozen-lockfile
@@ -27,6 +28,7 @@ RUN pnpm --filter=@recallnet/fonts build && \
     pnpm --filter=@recallnet/db build && \
     pnpm --filter=@recallnet/conversions build && \
     pnpm --filter=@recallnet/services build && \
+    pnpm --filter=@recallnet/test-utils build && \
     pnpm --filter=comps build
 
 FROM node:22-alpine

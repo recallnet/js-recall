@@ -3,16 +3,16 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 import { PriceTrackerService } from "@recallnet/services";
 import { MultiChainProvider } from "@recallnet/services/providers";
 import { BlockchainType } from "@recallnet/services/types";
-
-import config from "@/config/index.js";
-import { BalancesResponse, SnapshotResponse } from "@/e2e/utils/api-types.js";
+import { BalancesResponse, SnapshotResponse } from "@recallnet/test-utils";
 import {
   createTestClient,
   getAdminApiKey,
   registerUserAndAgentAndGetClient,
   startTestCompetition,
   wait,
-} from "@/e2e/utils/test-helpers.js";
+} from "@recallnet/test-utils";
+
+import config from "@/config/index.js";
 import { logger } from "@/lib/logger.js";
 import { ServiceRegistry } from "@/services/index.js";
 

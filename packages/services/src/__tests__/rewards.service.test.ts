@@ -63,6 +63,7 @@ describe("RewardsService", () => {
     updatedAt: new Date("2024-01-01"),
     crossChainTradingType: "disallowAll" as const,
     minimumStake: null,
+    evaluationMetric: "calmar_ratio" as const,
   });
 
   // Helper function to create a mock leaderboard entry

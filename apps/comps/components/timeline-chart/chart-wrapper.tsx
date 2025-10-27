@@ -11,10 +11,11 @@ import {
   YAxis,
 } from "recharts";
 
+import { formatDateShort } from "@/utils/format";
+
 import { HoverContext } from "./constants";
-import { CustomTooltip } from "./custom-tooltip";
+import { MetricTooltip } from "./custom-tooltip";
 import { ChartLinesProps, ChartWrapperProps } from "./types";
-import { formatDateShort } from "./utils";
 
 /**
  * Chart wrapper and lines components for the timeline chart
@@ -204,11 +205,15 @@ export const ChartWrapper = memo(
           <YAxis
             stroke="#9CA3AF"
             fontSize={12}
-            domain={["dataMin - 100", "dataMax + 100"]}
+            domain={[
+              (dataMin: number) => dataMin * 0.95,
+              (dataMax: number) => dataMax * 1.05,
+            ]}
+            tick={{ fontSize: 12 }}
             tickFormatter={(value) => `$${(value / 1000).toFixed(1)}k`}
           />
           <Tooltip
-            content={CustomTooltip}
+            content={(props) => <MetricTooltip {...props} />}
             cursor={{
               stroke: "#9CA3AF",
               strokeWidth: 1,

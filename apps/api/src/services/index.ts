@@ -32,7 +32,9 @@ import {
   PortfolioSnapshotterService,
   PriceTrackerService,
   RewardsService,
+  RiskMetricsService,
   SimulatedTradeExecutionService,
+  SortinoRatioService,
   TradeSimulatorService,
   TradingConstraintsService,
   UserService,
@@ -259,12 +261,23 @@ class ServiceRegistry {
     );
     const calmarRatioService = new CalmarRatioService(
       this._competitionRepository,
+      serviceLogger,
+    );
+    const sortinoRatioService = new SortinoRatioService(
+      this._competitionRepository,
+      serviceLogger,
+    );
+    const riskMetricsService = new RiskMetricsService(
+      calmarRatioService,
+      sortinoRatioService,
       this._perpsRepository,
+      this._competitionRepository,
+      db,
       serviceLogger,
     );
     // Initialize PerpsDataProcessor before CompetitionManager (as it's a dependency)
     this._perpsDataProcessor = new PerpsDataProcessor(
-      calmarRatioService,
+      riskMetricsService,
       this._agentRepository,
       this._competitionRepository,
       this._perpsRepository,

@@ -40,7 +40,12 @@ const BoostButton: React.FC<BoostButtonProps> = ({
   }
 
   return (
-    <Button variant="default" size="lg" className={cn(buttonStyles, className)}>
+    <Button
+      variant="default"
+      size="lg"
+      className={cn(buttonStyles, className)}
+      disabled={!boostingEnabled}
+    >
       <span className="font-semibold">Boost</span>
     </Button>
   );

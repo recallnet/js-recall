@@ -1,8 +1,9 @@
 import { sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
+import { wait } from "@recallnet/test-utils";
+
 import { db, dbRead } from "@/database/db.js";
-import { wait } from "@/e2e/utils/test-helpers.js";
 
 describe("Database Connections", () => {
   beforeAll(async () => {

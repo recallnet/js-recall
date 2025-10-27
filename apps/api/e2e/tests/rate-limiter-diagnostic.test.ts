@@ -6,7 +6,7 @@ import {
   getAdminApiKey,
   registerUserAndAgentAndGetClient,
   wait,
-} from "@/e2e/utils/test-helpers.js";
+} from "@recallnet/test-utils";
 
 /**
  * DIAGNOSTIC TEST FOR RATE LIMITER

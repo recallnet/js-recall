@@ -9,7 +9,10 @@ import {
 } from "@recallnet/db/schema/core/defs";
 import { MAX_HANDLE_LENGTH } from "@recallnet/db/schema/core/defs";
 import { SelectAgent, SelectUser } from "@recallnet/db/schema/core/types";
-import { crossChainTradingType } from "@recallnet/db/schema/trading/defs";
+import {
+  crossChainTradingType,
+  evaluationMetricEnum,
+} from "@recallnet/db/schema/trading/defs";
 
 import { specificChainTokens } from "../lib/config-utils.js";
 
@@ -709,6 +712,16 @@ export const CompetitionTypeSchema = z.enum(competitionType.enumValues);
  */
 export type CompetitionType = z.infer<typeof CompetitionTypeSchema>;
 
+/**
+ * Zod schema for evaluation metrics used in perps competitions.
+ */
+export const EvaluationMetricSchema = z.enum(evaluationMetricEnum.enumValues);
+
+/**
+ * Evaluation metrics for perps competitions.
+ */
+export type EvaluationMetric = z.infer<typeof EvaluationMetricSchema>;
+
 export const CompetitionAllowedUpdateSchema = z.strictObject({
   name: z.string().optional(),
   description: z.string().optional(),
@@ -1011,8 +1024,10 @@ export interface PerpsEnrichedLeaderboardEntry {
   totalAgents: number;
   score: number;
   calmarRatio: number | null;
+  sortinoRatio: number | null;
   simpleReturn: number | null;
   maxDrawdown: number | null;
+  downsideDeviation: number | null;
   totalEquity: number;
   totalPnl: number | null;
   hasRiskMetrics: true;

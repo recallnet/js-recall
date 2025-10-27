@@ -13,8 +13,6 @@ import {
   perpsCompetitionConfig,
   tradingConstraints,
 } from "@recallnet/db/schema/trading/defs";
-
-import { db } from "@/database/db.js";
 import {
   AdminAgentResponse,
   AdminAgentsListResponse,
@@ -31,9 +29,9 @@ import {
   StartCompetitionResponse,
   UpdateCompetitionResponse,
   UserRegistrationResponse,
-} from "@/e2e/utils/api-types.js";
-import { generateRandomPrivyId } from "@/e2e/utils/privy.js";
-import { getBaseUrl } from "@/e2e/utils/server.js";
+} from "@recallnet/test-utils";
+import { generateRandomPrivyId } from "@recallnet/test-utils";
+import { getBaseUrl } from "@recallnet/test-utils";
 import {
   ADMIN_EMAIL,
   createPerpsTestCompetition,
@@ -46,7 +44,9 @@ import {
   startPerpsTestCompetition,
   startTestCompetition,
   wait,
-} from "@/e2e/utils/test-helpers.js";
+} from "@recallnet/test-utils";
+
+import { db } from "@/database/db.js";
 
 describe("Admin API", () => {
   let adminApiKey: string;
@@ -299,7 +299,7 @@ describe("Admin API", () => {
     })) as ErrorResponse;
     expect(agentResult3.success).toBe(false);
     expect(agentResult3.error).toContain(
-      "Must provide either user ID or user wallet address",
+      "must provide either user ID or user wallet address",
     );
   });
 
@@ -2755,5 +2755,62 @@ describe("Admin API", () => {
     expect(updatedCompetitionDetails.competition).toBeDefined();
     expect(updatedCompetitionDetails.competition.minimumStake).toBeDefined();
     expect(updatedCompetitionDetails.competition.minimumStake).toBe(2500);
+  });
+
+  test("should throw ApiError for invalid fields in request body", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    const createResponse1 = (await adminClient.createCompetition({
+      name: "Competition with Invalid Fields",
+      description: "Test competition with invalid fields",
+      type: "foobar",
+    })) as ErrorResponse;
+    expect(createResponse1.success).toBe(false);
+    expect(createResponse1.status).toEqual(400);
+    expect(createResponse1.error).toContain(
+      'type (invalid option: expected one of "trading"|"perpetual_futures")',
+    );
+
+    const createResponse2 = (await adminClient.createCompetition({
+      name: "Competition with Invalid Fields 2",
+      description: "Test competition with invalid fields 2",
+      type: "trading",
+      // @ts-expect-error - we're intentionally passing an invalid type
+      minimumStake: "invalid",
+      startDate: "invalid",
+    })) as ErrorResponse;
+    expect(createResponse2.success).toBe(false);
+    expect(createResponse2.status).toBe(400);
+    expect(createResponse2.error).toContain("startDate (invalid ISO datetime)");
+    expect(createResponse2.error).toContain(
+      "minimumStake (expected number, received string)",
+    );
+
+    const {
+      competition: { id: competitionId },
+    } = (await adminClient.createCompetition({
+      name: "Competition to Update with Invalid Fields",
+      description: "Test updating competition with invalid fields",
+      type: "trading",
+    })) as CreateCompetitionResponse;
+
+    const updateResponse = (await adminClient.updateCompetition(competitionId, {
+      name: "Competition to Update with Invalid Fields",
+      description: "Test updating competition with invalid fields",
+      prizePools: {
+        // @ts-expect-error - we're intentionally passing an invalid type
+        agent: "invalid",
+        users: -10000,
+      },
+    })) as ErrorResponse;
+    expect(updateResponse.success).toBe(false);
+    expect(updateResponse.status).toEqual(400);
+    expect(updateResponse.error).toContain(
+      "prizePools.agent (expected number, received string)",
+    );
+    expect(updateResponse.error).toContain(
+      "prizePools.users (too small: expected number to be >=0)",
+    );
   });
 });

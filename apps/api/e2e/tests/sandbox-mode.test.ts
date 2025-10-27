@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test } from "vitest";
 
-import { ApiClient } from "@/e2e/utils/api-client.js";
+import { ApiClient } from "@recallnet/test-utils";
 import {
   AdminAgentResponse,
   BalancesResponse,
@@ -11,7 +11,7 @@ import {
   SnapshotResponse,
   StartCompetitionResponse,
   UserRegistrationResponse,
-} from "@/e2e/utils/api-types.js";
+} from "@recallnet/test-utils";
 import {
   createTestClient,
   createTestCompetition,
@@ -21,7 +21,7 @@ import {
   startPerpsTestCompetition,
   startTestCompetition,
   wait,
-} from "@/e2e/utils/test-helpers.js";
+} from "@recallnet/test-utils";
 
 describe("Sandbox Mode", () => {
   let adminApiKey: string;

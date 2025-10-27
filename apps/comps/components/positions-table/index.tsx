@@ -28,15 +28,12 @@ export interface PositionsTableProps {
   positions: PerpsPosition[];
   pagination: PaginationResponse;
   onPageChange: (page: number) => void;
-  /** When true, show a sign-in message instead of the default empty state */
-  showSignInMessage?: boolean;
 }
 
 export const PositionsTable: React.FC<PositionsTableProps> = ({
   positions,
   pagination,
   onPageChange,
-  showSignInMessage = false,
 }) => {
   const columns = React.useMemo<ColumnDef<PerpsPosition>[]>(
     () => [
@@ -261,18 +258,7 @@ export const PositionsTable: React.FC<PositionsTableProps> = ({
                   colSpan={columns.length}
                   className="h-24 text-center"
                 >
-                  {showSignInMessage ? (
-                    <div className="flex flex-col items-center gap-1">
-                      <span className="text-primary-foreground">
-                        Sign in to view positions
-                      </span>
-                      <span className="text-secondary-foreground text-sm">
-                        Position history is only accessible to logged in users
-                      </span>
-                    </div>
-                  ) : (
-                    "No positions found."
-                  )}
+                  No positions found
                 </TableCell>
               </TableRow>
             )}

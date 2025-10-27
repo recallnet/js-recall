@@ -1,7 +1,7 @@
 import express, { Express, Request, Response } from "express";
 import { Server } from "http";
 
-import { createLogger } from "@/lib/logger.js";
+import { createLogger } from "../logger.js";
 
 /**
  * Mock Symphony API server for E2E testing
@@ -215,6 +215,42 @@ export class MockSymphonyServer {
       openPositions: [],
       transfers: [],
     });
+
+    // Agent for Sortino vs Calmar ranking test - GOOD Sortino, POOR Calmar
+    // Progression: 1000 → 1600 (peak) → 1200 (final)
+    // Simple return: (1200/1000) - 1 = 20%
+    // Max drawdown: (1200/1600) - 1 = -25%
+    // Calmar: 0.20 / 0.25 = 0.8 (POOR)
+    // Periods: +60%, -25% → avg +17.5%, mostly positive, low downside dev
+    // Sortino: HIGH (positive avg, low downside)
+    this.setAgentData("0xeeee111111111111111111111111111111111111", {
+      initialCapital: 1000,
+      totalEquity: 1200,
+      availableBalance: 1200,
+      marginUsed: 0,
+      totalVolume: 0,
+      totalTrades: 0,
+      openPositions: [],
+      transfers: [],
+    });
+
+    // Agent for Sortino vs Calmar ranking test - POOR Sortino, GOOD Calmar
+    // Progression: 1000 → 1020 → 990 → 1010 → 980 → 1050 (final)
+    // Simple return: (1050/1000) - 1 = 5%
+    // Max drawdown: (980/1020) - 1 = -3.9%
+    // Calmar: 0.05 / 0.039 = 1.28 (GOOD)
+    // Periods: +2%, -2.9%, +2%, -3%, +7% → avg +1%, many negative periods, high downside dev
+    // Sortino: LOW (low avg, high downside)
+    this.setAgentData("0xffff111111111111111111111111111111111111", {
+      initialCapital: 1000,
+      totalEquity: 1050,
+      availableBalance: 1050,
+      marginUsed: 0,
+      totalVolume: 0,
+      totalTrades: 0,
+      openPositions: [],
+      transfers: [],
+    });
   }
 
   /**
@@ -324,6 +360,50 @@ export class MockSymphonyServer {
         this.logger.info(
           `[MockSymphony] Calmar wallet call #${callIdx + 1}, equity=$${currentEquity} (${phase})`,
         );
+      } else if (
+        lowerAddress === "0xeeee111111111111111111111111111111111111"
+      ) {
+        // Good Sortino, Poor Calmar: 1000 → 1600 → 1200
+        const callIdx = this.snapshotIndex.get(lowerAddress) || 0;
+        const equityProgression = [
+          1000,
+          1000, // Startup
+          1000,
+          1000, // First snapshot
+          1600,
+          1600, // Second snapshot - PEAK (+60%)
+          1200,
+          1200, // Third snapshot - Final (-25% from peak, +20% overall)
+        ];
+        currentEquity =
+          equityProgression[Math.min(callIdx, equityProgression.length - 1)] ??
+          1200;
+        this.snapshotIndex.set(lowerAddress, callIdx + 1);
+      } else if (
+        lowerAddress === "0xffff111111111111111111111111111111111111"
+      ) {
+        // Poor Sortino, Good Calmar: 1000 → 1020 → 990 → 1010 → 980 → 1050
+        const callIdx = this.snapshotIndex.get(lowerAddress) || 0;
+        const equityProgression = [
+          1000,
+          1000, // Startup
+          1000,
+          1000, // First
+          1020,
+          1020, // Second (+2%)
+          990,
+          990, // Third (-2.9%)
+          1010,
+          1010, // Fourth (+2%)
+          980,
+          980, // Fifth (-3%)
+          1050,
+          1050, // Sixth (+7%, final)
+        ];
+        currentEquity =
+          equityProgression[Math.min(callIdx, equityProgression.length - 1)] ??
+          1050;
+        this.snapshotIndex.set(lowerAddress, callIdx + 1);
       }
 
       res.json({

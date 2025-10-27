@@ -4,15 +4,15 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { PriceTrackerService } from "@recallnet/services";
 import { MultiChainProvider } from "@recallnet/services/providers";
 import { BlockchainType } from "@recallnet/services/types";
-
-import config from "@/config/index.js";
-import { ApiClient } from "@/e2e/utils/api-client.js";
-import { PriceResponse } from "@/e2e/utils/api-types.js";
+import { ApiClient } from "@recallnet/test-utils";
+import { PriceResponse } from "@recallnet/test-utils";
 import {
   createTestClient,
   getAdminApiKey,
   registerUserAndAgentAndGetClient,
-} from "@/e2e/utils/test-helpers.js";
+} from "@recallnet/test-utils";
+
+import config from "@/config/index.js";
 import { logger } from "@/lib/logger.js";
 
 // Load environment variables

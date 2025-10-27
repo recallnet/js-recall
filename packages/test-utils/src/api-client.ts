@@ -5,6 +5,13 @@ import { CookieJar } from "tough-cookie";
 import { PagingParams } from "@recallnet/services/types";
 
 import {
+  PrivyAuthProvider,
+  type TestPrivyUser,
+  createMockPrivyToken,
+  createTestPrivyUser,
+} from "./privy.js";
+import { getBaseUrl } from "./server.js";
+import {
   AdminAddAgentToCompetitionResponse,
   AdminAgentResponse,
   AdminAgentsListResponse,
@@ -67,14 +74,7 @@ import {
   UserProfileResponse,
   UserRegistrationResponse,
   UserSubscriptionResponse,
-} from "./api-types.js";
-import {
-  PrivyAuthProvider,
-  type TestPrivyUser,
-  createMockPrivyToken,
-  createTestPrivyUser,
-} from "./privy.js";
-import { getBaseUrl } from "./server.js";
+} from "./types.js";
 
 /**
  * API client for testing the Trading Simulator
@@ -450,6 +450,7 @@ export class ApiClient {
           boostEndDate?: string;
           tradingConstraints?: TradingConstraints;
           rewards?: Record<number, number>;
+          evaluationMetric?: "calmar_ratio" | "sortino_ratio" | "simple_return";
           perpsProvider?: {
             provider: string;
             initialCapital?: number;
@@ -530,6 +531,7 @@ export class ApiClient {
     minimumStake,
     tradingConstraints,
     rewards,
+    evaluationMetric,
     perpsProvider,
     prizePools,
   }: {
@@ -550,6 +552,7 @@ export class ApiClient {
     minimumStake?: number;
     tradingConstraints?: TradingConstraints;
     rewards?: Record<number, number>;
+    evaluationMetric?: "calmar_ratio" | "sortino_ratio" | "simple_return";
     perpsProvider?: {
       provider: "symphony" | "hyperliquid";
       initialCapital: number;
@@ -584,6 +587,7 @@ export class ApiClient {
           minimumStake,
           tradingConstraints,
           rewards,
+          evaluationMetric,
           perpsProvider,
           prizePools,
         },
@@ -611,6 +615,7 @@ export class ApiClient {
       minimumStake,
       tradingConstraints,
       rewards,
+      evaluationMetric,
       perpsProvider,
       prizePools,
     }: {
@@ -624,6 +629,7 @@ export class ApiClient {
       minimumStake?: number;
       tradingConstraints?: TradingConstraints;
       rewards?: Record<number, number>;
+      evaluationMetric?: "calmar_ratio" | "sortino_ratio" | "simple_return";
       perpsProvider?: {
         provider: "symphony" | "hyperliquid";
         initialCapital?: number;
@@ -651,6 +657,7 @@ export class ApiClient {
           minimumStake,
           tradingConstraints,
           rewards,
+          evaluationMetric,
           perpsProvider,
           prizePools,
         },

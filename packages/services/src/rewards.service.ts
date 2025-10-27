@@ -167,7 +167,10 @@ export class RewardsService {
         },
       );
     } catch (error) {
-      this.logger.error("[RewardsService] Error in calculateRewards:", error);
+      this.logger.error(
+        { error },
+        "[RewardsService] Error in calculateRewards",
+      );
       throw error;
     }
   }

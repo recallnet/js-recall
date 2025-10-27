@@ -38,6 +38,7 @@ export default defineConfig({
     "src/schema/trading/relations.ts",
     "src/schema/trading/types.ts",
     "src/schema/index.ts",
+    "src/utils/index.ts",
   ],
   format: ["cjs", "esm"],
   dts: true,

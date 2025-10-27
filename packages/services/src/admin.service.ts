@@ -309,7 +309,7 @@ export class AdminService {
       return savedAdmin;
     } catch (error) {
       if (error instanceof Error) {
-        this.logger.error("[AdminManager] Error creating admin:", error);
+        this.logger.error({ error }, "[AdminManager] Error creating admin");
         throw error;
       }
 
@@ -365,7 +365,10 @@ export class AdminService {
 
       return admins;
     } catch (error) {
-      this.logger.error("[AdminManager] Error retrieving all admins:", error);
+      this.logger.error(
+        { error },
+        "[AdminManager] Error retrieving all admins",
+      );
       return [];
     }
   }
@@ -533,7 +536,7 @@ export class AdminService {
 
       return null;
     } catch (error) {
-      this.logger.error("[AdminManager] Error validating API key:", error);
+      this.logger.error({ error }, "[AdminManager] Error validating API key");
       return null;
     }
   }
@@ -610,7 +613,7 @@ export class AdminService {
         .toString("hex");
       return `${salt}:${hash}`;
     } catch (error) {
-      this.logger.error("[AdminManager] Error hashing password:", error);
+      this.logger.error({ error }, "[AdminManager] Error hashing password");
       throw new Error("Failed to hash password");
     }
   }
@@ -776,7 +779,7 @@ export class AdminService {
     try {
       return await this.adminRepository.searchAdmins(searchParams);
     } catch (error) {
-      this.logger.error("[AdminManager] Error searching admins:", error);
+      this.logger.error({ error }, "[AdminManager] Error searching admins");
       return [];
     }
   }
@@ -828,7 +831,7 @@ export class AdminService {
       );
       return result;
     } catch (error) {
-      this.logger.error("[AdminManager] Error encrypting API key:", error);
+      this.logger.error({ error }, "[AdminManager] Error encrypting API key");
       throw new Error("Failed to encrypt API key");
     }
   }
@@ -862,7 +865,7 @@ export class AdminService {
 
       return decrypted;
     } catch (error) {
-      this.logger.error("[AdminManager] Error decrypting API key:", error);
+      this.logger.error({ error }, "[AdminManager] Error decrypting API key");
       throw error;
     }
   }
@@ -950,7 +953,7 @@ export class AdminService {
             walletAddress: agentWalletAddress,
           });
         } catch (error) {
-          this.logger.error("Error creating agent for user:", error);
+          this.logger.error({ error }, "Error creating agent for user");
           // If agent creation fails, we still return the user but note the agent error
           agentError =
             error instanceof Error ? error.message : "Failed to create agent";
@@ -963,7 +966,7 @@ export class AdminService {
         agentError,
       };
     } catch (error) {
-      this.logger.error("[AdminManager] Error registering user:", error);
+      this.logger.error({ error }, "[AdminManager] Error registering user");
 
       if (error instanceof Error) {
         // Check for invalid wallet address errors

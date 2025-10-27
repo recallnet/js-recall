@@ -250,7 +250,7 @@ export class AgentService {
         apiKey, // Return unencrypted key
       };
     } catch (error) {
-      this.logger.error("[AgentManager] Error creating agent:", error);
+      this.logger.error({ error }, "[AgentManager] Error creating agent");
       if (error instanceof ApiError) {
         throw error;
       }
@@ -469,7 +469,7 @@ export class AgentService {
 
       return agent.id;
     } catch (error) {
-      this.logger.error("[AgentManager] Error validating API key:", error);
+      this.logger.error({ error }, "[AgentManager] Error validating API key");
       throw error; // Re-throw to allow middleware to handle it
     }
   }
@@ -521,7 +521,7 @@ export class AgentService {
       );
       return result;
     } catch (error) {
-      this.logger.error("[AgentManager] Error encrypting API key:", error);
+      this.logger.error({ error }, "[AgentManager] Error encrypting API key");
       throw new Error("Failed to encrypt API key");
     }
   }
@@ -902,7 +902,7 @@ export class AgentService {
       );
       return agents.map(this.sanitizeAgent.bind(this));
     } catch (error) {
-      this.logger.error("[AgentManager] Error searching agents:", error);
+      this.logger.error({ error }, "[AgentManager] Error searching agents");
       return [];
     }
   }
@@ -1964,7 +1964,7 @@ export class AgentService {
 
       return nonce;
     } catch (error) {
-      this.logger.error("[AgentManager] Error generating nonce:", error);
+      this.logger.error({ error }, "[AgentManager] Error generating nonce");
       throw new ApiError(500, "Failed to generate nonce");
     }
   }
@@ -2001,7 +2001,7 @@ export class AgentService {
       // Mark nonce as used
       await this.agentNonceRepository.markAsUsed(nonce);
     } catch (error) {
-      this.logger.error("[AgentManager] Error validating nonce:", error);
+      this.logger.error({ error }, "[AgentManager] Error validating nonce");
       if (error instanceof ApiError) {
         throw error;
       }

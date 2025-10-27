@@ -144,6 +144,11 @@ export function configureAdminRoutes(
    *                   "1": 1000
    *                   "2": 500
    *                   "3": 250
+   *               evaluationMetric:
+   *                 type: string
+   *                 enum: [calmar_ratio, sortino_ratio, simple_return]
+   *                 description: Metric used for ranking agents. Defaults to calmar_ratio for perps, simple_return for spot trading
+   *                 example: calmar_ratio
    *               perpsProvider:
    *                 type: object
    *                 nullable: true
@@ -369,7 +374,7 @@ export function configureAdminRoutes(
    *               type:
    *                 type: string
    *                 description: The type of competition
-   *                 enum: [trading]
+   *                 enum: [trading, perpetual_futures]
    *                 default: trading
    *                 example: trading
    *               tradingConstraints:
@@ -412,6 +417,11 @@ export function configureAdminRoutes(
    *                   "1": 1000
    *                   "2": 500
    *                   "3": 250
+   *               evaluationMetric:
+   *                 type: string
+   *                 enum: [calmar_ratio, sortino_ratio, simple_return]
+   *                 description: Metric used for ranking agents. Defaults to calmar_ratio for perps, simple_return for spot trading
+   *                 example: calmar_ratio
    *               prizePools:
    *                 type: object
    *                 description: Prize pool configuration
@@ -479,7 +489,7 @@ export function configureAdminRoutes(
    *                       description: Whether sandbox mode is enabled for this competition
    *                     type:
    *                       type: string
-   *                       enum: [trading]
+   *                       enum: [trading, perpetual_futures]
    *                       description: The type of competition
    *                     maxParticipants:
    *                       type: integer
@@ -613,7 +623,7 @@ export function configureAdminRoutes(
    *                       description: Type of cross-chain trading allowed in this competition
    *                     type:
    *                       type: string
-   *                       enum: [trading]
+   *                       enum: [trading, perpetual_futures]
    *                       description: The type of competition
    *                     maxParticipants:
    *                       type: integer
@@ -697,6 +707,11 @@ export function configureAdminRoutes(
    *                 format: date-time
    *                 description: Boosting end date
    *                 example: 2023-05-07T23:59:59Z
+   *               evaluationMetric:
+   *                 type: string
+   *                 enum: [calmar_ratio, sortino_ratio, simple_return]
+   *                 description: Metric used for ranking agents
+   *                 example: calmar_ratio
    *               rewards:
    *                 type: object
    *                 nullable: true
@@ -1064,7 +1079,7 @@ export function configureAdminRoutes(
    *                       description: Type of cross-chain trading allowed in this competition
    *                     type:
    *                       type: string
-   *                       enum: [trading]
+   *                       enum: [trading, perpetual_futures]
    *                       description: The type of competition
    *                 leaderboard:
    *                   type: array

@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, test } from "vitest";
 
-import { config } from "@/config/index.js";
-import { ApiClient } from "@/e2e/utils/api-client.js";
+import { ApiClient } from "@recallnet/test-utils";
 import {
   AdminSearchUsersAndAgentsResponse,
   AdminUsersListResponse,
@@ -15,7 +14,7 @@ import {
   UserAgentApiKeyResponse,
   UserCompetitionsResponse,
   UserProfileResponse,
-} from "@/e2e/utils/api-types.js";
+} from "@recallnet/test-utils";
 import {
   createPrivyAuthenticatedClient,
   createTestAgent,
@@ -28,10 +27,11 @@ import {
   registerUserAndAgentAndGetClient,
   startExistingTestCompetition,
   wait,
-} from "@/e2e/utils/test-helpers.js";
-import { ServiceRegistry } from "@/services/index.js";
+} from "@recallnet/test-utils";
+import { generateRandomPrivyId } from "@recallnet/test-utils";
 
-import { generateRandomPrivyId } from "../utils/privy.js";
+import { config } from "@/config/index.js";
+import { ServiceRegistry } from "@/services/index.js";
 
 describe("User API", () => {
   // Clean up test state before each test

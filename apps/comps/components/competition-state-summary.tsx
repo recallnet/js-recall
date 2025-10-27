@@ -122,7 +122,7 @@ export const CompetitionStateSummary: React.FC<
       const isLessThan24Hours = timeDiff < 24 * 60 * 60 * 1000;
 
       return {
-        text: "Boosting begins in",
+        text: "Boosting starts in",
         color: "text-gray-500",
         date: boostStartDate,
         showCountdown: isLessThan24Hours,
