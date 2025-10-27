@@ -51,8 +51,8 @@ export const SingleRewardTGEValue: React.FC<SingleRewardTGEValueProps> = ({
         className,
       )}
     >
-      {formattedValue}
       <Recall size="sm" />
+      {formattedValue}
     </span>
   );
 };
@@ -93,8 +93,8 @@ export const RewardsTGE: React.FC<RewardsTGEProps> = ({
           className,
         )}
       >
+        <Recall size="sm" />
         {formattedRewards.totalValue}
-        <Recall />
       </div>
     );
   }
@@ -104,15 +104,15 @@ export const RewardsTGE: React.FC<RewardsTGEProps> = ({
       <div className="flex items-center gap-2">
         <span className="text-sm text-gray-400">Agents</span>
         <span className="flex items-center gap-1.5 font-bold text-white">
-          {formattedRewards.agentPrizePool.toLocaleString()}
           <Recall size="sm" />
+          {formattedRewards.agentPrizePool.toLocaleString()}
         </span>
       </div>
       <div className="flex items-center gap-2">
         <span className="text-sm text-gray-400">Boosters</span>
         <span className="flex items-center gap-1.5 font-bold text-white">
-          {formattedRewards.userPrizePool.toLocaleString()}
           <Recall size="sm" />
+          {formattedRewards.userPrizePool.toLocaleString()}
         </span>
       </div>
     </div>
