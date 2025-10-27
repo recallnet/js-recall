@@ -15,7 +15,6 @@ import {
 } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Zap } from "lucide-react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
@@ -31,6 +30,7 @@ import {
   TableRow,
 } from "@recallnet/ui2/components/table";
 import { toast } from "@recallnet/ui2/components/toast";
+import { Tooltip } from "@recallnet/ui2/components/tooltip";
 
 import { Pagination } from "@/components/pagination/index";
 import { config } from "@/config/public";
@@ -49,7 +49,7 @@ import { getSortState } from "@/utils/table";
 
 import { AgentAvatar } from "../agent-avatar";
 import BoostAgentModal from "../modals/boost-agent";
-import { SingleRewardTGEValue } from "../rewards-tge";
+import { RewardsTGE, SingleRewardTGEValue } from "../rewards-tge";
 import { boostedCompetitionsStartDate } from "../timeline-chart/constants";
 import { RankBadge } from "./rank-badge";
 
@@ -695,7 +695,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
   };
 
   return (
-    <div className="mt-40 w-full scroll-mt-10" ref={ref}>
+    <div className="mt-20 w-full scroll-mt-10 md:mt-40" ref={ref}>
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
         {/* Left column: Title, Button, Rewards, and Balance */}
         <div className="mb-5 md:col-span-1 md:col-start-1">
@@ -706,132 +706,136 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
             </h2>
 
             {/* Competition overview content */}
-            {!isMobile && (
-              <>
-                <div className="text-secondary-foreground mt-2 text-sm">
-                  See how leading agents stack against each other in this{" "}
-                  <span className="text-primary-foreground font-semibold">
-                    {formatCompetitionType(competition.type).toLowerCase()}
-                  </span>{" "}
-                  competition. This page gives you a snapshot of all competing
-                  agents and their performance metrics, and you can explore
-                  deeper insights in the{" "}
-                  <Link
-                    href="/leaderboards"
-                    className="text-primary-foreground hover:text-primary-foreground/80 font-semibold underline transition-all duration-200 ease-in-out"
-                  >
-                    global leaderboards
-                  </Link>
-                  . Learn more about it{" "}
-                  <a
-                    href="https://docs.recall.network/concepts"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-primary-foreground hover:text-primary-foreground/80 font-semibold underline transition-all duration-200 ease-in-out"
-                  >
-                    here
-                  </a>
-                  .
-                </div>
+            <>
+              <div className="text-secondary-foreground mt-2 text-sm">
+                See how leading agents stack against each other in this{" "}
+                <span className="text-primary-foreground font-semibold">
+                  {formatCompetitionType(competition.type).toLowerCase()}
+                </span>{" "}
+                competition. The leaderboard gives you a snapshot of all
+                competing agents and their performance metrics. Learn more about
+                it{" "}
+                <a
+                  href="https://docs.recall.network/concepts"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary-foreground hover:text-primary-foreground/80 font-semibold underline transition-all duration-200 ease-in-out"
+                >
+                  here
+                </a>
+                .
+              </div>
 
-                {/* Rewards TGE Info */}
-                {competition.rewardsTge && (
-                  <div className="flex flex-col gap-2">
-                    <hr className="border-0.5 my-4" />
-                    <span className="text-sm font-semibold uppercase tracking-wider text-gray-400">
-                      Rewards
-                    </span>
-                    <div className="text-secondary-foreground text-sm">
-                      A total of{" "}
-                      <SingleRewardTGEValue
-                        values={[
+              {/* Rewards TGE Info */}
+              {competition.rewardsTge && (
+                <div className="flex flex-col gap-2">
+                  <span className="text-sm font-semibold uppercase tracking-wider text-gray-400">
+                    Rewards
+                  </span>
+                  <Tooltip
+                    className="cursor-help"
+                    content={
+                      <div className="text-secondary-foreground mb-4 text-sm">
+                        A total of{" "}
+                        <SingleRewardTGEValue
+                          values={[
+                            competition.rewardsTge.agentPool,
+                            competition.rewardsTge.userPool,
+                          ]}
+                        />{" "}
+                        is allocated to this competition&apos;s rewards pool.
+                        Agents receive{" "}
+                        <SingleRewardTGEValue
+                          values={[competition.rewardsTge.agentPool]}
+                        />{" "}
+                        of the pool based on their performance. Boosters receive{" "}
+                        <SingleRewardTGEValue
+                          values={[competition.rewardsTge.userPool]}
+                        />{" "}
+                        of the pool derived from curated predictions. For more
+                        details on rewards distribution, see{" "}
+                        <a
+                          href="https://docs.recall.network/competitions/rewards"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary-foreground hover:text-primary-foreground/80 font-semibold underline transition-all duration-200 ease-in-out"
+                        >
+                          here
+                        </a>
+                        .
+                      </div>
+                    }
+                  >
+                    <RewardsTGE
+                      rewards={{
+                        agentPrizePool: BigInt(
                           competition.rewardsTge.agentPool,
-                          competition.rewardsTge.userPool,
-                        ]}
-                      />{" "}
-                      is allocated to this competition&apos;s rewards pool.
-                      Agents receive{" "}
-                      <SingleRewardTGEValue
-                        values={[competition.rewardsTge.agentPool]}
-                      />{" "}
-                      of the pool based on their performance. Boosters receive{" "}
-                      <SingleRewardTGEValue
-                        values={[competition.rewardsTge.userPool]}
-                      />{" "}
-                      of the pool based on curated predictions. For more
-                      details, see{" "}
-                      <a
-                        href="https://docs.recall.network/competitions/rewards"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary-foreground hover:text-primary-foreground/80 font-semibold underline transition-all duration-200 ease-in-out"
-                      >
-                        here
-                      </a>
-                      .
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
+                        ),
+                        userPrizePool: BigInt(competition.rewardsTge.userPool),
+                      }}
+                    />
+                  </Tooltip>
+                </div>
+              )}
+            </>
 
-            {!isMobile && <hr className="border-0.5 my-4" />}
             {/* Boost Balance */}
             {showBoostBalance && (
               <div className="flex flex-col gap-4">
                 <div className="mb-4 flex flex-col gap-2">
+                  {/* Boost balance display */}
                   <span className="text-sm font-semibold uppercase tracking-wider text-gray-400">
                     Boost Balance
-                  </span>
-
-                  {/* Description only on desktop */}
-                  {!isMobile && (
-                    <div className="text-secondary-foreground mb-4 text-sm">
-                      Users with an available Boost balance signal their support
-                      for competing agents. The best predictors earn a greater
-                      share of the reward pool. Learn more about Boost{" "}
-                      <a
-                        href="https://docs.recall.network/token/staking"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary-foreground hover:text-primary-foreground/80 font-semibold underline transition-all duration-200 ease-in-out"
-                      >
-                        here
-                      </a>
-                      .
+                  </span>{" "}
+                  <Tooltip
+                    className="cursor-help"
+                    content={
+                      <div className="text-secondary-foreground mb-4 text-sm">
+                        Users with an available Boost balance signal their
+                        support for competing agents. The best predictors earn a
+                        greater share of the reward pool. Learn more about Boost{" "}
+                        <a
+                          href="https://docs.recall.network/token/staking"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary-foreground hover:text-primary-foreground/80 font-semibold underline transition-all duration-200 ease-in-out"
+                        >
+                          here
+                        </a>
+                        .
+                      </div>
+                    }
+                  >
+                    <div className="flex items-center gap-2 text-2xl font-bold">
+                      <Zap className="h-4 w-4 text-yellow-500" />
+                      <span className="font-bold">
+                        {isBoostDataLoading
+                          ? "..."
+                          : numberFormatter.format(userBoostBalance || 0)}
+                      </span>
+                      <span className="text-secondary-foreground text-sm font-medium">
+                        available
+                      </span>
                     </div>
-                  )}
-
-                  {/* Boost balance display */}
-                  <div className="flex items-center gap-2 text-2xl font-bold">
-                    <Zap className="h-4 w-4 text-yellow-500" />
-                    <span className="font-bold">
-                      {isBoostDataLoading
-                        ? "..."
-                        : numberFormatter.format(userBoostBalance || 0)}
-                    </span>
-                    <span className="text-secondary-foreground text-sm font-medium">
-                      available
-                    </span>
-                  </div>
-                  <div className="bg-muted h-3 w-full overflow-hidden rounded-full">
-                    <div
-                      className="h-full rounded-full bg-yellow-500 transition-all duration-300"
-                      style={{
-                        width:
-                          isSuccessUserBoostBalance &&
-                          userBoostBalance > 0 &&
-                          totalBoostValue > 0
-                            ? `${Math.min(
-                                100,
-                                Number(
-                                  (userBoostBalance * 100) / totalBoostValue,
-                                ),
-                              )}%`
-                            : "0%",
-                      }}
-                    />
-                  </div>
+                    <div className="bg-muted h-3 w-full overflow-hidden rounded-full">
+                      <div
+                        className="h-full rounded-full bg-yellow-500 transition-all duration-300"
+                        style={{
+                          width:
+                            isSuccessUserBoostBalance &&
+                            userBoostBalance > 0 &&
+                            totalBoostValue > 0
+                              ? `${Math.min(
+                                  100,
+                                  Number(
+                                    (userBoostBalance * 100) / totalBoostValue,
+                                  ),
+                                )}%`
+                              : "0%",
+                        }}
+                      />
+                    </div>
+                  </Tooltip>
                 </div>
               </div>
             )}
