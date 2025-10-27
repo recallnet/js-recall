@@ -48,7 +48,7 @@ export interface AgentMetricsData {
   } | null;
   bestPnl: number | null;
   totalRoi: number | null;
-  ranks: AgentRankByType[] | null;
+  ranks: AgentRankByType[];
 }
 
 /**

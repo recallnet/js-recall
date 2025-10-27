@@ -139,14 +139,16 @@ export class LeaderboardRepository {
     );
 
     try {
-      // Query 1: Agent ranks by competition type with rank calculated in SQL
-      // Use a subquery to calculate ranks across ALL agents, then filter to requested agents
-      // DENSE_RANK() gives same rank for tied scores without skipping numbers
+      // Query 1: Agent ranks by competition type with rank. We use a subquery to calculate ranks
+      // across ALL agents, then filter to the requested agents. Results ordered by rank, then
+      // createdAt (oldest first) to reward longevity.
+      // Note: DENSE_RANK() gives same rank for tied scores without skipping numbers
       const rankedAgentsSubquery = this.#dbRead
         .select({
           agentId: agentScore.agentId,
           type: agentScore.type,
           ordinal: agentScore.ordinal,
+          createdAt: agentScore.createdAt,
           rank: sql<number>`DENSE_RANK() OVER (PARTITION BY ${agentScore.type} ORDER BY ${agentScore.ordinal} DESC)::int`.as(
             "rank",
           ),
@@ -162,7 +164,8 @@ export class LeaderboardRepository {
           rank: rankedAgentsSubquery.rank,
         })
         .from(rankedAgentsSubquery)
-        .where(inArray(rankedAgentsSubquery.agentId, agentIds));
+        .where(inArray(rankedAgentsSubquery.agentId, agentIds))
+        .orderBy(rankedAgentsSubquery.rank, rankedAgentsSubquery.createdAt);
 
       // Query 2: Competition counts (only completed competitions)
       const competitionCountsQuery = this.#dbRead

@@ -160,7 +160,7 @@ export class AgentMetricsHelper {
       bestPlacement: metrics.bestPlacement ?? undefined,
       totalRoi: metrics.totalRoi ?? undefined,
       bestPnl: metrics.bestPnl ?? undefined,
-      ranks: metrics.ranks ?? undefined,
+      ranks: metrics.ranks.length > 0 ? metrics.ranks : undefined,
     };
   }
 
@@ -202,7 +202,7 @@ export class AgentMetricsHelper {
       bestPlacement: null,
       bestPnl: null,
       totalRoi: null,
-      ranks: null,
+      ranks: [],
     };
   }
 }

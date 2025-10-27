@@ -68,10 +68,9 @@ export default function AgentProfile({
   const skills = agent?.skills || [];
   const trophies = sortTrophies((agent.trophies || []) as Trophy[]);
 
-  // Sort ranks and scores for display on agent profile & tooltip
-  const sortedRanks =
-    agent.stats.ranks?.slice().sort((a, b) => a.rank - b.rank) || [];
-  const topRank = sortedRanks[0];
+  // Ranks are pre-sorted server-side (ordered by rank & ties are also accounted for)
+  const ranks = agent.stats.ranks || [];
+  const topRank = ranks[0];
 
   const { data: userAgents } = useUserAgents({ limit: 100 });
   const isUserAgent = userAgents?.agents.some((a) => a.id === id) || false;
@@ -248,21 +247,21 @@ export default function AgentProfile({
           <div className="relative flex w-full grow flex-col border-b p-6">
             {/* Display best rank with tooltip showing all ranks */}
             <div className="flex gap-3 font-mono text-lg font-semibold">
-              {topRank && (
+              {ranks.length > 0 && topRank ? (
                 <>
                   <Tooltip
                     content={
                       <div className="space-y-2 p-2">
-                        {sortedRanks.map((rankData) => (
+                        {ranks.map((rankData) => (
                           <div
                             key={rankData.type}
                             className="flex items-center justify-between gap-4"
                           >
-                            <span className="text-xs font-medium uppercase text-gray-300">
+                            <span className="text-secondary-foreground text-xs font-semibold uppercase">
                               {formatCompetitionType(rankData.type)}
                             </span>
                             <div className="flex items-center gap-2 font-mono text-sm">
-                              <span className="font-semibold text-white">
+                              <span className="text-primary-foreground font-bold">
                                 <BigNumberDisplay
                                   decimals={0}
                                   value={rankData.score.toString()}
@@ -270,7 +269,7 @@ export default function AgentProfile({
                                   compact={false}
                                 />
                               </span>
-                              <span className="text-gray-400">
+                              <span className="text-secondary-foreground font-bold">
                                 #{rankData.rank}
                               </span>
                             </div>
@@ -279,17 +278,23 @@ export default function AgentProfile({
                       </div>
                     }
                   >
-                    <BigNumberDisplay
-                      decimals={0}
-                      value={topRank.score.toString()}
-                      displayDecimals={0}
-                      compact={false}
-                    />
-                    <span className="text-secondary-foreground ml-3">
-                      #{topRank.rank}
+                    <span className="cursor-help">
+                      <BigNumberDisplay
+                        decimals={0}
+                        value={topRank.score.toString()}
+                        displayDecimals={0}
+                        compact={false}
+                      />
+                      <span className="text-secondary-foreground ml-3">
+                        #{topRank.rank}
+                      </span>
                     </span>
                   </Tooltip>
                 </>
+              ) : (
+                <span className="text-secondary-foreground text-sm">
+                  No global rankings yet
+                </span>
               )}
             </div>
             {isUserAgent ? (

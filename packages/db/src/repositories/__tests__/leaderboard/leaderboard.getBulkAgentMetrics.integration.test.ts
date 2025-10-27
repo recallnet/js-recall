@@ -548,4 +548,93 @@ describe("LeaderboardRepository.getBulkAgentMetrics() Integration Tests", () => 
     );
     expect(noScoresRanks).toHaveLength(0);
   });
+
+  test("should order tied ranks by oldest agents for deterministic results", async () => {
+    const userId = randomUUID();
+    await db.insert(users).values({
+      id: userId,
+      walletAddress: generateWalletAddress(),
+      name: "Test User",
+      status: "active",
+    });
+    const oldestAgentId = randomUUID();
+    const middleAgentId = randomUUID();
+    const newestAgentId = randomUUID();
+    await db.insert(agents).values([
+      {
+        id: oldestAgentId,
+        ownerId: userId,
+        handle: generateHandle(),
+        name: "Oldest Agent",
+        apiKey: `key-${randomUUID()}`,
+        status: "active",
+      },
+      {
+        id: middleAgentId,
+        ownerId: userId,
+        handle: generateHandle(),
+        name: "Middle Agent",
+        apiKey: `key-${randomUUID()}`,
+        status: "active",
+      },
+      {
+        id: newestAgentId,
+        ownerId: userId,
+        handle: generateHandle(),
+        name: "Newest Agent",
+        apiKey: `key-${randomUUID()}`,
+        status: "active",
+      },
+    ]);
+
+    // Insert agent scores with identical scores but different `createdAt` timestamps
+    const baseTime = new Date("2025-01-01T00:00:00Z");
+    await db.insert(agentScore).values([
+      {
+        id: randomUUID(),
+        agentId: oldestAgentId,
+        type: "trading",
+        mu: 25.0,
+        sigma: 8.333,
+        ordinal: 100.0,
+        createdAt: new Date(baseTime.getTime()), // Oldest
+      },
+      {
+        id: randomUUID(),
+        agentId: middleAgentId,
+        type: "trading",
+        mu: 25.0,
+        sigma: 8.333,
+        ordinal: 100.0,
+        createdAt: new Date(baseTime.getTime() + 1000 * 60 * 60), // 1 hour later
+      },
+      {
+        id: randomUUID(),
+        agentId: newestAgentId,
+        type: "trading",
+        mu: 25.0,
+        sigma: 8.333,
+        ordinal: 100.0,
+        createdAt: new Date(baseTime.getTime() + 1000 * 60 * 60 * 2), // 2 hours later
+      },
+    ]);
+
+    const result = await repository.getBulkAgentMetrics([
+      oldestAgentId,
+      middleAgentId,
+      newestAgentId,
+    ]);
+
+    // All agents should have rank 1 (DENSE_RANK gives same rank for ties)
+    expect(result.agentRanks).toHaveLength(3);
+    result.agentRanks.forEach((rankData) => {
+      expect(rankData.rank).toBe(1); // All tied at rank 1
+      expect(rankData.ordinal).toBe(100.0); // All have same score
+    });
+
+    // Verify ordering: oldest createdAt should come first
+    expect(result.agentRanks[0]?.agentId).toBe(oldestAgentId);
+    expect(result.agentRanks[1]?.agentId).toBe(middleAgentId);
+    expect(result.agentRanks[2]?.agentId).toBe(newestAgentId);
+  });
 });
