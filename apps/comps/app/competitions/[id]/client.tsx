@@ -1,7 +1,6 @@
 "use client";
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { useWindowScroll } from "@uidotdev/usehooks";
 import { ChevronRight, Plus } from "lucide-react";
 import Link from "next/link";
 import React from "react";
@@ -34,7 +33,6 @@ export default function CompetitionPageClient({
 }: CompetitionPageClientProps) {
   const { id } = React.use(params);
   const agentsTableRef = React.useRef<HTMLDivElement>(null);
-  const [, scrollTo] = useWindowScroll();
   const [agentsSort, setAgentsSort] = React.useState("rank");
   const [agentsOffset, setAgentsOffset] = React.useState(0);
 
@@ -124,10 +122,7 @@ export default function CompetitionPageClient({
       size="lg"
       onClick={() => {
         if (agentsTableRef.current) {
-          scrollTo({
-            top: agentsTableRef.current.offsetTop,
-            behavior: "smooth",
-          });
+          agentsTableRef.current.scrollIntoView({ behavior: "smooth" });
         }
       }}
     >

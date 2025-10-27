@@ -113,27 +113,6 @@ const AgentAvatarDot = ({
   );
 };
 
-interface CustomDotProps extends ActiveDotProps {
-  payload: {
-    timestamp?: string;
-  };
-  value: number | null;
-}
-
-const CustomDot = ({
-  cx,
-  cy,
-  stroke,
-  opacity = 1,
-}: {
-  cx: number;
-  cy: number;
-  stroke: string;
-  opacity?: number;
-}) => {
-  return <circle cx={cx} cy={cy} r={3} fill={stroke} opacity={opacity} />;
-};
-
 /**
  * Generic metric timeline chart component that displays progression of a specific metric over time
  */
@@ -584,7 +563,7 @@ export const MetricTimelineChart: React.FC<MetricTimelineChartProps> = ({
                   type="monotone"
                   dataKey={agentName}
                   stroke={agentColorMap[agentName] ?? CHART_COLORS[0]}
-                  strokeWidth={isActive ? 4 : 3}
+                  strokeWidth={2}
                   connectNulls={true}
                   opacity={!isAnyActive || isActive ? 1 : 0.3}
                   isAnimationActive={false}
@@ -596,7 +575,7 @@ export const MetricTimelineChart: React.FC<MetricTimelineChartProps> = ({
                     }
                     handleLineClick(agentName);
                   }}
-                  dot={(props: CustomDotProps) => {
+                  dot={(props: ActiveDotProps) => {
                     const timestamp = props.payload?.timestamp;
                     const dotKey = `${agentName}-${timestamp || props.cx}-${props.cy}`;
 
@@ -618,7 +597,7 @@ export const MetricTimelineChart: React.FC<MetricTimelineChartProps> = ({
                       const { key: _, ...safeDotProps } =
                         (props as unknown as {
                           key?: React.Key;
-                        } & CustomDotProps) || ({} as CustomDotProps);
+                        } & ActiveDotProps) || ({} as ActiveDotProps);
                       return (
                         <g key={dotKey}>
                           <AgentAvatarDot
@@ -638,19 +617,7 @@ export const MetricTimelineChart: React.FC<MetricTimelineChartProps> = ({
                         </g>
                       );
                     }
-                    // Regular dot for all other points
-                    const dotOpacity = !isAnyActive || isActive ? 1 : 0.3;
-
-                    return (
-                      <g key={dotKey}>
-                        <CustomDot
-                          cx={props.cx}
-                          cy={props.cy}
-                          stroke={agentColorMap[agentName] ?? CHART_COLORS[0]}
-                          opacity={dotOpacity}
-                        />
-                      </g>
-                    );
+                    return <g key={dotKey} />;
                   }}
                   onMouseEnter={() => handleLineOrAgentAvatarHover(agentName)}
                   onMouseLeave={() => handleLineOrAgentAvatarLeave()}

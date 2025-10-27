@@ -26,6 +26,37 @@ export interface RewardsTGEProps {
   compact?: boolean;
 }
 
+export interface SingleRewardTGEValueProps {
+  values: string[];
+  className?: string;
+  compact?: boolean;
+}
+
+export const SingleRewardTGEValue: React.FC<SingleRewardTGEValueProps> = ({
+  values,
+  className,
+}) => {
+  const formattedValue = useMemo(() => {
+    const addedValues = values.reduce(
+      (acc, value) => acc + BigInt(value),
+      BigInt(0),
+    );
+    const val = attoValueToNumberValue(addedValues);
+    return val ? formatAmount(val, 0, true) : "0";
+  }, [values]);
+  return (
+    <span
+      className={cn(
+        "text-primary-foreground inline-flex items-center gap-1 font-bold",
+        className,
+      )}
+    >
+      <Recall size="sm" />
+      {formattedValue}
+    </span>
+  );
+};
+
 /**
  * Displays the total rewards and the 1st, 2nd, and 3rd place rewards in a responsive flex layout.
  *
@@ -62,8 +93,8 @@ export const RewardsTGE: React.FC<RewardsTGEProps> = ({
           className,
         )}
       >
+        <Recall size="sm" />
         {formattedRewards.totalValue}
-        <Recall />
       </div>
     );
   }
@@ -73,15 +104,15 @@ export const RewardsTGE: React.FC<RewardsTGEProps> = ({
       <div className="flex items-center gap-2">
         <span className="text-sm text-gray-400">Agents</span>
         <span className="flex items-center gap-1.5 font-bold text-white">
-          {formattedRewards.agentPrizePool.toLocaleString()}
           <Recall size="sm" />
+          {formattedRewards.agentPrizePool.toLocaleString()}
         </span>
       </div>
       <div className="flex items-center gap-2">
         <span className="text-sm text-gray-400">Boosters</span>
         <span className="flex items-center gap-1.5 font-bold text-white">
-          {formattedRewards.userPrizePool.toLocaleString()}
           <Recall size="sm" />
+          {formattedRewards.userPrizePool.toLocaleString()}
         </span>
       </div>
     </div>
