@@ -1,5 +1,7 @@
 "use client";
 
+import { isFuture } from "date-fns";
+import { useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   CartesianGrid,
@@ -20,7 +22,6 @@ import { RouterOutputs } from "@/rpc/router";
 import {
   formatAmount,
   formatCompactNumber,
-  formatDate,
   formatDateShort,
   formatPercentage,
 } from "@/utils/format";
@@ -54,6 +55,7 @@ interface MetricTimelineChartProps {
   isLoading?: boolean;
   status: "pending" | "active" | "ending" | "ended";
   startDate?: Date | null;
+  boostStartDate?: Date | null;
   dateRange?: "all" | "72h";
 }
 
@@ -144,8 +146,10 @@ export const MetricTimelineChart: React.FC<MetricTimelineChartProps> = ({
   isLoading = false,
   status,
   startDate,
+  boostStartDate,
   dateRange = "all",
 }) => {
+  const router = useRouter();
   const [lineOrAgentAvatarHovered, setLineOrAgentAvatarHovered] = useState<
     string | null
   >(null);
@@ -377,43 +381,141 @@ export const MetricTimelineChart: React.FC<MetricTimelineChartProps> = ({
     );
   }
 
-  if (!timelineData || timelineData.length === 0 || status === "pending") {
-    // Show countdown for pending competitions
-    if (status === "pending" && startDate) {
+  // Show countdown for pending competitions
+  if (status === "pending") {
+    // No start date - show placeholder message
+    if (!startDate) {
       return (
-        <div className="h-150 flex w-full flex-col items-center justify-center p-10">
-          <div className="flex flex-col items-center justify-center space-y-6">
-            <div className="text-center">
-              <h3 className="mb-3 text-2xl font-bold uppercase tracking-wider text-white">
-                Competition Starts In
-              </h3>
-              <CountdownClock
-                targetDate={new Date(startDate)}
-                className="text-5xl font-bold tabular-nums text-white"
-                showDuration={true}
-                onFinish={() => {
-                  // Refresh to update competition status
-                  window.location.reload();
-                }}
-              />
+        <div className="h-150 flex w-full flex-col items-center justify-center">
+          <div className="flex w-full max-w-2xl flex-col items-center justify-center space-y-8 px-8 py-16 text-center">
+            <div className="space-y-4">
+              <h2 className="text-primary-foreground text-3xl font-semibold tracking-wide">
+                Competition Details Pending
+              </h2>
             </div>
-            <p className="text-md text-secondary-foreground">
-              {formatDate(startDate)}
+            <p className="text-secondary-foreground text-lg">
+              Check back soon for the competition&apos;s start time,
+              requirements, and boosting details.
             </p>
           </div>
         </div>
       );
     }
 
-    // Default message for no data
+    // Start date exists - show countdown(s) for competition and boosting
+    const showCompetitionCountdown = isFuture(startDate);
+    const showBoostingCountdown = boostStartDate && isFuture(boostStartDate);
+    const showBothCountdowns =
+      showCompetitionCountdown && showBoostingCountdown;
+
     return (
-      <div className="h-150 flex w-full flex-col items-center justify-center p-10">
-        <span className="text-primary-foreground text-xl">
-          No data available
-        </span>
-        <span className="text-secondary-foreground text-md">
-          Data will appear here as the competition progresses.
-        </span>
+      <div className="h-150 flex w-full flex-col items-center justify-center">
+        <div className="flex w-full max-w-7xl flex-col items-center justify-center px-4 py-16">
+          {/* Show countdown(s) side by side if both exist, otherwise centered */}
+          {(showCompetitionCountdown || showBoostingCountdown) && (
+            <div
+              className={`grid w-full ${
+                showBothCountdowns
+                  ? "relative grid-cols-1 gap-16 sm:grid-cols-2"
+                  : "grid-cols-1"
+              }`}
+            >
+              {/* Boost start countdown */}
+              {showBoostingCountdown && (
+                <div className="flex flex-col items-center space-y-8 text-center">
+                  <div className="space-y-2">
+                    <h2 className="text-primary-foreground text-3xl font-semibold uppercase tracking-wide">
+                      Boosting Opens In
+                    </h2>
+                  </div>
+                  <CountdownClock
+                    targetDate={boostStartDate}
+                    className="text-primary text-6xl font-bold"
+                    showDuration={true}
+                    onFinish={() => {
+                      router.refresh();
+                    }}
+                  />
+                  <p className="text-secondary-foreground max-w-sm text-lg">
+                    Boosting opens on {formatDateShort(boostStartDate)}. Predict
+                    the top agents to earn rewards.
+                  </p>
+                </div>
+              )}
+
+              {/* Centered divider between columns */}
+              {showBothCountdowns && (
+                <div className="bg-border absolute left-1/2 top-0 hidden h-full w-px sm:block"></div>
+              )}
+
+              {/* Competition start countdown */}
+              {showCompetitionCountdown && (
+                <div className="flex flex-col items-center space-y-8 text-center">
+                  <div className="space-y-2">
+                    <h2 className="text-primary-foreground text-3xl font-semibold uppercase tracking-wide">
+                      Competition Starts In
+                    </h2>
+                  </div>
+                  <CountdownClock
+                    targetDate={startDate}
+                    className="text-primary text-6xl font-bold"
+                    showDuration={true}
+                    onFinish={() => {
+                      router.refresh();
+                    }}
+                  />
+                  <p className="text-secondary-foreground max-w-sm text-lg">
+                    Agents will begin competing on {formatDateShort(startDate)}{" "}
+                    to prove their skills.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Edge case where both dates are in the past (shouldn't happen, unless a competition wasn't properly started) */}
+          {!showCompetitionCountdown && !showBoostingCountdown && (
+            <div className="flex w-full max-w-2xl flex-col items-center justify-center space-y-8 px-8 py-16 text-center">
+              <div className="space-y-4">
+                <h2 className="text-primary-foreground text-3xl font-semibold tracking-wide">
+                  Competition Will Begin Shortly
+                </h2>
+                <p className="text-secondary-foreground text-lg">
+                  Check back soon to see how agents are performing.
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Edge case where the competition is active but no data is available yet
+  if (!timelineData || timelineData.length === 0) {
+    return (
+      <div className="h-150 flex w-full flex-col items-center justify-center">
+        <div className="flex w-full max-w-2xl flex-col items-center justify-center space-y-8 px-8 py-16 text-center">
+          <div className="space-y-4">
+            <h2 className="text-primary-foreground text-3xl font-semibold tracking-wide">
+              Waiting for Data
+            </h2>
+            <p className="text-secondary-foreground text-lg">
+              Agents are getting ready. Performance metrics will appear shortly.
+            </p>
+          </div>
+          <div className="text-primary flex items-center space-x-2">
+            <div className="bg-primary h-2 w-2 animate-pulse rounded-full"></div>
+            <div
+              className="bg-primary h-2 w-2 animate-pulse rounded-full"
+              style={{ animationDelay: "0.2s" }}
+            ></div>
+            <div
+              className="bg-primary h-2 w-2 animate-pulse rounded-full"
+              style={{ animationDelay: "0.4s" }}
+            ></div>
+          </div>
+        </div>
       </div>
     );
   }

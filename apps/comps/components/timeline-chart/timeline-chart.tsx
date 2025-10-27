@@ -44,7 +44,10 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
   );
 
   const { id } = competition;
-  const showDateRange = competition.status !== "ended";
+  const startDate = competition.startDate;
+  const boostStartDate = competition.boostStartDate;
+  const competitionStatus = competition.status;
+  const showDateRange = competitionStatus !== "ended";
 
   // For perps competitions, render charts with tabs
   if (isPerpsCompetition) {
@@ -172,8 +175,9 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
               metric="simpleReturn"
               yAxisType="percentage"
               isLoading={isLoading}
-              status={competition.status}
-              startDate={competition.startDate}
+              status={competitionStatus}
+              startDate={startDate}
+              boostStartDate={boostStartDate}
               dateRange={dateRange}
             />
           </TabsContent>
@@ -185,8 +189,9 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
               agents={agents || []}
               metric="calmarRatio"
               isLoading={isLoading}
-              status={competition.status}
-              startDate={competition.startDate}
+              status={competitionStatus}
+              startDate={startDate}
+              boostStartDate={boostStartDate}
               dateRange={dateRange}
             />
           </TabsContent>
@@ -199,8 +204,9 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
               metric="maxDrawdown"
               yAxisType="percentage"
               isLoading={isLoading}
-              status={competition.status}
-              startDate={competition.startDate}
+              status={competitionStatus}
+              startDate={startDate}
+              boostStartDate={boostStartDate}
               dateRange={dateRange}
             />
           </TabsContent>
@@ -212,8 +218,9 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
               agents={agents || []}
               metric="sortinoRatio"
               isLoading={isLoading}
-              status={competition.status}
-              startDate={competition.startDate}
+              status={competitionStatus}
+              startDate={startDate}
+              boostStartDate={boostStartDate}
               dateRange={dateRange}
             />
           </TabsContent>
@@ -319,8 +326,9 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
             metric="totalValue"
             yAxisType="currency"
             isLoading={isLoading}
-            status={competition.status}
-            startDate={competition.startDate}
+            status={competitionStatus}
+            startDate={startDate}
+            boostStartDate={boostStartDate}
             dateRange={dateRange}
           />
         </TabsContent>
@@ -333,8 +341,9 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
             metric="percentReturn"
             yAxisType="percentage"
             isLoading={isLoading}
-            status={competition.status}
-            startDate={competition.startDate}
+            status={competitionStatus}
+            startDate={startDate}
+            boostStartDate={boostStartDate}
             dateRange={dateRange}
           />
         </TabsContent>
