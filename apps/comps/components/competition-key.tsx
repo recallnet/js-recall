@@ -372,7 +372,7 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
                             </span>
                           )}
                           {position.createdAt && (
-                            <span className="text-secondary-foreground text-xs">
+                            <span className="text-secondary-foreground text-xs font-light">
                               Opened{" "}
                               {shouldShowRelativeTimestamp(position.createdAt)
                                 ? formatRelativeTime(position.createdAt)
@@ -449,7 +449,7 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
                             {formatAmount(Number(position.positionSize))}{" "}
                             {position.asset}
                           </span>
-                          <span className="text-xs text-gray-400">
+                          <span className="text-secondary-foreground text-xs">
                             {formatAmount(Number(position.leverage))}x leverage
                             • {formatAmount(Number(position.collateralAmount))}{" "}
                             collateral
