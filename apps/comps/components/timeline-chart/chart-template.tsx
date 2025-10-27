@@ -617,8 +617,7 @@ export const MetricTimelineChart: React.FC<MetricTimelineChartProps> = ({
                         </g>
                       );
                     }
-                    // Note: we need to conform to the ActiveDotProps type, but we don't want to render anything
-                    return <></>;
+                    return <g key={dotKey} />;
                   }}
                   onMouseEnter={() => handleLineOrAgentAvatarHover(agentName)}
                   onMouseLeave={() => handleLineOrAgentAvatarLeave()}
