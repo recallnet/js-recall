@@ -36,6 +36,7 @@ import {
 import { BoostIcon } from "./BoostIcon";
 import { AgentAvatar } from "./agent-avatar";
 import { RewardsTGE } from "./rewards-tge";
+import { SkeletonList } from "./skeleton-loaders";
 
 export interface CompetitionKeyProps {
   competition: RouterOutputs["competitions"]["getById"];
@@ -257,9 +258,7 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
           >
             <div className="h-full overflow-y-auto p-4">
               {isLoadingTrades ? (
-                <div className="flex items-center justify-center p-8">
-                  <p className="text-sm text-gray-400">Loading trades...</p>
-                </div>
+                <SkeletonList count={10} type="trade" />
               ) : tradesData && tradesData.trades.length > 0 ? (
                 <div>
                   <div className="space-y-3">
@@ -320,11 +319,7 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
           >
             <div className="h-full overflow-y-auto p-4">
               {isLoadingOpenPositions ? (
-                <div className="flex items-center justify-center p-8">
-                  <p className="text-sm text-gray-400">
-                    Loading open positions...
-                  </p>
-                </div>
+                <SkeletonList count={10} type="position" />
               ) : openPositionsData &&
                 openPositionsData.positions.length > 0 ? (
                 <div>
@@ -413,11 +408,7 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
           >
             <div className="h-full overflow-y-auto p-4">
               {isLoadingClosedPositions ? (
-                <div className="flex items-center justify-center p-8">
-                  <p className="text-sm text-gray-400">
-                    Loading closed positions...
-                  </p>
-                </div>
+                <SkeletonList count={10} type="position" />
               ) : closedPositionsData &&
                 closedPositionsData.positions.length > 0 ? (
                 <div>
