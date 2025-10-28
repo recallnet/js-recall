@@ -916,7 +916,7 @@ describe("Agent API", () => {
     expect(agentData.agent.stats?.completedCompetitions).toBe(0);
     expect(agentData.agent.stats?.totalTrades).toBe(0);
     expect(agentData.agent.stats?.bestPlacement).toBeUndefined();
-    expect(agentData.agent.stats?.ranks).toEqual([]);
+    expect(agentData.agent.stats?.ranks).toBeUndefined();
     // Validate owner information is included
     expect(agentData.owner).toBeDefined();
     expect(agentData.owner.id).toBeDefined();
