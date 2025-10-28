@@ -24,15 +24,19 @@ export function iconForStatus(
  * Returns an interval for active, pending, and ending competitions to keep data fresh.
  * Returns false for ended competitions to save resources.
  *
+ * Polling interval matches backend cron job (perps) frequency (60s) with additional buffer
+ * to allow time for processing (perps data sync, risk metrics calculation).
+ *
  * @param status - Competition status
- * @returns Polling interval in milliseconds with jitter (30-35s), or false if ended
+ * @returns Polling interval in milliseconds with jitter (60-65s), or false if ended
  */
 export function getCompetitionPollingInterval(
   status: "active" | "pending" | "ending" | "ended" | undefined,
 ): number | false {
   if (status === "active" || status === "pending" || status === "ending") {
-    // 30-35 second interval with jitter to prevent thundering herd
-    return 30000 + Math.random() * 5000;
+    // 60-65 second interval with jitter to prevent thundering herd
+    // Matches backend cron frequency and allows time for processing
+    return 60000 + Math.random() * 5000;
   }
   // No polling for ended competitions
   return false;

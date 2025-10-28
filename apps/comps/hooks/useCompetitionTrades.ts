@@ -32,7 +32,7 @@ export const useCompetitionTrades = (
         : skipToken,
       placeholderData: (prev) => prev,
     }),
-    staleTime: 30 * 1000, // Consider data stale after 30 seconds
+    staleTime: 60 * 1000, // Consider data stale after 60 seconds
     refetchInterval: () => getCompetitionPollingInterval(competitionStatus),
   });
 };

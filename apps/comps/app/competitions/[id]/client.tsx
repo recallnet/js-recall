@@ -43,7 +43,7 @@ export default function CompetitionPageClient({
     error: competitionError,
   } = useQuery({
     ...tanstackClient.competitions.getById.queryOptions({ input: { id } }),
-    staleTime: 30 * 1000, // Consider data stale after 30 seconds
+    staleTime: 60 * 1000, // Consider data stale after 60 seconds
     refetchInterval: (query) =>
       getCompetitionPollingInterval(query.state.data?.status),
   });
@@ -60,7 +60,7 @@ export default function CompetitionPageClient({
         },
       },
     }),
-    staleTime: 30 * 1000,
+    staleTime: 60 * 1000,
     refetchInterval: () => getCompetitionPollingInterval(competition?.status),
   });
 
@@ -81,7 +81,7 @@ export default function CompetitionPageClient({
         },
       },
     }),
-    staleTime: 30 * 1000,
+    staleTime: 60 * 1000,
     refetchInterval: () => getCompetitionPollingInterval(competition?.status),
   });
 
