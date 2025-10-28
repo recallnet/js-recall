@@ -326,10 +326,17 @@ export const AgentStatsSchema = z.object({
       totalAgents: z.number(),
     })
     .optional(),
-  rank: z.number().optional(),
-  score: z.number().optional(),
   totalRoi: z.number().optional(),
   bestPnl: z.number().optional(),
+  ranks: z
+    .array(
+      z.object({
+        type: z.string(),
+        rank: z.number(),
+        score: z.number(),
+      }),
+    )
+    .optional(),
 });
 
 export type AgentStats = z.infer<typeof AgentStatsSchema>;

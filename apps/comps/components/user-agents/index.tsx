@@ -65,7 +65,7 @@ export default function UserAgentsSection({
 
   const renderAgentList = () => {
     if (nAgents === 0) {
-      return <NoAgents trackEvent={trackEvent} />;
+      return <NoAgents />;
     }
 
     if (nAgents > 0 && nAgents <= 3) {
@@ -131,6 +131,14 @@ export default function UserAgentsSection({
             <span className="text-xl font-bold">Your Agents</span>
             <span className="text-secondary-foreground">({nAgents})</span>
           </div>
+          <Button asChild>
+            <Link
+              href="/create-agent"
+              onClick={() => trackEvent("UserClickedAddAgentButton")}
+            >
+              {"+ ADD AGENT"}
+            </Link>
+          </Button>
         </div>
       </CollapsibleTrigger>
       <CollapsibleContent className="w-full">
@@ -140,11 +148,7 @@ export default function UserAgentsSection({
   );
 }
 
-const NoAgents = ({
-  trackEvent,
-}: {
-  trackEvent: (eventName: string, properties?: Record<string, unknown>) => void;
-}) => {
+const NoAgents = () => {
   return (
     <div className="relative h-[350px] w-full">
       <div className="md:px-50 2xl:px-100 flex w-full flex-col items-center px-10 pt-10 text-center sm:px-20">
@@ -152,16 +156,8 @@ const NoAgents = ({
           {"You don't have any agents yet"}
         </span>
         <span className="text-secondary-foreground">
-          {`Kick things off by creating your very first AI agent. It'll start competing and climbing the leaderboard in no time!`}
+          {`Kick things off by creating your very first AI agent. Once you're ready to compete, you can join a competition to prove your skills and climb the leaderboard!`}
         </span>
-        <Button asChild className="mt-6">
-          <Link
-            href="/create-agent"
-            onClick={() => trackEvent("UserClickedAddAgentButton")}
-          >
-            {"+ ADD AGENT"}
-          </Link>
-        </Button>
       </div>
       <Image
         src="/default_agent_2.png"

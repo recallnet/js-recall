@@ -1970,6 +1970,9 @@ export class CompetitionRepository {
 
   /**
    * Get rankings for a single agent across multiple competitions
+   * For ended competitions, uses stored leaderboard rankings
+   * For active competitions, calculates rankings from current portfolio snapshots
+   * For pending competitions, does not calculate rankings (returns undefined)
    * @param agentId Agent ID
    * @param competitionIds Array of competition IDs
    * @returns Map of competition ID to ranking data
@@ -1987,44 +1990,23 @@ export class CompetitionRepository {
         `getAgentRankingsInCompetitions called for agent ${agentId} in ${competitionIds.length} competitions`,
       );
 
-      // Calculate rankings directly in SQL without fetching all agents
-      // Only include active agents in ranking calculation
-      const rankingResults = await this.#db.execute(
-        sql`
-        WITH latest_snapshots AS (
-          SELECT
-            ps.competition_id,
-            ps.agent_id,
-            ps.total_value,
-            ROW_NUMBER() OVER (PARTITION BY ps.competition_id, ps.agent_id ORDER BY ps.timestamp DESC) as rn
-          FROM ${portfolioSnapshots} ps
-          INNER JOIN ${competitionAgents} ca ON ps.agent_id = ca.agent_id AND ps.competition_id = ca.competition_id
-          WHERE ps.competition_id IN (${sql.join(
-            competitionIds.map((id) => sql`${id}`),
-            sql`, `,
-          )})
-            AND ca.status = ${"active"}
-        ),
-        ranked AS (
-          SELECT
-            competition_id,
-            agent_id,
-            total_value,
-            RANK() OVER (PARTITION BY competition_id ORDER BY total_value DESC) as rank,
-            COUNT(*) OVER (PARTITION BY competition_id) as total_agents
-          FROM latest_snapshots
-          WHERE rn = 1
-        )
-        SELECT
-          competition_id,
-          rank,
-          total_agents
-        FROM ranked
-        WHERE agent_id = ${agentId}
-      `,
-      );
+      // Get competition statuses to determine which approach to use
+      const competitionStatuses = await this.#db
+        .select({
+          id: competitions.id,
+          status: competitions.status,
+        })
+        .from(competitions)
+        .where(inArray(competitions.id, competitionIds));
 
-      // Convert results to map
+      const endedCompetitionIds = competitionStatuses
+        .filter((c) => c.status === "ended")
+        .map((c) => c.id);
+
+      const activeOrPendingCompetitionIds = competitionStatuses
+        .filter((c) => c.status !== "ended")
+        .map((c) => c.id);
+
       const rankingsMap = new Map<
         string,
         { rank: number; totalAgents: number } | undefined
@@ -2035,17 +2017,87 @@ export class CompetitionRepository {
         rankingsMap.set(competitionId, undefined);
       }
 
-      // Update with actual rankings
-      for (const row of rankingResults.rows) {
-        const { data, success, error } = BestPlacementDbSchema.safeParse(row);
-        if (success !== true) {
-          throw new Error(`${error}`);
-        }
+      // For ENDED competitions, use stored leaderboard rankings
+      if (endedCompetitionIds.length > 0) {
+        const leaderboardRankings = await this.#db
+          .select({
+            competitionId: competitionsLeaderboard.competitionId,
+            rank: competitionsLeaderboard.rank,
+            totalAgents: competitionsLeaderboard.totalAgents,
+          })
+          .from(competitionsLeaderboard)
+          .where(
+            and(
+              eq(competitionsLeaderboard.agentId, agentId),
+              inArray(
+                competitionsLeaderboard.competitionId,
+                endedCompetitionIds,
+              ),
+            ),
+          );
 
-        rankingsMap.set(data.competition_id, {
-          rank: data.rank,
-          totalAgents: data.total_agents,
-        });
+        // Update map with leaderboard rankings
+        for (const ranking of leaderboardRankings) {
+          rankingsMap.set(ranking.competitionId, {
+            rank: ranking.rank,
+            totalAgents: ranking.totalAgents,
+          });
+        }
+      }
+
+      // For ACTIVE/PENDING competitions, calculate from current snapshots
+      // Note: pending competitions will not have any snapshots taken, yet. This is ideal because
+      // the `rankingsMap` will result in undefined rankings for pending competitions. Downstream
+      // "best placement" calculations will then correctly include the pending competition in the
+      // response, but it will not attach the per-competition pending comp rankings to the agent.
+      if (activeOrPendingCompetitionIds.length > 0) {
+        const snapshotRankings = await this.#db.execute(
+          sql`
+          WITH latest_snapshots AS (
+            SELECT
+              ps.competition_id,
+              ps.agent_id,
+              ps.total_value,
+              ROW_NUMBER() OVER (PARTITION BY ps.competition_id, ps.agent_id ORDER BY ps.timestamp DESC) as rn
+            FROM ${portfolioSnapshots} ps
+            INNER JOIN ${competitionAgents} ca ON ps.agent_id = ca.agent_id AND ps.competition_id = ca.competition_id
+            WHERE ps.competition_id IN (${sql.join(
+              activeOrPendingCompetitionIds.map((id) => sql`${id}`),
+              sql`, `,
+            )})
+              AND ca.status = ${"active"}
+          ),
+          ranked AS (
+            SELECT
+              competition_id,
+              agent_id,
+              total_value,
+              RANK() OVER (PARTITION BY competition_id ORDER BY total_value DESC) as rank,
+              COUNT(*) OVER (PARTITION BY competition_id) as total_agents
+            FROM latest_snapshots
+            WHERE rn = 1
+          )
+          SELECT
+            competition_id,
+            rank,
+            total_agents
+          FROM ranked
+          WHERE agent_id = ${agentId}
+        `,
+        );
+
+        // Update map with snapshot-based rankings
+        for (const row of snapshotRankings.rows) {
+          const { data, success, error } = BestPlacementDbSchema.safeParse(row);
+          if (success !== true) {
+            throw new Error(`${error}`);
+          }
+
+          rankingsMap.set(data.competition_id, {
+            rank: data.rank,
+            totalAgents: data.total_agents,
+          });
+        }
       }
 
       this.#logger.debug(
@@ -2054,7 +2106,7 @@ export class CompetitionRepository {
 
       return rankingsMap;
     } catch (error) {
-      this.#logger.error("Error in getAgentRankingsInCompetitions:", error);
+      this.#logger.error({ error }, "Error in getAgentRankingsInCompetitions");
       throw error;
     }
   }

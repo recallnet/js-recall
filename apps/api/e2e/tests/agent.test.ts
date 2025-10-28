@@ -916,8 +916,7 @@ describe("Agent API", () => {
     expect(agentData.agent.stats?.completedCompetitions).toBe(0);
     expect(agentData.agent.stats?.totalTrades).toBe(0);
     expect(agentData.agent.stats?.bestPlacement).toBeUndefined();
-    expect(agentData.agent.stats?.rank).toBeUndefined();
-    expect(agentData.agent.stats?.score).toBeUndefined();
+    expect(agentData.agent.stats?.ranks).toBeUndefined();
     // Validate owner information is included
     expect(agentData.owner).toBeDefined();
     expect(agentData.owner.id).toBeDefined();
@@ -1843,8 +1842,12 @@ Purpose: WALLET_VERIFICATION`;
       agentProfile.agent.stats?.bestPlacement?.totalAgents,
     ).toBeGreaterThan(0);
 
-    expect(agentProfile.agent.stats?.rank).toBe(1);
-    expect(agentProfile.agent.stats?.score).toBe(1500);
+    // Verify agent has global ranks array
+    expect(agentProfile.agent.stats?.ranks).toBeDefined();
+    expect(Array.isArray(agentProfile.agent.stats?.ranks)).toBe(true);
+    expect(agentProfile.agent.stats?.ranks?.[0]?.rank).toBe(1);
+    expect(agentProfile.agent.stats?.ranks?.[0]?.score).toBe(1500);
+    expect(agentProfile.agent.stats?.ranks?.[0]?.type).toBe("trading");
   });
 
   describe("Per-Competition Agent Status", () => {

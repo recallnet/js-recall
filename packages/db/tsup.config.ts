@@ -19,6 +19,7 @@ export default defineConfig({
     "src/repositories/stakes.ts",
     "src/repositories/trade.ts",
     "src/repositories/trading-constraints.ts",
+    "src/repositories/types/index.ts",
     "src/repositories/user.ts",
     "src/schema/boost/defs.ts",
     "src/schema/boost/types.ts",

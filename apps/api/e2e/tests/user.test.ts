@@ -599,8 +599,7 @@ describe("User API", () => {
     expect(defaultAgents[0]?.stats?.completedCompetitions).toBe(0);
     expect(defaultAgents[0]?.stats?.totalTrades).toBe(0);
     expect(defaultAgents[0]?.stats?.bestPlacement).toBeUndefined();
-    expect(defaultAgents[0]?.stats?.rank).toBeUndefined();
-    expect(defaultAgents[0]?.stats?.score).toBeUndefined();
+    expect(defaultAgents[0]?.stats?.ranks).toBeUndefined();
   });
 
   test("user agents pagination respects limit parameter", async () => {
