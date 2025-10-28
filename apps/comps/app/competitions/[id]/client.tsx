@@ -41,16 +41,18 @@ export default function CompetitionPageClient({
     data: competition,
     isLoading: isLoadingCompetition,
     error: competitionError,
-  } = useQuery({
-    ...tanstackClient.competitions.getById.queryOptions({ input: { id } }),
-    staleTime: 60 * 1000, // Consider data stale after 60 seconds
-    refetchInterval: (query) =>
-      getCompetitionPollingInterval(query.state.data?.status),
-  });
+  } = useQuery(
+    tanstackClient.competitions.getById.queryOptions({
+      input: { id },
+      staleTime: 60 * 1000, // Consider data stale after 60 seconds
+      refetchInterval: (query) =>
+        getCompetitionPollingInterval(query.state.data?.status),
+    }),
+  );
 
   // Fetch top 12 agents for chart (independent of table pagination)
-  const { data: chartAgentsData, isLoading: isLoadingChartAgents } = useQuery({
-    ...tanstackClient.competitions.getAgents.queryOptions({
+  const { data: chartAgentsData, isLoading: isLoadingChartAgents } = useQuery(
+    tanstackClient.competitions.getAgents.queryOptions({
       input: {
         competitionId: id,
         paging: {
@@ -59,18 +61,18 @@ export default function CompetitionPageClient({
           limit: LIMIT_AGENTS_PER_CHART,
         },
       },
+      staleTime: 60 * 1000,
+      refetchInterval: () => getCompetitionPollingInterval(competition?.status),
     }),
-    staleTime: 60 * 1000,
-    refetchInterval: () => getCompetitionPollingInterval(competition?.status),
-  });
+  );
 
   // Fetch agents for standings table (paginated)
   const {
     data: agentsData,
     isLoading: isLoadingAgents,
     error: agentsError,
-  } = useQuery({
-    ...tanstackClient.competitions.getAgents.queryOptions({
+  } = useQuery(
+    tanstackClient.competitions.getAgents.queryOptions({
       placeholderData: keepPreviousData,
       input: {
         competitionId: id,
@@ -80,10 +82,10 @@ export default function CompetitionPageClient({
           limit: LIMIT_AGENTS_PER_PAGE,
         },
       },
+      staleTime: 60 * 1000,
+      refetchInterval: () => getCompetitionPollingInterval(competition?.status),
     }),
-    staleTime: 60 * 1000,
-    refetchInterval: () => getCompetitionPollingInterval(competition?.status),
-  });
+  );
 
   const handleAgentsPageChange = (page: number) => {
     setAgentsOffset(LIMIT_AGENTS_PER_PAGE * (page - 1));

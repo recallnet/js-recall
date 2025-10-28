@@ -19,8 +19,8 @@ export const useCompetitionTrades = (
   enabled: boolean = true,
   competitionStatus?: "active" | "pending" | "ending" | "ended",
 ): UseQueryResult<RouterOutputs["competitions"]["getTrades"], Error> => {
-  return useQuery({
-    ...tanstackClient.competitions.getTrades.queryOptions({
+  return useQuery(
+    tanstackClient.competitions.getTrades.queryOptions({
       input: enabled
         ? {
             competitionId,
@@ -31,8 +31,8 @@ export const useCompetitionTrades = (
           }
         : skipToken,
       placeholderData: (prev) => prev,
+      staleTime: 60 * 1000, // Consider data stale after 60 seconds
+      refetchInterval: () => getCompetitionPollingInterval(competitionStatus),
     }),
-    staleTime: 60 * 1000, // Consider data stale after 60 seconds
-    refetchInterval: () => getCompetitionPollingInterval(competitionStatus),
-  });
+  );
 };

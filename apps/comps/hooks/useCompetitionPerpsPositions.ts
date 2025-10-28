@@ -22,8 +22,8 @@ export const useCompetitionPerpsPositions = (
   RouterOutputs["competitions"]["getPerpsPositions"],
   Error
 > => {
-  return useQuery({
-    ...tanstackClient.competitions.getPerpsPositions.queryOptions({
+  return useQuery(
+    tanstackClient.competitions.getPerpsPositions.queryOptions({
       input: enabled
         ? {
             competitionId,
@@ -35,8 +35,8 @@ export const useCompetitionPerpsPositions = (
           }
         : skipToken,
       placeholderData: (prev) => prev,
+      staleTime: 60 * 1000, // Consider data stale after 60 seconds
+      refetchInterval: () => getCompetitionPollingInterval(competitionStatus),
     }),
-    staleTime: 60 * 1000, // Consider data stale after 60 seconds
-    refetchInterval: () => getCompetitionPollingInterval(competitionStatus),
-  });
+  );
 };
