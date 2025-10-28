@@ -23,6 +23,7 @@ import { TimelineChart } from "@/components/timeline-chart/index";
 import { getSocialLinksArray } from "@/data/social";
 import { openForBoosting } from "@/lib/open-for-boosting";
 import { tanstackClient } from "@/rpc/clients/tanstack-query";
+import { getCompetitionPollingInterval } from "@/utils/competition-utils";
 
 export type CompetitionPageClientProps = {
   params: Promise<{ id: string }>;
@@ -40,13 +41,16 @@ export default function CompetitionPageClient({
     data: competition,
     isLoading: isLoadingCompetition,
     error: competitionError,
-  } = useQuery(
-    tanstackClient.competitions.getById.queryOptions({ input: { id } }),
-  );
+  } = useQuery({
+    ...tanstackClient.competitions.getById.queryOptions({ input: { id } }),
+    staleTime: 30 * 1000, // Consider data stale after 30 seconds
+    refetchInterval: (query) =>
+      getCompetitionPollingInterval(query.state.data?.status),
+  });
 
   // Fetch top 12 agents for chart (independent of table pagination)
-  const { data: chartAgentsData, isLoading: isLoadingChartAgents } = useQuery(
-    tanstackClient.competitions.getAgents.queryOptions({
+  const { data: chartAgentsData, isLoading: isLoadingChartAgents } = useQuery({
+    ...tanstackClient.competitions.getAgents.queryOptions({
       input: {
         competitionId: id,
         paging: {
@@ -56,15 +60,17 @@ export default function CompetitionPageClient({
         },
       },
     }),
-  );
+    staleTime: 30 * 1000,
+    refetchInterval: () => getCompetitionPollingInterval(competition?.status),
+  });
 
   // Fetch agents for standings table (paginated)
   const {
     data: agentsData,
     isLoading: isLoadingAgents,
     error: agentsError,
-  } = useQuery(
-    tanstackClient.competitions.getAgents.queryOptions({
+  } = useQuery({
+    ...tanstackClient.competitions.getAgents.queryOptions({
       placeholderData: keepPreviousData,
       input: {
         competitionId: id,
@@ -75,7 +81,9 @@ export default function CompetitionPageClient({
         },
       },
     }),
-  );
+    staleTime: 30 * 1000,
+    refetchInterval: () => getCompetitionPollingInterval(competition?.status),
+  });
 
   const handleAgentsPageChange = (page: number) => {
     setAgentsOffset(LIMIT_AGENTS_PER_PAGE * (page - 1));

@@ -20,6 +20,25 @@ export function iconForStatus(
 }
 
 /**
+ * Calculates polling interval with jitter for competition data
+ * Returns an interval for active, pending, and ending competitions to keep data fresh.
+ * Returns false for ended competitions to save resources.
+ *
+ * @param status - Competition status
+ * @returns Polling interval in milliseconds with jitter (30-35s), or false if ended
+ */
+export function getCompetitionPollingInterval(
+  status: "active" | "pending" | "ending" | "ended" | undefined,
+): number | false {
+  if (status === "active" || status === "pending" || status === "ending") {
+    // 30-35 second interval with jitter to prevent thundering herd
+    return 30000 + Math.random() * 5000;
+  }
+  // No polling for ended competitions
+  return false;
+}
+
+/**
  * Formats the start and end dates of a competition in a user-friendly abbreviated form (MM/dd).
  * If either date is missing it falls back to the string "TBA".
  *
