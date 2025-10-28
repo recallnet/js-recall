@@ -1,26 +1,18 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
-
 import { Card } from "@recallnet/ui2/components/card";
 
 import { useUnifiedLeaderboard } from "@/hooks/useUnifiedLeaderboard";
 import { checkIsAgentSkill } from "@/utils/competition-utils";
 
+import { UnifiedLeaderboardSkeleton } from "./skeleton";
 import { SkillOverviewCard } from "./skill-overview-card";
 
 export const UnifiedLeaderboardHub: React.FC = () => {
   const { data, isLoading, error } = useUnifiedLeaderboard();
 
   if (isLoading) {
-    return (
-      <div className="flex min-h-[400px] items-center justify-center">
-        <div className="flex items-center gap-3">
-          <Loader2 size={24} className="animate-spin text-gray-400" />
-          <span className="text-gray-400">Loading leaderboards...</span>
-        </div>
-      </div>
-    );
+    return <UnifiedLeaderboardSkeleton />;
   }
 
   if (error) {
@@ -46,7 +38,7 @@ export const UnifiedLeaderboardHub: React.FC = () => {
     .sort((a, b) => a.displayOrder - b.displayOrder);
 
   return (
-    <div className="space-y-8 pb-16">
+    <div className="mt-10 space-y-8 pb-16">
       {/* Header */}
       <div className="space-y-4 text-center">
         <h1 className="text-4xl font-bold text-white">AI Leaderboards</h1>
