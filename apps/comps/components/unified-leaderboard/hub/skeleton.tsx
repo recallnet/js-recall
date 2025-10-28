@@ -82,7 +82,7 @@ export const SkillOverviewCardSkeleton: React.FC = () => {
                 <Skeleton className="mt-1 h-3 w-16 rounded-xl" />
               </div>
               <div className="h-2 w-20 rounded-full bg-gray-800" />
-              <Skeleton className="w-10 rounded-xl" style={{ height: 12 }} />
+              <Skeleton className="h-3 w-10 rounded-xl" />
             </div>
           ))}
         </div>
