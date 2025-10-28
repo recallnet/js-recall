@@ -16,6 +16,7 @@ import {
   DialogTitle,
 } from "@recallnet/ui2/components/dialog";
 import { Slider } from "@recallnet/ui2/components/slider";
+import { toast } from "@recallnet/ui2/components/toast";
 import {
   ToggleGroup,
   ToggleGroupItem,
@@ -124,6 +125,7 @@ export const RelockRecallModal: React.FC<RelockRecallModalProps> = ({
   useEffect(() => {
     if (isConfirmed && step === "confirming") {
       setStep("success");
+      toast.success("Successfully relocked tokens!");
     }
   }, [isConfirmed, step]);
 
@@ -144,6 +146,8 @@ export const RelockRecallModal: React.FC<RelockRecallModalProps> = ({
       });
       setError(userFriendlyError);
       setStep("error");
+      toast.error("Failed to relock tokens");
+      console.error("Relock error:", writeError);
     }
   }, [
     writeError,
@@ -231,6 +235,8 @@ export const RelockRecallModal: React.FC<RelockRecallModalProps> = ({
       );
       setError(userFriendlyError);
       setStep("error");
+      toast.error("Failed to relock tokens");
+      console.error("Relock error:", error);
     }
   };
 

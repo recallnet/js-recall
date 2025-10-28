@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo } from "react";
 
 import { attoValueToNumberValue } from "@recallnet/conversions/atto-conversions";
+import { toast } from "@recallnet/ui2/components/toast";
 
 import { useWithdraw } from "@/hooks/staking";
 import { useSafeBlock } from "@/hooks/useSafeWagmi";
@@ -38,9 +39,24 @@ const InactiveStakeEntry: React.FunctionComponent<InactiveStakeEntryProps> = ({
     execute: withdraw,
     isPending: isWithdrawPending,
     isConfirming: isWithdrawConfirming,
+    isConfirmed: isWithdrawConfirmed,
+    error: withdrawError,
   } = useWithdraw();
 
   const isWithdrawing = isWithdrawPending || isWithdrawConfirming;
+
+  useEffect(() => {
+    if (isWithdrawConfirmed) {
+      toast.success("Successfully withdrawn!");
+    }
+  }, [isWithdrawConfirmed]);
+
+  useEffect(() => {
+    if (withdrawError) {
+      toast.error("Failed to withdraw");
+      console.error("Withdraw error:", withdrawError);
+    }
+  }, [withdrawError]);
 
   const handleWithdraw = async () => {
     try {

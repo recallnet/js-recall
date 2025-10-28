@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
 import { attoValueToNumberValue } from "@recallnet/conversions/atto-conversions";
+import { toast } from "@recallnet/ui2/components/toast";
 
 import { useUnstake } from "@/hooks/staking";
 import { useSafeBlock } from "@/hooks/useSafeWagmi";
@@ -42,9 +43,24 @@ const ActiveStakeEntry: React.FunctionComponent<ActiveStakeEntryProps> = ({
     execute: unstake,
     isPending: isUnstakePending,
     isConfirming: isUnstakeConfirming,
+    isConfirmed: isUnstakeConfirmed,
+    error: unstakeError,
   } = useUnstake();
 
   const isUnstakeProcessing = isUnstakePending || isUnstakeConfirming;
+
+  useEffect(() => {
+    if (isUnstakeConfirmed) {
+      toast.success("Successfully unstaked!");
+    }
+  }, [isUnstakeConfirmed]);
+
+  useEffect(() => {
+    if (unstakeError) {
+      toast.error("Failed to unstake");
+      console.error("Unstake error:", unstakeError);
+    }
+  }, [unstakeError]);
 
   const handleUnstake = async () => {
     try {
