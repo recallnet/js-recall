@@ -114,6 +114,7 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
       limit: LIMIT_TRADES_PER_PAGE,
     },
     !isPerpsCompetition,
+    competition.status,
   );
 
   const { data: openPositionsData, isLoading: isLoadingOpenPositions } =
@@ -125,6 +126,7 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
         status: "Open",
       },
       isPerpsCompetition,
+      competition.status,
     );
 
   const { data: closedPositionsData, isLoading: isLoadingClosedPositions } =
@@ -136,6 +138,7 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
         status: "Closed",
       },
       isPerpsCompetition,
+      competition.status,
     );
 
   const handleTradesPageChange = useCallback((page: number) => {

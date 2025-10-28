@@ -23,6 +23,7 @@ import { TimelineChart } from "@/components/timeline-chart/index";
 import { getSocialLinksArray } from "@/data/social";
 import { openForBoosting } from "@/lib/open-for-boosting";
 import { tanstackClient } from "@/rpc/clients/tanstack-query";
+import { getCompetitionPollingInterval } from "@/utils/competition-utils";
 
 export type CompetitionPageClientProps = {
   params: Promise<{ id: string }>;
@@ -41,7 +42,12 @@ export default function CompetitionPageClient({
     isLoading: isLoadingCompetition,
     error: competitionError,
   } = useQuery(
-    tanstackClient.competitions.getById.queryOptions({ input: { id } }),
+    tanstackClient.competitions.getById.queryOptions({
+      input: { id },
+      staleTime: 60 * 1000, // Consider data stale after 60 seconds
+      refetchInterval: (query) =>
+        getCompetitionPollingInterval(query.state.data?.status),
+    }),
   );
 
   // Fetch top 12 agents for chart (independent of table pagination)
@@ -55,6 +61,8 @@ export default function CompetitionPageClient({
           limit: LIMIT_AGENTS_PER_CHART,
         },
       },
+      staleTime: 60 * 1000,
+      refetchInterval: () => getCompetitionPollingInterval(competition?.status),
     }),
   );
 
@@ -74,6 +82,8 @@ export default function CompetitionPageClient({
           limit: LIMIT_AGENTS_PER_PAGE,
         },
       },
+      staleTime: 60 * 1000,
+      refetchInterval: () => getCompetitionPollingInterval(competition?.status),
     }),
   );
 
