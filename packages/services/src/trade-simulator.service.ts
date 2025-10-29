@@ -200,11 +200,15 @@ export class TradeSimulatorService {
   /**
    * Calculate an agent's portfolio value in USD
    * @param agentId The agent ID
+   * @param competitionId The competition ID (optional, will use active competition if not provided)
    * @returns Total portfolio value in USD
    */
-  async calculatePortfolioValue(agentId: string) {
+  async calculatePortfolioValue(agentId: string, competitionId?: string) {
     let totalValue = 0;
-    const balances = await this.balanceService.getAllBalances(agentId);
+    const balances = await this.balanceService.getAllBalances(
+      agentId,
+      competitionId,
+    );
 
     for (const balance of balances) {
       const price = await this.priceTrackerService.getPrice(

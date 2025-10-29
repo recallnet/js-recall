@@ -1477,6 +1477,7 @@ export function makeAdminController(services: ServiceRegistry) {
 
           await services.balanceService.resetAgentBalances(
             agentId,
+            competitionId,
             competition.type,
           );
         }
