@@ -465,9 +465,8 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                   original: RouterOutputs["competitions"]["getAgents"]["agents"][number];
                 };
               }) => (
-                <span className="font-semibold text-red-400">
-                  {row.original.maxDrawdown !== null &&
-                  row.original.maxDrawdown !== undefined
+                <span className="text-secondary-foreground font-semibold">
+                  {row.original.maxDrawdown !== null
                     ? `${Math.abs(Number(row.original.maxDrawdown) * 100).toFixed(2)}%`
                     : "-"}
                 </span>
