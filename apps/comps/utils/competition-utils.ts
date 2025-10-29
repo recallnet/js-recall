@@ -94,9 +94,10 @@ export function getEvaluationMetricTabValue(
 }
 
 /**
- * Maps evaluation metric to table header ID
+ * Checks if a table header is the primary metric.
+ * @param headerId - Table header ID string
  * @param metric - Evaluation metric enum value
- * @returns Table header ID string
+ * @returns True if the table header is the primary metric, false otherwise
  */
 export function checkTableHeaderIsPrimaryMetric(
   headerId: string,
@@ -104,7 +105,7 @@ export function checkTableHeaderIsPrimaryMetric(
 ): boolean {
   if (!metric) return false;
   const toSnakeCase = (str: string) =>
-    str.replace(/([A-Z])/g, "_$1").toLowerCase();
+    str.replace(/([a-z])([A-Z])/g, "$1_$2").toLowerCase();
   return (
     toSnakeCase(headerId) ===
     PERPS_METRIC_TABS.find((t) => t.metric === metric)?.metric
