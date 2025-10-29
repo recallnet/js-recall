@@ -14,6 +14,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import { Star } from "lucide-react";
 import { useRouter } from "next/navigation";
 import React, {
   useCallback,
@@ -47,6 +48,7 @@ import { tanstackClient } from "@/rpc/clients/tanstack-query";
 import { RouterOutputs } from "@/rpc/router";
 import { PaginationResponse } from "@/types";
 import { CompetitionType } from "@/types/competition";
+import { checkTableHeaderIsPrimaryMetric } from "@/utils/competition-utils";
 import {
   checkIsPerpsCompetition,
   formatCompetitionType,
@@ -275,21 +277,43 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
     );
   }, [agentBoostTotals, isSuccessAgentBoostTotals]);
 
+  // Check if a table header is the primary metric (to display the star icon)
+  const isPrimaryMetric = useCallback(
+    (headerId: string) => {
+      return checkTableHeaderIsPrimaryMetric(
+        headerId,
+        competition.evaluationMetric,
+      );
+    },
+    [competition.evaluationMetric],
+  );
+
   useEffect(() => {
+    const getMetricVisibility = (columnId: string): boolean => {
+      return !isMobile || isPrimaryMetric(columnId);
+    };
+
     setColumnVisibility((prev) => ({
       ...prev,
       yourShare: isBoostEnabled && session.ready && session.isAuthenticated,
       // Hide the following columns on mobile
       boostPool: isBoostEnabled && !isMobile,
-      // Perps columns
-      calmarRatio: !isMobile,
-      maxDrawdown: !isMobile,
-      sortinoRatio: !isMobile,
-      // Trading columns
+      // Perps columns - show all on desktop, only primary on mobile
+      simpleReturn: getMetricVisibility("simpleReturn"),
+      calmarRatio: getMetricVisibility("calmarRatio"),
+      maxDrawdown: getMetricVisibility("maxDrawdown"),
+      sortinoRatio: getMetricVisibility("sortinoRatio"),
+      // Trading columns - desktop only
       portfolioValue: !isMobile,
-      change24h: !isMobile,
+      change_24h: !isMobile,
     }));
-  }, [session.ready, session.isAuthenticated, isBoostEnabled, isMobile]);
+  }, [
+    session.ready,
+    session.isAuthenticated,
+    isBoostEnabled,
+    isMobile,
+    isPrimaryMetric,
+  ]);
 
   // Calculate user's total spent boost for progress bar
   const userSpentBoost = useMemo(() => {
@@ -431,8 +455,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                           : "text-secondary-foreground"
                     }`}
                   >
-                    {row.original.simpleReturn !== null &&
-                    row.original.simpleReturn !== undefined
+                    {row.original.simpleReturn !== null
                       ? `${(Number(row.original.simpleReturn) * 100).toFixed(2)}%`
                       : "-"}
                   </span>
@@ -594,7 +617,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                 );
               },
               enableSorting: true,
-              size: 140,
+              size: 120,
             },
             {
               id: "change24h",
@@ -641,7 +664,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
         id: "boostPool",
         accessorKey: "boostTotal",
         header: () => (
-          <span className="text-right">
+          <span className="cursor-help text-right">
             <Tooltip content="The total amount of Boost that users have signaled to support this agent.">
               Boost Pool
             </Tooltip>
@@ -684,9 +707,11 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
         },
       },
       {
-        id: "yourShare",
+        id: "your_share",
+        accessorKey: "your_share",
+        enableSorting: false,
         header: () => (
-          <span className="text-right">
+          <span className="cursor-help text-right">
             <Tooltip content="The amount of Boost that you have used to support the agent.">
               Your Share
             </Tooltip>
@@ -936,7 +961,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
 
           {/* Boost Balance, if applicable */}
           {(showBoostBalance || isBoostDataLoading) && isOpenForBoosting && (
-            <div className="grid grid-cols-1 items-end gap-4 md:grid-cols-2">
+            <div className="grid grid-cols-1 items-end gap-4 sm:grid-cols-2">
               <div className="flex flex-col gap-2">
                 {/* Boost balance display */}
                 {isBoostDataLoading ? (
@@ -1057,12 +1082,15 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                         className={header.column.columnDef.meta?.className}
                         onClick={header.column.getToggleSortingHandler()}
                       >
-                        {header.isPlaceholder
-                          ? null
-                          : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext(),
-                            )}
+                        <div className="inline-flex items-center">
+                          {flexRender(
+                            header.column.columnDef.header,
+                            header.getContext(),
+                          )}
+                          {isPrimaryMetric(header.column.id) && (
+                            <Star className="ml-1 h-2 w-2 shrink-0 fill-yellow-500 text-yellow-500" />
+                          )}
+                        </div>
                       </SortableTableHeader>
                     ) : (
                       <TableHead
@@ -1071,12 +1099,10 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                         style={{ width: header.getSize() }}
                         className={header.column.columnDef.meta?.className}
                       >
-                        {header.isPlaceholder
-                          ? null
-                          : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext(),
-                            )}
+                        {flexRender(
+                          header.column.columnDef.header,
+                          header.getContext(),
+                        )}
                       </TableHead>
                     ),
                   )}

@@ -94,6 +94,24 @@ export function getEvaluationMetricTabValue(
 }
 
 /**
+ * Maps evaluation metric to table header ID
+ * @param metric - Evaluation metric enum value
+ * @returns Table header ID string
+ */
+export function checkTableHeaderIsPrimaryMetric(
+  headerId: string,
+  metric: EvaluationMetric | undefined,
+): boolean {
+  if (!metric) return false;
+  const toSnakeCase = (str: string) =>
+    str.replace(/([A-Z])/g, "_$1").toLowerCase();
+  return (
+    toSnakeCase(headerId) ===
+    PERPS_METRIC_TABS.find((t) => t.metric === metric)?.metric
+  );
+}
+
+/**
  * Type for metric tab configuration
  */
 export type MetricTab = {
