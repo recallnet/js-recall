@@ -435,7 +435,21 @@ export class RewardsService {
       leaderBoard,
     );
 
-    return [...userRewards, ...competitorRewards];
+    // TODO: this is a temporary solution to exclude specific competitors from competitorRewards
+    const excludedCompetitors = new Set<string>([
+      "b656119a-2d28-4b91-9914-44a8506625ab",
+      "db1e1798-97c1-4613-962b-c95e19c2bbb7",
+      "a3cd2e8d-ecfe-4c13-a825-4fde06b0f65c",
+      "ad77de46-86a3-41dd-97ef-b30aa3d7b150",
+      "36e5fa9b-151a-4a62-95d4-620f610e0273",
+      "b6418f67-a922-418e-a1db-34483141a5e2",
+    ]);
+    const filteredCompetitorRewards = competitorRewards.filter(
+      (reward) =>
+        reward.competitor && !excludedCompetitors.has(reward.competitor),
+    );
+
+    return [...userRewards, ...filteredCompetitorRewards];
   }
 }
 
