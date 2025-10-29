@@ -305,7 +305,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
       sortinoRatio: getMetricVisibility("sortinoRatio"),
       // Trading columns - desktop only
       portfolioValue: !isMobile,
-      change_24h: !isMobile,
+      change24h: !isMobile,
     }));
   }, [
     session.ready,
@@ -707,8 +707,8 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
         },
       },
       {
-        id: "your_share",
-        accessorKey: "your_share",
+        id: "yourShare",
+        accessorKey: "yourShare",
         enableSorting: false,
         header: () => (
           <span className="cursor-help text-right">
