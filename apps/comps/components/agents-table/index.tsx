@@ -920,12 +920,17 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                             : handleStakeToBoost
                         }
                       >
-                        {showActivateBoost
-                          ? config.publicFlags.tge
-                            ? "Activate Boost"
-                            : "Start Boosting"
-                          : "Stake to Boost"}{" "}
-                        <BoostIcon className="ml-1 size-4" />
+                        <span>
+                          {showActivateBoost
+                            ? config.publicFlags.tge
+                              ? "Activate Boost"
+                              : "Start Boosting"
+                            : "Stake to Boost"}
+                        </span>{" "}
+                        <BoostIcon
+                          className="ml-1 text-yellow-500 transition-colors duration-300 ease-in-out group-hover:text-black"
+                          useCurrentColor
+                        />
                       </Button>
                     </div>
                   )
