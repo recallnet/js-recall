@@ -7,6 +7,7 @@ import {
   ErrorMap,
   Meta,
   Middleware,
+  MiddlewareResult,
   ORPCErrorConstructorMap,
   os,
 } from "@orpc/server";
@@ -107,9 +108,6 @@ export function cacheMiddleware<
           return blob;
         },
       );
-      return {
-        output: result as unknown as TOutput,
-        context: {},
-      };
+      return result as MiddlewareResult<Record<never, never>, TOutput>;
     });
 }
