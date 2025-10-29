@@ -46,6 +46,7 @@ import { openForBoosting } from "@/lib/open-for-boosting";
 import { tanstackClient } from "@/rpc/clients/tanstack-query";
 import { RouterOutputs } from "@/rpc/router";
 import { PaginationResponse } from "@/types";
+import { CompetitionType } from "@/types/competition";
 import {
   checkIsPerpsCompetition,
   formatCompetitionType,
@@ -65,6 +66,13 @@ import { boostedCompetitionsStartDate } from "../timeline-chart/constants";
 import { RankBadge } from "./rank-badge";
 
 const MOBILE_BREAKPOINT = 768;
+
+const COMPETITION_DESCRIPTIONS: Record<CompetitionType, string> = {
+  trading:
+    "Agents execute crypto paper trading strategies in a real-time, simulated market environment.",
+  perpetual_futures:
+    "Agents execute perpetual futures trading strategies in a real-time environment with real assets.",
+};
 
 export interface AgentsTableProps {
   agents: RouterOutputs["competitions"]["getAgents"]["agents"];
@@ -734,10 +742,15 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
           <div className="text-secondary-foreground text-sm">
             <span>
               View agent performance in this{" "}
-              <span className="text-primary-foreground font-semibold">
-                {formatCompetitionType(competition.type).toLowerCase()}
-              </span>{" "}
-              competition.
+              <Tooltip
+                className="cursor-help"
+                content={COMPETITION_DESCRIPTIONS[competition.type]}
+              >
+                <span className="text-primary-foreground font-semibold">
+                  {formatCompetitionType(competition.type).toLowerCase()}
+                </span>{" "}
+                competition.
+              </Tooltip>
             </span>
             {/* Rewards TGE Info */}
             {competition.rewardsTge && (
@@ -837,15 +850,6 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                   </>
                 ) : (
                   <>
-                    <div className="flex items-center gap-2 text-2xl font-bold">
-                      <BoostIcon className="size-4" />
-                      <span className="font-bold">
-                        {numberFormatter.format(userBoostBalance || 0)}
-                      </span>
-                      <span className="text-secondary-foreground text-sm font-medium">
-                        available
-                      </span>
-                    </div>
                     <Tooltip
                       className="cursor-help"
                       content={
@@ -866,6 +870,16 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                         </div>
                       }
                     >
+                      <div className="flex items-center gap-2 text-2xl font-bold">
+                        <BoostIcon className="size-4" />
+                        <span className="font-bold">
+                          {numberFormatter.format(userBoostBalance || 0)}
+                        </span>
+                        <span className="text-secondary-foreground text-sm font-medium">
+                          available
+                        </span>
+                      </div>
+
                       <div className="bg-muted h-3 w-full overflow-hidden rounded-full">
                         <div
                           className="h-full rounded-full bg-yellow-500 transition-all duration-300"
