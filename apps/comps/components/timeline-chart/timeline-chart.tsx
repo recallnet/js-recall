@@ -23,6 +23,7 @@ import { useCompetitionTimeline } from "@/hooks/useCompetitionTimeline";
 import {
   checkIsPerpsCompetition,
   getEvaluationMetricTabValue,
+  getOrderedMetricTabs,
 } from "@/utils/competition-utils";
 
 import { ShareModal } from "../share-modal";
@@ -58,29 +59,10 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
   const competitionStatus = competition.status;
   const showDateRange = competitionStatus !== "ended";
 
-  // Define available metrics for perps competitions
+  // Get ordered tabs with primary metric first
   const perpsMetricTabs = useMemo(() => {
     if (!isPerpsCompetition) return [];
-
-    const allTabs = [
-      { value: "account-value", label: "Return %" },
-      { value: "calmar-ratio", label: "Calmar Ratio" },
-      { value: "max-drawdown", label: "Max Drawdown" },
-      { value: "sortino-ratio", label: "Sortino Ratio" },
-    ];
-
-    // If no evaluation metric, return default order
-    if (!competition.evaluationMetric) return allTabs;
-
-    // Find the primary metric tab
-    const primaryTabValue = getEvaluationMetricTabValue(
-      competition.evaluationMetric,
-    );
-    const primaryTab = allTabs.find((t) => t.value === primaryTabValue);
-    const otherTabs = allTabs.filter((t) => t.value !== primaryTabValue);
-
-    // Put primary tab first if found
-    return primaryTab ? [primaryTab, ...otherTabs] : allTabs;
+    return getOrderedMetricTabs(competition.evaluationMetric);
   }, [isPerpsCompetition, competition.evaluationMetric]);
 
   // Check if a tab is the primary metric

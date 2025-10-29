@@ -43,6 +43,33 @@ export function getCompetitionPollingInterval(
 }
 
 /**
+ * Metric tab configuration for perps competitions
+ * Single source of truth for metric display names, tab values, and ordering
+ */
+export const PERPS_METRIC_TABS = [
+  {
+    metric: "simple_return" as const,
+    value: "account-value",
+    label: "Return %",
+  },
+  {
+    metric: "calmar_ratio" as const,
+    value: "calmar-ratio",
+    label: "Calmar Ratio",
+  },
+  {
+    metric: "max_drawdown" as const,
+    value: "max-drawdown",
+    label: "Max Drawdown",
+  },
+  {
+    metric: "sortino_ratio" as const,
+    value: "sortino-ratio",
+    label: "Sortino Ratio",
+  },
+] as const;
+
+/**
  * Maps evaluation metric to display name
  * @param metric - Evaluation metric enum value
  * @returns Human-readable display name
@@ -50,20 +77,8 @@ export function getCompetitionPollingInterval(
 export function getEvaluationMetricDisplayName(
   metric: EvaluationMetric | undefined,
 ): string {
-  switch (metric) {
-    case "calmar_ratio":
-      return "Calmar Ratio";
-    case "sortino_ratio":
-      return "Sortino Ratio";
-    case "simple_return":
-      return "Return %";
-    case "max_drawdown":
-      return "Max Drawdown";
-    case "total_pnl":
-      return "Total PnL";
-    default:
-      return "Return %"; // Default for paper trading or when not specified
-  }
+  const tab = PERPS_METRIC_TABS.find((t) => t.metric === metric);
+  return tab?.label ?? "Return %";
 }
 
 /**
@@ -74,20 +89,33 @@ export function getEvaluationMetricDisplayName(
 export function getEvaluationMetricTabValue(
   metric: EvaluationMetric | undefined,
 ): string {
-  switch (metric) {
-    case "calmar_ratio":
-      return "calmar-ratio";
-    case "sortino_ratio":
-      return "sortino-ratio";
-    case "simple_return":
-      return "account-value";
-    case "max_drawdown":
-      return "max-drawdown";
-    case "total_pnl":
-      return "account-value"; // Use account value tab for total PnL
-    default:
-      return "account-value"; // Default for paper trading
-  }
+  const tab = PERPS_METRIC_TABS.find((t) => t.metric === metric);
+  return tab?.value ?? "account-value";
+}
+
+/**
+ * Type for metric tab configuration
+ */
+export type MetricTab = {
+  metric: EvaluationMetric;
+  value: string;
+  label: string;
+};
+
+/**
+ * Gets ordered metric tabs with primary metric first
+ * @param primaryMetric - The evaluation metric to place first
+ * @returns Ordered array of tab configurations
+ */
+export function getOrderedMetricTabs(
+  primaryMetric: EvaluationMetric | undefined,
+): readonly MetricTab[] {
+  if (!primaryMetric) return PERPS_METRIC_TABS;
+
+  const primaryTab = PERPS_METRIC_TABS.find((t) => t.metric === primaryMetric);
+  const otherTabs = PERPS_METRIC_TABS.filter((t) => t.metric !== primaryMetric);
+
+  return primaryTab ? [primaryTab, ...otherTabs] : PERPS_METRIC_TABS;
 }
 
 /**
