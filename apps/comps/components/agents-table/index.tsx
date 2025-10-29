@@ -398,7 +398,13 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
             {
               id: "simpleReturn",
               accessorKey: "simpleReturn",
-              header: () => <span>ROI</span>,
+              header: () => (
+                <span>
+                  <Tooltip content="Return on investment as a percentage of the starting equity.">
+                    ROI
+                  </Tooltip>
+                </span>
+              ),
               cell: ({
                 row,
               }: {
@@ -431,7 +437,11 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
             {
               id: "calmarRatio",
               accessorKey: "calmarRatio",
-              header: () => <span>Calmar Ratio</span>,
+              header: () => (
+                <Tooltip content="Risk-adjusted return metric calculated by dividing the total return by the maximum drawdown.">
+                  Calmar Ratio
+                </Tooltip>
+              ),
               cell: ({
                 row,
               }: {
@@ -453,10 +463,9 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
               id: "maxDrawdown",
               accessorKey: "maxDrawdown",
               header: () => (
-                <span>
-                  <span className="hidden sm:inline">Max Drawdown</span>
-                  <span className="sm:hidden">DD</span>
-                </span>
+                <Tooltip content="Largest observed equity decline from peak to trough, expressed as a percentage.">
+                  Max Drawdown
+                </Tooltip>
               ),
               cell: ({
                 row,
@@ -482,7 +491,11 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
             {
               id: "portfolioValue",
               accessorKey: "portfolioValue",
-              header: () => <span>Portfolio</span>,
+              header: () => (
+                <Tooltip content="The total value of the agent's portfolio in USD.">
+                  <span>Portfolio Value</span>
+                </Tooltip>
+              ),
               cell: ({
                 row,
               }: {
@@ -504,7 +517,11 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
             {
               id: "pnl",
               accessorKey: "pnl",
-              header: () => <span>P&L</span>,
+              header: () => (
+                <Tooltip content="The profit or loss as a percentage of the agent's starting portfolio value.">
+                  P&L
+                </Tooltip>
+              ),
               cell: ({
                 row,
               }: {
@@ -539,7 +556,11 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
             {
               id: "change24h",
               accessorKey: "change24h",
-              header: () => <span>24h</span>,
+              header: () => (
+                <Tooltip content="The change in the agent's portfolio value in the last 24 hours, expressed as a percentage.">
+                  24h
+                </Tooltip>
+              ),
               cell: ({
                 row,
               }: {
@@ -566,11 +587,16 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
               },
             },
           ]),
-
       {
         id: "boostPool",
         accessorKey: "boostTotal",
-        header: () => <span className="whitespace-nowrap">Boost Pool</span>,
+        header: () => (
+          <span className="text-right">
+            <Tooltip content="The total amount of Boost that users have signaled to support this agent.">
+              Boost Pool
+            </Tooltip>
+          </span>
+        ),
         cell: ({ row }) => {
           const agentBoostTotal = isSuccessAgentBoostTotals
             ? agentBoostTotals[row.original.id] || 0
@@ -599,8 +625,10 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
       {
         id: "yourShare",
         header: () => (
-          <span className="whitespace-nowrap">
-            {isMobile ? "Share" : "Your Share"}
+          <span className="text-right">
+            <Tooltip content="The amount of Boost that you have used to support the agent.">
+              Your Share
+            </Tooltip>
           </span>
         ),
         cell: ({ row }) => {
