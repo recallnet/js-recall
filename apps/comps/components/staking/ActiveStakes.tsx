@@ -100,7 +100,7 @@ const ActiveStakeEntry: React.FunctionComponent<ActiveStakeEntryProps> = ({
       variant: "outline",
     },
     {
-      label: "LOCK",
+      label: "RE-STAKE",
       onClick: handleOpenRelockModal,
       disabled: isLocked,
       isLoading: false,
