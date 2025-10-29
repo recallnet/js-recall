@@ -435,38 +435,7 @@ export class RewardsService {
       leaderBoard,
     );
 
-    // in case an address is both a booster and a competitor, we need to sum the amounts
-    // while keeping the references to owner and competitor
-    const rewards = [...userRewards, ...competitorRewards];
-    const rewardsByAddress = rewards.reduce(
-      (acc, reward) => {
-        if (!acc[reward.address]) {
-          acc[reward.address] = [
-            reward.amount,
-            reward.owner,
-            reward.competitor,
-          ];
-          return acc;
-        }
-
-        acc[reward.address] = [
-          acc[reward.address]![0] + reward.amount,
-          reward.owner,
-          acc[reward.address]![2] ?? reward.competitor,
-        ];
-        return acc;
-      },
-      {} as Record<string, [bigint, string, string?]>,
-    );
-
-    return Object.entries(rewardsByAddress).map(
-      ([address, [amount, owner, competitor]]) => ({
-        address,
-        amount,
-        owner,
-        competitor,
-      }),
-    );
+    return [...userRewards, ...competitorRewards];
   }
 }
 
