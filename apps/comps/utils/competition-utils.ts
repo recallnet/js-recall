@@ -50,7 +50,7 @@ export const PERPS_METRIC_TABS = [
   {
     metric: "simple_return" as const,
     value: "account-value",
-    label: "Return %",
+    label: "ROI",
   },
   {
     metric: "calmar_ratio" as const,
@@ -78,7 +78,7 @@ export function getEvaluationMetricDisplayName(
   metric: EvaluationMetric | undefined,
 ): string {
   const tab = PERPS_METRIC_TABS.find((t) => t.metric === metric);
-  return tab?.label ?? "Return %";
+  return tab?.label ?? "ROI";
 }
 
 /**
