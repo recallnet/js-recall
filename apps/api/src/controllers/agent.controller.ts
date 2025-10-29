@@ -236,6 +236,7 @@ export function makeAgentController(services: ServiceRegistry) {
         }
 
         // Get enhanced balances from the service layer
+        // The service will use getActiveCompetition() if no competitionId is provided
         const enhancedBalances =
           await services.agentService.getEnhancedBalances(agentId);
 

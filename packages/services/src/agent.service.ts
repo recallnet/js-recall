@@ -2050,12 +2050,19 @@ export class AgentService {
   /**
    * Get enhanced balances for an agent with price data and chain information
    * @param agentId The agent ID
+   * @param competitionId The competition ID (optional, will use active competition if not provided)
    * @returns Array of balances enhanced with price data, chain info, and values
    */
-  async getEnhancedBalances(agentId: string): Promise<EnhancedBalance[]> {
+  async getEnhancedBalances(
+    agentId: string,
+    competitionId?: string,
+  ): Promise<EnhancedBalance[]> {
     try {
       // Get all balances for the agent
-      const balances = await this.balanceService.getAllBalances(agentId);
+      const balances = await this.balanceService.getAllBalances(
+        agentId,
+        competitionId,
+      );
 
       // Extract all unique token addresses
       const tokenAddresses = balances.map((b) => b.tokenAddress);

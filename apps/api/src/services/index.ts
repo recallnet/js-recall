@@ -184,10 +184,17 @@ class ServiceRegistry {
     );
 
     // Initialize services in dependency order
+    // TODO(ENG-783): Remove this fallback once all callers pass competitionId explicitly
+    // Temporary: Pass getActiveCompetition function to BalanceService via repository
+    // This avoids circular dependency while maintaining backward compatibility
     this._balanceService = new BalanceService(
       balanceRepository,
       config,
       serviceLogger,
+      async () => {
+        const comp = await this._competitionRepository.findActive();
+        return comp ?? null;
+      },
     );
     this._priceTrackerService = new PriceTrackerService(
       multichainProvider,

@@ -701,7 +701,11 @@ export class CompetitionService {
 
     // Process all agent additions and activations
     for (const agentId of finalAgentIds) {
-      await this.balanceService.resetAgentBalances(agentId, competition.type);
+      await this.balanceService.resetAgentBalances(
+        agentId,
+        competitionId,
+        competition.type,
+      );
 
       // Note: Agent validation already done above, so we know agent exists and is active
 
