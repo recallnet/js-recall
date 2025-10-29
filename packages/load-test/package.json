@@ -22,8 +22,7 @@
     "artillery-plugin-ensure": "^1.20.0",
     "artillery-plugin-metrics-by-endpoint": "^1.20.0",
     "artillery-plugin-publish-metrics": "^2.31.0",
-    "dotenv": "^17.2.2",
-    "viem": "^2.34.0"
+    "dotenv": "^17.2.2"
   },
   "devDependencies": {
     "@recallnet/eslint-config": "workspace:*",

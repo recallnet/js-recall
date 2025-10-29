@@ -1,4 +1,3 @@
-import { waitForTransactionReceipt } from "@wagmi/core";
 import { useCallback, useMemo } from "react";
 import { type Address, erc20Abi } from "viem";
 import {
@@ -7,6 +6,7 @@ import {
   useWaitForTransactionReceipt,
   useWriteContract,
 } from "wagmi";
+import { waitForTransactionReceipt } from "wagmi/actions";
 
 import { clientConfig } from "@/wagmi-config";
 

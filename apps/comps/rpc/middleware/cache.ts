@@ -107,6 +107,9 @@ export function cacheMiddleware<
           return blob;
         },
       );
-      return result as unknown as TOutput;
+      return {
+        output: result as unknown as TOutput,
+        context: {},
+      };
     });
 }

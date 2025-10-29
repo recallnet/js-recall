@@ -105,7 +105,7 @@ export function CookieConsentProvider({
                   {
                     title: "Functional cookies",
                     description:
-                      "These cookies enable essential features like user authentication and session management through Privy. <b>Without these cookies, you cannot log in</b> or access authenticated features.",
+                      "Functional cookies enable features like staying logged in across sessions and remembering your preferences. You can still use authentication and wallet features without accepting these cookies.",
                     linkedCategory: "functional",
                   },
                   {
