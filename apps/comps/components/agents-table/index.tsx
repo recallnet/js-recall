@@ -411,24 +411,33 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                 row: {
                   original: RouterOutputs["competitions"]["getAgents"]["agents"][number];
                 };
-              }) => (
-                <span
-                  className={`font-semibold ${
-                    row.original.simpleReturn &&
-                    Number(row.original.simpleReturn) > 0
-                      ? "text-green-400"
-                      : row.original.simpleReturn &&
-                          Number(row.original.simpleReturn) < 0
-                        ? "text-red-400"
-                        : "text-secondary-foreground"
-                  }`}
-                >
-                  {row.original.simpleReturn !== null &&
-                  row.original.simpleReturn !== undefined
-                    ? `${(Number(row.original.simpleReturn) * 100).toFixed(2)}%`
-                    : "-"}
-                </span>
-              ),
+              }) => {
+                if (competition.status === "pending") {
+                  return (
+                    <span className="text-secondary-foreground font-semibold">
+                      -
+                    </span>
+                  );
+                }
+                return (
+                  <span
+                    className={`font-semibold ${
+                      row.original.simpleReturn &&
+                      Number(row.original.simpleReturn) > 0
+                        ? "text-green-400"
+                        : row.original.simpleReturn &&
+                            Number(row.original.simpleReturn) < 0
+                          ? "text-red-400"
+                          : "text-secondary-foreground"
+                    }`}
+                  >
+                    {row.original.simpleReturn !== null &&
+                    row.original.simpleReturn !== undefined
+                      ? `${(Number(row.original.simpleReturn) * 100).toFixed(2)}%`
+                      : "-"}
+                  </span>
+                );
+              },
               enableSorting: true,
               meta: {
                 className: isMobile ? "max-w-[80px]" : "max-w-[100px]",
@@ -448,14 +457,23 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                 row: {
                   original: RouterOutputs["competitions"]["getAgents"]["agents"][number];
                 };
-              }) => (
-                <span className="text-secondary-foreground font-semibold">
-                  {row.original.calmarRatio !== null &&
-                  row.original.calmarRatio !== undefined
-                    ? Number(row.original.calmarRatio).toFixed(2)
-                    : "-"}
-                </span>
-              ),
+              }) => {
+                if (competition.status === "pending") {
+                  return (
+                    <span className="text-secondary-foreground font-semibold">
+                      -
+                    </span>
+                  );
+                }
+                return (
+                  <span className="text-secondary-foreground font-semibold">
+                    {row.original.calmarRatio !== null &&
+                    row.original.calmarRatio !== undefined
+                      ? Number(row.original.calmarRatio).toFixed(2)
+                      : "-"}
+                  </span>
+                );
+              },
               enableSorting: true,
               size: 120,
             },
@@ -473,13 +491,22 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                 row: {
                   original: RouterOutputs["competitions"]["getAgents"]["agents"][number];
                 };
-              }) => (
-                <span className="text-secondary-foreground font-semibold">
-                  {row.original.maxDrawdown !== null
-                    ? `${Math.abs(Number(row.original.maxDrawdown) * 100).toFixed(2)}%`
-                    : "-"}
-                </span>
-              ),
+              }) => {
+                if (competition.status === "pending") {
+                  return (
+                    <span className="text-secondary-foreground font-semibold">
+                      -
+                    </span>
+                  );
+                }
+                return (
+                  <span className="text-secondary-foreground font-semibold">
+                    {row.original.maxDrawdown !== null
+                      ? `${Math.abs(Number(row.original.maxDrawdown) * 100).toFixed(2)}%`
+                      : "-"}
+                  </span>
+                );
+              },
               enableSorting: true,
               size: 140,
               meta: {
@@ -502,15 +529,24 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                 row: {
                   original: RouterOutputs["competitions"]["getAgents"]["agents"][number];
                 };
-              }) => (
-                <span className="text-secondary-foreground font-semibold">
-                  {row.original.portfolioValue.toLocaleString("en-US", {
-                    style: "currency",
-                    currency: "USD",
-                    maximumFractionDigits: 2,
-                  })}
-                </span>
-              ),
+              }) => {
+                if (competition.status === "pending") {
+                  return (
+                    <span className="text-secondary-foreground font-semibold">
+                      -
+                    </span>
+                  );
+                }
+                return (
+                  <span className="text-secondary-foreground font-semibold">
+                    {row.original.portfolioValue.toLocaleString("en-US", {
+                      style: "currency",
+                      currency: "USD",
+                      maximumFractionDigits: 2,
+                    })}
+                  </span>
+                );
+              },
               enableSorting: true,
               size: 140,
             },
@@ -529,6 +565,13 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                   original: RouterOutputs["competitions"]["getAgents"]["agents"][number];
                 };
               }) => {
+                if (competition.status === "pending") {
+                  return (
+                    <span className="text-secondary-foreground font-semibold">
+                      -
+                    </span>
+                  );
+                }
                 const pnlColor =
                   row.original.pnlPercent >= 0
                     ? "text-green-500"
@@ -568,6 +611,13 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                   original: RouterOutputs["competitions"]["getAgents"]["agents"][number];
                 };
               }) => {
+                if (competition.status === "pending") {
+                  return (
+                    <span className="text-secondary-foreground font-semibold">
+                      -
+                    </span>
+                  );
+                }
                 const percentColor =
                   row.original.change24hPercent >= 0
                     ? "text-green-500"
@@ -718,6 +768,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
       isSuccessUserBoosts,
       isPerpsCompetition,
       isMobile,
+      competition.status,
     ],
   );
 
@@ -1033,49 +1084,66 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
               ))}
             </TableHeader>
             <TableBody>
-              {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-                const row = table.getRowModel().rows[virtualRow.index];
-                if (!row) return null;
-                return (
-                  <TableRow
-                    key={row.id}
-                    style={{ display: "flex", cursor: "pointer" }}
-                    ref={(el) => rowVirtualizer.measureElement(el)}
-                    data-index={virtualRow.index}
-                    onClick={(e) => {
-                      // Don't navigate if clicking on the "Boost" button
-                      const target = e.target as HTMLElement;
-                      const isInteractive = target.closest(
-                        'button, [type="button"]',
-                      );
-                      if (!isInteractive) {
-                        router.push(`/agents/${row.original.id}`);
-                      }
-                    }}
-                    className="hover:bg-muted/50 transition-colors"
+              {agents.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={table.getAllColumns().length}
+                    className="h-20 border-t text-center"
                   >
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell
-                        key={cell.id}
-                        className={`flex items-center ${cell.column.columnDef.meta?.className ?? ""}`}
-                        style={{
-                          width: cell.column.getSize(),
-                          minWidth: (
-                            cell.column.columnDef.meta as
-                              | { minWidth?: number }
-                              | undefined
-                          )?.minWidth,
-                        }}
-                      >
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext(),
-                        )}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                );
-              })}
+                    <span className="text-secondary-foreground">
+                      {competition.status === "pending" &&
+                      competition.joinStartDate &&
+                      competition.joinStartDate > new Date()
+                        ? "Agent registration is not open."
+                        : "No agents found for this competition."}
+                    </span>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                  const row = table.getRowModel().rows[virtualRow.index];
+                  if (!row) return null;
+                  return (
+                    <TableRow
+                      key={row.id}
+                      style={{ display: "flex", cursor: "pointer" }}
+                      ref={(el) => rowVirtualizer.measureElement(el)}
+                      data-index={virtualRow.index}
+                      onClick={(e) => {
+                        // Don't navigate if clicking on the "Boost" button
+                        const target = e.target as HTMLElement;
+                        const isInteractive = target.closest(
+                          'button, [type="button"]',
+                        );
+                        if (!isInteractive) {
+                          router.push(`/agents/${row.original.id}`);
+                        }
+                      }}
+                      className="hover:bg-muted/50 transition-colors"
+                    >
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell
+                          key={cell.id}
+                          className={`flex items-center ${cell.column.columnDef.meta?.className ?? ""}`}
+                          style={{
+                            width: cell.column.getSize(),
+                            minWidth: (
+                              cell.column.columnDef.meta as
+                                | { minWidth?: number }
+                                | undefined
+                            )?.minWidth,
+                          }}
+                        >
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext(),
+                          )}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  );
+                })
+              )}
             </TableBody>
           </Table>
         </div>
