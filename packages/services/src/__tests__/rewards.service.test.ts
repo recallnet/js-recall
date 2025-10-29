@@ -12,7 +12,10 @@ import type {
 } from "@recallnet/db/schema/rewards/types";
 import { Database } from "@recallnet/db/types";
 import type { Leaderboard } from "@recallnet/rewards";
-import RewardsAllocator from "@recallnet/staking-contracts/rewards-allocator";
+import {
+  ExternallyOwnedAccountAllocator,
+  NoopRewardsAllocator,
+} from "@recallnet/staking-contracts";
 
 import { RewardsService, createLeafNode } from "../rewards.service.js";
 
@@ -20,14 +23,11 @@ import { RewardsService, createLeafNode } from "../rewards.service.js";
 vi.mock("@recallnet/db/repositories/rewards");
 vi.mock("@recallnet/db/repositories/boost");
 vi.mock("@recallnet/db/repositories/competition");
-vi.mock("@recallnet/staking-contracts/rewards-allocator", () => ({
-  default: vi.fn().mockImplementation(() => ({
-    allocate: vi.fn(),
-  })),
-}));
+// Note: The test provides its own in-memory RewardsAllocator mock instance,
+// so there is no need to mock the staking-contracts module here.
 
 describe("RewardsService", () => {
-  let mockRewardsAllocator: DeepMockProxy<RewardsAllocator>;
+  let mockRewardsAllocator: DeepMockProxy<ExternallyOwnedAccountAllocator>;
   let mockRewardsRepo: DeepMockProxy<RewardsRepository>;
   let mockCompetitionRepository: DeepMockProxy<CompetitionRepository>;
   let mockBoostRepository: DeepMockProxy<BoostRepository>;
@@ -118,10 +118,8 @@ describe("RewardsService", () => {
     mockRewardsAllocator = {
       allocate: vi.fn().mockResolvedValue({
         transactionHash: "0x1234567890abcdef1234567890abcdef12345678",
-        blockNumber: 12345n,
-        gasUsed: 100000n,
       }),
-    } as unknown as DeepMockProxy<RewardsAllocator>;
+    } as unknown as DeepMockProxy<ExternallyOwnedAccountAllocator>;
 
     // Mock database transaction
     mockTransaction = {
@@ -1215,7 +1213,7 @@ describe("RewardsService", () => {
       );
     });
 
-    it("should proceed with off-chain allocation when allocator is null", async () => {
+    it("should proceed with off-chain allocation when allocator is noop", async () => {
       const competitionId = "comp-123";
       const startTimestamp = 1640995200;
 
@@ -1244,7 +1242,7 @@ describe("RewardsService", () => {
         mockRewardsRepo,
         mockCompetitionRepository,
         mockBoostRepository,
-        null as unknown as RewardsAllocator,
+        new NoopRewardsAllocator(),
         mockDb,
         mockLogger,
       );
@@ -1257,12 +1255,14 @@ describe("RewardsService", () => {
       // Verify database inserts occurred
       expect(mockDb.transaction).toHaveBeenCalledOnce();
 
-      // Second values() call should insert root with tx set to 'offchain'
+      // Second values() call should insert root with tx set to '0x0000000000000000000000000000000000000000'
       const valuesCalls = mockTransaction.values.mock.calls;
       expect(valuesCalls.length).toBeGreaterThanOrEqual(2);
       const rootInsertArgs = valuesCalls[valuesCalls.length - 1]?.[0];
       expect(rootInsertArgs).toBeDefined();
-      expect(rootInsertArgs.tx).toBe("offchain");
+      expect(rootInsertArgs.tx).toBe(
+        "0x0000000000000000000000000000000000000000",
+      );
     });
   });
 

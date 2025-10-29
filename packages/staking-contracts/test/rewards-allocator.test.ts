@@ -4,13 +4,17 @@ import type { PublicClient, WalletClient } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { describe, expect, it, vi } from "vitest";
 
-import RewardsAllocator, { Network } from "../src/rewards-allocator.js";
+import {
+  ExternallyOwnedAccountAllocator,
+  Network,
+  NoopRewardsAllocator,
+} from "../src/index.js";
 import RewardsClaimer from "../src/rewards-claimer.js";
 import { RewardAllocationTestHelper } from "./test-helper.js";
 
 describe("Allocator Error Path", () => {
   it("should throw error on network failure", async () => {
-    const allocator = new RewardsAllocator(
+    const allocator = new ExternallyOwnedAccountAllocator(
       "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
       "http://127.0.0.1:8545",
       "0x0000000000000000000000000000000000000000",
@@ -37,7 +41,7 @@ describe("Allocator Error Path", () => {
   });
 
   it("should throw error when transaction receipt fails", async () => {
-    const allocator = new RewardsAllocator(
+    const allocator = new ExternallyOwnedAccountAllocator(
       "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
       "http://127.0.0.1:8545",
       "0x0000000000000000000000000000000000000000",
@@ -86,7 +90,7 @@ describe("Allocate Rewards", async () => {
     mockTokenAddress,
   } = network;
 
-  const rewardsAllocator = new RewardsAllocator(
+  const rewardsAllocator = new ExternallyOwnedAccountAllocator(
     rewardAllocatorPrivateKey,
     network.getJsonRpcUrl(),
     rewardsContractAddress,
@@ -160,8 +164,6 @@ describe("Allocate Rewards", async () => {
 
       // Verify allocation was successful
       expect(allocationResult.transactionHash).toBeTruthy();
-      expect(allocationResult.blockNumber).toBeGreaterThan(0n);
-      expect(allocationResult.gasUsed).toBeGreaterThan(0n);
 
       // Wait a bit for the allocation to be processed
       await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -201,6 +203,21 @@ describe("Allocate Rewards", async () => {
       await network.close();
     }
   }, 30_000);
+});
+
+describe("NoopRewardsAllocator", () => {
+  it("returns a fixed zero transaction hash", async () => {
+    const allocator = new NoopRewardsAllocator();
+    const result = await allocator.allocate(
+      "0x0000000000000000000000000000000000000000000000000000000000000000",
+      0n,
+      0,
+    );
+
+    expect(result.transactionHash).toBe(
+      "0x0000000000000000000000000000000000000000",
+    );
+  });
 });
 
 /**

@@ -5,24 +5,14 @@
   "type": "module",
   "private": true,
   "exports": {
-    "./rewards-allocator": {
+    ".": {
       "import": {
-        "types": "./dist/rewards-allocator.d.ts",
-        "default": "./dist/rewards-allocator.js"
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
       },
       "require": {
-        "types": "./dist/rewards-allocator.d.cts",
-        "default": "./dist/rewards-allocator.cjs"
-      }
-    },
-    "./rewards-claimer": {
-      "import": {
-        "types": "./dist/rewards-claimer.d.ts",
-        "default": "./dist/rewards-claimer.js"
-      },
-      "require": {
-        "types": "./dist/rewards-claimer.d.cts",
-        "default": "./dist/rewards-claimer.cjs"
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
       }
     }
   },
@@ -40,7 +30,15 @@
   "packageManager": "pnpm@10.6.4",
   "dependencies": {
     "@openzeppelin/contracts": "^5.3.0",
-    "@openzeppelin/contracts-upgradeable": "^5.3.0"
+    "@openzeppelin/contracts-upgradeable": "^5.3.0",
+    "@safe-global/api-kit": "^4.0.0",
+    "@safe-global/protocol-kit": "^6.1.1",
+    "@safe-global/types-kit": "^3.0.0",
+    "ethers": "^6.14.0",
+    "viem": "^2.30.0",
+    "ws": "^8.17.1",
+    "bufferutil": "^4.0.9",
+    "utf-8-validate": "^5.0.10"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-chai-matchers": "^2.0.8",
@@ -49,6 +47,9 @@
     "@nomicfoundation/hardhat-toolbox-viem": "^5.0.0",
     "@openzeppelin/contracts": "^5.3.0",
     "@openzeppelin/contracts-upgradeable": "^5.3.0",
+    "@safe-global/api-kit": "^4.0.0",
+    "@safe-global/protocol-kit": "^6.1.1",
+    "@safe-global/types-kit": "^3.0.0",
     "@types/node": "^22.15.19",
     "@vitest/coverage-v8": "^3.2.4",
     "ethers": "^6.14.0",

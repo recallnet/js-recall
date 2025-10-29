@@ -3,8 +3,7 @@ import { blue, cyan, green, magenta, red, yellow } from "kleur/colors";
 import * as path from "path";
 import { PropertyOptions, parse } from "ts-command-line-args";
 
-import { Network } from "@recallnet/staking-contracts/rewards-allocator";
-import RewardsClaimer from "@recallnet/staking-contracts/rewards-claimer";
+import { Network, RewardsClaimer } from "@recallnet/staking-contracts";
 
 import { config } from "@/config/index.js";
 

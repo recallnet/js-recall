@@ -39,6 +39,7 @@
     "@recallnet/db": "workspace:*",
     "@recallnet/fonts": "workspace:*",
     "@recallnet/services": "workspace:*",
+    "@recallnet/staking-contracts": "workspace:*",
     "@recallnet/ui2": "workspace:*",
     "@sentry/nextjs": "^10.5.0",
     "@tanstack/react-query": "^5.76.1",
