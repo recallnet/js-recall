@@ -25,6 +25,7 @@ import React, {
 
 import { attoValueToNumberValue } from "@recallnet/conversions/atto-conversions";
 import { Button } from "@recallnet/ui2/components/button";
+import { Skeleton } from "@recallnet/ui2/components/skeleton";
 import {
   SortableTableHeader,
   Table,
@@ -119,7 +120,8 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
 
   const queryClient = useQueryClient();
 
-  const { data: totalStaked } = useTotalUserStaked();
+  const { data: totalStaked, isLoading: isLoadingTotalStaked } =
+    useTotalUserStaked();
 
   // Boost hooks
 
@@ -297,7 +299,8 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
   const isBoostDataLoading =
     isLoadingUserBoostBalance ||
     isLoadingUserBoosts ||
-    isLoadingAgentBoostTotals;
+    isLoadingAgentBoostTotals ||
+    isLoadingTotalStaked;
 
   const handleStakeToBoost = () => {
     router.push("/stake");
@@ -822,65 +825,75 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
             </div>
           </div>
 
-          {/* Boost Balance */}
-          {showBoostBalance && (
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          {/* Boost Balance, if applicable */}
+          {(showBoostBalance || isBoostDataLoading) && isOpenForBoosting && (
+            <div className="grid grid-cols-1 items-end gap-4 md:grid-cols-2">
               <div className="flex flex-col gap-2">
                 {/* Boost balance display */}
-
-                <div className="flex items-center gap-2 text-2xl font-bold">
-                  <BoostIcon className="size-4" />
-                  <span className="font-bold">
-                    {isBoostDataLoading
-                      ? "..."
-                      : numberFormatter.format(userBoostBalance || 0)}
-                  </span>
-                  <span className="text-secondary-foreground text-sm font-medium">
-                    available
-                  </span>
-                </div>
-                <Tooltip
-                  className="cursor-help"
-                  content={
-                    <div className="text-secondary-foreground mb-4 text-sm">
-                      Users with an available Boost balance signal their support
-                      for competing agents. The best predictors earn a greater
-                      share of the reward pool. Learn more about Boost{" "}
-                      <a
-                        href="https://docs.recall.network/token/staking"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary-foreground hover:text-primary-foreground/80 font-semibold underline transition-all duration-200 ease-in-out"
-                      >
-                        here
-                      </a>
-                      .
+                {isBoostDataLoading ? (
+                  <>
+                    <Skeleton className="h-8 w-1/2 rounded-lg" />
+                    <Skeleton className="h-4 w-full rounded-full" />
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-2 text-2xl font-bold">
+                      <BoostIcon className="size-4" />
+                      <span className="font-bold">
+                        {numberFormatter.format(userBoostBalance || 0)}
+                      </span>
+                      <span className="text-secondary-foreground text-sm font-medium">
+                        available
+                      </span>
                     </div>
-                  }
-                >
-                  <div className="bg-muted h-3 w-full overflow-hidden rounded-full">
-                    <div
-                      className="h-full rounded-full bg-yellow-500 transition-all duration-300"
-                      style={{
-                        width:
-                          isSuccessUserBoostBalance &&
-                          userBoostBalance > 0 &&
-                          totalBoostValue > 0
-                            ? `${Math.min(
-                                100,
-                                Number(
-                                  (userBoostBalance * 100) / totalBoostValue,
-                                ),
-                              )}%`
-                            : "0%",
-                      }}
-                    />
-                  </div>
-                </Tooltip>
+                    <Tooltip
+                      className="cursor-help"
+                      content={
+                        <div className="text-secondary-foreground mb-4 text-sm">
+                          Users with an available Boost balance signal their
+                          support for competing agents. The best predictors earn
+                          a greater share of the reward pool. Learn more about
+                          Boost{" "}
+                          <a
+                            href="https://docs.recall.network/token/staking"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary-foreground hover:text-primary-foreground/80 font-semibold underline transition-all duration-200 ease-in-out"
+                          >
+                            here
+                          </a>
+                          .
+                        </div>
+                      }
+                    >
+                      <div className="bg-muted h-3 w-full overflow-hidden rounded-full">
+                        <div
+                          className="h-full rounded-full bg-yellow-500 transition-all duration-300"
+                          style={{
+                            width:
+                              isSuccessUserBoostBalance &&
+                              userBoostBalance > 0 &&
+                              totalBoostValue > 0
+                                ? `${Math.min(
+                                    100,
+                                    Number(
+                                      (userBoostBalance * 100) /
+                                        totalBoostValue,
+                                    ),
+                                  )}%`
+                                : "0%",
+                          }}
+                        />
+                      </div>
+                    </Tooltip>
+                  </>
+                )}
               </div>
               <div className="flex flex-col gap-2">
-                {/* Stake to Boost button */}
-                {competition.status !== "ended" &&
+                {/* "Stake to Boost" button */}
+                {isBoostDataLoading ? (
+                  <Skeleton className="h-14 w-full rounded-lg" />
+                ) : (
                   (showActivateBoost || showStakeToBoost) && (
                     <div>
                       <Button
@@ -901,7 +914,8 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                         <BoostIcon className="ml-1 size-4" />
                       </Button>
                     </div>
-                  )}
+                  )
+                )}
               </div>
             </div>
           )}
