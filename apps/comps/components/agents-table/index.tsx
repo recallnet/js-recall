@@ -604,15 +604,26 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
 
           return (
             <div className="flex flex-col items-end">
-              <span className="text-secondary-foreground font-semibold">
-                {isBoostDataLoading
-                  ? "..."
-                  : formatCompactNumber(agentBoostTotal)}
-              </span>
-              <span className="text-xs text-slate-400">
-                ({formatPercentage(Number(agentBoostTotal), Number(totalBoost))}
-                )
-              </span>
+              {isBoostDataLoading ? (
+                <>
+                  <Skeleton className="mb-1 h-4 rounded-xl" />
+                  <Skeleton className="h-4 rounded-xl" />
+                </>
+              ) : (
+                <>
+                  <span className="text-secondary-foreground font-semibold">
+                    {formatCompactNumber(agentBoostTotal)}
+                  </span>
+                  <span className="text-xs text-slate-400">
+                    (
+                    {formatPercentage(
+                      Number(agentBoostTotal),
+                      Number(totalBoost),
+                    )}
+                    )
+                  </span>
+                </>
+              )}
             </div>
           );
         },
@@ -651,28 +662,35 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                     <Button
                       size="sm"
                       variant="outline"
-                      className="hover:bg-muted h-8 w-8 rounded-lg border border-yellow-500 p-0 hover:text-white"
+                      className={`disabled:hover:text-primary-foreground text-primary-foreground group h-8 w-full border border-yellow-500 bg-black font-bold uppercase hover:bg-yellow-500 hover:text-black ${isMobile ? "h-7 px-2 text-xs" : "h-8"}`}
                       disabled={!userBoostBalance}
                       onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                         e.stopPropagation();
                         handleBoost(row.original);
                       }}
                     >
-                      <BoostIcon className="ml-1 size-4" />
+                      <BoostIcon
+                        className="ml-1 size-4 text-yellow-500 transition-colors duration-300 ease-in-out group-hover:text-black group-disabled:text-yellow-500"
+                        useCurrentColor
+                      />
                     </Button>
                   </>
                 ) : (
                   <Button
                     size="sm"
                     variant="outline"
-                    className={`disabled:hover:text-primary-foreground rounded-lg border border-yellow-500 font-bold uppercase text-white ${isMobile ? "h-7 px-2 text-xs" : "h-8"}`}
+                    className={`disabled:hover:text-primary-foreground text-primary-foreground group h-8 w-full border border-yellow-500 bg-black font-bold uppercase hover:bg-yellow-500 hover:text-black ${isMobile ? "h-7 px-2 text-xs" : "h-8"}`}
                     disabled={!userBoostBalance}
                     onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                       e.stopPropagation();
                       handleBoost(row.original);
                     }}
                   >
-                    Boost <BoostIcon className="ml-1 size-4" />
+                    Boost{" "}
+                    <BoostIcon
+                      className="ml-1 size-4 text-yellow-500 transition-colors duration-300 ease-in-out group-hover:text-black group-disabled:text-yellow-500"
+                      useCurrentColor
+                    />
                   </Button>
                 )
               ) : (
@@ -955,7 +973,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                             : "Stake to Boost"}
                         </span>{" "}
                         <BoostIcon
-                          className="ml-1 text-yellow-500 transition-colors duration-300 ease-in-out group-hover:text-black"
+                          className="ml-1 text-yellow-500 transition-colors duration-300 ease-in-out group-hover:text-black group-disabled:text-yellow-500"
                           useCurrentColor
                         />
                       </Button>
