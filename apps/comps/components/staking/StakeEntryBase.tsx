@@ -39,7 +39,7 @@ export interface StakeEntryProgress {
  * Props for StakeEntryBase component
  */
 export interface StakeEntryBaseProps {
-  status: "staked" | "locked" | "unstaked";
+  status: "staked" | "locked" | "unstaked" | "cooldown";
   formattedAmount: string;
   boostAmount: string;
   actions: StakeEntryAction[];
