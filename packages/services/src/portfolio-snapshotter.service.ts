@@ -76,7 +76,10 @@ export class PortfolioSnapshotterService {
       );
     }
 
-    const balances = await this.balanceService.getAllBalances(agentId);
+    const balances = await this.balanceService.getAllBalances(
+      agentId,
+      competitionId,
+    );
 
     // Skip if no balances
     if (balances.length === 0) {
