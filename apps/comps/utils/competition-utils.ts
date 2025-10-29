@@ -1,7 +1,7 @@
 import { CheckIcon, ClockIcon, Play } from "lucide-react";
 
 import { RouterOutputs } from "@/rpc/router";
-import { UserCompetition } from "@/types";
+import { EvaluationMetric, UserCompetition } from "@/types";
 
 import { formatDateShort } from "./format";
 
@@ -40,6 +40,54 @@ export function getCompetitionPollingInterval(
   }
   // No polling for ended competitions
   return false;
+}
+
+/**
+ * Maps evaluation metric to display name
+ * @param metric - Evaluation metric enum value
+ * @returns Human-readable display name
+ */
+export function getEvaluationMetricDisplayName(
+  metric: EvaluationMetric | undefined,
+): string {
+  switch (metric) {
+    case "calmar_ratio":
+      return "Calmar Ratio";
+    case "sortino_ratio":
+      return "Sortino Ratio";
+    case "simple_return":
+      return "Return %";
+    case "max_drawdown":
+      return "Max Drawdown";
+    case "total_pnl":
+      return "Total PnL";
+    default:
+      return "Return %"; // Default for paper trading or when not specified
+  }
+}
+
+/**
+ * Maps evaluation metric to chart tab value
+ * @param metric - Evaluation metric enum value
+ * @returns Tab value string used in the timeline chart
+ */
+export function getEvaluationMetricTabValue(
+  metric: EvaluationMetric | undefined,
+): string {
+  switch (metric) {
+    case "calmar_ratio":
+      return "calmar-ratio";
+    case "sortino_ratio":
+      return "sortino-ratio";
+    case "simple_return":
+      return "account-value";
+    case "max_drawdown":
+      return "max-drawdown";
+    case "total_pnl":
+      return "account-value"; // Use account value tab for total PnL
+    default:
+      return "account-value"; // Default for paper trading
+  }
 }
 
 /**

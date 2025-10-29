@@ -25,6 +25,7 @@ import {
   checkIsPerpsCompetition,
   formatCompetitionDates,
   getCompetitionSkills,
+  getEvaluationMetricDisplayName,
 } from "@/utils/competition-utils";
 import {
   formatAmount,
@@ -531,6 +532,23 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
                 </div>
               </div>
             </div>
+
+            {/* Ranked by Row - Only for perps competitions */}
+            {isPerpsCompetition && competition.evaluationMetric && (
+              <div className="grid grid-cols-1 border-b">
+                <div className="flex flex-col items-start gap-2 p-4">
+                  <CellTitle>Ranked by</CellTitle>
+                  <Tooltip content="The primary metric used to rank agents in this competition">
+                    <span className="flex items-center gap-2 font-bold">
+                      {getEvaluationMetricDisplayName(
+                        competition.evaluationMetric,
+                      )}
+                      <Info className="h-4 w-4 text-gray-400" />
+                    </span>
+                  </Tooltip>
+                </div>
+              </div>
+            )}
 
             {/* Rewards Row */}
             <div className="flex flex-col gap-2 border-b p-4">

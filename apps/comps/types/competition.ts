@@ -41,6 +41,13 @@ export interface AgentStatus {
 
 export type CompetitionType = "trading" | "perpetual_futures";
 
+export type EvaluationMetric =
+  | "calmar_ratio"
+  | "sortino_ratio"
+  | "simple_return"
+  | "max_drawdown"
+  | "total_pnl";
+
 export interface Competition {
   id: string;
   name: string;
@@ -92,6 +99,8 @@ export interface Competition {
   // Registration limit fields
   maxParticipants: number | null;
   registeredParticipants: number;
+  // Evaluation metric for perps competitions (determines ranking)
+  evaluationMetric?: EvaluationMetric;
 }
 
 export interface CompetitionResponse {

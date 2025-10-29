@@ -1,7 +1,7 @@
 "use client";
 
-import { ChevronDown } from "lucide-react";
-import React, { useState } from "react";
+import { ChevronDown, Star } from "lucide-react";
+import React, { useCallback, useMemo, useState } from "react";
 
 import { Button } from "@recallnet/ui2/components/button";
 import {
@@ -20,7 +20,10 @@ import { cn } from "@recallnet/ui2/lib/utils";
 
 import { config } from "@/config/public";
 import { useCompetitionTimeline } from "@/hooks/useCompetitionTimeline";
-import { checkIsPerpsCompetition } from "@/utils/competition-utils";
+import {
+  checkIsPerpsCompetition,
+  getEvaluationMetricTabValue,
+} from "@/utils/competition-utils";
 
 import { ShareModal } from "../share-modal";
 import { MetricTimelineChart } from "./chart-template";
@@ -35,7 +38,13 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
   className,
 }) => {
   const isPerpsCompetition = checkIsPerpsCompetition(competition.type);
-  const [activeChartTab, setActiveChartTab] = useState("account-value");
+
+  // Determine default tab based on evaluation metric for perps competitions
+  const defaultTab = isPerpsCompetition
+    ? getEvaluationMetricTabValue(competition.evaluationMetric)
+    : "account-value";
+
+  const [activeChartTab, setActiveChartTab] = useState(defaultTab);
   const [dateRange, setDateRange] = useState<"all" | "72h">("all");
 
   const { data: timelineRaw, isLoading } = useCompetitionTimeline(
@@ -48,6 +57,42 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
   const boostStartDate = competition.boostStartDate;
   const competitionStatus = competition.status;
   const showDateRange = competitionStatus !== "ended";
+
+  // Define available metrics for perps competitions
+  const perpsMetricTabs = useMemo(() => {
+    if (!isPerpsCompetition) return [];
+
+    const allTabs = [
+      { value: "account-value", label: "Return %" },
+      { value: "calmar-ratio", label: "Calmar Ratio" },
+      { value: "max-drawdown", label: "Max Drawdown" },
+      { value: "sortino-ratio", label: "Sortino Ratio" },
+    ];
+
+    // If no evaluation metric, return default order
+    if (!competition.evaluationMetric) return allTabs;
+
+    // Find the primary metric tab
+    const primaryTabValue = getEvaluationMetricTabValue(
+      competition.evaluationMetric,
+    );
+    const primaryTab = allTabs.find((t) => t.value === primaryTabValue);
+    const otherTabs = allTabs.filter((t) => t.value !== primaryTabValue);
+
+    // Put primary tab first if found
+    return primaryTab ? [primaryTab, ...otherTabs] : allTabs;
+  }, [isPerpsCompetition, competition.evaluationMetric]);
+
+  // Check if a tab is the primary metric
+  const isPrimaryMetric = useCallback(
+    (tabValue: string) => {
+      if (!competition.evaluationMetric) return false;
+      return (
+        tabValue === getEvaluationMetricTabValue(competition.evaluationMetric)
+      );
+    },
+    [competition.evaluationMetric],
+  );
 
   // For perps competitions, render charts with tabs
   if (isPerpsCompetition) {
@@ -62,30 +107,20 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
           <div className="flex items-center justify-between pb-2">
             {/* Desktop tabs - hidden on small screens */}
             <TabsList className="hidden flex-wrap gap-2 sm:flex">
-              <TabsTrigger
-                value="account-value"
-                className="border border-white bg-black px-4 py-2 font-semibold uppercase text-white transition-colors duration-200 hover:bg-white hover:text-black data-[state=active]:bg-white data-[state=active]:text-black"
-              >
-                Return %
-              </TabsTrigger>
-              <TabsTrigger
-                value="calmar-ratio"
-                className="border border-white bg-black px-4 py-2 font-semibold uppercase text-white transition-colors duration-200 hover:bg-white hover:text-black data-[state=active]:bg-white data-[state=active]:text-black"
-              >
-                Calmar Ratio
-              </TabsTrigger>
-              <TabsTrigger
-                value="max-drawdown"
-                className="border border-white bg-black px-4 py-2 font-semibold uppercase text-white transition-colors duration-200 hover:bg-white hover:text-black data-[state=active]:bg-white data-[state=active]:text-black"
-              >
-                Max Drawdown
-              </TabsTrigger>
-              <TabsTrigger
-                value="sortino-ratio"
-                className="border border-white bg-black px-4 py-2 font-semibold uppercase text-white transition-colors duration-200 hover:bg-white hover:text-black data-[state=active]:bg-white data-[state=active]:text-black"
-              >
-                Sortino Ratio
-              </TabsTrigger>
+              {perpsMetricTabs.map((tab) => (
+                <TabsTrigger
+                  key={tab.value}
+                  value={tab.value}
+                  className="border border-white bg-black px-4 py-2 font-semibold uppercase text-white transition-colors duration-200 hover:bg-white hover:text-black data-[state=active]:bg-white data-[state=active]:text-black"
+                >
+                  <span className="flex items-center gap-1.5">
+                    {tab.label}
+                    {isPrimaryMetric(tab.value) && (
+                      <Star className="h-3.5 w-3.5 fill-yellow-500 text-yellow-500" />
+                    )}
+                  </span>
+                </TabsTrigger>
+              ))}
             </TabsList>
 
             {/* Mobile dropdown - shown only on small screens */}
@@ -97,38 +132,31 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
                     size="sm"
                     className="h-auto border border-white bg-black px-3 py-2.5 text-xs font-semibold uppercase text-white hover:bg-white hover:text-black"
                   >
-                    {activeChartTab === "account-value" && "% Return"}
-                    {activeChartTab === "calmar-ratio" && "Calmar Ratio"}
-                    {activeChartTab === "max-drawdown" && "Max Drawdown"}
-                    {activeChartTab === "sortino-ratio" && "Sortino Ratio"}
+                    <span className="flex items-center gap-1.5">
+                      {perpsMetricTabs.find((t) => t.value === activeChartTab)
+                        ?.label || "Select Metric"}
+                      {isPrimaryMetric(activeChartTab) && (
+                        <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />
+                      )}
+                    </span>
                     <ChevronDown className="ml-2 h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start">
-                  <DropdownMenuItem
-                    onClick={() => setActiveChartTab("account-value")}
-                    className="border-0.5 cursor-pointer border-b p-3 font-mono text-xs font-semibold uppercase hover:bg-gray-800"
-                  >
-                    Return %
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => setActiveChartTab("calmar-ratio")}
-                    className="border-0.5 cursor-pointer border-b p-3 font-mono text-xs font-semibold uppercase hover:bg-gray-800"
-                  >
-                    Calmar Ratio
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => setActiveChartTab("max-drawdown")}
-                    className="border-0.5 cursor-pointer border-b p-3 font-mono text-xs font-semibold uppercase hover:bg-gray-800"
-                  >
-                    Max Drawdown
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => setActiveChartTab("sortino-ratio")}
-                    className="border-0.5 cursor-pointer p-3 font-mono text-xs font-semibold uppercase hover:bg-gray-800"
-                  >
-                    Sortino Ratio
-                  </DropdownMenuItem>
+                  {perpsMetricTabs.map((tab) => (
+                    <DropdownMenuItem
+                      key={tab.value}
+                      onClick={() => setActiveChartTab(tab.value)}
+                      className="border-0.5 cursor-pointer border-b p-3 font-mono text-xs font-semibold uppercase last:border-b-0 hover:bg-gray-800"
+                    >
+                      <span className="flex items-center gap-1.5">
+                        {tab.label}
+                        {isPrimaryMetric(tab.value) && (
+                          <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />
+                        )}
+                      </span>
+                    </DropdownMenuItem>
+                  ))}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
