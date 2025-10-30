@@ -50,9 +50,10 @@ export const rewards = pgTable(
     index("idx_rewards_user_id").on(table.userId),
     index("idx_rewards_agent_id").on(table.agentId),
     index("idx_rewards_address").on(table.address),
-    uniqueIndex("uq_rewards_competition_id_address").on(
+    uniqueIndex("uq_rewards_competition_id_user_id_agent_id").on(
       table.competitionId,
-      table.address,
+      table.userId,
+      table.agentId,
     ),
   ],
 );
