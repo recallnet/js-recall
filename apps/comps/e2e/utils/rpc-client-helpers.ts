@@ -5,7 +5,7 @@
  */
 import { type RouterClient, createRouterClient } from "@orpc/server";
 import { type PrivyClient } from "@privy-io/server-auth";
-import { type ReadonlyRequestCookies } from "next/dist/server/web/spec-extension/adapters/request-cookies";
+import { RequestCookie } from "next/dist/compiled/@edge-runtime/cookies";
 
 import { MockPrivyClient } from "@recallnet/services/lib";
 
@@ -17,6 +17,7 @@ import {
   competitionService,
   emailService,
   leaderboardService,
+  rewardsService,
   userService,
 } from "../../lib/services.js";
 import { router } from "../../rpc/router/index.js";
@@ -24,7 +25,7 @@ import { router } from "../../rpc/router/index.js";
 /**
  * Create a mock cookies object for testing
  */
-function createMockCookies(privyToken?: string): ReadonlyRequestCookies {
+function createMockCookies(privyToken?: string) {
   const cookieStore = new Map<string, string>();
 
   if (privyToken) {
@@ -32,33 +33,15 @@ function createMockCookies(privyToken?: string): ReadonlyRequestCookies {
   }
 
   return {
-    get: (name: string) => {
-      const value = cookieStore.get(name);
-      return value
-        ? {
-            name,
-            value,
-          }
-        : undefined;
-    },
-    getAll: (name?: string) => {
-      if (name) {
-        const value = cookieStore.get(name);
-        return value ? [{ name, value }] : [];
-      }
-      return Array.from(cookieStore.entries()).map(([name, value]) => ({
-        name,
-        value,
-      }));
-    },
-    has: (name: string) => cookieStore.has(name),
-    [Symbol.iterator]: function* () {
-      for (const [name, value] of cookieStore.entries()) {
-        yield { name, value };
+    get(...args: [name: string] | [RequestCookie]): RequestCookie | undefined {
+      const arg = args[0];
+      if (typeof arg === "string") {
+        return { name: arg, value: cookieStore.get(arg) || "" };
+      } else {
+        return { name: arg.name, value: cookieStore.get(arg.name) || "" };
       }
     },
-    size: cookieStore.size,
-  } as ReadonlyRequestCookies;
+  };
 }
 
 /**
@@ -84,6 +67,7 @@ export async function createTestRpcClient(
       agentService,
       emailService,
       leaderboardService,
+      rewardsService,
       logger: createLogger("TestRpcClient"),
     },
   });
