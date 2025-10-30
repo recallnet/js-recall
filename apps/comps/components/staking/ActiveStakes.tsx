@@ -104,7 +104,7 @@ const ActiveStakeEntry: React.FunctionComponent<ActiveStakeEntryProps> = ({
       onClick: handleOpenRelockModal,
       disabled: isLocked,
       isLoading: false,
-      loadingLabel: "Locking...",
+      loadingLabel: "Re-Staking...",
       variant: "default",
     },
   ];
