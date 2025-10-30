@@ -33,7 +33,7 @@ describe("Base Chain Trading", () => {
   ];
 
   // Base USDC token address
-  const BASE_USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"; // Native USDC (USDbC deprecated Aug 2025)
+  const BASE_USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
 
   // Base specific chain identifier
   const BASE_CHAIN = "base";
