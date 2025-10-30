@@ -435,7 +435,7 @@ export class RewardsService {
       leaderBoard,
     );
 
-    // TODO: this is a temporary solution to exclude specific competitors from competitorRewards
+    // TODO: this is a temporary solution to exclude llm agents that are not eligible for rewards
     const excludedCompetitors = new Set<string>([
       "b656119a-2d28-4b91-9914-44a8506625ab",
       "db1e1798-97c1-4613-962b-c95e19c2bbb7",
