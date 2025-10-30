@@ -474,7 +474,7 @@ class ServiceRegistry {
 
     if (config.rewards.eoaEnabled) {
       if (
-        !config.rewards.eoaEnabled ||
+        !config.rewards.eoaPrivateKey ||
         !config.rewards.contractAddress ||
         !config.rewards.rpcProvider
       ) {
