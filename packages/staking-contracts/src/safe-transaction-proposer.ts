@@ -1,8 +1,9 @@
 import SafeApiKit from "@safe-global/api-kit";
 import Safe from "@safe-global/protocol-kit";
 import { MetaTransactionData, OperationType } from "@safe-global/types-kit";
-import { ethers } from "ethers";
+import { encodeFunctionData, getAddress } from "viem";
 import { Hex } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
 
 import { abi } from "./abi.js";
 import { Network, getChainForNetwork } from "./network.js";
@@ -37,8 +38,7 @@ export class SafeTransactionProposer implements RewardsAllocator {
   private chainId: bigint;
   private proposerAddress: string;
   private proposerPrivateKey: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private safeSdk: any | null = null;
+  private safeSdk: Safe | null = null;
   private tokenAddress: Hex;
   private contractAddress: Hex;
 
@@ -50,14 +50,13 @@ export class SafeTransactionProposer implements RewardsAllocator {
     this.tokenAddress = config.tokenAddress;
     this.contractAddress = config.contractAddress;
 
-    const wallet = new ethers.Wallet(config.proposerPrivateKey);
-    this.proposerAddress = wallet.address;
+    const account = privateKeyToAccount(config.proposerPrivateKey);
+    this.proposerAddress = account.address;
     this.proposerPrivateKey = config.proposerPrivateKey;
   }
 
   async initializeSafe(): Promise<void> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    this.safeSdk = await (Safe as any).init({
+    this.safeSdk = await Safe.init({
       provider: this.rpcUrl,
       signer: this.proposerPrivateKey,
       safeAddress: this.safeAddress,
@@ -80,30 +79,32 @@ export class SafeTransactionProposer implements RewardsAllocator {
       await this.initializeSafe();
     }
 
-    const iface = new ethers.Interface(abi);
-    const data = iface.encodeFunctionData("addAllocation", [
-      root,
-      this.tokenAddress,
-      allocatedAmount,
-      startTimestamp,
-    ]);
+    const data = encodeFunctionData({
+      abi,
+      functionName: "addAllocation",
+      args: [
+        root as `0x${string}`,
+        this.tokenAddress,
+        allocatedAmount,
+        BigInt(startTimestamp),
+      ],
+    });
 
     const transactionData: MetaTransactionData = {
       to: this.contractAddress,
-      value: "0x0",
+      value: "0",
       data,
       operation: OperationType.Call,
     };
 
-    const safeTransaction = await this.safeSdk.createTransaction({
+    const safeTransaction = await this.safeSdk!.createTransaction({
       transactions: [transactionData],
     });
 
-    const safeTxHash = await this.safeSdk.getTransactionHash(safeTransaction);
-    const signature = await this.safeSdk.signHash(safeTxHash);
+    const safeTxHash = await this.safeSdk!.getTransactionHash(safeTransaction);
+    const signature = await this.safeSdk!.signHash(safeTxHash);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const apiKit = new (SafeApiKit as any)({
+    const apiKit = new SafeApiKit({
       chainId: this.chainId,
       apiKey: this.apiKey,
     });
@@ -111,13 +112,13 @@ export class SafeTransactionProposer implements RewardsAllocator {
     await apiKit.proposeTransaction({
       safeAddress: this.safeAddress,
       safeTransactionData: {
-        to: ethers.getAddress(safeTransaction.data.to),
-        value: 0,
+        to: getAddress(safeTransaction.data.to),
+        value: safeTransaction.data.value,
         data: safeTransaction.data.data,
         operation: safeTransaction.data.operation,
-        safeTxGas: 0,
-        baseGas: 0,
-        gasPrice: 0,
+        safeTxGas: safeTransaction.data.safeTxGas,
+        baseGas: safeTransaction.data.baseGas,
+        gasPrice: safeTransaction.data.gasPrice,
         gasToken: "0x0000000000000000000000000000000000000000",
         refundReceiver: "0x0000000000000000000000000000000000000000",
         nonce: safeTransaction.data.nonce,

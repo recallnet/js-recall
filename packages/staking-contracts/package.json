@@ -34,11 +34,7 @@
     "@safe-global/api-kit": "^4.0.0",
     "@safe-global/protocol-kit": "^6.1.1",
     "@safe-global/types-kit": "^3.0.0",
-    "ethers": "^6.14.0",
-    "viem": "^2.30.0",
-    "ws": "^8.17.1",
-    "bufferutil": "^4.0.9",
-    "utf-8-validate": "^5.0.10"
+    "viem": "^2.30.0"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-chai-matchers": "^2.0.8",
@@ -47,12 +43,8 @@
     "@nomicfoundation/hardhat-toolbox-viem": "^5.0.0",
     "@openzeppelin/contracts": "^5.3.0",
     "@openzeppelin/contracts-upgradeable": "^5.3.0",
-    "@safe-global/api-kit": "^4.0.0",
-    "@safe-global/protocol-kit": "^6.1.1",
-    "@safe-global/types-kit": "^3.0.0",
     "@types/node": "^22.15.19",
     "@vitest/coverage-v8": "^3.2.4",
-    "ethers": "^6.14.0",
     "forge-std": "github:foundry-rs/forge-std#v1.9.4",
     "hardhat": "^3.0.3",
     "merkletreejs": "^0.5.2",

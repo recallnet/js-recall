@@ -72,7 +72,12 @@ export class ExternallyOwnedAccountAllocator implements RewardsAllocator {
       address: this.contractAddress,
       abi: abi,
       functionName: "addAllocation",
-      args: [root, this.tokenAddress, totalAmount, startTimestamp],
+      args: [
+        root as `0x${string}`,
+        this.tokenAddress as `0x${string}`,
+        totalAmount,
+        BigInt(startTimestamp),
+      ],
       chain: this.walletClient.chain,
     });
 

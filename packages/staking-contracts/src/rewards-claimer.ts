@@ -81,7 +81,7 @@ class RewardsClaimer {
       address: this.contractAddress,
       abi: abi,
       functionName: "claim",
-      args: [root, claimAmount, proof],
+      args: [root as `0x${string}`, claimAmount, proof as `0x${string}`[]],
       chain: this.walletClient.chain,
     });
 

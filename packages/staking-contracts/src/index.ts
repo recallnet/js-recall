@@ -12,7 +12,7 @@ export type { SafeTransactionProposerConfig } from "./safe-transaction-proposer.
 export { NoopRewardsAllocator } from "./rewards-allocator.js";
 export { default as RewardsClaimer } from "./rewards-claimer.js";
 export { SafeTransactionProposer } from "./safe-transaction-proposer.js";
-export { ExternallyOwnedAccountAllocator } from "./externally-owner-account.js";
+export { ExternallyOwnedAccountAllocator } from "./externally-owned-account.js";
 
 // Network types and utilities
 export { Network, getChainForNetwork } from "./network.js";

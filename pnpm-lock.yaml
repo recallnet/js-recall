@@ -862,21 +862,9 @@ importers:
       '@safe-global/types-kit':
         specifier: ^3.0.0
         version: 3.0.0(typescript@5.8.3)(zod@3.25.76)
-      bufferutil:
-        specifier: ^4.0.9
-        version: 4.0.9
-      ethers:
-        specifier: ^6.14.0
-        version: 6.14.1(bufferutil@4.0.9)(utf-8-validate@5.0.10)
-      utf-8-validate:
-        specifier: ^5.0.10
-        version: 5.0.10
       viem:
         specifier: ^2.30.0
         version: 2.30.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76)
-      ws:
-        specifier: ^8.17.1
-        version: 8.18.3(bufferutil@4.0.9)(utf-8-validate@5.0.10)
     devDependencies:
       '@nomicfoundation/hardhat-chai-matchers':
         specifier: ^2.0.8
