@@ -186,6 +186,7 @@ export class SimulatedTradeExecutionService {
       const currentBalance = await this.balanceService.getBalance(
         agentId,
         fromToken,
+        competitionId,
       );
 
       // Validate balances and portfolio limits
@@ -866,12 +867,14 @@ export class SimulatedTradeExecutionService {
     // Update balance cache with absolute values from the database
     this.balanceService.setBalanceCache(
       agentId,
+      competitionId,
       fromToken,
       result.updatedBalances.fromTokenBalance,
     );
     if (result.updatedBalances.toTokenBalance !== undefined) {
       this.balanceService.setBalanceCache(
         agentId,
+        competitionId,
         toToken,
         result.updatedBalances.toTokenBalance,
       );
