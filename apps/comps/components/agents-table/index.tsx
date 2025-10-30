@@ -38,6 +38,7 @@ import {
 } from "@recallnet/ui2/components/table";
 import { toast } from "@recallnet/ui2/components/toast";
 import { Tooltip } from "@recallnet/ui2/components/tooltip";
+import { cn } from "@recallnet/ui2/lib/utils";
 
 import { Pagination } from "@/components/pagination/index";
 import { config } from "@/config/public";
@@ -53,11 +54,7 @@ import {
   checkIsPerpsCompetition,
   formatCompetitionType,
 } from "@/utils/competition-utils";
-import {
-  formatAmount,
-  formatCompactNumber,
-  formatPercentage,
-} from "@/utils/format";
+import { formatCompactNumber, formatPercentage } from "@/utils/format";
 import { getSortState } from "@/utils/table";
 
 import { BoostIcon } from "../BoostIcon";
@@ -360,7 +357,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
       <>
         <span className="hidden sm:inline">
           {prefix}
-          {formatAmount(value, 0, true)}
+          {formatCompactNumber(value)}
         </span>
         <span className="sm:hidden">
           {prefix}
@@ -858,129 +855,68 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
         </h2>
 
         {/* Three column layout: Description/Rewards, Stats, Boost Balance */}
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-          {/* Description */}
-          <div className="text-secondary-foreground text-sm">
-            <span>
-              View agent performance in this{" "}
-              <Tooltip
-                className="cursor-help"
-                content={COMPETITION_DESCRIPTIONS[competition.type]}
-              >
-                <span className="text-primary-foreground font-semibold">
-                  {formatCompetitionType(competition.type).toLowerCase()}
-                </span>{" "}
-                competition.
-              </Tooltip>
-            </span>
-            {/* Rewards TGE Info */}
-            {competition.rewardsTge && (
-              <div className="mt-4 flex flex-col gap-2">
-                <Tooltip
-                  className="cursor-help"
-                  content={
-                    <div className="text-secondary-foreground mb-4 text-sm">
-                      A total of{" "}
-                      <SingleRewardTGEValue
-                        values={[
-                          competition.rewardsTge.agentPool,
-                          competition.rewardsTge.userPool,
-                        ]}
-                      />{" "}
-                      is allocated to this competition&apos;s rewards pool.
-                      Agents receive{" "}
-                      <SingleRewardTGEValue
-                        values={[competition.rewardsTge.agentPool]}
-                      />{" "}
-                      of the pool based on their performance. Boosters receive{" "}
-                      <SingleRewardTGEValue
-                        values={[competition.rewardsTge.userPool]}
-                      />{" "}
-                      of the pool derived from curated predictions. For more
-                      details on the rewards distribution, see{" "}
-                      <a
-                        href="https://docs.recall.network/competitions/rewards"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary-foreground hover:text-primary-foreground/80 font-semibold underline transition-all duration-200 ease-in-out"
-                      >
-                        here
-                      </a>
-                      .
-                    </div>
-                  }
-                >
-                  <RewardsTGE
-                    rewards={{
-                      agentPrizePool: BigInt(competition.rewardsTge.agentPool),
-                      userPrizePool: BigInt(competition.rewardsTge.userPool),
-                    }}
-                  />
-                </Tooltip>
-              </div>
+        <div
+          className={cn("grid grid-cols-1 gap-6 md:items-stretch", {
+            "sm:grid-cols-2": competition.status === "pending",
+            "md:grid-cols-3": competition.status !== "pending",
+          })}
+        >
+          {/* Combined Description and Stats */}
+          <div
+            className={cn(
+              "border-border col-span-1 flex flex-col gap-6 rounded-xl border p-4 md:grid",
+              {
+                "md:col-span-1 md:grid-cols-1":
+                  competition.status === "pending",
+                "md:col-span-2 md:grid-cols-2":
+                  competition.status !== "pending",
+              },
             )}
-          </div>
-
-          {/* Stats */}
-          <div className="flex flex-col gap-2">
-            <div className="grid grid-cols-3 gap-2">
-              <div className="col-span-1">
-                <span className="text-secondary-foreground text-sm font-semibold uppercase tracking-wider">
-                  Total Agents
+          >
+            {/* Description */}
+            <div className="flex flex-col justify-center">
+              <div className="text-secondary-foreground text-sm">
+                <span>
+                  View agent performance in this{" "}
+                  <Tooltip
+                    className="cursor-help"
+                    content={COMPETITION_DESCRIPTIONS[competition.type]}
+                  >
+                    <span className="text-primary-foreground font-semibold">
+                      {formatCompetitionType(competition.type).toLowerCase()}
+                    </span>{" "}
+                  </Tooltip>
+                  competition.
+                  {competition.rewardsTge && " The rewards distribution is:"}
                 </span>
-                <div className="mt-2 font-bold">
-                  {competition.stats.totalAgents}
-                </div>
-              </div>
-              {competition.status !== "pending" && (
-                <>
-                  <div className="col-span-1">
-                    <span className="text-secondary-foreground text-sm font-semibold uppercase tracking-wider">
-                      Total Volume
-                    </span>
-                    <div className="mt-2 font-bold">
-                      {renderNumber(competition.stats.totalVolume ?? 0, "$")}
-                    </div>
-                  </div>
-                  <div className="col-span-1">
-                    <span className="text-secondary-foreground text-sm font-semibold uppercase tracking-wider">
-                      Total {isPerpsCompetition ? "Positions" : "Trades"}
-                    </span>
-                    <div className="mt-2 font-bold">
-                      {renderNumber(
-                        isPerpsCompetition
-                          ? (competition.stats.totalPositions ?? 0)
-                          : (competition.stats.totalTrades ?? 0),
-                      )}
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* Boost Balance, if applicable */}
-          {(showBoostBalance || isBoostDataLoading) && isOpenForBoosting && (
-            <div className="grid grid-cols-1 items-end gap-4 sm:grid-cols-2">
-              <div className="flex flex-col gap-2">
-                {/* Boost balance display */}
-                {isBoostDataLoading ? (
-                  <>
-                    <Skeleton className="h-8 w-1/2 rounded-lg" />
-                    <Skeleton className="h-4 w-full rounded-full" />
-                  </>
-                ) : (
-                  <>
+                {/* Rewards TGE Info */}
+                {competition.rewardsTge && (
+                  <div className="mt-4 flex flex-col gap-2">
                     <Tooltip
                       className="cursor-help"
                       content={
                         <div className="text-secondary-foreground mb-4 text-sm">
-                          Users with an available Boost balance signal their
-                          support for competing agents. The best predictors earn
-                          a greater share of the reward pool. Learn more about
-                          Boost{" "}
+                          A total of{" "}
+                          <SingleRewardTGEValue
+                            values={[
+                              competition.rewardsTge.agentPool,
+                              competition.rewardsTge.userPool,
+                            ]}
+                          />{" "}
+                          is allocated to this competition&apos;s rewards pool.
+                          Agents receive{" "}
+                          <SingleRewardTGEValue
+                            values={[competition.rewardsTge.agentPool]}
+                          />{" "}
+                          of the pool based on their performance. Boosters
+                          receive{" "}
+                          <SingleRewardTGEValue
+                            values={[competition.rewardsTge.userPool]}
+                          />{" "}
+                          of the pool derived from curated predictions. For more
+                          details on the rewards distribution, see{" "}
                           <a
-                            href="https://docs.recall.network/token/staking"
+                            href="https://docs.recall.network/competitions/rewards"
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-primary-foreground hover:text-primary-foreground/80 font-semibold underline transition-all duration-200 ease-in-out"
@@ -991,71 +927,170 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                         </div>
                       }
                     >
-                      <div className="flex items-center gap-2 text-2xl font-bold">
-                        <BoostIcon className="size-4" />
-                        <span className="font-bold">
-                          {numberFormatter.format(userBoostBalance || 0)}
-                        </span>
-                        <span className="text-secondary-foreground text-sm font-medium">
-                          available
-                        </span>
-                      </div>
-
-                      <div className="bg-muted h-3 w-full overflow-hidden rounded-full">
-                        <div
-                          className="h-full rounded-full bg-yellow-500 transition-all duration-300"
-                          style={{
-                            width:
-                              isSuccessUserBoostBalance &&
-                              userBoostBalance > 0 &&
-                              totalBoostValue > 0
-                                ? `${Math.min(
-                                    100,
-                                    Number(
-                                      (userBoostBalance * 100) /
-                                        totalBoostValue,
-                                    ),
-                                  )}%`
-                                : "0%",
-                          }}
-                        />
-                      </div>
+                      <RewardsTGE
+                        rewards={{
+                          agentPrizePool: BigInt(
+                            competition.rewardsTge.agentPool,
+                          ),
+                          userPrizePool: BigInt(
+                            competition.rewardsTge.userPool,
+                          ),
+                        }}
+                      />
                     </Tooltip>
-                  </>
+                  </div>
                 )}
               </div>
-              <div className="flex flex-col gap-2">
-                {/* "Stake to Boost" button */}
-                {isBoostDataLoading ? (
-                  <Skeleton className="h-14 w-full rounded-lg" />
-                ) : (
-                  (showActivateBoost || showStakeToBoost) && (
-                    <div>
-                      <Button
-                        size="lg"
-                        variant="outline"
-                        className="group h-8 w-full border border-yellow-500 bg-black font-semibold uppercase text-white hover:bg-yellow-500 hover:text-black"
-                        onClick={
-                          showActivateBoost
-                            ? handleClaimBoost
-                            : handleStakeToBoost
+            </div>
+
+            {/* Stats */}
+            {competition.status !== "pending" && (
+              <>
+                <hr className="border-border block md:hidden" />
+                <div className="flex h-full flex-col">
+                  <div className="grid h-full grid-cols-3 items-stretch gap-3">
+                    <div className="flex flex-col items-center justify-center">
+                      <span className="text-secondary-foreground text-xs font-semibold uppercase tracking-wider">
+                        Total Agents
+                      </span>
+                      <div className="mt-2 text-2xl font-bold">
+                        {competition.stats.totalAgents}
+                      </div>
+                    </div>
+
+                    <>
+                      <div className="flex flex-col items-center justify-center">
+                        <span className="text-secondary-foreground text-xs font-semibold uppercase tracking-wider">
+                          Volume
+                        </span>
+                        <div className="mt-2 text-2xl font-bold">
+                          {renderNumber(
+                            competition.stats.totalVolume ?? 0,
+                            "$",
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-center justify-center">
+                        <span className="text-secondary-foreground text-xs font-semibold uppercase tracking-wider">
+                          {isPerpsCompetition ? "Positions" : "Trades"}
+                        </span>
+                        <div className="mt-2 text-2xl font-bold">
+                          {renderNumber(
+                            isPerpsCompetition
+                              ? (competition.stats.totalPositions ?? 0)
+                              : (competition.stats.totalTrades ?? 0),
+                          )}
+                        </div>
+                      </div>
+                    </>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Boost Balance, if applicable */}
+          {(showBoostBalance || isBoostDataLoading) && isOpenForBoosting && (
+            <div className="border-border flex flex-col justify-center rounded-xl border p-4">
+              <div className="text-secondary-foreground mb-2 text-xs font-semibold uppercase tracking-wider">
+                Boost Balance
+              </div>
+              <div className="grid grid-cols-1 items-end gap-4 sm:grid-cols-2">
+                <div className="flex flex-col gap-2">
+                  {/* Boost balance display */}
+                  {isBoostDataLoading ? (
+                    <>
+                      <Skeleton className="h-8 w-1/2 rounded-xl" />
+                      <Skeleton className="h-4 w-full rounded-full" />
+                    </>
+                  ) : (
+                    <>
+                      <Tooltip
+                        className="cursor-help"
+                        content={
+                          <div className="text-secondary-foreground mb-4 text-sm">
+                            Users with an available Boost balance signal their
+                            support for competing agents. The best predictors
+                            earn a greater share of the reward pool. Learn more
+                            about Boost{" "}
+                            <a
+                              href="https://docs.recall.network/token/staking"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-primary-foreground hover:text-primary-foreground/80 font-semibold underline transition-all duration-200 ease-in-out"
+                            >
+                              here
+                            </a>
+                            .
+                          </div>
                         }
                       >
-                        <span>
-                          {showActivateBoost
-                            ? config.publicFlags.tge
-                              ? "Activate Boost"
-                              : "Start Boosting"
-                            : "Stake to Boost"}
-                        </span>{" "}
-                        <BoostIcon
-                          className="ml-1 text-yellow-500 transition-colors duration-300 ease-in-out group-hover:text-black group-disabled:text-yellow-500"
-                          useCurrentColor
-                        />
-                      </Button>
-                    </div>
-                  )
-                )}
+                        <div className="flex items-center gap-2 text-2xl font-bold">
+                          <BoostIcon className="size-4" />
+                          <span className="font-bold">
+                            {numberFormatter.format(userBoostBalance || 0)}
+                          </span>
+                          <span className="text-secondary-foreground text-sm font-medium">
+                            available
+                          </span>
+                        </div>
+
+                        <div className="bg-muted h-3 w-full overflow-hidden rounded-full">
+                          <div
+                            className="h-full rounded-full bg-yellow-500 transition-all duration-300"
+                            style={{
+                              width:
+                                isSuccessUserBoostBalance &&
+                                userBoostBalance > 0 &&
+                                totalBoostValue > 0
+                                  ? `${Math.min(
+                                      100,
+                                      Number(
+                                        (userBoostBalance * 100) /
+                                          totalBoostValue,
+                                      ),
+                                    )}%`
+                                  : "0%",
+                            }}
+                          />
+                        </div>
+                      </Tooltip>
+                    </>
+                  )}
+                </div>
+                <div className="flex flex-col gap-2">
+                  {/* "Stake to Boost" button */}
+                  {isBoostDataLoading ? (
+                    <Skeleton className="h-14 w-full rounded-xl" />
+                  ) : (
+                    (showActivateBoost || showStakeToBoost) && (
+                      <div>
+                        <Button
+                          size="lg"
+                          variant="outline"
+                          className="group h-8 w-full border border-yellow-500 bg-black font-semibold uppercase text-white hover:bg-yellow-500 hover:text-black"
+                          onClick={
+                            showActivateBoost
+                              ? handleClaimBoost
+                              : handleStakeToBoost
+                          }
+                        >
+                          <span>
+                            {showActivateBoost
+                              ? config.publicFlags.tge
+                                ? "Activate Boost"
+                                : "Start Boosting"
+                              : "Stake to Boost"}
+                          </span>{" "}
+                          <BoostIcon
+                            className="ml-1 text-yellow-500 transition-colors duration-300 ease-in-out group-hover:text-black group-disabled:text-yellow-500"
+                            useCurrentColor
+                          />
+                        </Button>
+                      </div>
+                    )
+                  )}
+                </div>
               </div>
             </div>
           )}
