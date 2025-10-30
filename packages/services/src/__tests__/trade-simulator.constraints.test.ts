@@ -1068,7 +1068,7 @@ describe("SimulatedTradeExecutionService - Trading Constraints", () => {
           },
           {
             name: "USDC (Base)",
-            address: "0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA",
+            address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
             chain: BlockchainType.EVM,
             specificChain: "base",
           },
