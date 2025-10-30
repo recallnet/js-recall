@@ -86,7 +86,7 @@ export async function createPrivyAuthenticatedRpcClient(params: {
   const rpcClient = await createTestRpcClient(privyToken);
 
   // Login to create/update user
-  let user = await rpcClient.user.getProfile();
+  let user = await rpcClient.user.login();
 
   // Update name if provided
   if (params.userName) {
