@@ -1,16 +1,21 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { simulateContract } from "@wagmi/core";
+import { useCallback, useEffect, useMemo } from "react";
 
 import { StakingAbi } from "@/abi/Staking";
+import { clientConfig } from "@/wagmi-config";
 
 import { useRecall } from "../useRecall";
 import {
+  useSafeAccount,
   useSafeWaitForTransactionReceipt,
   useSafeWriteContract,
 } from "../useSafeWagmi";
 import { useStakingContractAddress } from "./useStakingContractAddress";
+import { useTotalUserStaked } from "./useTotalUserStaked";
+import { useUserStakes } from "./useUserStakes";
 
 /**
  * Base hook result type for individual staking operations
@@ -34,6 +39,10 @@ export type StakingOperationResult = {
  */
 export const useRelock = (): StakingOperationResult => {
   const contractAddress = useStakingContractAddress();
+  const { address } = useSafeAccount();
+  const config = clientConfig;
+  const { queryKey: getUserStakesQueryKey } = useUserStakes();
+  const { queryKey: getTotalUserStakedQueryKey } = useTotalUserStaked();
   const { queryKey: recallQueryKey } = useRecall();
   const queryClient = useQueryClient();
 
@@ -42,12 +51,34 @@ export const useRelock = (): StakingOperationResult => {
     isPending,
     error,
     data: transactionHash,
+    reset,
   } = useSafeWriteContract();
 
   const { isLoading: isConfirming, isSuccess: isConfirmed } =
     useSafeWaitForTransactionReceipt({
       hash: transactionHash,
+      confirmations: 2,
     });
+
+  useEffect(() => {
+    if (isConfirmed) {
+      queryClient.invalidateQueries({
+        queryKey: recallQueryKey,
+      });
+      queryClient.invalidateQueries({
+        queryKey: getUserStakesQueryKey,
+      });
+      queryClient.invalidateQueries({
+        queryKey: getTotalUserStakedQueryKey,
+      });
+    }
+  }, [
+    isConfirmed,
+    queryClient,
+    recallQueryKey,
+    getUserStakesQueryKey,
+    getTotalUserStakedQueryKey,
+  ]);
 
   const execute = useCallback(
     async (
@@ -55,53 +86,36 @@ export const useRelock = (): StakingOperationResult => {
       newLockDuration: bigint,
       newLockAmount?: bigint,
     ) => {
-      if (!contractAddress) {
-        throw new Error("Contract address not available");
-      }
-      if (newLockAmount !== undefined) {
-        return writeContract({
+      try {
+        if (!contractAddress) {
+          throw new Error("Contract address not available");
+        }
+        // Resets the write contract hook
+        reset();
+
+        // First simulate the transaction using the core action
+        const simulationResult = await simulateContract(config as any, {
           address: contractAddress,
           abi: StakingAbi,
           functionName: "relock",
-          args: [tokenId, newLockDuration, newLockAmount],
+          args:
+            newLockAmount !== undefined
+              ? [tokenId, newLockDuration, newLockAmount]
+              : [tokenId, newLockDuration],
+          account: address,
         });
-      } else {
-        return writeContract({
-          address: contractAddress,
-          abi: StakingAbi,
-          functionName: "relock",
-          args: [tokenId, newLockDuration],
-        });
+
+        // If simulation succeeds, use the request data for the actual transaction
+        writeContract(simulationResult.request);
+      } catch (simulationError) {
+        // Re-throw simulation errors with a clear message
+        throw new Error(
+          `Transaction simulation failed: ${simulationError instanceof Error ? simulationError.message : "Unknown error"}`,
+        );
       }
     },
-    [writeContract, contractAddress],
+    [writeContract, config, contractAddress, address, reset],
   );
-
-  // Invalidate queries once per confirmed transaction
-  const lastConfirmedHashRef = useRef<`0x${string}` | undefined>(undefined);
-  useEffect(() => {
-    if (
-      isConfirmed &&
-      transactionHash &&
-      lastConfirmedHashRef.current !== transactionHash
-    ) {
-      // Invalidate staking-related queries
-      queryClient.invalidateQueries({
-        queryKey: ["readContract", contractAddress, "getUserStakes"],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ["readContract", contractAddress, "totalUserStaked"],
-      });
-      queryClient.invalidateQueries({ queryKey: recallQueryKey });
-      lastConfirmedHashRef.current = transactionHash;
-    }
-  }, [
-    isConfirmed,
-    transactionHash,
-    queryClient,
-    contractAddress,
-    recallQueryKey,
-  ]);
 
   return useMemo(
     () => ({

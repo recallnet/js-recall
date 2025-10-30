@@ -1,16 +1,21 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { simulateContract } from "@wagmi/core";
+import { useCallback, useEffect, useMemo } from "react";
 
 import { StakingAbi } from "@/abi/Staking";
+import { clientConfig } from "@/wagmi-config";
 
 import { useRecall } from "../useRecall";
 import {
+  useSafeAccount,
   useSafeWaitForTransactionReceipt,
   useSafeWriteContract,
 } from "../useSafeWagmi";
 import { useStakingContractAddress } from "./useStakingContractAddress";
+import { useTotalUserStaked } from "./useTotalUserStaked";
+import { useUserStakes } from "./useUserStakes";
 
 /**
  * Base hook result type for individual staking operations
@@ -30,6 +35,10 @@ export type StakingOperationResult = {
  */
 export const useWithdraw = (): StakingOperationResult => {
   const contractAddress = useStakingContractAddress();
+  const { address } = useSafeAccount();
+  const config = clientConfig;
+  const { queryKey: getUserStakesQueryKey } = useUserStakes();
+  const { queryKey: getTotalUserStakedQueryKey } = useTotalUserStaked();
   const { queryKey: recallQueryKey } = useRecall();
   const queryClient = useQueryClient();
 
@@ -38,53 +47,64 @@ export const useWithdraw = (): StakingOperationResult => {
     isPending,
     error,
     data: transactionHash,
+    reset,
   } = useSafeWriteContract();
 
   const { isLoading: isConfirming, isSuccess: isConfirmed } =
     useSafeWaitForTransactionReceipt({
       hash: transactionHash,
+      confirmations: 2,
     });
 
-  const execute = useCallback(
-    async (tokenId: bigint) => {
-      if (!contractAddress) {
-        throw new Error("Contract address not available");
-      }
-      return writeContract({
-        address: contractAddress,
-        abi: StakingAbi,
-        functionName: "withdraw",
-        args: [tokenId],
-      });
-    },
-    [writeContract, contractAddress],
-  );
-
-  // Invalidate queries once per confirmed transaction
-  const lastConfirmedHashRef = useRef<`0x${string}` | undefined>(undefined);
   useEffect(() => {
-    if (
-      isConfirmed &&
-      transactionHash &&
-      lastConfirmedHashRef.current !== transactionHash
-    ) {
-      // Invalidate staking-related queries
+    if (isConfirmed) {
       queryClient.invalidateQueries({
-        queryKey: ["readContract", contractAddress, "getUserStakes"],
+        queryKey: recallQueryKey,
       });
       queryClient.invalidateQueries({
-        queryKey: ["readContract", contractAddress, "totalUserStaked"],
+        queryKey: getUserStakesQueryKey,
       });
-      queryClient.invalidateQueries({ queryKey: recallQueryKey });
-      lastConfirmedHashRef.current = transactionHash;
+      queryClient.invalidateQueries({
+        queryKey: getTotalUserStakedQueryKey,
+      });
     }
   }, [
     isConfirmed,
-    transactionHash,
     queryClient,
-    contractAddress,
     recallQueryKey,
+    getUserStakesQueryKey,
+    getTotalUserStakedQueryKey,
   ]);
+
+  const execute = useCallback(
+    async (tokenId: bigint) => {
+      try {
+        if (!contractAddress) {
+          throw new Error("Contract address not available");
+        }
+        // Resets the write contract hook
+        reset();
+
+        // First simulate the transaction using the core action
+        const simulationResult = await simulateContract(config as any, {
+          address: contractAddress,
+          abi: StakingAbi,
+          functionName: "withdraw",
+          args: [tokenId],
+          account: address,
+        });
+
+        // If simulation succeeds, use the request data for the actual transaction
+        writeContract(simulationResult.request);
+      } catch (simulationError) {
+        // Re-throw simulation errors with a clear message
+        throw new Error(
+          `Transaction simulation failed: ${simulationError instanceof Error ? simulationError.message : "Unknown error"}`,
+        );
+      }
+    },
+    [writeContract, config, contractAddress, address, reset],
+  );
 
   return useMemo(
     () => ({
