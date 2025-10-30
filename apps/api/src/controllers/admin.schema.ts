@@ -329,5 +329,8 @@ export const AdminRewardsAllocationSchema = z.object({
     .number()
     .int()
     .positive()
-    .describe("The timestamp from which rewards can be claimed"),
+    .optional()
+    .describe(
+      "The timestamp from which rewards can be claimed (optional, defaults to competition end date + 1 hour)",
+    ),
 });

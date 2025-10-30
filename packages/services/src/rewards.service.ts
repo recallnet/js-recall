@@ -15,7 +15,7 @@ import {
   calculateRewardsForCompetitors,
   calculateRewardsForUsers,
 } from "@recallnet/rewards";
-import RewardsAllocator from "@recallnet/staking-contracts/rewards-allocator";
+import { RewardsAllocator } from "@recallnet/staking-contracts";
 
 /**
  * Service for handling reward-related operations
@@ -24,7 +24,7 @@ export class RewardsService {
   private rewardsRepo: RewardsRepository;
   private competitionRepository: CompetitionRepository;
   private boostRepository: BoostRepository;
-  private rewardsAllocator?: RewardsAllocator;
+  private rewardsAllocator: RewardsAllocator;
   private db: Database;
   private logger: Logger;
 
@@ -32,14 +32,14 @@ export class RewardsService {
     rewardsRepo: RewardsRepository,
     competitionRepository: CompetitionRepository,
     boostRepository: BoostRepository,
-    rewardsAllocator: RewardsAllocator | null | undefined,
+    rewardsAllocator: RewardsAllocator,
     db: Database,
     logger: Logger,
   ) {
     this.rewardsRepo = rewardsRepo;
     this.competitionRepository = competitionRepository;
     this.boostRepository = boostRepository;
-    this.rewardsAllocator = rewardsAllocator ?? undefined;
+    this.rewardsAllocator = rewardsAllocator;
     this.db = db;
     this.logger = logger;
   }
@@ -58,8 +58,29 @@ export class RewardsService {
    */
   public async calculateAndAllocate(
     competitionId: string,
-    startTimestamp: number,
+    startTimestamp: number | undefined,
   ): Promise<void> {
+    if (!startTimestamp) {
+      const competition =
+        await this.competitionRepository.findById(competitionId);
+      if (!competition) {
+        throw new Error(
+          `Competition not found for competition ${competitionId}`,
+        );
+      }
+
+      if (!competition.endDate) {
+        // set startTimestamp to now if competition has no end date
+        startTimestamp = Math.floor(Date.now() / 1000);
+      } else {
+        // add 1 hour to the end date if competition has an end date
+        startTimestamp = Math.floor(
+          new Date(competition.endDate.getTime() + 60 * 60 * 1000).getTime() /
+            1000,
+        );
+      }
+    }
+
     const prizePool =
       await this.competitionRepository.getCompetitionPrizePools(competitionId);
     if (!prizePool) {
@@ -252,31 +273,19 @@ export class RewardsService {
     const rootHash = merkleTree.getHexRoot();
 
     const executeWithTransaction = async (transaction: Transaction) => {
-      let transactionHash: string;
+      this.logger.info(
+        `[RewardsService] Publishing root hash ${rootHash} to blockchain for competition ${competitionId}`,
+      );
 
-      if (this.rewardsAllocator) {
-        this.logger.info(
-          `[RewardsService] Publishing root hash ${rootHash} to blockchain for competition ${competitionId}`,
-        );
+      const result = await this.rewardsAllocator.allocate(
+        rootHash as Hex,
+        allocationAmount,
+        startTimestamp,
+      );
 
-        const result = await this.rewardsAllocator.allocate(
-          rootHash as Hex,
-          allocationAmount,
-          startTimestamp,
-        );
-
-        transactionHash = result.transactionHash;
-
-        this.logger.info(
-          `[RewardsService] Successfully published root hash to blockchain. Transaction: ${transactionHash}`,
-        );
-      } else {
-        // When allocator is not provided, proceed with off-chain allocation and record a placeholder tx value
-        transactionHash = "offchain";
-        this.logger.warn(
-          `[RewardsService] RewardsAllocator not provided. Skipping on-chain publish for competition ${competitionId}. Recording tx="${transactionHash}"`,
-        );
-      }
+      this.logger.info(
+        `[RewardsService] Successfully published root hash to blockchain. Transaction: ${result.transactionHash}`,
+      );
 
       await runWithConcurrencyLimit(treeNodes, 1000, 10, async (batch) => {
         await transaction.insert(rewardsTree).values(batch);
@@ -286,7 +295,7 @@ export class RewardsService {
         id: crypto.randomUUID(),
         competitionId: competitionId,
         rootHash: new Uint8Array(merkleTree.getRoot()),
-        tx: transactionHash,
+        tx: result.transactionHash,
       });
     };
 

@@ -249,8 +249,20 @@ export const config = {
   sentry: createSentryConfig(),
   // Rewards allocation configuration
   rewards: {
+    // Whether to use the externally owned account allocator
+    eoaEnabled: process.env.REWARDS_EOA_ENABLED === "true",
     // Private key for the rewards allocator account
-    allocatorPrivateKey: process.env.REWARDS_ALLOCATOR_PRIVATE_KEY || "",
+    eoaPrivateKey: process.env.REWARDS_EOA_PRIVATE_KEY || "",
+
+    // Whether to use the Safe transaction proposer
+    safeProposerEnabled: process.env.REWARDS_SAFE_PROPOSER_ENABLED === "true",
+    // Private key for the Safe transaction proposer
+    safeProposerPrivateKey: process.env.REWARDS_SAFE_PROPOSER_PRIVATE_KEY || "",
+    // Address of the Safe contract
+    safeAddress: process.env.REWARDS_SAFE_ADDRESS || "",
+    // API key for the Safe API
+    safeApiKey: process.env.REWARDS_SAFE_API_KEY || "",
+
     // Contract address for the rewards contract
     contractAddress: process.env.REWARDS_CONTRACT_ADDRESS || "",
     // Contract address of the ERC20 token
