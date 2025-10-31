@@ -23,7 +23,7 @@ export const AgentsSummary: React.FunctionComponent<{
     <div
       className={cn(
         className,
-        "grid w-full min-w-0 grid-cols-1 grid-rows-3 border",
+        "grid w-full min-w-0 grid-cols-1 grid-rows-3 rounded-xl border",
         {
           "xs:grid-cols-3 xs:grid-rows-1": nAgents >= 4,
           "xs:grid-cols-3 xs:grid-rows-1 lg:h-87 lg:grid-cols-1 lg:grid-rows-3":
