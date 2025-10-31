@@ -608,6 +608,12 @@ export const riskMetricsSnapshots = tradingComps.table(
       table.competitionId,
       table.timestamp.desc(),
     ),
+    // Index for DISTINCT ON queries filtering by competition, grouping by agent, ordering by timestamp
+    index("idx_risk_snapshots_competition_agent_timestamp").on(
+      table.competitionId,
+      table.agentId,
+      table.timestamp.desc(),
+    ),
   ],
 );
 
