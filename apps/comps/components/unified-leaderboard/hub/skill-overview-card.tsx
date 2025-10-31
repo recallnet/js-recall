@@ -54,9 +54,7 @@ export const SkillOverviewCard: React.FC<SkillOverviewCardProps> = ({
         cropSize={35}
         corner="bottom-right"
         className={cn(
-          "bg-card hover:bg-card/80 group flex w-full cursor-pointer flex-col transition-all",
-          "border border-transparent hover:border-gray-700",
-          "h-[450px]", // Taller to prevent cutoff
+          "bg-card hover:bg-card/90 group flex w-full cursor-pointer flex-col transition-all",
         )}
       >
         {/* Header - Mobile: flexible height, Desktop: EXACTLY 72px */}

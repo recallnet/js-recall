@@ -42,7 +42,7 @@ export default function LinkWallet({
       <Clipboard
         text={user.walletAddress}
         textOnCopy={user.walletAddress}
-        className="text-secondary-foreground text-sm"
+        className="text-secondary-foreground font-mono text-sm"
         showBorder={false}
       />
       {/* If a user has a custom wallet address stored in the db, we need them to officially

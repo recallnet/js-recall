@@ -23,7 +23,7 @@ export const Clipboard = ({
   const handleCopy = async () => {
     copyToClipboard(textOnCopy || text);
     setCopied(true);
-    toast.success("Wallet Address copied to clipboard");
+    toast.success("Wallet address copied to clipboard");
     setTimeout(() => setCopied(false), 1500);
   };
 

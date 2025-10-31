@@ -87,7 +87,7 @@ export const ConfirmAgentEntryModal: React.FC<ChooseAgentModalProps> = ({
                 </span>
               </li> */}
               <li>
-                Completed Comps{" "}
+                Completed Competitions{" "}
                 <span className="text-primary-foreground">
                   [{agent?.stats.completedCompetitions || 0}]
                 </span>

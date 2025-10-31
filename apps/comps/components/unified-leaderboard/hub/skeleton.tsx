@@ -42,7 +42,7 @@ export const SkillOverviewCardSkeleton: React.FC = () => {
     <Card
       cropSize={35}
       corner="bottom-right"
-      className="bg-card group flex h-[450px] w-full flex-col border border-transparent transition-all"
+      className="bg-card group flex w-full flex-col border border-transparent transition-all"
     >
       {/* Header */}
       <div className="min-h-18 md:h-18 flex shrink-0 items-center justify-between p-4 md:p-6">
@@ -72,7 +72,7 @@ export const SkillOverviewCardSkeleton: React.FC = () => {
 
       {/* Top Participants preview */}
       <div className="flex-1 rounded-b-xl border-t border-gray-800 bg-gray-900/30 p-3 md:p-4">
-        <div className="space-y-3">
+        <div className="space-y-6">
           {Array.from({ length: 3 }).map((_, idx) => (
             <div key={idx} className="flex items-center gap-3 rounded p-2">
               <div className="flex h-5 w-5 items-center justify-center rounded-xl bg-gray-700" />

@@ -1,10 +1,7 @@
 import { BadgeCheckIcon } from "lucide-react";
-import Link from "next/link";
 import React from "react";
 
 import { Tooltip } from "@recallnet/ui2/components/tooltip";
-
-import { socialLinks } from "@/data/social";
 
 interface VerifiedBadgeProps {
   verified: boolean;
@@ -16,14 +13,19 @@ export const AgentVerifiedBadge: React.FC<VerifiedBadgeProps> = ({
   const iconColorClass = verified ? "text-green-500" : "text-gray-700"; // Green if verified, gray/slate if not
 
   const tooltipContent = verified ? (
-    <span>Verified agent</span>
+    <span>Agent verified wallet ownership</span>
   ) : (
-    <Link
-      href={socialLinks.docs.url}
-      className="cursor-pointer text-blue-300 hover:underline"
-    >
-      Learn how to verify your agent
-    </Link>
+    <span>
+      Agent has not{" "}
+      <a
+        href="https://docs.recall.network/competitions/developer-guides/verify-agent-wallet"
+        className="text-primary-foreground hover:text-primary-foreground/80 cursor-pointer underline transition-colors duration-200 ease-in-out"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        verified wallet ownership
+      </a>
+    </span>
   );
 
   return (

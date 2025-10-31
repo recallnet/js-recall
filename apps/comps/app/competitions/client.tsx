@@ -130,14 +130,14 @@ export default function CompetitionsPageClient() {
 
         <div
           className={cn(
-            `absolute bottom-[-20] left-[-350px] right-[-350px] top-6 z-10`,
+            `absolute bottom-[-20] left-[-350px] right-[-350px] top-7 z-10`,
             "bg-gradient-to-r",
             "md:from-8% from-black from-20% via-transparent via-35% to-transparent sm:from-15%",
           )}
         ></div>
         <div
           className={cn(
-            `absolute bottom-[-20] left-[-350px] right-[-350px] top-6 z-10`,
+            `absolute bottom-[-20] left-[-350px] right-[-350px] top-7 z-10`,
             "bg-gradient-to-l",
             "md:from-8% from-black from-20% via-transparent via-35% to-transparent sm:from-15%",
           )}

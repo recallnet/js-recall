@@ -86,7 +86,7 @@ export const Card: React.FC<CardProps> = ({
 
   return (
     <div
-      className={cn("bg-card relative", className)}
+      className={cn("bg-card relative overflow-hidden rounded-xl", className)}
       style={{
         clipPath,
         WebkitClipPath: clipPath,

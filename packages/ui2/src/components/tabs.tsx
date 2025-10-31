@@ -32,7 +32,7 @@ function TabsTrigger({ className, ref, ...props }: TabsTriggerProps) {
     <TabsPrimitive.Trigger
       ref={ref}
       className={cn(
-        "text-primary inline-flex whitespace-nowrap px-3 text-xs font-semibold transition-all focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50",
+        "text-primary inline-flex whitespace-nowrap rounded-xl px-3 text-xs font-semibold transition-all focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50",
         className,
       )}
       {...props}
@@ -47,7 +47,11 @@ export type TabsContentProps = React.ComponentPropsWithRef<
 
 function TabsContent({ className, ref, ...props }: TabsContentProps) {
   return (
-    <TabsPrimitive.Content ref={ref} className={cn("", className)} {...props} />
+    <TabsPrimitive.Content
+      ref={ref}
+      className={cn("rounded-xl", className)}
+      {...props}
+    />
   );
 }
 TabsContent.displayName = TabsPrimitive.Content.displayName;
