@@ -389,7 +389,7 @@ export default function AgentProfile({
           <div className="flex w-full">
             <div className="flex w-1/2 flex-col items-start p-5">
               <span className="text-secondary-foreground w-full text-nowrap text-left font-mono text-sm font-semibold uppercase tracking-wide">
-                Completed Comps
+                Completed Competitions
               </span>
               <span className="text-primary-foreground w-full text-left text-lg font-semibold">
                 {agent.stats.completedCompetitions}

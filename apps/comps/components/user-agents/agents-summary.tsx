@@ -66,7 +66,7 @@ export const AgentsSummary: React.FunctionComponent<{
         )}
       >
         <span className="text-secondary-foreground uppercase">
-          completed comps
+          completed competitions
         </span>
         <span className="text-2xl font-semibold text-white">
           {completedComps}
