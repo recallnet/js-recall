@@ -21,6 +21,7 @@ import {
   useUpdateSandboxAgent,
 } from "@/hooks/useSandbox";
 import type { RouterOutputs } from "@/rpc/router";
+import { displayAddress } from "@/utils/address";
 import { formatCompetitionType } from "@/utils/competition-utils";
 
 import BigNumberDisplay from "../bignumber";
@@ -194,7 +195,7 @@ export default function AgentProfile({
 
       <div className="xs:grid-rows-[550px_1fr] my-6 grid grid-cols-[300px_1fr_1fr] rounded-xl md:grid-cols-[400px_1fr_1fr]">
         <Card
-          className="xs:col-span-1 xs:mr-8 between relative col-span-3 h-[550px] bg-[#11121A]"
+          className="xs:col-span-1 xs:mr-8 relative col-span-3 flex h-[550px] flex-col border bg-[#11121A]"
           corner="top-left"
           cropSize={45}
         >
@@ -211,9 +212,10 @@ export default function AgentProfile({
           </div>
           <div
             className={cn(
+              "flex-1",
               agent?.imageUrl
-                ? "relative h-full w-full"
-                : "relative flex h-full w-full items-center justify-center",
+                ? "relative w-full"
+                : "relative flex w-full items-center justify-center",
             )}
           >
             {isUserAgent ? (
@@ -235,10 +237,12 @@ export default function AgentProfile({
             )}
           </div>
           {agent.walletAddress && (
-            <div className="px-15 xs:px-10 absolute bottom-0 right-[50%] z-20 w-full translate-x-[50%] border bg-black py-3 md:px-20">
+            <div className="flex justify-center border-t bg-black px-6 py-3 text-center">
               <Clipboard
-                text={agent.walletAddress}
-                className="text-secondary-foreground w-full rounded-[10px] px-3 py-2 text-lg"
+                text={displayAddress(agent.walletAddress, { numChars: 6 })}
+                textOnCopy={agent.walletAddress}
+                className="text-secondary-foreground px-3 py-2 font-mono text-lg"
+                showBorder={false}
               />
             </div>
           )}
