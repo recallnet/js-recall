@@ -14,11 +14,19 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import { Star } from "lucide-react";
 import { useRouter } from "next/navigation";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 import { attoValueToNumberValue } from "@recallnet/conversions/atto-conversions";
 import { Button } from "@recallnet/ui2/components/button";
+import { Skeleton } from "@recallnet/ui2/components/skeleton";
 import {
   SortableTableHeader,
   Table,
@@ -30,6 +38,7 @@ import {
 } from "@recallnet/ui2/components/table";
 import { toast } from "@recallnet/ui2/components/toast";
 import { Tooltip } from "@recallnet/ui2/components/tooltip";
+import { cn } from "@recallnet/ui2/lib/utils";
 
 import { Pagination } from "@/components/pagination/index";
 import { config } from "@/config/public";
@@ -39,6 +48,8 @@ import { openForBoosting } from "@/lib/open-for-boosting";
 import { tanstackClient } from "@/rpc/clients/tanstack-query";
 import { RouterOutputs } from "@/rpc/router";
 import { PaginationResponse } from "@/types";
+import { CompetitionType } from "@/types/competition";
+import { checkTableHeaderIsPrimaryMetric } from "@/utils/competition-utils";
 import {
   checkIsPerpsCompetition,
   formatCompetitionType,
@@ -54,6 +65,13 @@ import { boostedCompetitionsStartDate } from "../timeline-chart/constants";
 import { RankBadge } from "./rank-badge";
 
 const MOBILE_BREAKPOINT = 768;
+
+const COMPETITION_DESCRIPTIONS: Record<CompetitionType, string> = {
+  trading:
+    "Agents execute crypto paper trading strategies in a real-time, simulated market environment.",
+  perpetual_futures:
+    "Agents execute perpetual futures trading strategies in a live environment with real assets.",
+};
 
 export interface AgentsTableProps {
   agents: RouterOutputs["competitions"]["getAgents"]["agents"];
@@ -109,7 +127,8 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
 
   const queryClient = useQueryClient();
 
-  const { data: totalStaked } = useTotalUserStaked();
+  const { data: totalStaked, isLoading: isLoadingTotalStaked } =
+    useTotalUserStaked();
 
   // Boost hooks
 
@@ -255,21 +274,43 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
     );
   }, [agentBoostTotals, isSuccessAgentBoostTotals]);
 
+  // Check if a table header is the primary metric (to display the star icon)
+  const isPrimaryMetric = useCallback(
+    (headerId: string) => {
+      return checkTableHeaderIsPrimaryMetric(
+        headerId,
+        competition.evaluationMetric,
+      );
+    },
+    [competition.evaluationMetric],
+  );
+
   useEffect(() => {
+    const getMetricVisibility = (columnId: string): boolean => {
+      return !isMobile || isPrimaryMetric(columnId);
+    };
+
     setColumnVisibility((prev) => ({
       ...prev,
       yourShare: isBoostEnabled && session.ready && session.isAuthenticated,
       // Hide the following columns on mobile
       boostPool: isBoostEnabled && !isMobile,
-      // Perps columns
-      calmarRatio: !isMobile,
-      maxDrawdown: !isMobile,
-      sortinoRatio: !isMobile,
-      // Trading columns
+      // Perps columns - show all on desktop, only primary on mobile
+      simpleReturn: getMetricVisibility("simpleReturn"),
+      calmarRatio: getMetricVisibility("calmarRatio"),
+      maxDrawdown: getMetricVisibility("maxDrawdown"),
+      sortinoRatio: getMetricVisibility("sortinoRatio"),
+      // Trading columns - desktop only
       portfolioValue: !isMobile,
       change24h: !isMobile,
     }));
-  }, [session.ready, session.isAuthenticated, isBoostEnabled, isMobile]);
+  }, [
+    session.ready,
+    session.isAuthenticated,
+    isBoostEnabled,
+    isMobile,
+    isPrimaryMetric,
+  ]);
 
   // Calculate user's total spent boost for progress bar
   const userSpentBoost = useMemo(() => {
@@ -287,7 +328,8 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
   const isBoostDataLoading =
     isLoadingUserBoostBalance ||
     isLoadingUserBoosts ||
-    isLoadingAgentBoostTotals;
+    isLoadingAgentBoostTotals ||
+    isLoadingTotalStaked;
 
   const handleStakeToBoost = () => {
     router.push("/stake");
@@ -307,6 +349,24 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
     setSelectedAgent(agent);
     setIsBoostModalOpen(true);
   };
+
+  const isPerpsCompetition = checkIsPerpsCompetition(competition.type);
+
+  const renderNumber = useCallback(
+    (value: number, prefix = "") => (
+      <>
+        <span className="hidden sm:inline">
+          {prefix}
+          {formatCompactNumber(value)}
+        </span>
+        <span className="sm:hidden">
+          {prefix}
+          {formatCompactNumber(value)}
+        </span>
+      </>
+    ),
+    [],
+  );
 
   const columns = useMemo<
     ColumnDef<RouterOutputs["competitions"]["getAgents"]["agents"][number]>[]
@@ -354,36 +414,50 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
         },
       },
       // Show Calmar Ratio as primary metric for perps, Portfolio Value for others
-      ...(checkIsPerpsCompetition(competition.type)
+      ...(isPerpsCompetition
         ? [
             {
               id: "simpleReturn",
               accessorKey: "simpleReturn",
-              header: () => <span>ROI</span>,
+              header: () => (
+                <span>
+                  <Tooltip content="Return on investment as a percentage of the starting equity.">
+                    ROI
+                  </Tooltip>
+                </span>
+              ),
               cell: ({
                 row,
               }: {
                 row: {
                   original: RouterOutputs["competitions"]["getAgents"]["agents"][number];
                 };
-              }) => (
-                <span
-                  className={`font-semibold ${
-                    row.original.simpleReturn &&
-                    Number(row.original.simpleReturn) > 0
-                      ? "text-green-400"
-                      : row.original.simpleReturn &&
-                          Number(row.original.simpleReturn) < 0
-                        ? "text-red-400"
-                        : "text-secondary-foreground"
-                  }`}
-                >
-                  {row.original.simpleReturn !== null &&
-                  row.original.simpleReturn !== undefined
-                    ? `${(Number(row.original.simpleReturn) * 100).toFixed(2)}%`
-                    : "-"}
-                </span>
-              ),
+              }) => {
+                if (competition.status === "pending") {
+                  return (
+                    <span className="text-secondary-foreground font-semibold">
+                      -
+                    </span>
+                  );
+                }
+                return (
+                  <span
+                    className={`font-semibold ${
+                      row.original.simpleReturn &&
+                      Number(row.original.simpleReturn) > 0
+                        ? "text-green-400"
+                        : row.original.simpleReturn &&
+                            Number(row.original.simpleReturn) < 0
+                          ? "text-red-400"
+                          : "text-secondary-foreground"
+                    }`}
+                  >
+                    {row.original.simpleReturn !== null
+                      ? `${(Number(row.original.simpleReturn) * 100).toFixed(2)}%`
+                      : "-"}
+                  </span>
+                );
+              },
               enableSorting: true,
               meta: {
                 className: isMobile ? "max-w-[80px]" : "max-w-[100px]",
@@ -392,21 +466,34 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
             {
               id: "calmarRatio",
               accessorKey: "calmarRatio",
-              header: () => <span>Calmar Ratio</span>,
+              header: () => (
+                <Tooltip content="Risk-adjusted return metric calculated by dividing the total return by the maximum drawdown.">
+                  Calmar Ratio
+                </Tooltip>
+              ),
               cell: ({
                 row,
               }: {
                 row: {
                   original: RouterOutputs["competitions"]["getAgents"]["agents"][number];
                 };
-              }) => (
-                <span className="text-secondary-foreground font-semibold">
-                  {row.original.calmarRatio !== null &&
-                  row.original.calmarRatio !== undefined
-                    ? Number(row.original.calmarRatio).toFixed(2)
-                    : "-"}
-                </span>
-              ),
+              }) => {
+                if (competition.status === "pending") {
+                  return (
+                    <span className="text-secondary-foreground font-semibold">
+                      -
+                    </span>
+                  );
+                }
+                return (
+                  <span className="text-secondary-foreground font-semibold">
+                    {row.original.calmarRatio !== null &&
+                    row.original.calmarRatio !== undefined
+                      ? Number(row.original.calmarRatio).toFixed(2)
+                      : "-"}
+                  </span>
+                );
+              },
               enableSorting: true,
               size: 120,
             },
@@ -414,10 +501,9 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
               id: "maxDrawdown",
               accessorKey: "maxDrawdown",
               header: () => (
-                <span>
-                  <span className="hidden sm:inline">Max Drawdown</span>
-                  <span className="sm:hidden">DD</span>
-                </span>
+                <Tooltip content="Largest observed equity decline from peak to trough, expressed as a percentage.">
+                  Max Drawdown
+                </Tooltip>
               ),
               cell: ({
                 row,
@@ -425,14 +511,22 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                 row: {
                   original: RouterOutputs["competitions"]["getAgents"]["agents"][number];
                 };
-              }) => (
-                <span className="font-semibold text-red-400">
-                  {row.original.maxDrawdown !== null &&
-                  row.original.maxDrawdown !== undefined
-                    ? `${Math.abs(Number(row.original.maxDrawdown) * 100).toFixed(2)}%`
-                    : "-"}
-                </span>
-              ),
+              }) => {
+                if (competition.status === "pending") {
+                  return (
+                    <span className="text-secondary-foreground font-semibold">
+                      -
+                    </span>
+                  );
+                }
+                return (
+                  <span className="text-secondary-foreground font-semibold">
+                    {row.original.maxDrawdown !== null
+                      ? `${Math.abs(Number(row.original.maxDrawdown) * 100).toFixed(2)}%`
+                      : "-"}
+                  </span>
+                );
+              },
               enableSorting: true,
               size: 140,
               meta: {
@@ -444,29 +538,11 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
             {
               id: "portfolioValue",
               accessorKey: "portfolioValue",
-              header: () => <span>Portfolio</span>,
-              cell: ({
-                row,
-              }: {
-                row: {
-                  original: RouterOutputs["competitions"]["getAgents"]["agents"][number];
-                };
-              }) => (
-                <span className="text-secondary-foreground font-semibold">
-                  {row.original.portfolioValue.toLocaleString("en-US", {
-                    style: "currency",
-                    currency: "USD",
-                    maximumFractionDigits: 2,
-                  })}
-                </span>
+              header: () => (
+                <Tooltip content="The total value of the agent's portfolio in USD.">
+                  <span>Portfolio Value</span>
+                </Tooltip>
               ),
-              enableSorting: true,
-              size: 140,
-            },
-            {
-              id: "pnl",
-              accessorKey: "pnl",
-              header: () => <span>P&L</span>,
               cell: ({
                 row,
               }: {
@@ -474,6 +550,48 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                   original: RouterOutputs["competitions"]["getAgents"]["agents"][number];
                 };
               }) => {
+                if (competition.status === "pending") {
+                  return (
+                    <span className="text-secondary-foreground font-semibold">
+                      -
+                    </span>
+                  );
+                }
+                return (
+                  <span className="text-secondary-foreground font-semibold">
+                    {row.original.portfolioValue.toLocaleString("en-US", {
+                      style: "currency",
+                      currency: "USD",
+                      maximumFractionDigits: 2,
+                    })}
+                  </span>
+                );
+              },
+              enableSorting: true,
+              size: 140,
+            },
+            {
+              id: "pnl",
+              accessorKey: "pnl",
+              header: () => (
+                <Tooltip content="The profit or loss as a percentage of the agent's starting portfolio value.">
+                  P&L
+                </Tooltip>
+              ),
+              cell: ({
+                row,
+              }: {
+                row: {
+                  original: RouterOutputs["competitions"]["getAgents"]["agents"][number];
+                };
+              }) => {
+                if (competition.status === "pending") {
+                  return (
+                    <span className="text-secondary-foreground font-semibold">
+                      -
+                    </span>
+                  );
+                }
                 const pnlColor =
                   row.original.pnlPercent >= 0
                     ? "text-green-500"
@@ -496,12 +614,16 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                 );
               },
               enableSorting: true,
-              size: 140,
+              size: 120,
             },
             {
               id: "change24h",
               accessorKey: "change24h",
-              header: () => <span>24h</span>,
+              header: () => (
+                <Tooltip content="The change in the agent's portfolio value in the last 24 hours, expressed as a percentage.">
+                  24h
+                </Tooltip>
+              ),
               cell: ({
                 row,
               }: {
@@ -509,6 +631,13 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                   original: RouterOutputs["competitions"]["getAgents"]["agents"][number];
                 };
               }) => {
+                if (competition.status === "pending") {
+                  return (
+                    <span className="text-secondary-foreground font-semibold">
+                      -
+                    </span>
+                  );
+                }
                 const percentColor =
                   row.original.change24hPercent >= 0
                     ? "text-green-500"
@@ -528,11 +657,16 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
               },
             },
           ]),
-
       {
         id: "boostPool",
         accessorKey: "boostTotal",
-        header: () => <span className="whitespace-nowrap">Boost Pool</span>,
+        header: () => (
+          <span className="cursor-help text-right">
+            <Tooltip content="The total amount of Boost that users have signaled to support this agent.">
+              Boost Pool
+            </Tooltip>
+          </span>
+        ),
         cell: ({ row }) => {
           const agentBoostTotal = isSuccessAgentBoostTotals
             ? agentBoostTotals[row.original.id] || 0
@@ -540,15 +674,26 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
 
           return (
             <div className="flex flex-col items-end">
-              <span className="text-secondary-foreground font-semibold">
-                {isBoostDataLoading
-                  ? "..."
-                  : formatCompactNumber(agentBoostTotal)}
-              </span>
-              <span className="text-xs text-slate-400">
-                ({formatPercentage(Number(agentBoostTotal), Number(totalBoost))}
-                )
-              </span>
+              {isBoostDataLoading ? (
+                <>
+                  <Skeleton className="mb-1 h-4 rounded-xl" />
+                  <Skeleton className="h-4 rounded-xl" />
+                </>
+              ) : (
+                <>
+                  <span className="text-secondary-foreground font-semibold">
+                    {formatCompactNumber(agentBoostTotal)}
+                  </span>
+                  <span className="text-xs text-slate-400">
+                    (
+                    {formatPercentage(
+                      Number(agentBoostTotal),
+                      Number(totalBoost),
+                    )}
+                    )
+                  </span>
+                </>
+              )}
             </div>
           );
         },
@@ -560,9 +705,13 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
       },
       {
         id: "yourShare",
+        accessorKey: "yourShare",
+        enableSorting: false,
         header: () => (
-          <span className="whitespace-nowrap">
-            {isMobile ? "Share" : "Your Share"}
+          <span className="cursor-help text-right">
+            <Tooltip content="The amount of Boost that you have used to support the agent.">
+              Your Share
+            </Tooltip>
           </span>
         ),
         cell: ({ row }) => {
@@ -585,28 +734,35 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                     <Button
                       size="sm"
                       variant="outline"
-                      className="hover:bg-muted h-8 w-8 rounded-lg border border-yellow-500 p-0 hover:text-white"
+                      className={`disabled:hover:text-primary-foreground text-primary-foreground group h-8 w-full border border-yellow-500 bg-black font-bold uppercase hover:bg-yellow-500 hover:text-black ${isMobile ? "h-7 px-2 text-xs" : "h-8"}`}
                       disabled={!userBoostBalance}
                       onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                         e.stopPropagation();
                         handleBoost(row.original);
                       }}
                     >
-                      <BoostIcon className="ml-1 size-4" />
+                      <BoostIcon
+                        className="ml-1 size-4 text-yellow-500 transition-colors duration-300 ease-in-out group-hover:text-black group-disabled:text-yellow-500"
+                        useCurrentColor
+                      />
                     </Button>
                   </>
                 ) : (
                   <Button
                     size="sm"
                     variant="outline"
-                    className={`disabled:hover:text-primary-foreground rounded-lg border border-yellow-500 font-bold uppercase text-white ${isMobile ? "h-7 px-2 text-xs" : "h-8"}`}
+                    className={`disabled:hover:text-primary-foreground text-primary-foreground group h-8 w-full border border-yellow-500 bg-black font-bold uppercase hover:bg-yellow-500 hover:text-black ${isMobile ? "h-7 px-2 text-xs" : "h-8"}`}
                     disabled={!userBoostBalance}
                     onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                       e.stopPropagation();
                       handleBoost(row.original);
                     }}
                   >
-                    Boost <BoostIcon className="ml-1 size-4" />
+                    Boost{" "}
+                    <BoostIcon
+                      className="ml-1 size-4 text-yellow-500 transition-colors duration-300 ease-in-out group-hover:text-black group-disabled:text-yellow-500"
+                      useCurrentColor
+                    />
                   </Button>
                 )
               ) : (
@@ -632,8 +788,9 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
       isSuccessAgentBoostTotals,
       isOpenForBoosting,
       isSuccessUserBoosts,
-      competition.type,
+      isPerpsCompetition,
       isMobile,
+      competition.status,
     ],
   );
 
@@ -690,222 +847,321 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
 
   return (
     <div className="mt-20 w-full scroll-mt-10 md:mt-40" ref={ref}>
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-        {/* Left column: Title, Button, Rewards, and Balance */}
-        <div className="mb-5 md:col-span-1 md:col-start-1">
-          <div className="flex flex-col gap-4">
-            {/* Title */}
-            <h2 className="text-2xl font-bold">
-              Competition {competitionTitles[competition.status]}
-            </h2>
+      {/* Header section with title, description, rewards, boost balance, and button */}
+      <div className="mb-5 flex flex-col gap-4">
+        {/* Title */}
+        <h2 className="text-2xl font-bold">
+          Competition {competitionTitles[competition.status]}
+        </h2>
 
-            {/* Competition overview content */}
-            <>
-              <div className="text-secondary-foreground mt-2 text-sm">
-                See how leading agents stack against each other in this{" "}
-                <span className="text-primary-foreground font-semibold">
-                  {formatCompetitionType(competition.type).toLowerCase()}
-                </span>{" "}
-                competition. The leaderboard gives you a snapshot of all
-                competing agents and their performance metrics. Learn more about
-                it{" "}
-                <a
-                  href="https://docs.recall.network/concepts"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-primary-foreground hover:text-primary-foreground/80 font-semibold underline transition-all duration-200 ease-in-out"
-                >
-                  here
-                </a>
-                .
-              </div>
-
-              {/* Rewards TGE Info */}
-              {competition.rewardsTge && (
-                <div className="flex flex-col gap-2">
-                  <span className="text-sm font-semibold uppercase tracking-wider text-gray-400">
-                    Rewards
-                  </span>
+        {/* Three column layout: Description/Rewards, Stats, Boost Balance */}
+        <div
+          className={cn("grid grid-cols-1 gap-6 md:items-stretch", {
+            "sm:grid-cols-2": competition.status === "pending",
+            "md:grid-cols-3": competition.status !== "pending",
+          })}
+        >
+          {/* Combined Description and Stats */}
+          <div
+            className={cn(
+              "border-border col-span-1 flex flex-col gap-6 rounded-xl border p-4 md:grid",
+              {
+                "md:col-span-1 md:grid-cols-1":
+                  competition.status === "pending",
+                "md:col-span-2 md:grid-cols-2":
+                  competition.status !== "pending",
+              },
+            )}
+          >
+            {/* Description */}
+            <div className="flex flex-col justify-center">
+              <div className="text-secondary-foreground text-sm">
+                <span>
+                  View agent performance in this{" "}
                   <Tooltip
                     className="cursor-help"
-                    content={
-                      <div className="text-secondary-foreground mb-4 text-sm">
-                        A total of{" "}
-                        <SingleRewardTGEValue
-                          values={[
-                            competition.rewardsTge.agentPool,
-                            competition.rewardsTge.userPool,
-                          ]}
-                        />{" "}
-                        is allocated to this competition&apos;s rewards pool.
-                        Agents receive{" "}
-                        <SingleRewardTGEValue
-                          values={[competition.rewardsTge.agentPool]}
-                        />{" "}
-                        of the pool based on their performance. Boosters receive{" "}
-                        <SingleRewardTGEValue
-                          values={[competition.rewardsTge.userPool]}
-                        />{" "}
-                        of the pool derived from curated predictions. For more
-                        details on rewards distribution, see{" "}
-                        <a
-                          href="https://docs.recall.network/competitions/rewards"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-primary-foreground hover:text-primary-foreground/80 font-semibold underline transition-all duration-200 ease-in-out"
-                        >
-                          here
-                        </a>
-                        .
-                      </div>
-                    }
+                    content={COMPETITION_DESCRIPTIONS[competition.type]}
                   >
-                    <RewardsTGE
-                      rewards={{
-                        agentPrizePool: BigInt(
-                          competition.rewardsTge.agentPool,
-                        ),
-                        userPrizePool: BigInt(competition.rewardsTge.userPool),
-                      }}
-                    />
+                    <span className="text-primary-foreground font-semibold">
+                      {formatCompetitionType(competition.type).toLowerCase()}
+                    </span>{" "}
                   </Tooltip>
-                </div>
-              )}
-            </>
-
-            {/* Boost Balance */}
-            {showBoostBalance && (
-              <div className="flex flex-col gap-4">
-                <div className="mb-4 flex flex-col gap-2">
-                  {/* Boost balance display */}
-                  <span className="text-sm font-semibold uppercase tracking-wider text-gray-400">
-                    Boost Balance
-                  </span>{" "}
-                  <div className="flex items-center gap-2 text-2xl font-bold">
-                    <BoostIcon className="size-4" />
-                    <span className="font-bold">
-                      {isBoostDataLoading
-                        ? "..."
-                        : numberFormatter.format(userBoostBalance || 0)}
-                    </span>
-                    <span className="text-secondary-foreground text-sm font-medium">
-                      available
-                    </span>
-                  </div>
-                  <Tooltip
-                    className="cursor-help"
-                    content={
-                      <div className="text-secondary-foreground mb-4 text-sm">
-                        Users with an available Boost balance signal their
-                        support for competing agents. The best predictors earn a
-                        greater share of the reward pool. Learn more about Boost{" "}
-                        <a
-                          href="https://docs.recall.network/token/staking"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-primary-foreground hover:text-primary-foreground/80 font-semibold underline transition-all duration-200 ease-in-out"
-                        >
-                          here
-                        </a>
-                        .
-                      </div>
-                    }
-                  >
-                    <div className="bg-muted h-3 w-full overflow-hidden rounded-full">
-                      <div
-                        className="h-full rounded-full bg-yellow-500 transition-all duration-300"
-                        style={{
-                          width:
-                            isSuccessUserBoostBalance &&
-                            userBoostBalance > 0 &&
-                            totalBoostValue > 0
-                              ? `${Math.min(
-                                  100,
-                                  Number(
-                                    (userBoostBalance * 100) / totalBoostValue,
-                                  ),
-                                )}%`
-                              : "0%",
+                  competition.
+                  {competition.rewardsTge && " The rewards distribution is:"}
+                </span>
+                {/* Rewards TGE Info */}
+                {competition.rewardsTge && (
+                  <div className="mt-4 flex flex-col gap-2">
+                    <Tooltip
+                      className="cursor-help"
+                      content={
+                        <div className="text-secondary-foreground mb-4 text-sm">
+                          A total of{" "}
+                          <SingleRewardTGEValue
+                            values={[
+                              competition.rewardsTge.agentPool,
+                              competition.rewardsTge.userPool,
+                            ]}
+                          />{" "}
+                          is allocated to this competition&apos;s rewards pool.
+                          Agents receive{" "}
+                          <SingleRewardTGEValue
+                            values={[competition.rewardsTge.agentPool]}
+                          />{" "}
+                          of the pool based on their performance. Boosters
+                          receive{" "}
+                          <SingleRewardTGEValue
+                            values={[competition.rewardsTge.userPool]}
+                          />{" "}
+                          of the pool derived from curated predictions. For more
+                          details on the rewards distribution, see{" "}
+                          <a
+                            href="https://docs.recall.network/competitions/rewards"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary-foreground hover:text-primary-foreground/80 font-semibold underline transition-all duration-200 ease-in-out"
+                          >
+                            here
+                          </a>
+                          .
+                        </div>
+                      }
+                    >
+                      <RewardsTGE
+                        rewards={{
+                          agentPrizePool: BigInt(
+                            competition.rewardsTge.agentPool,
+                          ),
+                          userPrizePool: BigInt(
+                            competition.rewardsTge.userPool,
+                          ),
                         }}
                       />
+                    </Tooltip>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Stats */}
+            {competition.status !== "pending" && (
+              <>
+                <hr className="border-border block md:hidden" />
+                <div className="flex h-full flex-col">
+                  <div className="grid h-full grid-cols-3 items-stretch gap-3">
+                    <div className="flex flex-col items-center justify-center">
+                      <span className="text-secondary-foreground text-xs font-semibold uppercase tracking-wider">
+                        Total Agents
+                      </span>
+                      <div className="mt-2 text-2xl font-bold">
+                        {competition.stats.totalAgents}
+                      </div>
                     </div>
-                  </Tooltip>
+
+                    <>
+                      <div className="flex flex-col items-center justify-center">
+                        <span className="text-secondary-foreground text-xs font-semibold uppercase tracking-wider">
+                          Volume
+                        </span>
+                        <div className="mt-2 text-2xl font-bold">
+                          {renderNumber(
+                            competition.stats.totalVolume ?? 0,
+                            "$",
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-center justify-center">
+                        <span className="text-secondary-foreground text-xs font-semibold uppercase tracking-wider">
+                          {isPerpsCompetition ? "Positions" : "Trades"}
+                        </span>
+                        <div className="mt-2 text-2xl font-bold">
+                          {renderNumber(
+                            isPerpsCompetition
+                              ? (competition.stats.totalPositions ?? 0)
+                              : (competition.stats.totalTrades ?? 0),
+                          )}
+                        </div>
+                      </div>
+                    </>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Boost Balance, if applicable */}
+          {(showBoostBalance || isBoostDataLoading) && isOpenForBoosting && (
+            <div className="border-border flex flex-col justify-center rounded-xl border p-4">
+              <div className="text-secondary-foreground mb-2 text-xs font-semibold uppercase tracking-wider">
+                Boost Balance
+              </div>
+              <div className="grid grid-cols-1 items-end gap-4 sm:grid-cols-2">
+                <div className="flex flex-col gap-2">
+                  {/* Boost balance display */}
+                  {isBoostDataLoading ? (
+                    <>
+                      <Skeleton className="h-8 w-1/2 rounded-xl" />
+                      <Skeleton className="h-4 w-full rounded-full" />
+                    </>
+                  ) : (
+                    <>
+                      <Tooltip
+                        className="cursor-help"
+                        content={
+                          <div className="text-secondary-foreground mb-4 text-sm">
+                            Users with an available Boost balance signal their
+                            support for competing agents. The best predictors
+                            earn a greater share of the reward pool. Learn more
+                            about Boost{" "}
+                            <a
+                              href="https://docs.recall.network/token/staking"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-primary-foreground hover:text-primary-foreground/80 font-semibold underline transition-all duration-200 ease-in-out"
+                            >
+                              here
+                            </a>
+                            .
+                          </div>
+                        }
+                      >
+                        <div className="flex items-center gap-2 text-2xl font-bold">
+                          <BoostIcon className="size-4" />
+                          <span className="font-bold">
+                            {numberFormatter.format(userBoostBalance || 0)}
+                          </span>
+                          <span className="text-secondary-foreground text-sm font-medium">
+                            available
+                          </span>
+                        </div>
+
+                        <div className="bg-muted h-3 w-full overflow-hidden rounded-full">
+                          <div
+                            className="h-full rounded-full bg-yellow-500 transition-all duration-300"
+                            style={{
+                              width:
+                                isSuccessUserBoostBalance &&
+                                userBoostBalance > 0 &&
+                                totalBoostValue > 0
+                                  ? `${Math.min(
+                                      100,
+                                      Number(
+                                        (userBoostBalance * 100) /
+                                          totalBoostValue,
+                                      ),
+                                    )}%`
+                                  : "0%",
+                            }}
+                          />
+                        </div>
+                      </Tooltip>
+                    </>
+                  )}
+                </div>
+                <div className="flex flex-col gap-2">
+                  {/* "Stake to Boost" button */}
+                  {isBoostDataLoading ? (
+                    <Skeleton className="h-14 w-full rounded-xl" />
+                  ) : (
+                    (showActivateBoost || showStakeToBoost) && (
+                      <div>
+                        <Button
+                          size="lg"
+                          variant="outline"
+                          className="group h-8 w-full border border-yellow-500 bg-black font-semibold uppercase text-white hover:bg-yellow-500 hover:text-black"
+                          onClick={
+                            showActivateBoost
+                              ? handleClaimBoost
+                              : handleStakeToBoost
+                          }
+                        >
+                          <span>
+                            {showActivateBoost
+                              ? config.publicFlags.tge
+                                ? "Activate Boost"
+                                : "Start Boosting"
+                              : "Stake to Boost"}
+                          </span>{" "}
+                          <BoostIcon
+                            className="ml-1 text-yellow-500 transition-colors duration-300 ease-in-out group-hover:text-black group-disabled:text-yellow-500"
+                            useCurrentColor
+                          />
+                        </Button>
+                      </div>
+                    )
+                  )}
                 </div>
               </div>
-            )}
-
-            {/* Stake to Boost button */}
-            {competition.status !== "ended" &&
-              (showActivateBoost || showStakeToBoost) && (
-                <div>
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    className="group h-8 w-full border border-yellow-500 bg-black font-semibold uppercase text-white hover:bg-yellow-500 hover:text-black"
-                    onClick={
-                      showActivateBoost ? handleClaimBoost : handleStakeToBoost
-                    }
-                  >
-                    {showActivateBoost
-                      ? config.publicFlags.tge
-                        ? "Activate Boost"
-                        : "Start Boosting"
-                      : "Stake to Boost"}{" "}
-                    <BoostIcon className="ml-1 size-4" />
-                  </Button>
-                </div>
-              )}
-          </div>
+            </div>
+          )}
         </div>
+      </div>
 
-        {/* Table spanning full width on mobile, right 2 columns on desktop */}
-        <div className="md:col-span-2">
-          <div
-            ref={tableContainerRef}
-            className="overflow-x-auto overflow-y-auto"
-          >
-            <Table className="w-full min-w-max table-auto">
-              <TableHeader className="sticky top-0 z-10 bg-black">
-                {table.getHeaderGroups().map((headerGroup) => (
-                  <TableRow key={headerGroup.id} style={{ display: "flex" }}>
-                    {headerGroup.headers.map((header) =>
-                      header.column.getCanSort() ? (
-                        <SortableTableHeader
-                          key={header.id}
-                          colSpan={header.colSpan}
-                          sortState={getSortState(header.column.getIsSorted())}
-                          style={{ width: header.getSize() }}
-                          className={header.column.columnDef.meta?.className}
-                          onClick={header.column.getToggleSortingHandler()}
-                        >
-                          {header.isPlaceholder
-                            ? null
-                            : flexRender(
-                                header.column.columnDef.header,
-                                header.getContext(),
-                              )}
-                        </SortableTableHeader>
-                      ) : (
-                        <TableHead
-                          key={header.id}
-                          colSpan={header.colSpan}
-                          style={{ width: header.getSize() }}
-                          className={header.column.columnDef.meta?.className}
-                        >
-                          {header.isPlaceholder
-                            ? null
-                            : flexRender(
-                                header.column.columnDef.header,
-                                header.getContext(),
-                              )}
-                        </TableHead>
-                      ),
-                    )}
-                  </TableRow>
-                ))}
-              </TableHeader>
-              <TableBody>
-                {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+      {/* Table section */}
+      <div>
+        <div
+          ref={tableContainerRef}
+          className="overflow-x-auto overflow-y-auto"
+        >
+          <Table className="w-full min-w-max table-auto">
+            <TableHeader className="sticky top-0 z-10 bg-black">
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id} style={{ display: "flex" }}>
+                  {headerGroup.headers.map((header) =>
+                    header.column.getCanSort() ? (
+                      <SortableTableHeader
+                        key={header.id}
+                        colSpan={header.colSpan}
+                        sortState={getSortState(header.column.getIsSorted())}
+                        style={{ width: header.getSize() }}
+                        className={header.column.columnDef.meta?.className}
+                        onClick={header.column.getToggleSortingHandler()}
+                      >
+                        <div className="inline-flex items-center">
+                          {flexRender(
+                            header.column.columnDef.header,
+                            header.getContext(),
+                          )}
+                          {isPrimaryMetric(header.column.id) && (
+                            <Star className="ml-1 h-2 w-2 shrink-0 fill-yellow-500 text-yellow-500" />
+                          )}
+                        </div>
+                      </SortableTableHeader>
+                    ) : (
+                      <TableHead
+                        key={header.id}
+                        colSpan={header.colSpan}
+                        style={{ width: header.getSize() }}
+                        className={header.column.columnDef.meta?.className}
+                      >
+                        {flexRender(
+                          header.column.columnDef.header,
+                          header.getContext(),
+                        )}
+                      </TableHead>
+                    ),
+                  )}
+                </TableRow>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {agents.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={table.getAllColumns().length}
+                    className="h-20 border-t text-center"
+                  >
+                    <span className="text-secondary-foreground">
+                      {competition.status === "pending" &&
+                      competition.joinStartDate &&
+                      competition.joinStartDate > new Date()
+                        ? "Agent registration is not open."
+                        : "No agents found for this competition."}
+                    </span>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                rowVirtualizer.getVirtualItems().map((virtualRow) => {
                   const row = table.getRowModel().rows[virtualRow.index];
                   if (!row) return null;
                   return (
@@ -947,17 +1203,17 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                       ))}
                     </TableRow>
                   );
-                })}
-              </TableBody>
-            </Table>
-          </div>
-          <Pagination
-            totalItems={pagination.total}
-            currentPage={page}
-            itemsPerPage={pagination.limit}
-            onPageChange={onPageChange}
-          />
+                })
+              )}
+            </TableBody>
+          </Table>
         </div>
+        <Pagination
+          totalItems={pagination.total}
+          currentPage={page}
+          itemsPerPage={pagination.limit}
+          onPageChange={onPageChange}
+        />
       </div>
 
       <BoostAgentModal

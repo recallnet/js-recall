@@ -1,6 +1,7 @@
 "use client";
 
 import { isFuture } from "date-fns";
+import { Star } from "lucide-react";
 import { useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -19,6 +20,7 @@ import { cn } from "@recallnet/ui2/lib/utils";
 import { AgentAvatar } from "@/components/agent-avatar";
 import { CountdownClock } from "@/components/clock";
 import { RouterOutputs } from "@/rpc/router";
+import { checkIsPerpsCompetition } from "@/utils/competition-utils";
 import {
   formatAmount,
   formatCompactNumber,
@@ -54,6 +56,7 @@ interface MetricTimelineChartProps {
   yAxisDecimals?: number;
   isLoading?: boolean;
   status: "pending" | "active" | "ending" | "ended";
+  competitionType: RouterOutputs["competitions"]["getById"]["type"];
   startDate?: Date | null;
   boostStartDate?: Date | null;
   dateRange?: "all" | "72h";
@@ -127,6 +130,7 @@ export const MetricTimelineChart: React.FC<MetricTimelineChartProps> = ({
   startDate,
   boostStartDate,
   dateRange = "all",
+  competitionType,
 }) => {
   const router = useRouter();
   const [lineOrAgentAvatarHovered, setLineOrAgentAvatarHovered] = useState<
@@ -505,12 +509,12 @@ export const MetricTimelineChart: React.FC<MetricTimelineChartProps> = ({
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
             data={filteredData}
-            margin={{ right: 30, bottom: 5, top: 20, left: 20 }}
+            margin={{ right: 30, bottom: 5, top: 20, left: 0 }}
           >
-            <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
             <XAxis
               dataKey="displayTimestamp"
-              stroke="#9CA3AF"
+              stroke="var(--secondary-foreground)"
               fontSize={12}
               type="category"
               interval="equidistantPreserveStart"
@@ -518,9 +522,9 @@ export const MetricTimelineChart: React.FC<MetricTimelineChartProps> = ({
               minTickGap={20}
             />
             <YAxis
-              stroke="#9CA3AF"
+              stroke="var(--secondary-foreground)"
               fontSize={12}
-              tick={{ fill: "#9CA3AF" }}
+              tick={{ fill: "var(--secondary-foreground)" }}
               domain={[
                 (dataMin: number) => dataMin * 0.95,
                 (dataMax: number) => dataMax * 1.05,
@@ -563,7 +567,7 @@ export const MetricTimelineChart: React.FC<MetricTimelineChartProps> = ({
                   type="monotone"
                   dataKey={agentName}
                   stroke={agentColorMap[agentName] ?? CHART_COLORS[0]}
-                  strokeWidth={2}
+                  strokeWidth={isActive ? 3 : 2}
                   connectNulls={true}
                   opacity={!isAnyActive || isActive ? 1 : 0.3}
                   isAnimationActive={false}
@@ -626,6 +630,12 @@ export const MetricTimelineChart: React.FC<MetricTimelineChartProps> = ({
             })}
           </LineChart>
         </ResponsiveContainer>
+        {checkIsPerpsCompetition(competitionType) && (
+          <div className="text-secondary-foreground absolute bottom-[-18px] right-6 flex items-center gap-1 text-xs italic">
+            <Star className="h-2.5 w-2.5 fill-yellow-500 text-yellow-500" /> =
+            primary evaluation metric
+          </div>
+        )}
       </div>
     </>
   );

@@ -50,7 +50,7 @@ export const PERPS_METRIC_TABS = [
   {
     metric: "simple_return" as const,
     value: "account-value",
-    label: "Return %",
+    label: "ROI",
   },
   {
     metric: "calmar_ratio" as const,
@@ -78,7 +78,7 @@ export function getEvaluationMetricDisplayName(
   metric: EvaluationMetric | undefined,
 ): string {
   const tab = PERPS_METRIC_TABS.find((t) => t.metric === metric);
-  return tab?.label ?? "Return %";
+  return tab?.label ?? "ROI";
 }
 
 /**
@@ -91,6 +91,25 @@ export function getEvaluationMetricTabValue(
 ): string {
   const tab = PERPS_METRIC_TABS.find((t) => t.metric === metric);
   return tab?.value ?? "account-value";
+}
+
+/**
+ * Checks if a table header is the primary metric.
+ * @param headerId - Table header ID string
+ * @param metric - Evaluation metric enum value
+ * @returns True if the table header is the primary metric, false otherwise
+ */
+export function checkTableHeaderIsPrimaryMetric(
+  headerId: string,
+  metric: EvaluationMetric | undefined,
+): boolean {
+  if (!metric) return false;
+  const toSnakeCase = (str: string) =>
+    str.replace(/([a-z])([A-Z])/g, "$1_$2").toLowerCase();
+  return (
+    toSnakeCase(headerId) ===
+    PERPS_METRIC_TABS.find((t) => t.metric === metric)?.metric
+  );
 }
 
 /**

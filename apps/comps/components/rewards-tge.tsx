@@ -102,14 +102,14 @@ export const RewardsTGE: React.FC<RewardsTGEProps> = ({
   return (
     <div className="flex flex-1 flex-row gap-6">
       <div className="flex items-center gap-2">
-        <span className="text-sm text-gray-400">Agents</span>
+        <span className="text-secondary-foreground text-sm">Agents</span>
         <span className="flex items-center gap-1.5 font-bold text-white">
           <Recall size="sm" />
           {formattedRewards.agentPrizePool.toLocaleString()}
         </span>
       </div>
       <div className="flex items-center gap-2">
-        <span className="text-sm text-gray-400">Boosters</span>
+        <span className="text-secondary-foreground text-sm">Boosters</span>
         <span className="flex items-center gap-1.5 font-bold text-white">
           <Recall size="sm" />
           {formattedRewards.userPrizePool.toLocaleString()}

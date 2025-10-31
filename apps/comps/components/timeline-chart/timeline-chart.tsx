@@ -182,6 +182,7 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
             <MetricTimelineChart
               timelineData={timelineRaw || []}
               agents={agents || []}
+              competitionType={competition.type}
               metric="simpleReturn"
               yAxisType="percentage"
               isLoading={isLoading}
@@ -197,6 +198,7 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
             <MetricTimelineChart
               timelineData={timelineRaw || []}
               agents={agents || []}
+              competitionType={competition.type}
               metric="calmarRatio"
               isLoading={isLoading}
               status={competitionStatus}
@@ -211,6 +213,7 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
             <MetricTimelineChart
               timelineData={timelineRaw || []}
               agents={agents || []}
+              competitionType={competition.type}
               metric="maxDrawdown"
               yAxisType="percentage"
               isLoading={isLoading}
@@ -226,6 +229,7 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
             <MetricTimelineChart
               timelineData={timelineRaw || []}
               agents={agents || []}
+              competitionType={competition.type}
               metric="sortinoRatio"
               isLoading={isLoading}
               status={competitionStatus}
@@ -333,6 +337,7 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
           <MetricTimelineChart
             timelineData={timelineRaw || []}
             agents={agents || []}
+            competitionType={competition.type}
             metric="totalValue"
             yAxisType="currency"
             isLoading={isLoading}
@@ -348,6 +353,7 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
           <MetricTimelineChart
             timelineData={timelineRaw || []}
             agents={agents || []}
+            competitionType={competition.type}
             metric="percentReturn"
             yAxisType="percentage"
             isLoading={isLoading}
