@@ -1,6 +1,3 @@
-import { PrivyClient } from "@privy-io/server-auth";
-import { cookies } from "next/headers";
-
 import { base } from "@/rpc/context/base";
 
 export const privyUserMiddleware = base.middleware(
@@ -16,7 +13,7 @@ export const privyUserMiddleware = base.middleware(
           privyIdToken: idToken,
         },
       });
-    } catch (error) {
+    } catch {
       return await next({
         context: {
           privyUser: undefined,

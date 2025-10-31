@@ -3,8 +3,7 @@
 import { PrivyClientConfig, PrivyProvider } from "@privy-io/react-auth";
 import { WagmiProvider } from "@privy-io/wagmi";
 import { NavigationGuardProvider } from "next-navigation-guard";
-import { ReactNode, useEffect, useState } from "react";
-import * as CookieConsent from "vanilla-cookieconsent";
+import { ReactNode, useEffect } from "react";
 
 import { chainWithRpcUrl } from "@/config/chain";
 import { SessionProvider } from "@/providers/session-provider";
@@ -78,33 +77,6 @@ const privyConfig: PrivyClientConfig = {
  */
 export function PrivyProviderWrapper({ children }: { children: ReactNode }) {
   const privyAppId = process.env.NEXT_PUBLIC_PRIVY_APP_ID;
-  const [hasFunctionalConsent, setHasFunctionalConsent] = useState(false);
-  const [isCheckingConsent, setIsCheckingConsent] = useState(true);
-
-  // Check for functional cookie consent
-  useEffect(() => {
-    const checkFunctionalConsent = () => {
-      const functionalAccepted = CookieConsent.acceptedCategory("functional");
-      setHasFunctionalConsent(functionalAccepted);
-      setIsCheckingConsent(false);
-    };
-
-    // Initial check
-    checkFunctionalConsent();
-
-    // Listen for consent changes
-    const handleConsentChange = () => {
-      checkFunctionalConsent();
-    };
-
-    window.addEventListener("cc:onConsent", handleConsentChange);
-    window.addEventListener("cc:onChange", handleConsentChange);
-
-    return () => {
-      window.removeEventListener("cc:onConsent", handleConsentChange);
-      window.removeEventListener("cc:onChange", handleConsentChange);
-    };
-  }, []);
 
   // Apply custom CSS variables to Privy modal elements
   useEffect(() => {
@@ -115,17 +87,6 @@ export function PrivyProviderWrapper({ children }: { children: ReactNode }) {
   if (!privyAppId) {
     console.error("NEXT_PUBLIC_PRIVY_APP_ID is not configured");
     return <div>Authentication configuration error</div>;
-  }
-
-  // Don't initialize Privy until we know consent status
-  if (isCheckingConsent) {
-    return <>{children}</>;
-  }
-
-  // Only initialize Privy if user has given consent for functional cookies
-  // Privy sets functional cookies that require consent under GDPR
-  if (!hasFunctionalConsent) {
-    return <>{children}</>;
   }
 
   return (

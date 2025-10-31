@@ -86,8 +86,7 @@ export async function createPrivyAuthenticatedRpcClient(params: {
   const rpcClient = await createTestRpcClient(privyToken);
 
   // Login to create/update user
-  const userId = await rpcClient.user.login();
-  let user = await rpcClient.user.getProfile();
+  let user = await rpcClient.user.login();
 
   // Update name if provided
   if (params.userName) {
@@ -103,15 +102,15 @@ export async function createPrivyAuthenticatedRpcClient(params: {
       id: user.id,
       walletAddress: user.walletAddress || testEmbeddedWallet,
       embeddedWalletAddress: user.embeddedWalletAddress || testEmbeddedWallet,
-      walletLastVerifiedAt: user.walletLastVerifiedAt || null,
+      walletLastVerifiedAt: user.walletLastVerifiedAt,
       privyId: user.privyId,
       name: user.name || params.userName,
       email: user.email || uniqueUserEmail,
-      imageUrl: user.imageUrl || null,
-      status: user.status || "active",
-      metadata: user.metadata || null,
-      createdAt: user.createdAt || new Date().toISOString(),
-      updatedAt: user.updatedAt || new Date().toISOString(),
+      imageUrl: user.imageUrl,
+      status: user.status,
+      metadata: user.metadata,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
       lastLoginAt: user.lastLoginAt || new Date().toISOString(),
     },
     wallet: user.walletAddress || testEmbeddedWallet,

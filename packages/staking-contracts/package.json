@@ -34,7 +34,7 @@
     "@safe-global/api-kit": "^4.0.0",
     "@safe-global/protocol-kit": "^6.1.1",
     "@safe-global/types-kit": "^3.0.0",
-    "viem": "^2.30.0"
+    "viem": "^2.38.5"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-chai-matchers": "^2.0.8",
@@ -50,7 +50,6 @@
     "merkletreejs": "^0.5.2",
     "tsup": "^8.3.6",
     "typescript": "^5.8.3",
-    "viem": "^2.30.0",
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^3.2.4",
     "vitest-mock-extended": "^3.1.0"

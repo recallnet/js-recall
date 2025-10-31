@@ -6,14 +6,22 @@ import Script from "next/script";
 
 import { useCookieConsentState } from "@/components/cookie-consent-provider";
 
+/**
+ * This component conditionally loads analytics scripts based on user consent.
+ * The app uses a two-category consent system (necessary + analytics):
+ * - Necessary cookies (authentication via Privy, security, bot protection) are always
+ *   active and don't require consent per GDPR Article 5(3) exemption.
+ * - Analytics cookies (PostHog, Google Analytics, Hotjar, Vercel Analytics) require
+ *   explicit consent and are gated by this component.
+ */
 export function Tracking() {
-  const { consent } = useCookieConsentState();
+  const { analyticsConsent } = useCookieConsentState();
   const GA_ID = process.env.NEXT_PUBLIC_GA_ID;
   const HOTJAR_ID = process.env.NEXT_PUBLIC_HOTJAR_ID;
   const HOTJAR_SV = process.env.NEXT_PUBLIC_HOTJAR_SV;
 
-  // Only load tracking scripts if user has consented
-  if (!consent) {
+  // Only load tracking scripts if user has consented to analytics
+  if (!analyticsConsent) {
     return null;
   }
 

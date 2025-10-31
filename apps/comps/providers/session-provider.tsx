@@ -27,14 +27,10 @@ import {
   useMemo,
   useState,
 } from "react";
+import { useAccount, useChainId, useDisconnect } from "wagmi";
 
 import { WrongNetworkModal } from "@/components/modals/wrong-network";
 import { WrongWalletModal } from "@/components/modals/wrong-wallet";
-import {
-  useSafeAccount,
-  useSafeChainId,
-  useSafeDisconnect,
-} from "@/hooks/useSafeWagmi";
 import { mergeWithoutUndefined } from "@/lib/merge-without-undefined";
 import { userWalletState } from "@/lib/user-wallet-state";
 import { tanstackClient } from "@/rpc/clients/tanstack-query";
@@ -101,10 +97,10 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const { user, ready, authenticated, logout, isModalOpen, createWallet } =
     usePrivy();
 
-  const { disconnect } = useSafeDisconnect();
-  const { isConnected, chainId: currentChainId } = useSafeAccount();
+  const { disconnect } = useDisconnect();
+  const { isConnected, chainId: currentChainId } = useAccount();
   const { wallets, ready: readyWallets } = useWallets();
-  const defaultChainId = useSafeChainId();
+  const defaultChainId = useChainId();
   const isWrongChain = currentChainId !== defaultChainId;
   const { setActiveWallet } = useSetActiveWallet();
 

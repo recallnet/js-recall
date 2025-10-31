@@ -26,11 +26,5 @@
     "**/*.tsx",
     ".next/types/**/*.ts"
   ],
-  "exclude": [
-    "node_modules",
-    // E2E tests excluded from Next.js compilation (vitest handles type-checking during test runs)
-    "e2e",
-    // Vitest config excluded to prevent Next.js build errors (uses vite-specific types)
-    "vitest.config.ts"
-  ]
+  "exclude": ["node_modules"]
 }

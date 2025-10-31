@@ -4,8 +4,6 @@ import React, { ReactNode, useEffect, useState } from "react";
 
 import { Input } from "@recallnet/ui2/components/input";
 
-import { isValidUrl } from "@/utils/url";
-
 export const ImageURLInput: React.FC<
   React.JSX.IntrinsicElements["input"] & {
     sublabel?: ReactNode;
@@ -25,7 +23,7 @@ export const ImageURLInput: React.FC<
   );
   const [imageLoadError, setImageLoadError] = useState(true);
   const [isAttemptingValidation, setIsAttemptingValidation] = useState(false);
-  const isSyntacticallyValidUrl = isValidUrl(internalInputValue);
+  const isSyntacticallyValidUrl = URL.canParse(internalInputValue);
   const isImageValid =
     !imageLoadError && isSyntacticallyValidUrl && internalInputValue.length > 0;
 

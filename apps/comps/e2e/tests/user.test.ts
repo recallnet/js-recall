@@ -6,7 +6,6 @@ import {
   AdminSearchUsersAndAgentsResponse,
   AdminUsersListResponse,
   AgentProfileResponse,
-  AgentResponse,
   CROSS_CHAIN_TRADING_TYPE,
   CreateCompetitionResponse,
   StartCompetitionResponse,
@@ -223,7 +222,7 @@ describe("User API", () => {
     const existingPrivyId = originalUser.privyId;
     const { user: updatedUser } = await createPrivyAuthenticatedRpcClient({
       userName: newName,
-      privyId: existingPrivyId,
+      privyId: existingPrivyId || undefined,
       userEmail: originalUserEmail,
       walletAddress: newWalletAddress,
     });
@@ -381,19 +380,11 @@ describe("User API", () => {
     const { agent: updatedAgent5 } = await rpcClient.user.updateAgentProfile({
       agentId: agent.id,
       metadata: {
-        ref: {
-          name: "Updated Ref Name",
-          version: "1.0.0",
-          url: "https://example.com/updated-ref.com",
-        },
+        skills: ["trading", "ai"],
       },
     });
     expect(updatedAgent5.metadata).toBeDefined();
-    expect(updatedAgent5.metadata?.ref?.name).toBe("Updated Ref Name");
-    expect(updatedAgent5.metadata?.ref?.version).toBe("1.0.0");
-    expect(updatedAgent5.metadata?.ref?.url).toBe(
-      "https://example.com/updated-ref.com",
-    );
+    expect(updatedAgent5.metadata?.skills).toEqual(["trading", "ai"]);
 
     // Test: User can update all fields at once
     const { agent: finalAgent } = await rpcClient.user.updateAgentProfile({
@@ -403,16 +394,13 @@ describe("User API", () => {
       imageUrl: "https://example.com/final-image.jpg",
       email: "final-email@example.com",
       metadata: {
-        ref: {
-          name: "Final Ref Name",
-          version: "1.0.1",
-          url: "https://example.com/final-ref.com",
-        },
+        skills: ["trading", "ai"],
       },
     });
     expect(finalAgent.name).toBe("Final Agent Name");
     expect(finalAgent.description).toBe("Final agent description");
     expect(finalAgent.imageUrl).toBe("https://example.com/final-image.jpg");
+    expect(finalAgent.metadata?.skills).toEqual(["trading", "ai"]);
 
     // Test: Verify changes persisted by getting the agent again
     const persistedAgent = await rpcClient.user.getUserAgent({
@@ -473,8 +461,9 @@ describe("User API", () => {
       rpcClient.user.updateAgentProfile({
         agentId: agent.id,
         name: "Valid Name",
+        // @ts-expect-error We want to force the error
         invalidField: "Should be rejected",
-      } as any),
+      }),
     ).rejects.toThrow(/Input validation failed/);
   });
 
@@ -630,9 +619,9 @@ describe("User API", () => {
     expect(page3Agents).toHaveLength(2);
 
     // Verify no overlap between pages by checking agent IDs
-    const page1Ids = page1Agents.map((a: AgentResponse) => a.id);
-    const page2Ids = page2Agents.map((a: AgentResponse) => a.id);
-    const page3Ids = page3Agents.map((a: AgentResponse) => a.id);
+    const page1Ids = page1Agents.map((a) => a.id);
+    const page2Ids = page2Agents.map((a) => a.id);
+    const page3Ids = page3Agents.map((a) => a.id);
 
     const allPageIds = [...page1Ids, ...page2Ids, ...page3Ids];
     const uniqueIds = new Set(allPageIds);
@@ -775,14 +764,14 @@ describe("User API", () => {
     // User 1 should only see their own agents
     const { agents: user1Agents } = await user1RpcClient.user.getUserAgents({});
     expect(user1Agents).toHaveLength(3);
-    user1Agents.forEach((agent: AgentResponse) => {
+    user1Agents.forEach((agent) => {
       expect(agent.name).toMatch(/^User1 Agent/);
     });
 
     // User 2 should only see their own agents
     const { agents: user2Agents } = await user2RpcClient.user.getUserAgents({});
     expect(user2Agents).toHaveLength(2);
-    user2Agents.forEach((agent: AgentResponse) => {
+    user2Agents.forEach((agent) => {
       expect(agent.name).toMatch(/^User2 Agent/);
     });
 
@@ -792,7 +781,7 @@ describe("User API", () => {
         limit: 2,
       });
     expect(user1PaginatedAgents).toHaveLength(2);
-    user1PaginatedAgents.forEach((agent: AgentResponse) => {
+    user1PaginatedAgents.forEach((agent) => {
       expect(agent.name).toMatch(/^User1 Agent/);
     });
   });
@@ -841,6 +830,7 @@ describe("User API", () => {
     expect(agent?.createdAt).toBeDefined();
     expect(agent?.updatedAt).toBeDefined();
     // API key should NOT be present in the response for security
+    // @ts-expect-error We are testing the API key is not present
     expect(agent?.apiKey).toBeUndefined();
   });
 
