@@ -1280,19 +1280,27 @@ export class CompetitionRepository {
   /**
    * Get latest portfolio snapshots for all active agents in a competition
    * @param competitionId Competition ID
+   * @param includeInactive If true, include snapshots for disqualified and withdrawn agents
    */
   async getLatestPortfolioSnapshots(
     competitionId: string,
+    includeInactive = false,
   ): Promise<SelectPortfolioSnapshot[]> {
     try {
+      // Build WHERE clause conditionally
+      const statusFilter = includeInactive
+        ? sql.empty()
+        : sql`AND ca.status = ${"active"}`;
+
       const result = await this.#dbRead.execute<{
         id: number;
         agent_id: string;
         competition_id: string;
         timestamp: Date;
         total_value: number;
+        status: string;
       }>(sql`
-      SELECT ps.id, ps.agent_id, ps.competition_id, ps.timestamp, ps.total_value
+      SELECT ps.id, ps.agent_id, ps.competition_id, ps.timestamp, ps.total_value, ca.status
       FROM ${competitionAgents} ca
       CROSS JOIN LATERAL (
         SELECT ps.id, ps.agent_id, ps.competition_id, ps.timestamp, ps.total_value
@@ -1303,11 +1311,15 @@ export class CompetitionRepository {
         LIMIT 1
       ) ps
       WHERE ca.competition_id = ${competitionId}
-        AND ca.status = ${"active"}
+        ${statusFilter}
     `);
 
       // Convert snake_case to camelCase to match Drizzle `SelectPortfolioSnapshot` type
-      return result.rows.map((row) => this.convertBasicSnapshotRow(row));
+      // and include status field
+      return result.rows.map((row) => ({
+        ...this.convertBasicSnapshotRow(row),
+        status: row.status as "active" | "disqualified" | "withdrawn",
+      }));
     } catch (error) {
       this.#logger.error("Error in getLatestPortfolioSnapshots:", error);
       throw error;

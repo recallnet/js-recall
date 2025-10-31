@@ -127,6 +127,7 @@ interface LeaderboardEntry {
   maxDrawdown?: number | null;
   downsideDeviation?: number | null;
   hasRiskMetrics?: boolean; // Indicates if agent has risk metrics calculated
+  status?: "active" | "disqualified" | "withdrawn"; // Agent status in the competition
 }
 
 /**
@@ -970,15 +971,22 @@ export class CompetitionService {
     const competition = await this.competitionRepo.findById(competitionId);
 
     // Get the leaderboard (calculated from final snapshots)
+    // This includes ALL agents (active and disqualified) for display purposes
     const leaderboard = await this.getLeaderboard(competitionId);
+
+    // Filter to only active agents for rewards and final rankings
+    // Disqualified agents should not receive rewards or be counted in total agents
+    const activeLeaderboard = leaderboard.filter(
+      (entry) => entry.status === "active" || !entry.status,
+    );
 
     const enrichedEntries: EnrichedLeaderboardEntry[] = [];
 
-    // Note: the leaderboard array could be quite large, avoiding Promise.all
+    // Note: the activeLeaderboard array could be quite large, avoiding Promise.all
     // so that these async calls to get pnl happen in series and don't over
     // use system resources.
-    for (let i = 0; i < leaderboard.length; i++) {
-      const entry = leaderboard[i];
+    for (let i = 0; i < activeLeaderboard.length; i++) {
+      const entry = activeLeaderboard[i];
       if (entry === undefined) continue;
 
       const { pnl, startingValue } =
@@ -1040,7 +1048,7 @@ export class CompetitionService {
           rank: i + 1, // 1-based ranking
           pnl,
           startingValue,
-          totalAgents,
+          totalAgents: activeLeaderboard.length, // Use count of active agents only
           score,
           calmarRatio: entry.calmarRatio ?? null,
           sortinoRatio: entry.sortinoRatio ?? null,
@@ -1059,7 +1067,7 @@ export class CompetitionService {
           rank: i + 1, // 1-based ranking
           pnl,
           startingValue,
-          totalAgents,
+          totalAgents: activeLeaderboard.length, // Use count of active agents only
           score,
           hasRiskMetrics: false,
         };
@@ -1067,7 +1075,7 @@ export class CompetitionService {
       }
     }
 
-    // Persist to database
+    // Persist to database (only active agents)
     if (enrichedEntries.length > 0) {
       await this.competitionRepo.batchInsertLeaderboard(enrichedEntries, tx);
     }
@@ -1386,7 +1394,10 @@ export class CompetitionService {
     competitionId: string,
   ): Promise<LeaderboardEntry[]> {
     const snapshots =
-      await this.competitionRepo.getLatestPortfolioSnapshots(competitionId);
+      await this.competitionRepo.getLatestPortfolioSnapshots(
+        competitionId,
+        true, // Include inactive (disqualified/withdrawn) agents
+      );
     if (snapshots.length === 0) {
       return [];
     }
@@ -1406,6 +1417,7 @@ export class CompetitionService {
           500, // Reasonable limit
           0,
           evaluationMetric,
+          true, // Include inactive (disqualified/withdrawn) agents
         );
 
       // Combine snapshot data with risk metrics
@@ -1422,6 +1434,7 @@ export class CompetitionService {
 
         orderedResults.push({
           agentId: entry.agentId,
+          status: entry.status,
           value: portfolioValue,
           pnl: Number(entry.totalPnl) || 0, // Use PnL from risk-adjusted leaderboard
           calmarRatio: entry.calmarRatio ? Number(entry.calmarRatio) : null,
@@ -1438,18 +1451,27 @@ export class CompetitionService {
       return orderedResults;
     }
 
-    // For paper trading: Return without risk metrics
-    return snapshots
-      .map((snapshot) => ({
-        agentId: snapshot.agentId,
-        value: snapshot.totalValue,
-        pnl: 0, // PnL not available from snapshots alone
-        calmarRatio: null,
-        simpleReturn: null,
-        maxDrawdown: null,
-        hasRiskMetrics: false,
-      }))
-      .sort((a, b) => b.value - a.value);
+    // For paper trading: Return without risk metrics, sort active first then by value
+    const entries = snapshots.map((snapshot) => ({
+      agentId: snapshot.agentId,
+      status: (snapshot as any).status,
+      value: snapshot.totalValue,
+      pnl: 0, // PnL not available from snapshots alone
+      calmarRatio: null,
+      simpleReturn: null,
+      maxDrawdown: null,
+      hasRiskMetrics: false,
+    }));
+
+    // Sort: active agents first (sorted by value DESC), then inactive agents (sorted by value DESC)
+    return entries.sort((a, b) => {
+      const aIsActive = a.status === "active" ? 0 : 1;
+      const bIsActive = b.status === "active" ? 0 : 1;
+      if (aIsActive !== bIsActive) {
+        return aIsActive - bIsActive;
+      }
+      return b.value - a.value;
+    });
   }
 
   /**
@@ -1479,12 +1501,14 @@ export class CompetitionService {
           500, // Reasonable limit - most competitions won't have more agents
           0,
           evaluationMetric,
+          true, // Include inactive (disqualified/withdrawn) agents
         );
 
       // Transform to LeaderboardEntry format, including risk metrics
       // Already sorted by SQL, no need for additional sorting
       return riskAdjustedLeaderboard.map((entry) => ({
         agentId: entry.agentId,
+        status: entry.status,
         value: Number(entry.totalEquity) || 0, // Keep as portfolio value for API compatibility
         pnl: Number(entry.totalPnl) || 0,
         // Include risk-adjusted metrics
@@ -1684,7 +1708,7 @@ export class CompetitionService {
         deactivationReason: string;
       }> = [];
       if (inactiveAgentIds.length > 0) {
-        // 🚀 BULK OPERATIONS: Fetch all inactive agent data
+        // ?? BULK OPERATIONS: Fetch all inactive agent data
         const [competitionRecords, latestSnapshots] = await Promise.all([
           this.competitionRepo.getBulkAgentCompetitionRecords(
             competitionId,
@@ -1945,7 +1969,7 @@ export class CompetitionService {
         );
 
         if (oldType === "trading" && newType === "perpetual_futures") {
-          // Spot → Perps: Create perps config (after checking for existing)
+          // Spot ? Perps: Create perps config (after checking for existing)
           // At this point we know perpsProvider exists because we validated above
           if (!perpsProvider) {
             throw new ApiError(
@@ -1987,7 +2011,7 @@ export class CompetitionService {
             `[CompetitionService] Created perps config for converted competition ${competitionId}`,
           );
         } else if (oldType === "perpetual_futures" && newType === "trading") {
-          // Perps → Spot: Delete perps config using repository method
+          // Perps ? Spot: Delete perps config using repository method
           await this.perpsRepo.deletePerpsCompetitionConfig(competitionId, tx);
           this.logger.debug(
             `[CompetitionService] Deleted perps config for converted competition ${competitionId}`,

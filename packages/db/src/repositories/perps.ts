@@ -830,21 +830,27 @@ export class PerpsRepository {
    * Get active agents subquery for a competition
    * Reusable subquery
    * @param competitionId Competition ID to filter by
-   * @returns Subquery for active agents
+   * @param includeInactive If true, include disqualified and withdrawn agents
+   * @returns Subquery for agents in the competition
    * @private
    */
-  private getActiveAgentsSubquery(competitionId: string) {
+  private getActiveAgentsSubquery(
+    competitionId: string,
+    includeInactive = false,
+  ) {
+    const whereConditions = [eq(competitionAgents.competitionId, competitionId)];
+
+    if (!includeInactive) {
+      whereConditions.push(eq(competitionAgents.status, "active"));
+    }
+
     return this.#dbRead
       .select({
         agentId: competitionAgents.agentId,
+        status: competitionAgents.status,
       })
       .from(competitionAgents)
-      .where(
-        and(
-          eq(competitionAgents.competitionId, competitionId),
-          eq(competitionAgents.status, "active"),
-        ),
-      )
+      .where(and(...whereConditions))
       .as("active_agents");
   }
 
@@ -858,6 +864,8 @@ export class PerpsRepository {
    * @param competitionId Competition ID
    * @param limit Optional limit for pagination
    * @param offset Optional offset for pagination
+   * @param evaluationMetric Metric to use for ranking
+   * @param includeInactive If true, include disqualified and withdrawn agents at bottom
    * @returns Array of leaderboard entries sorted by Calmar (if available) then equity
    */
   async getRiskAdjustedLeaderboard(
@@ -868,10 +876,14 @@ export class PerpsRepository {
       | "calmar_ratio"
       | "sortino_ratio"
       | "simple_return" = "calmar_ratio",
+    includeInactive = false,
   ): Promise<RiskAdjustedLeaderboardEntry[]> {
     try {
-      // Get active agents subquery
-      const activeAgents = this.getActiveAgentsSubquery(competitionId);
+      // Get agents subquery (includes inactive if requested)
+      const activeAgents = this.getActiveAgentsSubquery(
+        competitionId,
+        includeInactive,
+      );
 
       // Latest summary subquery for lateral join
       const latestSummarySubquery = this.#dbRead
@@ -916,6 +928,7 @@ export class PerpsRepository {
       const results = await this.#dbRead
         .select({
           agentId: activeAgents.agentId,
+          status: activeAgents.status,
           totalEquity: latestSummarySubquery.totalEquity,
           totalPnl: latestSummarySubquery.totalPnl,
           calmarRatio: riskMetricsSubquery.calmarRatio,
@@ -928,7 +941,9 @@ export class PerpsRepository {
         .leftJoinLateral(latestSummarySubquery, sql`true`)
         .leftJoinLateral(riskMetricsSubquery, sql`true`)
         .orderBy(
-          // Dynamic sorting based on evaluation metric
+          // First, sort active agents to the top, inactive (disqualified/withdrawn) to the bottom
+          sql`CASE WHEN ${activeAgents.status} = 'active' THEN 0 ELSE 1 END`,
+          // Then apply evaluation metric sorting within each group
           // Use SQL template to add NULLS LAST - agents WITHOUT metrics rank after agents WITH metrics
           ...(evaluationMetric === "sortino_ratio"
             ? [
@@ -954,6 +969,7 @@ export class PerpsRepository {
         .filter((row) => row.totalEquity !== null) // Filter out agents without summaries
         .map((row) => ({
           agentId: row.agentId,
+          status: row.status,
           totalEquity: row.totalEquity || "0",
           totalPnl: row.totalPnl,
           calmarRatio: row.calmarRatio,
