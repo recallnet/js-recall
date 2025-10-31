@@ -71,6 +71,7 @@ export type PerpetualPositionWithAgent = SelectPerpetualPosition & {
  */
 export interface RiskAdjustedLeaderboardEntry {
   agentId: string;
+  status?: "active" | "disqualified" | "withdrawn";
   totalEquity: string;
   totalPnl: string | null;
   calmarRatio: string | null;
