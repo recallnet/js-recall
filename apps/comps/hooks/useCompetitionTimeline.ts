@@ -19,7 +19,7 @@ export const useCompetitionTimeline = (
         status !== "pending"
           ? {
               competitionId: id,
-              bucket: 180, // 3 hour buckets
+              bucket: 30, // 30 minute buckets
             }
           : skipToken,
     }),
