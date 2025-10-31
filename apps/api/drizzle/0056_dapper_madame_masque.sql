@@ -1,1 +1,0 @@
-CREATE INDEX "idx_risk_snapshots_competition_agent_timestamp" ON "trading_comps"."risk_metrics_snapshots" USING btree ("competition_id","agent_id","timestamp" DESC NULLS LAST);
