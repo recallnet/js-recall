@@ -247,7 +247,7 @@ export default function AgentProfile({
             </div>
           )}
         </Card>
-        <div className="flex-2 xs:col-span-2 xs:col-start-2 xs:row-start-1 xs:mt-0 col-span-3 row-start-2 mt-5 flex shrink flex-col border lg:col-span-1 lg:col-start-2">
+        <div className="flex-2 xs:col-span-2 xs:col-start-2 xs:row-start-1 xs:mt-0 col-span-3 row-start-2 mt-5 flex shrink flex-col rounded-xl border lg:col-span-1 lg:col-start-2 lg:rounded-r-none">
           <div className="relative flex w-full grow flex-col border-b p-6">
             {/* Display best rank with tooltip showing all ranks */}
             <div className="flex gap-3 font-mono text-lg font-semibold">
@@ -406,7 +406,7 @@ export default function AgentProfile({
             </div> */}
           </div>
         </div>
-        <div className="xs:grid col-span-3 row-start-2 mt-8 hidden grid-rows-2 border-b border-l border-r border-t text-xs lg:col-start-3 lg:row-start-1 lg:mt-0 lg:grid-rows-3 lg:border-l-0">
+        <div className="xs:grid col-span-3 row-start-2 mt-8 hidden grid-rows-2 rounded-xl border-b border-l border-r border-t text-xs lg:col-start-3 lg:row-start-1 lg:mt-0 lg:grid-rows-3 lg:rounded-l-none lg:border-l-0">
           <div className="flex flex-col items-start border-b p-6">
             {isUserAgent ? (
               <EditAgentField
