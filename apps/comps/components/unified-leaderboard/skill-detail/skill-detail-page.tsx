@@ -141,6 +141,7 @@ export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
         items={[
           { label: "Home", href: "/" },
           { label: "Leaderboards", href: "/leaderboards" },
+          { label: skill.name },
         ]}
       />
 
