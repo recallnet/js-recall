@@ -1,9 +1,7 @@
-import { useMemo } from "react";
 import { type Address, getAddress } from "viem";
+import { useAccount, useBalance } from "wagmi";
 
 import { config } from "@/config/public";
-
-import { useSafeAccount, useSafeBalance, useSafeChainId } from "./useSafeWagmi";
 
 /**
  * Hook return type for loading state
@@ -37,7 +35,7 @@ type UseRecallReturn = UseRecallLoading | UseRecallLoaded;
  * @returns Object containing token value and decimals
  */
 export const useRecall = (): UseRecallReturn => {
-  const { address, chainId } = useSafeAccount();
+  const { address, chainId } = useAccount();
 
   const token = getAddress(config.blockchain.tokenContractAddress);
 
@@ -45,7 +43,7 @@ export const useRecall = (): UseRecallReturn => {
     data: balanceData,
     isLoading: isBalanceLoading,
     queryKey,
-  } = useSafeBalance({
+  } = useBalance({
     address,
     token,
     chainId,

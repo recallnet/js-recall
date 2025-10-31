@@ -33,7 +33,7 @@
     "tough-cookie": "^5.1.2",
     "tree-kill": "^1.2.2",
     "uuid": "^9.0.0",
-    "viem": "^2.37.8",
+    "viem": "^2.38.5",
     "vitest": "^3.2.4"
   },
   "devDependencies": {

@@ -1,122 +1,24 @@
-import * as fs from "fs";
-import { dirname, join } from "path";
-import { fileURLToPath } from "url";
-import {
-  type Hex,
-  type PublicClient,
-  type WalletClient,
-  createPublicClient,
-  createWalletClient,
-  http,
-} from "viem";
-import { privateKeyToAccount } from "viem/accounts";
-
-import { Network, getChainForNetwork } from "./network.js";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const abi = JSON.parse(
-  fs.readFileSync(
-    join(__dirname, "../contracts/abi/RewardAllocation.json"),
-    "utf8",
-  ),
-);
-
-interface AllocationResult {
+/* eslint-disable @typescript-eslint/no-unused-vars */
+export interface AllocationResult {
   transactionHash: string;
-  blockNumber: bigint;
-  gasUsed: bigint;
 }
 
-interface ClaimResult {
-  transactionHash: string;
-  blockNumber: bigint;
-  gasUsed: bigint;
+export interface RewardsAllocator {
+  allocate(
+    root: string,
+    totalAmount: bigint,
+    startTimestamp: number,
+  ): Promise<AllocationResult>;
 }
 
-interface Options {
-  timeout?: number;
-  retryCount?: number;
-  pollingInterval?: number;
-}
-
-class RewardsAllocator {
-  private walletClient: WalletClient;
-  private publicClient: PublicClient;
-  private contractAddress: Hex;
-  private timeout?: number;
-  private tokenAddress: Hex;
-
-  constructor(
-    privateKey: Hex,
-    rpcProviderUrl: string,
-    contractAddress: Hex,
-    tokenAddress: Hex,
-    network: Network = Network.BaseSepolia,
-    options?: Options,
-  ) {
-    const account = privateKeyToAccount(privateKey);
-
-    const chain = getChainForNetwork(network);
-
-    const httpTransportOptions = options
-      ? {
-          timeout: options.timeout,
-          retryCount: options.retryCount,
-        }
-      : undefined;
-
-    this.publicClient = createPublicClient({
-      chain,
-      transport: http(rpcProviderUrl, httpTransportOptions),
-      pollingInterval: options?.pollingInterval,
-    });
-
-    this.walletClient = createWalletClient({
-      account,
-      chain,
-      transport: http(rpcProviderUrl, httpTransportOptions),
-      pollingInterval: options?.pollingInterval,
-    });
-
-    this.contractAddress = contractAddress;
-    this.timeout = options?.timeout;
-    this.tokenAddress = tokenAddress;
-  }
-
+export class NoopRewardsAllocator implements RewardsAllocator {
   async allocate(
     root: string,
     totalAmount: bigint,
     startTimestamp: number,
   ): Promise<AllocationResult> {
-    const hash = await this.walletClient.writeContract({
-      account: this.walletClient.account!,
-      address: this.contractAddress,
-      abi: abi,
-      functionName: "addAllocation",
-      args: [root, this.tokenAddress, totalAmount, startTimestamp],
-      chain: this.walletClient.chain,
-    });
-
-    const receipt = await this.publicClient.waitForTransactionReceipt({
-      hash,
-      timeout: this.timeout,
-    });
-
-    if (receipt.status !== "success") {
-      throw new Error(
-        "Transaction failed. Receipt: " + JSON.stringify(receipt),
-      );
-    }
-
     return {
-      transactionHash: hash,
-      blockNumber: receipt.blockNumber,
-      gasUsed: receipt.gasUsed,
+      transactionHash: "0x0000000000000000000000000000000000000000",
     };
   }
 }
-
-export { Network };
-export type { AllocationResult, ClaimResult };
-export default RewardsAllocator;

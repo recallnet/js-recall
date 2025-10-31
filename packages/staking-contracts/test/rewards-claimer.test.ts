@@ -1,7 +1,7 @@
 import type { PublicClient, WalletClient } from "viem";
 import { describe, expect, it, vi } from "vitest";
 
-import { Network } from "../src/rewards-allocator.js";
+import { Network } from "../src/network.js";
 import RewardsClaimer from "../src/rewards-claimer.js";
 
 describe("Claimer Error Path", () => {

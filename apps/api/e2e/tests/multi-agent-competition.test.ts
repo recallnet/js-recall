@@ -27,7 +27,7 @@ describe("Multi-Agent Competition", () => {
   // Number of agents to create for multi-agent tests
   const NUM_AGENTS = 6;
   // Base USDC token address
-  const BASE_USDC_ADDRESS = "0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA";
+  const BASE_USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
 
   // Store agent details for use in tests
   let agentClients: {

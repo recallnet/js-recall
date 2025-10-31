@@ -1,20 +1,19 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { WriteContractErrorType, simulateContract } from "@wagmi/core";
 import { useCallback, useEffect, useMemo } from "react";
 import { Hex, encodeFunctionData, encodePacked, keccak256 } from "viem";
+import {
+  useAccount,
+  useBlock,
+  useReadContracts,
+  useWaitForTransactionReceipt,
+  useWriteContract,
+} from "wagmi";
+import { WriteContractErrorType, simulateContract } from "wagmi/actions";
 
 import { RewardAllocationAbi } from "@/abi/RewardAllocation";
 import { config as publicConfig } from "@/config/public";
 import { tanstackClient } from "@/rpc/clients/tanstack-query";
 import { clientConfig } from "@/wagmi-config";
-
-import {
-  useSafeAccount,
-  useSafeBlock,
-  useSafeReadContracts,
-  useSafeWaitForTransactionReceipt,
-  useSafeWriteContract,
-} from "./useSafeWagmi";
 
 type ClaimItem = {
   merkleRoot: string;
@@ -50,7 +49,7 @@ export type ClaimOperationResult = {
  * - `ClaimItem[]`: Claims multiple rewards in a single multicall transaction
  */
 export function useClaim(): ClaimOperationResult {
-  const { address } = useSafeAccount();
+  const { address } = useAccount();
   const queryClient = useQueryClient();
   const config = clientConfig;
 
@@ -60,9 +59,9 @@ export function useClaim(): ClaimOperationResult {
     error,
     data: transactionHash,
     reset,
-  } = useSafeWriteContract();
+  } = useWriteContract();
   const { isLoading: isConfirming, isSuccess: isConfirmed } =
-    useSafeWaitForTransactionReceipt({
+    useWaitForTransactionReceipt({
       hash: transactionHash,
       confirmations: 2,
     });
@@ -90,7 +89,7 @@ export function useClaim(): ClaimOperationResult {
   }, [allClaims, address]);
 
   const { data: claimedStatus, queryKey: claimedStatusQueryKey } =
-    useSafeReadContracts({
+    useReadContracts({
       contracts,
       query: {
         enabled: contracts.length > 0,
@@ -107,7 +106,7 @@ export function useClaim(): ClaimOperationResult {
   }, [allClaims, claimedStatus]);
 
   // Fetch latest block (only when there are unclaimed allocations)
-  const { data: block } = useSafeBlock({
+  const { data: block } = useBlock({
     chainId: publicConfig.blockchain.chain.id,
     query: {
       enabled: Boolean(address) && hasUnclaimed,
@@ -130,7 +129,7 @@ export function useClaim(): ClaimOperationResult {
     }));
   }, [allClaims]);
 
-  const { data: allocInfoResults } = useSafeReadContracts({
+  const { data: allocInfoResults } = useReadContracts({
     contracts: allocInfoContracts,
     query: {
       enabled: allocInfoContracts.length > 0,
@@ -227,7 +226,7 @@ export function useClaim(): ClaimOperationResult {
         );
 
         // Simulate the multicall transaction
-        const simulationResult = await simulateContract(config as any, {
+        const simulationResult = await simulateContract(config, {
           address: publicConfig.blockchain
             .rewardAllocationContractAddress as Hex,
           abi: RewardAllocationAbi,
@@ -254,7 +253,7 @@ export function useClaim(): ClaimOperationResult {
       const proof = target.proof as Hex[];
 
       // First simulate the transaction
-      const simulationResult = await simulateContract(config as any, {
+      const simulationResult = await simulateContract(config, {
         address: publicConfig.blockchain.rewardAllocationContractAddress as Hex,
         abi: RewardAllocationAbi,
         functionName: "claim",
@@ -268,7 +267,6 @@ export function useClaim(): ClaimOperationResult {
     [writeContract, config, address, reset, claims, notYetActiveClaims],
   );
 
-  // @ts-expect-error - error is not typed correctly
   return useMemo(
     () => ({
       claims: claims ?? [],
