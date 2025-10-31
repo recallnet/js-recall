@@ -393,6 +393,13 @@
       "when": 1761748743170,
       "tag": "0055_mute_purple_man",
       "breakpoints": true
+    },
+    {
+      "idx": 56,
+      "version": "7",
+      "when": 1761943214885,
+      "tag": "0056_true_professor_monster",
+      "breakpoints": true
     }
   ]
 }
