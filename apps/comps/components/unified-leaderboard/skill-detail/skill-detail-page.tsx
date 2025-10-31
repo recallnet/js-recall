@@ -297,10 +297,6 @@ export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
 
         {/* Leaderboard Table */}
         <div>
-          <h2 className="mb-6 text-2xl font-bold text-white">
-            {skill.name} Leaderboard
-          </h2>
-
           {/* Desktop View */}
           <div className="hidden md:block">
             <SkillDetailLeaderboardTable skill={skill} skillData={skillData} />
