@@ -2714,31 +2714,6 @@ export class CompetitionRepository {
     includeRiskMetrics = false,
   ) {
     try {
-      // Extract the complex bucketing expression to avoid duplication
-      const bucketExpression = sql`FLOOR(EXTRACT(EPOCH FROM (ps.timestamp - c.start_date)) / 60 / ${bucket})`;
-
-      // Build conditional fragments for the single query approach
-      // Column selections - either from rms table or NULL
-      const calmarColumn = includeRiskMetrics
-        ? sql`rms.calmar_ratio`
-        : sql`NULL::numeric`;
-      const sortinoColumn = includeRiskMetrics
-        ? sql`rms.sortino_ratio`
-        : sql`NULL::numeric`;
-      const maxDrawdownColumn = includeRiskMetrics
-        ? sql`rms.max_drawdown`
-        : sql`NULL::numeric`;
-      const downsideDeviationColumn = includeRiskMetrics
-        ? sql`rms.downside_deviation`
-        : sql`NULL::numeric`;
-      const simpleReturnColumn = includeRiskMetrics
-        ? sql`rms.simple_return`
-        : sql`NULL::numeric`;
-      const annualizedReturnColumn = includeRiskMetrics
-        ? sql`rms.annualized_return`
-        : sql`NULL::numeric`;
-
-      // Single unified query with conditional columns
       const result = await this.#dbRead.execute<{
         timestamp: string;
         agent_id: string;
@@ -2753,66 +2728,60 @@ export class CompetitionRepository {
         annualized_return: string | null;
       }>(sql`
         SELECT
-          timestamp,
-          agent_id,
-          name AS agent_name,
-          competition_id,
-          total_value,
-          calmar_ratio,
-          sortino_ratio,
-          max_drawdown,
-          downside_deviation,
-          simple_return,
-          annualized_return
+          ps_bucketed.timestamp,
+          ps_bucketed.agent_id,
+          ps_bucketed.agent_name,
+          ps_bucketed.competition_id,
+          ps_bucketed.total_value,
+          ${includeRiskMetrics ? sql`rms_bucketed.calmar_ratio` : sql`NULL::numeric`} AS calmar_ratio,
+          ${includeRiskMetrics ? sql`rms_bucketed.sortino_ratio` : sql`NULL::numeric`} AS sortino_ratio,
+          ${includeRiskMetrics ? sql`rms_bucketed.max_drawdown` : sql`NULL::numeric`} AS max_drawdown,
+          ${includeRiskMetrics ? sql`rms_bucketed.downside_deviation` : sql`NULL::numeric`} AS downside_deviation,
+          ${includeRiskMetrics ? sql`rms_bucketed.simple_return` : sql`NULL::numeric`} AS simple_return,
+          ${includeRiskMetrics ? sql`rms_bucketed.annualized_return` : sql`NULL::numeric`} AS annualized_return
         FROM (
-          SELECT
-            ROW_NUMBER() OVER (
-              PARTITION BY ps.agent_id, ps.competition_id, ${bucketExpression}
-              ORDER BY ps.timestamp DESC
-            ) AS rn,
+          SELECT DISTINCT ON (agent_id, bucket_id)
             ps.timestamp,
             ps.agent_id,
-            a.name,
+            a.name AS agent_name,
             ps.competition_id,
             ps.total_value,
-            ${calmarColumn} AS calmar_ratio,
-            ${sortinoColumn} AS sortino_ratio,
-            ${maxDrawdownColumn} AS max_drawdown,
-            ${downsideDeviationColumn} AS downside_deviation,
-            ${simpleReturnColumn} AS simple_return,
-            ${annualizedReturnColumn} AS annualized_return
+            FLOOR(EXTRACT(EPOCH FROM (ps.timestamp - c.start_date)) / 60 / ${bucket}) AS bucket_id
           FROM competition_agents ca
           JOIN trading_comps.portfolio_snapshots ps
             ON ps.agent_id = ca.agent_id
             AND ps.competition_id = ca.competition_id
           JOIN agents a ON a.id = ca.agent_id
           JOIN competitions c ON c.id = ca.competition_id
-          ${
-            includeRiskMetrics
-              ? sql`
-          LEFT JOIN LATERAL (
-            SELECT 
-              calmar_ratio,
-              sortino_ratio,
-              max_drawdown,
-              downside_deviation,
-              simple_return,
-              annualized_return
-            FROM trading_comps.risk_metrics_snapshots rms
-            WHERE rms.agent_id = ps.agent_id
-              AND rms.competition_id = ps.competition_id
-              AND ABS(EXTRACT(EPOCH FROM (rms.timestamp - ps.timestamp))) < 300
-            ORDER BY ABS(EXTRACT(EPOCH FROM (rms.timestamp - ps.timestamp)))
-            LIMIT 1
-          ) rms ON true
-          `
-              : sql``
-          }
           WHERE ca.competition_id = ${competitionId}
             AND ca.status = ${"active"}
-        ) AS ranked_snapshots
-        WHERE rn = 1
-        ORDER BY timestamp, agent_id
+          ORDER BY agent_id, bucket_id, ps.timestamp DESC
+        ) ps_bucketed
+        ${
+          includeRiskMetrics
+            ? sql`
+        LEFT JOIN (
+          SELECT DISTINCT ON (agent_id, bucket_id)
+            agent_id,
+            competition_id,
+            FLOOR(EXTRACT(EPOCH FROM (rms.timestamp - c.start_date)) / 60 / ${bucket}) AS bucket_id,
+            calmar_ratio,
+            sortino_ratio,
+            max_drawdown,
+            downside_deviation,
+            simple_return,
+            annualized_return
+          FROM trading_comps.risk_metrics_snapshots rms
+          JOIN competitions c ON c.id = rms.competition_id
+          WHERE rms.competition_id = ${competitionId}
+          ORDER BY agent_id, bucket_id, rms.timestamp DESC
+        ) rms_bucketed
+          ON rms_bucketed.agent_id = ps_bucketed.agent_id
+          AND rms_bucketed.bucket_id = ps_bucketed.bucket_id
+        `
+            : sql``
+        }
+        ORDER BY ps_bucketed.timestamp, ps_bucketed.agent_id
       `);
 
       // Use the helper to convert snake_case to camelCase
