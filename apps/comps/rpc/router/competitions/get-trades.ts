@@ -8,11 +8,16 @@ import { base } from "@/rpc/context/base";
 import { cacheMiddleware } from "@/rpc/middleware/cache";
 
 export const getTrades = base
-  .use(
-    cacheMiddleware({
-      revalidateSecs: 30,
+  .use(({ next }) =>
+    next({
+      context: {
+        revalidateSecs: 30,
+        tags: undefined,
+        key: undefined,
+      },
     }),
   )
+  .use(cacheMiddleware)
   .input(
     z.object({
       competitionId: z.uuid(),

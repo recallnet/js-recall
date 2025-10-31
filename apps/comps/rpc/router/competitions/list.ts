@@ -18,12 +18,16 @@ export const list = base
       paging: PagingParamsSchema.optional(),
     }),
   )
-  .use(
-    cacheMiddleware({
-      revalidateSecs: 30, // 30 seconds
-      getTags: () => [CacheTags.competitionList()],
+  .use(({ next }) =>
+    next({
+      context: {
+        revalidateSecs: 30, // 30 seconds
+        tags: [CacheTags.competitionList()],
+        key: undefined,
+      },
     }),
   )
+  .use(cacheMiddleware)
   .handler(async ({ context, input, errors }) => {
     try {
       const res = await context.competitionService.getEnrichedCompetitions({

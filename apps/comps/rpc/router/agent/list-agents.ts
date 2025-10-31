@@ -11,12 +11,16 @@ import { base } from "@/rpc/context/base";
 import { cacheMiddleware } from "@/rpc/middleware/cache";
 
 export const listAgents = base
-  .use(
-    cacheMiddleware({
-      revalidateSecs: 60,
-      getTags: () => [CacheTags.agentList()],
+  .use(({ next }) =>
+    next({
+      context: {
+        revalidateSecs: 60,
+        tags: [CacheTags.agentList()],
+        key: undefined,
+      },
     }),
   )
+  .use(cacheMiddleware)
   .input(
     PagingParamsSchema.extend({
       filter: AgentFilterSchema.optional(),

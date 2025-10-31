@@ -24,12 +24,16 @@ const GetAgentCompetitionsInputSchema = z.object({
  */
 export const getCompetitions = base
   .input(GetAgentCompetitionsInputSchema)
-  .use(
-    cacheMiddleware({
-      revalidateSecs: 30,
-      getTags: (input) => [CacheTags.agentCompetitions(input.agentId)],
+  .use(({ next }, input) =>
+    next({
+      context: {
+        revalidateSecs: 30,
+        tags: [CacheTags.agentCompetitions(input.agentId)],
+        key: undefined,
+      },
     }),
   )
+  .use(cacheMiddleware)
   .handler(async ({ input, context, errors }) => {
     try {
       const { agentId, filters, paging } = input;

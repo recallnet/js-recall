@@ -11,11 +11,16 @@ import { cacheMiddleware } from "@/rpc/middleware/cache";
  * Loads benchmark data from static JSON file and combines with live trading data
  */
 export const getUnified = base
-  .use(
-    cacheMiddleware({
-      revalidateSecs: 60,
+  .use(({ next }) =>
+    next({
+      context: {
+        revalidateSecs: 60,
+        tags: undefined,
+        key: undefined,
+      },
     }),
   )
+  .use(cacheMiddleware)
   .handler(async ({ context, errors }) => {
     try {
       // Call service to build unified leaderboard with imported benchmark data

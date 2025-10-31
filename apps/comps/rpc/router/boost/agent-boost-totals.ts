@@ -6,12 +6,16 @@ import { cacheMiddleware } from "@/rpc/middleware/cache";
 
 export const agentBoostTotals = base
   .input(z.object({ competitionId: z.string() }))
-  .use(
-    cacheMiddleware({
-      revalidateSecs: 30,
-      getTags: (input) => [CacheTags.agentBoostTotals(input.competitionId)],
+  .use(({ next }, input) =>
+    next({
+      context: {
+        revalidateSecs: 30,
+        tags: [CacheTags.agentBoostTotals(input.competitionId)],
+        key: undefined,
+      },
     }),
   )
+  .use(cacheMiddleware)
   .handler(async ({ input, context, errors }) => {
     const res = await context.boostService.getAgentBoostTotals(
       input.competitionId,

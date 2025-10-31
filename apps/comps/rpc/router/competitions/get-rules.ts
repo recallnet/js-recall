@@ -7,11 +7,16 @@ import { base } from "@/rpc/context/base";
 import { cacheMiddleware } from "@/rpc/middleware/cache";
 
 export const getRules = base
-  .use(
-    cacheMiddleware({
-      revalidateSecs: 60 * 5, // 5 minutes
+  .use(({ next }) =>
+    next({
+      context: {
+        revalidateSecs: 60 * 5, // 5 minutes
+        tags: undefined,
+        key: undefined,
+      },
     }),
   )
+  .use(cacheMiddleware)
   .input(
     z.object({
       competitionId: z.string().uuid(),

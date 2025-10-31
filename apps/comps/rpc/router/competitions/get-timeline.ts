@@ -14,17 +14,25 @@ import { cacheMiddleware } from "@/rpc/middleware/cache";
  * @returns Array of timeline entries, one per agent, with timestamps and portfolio values
  */
 export const getTimeline = base
-  .use(
-    cacheMiddleware({
-      revalidateSecs: 30,
-    }),
-  )
   .input(
     z.object({
       competitionId: z.uuid(),
       bucket: BucketParamSchema.optional(),
     }),
   )
+  .use(async ({ context, next }, input) => {
+    const comp = await context.competitionService.getCompetitionById({
+      competitionId: input.competitionId,
+    });
+    return next({
+      context: {
+        revalidateSecs: comp.competition.status === "active" ? 30 : 60 * 60,
+        key: undefined,
+        tags: undefined,
+      },
+    });
+  })
+  .use(cacheMiddleware)
   .handler(async ({ context, input, errors }) => {
     try {
       const bucket = input.bucket ?? BucketParamSchema.parse(undefined);

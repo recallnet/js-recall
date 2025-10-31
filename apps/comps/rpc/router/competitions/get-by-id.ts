@@ -13,12 +13,16 @@ export const getById = base
       id: z.uuid(),
     }),
   )
-  .use(
-    cacheMiddleware({
-      revalidateSecs: 30,
-      getTags: (input) => [CacheTags.competition(input.id)],
+  .use(({ next }, input) =>
+    next({
+      context: {
+        revalidateSecs: 30,
+        tags: [CacheTags.competition(input.id)],
+        key: undefined,
+      },
     }),
   )
+  .use(cacheMiddleware)
   .handler(async ({ context, input, errors }) => {
     try {
       const res = await context.competitionService.getCompetitionById({

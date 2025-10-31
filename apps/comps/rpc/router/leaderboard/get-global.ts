@@ -12,11 +12,16 @@ import { cacheMiddleware } from "@/rpc/middleware/cache";
  * It returns an empty response as fallback on any failure.
  */
 export const getGlobal = base
-  .use(
-    cacheMiddleware({
-      revalidateSecs: 30,
+  .use(({ next }) =>
+    next({
+      context: {
+        revalidateSecs: 30,
+        tags: undefined,
+        key: undefined,
+      },
     }),
   )
+  .use(cacheMiddleware)
   .input(LeaderboardParamsSchema)
   .handler(async ({ input, context, errors }) => {
     try {

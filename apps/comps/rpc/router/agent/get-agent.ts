@@ -7,12 +7,16 @@ import { cacheMiddleware } from "@/rpc/middleware/cache";
 
 export const getAgent = base
   .input(z.object({ agentId: z.string().uuid() }))
-  .use(
-    cacheMiddleware({
-      revalidateSecs: 30,
-      getTags: (input) => [CacheTags.agent(input.agentId)],
+  .use(({ next }, input) =>
+    next({
+      context: {
+        revalidateSecs: 30,
+        tags: [CacheTags.agent(input.agentId)],
+        key: undefined,
+      },
     }),
   )
+  .use(cacheMiddleware)
   .handler(async ({ input, context, errors }) => {
     try {
       const { agentId } = input;
