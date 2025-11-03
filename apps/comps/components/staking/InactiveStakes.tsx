@@ -1,12 +1,12 @@
 "use client";
 
 import React, { useEffect, useMemo } from "react";
+import { useBlock } from "wagmi";
 
 import { attoValueToNumberValue } from "@recallnet/conversions/atto-conversions";
 import { toast } from "@recallnet/ui2/components/toast";
 
 import { useWithdraw } from "@/hooks/staking";
-import { useSafeBlock } from "@/hooks/useSafeWagmi";
 import { useUserStakes } from "@/hooks/useStakingContract";
 import type { StakeInfoWithId } from "@/types/staking";
 import { formatAmount } from "@/utils/format";
@@ -95,7 +95,7 @@ const InactiveStakeEntry: React.FunctionComponent<InactiveStakeEntryProps> = ({
 
   return (
     <StakeEntryBase
-      status="unstaked"
+      status={isWithdrawable ? "cooldown" : "unstaked"}
       formattedAmount={formattedAmount}
       boostAmount={boostAmount}
       actions={actions}
@@ -126,7 +126,7 @@ export const InactiveStakes: React.FunctionComponent = () => {
     );
   }, [allStakes]);
 
-  const { data: block } = useSafeBlock({
+  const { data: block } = useBlock({
     query: {
       refetchInterval: 10000,
     },

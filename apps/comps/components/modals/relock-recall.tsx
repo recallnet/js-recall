@@ -1,6 +1,7 @@
 import * as dnum from "dnum";
 import { ArrowLeft, Ban, Check, Lock, X } from "lucide-react";
 import React, { useEffect, useState } from "react";
+import { useAccount, useChainId } from "wagmi";
 
 import { Button } from "@recallnet/ui2/components/button";
 import {
@@ -24,7 +25,6 @@ import {
 
 import { Recall } from "@/components/Recall";
 import { useRelock } from "@/hooks/staking";
-import { useSafeAccount, useSafeChainId } from "@/hooks/useSafeWagmi";
 import { handleStakeTransactionError } from "@/lib/error-handling";
 import { formatBigintAmount, shouldShowCompact } from "@/utils/format";
 
@@ -85,8 +85,8 @@ export const RelockRecallModal: React.FC<RelockRecallModalProps> = ({
   const [termsAccepted, setTermsAccepted] = useState<boolean>(false);
   const [isCollapsibleOpen, setIsCollapsibleOpen] = useState<boolean>(true);
 
-  const { address } = useSafeAccount();
-  const chainId = useSafeChainId();
+  const { address } = useAccount();
+  const chainId = useChainId();
   const {
     execute: relock,
     isPending: isSigning,

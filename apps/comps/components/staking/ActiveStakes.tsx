@@ -1,12 +1,12 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import { useBlock } from "wagmi";
 
 import { attoValueToNumberValue } from "@recallnet/conversions/atto-conversions";
 import { toast } from "@recallnet/ui2/components/toast";
 
 import { useUnstake } from "@/hooks/staking";
-import { useSafeBlock } from "@/hooks/useSafeWagmi";
 import { useUserStakes } from "@/hooks/useStakingContract";
 import type { StakeInfoWithId } from "@/types/staking";
 import { formatAmount } from "@/utils/format";
@@ -150,7 +150,7 @@ export const ActiveStakes: React.FunctionComponent = () => {
     );
   }, [allStakes]);
 
-  const { data: block } = useSafeBlock({
+  const { data: block } = useBlock({
     query: {
       refetchInterval: 10000,
     },
