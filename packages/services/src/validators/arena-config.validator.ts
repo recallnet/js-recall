@@ -135,15 +135,6 @@ export const ArenaConfigSchema = z
       message: "boosting.startAt must be before or equal to endAt",
       path: ["schedule", "boosting", "startAt"],
     },
-  )
-  .refine(
-    (data) => {
-      return data.classification.skill === data.classification.skill;
-    },
-    {
-      message: "classification.skill must be defined",
-      path: ["classification", "skill"],
-    },
   );
 
 /**
