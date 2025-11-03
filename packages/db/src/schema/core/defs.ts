@@ -274,6 +274,9 @@ export const competitions = pgTable(
     }),
     status: competitionStatus("status").notNull(),
     sandboxMode: boolean("sandbox_mode").notNull().default(false),
+    engineId: text("engine_id"),
+    engineVersion: text("engine_version"),
+    engineConfig: jsonb("engine_config"),
     createdAt: timestamp("created_at", {
       withTimezone: true,
     }).defaultNow(),
@@ -294,6 +297,7 @@ export const competitions = pgTable(
       table.id,
     ),
     index("idx_competitions_status_end_date").on(table.status, table.endDate),
+    index("idx_competitions_engine_id").on(table.engineId),
   ],
 );
 
