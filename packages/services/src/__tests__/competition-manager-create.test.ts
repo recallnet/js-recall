@@ -160,6 +160,19 @@ describe("CompetitionService - createCompetition", () => {
       sandboxMode: false,
       crossChainTradingType: "disallowAll",
       evaluationMetric: "calmar_ratio",
+      engineId: "spot_paper_trading",
+      engineVersion: "1.0.0",
+      engineConfig: {
+        params: {
+          crossChainTradingType: "disallowAll",
+          tradingConstraints: {
+            minimumPairAgeHours: 24,
+            minimum24hVolumeUsd: 50000,
+            minimumLiquidityUsd: 25000,
+            minimumFdvUsd: 100000,
+          },
+        },
+      },
     }));
   });
 
@@ -587,6 +600,17 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
       competitionId: mockCompetitionId,
       crossChainTradingType: "allow" as const,
       evaluationMetric: "calmar_ratio" as const,
+      engineId: "perpetual_futures",
+      engineVersion: "1.0.0",
+      engineConfig: {
+        params: {
+          provider: "symphony",
+          evaluationMetric: "calmar_ratio",
+          initialCapital: 500,
+          selfFundingThreshold: 0,
+          minFundingThreshold: 250,
+        },
+      },
     };
 
     // Mock perps config with minFundingThreshold
@@ -844,6 +868,18 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
       competitionId: mockCompetitionId,
       crossChainTradingType: "allow" as const,
       evaluationMetric: "calmar_ratio" as const,
+      engineId: "perpetual_futures",
+      engineVersion: "1.0.0",
+      engineConfig: {
+        id: "perpetual_futures",
+        version: "1.0.0",
+        params: {
+          provider: "symphony",
+          evaluationMetric: "calmar_ratio",
+          initialCapital: 500,
+          selfFundingThreshold: 0,
+        },
+      },
     };
 
     // Mock perps config WITHOUT minFundingThreshold
@@ -1032,6 +1068,17 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
       competitionId: mockCompetitionId,
       crossChainTradingType: "allow" as const,
       evaluationMetric: "calmar_ratio" as const,
+      engineId: "perpetual_futures",
+      engineVersion: "1.0.0",
+      engineConfig: {
+        params: {
+          provider: "symphony",
+          evaluationMetric: "calmar_ratio",
+          initialCapital: 500,
+          selfFundingThreshold: 0,
+          minFundingThreshold: 250,
+        },
+      },
     };
 
     // Mock perps config with minFundingThreshold

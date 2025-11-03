@@ -46,6 +46,19 @@ describe("BoostAwardService", () => {
     createdAt: new Date(),
     updatedAt: null,
     minimumStake: null,
+    engineId: "spot_paper_trading",
+    engineVersion: "1.0.0",
+    engineConfig: {
+      params: {
+        crossChainTradingType: "disallowAll",
+        tradingConstraints: {
+          minimumPairAgeHours: 24,
+          minimum24hVolumeUsd: 50000,
+          minimumLiquidityUsd: 25000,
+          minimumFdvUsd: 100000,
+        },
+      },
+    },
   });
 
   beforeEach(() => {

@@ -92,6 +92,19 @@ describe("CompetitionService - joinCompetition", () => {
     sandboxMode: false,
     minimumStake: null,
     crossChainTradingType: "allow",
+    engineId: "spot_paper_trading",
+    engineVersion: "1.0.0",
+    engineConfig: {
+      params: {
+        crossChainTradingType: "allow",
+        tradingConstraints: {
+          minimumPairAgeHours: 24,
+          minimum24hVolumeUsd: 50000,
+          minimumLiquidityUsd: 25000,
+          minimumFdvUsd: 100000,
+        },
+      },
+    },
   };
 
   beforeEach(() => {

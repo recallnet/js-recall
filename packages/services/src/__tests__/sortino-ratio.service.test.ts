@@ -36,6 +36,16 @@ describe("SortinoRatioService", () => {
     crossChainTradingType: "disallowAll" as const,
     minimumStake: null,
     evaluationMetric: "sortino_ratio" as const,
+    engineId: "perpetual_futures",
+    engineVersion: "1.0.0",
+    engineConfig: {
+      params: {
+        provider: "symphony",
+        evaluationMetric: "sortino_ratio",
+        initialCapital: 500,
+        selfFundingThreshold: 10,
+      },
+    },
   });
 
   // Helper to create mock Sortino metrics from SQL calculation

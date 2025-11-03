@@ -1222,6 +1222,16 @@ describe("PerpsDataProcessor", () => {
         crossChainTradingType: "allow" as const,
         minimumStake: null,
         evaluationMetric: "calmar_ratio" as const,
+        engineId: "perpetual_futures",
+        engineVersion: "1.0.0",
+        engineConfig: {
+          params: {
+            provider: "symphony",
+            evaluationMetric: "calmar_ratio",
+            initialCapital: 500,
+            selfFundingThreshold: 10,
+          },
+        },
       };
 
       vi.mocked(mockCompetitionRepo.findById).mockResolvedValue(
@@ -1257,6 +1267,19 @@ describe("PerpsDataProcessor", () => {
         canceledBy: null,
         canceledAt: null,
         cancelReason: null,
+        engineId: "spot_paper_trading",
+        engineVersion: "1.0.0",
+        engineConfig: {
+          params: {
+            crossChainTradingType: "disallowAll",
+            tradingConstraints: {
+              minimumPairAgeHours: 24,
+              minimum24hVolumeUsd: 50000,
+              minimumLiquidityUsd: 25000,
+              minimumFdvUsd: 100000,
+            },
+          },
+        },
         crossChainTradingType: "allow" as const,
         minimumStake: null,
         evaluationMetric: "calmar_ratio" as const,

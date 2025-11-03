@@ -64,6 +64,19 @@ describe("RewardsService", () => {
     crossChainTradingType: "disallowAll" as const,
     minimumStake: null,
     evaluationMetric: "calmar_ratio" as const,
+    engineId: "spot_paper_trading",
+    engineVersion: "1.0.0",
+    engineConfig: {
+      params: {
+        crossChainTradingType: "disallowAll",
+        tradingConstraints: {
+          minimumPairAgeHours: 24,
+          minimum24hVolumeUsd: 50000,
+          minimumLiquidityUsd: 25000,
+          minimumFdvUsd: 100000,
+        },
+      },
+    },
   });
 
   // Helper function to create a mock leaderboard entry

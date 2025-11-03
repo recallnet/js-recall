@@ -36,6 +36,16 @@ describe("CalmarRatioService", () => {
     crossChainTradingType: "disallowAll" as const,
     minimumStake: null,
     evaluationMetric: "calmar_ratio" as const,
+    engineId: "perpetual_futures",
+    engineVersion: "1.0.0",
+    engineConfig: {
+      params: {
+        provider: "symphony",
+        evaluationMetric: "calmar_ratio",
+        initialCapital: 500,
+        selfFundingThreshold: 10,
+      },
+    },
   });
 
   // Helper to create mock portfolio snapshots

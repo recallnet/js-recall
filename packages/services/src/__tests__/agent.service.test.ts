@@ -25,11 +25,11 @@ import { UserService } from "../user.service.js";
 function createMockCompetition(
   overrides: Partial<SelectCompetition>,
 ): SelectCompetition {
-  return {
+  const baseCompetition = {
     id: "test-comp-id",
     name: "Test Competition",
-    type: "trading",
-    status: "active",
+    type: "trading" as const,
+    status: "active" as const,
     createdAt: new Date(),
     updatedAt: new Date(),
     description: null,
@@ -46,6 +46,49 @@ function createMockCompetition(
     registeredParticipants: 0,
     minimumStake: null,
     ...overrides,
+  };
+
+  // Add engine config based on competition type
+  const competitionType = baseCompetition.type;
+  if (competitionType === "trading") {
+    return {
+      ...baseCompetition,
+      engineId: "spot_paper_trading",
+      engineVersion: "1.0.0",
+      engineConfig: {
+        params: {
+          crossChainTradingType: "disallowAll",
+          tradingConstraints: {
+            minimumPairAgeHours: 24,
+            minimum24hVolumeUsd: 50000,
+            minimumLiquidityUsd: 25000,
+            minimumFdvUsd: 100000,
+          },
+        },
+      },
+    };
+  } else if (competitionType === "perpetual_futures") {
+    return {
+      ...baseCompetition,
+      engineId: "perpetual_futures",
+      engineVersion: "1.0.0",
+      engineConfig: {
+        params: {
+          provider: "symphony",
+          evaluationMetric: "calmar_ratio",
+          initialCapital: 500,
+          selfFundingThreshold: 10,
+        },
+      },
+    };
+  }
+
+  // Default for any other type
+  return {
+    ...baseCompetition,
+    engineId: null,
+    engineVersion: null,
+    engineConfig: null,
   };
 }
 
