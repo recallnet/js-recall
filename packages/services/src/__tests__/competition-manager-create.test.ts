@@ -871,8 +871,6 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
       engineId: "perpetual_futures",
       engineVersion: "1.0.0",
       engineConfig: {
-        id: "perpetual_futures",
-        version: "1.0.0",
         params: {
           provider: "symphony",
           evaluationMetric: "calmar_ratio",
