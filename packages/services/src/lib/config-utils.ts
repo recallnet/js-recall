@@ -11,9 +11,9 @@ export const specificChainTokens = {
     usdt: "0xdAC17F958D2ee523a2206206994597C13D831ec7", // USDT on Ethereum
   },
   polygon: {
-    eth: "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619", // Weth on Polygon
-    usdc: "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174", // USDC on Polygon
-    usdt: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F", // USDT on Polygon
+    eth: "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619",
+    usdc: "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359",
+    usdt: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F",
   },
   base: {
     eth: "0x4200000000000000000000000000000000000006", // WETH on Base
@@ -31,9 +31,9 @@ export const specificChainTokens = {
     usdt: "0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9", // USDT on Arbitrum
   },
   optimism: {
-    eth: "0x4200000000000000000000000000000000000006", // WETH on Optimism
-    usdc: "0x7f5c764cbc14f9669b88837ca1490cca17c31607", // USDC on Optimism
-    usdt: "0x94b008aa00579c1307b0ef2c499ad98a8ce58e58", // USDT on Optimism
+    eth: "0x4200000000000000000000000000000000000006",
+    usdc: "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85",
+    usdt: "0x94b008aa00579c1307b0ef2c499ad98a8ce58e58",
   },
 } as const;
 
