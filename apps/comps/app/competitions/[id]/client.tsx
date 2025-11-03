@@ -162,17 +162,21 @@ export default function CompetitionPageClient({
         <div className="md:col-span-1">
           <CompetitionKey competition={competition} />
           {/* Action buttons section */}
-          <div className="mt-6 flex w-full gap-3">
-            <JoinCompetitionButton
-              competitionId={id}
-              className="flex-1 justify-between border border-white bg-white text-blue-500 hover:border-blue-500 hover:bg-blue-500 hover:text-white disabled:hover:border-white disabled:hover:bg-white disabled:hover:text-blue-500"
-              disabled={competition.status !== "pending"}
-              size="lg"
-            >
-              <span>COMPETE</span> <Plus className="ml-2" size={18} />
-            </JoinCompetitionButton>
+          <div className="mt-6 grid grid-cols-2 gap-4">
+            <div className="col-span-1 w-full flex-1">
+              <JoinCompetitionButton
+                competitionId={id}
+                className="w-full border border-white bg-white text-blue-500 hover:border-blue-500 hover:bg-blue-500 hover:text-white disabled:hover:border-white disabled:hover:bg-white disabled:hover:text-blue-500"
+                disabled={competition.status !== "pending"}
+                size="lg"
+              >
+                <span>COMPETE</span> <Plus className="ml-2" size={18} />
+              </JoinCompetitionButton>
+            </div>
 
-            <BoostAgentsBtn className="flex-1 justify-between uppercase" />
+            <div className="col-span-1 w-full">
+              <BoostAgentsBtn className="w-full uppercase" />
+            </div>
           </div>
         </div>
       </div>

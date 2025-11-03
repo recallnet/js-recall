@@ -4,7 +4,17 @@ import posthog from "posthog-js";
 import type { ConfigDefaults } from "posthog-js";
 import { PostHogProvider } from "posthog-js/react";
 import { ReactNode, useEffect, useState } from "react";
+import * as CookieConsent from "vanilla-cookieconsent";
 
+/**
+ * PostHog analytics provider that respects user cookie consent.
+ * Only initializes when analytics cookies are accepted.
+ *
+ * This provider listens to vanilla-cookieconsent events (cc:onConsent, cc:onChange, storage)
+ * for dynamic initialization/shutdown without page reloads. When consent is granted,
+ * PostHog is initialized. When consent is revoked, PostHog is shut down and all tracking
+ * data is cleared.
+ */
 interface PostHogProviderWrapperProps {
   children: ReactNode;
 }
@@ -67,31 +77,27 @@ export function PostHogProviderWrapper({
   const posthogHost = process.env.NEXT_PUBLIC_POSTHOG_HOST;
 
   useEffect(() => {
-    // Check for existing consent
+    // Check for existing consent using vanilla-cookieconsent format
     const checkConsent = () => {
-      const cookieConsent = localStorage.getItem("cookie-consent");
-      const cc = localStorage.getItem("cc"); // vanilla-cookieconsent stores data here
-
-      let consentGiven = false;
-
-      // Check our simple consent first
-      if (cookieConsent === "true") {
-        consentGiven = true;
-      }
-
-      // Check vanilla-cookieconsent format
-      if (cc) {
+      try {
+        // First try using the CookieConsent library's API, which works with both
+        // cookie-based and localStorage-based consent storage
+        return CookieConsent.acceptedCategory("analytics");
+      } catch {
+        // If the library is not ready yet, fall back to parsing localStorage directly
         try {
-          const ccData = JSON.parse(cc);
-          if (ccData.categories?.includes("analytics")) {
-            consentGiven = true;
+          const cc = localStorage.getItem("cc"); // vanilla-cookieconsent stores data here
+          if (!cc) {
+            return false;
           }
-        } catch {
-          // Invalid JSON, ignore
+
+          const ccData = JSON.parse(cc);
+          return ccData.categories?.includes("analytics") ?? false;
+        } catch (error) {
+          console.warn("Failed to parse cookie consent data", error);
+          return false;
         }
       }
-
-      return consentGiven;
     };
 
     // Handle consent state changes
@@ -114,21 +120,17 @@ export function PostHogProviderWrapper({
     // Listen for storage changes (consent from another tab)
     window.addEventListener("storage", handleConsentChange);
 
-    // Listen for custom consent events
+    // Listen for custom consent events (same tab changes)
     const handleConsentUpdate = () => {
       handleConsentChange();
     };
     window.addEventListener("cc:onConsent", handleConsentUpdate);
     window.addEventListener("cc:onChange", handleConsentUpdate);
 
-    // Also check periodically in case consent changed in same tab
-    const interval = setInterval(handleConsentChange, 30000);
-
     return () => {
       window.removeEventListener("storage", handleConsentChange);
       window.removeEventListener("cc:onConsent", handleConsentUpdate);
       window.removeEventListener("cc:onChange", handleConsentUpdate);
-      clearInterval(interval);
     };
   }, []);
 

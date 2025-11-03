@@ -3,16 +3,16 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { simulateContract } from "@wagmi/core";
 import { useCallback, useEffect, useMemo } from "react";
+import {
+  useAccount,
+  useWaitForTransactionReceipt,
+  useWriteContract,
+} from "wagmi";
 
 import { StakingAbi } from "@/abi/Staking";
 import { clientConfig } from "@/wagmi-config";
 
 import { useRecall } from "../useRecall";
-import {
-  useSafeAccount,
-  useSafeWaitForTransactionReceipt,
-  useSafeWriteContract,
-} from "../useSafeWagmi";
 import { useStakingContractAddress } from "./useStakingContractAddress";
 import { useTotalUserStaked } from "./useTotalUserStaked";
 import { useUserStakes } from "./useUserStakes";
@@ -39,7 +39,7 @@ export type StakingOperationResult = {
  */
 export const useRelock = (): StakingOperationResult => {
   const contractAddress = useStakingContractAddress();
-  const { address } = useSafeAccount();
+  const { address } = useAccount();
   const config = clientConfig;
   const { queryKey: getUserStakesQueryKey } = useUserStakes();
   const { queryKey: getTotalUserStakedQueryKey } = useTotalUserStaked();
@@ -52,10 +52,10 @@ export const useRelock = (): StakingOperationResult => {
     error,
     data: transactionHash,
     reset,
-  } = useSafeWriteContract();
+  } = useWriteContract();
 
   const { isLoading: isConfirming, isSuccess: isConfirmed } =
-    useSafeWaitForTransactionReceipt({
+    useWaitForTransactionReceipt({
       hash: transactionHash,
       confirmations: 2,
     });

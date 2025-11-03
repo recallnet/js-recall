@@ -8,9 +8,10 @@ import { BoostRepository } from "@recallnet/db/repositories/boost";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { RewardsRepository } from "@recallnet/db/repositories/rewards";
 import { RewardsService } from "@recallnet/services";
-import RewardsAllocator, {
+import {
+  ExternallyOwnedAccountAllocator,
   Network,
-} from "@recallnet/staking-contracts/rewards-allocator";
+} from "@recallnet/staking-contracts";
 
 import config from "@/config/index.js";
 import { db } from "@/database/db.js";
@@ -107,13 +108,13 @@ async function allocateRewards() {
     const boostRepo = new BoostRepository(db);
 
     const {
-      allocatorPrivateKey,
+      eoaPrivateKey,
       contractAddress,
       tokenContractAddress,
       rpcProvider,
     } = config.rewards;
-    const rewardsAllocator = new RewardsAllocator(
-      allocatorPrivateKey as Hex,
+    const rewardsAllocator = new ExternallyOwnedAccountAllocator(
+      eoaPrivateKey as Hex,
       rpcProvider,
       contractAddress as Hex,
       tokenContractAddress as Hex,

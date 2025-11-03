@@ -65,8 +65,10 @@ export default function CompetitionSkeleton() {
       </div>
 
       {/* Standings table skeleton */}
-      <div className="my-8">
-        <Skeleton className="mb-4 h-5 w-32 rounded-xl" />
+      <div className="mt-20 md:mt-40">
+        <Skeleton className="mb-4 h-10 w-40 rounded-xl" />
+        <Skeleton className="w-50 mb-4 h-5 rounded-xl" />
+        <Skeleton className="w-50 mb-4 h-5 rounded-xl" />
         <div className="rounded-xl border">
           <div className="flex items-center gap-3 border-b p-4">
             <Skeleton className="h-4 w-24 rounded-xl" />

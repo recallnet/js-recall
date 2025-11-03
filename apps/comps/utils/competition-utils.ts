@@ -1,7 +1,7 @@
 import { CheckIcon, ClockIcon, Play } from "lucide-react";
 
 import { RouterOutputs } from "@/rpc/router";
-import { UserCompetition } from "@/types";
+import { EvaluationMetric, UserCompetition } from "@/types";
 
 import { formatDateShort } from "./format";
 
@@ -40,6 +40,101 @@ export function getCompetitionPollingInterval(
   }
   // No polling for ended competitions
   return false;
+}
+
+/**
+ * Metric tab configuration for perps competitions
+ * Single source of truth for metric display names, tab values, and ordering
+ */
+export const PERPS_METRIC_TABS = [
+  {
+    metric: "simple_return" as const,
+    value: "account-value",
+    label: "ROI",
+  },
+  {
+    metric: "calmar_ratio" as const,
+    value: "calmar-ratio",
+    label: "Calmar Ratio",
+  },
+  {
+    metric: "max_drawdown" as const,
+    value: "max-drawdown",
+    label: "Max Drawdown",
+  },
+  {
+    metric: "sortino_ratio" as const,
+    value: "sortino-ratio",
+    label: "Sortino Ratio",
+  },
+] as const;
+
+/**
+ * Maps evaluation metric to display name
+ * @param metric - Evaluation metric enum value
+ * @returns Human-readable display name
+ */
+export function getEvaluationMetricDisplayName(
+  metric: EvaluationMetric | undefined,
+): string {
+  const tab = PERPS_METRIC_TABS.find((t) => t.metric === metric);
+  return tab?.label ?? "ROI";
+}
+
+/**
+ * Maps evaluation metric to chart tab value
+ * @param metric - Evaluation metric enum value
+ * @returns Tab value string used in the timeline chart
+ */
+export function getEvaluationMetricTabValue(
+  metric: EvaluationMetric | undefined,
+): string {
+  const tab = PERPS_METRIC_TABS.find((t) => t.metric === metric);
+  return tab?.value ?? "account-value";
+}
+
+/**
+ * Checks if a table header is the primary metric.
+ * @param headerId - Table header ID string
+ * @param metric - Evaluation metric enum value
+ * @returns True if the table header is the primary metric, false otherwise
+ */
+export function checkTableHeaderIsPrimaryMetric(
+  headerId: string,
+  metric: EvaluationMetric | undefined,
+): boolean {
+  if (!metric) return false;
+  const toSnakeCase = (str: string) =>
+    str.replace(/([a-z])([A-Z])/g, "$1_$2").toLowerCase();
+  return (
+    toSnakeCase(headerId) ===
+    PERPS_METRIC_TABS.find((t) => t.metric === metric)?.metric
+  );
+}
+
+/**
+ * Type for metric tab configuration
+ */
+export type MetricTab = {
+  metric: EvaluationMetric;
+  value: string;
+  label: string;
+};
+
+/**
+ * Gets ordered metric tabs with primary metric first
+ * @param primaryMetric - The evaluation metric to place first
+ * @returns Ordered array of tab configurations
+ */
+export function getOrderedMetricTabs(
+  primaryMetric: EvaluationMetric | undefined,
+): readonly MetricTab[] {
+  if (!primaryMetric) return PERPS_METRIC_TABS;
+
+  const primaryTab = PERPS_METRIC_TABS.find((t) => t.metric === primaryMetric);
+  const otherTabs = PERPS_METRIC_TABS.filter((t) => t.metric !== primaryMetric);
+
+  return primaryTab ? [primaryTab, ...otherTabs] : PERPS_METRIC_TABS;
 }
 
 /**

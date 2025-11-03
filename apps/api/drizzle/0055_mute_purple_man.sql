@@ -1,0 +1,2 @@
+DROP INDEX "uq_rewards_competition_id_address";--> statement-breakpoint
+CREATE UNIQUE INDEX "uq_rewards_competition_id_user_id_agent_id" ON "rewards" USING btree ("competition_id","user_id","agent_id");

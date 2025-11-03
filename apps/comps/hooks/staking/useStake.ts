@@ -1,14 +1,14 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
-import { simulateContract, waitForTransactionReceipt } from "@wagmi/core";
 import { useCallback, useMemo, useState } from "react";
+import { useAccount, useWriteContract } from "wagmi";
+import { simulateContract, waitForTransactionReceipt } from "wagmi/actions";
 
 import { StakingAbi } from "@/abi/Staking";
 import { clientConfig } from "@/wagmi-config";
 
 import { useRecall } from "../useRecall";
-import { useSafeAccount, useSafeWriteContract } from "../useSafeWagmi";
 import { useStakingContractAddress } from "./useStakingContractAddress";
 import { useTotalUserStaked } from "./useTotalUserStaked";
 import { useUserStakes } from "./useUserStakes";
@@ -33,7 +33,7 @@ export const useStake = (): StakingOperationResult => {
   const [isConfirming, setIsConfirming] = useState(false);
   const [isConfirmed, setIsConfirmed] = useState(false);
   const contractAddress = useStakingContractAddress();
-  const { address } = useSafeAccount();
+  const { address } = useAccount();
   const config = clientConfig;
   const { queryKey: getUserStakesQueryKey } = useUserStakes();
   const { queryKey: getTotalUserStakedQueryKey } = useTotalUserStaked();
@@ -46,31 +46,36 @@ export const useStake = (): StakingOperationResult => {
     error,
     data: transactionHash,
     reset,
-  } = useSafeWriteContract();
+  } = useWriteContract();
 
-  const refetchQueries = async (txHash: `0x${string}`) => {
-    const transactionReceipt = await waitForTransactionReceipt(
-      clientConfig as any,
-      {
+  const refetchQueries = useCallback(
+    async (txHash: `0x${string}`) => {
+      const transactionReceipt = await waitForTransactionReceipt(clientConfig, {
         hash: txHash,
         pollingInterval: 1000,
         confirmations: 2,
-      },
-    );
+      });
 
-    if (transactionReceipt.status === "success") {
-      setIsConfirmed(true);
-      queryClient.invalidateQueries({
-        queryKey: recallQueryKey,
-      });
-      queryClient.invalidateQueries({
-        queryKey: getUserStakesQueryKey,
-      });
-      queryClient.invalidateQueries({
-        queryKey: getTotalUserStakedQueryKey,
-      });
-    }
-  };
+      if (transactionReceipt.status === "success") {
+        setIsConfirmed(true);
+        queryClient.invalidateQueries({
+          queryKey: recallQueryKey,
+        });
+        queryClient.invalidateQueries({
+          queryKey: getUserStakesQueryKey,
+        });
+        queryClient.invalidateQueries({
+          queryKey: getTotalUserStakedQueryKey,
+        });
+      }
+    },
+    [
+      queryClient,
+      recallQueryKey,
+      getUserStakesQueryKey,
+      getTotalUserStakedQueryKey,
+    ],
+  );
 
   // Enhanced execute function that simulates before executing
   const execute = useCallback(
@@ -83,7 +88,7 @@ export const useStake = (): StakingOperationResult => {
         reset();
 
         // First simulate the transaction using the core action
-        const simulationResult = await simulateContract(config as any, {
+        const simulationResult = await simulateContract(config, {
           address: contractAddress,
           abi: StakingAbi,
           functionName: "stake",
@@ -105,15 +110,7 @@ export const useStake = (): StakingOperationResult => {
         );
       }
     },
-    [
-      writeContract,
-      config,
-      contractAddress,
-      address,
-      reset,
-      refetchQueries,
-      setIsConfirming,
-    ],
+    [writeContract, config, contractAddress, address, reset, refetchQueries],
   );
 
   return useMemo(

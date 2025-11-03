@@ -1,4 +1,3 @@
-import { waitForTransactionReceipt } from "@wagmi/core";
 import { useCallback, useMemo } from "react";
 import { type Address, erc20Abi } from "viem";
 import {
@@ -7,6 +6,7 @@ import {
   useWaitForTransactionReceipt,
   useWriteContract,
 } from "wagmi";
+import { waitForTransactionReceipt } from "wagmi/actions";
 
 import { clientConfig } from "@/wagmi-config";
 
@@ -61,20 +61,20 @@ export const useTokenApproval = (
       confirmations: 2,
     });
 
-  const refetchAllowance = async (txHash: `0x${string}`) => {
-    const transactionReceipt = await waitForTransactionReceipt(
-      clientConfig as any,
-      {
+  const refetchAllowance = useCallback(
+    async (txHash: `0x${string}`) => {
+      const transactionReceipt = await waitForTransactionReceipt(clientConfig, {
         hash: txHash,
         pollingInterval: 1000,
         confirmations: 2,
-      },
-    );
+      });
 
-    if (transactionReceipt.status === "success") {
-      refetch();
-    }
-  };
+      if (transactionReceipt.status === "success") {
+        refetch();
+      }
+    },
+    [refetch],
+  );
 
   const approve = useCallback(
     async (amount: bigint): Promise<void> => {

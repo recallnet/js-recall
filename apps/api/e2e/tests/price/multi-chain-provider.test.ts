@@ -48,7 +48,7 @@ const testTokens = {
   // Base
   base: {
     ETH: "0x4200000000000000000000000000000000000006", // WETH on Base
-    USDC: "0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA",
+    USDC: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
   },
   // Solana tokens for comparison
   svm: {

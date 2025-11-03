@@ -13,7 +13,11 @@ export default defineConfig({
       provider: "v8",
       reporter: ["text", "json", "json-summary"],
       include: ["src/**/*.ts"],
-      exclude: ["contracts/**/*", ...coverageConfigDefaults.exclude],
+      exclude: [
+        "contracts/**/*",
+        ...coverageConfigDefaults.exclude,
+        "src/safe-transaction-proposer.ts",
+      ],
     },
   },
 });

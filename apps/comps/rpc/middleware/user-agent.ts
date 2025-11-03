@@ -1,5 +1,3 @@
-import { AgentService } from "@recallnet/services";
-
 import { base } from "@/rpc/context/base";
 
 import { authMiddleware } from "./auth";

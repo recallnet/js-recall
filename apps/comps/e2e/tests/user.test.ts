@@ -1,68 +1,63 @@
 import { beforeEach, describe, expect, test } from "vitest";
 
+import { specificChainTokens } from "@recallnet/services/lib";
 import { ApiClient } from "@recallnet/test-utils";
 import {
   AdminSearchUsersAndAgentsResponse,
   AdminUsersListResponse,
   AgentProfileResponse,
-  AgentResponse,
   CROSS_CHAIN_TRADING_TYPE,
   CreateCompetitionResponse,
-  ErrorResponse,
-  GetUserAgentsResponse,
   StartCompetitionResponse,
-  UserAgentApiKeyResponse,
   UserCompetitionsResponse,
-  UserProfileResponse,
 } from "@recallnet/test-utils";
 import {
-  createPrivyAuthenticatedClient,
-  createTestAgent,
   createTestClient,
   createTestCompetition,
   generateRandomEthAddress,
   generateTestCompetitions,
   getAdminApiKey,
   noTradingConstraints,
-  registerUserAndAgentAndGetClient,
   startExistingTestCompetition,
   wait,
 } from "@recallnet/test-utils";
 import { generateRandomPrivyId } from "@recallnet/test-utils";
 
-import { config } from "@/config/index.js";
-import { ServiceRegistry } from "@/services/index.js";
+// IDE shows error because e2e is excluded from main tsconfig, but path resolves correctly at runtime via Vitest
+import { portfolioSnapshotterService } from "@/lib/services";
+
+import {
+  createPrivyAuthenticatedRpcClient,
+  registerUserAndAgentAndGetRpcClient,
+} from "../utils/test-helpers.js";
 
 describe("User API", () => {
   // Clean up test state before each test
   let adminApiKey: string;
+  let adminClient: ApiClient;
 
   beforeEach(async () => {
     // Store the admin API key for authentication
     adminApiKey = await getAdminApiKey();
+
+    // Create and authenticate admin client for all tests
+    adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
   });
 
   test("admin can register a user and user can authenticate", async () => {
-    // Create a test client
-    const client = createTestClient();
-    // Attempt to login as admin with correct API key
-    await client.loginAsAdmin(adminApiKey);
-
     // Register a user
     const userName = `User ${Date.now()}`;
     const agentName = `Agent ${Date.now()}`;
     const userEmail = `user${Date.now()}@example.com`;
 
-    const {
-      client: userClient,
-      user,
-      apiKey,
-    } = await registerUserAndAgentAndGetClient({
-      adminApiKey,
-      userName,
-      userEmail,
-      agentName,
-    });
+    const { user, apiKey, rpcClient } =
+      await registerUserAndAgentAndGetRpcClient({
+        adminApiKey,
+        userName,
+        userEmail,
+        agentName,
+      });
 
     expect(user).toBeDefined();
     expect(user.id).toBeDefined();
@@ -75,48 +70,36 @@ describe("User API", () => {
     expect(user.lastLoginAt).toBeDefined();
     expect(apiKey).toBeDefined();
 
-    // Verify user client is authenticated
-    const profileResponse = await userClient.getUserProfile();
-    expect(profileResponse.success).toBe(true);
-    expect((profileResponse as UserProfileResponse).user).toBeDefined();
-    expect((profileResponse as UserProfileResponse).user.id).toBe(user.id);
-    expect((profileResponse as UserProfileResponse).user.name).toBe(userName);
+    // Verify user can authenticate and get profile via RPC
+    const profile = await rpcClient.user.getProfile();
+    expect(profile).toBeDefined();
+    expect(profile.id).toBe(user.id);
+    expect(profile.name).toBe(userName);
   });
 
   // TODO: once we have a user-centric API, switch to a user-centric test
   test("users can update their profile information", async () => {
-    // Setup admin client
-    const client = createTestClient();
-    // Attempt to login as admin with correct API key
-    await client.loginAsAdmin(adminApiKey);
-
     // Register a user
-    const { client: userClient } = await registerUserAndAgentAndGetClient({
+    const { rpcClient } = await registerUserAndAgentAndGetRpcClient({
       adminApiKey,
     });
 
     // Update user profile
     const newName = "Updated Contact Person";
-    const updateResponse = await userClient.updateUserProfile({
+    const updatedUser = await rpcClient.user.updateProfile({
       name: newName,
     });
 
-    expect(updateResponse.success).toBe(true);
-    expect((updateResponse as UserProfileResponse).user).toBeDefined();
-    expect((updateResponse as UserProfileResponse).user.name).toBe(newName);
+    expect(updatedUser).toBeDefined();
+    expect(updatedUser.name).toBe(newName);
 
     // Verify changes persisted
-    const profileResponse = await userClient.getUserProfile();
-    expect(profileResponse.success).toBe(true);
-    expect((profileResponse as UserProfileResponse).user.name).toBe(newName);
+    const profile = await rpcClient.user.getProfile();
+    expect(profile).toBeDefined();
+    expect(profile.name).toBe(newName);
   });
 
   test("admin can list all registered users", async () => {
-    // Setup admin client
-    const adminClient = createTestClient();
-    const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
-    expect(adminLoginSuccess).toBe(true);
-
     // Register multiple users
     const userData = [
       { name: `User A ${Date.now()}`, email: `user${Date.now()}@example.com` },
@@ -125,7 +108,7 @@ describe("User API", () => {
     ];
 
     for (const data of userData) {
-      await registerUserAndAgentAndGetClient({
+      await registerUserAndAgentAndGetRpcClient({
         adminApiKey,
         userName: data.name,
         userEmail: data.email,
@@ -152,24 +135,17 @@ describe("User API", () => {
 
   // TODO: once we have a user-centric API, switch to a user-centric test
   test("user can update both optional parameters in a single request", async () => {
-    // Setup admin client
-    const adminClient = createTestClient();
-    const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
-    expect(adminLoginSuccess).toBe(true);
-
     // Register a user without initial metadata or imageUrl
     const userName = `Combined Update User ${Date.now()}`;
     const userEmail = `combined-update-${Date.now()}@example.com`;
     const agentName = "Combined Update Agent";
 
-    const { client: userClient, user } = await registerUserAndAgentAndGetClient(
-      {
-        adminApiKey,
-        userName,
-        userEmail,
-        agentName,
-      },
-    );
+    const { rpcClient, user } = await registerUserAndAgentAndGetRpcClient({
+      adminApiKey,
+      userName,
+      userEmail,
+      agentName,
+    });
 
     expect(user).toBeDefined();
     expect(user.id).toBeDefined();
@@ -184,25 +160,22 @@ describe("User API", () => {
     };
 
     // Update both fields in a single request
-    const updateResponse = await userClient.updateUserProfile({
+    const updatedUser = await rpcClient.user.updateProfile({
       name: newName,
       imageUrl: newImageUrl,
       metadata: newMetadata,
     });
 
-    expect(updateResponse.success).toBe(true);
-    expect((updateResponse as UserProfileResponse).user.imageUrl).toBe(
-      newImageUrl,
-    );
+    expect(updatedUser).toBeDefined();
+    expect(updatedUser.imageUrl).toBe(newImageUrl);
 
     // Verify changes persisted
-    const profileResponse = await userClient.getUserProfile();
-    expect(profileResponse.success).toBe(true);
+    const profile = await rpcClient.user.getProfile();
+    expect(profile).toBeDefined();
 
-    const updatedProfile = (profileResponse as UserProfileResponse).user;
-    expect(updatedProfile.name).toBe(newName);
-    expect(updatedProfile.imageUrl).toBe(newImageUrl);
-    expect(updatedProfile.metadata).toEqual(newMetadata);
+    expect(profile.name).toBe(newName);
+    expect(profile.imageUrl).toBe(newImageUrl);
+    expect(profile.metadata).toEqual(newMetadata);
 
     // Verify admin can see both updated fields
     const searchResponse = await adminClient.searchUsersAndAgents({
@@ -221,10 +194,9 @@ describe("User API", () => {
   });
 
   test("creating a new user with duplicate email updates on conflict", async () => {
-    // Create a Privy-authenticated client
     const originalWalletAddress = generateRandomEthAddress();
     const originalUserEmail = `email@example.com`;
-    const { user: originalUser } = await createPrivyAuthenticatedClient({
+    const { user: originalUser } = await createPrivyAuthenticatedRpcClient({
       userName: "Privy Test User",
       userEmail: originalUserEmail,
       embeddedWalletAddress: originalWalletAddress,
@@ -248,9 +220,9 @@ describe("User API", () => {
     const newWalletAddress = generateRandomEthAddress();
     // We key off of unique email upon user creation, so this should update the user
     const existingPrivyId = originalUser.privyId;
-    const { user: updatedUser } = await createPrivyAuthenticatedClient({
+    const { user: updatedUser } = await createPrivyAuthenticatedRpcClient({
       userName: newName,
-      privyId: existingPrivyId,
+      privyId: existingPrivyId || undefined,
       userEmail: originalUserEmail,
       walletAddress: newWalletAddress,
     });
@@ -268,10 +240,9 @@ describe("User API", () => {
   });
 
   test("creating a new user with duplicate wallet address creates a new account", async () => {
-    // Create a Privy-authenticated client
     const originalWalletAddress = generateRandomEthAddress();
     const user1Email = `user1@example.com`;
-    const { user: originalUser } = await createPrivyAuthenticatedClient({
+    const { user: originalUser } = await createPrivyAuthenticatedRpcClient({
       walletAddress: originalWalletAddress,
       userEmail: user1Email,
     });
@@ -279,7 +250,7 @@ describe("User API", () => {
 
     // Try to login with the same wallet address - /login is idempotent and should merge
     const user2Email = `user2@example.com`;
-    const { user: mergedUser } = await createPrivyAuthenticatedClient({
+    const { user: mergedUser } = await createPrivyAuthenticatedRpcClient({
       userEmail: user2Email,
       walletAddress: originalWalletAddress,
     });
@@ -288,109 +259,88 @@ describe("User API", () => {
   });
 
   test("creating a new user with duplicate privyId is idempotent on login", async () => {
-    // Create a Privy-authenticated client
     const originalPrivyId = generateRandomPrivyId();
-    const { user: originalUser } = await createPrivyAuthenticatedClient({
+    const { user: originalUser } = await createPrivyAuthenticatedRpcClient({
       privyId: originalPrivyId,
     });
     expect(originalUser).toBeDefined();
 
     // Try to login again with the same privyId - should update lastLoginAt
-    const { user: again } = await createPrivyAuthenticatedClient({
+    const { user: again } = await createPrivyAuthenticatedRpcClient({
       privyId: originalPrivyId,
     });
     expect(again.id).toBe(originalUser.id);
   });
 
   test("user can access their profile and manage agents", async () => {
-    // Create a Privy-authenticated client
-    const { client: siweClient, user } = await createPrivyAuthenticatedClient({
+    const { rpcClient, user } = await createPrivyAuthenticatedRpcClient({
       userName: "Privy Test User",
       userEmail: "siwe-test@example.com",
     });
 
     // Test: User can get their profile via Privy session
-    const profileResponse = await siweClient.getUserProfile();
-    expect(profileResponse.success).toBe(true);
-    expect((profileResponse as UserProfileResponse).user).toBeDefined();
-    expect((profileResponse as UserProfileResponse).user.id).toBe(user.id);
-    expect((profileResponse as UserProfileResponse).user.name).toBe(user.name);
-    expect((profileResponse as UserProfileResponse).user.metadata).toBeNull();
+    const profile = await rpcClient.user.getProfile();
+    expect(profile).toBeDefined();
+    expect(profile.id).toBe(user.id);
+    expect(profile.name).toBe(user.name);
+    expect(profile.metadata).toBeNull();
 
     // Test: User can update their profile via Privy session, including metadata
     const newName = "Updated Privy User";
     const newMetadata = {
       foo: "bar",
     };
-    const updateResponse = await siweClient.updateUserProfile({
+    const updatedProfile = await rpcClient.user.updateProfile({
       name: newName,
       metadata: newMetadata,
     });
-    expect(updateResponse.success).toBe(true);
-    expect((updateResponse as UserProfileResponse).user.name).toBe(newName);
-    expect((updateResponse as UserProfileResponse).user.metadata).toEqual(
-      newMetadata,
-    );
+    expect(updatedProfile.name).toBe(newName);
+    expect(updatedProfile.metadata).toEqual(newMetadata);
 
     // Test: User can create an agent via Privy session
-    const createAgentResponse = await createTestAgent(
-      siweClient,
-      "Privy Created Agent",
-      "Agent created via Privy session",
-    );
-    expect(createAgentResponse.success).toBe(true);
-    expect((createAgentResponse as AgentProfileResponse).agent).toBeDefined();
-    expect((createAgentResponse as AgentProfileResponse).agent.name).toBe(
-      "Privy Created Agent",
-    );
+    const { agent: createdAgent } = await rpcClient.user.createAgent({
+      name: "Privy Created Agent",
+      handle: "privycreated",
+      description: "Agent created via Privy session",
+    });
+    expect(createdAgent).toBeDefined();
+    expect(createdAgent.name).toBe("Privy Created Agent");
 
     // Test: User can list their agents via Privy session
-    const agentsResponse =
-      (await siweClient.getUserAgents()) as GetUserAgentsResponse;
-    expect(agentsResponse.success).toBe(true);
-    expect(agentsResponse.agents).toBeDefined();
-    expect(agentsResponse.agents.length).toBe(1);
-    expect(agentsResponse.agents[0]?.name).toBe("Privy Created Agent");
-    expect(agentsResponse.agents[0]?.isVerified).toBe(false);
+    const { agents } = await rpcClient.user.getUserAgents({});
+    expect(agents).toBeDefined();
+    expect(agents.length).toBe(1);
+    expect(agents[0]?.name).toBe("Privy Created Agent");
+    expect(agents[0]?.isVerified).toBe(false);
 
     // Test: User can get a specific agent via Privy session
-    const agentId = (createAgentResponse as AgentProfileResponse).agent.id;
-    const specificAgentResponse = await siweClient.getUserAgent(agentId);
-    expect(specificAgentResponse.success).toBe(true);
-    expect((specificAgentResponse as AgentProfileResponse).agent.id).toBe(
-      agentId,
-    );
+    const agentId = createdAgent.id;
+    const specificAgent = await rpcClient.user.getUserAgent({ agentId });
+    expect(specificAgent.id).toBe(agentId);
   });
 
   test("user can update their agent profiles", async () => {
-    // Create a Privy-authenticated client
-    const { client: siweClient } = await createPrivyAuthenticatedClient({
+    const { rpcClient } = await createPrivyAuthenticatedRpcClient({
       userName: "Agent Profile Test User",
       userEmail: "agent-profile-test@example.com",
     });
 
     // Create an agent via Privy session
-    const createAgentResponse = await createTestAgent(
-      siweClient,
-      "Original Agent Name",
-      "Original agent description",
-      "https://example.com/original-image.jpg",
-    );
-    expect(createAgentResponse.success).toBe(true);
-    const agent = (createAgentResponse as AgentProfileResponse).agent;
+    const { agent } = await rpcClient.user.createAgent({
+      name: "Original Agent Name",
+      handle: "originalagent",
+      description: "Original agent description",
+      imageUrl: "https://example.com/original-image.jpg",
+    });
     expect(agent.name).toBe("Original Agent Name");
     expect(agent.description).toBe("Original agent description");
     expect(agent.imageUrl).toBe("https://example.com/original-image.jpg");
 
     // Test: User can update agent name only
-    const updateNameResponse = await siweClient.updateUserAgentProfile(
-      agent.id,
-      {
-        name: "Updated Agent Name",
-      },
-    );
-    expect(updateNameResponse.success).toBe(true);
-    const updatedAgent1 = (updateNameResponse as AgentProfileResponse).agent;
+    const { agent: updatedAgent1 } = await rpcClient.user.updateAgentProfile({
+      agentId: agent.id,
+      name: "Updated Agent Name",
+    });
     expect(updatedAgent1.name).toBe("Updated Agent Name");
     expect(updatedAgent1.description).toBe("Original agent description"); // Should remain unchanged
     expect(updatedAgent1.imageUrl).toBe(
@@ -398,14 +348,10 @@ describe("User API", () => {
     ); // Should remain unchanged
 
     // Test: User can update description only
-    const updateDescResponse = await siweClient.updateUserAgentProfile(
-      agent.id,
-      {
-        description: "Updated agent description",
-      },
-    );
-    expect(updateDescResponse.success).toBe(true);
-    const updatedAgent2 = (updateDescResponse as AgentProfileResponse).agent;
+    const { agent: updatedAgent2 } = await rpcClient.user.updateAgentProfile({
+      agentId: agent.id,
+      description: "Updated agent description",
+    });
     expect(updatedAgent2.name).toBe("Updated Agent Name"); // Should remain from previous update
     expect(updatedAgent2.description).toBe("Updated agent description");
     expect(updatedAgent2.imageUrl).toBe(
@@ -413,14 +359,10 @@ describe("User API", () => {
     ); // Should remain unchanged
 
     // Test: User can update imageUrl only
-    const updateImageResponse = await siweClient.updateUserAgentProfile(
-      agent.id,
-      {
-        imageUrl: "https://example.com/updated-image.jpg",
-      },
-    );
-    expect(updateImageResponse.success).toBe(true);
-    const updatedAgent3 = (updateImageResponse as AgentProfileResponse).agent;
+    const { agent: updatedAgent3 } = await rpcClient.user.updateAgentProfile({
+      agentId: agent.id,
+      imageUrl: "https://example.com/updated-image.jpg",
+    });
     expect(updatedAgent3.name).toBe("Updated Agent Name"); // Should remain from previous update
     expect(updatedAgent3.description).toBe("Updated agent description"); // Should remain from previous update
     expect(updatedAgent3.imageUrl).toBe(
@@ -428,139 +370,105 @@ describe("User API", () => {
     );
 
     // Test: User can update email field
-    const updateEmailResponse = await siweClient.updateUserAgentProfile(
-      agent.id,
-      {
-        email: "updated-email@example.com",
-      },
-    );
-    expect(updateEmailResponse.success).toBe(true);
-    const updatedAgent4 = (updateEmailResponse as AgentProfileResponse).agent;
+    const { agent: updatedAgent4 } = await rpcClient.user.updateAgentProfile({
+      agentId: agent.id,
+      email: "updated-email@example.com",
+    });
     expect(updatedAgent4.email).toBe("updated-email@example.com");
 
     // Test: User can update metadata field
-    const updateMetadataResponse = await siweClient.updateUserAgentProfile(
-      agent.id,
-      {
-        metadata: {
-          ref: {
-            name: "Updated Ref Name",
-            version: "1.0.0",
-            url: "https://example.com/updated-ref.com",
-          },
-        },
+    const { agent: updatedAgent5 } = await rpcClient.user.updateAgentProfile({
+      agentId: agent.id,
+      metadata: {
+        skills: ["trading", "ai"],
       },
-    );
-    expect(updateMetadataResponse.success).toBe(true);
-    const updatedAgent5 = (updateMetadataResponse as AgentProfileResponse)
-      .agent;
+    });
     expect(updatedAgent5.metadata).toBeDefined();
-    expect(updatedAgent5.metadata?.ref?.name).toBe("Updated Ref Name");
-    expect(updatedAgent5.metadata?.ref?.version).toBe("1.0.0");
-    expect(updatedAgent5.metadata?.ref?.url).toBe(
-      "https://example.com/updated-ref.com",
-    );
+    expect(updatedAgent5.metadata?.skills).toEqual(["trading", "ai"]);
 
     // Test: User can update all fields at once
-    const updateAllResponse = await siweClient.updateUserAgentProfile(
-      agent.id,
-      {
-        name: "Final Agent Name",
-        description: "Final agent description",
-        imageUrl: "https://example.com/final-image.jpg",
-        email: "final-email@example.com",
-        metadata: {
-          ref: {
-            name: "Final Ref Name",
-            version: "1.0.1",
-            url: "https://example.com/final-ref.com",
-          },
-        },
+    const { agent: finalAgent } = await rpcClient.user.updateAgentProfile({
+      agentId: agent.id,
+      name: "Final Agent Name",
+      description: "Final agent description",
+      imageUrl: "https://example.com/final-image.jpg",
+      email: "final-email@example.com",
+      metadata: {
+        skills: ["trading", "ai"],
       },
-    );
-    expect(updateAllResponse.success).toBe(true);
-    const finalAgent = (updateAllResponse as AgentProfileResponse).agent;
+    });
     expect(finalAgent.name).toBe("Final Agent Name");
     expect(finalAgent.description).toBe("Final agent description");
     expect(finalAgent.imageUrl).toBe("https://example.com/final-image.jpg");
+    expect(finalAgent.metadata?.skills).toEqual(["trading", "ai"]);
 
     // Test: Verify changes persisted by getting the agent again
-    const getAgentResponse = await siweClient.getUserAgent(agent.id);
-    expect(getAgentResponse.success).toBe(true);
-    const persistedAgent = (getAgentResponse as AgentProfileResponse).agent;
+    const persistedAgent = await rpcClient.user.getUserAgent({
+      agentId: agent.id,
+    });
     expect(persistedAgent.name).toBe("Final Agent Name");
     expect(persistedAgent.description).toBe("Final agent description");
     expect(persistedAgent.imageUrl).toBe("https://example.com/final-image.jpg");
   });
 
   test("user cannot update an agent they don't own", async () => {
-    // Create a Privy-authenticated client
-    const { client: siweClient } = await createPrivyAuthenticatedClient({
+    const { rpcClient } = await createPrivyAuthenticatedRpcClient({
       userName: "Agent Profile Test User",
       userEmail: "agent-profile-test@example.com",
     });
 
     // Create an agent via Privy session
-    const createAgentResponse = await createTestAgent(
-      siweClient,
-      "Original Agent Name",
-      "Original agent description",
-      "https://example.com/original-image.jpg",
-    );
-    expect(createAgentResponse.success).toBe(true);
-    const agent = (createAgentResponse as AgentProfileResponse).agent;
+    const { agent } = await rpcClient.user.createAgent({
+      name: "Original Agent Name",
+      handle: "originalagent2",
+      description: "Original agent description",
+      imageUrl: "https://example.com/original-image.jpg",
+    });
 
     // Test: User cannot update agent they don't own
     // Create another user and try to update the first user's agent
-    const { client: otherUserClient } = await createPrivyAuthenticatedClient({
-      userName: "Other User",
-      userEmail: "other-user@example.com",
-    });
-
-    const unauthorizedUpdateResponse =
-      await otherUserClient.updateUserAgentProfile(agent.id, {
-        name: "Unauthorized Update",
+    const { rpcClient: otherUserRpcClient } =
+      await createPrivyAuthenticatedRpcClient({
+        userName: "Other User",
+        userEmail: "other-user@example.com",
       });
-    expect(unauthorizedUpdateResponse.success).toBe(false);
-    expect((unauthorizedUpdateResponse as ErrorResponse).error).toContain(
-      "Access denied",
-    );
+
+    await expect(
+      otherUserRpcClient.user.updateAgentProfile({
+        agentId: agent.id,
+        name: "Unauthorized Update",
+      }),
+    ).rejects.toThrow(/Access denied/);
   });
 
   test("user cannot update an agent with invalid fields", async () => {
-    // Create a Privy-authenticated client
-    const { client: siweClient } = await createPrivyAuthenticatedClient({
+    const { rpcClient } = await createPrivyAuthenticatedRpcClient({
       userName: "Agent Profile Test User",
       userEmail: "agent-profile-test@example.com",
     });
 
     // Create an agent via Privy session
-    const createAgentResponse = await createTestAgent(
-      siweClient,
-      "Original Agent Name",
-      "Original agent description",
-      "https://example.com/original-image.jpg",
-    );
-    const agent = (createAgentResponse as AgentProfileResponse).agent;
+    const { agent } = await rpcClient.user.createAgent({
+      name: "Original Agent Name",
+      handle: "originalagent3",
+      description: "Original agent description",
+      imageUrl: "https://example.com/original-image.jpg",
+    });
 
-    // Test: Invalid fields are rejected
-    const invalidFieldsResponse = await siweClient.request(
-      "put",
-      `/api/user/agents/${agent.id}/profile`,
-      {
+    // Test: Invalid fields are rejected by server-side validation
+    // Use type assertion to bypass TypeScript's compile-time validation
+    await expect(
+      rpcClient.user.updateAgentProfile({
+        agentId: agent.id,
         name: "Valid Name",
+        // @ts-expect-error We want to force the error
         invalidField: "Should be rejected",
-      },
-    );
-    expect((invalidFieldsResponse as ErrorResponse).success).toBe(false);
-    expect((invalidFieldsResponse as ErrorResponse).error).toContain(
-      "Invalid request format",
-    );
+      }),
+    ).rejects.toThrow(/Input validation failed/);
   });
 
   test("get user agents pagination works with default parameters", async () => {
-    // Create a Privy-authenticated client
-    const { client: siweClient } = await createPrivyAuthenticatedClient({
+    const { rpcClient } = await createPrivyAuthenticatedRpcClient({
       userName: "Pagination Test User",
       userEmail: "pagination-test@example.com",
     });
@@ -575,20 +483,17 @@ describe("User API", () => {
     ];
 
     for (const name of agentNames) {
-      const response = await createTestAgent(
-        siweClient,
+      await rpcClient.user.createAgent({
         name,
-        `Description for ${name}`,
-      );
-      expect(response.success).toBe(true);
+        handle: name.toLowerCase().replace(/\s+/g, ""),
+        description: `Description for ${name}`,
+      });
       // Small delay to ensure different timestamps
       await wait(10);
     }
 
     // Test default pagination (should return all agents)
-    const defaultResponse = await siweClient.getUserAgents();
-    expect(defaultResponse.success).toBe(true);
-    const defaultAgents = (defaultResponse as GetUserAgentsResponse).agents;
+    const { agents: defaultAgents } = await rpcClient.user.getUserAgents({});
     expect(defaultAgents).toHaveLength(5);
     expect(Array.isArray(defaultAgents)).toBe(true);
 
@@ -603,133 +508,120 @@ describe("User API", () => {
   });
 
   test("user agents pagination respects limit parameter", async () => {
-    const { client: siweClient } = await createPrivyAuthenticatedClient({
+    const { rpcClient } = await createPrivyAuthenticatedRpcClient({
       userName: "Limit Test User",
       userEmail: "limit-test@example.com",
     });
 
     // Create 6 agents
     for (let i = 1; i <= 6; i++) {
-      const response = await createTestAgent(
-        siweClient,
-        `Agent ${i.toString().padStart(2, "0")}`,
-        `Description for Agent ${i}`,
-      );
-      expect(response.success).toBe(true);
+      await rpcClient.user.createAgent({
+        name: `Agent ${i.toString().padStart(2, "0")}`,
+        handle: `agent${i.toString().padStart(2, "0")}`,
+        description: `Description for Agent ${i}`,
+      });
       await wait(10);
     }
 
     // Test limit of 3
-    const limitedResponse = await siweClient.getUserAgents({ limit: 3 });
-    expect(limitedResponse.success).toBe(true);
-    const limitedAgents = (limitedResponse as GetUserAgentsResponse).agents;
+    const { agents: limitedAgents } = await rpcClient.user.getUserAgents({
+      limit: 3,
+    });
     expect(limitedAgents).toHaveLength(3);
 
     // Test limit of 2
-    const limit2Response = await siweClient.getUserAgents({ limit: 2 });
-    expect(limit2Response.success).toBe(true);
-    const limit2Agents = (limit2Response as GetUserAgentsResponse).agents;
+    const { agents: limit2Agents } = await rpcClient.user.getUserAgents({
+      limit: 2,
+    });
     expect(limit2Agents).toHaveLength(2);
 
     // Test limit larger than total
-    const largeLimitResponse = await siweClient.getUserAgents({ limit: 20 });
-    expect(largeLimitResponse.success).toBe(true);
-    const largeLimitAgents = (largeLimitResponse as GetUserAgentsResponse)
-      .agents;
+    const { agents: largeLimitAgents } = await rpcClient.user.getUserAgents({
+      limit: 20,
+    });
     expect(largeLimitAgents).toHaveLength(6);
   });
 
   test("user agents pagination respects offset parameter", async () => {
-    const { client: siweClient } = await createPrivyAuthenticatedClient({
+    const { rpcClient } = await createPrivyAuthenticatedRpcClient({
       userName: "Offset Test User",
       userEmail: "offset-test@example.com",
     });
 
     // Create 6 agents
     for (let i = 1; i <= 6; i++) {
-      const response = await createTestAgent(
-        siweClient,
-        `Agent ${i.toString().padStart(2, "0")}`,
-        `Description for Agent ${i}`,
-      );
-      expect(response.success).toBe(true);
+      await rpcClient.user.createAgent({
+        name: `Agent ${i.toString().padStart(2, "0")}`,
+        handle: `agent${i.toString().padStart(2, "0")}b`,
+        description: `Description for Agent ${i}`,
+      });
       await wait(10);
     }
 
     // Get all agents first to establish baseline
-    const allResponse = await siweClient.getUserAgents();
-    expect(allResponse.success).toBe(true);
-    const allAgents = (allResponse as GetUserAgentsResponse).agents;
+    const { agents: allAgents } = await rpcClient.user.getUserAgents({});
     expect(allAgents).toHaveLength(6);
 
     // Test offset of 2
-    const offset2Response = await siweClient.getUserAgents({ offset: 2 });
-    expect(offset2Response.success).toBe(true);
-    const offset2Agents = (offset2Response as GetUserAgentsResponse).agents;
+    const { agents: offset2Agents } = await rpcClient.user.getUserAgents({
+      offset: 2,
+    });
     expect(offset2Agents).toHaveLength(4);
 
     // Test offset of 4
-    const offset4Response = await siweClient.getUserAgents({ offset: 4 });
-    expect(offset4Response.success).toBe(true);
-    const offset4Agents = (offset4Response as GetUserAgentsResponse).agents;
+    const { agents: offset4Agents } = await rpcClient.user.getUserAgents({
+      offset: 4,
+    });
     expect(offset4Agents).toHaveLength(2);
 
     // Test offset larger than total
-    const largeOffsetResponse = await siweClient.getUserAgents({ offset: 10 });
-    expect(largeOffsetResponse.success).toBe(true);
-    const largeOffsetAgents = (largeOffsetResponse as GetUserAgentsResponse)
-      .agents;
+    const { agents: largeOffsetAgents } = await rpcClient.user.getUserAgents({
+      offset: 10,
+    });
     expect(largeOffsetAgents).toHaveLength(0);
   });
 
   test("user agents pagination combines limit and offset correctly", async () => {
-    const { client: siweClient } = await createPrivyAuthenticatedClient({
+    const { rpcClient } = await createPrivyAuthenticatedRpcClient({
       userName: "Limit Offset Test User",
       userEmail: "limit-offset-test@example.com",
     });
 
     // Create 8 agents
     for (let i = 1; i <= 8; i++) {
-      const response = await createTestAgent(
-        siweClient,
-        `Agent ${i.toString().padStart(2, "0")}`,
-        `Description for Agent ${i}`,
-      );
-      expect(response.success).toBe(true);
+      await rpcClient.user.createAgent({
+        name: `Agent ${i.toString().padStart(2, "0")}`,
+        handle: `agent${i.toString().padStart(2, "0")}c`,
+        description: `Description for Agent ${i}`,
+      });
       await wait(10);
     }
 
     // Test pagination: page 1 (offset 0, limit 3)
-    const page1Response = await siweClient.getUserAgents({
+    const { agents: page1Agents } = await rpcClient.user.getUserAgents({
       limit: 3,
       offset: 0,
     });
-    expect(page1Response.success).toBe(true);
-    const page1Agents = (page1Response as GetUserAgentsResponse).agents;
     expect(page1Agents).toHaveLength(3);
 
     // Test pagination: page 2 (offset 3, limit 3)
-    const page2Response = await siweClient.getUserAgents({
+    const { agents: page2Agents } = await rpcClient.user.getUserAgents({
       limit: 3,
       offset: 3,
     });
-    expect(page2Response.success).toBe(true);
-    const page2Agents = (page2Response as GetUserAgentsResponse).agents;
     expect(page2Agents).toHaveLength(3);
 
     // Test pagination: page 3 (offset 6, limit 3) - should only return 2 agents
-    const page3Response = await siweClient.getUserAgents({
+    const { agents: page3Agents } = await rpcClient.user.getUserAgents({
       limit: 3,
       offset: 6,
     });
-    expect(page3Response.success).toBe(true);
-    const page3Agents = (page3Response as GetUserAgentsResponse).agents;
     expect(page3Agents).toHaveLength(2);
 
     // Verify no overlap between pages by checking agent IDs
-    const page1Ids = page1Agents.map((a: AgentResponse) => a.id);
-    const page2Ids = page2Agents.map((a: AgentResponse) => a.id);
-    const page3Ids = page3Agents.map((a: AgentResponse) => a.id);
+    const page1Ids = page1Agents.map((a) => a.id);
+    const page2Ids = page2Agents.map((a) => a.id);
+    const page3Ids = page3Agents.map((a) => a.id);
 
     const allPageIds = [...page1Ids, ...page2Ids, ...page3Ids];
     const uniqueIds = new Set(allPageIds);
@@ -737,7 +629,7 @@ describe("User API", () => {
   });
 
   test("user agents sorting works correctly", async () => {
-    const { client: siweClient } = await createPrivyAuthenticatedClient({
+    const { rpcClient } = await createPrivyAuthenticatedRpcClient({
       userName: "Sort Test User",
       userEmail: "sort-test@example.com",
     });
@@ -751,19 +643,18 @@ describe("User API", () => {
     ];
 
     for (const agent of agentData) {
-      const response = await createTestAgent(
-        siweClient,
-        agent.name,
-        agent.description,
-      );
-      expect(response.success).toBe(true);
+      await rpcClient.user.createAgent({
+        name: agent.name,
+        handle: agent.name.toLowerCase().replace(/\s+/g, ""),
+        description: agent.description,
+      });
       await wait(50); // Larger delay for timestamp differentiation
     }
 
     // Test name ascending sort
-    const nameAscResponse = await siweClient.getUserAgents({ sort: "name" });
-    expect(nameAscResponse.success).toBe(true);
-    const nameAscAgents = (nameAscResponse as GetUserAgentsResponse).agents;
+    const { agents: nameAscAgents } = await rpcClient.user.getUserAgents({
+      sort: "name",
+    });
     expect(nameAscAgents).toHaveLength(4);
     expect(nameAscAgents[0]?.name).toBe("Alpha Agent");
     expect(nameAscAgents[1]?.name).toBe("Beta Agent");
@@ -771,9 +662,9 @@ describe("User API", () => {
     expect(nameAscAgents[3]?.name).toBe("Zebra Agent");
 
     // Test name descending sort
-    const nameDescResponse = await siweClient.getUserAgents({ sort: "-name" });
-    expect(nameDescResponse.success).toBe(true);
-    const nameDescAgents = (nameDescResponse as GetUserAgentsResponse).agents;
+    const { agents: nameDescAgents } = await rpcClient.user.getUserAgents({
+      sort: "-name",
+    });
     expect(nameDescAgents).toHaveLength(4);
     expect(nameDescAgents[0]?.name).toBe("Zebra Agent");
     expect(nameDescAgents[1]?.name).toBe("Gamma Agent");
@@ -781,24 +672,18 @@ describe("User API", () => {
     expect(nameDescAgents[3]?.name).toBe("Alpha Agent");
 
     // Test created date ascending sort (oldest first)
-    const createdAscResponse = await siweClient.getUserAgents({
+    const { agents: createdAscAgents } = await rpcClient.user.getUserAgents({
       sort: "createdAt",
     });
-    expect(createdAscResponse.success).toBe(true);
-    const createdAscAgents = (createdAscResponse as GetUserAgentsResponse)
-      .agents;
     expect(createdAscAgents).toHaveLength(4);
     // First created should be "Zebra Agent" (created first in our loop)
     expect(createdAscAgents[0]?.name).toBe("Zebra Agent");
     expect(createdAscAgents[3]?.name).toBe("Gamma Agent");
 
     // Test created date descending sort (newest first)
-    const createdDescResponse = await siweClient.getUserAgents({
+    const { agents: createdDescAgents } = await rpcClient.user.getUserAgents({
       sort: "-createdAt",
     });
-    expect(createdDescResponse.success).toBe(true);
-    const createdDescAgents = (createdDescResponse as GetUserAgentsResponse)
-      .agents;
     expect(createdDescAgents).toHaveLength(4);
     // Last created should be "Gamma Agent" (created last in our loop)
     expect(createdDescAgents[0]?.name).toBe("Gamma Agent");
@@ -806,7 +691,7 @@ describe("User API", () => {
   });
 
   test("user agents sorting combined with pagination", async () => {
-    const { client: siweClient } = await createPrivyAuthenticatedClient({
+    const { rpcClient } = await createPrivyAuthenticatedRpcClient({
       userName: "Sort Pagination Test User",
       userEmail: "sort-pagination-test@example.com",
     });
@@ -815,35 +700,30 @@ describe("User API", () => {
     const names = ["Hotel", "Alpha", "India", "Bravo", "Juliet", "Charlie"];
 
     for (const name of names) {
-      const response = await createTestAgent(
-        siweClient,
-        `${name} Agent`,
-        `Description for ${name}`,
-      );
-      expect(response.success).toBe(true);
+      await rpcClient.user.createAgent({
+        name: `${name} Agent`,
+        handle: `${name.toLowerCase()}agent`,
+        description: `Description for ${name}`,
+      });
       await wait(10);
     }
 
     // Get first page of 2, sorted by name ascending
-    const page1Response = await siweClient.getUserAgents({
+    const { agents: page1Agents } = await rpcClient.user.getUserAgents({
       sort: "name",
       limit: 2,
       offset: 0,
     });
-    expect(page1Response.success).toBe(true);
-    const page1Agents = (page1Response as GetUserAgentsResponse).agents;
     expect(page1Agents).toHaveLength(2);
     expect(page1Agents[0]?.name).toBe("Alpha Agent");
     expect(page1Agents[1]?.name).toBe("Bravo Agent");
 
     // Get second page of 2, sorted by name ascending
-    const page2Response = await siweClient.getUserAgents({
+    const { agents: page2Agents } = await rpcClient.user.getUserAgents({
       sort: "name",
       limit: 2,
       offset: 2,
     });
-    expect(page2Response.success).toBe(true);
-    const page2Agents = (page2Response as GetUserAgentsResponse).agents;
     expect(page2Agents).toHaveLength(2);
     expect(page2Agents[0]?.name).toBe("Charlie Agent");
     expect(page2Agents[1]?.name).toBe("Hotel Agent");
@@ -851,115 +731,96 @@ describe("User API", () => {
 
   test("user agents pagination only returns agents owned by authenticated user", async () => {
     // Create two different users
-    const { client: user1Client } = await createPrivyAuthenticatedClient({
-      userName: "User 1",
-      userEmail: "user1@example.com",
-    });
+    const { rpcClient: user1RpcClient } =
+      await createPrivyAuthenticatedRpcClient({
+        userName: "User 1",
+        userEmail: "user1@example.com",
+      });
 
-    const { client: user2Client } = await createPrivyAuthenticatedClient({
-      userName: "User 2",
-      userEmail: "user2@example.com",
-    });
+    const { rpcClient: user2RpcClient } =
+      await createPrivyAuthenticatedRpcClient({
+        userName: "User 2",
+        userEmail: "user2@example.com",
+      });
 
     // User 1 creates 3 agents
     for (let i = 1; i <= 3; i++) {
-      const response = await createTestAgent(
-        user1Client,
-        `User1 Agent ${i}`,
-        `Description ${i}`,
-      );
-      expect(response.success).toBe(true);
+      await user1RpcClient.user.createAgent({
+        name: `User1 Agent ${i}`,
+        handle: `user1agent${i}`,
+        description: `Description ${i}`,
+      });
     }
 
     // User 2 creates 2 agents
     for (let i = 1; i <= 2; i++) {
-      const response = await createTestAgent(
-        user2Client,
-        `User2 Agent ${i}`,
-        `Description ${i}`,
-      );
-      expect(response.success).toBe(true);
+      await user2RpcClient.user.createAgent({
+        name: `User2 Agent ${i}`,
+        handle: `user2agent${i}`,
+        description: `Description ${i}`,
+      });
     }
 
     // User 1 should only see their own agents
-    const user1Response = await user1Client.getUserAgents();
-    expect(user1Response.success).toBe(true);
-    const user1Agents = (user1Response as GetUserAgentsResponse).agents;
+    const { agents: user1Agents } = await user1RpcClient.user.getUserAgents({});
     expect(user1Agents).toHaveLength(3);
-    user1Agents.forEach((agent: AgentResponse) => {
+    user1Agents.forEach((agent) => {
       expect(agent.name).toMatch(/^User1 Agent/);
     });
 
     // User 2 should only see their own agents
-    const user2Response = await user2Client.getUserAgents();
-    expect(user2Response.success).toBe(true);
-    const user2Agents = (user2Response as GetUserAgentsResponse).agents;
+    const { agents: user2Agents } = await user2RpcClient.user.getUserAgents({});
     expect(user2Agents).toHaveLength(2);
-    user2Agents.forEach((agent: AgentResponse) => {
+    user2Agents.forEach((agent) => {
       expect(agent.name).toMatch(/^User2 Agent/);
     });
 
     // Test pagination isolation - User 1 with pagination
-    const user1PaginatedResponse = await user1Client.getUserAgents({
-      limit: 2,
-    });
-    expect(user1PaginatedResponse.success).toBe(true);
-    const user1PaginatedAgents = (
-      user1PaginatedResponse as GetUserAgentsResponse
-    ).agents;
+    const { agents: user1PaginatedAgents } =
+      await user1RpcClient.user.getUserAgents({
+        limit: 2,
+      });
     expect(user1PaginatedAgents).toHaveLength(2);
-    user1PaginatedAgents.forEach((agent: AgentResponse) => {
+    user1PaginatedAgents.forEach((agent) => {
       expect(agent.name).toMatch(/^User1 Agent/);
     });
   });
 
   test("user agents API returns consistent structure with pagination", async () => {
-    const { client: siweClient } = await createPrivyAuthenticatedClient({
+    const { rpcClient } = await createPrivyAuthenticatedRpcClient({
       userName: "Structure Test User",
       userEmail: "structure-test@example.com",
     });
 
     // Create a couple of agents
-    const response1 = await createTestAgent(
-      siweClient,
-      "Test Agent 1",
-      "Description 1",
-    );
-    expect(response1.success).toBe(true);
-    const response2 = await createTestAgent(
-      siweClient,
-      "Test Agent 2",
-      "Description 2",
-    );
-    expect(response2.success).toBe(true);
+    await rpcClient.user.createAgent({
+      name: "Test Agent 1",
+      handle: "testagent1",
+      description: "Description 1",
+    });
+    await rpcClient.user.createAgent({
+      name: "Test Agent 2",
+      handle: "testagent2",
+      description: "Description 2",
+    });
 
     // Test response structure with no pagination
-    const noPaginationResponse = await siweClient.getUserAgents();
-    expect(noPaginationResponse.success).toBe(true);
-    expect(
-      (noPaginationResponse as GetUserAgentsResponse).userId,
-    ).toBeDefined();
-    expect(
-      (noPaginationResponse as GetUserAgentsResponse).agents,
-    ).toBeDefined();
-    expect(
-      Array.isArray((noPaginationResponse as GetUserAgentsResponse).agents),
-    ).toBe(true);
+    const noPaginationResponse = await rpcClient.user.getUserAgents({});
+    expect(noPaginationResponse.userId).toBeDefined();
+    expect(noPaginationResponse.agents).toBeDefined();
+    expect(Array.isArray(noPaginationResponse.agents)).toBe(true);
 
     // Test response structure with pagination
-    const paginatedResponse = await siweClient.getUserAgents({
+    const paginatedResponse = await rpcClient.user.getUserAgents({
       limit: 1,
       offset: 0,
     });
-    expect(paginatedResponse.success).toBe(true);
-    expect((paginatedResponse as GetUserAgentsResponse).userId).toBeDefined();
-    expect((paginatedResponse as GetUserAgentsResponse).agents).toBeDefined();
-    expect(
-      Array.isArray((paginatedResponse as GetUserAgentsResponse).agents),
-    ).toBe(true);
+    expect(paginatedResponse.userId).toBeDefined();
+    expect(paginatedResponse.agents).toBeDefined();
+    expect(Array.isArray(paginatedResponse.agents)).toBe(true);
 
     // Verify agent structure (should not include API key for security)
-    const agents = (paginatedResponse as GetUserAgentsResponse).agents;
+    const agents = paginatedResponse.agents;
     expect(agents.length).toBeGreaterThan(0);
     const agent = agents[0];
     expect(agent?.id).toBeDefined();
@@ -969,48 +830,46 @@ describe("User API", () => {
     expect(agent?.createdAt).toBeDefined();
     expect(agent?.updatedAt).toBeDefined();
     // API key should NOT be present in the response for security
+    // @ts-expect-error We are testing the API key is not present
     expect(agent?.apiKey).toBeUndefined();
   });
 
   test("user agents pagination handles edge cases gracefully", async () => {
-    const { client: siweClient } = await createPrivyAuthenticatedClient({
+    const { rpcClient } = await createPrivyAuthenticatedRpcClient({
       userName: "Edge Case Test User",
       userEmail: "edge-case-test@example.com",
     });
 
     // Create a few agents
     for (let i = 1; i <= 3; i++) {
-      const response = await createTestAgent(
-        siweClient,
-        `Agent ${i}`,
-        `Description ${i}`,
-      );
-      expect(response.success).toBe(true);
+      await rpcClient.user.createAgent({
+        name: `Agent ${i}`,
+        handle: `edgecaseagent${i}`,
+        description: `Description ${i}`,
+      });
     }
 
     // Test zero offset
-    const zeroOffsetResponse = await siweClient.getUserAgents({ offset: 0 });
-    expect(zeroOffsetResponse.success).toBe(true);
-    const zeroOffsetAgents = (zeroOffsetResponse as GetUserAgentsResponse)
-      .agents;
+    const { agents: zeroOffsetAgents } = await rpcClient.user.getUserAgents({
+      offset: 0,
+    });
     expect(zeroOffsetAgents).toHaveLength(3);
 
     // Test minimum limit
-    const minLimitResponse = await siweClient.getUserAgents({ limit: 1 });
-    expect(minLimitResponse.success).toBe(true);
-    const minLimitAgents = (minLimitResponse as GetUserAgentsResponse).agents;
+    const { agents: minLimitAgents } = await rpcClient.user.getUserAgents({
+      limit: 1,
+    });
     expect(minLimitAgents).toHaveLength(1);
 
     // Test that pagination still works with empty sort string
-    const emptySortResponse = await siweClient.getUserAgents({ sort: "" });
-    expect(emptySortResponse.success).toBe(true);
-    const emptySortAgents = (emptySortResponse as GetUserAgentsResponse).agents;
+    const { agents: emptySortAgents } = await rpcClient.user.getUserAgents({
+      sort: "",
+    });
     expect(emptySortAgents).toHaveLength(3);
   });
 
   test("user cannot create agents with duplicate names", async () => {
-    // Create a Privy-authenticated client
-    const { client: siweClient } = await createPrivyAuthenticatedClient({
+    const { rpcClient } = await createPrivyAuthenticatedRpcClient({
       userName: "Duplicate Agent Name Test User",
       userEmail: "duplicate-agent-name-test@example.com",
     });
@@ -1019,48 +878,40 @@ describe("User API", () => {
     const agentDescription = "Test agent for duplicate name testing";
 
     // Create the first agent successfully
-    const firstAgentResponse = await createTestAgent(
-      siweClient,
-      agentName,
-      agentDescription,
-    );
-    expect(firstAgentResponse.success).toBe(true);
+    await rpcClient.user.createAgent({
+      name: agentName,
+      handle: "duplicateagent",
+      description: agentDescription,
+    });
 
-    // Try to create a second agent with the same name - should fail with 409
-    const secondAgentResponse = await createTestAgent(
-      siweClient,
-      agentName,
-      agentDescription,
-    );
-    expect(secondAgentResponse.success).toBe(false);
-    expect((secondAgentResponse as ErrorResponse).status).toBe(409);
-    expect((secondAgentResponse as ErrorResponse).error).toContain(
-      "You already have an agent with name",
-    );
+    // Try to create a second agent with the same name - should fail with conflict error
+    await expect(
+      rpcClient.user.createAgent({
+        name: agentName,
+        handle: "duplicateagent2",
+        description: agentDescription,
+      }),
+    ).rejects.toThrow(/You already have an agent with name/);
   });
 
   describe("User Agent API Key Access", () => {
     test("user can retrieve their own agent's API key", async () => {
-      // Create a Privy authenticated user client
-      const { client: userClient } = await createPrivyAuthenticatedClient({
+      const { rpcClient } = await createPrivyAuthenticatedRpcClient({
         userName: "API Key Test User",
         userEmail: "api-key-test@example.com",
       });
 
       // Create an agent for this user
-      const agentResponse = await createTestAgent(
-        userClient,
-        "Test Agent for API Key",
-        "Agent description for API key testing",
-      );
-      expect(agentResponse.success).toBe(true);
-      const agent = (agentResponse as AgentProfileResponse).agent;
+      const { agent } = await rpcClient.user.createAgent({
+        name: "Test Agent for API Key",
+        handle: "testapikey",
+        description: "Agent description for API key testing",
+      });
 
       // Get the agent's API key
-      const apiKeyResponse = await userClient.getUserAgentApiKey(agent.id);
-      expect(apiKeyResponse.success).toBe(true);
-
-      const keyData = apiKeyResponse as UserAgentApiKeyResponse;
+      const keyData = await rpcClient.user.getAgentApiKey({
+        agentId: agent.id,
+      });
       expect(keyData.agentId).toBe(agent.id);
       expect(keyData.agentName).toBe(agent.name);
       expect(keyData.apiKey).toBeDefined();
@@ -1070,129 +921,110 @@ describe("User API", () => {
 
     test("user cannot retrieve API key for agent they don't own", async () => {
       // Create two different users
-      const { client: user1Client } = await createPrivyAuthenticatedClient({
-        userName: "User 1",
-        userEmail: "user1-apikey@example.com",
-      });
+      const { rpcClient: user1RpcClient } =
+        await createPrivyAuthenticatedRpcClient({
+          userName: "User 1",
+          userEmail: "user1-apikey@example.com",
+        });
 
-      const { client: user2Client } = await createPrivyAuthenticatedClient({
-        userName: "User 2",
-        userEmail: "user2-apikey@example.com",
-      });
+      const { rpcClient: user2RpcClient } =
+        await createPrivyAuthenticatedRpcClient({
+          userName: "User 2",
+          userEmail: "user2-apikey@example.com",
+        });
 
       // User 1 creates an agent
-      const agentResponse = await createTestAgent(
-        user1Client,
-        "User 1 Agent",
-        "Agent owned by User 1",
-      );
-      expect(agentResponse.success).toBe(true);
-      const agent = (agentResponse as AgentProfileResponse).agent;
+      const { agent } = await user1RpcClient.user.createAgent({
+        name: "User 1 Agent",
+        handle: "user1keytest",
+        description: "Agent owned by User 1",
+      });
 
       // User 2 tries to get User 1's agent API key
-      const apiKeyResponse = await user2Client.getUserAgentApiKey(agent.id);
-      expect(apiKeyResponse.success).toBe(false);
-
-      const errorResponse = apiKeyResponse as ErrorResponse;
-      expect(errorResponse.status).toBe(403);
-      expect(errorResponse.error).toContain("Access denied");
+      await expect(
+        user2RpcClient.user.getAgentApiKey({ agentId: agent.id }),
+      ).rejects.toThrow(/Access denied/);
     });
 
     test("unauthenticated user cannot retrieve any agent API key", async () => {
       // Create an agent first
-      const { client: userClient } = await createPrivyAuthenticatedClient({
+      const { rpcClient } = await createPrivyAuthenticatedRpcClient({
         userName: "Agent Owner",
         userEmail: "agent-owner@example.com",
       });
 
-      const agentResponse = await createTestAgent(
-        userClient,
-        "Test Agent",
-        "Agent for unauthorized access test",
-      );
-      expect(agentResponse.success).toBe(true);
-      const agent = (agentResponse as AgentProfileResponse).agent;
+      const { agent } = await rpcClient.user.createAgent({
+        name: "Test Agent",
+        handle: "unauthtest",
+        description: "Agent for unauthorized access test",
+      });
 
-      // Create unauthenticated client
-      const unauthenticatedClient = createTestClient();
+      // Create unauthenticated RPC client (no Privy token)
+      const { createTestRpcClient } = await import(
+        "../utils/rpc-client-helpers.js"
+      );
+      const unauthenticatedRpcClient = await createTestRpcClient();
 
       // Try to get the agent's API key without authentication
-      const apiKeyResponse = await unauthenticatedClient.getUserAgentApiKey(
-        agent.id,
-      );
-      expect(apiKeyResponse.success).toBe(false);
-
-      const errorResponse = apiKeyResponse as ErrorResponse;
-      expect(errorResponse.status).toBe(401);
+      await expect(
+        unauthenticatedRpcClient.user.getAgentApiKey({ agentId: agent.id }),
+      ).rejects.toThrow(/Unauthorized|Authentication required/);
     });
 
     test("user gets 404 for non-existent agent API key", async () => {
-      // Create a Privy authenticated user client
-      const { client: userClient } = await createPrivyAuthenticatedClient({
+      const { rpcClient } = await createPrivyAuthenticatedRpcClient({
         userName: "404 Test User",
         userEmail: "404-test@example.com",
       });
 
       // Try to get API key for non-existent agent
       const fakeAgentId = "00000000-0000-0000-0000-000000000000";
-      const apiKeyResponse = await userClient.getUserAgentApiKey(fakeAgentId);
-      expect(apiKeyResponse.success).toBe(false);
-
-      const errorResponse = apiKeyResponse as ErrorResponse;
-      expect(errorResponse.status).toBe(404);
-      expect(errorResponse.error).toContain("Agent not found");
+      await expect(
+        rpcClient.user.getAgentApiKey({ agentId: fakeAgentId }),
+      ).rejects.toThrow(/Agent not found/);
     });
 
     test("user gets 400 for invalid agent ID format", async () => {
-      // Create a Privy authenticated user client
-      const { client: userClient } = await createPrivyAuthenticatedClient({
+      const { rpcClient } = await createPrivyAuthenticatedRpcClient({
         userName: "Invalid ID Test User",
         userEmail: "invalid-id-test@example.com",
       });
 
       // Try to get API key with invalid UUID format
       const invalidAgentId = "not-a-valid-uuid";
-      const apiKeyResponse =
-        await userClient.getUserAgentApiKey(invalidAgentId);
-      expect(apiKeyResponse.success).toBe(false);
-
-      const errorResponse = apiKeyResponse as ErrorResponse;
-      expect(errorResponse.status).toBe(400);
-      expect(errorResponse.error).toContain("Invalid request format");
+      await expect(
+        rpcClient.user.getAgentApiKey({ agentId: invalidAgentId }),
+      ).rejects.toThrow(/Input validation failed|Invalid/);
     });
 
     test("API key endpoint returns consistent format", async () => {
-      // Create a Privy authenticated user client
-      const { client: userClient } = await createPrivyAuthenticatedClient({
+      const { rpcClient } = await createPrivyAuthenticatedRpcClient({
         userName: "Format Test User",
         userEmail: "format-test@example.com",
       });
 
       // Create an agent
-      const agentResponse = await createTestAgent(
-        userClient,
-        "Format Test Agent",
-        "Agent for format consistency testing",
-      );
-      expect(agentResponse.success).toBe(true);
-      const agent = (agentResponse as AgentProfileResponse).agent;
+      const { agent } = await rpcClient.user.createAgent({
+        name: "Format Test Agent",
+        handle: "formattestagent",
+        description: "Agent for format consistency testing",
+      });
 
       // Get the agent's API key
-      const apiKeyResponse = await userClient.getUserAgentApiKey(agent.id);
-      expect(apiKeyResponse.success).toBe(true);
-
-      const keyData = apiKeyResponse as UserAgentApiKeyResponse;
+      const keyData = await rpcClient.user.getAgentApiKey({
+        agentId: agent.id,
+      });
 
       // Verify response structure
-      expect(keyData).toHaveProperty("success");
       expect(keyData).toHaveProperty("agentId");
       expect(keyData).toHaveProperty("agentName");
+      expect(keyData).toHaveProperty("agentHandle");
       expect(keyData).toHaveProperty("apiKey");
 
       // Verify types
-      expect(typeof keyData.success).toBe("boolean");
       expect(typeof keyData.agentId).toBe("string");
       expect(typeof keyData.agentName).toBe("string");
+      expect(typeof keyData.agentHandle).toBe("string");
       expect(typeof keyData.apiKey).toBe("string");
 
       // Verify values match agent data
@@ -1201,30 +1033,24 @@ describe("User API", () => {
     });
 
     test("retrieved API key works for agent authentication", async () => {
-      // Create a Privy authenticated user client
-      const { client: userClient } = await createPrivyAuthenticatedClient({
+      const { rpcClient } = await createPrivyAuthenticatedRpcClient({
         userName: "Auth Test User",
         userEmail: "auth-test@example.com",
       });
 
       // Create an agent
-      const agentResponse = await createTestAgent(
-        userClient,
-        "Auth Test Agent",
-        "Agent for authentication testing",
-      );
-      expect(agentResponse.success).toBe(true);
-      const agent = (agentResponse as AgentProfileResponse).agent;
+      const { agent } = await rpcClient.user.createAgent({
+        name: "Auth Test Agent",
+        handle: "authtestagent",
+        description: "Agent for authentication testing",
+      });
 
       // Get the agent's API key
-      const apiKeyResponse = await userClient.getUserAgentApiKey(agent.id);
-      expect(apiKeyResponse.success).toBe(true);
+      const keyData = await rpcClient.user.getAgentApiKey({
+        agentId: agent.id,
+      });
 
-      const keyData = apiKeyResponse as UserAgentApiKeyResponse;
-
-      // Create a new client using the retrieved API key
-      const adminClient = createTestClient();
-      await adminClient.loginAsAdmin(adminApiKey);
+      // Create an agent client using the retrieved API key
       const agentClient = adminClient.createAgentClient(keyData.apiKey);
 
       // Verify the agent client can authenticate and get its profile
@@ -1288,28 +1114,33 @@ describe("User API", () => {
   });
 
   test("user can get competitions for their agents with correct rank", async () => {
-    // Setup admin client
-    const adminClient = createTestClient();
-    await adminClient.loginAsAdmin(adminApiKey);
-
     // Register three agents
-    const { client: client1, agent: agent1 } =
-      await registerUserAndAgentAndGetClient({
-        adminApiKey,
-        agentName: "Agent One",
-      });
+    const {
+      rpcClient: rpcClient1,
+      agent: agent1,
+      client: agentClient1,
+    } = await registerUserAndAgentAndGetRpcClient({
+      adminApiKey,
+      agentName: "Agent One",
+    });
 
-    const { client: client2, agent: agent2 } =
-      await registerUserAndAgentAndGetClient({
-        adminApiKey,
-        agentName: "Agent Two",
-      });
+    const {
+      rpcClient: rpcClient2,
+      agent: agent2,
+      client: agentClient2,
+    } = await registerUserAndAgentAndGetRpcClient({
+      adminApiKey,
+      agentName: "Agent Two",
+    });
 
-    const { client: client3, agent: agent3 } =
-      await registerUserAndAgentAndGetClient({
-        adminApiKey,
-        agentName: "Agent Three",
-      });
+    const {
+      rpcClient: rpcClient3,
+      agent: agent3,
+      client: agentClient3,
+    } = await registerUserAndAgentAndGetRpcClient({
+      adminApiKey,
+      agentName: "Agent Three",
+    });
 
     // Create and start a competition with three agents
     const competitionName = `Ranking Test Competition ${Date.now()}`;
@@ -1326,108 +1157,94 @@ describe("User API", () => {
 
     // Make trades with different outcomes to create distinct rankings
     // Agent 1: Bad trade (loses most money) - should be ranked 3rd (worst)
-    await client1.executeTrade({
-      fromToken: config.specificChainTokens.eth.usdc,
+    await agentClient1.executeTrade({
+      fromToken: specificChainTokens.eth.usdc,
       toToken: "0x0000000000000000000000000000000000000000", // Zero address trade
       amount: "1000",
       reason: "Bad trade for Agent 1",
     });
 
     // Agent 2: Good trade (loses least money) - should be ranked 1st (best)
-    await client2.executeTrade({
-      fromToken: config.specificChainTokens.eth.usdc,
+    await agentClient2.executeTrade({
+      fromToken: specificChainTokens.eth.usdc,
       toToken: "0x0000000000000000000000000000000000000000",
       amount: "10",
       reason: "Good trade for Agent 2",
     });
 
     // Agent 3: Medium trade (loses some money) - should be ranked 2nd (middle)
-    await client3.executeTrade({
-      fromToken: config.specificChainTokens.eth.usdc,
+    await agentClient3.executeTrade({
+      fromToken: specificChainTokens.eth.usdc,
       toToken: "0x0000000000000000000000000000000000000000",
       amount: "100",
       reason: "Medium trade for Agent 3",
     });
 
     // Trigger portfolio snapshots
-    const services = new ServiceRegistry();
-    await services.portfolioSnapshotterService.takePortfolioSnapshots(
-      competition.id,
-    );
+    await portfolioSnapshotterService.takePortfolioSnapshots(competition.id);
 
     // Get agent competitions for each user
-    const response1 =
-      (await client1.getUserCompetitions()) as UserCompetitionsResponse;
+    const { competitions: comps1 } = await rpcClient1.user.getCompetitions({});
 
-    const response2 =
-      (await client2.getUserCompetitions()) as UserCompetitionsResponse;
+    const { competitions: comps2 } = await rpcClient2.user.getCompetitions({});
 
-    const response3 =
-      (await client3.getUserCompetitions()) as UserCompetitionsResponse;
+    const { competitions: comps3 } = await rpcClient3.user.getCompetitions({});
 
-    expect(response2.competitions[0]?.id).toBe(competition.id);
-    expect(response2.competitions[0]?.agents.length).toBe(1);
-    expect(response2.competitions[0]?.agents[0]?.id).toBe(agent2.id);
-    expect(response2.competitions[0]?.agents[0]?.rank).toBe(1);
+    expect(comps2[0]?.id).toBe(competition.id);
+    expect(comps2[0]?.agents.length).toBe(1);
+    expect(comps2[0]?.agents[0]?.id).toBe(agent2.id);
+    expect(comps2[0]?.agents[0]?.rank).toBe(1);
 
-    expect(response3.competitions[0]?.id).toBe(competition.id);
-    expect(response3.competitions[0]?.agents.length).toBe(1);
-    expect(response3.competitions[0]?.agents[0]?.id).toBe(agent3.id);
-    expect(response3.competitions[0]?.agents[0]?.rank).toBe(2);
+    expect(comps3[0]?.id).toBe(competition.id);
+    expect(comps3[0]?.agents.length).toBe(1);
+    expect(comps3[0]?.agents[0]?.id).toBe(agent3.id);
+    expect(comps3[0]?.agents[0]?.rank).toBe(2);
 
-    expect(response1.competitions[0]?.id).toBe(competition.id);
-    expect(response1.competitions[0]?.agents.length).toBe(1);
-    expect(response1.competitions[0]?.agents[0]?.id).toBe(agent1.id);
-    expect(response1.competitions[0]?.agents[0]?.rank).toBe(3);
+    expect(comps1[0]?.id).toBe(competition.id);
+    expect(comps1[0]?.agents.length).toBe(1);
+    expect(comps1[0]?.agents[0]?.id).toBe(agent1.id);
+    expect(comps1[0]?.agents[0]?.rank).toBe(3);
   });
 
   describe("User Competitions Sorting and Pagination", () => {
     test("user competitions throw 400 error for invalid sort fields", async () => {
       // Create a user with agent
-      const { client: userClient } = await createPrivyAuthenticatedClient({
+      const { rpcClient } = await createPrivyAuthenticatedRpcClient({
         userName: "Invalid Sort Test User",
         userEmail: "invalid-sort-test@example.com",
       });
 
       // Test valid sort fields that should work now
-      const validSortResponse = await userClient.getUserCompetitions({
+      const validSortResult = await rpcClient.user.getCompetitions({
         sort: "agentName",
       });
-      expect(validSortResponse.success).toBe(true);
+      expect(validSortResult).toBeDefined();
 
-      const validRankSortResponse = await userClient.getUserCompetitions({
+      const validRankSortResult = await rpcClient.user.getCompetitions({
         sort: "-rank",
       });
-      expect(validRankSortResponse.success).toBe(true);
+      expect(validRankSortResult).toBeDefined();
 
       // Test actually invalid sort field that should still fail
-      const invalidSortResponse = await userClient.getUserCompetitions({
-        sort: "invalidFieldName",
-      });
-      expect(invalidSortResponse.success).toBe(false);
-      expect((invalidSortResponse as ErrorResponse).status).toBe(400);
-      expect((invalidSortResponse as ErrorResponse).error).toContain(
-        "cannot sort by field",
-      );
+      await expect(
+        rpcClient.user.getCompetitions({
+          sort: "invalidFieldName",
+        }),
+      ).rejects.toThrow(/cannot sort by field/);
     });
 
     test("user competitions hasMore calculation is accurate", async () => {
-      const adminClient = createTestClient();
-      await adminClient.loginAsAdmin(adminApiKey);
-
       // Create a user with agent
-      const { client: userClient } = await createPrivyAuthenticatedClient({
+      const { rpcClient } = await createPrivyAuthenticatedRpcClient({
         userName: "HasMore Test User",
         userEmail: "hasmore-test@example.com",
       });
 
-      const agentResponse = await createTestAgent(
-        userClient,
-        "HasMore Test Agent",
-        "Agent for hasMore testing",
-      );
-      expect(agentResponse.success).toBe(true);
-      const agent = (agentResponse as AgentProfileResponse).agent;
+      const { agent } = await rpcClient.user.createAgent({
+        name: "HasMore Test Agent",
+        handle: "hasmoretest",
+        description: "Agent for hasMore testing",
+      });
 
       // Create exactly 5 competitions
       for (let i = 0; i < 5; i++) {
@@ -1437,59 +1254,46 @@ describe("User API", () => {
         });
         expect(createResponse.success).toBe(true);
         const createCompResponse = createResponse as CreateCompetitionResponse;
-        await userClient.joinCompetition(
-          createCompResponse.competition.id,
-          agent.id,
-        );
+        await rpcClient.competitions.join({
+          competitionId: createCompResponse.competition.id,
+          agentId: agent.id,
+        });
       }
 
       // Test scenario where hasMore should be true
-      const page1Response = await userClient.getUserCompetitions({
+      const page1Result = await rpcClient.user.getCompetitions({
         limit: 3,
         offset: 0,
       });
-      expect(page1Response.success).toBe(true);
-      expect(
-        (page1Response as UserCompetitionsResponse).pagination.hasMore,
-      ).toBe(true);
+      expect(page1Result.pagination.hasMore).toBe(true);
       // 0 + 3 < 5 = true
 
       // Test scenario where hasMore should be false
-      const page2Response = await userClient.getUserCompetitions({
+      const page2Result = await rpcClient.user.getCompetitions({
         limit: 3,
         offset: 3,
       });
-      expect(page2Response.success).toBe(true);
-      expect(
-        (page2Response as UserCompetitionsResponse).pagination.hasMore,
-      ).toBe(false);
+      expect(page2Result.pagination.hasMore).toBe(false);
       // 3 + 3 >= 5 = false (even though we only get 2 items back)
 
       // Verify the returned count matches what we expect
-      const page2Comps = (page2Response as UserCompetitionsResponse)
-        .competitions;
-      expect(page2Comps.length).toBe(2); // Only 2 competitions left (5 - 3 = 2)
+      expect(page2Result.competitions.length).toBe(2); // Only 2 competitions left (5 - 3 = 2)
     });
 
     test("user competitions pagination handles offset beyond total", async () => {
       // Create a user with agent and limited competitions
-      const { client: userClient } = await createPrivyAuthenticatedClient({
+      const { rpcClient } = await createPrivyAuthenticatedRpcClient({
         userName: "Offset Edge Test User",
         userEmail: "offset-edge-test@example.com",
       });
 
-      const agentResponse = await createTestAgent(
-        userClient,
-        "Offset Edge Test Agent",
-        "Agent for offset edge tests",
-      );
-      expect(agentResponse.success).toBe(true);
-      const agent = (agentResponse as AgentProfileResponse).agent;
+      const { agent } = await rpcClient.user.createAgent({
+        name: "Offset Edge Test Agent",
+        handle: "offsetedgetest",
+        description: "Agent for offset edge tests",
+      });
 
       // Create only 2 competitions
-      const adminClient = createTestClient();
-      await adminClient.loginAsAdmin(adminApiKey);
-
       for (let i = 0; i < 2; i++) {
         const createResponse = await adminClient.createCompetition({
           name: `Edge Test Competition ${i}`,
@@ -1497,43 +1301,33 @@ describe("User API", () => {
         });
         expect(createResponse.success).toBe(true);
         const createCompResponse = createResponse as CreateCompetitionResponse;
-        await userClient.joinCompetition(
-          createCompResponse.competition.id,
-          agent.id,
-        );
+        await rpcClient.competitions.join({
+          competitionId: createCompResponse.competition.id,
+          agentId: agent.id,
+        });
       }
 
       // Test offset beyond total (should return empty array)
-      const beyondTotalResponse = await userClient.getUserCompetitions({
+      const beyondTotalResult = await rpcClient.user.getCompetitions({
         offset: 10,
         limit: 5,
       });
-      expect(beyondTotalResponse.success).toBe(true);
-      const beyondComps = (beyondTotalResponse as UserCompetitionsResponse)
-        .competitions;
-      expect(beyondComps.length).toBe(0);
-      expect(
-        (beyondTotalResponse as UserCompetitionsResponse).pagination.hasMore,
-      ).toBe(false);
+      expect(beyondTotalResult.competitions.length).toBe(0);
+      expect(beyondTotalResult.pagination.hasMore).toBe(false);
     });
 
     test("user competitions valid sort fields work correctly", async () => {
       // Test that the currently supported sort fields work as expected
-      const adminClient = createTestClient();
-      await adminClient.loginAsAdmin(adminApiKey);
-
-      const { client: userClient } = await createPrivyAuthenticatedClient({
+      const { rpcClient } = await createPrivyAuthenticatedRpcClient({
         userName: "Valid Sort Test User",
         userEmail: "valid-sort-test@example.com",
       });
 
-      const agentResponse = await createTestAgent(
-        userClient,
-        "Valid Sort Test Agent",
-        "Agent for valid sort testing",
-      );
-      expect(agentResponse.success).toBe(true);
-      const agent = (agentResponse as AgentProfileResponse).agent;
+      const { agent } = await rpcClient.user.createAgent({
+        name: "Valid Sort Test Agent",
+        handle: "validsorttest",
+        description: "Agent for valid sort testing",
+      });
 
       // Create competitions with predictable names for sorting
       const firstComp = "Alpha Competition";
@@ -1548,7 +1342,10 @@ describe("User API", () => {
       const competitionIdForFirstComp = (
         create1Response as CreateCompetitionResponse
       ).competition.id;
-      await userClient.joinCompetition(competitionIdForFirstComp, agent.id);
+      await rpcClient.competitions.join({
+        competitionId: competitionIdForFirstComp,
+        agentId: agent.id,
+      });
       await wait(50);
 
       const create2Response = await adminClient.createCompetition({
@@ -1558,7 +1355,10 @@ describe("User API", () => {
       expect(create2Response.success).toBe(true);
       const createCompResponse2 = create2Response as CreateCompetitionResponse;
       const competitionIdForSecondComp = createCompResponse2.competition.id;
-      await userClient.joinCompetition(competitionIdForSecondComp, agent.id);
+      await rpcClient.competitions.join({
+        competitionId: competitionIdForSecondComp,
+        agentId: agent.id,
+      });
       await wait(50);
 
       const create3Response = await adminClient.createCompetition({
@@ -1569,7 +1369,10 @@ describe("User API", () => {
       const competitionIdForThirdComp = (
         create3Response as CreateCompetitionResponse
       ).competition.id;
-      await userClient.joinCompetition(competitionIdForThirdComp, agent.id);
+      await rpcClient.competitions.join({
+        competitionId: competitionIdForThirdComp,
+        agentId: agent.id,
+      });
       await wait(50);
 
       // Start/end the first competition, start/end the second competition, and keep the third pending
@@ -1589,35 +1392,29 @@ describe("User API", () => {
       expect(startCompResponse2.success).toBe(true);
 
       // Test name ascending sort (should work)
-      const nameAscResponse = await userClient.getUserCompetitions({
-        sort: "name",
-      });
-      expect(nameAscResponse.success).toBe(true);
-      const nameAscComps = (nameAscResponse as UserCompetitionsResponse)
-        .competitions;
+      const { competitions: nameAscComps } =
+        await rpcClient.user.getCompetitions({
+          sort: "name",
+        });
       expect(nameAscComps.length).toBe(3);
       expect(nameAscComps[0]?.name).toBe("Alpha Competition");
       expect(nameAscComps[1]?.name).toBe("Beta Competition");
       expect(nameAscComps[2]?.name).toBe("Charlie Competition");
 
       // Test createdAt descending sort (should work)
-      const createdDescResponse = await userClient.getUserCompetitions({
-        sort: "-createdAt",
-      });
-      expect(createdDescResponse.success).toBe(true);
-      const createdDescComps = (createdDescResponse as UserCompetitionsResponse)
-        .competitions;
+      const { competitions: createdDescComps } =
+        await rpcClient.user.getCompetitions({
+          sort: "-createdAt",
+        });
       expect(createdDescComps.length).toBe(3);
       // Newest first should be "Charlie Competition" (created last)
       expect(createdDescComps[0]?.name).toBe("Charlie Competition");
 
       // Sort by status ascending
-      const statusResponse = await userClient.getUserCompetitions({
-        sort: "status",
-      });
-      expect(statusResponse.success).toBe(true);
-      const statusAgents = (statusResponse as UserCompetitionsResponse)
-        .competitions;
+      const { competitions: statusAgents } =
+        await rpcClient.user.getCompetitions({
+          sort: "status",
+        });
       expect(statusAgents).toHaveLength(3);
       // The `competition` status should be in order
       expect(statusAgents[0]?.status).toBe("pending");
@@ -1625,12 +1422,10 @@ describe("User API", () => {
       expect(statusAgents[2]?.status).toBe("ended");
 
       // Sort by status descending
-      const statusDescResponse = await userClient.getUserCompetitions({
-        sort: "-status",
-      });
-      expect(statusDescResponse.success).toBe(true);
-      const statusDescAgents = (statusDescResponse as UserCompetitionsResponse)
-        .competitions;
+      const { competitions: statusDescAgents } =
+        await rpcClient.user.getCompetitions({
+          sort: "-status",
+        });
       expect(statusDescAgents).toHaveLength(3);
       // The `competition` status should be in order
       expect(statusDescAgents[0]?.status).toBe("ended");
@@ -1640,21 +1435,16 @@ describe("User API", () => {
 
     test("user competitions correct sort format works", async () => {
       // Test the CORRECT format that the API expects: "fieldName" and "-fieldName"
-      const adminClient = createTestClient();
-      await adminClient.loginAsAdmin(adminApiKey);
-
-      const { client: userClient } = await createPrivyAuthenticatedClient({
+      const { rpcClient } = await createPrivyAuthenticatedRpcClient({
         userName: "Correct Format Test User",
         userEmail: "correct-format-test@example.com",
       });
 
-      const agentResponse = await createTestAgent(
-        userClient,
-        "Correct Format Test Agent",
-        "Agent for correct format testing",
-      );
-      expect(agentResponse.success).toBe(true);
-      const agent = (agentResponse as AgentProfileResponse).agent;
+      const { agent } = await rpcClient.user.createAgent({
+        name: "Correct Format Test Agent",
+        handle: "correctfmttest",
+        description: "Agent for correct format testing",
+      });
 
       // Create competitions with predictable names
       const competitionNames = [
@@ -1670,57 +1460,49 @@ describe("User API", () => {
         });
         expect(createResponse.success).toBe(true);
         const createCompResponse = createResponse as CreateCompetitionResponse;
-        await userClient.joinCompetition(
-          createCompResponse.competition.id,
-          agent.id,
-        );
+        await rpcClient.competitions.join({
+          competitionId: createCompResponse.competition.id,
+          agentId: agent.id,
+        });
 
         // Small delay to ensure different timestamps
         await wait(50);
       }
 
       // Test correct format: name ascending (no prefix)
-      const nameAscResponse = await userClient.getUserCompetitions({
-        sort: "name",
-      });
-      expect(nameAscResponse.success).toBe(true);
-      const nameAscComps = (nameAscResponse as UserCompetitionsResponse)
-        .competitions;
+      const { competitions: nameAscComps } =
+        await rpcClient.user.getCompetitions({
+          sort: "name",
+        });
       expect(nameAscComps.length).toBe(3);
       expect(nameAscComps[0]?.name).toBe("Alpha Competition");
       expect(nameAscComps[1]?.name).toBe("Beta Competition");
       expect(nameAscComps[2]?.name).toBe("Zebra Competition");
 
       // Test correct format: name descending (minus prefix)
-      const nameDescResponse = await userClient.getUserCompetitions({
-        sort: "-name",
-      });
-      expect(nameDescResponse.success).toBe(true);
-      const nameDescComps = (nameDescResponse as UserCompetitionsResponse)
-        .competitions;
+      const { competitions: nameDescComps } =
+        await rpcClient.user.getCompetitions({
+          sort: "-name",
+        });
       expect(nameDescComps.length).toBe(3);
       expect(nameDescComps[0]?.name).toBe("Zebra Competition");
       expect(nameDescComps[1]?.name).toBe("Beta Competition");
       expect(nameDescComps[2]?.name).toBe("Alpha Competition");
 
       // Test correct format: createdAt ascending
-      const createdAscResponse = await userClient.getUserCompetitions({
-        sort: "createdAt",
-      });
-      expect(createdAscResponse.success).toBe(true);
-      const createdAscComps = (createdAscResponse as UserCompetitionsResponse)
-        .competitions;
+      const { competitions: createdAscComps } =
+        await rpcClient.user.getCompetitions({
+          sort: "createdAt",
+        });
       expect(createdAscComps.length).toBe(3);
       // Oldest first should be "Zebra Competition" (created first)
       expect(createdAscComps[0]?.name).toBe("Zebra Competition");
 
       // Test correct format: createdAt descending
-      const createdDescResponse = await userClient.getUserCompetitions({
-        sort: "-createdAt",
-      });
-      expect(createdDescResponse.success).toBe(true);
-      const createdDescComps = (createdDescResponse as UserCompetitionsResponse)
-        .competitions;
+      const { competitions: createdDescComps } =
+        await rpcClient.user.getCompetitions({
+          sort: "-createdAt",
+        });
       expect(createdDescComps.length).toBe(3);
       // Newest first should be "Beta Competition" (created last)
       expect(createdDescComps[0]?.name).toBe("Beta Competition");
@@ -1728,21 +1510,16 @@ describe("User API", () => {
 
     test("user competitions multiple sort fields work correctly", async () => {
       // Test multiple sort fields using the correct format: "field1,field2,-field3"
-      const adminClient = createTestClient();
-      await adminClient.loginAsAdmin(adminApiKey);
-
-      const { client: userClient } = await createPrivyAuthenticatedClient({
+      const { rpcClient } = await createPrivyAuthenticatedRpcClient({
         userName: "Multiple Sort Test User",
         userEmail: "multiple-sort-test@example.com",
       });
 
-      const agentResponse = await createTestAgent(
-        userClient,
-        "Multiple Sort Test Agent",
-        "Agent for multiple sort testing",
-      );
-      expect(agentResponse.success).toBe(true);
-      const agent = (agentResponse as AgentProfileResponse).agent;
+      const { agent } = await rpcClient.user.createAgent({
+        name: "Multiple Sort Test Agent",
+        handle: "multisorttest",
+        description: "Agent for multiple sort testing",
+      });
 
       // Create competitions with same names but different timestamps to test multi-field sorting
       const competitionData = [
@@ -1758,23 +1535,20 @@ describe("User API", () => {
         });
         expect(createResponse.success).toBe(true);
         const createCompResponse = createResponse as CreateCompetitionResponse;
-        await userClient.joinCompetition(
-          createCompResponse.competition.id,
-          agent.id,
-        );
+        await rpcClient.competitions.join({
+          competitionId: createCompResponse.competition.id,
+          agentId: agent.id,
+        });
 
         // Controlled delay to ensure different timestamps
         await wait(comp.delay);
       }
 
       // Test multiple sort fields: name ascending, then createdAt descending
-      const multipleSortResponse = await userClient.getUserCompetitions({
-        sort: "name,-createdAt",
-      });
-      expect(multipleSortResponse.success).toBe(true);
-      const multipleSortComps = (
-        multipleSortResponse as UserCompetitionsResponse
-      ).competitions;
+      const { competitions: multipleSortComps } =
+        await rpcClient.user.getCompetitions({
+          sort: "name,-createdAt",
+        });
       expect(multipleSortComps.length).toBe(3);
 
       // Should be sorted by name first (Alpha, Alpha, Beta),
@@ -1797,10 +1571,7 @@ describe("User API", () => {
 
     test("user competitions agentName sorting works correctly", async () => {
       // Test the new agentName computed sort field
-      const adminClient = createTestClient();
-      await adminClient.loginAsAdmin(adminApiKey);
-
-      const { client: userClient } = await createPrivyAuthenticatedClient({
+      const { rpcClient } = await createPrivyAuthenticatedRpcClient({
         userName: "AgentName Sort Test User",
         userEmail: "agentname-sort-test@example.com",
       });
@@ -1810,13 +1581,12 @@ describe("User API", () => {
       const agents = [];
 
       for (const name of agentNames) {
-        const agentResponse = await createTestAgent(
-          userClient,
+        const { agent } = await rpcClient.user.createAgent({
           name,
-          `Description for ${name}`,
-        );
-        expect(agentResponse.success).toBe(true);
-        agents.push((agentResponse as AgentProfileResponse).agent);
+          handle: name.toLowerCase().replace(/\s+/g, ""),
+          description: `Description for ${name}`,
+        });
+        agents.push(agent);
       }
 
       // Create competitions and have different agents join different competitions
@@ -1832,20 +1602,20 @@ describe("User API", () => {
         competitions.push(competition);
 
         // Each competition gets a different agent (to test primary agent name sorting)
-        await userClient.joinCompetition(competition.id, agents[i]!.id);
+        await rpcClient.competitions.join({
+          competitionId: competition.id,
+          agentId: agents[i]!.id,
+        });
 
         // Small delay to ensure different timestamps
         await wait(50);
       }
 
       // Test agentName ascending sort (should work now!)
-      const agentNameAscResponse = await userClient.getUserCompetitions({
-        sort: "agentName",
-      });
-      expect(agentNameAscResponse.success).toBe(true);
-      const agentNameAscComps = (
-        agentNameAscResponse as UserCompetitionsResponse
-      ).competitions;
+      const { competitions: agentNameAscComps } =
+        await rpcClient.user.getCompetitions({
+          sort: "agentName",
+        });
       expect(agentNameAscComps.length).toBe(3);
 
       // Verify sorting by primary agent name (alphabetically first)
@@ -1855,13 +1625,10 @@ describe("User API", () => {
       expect(agentNameAscComps[2]?.agents?.[0]?.name).toBe("Zebra Agent");
 
       // Test agentName descending sort
-      const agentNameDescResponse = await userClient.getUserCompetitions({
-        sort: "-agentName",
-      });
-      expect(agentNameDescResponse.success).toBe(true);
-      const agentNameDescComps = (
-        agentNameDescResponse as UserCompetitionsResponse
-      ).competitions;
+      const { competitions: agentNameDescComps } =
+        await rpcClient.user.getCompetitions({
+          sort: "-agentName",
+        });
       expect(agentNameDescComps.length).toBe(3);
 
       // Should be: Zebra Agent, Beta Agent, Alpha Agent
@@ -1872,19 +1639,20 @@ describe("User API", () => {
 
     test("user competitions rank sorting works correctly", async () => {
       // Test rank sorting with 3 users each having 1 agent in same competition with different ranks
-      const adminClient = createTestClient();
-      await adminClient.loginAsAdmin(adminApiKey);
-
       // Create 3 users, each with 1 agent
       const userAgents = [];
       for (let i = 1; i <= 3; i++) {
-        const { client, agent } = await registerUserAndAgentAndGetClient({
+        const {
+          rpcClient,
+          agent,
+          client: agentClient,
+        } = await registerUserAndAgentAndGetRpcClient({
           adminApiKey,
           userName: `Rank Test User ${i}`,
           userEmail: `rank-test-user${i}@example.com`,
           agentName: `Rank Agent ${i}`,
         });
-        userAgents.push({ client, agent });
+        userAgents.push({ rpcClient, agent, agentClient });
       }
 
       // Create two competitions
@@ -1903,24 +1671,24 @@ describe("User API", () => {
       const comp2 = comp2Response.competition;
 
       // All agents join first competition
-      await userAgents[0]!.client.joinCompetition(
-        comp1.id,
-        userAgents[0]!.agent.id,
-      );
-      await userAgents[1]!.client.joinCompetition(
-        comp1.id,
-        userAgents[1]!.agent.id,
-      );
-      await userAgents[2]!.client.joinCompetition(
-        comp1.id,
-        userAgents[2]!.agent.id,
-      );
+      await userAgents[0]!.rpcClient.competitions.join({
+        competitionId: comp1.id,
+        agentId: userAgents[0]!.agent.id,
+      });
+      await userAgents[1]!.rpcClient.competitions.join({
+        competitionId: comp1.id,
+        agentId: userAgents[1]!.agent.id,
+      });
+      await userAgents[2]!.rpcClient.competitions.join({
+        competitionId: comp1.id,
+        agentId: userAgents[2]!.agent.id,
+      });
 
       // First agent also joins second competition
-      await userAgents[0]!.client.joinCompetition(
-        comp2.id,
-        userAgents[0]!.agent.id,
-      );
+      await userAgents[0]!.rpcClient.competitions.join({
+        competitionId: comp2.id,
+        agentId: userAgents[0]!.agent.id,
+      });
 
       // Start first competition and create ranking differences
       await startExistingTestCompetition({
@@ -1933,43 +1701,21 @@ describe("User API", () => {
         ],
       });
 
-      // Get agent API keys for trading
-      const agent1KeyResponse = await userAgents[0]!.client.getUserAgentApiKey(
-        userAgents[0]!.agent.id,
-      );
-      expect(agent1KeyResponse.success).toBe(true);
-      const agent1Client = new ApiClient(
-        (agent1KeyResponse as UserAgentApiKeyResponse).apiKey,
-      );
-
-      const agent2KeyResponse = await userAgents[1]!.client.getUserAgentApiKey(
-        userAgents[1]!.agent.id,
-      );
-      expect(agent2KeyResponse.success).toBe(true);
-      const agent2Client = new ApiClient(
-        (agent2KeyResponse as UserAgentApiKeyResponse).apiKey,
-      );
-
-      const agent3KeyResponse = await userAgents[2]!.client.getUserAgentApiKey(
-        userAgents[2]!.agent.id,
-      );
-      expect(agent3KeyResponse.success).toBe(true);
-      const agent3Client = new ApiClient(
-        (agent3KeyResponse as UserAgentApiKeyResponse).apiKey,
-      );
-
+      const agent1Client = userAgents[0]!.agentClient;
+      const agent2Client = userAgents[1]!.agentClient;
+      const agent3Client = userAgents[2]!.agentClient;
       // Create ranking differences using burn address pattern
       // Agent 1: Small loss (best rank)
       await agent1Client.executeTrade({
-        fromToken: config.specificChainTokens.eth.usdc,
-        toToken: config.specificChainTokens.eth.eth, // ETH - should maintain/increase value
+        fromToken: specificChainTokens.eth.usdc,
+        toToken: specificChainTokens.eth.eth, // ETH - should maintain/increase value
         amount: "50",
         reason: "Agent 1 small trade - USDC to ETH",
       });
 
       // Agent 2: Medium loss (middle rank)
       await agent2Client.executeTrade({
-        fromToken: config.specificChainTokens.eth.usdc,
+        fromToken: specificChainTokens.eth.usdc,
         toToken: "0x000000000000000000000000000000000000dead", // Burn - bad trade
         amount: "25",
         reason: "Agent 2 bad trade - burning tokens",
@@ -1977,7 +1723,7 @@ describe("User API", () => {
 
       // Agent 3: Large loss (worst rank)
       await agent3Client.executeTrade({
-        fromToken: config.specificChainTokens.eth.usdc,
+        fromToken: specificChainTokens.eth.usdc,
         toToken: "0x000000000000000000000000000000000000dead", // Burn address
         amount: "50",
         reason: "Agent 3 terrible trade - burning large amount",
@@ -1995,12 +1741,10 @@ describe("User API", () => {
       await wait(2000);
 
       // Test rank ascending sort from first user's perspective (best ranks first)
-      const rankAscResponse = await userAgents[0]!.client.getUserCompetitions({
-        sort: "rank",
-      });
-      expect(rankAscResponse.success).toBe(true);
-      const rankAscComps = (rankAscResponse as UserCompetitionsResponse)
-        .competitions;
+      const { competitions: rankAscComps } =
+        await userAgents[0]!.rpcClient.user.getCompetitions({
+          sort: "rank",
+        });
       expect(rankAscComps.length).toBe(2);
 
       // Find competitions by name
@@ -2019,12 +1763,10 @@ describe("User API", () => {
       expect(singleAgentComp!.agents?.[0]?.rank).toBe(1);
 
       // Test rank descending sort
-      const rankDescResponse = await userAgents[0]!.client.getUserCompetitions({
-        sort: "-rank",
-      });
-      expect(rankDescResponse.success).toBe(true);
-      const rankDescComps = (rankDescResponse as UserCompetitionsResponse)
-        .competitions;
+      const { competitions: rankDescComps } =
+        await userAgents[0]!.rpcClient.user.getCompetitions({
+          sort: "-rank",
+        });
       expect(rankDescComps.length).toBe(2);
 
       // Order should be reversed, but ranks should be the same
@@ -2038,22 +1780,16 @@ describe("User API", () => {
       expect(singleAgentCompDesc!.agents?.[0]?.rank).toBe(1);
 
       // Verify second user has rank 2 in the competition
-      const user2CompsResponse =
-        await userAgents[1]!.client.getUserCompetitions({});
-      expect(user2CompsResponse.success).toBe(true);
-      const user2Comps = (user2CompsResponse as UserCompetitionsResponse)
-        .competitions;
+      const { competitions: user2Comps } =
+        await userAgents[1]!.rpcClient.user.getCompetitions({});
       const user2Comp1 = user2Comps.find(
         (c) => c.name === "Multi-Agent Competition",
       );
       expect(user2Comp1!.agents?.[0]?.rank).toBe(2);
 
       // Verify third user has rank 3
-      const user3CompsResponse =
-        await userAgents[2]!.client.getUserCompetitions({});
-      expect(user3CompsResponse.success).toBe(true);
-      const user3Comps = (user3CompsResponse as UserCompetitionsResponse)
-        .competitions;
+      const { competitions: user3Comps } =
+        await userAgents[2]!.rpcClient.user.getCompetitions({});
       const user3Comp1 = user3Comps.find(
         (c) => c.name === "Multi-Agent Competition",
       );
@@ -2062,21 +1798,16 @@ describe("User API", () => {
 
     test("user competitions rank sorting with undefined ranks", async () => {
       // Test rank sorting when some competitions have no ranking data
-      const adminClient = createTestClient();
-      await adminClient.loginAsAdmin(adminApiKey);
-
-      const { client: userClient } = await createPrivyAuthenticatedClient({
+      const { rpcClient } = await createPrivyAuthenticatedRpcClient({
         userName: "Undefined Rank Test User",
         userEmail: "undefined-rank-test@example.com",
       });
 
-      const agentResponse = await createTestAgent(
-        userClient,
-        "Undefined Rank Test Agent",
-        "Agent for testing undefined rank handling",
-      );
-      expect(agentResponse.success).toBe(true);
-      const agent = (agentResponse as AgentProfileResponse).agent;
+      const { agent } = await rpcClient.user.createAgent({
+        name: "Undefined Rank Test Agent",
+        handle: "undefranktest",
+        description: "Agent for testing undefined rank handling",
+      });
 
       // Create one started competition (will have rank) and one unstarted (no rank)
       const startedCompResponse = await createTestCompetition({
@@ -2094,8 +1825,14 @@ describe("User API", () => {
       const unstartedComp = unstartedCompResponse.competition;
 
       // Join both competitions
-      await userClient.joinCompetition(startedComp.id, agent.id);
-      await userClient.joinCompetition(unstartedComp.id, agent.id);
+      await rpcClient.competitions.join({
+        competitionId: startedComp.id,
+        agentId: agent.id,
+      });
+      await rpcClient.competitions.join({
+        competitionId: unstartedComp.id,
+        agentId: agent.id,
+      });
 
       // Start only one competition
       await startExistingTestCompetition({
@@ -2106,12 +1843,10 @@ describe("User API", () => {
       await wait(1000);
 
       // Test rank ascending sort - competitions with undefined ranks should go to end
-      const rankSortResponse = await userClient.getUserCompetitions({
-        sort: "rank",
-      });
-      expect(rankSortResponse.success).toBe(true);
-      const rankSortComps = (rankSortResponse as UserCompetitionsResponse)
-        .competitions;
+      const { competitions: rankSortComps } =
+        await rpcClient.user.getCompetitions({
+          sort: "rank",
+        });
       expect(rankSortComps.length).toBe(2);
 
       // First competition should be the one with valid rank
@@ -2125,62 +1860,54 @@ describe("User API", () => {
 
     test("user competitions new sort fields validation", async () => {
       // Test that the new sort fields are properly validated
-      const { client: userClient } = await createPrivyAuthenticatedClient({
+      const { rpcClient } = await createPrivyAuthenticatedRpcClient({
         userName: "New Sort Validation User",
         userEmail: "new-sort-validation@example.com",
       });
 
       // Test that agentName is now a valid sort field (should not throw 400)
-      const agentNameResponse = await userClient.getUserCompetitions({
+      const agentNameResult = await rpcClient.user.getCompetitions({
         sort: "agentName",
       });
-      expect(agentNameResponse.success).toBe(true);
+      expect(agentNameResult).toBeDefined();
 
       // Test that rank is now a valid sort field (should not throw 400)
-      const rankResponse = await userClient.getUserCompetitions({
+      const rankResult = await rpcClient.user.getCompetitions({
         sort: "rank",
       });
-      expect(rankResponse.success).toBe(true);
+      expect(rankResult).toBeDefined();
 
       // Test that descending variants work
-      const agentNameDescResponse = await userClient.getUserCompetitions({
+      const agentNameDescResult = await rpcClient.user.getCompetitions({
         sort: "-agentName",
       });
-      expect(agentNameDescResponse.success).toBe(true);
+      expect(agentNameDescResult).toBeDefined();
 
-      const rankDescResponse = await userClient.getUserCompetitions({
+      const rankDescResult = await rpcClient.user.getCompetitions({
         sort: "-rank",
       });
-      expect(rankDescResponse.success).toBe(true);
+      expect(rankDescResult).toBeDefined();
 
       // Test that invalid sort fields still throw 400
-      const invalidResponse = await userClient.getUserCompetitions({
-        sort: "invalidField",
-      });
-      expect(invalidResponse.success).toBe(false);
-      expect((invalidResponse as ErrorResponse).status).toBe(400);
-      expect((invalidResponse as ErrorResponse).error).toContain(
-        "cannot sort by field",
-      );
+      await expect(
+        rpcClient.user.getCompetitions({
+          sort: "invalidField",
+        }),
+      ).rejects.toThrow(/cannot sort by field/);
     });
 
     test("user competitions combined sort with new fields", async () => {
       // Test combining new computed sort fields with existing database fields
-      const adminClient = createTestClient();
-      await adminClient.loginAsAdmin(adminApiKey);
-
-      const { client: userClient } = await createPrivyAuthenticatedClient({
+      const { rpcClient } = await createPrivyAuthenticatedRpcClient({
         userName: "Combined Sort Test User",
         userEmail: "combined-sort-test@example.com",
       });
 
-      const agentResponse = await createTestAgent(
-        userClient,
-        "Combined Sort Test Agent",
-        "Agent for combined sort testing",
-      );
-      expect(agentResponse.success).toBe(true);
-      const agent = (agentResponse as AgentProfileResponse).agent;
+      const { agent } = await rpcClient.user.createAgent({
+        name: "Combined Sort Test Agent",
+        handle: "combsorttest",
+        description: "Agent for combined sort testing",
+      });
 
       // Create competitions with same agent names but different creation times
       for (let i = 0; i < 3; i++) {
@@ -2191,7 +1918,10 @@ describe("User API", () => {
         expect(createResponse.success).toBe(true);
         const competition = (createResponse as CreateCompetitionResponse)
           .competition;
-        await userClient.joinCompetition(competition.id, agent.id);
+        await rpcClient.competitions.join({
+          competitionId: competition.id,
+          agentId: agent.id,
+        });
 
         // Controlled delay for predictable timestamps
         await wait(100);
@@ -2199,12 +1929,10 @@ describe("User API", () => {
 
       // Test combined sort: agentName ascending, then createdAt descending
       // Since all have same agent, should sort by createdAt desc as secondary
-      const combinedResponse = await userClient.getUserCompetitions({
-        sort: "agentName,-createdAt",
-      });
-      expect(combinedResponse.success).toBe(true);
-      const combinedComps = (combinedResponse as UserCompetitionsResponse)
-        .competitions;
+      const { competitions: combinedComps } =
+        await rpcClient.user.getCompetitions({
+          sort: "agentName,-createdAt",
+        });
       expect(combinedComps.length).toBe(3);
 
       // Verify newest competition comes first (since agentName is same for all)
@@ -2215,10 +1943,7 @@ describe("User API", () => {
 
     test("user competitions agentName sorting with pagination", async () => {
       // Test pagination with agentName computed sorting
-      const adminClient = createTestClient();
-      await adminClient.loginAsAdmin(adminApiKey);
-
-      const { client: userClient } = await createPrivyAuthenticatedClient({
+      const { rpcClient } = await createPrivyAuthenticatedRpcClient({
         userName: "AgentName Pagination Test User",
         userEmail: "agentname-pagination-test@example.com",
       });
@@ -2234,13 +1959,12 @@ describe("User API", () => {
       const agents = [];
 
       for (const name of agentNames) {
-        const agentResponse = await createTestAgent(
-          userClient,
+        const { agent } = await rpcClient.user.createAgent({
           name,
-          `Description for ${name}`,
-        );
-        expect(agentResponse.success).toBe(true);
-        agents.push((agentResponse as AgentProfileResponse).agent);
+          handle: name.toLowerCase().replace(/\s+/g, ""),
+          description: `Description for ${name}`,
+        });
+        agents.push(agent);
       }
 
       // Create 5 competitions, each with a different agent
@@ -2252,78 +1976,66 @@ describe("User API", () => {
         expect(createResponse.success).toBe(true);
         const competition = (createResponse as CreateCompetitionResponse)
           .competition;
-        await userClient.joinCompetition(competition.id, agents[i]!.id);
+        await rpcClient.competitions.join({
+          competitionId: competition.id,
+          agentId: agents[i]!.id,
+        });
 
         await wait(50);
       }
 
       // Test first page (limit 2, offset 0) with agentName sorting
-      const page1Response = await userClient.getUserCompetitions({
+      const page1Result = await rpcClient.user.getCompetitions({
         sort: "agentName",
         limit: 2,
         offset: 0,
       });
-      expect(page1Response.success).toBe(true);
-      const page1Comps = (page1Response as UserCompetitionsResponse)
-        .competitions;
-      expect(page1Comps.length).toBe(2);
-      expect((page1Response as UserCompetitionsResponse).pagination.total).toBe(
-        5,
-      );
-      expect(
-        (page1Response as UserCompetitionsResponse).pagination.hasMore,
-      ).toBe(true);
+      expect(page1Result.competitions.length).toBe(2);
+      expect(page1Result.pagination.total).toBe(5);
+      expect(page1Result.pagination.hasMore).toBe(true);
 
       // Should be Alpha and Beta (first 2 alphabetically)
-      expect(page1Comps[0]?.agents?.[0]?.name).toBe("Alpha Agent");
-      expect(page1Comps[1]?.agents?.[0]?.name).toBe("Beta Agent");
+      expect(page1Result.competitions[0]?.agents?.[0]?.name).toBe(
+        "Alpha Agent",
+      );
+      expect(page1Result.competitions[1]?.agents?.[0]?.name).toBe("Beta Agent");
 
       // Test second page (limit 2, offset 2)
-      const page2Response = await userClient.getUserCompetitions({
+      const page2Result = await rpcClient.user.getCompetitions({
         sort: "agentName",
         limit: 2,
         offset: 2,
       });
-      expect(page2Response.success).toBe(true);
-      const page2Comps = (page2Response as UserCompetitionsResponse)
-        .competitions;
-      expect(page2Comps.length).toBe(2);
-      expect((page2Response as UserCompetitionsResponse).pagination.total).toBe(
-        5,
-      );
-      expect(
-        (page2Response as UserCompetitionsResponse).pagination.hasMore,
-      ).toBe(true);
+      expect(page2Result.competitions.length).toBe(2);
+      expect(page2Result.pagination.total).toBe(5);
+      expect(page2Result.pagination.hasMore).toBe(true);
 
       // Should be Charlie and Delta
-      expect(page2Comps[0]?.agents?.[0]?.name).toBe("Charlie Agent");
-      expect(page2Comps[1]?.agents?.[0]?.name).toBe("Delta Agent");
+      expect(page2Result.competitions[0]?.agents?.[0]?.name).toBe(
+        "Charlie Agent",
+      );
+      expect(page2Result.competitions[1]?.agents?.[0]?.name).toBe(
+        "Delta Agent",
+      );
 
       // Test final page (limit 2, offset 4)
-      const page3Response = await userClient.getUserCompetitions({
+      const page3Result = await rpcClient.user.getCompetitions({
         sort: "agentName",
         limit: 2,
         offset: 4,
       });
-      expect(page3Response.success).toBe(true);
-      const page3Comps = (page3Response as UserCompetitionsResponse)
-        .competitions;
-      expect(page3Comps.length).toBe(1); // Only Echo left
-      expect((page3Response as UserCompetitionsResponse).pagination.total).toBe(
-        5,
-      );
-      expect(
-        (page3Response as UserCompetitionsResponse).pagination.hasMore,
-      ).toBe(false);
+      expect(page3Result.competitions.length).toBe(1); // Only Echo left
+      expect(page3Result.pagination.total).toBe(5);
+      expect(page3Result.pagination.hasMore).toBe(false);
 
       // Should be Echo
-      expect(page3Comps[0]?.agents?.[0]?.name).toBe("Echo Agent");
+      expect(page3Result.competitions[0]?.agents?.[0]?.name).toBe("Echo Agent");
 
       // Verify no overlapping results between pages
       const allPageIds = [
-        ...page1Comps.map((c) => c.id),
-        ...page2Comps.map((c) => c.id),
-        ...page3Comps.map((c) => c.id),
+        ...page1Result.competitions.map((c) => c.id),
+        ...page2Result.competitions.map((c) => c.id),
+        ...page3Result.competitions.map((c) => c.id),
       ];
       const uniqueIds = new Set(allPageIds);
       expect(uniqueIds.size).toBe(allPageIds.length); // No duplicates
@@ -2331,10 +2043,7 @@ describe("User API", () => {
 
     test("user competitions rank sorting with pagination", async () => {
       // Test pagination with rank computed sorting
-      const adminClient = createTestClient();
-      await adminClient.loginAsAdmin(adminApiKey);
-
-      const { client: userClient } = await createPrivyAuthenticatedClient({
+      const { rpcClient } = await createPrivyAuthenticatedRpcClient({
         userName: "Rank Pagination Test User",
         userEmail: "rank-pagination-test@example.com",
       });
@@ -2342,13 +2051,12 @@ describe("User API", () => {
       // Create multiple agents
       const agents = [];
       for (let i = 0; i < 4; i++) {
-        const agentResponse = await createTestAgent(
-          userClient,
-          `Rank Test Agent ${i}`,
-          `Agent ${i} for rank pagination testing`,
-        );
-        expect(agentResponse.success).toBe(true);
-        agents.push((agentResponse as AgentProfileResponse).agent);
+        const { agent } = await rpcClient.user.createAgent({
+          name: `Rank Test Agent ${i}`,
+          handle: `ranktest${i}`,
+          description: `Agent ${i} for rank pagination testing`,
+        });
+        agents.push(agent);
       }
 
       // Create 2 started competitions (will have ranks) and 2 unstarted (no ranks)
@@ -2364,7 +2072,10 @@ describe("User API", () => {
         const competition = createResponse.competition;
         competitions.push(competition);
 
-        await userClient.joinCompetition(competition.id, agents[i]!.id);
+        await rpcClient.competitions.join({
+          competitionId: competition.id,
+          agentId: agents[i]!.id,
+        });
         await startExistingTestCompetition({
           adminClient,
           competitionId: competition.id,
@@ -2372,19 +2083,22 @@ describe("User API", () => {
         });
 
         // Create different performance levels using established burn address pattern
-        const agentClient = adminClient.createAgentClient(agents[i]!.apiKey!);
+        const keyData = await rpcClient.user.getAgentApiKey({
+          agentId: agents[i]!.id,
+        });
+        const agentClient = adminClient.createAgentClient(keyData.apiKey);
         if (i === 0) {
           // Best performer: keep valuable assets
           await agentClient.executeTrade({
-            fromToken: config.specificChainTokens.eth.usdc,
-            toToken: config.specificChainTokens.eth.eth,
+            fromToken: specificChainTokens.eth.usdc,
+            toToken: specificChainTokens.eth.eth,
             amount: "100",
             reason: "Smart trade - buying ETH",
           });
         } else {
           // Poor performer: burn tokens to create lower rank
           await agentClient.executeTrade({
-            fromToken: config.specificChainTokens.eth.usdc,
+            fromToken: specificChainTokens.eth.usdc,
             toToken: "0x000000000000000000000000000000000000dead", // Burn address
             amount: "150",
             reason: "Bad trade - burning tokens",
@@ -2405,61 +2119,47 @@ describe("User API", () => {
         const competition = createResponse.competition;
         competitions.push(competition);
 
-        await userClient.joinCompetition(competition.id, agents[i]!.id);
+        await rpcClient.competitions.join({
+          competitionId: competition.id,
+          agentId: agents[i]!.id,
+        });
       }
 
       // Wait for portfolio snapshots
       await wait(1500);
 
       // Test first page with rank sorting (started competitions should come first)
-      const page1Response = await userClient.getUserCompetitions({
+      const page1Result = await rpcClient.user.getCompetitions({
         sort: "rank",
         limit: 2,
         offset: 0,
       });
-      expect(page1Response.success).toBe(true);
-      const page1Comps = (page1Response as UserCompetitionsResponse)
-        .competitions;
-      expect(page1Comps.length).toBe(2);
-      expect((page1Response as UserCompetitionsResponse).pagination.total).toBe(
-        4,
-      );
-      expect(
-        (page1Response as UserCompetitionsResponse).pagination.hasMore,
-      ).toBe(true);
+      expect(page1Result.competitions.length).toBe(2);
+      expect(page1Result.pagination.total).toBe(4);
+      expect(page1Result.pagination.hasMore).toBe(true);
 
       // First 2 should be the started competitions (with ranks)
-      expect(page1Comps[0]?.agents?.[0]?.rank).toBe(1);
-      expect(page1Comps[1]?.agents?.[0]?.rank).toBe(1);
+      expect(page1Result.competitions[0]?.agents?.[0]?.rank).toBe(1);
+      expect(page1Result.competitions[1]?.agents?.[0]?.rank).toBe(1);
 
       // Test second page (should be unstarted competitions)
-      const page2Response = await userClient.getUserCompetitions({
+      const page2Result = await rpcClient.user.getCompetitions({
         sort: "rank",
         limit: 2,
         offset: 2,
       });
-      expect(page2Response.success).toBe(true);
-      const page2Comps = (page2Response as UserCompetitionsResponse)
-        .competitions;
-      expect(page2Comps.length).toBe(2);
-      expect((page2Response as UserCompetitionsResponse).pagination.total).toBe(
-        4,
-      );
-      expect(
-        (page2Response as UserCompetitionsResponse).pagination.hasMore,
-      ).toBe(false);
+      expect(page2Result.competitions.length).toBe(2);
+      expect(page2Result.pagination.total).toBe(4);
+      expect(page2Result.pagination.hasMore).toBe(false);
 
       // Last 2 should be the unstarted competitions (undefined ranks)
-      expect(page2Comps[0]?.agents?.[0]?.rank).toBeUndefined();
-      expect(page2Comps[1]?.agents?.[0]?.rank).toBeUndefined();
+      expect(page2Result.competitions[0]?.agents?.[0]?.rank).toBeUndefined();
+      expect(page2Result.competitions[1]?.agents?.[0]?.rank).toBeUndefined();
     });
 
     test("user competitions pagination accuracy with computed sorting", async () => {
       // Test that pagination counts are accurate when using computed sorting
-      const adminClient = createTestClient();
-      await adminClient.loginAsAdmin(adminApiKey);
-
-      const { client: userClient } = await createPrivyAuthenticatedClient({
+      const { rpcClient } = await createPrivyAuthenticatedRpcClient({
         userName: "Computed Pagination Test User",
         userEmail: "computed-pagination-test@example.com",
       });
@@ -2469,13 +2169,12 @@ describe("User API", () => {
       const agents = [];
 
       for (const name of agentNames) {
-        const agentResponse = await createTestAgent(
-          userClient,
-          `${name} Agent`,
-          `Agent named ${name}`,
-        );
-        expect(agentResponse.success).toBe(true);
-        agents.push((agentResponse as AgentProfileResponse).agent);
+        const { agent } = await rpcClient.user.createAgent({
+          name: `${name} Agent`,
+          handle: `${name.toLowerCase()}agent`,
+          description: `Agent named ${name}`,
+        });
+        agents.push(agent);
       }
 
       // Create 6 competitions, each with a different agent
@@ -2487,77 +2186,60 @@ describe("User API", () => {
         expect(createResponse.success).toBe(true);
         const competition = (createResponse as CreateCompetitionResponse)
           .competition;
-        await userClient.joinCompetition(competition.id, agents[i]!.id);
+        await rpcClient.competitions.join({
+          competitionId: competition.id,
+          agentId: agents[i]!.id,
+        });
       }
 
       // Test various pagination scenarios with computed sorting
 
       // Scenario 1: First 3 items
-      const scenario1 = await userClient.getUserCompetitions({
+      const scenario1 = await rpcClient.user.getCompetitions({
         sort: "agentName",
         limit: 3,
         offset: 0,
       });
-      expect(scenario1.success).toBe(true);
-      expect((scenario1 as UserCompetitionsResponse).competitions.length).toBe(
-        3,
-      );
-      expect((scenario1 as UserCompetitionsResponse).pagination.total).toBe(6);
-      expect((scenario1 as UserCompetitionsResponse).pagination.hasMore).toBe(
-        true,
-      );
-      expect((scenario1 as UserCompetitionsResponse).pagination.offset).toBe(0);
-      expect((scenario1 as UserCompetitionsResponse).pagination.limit).toBe(3);
+      expect(scenario1.competitions.length).toBe(3);
+      expect(scenario1.pagination.total).toBe(6);
+      expect(scenario1.pagination.hasMore).toBe(true);
+      expect(scenario1.pagination.offset).toBe(0);
+      expect(scenario1.pagination.limit).toBe(3);
 
       // Scenario 2: Next 3 items
-      const scenario2 = await userClient.getUserCompetitions({
+      const scenario2 = await rpcClient.user.getCompetitions({
         sort: "agentName",
         limit: 3,
         offset: 3,
       });
-      expect(scenario2.success).toBe(true);
-      expect((scenario2 as UserCompetitionsResponse).competitions.length).toBe(
-        3,
-      );
-      expect((scenario2 as UserCompetitionsResponse).pagination.total).toBe(6);
-      expect((scenario2 as UserCompetitionsResponse).pagination.hasMore).toBe(
-        false,
-      );
-      expect((scenario2 as UserCompetitionsResponse).pagination.offset).toBe(3);
-      expect((scenario2 as UserCompetitionsResponse).pagination.limit).toBe(3);
+      expect(scenario2.competitions.length).toBe(3);
+      expect(scenario2.pagination.total).toBe(6);
+      expect(scenario2.pagination.hasMore).toBe(false);
+      expect(scenario2.pagination.offset).toBe(3);
+      expect(scenario2.pagination.limit).toBe(3);
 
       // Scenario 3: Offset beyond total
-      const scenario3 = await userClient.getUserCompetitions({
+      const scenario3 = await rpcClient.user.getCompetitions({
         sort: "agentName",
         limit: 3,
         offset: 10,
       });
-      expect(scenario3.success).toBe(true);
-      expect((scenario3 as UserCompetitionsResponse).competitions.length).toBe(
-        0,
-      );
-      expect((scenario3 as UserCompetitionsResponse).pagination.total).toBe(6);
-      expect((scenario3 as UserCompetitionsResponse).pagination.hasMore).toBe(
-        false,
-      );
+      expect(scenario3.competitions.length).toBe(0);
+      expect(scenario3.pagination.total).toBe(6);
+      expect(scenario3.pagination.hasMore).toBe(false);
 
       // Scenario 4: Large limit
-      const scenario4 = await userClient.getUserCompetitions({
+      const scenario4 = await rpcClient.user.getCompetitions({
         sort: "agentName",
         limit: 20,
         offset: 0,
       });
-      expect(scenario4.success).toBe(true);
-      expect((scenario4 as UserCompetitionsResponse).competitions.length).toBe(
-        6,
-      );
-      expect((scenario4 as UserCompetitionsResponse).pagination.total).toBe(6);
-      expect((scenario4 as UserCompetitionsResponse).pagination.hasMore).toBe(
-        false,
-      );
+      expect(scenario4.competitions.length).toBe(6);
+      expect(scenario4.pagination.total).toBe(6);
+      expect(scenario4.pagination.hasMore).toBe(false);
 
       // Verify sorting is correct across all scenarios
-      const allSorted = (scenario4 as UserCompetitionsResponse).competitions;
+      const allSorted = scenario4.competitions;
       const expectedOrder = [
         "Alpha Agent",
         "Beta Agent",
@@ -2574,10 +2256,7 @@ describe("User API", () => {
 
     test("user competitions mixed computed and database sorting with pagination", async () => {
       // Test pagination with mixed computed (agentName) and database (createdAt) sorting
-      const adminClient = createTestClient();
-      await adminClient.loginAsAdmin(adminApiKey);
-
-      const { client: userClient } = await createPrivyAuthenticatedClient({
+      const { rpcClient } = await createPrivyAuthenticatedRpcClient({
         userName: "Mixed Sort Pagination User",
         userEmail: "mixed-sort-pagination@example.com",
       });
@@ -2593,13 +2272,12 @@ describe("User API", () => {
 
       const agents = [];
       for (const data of agentData) {
-        const agentResponse = await createTestAgent(
-          userClient,
-          data.name,
-          `Agent for ${data.comp}`,
-        );
-        expect(agentResponse.success).toBe(true);
-        agents.push((agentResponse as AgentProfileResponse).agent);
+        const { agent } = await rpcClient.user.createAgent({
+          name: data.name,
+          handle: data.name.toLowerCase().replace(/\s+/g, ""),
+          description: `Agent for ${data.comp}`,
+        });
+        agents.push(agent);
       }
 
       // Create competitions with controlled timing for secondary sort
@@ -2611,59 +2289,46 @@ describe("User API", () => {
         expect(createResponse.success).toBe(true);
         const competition = (createResponse as CreateCompetitionResponse)
           .competition;
-        await userClient.joinCompetition(competition.id, agents[i]!.id);
+        await rpcClient.competitions.join({
+          competitionId: competition.id,
+          agentId: agents[i]!.id,
+        });
 
         // Controlled delay for predictable timestamps
         await wait(100);
       }
 
       // Test pagination with mixed sort: agentName (computed) + createdAt descending (database)
-      const page1Response = await userClient.getUserCompetitions({
+      const page1Result = await rpcClient.user.getCompetitions({
         sort: "agentName,-createdAt",
         limit: 3,
         offset: 0,
       });
-      expect(page1Response.success).toBe(true);
-      const page1Comps = (page1Response as UserCompetitionsResponse)
-        .competitions;
-      expect(page1Comps.length).toBe(3);
-      expect((page1Response as UserCompetitionsResponse).pagination.total).toBe(
-        5,
-      );
-      expect(
-        (page1Response as UserCompetitionsResponse).pagination.hasMore,
-      ).toBe(true);
+      expect(page1Result.competitions.length).toBe(3);
+      expect(page1Result.pagination.total).toBe(5);
+      expect(page1Result.pagination.hasMore).toBe(true);
 
       // Should be: Alpha Agent A, Alpha Agent B, Beta Agent A
-      expect(page1Comps[0]?.name).toBe("Competition A"); // Alpha Agent A
-      expect(page1Comps[1]?.name).toBe("Competition B"); // Alpha Agent B
-      expect(page1Comps[2]?.name).toBe("Competition C"); // Beta Agent A
+      expect(page1Result.competitions[0]?.name).toBe("Competition A"); // Alpha Agent A
+      expect(page1Result.competitions[1]?.name).toBe("Competition B"); // Alpha Agent B
+      expect(page1Result.competitions[2]?.name).toBe("Competition C"); // Beta Agent A
 
       // Test second page
-      const page2Response = await userClient.getUserCompetitions({
+      const page2Result = await rpcClient.user.getCompetitions({
         sort: "agentName,-createdAt",
         limit: 3,
         offset: 3,
       });
-      expect(page2Response.success).toBe(true);
-      const page2Comps = (page2Response as UserCompetitionsResponse)
-        .competitions;
-      expect(page2Comps.length).toBe(2);
-      expect(
-        (page2Response as UserCompetitionsResponse).pagination.hasMore,
-      ).toBe(false);
+      expect(page2Result.competitions.length).toBe(2);
+      expect(page2Result.pagination.hasMore).toBe(false);
 
       // Should be: Beta Agent B, Gamma Agent
-      expect(page2Comps[0]?.name).toBe("Competition D"); // Beta Agent B
-      expect(page2Comps[1]?.name).toBe("Competition E"); // Gamma Agent
+      expect(page2Result.competitions[0]?.name).toBe("Competition D"); // Beta Agent B
+      expect(page2Result.competitions[1]?.name).toBe("Competition E"); // Gamma Agent
     });
   });
 
   test("user agents have correct stats after one competition", async () => {
-    // Create an admin client for competition management
-    const adminClient = createTestClient();
-    await adminClient.loginAsAdmin(adminApiKey);
-
     // Create 5 users, each with 1 agent
     const agentNames = [
       "Alpha Agent",
@@ -2675,13 +2340,17 @@ describe("User API", () => {
 
     const userAgents = [];
     for (let i = 0; i < agentNames.length; i++) {
-      const { client, agent } = await registerUserAndAgentAndGetClient({
+      const {
+        rpcClient,
+        agent,
+        client: agentClient,
+      } = await registerUserAndAgentAndGetRpcClient({
         adminApiKey,
         userName: `Stats Test User ${i + 1}`,
         userEmail: `stats-user${i + 1}@example.com`,
         agentName: agentNames[i]!,
       });
-      userAgents.push({ client, agent });
+      userAgents.push({ rpcClient, agent, agentClient });
       // Small delay to ensure different timestamps
       await wait(10);
     }
@@ -2706,21 +2375,13 @@ describe("User API", () => {
     expect(startResult.success).toBe(true);
 
     // Create different performance levels by executing different trades
-    // Get agent API keys for trading
-    const agentClients = [];
-    for (const ua of userAgents) {
-      const apiKeyResponse = await ua.client.getUserAgentApiKey(ua.agent.id);
-      expect(apiKeyResponse.success).toBe(true);
-      const agentClient = new ApiClient(
-        (apiKeyResponse as UserAgentApiKeyResponse).apiKey,
-      );
-      agentClients.push(agentClient);
-    }
+
+    const agentClients = userAgents.map((ua) => ua.agentClient);
 
     // Alpha Agent: (3 small bad trades)
     for (let i = 0; i < 3; i++) {
       await agentClients[0]?.executeTrade({
-        fromToken: config.specificChainTokens.eth.usdc,
+        fromToken: specificChainTokens.eth.usdc,
         toToken: "0x000000000000000000000000000000000000dead",
         amount: "10",
         reason: `Alpha Agent smart trade ${i + 1} - buying ETH`,
@@ -2731,7 +2392,7 @@ describe("User API", () => {
     // Bravo Agent: (2 small bad trades)
     for (let i = 0; i < 2; i++) {
       await agentClients[1]?.executeTrade({
-        fromToken: config.specificChainTokens.eth.usdc,
+        fromToken: specificChainTokens.eth.usdc,
         toToken: "0x000000000000000000000000000000000000dead",
         amount: "100",
         reason: `Bravo Agent good trade ${i + 1}`,
@@ -2741,7 +2402,7 @@ describe("User API", () => {
 
     // Charlie Agent: (1 medium bad trade)
     await agentClients[2]?.executeTrade({
-      fromToken: config.specificChainTokens.eth.usdc,
+      fromToken: specificChainTokens.eth.usdc,
       toToken: "0x000000000000000000000000000000000000dead",
       amount: "1000",
       reason: "Charlie Agent trade",
@@ -2750,7 +2411,7 @@ describe("User API", () => {
 
     // Delta Agent: (1 large bad trade)
     await agentClients[3]?.executeTrade({
-      fromToken: config.specificChainTokens.eth.usdc,
+      fromToken: specificChainTokens.eth.usdc,
       toToken: "0x000000000000000000000000000000000000dead", // Burn address
       amount: "2000",
       reason: "Delta Agent bad trade - burning tokens",
@@ -2760,7 +2421,7 @@ describe("User API", () => {
     // Echo Agent: Worst performer (2 bad trades)
     for (let i = 0; i < 2; i++) {
       await agentClients[4]?.executeTrade({
-        fromToken: config.specificChainTokens.eth.usdc,
+        fromToken: specificChainTokens.eth.usdc,
         toToken: "0x000000000000000000000000000000000000dead",
         amount: "2000",
         reason: `Echo Agent terrible trade ${i + 1} - burning tokens`,
@@ -2781,9 +2442,7 @@ describe("User API", () => {
     // Get all agents and verify bestPlacement stats
     const allAgents = [];
     for (const ua of userAgents) {
-      const agentsResponse = await ua.client.getUserAgents();
-      expect(agentsResponse.success).toBe(true);
-      const agents = (agentsResponse as GetUserAgentsResponse).agents;
+      const { agents } = await ua.rpcClient.user.getUserAgents({});
       expect(agents).toHaveLength(1); // Each user has 1 agent
       allAgents.push(agents[0]!);
     }
@@ -2855,42 +2514,28 @@ describe("User API", () => {
 
   test("two agents in multiple competitions have correct stats", async () => {
     // Test 2 agents (from different users) across multiple competitions with reversed performance
-    const adminClient = createTestClient();
-    await adminClient.loginAsAdmin(adminApiKey);
-
     // Create 2 users, each with 1 agent
-    const { client: user1Client, agent: agent1 } =
-      await registerUserAndAgentAndGetClient({
-        adminApiKey,
-        userName: "Multi Comp User 1",
-        userEmail: "multicomp-user1@example.com",
-        agentName: "Agent Foxtrot",
-      });
+    const {
+      rpcClient: user1RpcClient,
+      agent: agent1,
+      client: agent1Client,
+    } = await registerUserAndAgentAndGetRpcClient({
+      adminApiKey,
+      userName: "Multi Comp User 1",
+      userEmail: "multicomp-user1@example.com",
+      agentName: "Agent Foxtrot",
+    });
 
-    const { client: user2Client, agent: agent2 } =
-      await registerUserAndAgentAndGetClient({
-        adminApiKey,
-        userName: "Multi Comp User 2",
-        userEmail: "multicomp-user2@example.com",
-        agentName: "Agent Hotel",
-      });
-
-    // Get agent API keys for trading
-    const agent1ApiKeyResponse = await user1Client.getUserAgentApiKey(
-      agent1.id,
-    );
-    expect(agent1ApiKeyResponse.success).toBe(true);
-    const agent1Client = new ApiClient(
-      (agent1ApiKeyResponse as UserAgentApiKeyResponse).apiKey,
-    );
-
-    const agent2ApiKeyResponse = await user2Client.getUserAgentApiKey(
-      agent2.id,
-    );
-    expect(agent2ApiKeyResponse.success).toBe(true);
-    const agent2Client = new ApiClient(
-      (agent2ApiKeyResponse as UserAgentApiKeyResponse).apiKey,
-    );
+    const {
+      rpcClient: user2RpcClient,
+      agent: agent2,
+      client: agent2Client,
+    } = await registerUserAndAgentAndGetRpcClient({
+      adminApiKey,
+      userName: "Multi Comp User 2",
+      userEmail: "multicomp-user2@example.com",
+      agentName: "Agent Hotel",
+    });
 
     // FIRST COMPETITION
     const competition1Name = `Multi Competition Test 1 ${Date.now()}`;
@@ -2911,15 +2556,15 @@ describe("User API", () => {
 
     // Agent 1: Make stable trade (USDC to ETH) - will win comp1
     await agent1Client.executeTrade({
-      fromToken: config.specificChainTokens.eth.usdc,
-      toToken: config.specificChainTokens.eth.eth,
+      fromToken: specificChainTokens.eth.usdc,
+      toToken: specificChainTokens.eth.eth,
       amount: "1000",
       reason: `Agent Foxtrot trade - stable USDC to ETH`,
     });
 
     // Agent 2: Make bad trade - will lose comp1
     await agent2Client.executeTrade({
-      fromToken: config.specificChainTokens.eth.usdc,
+      fromToken: specificChainTokens.eth.usdc,
       toToken: "0x000000000000000000000000000000000000dead",
       amount: "1000",
       reason: "Agent Hotel trade - volatile USDC to burn",
@@ -2952,7 +2597,7 @@ describe("User API", () => {
     // REVERSE THE TRADING PATTERNS
     // Agent 1: make bad trade - will lose comp2
     await agent1Client.executeTrade({
-      fromToken: config.specificChainTokens.eth.usdc,
+      fromToken: specificChainTokens.eth.usdc,
       toToken: "0x000000000000000000000000000000000000dead",
       amount: "1200",
       reason: "Agent Foxtrot volatile trade - USDC to burn",
@@ -2960,8 +2605,8 @@ describe("User API", () => {
 
     // Agent 2: Now make stable trade (USDC to ETH) - will win comp2
     await agent2Client.executeTrade({
-      fromToken: config.specificChainTokens.eth.usdc,
-      toToken: config.specificChainTokens.eth.eth,
+      fromToken: specificChainTokens.eth.usdc,
+      toToken: specificChainTokens.eth.eth,
       amount: "1200",
       reason: `Agent Hotel stable trade - stable USDC to ETH`,
     });
@@ -2974,15 +2619,11 @@ describe("User API", () => {
     await wait(500);
 
     // Get all agents and verify stats
-    const user1AgentsResponse = await user1Client.getUserAgents();
-    expect(user1AgentsResponse.success).toBe(true);
-    const user1Agents = (user1AgentsResponse as GetUserAgentsResponse).agents;
+    const { agents: user1Agents } = await user1RpcClient.user.getUserAgents({});
     expect(user1Agents).toHaveLength(1);
     const agentFoxtrot = user1Agents[0]!;
 
-    const user2AgentsResponse = await user2Client.getUserAgents();
-    expect(user2AgentsResponse.success).toBe(true);
-    const user2Agents = (user2AgentsResponse as GetUserAgentsResponse).agents;
+    const { agents: user2Agents } = await user2RpcClient.user.getUserAgents({});
     expect(user2Agents).toHaveLength(1);
     const agentHotel = user2Agents[0]!;
 

@@ -39,15 +39,19 @@ import {
   TradingConstraintsService,
   UserService,
 } from "@recallnet/services";
-import { MockPrivyClient, MockRewardsAllocator } from "@recallnet/services/lib";
+import { MockPrivyClient } from "@recallnet/services/lib";
 import { WalletWatchlist } from "@recallnet/services/lib";
 import {
   DexScreenerProvider,
   MultiChainProvider,
 } from "@recallnet/services/providers";
-import RewardsAllocator, {
+import {
+  ExternallyOwnedAccountAllocator,
   Network,
-} from "@recallnet/staking-contracts/rewards-allocator";
+  NoopRewardsAllocator,
+  RewardsAllocator,
+  SafeTransactionProposer,
+} from "@recallnet/staking-contracts";
 
 import config from "@/config/index.js";
 import { db, dbRead } from "@/database/db.js";
@@ -120,26 +124,8 @@ class ServiceRegistry {
     this._rewardsRepository = new RewardsRepository(db, repositoryLogger);
 
     // Initialize RewardsAllocator (use MockRewardsAllocator in test mode to avoid blockchain interactions)
-    if (config.server.nodeEnv === "test") {
-      this._rewardsAllocator =
-        new MockRewardsAllocator() as unknown as RewardsAllocator;
-    } else if (
-      !config.rewards.allocatorPrivateKey ||
-      !config.rewards.contractAddress ||
-      !config.rewards.rpcProvider
-    ) {
-      configLogger.warn("Rewards allocator config is not set");
-      this._rewardsAllocator =
-        new MockRewardsAllocator() as unknown as RewardsAllocator;
-    } else {
-      this._rewardsAllocator = new RewardsAllocator(
-        config.rewards.allocatorPrivateKey as Hex,
-        config.rewards.rpcProvider,
-        config.rewards.contractAddress as Hex,
-        config.rewards.tokenContractAddress as Hex,
-        config.rewards.network as Network,
-      );
-    }
+    this._rewardsAllocator = this.getRewardsAllocator();
+
     const balanceRepository = new BalanceRepository(
       db,
       repositoryLogger,
@@ -479,6 +465,56 @@ class ServiceRegistry {
 
   get perpsRepository(): PerpsRepository {
     return this._perpsRepository;
+  }
+
+  private getRewardsAllocator(): RewardsAllocator {
+    if (config.server.nodeEnv === "test") {
+      return new NoopRewardsAllocator();
+    }
+
+    if (config.rewards.eoaEnabled) {
+      if (
+        !config.rewards.eoaPrivateKey ||
+        !config.rewards.contractAddress ||
+        !config.rewards.rpcProvider
+      ) {
+        configLogger.warn("Rewards EOA config is not set");
+        return new NoopRewardsAllocator();
+      }
+
+      return new ExternallyOwnedAccountAllocator(
+        config.rewards.eoaPrivateKey as Hex,
+        config.rewards.rpcProvider,
+        config.rewards.contractAddress as Hex,
+        config.rewards.tokenContractAddress as Hex,
+        config.rewards.network as Network,
+      );
+    }
+
+    if (config.rewards.safeProposerEnabled) {
+      if (
+        !config.rewards.safeAddress ||
+        !config.rewards.safeProposerPrivateKey ||
+        !config.rewards.safeApiKey ||
+        !config.rewards.contractAddress ||
+        !config.rewards.rpcProvider
+      ) {
+        configLogger.warn("Rewards safe proposer config is not set");
+        return new NoopRewardsAllocator();
+      }
+
+      return new SafeTransactionProposer({
+        safeAddress: config.rewards.safeAddress as Hex,
+        proposerPrivateKey: config.rewards.safeProposerPrivateKey as Hex,
+        apiKey: config.rewards.safeApiKey,
+        contractAddress: config.rewards.contractAddress as Hex,
+        rpcUrl: config.rewards.rpcProvider,
+        network: config.rewards.network as Network,
+        tokenAddress: config.rewards.tokenContractAddress as Hex,
+      });
+    }
+
+    return new NoopRewardsAllocator();
   }
 }
 

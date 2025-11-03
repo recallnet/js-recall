@@ -21,6 +21,7 @@ import {
 } from "@recallnet/services";
 import { WalletWatchlist } from "@recallnet/services/lib";
 import { MultiChainProvider } from "@recallnet/services/providers";
+import { NoopRewardsAllocator } from "@recallnet/staking-contracts";
 
 import { config } from "@/config/private";
 import {
@@ -200,7 +201,7 @@ export const rewardsService = new RewardsService(
   rewardsRepository,
   competitionRepository,
   boostRepository,
-  null,
+  new NoopRewardsAllocator(),
   db,
   createLogger("RewardsService"),
 );
