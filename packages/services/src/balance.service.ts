@@ -131,7 +131,7 @@ export class BalanceService {
         if (!this.getActiveCompetitionFn) {
           throw new ApiError(
             400,
-            "No active competition function provided to BalanceService",
+            "Competition ID is required for this operation",
           );
         }
         const activeComp = await this.getActiveCompetitionFn();
