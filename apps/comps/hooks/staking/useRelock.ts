@@ -1,13 +1,13 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
-import { simulateContract } from "@wagmi/core";
 import { useCallback, useEffect, useMemo } from "react";
 import {
   useAccount,
   useWaitForTransactionReceipt,
   useWriteContract,
 } from "wagmi";
+import { simulateContract } from "wagmi/actions";
 
 import { StakingAbi } from "@/abi/Staking";
 import { clientConfig } from "@/wagmi-config";
@@ -94,7 +94,7 @@ export const useRelock = (): StakingOperationResult => {
         reset();
 
         // First simulate the transaction using the core action
-        const simulationResult = await simulateContract(config as any, {
+        const simulationResult = await simulateContract(config, {
           address: contractAddress,
           abi: StakingAbi,
           functionName: "relock",
