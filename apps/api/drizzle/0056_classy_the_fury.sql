@@ -40,13 +40,13 @@ DECLARE
   affected_rows INTEGER;
   null_count INTEGER;
 BEGIN
-  -- Backfill: For each agent, assign their balances to their most recent active competition
+  -- Backfill: For each agent, assign their balances to their most recent competition
+  -- Note: Includes all statuses (active, disqualified, withdrawn) to avoid orphaning balances
   UPDATE "trading_comps"."balances" b
   SET "competition_id" = (
     SELECT ca."competition_id"
     FROM "public"."competition_agents" ca
     WHERE ca."agent_id" = b."agent_id"
-    AND ca."status" = 'active'
     ORDER BY ca."created_at" DESC
     LIMIT 1
   )
