@@ -61,8 +61,7 @@ BEGIN
   WHERE "competition_id" IS NULL;
 
   IF null_count > 0 THEN
-    RAISE WARNING 'WARNING: % balances still have NULL competition_id. These are orphaned balances for agents not in any active competition.', null_count;
-    RAISE WARNING 'Options: 1) Manually assign to a competition, 2) Delete them, 3) Create a "legacy" competition';
+    RAISE EXCEPTION 'ERROR: % balances still have NULL competition_id. These are orphaned balances for agents not in any active competition. Migration halted. Options: 1) Manually assign to a competition, 2) Delete them, 3) Create a "legacy" competition.', null_count;
   ELSE
     RAISE NOTICE 'SUCCESS: All balances have been assigned a competition_id';
   END IF;
