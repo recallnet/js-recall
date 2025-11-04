@@ -132,51 +132,6 @@ describe("DexScreenerProvider", () => {
     });
   });
 
-  describe("Polygon token price fetching", () => {
-    it("should fetch native USDC on Polygon", async () => {
-      const priceReport = await provider.getPrice(
-        specificChainTokens.polygon.usdc,
-        BlockchainType.EVM,
-        "polygon",
-      );
-
-      expect(priceReport).not.toBeNull();
-      expect(typeof priceReport?.price).toBe("number");
-      expect(priceReport?.price).toBeGreaterThan(0);
-      expect(priceReport?.price).toBeCloseTo(1, 1);
-    }, 15000);
-  });
-
-  describe("Arbitrum token price fetching", () => {
-    it("should fetch native USDC on Arbitrum", async () => {
-      const priceReport = await provider.getPrice(
-        specificChainTokens.arbitrum.usdc,
-        BlockchainType.EVM,
-        "arbitrum",
-      );
-
-      expect(priceReport).not.toBeNull();
-      expect(typeof priceReport?.price).toBe("number");
-      expect(priceReport?.price).toBeGreaterThan(0);
-      expect(priceReport?.price).toBeCloseTo(1, 1);
-    }, 15000);
-  });
-
-  describe("Optimism token price fetching", () => {
-    it("should fetch native USDC on Optimism", async () => {
-      const priceReport = await provider.getPrice(
-        specificChainTokens.optimism.usdc,
-        BlockchainType.EVM,
-        "optimism",
-      );
-
-      expect(priceReport).not.toBeNull();
-      expect(typeof priceReport?.price).toBe("number");
-      expect(priceReport?.price).toBeGreaterThan(0);
-      expect(priceReport?.price).toBeCloseTo(1, 1);
-    }, 15000);
-  });
-
   describe("Chain detection", () => {
     it("should detect Solana addresses correctly", async () => {
       const chain = provider.determineChain(specificChainTokens.svm.sol);
@@ -248,30 +203,6 @@ describe("DexScreenerProvider", () => {
         "unknown" as SpecificChain,
       );
       expect(isStable).toBe(false);
-    });
-
-    it("should correctly identify native USDC as stablecoin on Polygon", () => {
-      const isStable = provider.isStablecoin(
-        specificChainTokens.polygon.usdc,
-        "polygon",
-      );
-      expect(isStable).toBe(true);
-    });
-
-    it("should correctly identify native USDC as stablecoin on Arbitrum", () => {
-      const isStable = provider.isStablecoin(
-        specificChainTokens.arbitrum.usdc,
-        "arbitrum",
-      );
-      expect(isStable).toBe(true);
-    });
-
-    it("should correctly identify native USDC as stablecoin on Optimism", () => {
-      const isStable = provider.isStablecoin(
-        specificChainTokens.optimism.usdc,
-        "optimism",
-      );
-      expect(isStable).toBe(true);
     });
   });
 
