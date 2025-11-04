@@ -428,7 +428,8 @@ export const competitionPartners = pgTable(
 );
 
 /**
- * Junction table for agent participation in competitions
+ * Tracks agent participation in competitions
+ * Stores agent status, deactivation reason, and timestamps per competition
  */
 export const competitionAgents = pgTable(
   "competition_agents",
