@@ -105,14 +105,45 @@ export function sumTokenAmounts(amounts: (string | bigint)[]): bigint {
 }
 
 /**
+ * Safely convert value to BigInt with validation
+ */
+function safeToBigInt(value: string | bigint | number): bigint {
+  if (typeof value === "bigint") {
+    return value;
+  }
+
+  if (typeof value === "number") {
+    if (!Number.isInteger(value)) {
+      throw new Error(`Cannot convert decimal number ${value} to BigInt`);
+    }
+    return BigInt(value);
+  }
+
+  // Handle string input
+  const trimmed = value.trim();
+  if (trimmed === "") {
+    return 0n;
+  }
+
+  // Validate string is a valid integer (allows negative)
+  if (!/^-?\d+$/.test(trimmed)) {
+    throw new Error(
+      `Cannot convert "${value}" to BigInt: must be a valid integer`,
+    );
+  }
+
+  return BigInt(trimmed);
+}
+
+/**
  * Calculate percentage change between two values
  */
 export function calculatePercentageChange(
   oldValue: string | bigint | number,
   newValue: string | bigint | number,
 ): number {
-  const oldBig = BigInt(oldValue);
-  const newBig = BigInt(newValue);
+  const oldBig = safeToBigInt(oldValue);
+  const newBig = safeToBigInt(newValue);
 
   if (oldBig === 0n) return newBig > 0n ? 100 : 0;
 

@@ -124,6 +124,13 @@ export class AlchemyRpcProvider {
       "arbitrum",
       "optimism",
       "polygon",
+      "bsc",
+      "avalanche",
+      "linea",
+      "zksync",
+      "scroll",
+      "mantle",
+      "svm",
     ];
 
     for (const chain of supportedChains) {
