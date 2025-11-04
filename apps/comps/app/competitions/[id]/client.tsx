@@ -76,6 +76,7 @@ export default function CompetitionPageClient({
       placeholderData: keepPreviousData,
       input: {
         competitionId: id,
+        includeInactive: true,
         paging: {
           sort: agentsSort,
           offset: agentsOffset,

@@ -14,7 +14,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { Star } from "lucide-react";
+import { Flag, Star } from "lucide-react";
 import { useRouter } from "next/navigation";
 import React, {
   useCallback,
@@ -87,7 +87,6 @@ const numberFormatter = new Intl.NumberFormat();
 export const AgentsTable: React.FC<AgentsTableProps> = ({
   agents,
   competition,
-  //onFilterChange,
   onSortChange,
   onPageChange,
   pagination,
@@ -265,6 +264,13 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
       ? Math.floor(pagination.offset / pagination.limit) + 1
       : 1;
 
+  // Process agents to ensure rank 0 (inactive or DQ'd) agents appear last
+  const processedAgents = useMemo(() => {
+    const rankedAgents = agents.filter((agent) => agent.rank !== 0);
+    const unrankedAgents = agents.filter((agent) => agent.rank === 0);
+    return [...rankedAgents, ...unrankedAgents];
+  }, [agents]);
+
   // Calculate total boost for percentage calculation
   const totalBoost = useMemo(() => {
     if (!isSuccessAgentBoostTotals) return 0;
@@ -376,14 +382,26 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
         id: "rank",
         accessorKey: "rank",
         header: () => <span>Rank</span>,
-        cell: ({ row }) =>
-          row.original.rank ? (
-            <RankBadge
-              rank={row.original.rank}
-              showIcon={!isMobile}
-              className={isMobile ? "min-w-8" : ""}
-            />
-          ) : null,
+        cell: ({ row }) => (
+          <div className="flex w-full items-center justify-center">
+            {row.original.rank === 0 ? (
+              <Tooltip
+                content={row.original.deactivationReason?.replace(
+                  "Admin removal: ",
+                  "Disqualified: ",
+                )}
+              >
+                <Flag className="h-5 w-5 text-red-400" fill="currentColor" />
+              </Tooltip>
+            ) : row.original.rank ? (
+              <RankBadge
+                rank={row.original.rank}
+                showIcon={!isMobile}
+                className={isMobile ? "min-w-8" : ""}
+              />
+            ) : null}
+          </div>
+        ),
         enableSorting: true,
         size: isMobile ? 80 : 100,
         sortDescFirst: false, // Start with ascending (lower ranks first)
@@ -795,7 +813,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
   );
 
   const table = useReactTable({
-    data: agents,
+    data: processedAgents,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
@@ -1145,7 +1163,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
               ))}
             </TableHeader>
             <TableBody>
-              {agents.length === 0 ? (
+              {processedAgents.length === 0 ? (
                 <TableRow>
                   <TableCell
                     colSpan={table.getAllColumns().length}
