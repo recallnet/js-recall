@@ -194,15 +194,21 @@ export function validateArenaConfig(config: unknown): ArenaConfig {
   if (validated.engine.params) {
     switch (validated.engine.id) {
       case "spot_paper_trading":
-        SpotPaperTradingEngineParamsSchema.parse(validated.engine.params);
+        validated.engine.params = SpotPaperTradingEngineParamsSchema.parse(
+          validated.engine.params,
+        );
         break;
 
       case "perpetual_futures":
-        PerpetualFuturesEngineParamsSchema.parse(validated.engine.params);
+        validated.engine.params = PerpetualFuturesEngineParamsSchema.parse(
+          validated.engine.params,
+        );
         break;
 
       case "spot_live_trading":
-        SpotLiveTradingEngineParamsSchema.parse(validated.engine.params);
+        validated.engine.params = SpotLiveTradingEngineParamsSchema.parse(
+          validated.engine.params,
+        );
         break;
 
       default:

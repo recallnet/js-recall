@@ -216,6 +216,24 @@ describe("SpotLiveTradingEngineParamsSchema", () => {
     ).not.toThrow();
   });
 
+  test("should apply default values for optional boolean fields", () => {
+    const paramsWithoutDefaults = {
+      dataSource: "rpc_direct" as const,
+      provider: "alchemy",
+      chains: ["base"],
+      selfFundingThresholdUsd: 50,
+      minFundingThreshold: 100,
+    };
+
+    const result = SpotLiveTradingEngineParamsSchema.parse(
+      paramsWithoutDefaults,
+    );
+
+    // Defaults should be applied
+    expect(result.enableProtocolFilter).toBe(false);
+    expect(result.enableTokenWhitelist).toBe(false);
+  });
+
   test("should require dataSource and chains", () => {
     const invalidParams = {
       provider: "alchemy",
@@ -370,5 +388,41 @@ describe("validateEngineParams", () => {
     expect(() => validateEngineParams("unknown", {})).toThrow(
       /Unknown engine ID/,
     );
+  });
+
+  test("should apply engine param defaults through validateArenaConfig", () => {
+    const config = {
+      apiVersion: "arenas.recall/v1",
+      kind: "Competition",
+      metadata: {
+        id: "test-defaults",
+        name: "Test Defaults",
+        createdBy: "recall",
+      },
+      classification: {
+        category: "crypto_trading",
+        skill: "spot_live_trading",
+      },
+      participation: {},
+      engine: {
+        id: "spot_live_trading",
+        version: "1.0.0",
+        params: {
+          dataSource: "rpc_direct",
+          provider: "alchemy",
+          chains: ["base"],
+          selfFundingThresholdUsd: 50,
+          minFundingThreshold: 100,
+          // Missing enableProtocolFilter and enableTokenWhitelist - should default to false
+        },
+      },
+    };
+
+    const result = validateArenaConfig(config);
+
+    // Defaults should be applied and returned
+    expect(result.engine.params).toBeDefined();
+    expect(result.engine.params?.enableProtocolFilter).toBe(false);
+    expect(result.engine.params?.enableTokenWhitelist).toBe(false);
   });
 });
