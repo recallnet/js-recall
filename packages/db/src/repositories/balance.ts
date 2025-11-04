@@ -56,12 +56,12 @@ export class BalanceRepository {
         .select()
         .from(balances)
         .where(
-          isEvmAddress
-            ? sql`${balances.agentId} = ${agentId} AND LOWER(${balances.tokenAddress}) = ${tokenAddress.toLowerCase()}`
-            : and(
-                eq(balances.agentId, agentId),
-                eq(balances.tokenAddress, tokenAddress),
-              ),
+          and(
+            eq(balances.agentId, agentId),
+            isEvmAddress
+              ? sql`LOWER(${balances.tokenAddress}) = ${tokenAddress.toLowerCase()}`
+              : eq(balances.tokenAddress, tokenAddress),
+          ),
         );
 
       return result;
@@ -204,12 +204,12 @@ export class BalanceRepository {
         symbol,
       })
       .where(
-        isEvmAddress
-          ? sql`${balances.agentId} = ${agentId} AND LOWER(${balances.tokenAddress}) = ${tokenAddress.toLowerCase()}`
-          : and(
-              eq(balances.agentId, agentId),
-              eq(balances.tokenAddress, tokenAddress),
-            ),
+        and(
+          eq(balances.agentId, agentId),
+          isEvmAddress
+            ? sql`LOWER(${balances.tokenAddress}) = ${tokenAddress.toLowerCase()}`
+            : eq(balances.tokenAddress, tokenAddress),
+        ),
       )
       .returning();
 
