@@ -48,13 +48,19 @@ export class BalanceRepository {
    */
   async getBalance(agentId: string, tokenAddress: string) {
     try {
+      // Use case-insensitive comparison for EVM addresses (0x prefix)
+      // Preserve exact case for Solana addresses (base58, case-sensitive)
+      const isEvmAddress = tokenAddress.startsWith("0x");
+
       const [result] = await this.#db
         .select()
         .from(balances)
         .where(
           and(
             eq(balances.agentId, agentId),
-            eq(balances.tokenAddress, tokenAddress),
+            isEvmAddress
+              ? sql`LOWER(${balances.tokenAddress}) = LOWER(${tokenAddress})`
+              : eq(balances.tokenAddress, tokenAddress),
           ),
         );
 
@@ -185,6 +191,10 @@ export class BalanceRepository {
     specificChain: SpecificChain,
     symbol: string,
   ): Promise<number> {
+    // Use case-insensitive comparison for EVM addresses (0x prefix)
+    // Preserve exact case for Solana addresses (base58, case-sensitive)
+    const isEvmAddress = tokenAddress.startsWith("0x");
+
     const [result] = await tx
       .update(balances)
       .set({
@@ -196,7 +206,9 @@ export class BalanceRepository {
       .where(
         and(
           eq(balances.agentId, agentId),
-          eq(balances.tokenAddress, tokenAddress),
+          isEvmAddress
+            ? sql`LOWER(${balances.tokenAddress}) = LOWER(${tokenAddress})`
+            : eq(balances.tokenAddress, tokenAddress),
         ),
       )
       .returning();

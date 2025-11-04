@@ -45,6 +45,72 @@ describe("Trading API", () => {
     adminApiKey = await getAdminApiKey();
   });
 
+  test("should handle case-insensitive token addresses in trades", async () => {
+    // Register user and agent
+    const { client, agent } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Case Test Agent",
+    });
+
+    // Start competition
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+    const startResp = await startTestCompetition({
+      adminClient,
+      name: `Case Sensitivity Test ${Date.now()}`,
+      agentIds: [agent.id],
+      tradingConstraints: looseTradingConstraints,
+    });
+    expect(startResp.success).toBe(true);
+
+    // Get agent's balances to see what case addresses are stored as
+    const balancesResp = (await client.getBalance()) as BalancesResponse;
+    expect(balancesResp.success).toBe(true);
+
+    // Find Ethereum USDC balance (should have 5000 from config)
+    const ethUsdcBalance = balancesResp.balances.find(
+      (b) =>
+        b.specificChain === "eth" &&
+        b.symbol?.toUpperCase() === "USDC" &&
+        b.amount > 0,
+    );
+    expect(ethUsdcBalance).toBeDefined();
+    expect(ethUsdcBalance?.amount).toBeGreaterThan(100);
+    expect(ethUsdcBalance?.tokenAddress).toBeDefined();
+
+    const storedAddress = ethUsdcBalance?.tokenAddress ?? "";
+    const lowercaseAddress = storedAddress.toLowerCase();
+
+    // Try to trade using LOWERCASE version of the address
+    // This should work (Ethereum addresses are case-insensitive)
+    const tradeResp = await client.executeTrade({
+      fromToken: lowercaseAddress, // Using lowercase
+      toToken: config.specificChainTokens.eth.eth, // WETH
+      amount: "50",
+      reason: "Test: lowercase address should work",
+      fromChain: BlockchainType.EVM,
+      toChain: BlockchainType.EVM,
+      fromSpecificChain: "eth" as SpecificChain,
+      toSpecificChain: "eth" as SpecificChain,
+    });
+
+    // Expect trade to succeed (case-insensitive lookups)
+    expect(tradeResp.success).toBe(true);
+
+    const successResp = tradeResp as TradeResponse;
+    expect(successResp.transaction).toBeDefined();
+    expect(successResp.transaction.success).toBe(true);
+    expect(successResp.transaction.fromToken).toBe(lowercaseAddress);
+
+    // Verify balance was actually deducted
+    const balancesAfter = (await client.getBalance()) as BalancesResponse;
+    const ethUsdcAfter = balancesAfter.balances.find(
+      (b) => b.specificChain === "eth" && b.symbol?.toUpperCase() === "USDC",
+    );
+    expect(ethUsdcAfter).toBeDefined();
+    expect(ethUsdcAfter?.amount).toBeLessThan(ethUsdcBalance?.amount ?? 0);
+  });
+
   test("agent can execute a trade and verify balance updates", async () => {
     // Setup admin client
     const adminClient = createTestClient();
