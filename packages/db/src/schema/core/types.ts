@@ -21,10 +21,18 @@ export type SelectAgentWithCompetitionStatus = SelectAgent & {
 export type SelectAdmin = typeof defs.admins.$inferSelect;
 export type InsertAdmin = typeof defs.admins.$inferInsert;
 
+export type SelectArena = typeof defs.arenas.$inferSelect;
+export type InsertArena = typeof defs.arenas.$inferInsert;
+
 export type SelectCompetition = typeof defs.competitions.$inferSelect;
 export type InsertCompetition = typeof defs.competitions.$inferInsert;
 export const UpdateCompetitionSchema = createUpdateSchema(defs.competitions);
 export type UpdateCompetition = z.infer<typeof UpdateCompetitionSchema>;
+
+export type SelectCompetitionPartner =
+  typeof defs.competitionPartners.$inferSelect;
+export type InsertCompetitionPartner =
+  typeof defs.competitionPartners.$inferInsert;
 
 export type SelectCompetitionAgent = typeof defs.competitionAgents.$inferSelect;
 export type InsertCompetitionAgent = typeof defs.competitionAgents.$inferInsert;

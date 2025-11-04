@@ -9,7 +9,9 @@ import {
 } from "../trading/defs.js";
 import {
   agents,
+  arenas,
   competitionAgents,
+  competitionPartners,
   competitionRewards,
   competitions,
   competitionsLeaderboard,
@@ -31,16 +33,35 @@ export const agentsRelations = relations(agents, ({ one, many }) => ({
   competitionAgents: many(competitionAgents),
 }));
 
+export const arenasRelations = relations(arenas, ({ many }) => ({
+  competitions: many(competitions),
+}));
+
 export const competitionsRelations = relations(
   competitions,
   ({ one, many }) => ({
+    arena: one(arenas, {
+      fields: [competitions.arenaId],
+      references: [arenas.id],
+    }),
     tradingCompetition: one(tradingCompetitions),
+    partners: many(competitionPartners),
     trades: many(trades),
     portfolioSnapshots: many(portfolioSnapshots),
     competitionAgents: many(competitionAgents),
     rewards: many(rewards),
     rewardsTree: many(rewardsTree),
     rewardsRoots: many(rewardsRoots),
+  }),
+);
+
+export const competitionPartnersRelations = relations(
+  competitionPartners,
+  ({ one }) => ({
+    competition: one(competitions, {
+      fields: [competitionPartners.competitionId],
+      references: [competitions.id],
+    }),
   }),
 );
 

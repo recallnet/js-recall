@@ -1,5 +1,5 @@
 import * as dotenv from "dotenv";
-import { eq, isNull, sql } from "drizzle-orm";
+import { eq, isNull } from "drizzle-orm";
 import * as path from "path";
 
 import { arenas, competitions } from "@recallnet/db/schema/core/defs";
@@ -105,29 +105,12 @@ async function backfillArenasAndEngineConfig(): Promise<void> {
         continue;
       }
 
-      // Build engine config from old table data
-      const engineConfig = {
-        params: {
-          crossChainTradingType: comp.crossChainTradingType || "disallowAll",
-          ...(comp.minimumPairAgeHours !== null && {
-            tradingConstraints: {
-              minimumPairAgeHours: comp.minimumPairAgeHours,
-              minimum24hVolumeUsd: comp.minimum24hVolumeUsd,
-              minimumLiquidityUsd: comp.minimumLiquidityUsd,
-              minimumFdvUsd: comp.minimumFdvUsd,
-              minTradesPerDay: comp.minTradesPerDay,
-            },
-          }),
-        },
-      };
-
       await db
         .update(competitions)
         .set({
           arenaId: "default-paper-arena",
           engineId: "spot_paper_trading",
           engineVersion: "1.0.0",
-          engineConfig: sql`${JSON.stringify(engineConfig)}::jsonb`,
         })
         .where(eq(competitions.id, comp.id));
 
@@ -180,36 +163,12 @@ async function backfillArenasAndEngineConfig(): Promise<void> {
       }
 
       // Extract provider from dataSourceConfig
-      const dataSourceConfig = comp.dataSourceConfig as {
-        provider?: string;
-        apiUrl?: string;
-      };
-
-      // Build engine config from perps config table
-      const engineConfig = {
-        params: {
-          dataSource: comp.dataSource,
-          dataSourceConfig: comp.dataSourceConfig,
-          provider: dataSourceConfig.provider || "symphony",
-          evaluationMetric: comp.evaluationMetric,
-          initialCapital: parseFloat(comp.initialCapital || "500"),
-          selfFundingThreshold: parseFloat(
-            comp.selfFundingThresholdUsd || "10",
-          ),
-          ...(comp.minFundingThreshold && {
-            minFundingThreshold: parseFloat(comp.minFundingThreshold),
-          }),
-          ...(dataSourceConfig.apiUrl && { apiUrl: dataSourceConfig.apiUrl }),
-        },
-      };
-
       await db
         .update(competitions)
         .set({
           arenaId: "default-perps-arena",
           engineId: "perpetual_futures",
           engineVersion: "1.0.0",
-          engineConfig: sql`${JSON.stringify(engineConfig)}::jsonb`,
         })
         .where(eq(competitions.id, comp.id));
 

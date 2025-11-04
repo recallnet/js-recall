@@ -12,7 +12,71 @@ import {
  */
 
 /**
- * Base arena config schema
+ * Spot paper trading engine params schema
+ */
+export const SpotPaperTradingEngineParamsSchema = z.object({
+  crossChainTradingType: CrossChainTradingTypeSchema.optional(),
+  tradingConstraints: TradingConstraintsSchema.optional(),
+  priceProvider: z.enum(["dexscreener", "coingecko"]).optional(),
+});
+
+/**
+ * Perpetual futures engine params schema
+ */
+export const PerpetualFuturesEngineParamsSchema = z.object({
+  provider: z.enum(["symphony", "hyperliquid"]),
+  evaluationMetric: EvaluationMetricSchema.optional(),
+  initialCapital: z.number().positive(),
+  selfFundingThreshold: z.number().min(0),
+  minFundingThreshold: z.number().min(0).optional(),
+  apiUrl: z.string().url().optional(),
+  dataSource: z
+    .enum(["external_api", "onchain_indexing", "hybrid"])
+    .default("external_api"),
+  dataSourceConfig: z.record(z.string(), z.unknown()).optional(),
+});
+
+/**
+ * Spot live trading engine params schema
+ */
+export const SpotLiveTradingEngineParamsSchema = z.object({
+  dataSource: z.literal("rpc_direct"),
+  provider: z.string(),
+  chains: z.array(z.string()),
+  enableProtocolFilter: z.boolean().default(false),
+  enableTokenWhitelist: z.boolean().default(false),
+  selfFundingThresholdUsd: z.number().min(0),
+  minFundingThreshold: z.number().min(0),
+  scanIntervalSeconds: z.number().int().min(60).optional(),
+});
+
+/**
+ * Engine configuration discriminated union
+ * Provides type-safe engine params based on engine ID
+ */
+const EngineConfigSchema = z.discriminatedUnion("id", [
+  z.object({
+    id: z.literal("spot_paper_trading"),
+    version: z.string().regex(/^\d+\.\d+\.\d+$/, "Must be valid semver"),
+    description: z.string().optional(),
+    params: SpotPaperTradingEngineParamsSchema.optional(),
+  }),
+  z.object({
+    id: z.literal("perpetual_futures"),
+    version: z.string().regex(/^\d+\.\d+\.\d+$/, "Must be valid semver"),
+    description: z.string().optional(),
+    params: PerpetualFuturesEngineParamsSchema.optional(),
+  }),
+  z.object({
+    id: z.literal("spot_live_trading"),
+    version: z.string().regex(/^\d+\.\d+\.\d+$/, "Must be valid semver"),
+    description: z.string().optional(),
+    params: SpotLiveTradingEngineParamsSchema.optional(),
+  }),
+]);
+
+/**
+ * Arena configuration schema
  */
 export const ArenaConfigSchema = z
   .object({
@@ -68,13 +132,7 @@ export const ArenaConfigSchema = z
         })
         .optional(),
     }),
-    engine: z.object({
-      id: z.string(),
-      version: z.string().regex(/^\d+\.\d+\.\d+$/, "Must be valid semver"),
-      description: z.string().optional(),
-      details: z.record(z.string(), z.unknown()).optional(),
-      params: z.record(z.string(), z.unknown()).optional(),
-    }),
+    engine: EngineConfigSchema,
     partners: z
       .array(
         z.object({
@@ -138,87 +196,17 @@ export const ArenaConfigSchema = z
   );
 
 /**
- * Spot paper trading engine params schema
- */
-export const SpotPaperTradingEngineParamsSchema = z.object({
-  crossChainTradingType: CrossChainTradingTypeSchema.optional(),
-  tradingConstraints: TradingConstraintsSchema.optional(),
-  priceProvider: z.enum(["dexscreener", "coingecko"]).optional(),
-});
-
-/**
- * Perpetual futures engine params schema
- */
-export const PerpetualFuturesEngineParamsSchema = z.object({
-  provider: z.enum(["symphony", "hyperliquid"]),
-  evaluationMetric: EvaluationMetricSchema.optional(),
-  initialCapital: z.number().positive(),
-  selfFundingThreshold: z.number().min(0),
-  minFundingThreshold: z.number().min(0).optional(),
-  apiUrl: z.string().url().optional(),
-  dataSource: z
-    .enum(["external_api", "onchain_indexing", "hybrid"])
-    .default("external_api"),
-  dataSourceConfig: z.record(z.string(), z.unknown()).optional(),
-});
-
-/**
- * Spot live trading engine params schema
- */
-export const SpotLiveTradingEngineParamsSchema = z.object({
-  dataSource: z.literal("rpc_direct"), // Only RPC scanning supported (can add external_api when built)
-  provider: z.string(), // RPC provider (e.g., "alchemy", "quicknode")
-  chains: z.array(z.string()),
-  enableProtocolFilter: z.boolean().default(false),
-  enableTokenWhitelist: z.boolean().default(false),
-  selfFundingThresholdUsd: z.number().min(0),
-  minFundingThreshold: z.number().min(0),
-  scanIntervalSeconds: z.number().int().min(60).optional(),
-});
-
-/**
  * Type for validated arena config
  */
 export type ArenaConfig = z.infer<typeof ArenaConfigSchema>;
 
 /**
- * Validate arena config and engine-specific params
+ * Validate arena config with type-safe engine params
  * @param config The arena config to validate
- * @returns Validated config with typed engine params
+ * @returns Validated config with properly typed engine params based on engine ID
  */
 export function validateArenaConfig(config: unknown): ArenaConfig {
-  // Validate base structure
-  const validated = ArenaConfigSchema.parse(config);
-
-  // Validate engine-specific params based on engine.id
-  if (validated.engine.params) {
-    switch (validated.engine.id) {
-      case "spot_paper_trading":
-        validated.engine.params = SpotPaperTradingEngineParamsSchema.parse(
-          validated.engine.params,
-        );
-        break;
-
-      case "perpetual_futures":
-        validated.engine.params = PerpetualFuturesEngineParamsSchema.parse(
-          validated.engine.params,
-        );
-        break;
-
-      case "spot_live_trading":
-        validated.engine.params = SpotLiveTradingEngineParamsSchema.parse(
-          validated.engine.params,
-        );
-        break;
-
-      default:
-        throw new Error(
-          `Unknown engine ID: ${validated.engine.id}. Supported engines: spot_paper_trading, perpetual_futures, spot_live_trading`,
-        );
-    }
-  }
-
-  return validated;
+  return ArenaConfigSchema.parse(config);
 }
 
 /**

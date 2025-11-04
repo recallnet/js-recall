@@ -55,6 +55,35 @@ export const competitionType = pgEnum("competition_type", [
 ]);
 
 /**
+ * Defines the possible engine types
+ */
+export const engineType = pgEnum("engine_type", [
+  "spot_paper_trading",
+  "perpetual_futures",
+  "spot_live_trading",
+]);
+
+/**
+ * Defines the possible allocation units for rewards
+ */
+export const allocationUnit = pgEnum("allocation_unit", [
+  "RECALL",
+  "USDC",
+  "USD",
+]);
+
+/**
+ * Defines the possible display states for competitions
+ */
+export const displayState = pgEnum("display_state", [
+  "active",
+  "waitlist",
+  "cancelled",
+  "pending",
+  "paused",
+]);
+
+/**
  * Defines the possible statuses for agents within competitions.
  */
 export const competitionAgentStatus = pgEnum("competition_agent_status", [
@@ -287,6 +316,8 @@ export const competitions = pgTable(
     type: competitionType("type").default("trading").notNull(),
     externalUrl: text("external_url"),
     imageUrl: text("image_url"),
+
+    // Schedule
     startDate: timestamp("start_date", { withTimezone: true }),
     endDate: timestamp("end_date", { withTimezone: true }),
     boostStartDate: timestamp("boost_start_date", { withTimezone: true }),
@@ -302,15 +333,36 @@ export const competitions = pgTable(
       scale: 15,
       mode: "number",
     }),
+    vips: text("vips").array(),
+    allowlist: text("allowlist").array(),
+    blocklist: text("blocklist").array(),
+    minRecallRank: integer("min_recall_rank"),
+    allowlistOnly: boolean("allowlist_only").default(false),
+
+    agentAllocation: numeric("agent_allocation", {
+      precision: 30,
+      scale: 15,
+      mode: "number",
+    }),
+    agentAllocationUnit: allocationUnit("agent_allocation_unit"),
+    boosterAllocation: numeric("booster_allocation", {
+      precision: 30,
+      scale: 15,
+      mode: "number",
+    }),
+    boosterAllocationUnit: allocationUnit("booster_allocation_unit"),
+    rewardRules: text("reward_rules"),
+    rewardDetails: text("reward_details"),
+
+    // Engine routing
+    engineId: engineType("engine_id"),
+    engineVersion: text("engine_version"),
+
+    // Display
     status: competitionStatus("status").notNull(),
     sandboxMode: boolean("sandbox_mode").notNull().default(false),
-    engineId: text("engine_id"),
-    engineVersion: text("engine_version"),
-    engineConfig: jsonb("engine_config"),
-    participationConfig: jsonb("participation_config"),
-    partners: jsonb("partners"),
-    rewards: jsonb("rewards"),
-    displayState: text("display_state"),
+    displayState: displayState("display_state"),
+
     createdAt: timestamp("created_at", {
       withTimezone: true,
     }).defaultNow(),
@@ -342,8 +394,41 @@ export const competitions = pgTable(
 );
 
 /**
+ * Partners for competitions
+ * Stores structured partner information with display ordering
+ */
+export const competitionPartners = pgTable(
+  "competition_partners",
+  {
+    id: uuid().primaryKey().notNull().defaultRandom(),
+    competitionId: uuid("competition_id").notNull(),
+    position: integer("position").notNull(),
+    name: text("name").notNull(),
+    url: text("url"),
+    details: text("details"),
+    logoUrl: text("logo_url"),
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+    })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.competitionId],
+      foreignColumns: [competitions.id],
+      name: "competition_partners_competition_id_fkey",
+    }).onDelete("cascade"),
+    index("idx_competition_partners_competition_id").on(table.competitionId),
+    unique("competition_partners_competition_id_position").on(
+      table.competitionId,
+      table.position,
+    ),
+  ],
+);
+
+/**
  * Junction table for agent participation in competitions
- * Now includes per-competition agent status tracking
  */
 export const competitionAgents = pgTable(
   "competition_agents",

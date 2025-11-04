@@ -40,7 +40,7 @@ describe("ArenaConfigSchema", () => {
       metadata: { id: "test", name: "Test", createdBy: "recall" },
       classification: { category: "crypto_trading", skill: "test" },
       participation: {},
-      engine: { id: "paper_trading", version: "1.0.0" },
+      engine: { id: "spot_paper_trading", version: "1.0.0" },
     };
 
     expect(() => ArenaConfigSchema.parse(invalidConfig)).toThrow();
@@ -53,7 +53,7 @@ describe("ArenaConfigSchema", () => {
       metadata: { id: "test", name: "Test", createdBy: "recall" },
       classification: { category: "crypto_trading", skill: "test" },
       participation: {},
-      engine: { id: "paper_trading", version: "1.0.0" },
+      engine: { id: "spot_paper_trading", version: "1.0.0" },
     };
 
     expect(() => ArenaConfigSchema.parse(invalidConfig)).toThrow();
@@ -70,7 +70,7 @@ describe("ArenaConfigSchema", () => {
       },
       classification: { category: "crypto_trading", skill: "test" },
       participation: {},
-      engine: { id: "paper_trading", version: "1.0.0" },
+      engine: { id: "spot_paper_trading", version: "1.0.0" },
     };
 
     expect(() => ArenaConfigSchema.parse(invalidConfig)).toThrow(
@@ -85,7 +85,7 @@ describe("ArenaConfigSchema", () => {
       metadata: { id: "test", name: "Test", createdBy: "recall" },
       classification: { category: "crypto_trading", skill: "test" },
       participation: {},
-      engine: { id: "paper_trading", version: "1.0.0" },
+      engine: { id: "spot_paper_trading", version: "1.0.0" },
       schedule: {
         registration: {
           opensAt: new Date("2025-01-01"),
@@ -108,7 +108,7 @@ describe("ArenaConfigSchema", () => {
       metadata: { id: "test", name: "Test", createdBy: "recall" },
       classification: { category: "crypto_trading", skill: "test" },
       participation: {},
-      engine: { id: "paper_trading", version: "1.0.0" },
+      engine: { id: "spot_paper_trading", version: "1.0.0" },
       schedule: {
         registration: {
           opensAt: new Date("2025-01-02"),
@@ -330,7 +330,7 @@ describe("validateArenaConfig", () => {
       },
     };
 
-    expect(() => validateArenaConfig(config)).toThrow(/Unknown engine ID/);
+    expect(() => validateArenaConfig(config)).toThrow(/Invalid input/);
   });
 
   test("should reject invalid engine params", () => {
@@ -421,8 +421,11 @@ describe("validateEngineParams", () => {
     const result = validateArenaConfig(config);
 
     // Defaults should be applied and returned
-    expect(result.engine.params).toBeDefined();
-    expect(result.engine.params?.enableProtocolFilter).toBe(false);
-    expect(result.engine.params?.enableTokenWhitelist).toBe(false);
+    expect(result.engine.id).toBe("spot_live_trading");
+    if (result.engine.id === "spot_live_trading") {
+      expect(result.engine.params).toBeDefined();
+      expect(result.engine.params?.enableProtocolFilter).toBe(false);
+      expect(result.engine.params?.enableTokenWhitelist).toBe(false);
+    }
   });
 });
