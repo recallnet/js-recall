@@ -59,7 +59,7 @@ export class BalanceRepository {
           and(
             eq(balances.agentId, agentId),
             isEvmAddress
-              ? sql`LOWER(${balances.tokenAddress}) = ${tokenAddress.toLowerCase()}`
+              ? sql`LOWER(${balances.tokenAddress}) = LOWER(${tokenAddress})`
               : eq(balances.tokenAddress, tokenAddress),
           ),
         );
@@ -207,7 +207,7 @@ export class BalanceRepository {
         and(
           eq(balances.agentId, agentId),
           isEvmAddress
-            ? sql`LOWER(${balances.tokenAddress}) = ${tokenAddress.toLowerCase()}`
+            ? sql`LOWER(${balances.tokenAddress}) = LOWER(${tokenAddress})`
             : eq(balances.tokenAddress, tokenAddress),
         ),
       )
