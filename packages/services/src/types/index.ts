@@ -734,8 +734,24 @@ export const CompetitionAllowedUpdateSchema = z.strictObject({
   boostEndDate: z.date().optional(),
   joinStartDate: z.date().optional(),
   joinEndDate: z.date().optional(),
-  rewards: z.record(z.number(), z.number()).optional(),
+  rewards: z
+    .record(z.string().regex(/^\d+$/), z.number())
+    .transform((val) => {
+      const result: Record<number, number> = {};
+      for (const [key, value] of Object.entries(val)) {
+        result[parseInt(key, 10)] = value;
+      }
+      return result;
+    })
+    .optional(),
   tradingConstraints: TradingConstraintsSchema.optional(),
+  arenaId: z.string().optional(),
+  engineId: z.string().optional(),
+  engineVersion: z.string().optional(),
+  engineConfig: z.record(z.string(), z.unknown()).optional(),
+  participationConfig: z.record(z.string(), z.unknown()).optional(),
+  partners: z.array(z.unknown()).optional(),
+  displayState: z.string().optional(),
 });
 
 export type CompetitionAllowedUpdate = z.infer<
