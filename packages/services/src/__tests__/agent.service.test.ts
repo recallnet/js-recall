@@ -45,14 +45,19 @@ function createMockCompetition(
     maxParticipants: null,
     registeredParticipants: 0,
     minimumStake: null,
+    participationConfig: null,
+    partners: null,
+    rewards: null,
+    displayState: null,
     ...overrides,
   };
 
-  // Add engine config based on competition type
+  // Add engine config and arena based on competition type
   const competitionType = baseCompetition.type;
   if (competitionType === "trading") {
     return {
       ...baseCompetition,
+      arenaId: "default-paper-arena",
       engineId: "spot_paper_trading",
       engineVersion: "1.0.0",
       engineConfig: {
@@ -70,6 +75,7 @@ function createMockCompetition(
   } else if (competitionType === "perpetual_futures") {
     return {
       ...baseCompetition,
+      arenaId: "default-perps-arena",
       engineId: "perpetual_futures",
       engineVersion: "1.0.0",
       engineConfig: {
@@ -86,6 +92,7 @@ function createMockCompetition(
   // Default for any other type
   return {
     ...baseCompetition,
+    arenaId: null,
     engineId: null,
     engineVersion: null,
     engineConfig: null,

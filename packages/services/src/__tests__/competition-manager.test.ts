@@ -75,6 +75,11 @@ describe("CompetitionService", () => {
     sandboxMode: false,
     competitionId: mockCompeitionId,
     crossChainTradingType: "allow",
+    participationConfig: null,
+    partners: null,
+    rewards: null,
+    displayState: null,
+    arenaId: "default-paper-arena",
     engineId: "spot_paper_trading",
     engineVersion: "1.0.0",
     engineConfig: {

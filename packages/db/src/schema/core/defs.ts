@@ -248,10 +248,40 @@ export const admins = pgTable(
   ],
 );
 
+/**
+ * Arenas are grouping mechanisms for organizing related competitions
+ * Stores metadata and classification for discovery/filtering
+ */
+export const arenas = pgTable(
+  "arenas",
+  {
+    id: text().primaryKey().notNull(),
+    name: text().notNull(),
+    createdBy: text("created_by"),
+    classification: jsonb().notNull(),
+    kind: text().default("Competition").notNull(),
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+    })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", {
+      withTimezone: true,
+    })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index("idx_arenas_id").on(table.id),
+    unique("arenas_id_key").on(table.id),
+  ],
+);
+
 export const competitions = pgTable(
   "competitions",
   {
     id: uuid().primaryKey().notNull(),
+    arenaId: text("arena_id"),
     name: varchar({ length: 100 }).notNull(),
     description: text(),
     type: competitionType("type").default("trading").notNull(),
@@ -277,6 +307,10 @@ export const competitions = pgTable(
     engineId: text("engine_id"),
     engineVersion: text("engine_version"),
     engineConfig: jsonb("engine_config"),
+    participationConfig: jsonb("participation_config"),
+    partners: jsonb("partners"),
+    rewards: jsonb("rewards"),
+    displayState: text("display_state"),
     createdAt: timestamp("created_at", {
       withTimezone: true,
     }).defaultNow(),
@@ -285,6 +319,12 @@ export const competitions = pgTable(
     }).defaultNow(),
   },
   (table) => [
+    foreignKey({
+      columns: [table.arenaId],
+      foreignColumns: [arenas.id],
+      name: "competitions_arena_id_fkey",
+    }).onDelete("set null"),
+    index("idx_competitions_arena_id").on(table.arenaId),
     index("idx_competitions_status").on(table.status),
     index("idx_competitions_id_participants").on(
       table.id,

@@ -1,5 +1,5 @@
 {
-  "id": "00a666d8-1879-4f1d-bdcb-6c19ea2f4e33",
+  "id": "d208d22a-3083-424e-a8f6-e3e7008eb19f",
   "prevId": "3816456a-a3c3-4b3c-a185-c19754012f75",
   "version": "7",
   "dialect": "postgresql",
@@ -1178,6 +1178,86 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.arenas": {
+      "name": "arenas",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "classification": {
+          "name": "classification",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'Competition'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "idx_arenas_id": {
+          "name": "idx_arenas_id",
+          "columns": [
+            {
+              "expression": "id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "arenas_id_key": {
+          "name": "arenas_id_key",
+          "nullsNotDistinct": false,
+          "columns": ["id"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.competition_agents": {
       "name": "competition_agents",
       "schema": "",
@@ -1505,6 +1585,12 @@
           "primaryKey": true,
           "notNull": true
         },
+        "arena_id": {
+          "name": "arena_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "name": {
           "name": "name",
           "type": "varchar(100)",
@@ -1624,6 +1710,30 @@
           "primaryKey": false,
           "notNull": false
         },
+        "participation_config": {
+          "name": "participation_config",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "partners": {
+          "name": "partners",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "rewards": {
+          "name": "rewards",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "display_state": {
+          "name": "display_state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -1640,6 +1750,21 @@
         }
       },
       "indexes": {
+        "idx_competitions_arena_id": {
+          "name": "idx_competitions_arena_id",
+          "columns": [
+            {
+              "expression": "arena_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
         "idx_competitions_status": {
           "name": "idx_competitions_status",
           "columns": [
@@ -1746,7 +1871,17 @@
           "with": {}
         }
       },
-      "foreignKeys": {},
+      "foreignKeys": {
+        "competitions_arena_id_fkey": {
+          "name": "competitions_arena_id_fkey",
+          "tableFrom": "competitions",
+          "tableTo": "arenas",
+          "columnsFrom": ["arena_id"],
+          "columnsTo": ["id"],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},

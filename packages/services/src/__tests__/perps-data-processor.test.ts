@@ -1222,6 +1222,11 @@ describe("PerpsDataProcessor", () => {
         crossChainTradingType: "allow" as const,
         minimumStake: null,
         evaluationMetric: "calmar_ratio" as const,
+        participationConfig: null,
+        partners: null,
+        rewards: null,
+        displayState: null,
+        arenaId: "default-perps-arena",
         engineId: "perpetual_futures",
         engineVersion: "1.0.0",
         engineConfig: {
@@ -1267,6 +1272,11 @@ describe("PerpsDataProcessor", () => {
         canceledBy: null,
         canceledAt: null,
         cancelReason: null,
+        participationConfig: null,
+        partners: null,
+        rewards: null,
+        displayState: null,
+        arenaId: "default-paper-arena",
         engineId: "spot_paper_trading",
         engineVersion: "1.0.0",
         engineConfig: {

@@ -2,7 +2,7 @@ import * as dotenv from "dotenv";
 import { eq, isNull, sql } from "drizzle-orm";
 import * as path from "path";
 
-import { competitions } from "@recallnet/db/schema/core/defs";
+import { arenas, competitions } from "@recallnet/db/schema/core/defs";
 import {
   perpsCompetitionConfig,
   tradingCompetitions,
@@ -14,24 +14,56 @@ import { createLogger } from "@/lib/logger.js";
 
 dotenv.config({ path: path.resolve(process.cwd(), ".env") });
 
-const logger = createLogger("BackfillEngineConfig");
+const logger = createLogger("BackfillArenas");
 
 /**
- * Backfill engine configuration for existing competitions
+ * Backfill arenas and engine configuration for existing competitions
  *
- * Reads from old config tables and populates:
- * - engineId
- * - engineVersion
- * - engineConfig (jsonb with params only, no id/version duplication)
+ * Creates:
+ * - Default arenas for grouping existing competitions
+ * - Populates competitions with engineId, engineVersion, engineConfig, arena_id
  *
  * Safe to run multiple times (idempotent - skips already backfilled)
  */
-async function backfillEngineConfig(): Promise<void> {
-  logger.info("Starting engine config backfill...");
+async function backfillArenasAndEngineConfig(): Promise<void> {
+  logger.info("Starting arena and engine config backfill...");
 
   try {
     // ========================================
-    // 1. Backfill Paper Trading Competitions
+    // 1. Create Default Arenas
+    // ========================================
+    logger.info("Creating default arenas...");
+
+    const defaultArenas = [
+      {
+        id: "default-paper-arena",
+        name: "Default Paper Trading Arena",
+        createdBy: "system",
+        classification: {
+          category: "crypto_trading",
+          skill: "spot_paper_trading",
+        },
+      },
+      {
+        id: "default-perps-arena",
+        name: "Default Perpetual Futures Arena",
+        createdBy: "system",
+        classification: {
+          category: "crypto_trading",
+          skill: "perpetual_futures",
+        },
+      },
+    ];
+
+    for (const arena of defaultArenas) {
+      await db.insert(arenas).values(arena).onConflictDoNothing().execute();
+      logger.debug(`Created/verified arena: ${arena.id}`);
+    }
+
+    logger.info("✓ Default arenas created");
+
+    // ========================================
+    // 2. Backfill Paper Trading Competitions
     // ========================================
     logger.info("Backfilling paper trading competitions...");
 
@@ -92,6 +124,7 @@ async function backfillEngineConfig(): Promise<void> {
       await db
         .update(competitions)
         .set({
+          arenaId: "default-paper-arena",
           engineId: "spot_paper_trading",
           engineVersion: "1.0.0",
           engineConfig: sql`${JSON.stringify(engineConfig)}::jsonb`,
@@ -105,7 +138,7 @@ async function backfillEngineConfig(): Promise<void> {
     logger.info(`✓ Backfilled ${paperUpdated} paper trading competitions`);
 
     // ========================================
-    // 2. Backfill Perpetual Futures Competitions
+    // 3. Backfill Perpetual Futures Competitions
     // ========================================
     logger.info("Backfilling perpetual futures competitions...");
 
@@ -173,6 +206,7 @@ async function backfillEngineConfig(): Promise<void> {
       await db
         .update(competitions)
         .set({
+          arenaId: "default-perps-arena",
           engineId: "perpetual_futures",
           engineVersion: "1.0.0",
           engineConfig: sql`${JSON.stringify(engineConfig)}::jsonb`,
@@ -186,7 +220,7 @@ async function backfillEngineConfig(): Promise<void> {
     logger.info(`✓ Backfilled ${perpsUpdated} perpetual futures competitions`);
 
     // ========================================
-    // 3. Verification
+    // 4. Verification
     // ========================================
     const stillMissing = await db
       .select({ id: competitions.id, type: competitions.type })
@@ -214,4 +248,4 @@ async function backfillEngineConfig(): Promise<void> {
   }
 }
 
-backfillEngineConfig();
+backfillArenasAndEngineConfig();
