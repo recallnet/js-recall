@@ -221,6 +221,7 @@ describe("Logging and Metrics API", () => {
       fromToken: config.specificChainTokens.eth.usdc,
       toToken: config.specificChainTokens.eth.eth,
       amount: "100",
+      competitionId,
       reason: "Logging test trade 1 - USDC to ETH",
     });
     expect(trade1Response.success).toBe(true);
@@ -229,6 +230,7 @@ describe("Logging and Metrics API", () => {
       fromToken: config.specificChainTokens.eth.usdc,
       toToken: config.specificChainTokens.eth.usdt,
       amount: "50",
+      competitionId,
       reason: "Logging test trade 2 - USDC to USDT",
     });
     expect(trade2Response.success).toBe(true);
@@ -238,6 +240,7 @@ describe("Logging and Metrics API", () => {
       fromToken: config.specificChainTokens.eth.usdc,
       toToken: config.specificChainTokens.eth.eth,
       amount: "75",
+      competitionId,
       reason: "Logging test trade 3 - USDC to ETH",
     });
     expect(trade3Response.success).toBe(true);
@@ -450,6 +453,7 @@ describe("Logging and Metrics API", () => {
       fromToken: config.specificChainTokens.eth.usdc,
       toToken: config.specificChainTokens.eth.eth,
       amount: "50",
+      competitionId,
       reason: "DB Classification test trade",
     }); // create (trade)
 

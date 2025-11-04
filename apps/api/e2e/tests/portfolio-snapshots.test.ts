@@ -182,6 +182,7 @@ describe("Portfolio Snapshots", () => {
       fromToken: usdcTokenAddress,
       toToken: solTokenAddress,
       amount: "100",
+      competitionId,
       fromChain: BlockchainType.SVM,
       toChain: BlockchainType.SVM,
       reason,

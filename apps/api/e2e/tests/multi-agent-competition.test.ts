@@ -274,6 +274,7 @@ describe("Multi-Agent Competition", () => {
         fromToken: BASE_USDC_ADDRESS,
         toToken: tokenToTrade!,
         amount: tradeAmountPerAgent[i]!.toString(),
+        competitionId,
         fromChain: BlockchainType.EVM,
         toChain: BlockchainType.EVM,
         fromSpecificChain: SpecificChain.BASE,

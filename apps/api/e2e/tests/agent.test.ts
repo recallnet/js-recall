@@ -1822,6 +1822,7 @@ Purpose: WALLET_VERIFICATION`;
       fromToken: config.specificChainTokens.eth.usdc,
       toToken: "0x000000000000000000000000000000000000dead", // Burn address - make agent 1 lose
       amount: "100",
+      competitionId: firstCompetitionId,
       reason: "Test trade",
     });
     await adminClient.endCompetition(firstCompetitionId);
@@ -1881,33 +1882,14 @@ Purpose: WALLET_VERIFICATION`;
         "Updated without ever competing",
       );
 
-      // 3. Balance check
-      const balanceResponse = await agentClient.getBalance();
-      expect(balanceResponse.success).toBe(true);
-
-      // Ensure there is an active competition so the pricing endpoints are
-      // open, but do NOT add the first agent to it
-      const { agent: otherAgent } = await registerUserAndAgentAndGetClient({
-        adminApiKey,
-        agentName: "Active Competition Only Agent",
-        agentDescription:
-          "Agent used to create an active competition for middleware",
-      });
-      const startActiveCompResponse = await adminClient.startCompetition({
-        name: `Enable Price Access ${Date.now()}`,
-        description: "Active competition to satisfy price route middleware",
-        agentIds: [otherAgent.id],
-      });
-      expect(startActiveCompResponse.success).toBe(true);
-
-      // 4. Price data access
+      // 3. Price data access
       const priceResponse = await agentClient.getPrice(
         "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
       ); // WETH
       expect(priceResponse.success).toBe(true);
       expect((priceResponse as PriceResponse).price).toBeGreaterThan(0);
 
-      // 5. API key reset
+      // 4. API key reset
       const resetResponse = await agentClient.resetApiKey();
       expect(resetResponse.success).toBe(true);
       expect((resetResponse as ResetApiKeyResponse).apiKey).toBeDefined();
@@ -2023,11 +2005,16 @@ Purpose: WALLET_VERIFICATION`;
       const profileResponse2 = await agentClient.getAgentProfile();
       expect(profileResponse2.success).toBe(true);
 
-      // Agent should be able to perform other operations
-      const balanceResponse = await agentClient.getBalance();
+      // Agent can still check historical balances for the ended competition
+      const balanceResponse = await agentClient.getBalance(competitionId);
       expect(balanceResponse.success).toBe(true);
-    });
 
+      // Agent can still access other operations
+      const updateResponse = await agentClient.updateAgentProfile({
+        description: "Updated after competition ended",
+      });
+      expect(updateResponse.success).toBe(true);
+    });
     test("competition history is preserved when agent leaves", async () => {
       // Setup admin client
       const adminClient = createTestClient();
@@ -2061,6 +2048,7 @@ Purpose: WALLET_VERIFICATION`;
         fromToken: config.specificChainTokens.eth.usdc,
         toToken: config.specificChainTokens.eth.eth,
         amount: "100",
+        competitionId,
         reason: "Trade before leaving",
       });
 
@@ -2126,6 +2114,7 @@ Purpose: WALLET_VERIFICATION`;
         fromToken: config.specificChainTokens.eth.usdc,
         toToken: config.specificChainTokens.eth.eth,
         amount: "100",
+        competitionId,
         reason: "Test trade 1",
       });
 
@@ -2133,6 +2122,7 @@ Purpose: WALLET_VERIFICATION`;
         fromToken: config.specificChainTokens.eth.eth,
         toToken: config.specificChainTokens.eth.usdc,
         amount: "0.01",
+        competitionId,
         reason: "Test trade 2",
       });
 
@@ -2222,6 +2212,7 @@ Purpose: WALLET_VERIFICATION`;
         fromToken: config.specificChainTokens.eth.usdc,
         toToken: config.specificChainTokens.eth.eth,
         amount: "100",
+        competitionId: comp1Id,
         reason: "Comp 1 trade",
       });
 
@@ -2235,18 +2226,21 @@ Purpose: WALLET_VERIFICATION`;
         fromToken: config.specificChainTokens.eth.usdc,
         toToken: config.specificChainTokens.eth.eth,
         amount: "50",
+        competitionId: comp2Id,
         reason: "Comp 2 trade 1",
       });
       await agentClient.executeTrade({
         fromToken: config.specificChainTokens.eth.eth,
         toToken: config.specificChainTokens.eth.usdc,
         amount: "0.01",
+        competitionId: comp2Id,
         reason: "Comp 2 trade 2",
       });
       await agentClient.executeTrade({
         fromToken: config.specificChainTokens.eth.usdc,
         toToken: config.specificChainTokens.eth.eth,
         amount: "75",
+        competitionId: comp2Id,
         reason: "Comp 2 trade 3",
       });
 
@@ -2614,6 +2608,7 @@ Purpose: WALLET_VERIFICATION`;
           fromToken: config.specificChainTokens.eth.usdc,
           toToken: config.specificChainTokens.eth.eth, // ETH - valuable
           amount: "100",
+          competitionId,
           reason: `Agent 1 smart trade ${i + 1} - buying ETH`,
         });
       }
@@ -2623,12 +2618,14 @@ Purpose: WALLET_VERIFICATION`;
         fromToken: config.specificChainTokens.eth.usdc,
         toToken: config.specificChainTokens.eth.eth, // ETH - good trade
         amount: "100",
+        competitionId,
         reason: "Agent 2 good trade - buying ETH",
       });
       await agentClients[1]?.executeTrade({
         fromToken: config.specificChainTokens.eth.usdc,
         toToken: "0x000000000000000000000000000000000000dead", // Burn address - bad trade
         amount: "50",
+        competitionId,
         reason: "Agent 2 bad trade - burning tokens",
       });
 
@@ -2637,6 +2634,7 @@ Purpose: WALLET_VERIFICATION`;
         fromToken: config.specificChainTokens.eth.usdc,
         toToken: "0x000000000000000000000000000000000000dead", // Burn address - terrible trade
         amount: "200",
+        competitionId,
         reason: "Agent 3 terrible trade - burning large amount",
       });
 
@@ -2645,6 +2643,7 @@ Purpose: WALLET_VERIFICATION`;
         fromToken: config.specificChainTokens.eth.usdc,
         toToken: "0x000000000000000000000000000000000000dead", // Burn address - catastrophic trade
         amount: "500",
+        competitionId,
         reason: "Agent 4 catastrophic trade - burning everything",
       });
 
@@ -2782,6 +2781,7 @@ Purpose: WALLET_VERIFICATION`;
             fromToken: config.specificChainTokens.eth.usdc,
             toToken: config.specificChainTokens.eth.eth, // ETH
             amount: "100",
+            competitionId,
             reason: `Agent 1 trade ${j + 1} in competition ${i}`,
           });
         }
@@ -2794,6 +2794,7 @@ Purpose: WALLET_VERIFICATION`;
               fromToken: config.specificChainTokens.eth.usdc,
               toToken: config.specificChainTokens.eth.eth, // ETH
               amount: "50",
+              competitionId,
               reason: `Agent 2 good trade ${j + 1} in competition ${i}`,
             });
           }
@@ -2803,6 +2804,7 @@ Purpose: WALLET_VERIFICATION`;
             fromToken: config.specificChainTokens.eth.usdc,
             toToken: "0x000000000000000000000000000000000000dead", // Burn
             amount: "100",
+            competitionId,
             reason: `Agent 2 bad trade in competition ${i}`,
           });
         }
@@ -2990,6 +2992,7 @@ Purpose: WALLET_VERIFICATION`;
         fromToken: config.specificChainTokens.eth.usdc,
         toToken: "0x000000000000000000000000000000000000dead",
         amount: "1",
+        competitionId,
         reason: "Agent 1 good trade",
       });
 
@@ -2998,6 +3001,7 @@ Purpose: WALLET_VERIFICATION`;
         fromToken: config.specificChainTokens.eth.usdc,
         toToken: "0x000000000000000000000000000000000000dead",
         amount: "50",
+        competitionId,
         reason: "Agent 2 medium trade",
       });
 
@@ -3006,6 +3010,7 @@ Purpose: WALLET_VERIFICATION`;
         fromToken: config.specificChainTokens.eth.usdc,
         toToken: "0x000000000000000000000000000000000000dead",
         amount: "200",
+        competitionId,
         reason: "Agent 3 bad trade",
       });
 

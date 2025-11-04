@@ -221,13 +221,26 @@ export function makeAgentController(services: ServiceRegistry) {
     async getBalances(req: Request, res: Response, next: NextFunction) {
       try {
         const agentId = req.agentId as string;
+        const { competitionId } = req.query;
 
-        // Check if there's an active perps competition
-        const isPerpsCompetition =
-          await services.competitionService.isActiveCompetitionType(
-            "perpetual_futures",
+        // Validate competitionId parameter
+        if (!competitionId || typeof competitionId !== "string") {
+          throw new ApiError(
+            400,
+            "Missing required parameter: competitionId. " +
+              "Please specify which competition's balances to retrieve.",
           );
-        if (isPerpsCompetition) {
+        }
+
+        // Verify competition exists and get its type
+        const competition =
+          await services.competitionService.getCompetition(competitionId);
+        if (!competition) {
+          throw new ApiError(404, "Competition not found");
+        }
+
+        // Check if it's a perps competition
+        if (competition.type === "perpetual_futures") {
           throw new ApiError(
             400,
             "This endpoint is not available for perpetual futures competitions. " +
@@ -235,15 +248,18 @@ export function makeAgentController(services: ServiceRegistry) {
           );
         }
 
-        // Get enhanced balances from the service layer
-        // The service will use getActiveCompetition() if no competitionId is provided
+        // Get enhanced balances for the specified competition
         const enhancedBalances =
-          await services.agentService.getEnhancedBalances(agentId);
+          await services.agentService.getEnhancedBalances(
+            agentId,
+            competitionId,
+          );
 
         // Return the balances
         res.status(200).json({
           success: true,
           agentId,
+          competitionId,
           balances: enhancedBalances,
         });
       } catch (error) {

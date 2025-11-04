@@ -373,17 +373,19 @@ describe("Perps Competition", () => {
       });
 
     // Start a perps competition
-    await startPerpsTestCompetition({
+    const perpsCompetitionResponse = await startPerpsTestCompetition({
       adminClient,
       name: `Perps Block Test ${Date.now()}`,
       agentIds: [agent1.id, agent2.id],
     });
+    const competitionId = perpsCompetitionResponse.competition.id;
 
     // Try to execute trades (paper trading endpoints)
     const trade1Response = await agent1Client.executeTrade({
       fromToken: "0x0000000000000000000000000000000000000000",
       toToken: "0x1234567890123456789012345678901234567890",
       amount: "100",
+      competitionId,
       reason: "Test trade during perps competition",
       fromChain: BlockchainType.EVM,
     });
@@ -399,6 +401,7 @@ describe("Perps Competition", () => {
       fromToken: "0x1234567890123456789012345678901234567890",
       toToken: "0x0000000000000000000000000000000000000000",
       amount: "50",
+      competitionId,
       reason: "Test trade 2",
       fromChain: BlockchainType.EVM,
     });
@@ -456,11 +459,13 @@ describe("Perps Competition", () => {
     // Execute paper trades using proper token addresses
     const usdcTokenAddress = config.specificChainTokens.eth.usdc;
     const wethTokenAddress = config.specificChainTokens.eth.eth;
+    const paperCompetitionId = paperComp.competition.id;
 
     await client.executeTrade({
       fromToken: usdcTokenAddress,
       toToken: wethTokenAddress,
       amount: "100",
+      competitionId: paperCompetitionId,
       fromChain: BlockchainType.EVM,
       toChain: BlockchainType.EVM,
       reason: "Test trade 1",
@@ -470,6 +475,7 @@ describe("Perps Competition", () => {
       fromToken: wethTokenAddress,
       toToken: usdcTokenAddress,
       amount: "0.01",
+      competitionId: paperCompetitionId,
       fromChain: BlockchainType.EVM,
       toChain: BlockchainType.EVM,
       reason: "Test trade 2",
@@ -479,6 +485,7 @@ describe("Perps Competition", () => {
       fromToken: usdcTokenAddress,
       toToken: wethTokenAddress,
       amount: "50",
+      competitionId: paperCompetitionId,
       fromChain: BlockchainType.EVM,
       toChain: BlockchainType.EVM,
       reason: "Test trade 3",

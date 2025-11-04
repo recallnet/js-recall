@@ -13,7 +13,6 @@ import {
 
 import { flatParse } from "@/lib/flat-parse.js";
 import { adminLogger } from "@/lib/logger.js";
-import { updateFeaturesWithCompetition } from "@/lib/update-features-with-comp.js";
 import { ServiceRegistry } from "@/services/index.js";
 
 import {
@@ -545,10 +544,6 @@ export function makeAdminController(services: ServiceRegistry) {
                 },
           });
 
-        const activeCompetition =
-          await services.competitionService.getActiveCompetition();
-        updateFeaturesWithCompetition(activeCompetition);
-
         // Return the started competition
         res.status(200).json({
           success: true,
@@ -574,10 +569,6 @@ export function makeAdminController(services: ServiceRegistry) {
         // End the competition
         const { competition: endedCompetition, leaderboard } =
           await services.competitionService.endCompetition(competitionId);
-
-        const activeCompetition =
-          await services.competitionService.getActiveCompetition();
-        updateFeaturesWithCompetition(activeCompetition);
 
         adminLogger.info(
           `Successfully ended competition, id: ${competitionId}`,

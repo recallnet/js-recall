@@ -327,6 +327,7 @@ describe("Competition API", () => {
     });
 
     expect(competitionResponse.success).toBe(true);
+    const competitionId = competitionResponse.competition.id;
 
     // Execute a buy trade (buying SOL with USDC)
     const buyTradeResponse = await agentClient.executeTrade({
@@ -334,6 +335,7 @@ describe("Competition API", () => {
       fromToken: config.specificChainTokens.eth.usdc,
       toToken: config.specificChainTokens.svm.sol,
       amount: "100",
+      competitionId,
       fromChain: BlockchainType.EVM,
       toChain: BlockchainType.EVM,
     });
@@ -1962,6 +1964,7 @@ describe("Competition API", () => {
       fromToken: config.specificChainTokens.eth.eth,
       toToken: config.specificChainTokens.eth.usdc,
       amount: "0.001",
+      competitionId,
       reason: "Test trade 1",
     });
     expect(trades1.success).toBe(true);
@@ -1969,6 +1972,7 @@ describe("Competition API", () => {
       fromToken: config.specificChainTokens.eth.eth,
       toToken: config.specificChainTokens.eth.usdt,
       amount: "0.001",
+      competitionId,
       reason: "Test trade 2",
     });
     expect(trades2.success).toBe(true);
@@ -1976,6 +1980,7 @@ describe("Competition API", () => {
       fromToken: config.specificChainTokens.eth.eth,
       toToken: config.specificChainTokens.eth.usdt,
       amount: "0.001",
+      competitionId,
       reason: "Test trade 3",
     });
     expect(trades3.success).toBe(true);
@@ -1983,6 +1988,7 @@ describe("Competition API", () => {
       fromToken: config.specificChainTokens.eth.eth,
       toToken: config.specificChainTokens.eth.usdc,
       amount: "0.001",
+      competitionId,
       reason: "Test trade 4",
     });
     expect(trades4.success).toBe(true);
@@ -2090,12 +2096,14 @@ describe("Competition API", () => {
       fromToken: config.specificChainTokens.eth.usdc,
       toToken: "0x000000000000000000000000000000000000dead",
       amount: "100",
+      competitionId: tradingCompId1,
       reason: "Agent1 loses trading comp",
     });
     await agentClient2.executeTrade({
       fromToken: config.specificChainTokens.eth.usdc,
       toToken: "0x000000000000000000000000000000000000dead",
       amount: "10",
+      competitionId: tradingCompId1,
       reason: "Agent2 wins trading comp",
     });
 
@@ -4403,6 +4411,7 @@ describe("Competition API", () => {
           fromToken: config.specificChainTokens.eth.usdc,
           toToken: config.specificChainTokens.eth.eth, // ETH - valuable asset
           amount: "100",
+          competitionId,
           reason: `Agent 1 winning trade ${i + 1} - buying ETH`,
         });
       }
@@ -4412,12 +4421,14 @@ describe("Competition API", () => {
         fromToken: config.specificChainTokens.eth.usdc,
         toToken: config.specificChainTokens.eth.eth, // Good trade
         amount: "100",
+        competitionId,
         reason: "Agent 2 good trade - buying ETH",
       });
       await agent2Client.executeTrade({
         fromToken: config.specificChainTokens.eth.usdc,
         toToken: "0x000000000000000000000000000000000000dead", // Bad trade - burn tokens
         amount: "50",
+        competitionId,
         reason: "Agent 2 mediocre trade - burning some tokens",
       });
 
@@ -4426,6 +4437,7 @@ describe("Competition API", () => {
         fromToken: config.specificChainTokens.eth.usdc,
         toToken: "0x000000000000000000000000000000000000dead", // Burn address
         amount: "200",
+        competitionId,
         reason: "Agent 3 poor trade - burning tokens for 3rd place",
       });
 
@@ -4434,6 +4446,7 @@ describe("Competition API", () => {
         fromToken: config.specificChainTokens.eth.usdc,
         toToken: "0x000000000000000000000000000000000000dead", // Burn address
         amount: "500",
+        competitionId,
         reason: "Agent 4 terrible trade - burning most tokens for last place",
       });
 
@@ -4587,6 +4600,7 @@ describe("Competition API", () => {
         fromToken: config.specificChainTokens.eth.usdc,
         toToken: config.specificChainTokens.eth.eth, // ETH - valuable asset
         amount: "200",
+        competitionId,
         reason: "User 1 winning trade - buying ETH",
       });
 
@@ -4602,6 +4616,7 @@ describe("Competition API", () => {
         fromToken: config.specificChainTokens.eth.usdc,
         toToken: "0x000000000000000000000000000000000000dead", // Burn address
         amount: "300",
+        competitionId,
         reason: "User 2 poor trade - burning tokens for 2nd place",
       });
 
@@ -4763,6 +4778,7 @@ describe("Competition API", () => {
         fromToken: config.specificChainTokens.eth.usdc,
         toToken: config.specificChainTokens.eth.eth,
         amount: "100",
+        competitionId,
         reason: "Trade in active competition",
       });
 
@@ -4962,6 +4978,7 @@ describe("Competition API", () => {
       fromToken: config.specificChainTokens.eth.usdc,
       toToken: config.specificChainTokens.eth.eth,
       amount: "100",
+      competitionId,
       fromChain: BlockchainType.EVM,
       toChain: BlockchainType.EVM,
     });

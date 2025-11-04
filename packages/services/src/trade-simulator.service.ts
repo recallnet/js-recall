@@ -203,7 +203,7 @@ export class TradeSimulatorService {
    * @param competitionId The competition ID (optional, will use active competition if not provided)
    * @returns Total portfolio value in USD
    */
-  async calculatePortfolioValue(agentId: string, competitionId?: string) {
+  async calculatePortfolioValue(agentId: string, competitionId: string) {
     let totalValue = 0;
     const balances = await this.balanceService.getAllBalances(
       agentId,
@@ -225,10 +225,12 @@ export class TradeSimulatorService {
   /**
    * Calculate portfolio values for multiple agents in bulk
    * @param agentIds Array of agent IDs
+   * @param competitionId The competition ID
    * @returns Map of agent ID to portfolio value in USD
    */
   async calculateBulkPortfolioValues(
     agentIds: string[],
+    competitionId: string,
   ): Promise<Map<string, number>> {
     this.logger.debug(
       `[TradeSimulator] Calculating bulk portfolio values for ${agentIds.length} agents`,
@@ -242,7 +244,10 @@ export class TradeSimulatorService {
 
     try {
       // Step 1: Get all balances for all agents in one query
-      const allBalances = await this.balanceService.getBulkBalances(agentIds);
+      const allBalances = await this.balanceService.getBulkBalances(
+        agentIds,
+        competitionId,
+      );
 
       // Step 2: Get unique token addresses
       const uniqueTokens = [
@@ -285,7 +290,10 @@ export class TradeSimulatorService {
       );
       for (const agentId of agentIds) {
         try {
-          const value = await this.calculatePortfolioValue(agentId);
+          const value = await this.calculatePortfolioValue(
+            agentId,
+            competitionId,
+          );
           portfolioValues.set(agentId, value);
         } catch (agentError) {
           this.logger.error(

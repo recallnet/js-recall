@@ -1099,11 +1099,15 @@ export class ApiClient {
   }
 
   /**
-   * Get account balances
+   * Get account balances for a specific competition
    */
-  async getBalance(): Promise<BalancesResponse | ErrorResponse> {
+  async getBalance(
+    competitionId: string,
+  ): Promise<BalancesResponse | ErrorResponse> {
     try {
-      const response = await this.axiosInstance.get("/api/agent/balances");
+      const response = await this.axiosInstance.get(
+        `/api/agent/balances?competitionId=${competitionId}`,
+      );
       return response.data as BalancesResponse;
     } catch (error) {
       return this.handleApiError(error, "get balances");

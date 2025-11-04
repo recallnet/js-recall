@@ -1516,7 +1516,10 @@ export class CompetitionService {
 
     // Use bulk portfolio value calculation
     const portfolioValues =
-      await this.tradeSimulatorService.calculateBulkPortfolioValues(agents);
+      await this.tradeSimulatorService.calculateBulkPortfolioValues(
+        agents,
+        competitionId,
+      );
 
     const leaderboard = agents.map((agentId: string) => ({
       agentId,

@@ -103,11 +103,12 @@ describe("Specific Chains", () => {
 
     // Start a competition with the agent
     const competitionName = `Trade Chain Test ${Date.now()}`;
-    await startTestCompetition({
+    const competitionResponse = await startTestCompetition({
       adminClient,
       name: competitionName,
       agentIds: [agent.id],
     });
+    const competitionId = competitionResponse.competition.id;
 
     // Get agent's current balances
     const balanceResponse = (await client.getBalance()) as BalancesResponse;
@@ -152,6 +153,7 @@ describe("Specific Chains", () => {
       fromToken: ethToken,
       toToken: usdcToken,
       amount: tradeAmount,
+      competitionId,
       reason,
     });
     expect(tradeResponse.success).toBe(true);
@@ -184,12 +186,13 @@ describe("Specific Chains", () => {
 
     // Start a competition with the agent
     const competitionName = `Token Purchase Test ${Date.now()}`;
-    await startTestCompetition({
+    const competitionResponse2 = await startTestCompetition({
       adminClient,
       name: competitionName,
       agentIds: [agent.id],
       tradingConstraints: noTradingConstraints,
     });
+    const competitionId2 = competitionResponse2.competition.id;
 
     // Get agent's current balances
     const balanceResponse = (await client.getBalance()) as BalancesResponse;
@@ -206,6 +209,7 @@ describe("Specific Chains", () => {
       fromToken: usdcAddress,
       toToken: targetTokenAddress,
       amount: "100",
+      competitionId: competitionId2,
       reason,
     });
 
@@ -269,6 +273,7 @@ describe("Specific Chains", () => {
       fromToken: targetTokenAddress,
       toToken: usdcAddress,
       amount: trade?.toAmount.toString() ?? "0",
+      competitionId: competitionId2,
       reason,
     });
     // Verify the swap back was successful
@@ -341,11 +346,12 @@ describe("Specific Chains", () => {
 
     // Start a competition with the agent
     const competitionName = `Token Purchase Test ${Date.now()}`;
-    await startTestCompetition({
+    const competitionResponse3 = await startTestCompetition({
       adminClient,
       name: competitionName,
       agentIds: [agent.id],
     });
+    const competitionId3 = competitionResponse3.competition.id;
 
     // Track successfully purchased tokens
     const purchasedTokens: string[] = [];
@@ -373,6 +379,7 @@ describe("Specific Chains", () => {
           fromToken: usdcAddress,
           toToken: tokenAddress,
           amount: "100",
+          competitionId: competitionId3,
           reason,
         });
 
@@ -449,7 +456,7 @@ describe("Specific Chains", () => {
 
     // Start a competition with the agent
     const competitionName = `Token Purchase Test ${Date.now()}`;
-    await startTestCompetition({
+    const competitionResponse4 = await startTestCompetition({
       adminClient,
       name: competitionName,
       agentIds: [agent.id],
@@ -457,6 +464,7 @@ describe("Specific Chains", () => {
       // so that the actual test path always runs.
       tradingConstraints: noTradingConstraints,
     });
+    const competitionId4 = competitionResponse4.competition.id;
 
     // Get agent's current balances
     const balanceResponse = (await client.getBalance()) as BalancesResponse;
@@ -473,6 +481,7 @@ describe("Specific Chains", () => {
       fromToken: usdcAddress,
       toToken: targetTokenAddress,
       amount: "100",
+      competitionId: competitionId4,
       reason,
     })) as TradeResponse;
 
@@ -486,6 +495,7 @@ describe("Specific Chains", () => {
       fromSpecificChain: "optimism" as SpecificChain,
       toSpecificChain: "optimism" as SpecificChain,
       amount: "100",
+      competitionId: competitionId4,
       reason,
     })) as TradeResponse;
 

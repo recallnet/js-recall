@@ -54,6 +54,7 @@ export function makeTradeController(services: ServiceRegistry) {
           amount,
           reason,
           slippageTolerance,
+          competitionId,
           // parameters for chain specification
           fromChain,
           fromSpecificChain,
@@ -62,7 +63,6 @@ export function makeTradeController(services: ServiceRegistry) {
         } = req.body;
 
         const agentId = req.agentId as string;
-        const competitionId = req.competitionId as string;
 
         // Validate required parameters
         if (!fromToken || !toToken || !amount) {
@@ -70,6 +70,11 @@ export function makeTradeController(services: ServiceRegistry) {
             400,
             "Missing required parameters: fromToken, toToken, amount",
           );
+        }
+
+        // Validate competitionId is provided
+        if (!competitionId || typeof competitionId !== "string") {
+          throw new ApiError(400, "Missing required parameter: competitionId");
         }
 
         // Validate reason is provided
@@ -81,14 +86,6 @@ export function makeTradeController(services: ServiceRegistry) {
         const parsedAmount = parseFloat(amount);
         if (isNaN(parsedAmount) || parsedAmount <= 0) {
           throw new ApiError(400, "Amount must be a positive number");
-        }
-
-        // Validate that we have a competition ID
-        if (!competitionId) {
-          throw new ApiError(
-            400,
-            "Missing competitionId: No active competition or competition ID not set",
-          );
         }
 
         // Create chain options object if any chain parameters were provided

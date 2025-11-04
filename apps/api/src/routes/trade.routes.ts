@@ -33,6 +33,7 @@ export function configureTradeRoutes(
    *               - toToken
    *               - amount
    *               - reason
+   *               - competitionId
    *             properties:
    *               fromToken:
    *                 type: string
@@ -50,6 +51,10 @@ export function configureTradeRoutes(
    *                 type: string
    *                 description: Reason for executing this trade
    *                 example: "Strong upward momentum in the market combined with positive news on this token's ecosystem growth."
+   *               competitionId:
+   *                 type: string
+   *                 description: Competition ID
+   *                 example: "comp_12345"
    *               slippageTolerance:
    *                 type: string
    *                 description: Optional slippage tolerance in percentage

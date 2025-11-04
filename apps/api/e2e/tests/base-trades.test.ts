@@ -63,13 +63,14 @@ describe("Base Chain Trading", () => {
 
     // Start a competition with our agent
     const competitionName = `Base Trading Test ${Date.now()}`;
-    await startTestCompetition({
+    const competitionResponse = await startTestCompetition({
       adminClient,
       name: competitionName,
       agentIds: [agent.id],
       // disable trading constraints for testing base chain functionality
       tradingConstraints: noTradingConstraints,
     });
+    const competitionId = competitionResponse.competition.id;
 
     // Wait for balances to be properly initialized
     await wait(500);
@@ -129,6 +130,7 @@ describe("Base Chain Trading", () => {
         fromToken: BASE_USDC_ADDRESS, // Explicitly use Base USDC address
         toToken: token.address, // Target token to buy
         amount: spendPerToken.toString(),
+        competitionId,
         fromChain: BlockchainType.EVM,
         toChain: BlockchainType.EVM,
         fromSpecificChain: SpecificChain.BASE,
@@ -224,11 +226,12 @@ describe("Base Chain Trading", () => {
 
     // Start a competition with our agent
     const competitionName = `Cross-Chain Restriction Test ${Date.now()}`;
-    await startTestCompetition({
+    const competitionResponse2 = await startTestCompetition({
       adminClient,
       name: competitionName,
       agentIds: [agent.id],
     });
+    const competitionId2 = competitionResponse2.competition.id;
 
     // Wait for balances to be properly initialized
     await wait(500);
@@ -261,6 +264,7 @@ describe("Base Chain Trading", () => {
         fromToken: BASE_USDC_ADDRESS, // Base USDC
         toToken: ETH_ADDRESS, // Ethereum ETH
         amount: tradeAmount,
+        competitionId: competitionId2,
         fromChain: BlockchainType.EVM,
         toChain: BlockchainType.EVM,
         fromSpecificChain: SpecificChain.BASE,
@@ -348,13 +352,14 @@ describe("Base Chain Trading", () => {
 
     // Start a competition with our agent
     const competitionName = `Spending Limit Test ${Date.now()}`;
-    await startTestCompetition({
+    const competitionResponse3 = await startTestCompetition({
       adminClient,
       name: competitionName,
       agentIds: [agent.id],
       // disable trading constraints for testing base chain functionality
       tradingConstraints: noTradingConstraints,
     });
+    const competitionId3 = competitionResponse3.competition.id;
 
     // Wait for balances to be properly initialized
     await wait(500);
@@ -393,6 +398,7 @@ describe("Base Chain Trading", () => {
         fromToken: BASE_USDC_ADDRESS,
         toToken: targetToken!,
         amount: excessiveAmount,
+        competitionId: competitionId3,
         fromChain: BlockchainType.EVM,
         toChain: BlockchainType.EVM,
         fromSpecificChain: SpecificChain.BASE,
@@ -426,6 +432,7 @@ describe("Base Chain Trading", () => {
       fromToken: BASE_USDC_ADDRESS,
       toToken: targetToken!,
       amount: validAmount,
+      competitionId: competitionId3,
       fromChain: BlockchainType.EVM,
       toChain: BlockchainType.EVM,
       fromSpecificChain: SpecificChain.BASE,
