@@ -11,6 +11,7 @@ import {
   gte,
   inArray,
   isNotNull,
+  isNull,
   lt,
   lte,
   ne,
@@ -38,6 +39,7 @@ import {
   SelectCompetitionsLeaderboard,
   UpdateCompetition,
 } from "../schema/core/types.js";
+import { rewardsRoots } from "../schema/rewards/defs.js";
 import {
   perpsCompetitionsLeaderboard,
   portfolioSnapshots,
@@ -2696,6 +2698,49 @@ export class CompetitionRepository {
           error,
         },
         "[CompetitionRepository] Error in findCompetitionsNeedingStarting",
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Find competitions that need rewards calculation
+   * Finds competitions that have ended but don't have rewards allocated yet.
+   * @returns Array of competitions that should have rewards calculated
+   */
+  async findCompetitionsNeedingRewardsCalculation() {
+    try {
+      const result = await this.#db
+        .select({
+          crossChainTradingType: tradingCompetitions.crossChainTradingType,
+          ...getTableColumns(competitions),
+        })
+        .from(tradingCompetitions)
+        .innerJoin(
+          competitions,
+          eq(tradingCompetitions.competitionId, competitions.id),
+        )
+        .leftJoin(rewardsRoots, eq(competitions.id, rewardsRoots.competitionId))
+        .innerJoin(
+          competitionPrizePools,
+          eq(competitions.id, competitionPrizePools.competitionId),
+        )
+        .where(
+          and(
+            eq(competitions.status, "ended"),
+            isNotNull(competitions.endDate),
+            isNull(rewardsRoots.competitionId),
+          ),
+        )
+        .orderBy(asc(competitions.endDate));
+
+      return result;
+    } catch (error) {
+      this.#logger.error(
+        {
+          error,
+        },
+        "[CompetitionRepository] Error in findCompetitionsNeedingRewardsCalculation",
       );
       throw error;
     }

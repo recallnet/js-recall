@@ -28,6 +28,7 @@ import type { CompetitionRewardService } from "../competition-reward.service.js"
 import { CompetitionService } from "../competition.service.js";
 import type { PerpsDataProcessor } from "../perps-data-processor.service.js";
 import type { PortfolioSnapshotterService } from "../portfolio-snapshotter.service.js";
+import { RewardsService } from "../rewards.service.js";
 import type { TradeSimulatorService } from "../trade-simulator.service.js";
 import type { TradingConstraintsService } from "../trading-constraints.service.js";
 
@@ -40,6 +41,7 @@ describe("CompetitionService", () => {
   let agentRankService: MockProxy<AgentRankService>;
   let tradingConstraintsService: MockProxy<TradingConstraintsService>;
   let competitionRewardService: MockProxy<CompetitionRewardService>;
+  let rewardsService: MockProxy<RewardsService>;
   let perpsDataProcessor: MockProxy<PerpsDataProcessor>;
   let agentRepo: MockProxy<AgentRepository>;
   let agentScoreRepo: MockProxy<AgentScoreRepository>;
@@ -128,6 +130,7 @@ describe("CompetitionService", () => {
     agentRankService = mock<AgentRankService>();
     tradingConstraintsService = mock<TradingConstraintsService>();
     competitionRewardService = mock<CompetitionRewardService>();
+    rewardsService = mock<RewardsService>();
     perpsDataProcessor = mock<PerpsDataProcessor>();
     agentRepo = mock<AgentRepository>();
     agentScoreRepo = mock<AgentScoreRepository>();
@@ -155,6 +158,7 @@ describe("CompetitionService", () => {
       agentRankService,
       tradingConstraintsService,
       competitionRewardService,
+      rewardsService,
       perpsDataProcessor,
       agentRepo,
       agentScoreRepo,

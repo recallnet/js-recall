@@ -270,39 +270,6 @@ class ServiceRegistry {
       serviceLogger,
     );
 
-    this._competitionService = new CompetitionService(
-      this._balanceService,
-      this._tradeSimulatorService,
-      this._portfolioSnapshotterService,
-      this._agentService,
-      this._agentRankService,
-      this._tradingConstraintsService,
-      this._competitionRewardService,
-      this._perpsDataProcessor,
-      this._agentRepository,
-      agentScoreRepository,
-      this._perpsRepository,
-      this._competitionRepository,
-      this._stakesRepository,
-      this._userRepository,
-      db,
-      config,
-      serviceLogger,
-    );
-
-    // Initialize simulated trade execution service with its dependencies
-    this._simulatedTradeExecutionService = new SimulatedTradeExecutionService(
-      this._competitionService,
-      this._tradeSimulatorService,
-      this._balanceService,
-      this._priceTrackerService,
-      tradeRepository,
-      tradingConstraintsRepository,
-      dexScreenerProvider,
-      config,
-      serviceLogger,
-    );
-
     // Initialize LeaderboardService with required dependencies
     this._leaderboardService = new LeaderboardService(
       leaderboardRepository,
@@ -338,6 +305,40 @@ class ServiceRegistry {
       this._boostRepository,
       this._rewardsAllocator,
       db,
+      serviceLogger,
+    );
+
+    this._competitionService = new CompetitionService(
+      this._balanceService,
+      this._tradeSimulatorService,
+      this._portfolioSnapshotterService,
+      this._agentService,
+      this._agentRankService,
+      this._tradingConstraintsService,
+      this._competitionRewardService,
+      this._rewardsService,
+      this._perpsDataProcessor,
+      this._agentRepository,
+      agentScoreRepository,
+      this._perpsRepository,
+      this._competitionRepository,
+      this._stakesRepository,
+      this._userRepository,
+      db,
+      config,
+      serviceLogger,
+    );
+
+    // Initialize simulated trade execution service with its dependencies
+    this._simulatedTradeExecutionService = new SimulatedTradeExecutionService(
+      this._competitionService,
+      this._tradeSimulatorService,
+      this._balanceService,
+      this._priceTrackerService,
+      tradeRepository,
+      tradingConstraintsRepository,
+      dexScreenerProvider,
+      config,
       serviceLogger,
     );
     this._eventProcessor = new EventProcessor(

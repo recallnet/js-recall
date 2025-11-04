@@ -69,7 +69,9 @@
     "cron:portfolio-snapshot:run-once": "tsx scripts/take-portfolio-snapshots.ts --run-once",
     "cron:process-perps:run-once": "tsx scripts/process-perps-competitions.ts --run-once",
     "cron:auto-end-competitions:run-once": "tsx scripts/auto-end-competitions.ts --run-once",
-    "cron:auto-start-competitions:run-once": "tsx scripts/auto-start-competitions.ts --run-once"
+    "cron:auto-start-competitions:run-once": "tsx scripts/auto-start-competitions.ts --run-once",
+    "cron:auto-calculate-rewards": "tsx scripts/auto-calculate-rewards.ts",
+    "cron:auto-calculate-rewards:run-once": "tsx scripts/auto-calculate-rewards.ts --run-once"
   },
   "keywords": [
     "solana",

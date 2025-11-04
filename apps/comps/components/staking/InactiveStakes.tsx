@@ -1,94 +1,177 @@
 "use client";
 
-import Image from "next/image";
-import React from "react";
+import React, { useEffect, useMemo } from "react";
+import { useBlock } from "wagmi";
 
-import { Button } from "@recallnet/ui2/components/button";
+import { attoValueToNumberValue } from "@recallnet/conversions/atto-conversions";
+import { toast } from "@recallnet/ui2/components/toast";
 
-import { Recall } from "@/components/Recall";
+import { useWithdraw } from "@/hooks/staking";
+import { useUserStakes } from "@/hooks/useStakingContract";
+import type { StakeInfoWithId } from "@/types/staking";
+import { formatAmount } from "@/utils/format";
 
-interface StakeEntryProps {
-  status: "UNSTAKED" | "UNSTAKING";
-  amount: string;
-  boostAmount: string;
-  stakedDate?: string;
-  progress?: number;
-  progressText?: string;
-  unlockDate?: string;
+import type { StakeEntryAction } from "./StakeEntryBase";
+import { StakeEntryBase } from "./StakeEntryBase";
+import { calculateTimeProgress } from "./stakeTime";
+
+interface InactiveStakeEntryProps {
+  tokenId: bigint;
+  amount: bigint;
+  lockupEndTime: bigint;
+  withdrawAllowedTime: bigint;
+  blockTimestamp?: bigint;
 }
 
-const StakeEntry: React.FunctionComponent<StakeEntryProps> = ({
-  status,
+const InactiveStakeEntry: React.FunctionComponent<InactiveStakeEntryProps> = ({
+  tokenId,
   amount,
-  boostAmount,
-  stakedDate,
-  progress,
-  progressText,
-  unlockDate,
+  lockupEndTime,
+  withdrawAllowedTime,
+  blockTimestamp,
 }) => {
-  return (
-    <div className="rounded-lg border border-[#212C3A] bg-gray-900 p-3 sm:p-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
-          <div className="rounded-full bg-[#212C3A] px-3 py-1 text-xs font-medium text-white">
-            {status}
-          </div>
-          <div className="flex items-center gap-2">
-            <Recall size="md" />
-            <span className="text-lg font-semibold text-white">{amount}</span>
-          </div>
-          <div className="text-secondary-foreground">→</div>
-          <div className="flex items-center gap-1 text-yellow-400">
-            <Image
-              src="/boost.svg"
-              alt="Boost"
-              width={16}
-              height={16}
-              style={{ width: "auto", height: "auto" }}
-            />
-            <span>{boostAmount}</span>
-            <span className="text-secondary-foreground">per competition.</span>
-          </div>
-        </div>
-        <Button variant="outline" disabled={status === "UNSTAKING"}>
-          WITHDRAW
-        </Button>
-      </div>
+  // Use block timestamp if available, otherwise fall back to Date.now()
+  const now = blockTimestamp ?? BigInt(Math.floor(Date.now() / 1000));
+  const isWithdrawable = now >= withdrawAllowedTime;
 
-      {stakedDate && progress !== undefined && progressText && unlockDate && (
-        <div className="text-secondary-foreground mt-4 flex items-center justify-between text-sm">
-          <span>Staked {stakedDate}</span>
-          <div className="flex items-center gap-2">
-            <div className="h-2 flex-1 overflow-hidden rounded-full bg-gray-700">
-              <div
-                className="h-full bg-[#6D85A4] transition-all duration-300"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-            <span>{progressText}</span>
-          </div>
-          <span>{unlockDate}</span>
-        </div>
-      )}
-    </div>
+  // Per-row hook for independent loading state
+  const {
+    execute: withdraw,
+    isPending: isWithdrawPending,
+    isConfirming: isWithdrawConfirming,
+    isConfirmed: isWithdrawConfirmed,
+    error: withdrawError,
+  } = useWithdraw();
+
+  const isWithdrawing = isWithdrawPending || isWithdrawConfirming;
+
+  useEffect(() => {
+    if (isWithdrawConfirmed) {
+      toast.success("Successfully withdrawn!");
+    }
+  }, [isWithdrawConfirmed]);
+
+  useEffect(() => {
+    if (withdrawError) {
+      toast.error("Failed to withdraw");
+      console.error("Withdraw error:", withdrawError);
+    }
+  }, [withdrawError]);
+
+  const handleWithdraw = async () => {
+    try {
+      await withdraw(tokenId);
+    } catch (error) {
+      console.error("Failed to withdraw:", error);
+    }
+  };
+
+  const formattedAmount = useMemo(() => {
+    const value = attoValueToNumberValue(amount);
+    return value ? formatAmount(value, 0, true) : "0";
+  }, [amount]);
+
+  const boostAmount = "0";
+
+  const timeProgress = useMemo(() => {
+    return calculateTimeProgress(
+      lockupEndTime,
+      withdrawAllowedTime,
+      now,
+      "Withdrawable",
+    );
+  }, [lockupEndTime, withdrawAllowedTime, now]);
+
+  const actions: StakeEntryAction[] = [
+    {
+      label: "WITHDRAW",
+      onClick: handleWithdraw,
+      disabled: !isWithdrawable || isWithdrawing,
+      isLoading: isWithdrawing,
+      loadingLabel: "Withdrawing...",
+      variant: "outline",
+    },
+  ];
+
+  return (
+    <StakeEntryBase
+      status={isWithdrawable ? "cooldown" : "unstaked"}
+      formattedAmount={formattedAmount}
+      boostAmount={boostAmount}
+      actions={actions}
+      progress={
+        isWithdrawable
+          ? undefined
+          : {
+              leftLabel: `Unstaked ${timeProgress.startDateFormatted}`,
+              leftLabelTooltip: timeProgress.startDateISO,
+              rightLabel: `Withdrawable ${timeProgress.endDateFormatted}`,
+              rightLabelTooltip: timeProgress.endDateISO,
+              progressPercent: timeProgress.progress,
+              progressText: timeProgress.progressText,
+            }
+      }
+    />
   );
 };
 
 export const InactiveStakes: React.FunctionComponent = () => {
+  const { data: allStakes, isLoading, error } = useUserStakes();
+
+  // Filter to show only inactive stakes (withdrawAllowedTime !== 0n)
+  const stakes = useMemo(() => {
+    const stakesList = allStakes as StakeInfoWithId[] | undefined;
+    return (stakesList ?? []).filter(
+      (stake) => stake.withdrawAllowedTime !== 0n,
+    );
+  }, [allStakes]);
+
+  const { data: block } = useBlock({
+    query: {
+      refetchInterval: 10000,
+    },
+  });
+
+  const blockTimestamp = block?.timestamp ? BigInt(block.timestamp) : undefined;
+
+  if (isLoading) {
+    return (
+      <div className="mb-8">
+        <h2 className="mb-2 text-2xl font-bold text-white">Inactive Stakes</h2>
+        <p className="mb-4 text-sm text-gray-400">Loading your stakes...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="mb-8">
+        <h2 className="mb-2 text-2xl font-bold text-white">Inactive Stakes</h2>
+        <p className="mb-4 text-sm text-red-400">
+          Error loading stakes: {error.message}
+        </p>
+      </div>
+    );
+  }
+
+  if (!stakes || stakes.length === 0) {
+    return null;
+  }
+
   return (
-    <div className="mb-8">
-      <h2 className="mb-4 text-xl font-bold text-white">Inactive Stakes</h2>
-      <div className="space-y-4">
-        <StakeEntry status="UNSTAKED" amount="22,000" boostAmount="0" />
-        <StakeEntry
-          status="UNSTAKING"
-          amount="2,000"
-          boostAmount="0"
-          stakedDate="Nov 23"
-          progress={50}
-          progressText="07/14 days (50%)"
-          unlockDate="Unstakes Dec 22 (3 days)"
-        />
+    <div className="mb-8 flex flex-col gap-4">
+      <h2 className="text-2xl font-bold text-white">Inactive Stakes</h2>
+      <div className="flex flex-col gap-8">
+        {stakes.map((stake: StakeInfoWithId) => (
+          <InactiveStakeEntry
+            key={stake.tokenId.toString()}
+            tokenId={stake.tokenId}
+            amount={stake.amount}
+            lockupEndTime={stake.lockupEndTime}
+            withdrawAllowedTime={stake.withdrawAllowedTime}
+            blockTimestamp={blockTimestamp}
+          />
+        ))}
       </div>
     </div>
   );
