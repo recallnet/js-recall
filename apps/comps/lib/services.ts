@@ -177,6 +177,15 @@ export const leaderboardService = new LeaderboardService(
   createLogger("LeaderboardService"),
 );
 
+export const rewardsService = new RewardsService(
+  rewardsRepository,
+  competitionRepository,
+  boostRepository,
+  new NoopRewardsAllocator(),
+  db,
+  createLogger("RewardsService"),
+);
+
 export const competitionService = new CompetitionService(
   balanceService,
   tradeSimulatorService,
@@ -185,6 +194,7 @@ export const competitionService = new CompetitionService(
   agentRankService,
   tradingConstraintsService,
   competitionRewardsService,
+  rewardsService,
   perpsDataProcessor,
   agentRepository,
   agentScoreRepository,
@@ -195,13 +205,4 @@ export const competitionService = new CompetitionService(
   db,
   config,
   createLogger("CompetitionService"),
-);
-
-export const rewardsService = new RewardsService(
-  rewardsRepository,
-  competitionRepository,
-  boostRepository,
-  new NoopRewardsAllocator(),
-  db,
-  createLogger("RewardsService"),
 );
