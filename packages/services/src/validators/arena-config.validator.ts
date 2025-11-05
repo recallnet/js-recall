@@ -127,7 +127,7 @@ export const ArenaConfigSchema = z
       })
       .optional(),
     participation: z.object({
-      maxAgents: z.number().int().min(1).optional(),
+      maxParticipants: z.number().int().min(1).optional(),
       vips: z.array(z.string()).optional(),
       allowlist: z.array(z.string()).optional(),
       blocklist: z.array(z.string()).optional(),
