@@ -1,6 +1,5 @@
 "use client";
 
-import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { Menu } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -8,6 +7,13 @@ import { useMemo, useState } from "react";
 
 import { Avatar, AvatarImage } from "@recallnet/ui2/components/avatar";
 import { Button } from "@recallnet/ui2/components/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@recallnet/ui2/components/dropdown-menu";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { Claim } from "@/components/Claim";
@@ -31,10 +37,10 @@ export const Navbar: React.FunctionComponent = () => {
 
   const navItems = useMemo(() => {
     return [
-      { label: "COMPETITIONS", href: "/competitions", mobileOnly: false },
-      { label: "LEADERBOARDS", href: "/leaderboards", mobileOnly: false },
+      { label: "Competitions", href: "/competitions", mobileOnly: false },
+      { label: "Leaderboards", href: "/leaderboards", mobileOnly: false },
       {
-        label: "STAKE RECALL",
+        label: "Stake Recall",
         href: "/stake",
         mobileOnly: isWalletConnected,
       },
@@ -72,7 +78,7 @@ export const Navbar: React.FunctionComponent = () => {
                     )}
                   >
                     <span
-                      className={`font-mono text-xs font-medium tracking-widest text-white transition-colors`}
+                      className={`font-mono text-xs font-medium uppercase tracking-widest text-white transition-colors`}
                     >
                       {item.label}
                     </span>
@@ -83,34 +89,29 @@ export const Navbar: React.FunctionComponent = () => {
 
           {/* Dropdown trigger for <sm */}
           <div className="sm:hidden">
-            <DropdownMenu.Root open={open} onOpenChange={setOpen}>
-              <DropdownMenu.Trigger asChild>
-                <Button className="bg-transparent text-white hover:bg-transparent">
+            <DropdownMenu open={open} onOpenChange={setOpen}>
+              <DropdownMenuTrigger asChild>
+                <Button className="bg-transparent text-white hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0">
                   <Menu />
                 </Button>
-              </DropdownMenu.Trigger>
-              <DropdownMenu.Portal>
-                <DropdownMenu.Content
-                  className="z-50 min-w-[180px] rounded-md border bg-black p-1 shadow-xl"
-                  sideOffset={5}
-                >
-                  {navItems.map((item) => (
-                    <DropdownMenu.Item
-                      key={item.href}
-                      asChild
-                      onSelect={() => setOpen(false)}
-                    >
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="mt-1">
+                {navItems.map((item, index) => (
+                  <div key={item.href}>
+                    <DropdownMenuItem asChild>
                       <Link
                         href={item.href}
-                        className="block px-4 py-2 text-sm text-gray-300"
+                        onClick={() => setOpen(false)}
+                        className="cursor-pointer p-3"
                       >
                         {item.label}
                       </Link>
-                    </DropdownMenu.Item>
-                  ))}
-                </DropdownMenu.Content>
-              </DropdownMenu.Portal>
-            </DropdownMenu.Root>
+                    </DropdownMenuItem>
+                    {index < navItems.length - 1 && <DropdownMenuSeparator />}
+                  </div>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 
