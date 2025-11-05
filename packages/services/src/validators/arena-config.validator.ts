@@ -12,6 +12,11 @@ import {
  */
 
 /**
+ * Semver version regex pattern
+ */
+const SEMVER_REGEX = /^\d+\.\d+\.\d+$/;
+
+/**
  * Spot paper trading engine params schema
  */
 export const SpotPaperTradingEngineParamsSchema = z.object({
@@ -57,19 +62,19 @@ export const SpotLiveTradingEngineParamsSchema = z.object({
 const EngineConfigSchema = z.discriminatedUnion("id", [
   z.object({
     id: z.literal("spot_paper_trading"),
-    version: z.string().regex(/^\d+\.\d+\.\d+$/, "Must be valid semver"),
+    version: z.string().regex(SEMVER_REGEX, "Must be valid semver"),
     description: z.string().optional(),
     params: SpotPaperTradingEngineParamsSchema.optional(),
   }),
   z.object({
     id: z.literal("perpetual_futures"),
-    version: z.string().regex(/^\d+\.\d+\.\d+$/, "Must be valid semver"),
+    version: z.string().regex(SEMVER_REGEX, "Must be valid semver"),
     description: z.string().optional(),
     params: PerpetualFuturesEngineParamsSchema.optional(),
   }),
   z.object({
     id: z.literal("spot_live_trading"),
-    version: z.string().regex(/^\d+\.\d+\.\d+$/, "Must be valid semver"),
+    version: z.string().regex(SEMVER_REGEX, "Must be valid semver"),
     description: z.string().optional(),
     params: SpotLiveTradingEngineParamsSchema.optional(),
   }),
