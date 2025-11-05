@@ -434,9 +434,35 @@ export class PartnerRepository {
     tx?: Transaction,
   ): Promise<SelectCompetitionPartner[]> {
     try {
-      const executor = tx || this.#db;
+      // If transaction provided, use it directly; otherwise create new transaction
+      if (tx) {
+        // Use provided transaction directly (no nesting)
+        await tx
+          .delete(competitionPartners)
+          .where(eq(competitionPartners.competitionId, competitionId));
 
-      return await executor.transaction(async (txn) => {
+        if (partnerData.length === 0) {
+          return [];
+        }
+
+        const now = new Date();
+        const results = await tx
+          .insert(competitionPartners)
+          .values(
+            partnerData.map((p) => ({
+              competitionId,
+              partnerId: p.partnerId,
+              position: p.position,
+              createdAt: now,
+            })),
+          )
+          .returning();
+
+        return results;
+      }
+
+      // No transaction provided, create a new one
+      return await this.#db.transaction(async (txn) => {
         // Delete existing associations
         await txn
           .delete(competitionPartners)
