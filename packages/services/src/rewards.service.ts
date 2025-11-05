@@ -58,7 +58,7 @@ export class RewardsService {
    */
   public async calculateAndAllocate(
     competitionId: string,
-    startTimestamp: number | undefined,
+    startTimestamp?: number | undefined,
   ): Promise<void> {
     if (!startTimestamp) {
       const competition =

@@ -35,6 +35,7 @@ import {
 import { applySortingAndPagination, splitSortField } from "./lib/sort.js";
 import { PerpsDataProcessor } from "./perps-data-processor.service.js";
 import { PortfolioSnapshotterService } from "./portfolio-snapshotter.service.js";
+import { RewardsService } from "./rewards.service.js";
 import { TradeSimulatorService } from "./trade-simulator.service.js";
 import { TradingConstraintsService } from "./trading-constraints.service.js";
 import {
@@ -327,6 +328,7 @@ export class CompetitionService {
   private agentRankService: AgentRankService;
   private tradingConstraintsService: TradingConstraintsService;
   private competitionRewardService: CompetitionRewardService;
+  private rewardsService: RewardsService;
   private perpsDataProcessor: PerpsDataProcessor;
   private agentRepo: AgentRepository;
   private agentScoreRepo: AgentScoreRepository;
@@ -346,6 +348,7 @@ export class CompetitionService {
     agentRankService: AgentRankService,
     tradingConstraintsService: TradingConstraintsService,
     competitionRewardService: CompetitionRewardService,
+    rewardsService: RewardsService,
     perpsDataProcessor: PerpsDataProcessor,
     agentRepo: AgentRepository,
     agentScoreRepo: AgentScoreRepository,
@@ -364,6 +367,7 @@ export class CompetitionService {
     this.agentRankService = agentRankService;
     this.tradingConstraintsService = tradingConstraintsService;
     this.competitionRewardService = competitionRewardService;
+    this.rewardsService = rewardsService;
     this.perpsDataProcessor = perpsDataProcessor;
     this.agentRepo = agentRepo;
     this.agentScoreRepo = agentScoreRepo;
@@ -2551,6 +2555,57 @@ export class CompetitionService {
     } catch (error) {
       this.logger.error(
         `[CompetitionManager] Error in processCompetitionEndDateChecks: ${error instanceof Error ? error : String(error)}`,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Check and automatically calculate rewards for competitions that have ended
+   */
+  async processPendingRewardsCompetitions(): Promise<void> {
+    try {
+      const competitions =
+        await this.competitionRepo.findCompetitionsNeedingRewardsCalculation();
+
+      if (competitions.length === 0) {
+        this.logger.debug(
+          "[CompetitionManager] No competitions needing rewards calculation",
+        );
+        return;
+      }
+
+      for (const competition of competitions) {
+        // Ensure competition end date has passed by at least an hour
+        const now = new Date();
+        const endDate = competition.endDate;
+        if (!endDate || now.getTime() - endDate.getTime() < 60 * 60 * 1000) {
+          this.logger.debug(
+            `[CompetitionManager] Skipping rewards calculation for competition ${competition.name} (${competition.id}) because end date has not passed by an hour (endDate: ${endDate ? endDate.toISOString() : "N/A"}, now: ${now.toISOString()})`,
+          );
+          continue;
+        }
+
+        try {
+          this.logger.debug(
+            `[CompetitionManager] Calculating rewards for competition: ${competition.name} (${competition.id})`,
+          );
+
+          await this.rewardsService.calculateAndAllocate(competition.id);
+
+          this.logger.debug(
+            `[CompetitionManager] Successfully calculated rewards for competition: ${competition.name} (${competition.id})`,
+          );
+        } catch (error) {
+          this.logger.error(
+            `[CompetitionManager] Error calculating rewards for competition ${competition.id}: ${error instanceof Error ? error : String(error)}`,
+          );
+          // Continue processing other competitions even if one fails
+        }
+      }
+    } catch (error) {
+      this.logger.error(
+        `[CompetitionManager] Error in processPendingRewardsCompetitions: ${error instanceof Error ? error : String(error)}`,
       );
       throw error;
     }
