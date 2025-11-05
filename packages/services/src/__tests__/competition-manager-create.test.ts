@@ -18,6 +18,7 @@ import type { CompetitionRewardService } from "../competition-reward.service.js"
 import { CompetitionService } from "../competition.service.js";
 import type { PerpsDataProcessor } from "../perps-data-processor.service.js";
 import type { PortfolioSnapshotterService } from "../portfolio-snapshotter.service.js";
+import { RewardsService } from "../rewards.service.js";
 import type { TradeSimulatorService } from "../trade-simulator.service.js";
 import type { TradingConstraintsService } from "../trading-constraints.service.js";
 
@@ -29,6 +30,7 @@ describe("CompetitionService - createCompetition", () => {
   let agentRankService: MockProxy<AgentRankService>;
   let tradingConstraintsService: MockProxy<TradingConstraintsService>;
   let competitionRewardService: MockProxy<CompetitionRewardService>;
+  let rewardsService: MockProxy<RewardsService>;
   let perpsDataProcessor: MockProxy<PerpsDataProcessor>;
   let agentRepo: MockProxy<AgentRepository>;
   let agentScoreRepo: MockProxy<AgentScoreRepository>;
@@ -49,6 +51,7 @@ describe("CompetitionService - createCompetition", () => {
     agentRankService = mock<AgentRankService>();
     tradingConstraintsService = mock<TradingConstraintsService>();
     competitionRewardService = mock<CompetitionRewardService>();
+    rewardsService = mock<RewardsService>();
     perpsDataProcessor = mock<PerpsDataProcessor>();
     agentRepo = mock<AgentRepository>();
     agentScoreRepo = mock<AgentScoreRepository>();
@@ -104,6 +107,7 @@ describe("CompetitionService - createCompetition", () => {
       agentRankService,
       tradingConstraintsService,
       competitionRewardService,
+      rewardsService,
       perpsDataProcessor,
       agentRepo,
       agentScoreRepo,
@@ -160,24 +164,21 @@ describe("CompetitionService - createCompetition", () => {
       sandboxMode: false,
       crossChainTradingType: "disallowAll",
       evaluationMetric: "calmar_ratio",
-      participationConfig: null,
-      partners: null,
-      rewards: null,
+      vips: null,
+      allowlist: null,
+      blocklist: null,
+      minRecallRank: null,
+      allowlistOnly: false,
+      agentAllocation: null,
+      agentAllocationUnit: null,
+      boosterAllocation: null,
+      boosterAllocationUnit: null,
+      rewardRules: null,
+      rewardDetails: null,
       displayState: null,
       arenaId: "default-paper-arena",
-      engineId: "spot_paper_trading",
+      engineId: "spot_paper_trading" as const,
       engineVersion: "1.0.0",
-      engineConfig: {
-        params: {
-          crossChainTradingType: "disallowAll",
-          tradingConstraints: {
-            minimumPairAgeHours: 24,
-            minimum24hVolumeUsd: 50000,
-            minimumLiquidityUsd: 25000,
-            minimumFdvUsd: 100000,
-          },
-        },
-      },
     }));
   });
 
@@ -514,6 +515,7 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
   let agentRankService: MockProxy<AgentRankService>;
   let tradingConstraintsService: MockProxy<TradingConstraintsService>;
   let competitionRewardService: MockProxy<CompetitionRewardService>;
+  let rewardsService: MockProxy<RewardsService>;
   let perpsDataProcessor: MockProxy<PerpsDataProcessor>;
   let agentRepo: MockProxy<AgentRepository>;
   let agentScoreRepo: MockProxy<AgentScoreRepository>;
@@ -535,6 +537,7 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
     agentRankService = mock<AgentRankService>();
     tradingConstraintsService = mock<TradingConstraintsService>();
     competitionRewardService = mock<CompetitionRewardService>();
+    rewardsService = mock<RewardsService>();
     perpsDataProcessor = mock<PerpsDataProcessor>();
     agentRepo = mock<AgentRepository>();
     agentScoreRepo = mock<AgentScoreRepository>();
@@ -554,6 +557,7 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
       agentRankService,
       tradingConstraintsService,
       competitionRewardService,
+      rewardsService,
       perpsDataProcessor,
       agentRepo,
       agentScoreRepo,
@@ -605,22 +609,21 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
       competitionId: mockCompetitionId,
       crossChainTradingType: "allow" as const,
       evaluationMetric: "calmar_ratio" as const,
-      participationConfig: null,
-      partners: null,
-      rewards: null,
+      vips: null,
+      allowlist: null,
+      blocklist: null,
+      minRecallRank: null,
+      allowlistOnly: false,
+      agentAllocation: null,
+      agentAllocationUnit: null,
+      boosterAllocation: null,
+      boosterAllocationUnit: null,
+      rewardRules: null,
+      rewardDetails: null,
       displayState: null,
       arenaId: "default-perps-arena",
-      engineId: "perpetual_futures",
+      engineId: "perpetual_futures" as const,
       engineVersion: "1.0.0",
-      engineConfig: {
-        params: {
-          provider: "symphony",
-          evaluationMetric: "calmar_ratio",
-          initialCapital: 500,
-          selfFundingThreshold: 0,
-          minFundingThreshold: 250,
-        },
-      },
     };
 
     // Mock perps config with minFundingThreshold
@@ -878,21 +881,21 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
       competitionId: mockCompetitionId,
       crossChainTradingType: "allow" as const,
       evaluationMetric: "calmar_ratio" as const,
-      participationConfig: null,
-      partners: null,
-      rewards: null,
+      vips: null,
+      allowlist: null,
+      blocklist: null,
+      minRecallRank: null,
+      allowlistOnly: false,
+      agentAllocation: null,
+      agentAllocationUnit: null,
+      boosterAllocation: null,
+      boosterAllocationUnit: null,
+      rewardRules: null,
+      rewardDetails: null,
       displayState: null,
       arenaId: "default-perps-arena",
-      engineId: "perpetual_futures",
+      engineId: "perpetual_futures" as const,
       engineVersion: "1.0.0",
-      engineConfig: {
-        params: {
-          provider: "symphony",
-          evaluationMetric: "calmar_ratio",
-          initialCapital: 500,
-          selfFundingThreshold: 0,
-        },
-      },
     };
 
     // Mock perps config WITHOUT minFundingThreshold
@@ -1081,22 +1084,21 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
       competitionId: mockCompetitionId,
       crossChainTradingType: "allow" as const,
       evaluationMetric: "calmar_ratio" as const,
-      participationConfig: null,
-      partners: null,
-      rewards: null,
+      vips: null,
+      allowlist: null,
+      blocklist: null,
+      minRecallRank: null,
+      allowlistOnly: false,
+      agentAllocation: null,
+      agentAllocationUnit: null,
+      boosterAllocation: null,
+      boosterAllocationUnit: null,
+      rewardRules: null,
+      rewardDetails: null,
       displayState: null,
       arenaId: "default-perps-arena",
-      engineId: "perpetual_futures",
+      engineId: "perpetual_futures" as const,
       engineVersion: "1.0.0",
-      engineConfig: {
-        params: {
-          provider: "symphony",
-          evaluationMetric: "calmar_ratio",
-          initialCapital: 500,
-          selfFundingThreshold: 0,
-          minFundingThreshold: 250,
-        },
-      },
     };
 
     // Mock perps config with minFundingThreshold

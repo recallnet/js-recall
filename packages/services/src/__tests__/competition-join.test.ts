@@ -20,6 +20,7 @@ import type { CompetitionRewardService } from "../competition-reward.service.js"
 import { CompetitionService } from "../competition.service.js";
 import type { PerpsDataProcessor } from "../perps-data-processor.service.js";
 import type { PortfolioSnapshotterService } from "../portfolio-snapshotter.service.js";
+import { RewardsService } from "../rewards.service.js";
 import type { TradeSimulatorService } from "../trade-simulator.service.js";
 import type { TradingConstraintsService } from "../trading-constraints.service.js";
 import {
@@ -37,6 +38,7 @@ describe("CompetitionService - joinCompetition", () => {
   let agentRankService: MockProxy<AgentRankService>;
   let tradingConstraintsService: MockProxy<TradingConstraintsService>;
   let competitionRewardService: MockProxy<CompetitionRewardService>;
+  let rewardsService: MockProxy<RewardsService>;
   let perpsDataProcessor: MockProxy<PerpsDataProcessor>;
   let agentRepo: MockProxy<AgentRepository>;
   let agentScoreRepo: MockProxy<AgentScoreRepository>;
@@ -91,25 +93,22 @@ describe("CompetitionService - joinCompetition", () => {
     registeredParticipants: 0,
     sandboxMode: false,
     minimumStake: null,
+    vips: null,
+    allowlist: null,
+    blocklist: null,
+    minRecallRank: null,
+    allowlistOnly: false,
+    agentAllocation: null,
+    agentAllocationUnit: null,
+    boosterAllocation: null,
+    boosterAllocationUnit: null,
+    rewardRules: null,
+    rewardDetails: null,
     crossChainTradingType: "allow",
-    participationConfig: null,
-    partners: null,
-    rewards: null,
     displayState: null,
     arenaId: "default-paper-arena",
-    engineId: "spot_paper_trading",
+    engineId: "spot_paper_trading" as const,
     engineVersion: "1.0.0",
-    engineConfig: {
-      params: {
-        crossChainTradingType: "allow",
-        tradingConstraints: {
-          minimumPairAgeHours: 24,
-          minimum24hVolumeUsd: 50000,
-          minimumLiquidityUsd: 25000,
-          minimumFdvUsd: 100000,
-        },
-      },
-    },
   };
 
   beforeEach(() => {
@@ -121,6 +120,7 @@ describe("CompetitionService - joinCompetition", () => {
     agentRankService = mock<AgentRankService>();
     tradingConstraintsService = mock<TradingConstraintsService>();
     competitionRewardService = mock<CompetitionRewardService>();
+    rewardsService = mock<RewardsService>();
     perpsDataProcessor = mock<PerpsDataProcessor>();
     agentRepo = mock<AgentRepository>();
     agentScoreRepo = mock<AgentScoreRepository>();
@@ -160,6 +160,7 @@ describe("CompetitionService - joinCompetition", () => {
       agentRankService,
       tradingConstraintsService,
       competitionRewardService,
+      rewardsService,
       perpsDataProcessor,
       agentRepo,
       agentScoreRepo,

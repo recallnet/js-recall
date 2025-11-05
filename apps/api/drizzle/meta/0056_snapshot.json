@@ -1,5 +1,5 @@
 {
-  "id": "d208d22a-3083-424e-a8f6-e3e7008eb19f",
+  "id": "d855fd96-dd50-4d11-9e0b-099f70db4237",
   "prevId": "3816456a-a3c3-4b3c-a185-c19754012f75",
   "version": "7",
   "dialect": "postgresql",
@@ -1200,11 +1200,29 @@
           "primaryKey": false,
           "notNull": false
         },
-        "classification": {
-          "name": "classification",
-          "type": "jsonb",
+        "category": {
+          "name": "category",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
+        },
+        "skill": {
+          "name": "skill",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "venues": {
+          "name": "venues",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "chains": {
+          "name": "chains",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": false
         },
         "kind": {
           "name": "kind",
@@ -1234,6 +1252,36 @@
           "columns": [
             {
               "expression": "id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_arenas_category": {
+          "name": "idx_arenas_category",
+          "columns": [
+            {
+              "expression": "category",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_arenas_skill": {
+          "name": "idx_arenas_skill",
+          "columns": [
+            {
+              "expression": "skill",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -1419,6 +1467,112 @@
         }
       },
       "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.competition_partners": {
+      "name": "competition_partners",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "competition_id": {
+          "name": "competition_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "partner_id": {
+          "name": "partner_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "position": {
+          "name": "position",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "idx_competition_partners_competition_id": {
+          "name": "idx_competition_partners_competition_id",
+          "columns": [
+            {
+              "expression": "competition_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_competition_partners_partner_id": {
+          "name": "idx_competition_partners_partner_id",
+          "columns": [
+            {
+              "expression": "partner_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "competition_partners_competition_id_fkey": {
+          "name": "competition_partners_competition_id_fkey",
+          "tableFrom": "competition_partners",
+          "tableTo": "competitions",
+          "columnsFrom": ["competition_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "competition_partners_partner_id_fkey": {
+          "name": "competition_partners_partner_id_fkey",
+          "tableFrom": "competition_partners",
+          "tableTo": "partners",
+          "columnsFrom": ["partner_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "competition_partners_competition_id_partner_id_key": {
+          "name": "competition_partners_competition_id_partner_id_key",
+          "nullsNotDistinct": false,
+          "columns": ["competition_id", "partner_id"]
+        },
+        "competition_partners_competition_id_position_key": {
+          "name": "competition_partners_competition_id_position_key",
+          "nullsNotDistinct": false,
+          "columns": ["competition_id", "position"]
+        }
+      },
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -1678,6 +1832,88 @@
           "primaryKey": false,
           "notNull": false
         },
+        "vips": {
+          "name": "vips",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "allowlist": {
+          "name": "allowlist",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "blocklist": {
+          "name": "blocklist",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "min_recall_rank": {
+          "name": "min_recall_rank",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "allowlist_only": {
+          "name": "allowlist_only",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        },
+        "agent_allocation": {
+          "name": "agent_allocation",
+          "type": "numeric(30, 15)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "agent_allocation_unit": {
+          "name": "agent_allocation_unit",
+          "type": "allocation_unit",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "booster_allocation": {
+          "name": "booster_allocation",
+          "type": "numeric(30, 15)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "booster_allocation_unit": {
+          "name": "booster_allocation_unit",
+          "type": "allocation_unit",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "reward_rules": {
+          "name": "reward_rules",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "reward_details": {
+          "name": "reward_details",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "engine_id": {
+          "name": "engine_id",
+          "type": "engine_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "engine_version": {
+          "name": "engine_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "status": {
           "name": "status",
           "type": "competition_status",
@@ -1692,45 +1928,10 @@
           "notNull": true,
           "default": false
         },
-        "engine_id": {
-          "name": "engine_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "engine_version": {
-          "name": "engine_version",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "engine_config": {
-          "name": "engine_config",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "participation_config": {
-          "name": "participation_config",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "partners": {
-          "name": "partners",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "rewards": {
-          "name": "rewards",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false
-        },
         "display_state": {
           "name": "display_state",
-          "type": "text",
+          "type": "display_state",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": false
         },
@@ -2031,6 +2232,80 @@
           "onUpdate": "no action"
         }
       },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.partners": {
+      "name": "partners",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "url": {
+          "name": "url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "logo_url": {
+          "name": "logo_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "details": {
+          "name": "details",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "idx_partners_name": {
+          "name": "idx_partners_name",
+          "columns": [
+            {
+              "expression": "name",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
@@ -5482,6 +5757,11 @@
       "schema": "public",
       "values": ["active", "inactive", "suspended", "deleted"]
     },
+    "public.allocation_unit": {
+      "name": "allocation_unit",
+      "schema": "public",
+      "values": ["RECALL", "USDC", "USD"]
+    },
     "public.competition_agent_status": {
       "name": "competition_agent_status",
       "schema": "public",
@@ -5496,6 +5776,16 @@
       "name": "competition_type",
       "schema": "public",
       "values": ["trading", "perpetual_futures"]
+    },
+    "public.display_state": {
+      "name": "display_state",
+      "schema": "public",
+      "values": ["active", "waitlist", "cancelled", "pending", "paused"]
+    },
+    "public.engine_type": {
+      "name": "engine_type",
+      "schema": "public",
+      "values": ["spot_paper_trading", "perpetual_futures", "spot_live_trading"]
     },
     "trading_comps.cross_chain_trading_type": {
       "name": "cross_chain_trading_type",

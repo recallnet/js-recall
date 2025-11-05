@@ -4,7 +4,7 @@ import { type VariantProps, cva } from "class-variance-authority";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center text-sm font-medium transition-all duration-300 ease-in-out focus-visible:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-50",
+  "inline-flex items-center justify-center rounded-xl text-sm font-medium transition-all duration-300 ease-in-out focus-visible:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-50",
   {
     variants: {
       variant: {

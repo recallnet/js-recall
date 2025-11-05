@@ -35,6 +35,7 @@ import {
 import { applySortingAndPagination, splitSortField } from "./lib/sort.js";
 import { PerpsDataProcessor } from "./perps-data-processor.service.js";
 import { PortfolioSnapshotterService } from "./portfolio-snapshotter.service.js";
+import { RewardsService } from "./rewards.service.js";
 import { TradeSimulatorService } from "./trade-simulator.service.js";
 import { TradingConstraintsService } from "./trading-constraints.service.js";
 import {
@@ -290,14 +291,7 @@ type AgentCompetitionTradesData = {
  * Leaderboard with inactive agents data structure
  */
 interface LeaderboardWithInactiveAgents {
-  activeAgents: Array<{
-    agentId: string;
-    value: number;
-    calmarRatio?: number | null;
-    simpleReturn?: number | null;
-    maxDrawdown?: number | null;
-    hasRiskMetrics?: boolean;
-  }>;
+  activeAgents: LeaderboardEntry[];
   inactiveAgents: Array<{
     agentId: string;
     value: number;
@@ -334,6 +328,7 @@ export class CompetitionService {
   private agentRankService: AgentRankService;
   private tradingConstraintsService: TradingConstraintsService;
   private competitionRewardService: CompetitionRewardService;
+  private rewardsService: RewardsService;
   private perpsDataProcessor: PerpsDataProcessor;
   private agentRepo: AgentRepository;
   private agentScoreRepo: AgentScoreRepository;
@@ -353,6 +348,7 @@ export class CompetitionService {
     agentRankService: AgentRankService,
     tradingConstraintsService: TradingConstraintsService,
     competitionRewardService: CompetitionRewardService,
+    rewardsService: RewardsService,
     perpsDataProcessor: PerpsDataProcessor,
     agentRepo: AgentRepository,
     agentScoreRepo: AgentScoreRepository,
@@ -371,6 +367,7 @@ export class CompetitionService {
     this.agentRankService = agentRankService;
     this.tradingConstraintsService = tradingConstraintsService;
     this.competitionRewardService = competitionRewardService;
+    this.rewardsService = rewardsService;
     this.perpsDataProcessor = perpsDataProcessor;
     this.agentRepo = agentRepo;
     this.agentScoreRepo = agentScoreRepo;
@@ -1293,11 +1290,21 @@ export class CompetitionService {
 
     // Get leaderboard data for the competition to get scores and ranks
     const leaderboard = await this.getLeaderboard(competitionId);
+    const agentStatusMap = new Map(
+      agents.map((agent) => [agent.id, agent.competitionStatus]),
+    );
     const leaderboardMap = new Map(
-      leaderboard.map((entry, index) => [
-        entry.agentId,
-        { score: entry.value, rank: index + 1 },
-      ]),
+      leaderboard.map((entry, index) => {
+        // If the agent's status in the competition is not active, score them as zero with a rank
+        // equal to the total number of agents (last place). This ensures rank-based sorting always
+        // works correctly.
+        const competitionStatus = agentStatusMap.get(entry.agentId);
+        if (competitionStatus !== "active") {
+          return [entry.agentId, { score: 0, rank: total }];
+        } else {
+          return [entry.agentId, { score: entry.value, rank: index + 1 }];
+        }
+      }),
     );
 
     // Build the response with agent details and competition data using bulk metrics
@@ -1328,7 +1335,7 @@ export class CompetitionService {
         (entry) => entry.agentId === agent.id,
       );
       const score = leaderboardData?.score ?? 0;
-      const rank = leaderboardData?.rank ?? 0;
+      const rank = leaderboardData?.rank ?? total; // Use last place if not in leaderboard
       const metrics = bulkMetrics.get(agent.id) || {
         pnl: 0,
         pnlPercent: 0,
@@ -1684,7 +1691,7 @@ export class CompetitionService {
         deactivationReason: string;
       }> = [];
       if (inactiveAgentIds.length > 0) {
-        // 🚀 BULK OPERATIONS: Fetch all inactive agent data
+        // Bulk operations to fetch all inactive agent data
         const [competitionRecords, latestSnapshots] = await Promise.all([
           this.competitionRepo.getBulkAgentCompetitionRecords(
             competitionId,
@@ -1731,6 +1738,7 @@ export class CompetitionService {
         activeAgents: activeLeaderboard.map((entry) => ({
           agentId: entry.agentId,
           value: entry.value,
+          pnl: entry.pnl,
           calmarRatio: entry.calmarRatio,
           simpleReturn: entry.simpleReturn,
           maxDrawdown: entry.maxDrawdown,
@@ -2547,6 +2555,57 @@ export class CompetitionService {
     } catch (error) {
       this.logger.error(
         `[CompetitionManager] Error in processCompetitionEndDateChecks: ${error instanceof Error ? error : String(error)}`,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Check and automatically calculate rewards for competitions that have ended
+   */
+  async processPendingRewardsCompetitions(): Promise<void> {
+    try {
+      const competitions =
+        await this.competitionRepo.findCompetitionsNeedingRewardsCalculation();
+
+      if (competitions.length === 0) {
+        this.logger.debug(
+          "[CompetitionManager] No competitions needing rewards calculation",
+        );
+        return;
+      }
+
+      for (const competition of competitions) {
+        // Ensure competition end date has passed by at least an hour
+        const now = new Date();
+        const endDate = competition.endDate;
+        if (!endDate || now.getTime() - endDate.getTime() < 60 * 60 * 1000) {
+          this.logger.debug(
+            `[CompetitionManager] Skipping rewards calculation for competition ${competition.name} (${competition.id}) because end date has not passed by an hour (endDate: ${endDate ? endDate.toISOString() : "N/A"}, now: ${now.toISOString()})`,
+          );
+          continue;
+        }
+
+        try {
+          this.logger.debug(
+            `[CompetitionManager] Calculating rewards for competition: ${competition.name} (${competition.id})`,
+          );
+
+          await this.rewardsService.calculateAndAllocate(competition.id);
+
+          this.logger.debug(
+            `[CompetitionManager] Successfully calculated rewards for competition: ${competition.name} (${competition.id})`,
+          );
+        } catch (error) {
+          this.logger.error(
+            `[CompetitionManager] Error calculating rewards for competition ${competition.id}: ${error instanceof Error ? error : String(error)}`,
+          );
+          // Continue processing other competitions even if one fails
+        }
+      }
+    } catch (error) {
+      this.logger.error(
+        `[CompetitionManager] Error in processPendingRewardsCompetitions: ${error instanceof Error ? error : String(error)}`,
       );
       throw error;
     }

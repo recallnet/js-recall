@@ -45,9 +45,17 @@ function createMockCompetition(
     maxParticipants: null,
     registeredParticipants: 0,
     minimumStake: null,
-    participationConfig: null,
-    partners: null,
-    rewards: null,
+    vips: null,
+    allowlist: null,
+    blocklist: null,
+    minRecallRank: null,
+    allowlistOnly: false,
+    agentAllocation: null,
+    agentAllocationUnit: null,
+    boosterAllocation: null,
+    boosterAllocationUnit: null,
+    rewardRules: null,
+    rewardDetails: null,
     displayState: null,
     ...overrides,
   };
@@ -58,34 +66,15 @@ function createMockCompetition(
     return {
       ...baseCompetition,
       arenaId: "default-paper-arena",
-      engineId: "spot_paper_trading",
+      engineId: "spot_paper_trading" as const,
       engineVersion: "1.0.0",
-      engineConfig: {
-        params: {
-          crossChainTradingType: "disallowAll",
-          tradingConstraints: {
-            minimumPairAgeHours: 24,
-            minimum24hVolumeUsd: 50000,
-            minimumLiquidityUsd: 25000,
-            minimumFdvUsd: 100000,
-          },
-        },
-      },
     };
   } else if (competitionType === "perpetual_futures") {
     return {
       ...baseCompetition,
       arenaId: "default-perps-arena",
-      engineId: "perpetual_futures",
+      engineId: "perpetual_futures" as const,
       engineVersion: "1.0.0",
-      engineConfig: {
-        params: {
-          provider: "symphony",
-          evaluationMetric: "calmar_ratio",
-          initialCapital: 500,
-          selfFundingThreshold: 10,
-        },
-      },
     };
   }
 
@@ -95,7 +84,6 @@ function createMockCompetition(
     arenaId: null,
     engineId: null,
     engineVersion: null,
-    engineConfig: null,
   };
 }
 
