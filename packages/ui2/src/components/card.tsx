@@ -84,15 +84,9 @@ export const Card: React.FC<CardProps> = ({
 
   const clipPath = generateClipPath();
 
-  // If there's a crop size, use a smaller border radius
-  const borderRadius = corners.length > 0 ? "rounded-sm" : "rounded-xl";
   return (
     <div
-      className={cn(
-        "bg-card relative overflow-hidden",
-        borderRadius,
-        className,
-      )}
+      className={cn("bg-card relative overflow-hidden rounded-sm", className)}
       style={{
         clipPath,
         WebkitClipPath: clipPath,
