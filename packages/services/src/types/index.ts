@@ -734,6 +734,33 @@ export const CompetitionAllowedUpdateSchema = z.strictObject({
   boostEndDate: z.date().optional(),
   joinStartDate: z.date().optional(),
   joinEndDate: z.date().optional(),
+  maxParticipants: z.number().int().min(1).optional(),
+  tradingConstraints: TradingConstraintsSchema.optional(),
+
+  // Arena and engine routing
+  arenaId: z.string().optional(),
+  engineId: z
+    .enum(["spot_paper_trading", "perpetual_futures", "spot_live_trading"])
+    .optional(),
+  engineVersion: z.string().optional(),
+
+  // Participation rules (individual columns)
+  minimumStake: z.number().min(0).optional(),
+  vips: z.array(z.string()).optional(),
+  allowlist: z.array(z.string()).optional(),
+  blocklist: z.array(z.string()).optional(),
+  minRecallRank: z.number().int().optional(),
+  allowlistOnly: z.boolean().optional(),
+
+  // Reward allocation (individual columns)
+  agentAllocation: z.number().optional(),
+  agentAllocationUnit: z.enum(["RECALL", "USDC", "USD"]).optional(),
+  boosterAllocation: z.number().optional(),
+  boosterAllocationUnit: z.enum(["RECALL", "USDC", "USD"]).optional(),
+  rewardRules: z.string().optional(),
+  rewardDetails: z.string().optional(),
+
+  // Legacy rewards (competition_rewards table - rank-based prizes)
   rewards: z
     .record(z.string().regex(/^\d+$/), z.number())
     .transform((val) =>
@@ -742,14 +769,11 @@ export const CompetitionAllowedUpdateSchema = z.strictObject({
       ),
     )
     .optional(),
-  tradingConstraints: TradingConstraintsSchema.optional(),
-  arenaId: z.string().optional(),
-  engineId: z.string().optional(),
-  engineVersion: z.string().optional(),
-  engineConfig: z.record(z.string(), z.unknown()).optional(),
-  participationConfig: z.record(z.string(), z.unknown()).optional(),
-  partners: z.array(z.unknown()).optional(),
-  displayState: z.string().optional(),
+
+  // Display state
+  displayState: z
+    .enum(["active", "waitlist", "cancelled", "pending", "paused"])
+    .optional(),
 });
 
 export type CompetitionAllowedUpdate = z.infer<
