@@ -293,6 +293,57 @@ export interface DeleteArenaResponse extends ApiResponse {
 }
 
 /**
+ * PARTNER TYPES
+ */
+
+// Partner details
+export interface Partner {
+  id: string;
+  name: string;
+  url: string | null;
+  logoUrl: string | null;
+  details: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Create partner response
+export interface CreatePartnerResponse extends ApiResponse {
+  success: true;
+  partner: Partner;
+}
+
+// Get partner response
+export interface GetPartnerResponse extends ApiResponse {
+  success: true;
+  partner: Partner;
+}
+
+// List partners response
+export interface ListPartnersResponse extends ApiResponse {
+  success: true;
+  partners: Partner[];
+  pagination: {
+    total: number;
+    limit: number;
+    offset: number;
+    hasMore: boolean;
+  };
+}
+
+// Update partner response
+export interface UpdatePartnerResponse extends ApiResponse {
+  success: true;
+  partner: Partner;
+}
+
+// Delete partner response
+export interface DeletePartnerResponse extends ApiResponse {
+  success: true;
+  message: string;
+}
+
+/**
  * TRADING TYPES
  */
 

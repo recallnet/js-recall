@@ -45,16 +45,20 @@ import {
   CompetitionType,
   CreateArenaResponse,
   CreateCompetitionResponse,
+  CreatePartnerResponse,
   CrossChainTradingType,
   DeleteArenaResponse,
+  DeletePartnerResponse,
   DetailedHealthCheckResponse,
   ErrorResponse,
   GetArenaResponse,
+  GetPartnerResponse,
   GetUserAgentsResponse,
   GlobalLeaderboardResponse,
   HealthCheckResponse,
   LinkUserWalletResponse,
   ListArenasResponse,
+  ListPartnersResponse,
   LoginResponse,
   PerpsAccountResponse,
   PerpsPositionsResponse,
@@ -73,6 +77,7 @@ import {
   UpcomingCompetitionsResponse,
   UpdateArenaResponse,
   UpdateCompetitionResponse,
+  UpdatePartnerResponse,
   UserAgentApiKeyResponse,
   UserCompetitionsResponse,
   UserMetadata,
@@ -1249,6 +1254,113 @@ export class ApiClient {
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "delete arena");
+    }
+  }
+
+  /**
+   * Create a partner (admin only)
+   * @param partnerData Partner data to create
+   */
+  async createPartner(partnerData: {
+    name: string;
+    url?: string;
+    logoUrl?: string;
+    details?: string;
+  }): Promise<CreatePartnerResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.post(
+        "/api/admin/partners",
+        partnerData,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "create partner");
+    }
+  }
+
+  /**
+   * Get a partner by ID (admin only)
+   * @param id Partner ID
+   */
+  async getPartner(id: string): Promise<GetPartnerResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.get(
+        `/api/admin/partners/${id}`,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get partner");
+    }
+  }
+
+  /**
+   * List all partners (admin only)
+   * @param params Pagination and filter parameters
+   */
+  async listPartners(params?: {
+    limit?: number;
+    offset?: number;
+    sort?: string;
+    nameFilter?: string;
+  }): Promise<ListPartnersResponse | ErrorResponse> {
+    try {
+      const queryParams = new URLSearchParams();
+      if (params?.limit !== undefined)
+        queryParams.append("limit", params.limit.toString());
+      if (params?.offset !== undefined)
+        queryParams.append("offset", params.offset.toString());
+      if (params?.sort) queryParams.append("sort", params.sort);
+      if (params?.nameFilter)
+        queryParams.append("nameFilter", params.nameFilter);
+
+      const response = await this.axiosInstance.get(
+        `/api/admin/partners?${queryParams.toString()}`,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "list partners");
+    }
+  }
+
+  /**
+   * Update a partner (admin only)
+   * @param id Partner ID
+   * @param updateData Fields to update
+   */
+  async updatePartner(
+    id: string,
+    updateData: {
+      name?: string;
+      url?: string;
+      logoUrl?: string;
+      details?: string;
+    },
+  ): Promise<UpdatePartnerResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.put(
+        `/api/admin/partners/${id}`,
+        updateData,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "update partner");
+    }
+  }
+
+  /**
+   * Delete a partner (admin only)
+   * @param id Partner ID
+   */
+  async deletePartner(
+    id: string,
+  ): Promise<DeletePartnerResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.delete(
+        `/api/admin/partners/${id}`,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "delete partner");
     }
   }
 

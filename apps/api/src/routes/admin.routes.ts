@@ -326,6 +326,233 @@ export function configureAdminRoutes(
 
   /**
    * @openapi
+   * /api/admin/partners:
+   *   post:
+   *     tags:
+   *       - Admin
+   *     summary: Create a new partner
+   *     description: Create a new partner that can be associated with competitions
+   *     security:
+   *       - BearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - name
+   *             properties:
+   *               name:
+   *                 type: string
+   *                 description: Partner name
+   *                 example: Aerodrome Finance
+   *               url:
+   *                 type: string
+   *                 format: uri
+   *                 description: Partner website URL
+   *                 example: https://aerodrome.finance
+   *               logoUrl:
+   *                 type: string
+   *                 format: uri
+   *                 description: Partner logo URL
+   *                 example: https://aerodrome.finance/logo.png
+   *               details:
+   *                 type: string
+   *                 description: Partner details or description
+   *                 example: Leading DEX on Base
+   *     responses:
+   *       201:
+   *         description: Partner created successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                 partner:
+   *                   type: object
+   *       400:
+   *         description: Bad Request - Invalid data
+   *       401:
+   *         description: Unauthorized - Admin authentication required
+   *       409:
+   *         description: Conflict - Partner with this name already exists
+   *       500:
+   *         description: Server error
+   */
+  router.post("/partners", controller.createPartner);
+
+  /**
+   * @openapi
+   * /api/admin/partners:
+   *   get:
+   *     tags:
+   *       - Admin
+   *     summary: List all partners
+   *     description: Get paginated list of partners with optional name filtering
+   *     security:
+   *       - BearerAuth: []
+   *     parameters:
+   *       - in: query
+   *         name: limit
+   *         schema:
+   *           type: integer
+   *           minimum: 1
+   *           maximum: 100
+   *           default: 20
+   *         description: Number of partners to return
+   *       - in: query
+   *         name: offset
+   *         schema:
+   *           type: integer
+   *           minimum: 0
+   *           default: 0
+   *         description: Number of partners to skip
+   *       - in: query
+   *         name: sort
+   *         schema:
+   *           type: string
+   *           default: ""
+   *         description: Sort field and direction
+   *       - in: query
+   *         name: nameFilter
+   *         schema:
+   *           type: string
+   *         description: Filter partners by name (case-insensitive partial match)
+   *     responses:
+   *       200:
+   *         description: Partners retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                 partners:
+   *                   type: array
+   *                   items:
+   *                     type: object
+   *                 pagination:
+   *                   type: object
+   *       401:
+   *         description: Unauthorized - Admin authentication required
+   *       500:
+   *         description: Server error
+   */
+  router.get("/partners", controller.listPartners);
+
+  /**
+   * @openapi
+   * /api/admin/partners/{id}:
+   *   get:
+   *     tags:
+   *       - Admin
+   *     summary: Get partner by ID
+   *     description: Retrieve detailed information about a specific partner
+   *     security:
+   *       - BearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         description: Partner ID
+   *     responses:
+   *       200:
+   *         description: Partner retrieved successfully
+   *       401:
+   *         description: Unauthorized - Admin authentication required
+   *       404:
+   *         description: Partner not found
+   *       500:
+   *         description: Server error
+   */
+  router.get("/partners/:id", controller.getPartner);
+
+  /**
+   * @openapi
+   * /api/admin/partners/{id}:
+   *   put:
+   *     tags:
+   *       - Admin
+   *     summary: Update a partner
+   *     description: Update partner information
+   *     security:
+   *       - BearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         description: Partner ID
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               name:
+   *                 type: string
+   *               url:
+   *                 type: string
+   *                 format: uri
+   *               logoUrl:
+   *                 type: string
+   *                 format: uri
+   *               details:
+   *                 type: string
+   *     responses:
+   *       200:
+   *         description: Partner updated successfully
+   *       401:
+   *         description: Unauthorized - Admin authentication required
+   *       404:
+   *         description: Partner not found
+   *       500:
+   *         description: Server error
+   */
+  router.put("/partners/:id", controller.updatePartner);
+
+  /**
+   * @openapi
+   * /api/admin/partners/{id}:
+   *   delete:
+   *     tags:
+   *       - Admin
+   *     summary: Delete a partner
+   *     description: Delete a partner (cascades to remove all competition associations)
+   *     security:
+   *       - BearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         description: Partner ID
+   *     responses:
+   *       200:
+   *         description: Partner deleted successfully
+   *       401:
+   *         description: Unauthorized - Admin authentication required
+   *       404:
+   *         description: Partner not found
+   *       500:
+   *         description: Server error
+   */
+  router.delete("/partners/:id", controller.deletePartner);
+
+  /**
+   * @openapi
    * /api/admin/competition/create:
    *   post:
    *     tags:

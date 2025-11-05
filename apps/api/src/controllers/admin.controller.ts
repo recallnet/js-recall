@@ -21,6 +21,7 @@ import {
   AdminArenaParamsSchema,
   AdminCreateArenaSchema,
   AdminCreateCompetitionSchema,
+  AdminCreatePartnerSchema,
   AdminDeactivateAgentBodySchema,
   AdminDeactivateAgentParamsSchema,
   AdminDeleteAgentParamsSchema,
@@ -33,6 +34,8 @@ import {
   AdminGetPerformanceReportsQuerySchema,
   AdminListAllAgentsQuerySchema,
   AdminListArenasQuerySchema,
+  AdminListPartnersQuerySchema,
+  AdminPartnerParamsSchema,
   AdminReactivateAgentInCompetitionParamsSchema,
   AdminReactivateAgentParamsSchema,
   AdminRegisterUserSchema,
@@ -46,6 +49,7 @@ import {
   AdminUpdateArenaSchema,
   AdminUpdateCompetitionParamsSchema,
   AdminUpdateCompetitionSchema,
+  AdminUpdatePartnerSchema,
 } from "./admin.schema.js";
 import { parseAdminSearchQuery } from "./request-helpers.js";
 
@@ -292,6 +296,120 @@ export function makeAdminController(services: ServiceRegistry) {
         res.status(200).json({
           success: true,
           message: `Arena ${id} deleted successfully`,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Create a new partner
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async createPartner(req: Request, res: Response, next: NextFunction) {
+      try {
+        const partnerData = flatParse(AdminCreatePartnerSchema, req.body);
+
+        const partner =
+          await services.partnerService.createPartner(partnerData);
+
+        res.status(201).json({
+          success: true,
+          partner,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Get a partner by ID
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async getPartner(req: Request, res: Response, next: NextFunction) {
+      try {
+        const { id } = flatParse(AdminPartnerParamsSchema, req.params);
+
+        const partner = await services.partnerService.findById(id);
+
+        res.status(200).json({
+          success: true,
+          partner,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * List all partners with pagination
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async listPartners(req: Request, res: Response, next: NextFunction) {
+      try {
+        const { limit, offset, sort, nameFilter } = flatParse(
+          AdminListPartnersQuerySchema,
+          req.query,
+        );
+
+        const result = await services.partnerService.findAll(
+          { limit, offset, sort },
+          nameFilter,
+        );
+
+        res.status(200).json({
+          success: true,
+          partners: result.partners,
+          pagination: result.pagination,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Update a partner
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async updatePartner(req: Request, res: Response, next: NextFunction) {
+      try {
+        const { id } = flatParse(AdminPartnerParamsSchema, req.params);
+        const updateData = flatParse(AdminUpdatePartnerSchema, req.body);
+
+        const partner = await services.partnerService.update(id, updateData);
+
+        res.status(200).json({
+          success: true,
+          partner,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Delete a partner
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async deletePartner(req: Request, res: Response, next: NextFunction) {
+      try {
+        const { id } = flatParse(AdminPartnerParamsSchema, req.params);
+
+        await services.partnerService.delete(id);
+
+        res.status(200).json({
+          success: true,
+          message: `Partner ${id} deleted successfully`,
         });
       } catch (error) {
         next(error);

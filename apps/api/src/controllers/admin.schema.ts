@@ -382,3 +382,40 @@ export const AdminListArenasQuerySchema = z.object({
   sort: z.string().default(""),
   nameFilter: z.string().optional(),
 });
+
+/**
+ * Admin create partner schema
+ */
+export const AdminCreatePartnerSchema = z.object({
+  name: z.string().min(1).max(100),
+  url: z.string().url().optional(),
+  logoUrl: z.string().url().optional(),
+  details: z.string().max(500).optional(),
+});
+
+/**
+ * Admin update partner schema
+ */
+export const AdminUpdatePartnerSchema = z.object({
+  name: z.string().min(1).max(100).optional(),
+  url: z.string().url().optional(),
+  logoUrl: z.string().url().optional(),
+  details: z.string().max(500).optional(),
+});
+
+/**
+ * Admin partner params schema (for :id in path)
+ */
+export const AdminPartnerParamsSchema = z.object({
+  id: UuidSchema,
+});
+
+/**
+ * Admin list partners query schema
+ */
+export const AdminListPartnersQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+  offset: z.coerce.number().int().min(0).default(0),
+  sort: z.string().default(""),
+  nameFilter: z.string().optional(),
+});

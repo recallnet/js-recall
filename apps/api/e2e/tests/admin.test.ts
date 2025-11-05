@@ -26,13 +26,18 @@ import {
   CompetitionDetailResponse,
   CreateArenaResponse,
   CreateCompetitionResponse,
+  CreatePartnerResponse,
   DeleteArenaResponse,
+  DeletePartnerResponse,
   ErrorResponse,
   GetArenaResponse,
+  GetPartnerResponse,
   ListArenasResponse,
+  ListPartnersResponse,
   StartCompetitionResponse,
   UpdateArenaResponse,
   UpdateCompetitionResponse,
+  UpdatePartnerResponse,
   UserRegistrationResponse,
 } from "@recallnet/test-utils";
 import { generateRandomPrivyId } from "@recallnet/test-utils";
@@ -3088,6 +3093,219 @@ describe("Admin API", () => {
 
     // Try to list arenas without admin auth
     const listResponse = await regularClient.listArenas();
+    expect(listResponse.success).toBe(false);
+  });
+
+  // ===== Partner CRUD Tests =====
+
+  test("should create a partner as admin", async () => {
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    const partnerData = {
+      name: "Aerodrome Finance",
+      url: "https://aerodrome.finance",
+      logoUrl: "https://aerodrome.finance/logo.png",
+      details: "Leading DEX on Base",
+    };
+
+    const response = await adminClient.createPartner(partnerData);
+
+    expect(response.success).toBe(true);
+    expect((response as CreatePartnerResponse).partner).toBeDefined();
+    expect((response as CreatePartnerResponse).partner.name).toBe(
+      partnerData.name,
+    );
+    expect((response as CreatePartnerResponse).partner.url).toBe(
+      partnerData.url,
+    );
+    expect((response as CreatePartnerResponse).partner.logoUrl).toBe(
+      partnerData.logoUrl,
+    );
+  });
+
+  test("should reject duplicate partner name", async () => {
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    const partnerData = {
+      name: `Duplicate Partner ${Date.now()}`,
+      url: "https://example.com",
+    };
+
+    // Create first partner
+    const firstResponse = await adminClient.createPartner(partnerData);
+    expect(firstResponse.success).toBe(true);
+
+    // Try to create second partner with same name
+    const secondResponse = await adminClient.createPartner(partnerData);
+
+    expect(secondResponse.success).toBe(false);
+    expect((secondResponse as ErrorResponse).error).toContain("already exists");
+  });
+
+  test("should list partners with pagination", async () => {
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Create a few partners first
+    const partner1 = await adminClient.createPartner({
+      name: `List Partner 1 ${Date.now()}`,
+      url: "https://partner1.com",
+    });
+    expect(partner1.success).toBe(true);
+
+    const partner2 = await adminClient.createPartner({
+      name: `List Partner 2 ${Date.now()}`,
+      url: "https://partner2.com",
+    });
+    expect(partner2.success).toBe(true);
+
+    // List partners
+    const listResponse = await adminClient.listPartners({
+      limit: 10,
+      offset: 0,
+    });
+
+    expect(listResponse.success).toBe(true);
+    expect((listResponse as ListPartnersResponse).partners).toBeDefined();
+    expect(Array.isArray((listResponse as ListPartnersResponse).partners)).toBe(
+      true,
+    );
+    expect(
+      (listResponse as ListPartnersResponse).partners.length,
+    ).toBeGreaterThan(1);
+    expect((listResponse as ListPartnersResponse).pagination).toBeDefined();
+  });
+
+  test("should filter partners by name", async () => {
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    const uniqueName = `PartnerFilterTest-${Date.now()}`;
+
+    // Create partner with unique name
+    await adminClient.createPartner({
+      name: uniqueName,
+      url: "https://example.com",
+    });
+
+    // Filter by name
+    const listResponse = await adminClient.listPartners({
+      limit: 10,
+      offset: 0,
+      nameFilter: uniqueName,
+    });
+
+    expect(listResponse.success).toBe(true);
+    const partners = (listResponse as ListPartnersResponse).partners;
+    expect(partners.length).toBeGreaterThanOrEqual(1);
+    expect(partners.some((p) => p.name === uniqueName)).toBe(true);
+  });
+
+  test("should get partner by ID", async () => {
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Create partner
+    const createResponse = await adminClient.createPartner({
+      name: `Get Partner Test ${Date.now()}`,
+      url: "https://example.com",
+    });
+    expect(createResponse.success).toBe(true);
+    const partnerId = (createResponse as CreatePartnerResponse).partner.id;
+
+    // Get partner by ID
+    const getResponse = await adminClient.getPartner(partnerId);
+
+    expect(getResponse.success).toBe(true);
+    expect((getResponse as GetPartnerResponse).partner).toBeDefined();
+    expect((getResponse as GetPartnerResponse).partner.id).toBe(partnerId);
+  });
+
+  test("should return 404 for non-existent partner", async () => {
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    const response = await adminClient.getPartner(
+      "00000000-0000-0000-0000-000000000000",
+    );
+
+    expect(response.success).toBe(false);
+    expect((response as ErrorResponse).error).toContain("not found");
+  });
+
+  test("should update a partner", async () => {
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Create partner
+    const createResponse = await adminClient.createPartner({
+      name: `Original Partner ${Date.now()}`,
+      url: "https://original.com",
+      details: "Original details",
+    });
+    expect(createResponse.success).toBe(true);
+    const partnerId = (createResponse as CreatePartnerResponse).partner.id;
+
+    // Update partner
+    const updateResponse = await adminClient.updatePartner(partnerId, {
+      name: "Updated Partner Name",
+      url: "https://updated.com",
+      details: "Updated details",
+    });
+
+    expect(updateResponse.success).toBe(true);
+    expect((updateResponse as UpdatePartnerResponse).partner.name).toBe(
+      "Updated Partner Name",
+    );
+    expect((updateResponse as UpdatePartnerResponse).partner.url).toBe(
+      "https://updated.com",
+    );
+    expect((updateResponse as UpdatePartnerResponse).partner.details).toBe(
+      "Updated details",
+    );
+  });
+
+  test("should delete a partner", async () => {
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Create partner
+    const createResponse = await adminClient.createPartner({
+      name: `Partner To Delete ${Date.now()}`,
+      url: "https://example.com",
+    });
+    expect(createResponse.success).toBe(true);
+    const partnerId = (createResponse as CreatePartnerResponse).partner.id;
+
+    // Delete partner
+    const deleteResponse = await adminClient.deletePartner(partnerId);
+
+    expect(deleteResponse.success).toBe(true);
+    expect((deleteResponse as DeletePartnerResponse).message).toContain(
+      "deleted",
+    );
+
+    // Verify partner is gone
+    const getResponse = await adminClient.getPartner(partnerId);
+    expect(getResponse.success).toBe(false);
+    expect((getResponse as ErrorResponse).error).toContain("not found");
+  });
+
+  test("should not allow partner operations without admin auth", async () => {
+    const regularClient = createTestClient();
+
+    // Try to create partner without admin auth
+    const createResponse = await regularClient.createPartner({
+      name: "Unauthorized Partner",
+      url: "https://example.com",
+    });
+
+    expect(createResponse.success).toBe(false);
+
+    // Try to list partners without admin auth
+    const listResponse = await regularClient.listPartners();
     expect(listResponse.success).toBe(false);
   });
 });
