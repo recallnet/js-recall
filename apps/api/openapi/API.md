@@ -67,6 +67,319 @@ Creates the first admin account. This endpoint is only available when no admin e
 | 403  | Admin setup not allowed - an admin account already exists |
 | 500  | Server error                                              |
 
+### /api/admin/arenas
+
+#### POST
+
+##### Summary:
+
+Create a new arena
+
+##### Description:
+
+Create a new arena for grouping and organizing competitions
+
+##### Responses
+
+| Code | Description                                                      |
+| ---- | ---------------------------------------------------------------- |
+| 201  | Arena created successfully                                       |
+| 400  | Bad Request - Invalid arena ID format or missing required fields |
+| 401  | Unauthorized - Admin authentication required                     |
+| 409  | Conflict - Arena with this ID already exists                     |
+| 500  | Server error                                                     |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| BearerAuth      |        |
+
+#### GET
+
+##### Summary:
+
+List all arenas
+
+##### Description:
+
+Get paginated list of arenas with optional name filtering
+
+##### Parameters
+
+| Name       | Located in | Description                                            | Required | Schema  |
+| ---------- | ---------- | ------------------------------------------------------ | -------- | ------- |
+| limit      | query      | Number of arenas to return                             | No       | integer |
+| offset     | query      | Number of arenas to skip                               | No       | integer |
+| sort       | query      | Sort field and direction (e.g., "name:asc")            | No       | string  |
+| nameFilter | query      | Filter arenas by name (case-insensitive partial match) | No       | string  |
+
+##### Responses
+
+| Code | Description                                  |
+| ---- | -------------------------------------------- |
+| 200  | Arenas retrieved successfully                |
+| 401  | Unauthorized - Admin authentication required |
+| 500  | Server error                                 |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| BearerAuth      |        |
+
+### /api/admin/arenas/{id}
+
+#### GET
+
+##### Summary:
+
+Get arena by ID
+
+##### Description:
+
+Retrieve detailed information about a specific arena
+
+##### Parameters
+
+| Name | Located in | Description | Required | Schema |
+| ---- | ---------- | ----------- | -------- | ------ |
+| id   | path       | Arena ID    | Yes      | string |
+
+##### Responses
+
+| Code | Description                                  |
+| ---- | -------------------------------------------- |
+| 200  | Arena retrieved successfully                 |
+| 401  | Unauthorized - Admin authentication required |
+| 404  | Arena not found                              |
+| 500  | Server error                                 |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| BearerAuth      |        |
+
+#### PUT
+
+##### Summary:
+
+Update an arena
+
+##### Description:
+
+Update arena metadata and classification
+
+##### Parameters
+
+| Name | Located in | Description | Required | Schema |
+| ---- | ---------- | ----------- | -------- | ------ |
+| id   | path       | Arena ID    | Yes      | string |
+
+##### Responses
+
+| Code | Description                                  |
+| ---- | -------------------------------------------- |
+| 200  | Arena updated successfully                   |
+| 401  | Unauthorized - Admin authentication required |
+| 404  | Arena not found                              |
+| 500  | Server error                                 |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| BearerAuth      |        |
+
+#### DELETE
+
+##### Summary:
+
+Delete an arena
+
+##### Description:
+
+Delete an arena (fails if arena has associated competitions)
+
+##### Parameters
+
+| Name | Located in | Description | Required | Schema |
+| ---- | ---------- | ----------- | -------- | ------ |
+| id   | path       | Arena ID    | Yes      | string |
+
+##### Responses
+
+| Code | Description                                  |
+| ---- | -------------------------------------------- |
+| 200  | Arena deleted successfully                   |
+| 401  | Unauthorized - Admin authentication required |
+| 404  | Arena not found                              |
+| 409  | Conflict - Arena has associated competitions |
+| 500  | Server error                                 |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| BearerAuth      |        |
+
+### /api/admin/partners
+
+#### POST
+
+##### Summary:
+
+Create a new partner
+
+##### Description:
+
+Create a new partner that can be associated with competitions
+
+##### Responses
+
+| Code | Description                                      |
+| ---- | ------------------------------------------------ |
+| 201  | Partner created successfully                     |
+| 400  | Bad Request - Invalid data                       |
+| 401  | Unauthorized - Admin authentication required     |
+| 409  | Conflict - Partner with this name already exists |
+| 500  | Server error                                     |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| BearerAuth      |        |
+
+#### GET
+
+##### Summary:
+
+List all partners
+
+##### Description:
+
+Get paginated list of partners with optional name filtering
+
+##### Parameters
+
+| Name       | Located in | Description                                              | Required | Schema  |
+| ---------- | ---------- | -------------------------------------------------------- | -------- | ------- |
+| limit      | query      | Number of partners to return                             | No       | integer |
+| offset     | query      | Number of partners to skip                               | No       | integer |
+| sort       | query      | Sort field and direction                                 | No       | string  |
+| nameFilter | query      | Filter partners by name (case-insensitive partial match) | No       | string  |
+
+##### Responses
+
+| Code | Description                                  |
+| ---- | -------------------------------------------- |
+| 200  | Partners retrieved successfully              |
+| 401  | Unauthorized - Admin authentication required |
+| 500  | Server error                                 |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| BearerAuth      |        |
+
+### /api/admin/partners/{id}
+
+#### GET
+
+##### Summary:
+
+Get partner by ID
+
+##### Description:
+
+Retrieve detailed information about a specific partner
+
+##### Parameters
+
+| Name | Located in | Description | Required | Schema        |
+| ---- | ---------- | ----------- | -------- | ------------- |
+| id   | path       | Partner ID  | Yes      | string (uuid) |
+
+##### Responses
+
+| Code | Description                                  |
+| ---- | -------------------------------------------- |
+| 200  | Partner retrieved successfully               |
+| 401  | Unauthorized - Admin authentication required |
+| 404  | Partner not found                            |
+| 500  | Server error                                 |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| BearerAuth      |        |
+
+#### PUT
+
+##### Summary:
+
+Update a partner
+
+##### Description:
+
+Update partner information
+
+##### Parameters
+
+| Name | Located in | Description | Required | Schema        |
+| ---- | ---------- | ----------- | -------- | ------------- |
+| id   | path       | Partner ID  | Yes      | string (uuid) |
+
+##### Responses
+
+| Code | Description                                  |
+| ---- | -------------------------------------------- |
+| 200  | Partner updated successfully                 |
+| 401  | Unauthorized - Admin authentication required |
+| 404  | Partner not found                            |
+| 500  | Server error                                 |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| BearerAuth      |        |
+
+#### DELETE
+
+##### Summary:
+
+Delete a partner
+
+##### Description:
+
+Delete a partner (cascades to remove all competition associations)
+
+##### Parameters
+
+| Name | Located in | Description | Required | Schema        |
+| ---- | ---------- | ----------- | -------- | ------------- |
+| id   | path       | Partner ID  | Yes      | string (uuid) |
+
+##### Responses
+
+| Code | Description                                  |
+| ---- | -------------------------------------------- |
+| 200  | Partner deleted successfully                 |
+| 401  | Unauthorized - Admin authentication required |
+| 404  | Partner not found                            |
+| 500  | Server error                                 |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| BearerAuth      |        |
+
 ### /api/admin/competition/create
 
 #### POST
