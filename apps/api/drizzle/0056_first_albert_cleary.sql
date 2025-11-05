@@ -5,7 +5,10 @@ CREATE TABLE "arenas" (
 	"id" text PRIMARY KEY NOT NULL,
 	"name" text NOT NULL,
 	"created_by" text,
-	"classification" jsonb NOT NULL,
+	"category" text NOT NULL,
+	"skill" text NOT NULL,
+	"venues" text[],
+	"chains" text[],
 	"kind" text DEFAULT 'Competition' NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
@@ -15,13 +18,21 @@ CREATE TABLE "arenas" (
 CREATE TABLE "competition_partners" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"competition_id" uuid NOT NULL,
+	"partner_id" uuid NOT NULL,
 	"position" integer NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "competition_partners_competition_id_partner_id_key" UNIQUE("competition_id","partner_id"),
+	CONSTRAINT "competition_partners_competition_id_position_key" UNIQUE("competition_id","position")
+);
+--> statement-breakpoint
+CREATE TABLE "partners" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"name" text NOT NULL,
 	"url" text,
-	"details" text,
 	"logo_url" text,
+	"details" text,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	CONSTRAINT "competition_partners_competition_id_position" UNIQUE("competition_id","position")
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
 ALTER TABLE "competitions" ADD COLUMN "arena_id" text;--> statement-breakpoint
@@ -40,8 +51,13 @@ ALTER TABLE "competitions" ADD COLUMN "engine_id" "engine_type";--> statement-br
 ALTER TABLE "competitions" ADD COLUMN "engine_version" text;--> statement-breakpoint
 ALTER TABLE "competitions" ADD COLUMN "display_state" "display_state";--> statement-breakpoint
 ALTER TABLE "competition_partners" ADD CONSTRAINT "competition_partners_competition_id_fkey" FOREIGN KEY ("competition_id") REFERENCES "public"."competitions"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "competition_partners" ADD CONSTRAINT "competition_partners_partner_id_fkey" FOREIGN KEY ("partner_id") REFERENCES "public"."partners"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "idx_arenas_id" ON "arenas" USING btree ("id");--> statement-breakpoint
+CREATE INDEX "idx_arenas_category" ON "arenas" USING btree ("category");--> statement-breakpoint
+CREATE INDEX "idx_arenas_skill" ON "arenas" USING btree ("skill");--> statement-breakpoint
 CREATE INDEX "idx_competition_partners_competition_id" ON "competition_partners" USING btree ("competition_id");--> statement-breakpoint
+CREATE INDEX "idx_competition_partners_partner_id" ON "competition_partners" USING btree ("partner_id");--> statement-breakpoint
+CREATE INDEX "idx_partners_name" ON "partners" USING btree ("name");--> statement-breakpoint
 ALTER TABLE "competitions" ADD CONSTRAINT "competitions_arena_id_fkey" FOREIGN KEY ("arena_id") REFERENCES "public"."arenas"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "idx_competitions_arena_id" ON "competitions" USING btree ("arena_id");--> statement-breakpoint
 CREATE INDEX "idx_competitions_engine_id" ON "competitions" USING btree ("engine_id");
