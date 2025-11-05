@@ -1,5 +1,7 @@
 import { z } from "zod/v4";
 
+import { allocationUnit, engineType } from "@recallnet/db/schema/core/defs";
+
 import {
   CrossChainTradingTypeSchema,
   EvaluationMetricSchema,
@@ -61,19 +63,19 @@ export const SpotLiveTradingEngineParamsSchema = z.object({
  */
 const EngineConfigSchema = z.discriminatedUnion("id", [
   z.object({
-    id: z.literal("spot_paper_trading"),
+    id: z.literal(engineType.enumValues[0]), // "spot_paper_trading"
     version: z.string().regex(SEMVER_REGEX, "Must be valid semver"),
     description: z.string().optional(),
     params: SpotPaperTradingEngineParamsSchema.optional(),
   }),
   z.object({
-    id: z.literal("perpetual_futures"),
+    id: z.literal(engineType.enumValues[1]), // "perpetual_futures"
     version: z.string().regex(SEMVER_REGEX, "Must be valid semver"),
     description: z.string().optional(),
     params: PerpetualFuturesEngineParamsSchema.optional(),
   }),
   z.object({
-    id: z.literal("spot_live_trading"),
+    id: z.literal(engineType.enumValues[2]), // "spot_live_trading"
     version: z.string().regex(SEMVER_REGEX, "Must be valid semver"),
     description: z.string().optional(),
     params: SpotLiveTradingEngineParamsSchema.optional(),
@@ -152,9 +154,9 @@ export const ArenaConfigSchema = z
     rewards: z
       .object({
         agentAllocation: z.number().min(0).optional(),
-        agentAllocationUnit: z.string().optional(),
+        agentAllocationUnit: z.enum(allocationUnit.enumValues).optional(),
         boosterAllocation: z.number().min(0).optional(),
-        boosterAllocationUnit: z.string().optional(),
+        boosterAllocationUnit: z.enum(allocationUnit.enumValues).optional(),
         rules: z.string().optional(),
         details: z.string().optional(),
       })

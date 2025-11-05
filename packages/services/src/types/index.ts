@@ -3,9 +3,12 @@ import { z } from "zod/v4";
 import {
   type UserMetadata,
   actorStatus,
+  allocationUnit,
   competitionAgentStatus,
   competitionStatus,
   competitionType,
+  displayState,
+  engineType,
 } from "@recallnet/db/schema/core/defs";
 import { MAX_HANDLE_LENGTH } from "@recallnet/db/schema/core/defs";
 import { SelectAgent, SelectUser } from "@recallnet/db/schema/core/types";
@@ -739,9 +742,7 @@ export const CompetitionAllowedUpdateSchema = z.strictObject({
 
   // Arena and engine routing
   arenaId: z.string().optional(),
-  engineId: z
-    .enum(["spot_paper_trading", "perpetual_futures", "spot_live_trading"])
-    .optional(),
+  engineId: z.enum(engineType.enumValues).optional(),
   engineVersion: z.string().optional(),
 
   // Participation rules (individual columns)
@@ -754,9 +755,9 @@ export const CompetitionAllowedUpdateSchema = z.strictObject({
 
   // Reward allocation (individual columns)
   agentAllocation: z.number().optional(),
-  agentAllocationUnit: z.enum(["RECALL", "USDC", "USD"]).optional(),
+  agentAllocationUnit: z.enum(allocationUnit.enumValues).optional(),
   boosterAllocation: z.number().optional(),
-  boosterAllocationUnit: z.enum(["RECALL", "USDC", "USD"]).optional(),
+  boosterAllocationUnit: z.enum(allocationUnit.enumValues).optional(),
   rewardRules: z.string().optional(),
   rewardDetails: z.string().optional(),
 
@@ -777,9 +778,7 @@ export const CompetitionAllowedUpdateSchema = z.strictObject({
     .optional(),
 
   // Display state
-  displayState: z
-    .enum(["active", "waitlist", "cancelled", "pending", "paused"])
-    .optional(),
+  displayState: z.enum(displayState.enumValues).optional(),
 });
 
 export type CompetitionAllowedUpdate = z.infer<
