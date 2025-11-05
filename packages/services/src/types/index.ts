@@ -760,7 +760,13 @@ export const CompetitionAllowedUpdateSchema = z.strictObject({
   rewardRules: z.string().optional(),
   rewardDetails: z.string().optional(),
 
-  // Legacy rewards (competition_rewards table - rank-based prizes)
+  /**
+   * Rank-based prizes stored in competition_rewards table
+   * Maps rank position to reward amount (e.g., {1: 1000, 2: 500, 3: 250})
+   * Accepts JSON object with string keys (JSON limitation), transforms to Record<number, number>
+   * Input from API: {"1": 1000, "2": 500} → Internal type: {1: 1000, 2: 500}
+   * Rank positions are conceptually numeric, transformation provides type safety
+   */
   rewards: z
     .record(z.string().regex(/^\d+$/), z.number())
     .transform((val) =>
