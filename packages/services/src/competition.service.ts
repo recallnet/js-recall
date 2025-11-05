@@ -1286,15 +1286,16 @@ export class CompetitionService {
 
     // Get leaderboard data for the competition to get scores and ranks
     const leaderboard = await this.getLeaderboard(competitionId);
+    const agentStatusMap = new Map(
+      agents.map((agent) => [agent.id, agent.competitionStatus]),
+    );
     const leaderboardMap = new Map(
       leaderboard.map((entry, index) => {
         // If the agent's status in the competition is not active, score them as zero with a rank
         // equal to the total number of agents (last place). This ensures rank-based sorting always
         // works correctly.
-        if (
-          agents.find((agent) => agent.id === entry.agentId)
-            ?.competitionStatus !== "active"
-        ) {
+        const competitionStatus = agentStatusMap.get(entry.agentId);
+        if (competitionStatus !== "active") {
           return [entry.agentId, { score: 0, rank: total }];
         } else {
           return [entry.agentId, { score: entry.value, rank: index + 1 }];
