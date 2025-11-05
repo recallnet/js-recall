@@ -193,9 +193,9 @@ export default function AgentProfile({
         ]}
       />
 
-      <div className="xs:grid-rows-[550px_1fr] my-6 grid grid-cols-[300px_1fr_1fr] rounded-xl md:grid-cols-[400px_1fr_1fr]">
+      <div className="xs:grid-rows-[550px_1fr] my-6 grid grid-cols-[300px_1fr_1fr] rounded-sm md:grid-cols-[400px_1fr_1fr]">
         <Card
-          className="xs:col-span-1 xs:mr-8 relative col-span-3 flex h-[550px] flex-col border bg-[#11121A]"
+          className="xs:col-span-1 xs:mr-8 relative col-span-3 flex h-[550px] flex-col bg-[#11121A]"
           corner="top-left"
           cropSize={45}
         >
@@ -237,7 +237,7 @@ export default function AgentProfile({
             )}
           </div>
           {agent.walletAddress && (
-            <div className="flex justify-center border-t bg-black px-6 py-3 text-center">
+            <div className="bg-background flex justify-center border px-6 py-3 text-center">
               <Clipboard
                 text={displayAddress(agent.walletAddress, { numChars: 6 })}
                 textOnCopy={agent.walletAddress}
