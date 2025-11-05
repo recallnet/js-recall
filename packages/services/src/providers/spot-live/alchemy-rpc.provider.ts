@@ -501,11 +501,13 @@ export class AlchemyRpcProvider {
             const balances =
               await provider.core.getTokenBalances(walletAddress);
 
-            // Filter out zero balances and format
+            // Filter out zero balances and null/undefined values
             return balances.tokenBalances
               .filter(
                 (balance: { tokenBalance?: string | null }) =>
-                  balance.tokenBalance !== "0x0",
+                  balance.tokenBalance &&
+                  balance.tokenBalance !== "0x0" &&
+                  balance.tokenBalance !== null,
               )
               .map(
                 (balance: {
@@ -513,7 +515,7 @@ export class AlchemyRpcProvider {
                   tokenBalance?: string | null;
                 }) => ({
                   contractAddress: balance.contractAddress,
-                  balance: balance.tokenBalance || "0x0",
+                  balance: balance.tokenBalance!, // Safe to assert - filter guarantees non-null
                 }),
               );
           },
