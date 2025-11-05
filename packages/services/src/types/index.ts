@@ -3,9 +3,12 @@ import { z } from "zod/v4";
 import {
   type UserMetadata,
   actorStatus,
+  allocationUnit,
   competitionAgentStatus,
   competitionStatus,
   competitionType,
+  displayState,
+  engineType,
 } from "@recallnet/db/schema/core/defs";
 import { MAX_HANDLE_LENGTH } from "@recallnet/db/schema/core/defs";
 import { SelectAgent, SelectUser } from "@recallnet/db/schema/core/types";
@@ -734,8 +737,48 @@ export const CompetitionAllowedUpdateSchema = z.strictObject({
   boostEndDate: z.date().optional(),
   joinStartDate: z.date().optional(),
   joinEndDate: z.date().optional(),
-  rewards: z.record(z.number(), z.number()).optional(),
+  maxParticipants: z.number().int().min(1).optional(),
   tradingConstraints: TradingConstraintsSchema.optional(),
+
+  // Arena and engine routing
+  arenaId: z.string().optional(),
+  engineId: z.enum(engineType.enumValues).optional(),
+  engineVersion: z.string().optional(),
+
+  // Participation rules (individual columns)
+  minimumStake: z.number().min(0).optional(),
+  vips: z.array(z.string()).optional(),
+  allowlist: z.array(z.string()).optional(),
+  blocklist: z.array(z.string()).optional(),
+  minRecallRank: z.number().int().optional(),
+  allowlistOnly: z.boolean().optional(),
+
+  // Reward allocation (individual columns)
+  agentAllocation: z.number().optional(),
+  agentAllocationUnit: z.enum(allocationUnit.enumValues).optional(),
+  boosterAllocation: z.number().optional(),
+  boosterAllocationUnit: z.enum(allocationUnit.enumValues).optional(),
+  rewardRules: z.string().optional(),
+  rewardDetails: z.string().optional(),
+
+  /**
+   * Rank-based prizes stored in competition_rewards table
+   * Maps rank position to reward amount (e.g., {1: 1000, 2: 500, 3: 250})
+   * Accepts JSON object with string keys (JSON limitation), transforms to Record<number, number>
+   * Input from API: {"1": 1000, "2": 500} → Internal type: {1: 1000, 2: 500}
+   * Rank positions are conceptually numeric, transformation provides type safety
+   */
+  rewards: z
+    .record(z.string().regex(/^\d+$/), z.number())
+    .transform((val) =>
+      Object.fromEntries(
+        Object.entries(val).map(([k, v]) => [parseInt(k, 10), v]),
+      ),
+    )
+    .optional(),
+
+  // Display state
+  displayState: z.enum(displayState.enumValues).optional(),
 });
 
 export type CompetitionAllowedUpdate = z.infer<

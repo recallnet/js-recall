@@ -93,7 +93,22 @@ describe("CompetitionService - joinCompetition", () => {
     registeredParticipants: 0,
     sandboxMode: false,
     minimumStake: null,
+    vips: null,
+    allowlist: null,
+    blocklist: null,
+    minRecallRank: null,
+    allowlistOnly: false,
+    agentAllocation: null,
+    agentAllocationUnit: null,
+    boosterAllocation: null,
+    boosterAllocationUnit: null,
+    rewardRules: null,
+    rewardDetails: null,
     crossChainTradingType: "allow",
+    displayState: null,
+    arenaId: "default-paper-arena",
+    engineId: "spot_paper_trading" as const,
+    engineVersion: "1.0.0",
   };
 
   beforeEach(() => {

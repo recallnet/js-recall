@@ -55,6 +55,35 @@ export const competitionType = pgEnum("competition_type", [
 ]);
 
 /**
+ * Defines the possible engine types
+ */
+export const engineType = pgEnum("engine_type", [
+  "spot_paper_trading",
+  "perpetual_futures",
+  "spot_live_trading",
+]);
+
+/**
+ * Defines the possible allocation units for rewards
+ */
+export const allocationUnit = pgEnum("allocation_unit", [
+  "RECALL",
+  "USDC",
+  "USD",
+]);
+
+/**
+ * Defines the possible display states for competitions
+ */
+export const displayState = pgEnum("display_state", [
+  "active",
+  "waitlist",
+  "cancelled",
+  "pending",
+  "paused",
+]);
+
+/**
  * Defines the possible statuses for agents within competitions.
  */
 export const competitionAgentStatus = pgEnum("competition_agent_status", [
@@ -248,15 +277,52 @@ export const admins = pgTable(
   ],
 );
 
+/**
+ * Arenas are grouping mechanisms for organizing related competitions
+ * Stores metadata and classification for discovery/filtering
+ */
+export const arenas = pgTable(
+  "arenas",
+  {
+    id: text().primaryKey().notNull(),
+    name: text().notNull(),
+    createdBy: text("created_by"),
+    category: text().notNull(),
+    skill: text().notNull(),
+    venues: text().array(),
+    chains: text().array(),
+    kind: text().default("Competition").notNull(),
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+    })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", {
+      withTimezone: true,
+    })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index("idx_arenas_id").on(table.id),
+    index("idx_arenas_category").on(table.category),
+    index("idx_arenas_skill").on(table.skill),
+    unique("arenas_id_key").on(table.id),
+  ],
+);
+
 export const competitions = pgTable(
   "competitions",
   {
     id: uuid().primaryKey().notNull(),
+    arenaId: text("arena_id"),
     name: varchar({ length: 100 }).notNull(),
     description: text(),
     type: competitionType("type").default("trading").notNull(),
     externalUrl: text("external_url"),
     imageUrl: text("image_url"),
+
+    // Schedule
     startDate: timestamp("start_date", { withTimezone: true }),
     endDate: timestamp("end_date", { withTimezone: true }),
     boostStartDate: timestamp("boost_start_date", { withTimezone: true }),
@@ -272,8 +338,36 @@ export const competitions = pgTable(
       scale: 15,
       mode: "number",
     }),
+    vips: text("vips").array(),
+    allowlist: text("allowlist").array(),
+    blocklist: text("blocklist").array(),
+    minRecallRank: integer("min_recall_rank"),
+    allowlistOnly: boolean("allowlist_only").default(false),
+
+    agentAllocation: numeric("agent_allocation", {
+      precision: 30,
+      scale: 15,
+      mode: "number",
+    }),
+    agentAllocationUnit: allocationUnit("agent_allocation_unit"),
+    boosterAllocation: numeric("booster_allocation", {
+      precision: 30,
+      scale: 15,
+      mode: "number",
+    }),
+    boosterAllocationUnit: allocationUnit("booster_allocation_unit"),
+    rewardRules: text("reward_rules"),
+    rewardDetails: text("reward_details"),
+
+    // Engine routing
+    engineId: engineType("engine_id"),
+    engineVersion: text("engine_version"),
+
+    // Display
     status: competitionStatus("status").notNull(),
     sandboxMode: boolean("sandbox_mode").notNull().default(false),
+    displayState: displayState("display_state"),
+
     createdAt: timestamp("created_at", {
       withTimezone: true,
     }).defaultNow(),
@@ -282,6 +376,12 @@ export const competitions = pgTable(
     }).defaultNow(),
   },
   (table) => [
+    foreignKey({
+      columns: [table.arenaId],
+      foreignColumns: [arenas.id],
+      name: "competitions_arena_id_fkey",
+    }).onDelete("set null"),
+    index("idx_competitions_arena_id").on(table.arenaId),
     index("idx_competitions_status").on(table.status),
     index("idx_competitions_id_participants").on(
       table.id,
@@ -294,12 +394,80 @@ export const competitions = pgTable(
       table.id,
     ),
     index("idx_competitions_status_end_date").on(table.status, table.endDate),
+    index("idx_competitions_engine_id").on(table.engineId),
   ],
 );
 
 /**
- * Junction table for agent participation in competitions
- * Now includes per-competition agent status tracking
+ * Master partner information
+ * Stores partner details that can be reused across multiple competitions
+ */
+export const partners = pgTable(
+  "partners",
+  {
+    id: uuid().primaryKey().notNull().defaultRandom(),
+    name: text("name").notNull(),
+    url: text("url"),
+    logoUrl: text("logo_url"),
+    details: text("details"),
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+    })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", {
+      withTimezone: true,
+    })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [index("idx_partners_name").on(table.name)],
+);
+
+/**
+ * Junction table linking partners to competitions
+ * Tracks which partners are associated with which competitions and display ordering
+ */
+export const competitionPartners = pgTable(
+  "competition_partners",
+  {
+    id: uuid().primaryKey().notNull().defaultRandom(),
+    competitionId: uuid("competition_id").notNull(),
+    partnerId: uuid("partner_id").notNull(),
+    position: integer("position").notNull(),
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+    })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.competitionId],
+      foreignColumns: [competitions.id],
+      name: "competition_partners_competition_id_fkey",
+    }).onDelete("cascade"),
+    foreignKey({
+      columns: [table.partnerId],
+      foreignColumns: [partners.id],
+      name: "competition_partners_partner_id_fkey",
+    }).onDelete("cascade"),
+    unique("competition_partners_competition_id_partner_id_key").on(
+      table.competitionId,
+      table.partnerId,
+    ),
+    unique("competition_partners_competition_id_position_key").on(
+      table.competitionId,
+      table.position,
+    ),
+    index("idx_competition_partners_competition_id").on(table.competitionId),
+    index("idx_competition_partners_partner_id").on(table.partnerId),
+  ],
+);
+
+/**
+ * Tracks agent participation in competitions
+ * Stores agent status, deactivation reason, and timestamps per competition
  */
 export const competitionAgents = pgTable(
   "competition_agents",
