@@ -1292,8 +1292,8 @@ export class CompetitionService {
         // equal to the total number of agents (last place). This ensures rank-based sorting always
         // works correctly.
         if (
-          agents.find((agent) => agent.id === entry.agentId)?.status !==
-          "active"
+          agents.find((agent) => agent.id === entry.agentId)
+            ?.competitionStatus !== "active"
         ) {
           return [entry.agentId, { score: 0, rank: total }];
         } else {
