@@ -117,7 +117,7 @@ export class ArenaRepository {
         conditions.push(ilike(arenas.name, `%${nameFilter}%`));
       }
 
-      // Count query
+      // Build count query
       let countQuery = this.#dbRead
         .select({ count: drizzleCount() })
         .from(arenas)
@@ -127,10 +127,7 @@ export class ArenaRepository {
         countQuery = countQuery.where(and(...conditions));
       }
 
-      const countResult = await countQuery;
-      const total = countResult[0]?.count ?? 0;
-
-      // Data query
+      // Build data query
       let dataQuery = this.#dbRead.select().from(arenas).$dynamic();
 
       if (conditions.length > 0) {
@@ -141,9 +138,13 @@ export class ArenaRepository {
         dataQuery = getSort(dataQuery, params.sort, arenaOrderByFields);
       }
 
-      const results = await dataQuery.limit(params.limit).offset(params.offset);
+      // Execute count and data queries in parallel
+      const [results, countResult] = await Promise.all([
+        dataQuery.limit(params.limit).offset(params.offset),
+        countQuery,
+      ]);
 
-      return { arenas: results, total };
+      return { arenas: results, total: countResult[0]?.count ?? 0 };
     } catch (error) {
       this.#logger.error("[ArenaRepository] Error in findAll:", error);
       throw error;
@@ -208,7 +209,7 @@ export class ArenaRepository {
 
   /**
    * Find arenas by category
-   * @param category Category value from classification JSONB
+   * @param category Category value
    * @returns Array of matching arenas
    */
   async findByCategory(category: string): Promise<SelectArena[]> {
@@ -216,7 +217,7 @@ export class ArenaRepository {
       const results = await this.#dbRead
         .select()
         .from(arenas)
-        .where(sql`${arenas.classification}->>'category' = ${category}`);
+        .where(eq(arenas.category, category));
 
       return results;
     } catch (error) {
@@ -230,7 +231,7 @@ export class ArenaRepository {
 
   /**
    * Find arenas by skill
-   * @param skill Skill value from classification JSONB
+   * @param skill Skill value
    * @returns Array of matching arenas
    */
   async findBySkill(skill: string): Promise<SelectArena[]> {
@@ -238,7 +239,7 @@ export class ArenaRepository {
       const results = await this.#dbRead
         .select()
         .from(arenas)
-        .where(sql`${arenas.classification}->>'skill' = ${skill}`);
+        .where(eq(arenas.skill, skill));
 
       return results;
     } catch (error) {
@@ -263,32 +264,28 @@ export class ArenaRepository {
       const conditions = [];
 
       if (filters.category) {
-        conditions.push(
-          sql`${arenas.classification}->>'category' = ${filters.category}`,
-        );
+        conditions.push(eq(arenas.category, filters.category));
       }
 
       if (filters.skill) {
-        conditions.push(
-          sql`${arenas.classification}->>'skill' = ${filters.skill}`,
-        );
+        conditions.push(eq(arenas.skill, filters.skill));
       }
 
       if (filters.venues && filters.venues.length > 0) {
         conditions.push(
-          sql`${arenas.classification}->'venues' ?| array[${sql.join(
+          sql`${arenas.venues} && array[${sql.join(
             filters.venues.map((v) => sql`${v}`),
             sql`, `,
-          )}]`,
+          )}]::text[]`,
         );
       }
 
       if (filters.chains && filters.chains.length > 0) {
         conditions.push(
-          sql`${arenas.classification}->'chains' ?| array[${sql.join(
+          sql`${arenas.chains} && array[${sql.join(
             filters.chains.map((c) => sql`${c}`),
             sql`, `,
-          )}]`,
+          )}]::text[]`,
         );
       }
 
@@ -361,14 +358,13 @@ export class ArenaRepository {
     total: number;
   }> {
     try {
-      // Count query
-      const countResult = await this.#dbRead
+      // Build count query
+      const countQuery = this.#dbRead
         .select({ count: drizzleCount() })
         .from(arenas);
-      const total = countResult[0]?.count ?? 0;
 
-      // Data query with competition count
-      let query = this.#dbRead
+      // Build data query with competition count
+      let dataQuery = this.#dbRead
         .select({
           ...getTableColumns(arenas),
           competitionCount: sql<number>`count(${competitions.id})::int`,
@@ -379,12 +375,16 @@ export class ArenaRepository {
         .$dynamic();
 
       if (params.sort) {
-        query = getSort(query, params.sort, arenaOrderByFields);
+        dataQuery = getSort(dataQuery, params.sort, arenaOrderByFields);
       }
 
-      const results = await query.limit(params.limit).offset(params.offset);
+      // Execute count and data queries in parallel
+      const [results, countResult] = await Promise.all([
+        dataQuery.limit(params.limit).offset(params.offset),
+        countQuery,
+      ]);
 
-      return { arenas: results, total };
+      return { arenas: results, total: countResult[0]?.count ?? 0 };
     } catch (error) {
       this.#logger.error(
         "[ArenaRepository] Error in findAllWithCompetitionCounts:",
