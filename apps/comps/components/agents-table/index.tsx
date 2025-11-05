@@ -374,6 +374,14 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
     [],
   );
 
+  // When agents are not active in a competition, display DQ'd tooltips or hide stats
+  const agentIsInactive = useCallback(
+    (agent: RouterOutputs["competitions"]["getAgents"]["agents"][number]) => {
+      return agent.deactivationReason !== null;
+    },
+    [],
+  );
+
   const columns = useMemo<
     ColumnDef<RouterOutputs["competitions"]["getAgents"]["agents"][number]>[]
   >(
@@ -384,7 +392,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
         header: () => <span>Rank</span>,
         cell: ({ row }) => (
           <div className="flex w-full items-center justify-center">
-            {row.original.rank === 0 ? (
+            {agentIsInactive(row.original) ? (
               <Tooltip
                 content={row.original.deactivationReason?.replace(
                   "Admin removal: ",
@@ -451,7 +459,10 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                   original: RouterOutputs["competitions"]["getAgents"]["agents"][number];
                 };
               }) => {
-                if (competition.status === "pending") {
+                if (
+                  competition.status === "pending" ||
+                  agentIsInactive(row.original)
+                ) {
                   return (
                     <span className="text-secondary-foreground font-semibold">
                       -
@@ -496,7 +507,10 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                   original: RouterOutputs["competitions"]["getAgents"]["agents"][number];
                 };
               }) => {
-                if (competition.status === "pending") {
+                if (
+                  competition.status === "pending" ||
+                  agentIsInactive(row.original)
+                ) {
                   return (
                     <span className="text-secondary-foreground font-semibold">
                       -
@@ -530,7 +544,10 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                   original: RouterOutputs["competitions"]["getAgents"]["agents"][number];
                 };
               }) => {
-                if (competition.status === "pending") {
+                if (
+                  competition.status === "pending" ||
+                  agentIsInactive(row.original)
+                ) {
                   return (
                     <span className="text-secondary-foreground font-semibold">
                       -
@@ -568,7 +585,10 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                   original: RouterOutputs["competitions"]["getAgents"]["agents"][number];
                 };
               }) => {
-                if (competition.status === "pending") {
+                if (
+                  competition.status === "pending" ||
+                  agentIsInactive(row.original)
+                ) {
                   return (
                     <span className="text-secondary-foreground font-semibold">
                       -
@@ -603,7 +623,10 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                   original: RouterOutputs["competitions"]["getAgents"]["agents"][number];
                 };
               }) => {
-                if (competition.status === "pending") {
+                if (
+                  competition.status === "pending" ||
+                  agentIsInactive(row.original)
+                ) {
                   return (
                     <span className="text-secondary-foreground font-semibold">
                       -
@@ -649,7 +672,10 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                   original: RouterOutputs["competitions"]["getAgents"]["agents"][number];
                 };
               }) => {
-                if (competition.status === "pending") {
+                if (
+                  competition.status === "pending" ||
+                  agentIsInactive(row.original)
+                ) {
                   return (
                     <span className="text-secondary-foreground font-semibold">
                       -
@@ -809,6 +835,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
       isPerpsCompetition,
       isMobile,
       competition.status,
+      agentIsInactive,
     ],
   );
 
