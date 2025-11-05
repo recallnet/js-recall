@@ -239,6 +239,60 @@ export interface UserAgentApiKeyResponse extends ApiResponse {
 }
 
 /**
+ * ARENA TYPES
+ */
+
+// Arena details
+export interface Arena {
+  id: string;
+  name: string;
+  createdBy: string;
+  category: string;
+  skill: string;
+  venues: string[] | null;
+  chains: string[] | null;
+  kind: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Create arena response
+export interface CreateArenaResponse extends ApiResponse {
+  success: true;
+  arena: Arena;
+}
+
+// Get arena response
+export interface GetArenaResponse extends ApiResponse {
+  success: true;
+  arena: Arena;
+}
+
+// List arenas response
+export interface ListArenasResponse extends ApiResponse {
+  success: true;
+  arenas: Arena[];
+  pagination: {
+    total: number;
+    limit: number;
+    offset: number;
+    hasMore: boolean;
+  };
+}
+
+// Update arena response
+export interface UpdateArenaResponse extends ApiResponse {
+  success: true;
+  arena: Arena;
+}
+
+// Delete arena response
+export interface DeleteArenaResponse extends ApiResponse {
+  success: true;
+  message: string;
+}
+
+/**
  * TRADING TYPES
  */
 

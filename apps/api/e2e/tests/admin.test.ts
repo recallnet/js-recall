@@ -24,9 +24,14 @@ import {
   ApiResponse,
   CompetitionAgentsResponse,
   CompetitionDetailResponse,
+  CreateArenaResponse,
   CreateCompetitionResponse,
+  DeleteArenaResponse,
   ErrorResponse,
+  GetArenaResponse,
+  ListArenasResponse,
   StartCompetitionResponse,
+  UpdateArenaResponse,
   UpdateCompetitionResponse,
   UserRegistrationResponse,
 } from "@recallnet/test-utils";
@@ -2812,5 +2817,277 @@ describe("Admin API", () => {
     expect(updateResponse.error).toContain(
       "prizePools.users (too small: expected number to be >=0)",
     );
+  });
+
+  // ===== Arena CRUD Tests =====
+
+  test("should create an arena as admin", async () => {
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    const arenaData = {
+      id: `test-arena-${Date.now()}`,
+      name: "Test Arena",
+      createdBy: "admin",
+      category: "crypto_trading",
+      skill: "spot_paper_trading",
+      venues: ["aerodrome", "uniswap"],
+      chains: ["base", "arbitrum"],
+    };
+
+    const response = await adminClient.createArena(arenaData);
+
+    expect(response.success).toBe(true);
+    expect((response as CreateArenaResponse).arena).toBeDefined();
+    expect((response as CreateArenaResponse).arena.id).toBe(arenaData.id);
+    expect((response as CreateArenaResponse).arena.name).toBe(arenaData.name);
+    expect((response as CreateArenaResponse).arena.category).toBe(
+      arenaData.category,
+    );
+    expect((response as CreateArenaResponse).arena.skill).toBe(arenaData.skill);
+    expect((response as CreateArenaResponse).arena.venues).toEqual(
+      arenaData.venues,
+    );
+    expect((response as CreateArenaResponse).arena.chains).toEqual(
+      arenaData.chains,
+    );
+  });
+
+  test("should reject arena with invalid ID format", async () => {
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    const arenaData = {
+      id: "Invalid_ID_With_Caps",
+      name: "Test Arena",
+      createdBy: "admin",
+      category: "crypto_trading",
+      skill: "spot_paper_trading",
+    };
+
+    const response = await adminClient.createArena(arenaData);
+
+    expect(response.success).toBe(false);
+    expect((response as ErrorResponse).error).toContain("lowercase kebab-case");
+  });
+
+  test("should reject duplicate arena ID", async () => {
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    const arenaData = {
+      id: `duplicate-arena-${Date.now()}`,
+      name: "First Arena",
+      createdBy: "admin",
+      category: "crypto_trading",
+      skill: "spot_paper_trading",
+    };
+
+    // Create first arena
+    const firstResponse = await adminClient.createArena(arenaData);
+    expect(firstResponse.success).toBe(true);
+
+    // Try to create second arena with same ID
+    const secondResponse = await adminClient.createArena({
+      ...arenaData,
+      name: "Second Arena",
+    });
+
+    expect(secondResponse.success).toBe(false);
+    expect((secondResponse as ErrorResponse).error).toContain("already exists");
+  });
+
+  test("should list arenas with pagination", async () => {
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Create a few arenas first
+    const arena1 = await adminClient.createArena({
+      id: `list-arena-1-${Date.now()}`,
+      name: "List Test Arena 1",
+      createdBy: "admin",
+      category: "crypto_trading",
+      skill: "spot_paper_trading",
+    });
+    expect(arena1.success).toBe(true);
+
+    const arena2 = await adminClient.createArena({
+      id: `list-arena-2-${Date.now()}`,
+      name: "List Test Arena 2",
+      createdBy: "admin",
+      category: "crypto_trading",
+      skill: "perpetual_futures",
+    });
+    expect(arena2.success).toBe(true);
+
+    // List arenas
+    const listResponse = await adminClient.listArenas({ limit: 10, offset: 0 });
+
+    expect(listResponse.success).toBe(true);
+    expect((listResponse as ListArenasResponse).arenas).toBeDefined();
+    expect(Array.isArray((listResponse as ListArenasResponse).arenas)).toBe(
+      true,
+    );
+    expect((listResponse as ListArenasResponse).arenas.length).toBeGreaterThan(
+      1,
+    );
+    expect((listResponse as ListArenasResponse).pagination).toBeDefined();
+    expect(
+      (listResponse as ListArenasResponse).pagination.total,
+    ).toBeGreaterThan(1);
+  });
+
+  test("should filter arenas by name", async () => {
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    const uniqueName = `FilterTest-${Date.now()}`;
+
+    // Create arena with unique name
+    await adminClient.createArena({
+      id: `filter-arena-${Date.now()}`,
+      name: uniqueName,
+      createdBy: "admin",
+      category: "crypto_trading",
+      skill: "spot_paper_trading",
+    });
+
+    // Filter by name
+    const listResponse = await adminClient.listArenas({
+      limit: 10,
+      offset: 0,
+      nameFilter: uniqueName,
+    });
+
+    expect(listResponse.success).toBe(true);
+    const arenas = (listResponse as ListArenasResponse).arenas;
+    expect(arenas.length).toBeGreaterThanOrEqual(1);
+    expect(arenas.some((a) => a.name === uniqueName)).toBe(true);
+  });
+
+  test("should get arena by ID", async () => {
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    const arenaId = `get-arena-${Date.now()}`;
+
+    // Create arena
+    const createResponse = await adminClient.createArena({
+      id: arenaId,
+      name: "Get Test Arena",
+      createdBy: "admin",
+      category: "crypto_trading",
+      skill: "spot_paper_trading",
+    });
+    expect(createResponse.success).toBe(true);
+
+    // Get arena by ID
+    const getResponse = await adminClient.getArena(arenaId);
+
+    expect(getResponse.success).toBe(true);
+    expect((getResponse as GetArenaResponse).arena).toBeDefined();
+    expect((getResponse as GetArenaResponse).arena.id).toBe(arenaId);
+    expect((getResponse as GetArenaResponse).arena.name).toBe("Get Test Arena");
+  });
+
+  test("should return 404 for non-existent arena", async () => {
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    const response = await adminClient.getArena("nonexistent-arena-id");
+
+    expect(response.success).toBe(false);
+    expect((response as ErrorResponse).error).toContain("not found");
+  });
+
+  test("should update an arena", async () => {
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    const arenaId = `update-arena-${Date.now()}`;
+
+    // Create arena
+    const createResponse = await adminClient.createArena({
+      id: arenaId,
+      name: "Original Name",
+      createdBy: "admin",
+      category: "crypto_trading",
+      skill: "spot_paper_trading",
+      venues: ["aerodrome"],
+    });
+    expect(createResponse.success).toBe(true);
+
+    // Update arena
+    const updateResponse = await adminClient.updateArena(arenaId, {
+      name: "Updated Name",
+      venues: ["aerodrome", "uniswap"],
+      chains: ["base"],
+    });
+
+    expect(updateResponse.success).toBe(true);
+    expect((updateResponse as UpdateArenaResponse).arena.name).toBe(
+      "Updated Name",
+    );
+    expect((updateResponse as UpdateArenaResponse).arena.venues).toEqual([
+      "aerodrome",
+      "uniswap",
+    ]);
+    expect((updateResponse as UpdateArenaResponse).arena.chains).toEqual([
+      "base",
+    ]);
+  });
+
+  test("should delete an arena with no competitions", async () => {
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    const arenaId = `delete-arena-${Date.now()}`;
+
+    // Create arena
+    const createResponse = await adminClient.createArena({
+      id: arenaId,
+      name: "Arena To Delete",
+      createdBy: "admin",
+      category: "crypto_trading",
+      skill: "spot_paper_trading",
+    });
+    expect(createResponse.success).toBe(true);
+
+    // Delete arena
+    const deleteResponse = await adminClient.deleteArena(arenaId);
+
+    expect(deleteResponse.success).toBe(true);
+    expect((deleteResponse as DeleteArenaResponse).message).toContain(
+      "deleted",
+    );
+
+    // Verify arena is gone
+    const getResponse = await adminClient.getArena(arenaId);
+    expect(getResponse.success).toBe(false);
+    expect((getResponse as ErrorResponse).error).toContain("not found");
+  });
+
+  // TODO: Add test for deleting arena with associated competitions
+  // This requires updating createCompetition to accept arenaId parameter
+  // Will be implemented when we update competition creation in next phase
+
+  test("should not allow arena operations without admin auth", async () => {
+    const regularClient = createTestClient();
+
+    // Try to create arena without admin auth
+    const createResponse = await regularClient.createArena({
+      id: "unauthorized-arena",
+      name: "Should Fail",
+      createdBy: "hacker",
+      category: "crypto_trading",
+      skill: "spot_paper_trading",
+    });
+
+    expect(createResponse.success).toBe(false);
+    // Should be unauthorized
+
+    // Try to list arenas without admin auth
+    const listResponse = await regularClient.listArenas();
+    expect(listResponse.success).toBe(false);
   });
 });

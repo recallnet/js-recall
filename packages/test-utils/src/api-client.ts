@@ -43,14 +43,18 @@ import {
   CompetitionRulesResponse,
   CompetitionTimelineResponse,
   CompetitionType,
+  CreateArenaResponse,
   CreateCompetitionResponse,
   CrossChainTradingType,
+  DeleteArenaResponse,
   DetailedHealthCheckResponse,
   ErrorResponse,
+  GetArenaResponse,
   GetUserAgentsResponse,
   GlobalLeaderboardResponse,
   HealthCheckResponse,
   LinkUserWalletResponse,
+  ListArenasResponse,
   LoginResponse,
   PerpsAccountResponse,
   PerpsPositionsResponse,
@@ -67,6 +71,7 @@ import {
   TradeResponse,
   TradingConstraints,
   UpcomingCompetitionsResponse,
+  UpdateArenaResponse,
   UpdateCompetitionResponse,
   UserAgentApiKeyResponse,
   UserCompetitionsResponse,
@@ -1137,6 +1142,113 @@ export class ApiClient {
       return response.data as TradeResponse;
     } catch (error) {
       return this.handleApiError(error, "execute trade");
+    }
+  }
+
+  /**
+   * Create an arena (admin only)
+   * @param arenaData Arena data to create
+   */
+  async createArena(arenaData: {
+    id: string;
+    name: string;
+    createdBy: string;
+    category: string;
+    skill: string;
+    venues?: string[];
+    chains?: string[];
+  }): Promise<CreateArenaResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.post(
+        "/api/admin/arenas",
+        arenaData,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "create arena");
+    }
+  }
+
+  /**
+   * Get an arena by ID (admin only)
+   * @param id Arena ID
+   */
+  async getArena(id: string): Promise<GetArenaResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.get(`/api/admin/arenas/${id}`);
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get arena");
+    }
+  }
+
+  /**
+   * List all arenas (admin only)
+   * @param params Pagination and filter parameters
+   */
+  async listArenas(params?: {
+    limit?: number;
+    offset?: number;
+    sort?: string;
+    nameFilter?: string;
+  }): Promise<ListArenasResponse | ErrorResponse> {
+    try {
+      const queryParams = new URLSearchParams();
+      if (params?.limit !== undefined)
+        queryParams.append("limit", params.limit.toString());
+      if (params?.offset !== undefined)
+        queryParams.append("offset", params.offset.toString());
+      if (params?.sort) queryParams.append("sort", params.sort);
+      if (params?.nameFilter)
+        queryParams.append("nameFilter", params.nameFilter);
+
+      const response = await this.axiosInstance.get(
+        `/api/admin/arenas?${queryParams.toString()}`,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "list arenas");
+    }
+  }
+
+  /**
+   * Update an arena (admin only)
+   * @param id Arena ID
+   * @param updateData Fields to update
+   */
+  async updateArena(
+    id: string,
+    updateData: {
+      name?: string;
+      category?: string;
+      skill?: string;
+      venues?: string[];
+      chains?: string[];
+    },
+  ): Promise<UpdateArenaResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.put(
+        `/api/admin/arenas/${id}`,
+        updateData,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "update arena");
+    }
+  }
+
+  /**
+   * Delete an arena (admin only)
+   * @param id Arena ID
+   */
+  async deleteArena(id: string): Promise<DeleteArenaResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.delete(
+        `/api/admin/arenas/${id}`,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "delete arena");
     }
   }
 
