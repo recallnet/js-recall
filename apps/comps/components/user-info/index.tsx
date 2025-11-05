@@ -138,19 +138,19 @@ export default function UserInfoSection({
   };
 
   return (
-    <div className="flex w-full border">
+    <div className="flex w-full rounded-xl border">
       <ProfilePicture
         image={user?.imageUrl ?? undefined}
         onSave={async (newUrl) => {
           await onSave({ imageUrl: newUrl });
         }}
-        className="w-90 my-auto hidden sm:block"
+        className="w-90 my-auto hidden sm:block sm:rounded-l-xl"
         fallbackData={{
           walletAddress: user?.walletAddress,
           name: user?.name ?? undefined,
         }}
       />
-      <div className="flex w-full flex-col items-start justify-center gap-2 border-l p-4">
+      <div className="flex w-full flex-col items-start justify-center gap-2 p-4 sm:border-l">
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(handleSave)}

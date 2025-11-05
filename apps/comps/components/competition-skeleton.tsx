@@ -27,7 +27,7 @@ export default function CompetitionSkeleton() {
           {/* Tab filters */}
           <Skeleton className="mb-6 h-10 w-1/2 rounded-xl" />
           <div className="h-145 flex flex-col">
-            <div className="flex-1 border p-6">
+            <div className="flex-1 rounded-xl border p-6">
               <div className="mb-4">
                 <Skeleton className="mb-2 h-3 w-20 rounded-xl" />
                 <Skeleton className="h-4 w-40 rounded-xl" />

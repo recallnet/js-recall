@@ -32,8 +32,8 @@ const testTokens = {
   },
   // Polygon
   polygon: {
-    MATIC: "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270", // WMATIC
-    USDC: "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174",
+    MATIC: "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270",
+    USDC: "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359",
   },
   // Binance Smart Chain
   bsc: {
@@ -42,12 +42,17 @@ const testTokens = {
   },
   // Arbitrum
   arbitrum: {
-    ETH: "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1", // WETH on Arbitrum
-    USDC: "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8",
+    ETH: "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
+    USDC: "0xaf88d065e77c8cc2239327c5edb3a432268e5831",
+  },
+  // Optimism
+  optimism: {
+    ETH: "0x4200000000000000000000000000000000000006",
+    USDC: "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85",
   },
   // Base
   base: {
-    ETH: "0x4200000000000000000000000000000000000006", // WETH on Base
+    ETH: "0x4200000000000000000000000000000000000006",
     USDC: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
   },
   // Solana tokens for comparison
@@ -453,5 +458,57 @@ describe("Multi-Chain Provider Tests", () => {
       const priceReport = await priceTracker.getPrice(invalidToken);
       expect(priceReport).toBeNull();
     });
+  });
+
+  describe("Native USDC pairing verification", () => {
+    it("should correctly pair tokens with native USDC on Polygon", async () => {
+      const linkOnPolygon = "0x53E0bca35eC356BD5ddDFebbD1Fc0fD03FaBad39";
+
+      const priceReport = await multiChainProvider.getPrice(
+        linkOnPolygon,
+        BlockchainType.EVM,
+        "polygon",
+      );
+
+      expect(priceReport).not.toBeNull();
+      expect(priceReport?.price).toBeGreaterThan(0);
+      expect(priceReport?.specificChain).toBe("polygon");
+    }, 15000);
+
+    it("should fetch native USDC price on Polygon", async () => {
+      const priceReport = await multiChainProvider.getPrice(
+        testTokens.polygon.USDC,
+        BlockchainType.EVM,
+        "polygon",
+      );
+
+      expect(priceReport).not.toBeNull();
+      expect(priceReport?.price).toBeCloseTo(1, 1);
+      expect(priceReport?.specificChain).toBe("polygon");
+    }, 15000);
+
+    it("should fetch native USDC price on Arbitrum", async () => {
+      const priceReport = await multiChainProvider.getPrice(
+        testTokens.arbitrum.USDC,
+        BlockchainType.EVM,
+        "arbitrum",
+      );
+
+      expect(priceReport).not.toBeNull();
+      expect(priceReport?.price).toBeCloseTo(1, 1);
+      expect(priceReport?.specificChain).toBe("arbitrum");
+    }, 15000);
+
+    it("should fetch native USDC price on Optimism", async () => {
+      const priceReport = await multiChainProvider.getPrice(
+        testTokens.optimism.USDC,
+        BlockchainType.EVM,
+        "optimism",
+      );
+
+      expect(priceReport).not.toBeNull();
+      expect(priceReport?.price).toBeCloseTo(1, 1);
+      expect(priceReport?.specificChain).toBe("optimism");
+    }, 15000);
   });
 });

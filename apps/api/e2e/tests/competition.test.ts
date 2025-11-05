@@ -5684,5 +5684,93 @@ describe("Competition API", () => {
       expect(ourCompetition3.maxParticipants).toBeNull();
       expect(ourCompetition3.registeredParticipants).toBe(0);
     });
+
+    test("inactive agents should have last-place rank and appear at end of list", async () => {
+      // Setup admin client
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Create 5 agents for testing
+      const agents = await Promise.all([
+        registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "Agent Alpha",
+        }),
+        registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "Agent Beta",
+        }),
+        registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "Agent Gamma",
+        }),
+        registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "Agent Delta",
+        }),
+        registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "Agent Epsilon",
+        }),
+      ]);
+
+      // Create and start a competition with all 5 agents
+      const agentIds = agents.map((a) => a.agent.id);
+      const competitionName = `Inactive Rank Test ${Date.now()}`;
+      const competitionResponse = await startTestCompetition({
+        adminClient,
+        name: competitionName,
+        agentIds,
+      });
+      const competitionId = competitionResponse.competition.id;
+      await wait(100);
+
+      // Deactivate 2 agents (Beta and Delta)
+      const betaAgentId = agentIds[1];
+      const deltaAgentId = agentIds[3];
+      expect(betaAgentId).toBeDefined();
+      expect(deltaAgentId).toBeDefined();
+      await adminClient.removeAgentFromCompetition(
+        competitionId,
+        betaAgentId!,
+        "Test disqualification - Beta",
+      );
+      await adminClient.removeAgentFromCompetition(
+        competitionId,
+        deltaAgentId!,
+        "Test disqualification - Delta",
+      );
+
+      // Fetch all agents including inactive ones, sorted by rank
+      const agentsResponse = (await adminClient.getCompetitionAgents(
+        competitionId,
+        {
+          includeInactive: true,
+          sort: "rank",
+        },
+      )) as CompetitionAgentsResponse;
+
+      expect(agentsResponse.success).toBe(true);
+      expect(agentsResponse.agents).toBeDefined();
+      expect(agentsResponse.agents.length).toBe(5);
+
+      const fetchedAgents = agentsResponse.agents;
+      const totalAgents = agentsResponse.pagination.total;
+
+      // Verify we have 2 inactive and 3 active agents
+      const inactiveAgents = fetchedAgents.filter((agent) => !agent.active);
+      const activeAgents = fetchedAgents.filter((agent) => agent.active);
+      expect(inactiveAgents.length).toBe(2);
+      expect(activeAgents.length).toBe(3);
+
+      // Verify agents have correct ranks
+      const activeRanks = activeAgents.map((a) => a.rank).sort((a, b) => a - b);
+      expect(activeRanks).toEqual([1, 2, 3]);
+      for (const inactiveAgent of inactiveAgents) {
+        expect(inactiveAgent.rank).toBe(totalAgents);
+      }
+      const inactiveAgentIds = inactiveAgents.map((a) => a.id).sort();
+      expect(inactiveAgentIds).toEqual([betaAgentId, deltaAgentId].sort());
+    });
   });
 });

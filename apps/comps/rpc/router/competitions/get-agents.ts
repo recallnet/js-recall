@@ -16,6 +16,7 @@ export const getAgents = base
     z.object({
       competitionId: z.uuid(),
       paging: PagingParamsSchema.optional(),
+      includeInactive: z.boolean().optional(),
     }),
   )
   .handler(async ({ context, input, errors }) => {
@@ -24,7 +25,7 @@ export const getAgents = base
         competitionId: input.competitionId,
         queryParams: {
           ...(input.paging || PagingParamsSchema.parse({})),
-          includeInactive: false,
+          includeInactive: input.includeInactive ?? false,
         },
       });
       return res;

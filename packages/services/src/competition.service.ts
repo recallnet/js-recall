@@ -291,14 +291,7 @@ type AgentCompetitionTradesData = {
  * Leaderboard with inactive agents data structure
  */
 interface LeaderboardWithInactiveAgents {
-  activeAgents: Array<{
-    agentId: string;
-    value: number;
-    calmarRatio?: number | null;
-    simpleReturn?: number | null;
-    maxDrawdown?: number | null;
-    hasRiskMetrics?: boolean;
-  }>;
+  activeAgents: LeaderboardEntry[];
   inactiveAgents: Array<{
     agentId: string;
     value: number;
@@ -1297,11 +1290,21 @@ export class CompetitionService {
 
     // Get leaderboard data for the competition to get scores and ranks
     const leaderboard = await this.getLeaderboard(competitionId);
+    const agentStatusMap = new Map(
+      agents.map((agent) => [agent.id, agent.competitionStatus]),
+    );
     const leaderboardMap = new Map(
-      leaderboard.map((entry, index) => [
-        entry.agentId,
-        { score: entry.value, rank: index + 1 },
-      ]),
+      leaderboard.map((entry, index) => {
+        // If the agent's status in the competition is not active, score them as zero with a rank
+        // equal to the total number of agents (last place). This ensures rank-based sorting always
+        // works correctly.
+        const competitionStatus = agentStatusMap.get(entry.agentId);
+        if (competitionStatus !== "active") {
+          return [entry.agentId, { score: 0, rank: total }];
+        } else {
+          return [entry.agentId, { score: entry.value, rank: index + 1 }];
+        }
+      }),
     );
 
     // Build the response with agent details and competition data using bulk metrics
@@ -1332,7 +1335,7 @@ export class CompetitionService {
         (entry) => entry.agentId === agent.id,
       );
       const score = leaderboardData?.score ?? 0;
-      const rank = leaderboardData?.rank ?? 0;
+      const rank = leaderboardData?.rank ?? total; // Use last place if not in leaderboard
       const metrics = bulkMetrics.get(agent.id) || {
         pnl: 0,
         pnlPercent: 0,
@@ -1688,7 +1691,7 @@ export class CompetitionService {
         deactivationReason: string;
       }> = [];
       if (inactiveAgentIds.length > 0) {
-        // 🚀 BULK OPERATIONS: Fetch all inactive agent data
+        // Bulk operations to fetch all inactive agent data
         const [competitionRecords, latestSnapshots] = await Promise.all([
           this.competitionRepo.getBulkAgentCompetitionRecords(
             competitionId,
@@ -1735,6 +1738,7 @@ export class CompetitionService {
         activeAgents: activeLeaderboard.map((entry) => ({
           agentId: entry.agentId,
           value: entry.value,
+          pnl: entry.pnl,
           calmarRatio: entry.calmarRatio,
           simpleReturn: entry.simpleReturn,
           maxDrawdown: entry.maxDrawdown,
