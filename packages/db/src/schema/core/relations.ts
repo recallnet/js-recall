@@ -15,6 +15,7 @@ import {
   competitionRewards,
   competitions,
   competitionsLeaderboard,
+  partners,
   users,
 } from "./defs.js";
 
@@ -52,16 +53,6 @@ export const competitionsRelations = relations(
     rewards: many(rewards),
     rewardsTree: many(rewardsTree),
     rewardsRoots: many(rewardsRoots),
-  }),
-);
-
-export const competitionPartnersRelations = relations(
-  competitionPartners,
-  ({ one }) => ({
-    competition: one(competitions, {
-      fields: [competitionPartners.competitionId],
-      references: [competitions.id],
-    }),
   }),
 );
 
@@ -103,6 +94,24 @@ export const competitionRewardsRelations = relations(
     agent: one(agents, {
       fields: [competitionRewards.agentId],
       references: [agents.id],
+    }),
+  }),
+);
+
+export const partnersRelations = relations(partners, ({ many }) => ({
+  competitionPartners: many(competitionPartners),
+}));
+
+export const competitionPartnersRelations = relations(
+  competitionPartners,
+  ({ one }) => ({
+    competition: one(competitions, {
+      fields: [competitionPartners.competitionId],
+      references: [competitions.id],
+    }),
+    partner: one(partners, {
+      fields: [competitionPartners.partnerId],
+      references: [partners.id],
     }),
   }),
 );

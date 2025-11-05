@@ -287,7 +287,10 @@ export const arenas = pgTable(
     id: text().primaryKey().notNull(),
     name: text().notNull(),
     createdBy: text("created_by"),
-    classification: jsonb().notNull(),
+    category: text().notNull(),
+    skill: text().notNull(),
+    venues: text().array(),
+    chains: text().array(),
     kind: text().default("Competition").notNull(),
     createdAt: timestamp("created_at", {
       withTimezone: true,
@@ -302,6 +305,8 @@ export const arenas = pgTable(
   },
   (table) => [
     index("idx_arenas_id").on(table.id),
+    index("idx_arenas_category").on(table.category),
+    index("idx_arenas_skill").on(table.skill),
     unique("arenas_id_key").on(table.id),
   ],
 );
@@ -394,19 +399,42 @@ export const competitions = pgTable(
 );
 
 /**
- * Partners for competitions
- * Stores structured partner information with display ordering
+ * Master partner information
+ * Stores partner details that can be reused across multiple competitions
+ */
+export const partners = pgTable(
+  "partners",
+  {
+    id: uuid().primaryKey().notNull().defaultRandom(),
+    name: text("name").notNull(),
+    url: text("url"),
+    logoUrl: text("logo_url"),
+    details: text("details"),
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+    })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", {
+      withTimezone: true,
+    })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [index("idx_partners_name").on(table.name)],
+);
+
+/**
+ * Junction table linking partners to competitions
+ * Tracks which partners are associated with which competitions and display ordering
  */
 export const competitionPartners = pgTable(
   "competition_partners",
   {
     id: uuid().primaryKey().notNull().defaultRandom(),
     competitionId: uuid("competition_id").notNull(),
+    partnerId: uuid("partner_id").notNull(),
     position: integer("position").notNull(),
-    name: text("name").notNull(),
-    url: text("url"),
-    details: text("details"),
-    logoUrl: text("logo_url"),
     createdAt: timestamp("created_at", {
       withTimezone: true,
     })
@@ -419,11 +447,21 @@ export const competitionPartners = pgTable(
       foreignColumns: [competitions.id],
       name: "competition_partners_competition_id_fkey",
     }).onDelete("cascade"),
-    index("idx_competition_partners_competition_id").on(table.competitionId),
-    unique("competition_partners_competition_id_position").on(
+    foreignKey({
+      columns: [table.partnerId],
+      foreignColumns: [partners.id],
+      name: "competition_partners_partner_id_fkey",
+    }).onDelete("cascade"),
+    unique("competition_partners_competition_id_partner_id_key").on(
+      table.competitionId,
+      table.partnerId,
+    ),
+    unique("competition_partners_competition_id_position_key").on(
       table.competitionId,
       table.position,
     ),
+    index("idx_competition_partners_competition_id").on(table.competitionId),
+    index("idx_competition_partners_partner_id").on(table.partnerId),
   ],
 );
 

@@ -39,19 +39,19 @@ async function backfillArenasAndEngineConfig(): Promise<void> {
         id: "default-paper-arena",
         name: "Default Paper Trading Arena",
         createdBy: "system",
-        classification: {
-          category: "crypto_trading",
-          skill: "spot_paper_trading",
-        },
+        category: "crypto_trading",
+        skill: "spot_paper_trading",
+        venues: null,
+        chains: null,
       },
       {
         id: "default-perps-arena",
         name: "Default Perpetual Futures Arena",
         createdBy: "system",
-        classification: {
-          category: "crypto_trading",
-          skill: "perpetual_futures",
-        },
+        category: "crypto_trading",
+        skill: "perpetual_futures",
+        venues: null,
+        chains: null,
       },
     ];
 

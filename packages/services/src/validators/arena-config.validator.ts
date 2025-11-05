@@ -1,5 +1,7 @@
 import { z } from "zod/v4";
 
+import { allocationUnit, engineType } from "@recallnet/db/schema/core/defs";
+
 import {
   CrossChainTradingTypeSchema,
   EvaluationMetricSchema,
@@ -10,6 +12,11 @@ import {
  * Arena Config Validators
  * Based on: https://www.notion.so/Arena-Config-v1-Fields-Types-Purpose-294dfc9427de8088a0bad74538624ae7
  */
+
+/**
+ * Semver version regex pattern
+ */
+const SEMVER_REGEX = /^\d+\.\d+\.\d+$/;
 
 /**
  * Spot paper trading engine params schema
@@ -56,20 +63,20 @@ export const SpotLiveTradingEngineParamsSchema = z.object({
  */
 const EngineConfigSchema = z.discriminatedUnion("id", [
   z.object({
-    id: z.literal("spot_paper_trading"),
-    version: z.string().regex(/^\d+\.\d+\.\d+$/, "Must be valid semver"),
+    id: z.literal(engineType.enumValues[0]), // "spot_paper_trading"
+    version: z.string().regex(SEMVER_REGEX, "Must be valid semver"),
     description: z.string().optional(),
     params: SpotPaperTradingEngineParamsSchema.optional(),
   }),
   z.object({
-    id: z.literal("perpetual_futures"),
-    version: z.string().regex(/^\d+\.\d+\.\d+$/, "Must be valid semver"),
+    id: z.literal(engineType.enumValues[1]), // "perpetual_futures"
+    version: z.string().regex(SEMVER_REGEX, "Must be valid semver"),
     description: z.string().optional(),
     params: PerpetualFuturesEngineParamsSchema.optional(),
   }),
   z.object({
-    id: z.literal("spot_live_trading"),
-    version: z.string().regex(/^\d+\.\d+\.\d+$/, "Must be valid semver"),
+    id: z.literal(engineType.enumValues[2]), // "spot_live_trading"
+    version: z.string().regex(SEMVER_REGEX, "Must be valid semver"),
     description: z.string().optional(),
     params: SpotLiveTradingEngineParamsSchema.optional(),
   }),
@@ -120,7 +127,7 @@ export const ArenaConfigSchema = z
       })
       .optional(),
     participation: z.object({
-      maxAgents: z.number().int().min(1).optional(),
+      maxParticipants: z.number().int().min(1).optional(),
       vips: z.array(z.string()).optional(),
       allowlist: z.array(z.string()).optional(),
       blocklist: z.array(z.string()).optional(),
@@ -147,9 +154,9 @@ export const ArenaConfigSchema = z
     rewards: z
       .object({
         agentAllocation: z.number().min(0).optional(),
-        agentAllocationUnit: z.string().optional(),
+        agentAllocationUnit: z.enum(allocationUnit.enumValues).optional(),
         boosterAllocation: z.number().min(0).optional(),
-        boosterAllocationUnit: z.string().optional(),
+        boosterAllocationUnit: z.enum(allocationUnit.enumValues).optional(),
         rules: z.string().optional(),
         details: z.string().optional(),
       })

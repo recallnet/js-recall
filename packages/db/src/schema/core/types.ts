@@ -23,6 +23,13 @@ export type InsertAdmin = typeof defs.admins.$inferInsert;
 
 export type SelectArena = typeof defs.arenas.$inferSelect;
 export type InsertArena = typeof defs.arenas.$inferInsert;
+export const UpdateArenaSchema = createUpdateSchema(defs.arenas);
+export type UpdateArena = z.infer<typeof UpdateArenaSchema>;
+
+export type SelectPartner = typeof defs.partners.$inferSelect;
+export type InsertPartner = typeof defs.partners.$inferInsert;
+export const UpdatePartnerSchema = createUpdateSchema(defs.partners);
+export type UpdatePartner = z.infer<typeof UpdatePartnerSchema>;
 
 export type SelectCompetition = typeof defs.competitions.$inferSelect;
 export type InsertCompetition = typeof defs.competitions.$inferInsert;

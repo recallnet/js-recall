@@ -260,7 +260,7 @@ describe("validateArenaConfig", () => {
         skill: "spot_paper_trading",
       },
       participation: {
-        maxAgents: 100,
+        maxParticipants: 100,
       },
       engine: {
         id: "spot_paper_trading",
