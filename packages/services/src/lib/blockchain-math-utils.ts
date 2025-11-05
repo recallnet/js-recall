@@ -145,7 +145,7 @@ export function calculatePercentageChange(
   const oldBig = safeToBigInt(oldValue);
   const newBig = safeToBigInt(newValue);
 
-  if (oldBig === 0n) return newBig > 0n ? 100 : 0;
+  if (oldBig === 0n) return newBig > 0n ? 100 : newBig < 0n ? -100 : 0;
 
   const change = ((newBig - oldBig) * 10000n) / oldBig;
 
