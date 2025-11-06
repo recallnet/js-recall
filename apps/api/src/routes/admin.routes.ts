@@ -824,6 +824,75 @@ export function configureAdminRoutes(
    *                           type: number
    *                           nullable: true
    *                           description: Minimum number of trades required per day (null if no requirement)
+   *                     arenaId:
+   *                       type: string
+   *                       nullable: true
+   *                       description: Arena ID for grouping competitions
+   *                     engineId:
+   *                       type: string
+   *                       nullable: true
+   *                       enum: [spot_paper_trading, perpetual_futures, spot_live_trading]
+   *                       description: Engine type identifier
+   *                     engineVersion:
+   *                       type: string
+   *                       nullable: true
+   *                       description: Engine version
+   *                     vips:
+   *                       type: array
+   *                       nullable: true
+   *                       items:
+   *                         type: string
+   *                       description: VIP agent IDs with special access
+   *                     allowlist:
+   *                       type: array
+   *                       nullable: true
+   *                       items:
+   *                         type: string
+   *                       description: Allowlisted agent IDs
+   *                     blocklist:
+   *                       type: array
+   *                       nullable: true
+   *                       items:
+   *                         type: string
+   *                       description: Blocklisted agent IDs
+   *                     minRecallRank:
+   *                       type: integer
+   *                       nullable: true
+   *                       description: Minimum global Recall rank required to join
+   *                     allowlistOnly:
+   *                       type: boolean
+   *                       description: Whether only allowlisted agents can join
+   *                     agentAllocation:
+   *                       type: number
+   *                       nullable: true
+   *                       description: Agent reward pool allocation amount
+   *                     agentAllocationUnit:
+   *                       type: string
+   *                       nullable: true
+   *                       enum: [RECALL, USDC, USD]
+   *                       description: Unit for agent reward allocation
+   *                     boosterAllocation:
+   *                       type: number
+   *                       nullable: true
+   *                       description: Booster reward pool allocation amount
+   *                     boosterAllocationUnit:
+   *                       type: string
+   *                       nullable: true
+   *                       enum: [RECALL, USDC, USD]
+   *                       description: Unit for booster reward allocation
+   *                     rewardRules:
+   *                       type: string
+   *                       nullable: true
+   *                       description: Rules for reward distribution
+   *                     rewardDetails:
+   *                       type: string
+   *                       nullable: true
+   *                       description: Additional reward details
+   *                     displayState:
+   *                       type: string
+   *                       nullable: true
+   *                       enum: [active, waitlist, cancelled, pending, paused]
+   *                       description: UI display state
    *       400:
    *         description: |-
    *           Bad Request - Various validation errors:
@@ -1075,6 +1144,75 @@ export function configureAdminRoutes(
    *                           type: number
    *                           nullable: true
    *                           description: Minimum number of trades required per day (null if no requirement)
+   *                     arenaId:
+   *                       type: string
+   *                       nullable: true
+   *                       description: Arena ID for grouping competitions
+   *                     engineId:
+   *                       type: string
+   *                       nullable: true
+   *                       enum: [spot_paper_trading, perpetual_futures, spot_live_trading]
+   *                       description: Engine type identifier
+   *                     engineVersion:
+   *                       type: string
+   *                       nullable: true
+   *                       description: Engine version
+   *                     vips:
+   *                       type: array
+   *                       nullable: true
+   *                       items:
+   *                         type: string
+   *                       description: VIP agent IDs with special access
+   *                     allowlist:
+   *                       type: array
+   *                       nullable: true
+   *                       items:
+   *                         type: string
+   *                       description: Allowlisted agent IDs
+   *                     blocklist:
+   *                       type: array
+   *                       nullable: true
+   *                       items:
+   *                         type: string
+   *                       description: Blocklisted agent IDs
+   *                     minRecallRank:
+   *                       type: integer
+   *                       nullable: true
+   *                       description: Minimum global Recall rank required to join
+   *                     allowlistOnly:
+   *                       type: boolean
+   *                       description: Whether only allowlisted agents can join
+   *                     agentAllocation:
+   *                       type: number
+   *                       nullable: true
+   *                       description: Agent reward pool allocation amount
+   *                     agentAllocationUnit:
+   *                       type: string
+   *                       nullable: true
+   *                       enum: [RECALL, USDC, USD]
+   *                       description: Unit for agent reward allocation
+   *                     boosterAllocation:
+   *                       type: number
+   *                       nullable: true
+   *                       description: Booster reward pool allocation amount
+   *                     boosterAllocationUnit:
+   *                       type: string
+   *                       nullable: true
+   *                       enum: [RECALL, USDC, USD]
+   *                       description: Unit for booster reward allocation
+   *                     rewardRules:
+   *                       type: string
+   *                       nullable: true
+   *                       description: Rules for reward distribution
+   *                     rewardDetails:
+   *                       type: string
+   *                       nullable: true
+   *                       description: Additional reward details
+   *                     displayState:
+   *                       type: string
+   *                       nullable: true
+   *                       enum: [active, waitlist, cancelled, pending, paused]
+   *                       description: UI display state
    *                 initializedAgents:
    *                   type: array
    *                   items:
@@ -1391,6 +1529,75 @@ export function configureAdminRoutes(
    *                       type: string
    *                       format: date-time
    *                       description: Competition last update date
+   *                     arenaId:
+   *                       type: string
+   *                       nullable: true
+   *                       description: Arena ID for grouping competitions
+   *                     engineId:
+   *                       type: string
+   *                       nullable: true
+   *                       enum: [spot_paper_trading, perpetual_futures, spot_live_trading]
+   *                       description: Engine type identifier
+   *                     engineVersion:
+   *                       type: string
+   *                       nullable: true
+   *                       description: Engine version
+   *                     vips:
+   *                       type: array
+   *                       nullable: true
+   *                       items:
+   *                         type: string
+   *                       description: VIP agent IDs with special access
+   *                     allowlist:
+   *                       type: array
+   *                       nullable: true
+   *                       items:
+   *                         type: string
+   *                       description: Allowlisted agent IDs
+   *                     blocklist:
+   *                       type: array
+   *                       nullable: true
+   *                       items:
+   *                         type: string
+   *                       description: Blocklisted agent IDs
+   *                     minRecallRank:
+   *                       type: integer
+   *                       nullable: true
+   *                       description: Minimum global Recall rank required to join
+   *                     allowlistOnly:
+   *                       type: boolean
+   *                       description: Whether only allowlisted agents can join
+   *                     agentAllocation:
+   *                       type: number
+   *                       nullable: true
+   *                       description: Agent reward pool allocation amount
+   *                     agentAllocationUnit:
+   *                       type: string
+   *                       nullable: true
+   *                       enum: [RECALL, USDC, USD]
+   *                       description: Unit for agent reward allocation
+   *                     boosterAllocation:
+   *                       type: number
+   *                       nullable: true
+   *                       description: Booster reward pool allocation amount
+   *                     boosterAllocationUnit:
+   *                       type: string
+   *                       nullable: true
+   *                       enum: [RECALL, USDC, USD]
+   *                       description: Unit for booster reward allocation
+   *                     rewardRules:
+   *                       type: string
+   *                       nullable: true
+   *                       description: Rules for reward distribution
+   *                     rewardDetails:
+   *                       type: string
+   *                       nullable: true
+   *                       description: Additional reward details
+   *                     displayState:
+   *                       type: string
+   *                       nullable: true
+   *                       enum: [active, waitlist, cancelled, pending, paused]
+   *                       description: UI display state
    *       400:
    *         description: Bad request - Missing competitionId, no valid fields provided, attempting to update restricted fields (startDate, endDate, status), or missing perpsProvider when changing type to perpetual_futures
    *       401:
