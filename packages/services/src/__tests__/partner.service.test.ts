@@ -315,22 +315,38 @@ describe("PartnerService", () => {
         createMockAssociation("comp-123", "partner-2", 2),
       ];
 
+      // Mock enriched data that will be returned
+      const mockEnrichedPartners = [
+        {
+          ...mockPartner1,
+          position: 1,
+          competitionPartnerId: "assoc-comp-123-partner-1",
+        },
+        {
+          ...mockPartner2,
+          position: 2,
+          competitionPartnerId: "assoc-comp-123-partner-2",
+        },
+      ];
+
       mockRepo.findById
         .mockResolvedValueOnce(mockPartner1)
         .mockResolvedValueOnce(mockPartner2);
       mockRepo.replaceCompetitionPartners.mockResolvedValue(mockAssociations);
+      mockRepo.findByCompetition.mockResolvedValue(mockEnrichedPartners);
 
       const result = await service.replaceCompetitionPartners(
         "comp-123",
         partnerData,
       );
 
-      expect(result).toEqual(mockAssociations);
+      expect(result).toEqual(mockEnrichedPartners);
       expect(mockRepo.findById).toHaveBeenCalledTimes(2);
       expect(mockRepo.replaceCompetitionPartners).toHaveBeenCalledWith(
         "comp-123",
         partnerData,
       );
+      expect(mockRepo.findByCompetition).toHaveBeenCalledWith("comp-123");
     });
 
     it("should throw error if any partner not found", async () => {
