@@ -50,11 +50,17 @@ describe("Rate Limiter Diagnostics", () => {
     expect(agent1ApiKey).not.toEqual(agent2ApiKey);
 
     // Start a competition with both agents
-    await adminClient.startCompetition(
+    const competitionResponse = await adminClient.startCompetition(
       `Rate Limit Diagnostic Test ${Date.now()}`,
       "Test competition for diagnosing rate limiting",
       [agent1.id, agent2.id],
     );
+
+    if (!competitionResponse.success) {
+      throw new Error("Failed to start competition");
+    }
+
+    const competitionId = competitionResponse.competition.id;
 
     // Wait for competition setup to complete
     await wait(500);
@@ -67,7 +73,7 @@ describe("Rate Limiter Diagnostics", () => {
     // We'll try just a few requests since our rate limit is fairly low
     for (let i = 0; i < 5; i++) {
       try {
-        await agent1Client.getBalance();
+        await agent1Client.getBalance(competitionId);
       } catch (error) {
         const axiosError = error as AxiosError;
         if (axiosError.response && axiosError.response.status === 429) {
@@ -88,7 +94,7 @@ describe("Rate Limiter Diagnostics", () => {
     let agent2RateLimited = false;
 
     try {
-      const agent2Response = await agent2Client.getBalance();
+      const agent2Response = await agent2Client.getBalance(competitionId);
       if (agent2Response && agent2Response.success !== false) {
         agent2Success = true;
       }

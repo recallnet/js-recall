@@ -76,8 +76,9 @@ describe("Base Chain Trading", () => {
     await wait(500);
 
     // Check initial balance
-    const initialBalanceResponse =
-      (await client.getBalance()) as BalancesResponse;
+    const initialBalanceResponse = (await client.getBalance(
+      competitionId,
+    )) as BalancesResponse;
     expect(initialBalanceResponse.success).toBe(true);
     expect(initialBalanceResponse.balances).toBeDefined();
 
@@ -154,8 +155,9 @@ describe("Base Chain Trading", () => {
     await wait(500);
 
     // Check final balance
-    const finalBalanceResponse =
-      (await client.getBalance()) as BalancesResponse;
+    const finalBalanceResponse = (await client.getBalance(
+      competitionId,
+    )) as BalancesResponse;
     expect(finalBalanceResponse.success).toBe(true);
 
     // Calculate total portfolio value after trades
@@ -195,8 +197,9 @@ describe("Base Chain Trading", () => {
     expect(totalActualValue).toBeLessThanOrEqual(upperBound);
 
     // Get trade history and verify all trades were recorded with correct chain info
-    const tradeHistoryResponse =
-      (await client.getTradeHistory()) as TradeHistoryResponse;
+    const tradeHistoryResponse = (await client.getTradeHistory(
+      competitionId,
+    )) as TradeHistoryResponse;
     expect(tradeHistoryResponse.success).toBe(true);
     expect(tradeHistoryResponse.trades).toBeInstanceOf(Array);
     expect(tradeHistoryResponse.trades.length).toBeGreaterThanOrEqual(
@@ -237,8 +240,9 @@ describe("Base Chain Trading", () => {
     await wait(500);
 
     // Check initial balance
-    const initialBalanceResponse =
-      (await client.getBalance()) as BalancesResponse;
+    const initialBalanceResponse = (await client.getBalance(
+      competitionId2,
+    )) as BalancesResponse;
     expect(initialBalanceResponse.success).toBe(true);
     expect(initialBalanceResponse.balances).toBeDefined();
     // Get initial Base USDC balance
@@ -295,8 +299,9 @@ describe("Base Chain Trading", () => {
     await wait(500);
 
     // Check final balances
-    const finalBalanceResponse =
-      (await client.getBalance()) as BalancesResponse;
+    const finalBalanceResponse = (await client.getBalance(
+      competitionId2,
+    )) as BalancesResponse;
     expect(finalBalanceResponse.success).toBe(true);
 
     // Check the final Base USDC balance
@@ -326,13 +331,13 @@ describe("Base Chain Trading", () => {
       // If cross-chain trading is disabled, verify nothing was spent
       if (usdcDifference > 0) {
         // Get trade history to see what transaction occurred
-        await client.getTradeHistory();
+        await client.getTradeHistory(competitionId2);
       }
 
       // Verify no ETH was received
       if (ethBalance > initialEthBalance) {
         // Get trade history to see what transaction occurred
-        await client.getTradeHistory();
+        await client.getTradeHistory(competitionId2);
       }
       // Instead of expecting ETH balance to be 0, check that it hasn't increased
       expect(ethBalance).toBeLessThanOrEqual(initialEthBalance);
@@ -365,8 +370,9 @@ describe("Base Chain Trading", () => {
     await wait(500);
 
     // Check initial balance
-    const initialBalanceResponse =
-      (await client.getBalance()) as BalancesResponse;
+    const initialBalanceResponse = (await client.getBalance(
+      competitionId3,
+    )) as BalancesResponse;
     expect(initialBalanceResponse.success).toBe(true);
     expect(initialBalanceResponse.balances).toBeDefined();
     // Get initial Base USDC balance
@@ -448,8 +454,9 @@ describe("Base Chain Trading", () => {
     await wait(500);
 
     // Check final balances
-    const finalBalanceResponse =
-      (await client.getBalance()) as BalancesResponse;
+    const finalBalanceResponse = (await client.getBalance(
+      competitionId3,
+    )) as BalancesResponse;
     expect(finalBalanceResponse.success).toBe(true);
     // USDC balance should be reduced by the valid trade amount
     const finalBaseUsdcBalance = parseFloat(

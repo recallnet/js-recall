@@ -568,7 +568,7 @@ describe("Agent API", () => {
     // Step 6: Make multiple API calls to verify authentication still works
     // This confirms the apiKeyCache remains consistent
     for (let i = 0; i < 3; i++) {
-      const verifyResponse = await agentClient.getBalance();
+      const verifyResponse = await agentClient.getBalance(competitionId);
       expect(verifyResponse.success).toBe(true);
     }
   });
@@ -2346,12 +2346,14 @@ Purpose: WALLET_VERIFICATION`;
       });
       // Agent1 good performance, Agent2 poor
       await agentClient1.executeTrade({
+        competitionId: comp1Id,
         fromToken: config.specificChainTokens.eth.usdc,
         toToken: config.specificChainTokens.eth.eth,
         amount: "100",
         reason: "agent1 good trade",
       });
       await agentClient2.executeTrade({
+        competitionId: comp1Id,
         fromToken: config.specificChainTokens.eth.usdc,
         toToken: "0x000000000000000000000000000000000000dead",
         amount: "100",
@@ -2373,12 +2375,14 @@ Purpose: WALLET_VERIFICATION`;
       });
       // Agent2 good performance, Agent1 poor
       await agentClient2.executeTrade({
+        competitionId: comp2Id,
         fromToken: config.specificChainTokens.eth.usdc,
         toToken: config.specificChainTokens.eth.eth,
         amount: "100",
         reason: "agent2 good trade",
       });
       await agentClient1.executeTrade({
+        competitionId: comp2Id,
         fromToken: config.specificChainTokens.eth.usdc,
         toToken: "0x000000000000000000000000000000000000dead",
         amount: "50",

@@ -57,9 +57,12 @@ describe("Trading API", () => {
       tradingConstraints: looseTradingConstraints,
     });
     expect(startResp.success).toBe(true);
+    const competitionId = startResp.competition.id;
 
     // Get agent's balances to see what case addresses are stored as
-    const balancesResp = (await client.getBalance()) as BalancesResponse;
+    const balancesResp = (await client.getBalance(
+      competitionId,
+    )) as BalancesResponse;
     expect(balancesResp.success).toBe(true);
 
     // Find Ethereum USDC balance (should have 5000 from config)
@@ -82,6 +85,7 @@ describe("Trading API", () => {
       fromToken: lowercaseAddress, // Using lowercase
       toToken: config.specificChainTokens.eth.eth, // WETH
       amount: "50",
+      competitionId,
       reason: "Test: lowercase address should work",
       fromChain: BlockchainType.EVM,
       toChain: BlockchainType.EVM,
@@ -98,7 +102,9 @@ describe("Trading API", () => {
     expect(successResp.transaction.fromToken).toBe(lowercaseAddress);
 
     // Verify balance was actually deducted
-    const balancesAfter = (await client.getBalance()) as BalancesResponse;
+    const balancesAfter = (await client.getBalance(
+      competitionId,
+    )) as BalancesResponse;
     const ethUsdcAfter = balancesAfter.balances.find(
       (b) => b.specificChain === "eth" && b.symbol?.toUpperCase() === "USDC",
     );
@@ -128,7 +134,7 @@ describe("Trading API", () => {
     const competitionId = competitionResponse.competition.id;
 
     // Check initial balance
-    const initialBalanceResponse = await agentClient.getBalance();
+    const initialBalanceResponse = await agentClient.getBalance(competitionId);
     expect((initialBalanceResponse as BalancesResponse).success).toBe(true);
     expect((initialBalanceResponse as BalancesResponse).balances).toBeDefined();
 
@@ -184,7 +190,7 @@ describe("Trading API", () => {
     expect(buyTransaction.toChain).toBe(BlockchainType.SVM);
 
     // Check updated balance
-    const updatedBalanceResponse = await agentClient.getBalance();
+    const updatedBalanceResponse = await agentClient.getBalance(competitionId);
     expect(updatedBalanceResponse.success).toBe(true);
 
     // USDC balance should have decreased
@@ -203,7 +209,8 @@ describe("Trading API", () => {
     expect(updatedSolBalance).toBeGreaterThan(initialSolBalance);
 
     // Get trade history
-    const tradeHistoryResponse = await agentClient.getTradeHistory();
+    const tradeHistoryResponse =
+      await agentClient.getTradeHistory(competitionId);
     expect(tradeHistoryResponse.success).toBe(true);
     expect(
       (tradeHistoryResponse as TradeHistoryResponse).trades,
@@ -239,7 +246,7 @@ describe("Trading API", () => {
     expect((sellTradeResponse as TradeResponse).transaction).toBeDefined();
 
     // Check final balance
-    const finalBalanceResponse = await agentClient.getBalance();
+    const finalBalanceResponse = await agentClient.getBalance(competitionId);
     expect(finalBalanceResponse.success).toBe(true);
     // USDC balance should have increased compared to after buying
     const finalUsdcBalance = parseFloat(
@@ -279,7 +286,7 @@ describe("Trading API", () => {
     const competitionId = competition.competition.id;
 
     // Check initial balance
-    const initialBalanceResponse = await agentClient.getBalance();
+    const initialBalanceResponse = await agentClient.getBalance(competitionId);
     expect(initialBalanceResponse.success).toBe(true);
     expect((initialBalanceResponse as BalancesResponse).balances).toBeDefined();
 
@@ -321,7 +328,7 @@ describe("Trading API", () => {
     expect(tradeResponse.transaction.id).toBeDefined();
 
     // Check updated balance
-    const updatedBalanceResponse = await agentClient.getBalance();
+    const updatedBalanceResponse = await agentClient.getBalance(competitionId);
     expect(updatedBalanceResponse.success).toBe(true);
     // USDC balance should have decreased
     const updatedUsdcBalance = parseFloat(
@@ -342,7 +349,8 @@ describe("Trading API", () => {
     );
 
     // Get trade history
-    const tradeHistoryResponse = await agentClient.getTradeHistory();
+    const tradeHistoryResponse =
+      await agentClient.getTradeHistory(competitionId);
     expect(tradeHistoryResponse.success).toBe(true);
     expect(
       (tradeHistoryResponse as TradeHistoryResponse).trades,
@@ -382,7 +390,7 @@ describe("Trading API", () => {
     const competitionId = competition.competition.id;
 
     // Check initial balance
-    const initialBalanceResponse = await agentClient.getBalance();
+    const initialBalanceResponse = await agentClient.getBalance(competitionId);
     const usdcTokenAddress = config.specificChainTokens.svm.usdc;
     const initialUsdcBalance = parseFloat(
       (initialBalanceResponse as BalancesResponse).balances
@@ -439,7 +447,7 @@ describe("Trading API", () => {
       "Cannot trade between identical tokens",
     );
     // Get fresh balances to calculate current portfolio value after trade attempts
-    const balancesResponse = await agentClient.getBalance();
+    const balancesResponse = await agentClient.getBalance(competitionId);
     expect(balancesResponse.success).toBe(true);
     const balances = (balancesResponse as BalancesResponse).balances;
     const portfolioValue = balances.reduce(
@@ -509,8 +517,9 @@ describe("Trading API", () => {
     const competitionId = competition.competition.id;
 
     // Check initial balance
-    const initialBalanceResponse =
-      (await agentClient.getBalance()) as BalancesResponse;
+    const initialBalanceResponse = (await agentClient.getBalance(
+      competitionId,
+    )) as BalancesResponse;
 
     const usdcTokenAddress = config.specificChainTokens.svm.usdc;
 
@@ -552,7 +561,8 @@ describe("Trading API", () => {
     }
 
     // // Verify we now have a consolidated USDC balance
-    const balanceAfterConsolidation = await agentClient.getBalance();
+    const balanceAfterConsolidation =
+      await agentClient.getBalance(competitionId);
     const consolidatedUsdcBalance = parseFloat(
       (balanceAfterConsolidation as BalancesResponse).balances
         .find((b) => b.tokenAddress === usdcTokenAddress)
@@ -606,7 +616,7 @@ describe("Trading API", () => {
     const competitionId = competition.competition.id;
 
     // Check initial balance
-    const initialBalanceResponse = await agentClient.getBalance();
+    const initialBalanceResponse = await agentClient.getBalance(competitionId);
     expect(initialBalanceResponse.success).toBe(true);
     expect((initialBalanceResponse as BalancesResponse).balances).toBeDefined();
 
@@ -661,7 +671,7 @@ describe("Trading API", () => {
     expect((buyTradeResponse as TradeResponse).transaction.id).toBeDefined();
 
     // 4. Check final balance and validate it reflects the calculation
-    const finalBalanceResponse = await agentClient.getBalance();
+    const finalBalanceResponse = await agentClient.getBalance(competitionId);
     expect(finalBalanceResponse.success).toBe(true);
     expect((finalBalanceResponse as BalancesResponse).balances).toBeDefined();
     // USDC balance should have decreased by 10
@@ -683,7 +693,8 @@ describe("Trading API", () => {
     ); // Allow for small variations due to price fluctuations
 
     // Get trade history to verify details
-    const tradeHistoryResponse = await agentClient.getTradeHistory();
+    const tradeHistoryResponse =
+      await agentClient.getTradeHistory(competitionId);
     expect(tradeHistoryResponse.success).toBe(true);
     const tradeHistory = tradeHistoryResponse as TradeHistoryResponse;
     expect(tradeHistory.trades).toBeInstanceOf(Array);
@@ -719,7 +730,7 @@ describe("Trading API", () => {
     const competitionId = competitionResponse.competition.id;
 
     // Check initial balance
-    const initialBalanceResponse = await agentClient.getBalance();
+    const initialBalanceResponse = await agentClient.getBalance(competitionId);
     expect(initialBalanceResponse.success).toBe(true);
     const balancesResponse = initialBalanceResponse as BalancesResponse;
     expect(balancesResponse.balances).toBeDefined();
@@ -773,7 +784,7 @@ describe("Trading API", () => {
     expect(buyTradeResponse.success).toBe(true);
 
     // Check updated balance
-    const updatedBalanceResponse = await agentClient.getBalance();
+    const updatedBalanceResponse = await agentClient.getBalance(competitionId);
     // ETH balance should have increased
     const updatedEthBalance = parseFloat(
       (updatedBalanceResponse as BalancesResponse).balances
@@ -783,7 +794,8 @@ describe("Trading API", () => {
     expect(updatedEthBalance).toBeGreaterThan(initialEthBalance);
 
     // Get trade history and verify the Ethereum trade
-    const tradeHistoryResponse = await agentClient.getTradeHistory();
+    const tradeHistoryResponse =
+      await agentClient.getTradeHistory(competitionId);
     expect(tradeHistoryResponse.success).toBe(true);
     expect(
       (tradeHistoryResponse as TradeHistoryResponse).trades.length,
@@ -820,7 +832,7 @@ describe("Trading API", () => {
     const competitionId = competition.competition.id;
 
     // Check initial balance
-    const initialBalanceResponse = await agentClient.getBalance();
+    const initialBalanceResponse = await agentClient.getBalance(competitionId);
     expect(initialBalanceResponse.success).toBe(true);
 
     // Initial USDC balance should be the starting amount (e.g., 10000)
@@ -867,7 +879,7 @@ describe("Trading API", () => {
     );
 
     // Check updated balance
-    const updatedBalanceResponse = await agentClient.getBalance();
+    const updatedBalanceResponse = await agentClient.getBalance(competitionId);
     expect(updatedBalanceResponse.success).toBe(true);
     // USDC balance should have decreased
     const updatedUsdcBalance = parseFloat(
@@ -885,7 +897,8 @@ describe("Trading API", () => {
     expect(updatedSolBalance).toBeGreaterThan(initialSolBalance);
 
     // Get trade history and verify chain info is preserved
-    const tradeHistoryResponse = await agentClient.getTradeHistory();
+    const tradeHistoryResponse =
+      await agentClient.getTradeHistory(competitionId);
     expect(tradeHistoryResponse.success).toBe(true);
     // Get the most recent trade
     const lastTrade = (tradeHistoryResponse as TradeHistoryResponse).trades[0];
@@ -966,8 +979,9 @@ describe("Trading API", () => {
     expect(tradeResponse.transaction.reason).toBe(specificReason);
 
     // Get trade history
-    const tradeHistoryResponse =
-      (await agentClient.getTradeHistory()) as TradeHistoryResponse;
+    const tradeHistoryResponse = (await agentClient.getTradeHistory(
+      competitionId,
+    )) as TradeHistoryResponse;
 
     // Verify trade history response
     expect(tradeHistoryResponse.success).toBe(true);
@@ -1077,7 +1091,7 @@ describe("Trading API", () => {
     expect(competitionResponse.success).toBe(true);
 
     // Check if competition rules reflect the disabled cross-chain trading
-    const rulesResponse = await agentClient.getRules();
+    const rulesResponse = await agentClient.getRules(competition1Id);
     expect(rulesResponse.success).toBe(true);
 
     // Find cross-chain trading rule in the rules list
@@ -1091,7 +1105,7 @@ describe("Trading API", () => {
 
     // Verify that cross-chain trading is actually disabled by attempting a cross-chain trade
 
-    const balanceResponse = await agentClient.getBalance();
+    const balanceResponse = await agentClient.getBalance(competition1Id);
     const svmUsdcBalance = parseFloat(
       (balanceResponse as BalancesResponse).balances
         .find((b) => b.tokenAddress === svmUsdcAddress)
@@ -1135,7 +1149,7 @@ describe("Trading API", () => {
     expect(secondCompetitionResponse.success).toBe(true);
 
     // Check if competition rules reflect the enabled cross-chain trading
-    const secondRulesResponse = await agentClient.getRules();
+    const secondRulesResponse = await agentClient.getRules(secondCompetitionId);
     expect(secondRulesResponse.success).toBe(true);
 
     // Find cross-chain trading rule in the rules list
@@ -1206,11 +1220,13 @@ describe("Trading API", () => {
       agentIds: [agent.id],
       tradingType: CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
     });
+    const competitionId = (competitionResponse as StartCompetitionResponse)
+      .competition.id;
 
     expect(competitionResponse.success).toBe(true);
 
     // Verify the agent has some balance on the source chain
-    const initialBalanceResponse = await agentClient.getBalance();
+    const initialBalanceResponse = await agentClient.getBalance(competitionId);
     const sourceUsdcBalance = parseFloat(
       (initialBalanceResponse.success &&
         (initialBalanceResponse as BalancesResponse).balances
@@ -1310,7 +1326,7 @@ describe("Trading API", () => {
     const svmUsdcAddress = config.specificChainTokens.svm.usdc;
 
     // Check the initial balances
-    const initialBalanceResponse = await agentClient.getBalance();
+    const initialBalanceResponse = await agentClient.getBalance(competitionId);
     expect(initialBalanceResponse.success).toBe(true);
 
     const baseUsdcBalance = parseFloat(
@@ -1344,7 +1360,7 @@ describe("Trading API", () => {
     // PART 2: Test that EVM-to-SVM trading fails with disallowXParent
 
     // Get updated balances after the first successful trade
-    const updatedBalanceResponse = await agentClient.getBalance();
+    const updatedBalanceResponse = await agentClient.getBalance(competitionId);
     const ethUsdcBalance = parseFloat(
       (updatedBalanceResponse as BalancesResponse).balances
         .find((b) => b.tokenAddress === ethUsdcAddress)
@@ -1497,7 +1513,8 @@ describe("Trading API", () => {
     expect(actualUsdValue).toBeCloseTo(expectedUsdValue, 1); // Using precision 1 to allow for price movement between fetch and execution
 
     // Verify tradeAmountUsd also appears in trade history
-    const tradeHistoryResponse = await agentClient.getTradeHistory();
+    const tradeHistoryResponse =
+      await agentClient.getTradeHistory(competitionId);
     expect(tradeHistoryResponse.success).toBe(true);
 
     // Get the most recent trade (should be the one we just executed)
@@ -1559,7 +1576,7 @@ describe("Trading API", () => {
     const solTokenAddress = config.specificChainTokens.svm.sol;
 
     // 1. Verify symbols are returned in initial balance response
-    const initialBalanceResponse = await agentClient.getBalance();
+    const initialBalanceResponse = await agentClient.getBalance(competitionId);
     expect(initialBalanceResponse.success).toBe(true);
 
     const balancesResponse = initialBalanceResponse as BalancesResponse;
@@ -1586,6 +1603,7 @@ describe("Trading API", () => {
       usdcTokenAddress,
       solTokenAddress,
       "100",
+      competitionId,
     )) as QuoteResponse;
 
     // Check if it's an error response
@@ -1627,7 +1645,7 @@ describe("Trading API", () => {
     expect(transaction.fromTokenSymbol.length).toBeGreaterThan(0);
 
     // 4. Verify symbols are returned in updated balance response
-    const updatedBalanceResponse = await agentClient.getBalance();
+    const updatedBalanceResponse = await agentClient.getBalance(competitionId);
     expect(updatedBalanceResponse.success).toBe(true);
 
     const updatedBalancesResponse = updatedBalanceResponse as BalancesResponse;
@@ -1650,7 +1668,8 @@ describe("Trading API", () => {
     expect(updatedSolBalance!.symbol.length).toBeGreaterThan(0);
 
     // 5. Verify symbols in trade history
-    const tradeHistoryResponse = await agentClient.getTradeHistory();
+    const tradeHistoryResponse =
+      await agentClient.getTradeHistory(competitionId);
     expect(tradeHistoryResponse.success).toBe(true);
 
     const tradeHistory = tradeHistoryResponse as TradeHistoryResponse;
@@ -1733,7 +1752,7 @@ describe("Trading API", () => {
     const competitionId = competitionResponse.competition.id;
 
     // Check initial balance
-    const initialBalanceResponse = await agentClient.getBalance();
+    const initialBalanceResponse = await agentClient.getBalance(competitionId);
     expect((initialBalanceResponse as BalancesResponse).success).toBe(true);
     expect((initialBalanceResponse as BalancesResponse).balances).toBeDefined();
 
@@ -1789,7 +1808,7 @@ describe("Trading API", () => {
     expect(buyTransaction.toChain).toBe(BlockchainType.SVM);
 
     // Check updated balance
-    const updatedBalanceResponse = await agentClient.getBalance();
+    const updatedBalanceResponse = await agentClient.getBalance(competitionId);
     expect(updatedBalanceResponse.success).toBe(true);
 
     // USDC balance should have decreased
@@ -1808,7 +1827,8 @@ describe("Trading API", () => {
     expect(updatedSolBalance).toBeGreaterThan(initialSolBalance);
 
     // Get trade history
-    const tradeHistoryResponse = await agentClient.getTradeHistory();
+    const tradeHistoryResponse =
+      await agentClient.getTradeHistory(competitionId);
     expect(tradeHistoryResponse.success).toBe(true);
     expect(
       (tradeHistoryResponse as TradeHistoryResponse).trades,
@@ -1844,7 +1864,7 @@ describe("Trading API", () => {
     expect((sellTradeResponse as TradeResponse).transaction).toBeDefined();
 
     // Check final balance
-    const finalBalanceResponse = await agentClient.getBalance();
+    const finalBalanceResponse = await agentClient.getBalance(competitionId);
     expect(finalBalanceResponse.success).toBe(true);
     // USDC balance should have increased compared to after buying
     const finalUsdcBalance = parseFloat(
@@ -1885,7 +1905,7 @@ describe("Trading API", () => {
       .competition.id;
 
     // Check initial balance
-    const initialBalanceResponse = await agentClient.getBalance();
+    const initialBalanceResponse = await agentClient.getBalance(competitionId);
     expect(initialBalanceResponse.success).toBe(true);
 
     // Get initial USDC balance on Solana
@@ -1933,7 +1953,8 @@ describe("Trading API", () => {
     expect(transaction.tradeAmountUsd).toBeGreaterThan(0);
 
     // Check updated balance after EVM burn
-    const afterEvmBurnBalanceResponse = await agentClient.getBalance();
+    const afterEvmBurnBalanceResponse =
+      await agentClient.getBalance(competitionId);
     const afterEvmBurnUsdcBalance = parseFloat(
       (afterEvmBurnBalanceResponse as BalancesResponse).balances
         .find((b) => b.tokenAddress === svmUsdcAddress)
@@ -1987,7 +2008,7 @@ describe("Trading API", () => {
     expect(solanaBurnTransaction.tradeAmountUsd).toBeGreaterThan(0);
 
     // Check final balance after both burns
-    const finalBalanceResponse = await agentClient.getBalance();
+    const finalBalanceResponse = await agentClient.getBalance(competitionId);
     const finalUsdcBalance = parseFloat(
       (finalBalanceResponse as BalancesResponse).balances
         .find((b) => b.tokenAddress === svmUsdcAddress)
@@ -2006,7 +2027,8 @@ describe("Trading API", () => {
     expect(solanaDeadBalance).toBe(0);
 
     // Test 3: Verify burn trades appear correctly in trade history
-    const tradeHistoryResponse = await agentClient.getTradeHistory();
+    const tradeHistoryResponse =
+      await agentClient.getTradeHistory(competitionId);
     expect(tradeHistoryResponse.success).toBe(true);
 
     const trades = (tradeHistoryResponse as TradeHistoryResponse).trades;
@@ -2145,13 +2167,14 @@ describe("Trading API", () => {
     expect((tradeResponse as ErrorResponse).error).toContain("not registered");
 
     // Verify that the agent can get balance but it should be empty since they're not in the competition
-    const balanceResponse = await agentClient.getBalance();
+    const balanceResponse = await agentClient.getBalance(competitionId);
     expect(balanceResponse.success).toBe(true);
     expect((balanceResponse as BalancesResponse).balances).toBeDefined();
     expect((balanceResponse as BalancesResponse).balances.length).toBe(0);
 
     // Verify that the agent can get trade history but it should be empty since they're not in the competition
-    const tradeHistoryResponse = await agentClient.getTradeHistory();
+    const tradeHistoryResponse =
+      await agentClient.getTradeHistory(competitionId);
     expect(tradeHistoryResponse.success).toBe(true);
     expect((tradeHistoryResponse as TradeHistoryResponse).trades).toBeDefined();
     expect((tradeHistoryResponse as TradeHistoryResponse).trades.length).toBe(

@@ -91,8 +91,9 @@ describe("Multi-Agent Competition", () => {
     // Step 4: Validate that all agents have the same starting balances
 
     // Get first agent's balance as reference
-    const referenceBalanceResponse =
-      (await agentClients[0]?.client.getBalance()) as BalancesResponse;
+    const referenceBalanceResponse = (await agentClients[0]?.client.getBalance(
+      competitionId,
+    )) as BalancesResponse;
     expect(referenceBalanceResponse.success).toBe(true);
     expect(referenceBalanceResponse.balances).toBeDefined();
 
@@ -118,8 +119,9 @@ describe("Multi-Agent Competition", () => {
     // Validate other agents have identical balances
     for (let i = 1; i < NUM_AGENTS; i++) {
       const agentClient = agentClients[i]?.client;
-      const agentBalanceResponse =
-        (await agentClient?.getBalance()) as BalancesResponse;
+      const agentBalanceResponse = (await agentClient?.getBalance(
+        competitionId,
+      )) as BalancesResponse;
 
       expect(agentBalanceResponse?.success).toBe(true);
       expect(agentBalanceResponse?.balances).toBeDefined();
@@ -189,9 +191,14 @@ describe("Multi-Agent Competition", () => {
       const agentClient = agentClients[i]?.client;
 
       // Check competition status
-      const competition = await agentClient?.getActiveCompetition();
-      expect(competition).toBeDefined();
-      expect(competition?.id).toBe(competitionId);
+      const competitionResponse =
+        await agentClient?.getCompetition(competitionId);
+      expect(competitionResponse).toBeDefined();
+      if (!competitionResponse?.success) {
+        throw new Error("Failed to get competition");
+      }
+      const competition = competitionResponse.competition;
+      expect(competition.id).toBe(competitionId);
 
       // Check leaderboard
       const leaderboardResponse = await agentClient?.getCompetitionAgents(

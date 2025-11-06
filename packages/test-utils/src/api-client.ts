@@ -1106,7 +1106,7 @@ export class ApiClient {
   ): Promise<BalancesResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.get(
-        `/api/agent/balances?competitionId=${competitionId}`,
+        `/api/agent/balances?competitionId=${encodeURIComponent(competitionId)}`,
       );
       return response.data as BalancesResponse;
     } catch (error) {
@@ -1117,9 +1117,13 @@ export class ApiClient {
   /**
    * Get trade history
    */
-  async getTradeHistory(): Promise<TradeHistoryResponse | ErrorResponse> {
+  async getTradeHistory(
+    competitionId: string,
+  ): Promise<TradeHistoryResponse | ErrorResponse> {
     try {
-      const response = await this.axiosInstance.get("/api/agent/trades");
+      const response = await this.axiosInstance.get(
+        `/api/agent/trades?competitionId=${competitionId}`,
+      );
       return response.data as TradeHistoryResponse;
     } catch (error) {
       return this.handleApiError(error, "get trade history");
@@ -1393,15 +1397,14 @@ export class ApiClient {
   }
 
   /**
-   * Get competition rules for active competition (convenience method)
+   * Get competition rules for a specific competition
+   * @param competitionId The competition ID to get rules for
    */
-  async getRules(): Promise<CompetitionRulesResponse | ErrorResponse> {
+  async getRules(
+    competitionId: string,
+  ): Promise<CompetitionRulesResponse | ErrorResponse> {
     try {
-      // Get active competition first
-      const competition = await this.getActiveCompetition();
-
-      // Get rules for the active competition
-      return this.getCompetitionRules(competition.id);
+      return this.getCompetitionRules(competitionId);
     } catch (error) {
       return this.handleApiError(error, "get competition rules");
     }
@@ -1448,34 +1451,6 @@ export class ApiClient {
         `get competitions: sort=${sort}, status=${status}, limit=${limit}, offset=${offset}`,
       );
     }
-  }
-
-  /**
-   * Get the currently active competition
-   * Convenience method for tests - throws an error if no active competition exists
-   * @returns The active competition
-   * @throws Error if no active competition is found
-   */
-  async getActiveCompetition(): Promise<Competition> {
-    const response = await this.getCompetitions("active", undefined, 1);
-
-    if (!response.success) {
-      throw new Error(response.error || "Failed to get active competitions");
-    }
-
-    const competitions = (response as UpcomingCompetitionsResponse)
-      .competitions;
-
-    if (!competitions || competitions.length === 0) {
-      throw new Error("No active competition found");
-    }
-
-    const firstCompetition = competitions[0];
-    if (!firstCompetition) {
-      throw new Error("No active competition found");
-    }
-
-    return firstCompetition;
   }
 
   /**
@@ -1746,10 +1721,11 @@ export class ApiClient {
     fromToken: string,
     toToken: string,
     amount: string,
+    competitionId: string,
   ): Promise<QuoteResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.get(
-        `/api/trade/quote?fromToken=${encodeURIComponent(fromToken)}&toToken=${encodeURIComponent(toToken)}&amount=${encodeURIComponent(amount)}`,
+        `/api/trade/quote?fromToken=${encodeURIComponent(fromToken)}&toToken=${encodeURIComponent(toToken)}&amount=${encodeURIComponent(amount)}&competitionId=${encodeURIComponent(competitionId)}`,
       );
       return response.data as QuoteResponse;
     } catch (error) {
@@ -2107,12 +2083,15 @@ export class ApiClient {
 
   /**
    * Get perps positions for the authenticated agent
+   * @param competitionId The competition ID
    * @returns A promise that resolves to the perps positions response
    */
-  async getPerpsPositions(): Promise<PerpsPositionsResponse | ErrorResponse> {
+  async getPerpsPositions(
+    competitionId: string,
+  ): Promise<PerpsPositionsResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.get(
-        `/api/agent/perps/positions`,
+        `/api/agent/perps/positions?competitionId=${competitionId}`,
       );
       return response.data;
     } catch (error) {
@@ -2137,11 +2116,16 @@ export class ApiClient {
 
   /**
    * Get perps account summary for the authenticated agent
+   * @param competitionId The competition ID
    * @returns A promise that resolves to the perps account response
    */
-  async getPerpsAccount(): Promise<PerpsAccountResponse | ErrorResponse> {
+  async getPerpsAccount(
+    competitionId: string,
+  ): Promise<PerpsAccountResponse | ErrorResponse> {
     try {
-      const response = await this.axiosInstance.get(`/api/agent/perps/account`);
+      const response = await this.axiosInstance.get(
+        `/api/agent/perps/account?competitionId=${competitionId}`,
+      );
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "get perps account");

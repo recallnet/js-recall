@@ -10,6 +10,7 @@ import {
 import { ServiceRegistry } from "@/services/index.js";
 
 const GetQuoteQuerySchema = z.object({
+  competitionId: z.string().min(1, "competitionId is required"),
   fromToken: z.string().min(1, "fromToken is required"),
   toToken: z.string().min(1, "toToken is required"),
   amount: z
@@ -130,19 +131,25 @@ export function makeTradeController(services: ServiceRegistry) {
      */
     async getQuote(req: Request, res: Response, next: NextFunction) {
       try {
-        // Check if there's an active competition and if it's a perps competition
-        const activeCompetition =
-          await services.competitionService.getActiveCompetition();
-        if (activeCompetition?.type === "perpetual_futures") {
+        // Parse and validate query parameters
+        const queryParams = GetQuoteQuerySchema.parse(req.query);
+
+        // Get and validate competition
+        const competition = await services.competitionService.getCompetition(
+          queryParams.competitionId,
+        );
+
+        if (!competition) {
+          throw new ApiError(404, "Competition not found");
+        }
+
+        if (competition.type === "perpetual_futures") {
           throw new ApiError(
             400,
             "This endpoint is not available for perpetual futures competitions. " +
               "Perpetual futures positions are managed through Symphony, not through this API.",
           );
         }
-
-        // Parse and validate query parameters
-        const queryParams = GetQuoteQuerySchema.parse(req.query);
 
         // Call service method
         const result = await services.tradeSimulatorService.getTradeQuote({

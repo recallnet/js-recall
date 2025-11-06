@@ -379,8 +379,9 @@ describe("Competition API", () => {
     expect(competitionResponse.success).toBe(true);
 
     // Agent gets competition rules
-    const rulesResponse =
-      (await agentClient.getRules()) as CompetitionRulesResponse;
+    const rulesResponse = (await agentClient.getRules(
+      competitionResponse.competition.id,
+    )) as CompetitionRulesResponse;
     expect(rulesResponse.success).toBe(true);
     expect(rulesResponse.rules).toBeDefined();
     expect(rulesResponse.rules.tradingRules).toBeDefined();
@@ -432,7 +433,7 @@ describe("Competition API", () => {
     };
 
     const competitionName = `Active Rules Min Trades Test ${Date.now()}`;
-    await adminClient.startCompetition({
+    const competitionResponse = await adminClient.startCompetition({
       name: competitionName,
       description: "Competition to test active rules endpoint with min trades",
       agentIds: [agent.id],
@@ -440,8 +441,9 @@ describe("Competition API", () => {
     });
 
     // Agent gets competition rules (authenticated endpoint for active competition)
-    const rulesResponse =
-      (await agentClient.getRules()) as CompetitionRulesResponse;
+    const rulesResponse = (await agentClient.getRules(
+      (competitionResponse as StartCompetitionResponse).competition.id,
+    )) as CompetitionRulesResponse;
     expect(rulesResponse.success).toBe(true);
     expect(rulesResponse.rules).toBeDefined();
     expect(rulesResponse.rules.tradingConstraints).toBeDefined();
@@ -596,14 +598,19 @@ describe("Competition API", () => {
 
     // Admin starts a competition with the agent
     const competitionName = `Viewable Competition ${Date.now()}`;
-    await startTestCompetition({
+    const startedCompetition = await startTestCompetition({
       adminClient,
       name: competitionName,
       agentIds: [agent.id],
     });
+    const competitionId = startedCompetition.competition.id;
 
     // Agent checks competition status
-    const competition = await agentClient.getActiveCompetition();
+    const competitionResponse = await agentClient.getCompetition(competitionId);
+    if (!competitionResponse.success) {
+      throw new Error("Failed to get competition");
+    }
+    const competition = competitionResponse.competition;
     expect(competition.name).toBe(competitionName);
     expect(competition.status).toBe("active");
 
@@ -651,12 +658,24 @@ describe("Competition API", () => {
       agentIds: [agentIn.id],
     });
 
-    // Both agents can check status of the active competition
-    const competitionFromAgentIn = await agentInClient.getActiveCompetition();
+    // Both agents can check status of the competition by ID
+    const competitionFromAgentInResponse = await agentInClient.getCompetition(
+      competition.id,
+    );
+    if (!competitionFromAgentInResponse.success) {
+      throw new Error("Failed to get competition");
+    }
+    const competitionFromAgentIn = competitionFromAgentInResponse.competition;
     expect(competitionFromAgentIn.id).toBe(competition.id);
     expect(competitionFromAgentIn.status).toBe("active");
 
-    const competitionFromAgentOut = await agentOutClient.getActiveCompetition();
+    const competitionFromAgentOutResponse = await agentOutClient.getCompetition(
+      competition.id,
+    );
+    if (!competitionFromAgentOutResponse.success) {
+      throw new Error("Failed to get competition");
+    }
+    const competitionFromAgentOut = competitionFromAgentOutResponse.competition;
     expect(competitionFromAgentOut.id).toBe(competition.id);
     expect(competitionFromAgentOut.status).toBe("active");
   });
@@ -675,14 +694,20 @@ describe("Competition API", () => {
 
     // Start a competition with only the regular agent (admin is not a participant)
     const competitionName = `Admin Access Test Competition ${Date.now()}`;
-    await startTestCompetition({
+    const startedComp = await startTestCompetition({
       adminClient,
       name: competitionName,
       agentIds: [agent.id],
     });
+    const competitionId = startedComp.competition.id;
 
     // Admin checks competition status with full details
-    const adminCompetition = await adminClient.getActiveCompetition();
+    const adminCompetitionResponse =
+      await adminClient.getCompetition(competitionId);
+    if (!adminCompetitionResponse.success) {
+      throw new Error("Failed to get competition");
+    }
+    const adminCompetition = adminCompetitionResponse.competition;
     expect(adminCompetition.name).toBe(competitionName);
     expect(adminCompetition.status).toBe("active");
     expect(adminCompetition.description).toBeDefined();
@@ -708,8 +733,9 @@ describe("Competition API", () => {
     expect(adminLeaderboardResponse.agents[0]?.name).toBe("Regular Agent");
 
     // Admin checks competition rules
-    const adminRulesResponse =
-      (await adminClient.getRules()) as CompetitionRulesResponse;
+    const adminRulesResponse = (await adminClient.getRules(
+      competitionId,
+    )) as CompetitionRulesResponse;
     expect(adminRulesResponse.success).toBe(true);
     expect(adminRulesResponse.rules).toBeDefined();
     expect(adminRulesResponse.rules.tradingRules).toBeDefined();
@@ -718,7 +744,12 @@ describe("Competition API", () => {
     expect(adminRulesResponse.rules.slippageFormula).toBeDefined();
 
     // Regular agent checks all the same endpoints to verify they work for participants too
-    const agentCompetition = await agentClient.getActiveCompetition();
+    const agentCompetitionResponse =
+      await agentClient.getCompetition(competitionId);
+    if (!agentCompetitionResponse.success) {
+      throw new Error("Failed to get competition");
+    }
+    const agentCompetition = agentCompetitionResponse.competition;
     expect(agentCompetition.id).toBe(adminCompetition.id);
     expect(agentCompetition.status).toBe("active");
 
@@ -728,7 +759,7 @@ describe("Competition API", () => {
     expect(agentLeaderboardResponse.success).toBe(true);
 
     // Regular agent checks rules
-    const agentRulesResponse = await agentClient.getRules();
+    const agentRulesResponse = await agentClient.getRules(competitionId);
     expect(agentRulesResponse.success).toBe(true);
   });
 
@@ -1159,8 +1190,14 @@ describe("Competition API", () => {
     expect(startResponse.competition.imageUrl).toBe(imageUrl);
 
     // 3. Verify the fields are in the competition status response for participating agents
-    const agentCompetition = await agentClient.getActiveCompetition();
-    expect(agentCompetition.id).toBe(startResponse.competition.id);
+    const competitionId = startResponse.competition.id;
+    const agentCompetitionResponse =
+      await agentClient.getCompetition(competitionId);
+    if (!agentCompetitionResponse.success) {
+      throw new Error("Failed to get competition");
+    }
+    const agentCompetition = agentCompetitionResponse.competition;
+    expect(agentCompetition.id).toBe(competitionId);
     expect(agentCompetition.status).toBe("active");
     expect(agentCompetition.externalUrl).toBe(externalUrl);
     expect(agentCompetition.imageUrl).toBe(imageUrl);
