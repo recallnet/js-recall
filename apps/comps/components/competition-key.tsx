@@ -1095,7 +1095,7 @@ const PredictionsTabContent: React.FC<{
                 key={`${boost.userId}-${boost.agentId}-${index}`}
                 className="flex items-start justify-between gap-4 border-b border-gray-800 pb-3 last:border-0"
               >
-                {/* Left column: Agent name */}
+                {/* Left column: User wallet address */}
                 <div className="flex items-center gap-2">
                   <Tooltip
                     content={boost.wallet}
@@ -1107,7 +1107,7 @@ const PredictionsTabContent: React.FC<{
                   </Tooltip>
                 </div>
 
-                {/* Right column: User + Boost details */}
+                {/* Right column: Agent name + Boost details */}
                 <div className="flex flex-col items-end gap-1 text-right">
                   <span className="text-xs text-gray-400">
                     <Link
