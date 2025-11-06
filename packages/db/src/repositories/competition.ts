@@ -23,6 +23,7 @@ import { Logger } from "pino";
 
 import {
   agents,
+  arenas,
   competitionAgents,
   competitionPrizePools,
   competitionRewards,
@@ -224,9 +225,70 @@ export class CompetitionRepository {
 
   /**
    * Builds the full competition query with rewards and trading constraints
+   * Optionally includes arena classification data
+   * @param includeArena Whether to include arena data in the query
    * @returns A query builder for competitions with all enrichment data
    */
-  buildFullCompetitionQuery() {
+  buildFullCompetitionQuery(includeArena: boolean = false) {
+    if (includeArena) {
+      return this.#db
+        .select({
+          ...getTableColumns(competitions),
+          ...getTableColumns(tradingConstraints),
+          ...getTableColumns(tradingCompetitions),
+          arena: {
+            id: arenas.id,
+            name: arenas.name,
+            category: arenas.category,
+            skill: arenas.skill,
+            venues: arenas.venues,
+            chains: arenas.chains,
+          },
+          rewards: sql<
+            | Array<{ rank: number; reward: number; agentId: string | null }>
+            | undefined
+          >`
+          (
+            SELECT COALESCE(
+              json_agg(
+                json_build_object(
+                  'rank', cr.rank,
+                  'reward', cr.reward,
+                  'agentId', cr.agent_id
+                ) ORDER BY cr.rank
+              ),
+              NULL
+            )
+            FROM ${competitionRewards} cr
+            WHERE cr.competition_id = ${competitions.id}
+          )
+        `.as("rewards"),
+          rewardsTge: sql<{ agentPool: bigint; userPool: bigint } | undefined>`
+          (
+            SELECT COALESCE(
+              json_build_object(
+                'agentPool', cpp.agent_pool,
+                'userPool', cpp.user_pool
+              ),
+              NULL
+            )
+            FROM ${competitionPrizePools} cpp
+            WHERE cpp.competition_id = ${competitions.id}
+          )
+        `.as("rewards_tge"),
+        })
+        .from(tradingCompetitions)
+        .innerJoin(
+          competitions,
+          eq(tradingCompetitions.competitionId, competitions.id),
+        )
+        .leftJoin(
+          tradingConstraints,
+          eq(tradingConstraints.competitionId, competitions.id),
+        )
+        .leftJoin(arenas, eq(competitions.arenaId, arenas.id));
+    }
+
     return this.#db
       .select({
         ...getTableColumns(competitions),
@@ -323,9 +385,37 @@ export class CompetitionRepository {
 
   /**
    * Find a competition by ID
+   * Optionally includes arena classification data
    * @param id The ID to search for
+   * @param includeArena Whether to include arena data
+   * @returns Competition with optional arena data, undefined if not found
    */
-  async findById(id: string) {
+  async findById(id: string, includeArena: boolean = false) {
+    if (includeArena) {
+      const [result] = await this.#dbRead
+        .select({
+          crossChainTradingType: tradingCompetitions.crossChainTradingType,
+          ...getTableColumns(competitions),
+          arena: {
+            id: arenas.id,
+            name: arenas.name,
+            category: arenas.category,
+            skill: arenas.skill,
+            venues: arenas.venues,
+            chains: arenas.chains,
+          },
+        })
+        .from(tradingCompetitions)
+        .innerJoin(
+          competitions,
+          eq(tradingCompetitions.competitionId, competitions.id),
+        )
+        .leftJoin(arenas, eq(competitions.arenaId, arenas.id))
+        .where(eq(competitions.id, id))
+        .limit(1);
+      return result;
+    }
+
     const [result] = await this.#dbRead
       .select({
         crossChainTradingType: tradingCompetitions.crossChainTradingType,
@@ -339,6 +429,60 @@ export class CompetitionRepository {
       .where(eq(competitions.id, id))
       .limit(1);
     return result;
+  }
+
+  /**
+   * Find competitions by arena ID with pagination
+   * @param arenaId Arena ID to filter by
+   * @param params Pagination and sorting parameters
+   * @returns Object containing competitions array and total count
+   */
+  async findByArenaId(
+    arenaId: string,
+    params: PagingParams,
+  ): Promise<{
+    competitions: Array<SelectCompetition & { crossChainTradingType: string }>;
+    total: number;
+  }> {
+    try {
+      // Build count query
+      const countQuery = this.#dbRead
+        .select({ count: drizzleCount() })
+        .from(competitions)
+        .where(eq(competitions.arenaId, arenaId));
+
+      // Build data query
+      let dataQuery = this.#dbRead
+        .select({
+          crossChainTradingType: tradingCompetitions.crossChainTradingType,
+          ...getTableColumns(competitions),
+        })
+        .from(tradingCompetitions)
+        .innerJoin(
+          competitions,
+          eq(tradingCompetitions.competitionId, competitions.id),
+        )
+        .where(eq(competitions.arenaId, arenaId))
+        .$dynamic();
+
+      if (params.sort) {
+        dataQuery = getSort(dataQuery, params.sort, competitionOrderByFields);
+      }
+
+      // Execute count and data queries in parallel
+      const [results, countResult] = await Promise.all([
+        dataQuery.limit(params.limit).offset(params.offset),
+        countQuery,
+      ]);
+
+      return { competitions: results, total: countResult[0]?.count ?? 0 };
+    } catch (error) {
+      this.#logger.error(
+        `[CompetitionRepository] Error in findByArenaId (${arenaId}):`,
+        error,
+      );
+      throw error;
+    }
   }
 
   /**

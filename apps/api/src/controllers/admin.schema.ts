@@ -334,3 +334,88 @@ export const AdminRewardsAllocationSchema = z.object({
       "The timestamp from which rewards can be claimed (optional, defaults to competition end date + 1 hour)",
     ),
 });
+
+/**
+ * Admin create arena schema
+ */
+export const AdminCreateArenaSchema = z.object({
+  id: z
+    .string()
+    .regex(
+      /^[a-z0-9-]+$/,
+      "Arena ID must be lowercase kebab-case (e.g., 'aerodrome-base-weekly')",
+    )
+    .min(3)
+    .max(80),
+  name: z.string().min(4).max(80),
+  createdBy: z.string().min(1),
+  category: z.string().min(1),
+  skill: z.string().min(1),
+  venues: z.array(z.string()).optional(),
+  chains: z.array(z.string()).optional(),
+});
+
+/**
+ * Admin update arena schema
+ */
+export const AdminUpdateArenaSchema = z.object({
+  name: z.string().min(4).max(80).optional(),
+  category: z.string().min(1).optional(),
+  skill: z.string().min(1).optional(),
+  venues: z.array(z.string()).optional(),
+  chains: z.array(z.string()).optional(),
+});
+
+/**
+ * Admin arena params schema (for :id in path)
+ */
+export const AdminArenaParamsSchema = z.object({
+  id: z.string().min(1),
+});
+
+/**
+ * Admin list arenas query schema
+ */
+export const AdminListArenasQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+  offset: z.coerce.number().int().min(0).default(0),
+  sort: z.string().default(""),
+  nameFilter: z.string().optional(),
+});
+
+/**
+ * Admin create partner schema
+ */
+export const AdminCreatePartnerSchema = z.object({
+  name: z.string().min(1).max(100),
+  url: z.string().url().optional(),
+  logoUrl: z.string().url().optional(),
+  details: z.string().max(500).optional(),
+});
+
+/**
+ * Admin update partner schema
+ */
+export const AdminUpdatePartnerSchema = z.object({
+  name: z.string().min(1).max(100).optional(),
+  url: z.string().url().optional(),
+  logoUrl: z.string().url().optional(),
+  details: z.string().max(500).optional(),
+});
+
+/**
+ * Admin partner params schema (for :id in path)
+ */
+export const AdminPartnerParamsSchema = z.object({
+  id: UuidSchema,
+});
+
+/**
+ * Admin list partners query schema
+ */
+export const AdminListPartnersQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+  offset: z.coerce.number().int().min(0).default(0),
+  sort: z.string().default(""),
+  nameFilter: z.string().optional(),
+});
