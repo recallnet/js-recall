@@ -2314,6 +2314,120 @@ Purpose: WALLET_VERIFICATION`;
       }
     });
 
+    test("should sort competitions by bestPlacement with undefined ordering rules", async () => {
+      // Setup admin client
+      const adminClient = createTestClient();
+      const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
+      expect(adminLoginSuccess).toBe(true);
+
+      // Register two agents for ranking
+      const { client: agentClient1, agent: agent1 } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "BestPlacement Agent 1",
+        });
+
+      const { client: agentClient2, agent: agent2 } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "BestPlacement Agent 2",
+        });
+
+      // Create three competitions: two ended with opposite performances, one pending (undefined rank)
+      const comp1Name = `BP Comp 1 ${Date.now()}`; // agent1 should rank better
+      const comp2Name = `BP Comp 2 ${Date.now()}`; // agent2 should rank better
+      const comp3Name = `BP Comp 3 Pending ${Date.now()}`; // pending => undefined rank
+
+      // Competition 1
+      const createComp1Res = await adminClient.createCompetition({
+        name: comp1Name,
+        description: "BestPlacement sorting test - comp1",
+      });
+      expect(createComp1Res.success).toBe(true);
+      const comp1Id = (createComp1Res as CreateCompetitionResponse).competition
+        .id;
+      await adminClient.startExistingCompetition({
+        competitionId: comp1Id,
+        agentIds: [agent1.id, agent2.id],
+      });
+      // Agent1 good performance, Agent2 poor
+      await agentClient1.executeTrade({
+        fromToken: config.specificChainTokens.eth.usdc,
+        toToken: config.specificChainTokens.eth.eth,
+        amount: "100",
+        reason: "agent1 good trade",
+      });
+      await agentClient2.executeTrade({
+        fromToken: config.specificChainTokens.eth.usdc,
+        toToken: "0x000000000000000000000000000000000000dead",
+        amount: "100",
+        reason: "agent2 bad trade",
+      });
+      await adminClient.endCompetition(comp1Id);
+
+      // Competition 2
+      const createComp2Res = await adminClient.createCompetition({
+        name: comp2Name,
+        description: "BestPlacement sorting test - comp2",
+      });
+      expect(createComp2Res.success).toBe(true);
+      const comp2Id = (createComp2Res as CreateCompetitionResponse).competition
+        .id;
+      await adminClient.startExistingCompetition({
+        competitionId: comp2Id,
+        agentIds: [agent1.id, agent2.id],
+      });
+      // Agent2 good performance, Agent1 poor
+      await agentClient2.executeTrade({
+        fromToken: config.specificChainTokens.eth.usdc,
+        toToken: config.specificChainTokens.eth.eth,
+        amount: "100",
+        reason: "agent2 good trade",
+      });
+      await agentClient1.executeTrade({
+        fromToken: config.specificChainTokens.eth.usdc,
+        toToken: "0x000000000000000000000000000000000000dead",
+        amount: "50",
+        reason: "agent1 bad trade",
+      });
+      await adminClient.endCompetition(comp2Id);
+
+      // Competition 3 (pending) with only agent1 joined => undefined rank
+      const createComp3Res = await adminClient.createCompetition({
+        name: comp3Name,
+        description: "BestPlacement sorting test - pending",
+      });
+      expect(createComp3Res.success).toBe(true);
+      const comp3Id = (createComp3Res as CreateCompetitionResponse).competition
+        .id;
+      await agentClient1.joinCompetition(comp3Id, agent1.id);
+
+      // Give snapshotter a brief moment where applicable
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      // Ascending: expect comp1 (rank 1) first, then comp2 (rank 2), pending (undefined) last
+      const ascRes = (await agentClient1.getAgentCompetitions(agent1.id, {
+        sort: "bestPlacement",
+        limit: 10,
+        offset: 0,
+      })) as AgentCompetitionsResponse;
+      expect(ascRes.success).toBe(true);
+      const ascIds = ascRes.competitions.map((c: EnhancedCompetition) => c.id);
+      expect(ascIds).toEqual([comp1Id, comp2Id, comp3Id]);
+
+      // Descending: pending (undefined) should be first, then worse rank first (2), then better (1)
+      const descRes = (await agentClient1.getAgentCompetitions(agent1.id, {
+        sort: "-bestPlacement",
+        limit: 10,
+        offset: 0,
+      })) as AgentCompetitionsResponse;
+      expect(descRes.success).toBe(true);
+      const descIds = descRes.competitions.map(
+        (c: EnhancedCompetition) => c.id,
+      );
+      expect(descIds).toEqual([comp3Id, comp2Id, comp1Id]);
+    });
+
     test("should handle edge cases gracefully", async () => {
       // Setup admin client
       const adminClient = createTestClient();
