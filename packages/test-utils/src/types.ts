@@ -343,6 +343,67 @@ export interface DeletePartnerResponse extends ApiResponse {
   message: string;
 }
 
+// Competition partner association
+export interface CompetitionPartner {
+  id: string;
+  name: string;
+  url: string | null;
+  logoUrl: string | null;
+  details: string | null;
+  position: number;
+  competitionPartnerId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Get competition partners response
+export interface GetCompetitionPartnersResponse extends ApiResponse {
+  success: true;
+  partners: CompetitionPartner[];
+}
+
+// Add partner to competition response
+export interface AddPartnerToCompetitionResponse extends ApiResponse {
+  success: true;
+  association: {
+    id: string;
+    competitionId: string;
+    partnerId: string;
+    position: number;
+    createdAt: string;
+  };
+}
+
+// Update partner position response
+export interface UpdatePartnerPositionResponse extends ApiResponse {
+  success: true;
+  association: {
+    id: string;
+    competitionId: string;
+    partnerId: string;
+    position: number;
+    createdAt: string;
+  };
+}
+
+// Remove partner from competition response
+export interface RemovePartnerFromCompetitionResponse extends ApiResponse {
+  success: true;
+  message: string;
+}
+
+// Replace competition partners response
+export interface ReplaceCompetitionPartnersResponse extends ApiResponse {
+  success: true;
+  partners: Array<{
+    id: string;
+    competitionId: string;
+    partnerId: string;
+    position: number;
+    createdAt: string;
+  }>;
+}
+
 /**
  * TRADING TYPES
  */

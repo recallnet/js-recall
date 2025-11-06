@@ -14,6 +14,7 @@ import {
   tradingConstraints,
 } from "@recallnet/db/schema/trading/defs";
 import {
+  AddPartnerToCompetitionResponse,
   AdminAgentResponse,
   AdminAgentsListResponse,
   AdminReactivateAgentInCompetitionResponse,
@@ -31,12 +32,16 @@ import {
   DeletePartnerResponse,
   ErrorResponse,
   GetArenaResponse,
+  GetCompetitionPartnersResponse,
   GetPartnerResponse,
   ListArenasResponse,
   ListPartnersResponse,
+  RemovePartnerFromCompetitionResponse,
+  ReplaceCompetitionPartnersResponse,
   StartCompetitionResponse,
   UpdateArenaResponse,
   UpdateCompetitionResponse,
+  UpdatePartnerPositionResponse,
   UpdatePartnerResponse,
   UserRegistrationResponse,
 } from "@recallnet/test-utils";
@@ -3307,5 +3312,215 @@ describe("Admin API", () => {
     // Try to list partners without admin auth
     const listResponse = await regularClient.listPartners();
     expect(listResponse.success).toBe(false);
+  });
+
+  // ===== Partner-Competition Association Tests =====
+
+  test("should add partner to competition", async () => {
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Create partner
+    const partnerResponse = await adminClient.createPartner({
+      name: `Assoc Partner ${Date.now()}`,
+      url: "https://example.com",
+    });
+    expect(partnerResponse.success).toBe(true);
+    const partnerId = (partnerResponse as CreatePartnerResponse).partner.id;
+
+    // Create competition
+    const compResponse = await adminClient.createCompetition({
+      name: "Assoc Competition",
+      type: "trading",
+    });
+    expect(compResponse.success).toBe(true);
+    const competitionId = (compResponse as CreateCompetitionResponse)
+      .competition.id;
+
+    // Add partner to competition
+    const addResponse = await adminClient.addPartnerToCompetition(
+      competitionId,
+      partnerId,
+      1,
+    );
+
+    expect(addResponse.success).toBe(true);
+    expect(
+      (addResponse as AddPartnerToCompetitionResponse).association,
+    ).toBeDefined();
+    expect(
+      (addResponse as AddPartnerToCompetitionResponse).association
+        .competitionId,
+    ).toBe(competitionId);
+    expect(
+      (addResponse as AddPartnerToCompetitionResponse).association.partnerId,
+    ).toBe(partnerId);
+    expect(
+      (addResponse as AddPartnerToCompetitionResponse).association.position,
+    ).toBe(1);
+  });
+
+  test("should get partners for a competition", async () => {
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Create partners
+    const partner1 = await adminClient.createPartner({
+      name: `List Partner 1 ${Date.now()}`,
+    });
+    const partner2 = await adminClient.createPartner({
+      name: `List Partner 2 ${Date.now()}`,
+    });
+    expect(partner1.success && partner2.success).toBe(true);
+
+    // Create competition
+    const compResponse = await adminClient.createCompetition({
+      name: "Partners List Competition",
+      type: "trading",
+    });
+    const competitionId = (compResponse as CreateCompetitionResponse)
+      .competition.id;
+
+    // Add partners
+    await adminClient.addPartnerToCompetition(
+      competitionId,
+      (partner1 as CreatePartnerResponse).partner.id,
+      1,
+    );
+    await adminClient.addPartnerToCompetition(
+      competitionId,
+      (partner2 as CreatePartnerResponse).partner.id,
+      2,
+    );
+
+    // Get partners
+    const getResponse = await adminClient.getCompetitionPartners(competitionId);
+
+    expect(getResponse.success).toBe(true);
+    const partners = (getResponse as GetCompetitionPartnersResponse).partners;
+    expect(partners.length).toBe(2);
+    expect(partners[0]?.position).toBe(1);
+    expect(partners[1]?.position).toBe(2);
+  });
+
+  test("should update partner position", async () => {
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Create partner and competition
+    const partnerResponse = await adminClient.createPartner({
+      name: `Position Partner ${Date.now()}`,
+    });
+    const partnerId = (partnerResponse as CreatePartnerResponse).partner.id;
+
+    const compResponse = await adminClient.createCompetition({
+      name: "Position Competition",
+      type: "trading",
+    });
+    const competitionId = (compResponse as CreateCompetitionResponse)
+      .competition.id;
+
+    // Add at position 1
+    await adminClient.addPartnerToCompetition(competitionId, partnerId, 1);
+
+    // Update to position 2
+    const updateResponse = await adminClient.updatePartnerPosition(
+      competitionId,
+      partnerId,
+      2,
+    );
+
+    expect(updateResponse.success).toBe(true);
+    expect(
+      (updateResponse as UpdatePartnerPositionResponse).association.position,
+    ).toBe(2);
+  });
+
+  test("should remove partner from competition", async () => {
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Create partner and competition
+    const partnerResponse = await adminClient.createPartner({
+      name: `Remove Partner ${Date.now()}`,
+    });
+    const partnerId = (partnerResponse as CreatePartnerResponse).partner.id;
+
+    const compResponse = await adminClient.createCompetition({
+      name: "Remove Competition",
+      type: "trading",
+    });
+    const competitionId = (compResponse as CreateCompetitionResponse)
+      .competition.id;
+
+    // Add partner
+    await adminClient.addPartnerToCompetition(competitionId, partnerId, 1);
+
+    // Remove partner
+    const removeResponse = await adminClient.removePartnerFromCompetition(
+      competitionId,
+      partnerId,
+    );
+
+    expect(removeResponse.success).toBe(true);
+    expect(
+      (removeResponse as RemovePartnerFromCompetitionResponse).message,
+    ).toContain("removed");
+
+    // Verify it's gone
+    const getResponse = await adminClient.getCompetitionPartners(competitionId);
+    expect(
+      (getResponse as GetCompetitionPartnersResponse).partners.length,
+    ).toBe(0);
+  });
+
+  test("should replace all partners atomically", async () => {
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Create 3 partners
+    const p1 = (await adminClient.createPartner({
+      name: `Replace 1 ${Date.now()}`,
+    })) as CreatePartnerResponse;
+    const p2 = (await adminClient.createPartner({
+      name: `Replace 2 ${Date.now()}`,
+    })) as CreatePartnerResponse;
+    const p3 = (await adminClient.createPartner({
+      name: `Replace 3 ${Date.now()}`,
+    })) as CreatePartnerResponse;
+
+    // Create competition
+    const compResponse = await adminClient.createCompetition({
+      name: "Replace Competition",
+      type: "trading",
+    });
+    const competitionId = (compResponse as CreateCompetitionResponse)
+      .competition.id;
+
+    // Add first 2 partners
+    await adminClient.addPartnerToCompetition(competitionId, p1.partner.id, 1);
+    await adminClient.addPartnerToCompetition(competitionId, p2.partner.id, 2);
+
+    // Replace with different set
+    const replaceResponse = await adminClient.replaceCompetitionPartners(
+      competitionId,
+      [
+        { partnerId: p2.partner.id, position: 1 },
+        { partnerId: p3.partner.id, position: 2 },
+      ],
+    );
+
+    expect(replaceResponse.success).toBe(true);
+    const associations = (replaceResponse as ReplaceCompetitionPartnersResponse)
+      .partners;
+    expect(associations.length).toBe(2);
+
+    // Verify partners are correct
+    const getResponse = await adminClient.getCompetitionPartners(competitionId);
+    const partners = (getResponse as GetCompetitionPartnersResponse).partners;
+    expect(partners.length).toBe(2);
+    expect(partners.find((p) => p.id === p2.partner.id)).toBeDefined();
+    expect(partners.find((p) => p.id === p3.partner.id)).toBeDefined();
+    expect(partners.find((p) => p.id === p1.partner.id)).toBeUndefined(); // p1 removed
   });
 });

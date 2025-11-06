@@ -18,7 +18,10 @@ import { ServiceRegistry } from "@/services/index.js";
 
 import {
   AdminAddAgentToCompetitionParamsSchema,
+  AdminAddPartnerToCompetitionSchema,
   AdminArenaParamsSchema,
+  AdminCompetitionParamsSchema,
+  AdminCompetitionPartnerParamsSchema,
   AdminCreateArenaSchema,
   AdminCreateCompetitionSchema,
   AdminCreatePartnerSchema,
@@ -41,6 +44,7 @@ import {
   AdminRegisterUserSchema,
   AdminRemoveAgentFromCompetitionBodySchema,
   AdminRemoveAgentFromCompetitionParamsSchema,
+  AdminReplaceCompetitionPartnersSchema,
   AdminRewardsAllocationSchema,
   AdminSetupSchema,
   AdminStartCompetitionSchema,
@@ -49,6 +53,7 @@ import {
   AdminUpdateArenaSchema,
   AdminUpdateCompetitionParamsSchema,
   AdminUpdateCompetitionSchema,
+  AdminUpdatePartnerPositionSchema,
   AdminUpdatePartnerSchema,
 } from "./admin.schema.js";
 import { parseAdminSearchQuery } from "./request-helpers.js";
@@ -410,6 +415,174 @@ export function makeAdminController(services: ServiceRegistry) {
         res.status(200).json({
           success: true,
           message: `Partner ${id} deleted successfully`,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Get partners for a competition
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async getCompetitionPartners(
+      req: Request,
+      res: Response,
+      next: NextFunction,
+    ) {
+      try {
+        const { competitionId } = flatParse(
+          AdminCompetitionParamsSchema,
+          req.params,
+        );
+
+        const partners =
+          await services.partnerService.findByCompetition(competitionId);
+
+        res.status(200).json({
+          success: true,
+          partners,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Add partner to competition
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async addPartnerToCompetition(
+      req: Request,
+      res: Response,
+      next: NextFunction,
+    ) {
+      try {
+        const { competitionId } = flatParse(
+          AdminCompetitionParamsSchema,
+          req.params,
+        );
+        const { partnerId, position } = flatParse(
+          AdminAddPartnerToCompetitionSchema,
+          req.body,
+        );
+
+        const association = await services.partnerService.addToCompetition({
+          competitionId,
+          partnerId,
+          position,
+        });
+
+        res.status(201).json({
+          success: true,
+          association,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Update partner position in competition
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async updatePartnerPosition(
+      req: Request,
+      res: Response,
+      next: NextFunction,
+    ) {
+      try {
+        const { competitionId, partnerId } = flatParse(
+          AdminCompetitionPartnerParamsSchema,
+          req.params,
+        );
+        const { position } = flatParse(
+          AdminUpdatePartnerPositionSchema,
+          req.body,
+        );
+
+        const association = await services.partnerService.updatePosition(
+          competitionId,
+          partnerId,
+          position,
+        );
+
+        res.status(200).json({
+          success: true,
+          association,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Remove partner from competition
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async removePartnerFromCompetition(
+      req: Request,
+      res: Response,
+      next: NextFunction,
+    ) {
+      try {
+        const { competitionId, partnerId } = flatParse(
+          AdminCompetitionPartnerParamsSchema,
+          req.params,
+        );
+
+        await services.partnerService.removeFromCompetition(
+          competitionId,
+          partnerId,
+        );
+
+        res.status(200).json({
+          success: true,
+          message: `Partner removed from competition successfully`,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Replace all partners for a competition
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async replaceCompetitionPartners(
+      req: Request,
+      res: Response,
+      next: NextFunction,
+    ) {
+      try {
+        const { competitionId } = flatParse(
+          AdminCompetitionParamsSchema,
+          req.params,
+        );
+        const { partners } = flatParse(
+          AdminReplaceCompetitionPartnersSchema,
+          req.body,
+        );
+
+        const associations =
+          await services.partnerService.replaceCompetitionPartners(
+            competitionId,
+            partners,
+          );
+
+        res.status(200).json({
+          success: true,
+          partners: associations,
         });
       } catch (error) {
         next(error);

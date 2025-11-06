@@ -419,3 +419,45 @@ export const AdminListPartnersQuerySchema = z.object({
   sort: z.string().default(""),
   nameFilter: z.string().optional(),
 });
+
+/**
+ * Admin add partner to competition schema
+ */
+export const AdminAddPartnerToCompetitionSchema = z.object({
+  partnerId: UuidSchema,
+  position: z.number().int().min(1),
+});
+
+/**
+ * Admin update partner position schema
+ */
+export const AdminUpdatePartnerPositionSchema = z.object({
+  position: z.number().int().min(1),
+});
+
+/**
+ * Admin replace competition partners schema
+ */
+export const AdminReplaceCompetitionPartnersSchema = z.object({
+  partners: z.array(
+    z.object({
+      partnerId: UuidSchema,
+      position: z.number().int().min(1),
+    }),
+  ),
+});
+
+/**
+ * Admin competition params schema (for :competitionId in path)
+ */
+export const AdminCompetitionParamsSchema = z.object({
+  competitionId: UuidSchema,
+});
+
+/**
+ * Admin competition partner params schema (for :competitionId/:partnerId in path)
+ */
+export const AdminCompetitionPartnerParamsSchema = z.object({
+  competitionId: UuidSchema,
+  partnerId: UuidSchema,
+});

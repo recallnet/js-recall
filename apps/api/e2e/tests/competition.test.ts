@@ -15,9 +15,11 @@ import {
   CompetitionRulesResponse,
   CompetitionWithAgents,
   CreateCompetitionResponse,
+  CreatePartnerResponse,
   EndCompetitionResponse,
   EnhancedCompetition,
   ErrorResponse,
+  GetCompetitionPartnersResponse,
   GlobalLeaderboardResponse,
   StartCompetitionResponse,
   TradeResponse,
@@ -5771,6 +5773,63 @@ describe("Competition API", () => {
       }
       const inactiveAgentIds = inactiveAgents.map((a) => a.id).sort();
       expect(inactiveAgentIds).toEqual([betaAgentId, deltaAgentId].sort());
+    });
+  });
+
+  describe("Competition Partners", () => {
+    test("should get partners for a competition via public endpoint", async () => {
+      // Setup admin client
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Create partners
+      const partner1 = await adminClient.createPartner({
+        name: `Public Partner 1 ${Date.now()}`,
+        url: "https://partner1.com",
+        logoUrl: "https://partner1.com/logo.png",
+      });
+      const partner2 = await adminClient.createPartner({
+        name: `Public Partner 2 ${Date.now()}`,
+        url: "https://partner2.com",
+      });
+      expect(partner1.success && partner2.success).toBe(true);
+
+      // Create competition
+      const compResponse = await adminClient.createCompetition({
+        name: "Public Partners Competition",
+        type: "trading",
+      });
+      const competitionId = (compResponse as CreateCompetitionResponse)
+        .competition.id;
+
+      // Add partners
+      await adminClient.addPartnerToCompetition(
+        competitionId,
+        (partner1 as CreatePartnerResponse).partner.id,
+        1,
+      );
+      await adminClient.addPartnerToCompetition(
+        competitionId,
+        (partner2 as CreatePartnerResponse).partner.id,
+        2,
+      );
+
+      // Get partners via public endpoint (any client can access)
+      const { client: publicClient } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Public Partner Viewer",
+      });
+
+      const getResponse =
+        await publicClient.getCompetitionPartnersPublic(competitionId);
+
+      expect(getResponse.success).toBe(true);
+      const partners = (getResponse as GetCompetitionPartnersResponse).partners;
+      expect(partners.length).toBe(2);
+      expect(partners[0]?.position).toBe(1);
+      expect(partners[0]?.name).toContain("Public Partner 1");
+      expect(partners[1]?.position).toBe(2);
+      expect(partners[1]?.name).toContain("Public Partner 2");
     });
   });
 });

@@ -12,6 +12,7 @@ import {
 } from "./privy.js";
 import { getBaseUrl } from "./server.js";
 import {
+  AddPartnerToCompetitionResponse,
   AdminAddAgentToCompetitionResponse,
   AdminAgentResponse,
   AdminAgentsListResponse,
@@ -52,6 +53,7 @@ import {
   DetailedHealthCheckResponse,
   ErrorResponse,
   GetArenaResponse,
+  GetCompetitionPartnersResponse,
   GetPartnerResponse,
   GetUserAgentsResponse,
   GlobalLeaderboardResponse,
@@ -65,6 +67,8 @@ import {
   PriceResponse,
   PublicAgentResponse,
   QuoteResponse,
+  RemovePartnerFromCompetitionResponse,
+  ReplaceCompetitionPartnersResponse,
   ResetApiKeyResponse,
   RewardsProofsResponse,
   RewardsTotalResponse,
@@ -77,6 +81,7 @@ import {
   UpcomingCompetitionsResponse,
   UpdateArenaResponse,
   UpdateCompetitionResponse,
+  UpdatePartnerPositionResponse,
   UpdatePartnerResponse,
   UserAgentApiKeyResponse,
   UserCompetitionsResponse,
@@ -1361,6 +1366,123 @@ export class ApiClient {
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "delete partner");
+    }
+  }
+
+  /**
+   * Get partners for a competition (admin only)
+   * @param competitionId Competition ID
+   */
+  async getCompetitionPartners(
+    competitionId: string,
+  ): Promise<GetCompetitionPartnersResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.get(
+        `/api/admin/competitions/${competitionId}/partners`,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get competition partners");
+    }
+  }
+
+  /**
+   * Add partner to competition (admin only)
+   * @param competitionId Competition ID
+   * @param partnerId Partner ID
+   * @param position Display position
+   */
+  async addPartnerToCompetition(
+    competitionId: string,
+    partnerId: string,
+    position: number,
+  ): Promise<AddPartnerToCompetitionResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.post(
+        `/api/admin/competitions/${competitionId}/partners`,
+        { partnerId, position },
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "add partner to competition");
+    }
+  }
+
+  /**
+   * Update partner position in competition (admin only)
+   * @param competitionId Competition ID
+   * @param partnerId Partner ID
+   * @param position Display position
+   */
+  async updatePartnerPosition(
+    competitionId: string,
+    partnerId: string,
+    position: number,
+  ): Promise<UpdatePartnerPositionResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.put(
+        `/api/admin/competitions/${competitionId}/partners/${partnerId}`,
+        { position },
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "update partner position");
+    }
+  }
+
+  /**
+   * Remove partner from competition (admin only)
+   * @param competitionId Competition ID
+   * @param partnerId Partner ID
+   */
+  async removePartnerFromCompetition(
+    competitionId: string,
+    partnerId: string,
+  ): Promise<RemovePartnerFromCompetitionResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.delete(
+        `/api/admin/competitions/${competitionId}/partners/${partnerId}`,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "remove partner from competition");
+    }
+  }
+
+  /**
+   * Replace all partners for a competition (admin only)
+   * @param competitionId Competition ID
+   * @param partners Array of partner IDs with positions
+   */
+  async replaceCompetitionPartners(
+    competitionId: string,
+    partners: Array<{ partnerId: string; position: number }>,
+  ): Promise<ReplaceCompetitionPartnersResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.put(
+        `/api/admin/competitions/${competitionId}/partners/replace`,
+        { partners },
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "replace competition partners");
+    }
+  }
+
+  /**
+   * Get partners for a competition (public endpoint)
+   * @param competitionId Competition ID
+   */
+  async getCompetitionPartnersPublic(
+    competitionId: string,
+  ): Promise<GetCompetitionPartnersResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.get(
+        `/api/competitions/${competitionId}/partners`,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get competition partners");
     }
   }
 
