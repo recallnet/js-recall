@@ -5,6 +5,11 @@ import ServiceRegistry from "@/services/index.js";
 
 import { ensureUuid } from "./request-helpers.js";
 
+const ListCompetitionBoostsSchema = z.object({
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+  offset: z.coerce.number().int().min(0).default(0),
+});
+
 const BoostAgentSchema = z.object({
   amount: z.coerce.bigint(),
   idemKey: z
@@ -129,6 +134,42 @@ export function makeBoostController(services: ServiceRegistry) {
           res.status(200).json({
             success: true,
             agentTotal: result.value.agentBoostTotal.total.toString(),
+          });
+        }
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    async listCompetitionBoosts(
+      req: Request,
+      res: Response,
+      next: NextFunction,
+    ) {
+      try {
+        const competitionId = ensureUuid(req.params.competitionId);
+        const { limit, offset } = ListCompetitionBoostsSchema.parse(req.query);
+
+        const result = await services.boostService.getCompetitionBoosts(
+          competitionId,
+          { limit, offset },
+        );
+
+        if (result.isErr()) {
+          next(result.error);
+        } else {
+          res.status(200).json({
+            success: true,
+            data: {
+              items: result.value.items.map((item) => ({
+                userId: item.userId,
+                wallet: item.wallet,
+                agentId: item.agentId,
+                amount: item.amount.toString(),
+                createdAt: item.createdAt,
+              })),
+            },
+            pagination: result.value.pagination,
           });
         }
       } catch (error) {

@@ -1,6 +1,7 @@
 import { ResultAsync, errAsync, ok } from "neverthrow";
 import { Logger } from "pino";
 
+import { BlockchainAddressAsU8A } from "@recallnet/db/coders";
 import { BoostRepository } from "@recallnet/db/repositories/boost";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { UserRepository } from "@recallnet/db/repositories/user";
@@ -18,6 +19,30 @@ export type BoostAgentParams = {
   agentId: string;
   amount: bigint;
   idemKey: Buffer;
+};
+
+/**
+ * A single boost allocation record for a competition
+ */
+export type CompetitionBoost = {
+  userId: string;
+  wallet: string;
+  agentId: string;
+  amount: bigint;
+  createdAt: string;
+};
+
+/**
+ * Paginated response for competition boosts
+ */
+export type CompetitionBoostsResult = {
+  items: CompetitionBoost[];
+  pagination: {
+    total: number;
+    limit: number;
+    offset: number;
+    hasMore: boolean;
+  };
 };
 
 export interface BoostServiceConfig {
@@ -300,5 +325,53 @@ export class BoostService {
           return ok(result);
         });
       });
+  }
+
+  /**
+   * Get paginated boost allocations for a competition
+   * @param competitionId The competition ID
+   * @param limit Maximum number of records to return
+   * @param offset Number of records to skip
+   * @returns A result containing paginated boost allocations or an error
+   */
+  getCompetitionBoosts(
+    competitionId: string,
+    { limit, offset }: { limit: number; offset: number },
+  ): ResultAsync<
+    CompetitionBoostsResult,
+    { type: "RepositoryError"; message: string }
+  > {
+    return ResultAsync.fromPromise(
+      Promise.all([
+        this.boostRepository.competitionBoosts(
+          { competitionId, limit, offset },
+          undefined,
+        ),
+        this.boostRepository.countCompetitionBoosts(competitionId, undefined),
+      ]),
+      (err) =>
+        ({
+          type: "RepositoryError",
+          message: errorToMessage(err),
+        }) as const,
+    ).map(([items, total]) => {
+      const mappedItems: CompetitionBoost[] = items.map((item) => ({
+        userId: item.userId,
+        wallet: BlockchainAddressAsU8A.decode(item.wallet),
+        agentId: item.agentId,
+        amount: item.amount,
+        createdAt: item.createdAt.toISOString(),
+      }));
+
+      return {
+        items: mappedItems,
+        pagination: {
+          total,
+          limit,
+          offset,
+          hasMore: offset + limit < total,
+        },
+      };
+    });
   }
 }

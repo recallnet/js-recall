@@ -104,6 +104,14 @@ type BoostAgentResult =
       agentBoostTotal: SelectAgentBoostTotal;
     };
 
+type ListCompetitionBoost = {
+  userId: string;
+  wallet: Uint8Array;
+  agentId: string;
+  amount: bigint;
+  createdAt: Date;
+};
+
 /**
  * BoostRepository
  *
@@ -642,6 +650,137 @@ class BoostRepository {
         ),
       )
       .orderBy(schema.boostChanges.createdAt);
+  }
+
+  /**
+   * Retrieve paginated boost allocations for a specific competition.
+   *
+   * Behavior:
+   * 1) Join boost_changes with boost_balances to get user context.
+   * 2) Join with agent_boosts to link changes to specific agents.
+   * 3) Join with agent_boost_totals to get agent information.
+   * 4) Filter for negative delta amounts (debits/spending) for the specified competition.
+   * 5) Order by creation timestamp descending (most recent first).
+   * 6) Apply limit and offset for pagination.
+   *
+   * Read-Only Operation:
+   * - This method only reads data and does not modify any records.
+   * - Safe to call concurrently with other operations.
+   *
+   * Returns:
+   * - Array of boost allocation records with user ID, wallet, agent ID, amount (positive), and timestamp.
+   * - Empty array if no boost allocations found for the competition.
+   * - Amount is returned as positive bigint (negation of deltaAmount).
+   * - Wallet is returned as Uint8Array (binary format from database).
+   *
+   * Notes:
+   * - Only returns spending records (deltaAmount < 0), converted to positive amounts.
+   * - Results ordered by most recent first (createdAt DESC).
+   * - Supports pagination via limit and offset parameters.
+   *
+   * @param args - The query parameters
+   * @param args.competitionId - ID of the competition context
+   * @param args.limit - Maximum number of records to return
+   * @param args.offset - Number of records to skip
+   * @param tx - Optional database transaction to use for the query
+   * @returns Promise resolving to array of boost allocation records
+   */
+  async competitionBoosts(
+    {
+      competitionId,
+      limit,
+      offset,
+    }: { competitionId: string; limit: number; offset: number },
+    tx?: Transaction,
+  ): Promise<Array<ListCompetitionBoost>> {
+    const executor = tx || this.#db;
+    const results = await executor
+      .select({
+        userId: schema.boostBalances.userId,
+        wallet: schema.boostChanges.wallet,
+        agentId: schema.agentBoostTotals.agentId,
+        amount: sql<bigint>`-${schema.boostChanges.deltaAmount}`.mapWith(
+          BigInt,
+        ),
+        createdAt: schema.boostChanges.createdAt,
+      })
+      .from(schema.boostChanges)
+      .innerJoin(
+        schema.boostBalances,
+        eq(schema.boostChanges.balanceId, schema.boostBalances.id),
+      )
+      .innerJoin(
+        schema.agentBoosts,
+        eq(schema.boostChanges.id, schema.agentBoosts.changeId),
+      )
+      .innerJoin(
+        schema.agentBoostTotals,
+        eq(schema.agentBoosts.agentBoostTotalId, schema.agentBoostTotals.id),
+      )
+      .where(
+        and(
+          eq(schema.boostBalances.competitionId, competitionId),
+          sql`${schema.boostChanges.deltaAmount} < 0`,
+        ),
+      )
+      .orderBy(desc(schema.boostChanges.createdAt))
+      .limit(limit)
+      .offset(offset);
+
+    return results;
+  }
+
+  /**
+   * Count total boost allocations for a specific competition.
+   *
+   * Behavior:
+   * 1) Join boost_changes with boost_balances to get competition context.
+   * 2) Join with agent_boosts to ensure we're counting agent allocations.
+   * 3) Filter for negative delta amounts (debits/spending) for the specified competition.
+   * 4) Return the total count.
+   *
+   * Read-Only Operation:
+   * - This method only reads data and does not modify any records.
+   * - Safe to call concurrently with other operations.
+   *
+   * Returns:
+   * - Total count of boost allocation records for the competition.
+   * - Returns 0 if no boost allocations found.
+   *
+   * Notes:
+   * - Only counts spending records (deltaAmount < 0).
+   * - Used for pagination to calculate total pages and hasMore flag.
+   *
+   * @param competitionId - ID of the competition context
+   * @param tx - Optional database transaction to use for the query
+   * @returns Promise resolving to total count of boost allocations
+   */
+  async countCompetitionBoosts(
+    competitionId: string,
+    tx?: Transaction,
+  ): Promise<number> {
+    const executor = tx || this.#db;
+    const [result] = await executor
+      .select({
+        count: sql<number>`count(*)::int`.as("count"),
+      })
+      .from(schema.boostChanges)
+      .innerJoin(
+        schema.boostBalances,
+        eq(schema.boostChanges.balanceId, schema.boostBalances.id),
+      )
+      .innerJoin(
+        schema.agentBoosts,
+        eq(schema.boostChanges.id, schema.agentBoosts.changeId),
+      )
+      .where(
+        and(
+          eq(schema.boostBalances.competitionId, competitionId),
+          sql`${schema.boostChanges.deltaAmount} < 0`,
+        ),
+      );
+
+    return result?.count ?? 0;
   }
 
   /**
