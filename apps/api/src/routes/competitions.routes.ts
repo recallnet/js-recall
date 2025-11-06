@@ -488,7 +488,7 @@ export function configureCompetitionsRoutes(
    *           type: integer
    *           minimum: 1
    *           maximum: 100
-   *           default: 25
+   *           default: 50
    *         required: false
    *         description: Maximum number of results to return
    *       - in: query

@@ -704,6 +704,9 @@ class BoostRepository {
         agentId: schema.agentBoostTotals.agentId,
         agentName: agents.name,
         agentHandle: agents.handle,
+        // Negate deltaAmount to convert spending records (negative) to positive display amounts.
+        // Safe because WHERE clause ensures deltaAmount < 0, guaranteed by decrease() method
+        // which stores spending as -amount (see line 437).
         amount: sql<bigint>`-${schema.boostChanges.deltaAmount}`.mapWith(
           BigInt,
         ),

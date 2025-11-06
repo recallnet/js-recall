@@ -1,14 +1,11 @@
 import { NextFunction, Request, Response } from "express";
 import { z } from "zod";
 
+import { PagingSchema } from "@recallnet/services/types";
+
 import ServiceRegistry from "@/services/index.js";
 
 import { ensureUuid } from "./request-helpers.js";
-
-const ListCompetitionBoostsSchema = z.object({
-  limit: z.coerce.number().int().min(1).max(100).default(50),
-  offset: z.coerce.number().int().min(0).default(0),
-});
 
 const BoostAgentSchema = z.object({
   amount: z.coerce.bigint(),
@@ -148,7 +145,7 @@ export function makeBoostController(services: ServiceRegistry) {
     ) {
       try {
         const competitionId = ensureUuid(req.params.competitionId);
-        const { limit, offset } = ListCompetitionBoostsSchema.parse(req.query);
+        const { limit, offset } = PagingSchema.parse(req.query);
 
         const result = await services.boostService.getCompetitionBoosts(
           competitionId,
