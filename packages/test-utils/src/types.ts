@@ -554,6 +554,34 @@ export interface CompetitionAgentsResponse extends ApiResponse {
 }
 
 /**
+ * Competition boost allocation
+ */
+export interface CompetitionBoost {
+  userId: string;
+  wallet: string;
+  agentId: string;
+  agentName: string;
+  agentHandle: string;
+  amount: string;
+  createdAt: string;
+}
+
+/**
+ * Response for competition boosts list endpoint
+ */
+export interface CompetitionBoostsResponse extends ApiResponse {
+  data: {
+    items: CompetitionBoost[];
+  };
+  pagination: {
+    total: number;
+    limit: number;
+    offset: number;
+    hasMore: boolean;
+  };
+}
+
+/**
  * PORTFOLIO SNAPSHOTS
  */
 
