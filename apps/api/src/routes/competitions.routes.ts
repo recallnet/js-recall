@@ -472,8 +472,6 @@ export function configureCompetitionsRoutes(
    *       - Competition
    *     summary: Get all boost allocations for a competition
    *     description: Get a paginated list of all boost allocations (spending) in a specific competition, including user wallet addresses
-   *     security:
-   *       - BearerAuth: []
    *     parameters:
    *       - in: path
    *         name: competitionId
