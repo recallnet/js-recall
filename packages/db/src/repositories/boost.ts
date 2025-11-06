@@ -782,6 +782,11 @@ class BoostRepository {
         schema.agentBoosts,
         eq(schema.boostChanges.id, schema.agentBoosts.changeId),
       )
+      .innerJoin(
+        schema.agentBoostTotals,
+        eq(schema.agentBoosts.agentBoostTotalId, schema.agentBoostTotals.id),
+      )
+      .innerJoin(agents, eq(schema.agentBoostTotals.agentId, agents.id))
       .where(
         and(
           eq(schema.boostBalances.competitionId, competitionId),
