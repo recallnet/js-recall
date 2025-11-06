@@ -1665,6 +1665,28 @@ export class AgentService {
             comparison = isDesc ? bValue - aValue : aValue - bValue;
             break;
           }
+          case "bestPlacement": {
+            // Note: `undefined` bestPlacement is pushed to the end (e.g., pending comps or DQ'd)
+            const aRank =
+              typeof a.bestPlacement?.rank === "number"
+                ? a.bestPlacement.rank
+                : undefined;
+            const bRank =
+              typeof b.bestPlacement?.rank === "number"
+                ? b.bestPlacement.rank
+                : undefined;
+            if (aRank === undefined && bRank === undefined) {
+              comparison = 0;
+            } else if (aRank === undefined) {
+              // For ascending, undefined goes last; for descending, undefined goes first
+              comparison = isDesc ? -1 : 1;
+            } else if (bRank === undefined) {
+              comparison = isDesc ? 1 : -1;
+            } else {
+              comparison = isDesc ? bRank - aRank : aRank - bRank;
+            }
+            break;
+          }
           case "rank": {
             // Handle undefined ranks: push to end of results
             const aAgent = a.agents?.[0];

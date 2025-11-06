@@ -67,6 +67,7 @@ export const COMPUTED_SORT_FIELDS = [
   "totalTrades",
   "totalPositions",
   "rank",
+  "bestPlacement",
   "agentName",
   "agentHandle",
 ] as const;

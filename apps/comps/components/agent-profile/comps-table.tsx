@@ -84,14 +84,13 @@ export function CompetitionTable({
               >
                 Positions
               </SortableTableHeader>
-              <TableHead>Placement</TableHead>
-              {/* TODO: fix `bestPlacement.rank` sorting bug */}
-              {/* <SortableTableHeader
-                onToggleSort={() => handleSortChange("bestPlacement.rank")}
-                sortState={sortState["bestPlacement.rank"]}
+
+              <SortableTableHeader
+                onToggleSort={() => handleSortChange("bestPlacement")}
+                sortState={sortState["bestPlacement"]}
               >
                 Placement
-              </SortableTableHeader> */}
+              </SortableTableHeader>
               <TableHead>Trophies</TableHead>
               {canClaim && <TableHead className="text-left">Reward</TableHead>}
             </TableRow>
