@@ -279,6 +279,67 @@ describe("CompetitionService - createCompetition", () => {
     expect(result.rewards).toEqual([]);
   });
 
+  test("should create competition with arena routing and participation rules", async () => {
+    mockDb.transaction.mockImplementation(async (callback) => {
+      const mockTx = mock<Transaction>();
+      return await callback(mockTx);
+    });
+
+    const result = await competitionService.createCompetition({
+      name: "Competition with Arena Link",
+      description: "Test arena routing and participation rules",
+      tradingType: "disallowAll",
+      type: "trading",
+      arenaId: "test-arena",
+      engineId: "spot_paper_trading",
+      engineVersion: "1.0.0",
+      vips: ["agent-1", "agent-2"],
+      allowlist: ["agent-3", "agent-4"],
+      blocklist: ["agent-5"],
+      minRecallRank: 100,
+      allowlistOnly: true,
+      agentAllocation: 5000,
+      agentAllocationUnit: "RECALL",
+      boosterAllocation: 2000,
+      boosterAllocationUnit: "USDC",
+      rewardRules: "Top 10 get rewards",
+      rewardDetails: "Distributed weekly",
+      displayState: "active",
+    });
+
+    // Verify transaction was called
+    expect(mockDb.transaction).toHaveBeenCalledTimes(1);
+
+    // Verify competition was created with all fields
+    expect(competitionRepo.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: "Competition with Arena Link",
+        description: "Test arena routing and participation rules",
+        arenaId: "test-arena",
+        engineId: "spot_paper_trading",
+        engineVersion: "1.0.0",
+        vips: ["agent-1", "agent-2"],
+        allowlist: ["agent-3", "agent-4"],
+        blocklist: ["agent-5"],
+        minRecallRank: 100,
+        allowlistOnly: true,
+        agentAllocation: 5000,
+        agentAllocationUnit: "RECALL",
+        boosterAllocation: 2000,
+        boosterAllocationUnit: "USDC",
+        rewardRules: "Top 10 get rewards",
+        rewardDetails: "Distributed weekly",
+        displayState: "active",
+      }),
+      expect.any(Object), // The transaction object
+    );
+
+    // Verify result structure
+    expect(result).toMatchObject({
+      name: "Competition with Arena Link",
+    });
+  });
+
   test("should rollback transaction when competition creation fails", async () => {
     // Setup the transaction mock to execute the callback
     mockDb.transaction.mockImplementation(async (callback) => {

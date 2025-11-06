@@ -1,6 +1,11 @@
 import { z } from "zod/v4";
 
 import {
+  allocationUnit,
+  displayState,
+  engineType,
+} from "@recallnet/db/schema/core/defs";
+import {
   AgentHandleSchema,
   AgentMetadataSchema,
   CompetitionTypeSchema,
@@ -102,6 +107,29 @@ export const AdminCreateCompetitionSchema = z
         users: z.number().min(0),
       })
       .optional(),
+
+    // Arena and engine routing
+    arenaId: z.string().optional(),
+    engineId: z.enum(engineType.enumValues).optional(),
+    engineVersion: z.string().optional(),
+
+    // Participation rules
+    vips: z.array(z.string()).optional(),
+    allowlist: z.array(z.string()).optional(),
+    blocklist: z.array(z.string()).optional(),
+    minRecallRank: z.number().int().optional(),
+    allowlistOnly: z.boolean().optional(),
+
+    // Reward allocation
+    agentAllocation: z.number().optional(),
+    agentAllocationUnit: z.enum(allocationUnit.enumValues).optional(),
+    boosterAllocation: z.number().optional(),
+    boosterAllocationUnit: z.enum(allocationUnit.enumValues).optional(),
+    rewardRules: z.string().optional(),
+    rewardDetails: z.string().optional(),
+
+    // Display
+    displayState: z.enum(displayState.enumValues).optional(),
   })
   .refine(
     (data) => {
@@ -160,6 +188,29 @@ export const AdminStartCompetitionSchema = z
         users: z.number().min(0),
       })
       .optional(),
+
+    // Arena and engine routing
+    arenaId: z.string().optional(),
+    engineId: z.enum(engineType.enumValues).optional(),
+    engineVersion: z.string().optional(),
+
+    // Participation rules
+    vips: z.array(z.string()).optional(),
+    allowlist: z.array(z.string()).optional(),
+    blocklist: z.array(z.string()).optional(),
+    minRecallRank: z.number().int().optional(),
+    allowlistOnly: z.boolean().optional(),
+
+    // Reward allocation
+    agentAllocation: z.number().optional(),
+    agentAllocationUnit: z.enum(allocationUnit.enumValues).optional(),
+    boosterAllocation: z.number().optional(),
+    boosterAllocationUnit: z.enum(allocationUnit.enumValues).optional(),
+    rewardRules: z.string().optional(),
+    rewardDetails: z.string().optional(),
+
+    // Display
+    displayState: z.enum(displayState.enumValues).optional(),
   })
   .refine((data) => data.competitionId || data.name, {
     message: "Either competitionId or name must be provided",

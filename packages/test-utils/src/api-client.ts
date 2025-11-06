@@ -2,7 +2,12 @@ import axios, { AxiosInstance } from "axios";
 import { wrapper } from "axios-cookiejar-support";
 import { CookieJar } from "tough-cookie";
 
-import { PagingParams } from "@recallnet/services/types";
+import {
+  AllocationUnit,
+  DisplayState,
+  EngineType,
+  PagingParams,
+} from "@recallnet/services/types";
 
 import {
   PrivyAuthProvider,
@@ -544,6 +549,21 @@ export class ApiClient {
     evaluationMetric,
     perpsProvider,
     prizePools,
+    arenaId,
+    engineId,
+    engineVersion,
+    vips,
+    allowlist,
+    blocklist,
+    minRecallRank,
+    allowlistOnly,
+    agentAllocation,
+    agentAllocationUnit,
+    boosterAllocation,
+    boosterAllocationUnit,
+    rewardRules,
+    rewardDetails,
+    displayState,
   }: {
     name?: string;
     description?: string;
@@ -574,6 +594,21 @@ export class ApiClient {
       agent: number;
       users: number;
     };
+    arenaId?: string;
+    engineId?: EngineType;
+    engineVersion?: string;
+    vips?: string[];
+    allowlist?: string[];
+    blocklist?: string[];
+    minRecallRank?: number;
+    allowlistOnly?: boolean;
+    agentAllocation?: number;
+    agentAllocationUnit?: AllocationUnit;
+    boosterAllocation?: number;
+    boosterAllocationUnit?: AllocationUnit;
+    rewardRules?: string;
+    rewardDetails?: string;
+    displayState?: DisplayState;
   }): Promise<CreateCompetitionResponse | ErrorResponse> {
     const competitionName = name || `Test competition ${Date.now()}`;
     try {
@@ -600,6 +635,21 @@ export class ApiClient {
           evaluationMetric,
           perpsProvider,
           prizePools,
+          arenaId,
+          engineId,
+          engineVersion,
+          vips,
+          allowlist,
+          blocklist,
+          minRecallRank,
+          allowlistOnly,
+          agentAllocation,
+          agentAllocationUnit,
+          boosterAllocation,
+          boosterAllocationUnit,
+          rewardRules,
+          rewardDetails,
+          displayState,
         },
       );
 
@@ -628,6 +678,21 @@ export class ApiClient {
       evaluationMetric,
       perpsProvider,
       prizePools,
+      arenaId,
+      engineId,
+      engineVersion,
+      vips,
+      allowlist,
+      blocklist,
+      minRecallRank,
+      allowlistOnly,
+      agentAllocation,
+      agentAllocationUnit,
+      boosterAllocation,
+      boosterAllocationUnit,
+      rewardRules,
+      rewardDetails,
+      displayState,
     }: {
       name?: string;
       description?: string;
@@ -651,6 +716,21 @@ export class ApiClient {
         agent: number;
         users: number;
       };
+      arenaId?: string;
+      engineId?: EngineType;
+      engineVersion?: string;
+      vips?: string[];
+      allowlist?: string[];
+      blocklist?: string[];
+      minRecallRank?: number;
+      allowlistOnly?: boolean;
+      agentAllocation?: number;
+      agentAllocationUnit?: AllocationUnit;
+      boosterAllocation?: number;
+      boosterAllocationUnit?: AllocationUnit;
+      rewardRules?: string;
+      rewardDetails?: string;
+      displayState?: DisplayState;
     },
   ): Promise<UpdateCompetitionResponse | ErrorResponse> {
     try {
@@ -670,6 +750,21 @@ export class ApiClient {
           evaluationMetric,
           perpsProvider,
           prizePools,
+          arenaId,
+          engineId,
+          engineVersion,
+          vips,
+          allowlist,
+          blocklist,
+          minRecallRank,
+          allowlistOnly,
+          agentAllocation,
+          agentAllocationUnit,
+          boosterAllocation,
+          boosterAllocationUnit,
+          rewardRules,
+          rewardDetails,
+          displayState,
         },
       );
 

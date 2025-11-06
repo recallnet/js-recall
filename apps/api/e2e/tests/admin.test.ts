@@ -3072,9 +3072,103 @@ describe("Admin API", () => {
     expect((getResponse as ErrorResponse).error).toContain("not found");
   });
 
-  // TODO: Add test for deleting arena with associated competitions
-  // This requires updating createCompetition to accept arenaId parameter
-  // Will be implemented when we update competition creation in next phase
+  test("should create competition linked to arena", async () => {
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    const arenaId = `comp-arena-${Date.now()}`;
+
+    // Create arena first
+    const arenaResponse = await adminClient.createArena({
+      id: arenaId,
+      name: "Arena for Competition",
+      createdBy: "admin",
+      category: "crypto_trading",
+      skill: "spot_paper_trading",
+    });
+    expect(arenaResponse.success).toBe(true);
+
+    // Create competition linked to arena
+    const compResponse = await adminClient.createCompetition({
+      name: "Competition in Arena",
+      type: "trading",
+      arenaId: arenaId,
+      engineId: "spot_paper_trading",
+      engineVersion: "1.0.0",
+      vips: ["vip-agent-1"],
+      allowlist: ["allowed-agent-1", "allowed-agent-2"],
+      minRecallRank: 100,
+      agentAllocation: 5000,
+      agentAllocationUnit: "RECALL",
+      displayState: "active",
+    });
+
+    expect(compResponse.success).toBe(true);
+    expect(
+      (compResponse as CreateCompetitionResponse).competition,
+    ).toBeDefined();
+    expect((compResponse as CreateCompetitionResponse).competition.name).toBe(
+      "Competition in Arena",
+    );
+
+    // Now try to delete arena - should fail because it has a competition
+    const deleteResponse = await adminClient.deleteArena(arenaId);
+    expect(deleteResponse.success).toBe(false);
+    expect((deleteResponse as ErrorResponse).error).toContain(
+      "associated competitions",
+    );
+  });
+
+  test("should update competition with arena and participation fields", async () => {
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Create arena
+    const arenaId = `update-arena-${Date.now()}`;
+    await adminClient.createArena({
+      id: arenaId,
+      name: "Update Test Arena",
+      createdBy: "admin",
+      category: "crypto_trading",
+      skill: "spot_paper_trading",
+    });
+
+    // Create basic competition
+    const createResponse = await adminClient.createCompetition({
+      name: "Basic Competition",
+      type: "trading",
+    });
+    expect(createResponse.success).toBe(true);
+    const competitionId = (createResponse as CreateCompetitionResponse)
+      .competition.id;
+
+    // Update with arena and participation fields
+    const updateResponse = await adminClient.updateCompetition(competitionId, {
+      description: "Updated with arena link",
+      arenaId: arenaId,
+      engineId: "spot_paper_trading",
+      engineVersion: "1.0.0",
+      vips: ["vip-1", "vip-2"],
+      allowlist: ["allowed-1"],
+      blocklist: ["blocked-1"],
+      minRecallRank: 50,
+      allowlistOnly: true,
+      agentAllocation: 10000,
+      agentAllocationUnit: "USDC",
+      boosterAllocation: 5000,
+      boosterAllocationUnit: "RECALL",
+      rewardRules: "Weekly distribution",
+      rewardDetails: "Paid in USDC",
+      displayState: "waitlist",
+    });
+
+    expect(updateResponse.success).toBe(true);
+    expect(
+      (updateResponse as UpdateCompetitionResponse).competition.description,
+    ).toBe("Updated with arena link");
+    // Note: We can't directly verify the new fields in the response
+    // without updating the response serialization, but we verified they're accepted
+  });
 
   test("should not allow arena operations without admin auth", async () => {
     const regularClient = createTestClient();
