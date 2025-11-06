@@ -3169,6 +3169,9 @@ describe("Admin API", () => {
     // Note: We can't directly verify the new fields in the response
     // without updating the response serialization, but we verified they're accepted
   });
+  // TODO: Add test for deleting arena with associated competitions
+  // This requires updating createCompetition to accept arenaId parameter
+  // Will be implemented when we update competition creation in next phase
 
   test("should not allow arena operations without admin auth", async () => {
     const regularClient = createTestClient();

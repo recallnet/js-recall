@@ -477,7 +477,7 @@ export default function AgentProfile({
       </div>
 
       {isUserAgent && (
-        <div className="mb-8 flex flex-col border p-6">
+        <div className="mb-8 flex flex-col rounded-xl border p-6">
           <div className="flex items-center justify-between gap-2">
             <span className="text-secondary-foreground text-left font-semibold uppercase">
               Credentials

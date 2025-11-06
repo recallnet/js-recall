@@ -753,6 +753,15 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
                 </span>
               </div>
             </div>
+
+            {/* Disclaimer Row */}
+            <div className="p-4">
+              <div className="text-secondary-foreground text-xs">
+                Recall reserves the right to modify or cancel rules,
+                eligibility, prize amounts, formats, and schedules at any time
+                before the official start of the competition.
+              </div>
+            </div>
           </div>
         </TabsContent>
 
