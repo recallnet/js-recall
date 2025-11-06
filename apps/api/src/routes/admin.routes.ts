@@ -603,6 +603,12 @@ export function configureAdminRoutes(
    *                       competitionPartnerId:
    *                         type: string
    *                         format: uuid
+   *                       createdAt:
+   *                         type: string
+   *                         format: date-time
+   *                       updatedAt:
+   *                         type: string
+   *                         format: date-time
    *       401:
    *         description: Unauthorized
    *       500:

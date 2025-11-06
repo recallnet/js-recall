@@ -1382,7 +1382,7 @@ export class ApiClient {
       );
       return response.data;
     } catch (error) {
-      return this.handleApiError(error, "get competition partners");
+      return this.handleApiError(error, "get competition partners (admin)");
     }
   }
 
@@ -1482,7 +1482,7 @@ export class ApiClient {
       );
       return response.data;
     } catch (error) {
-      return this.handleApiError(error, "get competition partners");
+      return this.handleApiError(error, "get competition partners (public)");
     }
   }
 

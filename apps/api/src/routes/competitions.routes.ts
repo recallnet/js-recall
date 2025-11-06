@@ -1452,6 +1452,12 @@ export function configureCompetitionsRoutes(
    *                       competitionPartnerId:
    *                         type: string
    *                         format: uuid
+   *                       createdAt:
+   *                         type: string
+   *                         format: date-time
+   *                       updatedAt:
+   *                         type: string
+   *                         format: date-time
    *       400:
    *         description: Bad Request
    *       404:
