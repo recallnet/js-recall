@@ -28,6 +28,8 @@ export type CompetitionBoost = {
   userId: string;
   wallet: string;
   agentId: string;
+  agentName: string;
+  agentHandle: string;
   amount: bigint;
   createdAt: string;
 };
@@ -359,6 +361,8 @@ export class BoostService {
         userId: item.userId,
         wallet: BlockchainAddressAsU8A.decode(item.wallet),
         agentId: item.agentId,
+        agentName: item.agentName,
+        agentHandle: item.agentHandle,
         amount: item.amount,
         createdAt: item.createdAt.toISOString(),
       }));

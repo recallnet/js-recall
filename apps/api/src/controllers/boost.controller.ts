@@ -165,6 +165,8 @@ export function makeBoostController(services: ServiceRegistry) {
                 userId: item.userId,
                 wallet: item.wallet,
                 agentId: item.agentId,
+                agentName: item.agentName,
+                agentHandle: item.agentHandle,
                 amount: item.amount.toString(),
                 createdAt: item.createdAt,
               })),

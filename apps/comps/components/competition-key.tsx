@@ -1096,21 +1096,28 @@ const PredictionsTabContent: React.FC<{
                 key={`${boost.userId}-${boost.agentId}-${index}`}
                 className="flex items-start justify-between gap-4 border-b border-gray-800 pb-3 last:border-0"
               >
-                {/* Left column: User wallet */}
-                <div className="flex items-center gap-2 overflow-hidden">
+                {/* Left column: Agent name */}
+                <div className="flex items-center gap-2">
                   <Tooltip
                     content={boost.wallet}
                     tooltipClassName="max-w-md z-999"
                   >
-                    <span className="truncate font-mono text-sm font-semibold">
+                    <span className="font-mono">
                       {displayAddress(boost.wallet, { numChars: 6 })}
                     </span>
                   </Tooltip>
                 </div>
 
-                {/* Right column: Boost details */}
+                {/* Right column: User + Boost details */}
                 <div className="flex flex-col items-end gap-1 text-right">
                   <span className="text-xs text-gray-400">
+                    <Link
+                      href={`/agents/${boost.agentId}`}
+                      className="text-xs font-semibold hover:underline"
+                    >
+                      {boost.agentName}
+                    </Link>
+                    {" • "}
                     {formatBigintAmount(boost.amount)} BOOST
                   </span>
                   <span className="text-xs text-gray-500">

@@ -9,6 +9,7 @@ import {
   SelectAgentBoost,
   SelectAgentBoostTotal,
 } from "../schema/boost/types.js";
+import { agents } from "../schema/core/defs.js";
 import { stakes } from "../schema/indexing/defs.js";
 import type { Transaction } from "../types.js";
 import { Database } from "../types.js";
@@ -108,6 +109,8 @@ type ListCompetitionBoost = {
   userId: string;
   wallet: Uint8Array;
   agentId: string;
+  agentName: string;
+  agentHandle: string;
   amount: bigint;
   createdAt: Date;
 };
@@ -699,6 +702,8 @@ class BoostRepository {
         userId: schema.boostBalances.userId,
         wallet: schema.boostChanges.wallet,
         agentId: schema.agentBoostTotals.agentId,
+        agentName: agents.name,
+        agentHandle: agents.handle,
         amount: sql<bigint>`-${schema.boostChanges.deltaAmount}`.mapWith(
           BigInt,
         ),
@@ -717,6 +722,7 @@ class BoostRepository {
         schema.agentBoostTotals,
         eq(schema.agentBoosts.agentBoostTotalId, schema.agentBoostTotals.id),
       )
+      .innerJoin(agents, eq(schema.agentBoostTotals.agentId, agents.id))
       .where(
         and(
           eq(schema.boostBalances.competitionId, competitionId),

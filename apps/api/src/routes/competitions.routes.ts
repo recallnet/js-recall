@@ -531,6 +531,12 @@ export function configureCompetitionsRoutes(
    *                             type: string
    *                             format: uuid
    *                             description: Agent ID that received the boost
+   *                           agentName:
+   *                             type: string
+   *                             description: Name of the agent that received the boost
+   *                           agentHandle:
+   *                             type: string
+   *                             description: Handle of the agent that received the boost
    *                           amount:
    *                             type: string
    *                             description: Boost amount (bigint as string)
