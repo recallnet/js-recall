@@ -380,6 +380,172 @@ Delete a partner (cascades to remove all competition associations)
 | --------------- | ------ |
 | BearerAuth      |        |
 
+### /api/admin/competitions/{competitionId}/partners
+
+#### GET
+
+##### Summary:
+
+Get partners for a competition
+
+##### Description:
+
+Retrieve all partners associated with a competition, ordered by position
+
+##### Parameters
+
+| Name          | Located in | Description    | Required | Schema        |
+| ------------- | ---------- | -------------- | -------- | ------------- |
+| competitionId | path       | Competition ID | Yes      | string (uuid) |
+
+##### Responses
+
+| Code | Description                     |
+| ---- | ------------------------------- |
+| 200  | Partners retrieved successfully |
+| 401  | Unauthorized                    |
+| 500  | Server error                    |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| BearerAuth      |        |
+
+#### POST
+
+##### Summary:
+
+Add partner to competition
+
+##### Description:
+
+Associate a partner with a competition at a specific display position
+
+##### Parameters
+
+| Name          | Located in | Description    | Required | Schema        |
+| ------------- | ---------- | -------------- | -------- | ------------- |
+| competitionId | path       | Competition ID | Yes      | string (uuid) |
+
+##### Responses
+
+| Code | Description                                                     |
+| ---- | --------------------------------------------------------------- |
+| 201  | Partner added successfully                                      |
+| 400  | Bad Request                                                     |
+| 401  | Unauthorized                                                    |
+| 404  | Partner or Competition not found                                |
+| 409  | Conflict - Position already taken or partner already associated |
+| 500  | Server error                                                    |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| BearerAuth      |        |
+
+### /api/admin/competitions/{competitionId}/partners/replace
+
+#### PUT
+
+##### Summary:
+
+Replace all partners for a competition
+
+##### Description:
+
+Atomically replace all partner associations for a competition
+
+##### Parameters
+
+| Name          | Located in | Description    | Required | Schema        |
+| ------------- | ---------- | -------------- | -------- | ------------- |
+| competitionId | path       | Competition ID | Yes      | string (uuid) |
+
+##### Responses
+
+| Code | Description                    |
+| ---- | ------------------------------ |
+| 200  | Partners replaced successfully |
+| 400  | Bad Request                    |
+| 401  | Unauthorized                   |
+| 404  | One or more partners not found |
+| 500  | Server error                   |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| BearerAuth      |        |
+
+### /api/admin/competitions/{competitionId}/partners/{partnerId}
+
+#### PUT
+
+##### Summary:
+
+Update partner position
+
+##### Description:
+
+Update the display position of a partner in a competition
+
+##### Parameters
+
+| Name          | Located in | Description    | Required | Schema        |
+| ------------- | ---------- | -------------- | -------- | ------------- |
+| competitionId | path       | Competition ID | Yes      | string (uuid) |
+| partnerId     | path       | Partner ID     | Yes      | string (uuid) |
+
+##### Responses
+
+| Code | Description                               |
+| ---- | ----------------------------------------- |
+| 200  | Position updated successfully             |
+| 401  | Unauthorized                              |
+| 404  | Partner association not found             |
+| 409  | Position already taken by another partner |
+| 500  | Server error                              |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| BearerAuth      |        |
+
+#### DELETE
+
+##### Summary:
+
+Remove partner from competition
+
+##### Description:
+
+Remove the association between a partner and a competition
+
+##### Parameters
+
+| Name          | Located in | Description    | Required | Schema        |
+| ------------- | ---------- | -------------- | -------- | ------------- |
+| competitionId | path       | Competition ID | Yes      | string (uuid) |
+| partnerId     | path       | Partner ID     | Yes      | string (uuid) |
+
+##### Responses
+
+| Code | Description                   |
+| ---- | ----------------------------- |
+| 200  | Partner removed successfully  |
+| 401  | Unauthorized                  |
+| 404  | Partner association not found |
+| 500  | Server error                  |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| BearerAuth      |        |
+
 ### /api/admin/competition/create
 
 #### POST
@@ -1818,6 +1984,33 @@ Includes embedded agent information for each position.
 | Security Schema | Scopes |
 | --------------- | ------ |
 | bearerAuth      |        |
+
+### /api/competitions/{competitionId}/partners
+
+#### GET
+
+##### Summary:
+
+Get partners for a competition
+
+##### Description:
+
+Retrieve all partners/sponsors associated with a competition (public access)
+
+##### Parameters
+
+| Name          | Located in | Description    | Required | Schema        |
+| ------------- | ---------- | -------------- | -------- | ------------- |
+| competitionId | path       | Competition ID | Yes      | string (uuid) |
+
+##### Responses
+
+| Code | Description                     |
+| ---- | ------------------------------- |
+| 200  | Partners retrieved successfully |
+| 400  | Bad Request                     |
+| 404  | Competition not found           |
+| 500  | Server error                    |
 
 ### /api/health
 
