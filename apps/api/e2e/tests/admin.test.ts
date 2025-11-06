@@ -3511,16 +3511,38 @@ describe("Admin API", () => {
     );
 
     expect(replaceResponse.success).toBe(true);
-    const associations = (replaceResponse as ReplaceCompetitionPartnersResponse)
-      .partners;
-    expect(associations.length).toBe(2);
+    const replacedPartners = (
+      replaceResponse as ReplaceCompetitionPartnersResponse
+    ).partners;
+    expect(replacedPartners.length).toBe(2);
 
-    // Verify partners are correct
-    const getResponse = await adminClient.getCompetitionPartners(competitionId);
-    const partners = (getResponse as GetCompetitionPartnersResponse).partners;
-    expect(partners.length).toBe(2);
-    expect(partners.find((p) => p.id === p2.partner.id)).toBeDefined();
-    expect(partners.find((p) => p.id === p3.partner.id)).toBeDefined();
-    expect(partners.find((p) => p.id === p1.partner.id)).toBeUndefined(); // p1 removed
+    // Verify replace response contains enriched partner data
+    const partner1InResponse = replacedPartners.find(
+      (p) => p.id === p2.partner.id,
+    );
+    const partner2InResponse = replacedPartners.find(
+      (p) => p.id === p3.partner.id,
+    );
+
+    expect(partner1InResponse).toBeDefined();
+    expect(partner1InResponse?.name).toContain("Replace 2");
+    expect(partner1InResponse?.position).toBe(1);
+    expect(partner1InResponse?.competitionPartnerId).toBeDefined();
+
+    expect(partner2InResponse).toBeDefined();
+    expect(partner2InResponse?.name).toContain("Replace 3");
+    expect(partner2InResponse?.position).toBe(2);
+    expect(partner2InResponse?.competitionPartnerId).toBeDefined();
+
+    // Verify p1 was removed from response
+    expect(
+      replacedPartners.find((p) => p.id === p1.partner.id),
+    ).toBeUndefined();
+
+    // Verify ordering by position
+    expect(replacedPartners[0]?.position).toBe(1);
+    expect(replacedPartners[1]?.position).toBe(2);
+    expect(replacedPartners[0]?.id).toBe(p2.partner.id);
+    expect(replacedPartners[1]?.id).toBe(p3.partner.id);
   });
 });
