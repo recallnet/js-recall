@@ -389,12 +389,19 @@ export class PartnerService {
       partnerId: string;
       position: number;
     }>,
-  ): Promise<SelectCompetitionPartner[]> {
+  ): Promise<
+    Array<
+      SelectPartner & {
+        position: number;
+        competitionPartnerId: string;
+      }
+    >
+  > {
     try {
       // Verify all partners exist before making changes
       await Promise.all(partnerData.map((p) => this.findById(p.partnerId)));
 
-      const associations = await this.partnerRepo.replaceCompetitionPartners(
+      await this.partnerRepo.replaceCompetitionPartners(
         competitionId,
         partnerData,
       );
@@ -403,7 +410,8 @@ export class PartnerService {
         `[PartnerService] Replaced partners for competition ${competitionId} (${partnerData.length} partners)`,
       );
 
-      return associations;
+      // Fetch enriched data to return (consistent with GET endpoint)
+      return await this.partnerRepo.findByCompetition(competitionId);
     } catch (error) {
       if (error instanceof ApiError) {
         throw error;

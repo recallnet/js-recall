@@ -395,13 +395,7 @@ export interface RemovePartnerFromCompetitionResponse extends ApiResponse {
 // Replace competition partners response
 export interface ReplaceCompetitionPartnersResponse extends ApiResponse {
   success: true;
-  partners: Array<{
-    id: string;
-    competitionId: string;
-    partnerId: string;
-    position: number;
-    createdAt: string;
-  }>;
+  partners: CompetitionPartner[];
 }
 
 /**
