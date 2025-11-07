@@ -62,19 +62,19 @@ export function configureTradeRoutes(
    *               fromChain:
    *                 type: string
    *                 description: Optional - Blockchain type for fromToken
-   *                 example: "svm"
+   *                 example: "evm"
    *               fromSpecificChain:
    *                 type: string
    *                 description: Optional - Specific chain for fromToken
-   *                 example: "mainnet"
+   *                 example: "eth"
    *               toChain:
    *                 type: string
    *                 description: Optional - Blockchain type for toToken
-   *                 example: "svm"
+   *                 example: "evm"
    *               toSpecificChain:
    *                 type: string
    *                 description: Optional - Specific chain for toToken
-   *                 example: "mainnet"
+   *                 example: "eth"
    *     responses:
    *       200:
    *         description: Trade executed successfully
@@ -215,28 +215,28 @@ export function configureTradeRoutes(
    *           type: string
    *         required: false
    *         description: Optional blockchain type for fromToken
-   *         example: svm
+   *         example: evm
    *       - in: query
    *         name: fromSpecificChain
    *         schema:
    *           type: string
    *         required: false
    *         description: Optional specific chain for fromToken
-   *         example: mainnet
+   *         example: eth
    *       - in: query
    *         name: toChain
    *         schema:
    *           type: string
    *         required: false
    *         description: Optional blockchain type for toToken
-   *         example: svm
+   *         example: evm
    *       - in: query
    *         name: toSpecificChain
    *         schema:
    *           type: string
    *         required: false
    *         description: Optional specific chain for toToken
-   *         example: mainnet
+   *         example: eth
    *     responses:
    *       200:
    *         description: Quote generated successfully
