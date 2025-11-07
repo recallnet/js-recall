@@ -53,18 +53,21 @@ describe("Leaderboard API", () => {
       tradingType: CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
     })) as StartCompetitionResponse;
     expect(startResponse.success).toBe(true);
+    const competitionId = startResponse.competition.id;
 
     // Make some trades
     await agentClient1.executeTrade({
       fromToken: config.specificChainTokens.eth.usdc,
       toToken: "0x000000000000000000000000000000000000dead", // Effectively make agent 1 lose
       amount: "100",
+      competitionId,
       reason: "Test trade",
     });
     await agentClient2.executeTrade({
       fromToken: config.specificChainTokens.eth.usdc,
       toToken: "0x000000000000000000000000000000000000dead",
       amount: "1",
+      competitionId,
       reason: "Test trade",
     });
 
@@ -123,18 +126,21 @@ describe("Leaderboard API", () => {
       tradingType: CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
     })) as StartCompetitionResponse;
     expect(startResponse.success).toBe(true);
+    const competitionId = startResponse.competition.id;
 
     // Make some trades
     await agentClient1.executeTrade({
       fromToken: config.specificChainTokens.eth.usdc,
       toToken: "0x000000000000000000000000000000000000dead", // Effectively make agent 1 lose
       amount: "100",
+      competitionId,
       reason: "Test trade",
     });
     await agentClient2.executeTrade({
       fromToken: config.specificChainTokens.eth.usdc,
       toToken: "0x000000000000000000000000000000000000dead",
       amount: "1",
+      competitionId,
       reason: "Test trade",
     });
 
@@ -196,18 +202,21 @@ describe("Leaderboard API", () => {
       agentIds: [agent1.id, agent2.id],
       tradingType: CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
     })) as StartCompetitionResponse;
+    const competitionId1 = startResponse.competition.id;
 
     // Make some trades
     await agentClient1.executeTrade({
       fromToken: config.specificChainTokens.eth.usdc,
       toToken: "0x000000000000000000000000000000000000dead", // Effectively make agent 1 lose
       amount: "100",
+      competitionId: competitionId1,
       reason: "Test trade",
     });
     await agentClient2.executeTrade({
       fromToken: config.specificChainTokens.eth.usdc,
       toToken: "0x000000000000000000000000000000000000dead",
       amount: "1",
+      competitionId: competitionId1,
       reason: "Test trade",
     });
     // End existing competition
@@ -221,18 +230,21 @@ describe("Leaderboard API", () => {
       agentIds: [agent1.id, agent2.id],
       tradingType: CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
     })) as StartCompetitionResponse;
+    const competitionId2 = startResponse2.competition.id;
 
     // Make some trades
     await agentClient1.executeTrade({
       fromToken: config.specificChainTokens.eth.usdc,
       toToken: "0x000000000000000000000000000000000000dead", // Effectively make agent 1 lose
       amount: "100",
+      competitionId: competitionId2,
       reason: "Test trade",
     });
     await agentClient2.executeTrade({
       fromToken: config.specificChainTokens.eth.usdc,
       toToken: "0x000000000000000000000000000000000000dead",
       amount: "1",
+      competitionId: competitionId2,
       reason: "Test trade",
     });
 
@@ -384,12 +396,14 @@ describe("Leaderboard API", () => {
       fromToken: config.specificChainTokens.eth.usdc,
       toToken: "0x000000000000000000000000000000000000dead",
       amount: "100",
+      competitionId: tradingCompId1,
       reason: "Test trade - agent1 loses",
     });
     await agentClient2.executeTrade({
       fromToken: config.specificChainTokens.eth.usdc,
       toToken: "0x000000000000000000000000000000000000dead",
       amount: "10",
+      competitionId: tradingCompId1,
       reason: "Test trade - agent2 wins",
     });
 
@@ -469,12 +483,14 @@ describe("Leaderboard API", () => {
       fromToken: config.specificChainTokens.eth.usdc,
       toToken: "0x000000000000000000000000000000000000dead",
       amount: "50",
+      competitionId: tradingCompId2,
       reason: "Test trade - agent1 second comp",
     });
     await agentClient2.executeTrade({
       fromToken: config.specificChainTokens.eth.usdc,
       toToken: "0x000000000000000000000000000000000000dead",
       amount: "25",
+      competitionId: tradingCompId2,
       reason: "Test trade - agent2 second comp",
     });
 

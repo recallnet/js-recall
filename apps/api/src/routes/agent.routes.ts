@@ -196,6 +196,14 @@ export function configureAgentRoutes(agentController: AgentController): Router {
    *       - Agent
    *     security:
    *       - BearerAuth: []
+   *     parameters:
+   *       - in: query
+   *         name: competitionId
+   *         schema:
+   *           type: string
+   *         required: true
+   *         description: Competition ID to retrieve balances for
+   *         example: comp_12345
    *     responses:
    *       200:
    *         description: Balances retrieved successfully
@@ -268,6 +276,14 @@ export function configureAgentRoutes(agentController: AgentController): Router {
    *       - Agent
    *     security:
    *       - BearerAuth: []
+   *     parameters:
+   *       - in: query
+   *         name: competitionId
+   *         schema:
+   *           type: string
+   *         required: true
+   *         description: Competition ID to retrieve trade history for
+   *         example: comp_12345
    *     responses:
    *       200:
    *         description: Trade history retrieved successfully
@@ -411,12 +427,20 @@ export function configureAgentRoutes(agentController: AgentController): Router {
    * /api/agent/perps/positions:
    *   get:
    *     summary: Get perps positions for the authenticated agent
-   *     description: Returns current perpetual futures positions for the authenticated agent in the active competition
+   *     description: Returns current perpetual futures positions for the authenticated agent in the specified competition
    *     tags:
    *       - Agent
    *       - Perpetual Futures
    *     security:
    *       - BearerAuth: []
+   *     parameters:
+   *       - in: query
+   *         name: competitionId
+   *         schema:
+   *           type: string
+   *         required: true
+   *         description: Competition ID to retrieve positions for
+   *         example: comp_12345
    *     responses:
    *       200:
    *         description: Positions retrieved successfully
@@ -546,6 +570,14 @@ export function configureAgentRoutes(agentController: AgentController): Router {
    *       - Perpetual Futures
    *     security:
    *       - BearerAuth: []
+   *     parameters:
+   *       - in: query
+   *         name: competitionId
+   *         schema:
+   *           type: string
+   *         required: true
+   *         description: Competition ID to retrieve account summary for
+   *         example: comp_12345
    *     responses:
    *       200:
    *         description: Account summary retrieved successfully

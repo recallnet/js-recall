@@ -40,8 +40,6 @@ import { startMetricsServer } from "@/servers/metrics.server.js";
 import { ServiceRegistry } from "@/services/index.js";
 
 import { makeBoostController } from "./controllers/boost.controller.js";
-import { updateFeaturesWithCompetition } from "./lib/update-features-with-comp.js";
-import { activeCompMiddleware } from "./middleware/active-comp-filter.middleware.js";
 import { configureLeaderboardRoutes } from "./routes/leaderboard.routes.js";
 
 // Sentry configuration defaults
@@ -82,12 +80,6 @@ try {
 }
 
 const services = new ServiceRegistry();
-
-// Load competition-specific configuration settings
-const activeCompetition =
-  await services.competitionService.getActiveCompetition();
-updateFeaturesWithCompetition(activeCompetition);
-apiLogger.info("Competition-specific configuration settings loaded");
 
 // Configure middleware
 // Trust proxy to get real IP addresses (important for rate limiting)
@@ -196,11 +188,10 @@ const agentRoutes = configureAgentRoutes(agentController);
 const agentsRoutes = configureAgentsRoutes(agentController);
 const leaderboardRoutes = configureLeaderboardRoutes(leaderboardController);
 
-const activeCompFilter = activeCompMiddleware();
 // Apply routes to the API router
 apiRouter.use("/auth", authRoutes);
-apiRouter.use("/trade", activeCompFilter, tradeRoutes);
-apiRouter.use("/price", activeCompFilter, priceRoutes);
+apiRouter.use("/trade", tradeRoutes);
+apiRouter.use("/price", priceRoutes);
 apiRouter.use("/competitions", competitionsRoutes);
 apiRouter.use("/admin/setup", adminSetupRoutes);
 apiRouter.use("/admin", adminRoutes);

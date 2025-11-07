@@ -242,10 +242,12 @@ describe("Perps Competition", () => {
     });
 
     expect(response.success).toBe(true);
+    const competitionId = response.competition.id;
 
     // Get perps positions for the agent in this competition
     // Note: Using authenticated endpoint as the public endpoint isn't implemented yet
-    const positionsResponse = await agentClient.getPerpsPositions();
+    const positionsResponse =
+      await agentClient.getPerpsPositions(competitionId);
 
     expect(positionsResponse.success).toBe(true);
 
@@ -291,7 +293,7 @@ describe("Perps Competition", () => {
 
     // Get perps account for the agent
     // Note: Using authenticated endpoint as the public endpoint isn't implemented yet
-    const accountResponse = await agentClient.getPerpsAccount();
+    const accountResponse = await agentClient.getPerpsAccount(competition.id);
 
     expect(accountResponse.success).toBe(true);
 
@@ -373,17 +375,19 @@ describe("Perps Competition", () => {
       });
 
     // Start a perps competition
-    await startPerpsTestCompetition({
+    const perpsCompetitionResponse = await startPerpsTestCompetition({
       adminClient,
       name: `Perps Block Test ${Date.now()}`,
       agentIds: [agent1.id, agent2.id],
     });
+    const competitionId = perpsCompetitionResponse.competition.id;
 
     // Try to execute trades (paper trading endpoints)
     const trade1Response = await agent1Client.executeTrade({
       fromToken: "0x0000000000000000000000000000000000000000",
       toToken: "0x1234567890123456789012345678901234567890",
       amount: "100",
+      competitionId,
       reason: "Test trade during perps competition",
       fromChain: BlockchainType.EVM,
     });
@@ -399,6 +403,7 @@ describe("Perps Competition", () => {
       fromToken: "0x1234567890123456789012345678901234567890",
       toToken: "0x0000000000000000000000000000000000000000",
       amount: "50",
+      competitionId,
       reason: "Test trade 2",
       fromChain: BlockchainType.EVM,
     });
@@ -456,11 +461,13 @@ describe("Perps Competition", () => {
     // Execute paper trades using proper token addresses
     const usdcTokenAddress = config.specificChainTokens.eth.usdc;
     const wethTokenAddress = config.specificChainTokens.eth.eth;
+    const paperCompetitionId = paperComp.competition.id;
 
     await client.executeTrade({
       fromToken: usdcTokenAddress,
       toToken: wethTokenAddress,
       amount: "100",
+      competitionId: paperCompetitionId,
       fromChain: BlockchainType.EVM,
       toChain: BlockchainType.EVM,
       reason: "Test trade 1",
@@ -470,6 +477,7 @@ describe("Perps Competition", () => {
       fromToken: wethTokenAddress,
       toToken: usdcTokenAddress,
       amount: "0.01",
+      competitionId: paperCompetitionId,
       fromChain: BlockchainType.EVM,
       toChain: BlockchainType.EVM,
       reason: "Test trade 2",
@@ -479,6 +487,7 @@ describe("Perps Competition", () => {
       fromToken: usdcTokenAddress,
       toToken: wethTokenAddress,
       amount: "50",
+      competitionId: paperCompetitionId,
       fromChain: BlockchainType.EVM,
       toChain: BlockchainType.EVM,
       reason: "Test trade 3",
@@ -556,7 +565,9 @@ describe("Perps Competition", () => {
     const competition = competitionResponse.competition;
 
     // Test getting positions for the authenticated agent
-    const positionsResponse = await agentClient.getPerpsPositions();
+    const positionsResponse = await agentClient.getPerpsPositions(
+      competition.id,
+    );
 
     expect(positionsResponse.success).toBe(true);
 
@@ -611,7 +622,7 @@ describe("Perps Competition", () => {
     await wait(500);
 
     // Test getting account summary for the authenticated agent
-    const accountResponse = await agentClient.getPerpsAccount();
+    const accountResponse = await agentClient.getPerpsAccount(competition.id);
 
     expect(accountResponse.success).toBe(true);
 
@@ -776,22 +787,29 @@ describe("Perps Competition", () => {
       agentName: "No Competition Agent",
     });
 
+    // Use a non-existent competition ID to test 404 response
+    const nonExistentCompetitionId = randomUUID();
+
     // Try to get positions - should fail with 404
-    const positionsResponse = await agentClient.getPerpsPositions();
+    const positionsResponse = await agentClient.getPerpsPositions(
+      nonExistentCompetitionId,
+    );
     expect(positionsResponse.success).toBe(false);
     if (!positionsResponse.success) {
       const errorResponse = positionsResponse as ErrorResponse;
       expect(errorResponse.status).toBe(404);
-      expect(errorResponse.error).toContain("No active competition");
+      expect(errorResponse.error).toContain("Competition not found");
     }
 
     // Try to get account - should fail with 404
-    const accountResponse = await agentClient.getPerpsAccount();
+    const accountResponse = await agentClient.getPerpsAccount(
+      nonExistentCompetitionId,
+    );
     expect(accountResponse.success).toBe(false);
     if (!accountResponse.success) {
       const errorResponse = accountResponse as ErrorResponse;
       expect(errorResponse.status).toBe(404);
-      expect(errorResponse.error).toContain("No active competition");
+      expect(errorResponse.error).toContain("Competition not found");
     }
   });
 
@@ -815,9 +833,11 @@ describe("Perps Competition", () => {
     });
 
     expect(competitionResponse.success).toBe(true);
+    const competitionId = competitionResponse.competition.id;
 
     // Try to get perps positions - should fail with 400
-    const positionsResponse = await agentClient.getPerpsPositions();
+    const positionsResponse =
+      await agentClient.getPerpsPositions(competitionId);
     expect(positionsResponse.success).toBe(false);
     if (!positionsResponse.success) {
       const errorResponse = positionsResponse as ErrorResponse;
@@ -826,7 +846,7 @@ describe("Perps Competition", () => {
     }
 
     // Try to get perps account - should fail with 400
-    const accountResponse = await agentClient.getPerpsAccount();
+    const accountResponse = await agentClient.getPerpsAccount(competitionId);
     expect(accountResponse.success).toBe(false);
     if (!accountResponse.success) {
       const errorResponse = accountResponse as ErrorResponse;
@@ -881,7 +901,9 @@ describe("Perps Competition", () => {
     await new Promise((resolve) => setTimeout(resolve, 100));
 
     // Verify agent1's positions (BTC and ETH) were persisted
-    const agent1Positions = await agent1Client.getPerpsPositions();
+    const agent1Positions = await agent1Client.getPerpsPositions(
+      competition.id,
+    );
     expect(agent1Positions.success).toBe(true);
 
     // Type assertion since we've verified success
@@ -906,7 +928,7 @@ describe("Perps Competition", () => {
     expect(ethPosition?.size).toBe(6300);
 
     // Verify agent1's account summary
-    const agent1Account = await agent1Client.getPerpsAccount();
+    const agent1Account = await agent1Client.getPerpsAccount(competition.id);
     expect(agent1Account.success).toBe(true);
 
     // Type assertion since we've verified success
@@ -918,7 +940,9 @@ describe("Perps Competition", () => {
     expect(typedAgent1Account.account.openPositions).toBe(2);
 
     // Verify agent2's position (SOL with negative PnL) was persisted
-    const agent2Positions = await agent2Client.getPerpsPositions();
+    const agent2Positions = await agent2Client.getPerpsPositions(
+      competition.id,
+    );
     expect(agent2Positions.success).toBe(true);
 
     // Type assertion since we've verified success
@@ -932,7 +956,7 @@ describe("Perps Competition", () => {
     expect(solPosition?.unrealizedPnl).toBe(-50);
 
     // Verify agent2's account summary
-    const agent2Account = await agent2Client.getPerpsAccount();
+    const agent2Account = await agent2Client.getPerpsAccount(competition.id);
     expect(agent2Account.success).toBe(true);
 
     // Type assertion since we've verified success
@@ -942,14 +966,16 @@ describe("Perps Competition", () => {
     expect(typedAgent2Account.account.openPositions).toBe(1);
 
     // Verify agent3's data (has trading history but no positions)
-    const agent3Positions = await agent3Client.getPerpsPositions();
+    const agent3Positions = await agent3Client.getPerpsPositions(
+      competition.id,
+    );
     expect(agent3Positions.success).toBe(true);
 
     // Type assertion since we've verified success
     const typedAgent3Positions = agent3Positions as PerpsPositionsResponse;
     expect(typedAgent3Positions.positions).toHaveLength(0);
 
-    const agent3Account = await agent3Client.getPerpsAccount();
+    const agent3Account = await agent3Client.getPerpsAccount(competition.id);
     expect(agent3Account.success).toBe(true);
 
     // Type assertion since we've verified success
@@ -1146,9 +1172,11 @@ describe("Perps Competition", () => {
     });
 
     expect(competitionResponse.success).toBe(true);
+    const competitionId = competitionResponse.competition.id;
 
     // Agent2 tries to get positions - should fail with 403
-    const positionsResponse = await agent2Client.getPerpsPositions();
+    const positionsResponse =
+      await agent2Client.getPerpsPositions(competitionId);
     expect(positionsResponse.success).toBe(false);
     if (!positionsResponse.success) {
       const errorResponse = positionsResponse as ErrorResponse;
@@ -1157,7 +1185,7 @@ describe("Perps Competition", () => {
     }
 
     // Agent2 tries to get account - should fail with 403
-    const accountResponse = await agent2Client.getPerpsAccount();
+    const accountResponse = await agent2Client.getPerpsAccount(competitionId);
     expect(accountResponse.success).toBe(false);
     if (!accountResponse.success) {
       const errorResponse = accountResponse as ErrorResponse;
@@ -2135,7 +2163,7 @@ describe("Perps Competition", () => {
     await wait(500);
 
     // Verify BTC agent's position
-    const btcPositions = await agentBTCClient.getPerpsPositions();
+    const btcPositions = await agentBTCClient.getPerpsPositions(competition.id);
     expect(btcPositions.success).toBe(true);
     const typedBTCPositions = btcPositions as PerpsPositionsResponse;
     expect(typedBTCPositions.positions).toHaveLength(1);
@@ -2148,7 +2176,7 @@ describe("Perps Competition", () => {
     expect(btcPosition?.unrealizedPnl).toBe(1000);
 
     // Verify BTC agent's account summary
-    const btcAccount = await agentBTCClient.getPerpsAccount();
+    const btcAccount = await agentBTCClient.getPerpsAccount(competition.id);
     expect(btcAccount.success).toBe(true);
     const typedBTCAccount = btcAccount as PerpsAccountResponse;
     expect(typedBTCAccount.account.totalEquity).toBe("1250");
@@ -2157,7 +2185,7 @@ describe("Perps Competition", () => {
     expect(typedBTCAccount.account.openPositions).toBe(1);
 
     // Verify ETH agent's position (short)
-    const ethPositions = await agentETHClient.getPerpsPositions();
+    const ethPositions = await agentETHClient.getPerpsPositions(competition.id);
     expect(ethPositions.success).toBe(true);
     const typedETHPositions = ethPositions as PerpsPositionsResponse;
     expect(typedETHPositions.positions).toHaveLength(1);
@@ -2170,12 +2198,14 @@ describe("Perps Competition", () => {
     expect(ethPosition?.unrealizedPnl).toBe(-50);
 
     // Verify agent with no open positions
-    const noPositions = await agentNoPosClient.getPerpsPositions();
+    const noPositions = await agentNoPosClient.getPerpsPositions(
+      competition.id,
+    );
     expect(noPositions.success).toBe(true);
     const typedNoPositions = noPositions as PerpsPositionsResponse;
     expect(typedNoPositions.positions).toHaveLength(0);
 
-    const noPosAccount = await agentNoPosClient.getPerpsAccount();
+    const noPosAccount = await agentNoPosClient.getPerpsAccount(competition.id);
     expect(noPosAccount.success).toBe(true);
     const typedNoPosAccount = noPosAccount as PerpsAccountResponse;
     expect(typedNoPosAccount.account.totalEquity).toBe("1100");
@@ -2350,7 +2380,9 @@ describe("Perps Competition", () => {
     await services.perpsDataProcessor.processPerpsCompetition(competition.id);
     await wait(500);
 
-    const multiPositions = await agentMultiClient.getPerpsPositions();
+    const multiPositions = await agentMultiClient.getPerpsPositions(
+      competition.id,
+    );
     expect(multiPositions.success).toBe(true);
     const typedMultiPositions = multiPositions as PerpsPositionsResponse;
     expect(typedMultiPositions.positions).toHaveLength(3);
@@ -2373,7 +2405,7 @@ describe("Perps Competition", () => {
     expect(ethPos?.isLong).toBe(false);
     expect(solPos?.isLong).toBe(true);
 
-    const multiAccount = await agentMultiClient.getPerpsAccount();
+    const multiAccount = await agentMultiClient.getPerpsAccount(competition.id);
     expect(multiAccount.success).toBe(true);
     const typedMultiAccount = multiAccount as PerpsAccountResponse;
     expect(typedMultiAccount.account.openPositions).toBe(3);
@@ -2792,7 +2824,9 @@ describe("Perps Competition", () => {
     await services.perpsDataProcessor.processPerpsCompetition(competition.id);
     await wait(500);
 
-    const activeAccount = await agentActiveClient.getPerpsAccount();
+    const activeAccount = await agentActiveClient.getPerpsAccount(
+      competition.id,
+    );
     expect(activeAccount.success).toBe(true);
     const typedActiveAccount = activeAccount as PerpsAccountResponse;
     expect(typedActiveAccount.account.totalVolume).toBe("66700"); // Realistic volume from 6 fills

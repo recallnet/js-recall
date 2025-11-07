@@ -45,69 +45,71 @@ async function takePortfolioSnapshots() {
   logger.info("Starting portfolio snapshots task...");
 
   try {
-    // Check if a competition is active
-    const activeCompetition =
-      await services.competitionService.getActiveCompetition();
-
-    if (!activeCompetition) {
-      const duration = Date.now() - startTime;
-      logger.info(
-        `There is no active competition. No snapshots will be taken. (took ${duration}ms)`,
-      );
-      return;
-    }
-
-    // Skip perps competitions - handled by separate script
-    if (activeCompetition.type === "perpetual_futures") {
-      return;
-    }
-
-    // Check if we should take a snapshot based on timing
-    const shouldTake = await shouldTakeSnapshot(activeCompetition.id);
-    if (!shouldTake) {
-      const duration = Date.now() - startTime;
-      logger.debug(
-        `Skipping snapshot for trading competition ${activeCompetition.id} - not time yet (took ${duration}ms)`,
-      );
-      return;
-    }
-
-    // Display competition details
-    logger.info(
-      {
-        id: activeCompetition.id,
-        name: activeCompetition.name,
-        status: activeCompetition.status,
-        type: activeCompetition.type,
-      },
-      "Processing trading competition",
+    // Get all active trading competitions (non-perps)
+    const allCompetitions = await services.competitionRepository.findAll();
+    const activeTradingCompetitions = allCompetitions.filter(
+      (c) => c.status === "active" && c.type !== "perpetual_futures",
     );
 
-    // Only process trading competitions
-    if (activeCompetition.type === "trading") {
-      // Take paper trading portfolio snapshots
-      logger.info("Taking paper trading portfolio snapshots...");
+    if (activeTradingCompetitions.length === 0) {
+      const duration = Date.now() - startTime;
+      logger.info(
+        `There are no active trading competitions. No snapshots will be taken. (took ${duration}ms)`,
+      );
+      return;
+    }
 
-      try {
-        await services.portfolioSnapshotterService.takePortfolioSnapshots(
-          activeCompetition.id,
+    // Process each active trading competition
+    for (const activeCompetition of activeTradingCompetitions) {
+      // Check if we should take a snapshot based on timing
+      const shouldTake = await shouldTakeSnapshot(activeCompetition.id);
+      if (!shouldTake) {
+        logger.debug(
+          `Skipping snapshot for trading competition ${activeCompetition.id} - not time yet`,
         );
-      } catch (paperError) {
-        logger.error(
-          "Error taking paper trading snapshots:",
-          paperError instanceof Error ? paperError.message : String(paperError),
-        );
-        throw paperError;
+        continue;
       }
-    } else {
-      // Unknown competition type - throw error to fail fast
-      const errorMessage = `Unknown competition type: ${activeCompetition.type}. Expected 'trading' or 'perpetual_futures'.`;
-      logger.error(errorMessage);
-      throw new Error(errorMessage);
+
+      // Display competition details
+      logger.info(
+        {
+          id: activeCompetition.id,
+          name: activeCompetition.name,
+          status: activeCompetition.status,
+          type: activeCompetition.type,
+        },
+        "Processing trading competition",
+      );
+
+      // Only process trading competitions
+      if (activeCompetition.type === "trading") {
+        // Take paper trading portfolio snapshots
+        logger.info("Taking paper trading portfolio snapshots...");
+
+        try {
+          await services.portfolioSnapshotterService.takePortfolioSnapshots(
+            activeCompetition.id,
+          );
+        } catch (paperError) {
+          logger.error(
+            `Error taking paper trading snapshots for ${activeCompetition.id}:`,
+            paperError instanceof Error
+              ? paperError.message
+              : String(paperError),
+          );
+          // Continue processing other competitions even if one fails
+        }
+      } else {
+        // Unknown competition type - log error but continue
+        const errorMessage = `Unknown competition type: ${activeCompetition.type}. Expected 'trading' or 'perpetual_futures'.`;
+        logger.error(errorMessage);
+      }
     }
 
     const duration = Date.now() - startTime;
-    logger.info(`Portfolio snapshots completed successfully in ${duration}ms!`);
+    logger.info(
+      `Portfolio snapshots completed for ${activeTradingCompetitions.length} competition(s) in ${duration}ms!`,
+    );
   } catch (error) {
     logger.error(
       "Error in portfolio snapshots task:",

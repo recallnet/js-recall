@@ -62,6 +62,7 @@ describe("Total ROI Calculation Tests", () => {
       fromToken: config.specificChainTokens.eth.usdc,
       toToken: "0x000000000000000000000000000000000000dead",
       amount: tradeAmount.toString(),
+      competitionId,
       reason: "ROI test trade 1",
     });
 
@@ -132,6 +133,7 @@ describe("Total ROI Calculation Tests", () => {
       fromToken: config.specificChainTokens.eth.usdc,
       toToken: "0x000000000000000000000000000000000000dead",
       amount: tradeAmount1.toString(),
+      competitionId: startResponse1.competition.id,
       reason: "Multi competition trade 1",
     });
 
@@ -160,6 +162,7 @@ describe("Total ROI Calculation Tests", () => {
       fromToken: config.specificChainTokens.eth.usdc,
       toToken: "0x000000000000000000000000000000000000dead",
       amount: tradeAmount2.toString(),
+      competitionId: startResponse2.competition.id,
       reason: "Multi competition trade 2",
     });
 
@@ -242,6 +245,7 @@ describe("Total ROI Calculation Tests", () => {
       fromToken: config.specificChainTokens.eth.usdc,
       toToken: "0x000000000000000000000000000000000000dead",
       amount: tradeAmount.toString(),
+      competitionId: startResponse1.competition.id,
       reason: "Ended competition trade",
     });
 
@@ -264,6 +268,7 @@ describe("Total ROI Calculation Tests", () => {
       fromToken: config.specificChainTokens.eth.usdc,
       toToken: "0x000000000000000000000000000000000000dead",
       amount: "1000",
+      competitionId: startResponse2.competition.id,
       reason: "Active competition trade",
     });
     await wait(2000);
@@ -311,6 +316,7 @@ describe("Total ROI Calculation Tests", () => {
       fromToken: config.specificChainTokens.eth.usdc,
       toToken: "0x000000000000000000000000000000000000dead",
       amount: "1000",
+      competitionId: startResponse.competition.id,
       reason: "Trade in active competition",
     });
     await wait(2000);

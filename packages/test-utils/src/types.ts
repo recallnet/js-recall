@@ -415,6 +415,7 @@ export interface TradeExecutionParams {
   toToken: string;
   amount: string;
   reason: string;
+  competitionId: string;
   slippageTolerance?: string;
   fromChain?: BlockchainType;
   toChain?: BlockchainType;
