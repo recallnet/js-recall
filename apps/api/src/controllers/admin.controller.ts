@@ -587,7 +587,7 @@ export function makeAdminController(services: ServiceRegistry) {
                   evaluationMetric,
                   perpsProvider,
                   prizePools,
-                  arenaId,
+                  arenaId: arenaId!, // Guaranteed by Zod refinement when creating new competition
                   engineId,
                   engineVersion,
                   vips,

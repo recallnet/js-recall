@@ -67,6 +67,7 @@ import {
  */
 export interface CreateCompetitionParams {
   name: string;
+  arenaId: string; // Required - admins must explicitly specify arena
   description?: string;
   tradingType?: CrossChainTradingType;
   sandboxMode?: boolean;
@@ -96,8 +97,7 @@ export interface CreateCompetitionParams {
     users: number;
   };
 
-  // Arena and engine routing
-  arenaId?: string;
+  // Engine routing (arenaId already defined above as required)
   engineId?: EngineType;
   engineVersion?: string;
 
@@ -490,7 +490,7 @@ export class CompetitionService {
       updatedAt: new Date(),
 
       // Arena and engine routing
-      arenaId: arenaId ?? null,
+      arenaId,
       engineId: engineId ?? null,
       engineVersion: engineVersion ?? null,
 

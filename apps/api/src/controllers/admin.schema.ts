@@ -109,7 +109,7 @@ export const AdminCreateCompetitionSchema = z
       .optional(),
 
     // Arena and engine routing
-    arenaId: z.string().optional(),
+    arenaId: z.string().min(1, "Arena ID is required"),
     engineId: z.enum(engineType.enumValues).optional(),
     engineVersion: z.string().optional(),
 
@@ -151,8 +151,10 @@ export const AdminCreateCompetitionSchema = z
  */
 export const AdminUpdateCompetitionSchema = AdminCreateCompetitionSchema.omit({
   name: true,
+  arenaId: true,
 }).extend({
   name: z.string().optional(),
+  arenaId: z.string().min(1, "Arena ID is required").optional(),
 });
 
 /**
@@ -190,7 +192,7 @@ export const AdminStartCompetitionSchema = z
       .optional(),
 
     // Arena and engine routing
-    arenaId: z.string().optional(),
+    arenaId: z.string().min(1, "Arena ID is required").optional(),
     engineId: z.enum(engineType.enumValues).optional(),
     engineVersion: z.string().optional(),
 
@@ -214,7 +216,20 @@ export const AdminStartCompetitionSchema = z
   })
   .refine((data) => data.competitionId || data.name, {
     message: "Either competitionId or name must be provided",
-  });
+  })
+  .refine(
+    (data) => {
+      // If creating a new competition (no competitionId), arenaId is required
+      if (!data.competitionId && !data.arenaId) {
+        return false;
+      }
+      return true;
+    },
+    {
+      message: "Arena ID is required when creating a new competition",
+      path: ["arenaId"],
+    },
+  );
 
 /**
  * Admin end competition schema

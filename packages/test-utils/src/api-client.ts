@@ -477,6 +477,7 @@ export class ApiClient {
             agent: number;
             users: number;
           };
+          arenaId?: string;
         }
       | string,
     description?: string,
@@ -512,6 +513,14 @@ export class ApiClient {
           boostEndDate,
           tradingConstraints,
         };
+      }
+
+      // Add default arenaId if not provided
+      if (!requestData.arenaId) {
+        requestData.arenaId =
+          requestData.type === "perpetual_futures"
+            ? "default-perps-arena"
+            : "default-paper-arena";
       }
 
       const response = await this.axiosInstance.post(
@@ -611,6 +620,11 @@ export class ApiClient {
     displayState?: DisplayState;
   }): Promise<CreateCompetitionResponse | ErrorResponse> {
     const competitionName = name || `Test competition ${Date.now()}`;
+    // Default arenaId based on competition type
+    const defaultArenaId =
+      type === "perpetual_futures"
+        ? "default-perps-arena"
+        : "default-paper-arena";
     try {
       const response = await this.axiosInstance.post(
         "/api/admin/competition/create",
@@ -635,7 +649,7 @@ export class ApiClient {
           evaluationMetric,
           perpsProvider,
           prizePools,
-          arenaId,
+          arenaId: arenaId || defaultArenaId,
           engineId,
           engineVersion,
           vips,
