@@ -1230,26 +1230,6 @@ export class CompetitionService {
   }
 
   /**
-   * Get the currently active competition
-   * @returns The active competition or null if none
-   */
-  async getActiveCompetition() {
-    return this.competitionRepo.findActive();
-  }
-
-  /**
-   * Check if the active competition is of a specific type (atomic operation)
-   * @param type The competition type to check
-   * @returns true if active competition matches the type, false otherwise
-   */
-  async isActiveCompetitionType(
-    type: "trading" | "perpetual_futures",
-  ): Promise<boolean> {
-    const activeCompetition = await this.competitionRepo.findActive();
-    return activeCompetition?.type === type;
-  }
-
-  /**
    * Check if a specific competition is of a given type (atomic operation)
    * @param competitionId The competition ID to check
    * @param type The competition type to check
@@ -1516,7 +1496,10 @@ export class CompetitionService {
 
     // Use bulk portfolio value calculation
     const portfolioValues =
-      await this.tradeSimulatorService.calculateBulkPortfolioValues(agents);
+      await this.tradeSimulatorService.calculateBulkPortfolioValues(
+        agents,
+        competitionId,
+      );
 
     const leaderboard = agents.map((agentId: string) => ({
       agentId,
@@ -2570,7 +2553,7 @@ export class CompetitionService {
   async processPendingRewardsCompetitions(): Promise<string | null> {
     const competition =
       await this.competitionRepo.findCompetitionNeedingRewardsCalculation();
-    if (!competition) {
+      if (!competition) {
       this.logger.debug(
         "[CompetitionManager] No competition needing rewards calculation found",
       );

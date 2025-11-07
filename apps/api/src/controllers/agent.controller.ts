@@ -221,13 +221,25 @@ export function makeAgentController(services: ServiceRegistry) {
     async getBalances(req: Request, res: Response, next: NextFunction) {
       try {
         const agentId = req.agentId as string;
+        const { competitionId } = req.query;
 
-        // Check if there's an active perps competition
-        const isPerpsCompetition =
-          await services.competitionService.isActiveCompetitionType(
-            "perpetual_futures",
+        // Validate competitionId parameter
+        if (!competitionId || typeof competitionId !== "string") {
+          throw new ApiError(
+            400,
+            "Missing required parameter: competitionId. Use GET /api/agent/balances?competitionId=xxx",
           );
-        if (isPerpsCompetition) {
+        }
+
+        // Verify competition exists and get its type
+        const competition =
+          await services.competitionService.getCompetition(competitionId);
+        if (!competition) {
+          throw new ApiError(404, "Competition not found");
+        }
+
+        // Check if it's a perps competition
+        if (competition.type === "perpetual_futures") {
           throw new ApiError(
             400,
             "This endpoint is not available for perpetual futures competitions. " +
@@ -235,15 +247,18 @@ export function makeAgentController(services: ServiceRegistry) {
           );
         }
 
-        // Get enhanced balances from the service layer
-        // The service will use getActiveCompetition() if no competitionId is provided
+        // Get enhanced balances for the specified competition
         const enhancedBalances =
-          await services.agentService.getEnhancedBalances(agentId);
+          await services.agentService.getEnhancedBalances(
+            agentId,
+            competitionId,
+          );
 
         // Return the balances
         res.status(200).json({
           success: true,
           agentId,
+          competitionId,
           balances: enhancedBalances,
         });
       } catch (error) {
@@ -260,13 +275,26 @@ export function makeAgentController(services: ServiceRegistry) {
     async getTrades(req: Request, res: Response, next: NextFunction) {
       try {
         const agentId = req.agentId as string;
+        const { competitionId } = req.query;
 
-        // Check if there's an active perps competition
-        const isPerpsCompetition =
-          await services.competitionService.isActiveCompetitionType(
-            "perpetual_futures",
+        // Validate competitionId is provided
+        if (!competitionId || typeof competitionId !== "string") {
+          throw new ApiError(
+            400,
+            "Missing required parameter: competitionId. Use GET /api/agent/trades?competitionId=xxx",
           );
-        if (isPerpsCompetition) {
+        }
+
+        // Get and validate competition
+        const competition =
+          await services.competitionService.getCompetition(competitionId);
+
+        if (!competition) {
+          throw new ApiError(404, "Competition not found");
+        }
+
+        // Check if this is a perps competition
+        if (competition.type === "perpetual_futures") {
           throw new ApiError(
             400,
             "This endpoint is not available for perpetual futures competitions. " +
@@ -274,15 +302,18 @@ export function makeAgentController(services: ServiceRegistry) {
           );
         }
 
-        // Get the trades
-        const trades =
-          await services.tradeSimulatorService.getAgentTrades(agentId);
+        // Get the trades for this agent in this competition
+        const result =
+          await services.tradeSimulatorService.getAgentTradesInCompetition(
+            competitionId,
+            agentId,
+          );
 
         // Return the trades
         res.status(200).json({
           success: true,
           agentId,
-          trades,
+          trades: result.trades,
         });
       } catch (error) {
         next(error);
@@ -354,16 +385,25 @@ export function makeAgentController(services: ServiceRegistry) {
     async getPerpsPositions(req: Request, res: Response, next: NextFunction) {
       try {
         const agentId = req.agentId as string;
+        const { competitionId } = req.query;
 
-        // Check if there's an active perps competition
-        const activeCompetition =
-          await services.competitionService.getActiveCompetition();
-
-        if (!activeCompetition) {
-          throw new ApiError(404, "No active competition found");
+        // Validate competitionId parameter
+        if (!competitionId || typeof competitionId !== "string") {
+          throw new ApiError(
+            400,
+            "Missing required parameter: competitionId. Use GET /api/agent/perps/positions?competitionId=xxx",
+          );
         }
 
-        if (activeCompetition.type !== "perpetual_futures") {
+        // Get and validate competition
+        const competition =
+          await services.competitionService.getCompetition(competitionId);
+
+        if (!competition) {
+          throw new ApiError(404, "Competition not found");
+        }
+
+        if (competition.type !== "perpetual_futures") {
           throw new ApiError(
             400,
             "This endpoint is only available for perpetual futures competitions. " +
@@ -374,21 +414,21 @@ export function makeAgentController(services: ServiceRegistry) {
         // Check if agent is registered in the competition
         const isRegistered =
           await services.competitionService.isAgentActiveInCompetition(
-            activeCompetition.id,
+            competitionId,
             agentId,
           );
 
         if (!isRegistered) {
           throw new ApiError(
             403,
-            "Agent is not registered in the active perps competition",
+            "Agent is not registered in this competition",
           );
         }
 
         // Get positions from the service
         const positions = await services.perpsDataProcessor.getAgentPositions(
           agentId,
-          activeCompetition.id,
+          competitionId,
         );
 
         // Return the positions with consistent format across all endpoints
@@ -437,16 +477,25 @@ export function makeAgentController(services: ServiceRegistry) {
     async getPerpsAccount(req: Request, res: Response, next: NextFunction) {
       try {
         const agentId = req.agentId as string;
+        const { competitionId } = req.query;
 
-        // Check if there's an active perps competition
-        const activeCompetition =
-          await services.competitionService.getActiveCompetition();
-
-        if (!activeCompetition) {
-          throw new ApiError(404, "No active competition found");
+        // Validate competitionId parameter
+        if (!competitionId || typeof competitionId !== "string") {
+          throw new ApiError(
+            400,
+            "Missing required parameter: competitionId. Use GET /api/agent/perps/account?competitionId=xxx",
+          );
         }
 
-        if (activeCompetition.type !== "perpetual_futures") {
+        // Get and validate competition
+        const competition =
+          await services.competitionService.getCompetition(competitionId);
+
+        if (!competition) {
+          throw new ApiError(404, "Competition not found");
+        }
+
+        if (competition.type !== "perpetual_futures") {
           throw new ApiError(
             400,
             "This endpoint is only available for perpetual futures competitions. " +
@@ -457,14 +506,14 @@ export function makeAgentController(services: ServiceRegistry) {
         // Check if agent is registered in the competition
         const isRegistered =
           await services.competitionService.isAgentActiveInCompetition(
-            activeCompetition.id,
+            competitionId,
             agentId,
           );
 
         if (!isRegistered) {
           throw new ApiError(
             403,
-            "Agent is not registered in the active perps competition",
+            "Agent is not registered in this competition",
           );
         }
 
@@ -472,7 +521,7 @@ export function makeAgentController(services: ServiceRegistry) {
         const summary =
           await services.perpsDataProcessor.getAgentAccountSummary(
             agentId,
-            activeCompetition.id,
+            competitionId,
           );
 
         if (!summary) {
@@ -483,7 +532,7 @@ export function makeAgentController(services: ServiceRegistry) {
             account: {
               id: "",
               agentId,
-              competitionId: activeCompetition.id,
+              competitionId: competitionId,
               accountId: "",
               totalEquity: "0",
               availableBalance: "0",

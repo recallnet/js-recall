@@ -63,20 +63,22 @@ describe("Base Chain Trading", () => {
 
     // Start a competition with our agent
     const competitionName = `Base Trading Test ${Date.now()}`;
-    await startTestCompetition({
+    const competitionResponse = await startTestCompetition({
       adminClient,
       name: competitionName,
       agentIds: [agent.id],
       // disable trading constraints for testing base chain functionality
       tradingConstraints: noTradingConstraints,
     });
+    const competitionId = competitionResponse.competition.id;
 
     // Wait for balances to be properly initialized
     await wait(500);
 
     // Check initial balance
-    const initialBalanceResponse =
-      (await client.getBalance()) as BalancesResponse;
+    const initialBalanceResponse = (await client.getBalance(
+      competitionId,
+    )) as BalancesResponse;
     expect(initialBalanceResponse.success).toBe(true);
     expect(initialBalanceResponse.balances).toBeDefined();
 
@@ -129,6 +131,7 @@ describe("Base Chain Trading", () => {
         fromToken: BASE_USDC_ADDRESS, // Explicitly use Base USDC address
         toToken: token.address, // Target token to buy
         amount: spendPerToken.toString(),
+        competitionId,
         fromChain: BlockchainType.EVM,
         toChain: BlockchainType.EVM,
         fromSpecificChain: SpecificChain.BASE,
@@ -152,8 +155,9 @@ describe("Base Chain Trading", () => {
     await wait(500);
 
     // Check final balance
-    const finalBalanceResponse =
-      (await client.getBalance()) as BalancesResponse;
+    const finalBalanceResponse = (await client.getBalance(
+      competitionId,
+    )) as BalancesResponse;
     expect(finalBalanceResponse.success).toBe(true);
 
     // Calculate total portfolio value after trades
@@ -193,8 +197,9 @@ describe("Base Chain Trading", () => {
     expect(totalActualValue).toBeLessThanOrEqual(upperBound);
 
     // Get trade history and verify all trades were recorded with correct chain info
-    const tradeHistoryResponse =
-      (await client.getTradeHistory()) as TradeHistoryResponse;
+    const tradeHistoryResponse = (await client.getTradeHistory(
+      competitionId,
+    )) as TradeHistoryResponse;
     expect(tradeHistoryResponse.success).toBe(true);
     expect(tradeHistoryResponse.trades).toBeInstanceOf(Array);
     expect(tradeHistoryResponse.trades.length).toBeGreaterThanOrEqual(
@@ -224,18 +229,20 @@ describe("Base Chain Trading", () => {
 
     // Start a competition with our agent
     const competitionName = `Cross-Chain Restriction Test ${Date.now()}`;
-    await startTestCompetition({
+    const competitionResponse2 = await startTestCompetition({
       adminClient,
       name: competitionName,
       agentIds: [agent.id],
     });
+    const competitionId2 = competitionResponse2.competition.id;
 
     // Wait for balances to be properly initialized
     await wait(500);
 
     // Check initial balance
-    const initialBalanceResponse =
-      (await client.getBalance()) as BalancesResponse;
+    const initialBalanceResponse = (await client.getBalance(
+      competitionId2,
+    )) as BalancesResponse;
     expect(initialBalanceResponse.success).toBe(true);
     expect(initialBalanceResponse.balances).toBeDefined();
     // Get initial Base USDC balance
@@ -261,6 +268,7 @@ describe("Base Chain Trading", () => {
         fromToken: BASE_USDC_ADDRESS, // Base USDC
         toToken: ETH_ADDRESS, // Ethereum ETH
         amount: tradeAmount,
+        competitionId: competitionId2,
         fromChain: BlockchainType.EVM,
         toChain: BlockchainType.EVM,
         fromSpecificChain: SpecificChain.BASE,
@@ -291,8 +299,9 @@ describe("Base Chain Trading", () => {
     await wait(500);
 
     // Check final balances
-    const finalBalanceResponse =
-      (await client.getBalance()) as BalancesResponse;
+    const finalBalanceResponse = (await client.getBalance(
+      competitionId2,
+    )) as BalancesResponse;
     expect(finalBalanceResponse.success).toBe(true);
 
     // Check the final Base USDC balance
@@ -322,13 +331,13 @@ describe("Base Chain Trading", () => {
       // If cross-chain trading is disabled, verify nothing was spent
       if (usdcDifference > 0) {
         // Get trade history to see what transaction occurred
-        await client.getTradeHistory();
+        await client.getTradeHistory(competitionId2);
       }
 
       // Verify no ETH was received
       if (ethBalance > initialEthBalance) {
         // Get trade history to see what transaction occurred
-        await client.getTradeHistory();
+        await client.getTradeHistory(competitionId2);
       }
       // Instead of expecting ETH balance to be 0, check that it hasn't increased
       expect(ethBalance).toBeLessThanOrEqual(initialEthBalance);
@@ -348,20 +357,22 @@ describe("Base Chain Trading", () => {
 
     // Start a competition with our agent
     const competitionName = `Spending Limit Test ${Date.now()}`;
-    await startTestCompetition({
+    const competitionResponse3 = await startTestCompetition({
       adminClient,
       name: competitionName,
       agentIds: [agent.id],
       // disable trading constraints for testing base chain functionality
       tradingConstraints: noTradingConstraints,
     });
+    const competitionId3 = competitionResponse3.competition.id;
 
     // Wait for balances to be properly initialized
     await wait(500);
 
     // Check initial balance
-    const initialBalanceResponse =
-      (await client.getBalance()) as BalancesResponse;
+    const initialBalanceResponse = (await client.getBalance(
+      competitionId3,
+    )) as BalancesResponse;
     expect(initialBalanceResponse.success).toBe(true);
     expect(initialBalanceResponse.balances).toBeDefined();
     // Get initial Base USDC balance
@@ -393,6 +404,7 @@ describe("Base Chain Trading", () => {
         fromToken: BASE_USDC_ADDRESS,
         toToken: targetToken!,
         amount: excessiveAmount,
+        competitionId: competitionId3,
         fromChain: BlockchainType.EVM,
         toChain: BlockchainType.EVM,
         fromSpecificChain: SpecificChain.BASE,
@@ -426,6 +438,7 @@ describe("Base Chain Trading", () => {
       fromToken: BASE_USDC_ADDRESS,
       toToken: targetToken!,
       amount: validAmount,
+      competitionId: competitionId3,
       fromChain: BlockchainType.EVM,
       toChain: BlockchainType.EVM,
       fromSpecificChain: SpecificChain.BASE,
@@ -441,8 +454,9 @@ describe("Base Chain Trading", () => {
     await wait(500);
 
     // Check final balances
-    const finalBalanceResponse =
-      (await client.getBalance()) as BalancesResponse;
+    const finalBalanceResponse = (await client.getBalance(
+      competitionId3,
+    )) as BalancesResponse;
     expect(finalBalanceResponse.success).toBe(true);
     // USDC balance should be reduced by the valid trade amount
     const finalBaseUsdcBalance = parseFloat(

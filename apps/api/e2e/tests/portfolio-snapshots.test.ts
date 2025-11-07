@@ -182,6 +182,7 @@ describe("Portfolio Snapshots", () => {
       fromToken: usdcTokenAddress,
       toToken: solTokenAddress,
       amount: "100",
+      competitionId,
       fromChain: BlockchainType.SVM,
       toChain: BlockchainType.SVM,
       reason,
@@ -245,8 +246,9 @@ describe("Portfolio Snapshots", () => {
     await wait(500);
 
     // Get initial balances
-    const initialBalanceResponse =
-      (await client.getBalance()) as BalancesResponse;
+    const initialBalanceResponse = (await client.getBalance(
+      competitionId,
+    )) as BalancesResponse;
 
     // Verify we have a diversified portfolio with multiple tokens
     expect(initialBalanceResponse.balances.length).toBeGreaterThan(0);

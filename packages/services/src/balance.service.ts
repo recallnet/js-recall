@@ -5,7 +5,6 @@ import type { SelectBalance } from "@recallnet/db/schema/trading/types";
 
 import { assertUnreachable } from "./lib/typescript-utils.js";
 import {
-  ApiError,
   CompetitionType,
   SpecificChain,
   SpecificChainBalances,
@@ -28,20 +27,17 @@ export class BalanceService {
   private specificChainBalances: SpecificChainBalances;
   private specificChainTokens: SpecificChainTokens;
   private logger: Logger;
-  private getActiveCompetitionFn: (() => Promise<{ id: string } | null>) | null;
 
   constructor(
     balanceRepo: BalanceRepository,
     config: BalanceServiceConfig,
     logger: Logger,
-    getActiveCompetitionFn?: () => Promise<{ id: string } | null>,
   ) {
     this.balanceCache = new Map();
     this.balanceRepo = balanceRepo;
     this.specificChainBalances = config.specificChainBalances;
     this.specificChainTokens = config.specificChainTokens;
     this.logger = logger;
-    this.getActiveCompetitionFn = getActiveCompetitionFn ?? null;
   }
 
   /**
@@ -105,7 +101,7 @@ export class BalanceService {
             }
           });
         } else {
-          console.warn(
+          this.logger.warn(
             `[BalanceManager] No token configuration found for specific chain: ${chain}`,
           );
         }
@@ -117,30 +113,15 @@ export class BalanceService {
    * Get an agent's balance for a specific token
    * @param agentId The agent ID
    * @param tokenAddress The token address
-   * @param competitionId The competition ID (optional, will use active competition if not provided)
+   * @param competitionId The competition ID
    * @returns The balance amount or 0 if not found
    */
   async getBalance(
     agentId: string,
     tokenAddress: string,
-    competitionId?: string,
+    competitionId: string,
   ): Promise<number> {
     try {
-      // TODO(ENG-783): Remove getActiveCompetition() and require competitionId from caller
-      if (!competitionId) {
-        if (!this.getActiveCompetitionFn) {
-          throw new ApiError(
-            400,
-            "Competition ID is required for this operation",
-          );
-        }
-        const activeComp = await this.getActiveCompetitionFn();
-        if (!activeComp) {
-          throw new ApiError(400, "No active competition");
-        }
-        competitionId = activeComp.id;
-      }
-
       // First check cache
       const agentCache = this.balanceCache.get(agentId);
       const competitionCache = agentCache?.get(competitionId);
@@ -181,29 +162,14 @@ export class BalanceService {
   /**
    * Get all balances for an agent
    * @param agentId The agent ID
-   * @param competitionId The competition ID (optional, will use active competition if not provided)
+   * @param competitionId The competition ID
    * @returns Array of Balance objects
    */
   async getAllBalances(
     agentId: string,
-    competitionId?: string,
+    competitionId: string,
   ): Promise<SelectBalance[]> {
     try {
-      // TODO(ENG-783): Remove getActiveCompetition() and require competitionId from caller
-      if (!competitionId) {
-        if (!this.getActiveCompetitionFn) {
-          throw new ApiError(
-            400,
-            "No active competition function provided to BalanceService",
-          );
-        }
-        const activeComp = await this.getActiveCompetitionFn();
-        if (!activeComp) {
-          throw new ApiError(400, "No active competition");
-        }
-        competitionId = activeComp.id;
-      }
-
       // Get from database
       const balances = await this.balanceRepo.getAgentBalances(
         agentId,
@@ -238,34 +204,16 @@ export class BalanceService {
   /**
    * Get all balances for multiple agents in bulk
    * @param agentIds Array of agent IDs
-   * @param competitionId The competition ID (optional, will use active competition if not provided)
+   * @param competitionId The competition ID
    * @returns Array of Balance objects for all agents
    */
   async getBulkBalances(
     agentIds: string[],
-    competitionId?: string,
+    competitionId: string,
   ): Promise<SelectBalance[]> {
     try {
       if (agentIds.length === 0) {
         return [];
-      }
-
-      // TODO(ENG-783): Remove getActiveCompetition() and require competitionId from caller
-      let resolvedCompetitionId: string;
-      if (!competitionId) {
-        if (!this.getActiveCompetitionFn) {
-          throw new ApiError(
-            400,
-            "No active competition function provided to BalanceService",
-          );
-        }
-        const activeComp = await this.getActiveCompetitionFn();
-        if (!activeComp) {
-          throw new ApiError(400, "No active competition");
-        }
-        resolvedCompetitionId = activeComp.id;
-      } else {
-        resolvedCompetitionId = competitionId;
       }
 
       this.logger.debug(
@@ -275,7 +223,7 @@ export class BalanceService {
       // Get all balances from database in one query
       const balances = await this.balanceRepo.getAgentsBulkBalances(
         agentIds,
-        resolvedCompetitionId,
+        competitionId,
       );
 
       // Update cache for all agents
@@ -299,7 +247,7 @@ export class BalanceService {
         if (!this.balanceCache.has(agentId)) {
           this.balanceCache.set(agentId, new Map());
         }
-        this.balanceCache.get(agentId)!.set(resolvedCompetitionId, balanceMap);
+        this.balanceCache.get(agentId)!.set(competitionId, balanceMap);
       });
 
       this.logger.debug(
@@ -391,14 +339,14 @@ export class BalanceService {
    * @param agentId The agent ID
    * @param tokenAddress The token address
    * @param amount The amount to check
-   * @param competitionId The competition ID (optional, will use active competition if not provided)
+   * @param competitionId The competition ID
    * @returns True if the agent has sufficient balance
    */
   async hasSufficientBalance(
     agentId: string,
     tokenAddress: string,
     amount: number,
-    competitionId?: string,
+    competitionId: string,
   ): Promise<boolean> {
     const balance = await this.getBalance(agentId, tokenAddress, competitionId);
     return balance >= amount;
