@@ -1982,10 +1982,26 @@ export class ApiClient {
     toToken: string,
     amount: string,
     competitionId: string,
+    fromChain?: BlockchainType,
+    fromSpecificChain?: SpecificChain,
+    toChain?: BlockchainType,
+    toSpecificChain?: SpecificChain,
   ): Promise<QuoteResponse | ErrorResponse> {
     try {
+      const queryParams = new URLSearchParams({
+        fromToken: encodeURIComponent(fromToken),
+        toToken: encodeURIComponent(toToken),
+        amount: encodeURIComponent(amount),
+        competitionId: encodeURIComponent(competitionId),
+      });
+
+      if (fromChain) queryParams.append("fromChain", fromChain);
+      if (fromSpecificChain) queryParams.append("fromSpecificChain", fromSpecificChain);
+      if (toChain) queryParams.append("toChain", toChain);
+      if (toSpecificChain) queryParams.append("toSpecificChain", toSpecificChain);
+
       const response = await this.axiosInstance.get(
-        `/api/trade/quote?fromToken=${encodeURIComponent(fromToken)}&toToken=${encodeURIComponent(toToken)}&amount=${encodeURIComponent(amount)}&competitionId=${encodeURIComponent(competitionId)}`,
+        `/api/trade/quote?${queryParams.toString()}`,
       );
       return response.data as QuoteResponse;
     } catch (error) {

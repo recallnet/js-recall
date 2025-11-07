@@ -56,7 +56,23 @@ const ExecuteTradeBodySchema = z.object({
       return parsed;
     }),
   reason: z.string().min(1, "reason is required"),
-  slippageTolerance: z.string().optional(),
+  slippageTolerance: z
+    .string()
+    .optional()
+    .transform((val) => {
+      if (!val) return undefined;
+      const parsed = parseFloat(val);
+      if (isNaN(parsed) || parsed < 0) {
+        throw new z.ZodError([
+          {
+            code: z.ZodIssueCode.custom,
+            message: "Slippage tolerance must be a non-negative number",
+            path: ["slippageTolerance"],
+          },
+        ]);
+      }
+      return parsed;
+    }),
   fromChain: z.nativeEnum(BlockchainType).optional(),
   fromSpecificChain: z.enum(SPECIFIC_CHAIN_NAMES).optional(),
   toChain: z.nativeEnum(BlockchainType).optional(),

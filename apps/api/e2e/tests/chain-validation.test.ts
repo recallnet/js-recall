@@ -2,7 +2,7 @@ import axios from "axios";
 import { beforeEach, describe, expect, test } from "vitest";
 
 import { BlockchainType } from "@recallnet/services/types";
-import { QuoteResponse } from "@recallnet/test-utils";
+import { QuoteResponse, SpecificChain } from "@recallnet/test-utils";
 import {
   createTestClient,
   getAdminApiKey,
@@ -53,9 +53,8 @@ describe("Chain Parameter Validation", () => {
         fromToken: USDC_TOKEN_ADDRESS,
         toToken: SOL_TOKEN_ADDRESS,
         amount: "100",
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        fromSpecificChain: "mainnet" as any, // Invalid value
-        toSpecificChain: "svm",
+        fromSpecificChain: "mainnet" as unknown as SpecificChain, // Testing invalid value
+        toSpecificChain: SpecificChain.SVM,
         reason: "Testing invalid fromSpecificChain",
       });
 
@@ -122,9 +121,8 @@ describe("Chain Parameter Validation", () => {
         fromToken: USDC_TOKEN_ADDRESS,
         toToken: SOL_TOKEN_ADDRESS,
         amount: "100",
-        fromSpecificChain: "svm",
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        toSpecificChain: "mainnet" as any, // Invalid value
+        fromSpecificChain: SpecificChain.SVM,
+        toSpecificChain: "mainnet" as unknown as SpecificChain, // Testing invalid value
         reason: "Testing invalid toSpecificChain",
       });
 
@@ -177,8 +175,7 @@ describe("Chain Parameter Validation", () => {
         fromToken: USDC_TOKEN_ADDRESS,
         toToken: SOL_TOKEN_ADDRESS,
         amount: "100",
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        fromChain: "mainnet" as any, // Invalid value
+        fromChain: "mainnet" as unknown as BlockchainType, // Testing invalid value
         toChain: BlockchainType.SVM,
         reason: "Testing invalid fromChain",
       });
@@ -232,8 +229,7 @@ describe("Chain Parameter Validation", () => {
         toToken: SOL_TOKEN_ADDRESS,
         amount: "100",
         fromChain: BlockchainType.SVM,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        toChain: "mainnet" as any, // Invalid value
+        toChain: "mainnet" as unknown as BlockchainType, // Testing invalid value
         reason: "Testing invalid toChain",
       });
 
@@ -285,8 +281,7 @@ describe("Chain Parameter Validation", () => {
         SOL_TOKEN_ADDRESS,
         "100",
         undefined,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        "mainnet" as any, // Invalid fromSpecificChain
+        "mainnet" as unknown as SpecificChain, // Testing invalid fromSpecificChain
       );
 
       // Should not reach here
@@ -338,7 +333,7 @@ describe("Chain Parameter Validation", () => {
       SOL_TOKEN_ADDRESS,
       "100",
       undefined,
-      "svm",
+      SpecificChain.SVM,
     )) as QuoteResponse;
 
     expect(svmQuote).toBeDefined();
