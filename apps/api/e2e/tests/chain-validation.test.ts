@@ -53,6 +53,7 @@ describe("Chain Parameter Validation", () => {
         fromToken: USDC_TOKEN_ADDRESS,
         toToken: SOL_TOKEN_ADDRESS,
         amount: "100",
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         fromSpecificChain: "mainnet" as any, // Invalid value
         toSpecificChain: "svm",
         reason: "Testing invalid fromSpecificChain",
@@ -73,7 +74,7 @@ describe("Chain Parameter Validation", () => {
 
         // Find the fromSpecificChain error
         const chainError = error.response.data.details.find(
-          (d: any) => d.field === "fromSpecificChain",
+          (d: { field: string }) => d.field === "fromSpecificChain",
         );
         expect(chainError).toBeDefined();
         expect(chainError.message).toContain("Invalid enum value");
@@ -122,6 +123,7 @@ describe("Chain Parameter Validation", () => {
         toToken: SOL_TOKEN_ADDRESS,
         amount: "100",
         fromSpecificChain: "svm",
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         toSpecificChain: "mainnet" as any, // Invalid value
         reason: "Testing invalid toSpecificChain",
       });
@@ -134,7 +136,7 @@ describe("Chain Parameter Validation", () => {
         expect(error.response.data.error).toBe("Validation failed");
 
         const chainError = error.response.data.details.find(
-          (d: any) => d.field === "toSpecificChain",
+          (d: { field: string }) => d.field === "toSpecificChain",
         );
         expect(chainError).toBeDefined();
         expect(chainError.validValues).toContain("svm");
@@ -175,6 +177,7 @@ describe("Chain Parameter Validation", () => {
         fromToken: USDC_TOKEN_ADDRESS,
         toToken: SOL_TOKEN_ADDRESS,
         amount: "100",
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         fromChain: "mainnet" as any, // Invalid value
         toChain: BlockchainType.SVM,
         reason: "Testing invalid fromChain",
@@ -188,7 +191,7 @@ describe("Chain Parameter Validation", () => {
         expect(error.response.data.error).toBe("Validation failed");
 
         const chainError = error.response.data.details.find(
-          (d: any) => d.field === "fromChain",
+          (d: { field: string }) => d.field === "fromChain",
         );
         expect(chainError).toBeDefined();
         expect(chainError.message).toContain("Invalid enum value");
@@ -229,6 +232,7 @@ describe("Chain Parameter Validation", () => {
         toToken: SOL_TOKEN_ADDRESS,
         amount: "100",
         fromChain: BlockchainType.SVM,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         toChain: "mainnet" as any, // Invalid value
         reason: "Testing invalid toChain",
       });
@@ -241,7 +245,7 @@ describe("Chain Parameter Validation", () => {
         expect(error.response.data.error).toBe("Validation failed");
 
         const chainError = error.response.data.details.find(
-          (d: any) => d.field === "toChain",
+          (d: { field: string }) => d.field === "toChain",
         );
         expect(chainError).toBeDefined();
       } else {
@@ -281,6 +285,7 @@ describe("Chain Parameter Validation", () => {
         SOL_TOKEN_ADDRESS,
         "100",
         undefined,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         "mainnet" as any, // Invalid fromSpecificChain
       );
 
@@ -292,7 +297,7 @@ describe("Chain Parameter Validation", () => {
         expect(error.response.data.error).toBe("Validation failed");
 
         const chainError = error.response.data.details.find(
-          (d: any) => d.field === "fromSpecificChain",
+          (d: { field: string }) => d.field === "fromSpecificChain",
         );
         expect(chainError).toBeDefined();
         expect(chainError.validValues).toBeDefined();
