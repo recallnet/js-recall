@@ -182,6 +182,13 @@ export function configureTradeRoutes(
    *       - BearerAuth: []
    *     parameters:
    *       - in: query
+   *         name: competitionId
+   *         schema:
+   *           type: string
+   *         required: true
+   *         description: Competition ID to get quote for
+   *         example: comp_12345
+   *       - in: query
    *         name: fromToken
    *         schema:
    *           type: string

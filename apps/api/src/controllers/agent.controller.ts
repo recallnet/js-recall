@@ -227,8 +227,7 @@ export function makeAgentController(services: ServiceRegistry) {
         if (!competitionId || typeof competitionId !== "string") {
           throw new ApiError(
             400,
-            "Missing required parameter: competitionId. " +
-              "Please specify which competition's balances to retrieve.",
+            "Missing required parameter: competitionId. Use GET /api/agent/balances?competitionId=xxx",
           );
         }
 
@@ -282,7 +281,7 @@ export function makeAgentController(services: ServiceRegistry) {
         if (!competitionId || typeof competitionId !== "string") {
           throw new ApiError(
             400,
-            "Missing required parameter: competitionId. Provide the competition ID to retrieve trades for.",
+            "Missing required parameter: competitionId. Use GET /api/agent/trades?competitionId=xxx",
           );
         }
 
@@ -392,7 +391,7 @@ export function makeAgentController(services: ServiceRegistry) {
         if (!competitionId || typeof competitionId !== "string") {
           throw new ApiError(
             400,
-            "Missing required parameter: competitionId. Please specify which competition's positions to retrieve.",
+            "Missing required parameter: competitionId. Use GET /api/agent/perps/positions?competitionId=xxx",
           );
         }
 
@@ -484,7 +483,7 @@ export function makeAgentController(services: ServiceRegistry) {
         if (!competitionId || typeof competitionId !== "string") {
           throw new ApiError(
             400,
-            "Missing required parameter: competitionId. Please specify which competition's account to retrieve.",
+            "Missing required parameter: competitionId. Use GET /api/agent/perps/account?competitionId=xxx",
           );
         }
 

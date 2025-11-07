@@ -75,7 +75,10 @@ export function makeTradeController(services: ServiceRegistry) {
 
         // Validate competitionId is provided
         if (!competitionId || typeof competitionId !== "string") {
-          throw new ApiError(400, "Missing required parameter: competitionId");
+          throw new ApiError(
+            400,
+            "Missing required parameter: competitionId. Use POST /api/trade/execute with competitionId in body",
+          );
         }
 
         // Validate reason is provided

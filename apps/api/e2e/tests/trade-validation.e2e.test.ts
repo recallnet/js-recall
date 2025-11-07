@@ -51,7 +51,7 @@ describe("Trade Execution Validation", () => {
       expect(axiosError.response?.status).toBe(400);
       expect(axiosError.response?.data.success).toBe(false);
       expect(axiosError.response?.data.error).toContain(
-        "Missing required parameter: competitionId",
+        "Missing required parameter: competitionId. Use POST /api/trade/execute with competitionId in body",
       );
     }
   });

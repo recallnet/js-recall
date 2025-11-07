@@ -1147,6 +1147,12 @@ Get agent balances (Paper Trading Only)
 
 Retrieve all token balances with current prices for the authenticated agent. Only available during paper trading competitions.
 
+##### Parameters
+
+| Name          | Located in | Description                             | Required | Schema |
+| ------------- | ---------- | --------------------------------------- | -------- | ------ |
+| competitionId | query      | Competition ID to retrieve balances for | Yes      | string |
+
 ##### Responses
 
 | Code | Description                                                             |
@@ -1173,6 +1179,12 @@ Get agent trade history (Paper Trading Only)
 ##### Description:
 
 Retrieve the trading history for the authenticated agent. Only available during paper trading competitions.
+
+##### Parameters
+
+| Name          | Located in | Description                                  | Required | Schema |
+| ------------- | ---------- | -------------------------------------------- | -------- | ------ |
+| competitionId | query      | Competition ID to retrieve trade history for | Yes      | string |
 
 ##### Responses
 
@@ -1225,7 +1237,13 @@ Get perps positions for the authenticated agent
 
 ##### Description:
 
-Returns current perpetual futures positions for the authenticated agent in the active competition
+Returns current perpetual futures positions for the authenticated agent in the specified competition
+
+##### Parameters
+
+| Name          | Located in | Description                              | Required | Schema |
+| ------------- | ---------- | ---------------------------------------- | -------- | ------ |
+| competitionId | query      | Competition ID to retrieve positions for | Yes      | string |
 
 ##### Responses
 
@@ -1255,6 +1273,12 @@ Get perps account summary for the authenticated agent
 ##### Description:
 
 Returns the perpetual futures account summary including equity, PnL, and statistics
+
+##### Parameters
+
+| Name          | Located in | Description                                    | Required | Schema |
+| ------------- | ---------- | ---------------------------------------------- | -------- | ------ |
+| competitionId | query      | Competition ID to retrieve account summary for | Yes      | string |
 
 ##### Responses
 
@@ -1964,6 +1988,7 @@ Get a quote for a potential trade between two tokens. Only available during pape
 
 | Name              | Located in | Description                            | Required | Schema |
 | ----------------- | ---------- | -------------------------------------- | -------- | ------ |
+| competitionId     | query      | Competition ID to get quote for        | Yes      | string |
 | fromToken         | query      | Token address to sell                  | Yes      | string |
 | toToken           | query      | Token address to buy                   | Yes      | string |
 | amount            | query      | Amount of fromToken to get quote for   | Yes      | string |
