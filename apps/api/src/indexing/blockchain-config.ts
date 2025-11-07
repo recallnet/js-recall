@@ -199,6 +199,43 @@ export const EVENTS = {
       },
     ],
   },
+  AllocationAdded: {
+    name: "AllocationAdded",
+    type: "allocationAdded",
+    abi: [
+      {
+        anonymous: false,
+        inputs: [
+          {
+            indexed: true,
+            internalType: "bytes32",
+            name: "root",
+            type: "bytes32",
+          },
+          {
+            indexed: true,
+            internalType: "address",
+            name: "token",
+            type: "address",
+          },
+          {
+            indexed: false,
+            internalType: "uint256",
+            name: "allocatedAmount",
+            type: "uint256",
+          },
+          {
+            indexed: false,
+            internalType: "uint256",
+            name: "startTimestamp",
+            type: "uint256",
+          },
+        ],
+        name: "AllocationAdded",
+        type: "event",
+      },
+    ],
+  },
 } as const;
 
 /**

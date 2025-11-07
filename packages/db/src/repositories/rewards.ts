@@ -275,4 +275,33 @@ export class RewardsRepository {
       throw error;
     }
   }
+
+  /**
+   * Update the transaction hash for a rewards root entry by root hash
+   * @param rootHash The root hash to identify the entry
+   * @param tx The transaction hash to update
+   * @param dbTx Optional database transaction to use for the operation
+   * @returns The updated root entry if found, undefined otherwise
+   */
+  async updateRewardsRootTx(
+    rootHash: Uint8Array,
+    tx: string,
+    dbTx?: Transaction,
+  ): Promise<SelectRewardsRoot | undefined> {
+    try {
+      const executor = dbTx || this.#db;
+      const [updated] = await executor
+        .update(rewardsRoots)
+        .set({
+          tx: tx,
+        })
+        .where(eq(rewardsRoots.rootHash, rootHash))
+        .returning();
+
+      return updated;
+    } catch (error) {
+      this.#logger.error("Error in updateRewardsRootTx:", error);
+      throw error;
+    }
+  }
 }
