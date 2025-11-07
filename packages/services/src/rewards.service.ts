@@ -422,6 +422,162 @@ export class RewardsService {
   }
 
   /**
+   * Get rewards report data for a competition
+   * @param competitionId The competition ID (UUID) to generate report for
+   * @returns Report data including competition info, rewards stats, and merkle root
+   */
+  public async getRewardsReportData(competitionId: string): Promise<{
+    competition: {
+      id: string;
+      name: string;
+    };
+    merkleRoot: string;
+    totalRecipients: number;
+    totalBoosters: number;
+    totalAgents: number;
+    totalRewards: bigint;
+    agentRewards: Array<{
+      address: string;
+      amount: bigint;
+    }>;
+    boosterRewards: Array<{
+      address: string;
+      amount: bigint;
+    }>;
+    boosterStats: {
+      average: bigint;
+      median: bigint;
+      largest: bigint;
+      smallest: bigint;
+      largestAddress: string;
+      smallestAddress: string;
+    };
+    top5Agents: Array<{
+      address: string;
+      amount: bigint;
+    }>;
+    top5Boosters: Array<{
+      address: string;
+      amount: bigint;
+    }>;
+  }> {
+    const competition =
+      await this.competitionRepository.findById(competitionId);
+    if (!competition) {
+      throw new Error(`Competition not found: ${competitionId}`);
+    }
+
+    const rewardsRoot =
+      await this.rewardsRepo.getRewardsRootByCompetition(competitionId);
+    if (!rewardsRoot) {
+      throw new Error(
+        `Rewards root not found for competition: ${competitionId}`,
+      );
+    }
+
+    const rewards =
+      await this.rewardsRepo.getRewardsByCompetition(competitionId);
+
+    // Separate agent rewards (have agentId) from booster rewards (no agentId)
+    const agentRewards = rewards
+      .filter((r) => r.agentId !== null)
+      .map((r) => ({
+        address: r.address,
+        amount: r.amount,
+      }));
+
+    const boosterRewards = rewards
+      .filter((r) => r.agentId === null)
+      .map((r) => ({
+        address: r.address,
+        amount: r.amount,
+      }));
+
+    // Calculate booster statistics
+    const boosterAmounts = boosterRewards
+      .map((r) => r.amount)
+      .sort((a, b) => {
+        if (a < b) return -1;
+        if (a > b) return 1;
+        return 0;
+      });
+
+    const calculateMedian = (sorted: bigint[]): bigint => {
+      if (sorted.length === 0) return 0n;
+      const mid = Math.floor(sorted.length / 2);
+      if (sorted.length % 2 === 0) {
+        return (sorted[mid - 1]! + sorted[mid]!) / 2n;
+      }
+      return sorted[mid]!;
+    };
+
+    const totalBoosterAmount = boosterAmounts.reduce(
+      (acc, amount) => acc + amount,
+      0n,
+    );
+    const average =
+      boosterAmounts.length > 0
+        ? totalBoosterAmount / BigInt(boosterAmounts.length)
+        : 0n;
+    const median = calculateMedian(boosterAmounts);
+    const largest =
+      boosterAmounts.length > 0
+        ? boosterAmounts[boosterAmounts.length - 1]!
+        : 0n;
+    const smallest = boosterAmounts.length > 0 ? boosterAmounts[0]! : 0n;
+
+    const largestReward = boosterRewards.find((r) => r.amount === largest);
+    const smallestReward = boosterRewards.find((r) => r.amount === smallest);
+
+    const boosterStats = {
+      average,
+      median,
+      largest,
+      smallest,
+      largestAddress: largestReward?.address || "",
+      smallestAddress: smallestReward?.address || "",
+    };
+
+    // Get top 5 agents and boosters
+    const top5Agents = [...agentRewards]
+      .sort((a, b) => {
+        if (a.amount < b.amount) return 1;
+        if (a.amount > b.amount) return -1;
+        return 0;
+      })
+      .slice(0, 5);
+
+    const top5Boosters = [...boosterRewards]
+      .sort((a, b) => {
+        if (a.amount < b.amount) return 1;
+        if (a.amount > b.amount) return -1;
+        return 0;
+      })
+      .slice(0, 5);
+
+    const totalRewards = rewards.reduce((acc, r) => acc + r.amount, 0n);
+
+    const merkleRoot = `0x${Buffer.from(rewardsRoot.rootHash).toString("hex")}`;
+
+    return {
+      competition: {
+        id: competition.id,
+        name: competition.name || `Competition #${competition.id}`,
+      },
+      merkleRoot,
+      totalRecipients: rewards.length,
+      totalBoosters: boosterRewards.length,
+      totalAgents: agentRewards.length,
+      totalRewards,
+      agentRewards,
+      boosterRewards,
+      boosterStats,
+      top5Agents,
+      top5Boosters,
+    };
+  }
+
+  /**
    * Internal method to calculate rewards
    * @returns Array of calculated rewards
    * @private

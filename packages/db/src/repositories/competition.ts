@@ -2848,46 +2848,37 @@ export class CompetitionRepository {
   }
 
   /**
-   * Find competitions that need rewards calculation
-   * Finds competitions that have ended but don't have rewards allocated yet.
-   * @returns Array of competitions that should have rewards calculated
+   * Find competition that need rewards calculation
+   * Finds competition that have ended but don't have rewards allocated yet.
+   * @returns Competition that should have rewards calculated or null if no competition found
    */
-  async findCompetitionsNeedingRewardsCalculation() {
-    try {
-      const result = await this.#db
-        .select({
-          crossChainTradingType: tradingCompetitions.crossChainTradingType,
-          ...getTableColumns(competitions),
-        })
-        .from(tradingCompetitions)
-        .innerJoin(
-          competitions,
-          eq(tradingCompetitions.competitionId, competitions.id),
-        )
-        .leftJoin(rewardsRoots, eq(competitions.id, rewardsRoots.competitionId))
-        .innerJoin(
-          competitionPrizePools,
-          eq(competitions.id, competitionPrizePools.competitionId),
-        )
-        .where(
-          and(
-            eq(competitions.status, "ended"),
-            isNotNull(competitions.endDate),
-            isNull(rewardsRoots.competitionId),
-          ),
-        )
-        .orderBy(asc(competitions.endDate));
+  async findCompetitionNeedingRewardsCalculation(): Promise<SelectCompetition | null> {
+    const [result] = await this.#db
+      .select({
+        crossChainTradingType: tradingCompetitions.crossChainTradingType,
+        ...getTableColumns(competitions),
+      })
+      .from(tradingCompetitions)
+      .innerJoin(
+        competitions,
+        eq(tradingCompetitions.competitionId, competitions.id),
+      )
+      .leftJoin(rewardsRoots, eq(competitions.id, rewardsRoots.competitionId))
+      .innerJoin(
+        competitionPrizePools,
+        eq(competitions.id, competitionPrizePools.competitionId),
+      )
+      .where(
+        and(
+          eq(competitions.status, "ended"),
+          isNotNull(competitions.endDate),
+          isNull(rewardsRoots.competitionId),
+        ),
+      )
+      .orderBy(asc(competitions.endDate))
+      .limit(1);
 
-      return result;
-    } catch (error) {
-      this.#logger.error(
-        {
-          error,
-        },
-        "[CompetitionRepository] Error in findCompetitionsNeedingRewardsCalculation",
-      );
-      throw error;
-    }
+    return result || null;
   }
 
   /**
