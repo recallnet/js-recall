@@ -175,7 +175,7 @@ export class RewardsRepository {
 
       return result;
     } catch (error) {
-      this.#logger.error("Error in getRewardsRootByCompetition:", error);
+      this.#logger.error({ error }, "Error in getRewardsRootByCompetition");
       throw error;
     }
   }
