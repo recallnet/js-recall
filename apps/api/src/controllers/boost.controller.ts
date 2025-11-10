@@ -1,8 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { z } from "zod";
 
-import { PagingSchema } from "@recallnet/services/types";
-
 import ServiceRegistry from "@/services/index.js";
 
 import { ensureUuid } from "./request-helpers.js";
@@ -131,44 +129,6 @@ export function makeBoostController(services: ServiceRegistry) {
           res.status(200).json({
             success: true,
             agentTotal: result.value.agentBoostTotal.total.toString(),
-          });
-        }
-      } catch (error) {
-        next(error);
-      }
-    },
-
-    async listCompetitionBoosts(
-      req: Request,
-      res: Response,
-      next: NextFunction,
-    ) {
-      try {
-        const competitionId = ensureUuid(req.params.competitionId);
-        const { limit, offset } = PagingSchema.parse(req.query);
-
-        const result = await services.boostService.getCompetitionBoosts(
-          competitionId,
-          { limit, offset },
-        );
-
-        if (result.isErr()) {
-          next(result.error);
-        } else {
-          res.status(200).json({
-            success: true,
-            data: {
-              items: result.value.items.map((item) => ({
-                userId: item.userId,
-                wallet: item.wallet,
-                agentId: item.agentId,
-                agentName: item.agentName,
-                agentHandle: item.agentHandle,
-                amount: item.amount.toString(),
-                createdAt: item.createdAt,
-              })),
-            },
-            pagination: result.value.pagination,
           });
         }
       } catch (error) {
