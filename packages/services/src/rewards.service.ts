@@ -171,15 +171,14 @@ export class RewardsService {
         .filter((agent) => agent.isRewardsIneligible)
         .map((agent) => agent.id);
 
-      // Combine competition-specific and global exclusions
+      // Combine competition-specific and global exclusions (deduplicated)
       const competitionExclusions = competition.rewardsIneligible ?? [];
-      const allExcludedAgents = [
-        ...competitionExclusions,
-        ...globallyIneligibleAgents,
-      ];
+      const allExcludedAgents = Array.from(
+        new Set([...competitionExclusions, ...globallyIneligibleAgents]),
+      );
 
       this.logger.debug(
-        `[RewardsService] Excluding ${allExcludedAgents.length} agents from rewards (${competitionExclusions.length} competition-specific, ${globallyIneligibleAgents.length} globally ineligible)`,
+        `[RewardsService] Excluding ${allExcludedAgents.length} unique agents from rewards (${competitionExclusions.length} competition-specific, ${globallyIneligibleAgents.length} globally ineligible)`,
       );
 
       const rewards = this.calculate(

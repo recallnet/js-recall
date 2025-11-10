@@ -1202,12 +1202,11 @@ export class CompetitionService {
           .filter((agent) => agent.isRewardsIneligible)
           .map((agent) => agent.id);
 
-        // Combine competition-specific and global exclusions
+        // Combine competition-specific and global exclusions (deduplicated)
         const competitionExclusions = updated.rewardsIneligible ?? [];
-        const allExcludedAgents = [
-          ...competitionExclusions,
-          ...globallyIneligibleAgents,
-        ];
+        const allExcludedAgents = Array.from(
+          new Set([...competitionExclusions, ...globallyIneligibleAgents]),
+        );
 
         // Assign winners to rewards (excluding both competition-specific and globally ineligible agents)
         await this.competitionRewardService.assignWinnersToRewards(
