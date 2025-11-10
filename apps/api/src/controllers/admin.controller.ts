@@ -688,6 +688,7 @@ export function makeAdminController(services: ServiceRegistry) {
           evaluationMetric,
           perpsProvider,
           prizePools,
+          rewardsIneligible,
         } = flatParse(AdminStartCompetitionSchema, req.body);
 
         // Call service method with creation params only if no competitionId
@@ -716,6 +717,7 @@ export function makeAdminController(services: ServiceRegistry) {
                   evaluationMetric,
                   perpsProvider,
                   prizePools,
+                  rewardsIneligible,
                 },
           });
 
