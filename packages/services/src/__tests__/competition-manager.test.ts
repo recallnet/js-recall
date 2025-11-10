@@ -131,6 +131,7 @@ describe("CompetitionService", () => {
     boosterAllocationUnit: null,
     rewardRules: null,
     rewardDetails: null,
+    rewardsIneligible: null,
     sandboxMode: false,
     displayState: null,
     competitionId: mockCompeitionId,

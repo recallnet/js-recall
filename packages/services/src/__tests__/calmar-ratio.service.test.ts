@@ -51,6 +51,7 @@ describe("CalmarRatioService", () => {
     arenaId: "default-perps-arena",
     engineId: "perpetual_futures" as const,
     engineVersion: "1.0.0",
+    rewardsIneligible: null,
   });
 
   // Helper to create mock portfolio snapshots
