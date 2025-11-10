@@ -705,8 +705,8 @@ class BoostRepository {
         agentName: agents.name,
         agentHandle: agents.handle,
         // Negate deltaAmount to convert spending records (negative) to positive display amounts.
-        // Safe because WHERE clause ensures deltaAmount < 0, guaranteed by decrease() method
-        // which stores spending as -amount (see line 437).
+        // Safe because WHERE clause ensures deltaAmount < 0, guaranteed by `decrease` method
+        // which stores spending as -amount.
         amount: sql<bigint>`-${schema.boostChanges.deltaAmount}`.mapWith(
           BigInt,
         ),
@@ -726,12 +726,7 @@ class BoostRepository {
         eq(schema.agentBoosts.agentBoostTotalId, schema.agentBoostTotals.id),
       )
       .innerJoin(agents, eq(schema.agentBoostTotals.agentId, agents.id))
-      .where(
-        and(
-          eq(schema.boostBalances.competitionId, competitionId),
-          sql`${schema.boostChanges.deltaAmount} < 0`,
-        ),
-      )
+      .where(eq(schema.boostBalances.competitionId, competitionId))
       .orderBy(desc(schema.boostChanges.createdAt))
       .limit(limit)
       .offset(offset);
@@ -787,12 +782,7 @@ class BoostRepository {
         eq(schema.agentBoosts.agentBoostTotalId, schema.agentBoostTotals.id),
       )
       .innerJoin(agents, eq(schema.agentBoostTotals.agentId, agents.id))
-      .where(
-        and(
-          eq(schema.boostBalances.competitionId, competitionId),
-          sql`${schema.boostChanges.deltaAmount} < 0`,
-        ),
-      );
+      .where(eq(schema.boostBalances.competitionId, competitionId));
 
     return result?.count ?? 0;
   }
