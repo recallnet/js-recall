@@ -661,8 +661,8 @@ class BoostRepository {
    * Behavior:
    * 1) Join boost_changes with boost_balances to get user context.
    * 2) Join with agent_boosts to link changes to specific agents.
-   * 3) Join with agent_boost_totals to get agent information.
-   * 4) Filter for negative delta amounts (debits/spending) for the specified competition.
+   * 3) Join with agent_boost_totals and agents to get agent information.
+   * 4) Filter by competition ID.
    * 5) Order by creation timestamp descending (most recent first).
    * 6) Apply limit and offset for pagination.
    *
@@ -671,13 +671,15 @@ class BoostRepository {
    * - Safe to call concurrently with other operations.
    *
    * Returns:
-   * - Array of boost allocation records with user ID, wallet, agent ID, amount (positive), and timestamp.
+   * - Array of boost allocation records with user ID, wallet, agent ID, agent name, agent handle, amount (positive), and timestamp.
    * - Empty array if no boost allocations found for the competition.
    * - Amount is returned as positive bigint (negation of deltaAmount).
    * - Wallet is returned as Uint8Array (binary format from database).
    *
    * Notes:
-   * - Only returns spending records (deltaAmount < 0), converted to positive amounts.
+   * - Only returns boost spending records via INNER JOIN to agent_boosts (which only contains spending).
+   * - The decrease() method guarantees all agent_boosts entries have negative deltaAmount.
+   * - Amounts are negated to positive values for display.
    * - Results ordered by most recent first (createdAt DESC).
    * - Supports pagination via limit and offset parameters.
    *
@@ -740,8 +742,9 @@ class BoostRepository {
    * Behavior:
    * 1) Join boost_changes with boost_balances to get competition context.
    * 2) Join with agent_boosts to ensure we're counting agent allocations.
-   * 3) Filter for negative delta amounts (debits/spending) for the specified competition.
-   * 4) Return the total count.
+   * 3) Join with agent_boost_totals and agents (matching competitionBoosts query structure).
+   * 4) Filter by competition ID.
+   * 5) Return the total count.
    *
    * Read-Only Operation:
    * - This method only reads data and does not modify any records.
@@ -752,7 +755,8 @@ class BoostRepository {
    * - Returns 0 if no boost allocations found.
    *
    * Notes:
-   * - Only counts spending records (deltaAmount < 0).
+   * - Uses identical join structure as competitionBoosts() to ensure count matches returnable records.
+   * - Only counts boost spending records via INNER JOIN to agent_boosts.
    * - Used for pagination to calculate total pages and hasMore flag.
    *
    * @param competitionId - ID of the competition context
