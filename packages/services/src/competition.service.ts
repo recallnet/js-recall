@@ -2403,7 +2403,7 @@ export class CompetitionService {
       }
     }
 
-    // Rule 5: Rank requirement check
+    // Rule 4: Rank requirement check
     if (
       competition.minRecallRank !== null &&
       competition.minRecallRank !== undefined
