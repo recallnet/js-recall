@@ -6099,5 +6099,76 @@ describe("Competition API", () => {
       );
       expect(agentReward).toBeDefined();
     });
+
+    test("should handle rewardsIneligible when using startCompetition endpoint", async () => {
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Create two agents
+      const { agent: agent1, client: client1 } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "Start Winner",
+        });
+      const { agent: agent2, client: client2 } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "Start Excluded",
+        });
+
+      // Use startCompetition (not createCompetition) with rewardsIneligible
+      const startResponse = await adminClient.startCompetition({
+        name: "Start Competition with Exclusions",
+        agentIds: [agent1.id, agent2.id],
+        rewards: {
+          1: 500,
+          2: 250,
+        },
+        rewardsIneligible: [agent2.id], // Exclude agent2
+      });
+
+      expect(startResponse.success).toBe(true);
+      const competitionId = (startResponse as StartCompetitionResponse)
+        .competition.id;
+
+      // Make trades
+      await client1.executeTrade({
+        competitionId,
+        fromToken: config.specificChainTokens.eth.usdc,
+        toToken: "0x000000000000000000000000000000000000dead",
+        amount: "10",
+        reason: "Winner",
+      });
+
+      await client2.executeTrade({
+        competitionId,
+        fromToken: config.specificChainTokens.eth.usdc,
+        toToken: "0x000000000000000000000000000000000000dead",
+        amount: "100",
+        reason: "Excluded agent",
+      });
+
+      await wait(2000);
+      await adminClient.endCompetition(competitionId);
+
+      // Verify exclusion worked via startCompetition endpoint
+      const detailResponse = await adminClient.getCompetition(competitionId);
+      const competition = (detailResponse as CompetitionDetailResponse)
+        .competition;
+
+      // Agent2 should not get reward
+      const agent2Reward = competition.rewards?.find(
+        (r) => r.agentId === agent2.id,
+      );
+      expect(agent2Reward).toBeUndefined();
+
+      // Agent1 should get reward
+      const agent1Reward = competition.rewards?.find(
+        (r) => r.agentId === agent1.id,
+      );
+      expect(agent1Reward).toBeDefined();
+      expect(agent1Reward?.rank).toBe(1);
+      expect(agent1Reward?.reward).toBe(500);
+    });
   });
 });

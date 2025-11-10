@@ -131,7 +131,6 @@ describe("CompetitionService", () => {
     boosterAllocationUnit: null,
     rewardRules: null,
     rewardDetails: null,
-    rewardsIneligible: null,
     sandboxMode: false,
     displayState: null,
     competitionId: mockCompeitionId,
@@ -139,6 +138,7 @@ describe("CompetitionService", () => {
     arenaId: "default-paper-arena",
     engineId: "spot_paper_trading" as const,
     engineVersion: "1.0.0",
+    rewardsIneligible: null,
   };
 
   const mockRewards: SelectCompetitionReward[] = [
