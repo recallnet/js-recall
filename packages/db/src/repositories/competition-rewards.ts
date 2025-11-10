@@ -128,22 +128,34 @@ export class CompetitionRewardsRepository {
    * Assign winners to rewards for a competition by updating agentIds based on leaderboard
    * @param competitionId The competition ID
    * @param leaderboard Array of { agentId, value } objects, index+1 = rank
+   * @param excludedAgentIds Optional array of agent IDs ineligible for rewards
    * @param tx Optional database transaction
    * @returns void
    */
   async assignWinnersToRewards(
     competitionId: string,
     leaderboard: { agentId: string; value: number }[],
+    excludedAgentIds?: string[],
     tx?: Transaction,
   ): Promise<void> {
     try {
       // Fetch all rewards for the competition
       const rewardRecords = await this.findRewardsByCompetition(competitionId);
 
+      const excludedSet = excludedAgentIds
+        ? new Set(excludedAgentIds)
+        : new Set();
+
       const updates = rewardRecords
         .map((reward) => {
           const leaderboardEntry = leaderboard[reward.rank - 1];
           if (!leaderboardEntry) return null;
+
+          // Skip if agent is ineligible for rewards
+          if (excludedSet.has(leaderboardEntry.agentId)) {
+            return null;
+          }
+
           return {
             id: reward.id,
             agentId: leaderboardEntry.agentId,

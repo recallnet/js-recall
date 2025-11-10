@@ -102,6 +102,7 @@ export const AdminCreateCompetitionSchema = z
         users: z.number().min(0),
       })
       .optional(),
+    rewardsIneligible: z.array(z.string()).optional(),
   })
   .refine(
     (data) => {
@@ -160,6 +161,7 @@ export const AdminStartCompetitionSchema = z
         users: z.number().min(0),
       })
       .optional(),
+    rewardsIneligible: z.array(z.string()).optional(),
   })
   .refine((data) => data.competitionId || data.name, {
     message: "Either competitionId or name must be provided",

@@ -79,6 +79,7 @@ describe("RewardsService", () => {
     arenaId: "default-paper-arena",
     engineId: "spot_paper_trading" as const,
     engineVersion: "1.0.0",
+    rewardsIneligible: null,
   });
 
   // Helper function to create a mock leaderboard entry
@@ -1563,6 +1564,128 @@ describe("RewardsService", () => {
         insertCall?.reduce((sum: bigint, reward) => sum + reward.amount, 0n) ||
         0n;
       expect(totalRewards).toBeLessThanOrEqual(BigInt(testCaseData.prizePool));
+    });
+
+    it("should exclude ineligible agents from competitor rewards", async () => {
+      const service = new RewardsService(
+        mockRewardsRepo,
+        mockCompetitionRepository,
+        mockBoostRepository,
+        mockRewardsAllocator,
+        mockDb,
+        mockLogger,
+      );
+
+      // Create competition with excluded agents
+      const competitionWithExclusions = {
+        ...createMockCompetition(testCompetitionId),
+        rewardsIneligible: ["Competitor B"], // Exclude agent B
+      };
+
+      const leaderboardWithExcluded: Leaderboard = [
+        {
+          owner: "owner-1",
+          competitor: "Competitor A",
+          wallet: "0x1111111111111111111111111111111111111111",
+          rank: 1,
+        },
+        {
+          owner: "owner-2",
+          competitor: "Competitor B", // This one is excluded
+          wallet: "0x2222222222222222222222222222222222222222",
+          rank: 2,
+        },
+        {
+          owner: "owner-3",
+          competitor: "Competitor C",
+          wallet: "0x3333333333333333333333333333333333333333",
+          rank: 3,
+        },
+      ];
+
+      mockCompetitionRepository.findById.mockResolvedValue(
+        competitionWithExclusions,
+      );
+      vi.mocked(
+        mockCompetitionRepository.findLeaderboardByCompetitionWithWallets,
+      ).mockResolvedValue(
+        leaderboardWithExcluded.map((entry) =>
+          createMockLeaderboardEntry(
+            entry.competitor,
+            entry.wallet,
+            entry.rank,
+          ),
+        ),
+      );
+      mockBoostRepository.userBoostSpending.mockResolvedValue([]);
+      mockRewardsRepo.insertRewards.mockResolvedValue([]);
+
+      await service.calculateRewards(
+        testCompetitionId,
+        testPrizePoolUsers,
+        testPrizePoolCompetitors,
+      );
+
+      expect(mockRewardsRepo.insertRewards).toHaveBeenCalled();
+      const insertCall = mockRewardsRepo.insertRewards.mock.calls[0]?.[0];
+
+      // Verify Competitor B (excluded) does not receive rewards
+      const competitorBReward = insertCall?.find(
+        (reward) => reward.agentId === "Competitor B",
+      );
+      expect(competitorBReward).toBeUndefined();
+
+      // Verify Competitor A and C still receive rewards
+      const competitorAReward = insertCall?.find(
+        (reward) => reward.agentId === "Competitor A",
+      );
+      const competitorCReward = insertCall?.find(
+        (reward) => reward.agentId === "Competitor C",
+      );
+      expect(competitorAReward).toBeDefined();
+      expect(competitorCReward).toBeDefined();
+    });
+
+    it("should handle empty exclusion list (backward compatible)", async () => {
+      const service = new RewardsService(
+        mockRewardsRepo,
+        mockCompetitionRepository,
+        mockBoostRepository,
+        mockRewardsAllocator,
+        mockDb,
+        mockLogger,
+      );
+
+      const competitionNoExclusions = {
+        ...createMockCompetition(testCompetitionId),
+        rewardsIneligible: [], // Empty array
+      };
+
+      mockCompetitionRepository.findById.mockResolvedValue(
+        competitionNoExclusions,
+      );
+      vi.mocked(
+        mockCompetitionRepository.findLeaderboardByCompetitionWithWallets,
+      ).mockResolvedValue([
+        createMockLeaderboardEntry(
+          "agent-1",
+          "0x1111111111111111111111111111111111111111",
+          1,
+        ),
+      ]);
+      mockBoostRepository.userBoostSpending.mockResolvedValue([]);
+      mockRewardsRepo.insertRewards.mockResolvedValue([]);
+
+      await service.calculateRewards(
+        testCompetitionId,
+        testPrizePoolUsers,
+        testPrizePoolCompetitors,
+      );
+
+      // Should insert rewards normally (no exclusions)
+      expect(mockRewardsRepo.insertRewards).toHaveBeenCalled();
+      const insertCall = mockRewardsRepo.insertRewards.mock.calls[0]?.[0];
+      expect(insertCall?.length).toBeGreaterThan(0);
     });
   });
 

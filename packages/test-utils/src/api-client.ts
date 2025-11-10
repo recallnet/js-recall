@@ -477,6 +477,7 @@ export class ApiClient {
             agent: number;
             users: number;
           };
+          rewardsIneligible?: string[];
         }
       | string,
     description?: string,
@@ -549,6 +550,7 @@ export class ApiClient {
     evaluationMetric,
     perpsProvider,
     prizePools,
+    rewardsIneligible,
   }: {
     name?: string;
     description?: string;
@@ -579,6 +581,7 @@ export class ApiClient {
       agent: number;
       users: number;
     };
+    rewardsIneligible?: string[];
   }): Promise<CreateCompetitionResponse | ErrorResponse> {
     const competitionName = name || `Test competition ${Date.now()}`;
     try {
@@ -605,6 +608,7 @@ export class ApiClient {
           evaluationMetric,
           perpsProvider,
           prizePools,
+          rewardsIneligible,
         },
       );
 
@@ -633,6 +637,7 @@ export class ApiClient {
       evaluationMetric,
       perpsProvider,
       prizePools,
+      rewardsIneligible,
     }: {
       name?: string;
       description?: string;
@@ -656,6 +661,7 @@ export class ApiClient {
         agent: number;
         users: number;
       };
+      rewardsIneligible?: string[];
     },
   ): Promise<UpdateCompetitionResponse | ErrorResponse> {
     try {
@@ -675,6 +681,7 @@ export class ApiClient {
           evaluationMetric,
           perpsProvider,
           prizePools,
+          rewardsIneligible,
         },
       );
 

@@ -92,6 +92,7 @@ export interface CreateCompetitionParams {
     agent: number;
     users: number;
   };
+  rewardsIneligible?: string[];
 }
 
 /**
@@ -422,6 +423,7 @@ export class CompetitionService {
     evaluationMetric,
     perpsProvider,
     prizePools,
+    rewardsIneligible,
   }: CreateCompetitionParams) {
     const id = randomUUID();
 
@@ -441,6 +443,7 @@ export class CompetitionService {
       joinEndDate: joinEndDate ?? null,
       maxParticipants: maxParticipants ?? null,
       minimumStake: minimumStake ?? null,
+      rewardsIneligible: rewardsIneligible ?? null,
       status: "pending",
       crossChainTradingType: tradingType ?? "disallowAll",
       sandboxMode: sandboxMode ?? false,
@@ -1192,10 +1195,11 @@ export class CompetitionService {
           tx,
         );
 
-        // Assign winners to rewards
+        // Assign winners to rewards (excluding ineligible agents)
         await this.competitionRewardService.assignWinnersToRewards(
           competitionId,
           leaderboard,
+          updated.rewardsIneligible ?? undefined,
           tx,
         );
 
@@ -2553,7 +2557,7 @@ export class CompetitionService {
   async processPendingRewardsCompetitions(): Promise<string | null> {
     const competition =
       await this.competitionRepo.findCompetitionNeedingRewardsCalculation();
-      if (!competition) {
+    if (!competition) {
       this.logger.debug(
         "[CompetitionManager] No competition needing rewards calculation found",
       );

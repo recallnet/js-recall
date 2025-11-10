@@ -156,6 +156,12 @@ export function configureCompetitionsRoutes(
    *                             type: number
    *                             nullable: true
    *                             description: Minimum number of trades required per day (null if no requirement)
+   *                       rewardsIneligible:
+   *                         type: array
+   *                         nullable: true
+   *                         items:
+   *                           type: string
+   *                         description: Agent IDs ineligible to receive rewards from this competition
    *                 pagination:
    *                   type: object
    *                   description: Pagination metadata
@@ -437,6 +443,12 @@ export function configureCompetitionsRoutes(
    *                           type: number
    *                           nullable: true
    *                           description: Minimum number of trades required per day (null if no requirement)
+   *                     rewardsIneligible:
+   *                       type: array
+   *                       nullable: true
+   *                       items:
+   *                         type: string
+   *                       description: Agent IDs ineligible to receive rewards from this competition
    *       400:
    *         description: Bad request - Invalid competition ID format
    *       404:

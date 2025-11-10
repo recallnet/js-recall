@@ -616,6 +616,7 @@ export function makeAdminController(services: ServiceRegistry) {
           evaluationMetric,
           perpsProvider,
           prizePools,
+          rewardsIneligible,
         } = flatParse(AdminCreateCompetitionSchema, req.body);
 
         // Create a new competition
@@ -643,6 +644,7 @@ export function makeAdminController(services: ServiceRegistry) {
             evaluationMetric,
             perpsProvider,
             prizePools,
+            rewardsIneligible,
           },
         );
 

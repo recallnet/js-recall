@@ -1014,6 +1014,12 @@ export function configureAdminRoutes(
    *                     minimum: 0
    *                     description: User prize pool amount
    *                     example: 500
+   *               rewardsIneligible:
+   *                 type: array
+   *                 items:
+   *                   type: string
+   *                 description: Agent IDs ineligible to receive rewards from this competition
+   *                 example: ["agent-id-1", "agent-id-2"]
    *     responses:
    *       201:
    *         description: Competition created successfully
@@ -1109,6 +1115,12 @@ export function configureAdminRoutes(
    *                           type: number
    *                           nullable: true
    *                           description: Minimum number of trades required per day (null if no requirement)
+   *                     rewardsIneligible:
+   *                       type: array
+   *                       nullable: true
+   *                       items:
+   *                         type: string
+   *                       description: Agent IDs ineligible to receive rewards from this competition
    *       400:
    *         description: |-
    *           Bad Request - Various validation errors:
@@ -1260,6 +1272,12 @@ export function configureAdminRoutes(
    *                     minimum: 0
    *                     description: User prize pool amount
    *                     example: 500
+   *               rewardsIneligible:
+   *                 type: array
+   *                 items:
+   *                   type: string
+   *                 description: Agent IDs ineligible to receive rewards from this competition
+   *                 example: ["agent-id-1", "agent-id-2"]
    *     responses:
    *       200:
    *         description: Competition started successfully
@@ -1360,6 +1378,12 @@ export function configureAdminRoutes(
    *                           type: number
    *                           nullable: true
    *                           description: Minimum number of trades required per day (null if no requirement)
+   *                     rewardsIneligible:
+   *                       type: array
+   *                       nullable: true
+   *                       items:
+   *                         type: string
+   *                       description: Agent IDs ineligible to receive rewards from this competition
    *                 initializedAgents:
    *                   type: array
    *                   items:
@@ -1590,6 +1614,12 @@ export function configureAdminRoutes(
    *                 nullable: true
    *                 description: Minimum stake amount required to join the competition (in USD)
    *                 example: 100
+   *               rewardsIneligible:
+   *                 type: array
+   *                 items:
+   *                   type: string
+   *                 description: Agent IDs ineligible to receive rewards from this competition
+   *                 example: ["agent-id-1", "agent-id-2"]
    *     responses:
    *       200:
    *         description: Competition updated successfully
@@ -1676,6 +1706,12 @@ export function configureAdminRoutes(
    *                       type: string
    *                       format: date-time
    *                       description: Competition last update date
+   *                     rewardsIneligible:
+   *                       type: array
+   *                       nullable: true
+   *                       items:
+   *                         type: string
+   *                       description: Agent IDs ineligible to receive rewards from this competition
    *       400:
    *         description: Bad request - Missing competitionId, no valid fields provided, attempting to update restricted fields (startDate, endDate, status), or missing perpsProvider when changing type to perpetual_futures
    *       401:

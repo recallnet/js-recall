@@ -533,6 +533,7 @@ export interface Competition {
     | "max_drawdown"
     | "total_pnl"; // Primary evaluation metric for perps competitions
   tradingConstraints?: TradingConstraints;
+  rewardsIneligible?: string[] | null;
   rewards?: {
     rank: number;
     reward: number;

@@ -358,6 +358,7 @@ export const competitions = pgTable(
     boosterAllocationUnit: allocationUnit("booster_allocation_unit"),
     rewardRules: text("reward_rules"),
     rewardDetails: text("reward_details"),
+    rewardsIneligible: text("rewards_ineligible").array(),
 
     // Engine routing
     engineId: engineType("engine_id"),
