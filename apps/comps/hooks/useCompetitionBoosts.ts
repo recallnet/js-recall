@@ -6,7 +6,6 @@ import {
 
 import { tanstackClient } from "@/rpc/clients/tanstack-query";
 import { RouterOutputs } from "@/rpc/router";
-import { CompetitionStatus } from "@/types/enums";
 import { getCompetitionPollingInterval } from "@/utils/competition-utils";
 
 /**
@@ -21,7 +20,7 @@ export const useCompetitionBoosts = (
   competitionId: string,
   limit: number = 25,
   enabled: boolean = true,
-  competitionStatus?: CompetitionStatus,
+  competitionStatus: RouterOutputs["competitions"]["getById"]["status"],
 ): UseInfiniteQueryResult<
   RouterOutputs["boost"]["competitionBoosts"],
   Error

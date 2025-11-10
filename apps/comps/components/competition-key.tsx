@@ -1047,12 +1047,7 @@ const PredictionsTabContent: React.FC<{
     isError,
   } = useCompetitionBoosts(competition.id, 50, true, competition.status);
 
-  // Flatten all pages into a single array
-  const boosts = useMemo(() => {
-    return data?.pages.flatMap((page) => page.items) ?? [];
-  }, [data]);
-
-  if (isLoading) {
+  if (isLoading || !data) {
     return (
       <div className="h-full overflow-y-auto p-4">
         <SkeletonList count={10} type="trade" />
@@ -1069,7 +1064,7 @@ const PredictionsTabContent: React.FC<{
     );
   }
 
-  if (boosts.length === 0) {
+  if (data?.items.length === 0) {
     return (
       <div className="flex h-full flex-col items-center justify-center p-8">
         <BoostIcon className="mb-4 size-8" />
@@ -1086,7 +1081,7 @@ const PredictionsTabContent: React.FC<{
     <div className="h-full overflow-y-auto p-4">
       <div>
         <div className="space-y-3">
-          {boosts.map((boost, index) => {
+          {data?.items.map((boost, index) => {
             const timestamp = new Date(boost.createdAt);
             const showRelative = shouldShowRelativeTimestamp(timestamp);
 
