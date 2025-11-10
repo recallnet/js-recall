@@ -1119,7 +1119,7 @@ describe("CompetitionService - joinCompetition", () => {
       ).rejects.toThrow("not permitted");
     });
 
-    it("should reject when allowlistOnly is true but no allowlist exists", async () => {
+    it("should reject when allowlistOnly is true but no allowlist exists (misconfiguration)", async () => {
       const mockCompetitionNoList = {
         ...mockCompetition,
         allowlistOnly: true,
@@ -1130,23 +1130,20 @@ describe("CompetitionService - joinCompetition", () => {
       competitionRepo.findById.mockResolvedValue(mockCompetitionNoList);
       competitionRepo.isAgentActiveInCompetition.mockResolvedValue(false);
 
-      await expect(
-        competitionService.joinCompetition(
+      try {
+        await competitionService.joinCompetition(
           mockCompetition.id,
           mockAgent.id,
           mockUserId,
           undefined,
-        ),
-      ).rejects.toThrow(ApiError);
-
-      await expect(
-        competitionService.joinCompetition(
-          mockCompetition.id,
-          mockAgent.id,
-          mockUserId,
-          undefined,
-        ),
-      ).rejects.toThrow("allowlist-only");
+        );
+        expect.fail("Should have thrown ApiError");
+      } catch (error) {
+        expect(error).toBeInstanceOf(ApiError);
+        expect((error as ApiError).statusCode).toBe(500); // Server misconfiguration
+        expect((error as ApiError).message).toContain("misconfigured");
+        expect((error as ApiError).message).toContain("allowlist-only mode");
+      }
     });
   });
 });

@@ -2379,10 +2379,10 @@ export class CompetitionService {
     // Rule 2: Allowlist-only mode
     if (competition.allowlistOnly) {
       if (!competition.allowlist || competition.allowlist.length === 0) {
-        // If allowlistOnly is true but no allowlist exists, nobody can join
+        // If allowlistOnly is true but no allowlist exists, competition is misconfigured
         throw new ApiError(
-          403,
-          "This competition is allowlist-only. Your agent is not on the allowlist",
+          500,
+          "This competition is misconfigured: allowlist-only mode is enabled but no allowlist is defined. Please contact an administrator.",
         );
       }
       if (!competition.allowlist.includes(agentId)) {
