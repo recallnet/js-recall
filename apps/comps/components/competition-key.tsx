@@ -20,6 +20,7 @@ import { Pagination } from "@/components/pagination";
 import { useCompetitionBoosts, useCompetitionRules } from "@/hooks";
 import { useCompetitionPerpsPositions } from "@/hooks/useCompetitionPerpsPositions";
 import { useCompetitionTrades } from "@/hooks/useCompetitionTrades";
+import { openForBoosting } from "@/lib/open-for-boosting";
 import { RouterOutputs } from "@/rpc/router";
 import { displayAddress } from "@/utils/address";
 import {
@@ -1038,6 +1039,9 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
 const PredictionsTabContent: React.FC<{
   competition: RouterOutputs["competitions"]["getById"];
 }> = ({ competition }) => {
+  // If the competition is pending, only query boosts if boosting has started; else, always fetch
+  const shouldFetchBoosts =
+    competition.status === "pending" ? openForBoosting(competition) : true;
   const {
     data,
     fetchNextPage,
@@ -1045,9 +1049,18 @@ const PredictionsTabContent: React.FC<{
     isFetchingNextPage,
     isLoading,
     isError,
-  } = useCompetitionBoosts(competition.id, 50, true, competition.status);
+  } = useCompetitionBoosts(
+    competition.id,
+    25,
+    shouldFetchBoosts,
+    competition.status,
+  );
 
-  if (isLoading || !data) {
+  const boosts = useMemo(() => {
+    return data?.pages.flatMap((page) => page.items) ?? [];
+  }, [data]);
+
+  if (isLoading) {
     return (
       <div className="h-full overflow-y-auto p-4">
         <SkeletonList count={10} type="trade" />
@@ -1064,7 +1077,7 @@ const PredictionsTabContent: React.FC<{
     );
   }
 
-  if (data?.items.length === 0) {
+  if (boosts.length === 0) {
     return (
       <div className="flex h-full flex-col items-center justify-center p-8">
         <BoostIcon className="mb-4 size-8" />
@@ -1081,7 +1094,7 @@ const PredictionsTabContent: React.FC<{
     <div className="h-full overflow-y-auto p-4">
       <div>
         <div className="space-y-3">
-          {data?.items.map((boost, index) => {
+          {boosts.map((boost, index) => {
             const timestamp = new Date(boost.createdAt);
             const showRelative = shouldShowRelativeTimestamp(timestamp);
 

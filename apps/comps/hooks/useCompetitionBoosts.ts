@@ -1,8 +1,7 @@
-import {
-  UseInfiniteQueryResult,
-  skipToken,
-  useInfiniteQuery,
-} from "@tanstack/react-query";
+import { InfiniteData, useInfiniteQuery } from "@tanstack/react-query";
+import { UseInfiniteQueryResult } from "@tanstack/react-query";
+
+import { CompetitionBoostsResult } from "@recallnet/services";
 
 import { tanstackClient } from "@/rpc/clients/tanstack-query";
 import { RouterOutputs } from "@/rpc/router";
@@ -20,33 +19,24 @@ export const useCompetitionBoosts = (
   competitionId: string,
   limit: number = 25,
   enabled: boolean = true,
-  competitionStatus: RouterOutputs["competitions"]["getById"]["status"],
-): UseInfiniteQueryResult<
-  RouterOutputs["boost"]["competitionBoosts"],
-  Error
-> => {
+  competitionStatus?: RouterOutputs["competitions"]["getById"]["status"],
+): UseInfiniteQueryResult<InfiniteData<CompetitionBoostsResult>, Error> => {
   const baseOptions = tanstackClient.boost.competitionBoosts.queryOptions({
-    input: enabled
-      ? {
-          competitionId,
-          limit,
-          offset: 0,
-        }
-      : skipToken,
-    staleTime: 60_000,
+    input: { competitionId, limit, offset: 0 },
+    enabled,
+    staleTime: 60 * 1000,
     refetchInterval: () => getCompetitionPollingInterval(competitionStatus),
   });
-
   return useInfiniteQuery({
     ...baseOptions,
     queryKey: [...baseOptions.queryKey, "infinite"],
-    initialPageParam: 0,
     queryFn: async ({ pageParam = 0 }) =>
       tanstackClient.boost.competitionBoosts.call({
         competitionId,
         limit,
         offset: pageParam,
       }),
+    initialPageParam: 0,
     getNextPageParam: (lastPage) =>
       lastPage.pagination.hasMore
         ? lastPage.pagination.offset + lastPage.pagination.limit
