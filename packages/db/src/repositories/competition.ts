@@ -1283,31 +1283,6 @@ export class CompetitionRepository {
   }
 
   /**
-   * Find active competition
-   */
-  async findActive() {
-    try {
-      const [result] = await this.#db
-        .select({
-          crossChainTradingType: tradingCompetitions.crossChainTradingType,
-          ...getTableColumns(competitions),
-        })
-        .from(tradingCompetitions)
-        .innerJoin(
-          competitions,
-          eq(tradingCompetitions.competitionId, competitions.id),
-        )
-        .where(eq(competitions.status, "active"))
-        .limit(1);
-
-      return result;
-    } catch (error) {
-      this.#logger.error("Error in findActive:", error);
-      throw error;
-    }
-  }
-
-  /**
    * Find all competitions that are open for boosting
    * @param tx Optional transaction
    * @returns All competitions that are open for boosting (active or pending, and within boosting period)

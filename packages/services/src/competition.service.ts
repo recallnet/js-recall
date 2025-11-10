@@ -666,13 +666,6 @@ export class CompetitionService {
       );
     }
 
-    const activeCompetition = await this.competitionRepo.findActive();
-    if (activeCompetition) {
-      throw new Error(
-        `Another competition is already active: ${activeCompetition.id}`,
-      );
-    }
-
     // Validate provided agent IDs, in case the caller provided `agentIds`
     if (agentIds) {
       // Note: this throws if any are invalid or inactive
@@ -2553,7 +2546,7 @@ export class CompetitionService {
   async processPendingRewardsCompetitions(): Promise<string | null> {
     const competition =
       await this.competitionRepo.findCompetitionNeedingRewardsCalculation();
-      if (!competition) {
+    if (!competition) {
       this.logger.debug(
         "[CompetitionManager] No competition needing rewards calculation found",
       );
@@ -2593,19 +2586,6 @@ export class CompetitionService {
    */
   async processCompetitionStartDateChecks(): Promise<void> {
     try {
-      // Do not start anything if there's already an active competition
-      const active = await this.competitionRepo.findActive();
-      if (active) {
-        this.logger.debug(
-          {
-            competitionId: active.id,
-            name: active.name,
-          },
-          `[CompetitionManager] Active competition found. Skipping auto-start checks`,
-        );
-        return;
-      }
-
       const competitionsToStart =
         await this.competitionRepo.findCompetitionsNeedingStarting();
       if (competitionsToStart.length === 0) {
@@ -2615,51 +2595,70 @@ export class CompetitionService {
         return;
       }
 
-      // We only support running one competition at a time, so we will not start any competitions
-      // if we find more than one. Note: This should not happen if competitions are created with
-      // the correct start dates; it's defensive.
-      const competition = competitionsToStart[0];
-      if (competitionsToStart.length > 1 || !competition) {
-        this.logger.warn(
-          {
-            competitions: competitionsToStart.map((c) => ({
-              id: c.id,
-              name: c.name,
-              startDate: c.startDate?.toISOString(),
-            })),
-          },
-          `[CompetitionManager] Multiple competitions ready to start. Skipping auto-start checks`,
-        );
-        return;
+      this.logger.info(
+        {
+          count: competitionsToStart.length,
+          competitions: competitionsToStart.map((c) => ({
+            id: c.id,
+            name: c.name,
+            startDate: c.startDate?.toISOString(),
+          })),
+        },
+        `[CompetitionManager] Found ${competitionsToStart.length} competition(s) ready to start`,
+      );
+
+      for (const competition of competitionsToStart) {
+        try {
+          this.logger.debug(
+            {
+              competitionId: competition.id,
+              name: competition.name,
+              startDate: competition.startDate?.toISOString(),
+            },
+            `[CompetitionManager] Auto-starting competition`,
+          );
+          await this.startCompetition(competition.id);
+          this.logger.info(
+            {
+              competitionId: competition.id,
+              name: competition.name,
+            },
+            `[CompetitionManager] Successfully auto-started competition`,
+          );
+        } catch (error) {
+          // Continue with next competition if this one fails
+          if (
+            error instanceof ApiError &&
+            error.statusCode === 400 &&
+            error.message.includes("no registered agents")
+          ) {
+            this.logger.warn(
+              {
+                competitionId: competition.id,
+                name: competition.name,
+              },
+              `[CompetitionManager] No registered agents found for competition. Skipping auto-start.`,
+            );
+          } else {
+            this.logger.error(
+              {
+                competitionId: competition.id,
+                name: competition.name,
+                error: error instanceof Error ? error.message : String(error),
+              },
+              `[CompetitionManager] Error auto-starting competition`,
+            );
+          }
+        }
       }
-      this.logger.debug(
-        {
-          competitionId: competition.id,
-          name: competition.name,
-          startDate: competition.startDate?.toISOString(),
-        },
-        `[CompetitionManager] Auto-starting competition`,
-      );
-      await this.startCompetition(competition.id);
-      this.logger.debug(
-        {
-          competitionId: competition.id,
-          name: competition.name,
-        },
-        `[CompetitionManager] Successfully auto-started competition`,
-      );
     } catch (error) {
-      // Continue silently if the competition has no registered nor provided agents
-      if (
-        error instanceof ApiError &&
-        error.statusCode === 400 &&
-        error.message.includes("no registered agents")
-      ) {
-        this.logger.error(
-          `[CompetitionManager] No registered agents found for competition. Skipping auto-start.`,
-        );
-        return;
-      }
+      this.logger.error(
+        {
+          error: error instanceof Error ? error.message : String(error),
+        },
+        `[CompetitionManager] Error in processCompetitionStartDateChecks`,
+      );
+      throw error;
     }
   }
 
