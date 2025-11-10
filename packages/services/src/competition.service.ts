@@ -2292,6 +2292,21 @@ export class CompetitionService {
       );
     }
 
+    // Check VIP status early - VIPs bypass ALL requirements (stake, rank, etc.)
+    if (competition.vips && competition.vips.length > 0) {
+      if (competition.vips.includes(agentId)) {
+        await this.competitionRepo.addAgentToCompetition(
+          competitionId,
+          agentId,
+        );
+        this.logger.debug(
+          `[CompetitionManager] VIP agent ${agentId} joined competition ${competitionId}, bypassing all requirements`,
+        );
+        return;
+      }
+    }
+
+    // Check minimum stake requirement (non-VIPs only)
     if (competition.minimumStake && competition.minimumStake > 0) {
       const user = await this.userRepo.findById(validatedUserId);
       if (!user) {
@@ -2307,6 +2322,9 @@ export class CompetitionService {
         );
       }
     }
+
+    // Validate participation rules (blocklist, allowlist, VIP, rank requirements)
+    await this.validateParticipationRules(competition, agentId);
 
     // Atomically add agent to competition with participant limit check
     // This prevents race conditions when multiple agents try to join simultaneously
@@ -2336,6 +2354,82 @@ export class CompetitionService {
     this.logger.debug(
       `[CompetitionManager] Successfully joined agent ${agentId} to competition ${competitionId} for user ${validatedUserId}`,
     );
+  }
+
+  /**
+   * Validate agent against competition participation rules
+   * @param competition Competition with participation rules
+   * @param agentId Agent ID to validate
+   * @returns void (throws ApiError if validation fails)
+   */
+  private async validateParticipationRules(
+    competition: SelectCompetition,
+    agentId: string,
+  ): Promise<void> {
+    // Rule 1: Blocklist check (highest priority - reject immediately)
+    if (competition.blocklist && competition.blocklist.length > 0) {
+      if (competition.blocklist.includes(agentId)) {
+        throw new ApiError(
+          403,
+          "This agent is not permitted to join this competition",
+        );
+      }
+    }
+
+    // Rule 2: Allowlist-only mode
+    if (competition.allowlistOnly) {
+      if (!competition.allowlist || competition.allowlist.length === 0) {
+        // If allowlistOnly is true but no allowlist exists, nobody can join
+        throw new ApiError(
+          403,
+          "This competition is allowlist-only. Your agent is not on the allowlist",
+        );
+      }
+      if (!competition.allowlist.includes(agentId)) {
+        throw new ApiError(
+          403,
+          "This competition is allowlist-only. Your agent is not on the allowlist",
+        );
+      }
+      // If agent is on allowlist in allowlist-only mode, they're approved - skip remaining checks
+      return;
+    }
+
+    // Rule 3: Allowlist bypass (bypasses rank check only)
+    // Note: VIPs are checked earlier in joinCompetition() and bypass ALL checks including stake
+    if (competition.allowlist && competition.allowlist.length > 0) {
+      if (competition.allowlist.includes(agentId)) {
+        return; // Allowlist bypass (rank only, stake still applies)
+      }
+    }
+
+    // Rule 5: Rank requirement check
+    if (
+      competition.minRecallRank !== null &&
+      competition.minRecallRank !== undefined
+    ) {
+      const agentRankData = await this.agentScoreRepo.getAgentRank(
+        agentId,
+        competition.type,
+      );
+
+      // No rank means agent hasn't competed yet
+      if (!agentRankData) {
+        throw new ApiError(
+          403,
+          `This competition requires a minimum Recall rank of ${competition.minRecallRank}. Your agent has not yet established a rank.`,
+        );
+      }
+
+      // Lower rank number = better (rank 1 is best)
+      // So if agent's rank > required rank, they don't meet the requirement
+      if (agentRankData.rank > competition.minRecallRank) {
+        throw new ApiError(
+          403,
+          `This competition requires a minimum Recall rank of ${competition.minRecallRank}. Your agent's current rank is ${agentRankData.rank}.`,
+        );
+      }
+    }
   }
 
   /**
