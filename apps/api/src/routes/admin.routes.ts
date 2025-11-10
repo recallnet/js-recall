@@ -553,6 +553,291 @@ export function configureAdminRoutes(
 
   /**
    * @openapi
+   * /api/admin/competitions/{competitionId}/partners:
+   *   get:
+   *     tags:
+   *       - Admin
+   *     summary: Get partners for a competition
+   *     description: Retrieve all partners associated with a competition, ordered by position
+   *     security:
+   *       - BearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: competitionId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         description: Competition ID
+   *     responses:
+   *       200:
+   *         description: Partners retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                 partners:
+   *                   type: array
+   *                   items:
+   *                     type: object
+   *                     properties:
+   *                       id:
+   *                         type: string
+   *                         format: uuid
+   *                       name:
+   *                         type: string
+   *                       url:
+   *                         type: string
+   *                         nullable: true
+   *                       logoUrl:
+   *                         type: string
+   *                         nullable: true
+   *                       details:
+   *                         type: string
+   *                         nullable: true
+   *                       position:
+   *                         type: integer
+   *                       competitionPartnerId:
+   *                         type: string
+   *                         format: uuid
+   *                       createdAt:
+   *                         type: string
+   *                         format: date-time
+   *                       updatedAt:
+   *                         type: string
+   *                         format: date-time
+   *       401:
+   *         description: Unauthorized
+   *       500:
+   *         description: Server error
+   */
+  router.get(
+    "/competitions/:competitionId/partners",
+    controller.getCompetitionPartners,
+  );
+
+  /**
+   * @openapi
+   * /api/admin/competitions/{competitionId}/partners:
+   *   post:
+   *     tags:
+   *       - Admin
+   *     summary: Add partner to competition
+   *     description: Associate a partner with a competition at a specific display position
+   *     security:
+   *       - BearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: competitionId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         description: Competition ID
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - partnerId
+   *               - position
+   *             properties:
+   *               partnerId:
+   *                 type: string
+   *                 format: uuid
+   *                 description: Partner ID
+   *               position:
+   *                 type: integer
+   *                 minimum: 1
+   *                 description: Display position (1-indexed)
+   *     responses:
+   *       201:
+   *         description: Partner added successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                 association:
+   *                   type: object
+   *       400:
+   *         description: Bad Request
+   *       401:
+   *         description: Unauthorized
+   *       404:
+   *         description: Partner or Competition not found
+   *       409:
+   *         description: Conflict - Position already taken or partner already associated
+   *       500:
+   *         description: Server error
+   */
+  router.post(
+    "/competitions/:competitionId/partners",
+    controller.addPartnerToCompetition,
+  );
+
+  /**
+   * @openapi
+   * /api/admin/competitions/{competitionId}/partners/replace:
+   *   put:
+   *     tags:
+   *       - Admin
+   *     summary: Replace all partners for a competition
+   *     description: Atomically replace all partner associations for a competition
+   *     security:
+   *       - BearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: competitionId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         description: Competition ID
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - partners
+   *             properties:
+   *               partners:
+   *                 type: array
+   *                 items:
+   *                   type: object
+   *                   required:
+   *                     - partnerId
+   *                     - position
+   *                   properties:
+   *                     partnerId:
+   *                       type: string
+   *                       format: uuid
+   *                     position:
+   *                       type: integer
+   *                       minimum: 1
+   *     responses:
+   *       200:
+   *         description: Partners replaced successfully
+   *       400:
+   *         description: Bad Request
+   *       401:
+   *         description: Unauthorized
+   *       404:
+   *         description: One or more partners not found
+   *       500:
+   *         description: Server error
+   */
+  router.put(
+    "/competitions/:competitionId/partners/replace",
+    controller.replaceCompetitionPartners,
+  );
+
+  /**
+   * @openapi
+   * /api/admin/competitions/{competitionId}/partners/{partnerId}:
+   *   put:
+   *     tags:
+   *       - Admin
+   *     summary: Update partner position
+   *     description: Update the display position of a partner in a competition
+   *     security:
+   *       - BearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: competitionId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         description: Competition ID
+   *       - in: path
+   *         name: partnerId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         description: Partner ID
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - position
+   *             properties:
+   *               position:
+   *                 type: integer
+   *                 minimum: 1
+   *                 description: Display position
+   *     responses:
+   *       200:
+   *         description: Position updated successfully
+   *       401:
+   *         description: Unauthorized
+   *       404:
+   *         description: Partner association not found
+   *       409:
+   *         description: Position already taken by another partner
+   *       500:
+   *         description: Server error
+   */
+  router.put(
+    "/competitions/:competitionId/partners/:partnerId",
+    controller.updatePartnerPosition,
+  );
+
+  /**
+   * @openapi
+   * /api/admin/competitions/{competitionId}/partners/{partnerId}:
+   *   delete:
+   *     tags:
+   *       - Admin
+   *     summary: Remove partner from competition
+   *     description: Remove the association between a partner and a competition
+   *     security:
+   *       - BearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: competitionId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         description: Competition ID
+   *       - in: path
+   *         name: partnerId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         description: Partner ID
+   *     responses:
+   *       200:
+   *         description: Partner removed successfully
+   *       401:
+   *         description: Unauthorized
+   *       404:
+   *         description: Partner association not found
+   *       500:
+   *         description: Server error
+   */
+  router.delete(
+    "/competitions/:competitionId/partners/:partnerId",
+    controller.removePartnerFromCompetition,
+  );
+
+  /**
+   * @openapi
    * /api/admin/competition/create:
    *   post:
    *     tags:
