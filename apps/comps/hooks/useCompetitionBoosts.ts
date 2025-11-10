@@ -1,6 +1,12 @@
-import { useInfiniteQuery } from "@tanstack/react-query";
+import {
+  UseInfiniteQueryResult,
+  skipToken,
+  useInfiniteQuery,
+} from "@tanstack/react-query";
 
-import { client } from "@/rpc/clients/client-side";
+import { tanstackClient } from "@/rpc/clients/tanstack-query";
+import { RouterOutputs } from "@/rpc/router";
+import { CompetitionStatus } from "@/types/enums";
 import { getCompetitionPollingInterval } from "@/utils/competition-utils";
 
 /**
@@ -15,27 +21,36 @@ export const useCompetitionBoosts = (
   competitionId: string,
   limit: number = 25,
   enabled: boolean = true,
-  competitionStatus?: "active" | "pending" | "ending" | "ended",
-) => {
+  competitionStatus?: CompetitionStatus,
+): UseInfiniteQueryResult<
+  RouterOutputs["boost"]["competitionBoosts"],
+  Error
+> => {
+  const baseOptions = tanstackClient.boost.competitionBoosts.queryOptions({
+    input: enabled
+      ? {
+          competitionId,
+          limit,
+          offset: 0,
+        }
+      : skipToken,
+    staleTime: 60_000,
+    refetchInterval: () => getCompetitionPollingInterval(competitionStatus),
+  });
+
   return useInfiniteQuery({
-    queryKey: ["competition", "boosts", competitionId, limit],
-    queryFn: async ({ pageParam = 0 }) => {
-      const result = await client.boost.competitionBoosts({
+    ...baseOptions,
+    queryKey: [...baseOptions.queryKey, "infinite"],
+    initialPageParam: 0,
+    queryFn: async ({ pageParam = 0 }) =>
+      tanstackClient.boost.competitionBoosts.call({
         competitionId,
         limit,
         offset: pageParam,
-      });
-      return result;
-    },
-    initialPageParam: 0,
-    getNextPageParam: (lastPage) => {
-      if (lastPage.pagination.hasMore) {
-        return lastPage.pagination.offset + lastPage.pagination.limit;
-      }
-      return undefined;
-    },
-    enabled,
-    staleTime: 60 * 1000, // Consider data stale after 60 seconds
-    refetchInterval: () => getCompetitionPollingInterval(competitionStatus),
+      }),
+    getNextPageParam: (lastPage) =>
+      lastPage.pagination.hasMore
+        ? lastPage.pagination.offset + lastPage.pagination.limit
+        : undefined,
   });
 };
