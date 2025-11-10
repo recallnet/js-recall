@@ -3,8 +3,10 @@ import { MerkleTree } from "merkletreejs";
 import { hexToBytes, keccak256 } from "viem";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 
+import { AgentRepository } from "@recallnet/db/repositories/agent";
 import { BoostRepository } from "@recallnet/db/repositories/boost";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
+import { CompetitionRewardsRepository } from "@recallnet/db/repositories/competition-rewards";
 import { RewardsRepository } from "@recallnet/db/repositories/rewards";
 import { competitions, users } from "@recallnet/db/schema/core/defs";
 import {
@@ -48,12 +50,18 @@ describe("Rewards Service", () => {
     rewardsRepo = new RewardsRepository(db, logger);
     competitionRepo = new CompetitionRepository(db, db, logger);
     boostRepo = new BoostRepository(db);
+    const agentRepo = new AgentRepository(
+      db,
+      logger,
+      new CompetitionRewardsRepository(db, logger),
+    );
 
     // Create RewardsService with all required dependencies
     rewardsService = new RewardsService(
       rewardsRepo,
       competitionRepo,
       boostRepo,
+      agentRepo,
       mockRewardsAllocator as any, // eslint-disable-line
       db,
       logger,

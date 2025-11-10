@@ -886,6 +886,8 @@ export class ApiClient {
       imageUrl?: string;
       email?: string;
       metadata?: Record<string, unknown>;
+      isRewardsIneligible?: boolean;
+      rewardsIneligibilityReason?: string;
     },
   ): Promise<ApiResponse | ErrorResponse> {
     try {

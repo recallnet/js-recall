@@ -1195,11 +1195,25 @@ export class CompetitionService {
           tx,
         );
 
-        // Assign winners to rewards (excluding ineligible agents)
+        // Fetch agents to check for globally ineligible agents
+        const agentIds = leaderboard.map((entry) => entry.agentId);
+        const agents = await this.agentRepo.findByIds(agentIds);
+        const globallyIneligibleAgents = agents
+          .filter((agent) => agent.isRewardsIneligible)
+          .map((agent) => agent.id);
+
+        // Combine competition-specific and global exclusions
+        const competitionExclusions = updated.rewardsIneligible ?? [];
+        const allExcludedAgents = [
+          ...competitionExclusions,
+          ...globallyIneligibleAgents,
+        ];
+
+        // Assign winners to rewards (excluding both competition-specific and globally ineligible agents)
         await this.competitionRewardService.assignWinnersToRewards(
           competitionId,
           leaderboard,
-          updated.rewardsIneligible ?? undefined,
+          allExcludedAgents.length > 0 ? allExcludedAgents : undefined,
           tx,
         );
 

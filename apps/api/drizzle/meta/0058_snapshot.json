@@ -1,5 +1,5 @@
 {
-  "id": "4e62f4f7-2471-4a24-a26c-db26c488b2e0",
+  "id": "0335f64f-328a-42d4-ae60-7c162fe973bb",
   "prevId": "47ed8962-1503-4a5d-a029-498b34625842",
   "version": "7",
   "dialect": "postgresql",
@@ -1028,6 +1028,19 @@
           "primaryKey": false,
           "notNull": false
         },
+        "is_rewards_ineligible": {
+          "name": "is_rewards_ineligible",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "rewards_ineligibility_reason": {
+          "name": "rewards_ineligibility_reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -1124,6 +1137,21 @@
           "columns": [
             {
               "expression": "api_key_hash",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_agents_rewards_ineligible": {
+          "name": "idx_agents_rewards_ineligible",
+          "columns": [
+            {
+              "expression": "is_rewards_ineligible",
               "isExpression": false,
               "asc": true,
               "nulls": "last"

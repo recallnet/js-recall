@@ -698,6 +698,8 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
         metadata: null,
         deactivationReason: null,
         deactivationDate: null,
+        isRewardsIneligible: false,
+        rewardsIneligibilityReason: null,
       },
       {
         id: agent2Id,
@@ -716,6 +718,8 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
         metadata: null,
         deactivationReason: null,
         deactivationDate: null,
+        isRewardsIneligible: false,
+        rewardsIneligibilityReason: null,
       },
       {
         id: agent3Id,
@@ -734,6 +738,8 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
         metadata: null,
         deactivationReason: null,
         deactivationDate: null,
+        isRewardsIneligible: false,
+        rewardsIneligibilityReason: null,
       },
     ]);
     competitionRepo.getAgentCompetitionRecord.mockResolvedValue({
@@ -954,6 +960,8 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
         metadata: null,
         deactivationReason: null,
         deactivationDate: null,
+        isRewardsIneligible: false,
+        rewardsIneligibilityReason: null,
       },
       {
         id: agent2Id,
@@ -972,6 +980,8 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
         metadata: null,
         deactivationReason: null,
         deactivationDate: null,
+        isRewardsIneligible: false,
+        rewardsIneligibilityReason: null,
       },
     ]);
 
@@ -1175,6 +1185,8 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
         metadata: null,
         deactivationReason: null,
         deactivationDate: null,
+        isRewardsIneligible: false,
+        rewardsIneligibilityReason: null,
       },
       {
         id: agent2Id,
@@ -1193,6 +1205,8 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
         metadata: null,
         deactivationReason: null,
         deactivationDate: null,
+        isRewardsIneligible: false,
+        rewardsIneligibilityReason: null,
       },
     ]);
 

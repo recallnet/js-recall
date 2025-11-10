@@ -4,8 +4,10 @@ import * as path from "path";
 import { parse } from "ts-command-line-args";
 import { Hex } from "viem";
 
+import { AgentRepository } from "@recallnet/db/repositories/agent";
 import { BoostRepository } from "@recallnet/db/repositories/boost";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
+import { CompetitionRewardsRepository } from "@recallnet/db/repositories/competition-rewards";
 import { RewardsRepository } from "@recallnet/db/repositories/rewards";
 import { RewardsService } from "@recallnet/services";
 import {
@@ -121,10 +123,17 @@ async function allocateRewards() {
       config.rewards.network as Network,
     );
 
+    const agentRepo = new AgentRepository(
+      db,
+      serviceLogger,
+      new CompetitionRewardsRepository(db, serviceLogger),
+    );
+
     const rewardsService = new RewardsService(
       rewardsRepo,
       competitionRepo,
       boostRepo,
+      agentRepo,
       rewardsAllocator,
       db,
       serviceLogger,

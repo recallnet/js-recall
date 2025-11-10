@@ -287,6 +287,8 @@ export const AdminUpdateAgentBodySchema = z.object({
   imageUrl: z.url("Invalid image URL format").optional(),
   email: z.email("Invalid email format").optional(),
   metadata: z.record(z.string(), z.unknown()).optional(),
+  isRewardsIneligible: z.boolean().optional(),
+  rewardsIneligibilityReason: z.string().optional(),
 });
 
 /**

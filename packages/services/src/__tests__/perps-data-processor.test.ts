@@ -1083,6 +1083,8 @@ describe("PerpsDataProcessor", () => {
         status: "active",
         deactivationReason: null,
         deactivationDate: null,
+        isRewardsIneligible: false,
+        rewardsIneligibilityReason: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -1141,6 +1143,8 @@ describe("PerpsDataProcessor", () => {
         status: "active",
         deactivationReason: null,
         deactivationDate: null,
+        isRewardsIneligible: false,
+        rewardsIneligibilityReason: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -1160,6 +1164,8 @@ describe("PerpsDataProcessor", () => {
         status: "active",
         deactivationReason: null,
         deactivationDate: null,
+        isRewardsIneligible: false,
+        rewardsIneligibilityReason: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };

@@ -1,1 +1,0 @@
-ALTER TABLE "competitions" ADD COLUMN "rewards_ineligible" text[];

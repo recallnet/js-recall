@@ -2,6 +2,7 @@ import { MerkleTree } from "merkletreejs";
 import { Logger } from "pino";
 import { Hex, bytesToHex, encodePacked, hexToBytes, keccak256 } from "viem";
 
+import { AgentRepository } from "@recallnet/db/repositories/agent";
 import { BoostRepository } from "@recallnet/db/repositories/boost";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { RewardsRepository } from "@recallnet/db/repositories/rewards";
@@ -24,6 +25,7 @@ export class RewardsService {
   private rewardsRepo: RewardsRepository;
   private competitionRepository: CompetitionRepository;
   private boostRepository: BoostRepository;
+  private agentRepo: AgentRepository;
   private rewardsAllocator: RewardsAllocator;
   private db: Database;
   private logger: Logger;
@@ -32,6 +34,7 @@ export class RewardsService {
     rewardsRepo: RewardsRepository,
     competitionRepository: CompetitionRepository,
     boostRepository: BoostRepository,
+    agentRepo: AgentRepository,
     rewardsAllocator: RewardsAllocator,
     db: Database,
     logger: Logger,
@@ -39,6 +42,7 @@ export class RewardsService {
     this.rewardsRepo = rewardsRepo;
     this.competitionRepository = competitionRepository;
     this.boostRepository = boostRepository;
+    this.agentRepo = agentRepo;
     this.rewardsAllocator = rewardsAllocator;
     this.db = db;
     this.logger = logger;
@@ -160,13 +164,31 @@ export class RewardsService {
         },
       );
 
+      // Fetch agent details to check for globally ineligible agents
+      const agentIds = leaderBoard.map((entry) => entry.competitor);
+      const agents = await this.agentRepo.findByIds(agentIds);
+      const globallyIneligibleAgents = agents
+        .filter((agent) => agent.isRewardsIneligible)
+        .map((agent) => agent.id);
+
+      // Combine competition-specific and global exclusions
+      const competitionExclusions = competition.rewardsIneligible ?? [];
+      const allExcludedAgents = [
+        ...competitionExclusions,
+        ...globallyIneligibleAgents,
+      ];
+
+      this.logger.debug(
+        `[RewardsService] Excluding ${allExcludedAgents.length} agents from rewards (${competitionExclusions.length} competition-specific, ${globallyIneligibleAgents.length} globally ineligible)`,
+      );
+
       const rewards = this.calculate(
         prizePoolUsers,
         prizePoolCompetitors,
         boostAllocations,
         leaderBoard,
         boostAllocationWindow,
-        competition.rewardsIneligible ?? undefined,
+        allExcludedAgents.length > 0 ? allExcludedAgents : undefined,
       );
 
       const rewardsToInsert = rewards.map((reward) => ({
