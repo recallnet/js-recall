@@ -38,7 +38,7 @@ describe("Chain Parameter Validation", () => {
       agentName: "Chain Validation Test Agent 2",
     });
 
-    await startTestCompetition({
+    const { competition } = await startTestCompetition({
       adminClient,
       name: `Chain Validation Test ${Date.now()}`,
       agentIds: [agent.id],
@@ -50,6 +50,7 @@ describe("Chain Parameter Validation", () => {
     // Execute trade with invalid fromSpecificChain
     try {
       await client.executeTrade({
+        competitionId: competition.id,
         fromToken: USDC_TOKEN_ADDRESS,
         toToken: SOL_TOKEN_ADDRESS,
         amount: "100",
@@ -106,7 +107,7 @@ describe("Chain Parameter Validation", () => {
       agentName: "Chain Validation Test Agent 2",
     });
 
-    await startTestCompetition({
+    const { competition } = await startTestCompetition({
       adminClient,
       name: `Chain Validation Test ${Date.now()}`,
       agentIds: [agent.id],
@@ -118,6 +119,7 @@ describe("Chain Parameter Validation", () => {
     // Execute trade with invalid toSpecificChain
     try {
       await client.executeTrade({
+        competitionId: competition.id,
         fromToken: USDC_TOKEN_ADDRESS,
         toToken: SOL_TOKEN_ADDRESS,
         amount: "100",
@@ -160,7 +162,7 @@ describe("Chain Parameter Validation", () => {
       agentName: "Chain Validation Test Agent 2",
     });
 
-    await startTestCompetition({
+    const { competition } = await startTestCompetition({
       adminClient,
       name: `Chain Validation Test ${Date.now()}`,
       agentIds: [agent.id],
@@ -172,6 +174,7 @@ describe("Chain Parameter Validation", () => {
     // Execute trade with invalid fromChain
     try {
       await client.executeTrade({
+        competitionId: competition.id,
         fromToken: USDC_TOKEN_ADDRESS,
         toToken: SOL_TOKEN_ADDRESS,
         amount: "100",
@@ -213,7 +216,7 @@ describe("Chain Parameter Validation", () => {
       agentName: "Chain Validation Test Agent 2",
     });
 
-    await startTestCompetition({
+    const { competition } = await startTestCompetition({
       adminClient,
       name: `Chain Validation Test ${Date.now()}`,
       agentIds: [agent.id],
@@ -225,6 +228,7 @@ describe("Chain Parameter Validation", () => {
     // Execute trade with invalid toChain
     try {
       await client.executeTrade({
+        competitionId: competition.id,
         fromToken: USDC_TOKEN_ADDRESS,
         toToken: SOL_TOKEN_ADDRESS,
         amount: "100",
@@ -265,7 +269,7 @@ describe("Chain Parameter Validation", () => {
       agentName: "Chain Validation Quote Test Agent 2",
     });
 
-    await startTestCompetition({
+    const { competition } = await startTestCompetition({
       adminClient,
       name: `Chain Validation Quote Test ${Date.now()}`,
       agentIds: [agent.id],
@@ -280,7 +284,8 @@ describe("Chain Parameter Validation", () => {
         USDC_TOKEN_ADDRESS,
         SOL_TOKEN_ADDRESS,
         "100",
-        undefined,
+        competition.id,
+        undefined, // fromChain
         "mainnet" as unknown as SpecificChain, // Testing invalid fromSpecificChain
       );
 
@@ -318,7 +323,7 @@ describe("Chain Parameter Validation", () => {
       agentName: "Valid Chain Test Agent 2",
     });
 
-    await startTestCompetition({
+    const { competition } = await startTestCompetition({
       adminClient,
       name: `Valid Chain Test ${Date.now()}`,
       agentIds: [agent.id],
@@ -332,8 +337,9 @@ describe("Chain Parameter Validation", () => {
       USDC_TOKEN_ADDRESS,
       SOL_TOKEN_ADDRESS,
       "100",
-      undefined,
-      SpecificChain.SVM,
+      competition.id,
+      undefined, // fromChain
+      SpecificChain.SVM, // fromSpecificChain
     )) as QuoteResponse;
 
     expect(svmQuote).toBeDefined();
