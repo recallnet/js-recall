@@ -40,6 +40,7 @@ describe("SortinoRatioService", () => {
     boosterAllocationUnit: null,
     rewardRules: null,
     rewardDetails: null,
+    rewardsIneligible: null,
     status: "active" as const,
     sandboxMode: false,
     displayState: null,
