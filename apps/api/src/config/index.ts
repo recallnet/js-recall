@@ -271,6 +271,8 @@ export const config = {
     rpcProvider: process.env.RPC_PROVIDER || "",
     // Network for the rewards allocator
     network: process.env.REWARDS_NETWORK || "baseSepolia",
+    // Slack webhook URL for rewards notifications
+    slackWebhookUrl: process.env.REWARDS_SLACK_WEBHOOK_URL || "",
   },
   boost: {
     // Amount of boost (in wei) to grant on wallet linking pre TGE

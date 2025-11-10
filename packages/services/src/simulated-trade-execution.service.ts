@@ -186,11 +186,13 @@ export class SimulatedTradeExecutionService {
       const currentBalance = await this.balanceService.getBalance(
         agentId,
         fromToken,
+        competitionId,
       );
 
       // Validate balances and portfolio limits
       await this.validateBalancesAndPortfolio(
         agentId,
+        competitionId,
         fromToken,
         fromAmount,
         fromValueUSD,
@@ -695,6 +697,7 @@ export class SimulatedTradeExecutionService {
    */
   private async validateBalancesAndPortfolio(
     agentId: string,
+    competitionId: string,
     fromToken: string,
     fromAmount: number,
     fromValueUSD: number,
@@ -714,7 +717,10 @@ export class SimulatedTradeExecutionService {
 
     // Calculate portfolio value to check maximum trade size (configurable percentage of portfolio)
     const portfolioValue =
-      await this.tradeSimulatorService.calculatePortfolioValue(agentId);
+      await this.tradeSimulatorService.calculatePortfolioValue(
+        agentId,
+        competitionId,
+      );
     // TODO: maxTradePercentage should probably be a setting per comp.
     const maxTradeValue =
       portfolioValue * (this.config.maxTradePercentage / 100);
@@ -866,12 +872,14 @@ export class SimulatedTradeExecutionService {
     // Update balance cache with absolute values from the database
     this.balanceService.setBalanceCache(
       agentId,
+      competitionId,
       fromToken,
       result.updatedBalances.fromTokenBalance,
     );
     if (result.updatedBalances.toTokenBalance !== undefined) {
       this.balanceService.setBalanceCache(
         agentId,
+        competitionId,
         toToken,
         result.updatedBalances.toTokenBalance,
       );

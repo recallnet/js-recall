@@ -239,6 +239,166 @@ export interface UserAgentApiKeyResponse extends ApiResponse {
 }
 
 /**
+ * ARENA TYPES
+ */
+
+// Arena details
+export interface Arena {
+  id: string;
+  name: string;
+  createdBy: string;
+  category: string;
+  skill: string;
+  venues: string[] | null;
+  chains: string[] | null;
+  kind: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Create arena response
+export interface CreateArenaResponse extends ApiResponse {
+  success: true;
+  arena: Arena;
+}
+
+// Get arena response
+export interface GetArenaResponse extends ApiResponse {
+  success: true;
+  arena: Arena;
+}
+
+// List arenas response
+export interface ListArenasResponse extends ApiResponse {
+  success: true;
+  arenas: Arena[];
+  pagination: {
+    total: number;
+    limit: number;
+    offset: number;
+    hasMore: boolean;
+  };
+}
+
+// Update arena response
+export interface UpdateArenaResponse extends ApiResponse {
+  success: true;
+  arena: Arena;
+}
+
+// Delete arena response
+export interface DeleteArenaResponse extends ApiResponse {
+  success: true;
+  message: string;
+}
+
+/**
+ * PARTNER TYPES
+ */
+
+// Partner details
+export interface Partner {
+  id: string;
+  name: string;
+  url: string | null;
+  logoUrl: string | null;
+  details: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Create partner response
+export interface CreatePartnerResponse extends ApiResponse {
+  success: true;
+  partner: Partner;
+}
+
+// Get partner response
+export interface GetPartnerResponse extends ApiResponse {
+  success: true;
+  partner: Partner;
+}
+
+// List partners response
+export interface ListPartnersResponse extends ApiResponse {
+  success: true;
+  partners: Partner[];
+  pagination: {
+    total: number;
+    limit: number;
+    offset: number;
+    hasMore: boolean;
+  };
+}
+
+// Update partner response
+export interface UpdatePartnerResponse extends ApiResponse {
+  success: true;
+  partner: Partner;
+}
+
+// Delete partner response
+export interface DeletePartnerResponse extends ApiResponse {
+  success: true;
+  message: string;
+}
+
+// Competition partner association
+export interface CompetitionPartner {
+  id: string;
+  name: string;
+  url: string | null;
+  logoUrl: string | null;
+  details: string | null;
+  position: number;
+  competitionPartnerId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Get competition partners response
+export interface GetCompetitionPartnersResponse extends ApiResponse {
+  success: true;
+  partners: CompetitionPartner[];
+}
+
+// Add partner to competition response
+export interface AddPartnerToCompetitionResponse extends ApiResponse {
+  success: true;
+  association: {
+    id: string;
+    competitionId: string;
+    partnerId: string;
+    position: number;
+    createdAt: string;
+  };
+}
+
+// Update partner position response
+export interface UpdatePartnerPositionResponse extends ApiResponse {
+  success: true;
+  association: {
+    id: string;
+    competitionId: string;
+    partnerId: string;
+    position: number;
+    createdAt: string;
+  };
+}
+
+// Remove partner from competition response
+export interface RemovePartnerFromCompetitionResponse extends ApiResponse {
+  success: true;
+  message: string;
+}
+
+// Replace competition partners response
+export interface ReplaceCompetitionPartnersResponse extends ApiResponse {
+  success: true;
+  partners: CompetitionPartner[];
+}
+
+/**
  * TRADING TYPES
  */
 
@@ -310,6 +470,7 @@ export interface TradeExecutionParams {
   toToken: string;
   amount: string;
   reason: string;
+  competitionId: string;
   slippageTolerance?: string;
   fromChain?: BlockchainType;
   toChain?: BlockchainType;

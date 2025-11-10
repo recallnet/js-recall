@@ -76,13 +76,46 @@ async function showCompetitionStatus() {
       `${colors.cyan}╚════════════════════════════════════════════════════════════════╝${colors.reset}`,
     );
 
-    // Check if a competition is active
+    // Get competition ID from command line argument
+    const competitionId = process.argv[2];
+
+    // If no ID provided, list active competitions and exit with helpful message
+    if (!competitionId) {
+      const allCompetitions = await services.competitionRepository.findAll();
+      const activeCompetitions = allCompetitions.filter(
+        (c) => c.status === "active",
+      );
+
+      if (activeCompetitions.length === 0) {
+        console.log(
+          `\n${colors.yellow}No active competitions found.${colors.reset}`,
+        );
+        console.log(
+          `\n${colors.green}Use 'pnpm setup:competition' to start a new competition.${colors.reset}`,
+        );
+        return;
+      }
+
+      console.log(`\n${colors.blue}Active competitions:${colors.reset}`);
+      activeCompetitions.forEach((comp, index) => {
+        console.log(`${index + 1}. ${comp.name} (ID: ${comp.id})`);
+      });
+
+      console.log(
+        `\n${colors.yellow}Please provide a competition ID as an argument:${colors.reset}`,
+      );
+      console.log(
+        `${colors.cyan}tsx competition-status.ts <competition-id>${colors.reset}`,
+      );
+      return;
+    }
+
     const competition =
-      await services.competitionService.getActiveCompetition();
+      await services.competitionService.getCompetition(competitionId);
 
     if (!competition) {
       console.log(
-        `\n${colors.yellow}No active competition found.${colors.reset}`,
+        `\n${colors.yellow}Competition not found: ${competitionId}${colors.reset}`,
       );
 
       // Check if there are any previous competitions

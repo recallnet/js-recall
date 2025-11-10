@@ -44,86 +44,88 @@ async function processPerpsCompetitions() {
   logger.info("Starting perps competition processing...");
 
   try {
-    // Check if a competition is active
-    const activeCompetition =
-      await services.competitionService.getActiveCompetition();
-
-    if (!activeCompetition) {
-      const duration = Date.now() - startTime;
-      logger.info(
-        `No active competition. Nothing to process. (took ${duration}ms)`,
-      );
-      return;
-    }
-
-    // Only process perps competitions
-    if (activeCompetition.type !== "perpetual_futures") {
-      return;
-    }
-
-    // Check if we should process based on timing
-    const shouldProcess = await shouldProcessPerps(activeCompetition.id);
-    if (!shouldProcess) {
-      const duration = Date.now() - startTime;
-      logger.debug(
-        `Skipping perps processing for ${activeCompetition.id} - not time yet (took ${duration}ms)`,
-      );
-      return;
-    }
-
-    // Display competition details
-    logger.info(
-      {
-        id: activeCompetition.id,
-        name: activeCompetition.name,
-        status: activeCompetition.status,
-        type: activeCompetition.type,
-      },
-      "Processing perpetual futures competition",
+    // Get all active perps competitions
+    const allCompetitions = await services.competitionRepository.findAll();
+    const activePerpsCompetitions = allCompetitions.filter(
+      (c) => c.status === "active" && c.type === "perpetual_futures",
     );
 
-    try {
-      // This single call orchestrates everything:
-      // - Fetches data from Symphony provider
-      // - Stores account summaries, positions, sync data
-      // - Creates portfolio snapshots
-      // - Calculates risk metrics (Calmar, Sortino)
-      // - Runs self-funding monitoring
-      // - Stores any alerts
-      const result = await services.perpsDataProcessor.processPerpsCompetition(
-        activeCompetition.id,
-      );
-
-      const successfulCount = result.syncResult.successful.length;
-      const failedCount = result.syncResult.failed.length;
-      const totalCount = successfulCount + failedCount;
-
+    if (activePerpsCompetitions.length === 0) {
+      const duration = Date.now() - startTime;
       logger.info(
-        `Perps processing complete: ${successfulCount}/${totalCount} agents processed successfully`,
+        `No active perps competitions. Nothing to process. (took ${duration}ms)`,
       );
+      return;
+    }
 
-      if (failedCount > 0) {
-        logger.warn(`Failed to process ${failedCount} agents`);
+    // Process each active perps competition
+    for (const activeCompetition of activePerpsCompetitions) {
+      // Check if we should process based on timing
+      const shouldProcess = await shouldProcessPerps(activeCompetition.id);
+      if (!shouldProcess) {
+        logger.debug(
+          `Skipping perps processing for ${activeCompetition.id} - not time yet`,
+        );
+        continue;
       }
 
-      if (result.monitoringResult) {
-        const alertsCreated = result.monitoringResult.alertsCreated;
-        if (alertsCreated > 0) {
-          logger.warn(
-            `Self-funding monitoring created ${alertsCreated} alerts`,
+      // Display competition details
+      logger.info(
+        {
+          id: activeCompetition.id,
+          name: activeCompetition.name,
+          status: activeCompetition.status,
+          type: activeCompetition.type,
+        },
+        "Processing perpetual futures competition",
+      );
+
+      try {
+        // This single call orchestrates everything:
+        // - Fetches data from Symphony provider
+        // - Stores account summaries, positions, sync data
+        // - Creates portfolio snapshots
+        // - Calculates risk metrics (Calmar, Sortino)
+        // - Runs self-funding monitoring
+        // - Stores any alerts
+        const result =
+          await services.perpsDataProcessor.processPerpsCompetition(
+            activeCompetition.id,
           );
+
+        const successfulCount = result.syncResult.successful.length;
+        const failedCount = result.syncResult.failed.length;
+        const totalCount = successfulCount + failedCount;
+
+        logger.info(
+          `Perps processing complete: ${successfulCount}/${totalCount} agents processed successfully`,
+        );
+
+        if (failedCount > 0) {
+          logger.warn(`Failed to process ${failedCount} agents`);
         }
+
+        if (result.monitoringResult) {
+          const alertsCreated = result.monitoringResult.alertsCreated;
+          if (alertsCreated > 0) {
+            logger.warn(
+              `Self-funding monitoring created ${alertsCreated} alerts`,
+            );
+          }
+        }
+      } catch (perpsError) {
+        logger.error(
+          `Error processing perps competition ${activeCompetition.id}:`,
+          perpsError instanceof Error ? perpsError.message : String(perpsError),
+        );
+        // Continue processing other competitions even if one fails
       }
-    } catch (perpsError) {
-      logger.error(
-        "Error processing perps competition:",
-        perpsError instanceof Error ? perpsError.message : String(perpsError),
-      );
-      throw perpsError;
     }
 
     const duration = Date.now() - startTime;
-    logger.info(`Perps processing completed successfully in ${duration}ms!`);
+    logger.info(
+      `Perps processing completed for ${activePerpsCompetitions.length} competition(s) in ${duration}ms!`,
+    );
   } catch (error) {
     logger.error(
       "Error in perps processing task:",

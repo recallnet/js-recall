@@ -131,6 +131,7 @@ export const balances = tradingComps.table(
   {
     id: serial().primaryKey().notNull(),
     agentId: uuid("agent_id").notNull(),
+    competitionId: uuid("competition_id").notNull(),
     tokenAddress: varchar("token_address", { length: 50 }).notNull(),
     amount: numeric({ mode: "number" }).notNull(),
     createdAt: timestamp("created_at", {
@@ -145,14 +146,25 @@ export const balances = tradingComps.table(
   (table) => [
     index("idx_balances_specific_chain").on(table.specificChain),
     index("idx_balances_agent_id").on(table.agentId),
+    index("idx_balances_competition_id").on(table.competitionId),
+    index("idx_balances_agent_competition").on(
+      table.agentId,
+      table.competitionId,
+    ),
     foreignKey({
       columns: [table.agentId],
       foreignColumns: [agents.id],
       name: "balances_agent_id_fkey",
     }).onDelete("cascade"),
-    unique("balances_agent_id_token_address_key").on(
+    foreignKey({
+      columns: [table.competitionId],
+      foreignColumns: [competitions.id],
+      name: "balances_competition_id_fkey",
+    }).onDelete("cascade"),
+    unique("balances_agent_id_token_address_competition_id_key").on(
       table.agentId,
       table.tokenAddress,
+      table.competitionId,
     ),
   ],
 );

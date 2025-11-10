@@ -82,17 +82,32 @@ describe("Logging and Metrics API", () => {
     await client.loginAsAdmin(adminApiKey);
 
     // Create a user and agent to trigger database operations
-    const { client: agentClient } = await registerUserAndAgentAndGetClient({
-      adminApiKey,
-      userName: "DB Metrics Test User",
-      userEmail: "db-metrics@example.com",
-      agentName: "DB Metrics Test Agent",
-      agentDescription: "Agent for testing database metrics",
+    const { client: agentClient, agent } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        userName: "DB Metrics Test User",
+        userEmail: "db-metrics@example.com",
+        agentName: "DB Metrics Test Agent",
+        agentDescription: "Agent for testing database metrics",
+      });
+
+    // Start a competition with the agent
+    const competitionName = `DB Metrics Test ${Date.now()}`;
+    const createCompResult = await client.createCompetition({
+      name: competitionName,
+      description: "Competition for database metrics testing",
+    });
+    expect(createCompResult.success).toBe(true);
+    const competitionId = (createCompResult as CreateCompetitionResponse)
+      .competition.id;
+    await client.startExistingCompetition({
+      competitionId,
+      agentIds: [agent.id],
     });
 
     // Perform operations that trigger different repository operations
     await agentClient.getAgentProfile(); // SELECT operations
-    await agentClient.getBalance(); // SELECT operations
+    await agentClient.getBalance(competitionId); // SELECT operations
     await client.listAgents(); // SELECT operations
     await client.listUsers(); // SELECT operations
 
@@ -221,6 +236,7 @@ describe("Logging and Metrics API", () => {
       fromToken: config.specificChainTokens.eth.usdc,
       toToken: config.specificChainTokens.eth.eth,
       amount: "100",
+      competitionId,
       reason: "Logging test trade 1 - USDC to ETH",
     });
     expect(trade1Response.success).toBe(true);
@@ -229,6 +245,7 @@ describe("Logging and Metrics API", () => {
       fromToken: config.specificChainTokens.eth.usdc,
       toToken: config.specificChainTokens.eth.usdt,
       amount: "50",
+      competitionId,
       reason: "Logging test trade 2 - USDC to USDT",
     });
     expect(trade2Response.success).toBe(true);
@@ -238,6 +255,7 @@ describe("Logging and Metrics API", () => {
       fromToken: config.specificChainTokens.eth.usdc,
       toToken: config.specificChainTokens.eth.eth,
       amount: "75",
+      competitionId,
       reason: "Logging test trade 3 - USDC to ETH",
     });
     expect(trade3Response.success).toBe(true);
@@ -245,9 +263,9 @@ describe("Logging and Metrics API", () => {
     // Step 4: Perform various API operations to generate diverse logging
     await agentClient1.getAgentProfile();
     await agentClient2.getAgentProfile();
-    await agentClient1.getBalance();
-    await agentClient2.getBalance();
-    await agentClient2.getTradeHistory();
+    await agentClient1.getBalance(competitionId);
+    await agentClient2.getBalance(competitionId);
+    await agentClient2.getTradeHistory(competitionId);
 
     // Admin operations
     await adminClient.getCompetition(competitionId);
@@ -313,16 +331,31 @@ describe("Logging and Metrics API", () => {
     await client.loginAsAdmin(adminApiKey);
 
     // Create a user and agent to trigger operations with trace IDs
-    const { client: agentClient } = await registerUserAndAgentAndGetClient({
-      adminApiKey,
-      userName: "Trace ID Test User",
-      userEmail: "traceid@example.com",
-      agentName: "Trace ID Test Agent",
+    const { client: agentClient, agent } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        userName: "Trace ID Test User",
+        userEmail: "traceid@example.com",
+        agentName: "Trace ID Test Agent",
+      });
+
+    // Start a competition with the agent
+    const competitionName = `Trace ID Test ${Date.now()}`;
+    const createCompResult = await client.createCompetition({
+      name: competitionName,
+      description: "Competition for trace ID testing",
+    });
+    expect(createCompResult.success).toBe(true);
+    const competitionId = (createCompResult as CreateCompetitionResponse)
+      .competition.id;
+    await client.startExistingCompetition({
+      competitionId,
+      agentIds: [agent.id],
     });
 
     // Make a sequence of related API calls that should have trace ID correlation
     await agentClient.getAgentProfile();
-    await agentClient.getBalance();
+    await agentClient.getBalance(competitionId);
 
     // Get metrics to verify the operations were tracked
     const metricsResponse = await client.getMetrics();
@@ -338,16 +371,31 @@ describe("Logging and Metrics API", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Register an agent
-    const { client: agentClient } = await registerUserAndAgentAndGetClient({
-      adminApiKey,
-      userName: "API Reset Metrics User",
-      userEmail: "api-reset-metrics@example.com",
-      agentName: "API Reset Metrics Agent",
+    const { client: agentClient, agent } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        userName: "API Reset Metrics User",
+        userEmail: "api-reset-metrics@example.com",
+        agentName: "API Reset Metrics Agent",
+      });
+
+    // Start a competition with the agent
+    const competitionName = `API Reset Metrics Test ${Date.now()}`;
+    const createCompResult = await adminClient.createCompetition({
+      name: competitionName,
+      description: "Competition for API reset metrics testing",
+    });
+    expect(createCompResult.success).toBe(true);
+    const competitionId = (createCompResult as CreateCompetitionResponse)
+      .competition.id;
+    await adminClient.startExistingCompetition({
+      competitionId,
+      agentIds: [agent.id],
     });
 
     // Make some API calls with original key
     await agentClient.getAgentProfile();
-    await agentClient.getBalance();
+    await agentClient.getBalance(competitionId);
 
     // Reset the API key
     const resetResponse = await agentClient.resetApiKey();
@@ -359,7 +407,7 @@ describe("Logging and Metrics API", () => {
 
     // Make API calls with new key
     await newClient.getAgentProfile();
-    await newClient.getBalance();
+    await newClient.getBalance(competitionId);
 
     // Verify metrics captured operations from both old and new keys
     const metricsResponse = await adminClient.getMetrics();
@@ -439,8 +487,8 @@ describe("Logging and Metrics API", () => {
 
     // SELECT operations (should be classified as "SELECT")
     await agentClient.getAgentProfile(); // findById
-    await agentClient.getBalance(); // getBalance, getAgentBalances
-    await agentClient.getTradeHistory(); // getAgentTrades
+    await agentClient.getBalance(competitionId); // getBalance, getAgentBalances
+    await agentClient.getTradeHistory(competitionId); // getAgentTrades
     await client.listAgents(); // findAll
     await client.getCompetition(competitionId); // findById
     await client.getCompetitionAgents(competitionId); // findAgentsByCompetition
@@ -450,6 +498,7 @@ describe("Logging and Metrics API", () => {
       fromToken: config.specificChainTokens.eth.usdc,
       toToken: config.specificChainTokens.eth.eth,
       amount: "50",
+      competitionId,
       reason: "DB Classification test trade",
     }); // create (trade)
 

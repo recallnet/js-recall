@@ -78,7 +78,9 @@ describe("Competition Start Date Processing", () => {
     expect(snapshotsResponse.snapshots.length).toBeGreaterThan(0);
 
     // Verify balances were initialized/reset for the agent
-    const balances = (await agentClient.getBalance()) as BalancesResponse;
+    const balances = (await agentClient.getBalance(
+      competition.id,
+    )) as BalancesResponse;
     expect(balances.success).toBe(true);
     expect(balances.balances.length).toBeGreaterThan(0);
   });

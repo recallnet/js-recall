@@ -62,6 +62,16 @@
         "default": "./dist/repositories/agent.cjs"
       }
     },
+    "./repositories/arena": {
+      "import": {
+        "types": "./dist/repositories/arena.d.ts",
+        "default": "./dist/repositories/arena.js"
+      },
+      "require": {
+        "types": "./dist/repositories/arena.d.cts",
+        "default": "./dist/repositories/arena.cjs"
+      }
+    },
     "./repositories/agent-score": {
       "import": {
         "types": "./dist/repositories/agent-score.d.ts",
@@ -120,6 +130,16 @@
       "require": {
         "types": "./dist/repositories/leaderboard.d.cts",
         "default": "./dist/repositories/leaderboard.cjs"
+      }
+    },
+    "./repositories/partner": {
+      "import": {
+        "types": "./dist/repositories/partner.d.ts",
+        "default": "./dist/repositories/partner.js"
+      },
+      "require": {
+        "types": "./dist/repositories/partner.d.cts",
+        "default": "./dist/repositories/partner.cjs"
       }
     },
     "./repositories/perps": {

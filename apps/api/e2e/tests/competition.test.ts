@@ -15,9 +15,11 @@ import {
   CompetitionRulesResponse,
   CompetitionWithAgents,
   CreateCompetitionResponse,
+  CreatePartnerResponse,
   EndCompetitionResponse,
   EnhancedCompetition,
   ErrorResponse,
+  GetCompetitionPartnersResponse,
   GlobalLeaderboardResponse,
   StartCompetitionResponse,
   TradeResponse,
@@ -327,6 +329,7 @@ describe("Competition API", () => {
     });
 
     expect(competitionResponse.success).toBe(true);
+    const competitionId = competitionResponse.competition.id;
 
     // Execute a buy trade (buying SOL with USDC)
     const buyTradeResponse = await agentClient.executeTrade({
@@ -334,6 +337,7 @@ describe("Competition API", () => {
       fromToken: config.specificChainTokens.eth.usdc,
       toToken: config.specificChainTokens.svm.sol,
       amount: "100",
+      competitionId,
       fromChain: BlockchainType.EVM,
       toChain: BlockchainType.EVM,
     });
@@ -377,8 +381,9 @@ describe("Competition API", () => {
     expect(competitionResponse.success).toBe(true);
 
     // Agent gets competition rules
-    const rulesResponse =
-      (await agentClient.getRules()) as CompetitionRulesResponse;
+    const rulesResponse = (await agentClient.getRules(
+      competitionResponse.competition.id,
+    )) as CompetitionRulesResponse;
     expect(rulesResponse.success).toBe(true);
     expect(rulesResponse.rules).toBeDefined();
     expect(rulesResponse.rules.tradingRules).toBeDefined();
@@ -430,7 +435,7 @@ describe("Competition API", () => {
     };
 
     const competitionName = `Active Rules Min Trades Test ${Date.now()}`;
-    await adminClient.startCompetition({
+    const competitionResponse = await adminClient.startCompetition({
       name: competitionName,
       description: "Competition to test active rules endpoint with min trades",
       agentIds: [agent.id],
@@ -438,8 +443,9 @@ describe("Competition API", () => {
     });
 
     // Agent gets competition rules (authenticated endpoint for active competition)
-    const rulesResponse =
-      (await agentClient.getRules()) as CompetitionRulesResponse;
+    const rulesResponse = (await agentClient.getRules(
+      (competitionResponse as StartCompetitionResponse).competition.id,
+    )) as CompetitionRulesResponse;
     expect(rulesResponse.success).toBe(true);
     expect(rulesResponse.rules).toBeDefined();
     expect(rulesResponse.rules.tradingConstraints).toBeDefined();
@@ -594,14 +600,19 @@ describe("Competition API", () => {
 
     // Admin starts a competition with the agent
     const competitionName = `Viewable Competition ${Date.now()}`;
-    await startTestCompetition({
+    const startedCompetition = await startTestCompetition({
       adminClient,
       name: competitionName,
       agentIds: [agent.id],
     });
+    const competitionId = startedCompetition.competition.id;
 
     // Agent checks competition status
-    const competition = await agentClient.getActiveCompetition();
+    const competitionResponse = await agentClient.getCompetition(competitionId);
+    if (!competitionResponse.success) {
+      throw new Error("Failed to get competition");
+    }
+    const competition = competitionResponse.competition;
     expect(competition.name).toBe(competitionName);
     expect(competition.status).toBe("active");
 
@@ -649,12 +660,24 @@ describe("Competition API", () => {
       agentIds: [agentIn.id],
     });
 
-    // Both agents can check status of the active competition
-    const competitionFromAgentIn = await agentInClient.getActiveCompetition();
+    // Both agents can check status of the competition by ID
+    const competitionFromAgentInResponse = await agentInClient.getCompetition(
+      competition.id,
+    );
+    if (!competitionFromAgentInResponse.success) {
+      throw new Error("Failed to get competition");
+    }
+    const competitionFromAgentIn = competitionFromAgentInResponse.competition;
     expect(competitionFromAgentIn.id).toBe(competition.id);
     expect(competitionFromAgentIn.status).toBe("active");
 
-    const competitionFromAgentOut = await agentOutClient.getActiveCompetition();
+    const competitionFromAgentOutResponse = await agentOutClient.getCompetition(
+      competition.id,
+    );
+    if (!competitionFromAgentOutResponse.success) {
+      throw new Error("Failed to get competition");
+    }
+    const competitionFromAgentOut = competitionFromAgentOutResponse.competition;
     expect(competitionFromAgentOut.id).toBe(competition.id);
     expect(competitionFromAgentOut.status).toBe("active");
   });
@@ -673,14 +696,20 @@ describe("Competition API", () => {
 
     // Start a competition with only the regular agent (admin is not a participant)
     const competitionName = `Admin Access Test Competition ${Date.now()}`;
-    await startTestCompetition({
+    const startedComp = await startTestCompetition({
       adminClient,
       name: competitionName,
       agentIds: [agent.id],
     });
+    const competitionId = startedComp.competition.id;
 
     // Admin checks competition status with full details
-    const adminCompetition = await adminClient.getActiveCompetition();
+    const adminCompetitionResponse =
+      await adminClient.getCompetition(competitionId);
+    if (!adminCompetitionResponse.success) {
+      throw new Error("Failed to get competition");
+    }
+    const adminCompetition = adminCompetitionResponse.competition;
     expect(adminCompetition.name).toBe(competitionName);
     expect(adminCompetition.status).toBe("active");
     expect(adminCompetition.description).toBeDefined();
@@ -706,8 +735,9 @@ describe("Competition API", () => {
     expect(adminLeaderboardResponse.agents[0]?.name).toBe("Regular Agent");
 
     // Admin checks competition rules
-    const adminRulesResponse =
-      (await adminClient.getRules()) as CompetitionRulesResponse;
+    const adminRulesResponse = (await adminClient.getRules(
+      competitionId,
+    )) as CompetitionRulesResponse;
     expect(adminRulesResponse.success).toBe(true);
     expect(adminRulesResponse.rules).toBeDefined();
     expect(adminRulesResponse.rules.tradingRules).toBeDefined();
@@ -716,7 +746,12 @@ describe("Competition API", () => {
     expect(adminRulesResponse.rules.slippageFormula).toBeDefined();
 
     // Regular agent checks all the same endpoints to verify they work for participants too
-    const agentCompetition = await agentClient.getActiveCompetition();
+    const agentCompetitionResponse =
+      await agentClient.getCompetition(competitionId);
+    if (!agentCompetitionResponse.success) {
+      throw new Error("Failed to get competition");
+    }
+    const agentCompetition = agentCompetitionResponse.competition;
     expect(agentCompetition.id).toBe(adminCompetition.id);
     expect(agentCompetition.status).toBe("active");
 
@@ -726,7 +761,7 @@ describe("Competition API", () => {
     expect(agentLeaderboardResponse.success).toBe(true);
 
     // Regular agent checks rules
-    const agentRulesResponse = await agentClient.getRules();
+    const agentRulesResponse = await agentClient.getRules(competitionId);
     expect(agentRulesResponse.success).toBe(true);
   });
 
@@ -1157,8 +1192,14 @@ describe("Competition API", () => {
     expect(startResponse.competition.imageUrl).toBe(imageUrl);
 
     // 3. Verify the fields are in the competition status response for participating agents
-    const agentCompetition = await agentClient.getActiveCompetition();
-    expect(agentCompetition.id).toBe(startResponse.competition.id);
+    const competitionId = startResponse.competition.id;
+    const agentCompetitionResponse =
+      await agentClient.getCompetition(competitionId);
+    if (!agentCompetitionResponse.success) {
+      throw new Error("Failed to get competition");
+    }
+    const agentCompetition = agentCompetitionResponse.competition;
+    expect(agentCompetition.id).toBe(competitionId);
     expect(agentCompetition.status).toBe("active");
     expect(agentCompetition.externalUrl).toBe(externalUrl);
     expect(agentCompetition.imageUrl).toBe(imageUrl);
@@ -1962,6 +2003,7 @@ describe("Competition API", () => {
       fromToken: config.specificChainTokens.eth.eth,
       toToken: config.specificChainTokens.eth.usdc,
       amount: "0.001",
+      competitionId,
       reason: "Test trade 1",
     });
     expect(trades1.success).toBe(true);
@@ -1969,6 +2011,7 @@ describe("Competition API", () => {
       fromToken: config.specificChainTokens.eth.eth,
       toToken: config.specificChainTokens.eth.usdt,
       amount: "0.001",
+      competitionId,
       reason: "Test trade 2",
     });
     expect(trades2.success).toBe(true);
@@ -1976,6 +2019,7 @@ describe("Competition API", () => {
       fromToken: config.specificChainTokens.eth.eth,
       toToken: config.specificChainTokens.eth.usdt,
       amount: "0.001",
+      competitionId,
       reason: "Test trade 3",
     });
     expect(trades3.success).toBe(true);
@@ -1983,6 +2027,7 @@ describe("Competition API", () => {
       fromToken: config.specificChainTokens.eth.eth,
       toToken: config.specificChainTokens.eth.usdc,
       amount: "0.001",
+      competitionId,
       reason: "Test trade 4",
     });
     expect(trades4.success).toBe(true);
@@ -2090,12 +2135,14 @@ describe("Competition API", () => {
       fromToken: config.specificChainTokens.eth.usdc,
       toToken: "0x000000000000000000000000000000000000dead",
       amount: "100",
+      competitionId: tradingCompId1,
       reason: "Agent1 loses trading comp",
     });
     await agentClient2.executeTrade({
       fromToken: config.specificChainTokens.eth.usdc,
       toToken: "0x000000000000000000000000000000000000dead",
       amount: "10",
+      competitionId: tradingCompId1,
       reason: "Agent2 wins trading comp",
     });
 
@@ -4403,6 +4450,7 @@ describe("Competition API", () => {
           fromToken: config.specificChainTokens.eth.usdc,
           toToken: config.specificChainTokens.eth.eth, // ETH - valuable asset
           amount: "100",
+          competitionId,
           reason: `Agent 1 winning trade ${i + 1} - buying ETH`,
         });
       }
@@ -4412,12 +4460,14 @@ describe("Competition API", () => {
         fromToken: config.specificChainTokens.eth.usdc,
         toToken: config.specificChainTokens.eth.eth, // Good trade
         amount: "100",
+        competitionId,
         reason: "Agent 2 good trade - buying ETH",
       });
       await agent2Client.executeTrade({
         fromToken: config.specificChainTokens.eth.usdc,
         toToken: "0x000000000000000000000000000000000000dead", // Bad trade - burn tokens
         amount: "50",
+        competitionId,
         reason: "Agent 2 mediocre trade - burning some tokens",
       });
 
@@ -4426,6 +4476,7 @@ describe("Competition API", () => {
         fromToken: config.specificChainTokens.eth.usdc,
         toToken: "0x000000000000000000000000000000000000dead", // Burn address
         amount: "200",
+        competitionId,
         reason: "Agent 3 poor trade - burning tokens for 3rd place",
       });
 
@@ -4434,6 +4485,7 @@ describe("Competition API", () => {
         fromToken: config.specificChainTokens.eth.usdc,
         toToken: "0x000000000000000000000000000000000000dead", // Burn address
         amount: "500",
+        competitionId,
         reason: "Agent 4 terrible trade - burning most tokens for last place",
       });
 
@@ -4587,6 +4639,7 @@ describe("Competition API", () => {
         fromToken: config.specificChainTokens.eth.usdc,
         toToken: config.specificChainTokens.eth.eth, // ETH - valuable asset
         amount: "200",
+        competitionId,
         reason: "User 1 winning trade - buying ETH",
       });
 
@@ -4602,6 +4655,7 @@ describe("Competition API", () => {
         fromToken: config.specificChainTokens.eth.usdc,
         toToken: "0x000000000000000000000000000000000000dead", // Burn address
         amount: "300",
+        competitionId,
         reason: "User 2 poor trade - burning tokens for 2nd place",
       });
 
@@ -4763,6 +4817,7 @@ describe("Competition API", () => {
         fromToken: config.specificChainTokens.eth.usdc,
         toToken: config.specificChainTokens.eth.eth,
         amount: "100",
+        competitionId,
         reason: "Trade in active competition",
       });
 
@@ -4962,6 +5017,7 @@ describe("Competition API", () => {
       fromToken: config.specificChainTokens.eth.usdc,
       toToken: config.specificChainTokens.eth.eth,
       amount: "100",
+      competitionId,
       fromChain: BlockchainType.EVM,
       toChain: BlockchainType.EVM,
     });
@@ -5771,6 +5827,63 @@ describe("Competition API", () => {
       }
       const inactiveAgentIds = inactiveAgents.map((a) => a.id).sort();
       expect(inactiveAgentIds).toEqual([betaAgentId, deltaAgentId].sort());
+    });
+  });
+
+  describe("Competition Partners", () => {
+    test("should get partners for a competition via public endpoint", async () => {
+      // Setup admin client
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Create partners
+      const partner1 = await adminClient.createPartner({
+        name: `Public Partner 1 ${Date.now()}`,
+        url: "https://partner1.com",
+        logoUrl: "https://partner1.com/logo.png",
+      });
+      const partner2 = await adminClient.createPartner({
+        name: `Public Partner 2 ${Date.now()}`,
+        url: "https://partner2.com",
+      });
+      expect(partner1.success && partner2.success).toBe(true);
+
+      // Create competition
+      const compResponse = await adminClient.createCompetition({
+        name: "Public Partners Competition",
+        type: "trading",
+      });
+      const competitionId = (compResponse as CreateCompetitionResponse)
+        .competition.id;
+
+      // Add partners
+      await adminClient.addPartnerToCompetition(
+        competitionId,
+        (partner1 as CreatePartnerResponse).partner.id,
+        1,
+      );
+      await adminClient.addPartnerToCompetition(
+        competitionId,
+        (partner2 as CreatePartnerResponse).partner.id,
+        2,
+      );
+
+      // Get partners via public endpoint (any client can access)
+      const { client: publicClient } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Public Partner Viewer",
+      });
+
+      const getResponse =
+        await publicClient.getCompetitionPartnersPublic(competitionId);
+
+      expect(getResponse.success).toBe(true);
+      const partners = (getResponse as GetCompetitionPartnersResponse).partners;
+      expect(partners.length).toBe(2);
+      expect(partners[0]?.position).toBe(1);
+      expect(partners[0]?.name).toContain("Public Partner 1");
+      expect(partners[1]?.position).toBe(2);
+      expect(partners[1]?.name).toContain("Public Partner 2");
     });
   });
 });

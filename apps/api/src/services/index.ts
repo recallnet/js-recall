@@ -5,11 +5,13 @@ import { AdminRepository } from "@recallnet/db/repositories/admin";
 import { AgentRepository } from "@recallnet/db/repositories/agent";
 import { AgentNonceRepository } from "@recallnet/db/repositories/agent-nonce";
 import { AgentScoreRepository } from "@recallnet/db/repositories/agent-score";
+import { ArenaRepository } from "@recallnet/db/repositories/arena";
 import { BalanceRepository } from "@recallnet/db/repositories/balance";
 import { BoostRepository } from "@recallnet/db/repositories/boost";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { CompetitionRewardsRepository } from "@recallnet/db/repositories/competition-rewards";
 import { LeaderboardRepository } from "@recallnet/db/repositories/leaderboard";
+import { PartnerRepository } from "@recallnet/db/repositories/partner";
 import { PerpsRepository } from "@recallnet/db/repositories/perps";
 import { RewardsRepository } from "@recallnet/db/repositories/rewards";
 import { StakesRepository } from "@recallnet/db/repositories/stakes";
@@ -20,6 +22,7 @@ import {
   AdminService,
   AgentRankService,
   AgentService,
+  ArenaService,
   BalanceService,
   BoostAwardService,
   BoostService,
@@ -28,6 +31,7 @@ import {
   CompetitionService,
   EmailService,
   LeaderboardService,
+  PartnerService,
   PerpsDataProcessor,
   PortfolioSnapshotterService,
   PriceTrackerService,
@@ -81,6 +85,8 @@ class ServiceRegistry {
   private _userService: UserService;
   private _agentService: AgentService;
   private _adminService: AdminService;
+  private _arenaService: ArenaService;
+  private _partnerService: PartnerService;
   private _portfolioSnapshotterService: PortfolioSnapshotterService;
   private _leaderboardService: LeaderboardService;
   private _agentRankService: AgentRankService;
@@ -95,6 +101,8 @@ class ServiceRegistry {
   private readonly _boostRepository: BoostRepository;
   private readonly _stakesRepository: StakesRepository;
   private readonly _userRepository: UserRepository;
+  private readonly _arenaRepository: ArenaRepository;
+  private readonly _partnerRepository: PartnerRepository;
   private readonly _indexingService: IndexingService;
   private readonly _eventsRepository: EventsRepository;
   private readonly _eventProcessor: EventProcessor;
@@ -159,6 +167,12 @@ class ServiceRegistry {
     );
     this._perpsRepository = new PerpsRepository(db, dbRead, repositoryLogger);
     const adminRepository = new AdminRepository(db, repositoryLogger);
+    this._arenaRepository = new ArenaRepository(db, dbRead, repositoryLogger);
+    this._partnerRepository = new PartnerRepository(
+      db,
+      dbRead,
+      repositoryLogger,
+    );
 
     const walletWatchlist = new WalletWatchlist(config, serviceLogger);
 
@@ -273,6 +287,13 @@ class ServiceRegistry {
     // Initialize LeaderboardService with required dependencies
     this._leaderboardService = new LeaderboardService(
       leaderboardRepository,
+      serviceLogger,
+    );
+
+    // Initialize ArenaService and PartnerService
+    this._arenaService = new ArenaService(this._arenaRepository, serviceLogger);
+    this._partnerService = new PartnerService(
+      this._partnerRepository,
       serviceLogger,
     );
 
@@ -466,6 +487,22 @@ class ServiceRegistry {
 
   get perpsRepository(): PerpsRepository {
     return this._perpsRepository;
+  }
+
+  get arenaRepository(): ArenaRepository {
+    return this._arenaRepository;
+  }
+
+  get partnerRepository(): PartnerRepository {
+    return this._partnerRepository;
+  }
+
+  get arenaService(): ArenaService {
+    return this._arenaService;
+  }
+
+  get partnerService(): PartnerService {
+    return this._partnerService;
   }
 
   private getRewardsAllocator(): RewardsAllocator {

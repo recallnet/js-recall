@@ -701,7 +701,11 @@ export class CompetitionService {
 
     // Process all agent additions and activations
     for (const agentId of finalAgentIds) {
-      await this.balanceService.resetAgentBalances(agentId, competition.type);
+      await this.balanceService.resetAgentBalances(
+        agentId,
+        competitionId,
+        competition.type,
+      );
 
       // Note: Agent validation already done above, so we know agent exists and is active
 
@@ -1226,26 +1230,6 @@ export class CompetitionService {
   }
 
   /**
-   * Get the currently active competition
-   * @returns The active competition or null if none
-   */
-  async getActiveCompetition() {
-    return this.competitionRepo.findActive();
-  }
-
-  /**
-   * Check if the active competition is of a specific type (atomic operation)
-   * @param type The competition type to check
-   * @returns true if active competition matches the type, false otherwise
-   */
-  async isActiveCompetitionType(
-    type: "trading" | "perpetual_futures",
-  ): Promise<boolean> {
-    const activeCompetition = await this.competitionRepo.findActive();
-    return activeCompetition?.type === type;
-  }
-
-  /**
    * Check if a specific competition is of a given type (atomic operation)
    * @param competitionId The competition ID to check
    * @param type The competition type to check
@@ -1512,7 +1496,10 @@ export class CompetitionService {
 
     // Use bulk portfolio value calculation
     const portfolioValues =
-      await this.tradeSimulatorService.calculateBulkPortfolioValues(agents);
+      await this.tradeSimulatorService.calculateBulkPortfolioValues(
+        agents,
+        competitionId,
+      );
 
     const leaderboard = agents.map((agentId: string) => ({
       agentId,
@@ -2563,52 +2550,37 @@ export class CompetitionService {
   /**
    * Check and automatically calculate rewards for competitions that have ended
    */
-  async processPendingRewardsCompetitions(): Promise<void> {
-    try {
-      const competitions =
-        await this.competitionRepo.findCompetitionsNeedingRewardsCalculation();
-
-      if (competitions.length === 0) {
-        this.logger.debug(
-          "[CompetitionManager] No competitions needing rewards calculation",
-        );
-        return;
-      }
-
-      for (const competition of competitions) {
-        // Ensure competition end date has passed by at least an hour
-        const now = new Date();
-        const endDate = competition.endDate;
-        if (!endDate || now.getTime() - endDate.getTime() < 60 * 60 * 1000) {
-          this.logger.debug(
-            `[CompetitionManager] Skipping rewards calculation for competition ${competition.name} (${competition.id}) because end date has not passed by an hour (endDate: ${endDate ? endDate.toISOString() : "N/A"}, now: ${now.toISOString()})`,
-          );
-          continue;
-        }
-
-        try {
-          this.logger.debug(
-            `[CompetitionManager] Calculating rewards for competition: ${competition.name} (${competition.id})`,
-          );
-
-          await this.rewardsService.calculateAndAllocate(competition.id);
-
-          this.logger.debug(
-            `[CompetitionManager] Successfully calculated rewards for competition: ${competition.name} (${competition.id})`,
-          );
-        } catch (error) {
-          this.logger.error(
-            `[CompetitionManager] Error calculating rewards for competition ${competition.id}: ${error instanceof Error ? error : String(error)}`,
-          );
-          // Continue processing other competitions even if one fails
-        }
-      }
-    } catch (error) {
-      this.logger.error(
-        `[CompetitionManager] Error in processPendingRewardsCompetitions: ${error instanceof Error ? error : String(error)}`,
+  async processPendingRewardsCompetitions(): Promise<string | null> {
+    const competition =
+      await this.competitionRepo.findCompetitionNeedingRewardsCalculation();
+      if (!competition) {
+      this.logger.debug(
+        "[CompetitionManager] No competition needing rewards calculation found",
       );
-      throw error;
+      return null;
     }
+
+    // Ensure competition end date has passed by at least an hour
+    const now = new Date();
+    const endDate = competition.endDate;
+    if (!endDate || now.getTime() - endDate.getTime() < 60 * 60 * 1000) {
+      this.logger.debug(
+        `[CompetitionManager] Skipping rewards calculation for competition ${competition.name} (${competition.id}) because end date has not passed by an hour (endDate: ${endDate ? endDate.toISOString() : "N/A"}, now: ${now.toISOString()})`,
+      );
+      return null;
+    }
+
+    this.logger.debug(
+      `[CompetitionManager] Calculating rewards for competition: ${competition.name} (${competition.id})`,
+    );
+
+    await this.rewardsService.calculateAndAllocate(competition.id);
+
+    this.logger.debug(
+      `[CompetitionManager] Successfully calculated rewards for competition: ${competition.name} (${competition.id})`,
+    );
+
+    return competition.id || null;
   }
 
   /**
