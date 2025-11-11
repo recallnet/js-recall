@@ -39,11 +39,14 @@ import { RewardsService } from "./rewards.service.js";
 import { TradeSimulatorService } from "./trade-simulator.service.js";
 import { TradingConstraintsService } from "./trading-constraints.service.js";
 import {
+  AllocationUnit,
   BaseEnrichedLeaderboardEntry,
   CompetitionAgentStatus,
   CompetitionStatus,
   CompetitionType,
   CrossChainTradingType,
+  DisplayState,
+  EngineType,
   EnrichedLeaderboardEntry,
   EvaluationMetric,
   PagingParams,
@@ -64,6 +67,7 @@ import {
  */
 export interface CreateCompetitionParams {
   name: string;
+  arenaId: string; // Required - admins must explicitly specify arena
   description?: string;
   tradingType?: CrossChainTradingType;
   sandboxMode?: boolean;
@@ -92,6 +96,28 @@ export interface CreateCompetitionParams {
     agent: number;
     users: number;
   };
+
+  // Engine routing (arenaId already defined above as required)
+  engineId?: EngineType;
+  engineVersion?: string;
+
+  // Participation rules
+  vips?: string[];
+  allowlist?: string[];
+  blocklist?: string[];
+  minRecallRank?: number;
+  allowlistOnly?: boolean;
+
+  // Reward allocation
+  agentAllocation?: number;
+  agentAllocationUnit?: AllocationUnit;
+  boosterAllocation?: number;
+  boosterAllocationUnit?: AllocationUnit;
+  rewardRules?: string;
+  rewardDetails?: string;
+
+  // Display
+  displayState?: DisplayState;
 }
 
 /**
@@ -422,6 +448,21 @@ export class CompetitionService {
     evaluationMetric,
     perpsProvider,
     prizePools,
+    arenaId,
+    engineId,
+    engineVersion,
+    vips,
+    allowlist,
+    blocklist,
+    minRecallRank,
+    allowlistOnly,
+    agentAllocation,
+    agentAllocationUnit,
+    boosterAllocation,
+    boosterAllocationUnit,
+    rewardRules,
+    rewardDetails,
+    displayState,
   }: CreateCompetitionParams) {
     const id = randomUUID();
 
@@ -447,6 +488,29 @@ export class CompetitionService {
       type: competitionType,
       createdAt: new Date(),
       updatedAt: new Date(),
+
+      // Arena and engine routing
+      arenaId,
+      engineId: engineId ?? null,
+      engineVersion: engineVersion ?? null,
+
+      // Participation rules
+      vips: vips ?? null,
+      allowlist: allowlist ?? null,
+      blocklist: blocklist ?? null,
+      minRecallRank: minRecallRank ?? null,
+      allowlistOnly: allowlistOnly ?? false,
+
+      // Reward allocation
+      agentAllocation: agentAllocation ?? null,
+      agentAllocationUnit: agentAllocationUnit ?? null,
+      boosterAllocation: boosterAllocation ?? null,
+      boosterAllocationUnit: boosterAllocationUnit ?? null,
+      rewardRules: rewardRules ?? null,
+      rewardDetails: rewardDetails ?? null,
+
+      // Display
+      displayState: displayState ?? null,
     };
 
     // Execute all operations in a single transaction
