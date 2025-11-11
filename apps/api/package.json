@@ -56,6 +56,7 @@
     "scripts:delete-competitions": "tsx scripts/delete-competitions.ts",
     "scripts:populate-agent-handles": "tsx scripts/populate-agent-handles.ts",
     "scripts:migrate-api-key-hashes": "tsx scripts/migrate-api-key-hashes.ts",
+    "scripts:generate-merkle-tree": "tsx scripts/generate-merkle-tree.ts",
     "generate-openapi": "tsx scripts/generate-openapi.ts",
     "generate-markdown": "openapi-markdown -i ./openapi/openapi.json -o ./openapi/API.md",
     "generate-docs": "pnpm generate-openapi && pnpm generate-markdown",
