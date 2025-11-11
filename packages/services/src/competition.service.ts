@@ -2333,7 +2333,11 @@ export class CompetitionService {
       }
     }
 
+    // Validate participation rules (blocklist, allowlist, VIP, rank requirements)
+    await this.validateParticipationRules(competition, agentId);
+
     // Check minimum stake requirement (non-VIPs only)
+    // Note: Checked after participation rules so allowlist-only errors take precedence
     if (competition.minimumStake && competition.minimumStake > 0) {
       const user = await this.userRepo.findById(validatedUserId);
       if (!user) {
@@ -2349,9 +2353,6 @@ export class CompetitionService {
         );
       }
     }
-
-    // Validate participation rules (blocklist, allowlist, VIP, rank requirements)
-    await this.validateParticipationRules(competition, agentId);
 
     // Atomically add agent to competition with participant limit check
     // This prevents race conditions when multiple agents try to join simultaneously
