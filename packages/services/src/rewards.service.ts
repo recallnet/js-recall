@@ -115,7 +115,7 @@ export class RewardsService {
     prizePoolCompetitors: bigint,
     tx?: Transaction,
   ): Promise<void> {
-    try {
+    const executeWithLock = async (transaction: Transaction) => {
       const competition =
         await this.competitionRepository.findById(competitionId);
       if (!competition) {
@@ -164,9 +164,12 @@ export class RewardsService {
         },
       );
 
-      // Fetch agent details to check for globally ineligible agents
+      // Fetch agent details with lock to prevent concurrent eligibility updates
       const agentIds = leaderBoard.map((entry) => entry.competitor);
-      const agents = await this.agentRepo.findByIds(agentIds);
+      const agents = await this.agentRepo.findByIdsWithLock(
+        agentIds,
+        transaction,
+      );
       const globallyIneligibleAgents = agents
         .filter((agent) => agent.isRewardsIneligible)
         .map((agent) => agent.id);
@@ -206,9 +209,18 @@ export class RewardsService {
         1000,
         10,
         async (batch) => {
-          await this.rewardsRepo.insertRewards(batch, tx);
+          await this.rewardsRepo.insertRewards(batch, transaction);
         },
       );
+    };
+
+    try {
+      // If tx provided, use it; otherwise create one
+      if (tx) {
+        await executeWithLock(tx);
+      } else {
+        await this.db.transaction(executeWithLock);
+      }
     } catch (error) {
       this.logger.error(
         { error },

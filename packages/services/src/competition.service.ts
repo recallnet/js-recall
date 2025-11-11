@@ -1195,9 +1195,10 @@ export class CompetitionService {
           tx,
         );
 
-        // Fetch agents to check for globally ineligible agents
+        // Fetch agents with lock to check for globally ineligible agents
+        // Lock prevents concurrent updates to agent eligibility during reward assignment
         const agentIds = leaderboard.map((entry) => entry.agentId);
-        const agents = await this.agentRepo.findByIds(agentIds);
+        const agents = await this.agentRepo.findByIdsWithLock(agentIds, tx);
         const globallyIneligibleAgents = agents
           .filter((agent) => agent.isRewardsIneligible)
           .map((agent) => agent.id);
