@@ -1,6 +1,7 @@
 import {
   AgentRankService,
   AgentService,
+  AirdropService,
   ArenaService,
   BalanceService,
   BoostAwardService,
@@ -29,11 +30,13 @@ import {
   agentNonceRepository,
   agentRepository,
   agentScoreRepository,
+  airdropRepository,
   arenaRepository,
   balanceRepository,
   boostRepository,
   competitionRepository,
   competitionRewardsRepository,
+  convictionClaimsRepository,
   leaderboardRepository,
   perpsRepository,
   rewardsRepository,
@@ -54,6 +57,12 @@ const multichainProvider = new MultiChainProvider(
 export const walletWatchList = new WalletWatchlist(
   config,
   createLogger("WalletWatchlist"),
+);
+
+export const airdropService = new AirdropService(
+  airdropRepository,
+  createLogger("AirdropService"),
+  convictionClaimsRepository,
 );
 
 export const balanceService = new BalanceService(
