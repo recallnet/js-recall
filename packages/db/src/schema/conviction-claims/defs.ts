@@ -2,7 +2,6 @@ import {
   bigint,
   index,
   integer,
-  numeric,
   pgTable,
   text,
   timestamp,
