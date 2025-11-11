@@ -2292,7 +2292,15 @@ export class CompetitionService {
       );
     }
 
-    // Check VIP status early - VIPs bypass ALL requirements (stake, rank, etc.)
+    // Check blocklist FIRST - absolute exclusion that even VIPs cannot bypass
+    if (competition.blocklist?.includes(agentId)) {
+      throw new ApiError(
+        403,
+        "This agent is not permitted to join this competition",
+      );
+    }
+
+    // Check VIP status early - VIPs bypass soft requirements (stake, rank)
     if (competition.vips && competition.vips.length > 0) {
       if (competition.vips.includes(agentId)) {
         await this.competitionRepo.addAgentToCompetition(
@@ -2300,7 +2308,7 @@ export class CompetitionService {
           agentId,
         );
         this.logger.debug(
-          `[CompetitionManager] VIP agent ${agentId} joined competition ${competitionId}, bypassing all requirements`,
+          `[CompetitionManager] VIP agent ${agentId} joined competition ${competitionId}, bypassing soft requirements`,
         );
         return;
       }
@@ -2366,17 +2374,9 @@ export class CompetitionService {
     competition: SelectCompetition,
     agentId: string,
   ): Promise<void> {
-    // Rule 1: Blocklist check (highest priority - reject immediately)
-    if (competition.blocklist && competition.blocklist.length > 0) {
-      if (competition.blocklist.includes(agentId)) {
-        throw new ApiError(
-          403,
-          "This agent is not permitted to join this competition",
-        );
-      }
-    }
+    // Note: Blocklist check moved before VIP check in joinCompetition() - it's an absolute exclusion
 
-    // Rule 2: Allowlist-only mode
+    // Rule 1: Allowlist-only mode
     if (competition.allowlistOnly) {
       if (!competition.allowlist || competition.allowlist.length === 0) {
         // If allowlistOnly is true but no allowlist exists, competition is misconfigured
@@ -2395,7 +2395,7 @@ export class CompetitionService {
       return;
     }
 
-    // Rule 3: Allowlist bypass (bypasses rank check only)
+    // Rule 2: Allowlist bypass (bypasses rank check only)
     // Note: VIPs are checked earlier in joinCompetition() and bypass ALL checks including stake
     if (competition.allowlist && competition.allowlist.length > 0) {
       if (competition.allowlist.includes(agentId)) {
@@ -2403,7 +2403,7 @@ export class CompetitionService {
       }
     }
 
-    // Rule 4: Rank requirement check
+    // Rule 3: Rank requirement check
     if (
       competition.minRecallRank !== null &&
       competition.minRecallRank !== undefined

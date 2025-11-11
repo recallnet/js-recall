@@ -1145,5 +1145,26 @@ describe("CompetitionService - joinCompetition", () => {
         expect((error as ApiError).message).toContain("allowlist-only mode");
       }
     });
+
+    it("should reject blocklisted agent even if on VIP list", async () => {
+      const mockCompetitionBlockedVip = {
+        ...mockCompetition,
+        blocklist: [mockAgent.id],
+        vips: [mockAgent.id], // Same agent on both lists
+      };
+
+      agentService.getAgent.mockResolvedValue(mockAgent);
+      competitionRepo.findById.mockResolvedValue(mockCompetitionBlockedVip);
+      competitionRepo.isAgentActiveInCompetition.mockResolvedValue(false);
+
+      await expect(
+        competitionService.joinCompetition(
+          mockCompetition.id,
+          mockAgent.id,
+          mockUserId,
+          undefined,
+        ),
+      ).rejects.toThrow("not permitted");
+    });
   });
 });
