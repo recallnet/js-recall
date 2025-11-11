@@ -22,17 +22,20 @@ export class CompetitionRewardService {
    * Assign winners to rewards for a competition
    * @param competitionId The competition ID
    * @param leaderboard The leaderboard
+   * @param excludedAgentIds Optional array of agent IDs ineligible for rewards
    * @param tx Optional database transaction
    * @returns void
    */
   async assignWinnersToRewards(
     competitionId: string,
     leaderboard: { agentId: string; value: number }[],
+    excludedAgentIds?: string[],
     tx?: Transaction,
   ): Promise<void> {
     await this.competitionRewardsRepo.assignWinnersToRewards(
       competitionId,
       leaderboard,
+      excludedAgentIds,
       tx,
     );
   }

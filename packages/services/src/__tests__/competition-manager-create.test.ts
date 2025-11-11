@@ -179,6 +179,7 @@ describe("CompetitionService - createCompetition", () => {
       arenaId: "default-paper-arena",
       engineId: "spot_paper_trading" as const,
       engineVersion: "1.0.0",
+      rewardsIneligible: null,
     }));
   });
 
@@ -690,6 +691,7 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
       boosterAllocationUnit: null,
       rewardRules: null,
       rewardDetails: null,
+      rewardsIneligible: null,
       displayState: null,
       arenaId: "default-perps-arena",
       engineId: "perpetual_futures" as const,
@@ -766,6 +768,8 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
         metadata: null,
         deactivationReason: null,
         deactivationDate: null,
+        isRewardsIneligible: false,
+        rewardsIneligibilityReason: null,
       },
       {
         id: agent2Id,
@@ -784,6 +788,8 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
         metadata: null,
         deactivationReason: null,
         deactivationDate: null,
+        isRewardsIneligible: false,
+        rewardsIneligibilityReason: null,
       },
       {
         id: agent3Id,
@@ -802,6 +808,8 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
         metadata: null,
         deactivationReason: null,
         deactivationDate: null,
+        isRewardsIneligible: false,
+        rewardsIneligibilityReason: null,
       },
     ]);
     competitionRepo.getAgentCompetitionRecord.mockResolvedValue({
@@ -962,6 +970,7 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
       boosterAllocationUnit: null,
       rewardRules: null,
       rewardDetails: null,
+      rewardsIneligible: null,
       displayState: null,
       arenaId: "default-perps-arena",
       engineId: "perpetual_futures" as const,
@@ -1021,6 +1030,8 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
         metadata: null,
         deactivationReason: null,
         deactivationDate: null,
+        isRewardsIneligible: false,
+        rewardsIneligibilityReason: null,
       },
       {
         id: agent2Id,
@@ -1039,6 +1050,8 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
         metadata: null,
         deactivationReason: null,
         deactivationDate: null,
+        isRewardsIneligible: false,
+        rewardsIneligibilityReason: null,
       },
     ]);
 
@@ -1165,6 +1178,7 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
       boosterAllocationUnit: null,
       rewardRules: null,
       rewardDetails: null,
+      rewardsIneligible: null,
       displayState: null,
       arenaId: "default-perps-arena",
       engineId: "perpetual_futures" as const,
@@ -1241,6 +1255,8 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
         metadata: null,
         deactivationReason: null,
         deactivationDate: null,
+        isRewardsIneligible: false,
+        rewardsIneligibilityReason: null,
       },
       {
         id: agent2Id,
@@ -1259,6 +1275,8 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
         metadata: null,
         deactivationReason: null,
         deactivationDate: null,
+        isRewardsIneligible: false,
+        rewardsIneligibilityReason: null,
       },
     ]);
 

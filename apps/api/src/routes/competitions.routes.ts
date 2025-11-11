@@ -225,6 +225,12 @@ export function configureCompetitionsRoutes(
    *                         nullable: true
    *                         enum: [active, waitlist, cancelled, pending, paused]
    *                         description: UI display state
+   *                       rewardsIneligible:
+   *                         type: array
+   *                         nullable: true
+   *                         items:
+   *                           type: string
+   *                         description: Agent IDs ineligible to receive rewards from this competition
    *                 pagination:
    *                   type: object
    *                   description: Pagination metadata
@@ -575,6 +581,12 @@ export function configureCompetitionsRoutes(
    *                       nullable: true
    *                       enum: [active, waitlist, cancelled, pending, paused]
    *                       description: UI display state
+   *                     rewardsIneligible:
+   *                       type: array
+   *                       nullable: true
+   *                       items:
+   *                         type: string
+   *                       description: Agent IDs ineligible to receive rewards from this competition
    *       400:
    *         description: Bad request - Invalid competition ID format
    *       404:

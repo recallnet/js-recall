@@ -2,6 +2,7 @@ import { MerkleTree } from "merkletreejs";
 import { Logger } from "pino";
 import { Hex, bytesToHex, encodePacked, hexToBytes, keccak256 } from "viem";
 
+import { AgentRepository } from "@recallnet/db/repositories/agent";
 import { BoostRepository } from "@recallnet/db/repositories/boost";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { RewardsRepository } from "@recallnet/db/repositories/rewards";
@@ -24,6 +25,7 @@ export class RewardsService {
   private rewardsRepo: RewardsRepository;
   private competitionRepository: CompetitionRepository;
   private boostRepository: BoostRepository;
+  private agentRepo: AgentRepository;
   private rewardsAllocator: RewardsAllocator;
   private db: Database;
   private logger: Logger;
@@ -32,6 +34,7 @@ export class RewardsService {
     rewardsRepo: RewardsRepository,
     competitionRepository: CompetitionRepository,
     boostRepository: BoostRepository,
+    agentRepo: AgentRepository,
     rewardsAllocator: RewardsAllocator,
     db: Database,
     logger: Logger,
@@ -39,6 +42,7 @@ export class RewardsService {
     this.rewardsRepo = rewardsRepo;
     this.competitionRepository = competitionRepository;
     this.boostRepository = boostRepository;
+    this.agentRepo = agentRepo;
     this.rewardsAllocator = rewardsAllocator;
     this.db = db;
     this.logger = logger;
@@ -111,7 +115,7 @@ export class RewardsService {
     prizePoolCompetitors: bigint,
     tx?: Transaction,
   ): Promise<void> {
-    try {
+    const executeWithLock = async (transaction: Transaction) => {
       const competition =
         await this.competitionRepository.findById(competitionId);
       if (!competition) {
@@ -160,12 +164,33 @@ export class RewardsService {
         },
       );
 
+      // Fetch agent details with lock to prevent concurrent eligibility updates
+      const agentIds = leaderBoard.map((entry) => entry.competitor);
+      const agents = await this.agentRepo.findByIdsWithLock(
+        agentIds,
+        transaction,
+      );
+      const globallyIneligibleAgents = agents
+        .filter((agent) => agent.isRewardsIneligible)
+        .map((agent) => agent.id);
+
+      // Combine competition-specific and global exclusions (deduplicated)
+      const competitionExclusions = competition.rewardsIneligible ?? [];
+      const allExcludedAgents = Array.from(
+        new Set([...competitionExclusions, ...globallyIneligibleAgents]),
+      );
+
+      this.logger.debug(
+        `[RewardsService] Excluding ${allExcludedAgents.length} unique agents from rewards (${competitionExclusions.length} competition-specific, ${globallyIneligibleAgents.length} globally ineligible)`,
+      );
+
       const rewards = this.calculate(
         prizePoolUsers,
         prizePoolCompetitors,
         boostAllocations,
         leaderBoard,
         boostAllocationWindow,
+        allExcludedAgents.length > 0 ? allExcludedAgents : undefined,
       );
 
       const rewardsToInsert = rewards.map((reward) => ({
@@ -184,9 +209,18 @@ export class RewardsService {
         1000,
         10,
         async (batch) => {
-          await this.rewardsRepo.insertRewards(batch, tx);
+          await this.rewardsRepo.insertRewards(batch, transaction);
         },
       );
+    };
+
+    try {
+      // If tx provided, use it; otherwise create one
+      if (tx) {
+        await executeWithLock(tx);
+      } else {
+        await this.db.transaction(executeWithLock);
+      }
     } catch (error) {
       this.logger.error(
         { error },
@@ -579,6 +613,12 @@ export class RewardsService {
 
   /**
    * Internal method to calculate rewards
+   * @param prizePoolUsers Prize pool for users
+   * @param prizePoolCompetitors Prize pool for competitors
+   * @param boostAllocations Boost allocation data
+   * @param leaderBoard Competition leaderboard
+   * @param window Boost allocation window
+   * @param excludedAgentIds Optional array of agent IDs ineligible for rewards
    * @returns Array of calculated rewards
    * @private
    */
@@ -588,6 +628,7 @@ export class RewardsService {
     boostAllocations: BoostAllocation[],
     leaderBoard: Leaderboard,
     window: BoostAllocationWindow,
+    excludedAgentIds?: string[],
   ): Reward[] {
     const userRewards = calculateRewardsForUsers(
       prizePoolUsers,
@@ -600,15 +641,10 @@ export class RewardsService {
       leaderBoard,
     );
 
-    // TODO: this is a temporary solution to exclude llm agents that are not eligible for rewards
-    const excludedCompetitors = new Set<string>([
-      "b656119a-2d28-4b91-9914-44a8506625ab",
-      "db1e1798-97c1-4613-962b-c95e19c2bbb7",
-      "a3cd2e8d-ecfe-4c13-a825-4fde06b0f65c",
-      "ad77de46-86a3-41dd-97ef-b30aa3d7b150",
-      "36e5fa9b-151a-4a62-95d4-620f610e0273",
-      "b6418f67-a922-418e-a1db-34483141a5e2",
-    ]);
+    // Filter out agents ineligible for rewards (per-competition configuration)
+    const excludedCompetitors = excludedAgentIds
+      ? new Set(excludedAgentIds)
+      : new Set();
     const filteredCompetitorRewards = competitorRewards.filter(
       (reward) =>
         reward.competitor && !excludedCompetitors.has(reward.competitor),

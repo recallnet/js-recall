@@ -236,6 +236,7 @@ export async function startTestCompetition({
   externalUrl,
   imageUrl,
   tradingConstraints,
+  rewardsIneligible,
 }: {
   adminClient: ApiClient;
   name?: string;
@@ -244,6 +245,7 @@ export async function startTestCompetition({
   externalUrl?: string;
   imageUrl?: string;
   tradingConstraints?: TradingConstraints;
+  rewardsIneligible?: string[];
 }): Promise<StartCompetitionResponse> {
   const competitionName = name || `Test competition ${Date.now()}`;
   const result = await adminClient.startCompetition({
@@ -284,6 +286,7 @@ export async function createTestCompetition({
   joinEndDate,
   maxParticipants,
   tradingConstraints,
+  rewardsIneligible,
 }: {
   adminClient: ApiClient;
   name?: string;
@@ -301,6 +304,7 @@ export async function createTestCompetition({
   joinEndDate?: string;
   maxParticipants?: number;
   tradingConstraints?: TradingConstraints;
+  rewardsIneligible?: string[];
 }): Promise<CreateCompetitionResponse> {
   const competitionName = name || `Test competition ${Date.now()}`;
   const result = await adminClient.createCompetition({
@@ -320,6 +324,7 @@ export async function createTestCompetition({
     joinEndDate,
     maxParticipants,
     tradingConstraints,
+    rewardsIneligible,
     arenaId: "default-paper-arena",
   });
 
@@ -680,6 +685,7 @@ export async function createPerpsTestCompetition({
   rewards,
   evaluationMetric,
   perpsProvider,
+  rewardsIneligible,
 }: {
   adminClient: ApiClient;
   name?: string;
@@ -704,6 +710,7 @@ export async function createPerpsTestCompetition({
     minFundingThreshold?: number;
     apiUrl?: string;
   };
+  rewardsIneligible?: string[];
 }): Promise<CreateCompetitionResponse> {
   const competitionName = name || `Perps Test Competition ${Date.now()}`;
   const result = await adminClient.createCompetition({
@@ -729,6 +736,7 @@ export async function createPerpsTestCompetition({
       selfFundingThreshold: 0,
       apiUrl: "http://localhost:4567", // Default to mock server
     },
+    rewardsIneligible,
     arenaId: "default-perps-arena",
   });
 

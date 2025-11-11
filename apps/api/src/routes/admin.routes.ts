@@ -1086,6 +1086,12 @@ export function configureAdminRoutes(
    *                 nullable: true
    *                 enum: [active, waitlist, cancelled, pending, paused]
    *                 description: UI display state
+   *               rewardsIneligible:
+   *                 type: array
+   *                 items:
+   *                   type: string
+   *                 description: Agent IDs ineligible to receive rewards from this competition
+   *                 example: ["agent-id-1", "agent-id-2"]
    *     responses:
    *       201:
    *         description: Competition created successfully
@@ -1250,6 +1256,12 @@ export function configureAdminRoutes(
    *                       nullable: true
    *                       enum: [active, waitlist, cancelled, pending, paused]
    *                       description: UI display state
+   *                     rewardsIneligible:
+   *                       type: array
+   *                       nullable: true
+   *                       items:
+   *                         type: string
+   *                       description: Agent IDs ineligible to receive rewards from this competition
    *       400:
    *         description: |-
    *           Bad Request - Various validation errors:
@@ -1472,6 +1484,12 @@ export function configureAdminRoutes(
    *                 nullable: true
    *                 enum: [active, waitlist, cancelled, pending, paused]
    *                 description: UI display state
+   *               rewardsIneligible:
+   *                 type: array
+   *                 items:
+   *                   type: string
+   *                 description: Agent IDs ineligible to receive rewards from this competition
+   *                 example: ["agent-id-1", "agent-id-2"]
    *     responses:
    *       200:
    *         description: Competition started successfully
@@ -1641,6 +1659,12 @@ export function configureAdminRoutes(
    *                       nullable: true
    *                       enum: [active, waitlist, cancelled, pending, paused]
    *                       description: UI display state
+   *                     rewardsIneligible:
+   *                       type: array
+   *                       nullable: true
+   *                       items:
+   *                         type: string
+   *                       description: Agent IDs ineligible to receive rewards from this competition
    *                 initializedAgents:
    *                   type: array
    *                   items:
@@ -1944,6 +1968,12 @@ export function configureAdminRoutes(
    *                 nullable: true
    *                 enum: [active, waitlist, cancelled, pending, paused]
    *                 description: UI display state
+   *               rewardsIneligible:
+   *                 type: array
+   *                 items:
+   *                   type: string
+   *                 description: Agent IDs ineligible to receive rewards from this competition
+   *                 example: ["agent-id-1", "agent-id-2"]
    *     responses:
    *       200:
    *         description: Competition updated successfully
@@ -2099,6 +2129,12 @@ export function configureAdminRoutes(
    *                       nullable: true
    *                       enum: [active, waitlist, cancelled, pending, paused]
    *                       description: UI display state
+   *                     rewardsIneligible:
+   *                       type: array
+   *                       nullable: true
+   *                       items:
+   *                         type: string
+   *                       description: Agent IDs ineligible to receive rewards from this competition
    *       400:
    *         description: Bad request - Missing competitionId, no valid fields provided, attempting to update restricted fields (startDate, endDate, status), or missing perpsProvider when changing type to perpetual_futures
    *       401:
@@ -3159,6 +3195,13 @@ export function configureAdminRoutes(
    *                       type: string
    *                       description: URL to the agent's image
    *                       nullable: true
+   *                     isRewardsIneligible:
+   *                       type: boolean
+   *                       description: Whether the agent is globally ineligible for rewards
+   *                     rewardsIneligibilityReason:
+   *                       type: string
+   *                       description: Reason for rewards ineligibility
+   *                       nullable: true
    *                     createdAt:
    *                       type: string
    *                       format: date-time
@@ -3222,6 +3265,14 @@ export function configureAdminRoutes(
    *                 type: object
    *                 description: Agent's new metadata
    *                 example: { "strategy": "updated-strategy" }
+   *               isRewardsIneligible:
+   *                 type: boolean
+   *                 description: Whether the agent is globally ineligible for rewards across all competitions
+   *                 example: true
+   *               rewardsIneligibilityReason:
+   *                 type: string
+   *                 description: Optional reason for rewards ineligibility
+   *                 example: "Test agent - not eligible for production rewards"
    *     responses:
    *       200:
    *         description: Agent updated successfully
@@ -3270,6 +3321,13 @@ export function configureAdminRoutes(
    *                     metadata:
    *                       type: object
    *                       description: Agent metadata
+   *                       nullable: true
+   *                     isRewardsIneligible:
+   *                       type: boolean
+   *                       description: Whether the agent is globally ineligible for rewards
+   *                     rewardsIneligibilityReason:
+   *                       type: string
+   *                       description: Reason for rewards ineligibility
    *                       nullable: true
    *                     createdAt:
    *                       type: string

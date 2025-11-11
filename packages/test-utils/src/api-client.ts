@@ -483,6 +483,7 @@ export class ApiClient {
             agent: number;
             users: number;
           };
+          rewardsIneligible?: string[];
           arenaId?: string;
         }
       | string,
@@ -564,6 +565,7 @@ export class ApiClient {
     evaluationMetric,
     perpsProvider,
     prizePools,
+    rewardsIneligible,
     arenaId,
     engineId,
     engineVersion,
@@ -609,6 +611,7 @@ export class ApiClient {
       agent: number;
       users: number;
     };
+    rewardsIneligible?: string[];
     arenaId?: string;
     engineId?: EngineType;
     engineVersion?: string;
@@ -655,6 +658,7 @@ export class ApiClient {
           evaluationMetric,
           perpsProvider,
           prizePools,
+          rewardsIneligible,
           arenaId: arenaId || defaultArenaId,
           engineId,
           engineVersion,
@@ -698,6 +702,7 @@ export class ApiClient {
       evaluationMetric,
       perpsProvider,
       prizePools,
+      rewardsIneligible,
       arenaId,
       engineId,
       engineVersion,
@@ -736,6 +741,7 @@ export class ApiClient {
         agent: number;
         users: number;
       };
+      rewardsIneligible?: string[];
       arenaId?: string;
       engineId?: EngineType;
       engineVersion?: string;
@@ -770,6 +776,7 @@ export class ApiClient {
           evaluationMetric,
           perpsProvider,
           prizePools,
+          rewardsIneligible,
           arenaId,
           engineId,
           engineVersion,
@@ -989,6 +996,8 @@ export class ApiClient {
       imageUrl?: string;
       email?: string;
       metadata?: Record<string, unknown>;
+      isRewardsIneligible?: boolean;
+      rewardsIneligibilityReason?: string;
     },
   ): Promise<ApiResponse | ErrorResponse> {
     try {

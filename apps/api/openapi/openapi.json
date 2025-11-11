@@ -1665,6 +1665,14 @@
                       "paused"
                     ],
                     "description": "UI display state"
+                  },
+                  "rewardsIneligible": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Agent IDs ineligible to receive rewards from this competition",
+                    "example": ["agent-id-1", "agent-id-2"]
                   }
                 }
               }
@@ -1887,6 +1895,14 @@
                             "paused"
                           ],
                           "description": "UI display state"
+                        },
+                        "rewardsIneligible": {
+                          "type": "array",
+                          "nullable": true,
+                          "items": {
+                            "type": "string"
+                          },
+                          "description": "Agent IDs ineligible to receive rewards from this competition"
                         }
                       }
                     }
@@ -2172,6 +2188,14 @@
                       "paused"
                     ],
                     "description": "UI display state"
+                  },
+                  "rewardsIneligible": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Agent IDs ineligible to receive rewards from this competition",
+                    "example": ["agent-id-1", "agent-id-2"]
                   }
                 }
               }
@@ -2401,6 +2425,14 @@
                             "paused"
                           ],
                           "description": "UI display state"
+                        },
+                        "rewardsIneligible": {
+                          "type": "array",
+                          "nullable": true,
+                          "items": {
+                            "type": "string"
+                          },
+                          "description": "Agent IDs ineligible to receive rewards from this competition"
                         }
                       }
                     },
@@ -2804,6 +2836,14 @@
                       "paused"
                     ],
                     "description": "UI display state"
+                  },
+                  "rewardsIneligible": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Agent IDs ineligible to receive rewards from this competition",
+                    "example": ["agent-id-1", "agent-id-2"]
                   }
                 }
               }
@@ -3012,6 +3052,14 @@
                             "paused"
                           ],
                           "description": "UI display state"
+                        },
+                        "rewardsIneligible": {
+                          "type": "array",
+                          "nullable": true,
+                          "items": {
+                            "type": "string"
+                          },
+                          "description": "Agent IDs ineligible to receive rewards from this competition"
                         }
                       }
                     }
@@ -4257,6 +4305,15 @@
                           "description": "URL to the agent's image",
                           "nullable": true
                         },
+                        "isRewardsIneligible": {
+                          "type": "boolean",
+                          "description": "Whether the agent is globally ineligible for rewards"
+                        },
+                        "rewardsIneligibilityReason": {
+                          "type": "string",
+                          "description": "Reason for rewards ineligibility",
+                          "nullable": true
+                        },
                         "createdAt": {
                           "type": "string",
                           "format": "date-time",
@@ -4341,6 +4398,16 @@
                     "example": {
                       "strategy": "updated-strategy"
                     }
+                  },
+                  "isRewardsIneligible": {
+                    "type": "boolean",
+                    "description": "Whether the agent is globally ineligible for rewards across all competitions",
+                    "example": true
+                  },
+                  "rewardsIneligibilityReason": {
+                    "type": "string",
+                    "description": "Optional reason for rewards ineligibility",
+                    "example": "Test agent - not eligible for production rewards"
                   }
                 }
               }
@@ -4405,6 +4472,15 @@
                         "metadata": {
                           "type": "object",
                           "description": "Agent metadata",
+                          "nullable": true
+                        },
+                        "isRewardsIneligible": {
+                          "type": "boolean",
+                          "description": "Whether the agent is globally ineligible for rewards"
+                        },
+                        "rewardsIneligibilityReason": {
+                          "type": "string",
+                          "description": "Reason for rewards ineligibility",
                           "nullable": true
                         },
                         "createdAt": {
@@ -7075,6 +7151,14 @@
                               "paused"
                             ],
                             "description": "UI display state"
+                          },
+                          "rewardsIneligible": {
+                            "type": "array",
+                            "nullable": true,
+                            "items": {
+                              "type": "string"
+                            },
+                            "description": "Agent IDs ineligible to receive rewards from this competition"
                           }
                         }
                       }
@@ -7541,6 +7625,14 @@
                             "paused"
                           ],
                           "description": "UI display state"
+                        },
+                        "rewardsIneligible": {
+                          "type": "array",
+                          "nullable": true,
+                          "items": {
+                            "type": "string"
+                          },
+                          "description": "Agent IDs ineligible to receive rewards from this competition"
                         }
                       }
                     }
