@@ -67,6 +67,7 @@ export const COMPUTED_SORT_FIELDS = [
   "totalTrades",
   "totalPositions",
   "rank",
+  "bestPlacement",
   "agentName",
   "agentHandle",
 ] as const;
@@ -370,6 +371,38 @@ export class AgentRepository {
       return results;
     } catch (error) {
       this.#logger.error("[AgentRepository] Error in findByIds:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Find multiple agents by their IDs with shared lock
+   * Prevents concurrent updates to agent eligibility during reward distribution
+   * @param ids Array of agent IDs to search for
+   * @param tx Transaction context (required for locking)
+   * @returns Array of agents matching the provided IDs
+   */
+  async findByIdsWithLock(
+    ids: string[],
+    tx: Transaction,
+  ): Promise<SelectAgent[]> {
+    try {
+      if (ids.length === 0) {
+        return [];
+      }
+
+      const results = await tx
+        .select()
+        .from(agents)
+        .where(inArray(agents.id, ids))
+        .for("share");
+
+      return results;
+    } catch (error) {
+      this.#logger.error(
+        "[AgentRepository] Error in findByIdsWithLock:",
+        error,
+      );
       throw error;
     }
   }

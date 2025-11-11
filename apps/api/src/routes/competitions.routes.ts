@@ -225,6 +225,12 @@ export function configureCompetitionsRoutes(
    *                         nullable: true
    *                         enum: [active, waitlist, cancelled, pending, paused]
    *                         description: UI display state
+   *                       rewardsIneligible:
+   *                         type: array
+   *                         nullable: true
+   *                         items:
+   *                           type: string
+   *                         description: Agent IDs ineligible to receive rewards from this competition
    *                 pagination:
    *                   type: object
    *                   description: Pagination metadata
@@ -575,6 +581,12 @@ export function configureCompetitionsRoutes(
    *                       nullable: true
    *                       enum: [active, waitlist, cancelled, pending, paused]
    *                       description: UI display state
+   *                     rewardsIneligible:
+   *                       type: array
+   *                       nullable: true
+   *                       items:
+   *                         type: string
+   *                       description: Agent IDs ineligible to receive rewards from this competition
    *       400:
    *         description: Bad request - Invalid competition ID format
    *       404:
@@ -1538,6 +1550,75 @@ export function configureCompetitionsRoutes(
     "/:competitionId/perps/all-positions",
     ...authMiddlewares,
     competitionController.getCompetitionPerpsPositions,
+  );
+
+  /**
+   * @openapi
+   * /api/competitions/{competitionId}/partners:
+   *   get:
+   *     tags:
+   *       - Competition
+   *     summary: Get partners for a competition
+   *     description: Retrieve all partners/sponsors associated with a competition (public access)
+   *     parameters:
+   *       - in: path
+   *         name: competitionId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         description: Competition ID
+   *     responses:
+   *       200:
+   *         description: Partners retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                 partners:
+   *                   type: array
+   *                   items:
+   *                     type: object
+   *                     properties:
+   *                       id:
+   *                         type: string
+   *                         format: uuid
+   *                       name:
+   *                         type: string
+   *                       url:
+   *                         type: string
+   *                         nullable: true
+   *                       logoUrl:
+   *                         type: string
+   *                         nullable: true
+   *                       details:
+   *                         type: string
+   *                         nullable: true
+   *                       position:
+   *                         type: integer
+   *                       competitionPartnerId:
+   *                         type: string
+   *                         format: uuid
+   *                       createdAt:
+   *                         type: string
+   *                         format: date-time
+   *                       updatedAt:
+   *                         type: string
+   *                         format: date-time
+   *       400:
+   *         description: Bad Request
+   *       404:
+   *         description: Competition not found
+   *       500:
+   *         description: Server error
+   */
+  router.get(
+    "/:competitionId/partners",
+    optionalAuthMiddleware,
+    competitionController.getCompetitionPartners,
   );
 
   return router;

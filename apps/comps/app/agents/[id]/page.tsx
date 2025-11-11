@@ -20,6 +20,7 @@ export default function AgentPage({
   // Define sorting configuration for agent competitions
   const sortDescFirst = {
     rank: false, // Lower ranks (#1, #2, #3) first
+    bestPlacement: false,
     name: false, // Alphabetical order
   };
 

@@ -159,6 +159,28 @@ export class RewardsRepository {
   }
 
   /**
+   * Get the rewards root for a specific competition
+   * @param competitionId The competition ID (UUID) to get the root for
+   * @returns The rewards root entry if found, undefined otherwise
+   */
+  async getRewardsRootByCompetition(
+    competitionId: string,
+  ): Promise<SelectRewardsRoot | undefined> {
+    try {
+      const [result] = await this.#db
+        .select()
+        .from(rewardsRoots)
+        .where(eq(rewardsRoots.competitionId, competitionId))
+        .limit(1);
+
+      return result;
+    } catch (error) {
+      this.#logger.error({ error }, "Error in getRewardsRootByCompetition");
+      throw error;
+    }
+  }
+
+  /**
    * Mark a reward as claimed by updating the claimed column to true
    * @param competitionId The competition ID (UUID)
    * @param address The user's blockchain address

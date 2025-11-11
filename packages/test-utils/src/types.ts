@@ -343,6 +343,61 @@ export interface DeletePartnerResponse extends ApiResponse {
   message: string;
 }
 
+// Competition partner association
+export interface CompetitionPartner {
+  id: string;
+  name: string;
+  url: string | null;
+  logoUrl: string | null;
+  details: string | null;
+  position: number;
+  competitionPartnerId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Get competition partners response
+export interface GetCompetitionPartnersResponse extends ApiResponse {
+  success: true;
+  partners: CompetitionPartner[];
+}
+
+// Add partner to competition response
+export interface AddPartnerToCompetitionResponse extends ApiResponse {
+  success: true;
+  association: {
+    id: string;
+    competitionId: string;
+    partnerId: string;
+    position: number;
+    createdAt: string;
+  };
+}
+
+// Update partner position response
+export interface UpdatePartnerPositionResponse extends ApiResponse {
+  success: true;
+  association: {
+    id: string;
+    competitionId: string;
+    partnerId: string;
+    position: number;
+    createdAt: string;
+  };
+}
+
+// Remove partner from competition response
+export interface RemovePartnerFromCompetitionResponse extends ApiResponse {
+  success: true;
+  message: string;
+}
+
+// Replace competition partners response
+export interface ReplaceCompetitionPartnersResponse extends ApiResponse {
+  success: true;
+  partners: CompetitionPartner[];
+}
+
 /**
  * TRADING TYPES
  */
@@ -415,6 +470,7 @@ export interface TradeExecutionParams {
   toToken: string;
   amount: string;
   reason: string;
+  competitionId: string;
   slippageTolerance?: string;
   fromChain?: BlockchainType;
   toChain?: BlockchainType;
@@ -500,6 +556,7 @@ export interface Competition {
     | "max_drawdown"
     | "total_pnl"; // Primary evaluation metric for perps competitions
   tradingConstraints?: TradingConstraints;
+  rewardsIneligible?: string[] | null;
   rewards?: {
     rank: number;
     reward: number;
@@ -673,6 +730,34 @@ export interface TradingConstraints {
 export interface CompetitionAgentsResponse extends ApiResponse {
   competitionId: string;
   agents: CompetitionAgent[];
+  pagination: {
+    total: number;
+    limit: number;
+    offset: number;
+    hasMore: boolean;
+  };
+}
+
+/**
+ * Competition boost allocation
+ */
+export interface CompetitionBoost {
+  userId: string;
+  wallet: string;
+  agentId: string;
+  agentName: string;
+  agentHandle: string;
+  amount: string;
+  createdAt: string;
+}
+
+/**
+ * Response for competition boosts list endpoint
+ */
+export interface CompetitionBoostsResponse extends ApiResponse {
+  data: {
+    items: CompetitionBoost[];
+  };
   pagination: {
     total: number;
     limit: number;

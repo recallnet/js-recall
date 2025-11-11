@@ -86,11 +86,12 @@ describe("Agent Deactivation API", () => {
 
     // Start a competition with the agent
     const competitionName = `Deactivation Test ${Date.now()}`;
-    await startTestCompetition({
+    const competitionResponse = await startTestCompetition({
       adminClient,
       name: competitionName,
       agentIds: [agent.id],
     });
+    const competitionId = competitionResponse.competition.id;
 
     // Verify agent can access API before deactivation
     const profileResponse = await client.getAgentProfile();
@@ -129,6 +130,7 @@ describe("Agent Deactivation API", () => {
         fromToken: usdcTokenAddress,
         toToken: solTokenAddress,
         amount: "100",
+        competitionId,
         fromChain: BlockchainType.SVM,
         toChain: BlockchainType.SVM,
         reason,
@@ -285,6 +287,7 @@ describe("Agent Deactivation API", () => {
       fromToken: usdcTokenAddress,
       toToken: solTokenAddress,
       amount: "100",
+      competitionId,
       fromChain: BlockchainType.SVM,
       toChain: BlockchainType.SVM,
       reason: "inactive agents are filtered from leaderboard",
@@ -295,6 +298,7 @@ describe("Agent Deactivation API", () => {
       fromToken: usdcTokenAddress,
       toToken: solTokenAddress,
       amount: "50",
+      competitionId,
       fromChain: BlockchainType.SVM,
       toChain: BlockchainType.SVM,
       reason: "inactive agents are filtered from leaderboard",
@@ -304,6 +308,7 @@ describe("Agent Deactivation API", () => {
       fromToken: usdcTokenAddress,
       toToken: solTokenAddress,
       amount: "75",
+      competitionId,
       fromChain: BlockchainType.SVM,
       toChain: BlockchainType.SVM,
       reason: "inactive agents are filtered from leaderboard",
@@ -447,6 +452,7 @@ describe("Agent Deactivation API", () => {
 
     // Make trades to establish different portfolio values
     const usdcTokenAddress = config.specificChainTokens.svm.usdc;
+    const competitionId2 = competition.id;
 
     // Agent1: Keep high portfolio value (no trades - maintains starting balance)
     // Agent2: Burn tokens to guarantee lower portfolio value and rank 2
@@ -454,6 +460,7 @@ describe("Agent Deactivation API", () => {
       fromToken: usdcTokenAddress,
       toToken: "0x000000000000000000000000000000000000dead", // Burn address
       amount: "100",
+      competitionId: competitionId2,
       fromChain: BlockchainType.SVM,
       toChain: BlockchainType.SVM,
       reason: "Burn tokens to ensure second place ranking",

@@ -15,7 +15,6 @@ import { cn } from "@recallnet/ui2/lib/utils";
 
 import { Trophy, TrophyBadge } from "@/components/trophy-badge";
 import type { RouterOutputs } from "@/rpc/router";
-import { CompetitionStatus } from "@/types";
 
 import RainbowText from "../animations/rainbow-text";
 
@@ -84,14 +83,13 @@ export function CompetitionTable({
               >
                 Positions
               </SortableTableHeader>
-              <TableHead>Placement</TableHead>
-              {/* TODO: fix `bestPlacement.rank` sorting bug */}
-              {/* <SortableTableHeader
-                onToggleSort={() => handleSortChange("bestPlacement.rank")}
-                sortState={sortState["bestPlacement.rank"]}
+
+              <SortableTableHeader
+                onToggleSort={() => handleSortChange("bestPlacement")}
+                sortState={sortState["bestPlacement"]}
               >
                 Placement
-              </SortableTableHeader> */}
+              </SortableTableHeader>
               <TableHead>Trophies</TableHead>
               {canClaim && <TableHead className="text-left">Reward</TableHead>}
             </TableRow>
@@ -101,12 +99,12 @@ export function CompetitionTable({
             {competitions && competitions.length > 0 ? (
               competitions.slice(0, 10).map((comp, i) => {
                 const compStatus =
-                  comp.status === CompetitionStatus.Active
+                  comp.status === "active"
                     ? {
                         text: "Ongoing",
                         style: "border-green-500 text-green-500",
                       }
-                    : comp.status === CompetitionStatus.Pending
+                    : comp.status === "pending"
                       ? {
                           text: "Upcoming",
                           style: "border-blue-500 text-blue-500",
@@ -175,10 +173,15 @@ export function CompetitionTable({
                       {comp.totalPositions ?? 0}
                     </TableCell>
                     <TableCell className="w-30 text-secondary-foreground flex items-center text-center">
-                      {comp.bestPlacement?.rank &&
-                      comp.bestPlacement?.totalAgents
-                        ? `${comp.bestPlacement.rank}/${comp.bestPlacement.totalAgents}`
-                        : "N/A"}
+                      {/* If a comp is pending, we show `N/A`; else, an undefined best placement means the agent was DQ'd */}
+                      {comp.status === "pending" ? (
+                        "N/A"
+                      ) : comp.bestPlacement?.rank &&
+                        comp.bestPlacement?.totalAgents ? (
+                        `${comp.bestPlacement.rank}/${comp.bestPlacement.totalAgents}`
+                      ) : (
+                        <span className="text-red-400">DQ</span>
+                      )}
                     </TableCell>
                     <TableCell className="h-25 ml-1 flex items-center gap-2">
                       {comp.trophies.length > 0 ? (

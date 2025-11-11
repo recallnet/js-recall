@@ -10,7 +10,6 @@ declare global {
         id: string;
         name: string;
       };
-      competitionId?: string;
       privyToken?: string;
       traceId?: string;
     }

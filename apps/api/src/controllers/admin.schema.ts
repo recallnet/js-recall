@@ -107,9 +107,10 @@ export const AdminCreateCompetitionSchema = z
         users: z.number().min(0),
       })
       .optional(),
+    rewardsIneligible: z.array(z.string()).optional(),
 
     // Arena and engine routing
-    arenaId: z.string().optional(),
+    arenaId: z.string().min(1, "Arena ID is required"),
     engineId: z.enum(engineType.enumValues).optional(),
     engineVersion: z.string().optional(),
 
@@ -151,8 +152,10 @@ export const AdminCreateCompetitionSchema = z
  */
 export const AdminUpdateCompetitionSchema = AdminCreateCompetitionSchema.omit({
   name: true,
+  arenaId: true,
 }).extend({
   name: z.string().optional(),
+  arenaId: z.string().min(1, "Arena ID is required").optional(),
 });
 
 /**
@@ -188,9 +191,10 @@ export const AdminStartCompetitionSchema = z
         users: z.number().min(0),
       })
       .optional(),
+    rewardsIneligible: z.array(z.string()).optional(),
 
     // Arena and engine routing
-    arenaId: z.string().optional(),
+    arenaId: z.string().min(1, "Arena ID is required").optional(),
     engineId: z.enum(engineType.enumValues).optional(),
     engineVersion: z.string().optional(),
 
@@ -214,7 +218,20 @@ export const AdminStartCompetitionSchema = z
   })
   .refine((data) => data.competitionId || data.name, {
     message: "Either competitionId or name must be provided",
-  });
+  })
+  .refine(
+    (data) => {
+      // If creating a new competition (no competitionId), arenaId is required
+      if (!data.competitionId && !data.arenaId) {
+        return false;
+      }
+      return true;
+    },
+    {
+      message: "Arena ID is required when creating a new competition",
+      path: ["arenaId"],
+    },
+  );
 
 /**
  * Admin end competition schema
@@ -336,6 +353,8 @@ export const AdminUpdateAgentBodySchema = z.object({
   imageUrl: z.url("Invalid image URL format").optional(),
   email: z.email("Invalid email format").optional(),
   metadata: z.record(z.string(), z.unknown()).optional(),
+  isRewardsIneligible: z.boolean().optional(),
+  rewardsIneligibilityReason: z.string().optional(),
 });
 
 /**
@@ -469,4 +488,46 @@ export const AdminListPartnersQuerySchema = z.object({
   offset: z.coerce.number().int().min(0).default(0),
   sort: z.string().default(""),
   nameFilter: z.string().optional(),
+});
+
+/**
+ * Admin add partner to competition schema
+ */
+export const AdminAddPartnerToCompetitionSchema = z.object({
+  partnerId: UuidSchema,
+  position: z.number().int().min(1),
+});
+
+/**
+ * Admin update partner position schema
+ */
+export const AdminUpdatePartnerPositionSchema = z.object({
+  position: z.number().int().min(1),
+});
+
+/**
+ * Admin replace competition partners schema
+ */
+export const AdminReplaceCompetitionPartnersSchema = z.object({
+  partners: z.array(
+    z.object({
+      partnerId: UuidSchema,
+      position: z.number().int().min(1),
+    }),
+  ),
+});
+
+/**
+ * Admin competition params schema (for :competitionId in path)
+ */
+export const AdminCompetitionParamsSchema = z.object({
+  competitionId: UuidSchema,
+});
+
+/**
+ * Admin competition partner params schema (for :competitionId/:partnerId in path)
+ */
+export const AdminCompetitionPartnerParamsSchema = z.object({
+  competitionId: UuidSchema,
+  partnerId: UuidSchema,
 });

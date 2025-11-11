@@ -17,6 +17,7 @@ import {
 } from "./privy.js";
 import { getBaseUrl } from "./server.js";
 import {
+  AddPartnerToCompetitionResponse,
   AdminAddAgentToCompetitionResponse,
   AdminAgentResponse,
   AdminAgentsListResponse,
@@ -41,6 +42,7 @@ import {
   Competition,
   CompetitionAgentsResponse,
   CompetitionAllPerpsPositionsResponse,
+  CompetitionBoostsResponse,
   CompetitionDetailResponse,
   CompetitionJoinResponse,
   CompetitionLeaveResponse,
@@ -57,6 +59,7 @@ import {
   DetailedHealthCheckResponse,
   ErrorResponse,
   GetArenaResponse,
+  GetCompetitionPartnersResponse,
   GetPartnerResponse,
   GetUserAgentsResponse,
   GlobalLeaderboardResponse,
@@ -70,6 +73,8 @@ import {
   PriceResponse,
   PublicAgentResponse,
   QuoteResponse,
+  RemovePartnerFromCompetitionResponse,
+  ReplaceCompetitionPartnersResponse,
   ResetApiKeyResponse,
   RewardsProofsResponse,
   RewardsTotalResponse,
@@ -82,6 +87,7 @@ import {
   UpcomingCompetitionsResponse,
   UpdateArenaResponse,
   UpdateCompetitionResponse,
+  UpdatePartnerPositionResponse,
   UpdatePartnerResponse,
   UserAgentApiKeyResponse,
   UserCompetitionsResponse,
@@ -477,6 +483,8 @@ export class ApiClient {
             agent: number;
             users: number;
           };
+          rewardsIneligible?: string[];
+          arenaId?: string;
         }
       | string,
     description?: string,
@@ -514,6 +522,14 @@ export class ApiClient {
         };
       }
 
+      // Add default arenaId if not provided
+      if (!requestData.arenaId) {
+        requestData.arenaId =
+          requestData.type === "perpetual_futures"
+            ? "default-perps-arena"
+            : "default-paper-arena";
+      }
+
       const response = await this.axiosInstance.post(
         "/api/admin/competition/start",
         requestData,
@@ -549,6 +565,7 @@ export class ApiClient {
     evaluationMetric,
     perpsProvider,
     prizePools,
+    rewardsIneligible,
     arenaId,
     engineId,
     engineVersion,
@@ -594,6 +611,7 @@ export class ApiClient {
       agent: number;
       users: number;
     };
+    rewardsIneligible?: string[];
     arenaId?: string;
     engineId?: EngineType;
     engineVersion?: string;
@@ -611,6 +629,11 @@ export class ApiClient {
     displayState?: DisplayState;
   }): Promise<CreateCompetitionResponse | ErrorResponse> {
     const competitionName = name || `Test competition ${Date.now()}`;
+    // Default arenaId based on competition type
+    const defaultArenaId =
+      type === "perpetual_futures"
+        ? "default-perps-arena"
+        : "default-paper-arena";
     try {
       const response = await this.axiosInstance.post(
         "/api/admin/competition/create",
@@ -635,7 +658,8 @@ export class ApiClient {
           evaluationMetric,
           perpsProvider,
           prizePools,
-          arenaId,
+          rewardsIneligible,
+          arenaId: arenaId || defaultArenaId,
           engineId,
           engineVersion,
           vips,
@@ -678,6 +702,7 @@ export class ApiClient {
       evaluationMetric,
       perpsProvider,
       prizePools,
+      rewardsIneligible,
       arenaId,
       engineId,
       engineVersion,
@@ -716,6 +741,7 @@ export class ApiClient {
         agent: number;
         users: number;
       };
+      rewardsIneligible?: string[];
       arenaId?: string;
       engineId?: EngineType;
       engineVersion?: string;
@@ -750,6 +776,7 @@ export class ApiClient {
           evaluationMetric,
           perpsProvider,
           prizePools,
+          rewardsIneligible,
           arenaId,
           engineId,
           engineVersion,
@@ -969,6 +996,8 @@ export class ApiClient {
       imageUrl?: string;
       email?: string;
       metadata?: Record<string, unknown>;
+      isRewardsIneligible?: boolean;
+      rewardsIneligibilityReason?: string;
     },
   ): Promise<ApiResponse | ErrorResponse> {
     try {
@@ -1194,11 +1223,15 @@ export class ApiClient {
   }
 
   /**
-   * Get account balances
+   * Get account balances for a specific competition
    */
-  async getBalance(): Promise<BalancesResponse | ErrorResponse> {
+  async getBalance(
+    competitionId: string,
+  ): Promise<BalancesResponse | ErrorResponse> {
     try {
-      const response = await this.axiosInstance.get("/api/agent/balances");
+      const response = await this.axiosInstance.get(
+        `/api/agent/balances?competitionId=${encodeURIComponent(competitionId)}`,
+      );
       return response.data as BalancesResponse;
     } catch (error) {
       return this.handleApiError(error, "get balances");
@@ -1208,9 +1241,13 @@ export class ApiClient {
   /**
    * Get trade history
    */
-  async getTradeHistory(): Promise<TradeHistoryResponse | ErrorResponse> {
+  async getTradeHistory(
+    competitionId: string,
+  ): Promise<TradeHistoryResponse | ErrorResponse> {
     try {
-      const response = await this.axiosInstance.get("/api/agent/trades");
+      const response = await this.axiosInstance.get(
+        `/api/agent/trades?competitionId=${competitionId}`,
+      );
       return response.data as TradeHistoryResponse;
     } catch (error) {
       return this.handleApiError(error, "get trade history");
@@ -1460,6 +1497,123 @@ export class ApiClient {
   }
 
   /**
+   * Get partners for a competition (admin only)
+   * @param competitionId Competition ID
+   */
+  async getCompetitionPartners(
+    competitionId: string,
+  ): Promise<GetCompetitionPartnersResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.get(
+        `/api/admin/competitions/${competitionId}/partners`,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get competition partners (admin)");
+    }
+  }
+
+  /**
+   * Add partner to competition (admin only)
+   * @param competitionId Competition ID
+   * @param partnerId Partner ID
+   * @param position Display position
+   */
+  async addPartnerToCompetition(
+    competitionId: string,
+    partnerId: string,
+    position: number,
+  ): Promise<AddPartnerToCompetitionResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.post(
+        `/api/admin/competitions/${competitionId}/partners`,
+        { partnerId, position },
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "add partner to competition");
+    }
+  }
+
+  /**
+   * Update partner position in competition (admin only)
+   * @param competitionId Competition ID
+   * @param partnerId Partner ID
+   * @param position Display position
+   */
+  async updatePartnerPosition(
+    competitionId: string,
+    partnerId: string,
+    position: number,
+  ): Promise<UpdatePartnerPositionResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.put(
+        `/api/admin/competitions/${competitionId}/partners/${partnerId}`,
+        { position },
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "update partner position");
+    }
+  }
+
+  /**
+   * Remove partner from competition (admin only)
+   * @param competitionId Competition ID
+   * @param partnerId Partner ID
+   */
+  async removePartnerFromCompetition(
+    competitionId: string,
+    partnerId: string,
+  ): Promise<RemovePartnerFromCompetitionResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.delete(
+        `/api/admin/competitions/${competitionId}/partners/${partnerId}`,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "remove partner from competition");
+    }
+  }
+
+  /**
+   * Replace all partners for a competition (admin only)
+   * @param competitionId Competition ID
+   * @param partners Array of partner IDs with positions
+   */
+  async replaceCompetitionPartners(
+    competitionId: string,
+    partners: Array<{ partnerId: string; position: number }>,
+  ): Promise<ReplaceCompetitionPartnersResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.put(
+        `/api/admin/competitions/${competitionId}/partners/replace`,
+        { partners },
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "replace competition partners");
+    }
+  }
+
+  /**
+   * Get partners for a competition (public endpoint)
+   * @param competitionId Competition ID
+   */
+  async getCompetitionPartnersPublic(
+    competitionId: string,
+  ): Promise<GetCompetitionPartnersResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.get(
+        `/api/competitions/${competitionId}/partners`,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get competition partners (public)");
+    }
+  }
+
+  /**
    * Get the global leaderboard (global rankings)
    */
   async getGlobalLeaderboard(params?: {
@@ -1484,15 +1638,14 @@ export class ApiClient {
   }
 
   /**
-   * Get competition rules for active competition (convenience method)
+   * Get competition rules for a specific competition
+   * @param competitionId The competition ID to get rules for
    */
-  async getRules(): Promise<CompetitionRulesResponse | ErrorResponse> {
+  async getRules(
+    competitionId: string,
+  ): Promise<CompetitionRulesResponse | ErrorResponse> {
     try {
-      // Get active competition first
-      const competition = await this.getActiveCompetition();
-
-      // Get rules for the active competition
-      return this.getCompetitionRules(competition.id);
+      return this.getCompetitionRules(competitionId);
     } catch (error) {
       return this.handleApiError(error, "get competition rules");
     }
@@ -1539,34 +1692,6 @@ export class ApiClient {
         `get competitions: sort=${sort}, status=${status}, limit=${limit}, offset=${offset}`,
       );
     }
-  }
-
-  /**
-   * Get the currently active competition
-   * Convenience method for tests - throws an error if no active competition exists
-   * @returns The active competition
-   * @throws Error if no active competition is found
-   */
-  async getActiveCompetition(): Promise<Competition> {
-    const response = await this.getCompetitions("active", undefined, 1);
-
-    if (!response.success) {
-      throw new Error(response.error || "Failed to get active competitions");
-    }
-
-    const competitions = (response as UpcomingCompetitionsResponse)
-      .competitions;
-
-    if (!competitions || competitions.length === 0) {
-      throw new Error("No active competition found");
-    }
-
-    const firstCompetition = competitions[0];
-    if (!firstCompetition) {
-      throw new Error("No active competition found");
-    }
-
-    return firstCompetition;
   }
 
   /**
@@ -1651,6 +1776,34 @@ export class ApiClient {
       return this.handleApiError(
         error,
         `get competition trades: competitionId=${competitionId}, limit=${limit}, offset=${offset}`,
+      );
+    }
+  }
+
+  /**
+   * Get boost allocations for a competition
+   * @param competitionId Competition ID
+   * @param limit Optional number of boosts to return (default: 50, max: 100)
+   * @param offset Optional offset for pagination (default: 0)
+   * @returns Paginated boost allocations with agent information
+   */
+  async getCompetitionBoosts(
+    competitionId: string,
+    limit?: number,
+    offset?: number,
+  ): Promise<CompetitionBoostsResponse | ErrorResponse> {
+    try {
+      const params = new URLSearchParams();
+      if (limit !== undefined) params.append("limit", limit.toString());
+      if (offset !== undefined) params.append("offset", offset.toString());
+
+      const url = `/api/competitions/${competitionId}/boosts/all${params.toString() ? `?${params.toString()}` : ""}`;
+      const response = await this.axiosInstance.get(url);
+      return response.data as CompetitionBoostsResponse;
+    } catch (error) {
+      return this.handleApiError(
+        error,
+        `get competition boosts: competitionId=${competitionId}, limit=${limit}, offset=${offset}`,
       );
     }
   }
@@ -1837,10 +1990,11 @@ export class ApiClient {
     fromToken: string,
     toToken: string,
     amount: string,
+    competitionId: string,
   ): Promise<QuoteResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.get(
-        `/api/trade/quote?fromToken=${encodeURIComponent(fromToken)}&toToken=${encodeURIComponent(toToken)}&amount=${encodeURIComponent(amount)}`,
+        `/api/trade/quote?fromToken=${encodeURIComponent(fromToken)}&toToken=${encodeURIComponent(toToken)}&amount=${encodeURIComponent(amount)}&competitionId=${encodeURIComponent(competitionId)}`,
       );
       return response.data as QuoteResponse;
     } catch (error) {
@@ -2198,12 +2352,15 @@ export class ApiClient {
 
   /**
    * Get perps positions for the authenticated agent
+   * @param competitionId The competition ID
    * @returns A promise that resolves to the perps positions response
    */
-  async getPerpsPositions(): Promise<PerpsPositionsResponse | ErrorResponse> {
+  async getPerpsPositions(
+    competitionId: string,
+  ): Promise<PerpsPositionsResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.get(
-        `/api/agent/perps/positions`,
+        `/api/agent/perps/positions?competitionId=${competitionId}`,
       );
       return response.data;
     } catch (error) {
@@ -2228,11 +2385,16 @@ export class ApiClient {
 
   /**
    * Get perps account summary for the authenticated agent
+   * @param competitionId The competition ID
    * @returns A promise that resolves to the perps account response
    */
-  async getPerpsAccount(): Promise<PerpsAccountResponse | ErrorResponse> {
+  async getPerpsAccount(
+    competitionId: string,
+  ): Promise<PerpsAccountResponse | ErrorResponse> {
     try {
-      const response = await this.axiosInstance.get(`/api/agent/perps/account`);
+      const response = await this.axiosInstance.get(
+        `/api/agent/perps/account?competitionId=${competitionId}`,
+      );
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "get perps account");

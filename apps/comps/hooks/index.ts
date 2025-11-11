@@ -11,3 +11,4 @@ export * from "./useLeaveCompetition";
 export * from "./useCreateAgent";
 export * from "./useSession";
 export * from "./useSandbox";
+export * from "./useCompetitionBoosts";

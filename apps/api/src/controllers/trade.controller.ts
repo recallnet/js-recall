@@ -10,6 +10,7 @@ import {
 import { ServiceRegistry } from "@/services/index.js";
 
 const GetQuoteQuerySchema = z.object({
+  competitionId: z.string().min(1, "competitionId is required"),
   fromToken: z.string().min(1, "fromToken is required"),
   toToken: z.string().min(1, "toToken is required"),
   amount: z
@@ -54,6 +55,7 @@ export function makeTradeController(services: ServiceRegistry) {
           amount,
           reason,
           slippageTolerance,
+          competitionId,
           // parameters for chain specification
           fromChain,
           fromSpecificChain,
@@ -62,13 +64,20 @@ export function makeTradeController(services: ServiceRegistry) {
         } = req.body;
 
         const agentId = req.agentId as string;
-        const competitionId = req.competitionId as string;
 
         // Validate required parameters
         if (!fromToken || !toToken || !amount) {
           throw new ApiError(
             400,
             "Missing required parameters: fromToken, toToken, amount",
+          );
+        }
+
+        // Validate competitionId is provided
+        if (!competitionId || typeof competitionId !== "string") {
+          throw new ApiError(
+            400,
+            "Missing required parameter: competitionId. Use POST /api/trade/execute with competitionId in body",
           );
         }
 
@@ -81,14 +90,6 @@ export function makeTradeController(services: ServiceRegistry) {
         const parsedAmount = parseFloat(amount);
         if (isNaN(parsedAmount) || parsedAmount <= 0) {
           throw new ApiError(400, "Amount must be a positive number");
-        }
-
-        // Validate that we have a competition ID
-        if (!competitionId) {
-          throw new ApiError(
-            400,
-            "Missing competitionId: No active competition or competition ID not set",
-          );
         }
 
         // Create chain options object if any chain parameters were provided
@@ -133,19 +134,25 @@ export function makeTradeController(services: ServiceRegistry) {
      */
     async getQuote(req: Request, res: Response, next: NextFunction) {
       try {
-        // Check if there's an active competition and if it's a perps competition
-        const activeCompetition =
-          await services.competitionService.getActiveCompetition();
-        if (activeCompetition?.type === "perpetual_futures") {
+        // Parse and validate query parameters
+        const queryParams = GetQuoteQuerySchema.parse(req.query);
+
+        // Get and validate competition
+        const competition = await services.competitionService.getCompetition(
+          queryParams.competitionId,
+        );
+
+        if (!competition) {
+          throw new ApiError(404, "Competition not found");
+        }
+
+        if (competition.type === "perpetual_futures") {
           throw new ApiError(
             400,
             "This endpoint is not available for perpetual futures competitions. " +
               "Perpetual futures positions are managed through Symphony, not through this API.",
           );
         }
-
-        // Parse and validate query parameters
-        const queryParams = GetQuoteQuerySchema.parse(req.query);
 
         // Call service method
         const result = await services.tradeSimulatorService.getTradeQuote({

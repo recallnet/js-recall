@@ -1083,6 +1083,8 @@ describe("PerpsDataProcessor", () => {
         status: "active",
         deactivationReason: null,
         deactivationDate: null,
+        isRewardsIneligible: false,
+        rewardsIneligibilityReason: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -1141,6 +1143,8 @@ describe("PerpsDataProcessor", () => {
         status: "active",
         deactivationReason: null,
         deactivationDate: null,
+        isRewardsIneligible: false,
+        rewardsIneligibilityReason: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -1160,6 +1164,8 @@ describe("PerpsDataProcessor", () => {
         status: "active",
         deactivationReason: null,
         deactivationDate: null,
+        isRewardsIneligible: false,
+        rewardsIneligibilityReason: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -1233,6 +1239,7 @@ describe("PerpsDataProcessor", () => {
         boosterAllocationUnit: null,
         rewardRules: null,
         rewardDetails: null,
+        rewardsIneligible: null,
         displayState: null,
         arenaId: "default-perps-arena",
         engineId: "perpetual_futures" as const,
@@ -1283,6 +1290,7 @@ describe("PerpsDataProcessor", () => {
         boosterAllocationUnit: null,
         rewardRules: null,
         rewardDetails: null,
+        rewardsIneligible: null,
         displayState: null,
         arenaId: "default-paper-arena",
         engineId: "spot_paper_trading" as const,

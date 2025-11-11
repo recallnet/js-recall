@@ -380,6 +380,172 @@ Delete a partner (cascades to remove all competition associations)
 | --------------- | ------ |
 | BearerAuth      |        |
 
+### /api/admin/competitions/{competitionId}/partners
+
+#### GET
+
+##### Summary:
+
+Get partners for a competition
+
+##### Description:
+
+Retrieve all partners associated with a competition, ordered by position
+
+##### Parameters
+
+| Name          | Located in | Description    | Required | Schema        |
+| ------------- | ---------- | -------------- | -------- | ------------- |
+| competitionId | path       | Competition ID | Yes      | string (uuid) |
+
+##### Responses
+
+| Code | Description                     |
+| ---- | ------------------------------- |
+| 200  | Partners retrieved successfully |
+| 401  | Unauthorized                    |
+| 500  | Server error                    |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| BearerAuth      |        |
+
+#### POST
+
+##### Summary:
+
+Add partner to competition
+
+##### Description:
+
+Associate a partner with a competition at a specific display position
+
+##### Parameters
+
+| Name          | Located in | Description    | Required | Schema        |
+| ------------- | ---------- | -------------- | -------- | ------------- |
+| competitionId | path       | Competition ID | Yes      | string (uuid) |
+
+##### Responses
+
+| Code | Description                                                     |
+| ---- | --------------------------------------------------------------- |
+| 201  | Partner added successfully                                      |
+| 400  | Bad Request                                                     |
+| 401  | Unauthorized                                                    |
+| 404  | Partner or Competition not found                                |
+| 409  | Conflict - Position already taken or partner already associated |
+| 500  | Server error                                                    |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| BearerAuth      |        |
+
+### /api/admin/competitions/{competitionId}/partners/replace
+
+#### PUT
+
+##### Summary:
+
+Replace all partners for a competition
+
+##### Description:
+
+Atomically replace all partner associations for a competition
+
+##### Parameters
+
+| Name          | Located in | Description    | Required | Schema        |
+| ------------- | ---------- | -------------- | -------- | ------------- |
+| competitionId | path       | Competition ID | Yes      | string (uuid) |
+
+##### Responses
+
+| Code | Description                    |
+| ---- | ------------------------------ |
+| 200  | Partners replaced successfully |
+| 400  | Bad Request                    |
+| 401  | Unauthorized                   |
+| 404  | One or more partners not found |
+| 500  | Server error                   |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| BearerAuth      |        |
+
+### /api/admin/competitions/{competitionId}/partners/{partnerId}
+
+#### PUT
+
+##### Summary:
+
+Update partner position
+
+##### Description:
+
+Update the display position of a partner in a competition
+
+##### Parameters
+
+| Name          | Located in | Description    | Required | Schema        |
+| ------------- | ---------- | -------------- | -------- | ------------- |
+| competitionId | path       | Competition ID | Yes      | string (uuid) |
+| partnerId     | path       | Partner ID     | Yes      | string (uuid) |
+
+##### Responses
+
+| Code | Description                               |
+| ---- | ----------------------------------------- |
+| 200  | Position updated successfully             |
+| 401  | Unauthorized                              |
+| 404  | Partner association not found             |
+| 409  | Position already taken by another partner |
+| 500  | Server error                              |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| BearerAuth      |        |
+
+#### DELETE
+
+##### Summary:
+
+Remove partner from competition
+
+##### Description:
+
+Remove the association between a partner and a competition
+
+##### Parameters
+
+| Name          | Located in | Description    | Required | Schema        |
+| ------------- | ---------- | -------------- | -------- | ------------- |
+| competitionId | path       | Competition ID | Yes      | string (uuid) |
+| partnerId     | path       | Partner ID     | Yes      | string (uuid) |
+
+##### Responses
+
+| Code | Description                   |
+| ---- | ----------------------------- |
+| 200  | Partner removed successfully  |
+| 401  | Unauthorized                  |
+| 404  | Partner association not found |
+| 500  | Server error                  |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| BearerAuth      |        |
+
 ### /api/admin/competition/create
 
 #### POST
@@ -1147,6 +1313,12 @@ Get agent balances (Paper Trading Only)
 
 Retrieve all token balances with current prices for the authenticated agent. Only available during paper trading competitions.
 
+##### Parameters
+
+| Name          | Located in | Description                             | Required | Schema |
+| ------------- | ---------- | --------------------------------------- | -------- | ------ |
+| competitionId | query      | Competition ID to retrieve balances for | Yes      | string |
+
 ##### Responses
 
 | Code | Description                                                             |
@@ -1173,6 +1345,12 @@ Get agent trade history (Paper Trading Only)
 ##### Description:
 
 Retrieve the trading history for the authenticated agent. Only available during paper trading competitions.
+
+##### Parameters
+
+| Name          | Located in | Description                                  | Required | Schema |
+| ------------- | ---------- | -------------------------------------------- | -------- | ------ |
+| competitionId | query      | Competition ID to retrieve trade history for | Yes      | string |
 
 ##### Responses
 
@@ -1225,7 +1403,13 @@ Get perps positions for the authenticated agent
 
 ##### Description:
 
-Returns current perpetual futures positions for the authenticated agent in the active competition
+Returns current perpetual futures positions for the authenticated agent in the specified competition
+
+##### Parameters
+
+| Name          | Located in | Description                              | Required | Schema |
+| ------------- | ---------- | ---------------------------------------- | -------- | ------ |
+| competitionId | query      | Competition ID to retrieve positions for | Yes      | string |
 
 ##### Responses
 
@@ -1255,6 +1439,12 @@ Get perps account summary for the authenticated agent
 ##### Description:
 
 Returns the perpetual futures account summary including equity, PnL, and statistics
+
+##### Parameters
+
+| Name          | Located in | Description                                    | Required | Schema |
+| ------------- | ---------- | ---------------------------------------------- | -------- | ------ |
+| competitionId | query      | Competition ID to retrieve account summary for | Yes      | string |
 
 ##### Responses
 
@@ -1819,6 +2009,33 @@ Includes embedded agent information for each position.
 | --------------- | ------ |
 | bearerAuth      |        |
 
+### /api/competitions/{competitionId}/partners
+
+#### GET
+
+##### Summary:
+
+Get partners for a competition
+
+##### Description:
+
+Retrieve all partners/sponsors associated with a competition (public access)
+
+##### Parameters
+
+| Name          | Located in | Description    | Required | Schema        |
+| ------------- | ---------- | -------------- | -------- | ------------- |
+| competitionId | path       | Competition ID | Yes      | string (uuid) |
+
+##### Responses
+
+| Code | Description                     |
+| ---- | ------------------------------- |
+| 200  | Partners retrieved successfully |
+| 400  | Bad Request                     |
+| 404  | Competition not found           |
+| 500  | Server error                    |
+
 ### /api/health
 
 #### GET
@@ -1964,6 +2181,7 @@ Get a quote for a potential trade between two tokens. Only available during pape
 
 | Name              | Located in | Description                            | Required | Schema |
 | ----------------- | ---------- | -------------------------------------- | -------- | ------ |
+| competitionId     | query      | Competition ID to get quote for        | Yes      | string |
 | fromToken         | query      | Token address to sell                  | Yes      | string |
 | toToken           | query      | Token address to buy                   | Yes      | string |
 | amount            | query      | Amount of fromToken to get quote for   | Yes      | string |

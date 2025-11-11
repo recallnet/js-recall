@@ -14,6 +14,7 @@ import {
   tradingConstraints,
 } from "@recallnet/db/schema/trading/defs";
 import {
+  AddPartnerToCompetitionResponse,
   AdminAgentResponse,
   AdminAgentsListResponse,
   AdminReactivateAgentInCompetitionResponse,
@@ -31,12 +32,16 @@ import {
   DeletePartnerResponse,
   ErrorResponse,
   GetArenaResponse,
+  GetCompetitionPartnersResponse,
   GetPartnerResponse,
   ListArenasResponse,
   ListPartnersResponse,
+  RemovePartnerFromCompetitionResponse,
+  ReplaceCompetitionPartnersResponse,
   StartCompetitionResponse,
   UpdateArenaResponse,
   UpdateCompetitionResponse,
+  UpdatePartnerPositionResponse,
   UpdatePartnerResponse,
   UserRegistrationResponse,
 } from "@recallnet/test-utils";
@@ -1090,6 +1095,7 @@ describe("Admin API", () => {
         type: "trading",
         externalUrl: "https://example.com",
         imageUrl: "https://example.com/image.jpg",
+        arenaId: "default-paper-arena",
       },
       {
         headers: {
@@ -1147,6 +1153,7 @@ describe("Admin API", () => {
       {
         name: "Test Competition for Auth Test",
         description: "Test description",
+        arenaId: "default-paper-arena",
       },
       {
         headers: {
@@ -1215,6 +1222,7 @@ describe("Admin API", () => {
       {
         name: "Test Competition for Validation",
         description: "Test description",
+        arenaId: "default-paper-arena",
       },
       {
         headers: {
@@ -1685,6 +1693,7 @@ describe("Admin API", () => {
         name: "Test Competition with Rewards",
         description: "Competition to test rewards update",
         type: "trading",
+        arenaId: "default-paper-arena",
       },
       {
         headers: {
@@ -2053,6 +2062,7 @@ describe("Admin API", () => {
         name: "Atomic Test Competition",
         description: "Testing atomic updates",
         type: "trading",
+        arenaId: "default-paper-arena",
       },
       {
         headers: {
@@ -2134,6 +2144,7 @@ describe("Admin API", () => {
         name: "Trading Constraints Test",
         description: "Testing constraints update",
         type: "trading",
+        arenaId: "default-paper-arena",
       },
       {
         headers: {
@@ -2217,6 +2228,7 @@ describe("Admin API", () => {
           tradingType: "disallowAll",
           sandboxMode: false,
           type: "trading",
+          arenaId: "default-paper-arena",
           rewards: {
             "-1": 1000, // Invalid rank (negative)
             "0": 500, // Invalid rank (zero)
@@ -2254,6 +2266,7 @@ describe("Admin API", () => {
         tradingType: "disallowAll",
         sandboxMode: false,
         type: "trading",
+        arenaId: "default-paper-arena",
       },
       {
         headers: {
@@ -2280,6 +2293,7 @@ describe("Admin API", () => {
         tradingType: "disallowAll",
         sandboxMode: false,
         type: "trading",
+        arenaId: "default-paper-arena",
         tradingConstraints: {
           minimumPairAgeHours: 96,
           minimum24hVolumeUsd: 75000,
@@ -2338,6 +2352,7 @@ describe("Admin API", () => {
       name: "Competition To Convert to Perps",
       description: "Test converting spot to perps",
       type: "trading",
+      arenaId: "default-paper-arena",
     });
 
     expect(createResponse.success).toBe(true);
@@ -2462,6 +2477,7 @@ describe("Admin API", () => {
       name: "Competition Missing PerpsProvider",
       description: "Test missing perpsProvider validation",
       type: "trading",
+      arenaId: "default-paper-arena",
     });
 
     expect(createResponse.success).toBe(true);
@@ -2500,6 +2516,7 @@ describe("Admin API", () => {
       name: "Pending Competition With Agents",
       description: "Test type conversion with registered agents",
       type: "trading",
+      arenaId: "default-paper-arena",
     });
 
     expect(createResponse.success).toBe(true);
@@ -2687,6 +2704,7 @@ describe("Admin API", () => {
       description: "Test competition with minimum stake requirement",
       type: "trading",
       minimumStake: 1000, // 1000 tokens minimum stake
+      arenaId: "default-paper-arena",
     });
 
     expect(createResponse.success).toBe(true);
@@ -2722,6 +2740,7 @@ describe("Admin API", () => {
       name: "Competition to Update with Minimum Stake",
       description: "Test updating competition with minimum stake",
       type: "trading",
+      arenaId: "default-paper-arena",
     });
 
     expect(createResponse.success).toBe(true);
@@ -2767,6 +2786,53 @@ describe("Admin API", () => {
     expect(updatedCompetitionDetails.competition.minimumStake).toBe(2500);
   });
 
+  test("should require arenaId when creating competition", async () => {
+    // Use raw axios to bypass ApiClient defaults
+    await expect(
+      axios.post(
+        `${getBaseUrl()}/api/admin/competition/create`,
+        {
+          name: "Competition Missing Arena",
+          description: "Test competition without arenaId",
+          type: "trading",
+          // arenaId intentionally omitted
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${adminApiKey}`,
+          },
+        },
+      ),
+    ).rejects.toThrow();
+  });
+
+  test("should require arenaId when creating new competition via start", async () => {
+    // Use raw axios to bypass ApiClient defaults
+    // This tests the create-and-start flow (no competitionId provided)
+    const { agent } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Test Agent for Arena Validation",
+    });
+
+    await expect(
+      axios.post(
+        `${getBaseUrl()}/api/admin/competition/start`,
+        {
+          name: "Competition Start Missing Arena",
+          description: "Test start competition without arenaId",
+          type: "trading",
+          agentIds: [agent.id],
+          // arenaId intentionally omitted - should fail because we're creating new competition
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${adminApiKey}`,
+          },
+        },
+      ),
+    ).rejects.toThrow();
+  });
+
   test("should throw ApiError for invalid fields in request body", async () => {
     const adminClient = createTestClient(getBaseUrl());
     await adminClient.loginAsAdmin(adminApiKey);
@@ -2775,6 +2841,7 @@ describe("Admin API", () => {
       name: "Competition with Invalid Fields",
       description: "Test competition with invalid fields",
       type: "foobar",
+      arenaId: "default-paper-arena",
     })) as ErrorResponse;
     expect(createResponse1.success).toBe(false);
     expect(createResponse1.status).toEqual(400);
@@ -2786,6 +2853,7 @@ describe("Admin API", () => {
       name: "Competition with Invalid Fields 2",
       description: "Test competition with invalid fields 2",
       type: "trading",
+      arenaId: "default-paper-arena",
       // @ts-expect-error - we're intentionally passing an invalid type
       minimumStake: "invalid",
       startDate: "invalid",
@@ -2801,6 +2869,7 @@ describe("Admin API", () => {
       competition: { id: competitionId },
     } = (await adminClient.createCompetition({
       name: "Competition to Update with Invalid Fields",
+      arenaId: "default-paper-arena",
       description: "Test updating competition with invalid fields",
       type: "trading",
     })) as CreateCompetitionResponse;
@@ -3137,6 +3206,7 @@ describe("Admin API", () => {
     const createResponse = await adminClient.createCompetition({
       name: "Basic Competition",
       type: "trading",
+      arenaId: "default-paper-arena",
     });
     expect(createResponse.success).toBe(true);
     const competitionId = (createResponse as CreateCompetitionResponse)
@@ -3169,6 +3239,9 @@ describe("Admin API", () => {
     // Note: We can't directly verify the new fields in the response
     // without updating the response serialization, but we verified they're accepted
   });
+  // TODO: Add test for deleting arena with associated competitions
+  // This requires updating createCompetition to accept arenaId parameter
+  // Will be implemented when we update competition creation in next phase
 
   test("should not allow arena operations without admin auth", async () => {
     const regularClient = createTestClient();
@@ -3401,5 +3474,237 @@ describe("Admin API", () => {
     // Try to list partners without admin auth
     const listResponse = await regularClient.listPartners();
     expect(listResponse.success).toBe(false);
+  });
+
+  // ===== Partner-Competition Association Tests =====
+
+  test("should add partner to competition", async () => {
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Create partner
+    const partnerResponse = await adminClient.createPartner({
+      name: `Assoc Partner ${Date.now()}`,
+      url: "https://example.com",
+    });
+    expect(partnerResponse.success).toBe(true);
+    const partnerId = (partnerResponse as CreatePartnerResponse).partner.id;
+
+    // Create competition
+    const compResponse = await adminClient.createCompetition({
+      name: "Assoc Competition",
+      type: "trading",
+    });
+    expect(compResponse.success).toBe(true);
+    const competitionId = (compResponse as CreateCompetitionResponse)
+      .competition.id;
+
+    // Add partner to competition
+    const addResponse = await adminClient.addPartnerToCompetition(
+      competitionId,
+      partnerId,
+      1,
+    );
+
+    expect(addResponse.success).toBe(true);
+    expect(
+      (addResponse as AddPartnerToCompetitionResponse).association,
+    ).toBeDefined();
+    expect(
+      (addResponse as AddPartnerToCompetitionResponse).association
+        .competitionId,
+    ).toBe(competitionId);
+    expect(
+      (addResponse as AddPartnerToCompetitionResponse).association.partnerId,
+    ).toBe(partnerId);
+    expect(
+      (addResponse as AddPartnerToCompetitionResponse).association.position,
+    ).toBe(1);
+  });
+
+  test("should get partners for a competition", async () => {
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Create partners
+    const partner1 = await adminClient.createPartner({
+      name: `List Partner 1 ${Date.now()}`,
+    });
+    const partner2 = await adminClient.createPartner({
+      name: `List Partner 2 ${Date.now()}`,
+    });
+    expect(partner1.success && partner2.success).toBe(true);
+
+    // Create competition
+    const compResponse = await adminClient.createCompetition({
+      name: "Partners List Competition",
+      type: "trading",
+    });
+    const competitionId = (compResponse as CreateCompetitionResponse)
+      .competition.id;
+
+    // Add partners
+    await adminClient.addPartnerToCompetition(
+      competitionId,
+      (partner1 as CreatePartnerResponse).partner.id,
+      1,
+    );
+    await adminClient.addPartnerToCompetition(
+      competitionId,
+      (partner2 as CreatePartnerResponse).partner.id,
+      2,
+    );
+
+    // Get partners
+    const getResponse = await adminClient.getCompetitionPartners(competitionId);
+
+    expect(getResponse.success).toBe(true);
+    const partners = (getResponse as GetCompetitionPartnersResponse).partners;
+    expect(partners.length).toBe(2);
+    expect(partners[0]?.position).toBe(1);
+    expect(partners[1]?.position).toBe(2);
+  });
+
+  test("should update partner position", async () => {
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Create partner and competition
+    const partnerResponse = await adminClient.createPartner({
+      name: `Position Partner ${Date.now()}`,
+    });
+    const partnerId = (partnerResponse as CreatePartnerResponse).partner.id;
+
+    const compResponse = await adminClient.createCompetition({
+      name: "Position Competition",
+      type: "trading",
+    });
+    const competitionId = (compResponse as CreateCompetitionResponse)
+      .competition.id;
+
+    // Add at position 1
+    await adminClient.addPartnerToCompetition(competitionId, partnerId, 1);
+
+    // Update to position 2
+    const updateResponse = await adminClient.updatePartnerPosition(
+      competitionId,
+      partnerId,
+      2,
+    );
+
+    expect(updateResponse.success).toBe(true);
+    expect(
+      (updateResponse as UpdatePartnerPositionResponse).association.position,
+    ).toBe(2);
+  });
+
+  test("should remove partner from competition", async () => {
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Create partner and competition
+    const partnerResponse = await adminClient.createPartner({
+      name: `Remove Partner ${Date.now()}`,
+    });
+    const partnerId = (partnerResponse as CreatePartnerResponse).partner.id;
+
+    const compResponse = await adminClient.createCompetition({
+      name: "Remove Competition",
+      type: "trading",
+    });
+    const competitionId = (compResponse as CreateCompetitionResponse)
+      .competition.id;
+
+    // Add partner
+    await adminClient.addPartnerToCompetition(competitionId, partnerId, 1);
+
+    // Remove partner
+    const removeResponse = await adminClient.removePartnerFromCompetition(
+      competitionId,
+      partnerId,
+    );
+
+    expect(removeResponse.success).toBe(true);
+    expect(
+      (removeResponse as RemovePartnerFromCompetitionResponse).message,
+    ).toContain("removed");
+
+    // Verify it's gone
+    const getResponse = await adminClient.getCompetitionPartners(competitionId);
+    expect(
+      (getResponse as GetCompetitionPartnersResponse).partners.length,
+    ).toBe(0);
+  });
+
+  test("should replace all partners atomically", async () => {
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Create 3 partners
+    const p1 = (await adminClient.createPartner({
+      name: `Replace 1 ${Date.now()}`,
+    })) as CreatePartnerResponse;
+    const p2 = (await adminClient.createPartner({
+      name: `Replace 2 ${Date.now()}`,
+    })) as CreatePartnerResponse;
+    const p3 = (await adminClient.createPartner({
+      name: `Replace 3 ${Date.now()}`,
+    })) as CreatePartnerResponse;
+
+    // Create competition
+    const compResponse = await adminClient.createCompetition({
+      name: "Replace Competition",
+      type: "trading",
+    });
+    const competitionId = (compResponse as CreateCompetitionResponse)
+      .competition.id;
+
+    // Add first 2 partners
+    await adminClient.addPartnerToCompetition(competitionId, p1.partner.id, 1);
+    await adminClient.addPartnerToCompetition(competitionId, p2.partner.id, 2);
+
+    // Replace with different set
+    const replaceResponse = await adminClient.replaceCompetitionPartners(
+      competitionId,
+      [
+        { partnerId: p2.partner.id, position: 1 },
+        { partnerId: p3.partner.id, position: 2 },
+      ],
+    );
+
+    expect(replaceResponse.success).toBe(true);
+    const replacedPartners = (
+      replaceResponse as ReplaceCompetitionPartnersResponse
+    ).partners;
+    expect(replacedPartners.length).toBe(2);
+
+    // Verify replace response contains enriched partner data
+    const partner1InResponse = replacedPartners.find(
+      (p) => p.id === p2.partner.id,
+    );
+    const partner2InResponse = replacedPartners.find(
+      (p) => p.id === p3.partner.id,
+    );
+
+    expect(partner1InResponse).toBeDefined();
+    expect(partner1InResponse?.name).toContain("Replace 2");
+    expect(partner1InResponse?.position).toBe(1);
+    expect(partner1InResponse?.competitionPartnerId).toBeDefined();
+
+    expect(partner2InResponse).toBeDefined();
+    expect(partner2InResponse?.name).toContain("Replace 3");
+    expect(partner2InResponse?.position).toBe(2);
+    expect(partner2InResponse?.competitionPartnerId).toBeDefined();
+
+    // Verify p1 was removed from response
+    expect(
+      replacedPartners.find((p) => p.id === p1.partner.id),
+    ).toBeUndefined();
+
+    // Verify ordering by position
+    expect(replacedPartners[0]?.position).toBe(1);
+    expect(replacedPartners[1]?.position).toBe(2);
+    expect(replacedPartners[0]?.id).toBe(p2.partner.id);
+    expect(replacedPartners[1]?.id).toBe(p3.partner.id);
   });
 });

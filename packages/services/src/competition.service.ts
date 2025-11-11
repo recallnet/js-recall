@@ -67,6 +67,7 @@ import {
  */
 export interface CreateCompetitionParams {
   name: string;
+  arenaId: string; // Required - admins must explicitly specify arena
   description?: string;
   tradingType?: CrossChainTradingType;
   sandboxMode?: boolean;
@@ -95,9 +96,9 @@ export interface CreateCompetitionParams {
     agent: number;
     users: number;
   };
+  rewardsIneligible?: string[];
 
-  // Arena and engine routing
-  arenaId?: string;
+  // Engine routing (arenaId already defined above as required)
   engineId?: EngineType;
   engineVersion?: string;
 
@@ -448,6 +449,7 @@ export class CompetitionService {
     evaluationMetric,
     perpsProvider,
     prizePools,
+    rewardsIneligible,
     arenaId,
     engineId,
     engineVersion,
@@ -482,6 +484,7 @@ export class CompetitionService {
       joinEndDate: joinEndDate ?? null,
       maxParticipants: maxParticipants ?? null,
       minimumStake: minimumStake ?? null,
+      rewardsIneligible: rewardsIneligible ?? null,
       status: "pending",
       crossChainTradingType: tradingType ?? "disallowAll",
       sandboxMode: sandboxMode ?? false,
@@ -490,7 +493,7 @@ export class CompetitionService {
       updatedAt: new Date(),
 
       // Arena and engine routing
-      arenaId: arenaId ?? null,
+      arenaId,
       engineId: engineId ?? null,
       engineVersion: engineVersion ?? null,
 
@@ -730,13 +733,6 @@ export class CompetitionService {
       );
     }
 
-    const activeCompetition = await this.competitionRepo.findActive();
-    if (activeCompetition) {
-      throw new Error(
-        `Another competition is already active: ${activeCompetition.id}`,
-      );
-    }
-
     // Validate provided agent IDs, in case the caller provided `agentIds`
     if (agentIds) {
       // Note: this throws if any are invalid or inactive
@@ -765,7 +761,11 @@ export class CompetitionService {
 
     // Process all agent additions and activations
     for (const agentId of finalAgentIds) {
-      await this.balanceService.resetAgentBalances(agentId, competition.type);
+      await this.balanceService.resetAgentBalances(
+        agentId,
+        competitionId,
+        competition.type,
+      );
 
       // Note: Agent validation already done above, so we know agent exists and is active
 
@@ -1252,10 +1252,25 @@ export class CompetitionService {
           tx,
         );
 
-        // Assign winners to rewards
+        // Fetch agents with lock to check for globally ineligible agents
+        // Lock prevents concurrent updates to agent eligibility during reward assignment
+        const agentIds = leaderboard.map((entry) => entry.agentId);
+        const agents = await this.agentRepo.findByIdsWithLock(agentIds, tx);
+        const globallyIneligibleAgents = agents
+          .filter((agent) => agent.isRewardsIneligible)
+          .map((agent) => agent.id);
+
+        // Combine competition-specific and global exclusions (deduplicated)
+        const competitionExclusions = updated.rewardsIneligible ?? [];
+        const allExcludedAgents = Array.from(
+          new Set([...competitionExclusions, ...globallyIneligibleAgents]),
+        );
+
+        // Assign winners to rewards (excluding both competition-specific and globally ineligible agents)
         await this.competitionRewardService.assignWinnersToRewards(
           competitionId,
           leaderboard,
+          allExcludedAgents.length > 0 ? allExcludedAgents : undefined,
           tx,
         );
 
@@ -1287,26 +1302,6 @@ export class CompetitionService {
   async isCompetitionActive(competitionId: string) {
     const competition = await this.competitionRepo.findById(competitionId);
     return competition?.status === "active";
-  }
-
-  /**
-   * Get the currently active competition
-   * @returns The active competition or null if none
-   */
-  async getActiveCompetition() {
-    return this.competitionRepo.findActive();
-  }
-
-  /**
-   * Check if the active competition is of a specific type (atomic operation)
-   * @param type The competition type to check
-   * @returns true if active competition matches the type, false otherwise
-   */
-  async isActiveCompetitionType(
-    type: "trading" | "perpetual_futures",
-  ): Promise<boolean> {
-    const activeCompetition = await this.competitionRepo.findActive();
-    return activeCompetition?.type === type;
   }
 
   /**
@@ -1576,7 +1571,10 @@ export class CompetitionService {
 
     // Use bulk portfolio value calculation
     const portfolioValues =
-      await this.tradeSimulatorService.calculateBulkPortfolioValues(agents);
+      await this.tradeSimulatorService.calculateBulkPortfolioValues(
+        agents,
+        competitionId,
+      );
 
     const leaderboard = agents.map((agentId: string) => ({
       agentId,
@@ -2742,52 +2740,37 @@ export class CompetitionService {
   /**
    * Check and automatically calculate rewards for competitions that have ended
    */
-  async processPendingRewardsCompetitions(): Promise<void> {
-    try {
-      const competitions =
-        await this.competitionRepo.findCompetitionsNeedingRewardsCalculation();
-
-      if (competitions.length === 0) {
-        this.logger.debug(
-          "[CompetitionManager] No competitions needing rewards calculation",
-        );
-        return;
-      }
-
-      for (const competition of competitions) {
-        // Ensure competition end date has passed by at least an hour
-        const now = new Date();
-        const endDate = competition.endDate;
-        if (!endDate || now.getTime() - endDate.getTime() < 60 * 60 * 1000) {
-          this.logger.debug(
-            `[CompetitionManager] Skipping rewards calculation for competition ${competition.name} (${competition.id}) because end date has not passed by an hour (endDate: ${endDate ? endDate.toISOString() : "N/A"}, now: ${now.toISOString()})`,
-          );
-          continue;
-        }
-
-        try {
-          this.logger.debug(
-            `[CompetitionManager] Calculating rewards for competition: ${competition.name} (${competition.id})`,
-          );
-
-          await this.rewardsService.calculateAndAllocate(competition.id);
-
-          this.logger.debug(
-            `[CompetitionManager] Successfully calculated rewards for competition: ${competition.name} (${competition.id})`,
-          );
-        } catch (error) {
-          this.logger.error(
-            `[CompetitionManager] Error calculating rewards for competition ${competition.id}: ${error instanceof Error ? error : String(error)}`,
-          );
-          // Continue processing other competitions even if one fails
-        }
-      }
-    } catch (error) {
-      this.logger.error(
-        `[CompetitionManager] Error in processPendingRewardsCompetitions: ${error instanceof Error ? error : String(error)}`,
+  async processPendingRewardsCompetitions(): Promise<string | null> {
+    const competition =
+      await this.competitionRepo.findCompetitionNeedingRewardsCalculation();
+    if (!competition) {
+      this.logger.debug(
+        "[CompetitionManager] No competition needing rewards calculation found",
       );
-      throw error;
+      return null;
     }
+
+    // Ensure competition end date has passed by at least an hour
+    const now = new Date();
+    const endDate = competition.endDate;
+    if (!endDate || now.getTime() - endDate.getTime() < 60 * 60 * 1000) {
+      this.logger.debug(
+        `[CompetitionManager] Skipping rewards calculation for competition ${competition.name} (${competition.id}) because end date has not passed by an hour (endDate: ${endDate ? endDate.toISOString() : "N/A"}, now: ${now.toISOString()})`,
+      );
+      return null;
+    }
+
+    this.logger.debug(
+      `[CompetitionManager] Calculating rewards for competition: ${competition.name} (${competition.id})`,
+    );
+
+    await this.rewardsService.calculateAndAllocate(competition.id);
+
+    this.logger.debug(
+      `[CompetitionManager] Successfully calculated rewards for competition: ${competition.name} (${competition.id})`,
+    );
+
+    return competition.id || null;
   }
 
   /**
@@ -2800,19 +2783,6 @@ export class CompetitionService {
    */
   async processCompetitionStartDateChecks(): Promise<void> {
     try {
-      // Do not start anything if there's already an active competition
-      const active = await this.competitionRepo.findActive();
-      if (active) {
-        this.logger.debug(
-          {
-            competitionId: active.id,
-            name: active.name,
-          },
-          `[CompetitionManager] Active competition found. Skipping auto-start checks`,
-        );
-        return;
-      }
-
       const competitionsToStart =
         await this.competitionRepo.findCompetitionsNeedingStarting();
       if (competitionsToStart.length === 0) {
@@ -2822,51 +2792,33 @@ export class CompetitionService {
         return;
       }
 
-      // We only support running one competition at a time, so we will not start any competitions
-      // if we find more than one. Note: This should not happen if competitions are created with
-      // the correct start dates; it's defensive.
-      const competition = competitionsToStart[0];
-      if (competitionsToStart.length > 1 || !competition) {
-        this.logger.warn(
-          {
-            competitions: competitionsToStart.map((c) => ({
-              id: c.id,
-              name: c.name,
-              startDate: c.startDate?.toISOString(),
-            })),
-          },
-          `[CompetitionManager] Multiple competitions ready to start. Skipping auto-start checks`,
-        );
-        return;
+      this.logger.debug(
+        `[CompetitionManager] Found ${competitionsToStart.length} competitions ready to start`,
+      );
+
+      for (const competition of competitionsToStart) {
+        try {
+          this.logger.debug(
+            `[CompetitionManager] Auto-starting competition: ${competition.name} (${competition.id}) - scheduled start: ${competition.startDate!.toISOString()} - status: ${competition.status}`,
+          );
+
+          await this.startCompetition(competition.id);
+
+          this.logger.debug(
+            `[CompetitionManager] Successfully auto-started competition: ${competition.name} (${competition.id})`,
+          );
+        } catch (error) {
+          this.logger.error(
+            `[CompetitionManager] Error auto-starting competition ${competition.id}: ${error instanceof Error ? error : String(error)}`,
+          );
+          // Continue processing other competitions even if one fails
+        }
       }
-      this.logger.debug(
-        {
-          competitionId: competition.id,
-          name: competition.name,
-          startDate: competition.startDate?.toISOString(),
-        },
-        `[CompetitionManager] Auto-starting competition`,
-      );
-      await this.startCompetition(competition.id);
-      this.logger.debug(
-        {
-          competitionId: competition.id,
-          name: competition.name,
-        },
-        `[CompetitionManager] Successfully auto-started competition`,
-      );
     } catch (error) {
-      // Continue silently if the competition has no registered nor provided agents
-      if (
-        error instanceof ApiError &&
-        error.statusCode === 400 &&
-        error.message.includes("no registered agents")
-      ) {
-        this.logger.error(
-          `[CompetitionManager] No registered agents found for competition. Skipping auto-start.`,
-        );
-        return;
-      }
+      this.logger.error(
+        `[CompetitionManager] Error in processCompetitionStartDateChecks: ${error instanceof Error ? error : String(error)}`,
+      );
+      throw error;
     }
   }
 

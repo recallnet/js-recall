@@ -1,8 +1,10 @@
 import { hexToBytes } from "viem";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 
+import { AgentRepository } from "@recallnet/db/repositories/agent";
 import { BoostRepository } from "@recallnet/db/repositories/boost";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
+import { CompetitionRewardsRepository } from "@recallnet/db/repositories/competition-rewards";
 import { RewardsRepository } from "@recallnet/db/repositories/rewards";
 import { competitions } from "@recallnet/db/schema/core/defs";
 import { InsertReward } from "@recallnet/db/schema/rewards/types";
@@ -47,11 +49,17 @@ describe("Rewards API", () => {
 
   beforeEach(async () => {
     const rewardsRepository = new RewardsRepository(db, logger);
+    const agentRepository = new AgentRepository(
+      db,
+      logger,
+      new CompetitionRewardsRepository(db, logger),
+    );
     // Create RewardsService with mock RewardsAllocator
     rewardsService = new RewardsService(
       rewardsRepository,
       new CompetitionRepository(db, db, logger),
       new BoostRepository(db),
+      agentRepository,
       mockRewardsAllocator as any, // eslint-disable-line
       db,
       logger,

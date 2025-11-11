@@ -553,6 +553,291 @@ export function configureAdminRoutes(
 
   /**
    * @openapi
+   * /api/admin/competitions/{competitionId}/partners:
+   *   get:
+   *     tags:
+   *       - Admin
+   *     summary: Get partners for a competition
+   *     description: Retrieve all partners associated with a competition, ordered by position
+   *     security:
+   *       - BearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: competitionId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         description: Competition ID
+   *     responses:
+   *       200:
+   *         description: Partners retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                 partners:
+   *                   type: array
+   *                   items:
+   *                     type: object
+   *                     properties:
+   *                       id:
+   *                         type: string
+   *                         format: uuid
+   *                       name:
+   *                         type: string
+   *                       url:
+   *                         type: string
+   *                         nullable: true
+   *                       logoUrl:
+   *                         type: string
+   *                         nullable: true
+   *                       details:
+   *                         type: string
+   *                         nullable: true
+   *                       position:
+   *                         type: integer
+   *                       competitionPartnerId:
+   *                         type: string
+   *                         format: uuid
+   *                       createdAt:
+   *                         type: string
+   *                         format: date-time
+   *                       updatedAt:
+   *                         type: string
+   *                         format: date-time
+   *       401:
+   *         description: Unauthorized
+   *       500:
+   *         description: Server error
+   */
+  router.get(
+    "/competitions/:competitionId/partners",
+    controller.getCompetitionPartners,
+  );
+
+  /**
+   * @openapi
+   * /api/admin/competitions/{competitionId}/partners:
+   *   post:
+   *     tags:
+   *       - Admin
+   *     summary: Add partner to competition
+   *     description: Associate a partner with a competition at a specific display position
+   *     security:
+   *       - BearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: competitionId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         description: Competition ID
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - partnerId
+   *               - position
+   *             properties:
+   *               partnerId:
+   *                 type: string
+   *                 format: uuid
+   *                 description: Partner ID
+   *               position:
+   *                 type: integer
+   *                 minimum: 1
+   *                 description: Display position (1-indexed)
+   *     responses:
+   *       201:
+   *         description: Partner added successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                 association:
+   *                   type: object
+   *       400:
+   *         description: Bad Request
+   *       401:
+   *         description: Unauthorized
+   *       404:
+   *         description: Partner or Competition not found
+   *       409:
+   *         description: Conflict - Position already taken or partner already associated
+   *       500:
+   *         description: Server error
+   */
+  router.post(
+    "/competitions/:competitionId/partners",
+    controller.addPartnerToCompetition,
+  );
+
+  /**
+   * @openapi
+   * /api/admin/competitions/{competitionId}/partners/replace:
+   *   put:
+   *     tags:
+   *       - Admin
+   *     summary: Replace all partners for a competition
+   *     description: Atomically replace all partner associations for a competition
+   *     security:
+   *       - BearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: competitionId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         description: Competition ID
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - partners
+   *             properties:
+   *               partners:
+   *                 type: array
+   *                 items:
+   *                   type: object
+   *                   required:
+   *                     - partnerId
+   *                     - position
+   *                   properties:
+   *                     partnerId:
+   *                       type: string
+   *                       format: uuid
+   *                     position:
+   *                       type: integer
+   *                       minimum: 1
+   *     responses:
+   *       200:
+   *         description: Partners replaced successfully
+   *       400:
+   *         description: Bad Request
+   *       401:
+   *         description: Unauthorized
+   *       404:
+   *         description: One or more partners not found
+   *       500:
+   *         description: Server error
+   */
+  router.put(
+    "/competitions/:competitionId/partners/replace",
+    controller.replaceCompetitionPartners,
+  );
+
+  /**
+   * @openapi
+   * /api/admin/competitions/{competitionId}/partners/{partnerId}:
+   *   put:
+   *     tags:
+   *       - Admin
+   *     summary: Update partner position
+   *     description: Update the display position of a partner in a competition
+   *     security:
+   *       - BearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: competitionId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         description: Competition ID
+   *       - in: path
+   *         name: partnerId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         description: Partner ID
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - position
+   *             properties:
+   *               position:
+   *                 type: integer
+   *                 minimum: 1
+   *                 description: Display position
+   *     responses:
+   *       200:
+   *         description: Position updated successfully
+   *       401:
+   *         description: Unauthorized
+   *       404:
+   *         description: Partner association not found
+   *       409:
+   *         description: Position already taken by another partner
+   *       500:
+   *         description: Server error
+   */
+  router.put(
+    "/competitions/:competitionId/partners/:partnerId",
+    controller.updatePartnerPosition,
+  );
+
+  /**
+   * @openapi
+   * /api/admin/competitions/{competitionId}/partners/{partnerId}:
+   *   delete:
+   *     tags:
+   *       - Admin
+   *     summary: Remove partner from competition
+   *     description: Remove the association between a partner and a competition
+   *     security:
+   *       - BearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: competitionId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         description: Competition ID
+   *       - in: path
+   *         name: partnerId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         description: Partner ID
+   *     responses:
+   *       200:
+   *         description: Partner removed successfully
+   *       401:
+   *         description: Unauthorized
+   *       404:
+   *         description: Partner association not found
+   *       500:
+   *         description: Server error
+   */
+  router.delete(
+    "/competitions/:competitionId/partners/:partnerId",
+    controller.removePartnerFromCompetition,
+  );
+
+  /**
+   * @openapi
    * /api/admin/competition/create:
    *   post:
    *     tags:
@@ -569,6 +854,7 @@ export function configureAdminRoutes(
    *             type: object
    *             required:
    *               - name
+   *               - arenaId
    *             properties:
    *               name:
    *                 type: string
@@ -729,6 +1015,83 @@ export function configureAdminRoutes(
    *                     minimum: 0
    *                     description: User prize pool amount
    *                     example: 500
+   *               arenaId:
+   *                 type: string
+   *                 description: Arena ID for routing competitions to specific execution engines (required)
+   *                 example: default-paper-arena
+   *               engineId:
+   *                 type: string
+   *                 nullable: true
+   *                 enum: [spot_paper_trading, perpetual_futures, spot_live_trading]
+   *                 description: Engine type identifier (optional, defaults based on competition type)
+   *                 example: spot_paper_trading
+   *               engineVersion:
+   *                 type: string
+   *                 nullable: true
+   *                 description: Engine version (optional)
+   *                 example: 1.0.0
+   *               vips:
+   *                 type: array
+   *                 nullable: true
+   *                 items:
+   *                   type: string
+   *                 description: VIP agent IDs with special access
+   *               allowlist:
+   *                 type: array
+   *                 nullable: true
+   *                 items:
+   *                   type: string
+   *                 description: Allowlisted agent IDs
+   *               blocklist:
+   *                 type: array
+   *                 nullable: true
+   *                 items:
+   *                   type: string
+   *                 description: Blocklisted agent IDs
+   *               minRecallRank:
+   *                 type: integer
+   *                 nullable: true
+   *                 description: Minimum global Recall rank required to join
+   *               allowlistOnly:
+   *                 type: boolean
+   *                 description: Whether only allowlisted agents can join
+   *               agentAllocation:
+   *                 type: number
+   *                 nullable: true
+   *                 description: Agent reward pool allocation amount
+   *               agentAllocationUnit:
+   *                 type: string
+   *                 nullable: true
+   *                 enum: [RECALL, USDC, USD]
+   *                 description: Unit for agent reward allocation
+   *               boosterAllocation:
+   *                 type: number
+   *                 nullable: true
+   *                 description: Booster reward pool allocation amount
+   *               boosterAllocationUnit:
+   *                 type: string
+   *                 nullable: true
+   *                 enum: [RECALL, USDC, USD]
+   *                 description: Unit for booster reward allocation
+   *               rewardRules:
+   *                 type: string
+   *                 nullable: true
+   *                 description: Rules for reward distribution
+   *               rewardDetails:
+   *                 type: string
+   *                 nullable: true
+   *                 description: Additional reward details
+   *               displayState:
+   *                 type: string
+   *                 nullable: true
+   *                 enum: [active, waitlist, cancelled, pending, paused]
+   *                 description: UI display state
+   *               rewardsIneligible:
+   *                 type: array
+   *                 items:
+   *                   type: string
+   *                 description: Agent IDs ineligible to receive rewards from this competition
+   *                 example: ["agent-id-1", "agent-id-2"]
    *     responses:
    *       201:
    *         description: Competition created successfully
@@ -893,6 +1256,12 @@ export function configureAdminRoutes(
    *                       nullable: true
    *                       enum: [active, waitlist, cancelled, pending, paused]
    *                       description: UI display state
+   *                     rewardsIneligible:
+   *                       type: array
+   *                       nullable: true
+   *                       items:
+   *                         type: string
+   *                       description: Agent IDs ineligible to receive rewards from this competition
    *       400:
    *         description: |-
    *           Bad Request - Various validation errors:
@@ -1044,6 +1413,83 @@ export function configureAdminRoutes(
    *                     minimum: 0
    *                     description: User prize pool amount
    *                     example: 500
+   *               arenaId:
+   *                 type: string
+   *                 description: Arena ID for routing competitions (required when creating new competition, not needed when starting existing)
+   *                 example: default-paper-arena
+   *               engineId:
+   *                 type: string
+   *                 nullable: true
+   *                 enum: [spot_paper_trading, perpetual_futures, spot_live_trading]
+   *                 description: Engine type identifier (optional)
+   *                 example: spot_paper_trading
+   *               engineVersion:
+   *                 type: string
+   *                 nullable: true
+   *                 description: Engine version (optional)
+   *                 example: 1.0.0
+   *               vips:
+   *                 type: array
+   *                 nullable: true
+   *                 items:
+   *                   type: string
+   *                 description: VIP agent IDs with special access
+   *               allowlist:
+   *                 type: array
+   *                 nullable: true
+   *                 items:
+   *                   type: string
+   *                 description: Allowlisted agent IDs
+   *               blocklist:
+   *                 type: array
+   *                 nullable: true
+   *                 items:
+   *                   type: string
+   *                 description: Blocklisted agent IDs
+   *               minRecallRank:
+   *                 type: integer
+   *                 nullable: true
+   *                 description: Minimum global Recall rank required to join
+   *               allowlistOnly:
+   *                 type: boolean
+   *                 description: Whether only allowlisted agents can join
+   *               agentAllocation:
+   *                 type: number
+   *                 nullable: true
+   *                 description: Agent reward pool allocation amount
+   *               agentAllocationUnit:
+   *                 type: string
+   *                 nullable: true
+   *                 enum: [RECALL, USDC, USD]
+   *                 description: Unit for agent reward allocation
+   *               boosterAllocation:
+   *                 type: number
+   *                 nullable: true
+   *                 description: Booster reward pool allocation amount
+   *               boosterAllocationUnit:
+   *                 type: string
+   *                 nullable: true
+   *                 enum: [RECALL, USDC, USD]
+   *                 description: Unit for booster reward allocation
+   *               rewardRules:
+   *                 type: string
+   *                 nullable: true
+   *                 description: Rules for reward distribution
+   *               rewardDetails:
+   *                 type: string
+   *                 nullable: true
+   *                 description: Additional reward details
+   *               displayState:
+   *                 type: string
+   *                 nullable: true
+   *                 enum: [active, waitlist, cancelled, pending, paused]
+   *                 description: UI display state
+   *               rewardsIneligible:
+   *                 type: array
+   *                 items:
+   *                   type: string
+   *                 description: Agent IDs ineligible to receive rewards from this competition
+   *                 example: ["agent-id-1", "agent-id-2"]
    *     responses:
    *       200:
    *         description: Competition started successfully
@@ -1213,6 +1659,12 @@ export function configureAdminRoutes(
    *                       nullable: true
    *                       enum: [active, waitlist, cancelled, pending, paused]
    *                       description: UI display state
+   *                     rewardsIneligible:
+   *                       type: array
+   *                       nullable: true
+   *                       items:
+   *                         type: string
+   *                       description: Agent IDs ineligible to receive rewards from this competition
    *                 initializedAgents:
    *                   type: array
    *                   items:
@@ -1443,6 +1895,85 @@ export function configureAdminRoutes(
    *                 nullable: true
    *                 description: Minimum stake amount required to join the competition (in USD)
    *                 example: 100
+   *               arenaId:
+   *                 type: string
+   *                 nullable: true
+   *                 description: Arena ID for routing competitions (optional - can reassign competition to different arena)
+   *                 example: default-paper-arena
+   *               engineId:
+   *                 type: string
+   *                 nullable: true
+   *                 enum: [spot_paper_trading, perpetual_futures, spot_live_trading]
+   *                 description: Engine type identifier (optional)
+   *                 example: spot_paper_trading
+   *               engineVersion:
+   *                 type: string
+   *                 nullable: true
+   *                 description: Engine version (optional)
+   *                 example: 1.0.0
+   *               vips:
+   *                 type: array
+   *                 nullable: true
+   *                 items:
+   *                   type: string
+   *                 description: VIP agent IDs with special access
+   *               allowlist:
+   *                 type: array
+   *                 nullable: true
+   *                 items:
+   *                   type: string
+   *                 description: Allowlisted agent IDs
+   *               blocklist:
+   *                 type: array
+   *                 nullable: true
+   *                 items:
+   *                   type: string
+   *                 description: Blocklisted agent IDs
+   *               minRecallRank:
+   *                 type: integer
+   *                 nullable: true
+   *                 description: Minimum global Recall rank required to join
+   *               allowlistOnly:
+   *                 type: boolean
+   *                 nullable: true
+   *                 description: Whether only allowlisted agents can join
+   *               agentAllocation:
+   *                 type: number
+   *                 nullable: true
+   *                 description: Agent reward pool allocation amount
+   *               agentAllocationUnit:
+   *                 type: string
+   *                 nullable: true
+   *                 enum: [RECALL, USDC, USD]
+   *                 description: Unit for agent reward allocation
+   *               boosterAllocation:
+   *                 type: number
+   *                 nullable: true
+   *                 description: Booster reward pool allocation amount
+   *               boosterAllocationUnit:
+   *                 type: string
+   *                 nullable: true
+   *                 enum: [RECALL, USDC, USD]
+   *                 description: Unit for booster reward allocation
+   *               rewardRules:
+   *                 type: string
+   *                 nullable: true
+   *                 description: Rules for reward distribution
+   *               rewardDetails:
+   *                 type: string
+   *                 nullable: true
+   *                 description: Additional reward details
+   *               displayState:
+   *                 type: string
+   *                 nullable: true
+   *                 enum: [active, waitlist, cancelled, pending, paused]
+   *                 description: UI display state
+   *               rewardsIneligible:
+   *                 type: array
+   *                 items:
+   *                   type: string
+   *                 description: Agent IDs ineligible to receive rewards from this competition
+   *                 example: ["agent-id-1", "agent-id-2"]
    *     responses:
    *       200:
    *         description: Competition updated successfully
@@ -1598,6 +2129,12 @@ export function configureAdminRoutes(
    *                       nullable: true
    *                       enum: [active, waitlist, cancelled, pending, paused]
    *                       description: UI display state
+   *                     rewardsIneligible:
+   *                       type: array
+   *                       nullable: true
+   *                       items:
+   *                         type: string
+   *                       description: Agent IDs ineligible to receive rewards from this competition
    *       400:
    *         description: Bad request - Missing competitionId, no valid fields provided, attempting to update restricted fields (startDate, endDate, status), or missing perpsProvider when changing type to perpetual_futures
    *       401:
@@ -2658,6 +3195,13 @@ export function configureAdminRoutes(
    *                       type: string
    *                       description: URL to the agent's image
    *                       nullable: true
+   *                     isRewardsIneligible:
+   *                       type: boolean
+   *                       description: Whether the agent is globally ineligible for rewards
+   *                     rewardsIneligibilityReason:
+   *                       type: string
+   *                       description: Reason for rewards ineligibility
+   *                       nullable: true
    *                     createdAt:
    *                       type: string
    *                       format: date-time
@@ -2721,6 +3265,14 @@ export function configureAdminRoutes(
    *                 type: object
    *                 description: Agent's new metadata
    *                 example: { "strategy": "updated-strategy" }
+   *               isRewardsIneligible:
+   *                 type: boolean
+   *                 description: Whether the agent is globally ineligible for rewards across all competitions
+   *                 example: true
+   *               rewardsIneligibilityReason:
+   *                 type: string
+   *                 description: Optional reason for rewards ineligibility
+   *                 example: "Test agent - not eligible for production rewards"
    *     responses:
    *       200:
    *         description: Agent updated successfully
@@ -2769,6 +3321,13 @@ export function configureAdminRoutes(
    *                     metadata:
    *                       type: object
    *                       description: Agent metadata
+   *                       nullable: true
+   *                     isRewardsIneligible:
+   *                       type: boolean
+   *                       description: Whether the agent is globally ineligible for rewards
+   *                     rewardsIneligibilityReason:
+   *                       type: string
+   *                       description: Reason for rewards ineligibility
    *                       nullable: true
    *                     createdAt:
    *                       type: string
