@@ -2303,10 +2303,31 @@ export class CompetitionService {
     // Check VIP status early - VIPs bypass soft requirements (stake, rank)
     if (competition.vips && competition.vips.length > 0) {
       if (competition.vips.includes(agentId)) {
-        await this.competitionRepo.addAgentToCompetition(
-          competitionId,
-          agentId,
-        );
+        try {
+          await this.competitionRepo.addAgentToCompetition(
+            competitionId,
+            agentId,
+          );
+        } catch (error) {
+          // Convert repository error to appropriate API error
+          if (
+            error instanceof Error &&
+            error.message.includes("maximum participant limit")
+          ) {
+            throw new ApiError(409, error.message);
+          }
+          // Handle one-agent-per-user error
+          if (
+            error instanceof Error &&
+            error.message.includes("already has an agent registered")
+          ) {
+            throw new ApiError(
+              409,
+              "You already have an agent registered in this competition. Each user can only register one agent per competition.",
+            );
+          }
+          throw error;
+        }
         this.logger.debug(
           `[CompetitionManager] VIP agent ${agentId} joined competition ${competitionId}, bypassing soft requirements`,
         );
