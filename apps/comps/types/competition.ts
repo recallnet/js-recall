@@ -1,9 +1,11 @@
+import type { CompetitionStatus } from "@recallnet/db/repositories/types";
+
 import type { RouterOutputs } from "@/rpc/router";
 import { mergeCompetitionsWithUserData } from "@/utils/competition-utils";
 
 import { Agent } from "./agent";
 import { PaginationResponse } from "./api";
-import { CompetitionStatus, CrossChainTradingType } from "./enums";
+import { CrossChainTradingType } from "./enums";
 
 export interface Reward {
   name: string;
