@@ -59,9 +59,15 @@ import {
 
 import config from "@/config/index.js";
 import { db, dbRead } from "@/database/db.js";
+import {
+  INDEXING_EVENTS_HYPERSYNC_QUERY,
+  INDEXING_TRANSACTIONS_HYPERSYNC_QUERY,
+} from "@/indexing/blockchain-config.js";
+import { ConvictionClaimsRepository } from "@/indexing/conviction-claims.repository.js";
 import { EventProcessor } from "@/indexing/event-processor.js";
 import { EventsRepository } from "@/indexing/events.repository.js";
 import { IndexingService } from "@/indexing/indexing.service.js";
+import { TransactionProcessor } from "@/indexing/transaction-processor.js";
 import {
   configLogger,
   indexingLogger,
@@ -103,9 +109,12 @@ class ServiceRegistry {
   private readonly _userRepository: UserRepository;
   private readonly _arenaRepository: ArenaRepository;
   private readonly _partnerRepository: PartnerRepository;
-  private readonly _indexingService: IndexingService;
+  private readonly _eventIndexingService: IndexingService | undefined;
+  private readonly _transactionIndexingService: IndexingService | undefined;
   private readonly _eventsRepository: EventsRepository;
   private readonly _eventProcessor: EventProcessor;
+  private readonly _transactionProcessor: TransactionProcessor;
+  private readonly _convictionClaimsRepository: ConvictionClaimsRepository;
   private readonly _boostAwardService: BoostAwardService;
   private readonly _privyClient: PrivyClient;
   private _rewardsService: RewardsService;
@@ -362,6 +371,9 @@ class ServiceRegistry {
       config,
       serviceLogger,
     );
+
+    this._convictionClaimsRepository = new ConvictionClaimsRepository(db);
+
     this._eventProcessor = new EventProcessor(
       db,
       this._rewardsRepository,
@@ -371,10 +383,26 @@ class ServiceRegistry {
       this._competitionService,
       indexingLogger,
     );
-    this._indexingService = new IndexingService(
+
+    if (INDEXING_EVENTS_HYPERSYNC_QUERY) {
+      this._eventIndexingService = new IndexingService(
+        indexingLogger,
+        this._eventProcessor,
+        INDEXING_EVENTS_HYPERSYNC_QUERY,
+      );
+    }
+
+    this._transactionProcessor = new TransactionProcessor(
+      this._convictionClaimsRepository,
       indexingLogger,
-      this._eventProcessor,
     );
+    if (INDEXING_TRANSACTIONS_HYPERSYNC_QUERY) {
+      this._transactionIndexingService = new IndexingService(
+        indexingLogger,
+        this._transactionProcessor,
+        INDEXING_TRANSACTIONS_HYPERSYNC_QUERY,
+      );
+    }
   }
 
   public static getInstance(): ServiceRegistry {
@@ -445,8 +473,20 @@ class ServiceRegistry {
     return this._perpsDataProcessor;
   }
 
-  get indexingService(): IndexingService {
-    return this._indexingService;
+  get eventIndexingService(): IndexingService | undefined {
+    return this._eventIndexingService;
+  }
+
+  get transactionIndexingService(): IndexingService | undefined {
+    return this._transactionIndexingService;
+  }
+
+  get convictionClaimsRepository(): ConvictionClaimsRepository {
+    return this._convictionClaimsRepository;
+  }
+
+  get transactionProcessor(): TransactionProcessor {
+    return this._transactionProcessor;
   }
 
   get competitionRepository(): CompetitionRepository {
