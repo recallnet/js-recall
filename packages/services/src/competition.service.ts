@@ -2595,68 +2595,31 @@ export class CompetitionService {
         return;
       }
 
-      this.logger.info(
-        {
-          count: competitionsToStart.length,
-          competitions: competitionsToStart.map((c) => ({
-            id: c.id,
-            name: c.name,
-            startDate: c.startDate?.toISOString(),
-          })),
-        },
-        `[CompetitionManager] Found ${competitionsToStart.length} competition(s) ready to start`,
+      this.logger.debug(
+        `[CompetitionManager] Found ${competitionsToStart.length} competitions ready to start`,
       );
 
       for (const competition of competitionsToStart) {
         try {
           this.logger.debug(
-            {
-              competitionId: competition.id,
-              name: competition.name,
-              startDate: competition.startDate?.toISOString(),
-            },
-            `[CompetitionManager] Auto-starting competition`,
+            `[CompetitionManager] Auto-starting competition: ${competition.name} (${competition.id}) - scheduled start: ${competition.startDate!.toISOString()} - status: ${competition.status}`,
           );
+
           await this.startCompetition(competition.id);
-          this.logger.info(
-            {
-              competitionId: competition.id,
-              name: competition.name,
-            },
-            `[CompetitionManager] Successfully auto-started competition`,
+
+          this.logger.debug(
+            `[CompetitionManager] Successfully auto-started competition: ${competition.name} (${competition.id})`,
           );
         } catch (error) {
-          // Continue with next competition if this one fails
-          if (
-            error instanceof ApiError &&
-            error.statusCode === 400 &&
-            error.message.includes("no registered agents")
-          ) {
-            this.logger.warn(
-              {
-                competitionId: competition.id,
-                name: competition.name,
-              },
-              `[CompetitionManager] No registered agents found for competition. Skipping auto-start.`,
-            );
-          } else {
-            this.logger.error(
-              {
-                competitionId: competition.id,
-                name: competition.name,
-                error: error instanceof Error ? error.message : String(error),
-              },
-              `[CompetitionManager] Error auto-starting competition`,
-            );
-          }
+          this.logger.error(
+            `[CompetitionManager] Error auto-starting competition ${competition.id}: ${error instanceof Error ? error : String(error)}`,
+          );
+          // Continue processing other competitions even if one fails
         }
       }
     } catch (error) {
       this.logger.error(
-        {
-          error: error instanceof Error ? error.message : String(error),
-        },
-        `[CompetitionManager] Error in processCompetitionStartDateChecks`,
+        `[CompetitionManager] Error in processCompetitionStartDateChecks: ${error instanceof Error ? error : String(error)}`,
       );
       throw error;
     }
