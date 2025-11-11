@@ -4,6 +4,7 @@ import { and, asc, eq } from "drizzle-orm";
 import { getAddress } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 
+import { arenas } from "@recallnet/db/schema/core/defs";
 import { portfolioSnapshots } from "@recallnet/db/schema/trading/defs";
 
 import { ApiClient } from "./api-client.js";
@@ -253,6 +254,7 @@ export async function startTestCompetition({
     externalUrl,
     imageUrl,
     tradingConstraints,
+    arenaId: "default-paper-arena",
   });
 
   if (!result.success) {
@@ -318,6 +320,7 @@ export async function createTestCompetition({
     joinEndDate,
     maxParticipants,
     tradingConstraints,
+    arenaId: "default-paper-arena",
   });
 
   if (!result.success) {
@@ -608,6 +611,9 @@ export async function getStartingValue(agentId: string, competitionId: string) {
 }
 
 export async function getAdminApiKey() {
+  // Ensure default arenas exist for tests
+  await ensureDefaultArenas();
+
   // Create admin account
   const response = await axios.post(`${getBaseUrl()}/api/admin/setup`, {
     username: ADMIN_USERNAME,
@@ -621,6 +627,36 @@ export async function getAdminApiKey() {
   }
 
   return adminApiKey;
+}
+
+/**
+ * Ensure default arenas exist in the database for testing
+ * This should be called before any test that creates competitions
+ */
+async function ensureDefaultArenas() {
+  await db
+    .insert(arenas)
+    .values({
+      id: "default-paper-arena",
+      name: "Default Paper Trading Arena",
+      createdBy: "system",
+      category: "crypto_trading",
+      skill: "spot_paper_trading",
+      kind: "Competition",
+    })
+    .onConflictDoNothing();
+
+  await db
+    .insert(arenas)
+    .values({
+      id: "default-perps-arena",
+      name: "Default Perpetual Futures Arena",
+      createdBy: "system",
+      category: "crypto_trading",
+      skill: "perpetual_futures",
+      kind: "Competition",
+    })
+    .onConflictDoNothing();
 }
 
 /**
@@ -693,6 +729,7 @@ export async function createPerpsTestCompetition({
       selfFundingThreshold: 0,
       apiUrl: "http://localhost:4567", // Default to mock server
     },
+    arenaId: "default-perps-arena",
   });
 
   if (!result.success) {
@@ -752,6 +789,7 @@ export async function startPerpsTestCompetition({
     rewards,
     evaluationMetric,
     perpsProvider,
+    arenaId: "default-perps-arena",
   });
 
   if (!result.success) {

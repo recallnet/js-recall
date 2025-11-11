@@ -518,6 +518,29 @@ export interface Competition {
     competitionType?: string; // Type indicator for clients
   };
   boostStartDate: string | null;
+
+  // Arena and engine routing
+  arenaId?: string | null;
+  engineId?: string | null;
+  engineVersion?: string | null;
+
+  // Participation rules
+  vips?: string[] | null;
+  allowlist?: string[] | null;
+  blocklist?: string[] | null;
+  minRecallRank?: number | null;
+  allowlistOnly?: boolean;
+
+  // Reward allocation
+  agentAllocation?: number | null;
+  agentAllocationUnit?: string | null;
+  boosterAllocation?: number | null;
+  boosterAllocationUnit?: string | null;
+  rewardRules?: string | null;
+  rewardDetails?: string | null;
+
+  // Display
+  displayState?: string | null;
   boostEndDate: string | null;
   // Join date constraint fields
   joinStartDate: string | null;

@@ -2,7 +2,12 @@ import axios, { AxiosInstance } from "axios";
 import { wrapper } from "axios-cookiejar-support";
 import { CookieJar } from "tough-cookie";
 
-import { PagingParams } from "@recallnet/services/types";
+import {
+  AllocationUnit,
+  DisplayState,
+  EngineType,
+  PagingParams,
+} from "@recallnet/services/types";
 
 import {
   PrivyAuthProvider,
@@ -478,6 +483,7 @@ export class ApiClient {
             agent: number;
             users: number;
           };
+          arenaId?: string;
         }
       | string,
     description?: string,
@@ -515,6 +521,14 @@ export class ApiClient {
         };
       }
 
+      // Add default arenaId if not provided
+      if (!requestData.arenaId) {
+        requestData.arenaId =
+          requestData.type === "perpetual_futures"
+            ? "default-perps-arena"
+            : "default-paper-arena";
+      }
+
       const response = await this.axiosInstance.post(
         "/api/admin/competition/start",
         requestData,
@@ -550,6 +564,21 @@ export class ApiClient {
     evaluationMetric,
     perpsProvider,
     prizePools,
+    arenaId,
+    engineId,
+    engineVersion,
+    vips,
+    allowlist,
+    blocklist,
+    minRecallRank,
+    allowlistOnly,
+    agentAllocation,
+    agentAllocationUnit,
+    boosterAllocation,
+    boosterAllocationUnit,
+    rewardRules,
+    rewardDetails,
+    displayState,
   }: {
     name?: string;
     description?: string;
@@ -580,8 +609,28 @@ export class ApiClient {
       agent: number;
       users: number;
     };
+    arenaId?: string;
+    engineId?: EngineType;
+    engineVersion?: string;
+    vips?: string[];
+    allowlist?: string[];
+    blocklist?: string[];
+    minRecallRank?: number;
+    allowlistOnly?: boolean;
+    agentAllocation?: number;
+    agentAllocationUnit?: AllocationUnit;
+    boosterAllocation?: number;
+    boosterAllocationUnit?: AllocationUnit;
+    rewardRules?: string;
+    rewardDetails?: string;
+    displayState?: DisplayState;
   }): Promise<CreateCompetitionResponse | ErrorResponse> {
     const competitionName = name || `Test competition ${Date.now()}`;
+    // Default arenaId based on competition type
+    const defaultArenaId =
+      type === "perpetual_futures"
+        ? "default-perps-arena"
+        : "default-paper-arena";
     try {
       const response = await this.axiosInstance.post(
         "/api/admin/competition/create",
@@ -606,6 +655,21 @@ export class ApiClient {
           evaluationMetric,
           perpsProvider,
           prizePools,
+          arenaId: arenaId || defaultArenaId,
+          engineId,
+          engineVersion,
+          vips,
+          allowlist,
+          blocklist,
+          minRecallRank,
+          allowlistOnly,
+          agentAllocation,
+          agentAllocationUnit,
+          boosterAllocation,
+          boosterAllocationUnit,
+          rewardRules,
+          rewardDetails,
+          displayState,
         },
       );
 
@@ -634,6 +698,21 @@ export class ApiClient {
       evaluationMetric,
       perpsProvider,
       prizePools,
+      arenaId,
+      engineId,
+      engineVersion,
+      vips,
+      allowlist,
+      blocklist,
+      minRecallRank,
+      allowlistOnly,
+      agentAllocation,
+      agentAllocationUnit,
+      boosterAllocation,
+      boosterAllocationUnit,
+      rewardRules,
+      rewardDetails,
+      displayState,
     }: {
       name?: string;
       description?: string;
@@ -657,6 +736,21 @@ export class ApiClient {
         agent: number;
         users: number;
       };
+      arenaId?: string;
+      engineId?: EngineType;
+      engineVersion?: string;
+      vips?: string[];
+      allowlist?: string[];
+      blocklist?: string[];
+      minRecallRank?: number;
+      allowlistOnly?: boolean;
+      agentAllocation?: number;
+      agentAllocationUnit?: AllocationUnit;
+      boosterAllocation?: number;
+      boosterAllocationUnit?: AllocationUnit;
+      rewardRules?: string;
+      rewardDetails?: string;
+      displayState?: DisplayState;
     },
   ): Promise<UpdateCompetitionResponse | ErrorResponse> {
     try {
@@ -676,6 +770,21 @@ export class ApiClient {
           evaluationMetric,
           perpsProvider,
           prizePools,
+          arenaId,
+          engineId,
+          engineVersion,
+          vips,
+          allowlist,
+          blocklist,
+          minRecallRank,
+          allowlistOnly,
+          agentAllocation,
+          agentAllocationUnit,
+          boosterAllocation,
+          boosterAllocationUnit,
+          rewardRules,
+          rewardDetails,
+          displayState,
         },
       );
 
