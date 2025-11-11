@@ -340,7 +340,6 @@ describe("PartnerService", () => {
         partnerData,
       );
 
-      expect(result).toEqual(mockAssociations);
       expect(result).toEqual(mockEnrichedPartners);
       expect(mockRepo.findById).toHaveBeenCalledTimes(2);
       expect(mockRepo.replaceCompetitionPartners).toHaveBeenCalledWith(
