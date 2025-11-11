@@ -3195,6 +3195,13 @@ export function configureAdminRoutes(
    *                       type: string
    *                       description: URL to the agent's image
    *                       nullable: true
+   *                     isRewardsIneligible:
+   *                       type: boolean
+   *                       description: Whether the agent is globally ineligible for rewards
+   *                     rewardsIneligibilityReason:
+   *                       type: string
+   *                       description: Reason for rewards ineligibility
+   *                       nullable: true
    *                     createdAt:
    *                       type: string
    *                       format: date-time
@@ -3258,6 +3265,14 @@ export function configureAdminRoutes(
    *                 type: object
    *                 description: Agent's new metadata
    *                 example: { "strategy": "updated-strategy" }
+   *               isRewardsIneligible:
+   *                 type: boolean
+   *                 description: Whether the agent is globally ineligible for rewards across all competitions
+   *                 example: true
+   *               rewardsIneligibilityReason:
+   *                 type: string
+   *                 description: Optional reason for rewards ineligibility
+   *                 example: "Test agent - not eligible for production rewards"
    *     responses:
    *       200:
    *         description: Agent updated successfully
@@ -3306,6 +3321,13 @@ export function configureAdminRoutes(
    *                     metadata:
    *                       type: object
    *                       description: Agent metadata
+   *                       nullable: true
+   *                     isRewardsIneligible:
+   *                       type: boolean
+   *                       description: Whether the agent is globally ineligible for rewards
+   *                     rewardsIneligibilityReason:
+   *                       type: string
+   *                       description: Reason for rewards ineligibility
    *                       nullable: true
    *                     createdAt:
    *                       type: string

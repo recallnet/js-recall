@@ -333,6 +333,7 @@ class ServiceRegistry {
       this._rewardsRepository,
       this._competitionRepository,
       this._boostRepository,
+      this._agentRepository,
       this._rewardsAllocator,
       db,
       serviceLogger,

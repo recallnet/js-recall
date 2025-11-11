@@ -73,6 +73,8 @@ function mockAgent({
     apiKeyHash: null,
     deactivationReason: null,
     deactivationDate: null,
+    isRewardsIneligible: false,
+    rewardsIneligibilityReason: null,
     competitionStatus,
     competitionDeactivationReason,
   };
