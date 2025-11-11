@@ -42,6 +42,7 @@ import {
   Competition,
   CompetitionAgentsResponse,
   CompetitionAllPerpsPositionsResponse,
+  CompetitionBoostsResponse,
   CompetitionDetailResponse,
   CompetitionJoinResponse,
   CompetitionLeaveResponse,
@@ -1766,6 +1767,34 @@ export class ApiClient {
       return this.handleApiError(
         error,
         `get competition trades: competitionId=${competitionId}, limit=${limit}, offset=${offset}`,
+      );
+    }
+  }
+
+  /**
+   * Get boost allocations for a competition
+   * @param competitionId Competition ID
+   * @param limit Optional number of boosts to return (default: 50, max: 100)
+   * @param offset Optional offset for pagination (default: 0)
+   * @returns Paginated boost allocations with agent information
+   */
+  async getCompetitionBoosts(
+    competitionId: string,
+    limit?: number,
+    offset?: number,
+  ): Promise<CompetitionBoostsResponse | ErrorResponse> {
+    try {
+      const params = new URLSearchParams();
+      if (limit !== undefined) params.append("limit", limit.toString());
+      if (offset !== undefined) params.append("offset", offset.toString());
+
+      const url = `/api/competitions/${competitionId}/boosts/all${params.toString() ? `?${params.toString()}` : ""}`;
+      const response = await this.axiosInstance.get(url);
+      return response.data as CompetitionBoostsResponse;
+    } catch (error) {
+      return this.handleApiError(
+        error,
+        `get competition boosts: competitionId=${competitionId}, limit=${limit}, offset=${offset}`,
       );
     }
   }
