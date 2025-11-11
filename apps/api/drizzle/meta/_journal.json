@@ -407,6 +407,20 @@
       "when": 1762470703638,
       "tag": "0057_calm_the_hand",
       "breakpoints": true
+    },
+    {
+      "idx": 58,
+      "version": "7",
+      "when": 1762876293446,
+      "tag": "0058_absurd_power_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "7",
+      "when": 1762889662708,
+      "tag": "0059_empty_tinkerer",
+      "breakpoints": true
     }
   ]
 }

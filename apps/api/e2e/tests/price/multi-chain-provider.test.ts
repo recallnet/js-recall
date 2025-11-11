@@ -1,5 +1,5 @@
 import dotenv from "dotenv";
-import { beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import { PriceTrackerService } from "@recallnet/services";
 import { MultiChainProvider } from "@recallnet/services/providers";
@@ -8,9 +8,7 @@ import {
   PriceSource,
   SpecificChain,
 } from "@recallnet/services/types";
-import { ApiClient } from "@recallnet/test-utils";
 import { PriceResponse } from "@recallnet/test-utils";
-import { dbManager } from "@recallnet/test-utils";
 import {
   createTestClient,
   getAdminApiKey,
@@ -65,32 +63,12 @@ const testTokens = {
 describe("Multi-Chain Provider Tests", () => {
   let multiChainProvider: MultiChainProvider;
   let priceTracker: PriceTrackerService;
-  // Add authenticated clients
-  let adminClient: ApiClient;
-  let client: ApiClient;
   let adminApiKey: string;
 
-  // Initialize database before all tests
-  beforeAll(async () => {
-    // Initialize the database
-    await dbManager.initialize();
-
+  beforeEach(async () => {
     // Store the admin API key for authentication
     adminApiKey = await getAdminApiKey();
 
-    // Setup admin client
-    adminClient = createTestClient();
-    await adminClient.loginAsAdmin(adminApiKey);
-
-    // Register a user/agent and get an authenticated client
-    const result = await registerUserAndAgentAndGetClient({
-      adminApiKey,
-    });
-    client = result.client;
-  });
-
-  // Clean up test state before each test
-  beforeEach(async () => {
     // Initialize providers
     multiChainProvider = new MultiChainProvider(config, logger);
     priceTracker = new PriceTrackerService(multiChainProvider, config, logger);
@@ -127,8 +105,13 @@ describe("Multi-Chain Provider Tests", () => {
 
   describe("Multi-chain price fetching", () => {
     it("should try to fetch prices for Ethereum mainnet tokens", async () => {
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
       // Ensure there is an active competition (required by price route middleware)
-      const { agent } = await registerUserAndAgentAndGetClient({ adminApiKey });
+      const { agent, client } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+      });
       const startResp = await adminClient.startCompetition({
         name: `Eth Token Price Test ${Date.now()}`,
         agentIds: [agent.id],
@@ -187,8 +170,13 @@ describe("Multi-Chain Provider Tests", () => {
     });
 
     it("should try to fetch prices for unknown tokens by searching multiple chains", async () => {
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
       // Ensure there is an active competition (required by price route middleware)
-      const { agent } = await registerUserAndAgentAndGetClient({ adminApiKey });
+      const { agent, client } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+      });
       const startResp = await adminClient.startCompetition({
         name: `Unknown Token Price Test ${Date.now()}`,
         agentIds: [agent.id],
@@ -305,8 +293,11 @@ describe("Multi-Chain Provider Tests", () => {
         },
       ];
 
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
       // Ensure there is an active competition (required by price route middleware)
-      const { agent } = await registerUserAndAgentAndGetClient({
+      const { agent, client } = await registerUserAndAgentAndGetClient({
         adminApiKey,
       });
       const startResp = await adminClient.startCompetition({

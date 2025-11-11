@@ -4,7 +4,8 @@ import ServiceRegistry from "@/services/index.js";
 const services = new ServiceRegistry();
 
 // Start blockchain indexing, if enabled
-const indexingService = services.indexingService;
+const eventIndexingService = services.eventIndexingService;
+const transationIndexingService = services.transactionIndexingService;
 
 let shuttingDown = false;
 async function gracefulShutdown(signal: string) {
@@ -18,7 +19,8 @@ async function gracefulShutdown(signal: string) {
     `\n[${signal}] Received shutdown signal, closing servers gracefully...`,
   );
 
-  await indexingService.close();
+  await eventIndexingService?.close();
+  await transationIndexingService?.close();
 }
 
 process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
@@ -26,7 +28,8 @@ process.on("SIGINT", () => gracefulShutdown("SIGINT"));
 process.on("SIGUSR2", () => gracefulShutdown("SIGUSR2")); // nodemon restart
 
 function main() {
-  indexingService.start();
+  eventIndexingService?.start();
+  transationIndexingService?.start();
 }
 
 main();

@@ -8,6 +8,7 @@ import { config } from "dotenv";
 import fs from "fs";
 import path from "path";
 
+import { arenas } from "@recallnet/db/schema/core/defs";
 import { dbManager } from "@recallnet/test-utils";
 import {
   startLoopsMockServer,
@@ -17,6 +18,7 @@ import { MockHyperliquidServer } from "@recallnet/test-utils";
 import { MockSymphonyServer } from "@recallnet/test-utils";
 import { startServer, stopServer } from "@recallnet/test-utils";
 
+import { db } from "@/database/db.js";
 import { createLogger } from "@/lib/logger.js";
 
 // Path to log file
@@ -186,6 +188,33 @@ export async function setup() {
     // Initialize database using our new DbManager
     log("📦 Initializing database...");
     await dbManager.initialize();
+
+    // Create default arenas for tests
+    log("🏟️  Creating default arenas...");
+    await db
+      .insert(arenas)
+      .values({
+        id: "default-paper-arena",
+        name: "Default Paper Trading Arena",
+        createdBy: "system",
+        category: "crypto_trading",
+        skill: "spot_paper_trading",
+        kind: "Competition",
+      })
+      .onConflictDoNothing();
+
+    await db
+      .insert(arenas)
+      .values({
+        id: "default-perps-arena",
+        name: "Default Perpetual Futures Arena",
+        createdBy: "system",
+        category: "crypto_trading",
+        skill: "perpetual_futures",
+        kind: "Competition",
+      })
+      .onConflictDoNothing();
+    log("✅ Default arenas created");
 
     // Start mock Symphony server for perps testing
     log("🎭 Starting mock Symphony server...");

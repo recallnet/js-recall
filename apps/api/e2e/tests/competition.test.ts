@@ -1417,6 +1417,148 @@ describe("Competition API", () => {
     expect(competitionDetail.endDate).toBeNull();
   });
 
+  test("should include arena and participation fields in competition details", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Create arena
+    const arenaId = `test-arena-${Date.now()}`;
+    await adminClient.createArena({
+      id: arenaId,
+      name: "Test Arena",
+      createdBy: "admin",
+      category: "crypto_trading",
+      skill: "spot_paper_trading",
+    });
+
+    // Create competition with all new fields
+    const competitionName = `Arena Fields Test ${Date.now()}`;
+    const createResponse = await adminClient.createCompetition({
+      name: competitionName,
+      description: "Test arena and participation fields",
+      type: "trading",
+      arenaId: arenaId,
+      engineId: "spot_paper_trading",
+      engineVersion: "1.0.0",
+      vips: ["vip-agent-1", "vip-agent-2"],
+      allowlist: ["allowed-1"],
+      blocklist: ["blocked-1"],
+      minRecallRank: 100,
+      allowlistOnly: true,
+      agentAllocation: 10000,
+      agentAllocationUnit: "RECALL",
+      boosterAllocation: 5000,
+      boosterAllocationUnit: "USDC",
+      rewardRules: "Top 10 winners",
+      rewardDetails: "Distributed weekly",
+      displayState: "active",
+    });
+
+    expect(createResponse.success).toBe(true);
+    const competitionId = (createResponse as CreateCompetitionResponse)
+      .competition.id;
+
+    // Register an agent to fetch the competition
+    const { client: agentClient } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Arena Fields Viewer",
+    });
+
+    // Get competition details and verify new fields are present
+    const detailResponse = (await agentClient.getCompetition(
+      competitionId,
+    )) as CompetitionDetailResponse;
+
+    expect(detailResponse.success).toBe(true);
+    const competition = detailResponse.competition;
+
+    // Verify arena and engine fields
+    expect(competition.arenaId).toBe(arenaId);
+    expect(competition.engineId).toBe("spot_paper_trading");
+    expect(competition.engineVersion).toBe("1.0.0");
+
+    // Verify participation fields
+    expect(competition.vips).toEqual(["vip-agent-1", "vip-agent-2"]);
+    expect(competition.allowlist).toEqual(["allowed-1"]);
+    expect(competition.blocklist).toEqual(["blocked-1"]);
+    expect(competition.minRecallRank).toBe(100);
+    expect(competition.allowlistOnly).toBe(true);
+
+    // Verify reward allocation fields
+    expect(competition.agentAllocation).toBe(10000);
+    expect(competition.agentAllocationUnit).toBe("RECALL");
+    expect(competition.boosterAllocation).toBe(5000);
+    expect(competition.boosterAllocationUnit).toBe("USDC");
+    expect(competition.rewardRules).toBe("Top 10 winners");
+    expect(competition.rewardDetails).toBe("Distributed weekly");
+
+    // Verify display state
+    expect(competition.displayState).toBe("active");
+  });
+
+  test("should return arena and participation fields when competition is modified", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Create basic competition
+    const createResponse = await adminClient.createCompetition({
+      name: "Basic Competition",
+      type: "trading",
+    });
+    expect(createResponse.success).toBe(true);
+    const competitionId = (createResponse as CreateCompetitionResponse)
+      .competition.id;
+
+    // Create arena for linking
+    const arenaId = `modify-test-arena-${Date.now()}`;
+    await adminClient.createArena({
+      id: arenaId,
+      name: "Modify Test Arena",
+      createdBy: "admin",
+      category: "crypto_trading",
+      skill: "spot_paper_trading",
+    });
+
+    // Modify competition to add arena and participation fields
+    await adminClient.updateCompetition(competitionId, {
+      arenaId: arenaId,
+      engineId: "spot_paper_trading",
+      engineVersion: "2.0.0",
+      vips: ["vip-agent"],
+      allowlist: ["allowed-agent"],
+      minRecallRank: 200,
+      agentAllocation: 20000,
+      agentAllocationUnit: "USDC",
+      displayState: "waitlist",
+    });
+
+    // Fetch competition and verify fields are returned
+    const { client: agentClient } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Field Viewer",
+    });
+
+    const detailResponse = (await agentClient.getCompetition(
+      competitionId,
+    )) as CompetitionDetailResponse;
+
+    expect(detailResponse.success).toBe(true);
+    const competition = detailResponse.competition;
+
+    // Verify fields are in the response
+    expect(competition.arenaId).toBe(arenaId);
+    expect(competition.engineId).toBe("spot_paper_trading");
+    expect(competition.engineVersion).toBe("2.0.0");
+    expect(competition.vips).toEqual(["vip-agent"]);
+    expect(competition.allowlist).toEqual(["allowed-agent"]);
+    expect(competition.minRecallRank).toBe(200);
+    expect(competition.agentAllocation).toBe(20000);
+    expect(competition.agentAllocationUnit).toBe("USDC");
+    expect(competition.displayState).toBe("waitlist");
+  });
+
   // test cases for GET /competitions/{competitionId}/agents
   test("should get competition agents with scores and ranks", async () => {
     // Setup admin client

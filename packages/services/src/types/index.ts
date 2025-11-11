@@ -725,6 +725,36 @@ export const EvaluationMetricSchema = z.enum(evaluationMetricEnum.enumValues);
  */
 export type EvaluationMetric = z.infer<typeof EvaluationMetricSchema>;
 
+/**
+ * Zod schema for engine types
+ */
+export const EngineTypeSchema = z.enum(engineType.enumValues);
+
+/**
+ * Engine type for competition routing
+ */
+export type EngineType = z.infer<typeof EngineTypeSchema>;
+
+/**
+ * Zod schema for allocation units
+ */
+export const AllocationUnitSchema = z.enum(allocationUnit.enumValues);
+
+/**
+ * Allocation unit for rewards
+ */
+export type AllocationUnit = z.infer<typeof AllocationUnitSchema>;
+
+/**
+ * Zod schema for display states
+ */
+export const DisplayStateSchema = z.enum(displayState.enumValues);
+
+/**
+ * Display state for UI
+ */
+export type DisplayState = z.infer<typeof DisplayStateSchema>;
+
 export const CompetitionAllowedUpdateSchema = z.strictObject({
   name: z.string().optional(),
   description: z.string().optional(),

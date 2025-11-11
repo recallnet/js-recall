@@ -2,16 +2,12 @@ import { HypersyncClient } from "@envio-dev/hypersync-client";
 import type { Logger } from "pino";
 
 import config from "@/config/index.js";
-import {
-  EVENTS,
-  EVENT_HASH_NAMES,
-  HypersyncQuery,
-  INDEXING_HYPERSYNC_QUERY,
-} from "@/indexing/blockchain-events-config.js";
-import type { EventData, RawLog } from "@/indexing/blockchain-types.js";
+import { HypersyncQuery } from "@/indexing/blockchain-config.js";
 import { EventProcessor } from "@/indexing/event-processor.js";
 import { type Defer, defer } from "@/lib/defer.js";
 import { delay } from "@/lib/delay.js";
+
+import { TransactionProcessor } from "./transaction-processor.js";
 
 /**
  * IndexingService
@@ -37,22 +33,23 @@ import { delay } from "@/lib/delay.js";
  * - AbortError is silenced for clean shutdown; all other errors bubble up.
  */
 export class IndexingService {
-  readonly #indexingQuery: HypersyncQuery | undefined;
+  readonly #indexingQuery: HypersyncQuery;
   readonly #client: HypersyncClient;
   readonly #delayMs: number;
   readonly #logger: Logger;
-  readonly #eventHashNames: Record<string, string>;
-  readonly #eventProcessor: EventProcessor;
+  // readonly #eventHashNames: Record<string, string>;
+  readonly #indexingProcessor: EventProcessor | TransactionProcessor;
 
   #deferStop: Defer<void> | undefined;
   #abortController: AbortController | undefined;
 
   constructor(
     logger: Logger,
-    eventProcessor: EventProcessor,
-    indexingQuery: HypersyncQuery | undefined = INDEXING_HYPERSYNC_QUERY,
-    eventHashNames = EVENT_HASH_NAMES,
+    indexingProcessor: EventProcessor | TransactionProcessor,
+    indexingQuery: HypersyncQuery,
   ) {
+    // Hypersync query is distinct to this instance, the query
+    // might be indexing events or blocks or transactions
     this.#indexingQuery = indexingQuery;
     this.#client = HypersyncClient.new({
       url: config.stakingIndex.hypersyncUrl,
@@ -60,8 +57,7 @@ export class IndexingService {
     });
     this.#delayMs = indexingQuery?.delayMs || 3000;
     this.#logger = logger;
-    this.#eventHashNames = eventHashNames;
-    this.#eventProcessor = eventProcessor;
+    this.#indexingProcessor = indexingProcessor;
     this.#deferStop = undefined;
     this.#abortController = undefined;
   }
@@ -122,7 +118,7 @@ export class IndexingService {
     const effectiveQuery = {
       ...query,
     };
-    const lastBlockNumber = await this.#eventProcessor.lastBlockNumber();
+    const lastBlockNumber = await this.#indexingProcessor.lastBlockNumber();
     effectiveQuery.fromBlock = Number(lastBlockNumber);
     this.#logger.info(
       `Starting indexing from block ${effectiveQuery.fromBlock}`,
@@ -139,39 +135,7 @@ export class IndexingService {
           continue;
         }
 
-        if (res.data && res.data.logs && res.data.logs.length > 0) {
-          this.#logger.info(
-            `Processing ${res.data.logs.length} logs from block ${
-              res.data.logs[0]?.blockNumber || "unknown"
-            }`,
-          );
-
-          // Create a map of block number to block timestamp from the returned block data
-          const blockTimestampMap = new Map<string, number>();
-          if (res.data.blocks && res.data.blocks.length > 0) {
-            for (const block of res.data.blocks) {
-              if (block.number && block.timestamp) {
-                blockTimestampMap.set(
-                  block.number.toString(),
-                  Number(block.timestamp),
-                );
-              }
-            }
-          }
-
-          // Enhance logs with block timestamp before processing
-          const enhancedLogs = res.data.logs.map((log) => {
-            const blockNumber = log.blockNumber?.toString() || "unknown";
-            const blockTimestamp = blockTimestampMap.get(blockNumber!);
-            return {
-              ...log,
-              blockTimestamp: blockTimestamp,
-            } as RawLog;
-          });
-          for (const log of enhancedLogs) {
-            await this.processLog(log);
-          }
-        }
+        await this.#indexingProcessor.process(res);
 
         // Update query for next batch
         if (res.nextBlock) {
@@ -197,45 +161,6 @@ export class IndexingService {
   }
 
   /**
-   * Handle a single raw log from Hypersync.
-   *
-   * - Extracts `topic0` and maps it to a known event name via EVENT_HASH_NAMES.
-   * - Skips unknown events.
-   * - Builds an EventData record (createEventData).
-   * - Delegates to EventProcessor.processEvent() to persist into DB.
-   *
-   * Logging:
-   * - Debug logs show event name, block number, tx hash.
-   *
-   * @internal
-   */
-  async processLog(rawLog: RawLog): Promise<void> {
-    const eventHash = rawLog.topics ? rawLog.topics[0] : null;
-    if (!eventHash) {
-      return;
-    }
-    const contractAddress = rawLog.address;
-    const eventName = this.#eventHashNames[eventHash];
-    if (eventName) {
-      this.#logger.debug(
-        `Processing log (${eventName}) from contract ${contractAddress}`,
-      );
-      // Create raw event data
-      const event = createEventData(eventName, rawLog);
-
-      this.#logger.debug("Preparing to store raw event with metadata:", {
-        eventName,
-        blockNumber: event.blockNumber.toString(),
-        transactionHash: event.transactionHash,
-      });
-
-      await this.#eventProcessor.processEvent(event, eventName);
-    } else {
-      this.#logger.debug(`Skipped Unknown event hash: ${eventHash}`);
-    }
-  }
-
-  /**
    * Stop the indexing loop gracefully.
    *
    * - Aborts the AbortController.
@@ -250,40 +175,4 @@ export class IndexingService {
     this.#deferStop = undefined;
     this.#abortController = undefined;
   }
-}
-
-/**
- * Helper: normalize a raw blockchain log into our internal `EventData` format.
- *
- * - Copies chain metadata (block number, hash, tx hash, log index).
- * - Converts blockTimestamp (seconds → JS Date).
- * - Preserves raw payload (topics + data + address) for replay/audit.
- * - Classifies into EventType using EVENTS config; defaults to "unknown".
- */
-export function createEventData(eventName: string, rawLog: RawLog): EventData {
-  const eventConfig = EVENTS[eventName as keyof typeof EVENTS];
-
-  const blockTimestamp =
-    rawLog.blockTimestamp && typeof rawLog.blockTimestamp === "number"
-      ? rawLog.blockTimestamp * 1000
-      : undefined;
-
-  return {
-    // Blockchain metadata
-    blockNumber: BigInt(rawLog.blockNumber || 0),
-    blockHash: rawLog.blockHash || "",
-    blockTimestamp: blockTimestamp ? new Date(blockTimestamp) : new Date(),
-    transactionHash: rawLog.transactionHash || "",
-    logIndex: rawLog.logIndex || 0,
-
-    // Raw event payload
-    raw: {
-      topics: rawLog.topics,
-      data: rawLog.data,
-      address: rawLog.address,
-    },
-    type: eventConfig?.type || "unknown",
-    // Indexer metadata
-    createdAt: new Date(),
-  };
 }
