@@ -124,6 +124,7 @@ describe("RewardsService", () => {
 
     mockAgentRepo = {
       findByIds: vi.fn().mockResolvedValue([]),
+      findByIdsWithLock: vi.fn().mockResolvedValue([]),
     } as unknown as DeepMockProxy<AgentRepository>;
 
     mockDb = {
@@ -1762,7 +1763,7 @@ describe("RewardsService", () => {
       ];
 
       // Mock agents with Competitor B marked as globally ineligible
-      mockAgentRepo.findByIds.mockResolvedValue([
+      mockAgentRepo.findByIdsWithLock.mockResolvedValue([
         {
           id: "Competitor A",
           ownerId: "owner-1",
@@ -1912,7 +1913,7 @@ describe("RewardsService", () => {
       ];
 
       // Mock agents with Competitor C marked as globally ineligible
-      mockAgentRepo.findByIds.mockResolvedValue([
+      mockAgentRepo.findByIdsWithLock.mockResolvedValue([
         {
           id: "Competitor A",
           ownerId: "owner-1",
