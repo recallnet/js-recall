@@ -212,7 +212,7 @@ async function setupCompetition() {
 
     if (activeCompetitions.length > 0) {
       console.log(
-        `\n${colors.yellow}WARNING: There are ${activeCompetitions.length} active competition(s):${colors.reset}`,
+        `\n${colors.yellow}INFO: There are ${activeCompetitions.length} active competition(s):${colors.reset}`,
       );
       activeCompetitions.forEach((comp) => {
         console.log(`- ID: ${comp.id}`);
@@ -220,30 +220,45 @@ async function setupCompetition() {
         console.log(`  Started: ${new Date(comp.startDate!).toLocaleString()}`);
       });
 
-      const proceed = await prompt(
-        `\n${colors.red}Do you want to continue and start a new competition? (y/n):${colors.reset} `,
+      const action = await prompt(
+        `\n${colors.yellow}What would you like to do?\n` +
+          `  1) Continue and run competitions concurrently\n` +
+          `  2) End active competitions before creating new one\n` +
+          `  3) Cancel\n` +
+          `Enter choice (1/2/3):${colors.reset} `,
       );
 
-      if (proceed.toLowerCase() !== "y") {
+      if (action === "3") {
         console.log(
           `\n${colors.blue}Setup cancelled. Use the admin dashboard to manage active competitions.${colors.reset}`,
         );
         return;
       }
 
-      // End all active competitions
-      console.log(
-        `\n${colors.blue}Ending ${activeCompetitions.length} active competition(s)...${colors.reset}`,
-      );
-      for (const comp of activeCompetitions) {
-        await services.competitionService.endCompetition(comp.id);
+      if (action === "2") {
+        // End all active competitions
         console.log(
-          `${colors.green}Ended competition: ${comp.name}${colors.reset}`,
+          `\n${colors.blue}Ending ${activeCompetitions.length} active competition(s)...${colors.reset}`,
         );
+        for (const comp of activeCompetitions) {
+          await services.competitionService.endCompetition(comp.id);
+          console.log(
+            `${colors.green}Ended competition: ${comp.name}${colors.reset}`,
+          );
+        }
+        console.log(
+          `${colors.green}Successfully ended all previous competitions.${colors.reset}`,
+        );
+      } else if (action === "1") {
+        console.log(
+          `\n${colors.green}Continuing with concurrent competitions...${colors.reset}`,
+        );
+      } else {
+        console.log(
+          `\n${colors.red}Invalid choice. Setup cancelled.${colors.reset}`,
+        );
+        return;
       }
-      console.log(
-        `${colors.green}Successfully ended all previous competitions.${colors.reset}`,
-      );
     }
 
     // Get competition details
@@ -299,6 +314,7 @@ async function setupCompetition() {
     const competition = await services.competitionService.createCompetition({
       name,
       description,
+      arenaId: "default-paper-arena",
     });
 
     console.log(

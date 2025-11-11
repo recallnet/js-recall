@@ -252,6 +252,16 @@
         "default": "./dist/schema/boost/defs.cjs"
       }
     },
+    "./schema/conviction-claims/defs": {
+      "import": {
+        "types": "./dist/schema/conviction-claims/defs.d.ts",
+        "default": "./dist/schema/conviction-claims/defs.js"
+      },
+      "require": {
+        "types": "./dist/schema/conviction-claims/defs.d.cts",
+        "default": "./dist/schema/conviction-claims/defs.cjs"
+      }
+    },
     "./schema/boost/types": {
       "import": {
         "types": "./dist/schema/boost/types.d.ts",
