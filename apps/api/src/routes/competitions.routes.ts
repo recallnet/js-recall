@@ -357,6 +357,41 @@ export function configureCompetitionsRoutes(
 
   /**
    * @openapi
+   * /api/competitions/{competitionId}/og-image.png:
+   *   get:
+   *     tags:
+   *       - Competition
+   *     summary: Get competition OG image
+   *     description: Get a dynamically generated Open Graph image for a specific competition.
+   *     parameters:
+   *       - in: path
+   *         name: competitionId
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: Competition ID
+   *     responses:
+   *       200:
+   *         description: Competition OG image retrieved successfully
+   *         content:
+   *           image/png:
+   *             schema:
+   *               type: string
+   *               format: binary
+   *       400:
+   *         description: Bad request - Invalid competition ID format
+   *       404:
+   *         description: Competition not found
+   *       500:
+   *         description: Server error
+   */
+  router.get(
+    "/:competitionId/og-image",
+    competitionController.getCompetitionOgImage,
+  );
+
+  /**
+   * @openapi
    * /api/competitions/{competitionId}:
    *   get:
    *     tags:
