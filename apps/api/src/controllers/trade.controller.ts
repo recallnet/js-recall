@@ -1,11 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { z } from "zod";
 
-import {
-  ApiError,
-  BlockchainType,
-  SPECIFIC_CHAIN_NAMES,
-} from "@recallnet/services/types";
+import { ApiError, BlockchainType } from "@recallnet/services/types";
 
 import { ServiceRegistry } from "@/services/index.js";
 
@@ -30,9 +26,39 @@ const GetQuoteQuerySchema = z.object({
       return parsed;
     }),
   fromChain: z.nativeEnum(BlockchainType).optional(),
-  fromSpecificChain: z.enum(SPECIFIC_CHAIN_NAMES).optional(),
+  fromSpecificChain: z
+    .enum([
+      "eth",
+      "polygon",
+      "bsc",
+      "arbitrum",
+      "optimism",
+      "avalanche",
+      "base",
+      "linea",
+      "zksync",
+      "scroll",
+      "mantle",
+      "svm",
+    ])
+    .optional(),
   toChain: z.nativeEnum(BlockchainType).optional(),
-  toSpecificChain: z.enum(SPECIFIC_CHAIN_NAMES).optional(),
+  toSpecificChain: z
+    .enum([
+      "eth",
+      "polygon",
+      "bsc",
+      "arbitrum",
+      "optimism",
+      "avalanche",
+      "base",
+      "linea",
+      "zksync",
+      "scroll",
+      "mantle",
+      "svm",
+    ])
+    .optional(),
 });
 
 const ExecuteTradeBodySchema = z.object({
@@ -74,9 +100,39 @@ const ExecuteTradeBodySchema = z.object({
       return parsed;
     }),
   fromChain: z.nativeEnum(BlockchainType).optional(),
-  fromSpecificChain: z.enum(SPECIFIC_CHAIN_NAMES).optional(),
+  fromSpecificChain: z
+    .enum([
+      "eth",
+      "polygon",
+      "bsc",
+      "arbitrum",
+      "optimism",
+      "avalanche",
+      "base",
+      "linea",
+      "zksync",
+      "scroll",
+      "mantle",
+      "svm",
+    ])
+    .optional(),
   toChain: z.nativeEnum(BlockchainType).optional(),
-  toSpecificChain: z.enum(SPECIFIC_CHAIN_NAMES).optional(),
+  toSpecificChain: z
+    .enum([
+      "eth",
+      "polygon",
+      "bsc",
+      "arbitrum",
+      "optimism",
+      "avalanche",
+      "base",
+      "linea",
+      "zksync",
+      "scroll",
+      "mantle",
+      "svm",
+    ])
+    .optional(),
 });
 
 export function makeTradeController(services: ServiceRegistry) {
