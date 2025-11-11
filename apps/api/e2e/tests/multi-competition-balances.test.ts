@@ -390,31 +390,11 @@ describe("Multi-Competition Balance Isolation", () => {
       }
 
       // Run migration #57
-      try {
-        await migrate(testDb, { migrationsFolder: tempMigrationsDir });
-        logger.info("✓ Migration #57 completed");
-      } catch (error) {
-        // Handle orphaned balances
-        if (
-          error instanceof Error &&
-          error.message.includes("orphaned balances")
-        ) {
-          logger.warn("Migration detected orphaned balances - cleaning up...");
-
-          await testDb.execute(sql`
-            DELETE FROM "trading_comps"."balances"
-            WHERE agent_id = ${testAgent4Id}::uuid
-          `);
-
-          // Retry migration
-          await migrate(testDb, { migrationsFolder: tempMigrationsDir });
-          logger.info(
-            "✓ Migration #57 completed after handling orphaned balances",
-          );
-        } else {
-          throw error;
-        }
-      }
+      // Migration automatically deletes orphaned balances
+      await migrate(testDb, { migrationsFolder: tempMigrationsDir });
+      logger.info(
+        "✓ Migration #57 completed (orphaned balances automatically deleted)",
+      );
     });
   });
 
