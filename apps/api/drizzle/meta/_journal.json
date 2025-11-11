@@ -407,13 +407,6 @@
       "when": 1762470703638,
       "tag": "0057_calm_the_hand",
       "breakpoints": true
-    },
-    {
-      "idx": 58,
-      "version": "7",
-      "when": 1762805876808,
-      "tag": "0058_sturdy_tomas",
-      "breakpoints": true
     }
   ]
 }
