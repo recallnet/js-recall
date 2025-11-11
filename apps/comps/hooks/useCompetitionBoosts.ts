@@ -1,7 +1,11 @@
-import { InfiniteData, useInfiniteQuery } from "@tanstack/react-query";
-import { UseInfiniteQueryResult } from "@tanstack/react-query";
+import {
+  type InfiniteData,
+  type UseInfiniteQueryResult,
+  skipToken,
+  useInfiniteQuery,
+} from "@tanstack/react-query";
 
-import { CompetitionBoostsResult } from "@recallnet/services";
+import type { CompetitionStatus } from "@recallnet/db/repositories/types";
 
 import { tanstackClient } from "@/rpc/clients/tanstack-query";
 import { RouterOutputs } from "@/rpc/router";
@@ -19,27 +23,27 @@ export const useCompetitionBoosts = (
   competitionId: string,
   limit: number = 25,
   enabled: boolean = true,
-  competitionStatus?: RouterOutputs["competitions"]["getById"]["status"],
-): UseInfiniteQueryResult<InfiniteData<CompetitionBoostsResult>, Error> => {
-  const baseOptions = tanstackClient.boost.competitionBoosts.queryOptions({
-    input: { competitionId, limit, offset: 0 },
-    enabled,
-    staleTime: 60 * 1000,
-    refetchInterval: () => getCompetitionPollingInterval(competitionStatus),
-  });
-  return useInfiniteQuery({
-    ...baseOptions,
-    queryKey: [...baseOptions.queryKey, "infinite"],
-    queryFn: async ({ pageParam = 0 }) =>
-      tanstackClient.boost.competitionBoosts.call({
-        competitionId,
-        limit,
-        offset: pageParam,
-      }),
-    initialPageParam: 0,
-    getNextPageParam: (lastPage) =>
-      lastPage.pagination.hasMore
-        ? lastPage.pagination.offset + lastPage.pagination.limit
-        : undefined,
-  });
+  competitionStatus?: CompetitionStatus,
+): UseInfiniteQueryResult<
+  InfiniteData<RouterOutputs["boost"]["competitionBoosts"]>,
+  Error
+> => {
+  return useInfiniteQuery(
+    tanstackClient.boost.competitionBoosts.infiniteOptions({
+      input: enabled
+        ? (pageParam: number) => ({
+            competitionId,
+            limit,
+            offset: pageParam,
+          })
+        : skipToken,
+      initialPageParam: 0,
+      getNextPageParam: (lastPage) =>
+        lastPage.pagination.hasMore
+          ? lastPage.pagination.offset + lastPage.pagination.limit
+          : undefined,
+      staleTime: 60 * 1000,
+      refetchInterval: () => getCompetitionPollingInterval(competitionStatus),
+    }),
+  );
 };
