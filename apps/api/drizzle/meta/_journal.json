@@ -421,6 +421,13 @@
       "when": 1762896074549,
       "tag": "0059_curious_thundra",
       "breakpoints": true
+    },
+    {
+      "idx": 60,
+      "version": "7",
+      "when": 1762972572473,
+      "tag": "0060_stormy_sugar_man",
+      "breakpoints": true
     }
   ]
 }

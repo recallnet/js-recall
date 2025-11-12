@@ -27,13 +27,19 @@ export class LeaderboardService {
   }
 
   /**
-   * Get global leaderboard data with pagination
-   * @param params Query parameters including limit, offset
+   * Get leaderboard data with pagination
+   * Returns global leaderboard by type or arena-specific leaderboard if arenaId provided
+   * @param params Query parameters including type, arenaId, limit, offset
    * @returns Complete leaderboard response with ranked agents and metadata
    */
   async getGlobalLeaderboardForType(params: LeaderboardParams) {
     try {
-      // Get paginated global metrics from database
+      // If arenaId provided, return arena-specific leaderboard
+      if (params.arenaId) {
+        return await this.getArenaLeaderboard(params.arenaId, params);
+      }
+
+      // Otherwise return global leaderboard by type
       const { agents, totalCount } =
         await this.getGlobalAgentMetricsForType(params);
 
@@ -47,13 +53,47 @@ export class LeaderboardService {
       };
     } catch (error) {
       this.logger.error(
-        "[LeaderboardService] Failed to get global leaderboard:",
+        "[LeaderboardService] Failed to get leaderboard:",
         error,
       );
 
       // Return safe fallback instead of throwing
       return this.emptyLeaderboardResponse(params);
     }
+  }
+
+  /**
+   * Get arena-specific leaderboard data with pagination
+   * @param arenaId Arena ID to get leaderboard for
+   * @param params Pagination parameters
+   * @returns Complete leaderboard response with ranked agents and metadata
+   */
+  private async getArenaLeaderboard(
+    arenaId: string,
+    params: Pick<LeaderboardParams, "limit" | "offset">,
+  ) {
+    const { agents, totalCount } =
+      await this.leaderboardRepo.getArenaLeaderboard({
+        arenaId,
+        limit: params.limit,
+        offset: params.offset,
+      });
+
+    // Calculate ranks using arithmetic (offset + index + 1)
+    const rankedAgents = agents.map((agent, index) => ({
+      ...agent,
+      rank: params.offset + index + 1,
+      metadata: agent.metadata as AgentMetadata,
+    }));
+
+    return {
+      agents: rankedAgents,
+      pagination: buildPaginationResponse(
+        totalCount,
+        params.limit,
+        params.offset,
+      ),
+    };
   }
 
   /**

@@ -1618,6 +1618,7 @@ export class ApiClient {
    */
   async getGlobalLeaderboard(params?: {
     type?: CompetitionType;
+    arenaId?: string;
     limit?: number;
     offset?: number;
   }): Promise<GlobalLeaderboardResponse | ErrorResponse> {
@@ -1628,6 +1629,8 @@ export class ApiClient {
       if (params?.offset !== undefined)
         queryParams.append("offset", params.offset.toString());
       if (params?.type !== undefined) queryParams.append("type", params.type);
+      if (params?.arenaId !== undefined)
+        queryParams.append("arenaId", params.arenaId);
       const response = await this.axiosInstance.get(
         `/api/leaderboard?${queryParams.toString()}`,
       );

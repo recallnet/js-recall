@@ -384,6 +384,38 @@ export class CompetitionRepository {
   }
 
   /**
+   * Get competition type and arena ID for ranking calculations
+   * @param competitionId The competition ID
+   * @param tx Optional database transaction
+   * @returns Object with type and arenaId, or null if competition not found
+   */
+  async getCompetitionMetadata(
+    competitionId: string,
+    tx?: Transaction,
+  ): Promise<{ type: CompetitionType; arenaId: string | null } | null> {
+    const executor = tx || this.#dbRead;
+
+    try {
+      const [result] = await executor
+        .select({
+          type: competitions.type,
+          arenaId: competitions.arenaId,
+        })
+        .from(competitions)
+        .where(eq(competitions.id, competitionId))
+        .limit(1);
+
+      return result || null;
+    } catch (error) {
+      this.#logger.error(
+        { competitionId, error },
+        `[CompetitionRepository] Error getting competition metadata`,
+      );
+      throw error;
+    }
+  }
+
+  /**
    * Find a competition by ID
    * Optionally includes arena classification data
    * @param id The ID to search for
