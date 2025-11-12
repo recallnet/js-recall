@@ -368,7 +368,7 @@ class ServiceRegistry {
       this._balanceService,
       this._priceTrackerService,
       tradeRepository,
-      tradingConstraintsRepository,
+      this._tradingConstraintsService,
       dexScreenerProvider,
       config,
       serviceLogger,

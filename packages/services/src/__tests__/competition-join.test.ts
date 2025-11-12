@@ -736,4 +736,438 @@ describe("CompetitionService - joinCompetition", () => {
       );
     });
   });
+
+  describe("participation rules validation", () => {
+    it("should reject agent on blocklist", async () => {
+      const blockedAgent: SelectAgent = {
+        ...mockAgent,
+        id: "blocked-agent",
+      };
+      const mockCompetitionWithBlocklist = {
+        ...mockCompetition,
+        blocklist: ["blocked-agent", "other-blocked"],
+      };
+
+      agentService.getAgent.mockResolvedValue(blockedAgent);
+      competitionRepo.findById.mockResolvedValue(mockCompetitionWithBlocklist);
+      competitionRepo.isAgentActiveInCompetition.mockResolvedValue(false);
+
+      await expect(
+        competitionService.joinCompetition(
+          mockCompetition.id,
+          blockedAgent.id,
+          mockUserId,
+          undefined,
+        ),
+      ).rejects.toThrow(ApiError);
+
+      await expect(
+        competitionService.joinCompetition(
+          mockCompetition.id,
+          blockedAgent.id,
+          mockUserId,
+          undefined,
+        ),
+      ).rejects.toThrow("not permitted to join");
+    });
+
+    it("should reject agent when allowlistOnly is true and agent not on allowlist", async () => {
+      const mockCompetitionAllowlistOnly = {
+        ...mockCompetition,
+        allowlistOnly: true,
+        allowlist: ["allowed-agent-1", "allowed-agent-2"],
+      };
+
+      agentService.getAgent.mockResolvedValue(mockAgent);
+      competitionRepo.findById.mockResolvedValue(mockCompetitionAllowlistOnly);
+      competitionRepo.isAgentActiveInCompetition.mockResolvedValue(false);
+
+      await expect(
+        competitionService.joinCompetition(
+          mockCompetition.id,
+          mockAgent.id,
+          mockUserId,
+          undefined,
+        ),
+      ).rejects.toThrow(ApiError);
+
+      await expect(
+        competitionService.joinCompetition(
+          mockCompetition.id,
+          mockAgent.id,
+          mockUserId,
+          undefined,
+        ),
+      ).rejects.toThrow("allowlist-only");
+    });
+
+    it("should allow agent when allowlistOnly is true and agent on allowlist", async () => {
+      const allowedAgent: SelectAgent = {
+        ...mockAgent,
+        id: "allowed-agent",
+      };
+      const mockCompetitionAllowlistOnly = {
+        ...mockCompetition,
+        allowlistOnly: true,
+        allowlist: ["allowed-agent", "other-allowed"],
+      };
+
+      agentService.getAgent.mockResolvedValue(allowedAgent);
+      competitionRepo.findById.mockResolvedValue(mockCompetitionAllowlistOnly);
+      competitionRepo.isAgentActiveInCompetition.mockResolvedValue(false);
+      competitionRepo.addAgentToCompetition.mockResolvedValue();
+
+      await competitionService.joinCompetition(
+        mockCompetition.id,
+        allowedAgent.id,
+        mockUserId,
+        undefined,
+      );
+
+      expect(competitionRepo.addAgentToCompetition).toHaveBeenCalledWith(
+        mockCompetition.id,
+        allowedAgent.id,
+      );
+    });
+
+    it("should allow VIP agent and skip all checks including stake", async () => {
+      const vipAgent: SelectAgent = {
+        ...mockAgent,
+        id: "vip-agent",
+      };
+      const mockCompetitionWithVips = {
+        ...mockCompetition,
+        vips: ["vip-agent", "other-vip"],
+        minimumStake: 1000, // VIP should bypass this
+        minRecallRank: 10, // VIP should bypass this too
+      };
+
+      agentService.getAgent.mockResolvedValue(vipAgent);
+      competitionRepo.findById.mockResolvedValue(mockCompetitionWithVips);
+      competitionRepo.isAgentActiveInCompetition.mockResolvedValue(false);
+      competitionRepo.addAgentToCompetition.mockResolvedValue();
+
+      await competitionService.joinCompetition(
+        mockCompetition.id,
+        vipAgent.id,
+        mockUserId,
+        undefined,
+      );
+
+      // VIP should bypass stake check
+      expect(userRepo.findById).not.toHaveBeenCalled();
+      expect(stakesRepo.getTotalStakedByWallet).not.toHaveBeenCalled();
+      // VIP should bypass rank check
+      expect(agentScoreRepo.getAgentRank).not.toHaveBeenCalled();
+      // Should add agent directly
+      expect(competitionRepo.addAgentToCompetition).toHaveBeenCalled();
+    });
+
+    it("should allow allowlisted agent and skip rank check but still check stake", async () => {
+      const allowlistedAgent: SelectAgent = {
+        ...mockAgent,
+        id: "allowed-agent",
+      };
+      const mockCompetitionWithAllowlist = {
+        ...mockCompetition,
+        allowlist: ["allowed-agent", "other-allowed"],
+        minimumStake: 100, // Allowlist should NOT bypass stake
+        minRecallRank: 10, // Allowlist SHOULD bypass rank
+      };
+
+      const mockUser = {
+        id: mockUserId,
+        name: "Test User",
+        walletAddress: "0x1234567890123456789012345678901234567890",
+        walletLastVerifiedAt: new Date(),
+        embeddedWalletAddress: null,
+        privyId: "test-privy-id",
+        email: "test@example.com",
+        isSubscribed: false,
+        imageUrl: null,
+        metadata: null,
+        status: "active" as const,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastLoginAt: null,
+      };
+
+      agentService.getAgent.mockResolvedValue(allowlistedAgent);
+      competitionRepo.findById.mockResolvedValue(mockCompetitionWithAllowlist);
+      competitionRepo.isAgentActiveInCompetition.mockResolvedValue(false);
+      userRepo.findById.mockResolvedValue(mockUser);
+      stakesRepo.getTotalStakedByWallet.mockResolvedValue(BigInt(200e18)); // Sufficient stake
+      competitionRepo.addAgentToCompetition.mockResolvedValue();
+
+      await competitionService.joinCompetition(
+        mockCompetition.id,
+        allowlistedAgent.id,
+        mockUserId,
+        undefined,
+      );
+
+      // Should check stake for allowlisted agent (not bypassed)
+      expect(userRepo.findById).toHaveBeenCalled();
+      expect(stakesRepo.getTotalStakedByWallet).toHaveBeenCalled();
+      // Should not check rank for allowlisted agent (bypassed)
+      expect(agentScoreRepo.getAgentRank).not.toHaveBeenCalled();
+      expect(competitionRepo.addAgentToCompetition).toHaveBeenCalled();
+    });
+
+    it("should handle VIP early return when both vips and allowlist are set", async () => {
+      const vipAgent2: SelectAgent = {
+        ...mockAgent,
+        id: "vip-agent",
+      };
+      const mockCompetitionBoth = {
+        ...mockCompetition,
+        vips: ["vip-agent"],
+        allowlist: ["other-agent"], // Not checked due to VIP early return
+        minimumStake: 1000,
+        minRecallRank: 10,
+      };
+
+      agentService.getAgent.mockResolvedValue(vipAgent2);
+      competitionRepo.findById.mockResolvedValue(mockCompetitionBoth);
+      competitionRepo.isAgentActiveInCompetition.mockResolvedValue(false);
+      competitionRepo.addAgentToCompetition.mockResolvedValue();
+
+      await competitionService.joinCompetition(
+        mockCompetition.id,
+        vipAgent2.id,
+        mockUserId,
+        undefined,
+      );
+
+      // VIP early return should bypass all checks
+      expect(userRepo.findById).not.toHaveBeenCalled();
+      expect(stakesRepo.getTotalStakedByWallet).not.toHaveBeenCalled();
+      expect(agentScoreRepo.getAgentRank).not.toHaveBeenCalled();
+      expect(competitionRepo.addAgentToCompetition).toHaveBeenCalled();
+    });
+
+    it("should reject agent with no rank when rank requirement exists", async () => {
+      const mockCompetitionWithRank = {
+        ...mockCompetition,
+        minRecallRank: 50,
+      };
+
+      agentService.getAgent.mockResolvedValue(mockAgent);
+      competitionRepo.findById.mockResolvedValue(mockCompetitionWithRank);
+      competitionRepo.isAgentActiveInCompetition.mockResolvedValue(false);
+      agentScoreRepo.getAgentRank.mockResolvedValue(undefined); // No rank
+
+      await expect(
+        competitionService.joinCompetition(
+          mockCompetition.id,
+          mockAgent.id,
+          mockUserId,
+          undefined,
+        ),
+      ).rejects.toThrow(ApiError);
+
+      await expect(
+        competitionService.joinCompetition(
+          mockCompetition.id,
+          mockAgent.id,
+          mockUserId,
+          undefined,
+        ),
+      ).rejects.toThrow("has not yet established a rank");
+    });
+
+    it("should reject agent with insufficient rank", async () => {
+      const mockCompetitionWithRank = {
+        ...mockCompetition,
+        minRecallRank: 50,
+      };
+
+      agentService.getAgent.mockResolvedValue(mockAgent);
+      competitionRepo.findById.mockResolvedValue(mockCompetitionWithRank);
+      competitionRepo.isAgentActiveInCompetition.mockResolvedValue(false);
+      agentScoreRepo.getAgentRank.mockResolvedValue({
+        rank: 100, // Worse than required rank 50
+        ordinal: 1200,
+      });
+
+      await expect(
+        competitionService.joinCompetition(
+          mockCompetition.id,
+          mockAgent.id,
+          mockUserId,
+          undefined,
+        ),
+      ).rejects.toThrow(ApiError);
+
+      await expect(
+        competitionService.joinCompetition(
+          mockCompetition.id,
+          mockAgent.id,
+          mockUserId,
+          undefined,
+        ),
+      ).rejects.toThrow("current rank is 100");
+    });
+
+    it("should allow agent with sufficient rank", async () => {
+      const mockCompetitionWithRank = {
+        ...mockCompetition,
+        minRecallRank: 50,
+      };
+
+      agentService.getAgent.mockResolvedValue(mockAgent);
+      competitionRepo.findById.mockResolvedValue(mockCompetitionWithRank);
+      competitionRepo.isAgentActiveInCompetition.mockResolvedValue(false);
+      agentScoreRepo.getAgentRank.mockResolvedValue({
+        rank: 25, // Better than required rank 50
+        ordinal: 1500,
+      });
+      competitionRepo.addAgentToCompetition.mockResolvedValue();
+
+      await competitionService.joinCompetition(
+        mockCompetition.id,
+        mockAgent.id,
+        mockUserId,
+        undefined,
+      );
+
+      expect(agentScoreRepo.getAgentRank).toHaveBeenCalledWith(
+        mockAgent.id,
+        mockCompetition.type,
+      );
+      expect(competitionRepo.addAgentToCompetition).toHaveBeenCalled();
+    });
+
+    it("should allow agent when no participation rules are set (backward compatible)", async () => {
+      const mockCompetitionNoRules = {
+        ...mockCompetition,
+        vips: null,
+        allowlist: null,
+        blocklist: null,
+        minRecallRank: null,
+        allowlistOnly: false,
+      };
+
+      agentService.getAgent.mockResolvedValue(mockAgent);
+      competitionRepo.findById.mockResolvedValue(mockCompetitionNoRules);
+      competitionRepo.isAgentActiveInCompetition.mockResolvedValue(false);
+      competitionRepo.addAgentToCompetition.mockResolvedValue();
+
+      await competitionService.joinCompetition(
+        mockCompetition.id,
+        mockAgent.id,
+        mockUserId,
+        undefined,
+      );
+
+      expect(agentScoreRepo.getAgentRank).not.toHaveBeenCalled();
+      expect(competitionRepo.addAgentToCompetition).toHaveBeenCalled();
+    });
+
+    it("should treat empty arrays as no restriction", async () => {
+      const mockCompetitionEmptyArrays = {
+        ...mockCompetition,
+        vips: [],
+        allowlist: [],
+        blocklist: [],
+        minRecallRank: null,
+      };
+
+      agentService.getAgent.mockResolvedValue(mockAgent);
+      competitionRepo.findById.mockResolvedValue(mockCompetitionEmptyArrays);
+      competitionRepo.isAgentActiveInCompetition.mockResolvedValue(false);
+      competitionRepo.addAgentToCompetition.mockResolvedValue();
+
+      await competitionService.joinCompetition(
+        mockCompetition.id,
+        mockAgent.id,
+        mockUserId,
+        undefined,
+      );
+
+      expect(competitionRepo.addAgentToCompetition).toHaveBeenCalled();
+    });
+
+    it("should reject blocklisted agent even if they are on allowlist", async () => {
+      const conflictedAgent: SelectAgent = {
+        ...mockAgent,
+        id: "conflicted-agent",
+      };
+      const mockCompetitionConflict = {
+        ...mockCompetition,
+        blocklist: ["conflicted-agent"],
+        allowlist: ["conflicted-agent"], // Also on allowlist
+      };
+
+      agentService.getAgent.mockResolvedValue(conflictedAgent);
+      competitionRepo.findById.mockResolvedValue(mockCompetitionConflict);
+      competitionRepo.isAgentActiveInCompetition.mockResolvedValue(false);
+
+      await expect(
+        competitionService.joinCompetition(
+          mockCompetition.id,
+          conflictedAgent.id,
+          mockUserId,
+          undefined,
+        ),
+      ).rejects.toThrow(ApiError);
+
+      await expect(
+        competitionService.joinCompetition(
+          mockCompetition.id,
+          conflictedAgent.id,
+          mockUserId,
+          undefined,
+        ),
+      ).rejects.toThrow("not permitted");
+    });
+
+    it("should reject when allowlistOnly is true but no allowlist exists (misconfiguration)", async () => {
+      const mockCompetitionNoList = {
+        ...mockCompetition,
+        allowlistOnly: true,
+        allowlist: null, // No allowlist defined
+      };
+
+      agentService.getAgent.mockResolvedValue(mockAgent);
+      competitionRepo.findById.mockResolvedValue(mockCompetitionNoList);
+      competitionRepo.isAgentActiveInCompetition.mockResolvedValue(false);
+
+      try {
+        await competitionService.joinCompetition(
+          mockCompetition.id,
+          mockAgent.id,
+          mockUserId,
+          undefined,
+        );
+        expect.fail("Should have thrown ApiError");
+      } catch (error) {
+        expect(error).toBeInstanceOf(ApiError);
+        expect((error as ApiError).statusCode).toBe(500); // Server misconfiguration
+        expect((error as ApiError).message).toContain("misconfigured");
+        expect((error as ApiError).message).toContain("allowlist-only mode");
+      }
+    });
+
+    it("should reject blocklisted agent even if on VIP list", async () => {
+      const mockCompetitionBlockedVip = {
+        ...mockCompetition,
+        blocklist: [mockAgent.id],
+        vips: [mockAgent.id], // Same agent on both lists
+      };
+
+      agentService.getAgent.mockResolvedValue(mockAgent);
+      competitionRepo.findById.mockResolvedValue(mockCompetitionBlockedVip);
+      competitionRepo.isAgentActiveInCompetition.mockResolvedValue(false);
+
+      await expect(
+        competitionService.joinCompetition(
+          mockCompetition.id,
+          mockAgent.id,
+          mockUserId,
+          undefined,
+        ),
+      ).rejects.toThrow("not permitted");
+    });
+  });
 });

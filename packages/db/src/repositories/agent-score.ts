@@ -42,6 +42,54 @@ export class AgentScoreRepository {
   }
 
   /**
+   * Get a single agent's global rank for a specific competition type
+   * @param agentId Agent ID
+   * @param type Competition type (trading or perpetual_futures)
+   * @returns Agent's rank and score, or undefined if agent has no rank for that type
+   */
+  async getAgentRank(
+    agentId: string,
+    type: CompetitionType,
+  ): Promise<{ rank: number; ordinal: number } | undefined> {
+    try {
+      // Use DENSE_RANK() to calculate position among all agents
+      // Higher ordinal = better performance = lower rank number
+      const rankedAgentsSubquery = this.#db
+        .select({
+          agentId: agentScore.agentId,
+          ordinal: agentScore.ordinal,
+          rank: sql<number>`DENSE_RANK() OVER (PARTITION BY ${agentScore.type} ORDER BY ${agentScore.ordinal} DESC)::int`.as(
+            "rank",
+          ),
+        })
+        .from(agentScore)
+        .where(eq(agentScore.type, type))
+        .as("rankedAgents");
+
+      const [result] = await this.#db
+        .select({
+          rank: rankedAgentsSubquery.rank,
+          ordinal: rankedAgentsSubquery.ordinal,
+        })
+        .from(rankedAgentsSubquery)
+        .where(eq(rankedAgentsSubquery.agentId, agentId))
+        .limit(1);
+
+      return result;
+    } catch (error) {
+      this.#logger.error(
+        {
+          agentId,
+          type,
+          error,
+        },
+        "Error in getAgentRank",
+      );
+      throw error;
+    }
+  }
+
+  /**
    * Fetches all agent ranks and returns them as an array of objects containing
    * the agent information and rank score.
    * @returns An array of objects with agent ID, name, and rank score

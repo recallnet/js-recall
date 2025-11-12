@@ -25,6 +25,22 @@ export * from "./perps.js";
 export * from "./unified-leaderboard.js";
 
 /**
+ * Trading constraints for token validation
+ */
+export interface TradingConstraints {
+  /** Minimum age of trading pair in hours */
+  minimumPairAgeHours: number;
+  /** Minimum 24-hour trading volume in USD */
+  minimum24hVolumeUsd: number;
+  /** Minimum liquidity in USD */
+  minimumLiquidityUsd: number;
+  /** Minimum fully diluted valuation in USD */
+  minimumFdvUsd: number;
+  /** Minimum trades per day (null = no constraint) */
+  minTradesPerDay: number | null;
+}
+
+/**
  * Custom error class with HTTP status code
  */
 export class ApiError extends Error {
