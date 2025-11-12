@@ -144,7 +144,8 @@ export class LeaderboardRepository {
       // across ALL agents, then filter to the requested agents. Results ordered by rank, then
       // createdAt (oldest first) to reward longevity.
       // Note: DENSE_RANK() gives same rank for tied scores without skipping numbers
-      // Only include global scores (arena_id IS NULL) for global leaderboard rankings
+      // Calculate DENSE_RANK across all global scores (arena_id IS NULL) to determine
+      // each agent's global position before filtering to requested agents
       const rankedAgentsSubquery = this.#dbRead
         .select({
           agentId: agentScore.agentId,

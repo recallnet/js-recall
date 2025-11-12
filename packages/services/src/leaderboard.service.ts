@@ -30,6 +30,10 @@ export class LeaderboardService {
    * Get leaderboard data with pagination
    * Returns global leaderboard by type or arena-specific leaderboard if arenaId provided
    * @param params Query parameters including type, arenaId, limit, offset
+   * @param params.type - Competition type for global leaderboard
+   * @param params.arenaId - Optional arena ID for arena-specific leaderboard
+   * @param params.limit - Maximum number of results to return
+   * @param params.offset - Number of results to skip
    * @returns Complete leaderboard response with ranked agents and metadata
    */
   async getGlobalLeaderboardForType(params: LeaderboardParams) {
