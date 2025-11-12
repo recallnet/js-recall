@@ -2333,7 +2333,7 @@ export class CompetitionService {
       }
     }
 
-    // Validate participation rules (blocklist, allowlist, VIP, rank requirements)
+    // Validate participation rules (allowlist, rank requirements)
     await this.validateParticipationRules(competition, agentId);
 
     // Check minimum stake requirement (non-VIPs only)
