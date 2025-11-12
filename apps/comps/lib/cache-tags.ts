@@ -56,6 +56,23 @@ export const CacheTags = {
    * @returns Cache tag string
    */
   competitionList: (): string => `competition-list`,
+
+  /**
+   * Cache tag for a specific arena by ID
+   *
+   * @param arenaId - The arena ID
+   * @returns Cache tag string
+   */
+  arena: (arenaId: string): string => `arena:${arenaId}`,
+
+  /**
+   * Cache tag for the global arena list
+   *
+   * Invalidating this tag will invalidate all paginated arena list queries
+   *
+   * @returns Cache tag string
+   */
+  arenaList: (): string => `arena-list`,
 } as const;
 
 /**

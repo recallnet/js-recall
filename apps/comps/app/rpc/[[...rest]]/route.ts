@@ -5,6 +5,7 @@ import { createLogger } from "@/lib/logger";
 import { privyClient } from "@/lib/privy-client";
 import {
   agentService,
+  arenaService,
   boostAwardService,
   boostService,
   competitionService,
@@ -28,6 +29,7 @@ async function handleRequest(request: Request) {
       userService,
       competitionService,
       agentService,
+      arenaService,
       emailService,
       leaderboardService,
       rewardsService,

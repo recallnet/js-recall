@@ -1,6 +1,7 @@
 import {
   AgentRankService,
   AgentService,
+  ArenaService,
   BalanceService,
   BoostAwardService,
   BoostService,
@@ -28,6 +29,7 @@ import {
   agentNonceRepository,
   agentRepository,
   agentScoreRepository,
+  arenaRepository,
   balanceRepository,
   boostRepository,
   competitionRepository,
@@ -170,6 +172,11 @@ const perpsDataProcessor = new PerpsDataProcessor(
   competitionRepository,
   perpsRepository,
   createLogger("PerpsDataProcessor"),
+);
+
+export const arenaService = new ArenaService(
+  arenaRepository,
+  createLogger("ArenaService"),
 );
 
 export const leaderboardService = new LeaderboardService(

@@ -9,6 +9,7 @@ import { createLogger } from "@/lib/logger";
 import { privyClient } from "@/lib/privy-client";
 import {
   agentService,
+  arenaService,
   boostAwardService,
   boostService,
   competitionService,
@@ -29,6 +30,7 @@ export async function createClient(): Promise<RouterClient<typeof router>> {
       userService,
       competitionService,
       agentService,
+      arenaService,
       emailService,
       leaderboardService,
       rewardsService,

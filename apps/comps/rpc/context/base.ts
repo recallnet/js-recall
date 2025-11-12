@@ -18,6 +18,7 @@ import { Logger } from "pino";
 
 import {
   AgentService,
+  ArenaService,
   BoostAwardService,
   BoostService,
   CompetitionService,
@@ -42,6 +43,7 @@ export interface CookieStore {
  * @property userService - Service for user-related operations
  * @property competitionService - Service for competition operations
  * @property agentService - Service for agent management operations
+ * @property arenaService - Service for arena operations
  * @property emailService - Service for email operations
  * @property leaderboardService - Service for leaderboard operations
  * @property rewardsService - Service for reward operations
@@ -61,6 +63,7 @@ export const base = os
     userService: UserService;
     competitionService: CompetitionService;
     agentService: AgentService;
+    arenaService: ArenaService;
     emailService: EmailService;
     leaderboardService: LeaderboardService;
     rewardsService: RewardsService;

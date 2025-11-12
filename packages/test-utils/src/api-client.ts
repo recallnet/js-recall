@@ -1614,6 +1614,47 @@ export class ApiClient {
   }
 
   /**
+   * List all arenas (public endpoint)
+   * @param params Pagination parameters
+   */
+  async getArenas(params?: {
+    limit?: number;
+    offset?: number;
+    sort?: string;
+    name?: string;
+  }): Promise<ListArenasResponse | ErrorResponse> {
+    try {
+      const queryParams = new URLSearchParams();
+      if (params?.limit !== undefined)
+        queryParams.append("limit", params.limit.toString());
+      if (params?.offset !== undefined)
+        queryParams.append("offset", params.offset.toString());
+      if (params?.sort) queryParams.append("sort", params.sort);
+      if (params?.name) queryParams.append("name", params.name);
+
+      const response = await this.axiosInstance.get(
+        `/api/arenas?${queryParams.toString()}`,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get arenas");
+    }
+  }
+
+  /**
+   * Get arena by ID (public endpoint)
+   * @param id Arena ID
+   */
+  async getArenaById(id: string): Promise<GetArenaResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.get(`/api/arenas/${id}`);
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get arena by id");
+    }
+  }
+
+  /**
    * Get the global leaderboard (global rankings)
    */
   async getGlobalLeaderboard(params?: {
