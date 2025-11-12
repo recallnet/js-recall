@@ -596,6 +596,9 @@ export class CompetitionService {
       };
     });
 
+    // Clear trading constraints cache after transaction commits
+    this.tradingConstraintsService.clearConstraintsCache(id);
+
     this.logger.debug(
       `[CompetitionManager] Created competition: ${name} (${id}), crossChainTradingType: ${tradingType}, type: ${type}}`,
     );
@@ -758,6 +761,9 @@ export class CompetitionService {
       const agents = await this.agentService.getAgentsByIds(finalAgentIds);
       this.validateAgentsForPerpsCompetition(agents, competition.type);
     }
+
+    // Clear cached balances after validation, before processing agents
+    this.balanceService.clearCompetitionCache(competitionId);
 
     // Process all agent additions and activations
     for (const agentId of finalAgentIds) {
@@ -1276,6 +1282,13 @@ export class CompetitionService {
 
         return { competition: updated, leaderboard };
       });
+
+    // Clear balance cache after transaction commits successfully
+    // Note: There is a small window between transaction commit and cache clear where concurrent
+    // requests might cache final balances, which we then evict. However, the next cache miss will
+    // correctly fetch the final balances from the database. This is preferable to clearing before
+    // commit, which could result in requests caching stale balances that persist indefinitely.
+    this.balanceService.clearCompetitionCache(competitionId);
 
     // Log success only after transaction has committed
     this.logger.debug(
@@ -2171,6 +2184,11 @@ export class CompetitionService {
 
       return { competition: updatedCompetition, updatedRewards };
     });
+
+    // Clear trading constraints cache after transaction commits (if constraints were updated)
+    if (tradingConstraints) {
+      this.tradingConstraintsService.clearConstraintsCache(competitionId);
+    }
 
     this.logger.debug(
       `[CompetitionService] Updated competition: ${competitionId}`,

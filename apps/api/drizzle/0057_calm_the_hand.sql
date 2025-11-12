@@ -39,6 +39,7 @@ DO $$
 DECLARE
   affected_rows INTEGER;
   null_count INTEGER;
+  orphaned_record RECORD;
 BEGIN
   -- Backfill: For each agent, assign their balances to their most recent competition
   -- Note: Includes all statuses (active, disqualified, withdrawn) to avoid orphaning balances
@@ -55,16 +56,41 @@ BEGIN
   GET DIAGNOSTICS affected_rows = ROW_COUNT;
   RAISE NOTICE 'Backfilled % balance rows with competition_id', affected_rows;
 
-  -- Check if any nulls remain (orphaned balances)
-  SELECT COUNT(*) INTO null_count
-  FROM "trading_comps"."balances"
+  -- Report orphaned balances before deleting
+  FOR orphaned_record IN
+    SELECT
+      b.agent_id,
+      a.name as agent_name,
+      a.handle as agent_handle,
+      b.token_address,
+      b.symbol,
+      b.amount::text as amount,
+      b.specific_chain
+    FROM "trading_comps"."balances" b
+    INNER JOIN "public"."agents" a ON a.id = b.agent_id
+    WHERE b."competition_id" IS NULL
+    ORDER BY a.name, b.token_address
+  LOOP
+    RAISE NOTICE 'Orphaned balance: Agent=% (%), Token=% (%), Amount=%, Chain=%',
+      orphaned_record.agent_name,
+      orphaned_record.agent_id,
+      COALESCE(orphaned_record.symbol, '???'),
+      orphaned_record.token_address,
+      orphaned_record.amount,
+      orphaned_record.specific_chain;
+  END LOOP;
+
+  -- Delete orphaned balances (balances for agents not in any competition)
+  DELETE FROM "trading_comps"."balances"
   WHERE "competition_id" IS NULL;
 
+  GET DIAGNOSTICS null_count = ROW_COUNT;
+
   IF null_count > 0 THEN
-    RAISE EXCEPTION 'ERROR: % balances still have NULL competition_id. These are orphaned balances for agents not in any competition. Migration halted. Options: 1) Manually assign to a competition, 2) Delete them, 3) Create a "legacy" competition.', null_count;
-  ELSE
-    RAISE NOTICE 'SUCCESS: All balances have been assigned a competition_id';
+    RAISE NOTICE 'Deleted % orphaned balance rows (balances for agents not in any competition)', null_count;
   END IF;
+
+  RAISE NOTICE 'SUCCESS: All balances have been assigned a competition_id';
 END $$;--> statement-breakpoint
 
 -- Phase 3: Make competition_id NOT NULL
