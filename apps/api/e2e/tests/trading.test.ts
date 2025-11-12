@@ -1,4 +1,4 @@
-import { v4 as uuidv4 } from "uuid";
+import { v7 as uuidv7 } from "uuid";
 import { beforeEach, describe, expect, test } from "vitest";
 
 import { trades as tradesDef } from "@recallnet/db/schema/trading/defs";
@@ -1412,7 +1412,7 @@ describe("Trading API", () => {
     const smallValue = 2.938e-27;
 
     const trade: InsertTrade = {
-      id: uuidv4(),
+      id: uuidv7(),
       timestamp: new Date(),
       fromToken: config.specificChainTokens.svm.usdc,
       toToken: config.specificChainTokens.svm.sol,

@@ -2,7 +2,7 @@ import * as dotenv from "dotenv";
 import { blue, cyan, green, magenta, red, yellow } from "kleur/colors";
 import { MerkleTree } from "merkletreejs";
 import * as path from "path";
-import { v4 as uuidv4 } from "uuid";
+import { v7 as uuidv7 } from "uuid";
 import { hexToBytes, keccak256 } from "viem";
 
 import { competitions, users } from "@recallnet/db/schema/core/defs";
@@ -57,7 +57,7 @@ async function insertCompetitionAndRewards() {
     );
 
     // Insert competition
-    const competitionId = uuidv4();
+    const competitionId = uuidv7();
 
     console.log(
       `\n${blue("Inserting competition with ID:")} ${yellow(competitionId)}`,
@@ -79,7 +79,7 @@ async function insertCompetitionAndRewards() {
 
     for (let i = 0; i < TEST_WALLETS.length; i++) {
       const wallet = TEST_WALLETS[i]!;
-      const userId = uuidv4();
+      const userId = uuidv7();
 
       await db.insert(users).values({
         id: userId,
