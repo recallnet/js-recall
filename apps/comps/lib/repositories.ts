@@ -1,6 +1,7 @@
 import { AgentRepository } from "@recallnet/db/repositories/agent";
 import { AgentNonceRepository } from "@recallnet/db/repositories/agent-nonce";
 import { AgentScoreRepository } from "@recallnet/db/repositories/agent-score";
+import { AirdropRepository } from "@recallnet/db/repositories/airdrop";
 import { BalanceRepository } from "@recallnet/db/repositories/balance";
 import { BoostRepository } from "@recallnet/db/repositories/boost";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
@@ -21,6 +22,11 @@ import { createLogger } from "./logger";
 export const competitionRewardsRepository = new CompetitionRewardsRepository(
   db,
   createLogger("CompetitionRewardsRepository"),
+);
+
+export const airdropRepository = new AirdropRepository(
+  db,
+  createLogger("AirdropRepository"),
 );
 
 export const agentRepository = new AgentRepository(

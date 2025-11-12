@@ -82,6 +82,16 @@
         "default": "./dist/repositories/agent-score.cjs"
       }
     },
+    "./repositories/airdrop": {
+      "import": {
+        "types": "./dist/repositories/airdrop.d.ts",
+        "default": "./dist/repositories/airdrop.js"
+      },
+      "require": {
+        "types": "./dist/repositories/airdrop.d.cts",
+        "default": "./dist/repositories/airdrop.cjs"
+      }
+    },
     "./repositories/balance": {
       "import": {
         "types": "./dist/repositories/balance.d.ts",
@@ -230,6 +240,26 @@
       "require": {
         "types": "./dist/schema/index.d.cts",
         "default": "./dist/schema/index.cjs"
+      }
+    },
+    "./schema/airdrop/defs": {
+      "import": {
+        "types": "./dist/schema/airdrop/defs.d.ts",
+        "default": "./dist/schema/airdrop/defs.js"
+      },
+      "require": {
+        "types": "./dist/schema/airdrop/defs.d.cts",
+        "default": "./dist/schema/airdrop/defs.cjs"
+      }
+    },
+    "./schema/airdrop/types": {
+      "import": {
+        "types": "./dist/schema/airdrop/types.d.ts",
+        "default": "./dist/schema/airdrop/types.js"
+      },
+      "require": {
+        "types": "./dist/schema/airdrop/types.d.cts",
+        "default": "./dist/schema/airdrop/types.cjs"
       }
     },
     "./schema/core/defs": {

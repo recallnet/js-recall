@@ -5,6 +5,7 @@ import { createLogger } from "@/lib/logger";
 import { privyClient } from "@/lib/privy-client";
 import {
   agentService,
+  airdropService,
   boostAwardService,
   boostService,
   competitionService,
@@ -23,6 +24,7 @@ async function handleRequest(request: Request) {
     context: {
       cookies: await cookies(),
       privyClient,
+      airdropService,
       boostService,
       boostAwardService,
       userService,
