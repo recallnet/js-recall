@@ -337,6 +337,7 @@ class ServiceRegistry {
       this._rewardsAllocator,
       db,
       serviceLogger,
+      config.rewards.boostTimeDecayRate,
     );
 
     this._competitionService = new CompetitionService(
