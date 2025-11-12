@@ -414,6 +414,13 @@
       "when": 1762876293446,
       "tag": "0058_absurd_power_man",
       "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "7",
+      "when": 1762941343946,
+      "tag": "0059_kind_gamma_corps",
+      "breakpoints": true
     }
   ]
 }

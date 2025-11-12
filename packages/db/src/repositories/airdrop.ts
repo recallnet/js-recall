@@ -312,4 +312,89 @@ export class AirdropRepository {
       throw error;
     }
   }
+
+  /**
+   * Insert claims in batches
+   */
+  async insertClaimsBatch(
+    claims: Array<{
+      address: string;
+      amount: string;
+      season: number;
+      proof: string[];
+      category: string;
+      sybilClassification: string;
+      flaggedAt: string | null;
+      flaggingReason: string | null;
+      powerUser: boolean;
+      recallSnapper: boolean;
+      aiBuilder: boolean;
+      aiExplorer: boolean;
+    }>,
+    batchSize: number = 1000,
+  ): Promise<void> {
+    this.#logger.info(
+      `Inserting ${claims.length} claims in batches of ${batchSize}`,
+    );
+
+    for (let i = 0; i < claims.length; i += batchSize) {
+      const batch = claims.slice(i, i + batchSize);
+
+      const values = batch.map((claim) => ({
+        address: claim.address.toLowerCase(),
+        amount: BigInt(claim.amount),
+        season: claim.season,
+        proof: JSON.stringify(claim.proof),
+        category: claim.category || "",
+        sybilClassification: claim.sybilClassification || "approved",
+        flaggedAt: claim.flaggedAt ? new Date(claim.flaggedAt) : undefined,
+        flaggingReason: claim.flaggingReason || undefined,
+        powerUser: claim.powerUser,
+        recallSnapper: claim.recallSnapper,
+        aiBuilder: claim.aiBuilder,
+        aiExplorer: claim.aiExplorer,
+      }));
+
+      await this.#db.insert(airdropClaims).values(values);
+
+      this.#logger.info(
+        `Inserted batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(claims.length / batchSize)}`,
+      );
+    }
+
+    this.#logger.info("All claims inserted successfully");
+  }
+
+  /**
+   * Insert or update merkle metadata
+   */
+  async upsertMetadata(metadata: {
+    merkleRoot: string;
+    totalAmount: string;
+    totalRows: number;
+    uniqueAddresses: number;
+  }): Promise<void> {
+    this.#logger.info("Upserting merkle metadata");
+
+    await this.#db
+      .insert(merkleMetadata)
+      .values({
+        id: 1,
+        merkleRoot: metadata.merkleRoot,
+        totalAmount: metadata.totalAmount,
+        totalRows: metadata.totalRows,
+        uniqueAddresses: metadata.uniqueAddresses,
+      })
+      .onConflictDoUpdate({
+        target: merkleMetadata.id,
+        set: {
+          merkleRoot: metadata.merkleRoot,
+          totalAmount: metadata.totalAmount,
+          totalRows: metadata.totalRows,
+          uniqueAddresses: metadata.uniqueAddresses,
+        },
+      });
+
+    this.#logger.info("Merkle metadata upserted successfully");
+  }
 }

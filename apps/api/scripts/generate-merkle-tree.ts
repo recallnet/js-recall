@@ -1,23 +1,14 @@
 import { StandardMerkleTree } from "@openzeppelin/merkle-tree";
-import dotenv from "dotenv";
-import { sql } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/node-postgres";
 import fs from "fs";
 import Papa from "papaparse";
 import path from "path";
-import pg from "pg";
-import readline from "readline";
 import { fileURLToPath } from "url";
 import { isAddress } from "viem";
 
-import * as schema from "../src/db/schema";
+import { AirdropRepository } from "@recallnet/db/repositories/airdrop";
 
-// Load environment variables
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-dotenv.config({ path: path.join(__dirname, "../.env") });
-
-const { Pool } = pg;
+import { db } from "@/database/db.js";
+import { logger } from "@/lib/logger.js";
 
 // Types
 interface Recipient {
@@ -71,7 +62,9 @@ interface CsvRow {
 }
 
 // Constants
-const INPUT_FILE_PATH = "./data/airdrop-data.csv";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const INPUT_FILE_PATH = path.join(__dirname, "data", "airdrop-data.csv");
 const EXPECTED_HEADERS = ["address", "amount", "season"];
 const OPTIONAL_HEADERS = [
   "category",
@@ -85,121 +78,64 @@ const OPTIONAL_HEADERS = [
 ];
 const VALID_SYBIL_CLASSIFICATIONS = ["approved", "maybe-sybil", "sybil"];
 
-// Create database connection
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl:
-    process.env.NODE_ENV === "production"
-      ? {
-          rejectUnauthorized: false,
-        }
-      : undefined,
-});
-
-// Create the drizzle instance with schema
-export const db = drizzle(pool, { schema });
-
 // Helper function to parse boolean values from CSV
 const parseBooleanFromCsv = (value: string | undefined): boolean => {
   return value === "1" || value?.toLowerCase() === "true";
 };
 
 // Helper function to prompt user for confirmation
-async function promptUser(question: string): Promise<boolean> {
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
+// async function promptUser(question: string): Promise<boolean> {
+//   const rl = readline.createInterface({
+//     input: process.stdin,
+//     output: process.stdout,
+//   });
 
-  return new Promise((resolve) => {
-    rl.question(question, (answer) => {
-      rl.close();
-      resolve(answer.toLowerCase() === "y" || answer.toLowerCase() === "yes");
-    });
-  });
-}
+//   return new Promise((resolve) => {
+//     rl.question(question, (answer) => {
+//       rl.close();
+//       resolve(answer.toLowerCase() === "y" || answer.toLowerCase() === "yes");
+//     });
+//   });
+// }
 
-async function clearExistingData(): Promise<void> {
-  console.log("🗑️  Clearing existing data...");
-  try {
-    // Clear claims table
-    await db.delete(schema.airdropClaims);
-  } catch (err) {
-    console.log("could not delete airdrop_claims table:", err);
-    // Ask for confirmation before clearing claims table
-    const confirmClaims = await promptUser(
-      "⚠️  Do you want to continue even though the airdrop_claims table cannot be deleted? (y/n): ",
-    );
-    if (!confirmClaims) {
-      throw err;
-    }
-  }
-  try {
-    // Clear metadata table
-    await db.delete(schema.merkleMetadata);
-  } catch (err) {
-    console.log("could not delete merkle_metadata table:", err);
-    const confirmMetadata = await promptUser(
-      "⚠️  Do you want to continue even though the merkle_metadata table cannot be deleted? (y/n): ",
-    );
-    if (!confirmMetadata) {
-      throw err;
-    }
-  }
-  console.log("✅ Existing data cleared");
-}
+// TODO: in the claims app we can nuke the db and reload from the csv because
+//  the data is fixed. Now we are going to update the airdrop each month. need
+//  to figure out if this nuke and reload strat will continue to work.
+// async function clearExistingData(): Promise<void> {
+//   console.log("🗑️  Clearing existing data...");
+//   try {
+//     // Clear claims table
+//     await db.delete(schema.airdropClaims);
+//   } catch (err) {
+//     console.log("could not delete airdrop_claims table:", err);
+//     // Ask for confirmation before clearing claims table
+//     const confirmClaims = await promptUser(
+//       "⚠️  Do you want to continue even though the airdrop_claims table cannot be deleted? (y/n): ",
+//     );
+//     if (!confirmClaims) {
+//       throw err;
+//     }
+//   }
+//   try {
+//     // Clear metadata table
+//     await db.delete(schema.merkleMetadata);
+//   } catch (err) {
+//     console.log("could not delete merkle_metadata table:", err);
+//     const confirmMetadata = await promptUser(
+//       "⚠️  Do you want to continue even though the merkle_metadata table cannot be deleted? (y/n): ",
+//     );
+//     if (!confirmMetadata) {
+//       throw err;
+//     }
+//   }
+//   console.log("✅ Existing data cleared");
+// }
 
-async function insertClaimsInBatches(
-  claims: Claim[],
-  batchSize: number = 1000,
-): Promise<void> {
-  console.log(
-    `📦 Inserting ${claims.length} claims in batches of ${batchSize}...`,
-  );
-
-  for (let i = 0; i < claims.length; i += batchSize) {
-    const batch = claims.slice(i, i + batchSize);
-
-    // Prepare batch data for insertion
-    const values = batch.map((claim) => ({
-      address: claim.address.toLowerCase(),
-      amount: claim.amount,
-      season: claim.season,
-      proof: JSON.stringify(claim.proof),
-      category: claim.category || "",
-      sybilClassification: claim.sybilClassification || "approved",
-      flaggedAt: claim.flaggedAt || undefined,
-      flaggingReason: claim.flaggingReason || undefined,
-      powerUser: claim.powerUser,
-      recallSnapper: claim.recallSnapper,
-      aiBuilder: claim.aiBuilder,
-      aiExplorer: claim.aiExplorer,
-    }));
-
-    // Execute batch insert with ON CONFLICT DO UPDATE
-    await db.insert(schema.airdropClaims).values(values);
-
-    console.log(
-      `  Inserted batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(claims.length / batchSize)}`,
-    );
-  }
-
-  console.log("✅ All claims inserted");
-}
-
-async function insertMetadata(metadata: MerkleMetadata): Promise<void> {
-  console.log("📊 Inserting merkle metadata...");
-
-  await db.insert(schema.merkleMetadata).values({
-    id: 1, // Always use ID 1 for single-row metadata
-    merkleRoot: metadata.merkleRoot,
-    totalAmount: metadata.totalAmount,
-    totalRows: metadata.totalRows,
-    uniqueAddresses: metadata.uniqueAddresses,
-  });
-
-  console.log("✅ Metadata inserted");
-}
+// Create repository instance
+const airdropRepository = new AirdropRepository(
+  db,
+  logger.child({ module: "AirdropRepository" }),
+);
 
 function processAirdropFile(): Promise<void> {
   const recipients: Recipient[] = [];
@@ -214,7 +150,7 @@ function processAirdropFile(): Promise<void> {
       header: true,
       skipEmptyLines: true,
       worker: false, // Must be false for node streams
-      step: (results) => {
+      step: (results: Papa.ParseStepResult<CsvRow>) => {
         const row = results.data;
 
         // We only need to validate the headers for one row since this is a CSV
@@ -229,8 +165,8 @@ function processAirdropFile(): Promise<void> {
           headersValidated = true;
         }
 
-        if (results.errors.length > 0) {
-          const error = `Parsing error near row ${results.meta.cursor}: ${results.errors[0].message}`;
+        if (results.errors && results.errors.length > 0) {
+          const error = `Parsing error near row ${results.meta.cursor}: ${results.errors[0]?.message}`;
           return reject(new Error(error));
         }
 
@@ -335,6 +271,9 @@ function processAirdropFile(): Promise<void> {
           for (const [i, value] of tree.entries()) {
             const [address] = value;
             const recipient = recipients[i];
+            if (!recipient) {
+              throw new Error(`No recipient found at index ${i}`);
+            }
             claims.push({
               address: address.toLowerCase(),
               amount: recipient.amount.toString(),
@@ -365,10 +304,13 @@ function processAirdropFile(): Promise<void> {
           console.log(`   Total Rows: ${recipients.length}`);
           console.log(`   Unique Addresses: ${uniqueAddresses}`);
 
-          // Save to database
-          await clearExistingData();
-          await insertClaimsInBatches(claims);
-          await insertMetadata(metadata);
+          // Save to database using repository
+          console.log("💾 Saving to database...");
+
+          // TODO: Add clearAllData method to repository if you want to clear existing data first
+
+          await airdropRepository.insertClaimsBatch(claims);
+          await airdropRepository.upsertMetadata(metadata);
 
           console.log("✅ Data successfully saved to database!");
           resolve();
@@ -377,7 +319,7 @@ function processAirdropFile(): Promise<void> {
           reject(e);
         }
       },
-      error: (err) => {
+      error: (err: Error) => {
         reject(err);
       },
     });
@@ -387,23 +329,13 @@ function processAirdropFile(): Promise<void> {
 // Main execution
 async function main(): Promise<void> {
   try {
-    // Test database connection, and fail early if this isn't going to work
-    const testQuery = await db.execute(sql`SELECT 1 as test`);
-    if (testQuery.rows[0].test !== 1) {
-      throw new Error("Database cannot connect");
-    }
-    console.log("✅ Database connection successful");
-
     // Process the airdrop file and save to database
     await processAirdropFile();
 
-    // Close database connection
-    await pool.end();
-    console.log("✅ Database connection closed");
+    console.log("✅ Script completed successfully");
     process.exit(0);
   } catch (err) {
     console.error("❌ Error generating Merkle tree:", err);
-    await pool.end();
     process.exit(1);
   }
 }

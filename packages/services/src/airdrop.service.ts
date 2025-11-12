@@ -16,6 +16,7 @@ export class AirdropService {
   async checkEligibility(address: string, season: number) {
     // TODO: Whatever checks we want to do.
     // No idea if/how season fits in here.
+    console.log(`season is ${season}, address is ${address}`); // log to fix lint
     const res = await this.airdropRepository.getClaimByAddress(address);
     return res;
   }
