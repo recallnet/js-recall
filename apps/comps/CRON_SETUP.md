@@ -169,39 +169,108 @@ export async function POST(request: NextRequest) {
 
 ## Adding New Cron Jobs
 
-1. **Create the endpoint:**
+We provide a reusable `withCronAuth` middleware for easy cron job creation.
 
-   ```typescript
-   // apps/comps/app/api/cron/new-job/route.ts
-   export async function POST(request: NextRequest) {
-     if (!validateCronSecret(request)) {
-       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-     }
+### Quick Start
 
-     // Your cron logic here
-     await myService.doWork();
+1. **Copy the template:**
 
-     return NextResponse.json({ success: true });
-   }
+   ```bash
+   cp apps/comps/app/api/cron/_TEMPLATE/route.ts \
+      apps/comps/app/api/cron/your-job-name/route.ts
    ```
 
-2. **Add to vercel.json:**
+2. **Implement your logic:**
+
+   ```typescript
+   // apps/comps/app/api/cron/your-job-name/route.ts
+   import { NextRequest } from "next/server";
+
+   import { withCronAuth } from "@/lib/cron-auth";
+   import { createLogger } from "@/lib/logger";
+   import { myService } from "@/lib/services";
+
+   const logger = createLogger("YourJobName");
+
+   async function yourCronJob() {
+     const startTime = Date.now();
+     logger.info("Starting your job...");
+
+     try {
+       // Your business logic
+       await myService.doWork();
+
+       const duration = Date.now() - startTime;
+       logger.info(`Job completed in ${duration}ms`);
+
+       return {
+         success: true,
+         duration,
+         message: "Job completed successfully",
+       };
+     } catch (error) {
+       logger.error("Job failed:", error);
+       throw error;
+     }
+   }
+
+   // Authentication and error handling are automatic!
+   const handler = withCronAuth(async (request) => {
+     return await yourCronJob();
+   });
+
+   export const POST = handler;
+   export const GET = handler; // For manual testing
+   ```
+
+3. **Add to vercel.json:**
 
    ```json
    {
      "crons": [
        {
-         "path": "/api/cron/new-job",
+         "path": "/api/cron/your-job-name",
          "schedule": "0 * * * *"
        }
      ]
    }
    ```
 
-3. **Deploy:**
+4. **Deploy:**
    ```bash
    vercel --prod
    ```
+
+### Middleware Benefits
+
+The `withCronAuth` middleware automatically handles:
+
+- ✅ Bearer token validation
+- ✅ CRON_SECRET verification
+- ✅ Error handling and logging
+- ✅ Consistent response format
+- ✅ Timestamps in responses
+
+### Manual Authentication (Advanced)
+
+If you need more control, use the lower-level functions:
+
+```typescript
+import { validateCronAuth, validateCronSecret } from "@/lib/cron-auth";
+
+export async function POST(request: NextRequest) {
+  // Option 1: Return 401 response if unauthorized
+  const authError = validateCronAuth(request);
+  if (authError) return authError;
+
+  // Option 2: Just check boolean
+  if (!validateCronSecret(request)) {
+    // Handle unauthorized
+  }
+
+  // Your logic...
+}
+```
 
 ## Cron Schedule Format
 

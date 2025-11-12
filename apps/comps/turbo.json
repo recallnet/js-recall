@@ -52,7 +52,8 @@
         "COINGECKO_MODE",
         "TEST_MODE",
         "METRICS_PORT",
-        "CI"
+        "CI",
+        "CRON_SECRET"
       ]
     }
   }

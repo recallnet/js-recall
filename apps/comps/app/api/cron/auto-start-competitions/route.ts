@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 
-import { config } from "@/config/private";
+import { withCronAuth } from "@/lib/cron-auth";
 import { createLogger } from "@/lib/logger";
 import { competitionService } from "@/lib/services";
 
@@ -11,7 +11,7 @@ import { competitionService } from "@/lib/services";
  * Designed to be called by Vercel Cron or external cron services.
  *
  * Security:
- * - Protected by bearer token authentication (CRON_SECRET)
+ * - Protected by bearer token authentication via withCronAuth middleware
  * - Should be called every minute by cron scheduler
  *
  * Usage:
@@ -28,27 +28,6 @@ import { competitionService } from "@/lib/services";
  */
 
 const logger = createLogger("AutoStartCompetitions");
-
-/**
- * Validate the cron secret token
- */
-function validateCronSecret(request: NextRequest): boolean {
-  const authHeader = request.headers.get("authorization");
-
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return false;
-  }
-
-  const token = authHeader.substring(7); // Remove "Bearer " prefix
-  const expectedToken = process.env.CRON_SECRET;
-
-  if (!expectedToken) {
-    logger.error("CRON_SECRET environment variable not set");
-    return false;
-  }
-
-  return token === expectedToken;
-}
 
 /**
  * Auto start competitions that have reached their start date
@@ -81,60 +60,8 @@ async function autoStartCompetitions() {
 }
 
 /**
- * POST handler for the cron endpoint
+ * Cron handler wrapped with authentication
  */
-export async function POST(request: NextRequest) {
-  // Validate cron secret
-  if (!validateCronSecret(request)) {
-    logger.warn("Unauthorized cron request attempt");
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Unauthorized. Valid bearer token required.",
-      },
-      { status: 401 },
-    );
-  }
-
-  try {
-    const result = await autoStartCompetitions();
-
-    return NextResponse.json(
-      {
-        success: true,
-        timestamp: new Date().toISOString(),
-        ...result,
-      },
-      { status: 200 },
-    );
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-
-    logger.error("Auto start competitions failed:", errorMessage);
-
-    return NextResponse.json(
-      {
-        success: false,
-        error: errorMessage,
-        timestamp: new Date().toISOString(),
-      },
-      { status: 500 },
-    );
-  }
-}
-
-// Support GET for manual testing/debugging (still requires auth)
-export async function GET(request: NextRequest) {
-  if (!validateCronSecret(request)) {
-    logger.warn("Unauthorized GET request attempt");
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Unauthorized. Valid bearer token required.",
-      },
-      { status: 401 },
-    );
-  }
-
-  return POST(request);
-}
+export const POST = withCronAuth(async (_: NextRequest) => {
+  return await autoStartCompetitions();
+});
