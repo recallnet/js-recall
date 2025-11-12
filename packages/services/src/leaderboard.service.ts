@@ -68,12 +68,17 @@ export class LeaderboardService {
         ),
       };
     } catch (error) {
+      // Re-throw ApiError instances (validation errors, not found, etc.)
+      if (error instanceof ApiError) {
+        throw error;
+      }
+
       this.logger.error(
         "[LeaderboardService] Failed to get leaderboard:",
         error,
       );
 
-      // Return safe fallback instead of throwing
+      // Return safe fallback for unexpected errors
       return this.emptyLeaderboardResponse(params);
     }
   }
