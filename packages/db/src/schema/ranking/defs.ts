@@ -40,9 +40,9 @@ export const agentScore = pgTable(
     index("idx_agent_score_type").on(table.type),
     index("idx_agent_score_arena_id").on(table.arenaId),
 
-    // Note: Partial unique constraints for global vs arena scores must be added manually in migration:
-    // CREATE UNIQUE INDEX unique_agent_score_global ON ranking.agent_score (agent_id, type) WHERE arena_id IS NULL;
-    // CREATE UNIQUE INDEX unique_agent_score_arena ON ranking.agent_score (agent_id, arena_id) WHERE arena_id IS NOT NULL;
+    // Partial unique constraints for global vs arena scores (handled by migration 0060):
+    // - unique_agent_score_global: ensures one global score per (agent_id, type) where arena_id IS NULL
+    // - unique_agent_score_arena: ensures one arena score per (agent_id, arena_id) where arena_id IS NOT NULL
 
     foreignKey({
       columns: [table.agentId],
