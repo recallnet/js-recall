@@ -1,5 +1,5 @@
+import { randomUUID } from "crypto";
 import { eq } from "drizzle-orm";
-import { v4 as uuidv4 } from "uuid";
 import {
   afterEach,
   beforeAll,
@@ -222,7 +222,7 @@ describe("Privy Authentication", () => {
       const walletAddress = generateRandomEthAddress();
       const email = "backfilled-privy-user@example.com";
       const name = "Backfilled Privy User";
-      const id = uuidv4();
+      const id = randomUUID();
       const [row] = await db
         .insert(users)
         .values({
@@ -250,7 +250,7 @@ describe("Privy Authentication", () => {
     test("should backfill pre-existing user with only a wallet", async () => {
       const walletAddress = generateRandomEthAddress();
       const name = "Backfilled Privy User";
-      const id = uuidv4();
+      const id = randomUUID();
       const [row] = await db
         .insert(users)
         .values({
