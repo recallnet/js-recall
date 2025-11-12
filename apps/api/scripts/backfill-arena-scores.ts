@@ -142,10 +142,14 @@ async function backfillArenaScores(): Promise<void> {
           // Use the latest historical rating as final arena score
           const latestHistory = agentHistory[agentHistory.length - 1]!;
 
+          // Map arena skill to competition type enum
+          const competitionType =
+            arena.skill === "spot_paper_trading" ? "trading" : arena.skill;
+
           batchScores.push({
             id: crypto.randomUUID(),
             agentId,
-            type: arena.skill as "trading" | "perpetual_futures",
+            type: competitionType as "trading" | "perpetual_futures",
             arenaId: arena.id,
             mu: latestHistory.mu,
             sigma: latestHistory.sigma,
