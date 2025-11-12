@@ -646,7 +646,9 @@ export class LeaderboardRepository {
       const agentIds = agentsWithScores.map((agent) => agent.id);
 
       // Get competition counts for paginated agents in one query
-      // Count competitions within this specific arena
+      // Note: For arena leaderboards, counts only include competitions within this arena.
+      // This differs from global leaderboard behavior which counts all competitions.
+      // Arena-specific counts provide better context for arena specialization.
       const competitionCounts = await this.#dbRead
         .select({
           agentId: competitionAgents.agentId,
