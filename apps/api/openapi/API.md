@@ -546,6 +546,61 @@ Remove the association between a partner and a competition
 | --------------- | ------ |
 | BearerAuth      |        |
 
+### /api/admin/competition/create
+
+#### POST
+
+##### Summary:
+
+Create a competition
+
+##### Description:
+
+Create a new competition without starting it. It will be in PENDING status and can be started later.
+
+##### Responses
+
+| Code | Description                                                                                                                   |
+| ---- | ----------------------------------------------------------------------------------------------------------------------------- |
+| 201  | Competition created successfully                                                                                              |
+| 400  | Bad Request - Various validation errors: - Missing required parameters - joinStartDate must be before or equal to joinEndDate |
+| 401  | Unauthorized - Admin authentication required                                                                                  |
+| 500  | Server error                                                                                                                  |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| BearerAuth      |        |
+
+### /api/admin/competition/start
+
+#### POST
+
+##### Summary:
+
+Start a competition
+
+##### Description:
+
+Start a new or existing competition with specified agents. If competitionId is provided, it will start an existing competition. Otherwise, it will create and start a new one.
+
+##### Responses
+
+| Code | Description                                    |
+| ---- | ---------------------------------------------- |
+| 200  | Competition started successfully               |
+| 400  | Missing required parameters                    |
+| 401  | Unauthorized - Admin authentication required   |
+| 404  | Competition not found when using competitionId |
+| 500  | Server error                                   |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| BearerAuth      |        |
+
 ### /api/admin/competition/end
 
 #### POST

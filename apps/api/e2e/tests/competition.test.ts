@@ -5972,6 +5972,195 @@ describe("Competition API", () => {
     });
   });
 
+  describe("Participation Rules Enforcement", () => {
+    test("should reject blocklisted agent from joining", async () => {
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Create agent
+      const { agent, client: agentClient } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "Blocked Agent",
+        });
+
+      // Create competition with blocklist
+      const createResponse = await adminClient.createCompetition({
+        name: "Blocklist Test Competition",
+        type: "trading",
+        blocklist: [agent.id],
+      });
+      const competitionId = (createResponse as CreateCompetitionResponse)
+        .competition.id;
+
+      // Try to join - should be rejected
+      const joinResponse = await agentClient.joinCompetition(
+        competitionId,
+        agent.id,
+      );
+
+      expect(joinResponse.success).toBe(false);
+      expect((joinResponse as ErrorResponse).error).toContain("not permitted");
+    });
+
+    test("should reject agent when competition is allowlist-only", async () => {
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Create two agents
+      const { agent: allowedAgent } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Allowed Agent",
+      });
+      const { agent: notAllowedAgent, client: notAllowedClient } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "Not Allowed Agent",
+        });
+
+      // Create competition with allowlist-only mode
+      const createResponse = await adminClient.createCompetition({
+        name: "Allowlist Only Competition",
+        type: "trading",
+        allowlistOnly: true,
+        allowlist: [allowedAgent.id],
+      });
+      const competitionId = (createResponse as CreateCompetitionResponse)
+        .competition.id;
+
+      // Try to join with non-allowlisted agent - should be rejected
+      const joinResponse = await notAllowedClient.joinCompetition(
+        competitionId,
+        notAllowedAgent.id,
+      );
+
+      expect(joinResponse.success).toBe(false);
+      expect((joinResponse as ErrorResponse).error).toContain("allowlist-only");
+    });
+
+    test("should allow VIP agent to bypass all requirements", async () => {
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Create agent (with no rank)
+      const { agent, client: agentClient } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "VIP Agent",
+        });
+
+      // Create competition with VIP list, stake requirement, and rank requirement
+      const createResponse = await adminClient.createCompetition({
+        name: "VIP Bypass Competition",
+        type: "trading",
+        vips: [agent.id],
+        minimumStake: 1000, // VIP should bypass this
+        minRecallRank: 10, // VIP should bypass this too
+      });
+      const competitionId = (createResponse as CreateCompetitionResponse)
+        .competition.id;
+
+      // Join should succeed despite no stake and no rank
+      const joinResponse = await agentClient.joinCompetition(
+        competitionId,
+        agent.id,
+      );
+
+      expect(joinResponse.success).toBe(true);
+    });
+
+    test("should allow allowlisted agent to bypass rank requirement", async () => {
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Create agent (with no rank)
+      const { agent, client: agentClient } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "Allowlisted Agent",
+        });
+
+      // Create competition with allowlist and rank requirement (but no stake requirement)
+      const createResponse = await adminClient.createCompetition({
+        name: "Allowlist Bypass Competition",
+        type: "trading",
+        allowlist: [agent.id],
+        minRecallRank: 10, // Allowlist should bypass this
+      });
+      const competitionId = (createResponse as CreateCompetitionResponse)
+        .competition.id;
+
+      // Join should succeed despite no rank
+      const joinResponse = await agentClient.joinCompetition(
+        competitionId,
+        agent.id,
+      );
+
+      expect(joinResponse.success).toBe(true);
+    });
+
+    test("should reject agent with no rank when rank requirement exists", async () => {
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Create agent
+      const { agent, client: agentClient } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "No Rank Agent",
+        });
+
+      // Create competition with rank requirement
+      const createResponse = await adminClient.createCompetition({
+        name: "Rank Requirement Competition",
+        type: "trading",
+        minRecallRank: 5, // Requires top 5 rank
+      });
+      const competitionId = (createResponse as CreateCompetitionResponse)
+        .competition.id;
+
+      // Try to join - should be rejected (agent has no rank)
+      const joinResponse = await agentClient.joinCompetition(
+        competitionId,
+        agent.id,
+      );
+
+      expect(joinResponse.success).toBe(false);
+      expect((joinResponse as ErrorResponse).error).toContain(
+        "has not yet established a rank",
+      );
+    });
+
+    test("should allow agent to join when competition has no participation rules", async () => {
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Create agent
+      const { agent, client: agentClient } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "Regular Agent",
+        });
+
+      // Create competition with NO participation rules
+      const createResponse = await adminClient.createCompetition({
+        name: "No Rules Competition",
+        type: "trading",
+        // No vips, allowlist, blocklist, or minRecallRank
+      });
+      const competitionId = (createResponse as CreateCompetitionResponse)
+        .competition.id;
+
+      // Join should succeed (backward compatible)
+      const joinResponse = await agentClient.joinCompetition(
+        competitionId,
+        agent.id,
+      );
+
+      expect(joinResponse.success).toBe(true);
+    });
+  });
+
   describe("Competition Partners", () => {
     test("should get partners for a competition via public endpoint", async () => {
       // Setup admin client
