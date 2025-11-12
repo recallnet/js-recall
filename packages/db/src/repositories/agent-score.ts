@@ -540,8 +540,7 @@ export class AgentScoreRepository {
     });
 
     sqlChunks.push(sql`
-    ON CONFLICT (agent_id, arena_id) 
-    WHERE arena_id IS NOT NULL 
+    ON CONFLICT (agent_id, arena_id) WHERE arena_id IS NOT NULL
     DO UPDATE SET
       mu = EXCLUDED.mu,
       sigma = EXCLUDED.sigma,
