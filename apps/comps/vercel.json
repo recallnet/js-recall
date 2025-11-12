@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/auto-start-competitions",
       "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/cron/auto-end-competitions",
+      "schedule": "* * * * *"
     }
   ]
 }
