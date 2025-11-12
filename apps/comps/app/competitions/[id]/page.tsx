@@ -1,7 +1,6 @@
 import { Metadata } from "next";
 import { cache } from "react";
 
-import { getBaseUrl } from "@/lib/get-site-url";
 import { createMetadata } from "@/lib/metadata";
 import { createSafeClient } from "@/rpc/clients/server-side";
 
@@ -24,7 +23,7 @@ export async function generateMetadata({
       const description =
         competition.description ||
         "AI agents compete to prove their skills & earn rewards.";
-      const ogImageUrl = `${getBaseUrl()}/api/competitions/${id}/og-image`;
+      const ogImageUrl = `/competitions/${id}/og-image`;
       return createMetadata(title, description, ogImageUrl);
     }
   } catch (error) {

@@ -1,6 +1,5 @@
 import { NextFunction, Response } from "express";
 import { LRUCache } from "lru-cache";
-import satori from "satori";
 
 import { ParsingError } from "@recallnet/db/errors";
 import { PerpetualPositionWithAgent } from "@recallnet/db/schema/trading/types";
@@ -22,15 +21,8 @@ import {
   buildPaginationResponse,
   checkShouldCacheResponse,
   generateCacheKey,
-} from "../controllers/request-helpers.js";
-import { checkIsAdmin, ensureUuid } from "../controllers/request-helpers.js";
-import { getCompetitionOgTemplate } from "../utils/competition-og-template.jsx";
-import {
-  assets,
-  fonts,
-  formatEventDate,
-  formatNumber,
-} from "../utils/font-loader.js";
+} from "./request-helpers.js";
+import { checkIsAdmin, ensureUuid } from "./request-helpers.js";
 
 export function makeCompetitionController(services: ServiceRegistry) {
   /**
@@ -644,98 +636,6 @@ export function makeCompetitionController(services: ServiceRegistry) {
           success: true,
           partners,
         });
-      } catch (error) {
-        next(error);
-      }
-    },
-    /**
-     * Get competition OG image
-     * @param req Request
-     * @param res Express response object
-     * @param next Express next function
-     */
-
-    async getCompetitionOgImage(
-      req: AuthenticatedRequest,
-      res: Response,
-      next: NextFunction,
-    ) {
-      try {
-        const competitionId = ensureUuid(req.params.competitionId);
-        if (!competitionId) {
-          throw new ApiError(400, "Competition ID is required");
-        }
-
-        const competitionDetails =
-          await services.competitionService.getCompetitionById({
-            competitionId,
-          });
-
-        if (!competitionDetails.success) {
-          throw new ApiError(404, "Competition not found");
-        }
-
-        const competition = competitionDetails.competition;
-
-        // Load all fonts and assets concurrently
-        const [
-          fontLight,
-          fontRegular,
-          fontBold,
-          fontMono,
-          bgImage,
-          recallToken,
-          recallText,
-        ] = await Promise.all([
-          fonts.interLight,
-          fonts.interRegular,
-          fonts.interBold,
-          fonts.spaceMonoRegular,
-          assets.ogBackground,
-          assets.recallToken,
-          assets.recallText,
-        ]);
-
-        // Format all data for the template
-        const prizeAgents = formatNumber(
-          Number(competition.rewardsTge?.agentPool ?? 0),
-        );
-        const prizeBoosters = formatNumber(
-          Number(competition.rewardsTge?.userPool ?? 0),
-        );
-        const duration = `${formatEventDate(
-          competition.startDate,
-        )} - ${formatEventDate(competition.endDate)}`;
-        const boostWindow = `${formatEventDate(
-          competition.boostStartDate,
-        )} - ${formatEventDate(competition.boostEndDate)}`;
-
-        // Call the template with all props
-        const element = getCompetitionOgTemplate({
-          backgroundImage: bgImage,
-          competitionName: competition.name,
-          recallSvgUrl: recallToken,
-          prizeAgents: prizeAgents,
-          prizeBoosters: prizeBoosters,
-          duration: duration,
-          boostWindow: boostWindow,
-          recallTextSvgUrl: recallText,
-        });
-
-        // --- 4. Generate the SVG with satori ---
-        const svg = await satori(element, {
-          width: 1200,
-          height: 675,
-          fonts: [
-            { name: "Inter", data: fontLight, weight: 300 }, // Updated
-            { name: "Inter", data: fontRegular, weight: 400 }, // Updated
-            { name: "Inter", data: fontBold, weight: 700 }, // Updated
-            { name: "Space Mono", data: fontMono, weight: 400 }, // Updated
-          ],
-        });
-
-        res.setHeader("Content-Type", "image/svg+xml");
-        res.status(200).send(svg);
       } catch (error) {
         next(error);
       }

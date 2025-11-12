@@ -1,7 +1,6 @@
 {
   "extends": "@recallnet/typescript-config/base.json",
   "compilerOptions": {
-    "allowJs": true,
     "declaration": false,
     "declarationMap": false,
     "outDir": "./dist",
@@ -15,15 +14,8 @@
     "forceConsistentCasingInFileNames": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
-    "sourceMap": true,
-    "jsx": "react-jsx"
+    "sourceMap": true
   },
-  "include": [
-    "src/**/*.ts",
-    "src/**/*.jsx",
-    "scripts/**/*.ts",
-    "e2e/**/*.ts",
-    "sum/**/*.ts"
-  ],
+  "include": ["src/**/*.ts", "scripts/**/*.ts", "e2e/**/*.ts", "sum/**/*.ts"],
   "exclude": ["node_modules", "dist"]
 }
