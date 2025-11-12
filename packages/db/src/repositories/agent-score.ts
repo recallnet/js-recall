@@ -228,9 +228,10 @@ export class AgentScoreRepository {
 
   /**
    * Updates multiple agent ranks for a specific arena in a single transaction
-   * Similar to batchUpdateAgentRanks but for arena-specific scores
+   * Similar to batchUpdateAgentRanks but for arena-specific scores.
+   * The type and arenaId are provided as parameters and added to each record.
    * Also creates entries in the agent rank history table for each agent
-   * @param dataArray Array of agent rank data to insert/update
+   * @param dataArray Array of agent rank data to insert/update (type and arenaId will be added from parameters)
    * @param competitionId The competition ID to associate with the rank history
    * @param arenaId The arena ID for arena-specific rankings
    * @param type The competition type
