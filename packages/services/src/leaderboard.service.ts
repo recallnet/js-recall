@@ -1,10 +1,12 @@
 import { Logger } from "pino";
 
+import { ArenaRepository } from "@recallnet/db/repositories/arena";
 import { LeaderboardRepository } from "@recallnet/db/repositories/leaderboard";
 
 import { buildPaginationResponse } from "./lib/pagination-utils.js";
 import {
   AgentMetadata,
+  ApiError,
   BenchmarkLeaderboardData,
   CompetitionType,
   LeaderboardAgent,
@@ -19,10 +21,16 @@ import {
  */
 export class LeaderboardService {
   private leaderboardRepo: LeaderboardRepository;
+  private arenaRepo: ArenaRepository;
   private logger: Logger;
 
-  constructor(leaderboardRepo: LeaderboardRepository, logger: Logger) {
+  constructor(
+    leaderboardRepo: LeaderboardRepository,
+    arenaRepo: ArenaRepository,
+    logger: Logger,
+  ) {
     this.leaderboardRepo = leaderboardRepo;
+    this.arenaRepo = arenaRepo;
     this.logger = logger;
   }
 
@@ -38,8 +46,12 @@ export class LeaderboardService {
    */
   async getGlobalLeaderboardForType(params: LeaderboardParams) {
     try {
-      // If arenaId provided, return arena-specific leaderboard
+      // If arenaId provided, validate arena exists then return arena-specific leaderboard
       if (params.arenaId) {
+        const arena = await this.arenaRepo.findById(params.arenaId);
+        if (!arena) {
+          throw new ApiError(404, `Arena with ID ${params.arenaId} not found`);
+        }
         return await this.getArenaLeaderboard(params.arenaId, params);
       }
 

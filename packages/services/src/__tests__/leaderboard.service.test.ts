@@ -1,7 +1,9 @@
 import { Logger } from "pino";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { MockedObject } from "vitest";
+import { mock } from "vitest-mock-extended";
 
+import { ArenaRepository } from "@recallnet/db/repositories/arena";
 import { LeaderboardRepository } from "@recallnet/db/repositories/leaderboard";
 
 import { LeaderboardService } from "../leaderboard.service.js";
@@ -16,6 +18,7 @@ vi.mock("@recallnet/db/repositories/leaderboard");
 describe("LeaderboardService", () => {
   let service: LeaderboardService;
   let mockRepo: MockedObject<LeaderboardRepository>;
+  let mockArenaRepo: ReturnType<typeof mock<ArenaRepository>>;
   let mockLogger: Logger;
 
   beforeEach(() => {
@@ -28,6 +31,9 @@ describe("LeaderboardService", () => {
       getTotalRankedAgents: vi.fn(),
     } as unknown as MockedObject<LeaderboardRepository>;
 
+    // Create mock arena repository
+    mockArenaRepo = mock<ArenaRepository>();
+
     // Create mock logger
     mockLogger = {
       debug: vi.fn(),
@@ -36,7 +42,7 @@ describe("LeaderboardService", () => {
       warn: vi.fn(),
     } as unknown as Logger;
 
-    service = new LeaderboardService(mockRepo, mockLogger);
+    service = new LeaderboardService(mockRepo, mockArenaRepo, mockLogger);
   });
 
   describe("getUnifiedLeaderboard", () => {

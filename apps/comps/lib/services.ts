@@ -181,6 +181,7 @@ export const arenaService = new ArenaService(
 
 export const leaderboardService = new LeaderboardService(
   leaderboardRepository,
+  arenaRepository,
   createLogger("LeaderboardService"),
 );
 

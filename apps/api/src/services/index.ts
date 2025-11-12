@@ -296,6 +296,7 @@ class ServiceRegistry {
     // Initialize LeaderboardService with required dependencies
     this._leaderboardService = new LeaderboardService(
       leaderboardRepository,
+      this._arenaRepository,
       serviceLogger,
     );
 
