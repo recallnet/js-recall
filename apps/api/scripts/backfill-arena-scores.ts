@@ -19,6 +19,20 @@ const arenaRepo = new ArenaRepository(db, dbRead, logger);
 const competitionRepo = new CompetitionRepository(db, dbRead, logger);
 
 /**
+ * Map arena skill to competition type enum
+ * @param skill Arena skill value
+ * @returns Competition type enum value
+ */
+function getCompetitionTypeFromSkill(
+  skill: string,
+): "trading" | "perpetual_futures" {
+  if (skill.includes("perpetual") || skill.includes("perp")) {
+    return "perpetual_futures";
+  }
+  return "trading";
+}
+
+/**
  * Backfill arena-specific scores for existing competitions
  *
  * For each arena:
@@ -142,14 +156,10 @@ async function backfillArenaScores(): Promise<void> {
           // Use the latest historical rating as final arena score
           const latestHistory = agentHistory[agentHistory.length - 1]!;
 
-          // Map arena skill to competition type enum
-          const competitionType =
-            arena.skill === "spot_paper_trading" ? "trading" : arena.skill;
-
           batchScores.push({
             id: crypto.randomUUID(),
             agentId,
-            type: competitionType as "trading" | "perpetual_futures",
+            type: getCompetitionTypeFromSkill(arena.skill),
             arenaId: arena.id,
             mu: latestHistory.mu,
             sigma: latestHistory.sigma,
