@@ -7,9 +7,24 @@ import { AirdropService, ClaimData } from "../airdrop.service";
 
 describe("AirdropService", () => {
   let service: AirdropService;
-  let mockAirdropRepository: any;
-  let mockConvictionClaimsRepository: any;
-  let mockLogger: any;
+  let mockAirdropRepository: {
+    getAllClaimsForAddress: ReturnType<typeof vi.fn>;
+    getClaimByAddress: ReturnType<typeof vi.fn>;
+    getClaimStatus: ReturnType<typeof vi.fn>;
+    updateClaimStatus: ReturnType<typeof vi.fn>;
+  };
+  let mockConvictionClaimsRepository: {
+    getClaimsByAccount: ReturnType<typeof vi.fn>;
+    getClaimByAccountAndSeason: ReturnType<typeof vi.fn>;
+    hasClaimedForSeason: ReturnType<typeof vi.fn>;
+    getTotalClaimedByAccount: ReturnType<typeof vi.fn>;
+  };
+  let mockLogger: {
+    info: ReturnType<typeof vi.fn>;
+    error: ReturnType<typeof vi.fn>;
+    warn: ReturnType<typeof vi.fn>;
+    debug: ReturnType<typeof vi.fn>;
+  };
 
   beforeEach(() => {
     mockLogger = {

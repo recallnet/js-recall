@@ -103,11 +103,21 @@ export class AirdropService {
       this.logger.info(`Fetching claims data for address: ${address}`);
 
       // Get all airdrop allocations and claim status for the address
-      const { claims: allocations, claimStatus } =
+      const { claims: allocations } =
         await this.airdropRepository.getAllClaimsForAddress(address);
 
       // Get conviction claims data if repository is available
-      let convictionClaims: any[] = [];
+      let convictionClaims: Array<{
+        id: string;
+        account: string;
+        eligibleAmount: bigint;
+        claimedAmount: bigint;
+        season: number;
+        duration: bigint;
+        blockNumber: bigint;
+        blockTimestamp: Date;
+        transactionHash: Buffer | Uint8Array;
+      }> = [];
       if (this.convictionClaimsRepository) {
         convictionClaims =
           await this.convictionClaimsRepository.getClaimsByAccount(address);

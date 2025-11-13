@@ -5,8 +5,18 @@ import { ConvictionClaimsRepository } from "../conviction-claims.js";
 
 describe("ConvictionClaimsRepository", () => {
   let repository: ConvictionClaimsRepository;
-  let mockDb: any;
-  let mockLogger: any;
+  let mockDb: {
+    select: ReturnType<typeof vi.fn>;
+    insert: ReturnType<typeof vi.fn>;
+    update: ReturnType<typeof vi.fn>;
+    delete: ReturnType<typeof vi.fn>;
+  };
+  let mockLogger: {
+    info: ReturnType<typeof vi.fn>;
+    error: ReturnType<typeof vi.fn>;
+    warn: ReturnType<typeof vi.fn>;
+    debug: ReturnType<typeof vi.fn>;
+  };
 
   beforeEach(() => {
     mockLogger = {
