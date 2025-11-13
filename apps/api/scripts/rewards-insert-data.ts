@@ -2,9 +2,9 @@ import * as dotenv from "dotenv";
 import { eq } from "drizzle-orm";
 import { blue, cyan, green, red, yellow } from "kleur/colors";
 import { MerkleTree } from "merkletreejs";
+import { randomUUID } from "node:crypto";
 import * as path from "path";
 import { parse } from "ts-command-line-args";
-import { v4 as uuidv4 } from "uuid";
 import { hexToBytes, keccak256 } from "viem";
 
 import { competitions, users } from "@recallnet/db/schema/core/defs";
@@ -103,7 +103,7 @@ async function insertReward() {
     console.log(`${blue("Amount (wei):")} ${yellow(args.amount)}`);
 
     // Create competition
-    const competitionId = uuidv4();
+    const competitionId = randomUUID();
 
     console.log(
       `\n${blue("Creating competition with ID:")} ${yellow(competitionId)}`,
