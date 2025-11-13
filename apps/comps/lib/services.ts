@@ -166,7 +166,7 @@ const riskMetricsService = new RiskMetricsService(
   createLogger("RiskMetricsService"),
 );
 
-const perpsDataProcessor = new PerpsDataProcessor(
+export const perpsDataProcessor = new PerpsDataProcessor(
   riskMetricsService,
   agentRepository,
   competitionRepository,
