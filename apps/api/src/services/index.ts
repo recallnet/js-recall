@@ -353,6 +353,7 @@ class ServiceRegistry {
       this._perpsDataProcessor,
       this._agentRepository,
       agentScoreRepository,
+      this._arenaRepository,
       this._perpsRepository,
       this._competitionRepository,
       this._stakesRepository,

@@ -63,7 +63,7 @@ export class AgentScoreRepository {
           ),
         })
         .from(agentScore)
-        .where(eq(agentScore.type, type))
+        .where(and(eq(agentScore.type, type), isNull(agentScore.arenaId)))
         .as("rankedAgents");
 
       const [result] = await this.#db

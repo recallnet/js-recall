@@ -174,6 +174,33 @@ describe("Competition API", () => {
     expect(competition.endDate).toBeNull();
   });
 
+  test("should reject creating competition with incompatible arena type", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Attempt to create a perpetual_futures competition in a spot_paper_trading arena
+    const result = await adminClient.createCompetition({
+      name: `Incompatible Competition ${Date.now()}`,
+      description: "Should fail due to type mismatch",
+      arenaId: "default-paper-arena", // spot_paper_trading arena
+      type: "perpetual_futures", // incompatible with spot_paper_trading
+      perpsProvider: {
+        provider: "hyperliquid",
+        initialCapital: 1000,
+        selfFundingThreshold: 0,
+      },
+    });
+
+    // Verify error response
+    expect(result.success).toBe(false);
+    const errorResponse = result as ErrorResponse;
+    expect(errorResponse.error).toContain("incompatible");
+    expect(errorResponse.error).toContain("perpetual_futures");
+    expect(errorResponse.error).toContain("spot_paper_trading");
+    expect(errorResponse.status).toBe(400);
+  });
+
   test("should start an existing competition with already registered agents", async () => {
     // Setup admin client
     const adminClient = createTestClient();

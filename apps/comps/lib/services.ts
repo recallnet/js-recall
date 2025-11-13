@@ -207,6 +207,7 @@ export const competitionService = new CompetitionService(
   perpsDataProcessor,
   agentRepository,
   agentScoreRepository,
+  arenaRepository,
   perpsRepository,
   competitionRepository,
   stakesRepository,
