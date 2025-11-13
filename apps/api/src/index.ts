@@ -131,6 +131,7 @@ const agentApiKeyRoutes = [
   `${apiBasePath}/api/agent`,
   `${apiBasePath}/api/trade`,
   `${apiBasePath}/api/price`,
+  `${apiBasePath}/api/nfl`,
 ];
 
 const userSessionRoutes = [`${apiBasePath}/api/user`];

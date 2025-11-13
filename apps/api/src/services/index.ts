@@ -483,6 +483,7 @@ class ServiceRegistry {
 
     this._predictionsManagerService = new PredictionsManagerService(
       this._competitionRepository,
+      this._gamesRepository,
       this._gamePlaysRepository,
       this._predictionsRepository,
       serviceLogger,

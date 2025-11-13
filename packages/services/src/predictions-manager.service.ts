@@ -2,6 +2,7 @@ import { Logger } from "pino";
 
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { GamePlaysRepository } from "@recallnet/db/repositories/game-plays";
+import { GamesRepository } from "@recallnet/db/repositories/games";
 import { PredictionsRepository } from "@recallnet/db/repositories/predictions";
 import { SelectPrediction } from "@recallnet/db/schema/sports/types";
 
@@ -10,7 +11,7 @@ import { SelectPrediction } from "@recallnet/db/schema/sports/types";
  */
 export interface CreatePredictionInput {
   competitionId: string;
-  gamePlayId: string;
+  globalGameId: number;
   agentId: string;
   prediction: "run" | "pass";
   confidence: number;
@@ -22,24 +23,27 @@ export interface CreatePredictionInput {
  */
 export class PredictionsManagerService {
   readonly #competitionRepo: CompetitionRepository;
+  readonly #gamesRepo: GamesRepository;
   readonly #gamePlaysRepo: GamePlaysRepository;
   readonly #predictionsRepo: PredictionsRepository;
   readonly #logger: Logger;
 
   constructor(
     competitionRepo: CompetitionRepository,
+    gamesRepo: GamesRepository,
     gamePlaysRepo: GamePlaysRepository,
     predictionsRepo: PredictionsRepository,
     logger: Logger,
   ) {
     this.#competitionRepo = competitionRepo;
+    this.#gamesRepo = gamesRepo;
     this.#gamePlaysRepo = gamePlaysRepo;
     this.#predictionsRepo = predictionsRepo;
     this.#logger = logger;
   }
 
   /**
-   * Create a prediction with validation
+   * Create a prediction for the next open play in a game
    * @param input Prediction input data
    * @returns The created prediction
    */
@@ -61,15 +65,29 @@ export class PredictionsManagerService {
         );
       }
 
-      // Validate play exists and is open
-      const play = await this.#gamePlaysRepo.findById(input.gamePlayId);
-      if (!play) {
-        throw new Error(`Play ${input.gamePlayId} not found`);
+      // Find the game by globalGameId
+      const game = await this.#gamesRepo.findByGlobalGameId(input.globalGameId);
+      if (!game) {
+        throw new Error(`Game ${input.globalGameId} not found`);
       }
 
-      if (play.status !== "open") {
+      // Find the next open play for this game
+      const openPlays = await this.#gamePlaysRepo.findOpenByGameIds(
+        [game.id],
+        1,
+        0,
+      );
+
+      if (openPlays.length === 0) {
         throw new Error(
-          `Play ${input.gamePlayId} is not open for predictions (status: ${play.status})`,
+          `No open plays available for game ${input.globalGameId}`,
+        );
+      }
+
+      const play = openPlays[0];
+      if (!play) {
+        throw new Error(
+          `No open plays available for game ${input.globalGameId}`,
         );
       }
 
@@ -77,7 +95,7 @@ export class PredictionsManagerService {
       const now = new Date();
       if (now >= play.lockTime) {
         throw new Error(
-          `Play ${input.gamePlayId} is locked (lock time: ${play.lockTime.toISOString()})`,
+          `Next play for game ${input.globalGameId} is locked (lock time: ${play.lockTime.toISOString()})`,
         );
       }
 
@@ -93,26 +111,26 @@ export class PredictionsManagerService {
         await this.#predictionsRepo.findByAgentCompetitionAndPlay(
           input.agentId,
           input.competitionId,
-          input.gamePlayId,
+          play.id,
         );
 
       if (existing) {
         throw new Error(
-          `Agent ${input.agentId} has already predicted on play ${input.gamePlayId}`,
+          `Agent ${input.agentId} has already predicted the next play for game ${input.globalGameId}`,
         );
       }
 
       // Create the prediction
       const prediction = await this.#predictionsRepo.create({
         competitionId: input.competitionId,
-        gamePlayId: input.gamePlayId,
+        gamePlayId: play.id,
         agentId: input.agentId,
         prediction: input.prediction,
         confidence: input.confidence.toString(),
       });
 
       this.#logger.info(
-        `Created prediction ${prediction.id} for agent ${input.agentId} on play ${input.gamePlayId}`,
+        `Created prediction ${prediction.id} for agent ${input.agentId} on game ${input.globalGameId} play ${play.sequence}`,
       );
 
       return prediction;

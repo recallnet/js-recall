@@ -74,7 +74,7 @@ export class PredictionsRepository {
 
       return result;
     } catch (error) {
-      this.#logger.error("Error in findByAgentCompetitionAndPlay:", error);
+      this.#logger.error({ error }, "Error in findByAgentCompetitionAndPlay");
       throw error;
     }
   }
@@ -93,7 +93,7 @@ export class PredictionsRepository {
 
       return results;
     } catch (error) {
-      this.#logger.error("Error in findByPlayId:", error);
+      this.#logger.error({ error }, "Error in findByPlayId");
       throw error;
     }
   }
@@ -121,7 +121,7 @@ export class PredictionsRepository {
 
       return results;
     } catch (error) {
-      this.#logger.error("Error in findByCompetitionAndAgent:", error);
+      this.#logger.error({ error }, "Error in findByCompetitionAndAgent");
       throw error;
     }
   }
@@ -140,7 +140,7 @@ export class PredictionsRepository {
 
       return result?.count || 0;
     } catch (error) {
-      this.#logger.error("Error in countByCompetition:", error);
+      this.#logger.error({ error }, "Error in countByCompetition");
       throw error;
     }
   }
@@ -163,7 +163,7 @@ export class PredictionsRepository {
 
       return results;
     } catch (error) {
-      this.#logger.error("Error in findByPlayIds:", error);
+      this.#logger.error({ error }, "Error in findByPlayIds");
       throw error;
     }
   }

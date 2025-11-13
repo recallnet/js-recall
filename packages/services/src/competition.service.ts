@@ -55,6 +55,7 @@ import {
   PerpsEnrichedLeaderboardEntry,
   SpecificChain,
   SpecificChainBalances,
+  TradingConstraints,
   isPerpsEnrichedEntry,
 } from "./types/index.js";
 import { ApiError } from "./types/index.js";
@@ -127,7 +128,7 @@ export interface CreateCompetitionParams {
  * Return type for started competition with trading constraints and agent IDs
  */
 export type StartedCompetitionResult = SelectCompetition & {
-  tradingConstraints: {
+  tradingConstraints?: {
     minimumPairAgeHours?: number;
     minimum24hVolumeUsd?: number;
     minimumLiquidityUsd?: number;
@@ -779,76 +780,80 @@ export class CompetitionService {
       this.validateAgentsForPerpsCompetition(agents, competition.type);
     }
 
-    // Process all agent additions and activations
-    for (const agentId of finalAgentIds) {
-      await this.balanceService.resetAgentBalances(
-        agentId,
-        competitionId,
-        competition.type,
-      );
-
-      // Note: Agent validation already done above, so we know agent exists and is active
-
-      // Register agent in the competition (automatically sets status to 'active')
-      try {
-        await this.competitionRepo.addAgentToCompetition(
-          competitionId,
-          agentId,
-        );
-      } catch (error) {
-        // If participant limit error, provide a more helpful error message
-        if (
-          error instanceof Error &&
-          error.message.includes("maximum participant limit")
-        ) {
-          throw new Error(
-            `Cannot start competition: ${error.message}. Participant limit reached. Some agents may already be registered.`,
-          );
-        }
-        // Handle one-agent-per-user error
-        if (
-          error instanceof Error &&
-          error.message.includes("already has an agent registered")
-        ) {
-          throw new Error(
-            `Cannot start competition: A user has multiple agents in the participant list. Each user can only have one agent per competition.`,
-          );
-        }
-        throw error;
-      }
-
-      this.logger.debug(
-        `[CompetitionManager] Agent ${agentId} ready for competition`,
-      );
-    }
-
-    // Set up trading constraints before taking snapshots
-    const existingConstraints =
-      await this.tradingConstraintsService.getConstraints(competitionId);
-    let newConstraints = existingConstraints;
-    if (tradingConstraints && existingConstraints) {
-      // If the caller provided constraints and they already exist, we update
-      newConstraints = await this.tradingConstraintsService.updateConstraints(
-        competitionId,
-        tradingConstraints,
-      );
-      this.logger.debug(
-        `[CompetitionManager] Updating trading constraints for competition ${competitionId}`,
-      );
-    } else if (!existingConstraints) {
-      // if the constraints don't exist, we create them with defaults and
-      // (optionally) caller provided values.
-      newConstraints =
-        (await this.tradingConstraintsService.createConstraints({
-          competitionId,
-          ...tradingConstraints,
-        })) || null;
-    }
-
     // Take initial portfolio snapshots BEFORE setting status to active
     // This ensures no trades can happen during snapshot initialization
     // Different approach based on competition type:
+    let newConstraints: TradingConstraints | null = null;
     if (competition.type === "trading") {
+      // Clear cached balances after validation, before processing agents
+      this.balanceService.clearCompetitionCache(competitionId);
+
+      // Process all agent additions and activations
+      for (const agentId of finalAgentIds) {
+        await this.balanceService.resetAgentBalances(
+          agentId,
+          competitionId,
+          competition.type,
+        );
+
+        // Note: Agent validation already done above, so we know agent exists and is active
+
+        // Register agent in the competition (automatically sets status to 'active')
+        try {
+          await this.competitionRepo.addAgentToCompetition(
+            competitionId,
+            agentId,
+          );
+        } catch (error) {
+          // If participant limit error, provide a more helpful error message
+          if (
+            error instanceof Error &&
+            error.message.includes("maximum participant limit")
+          ) {
+            throw new Error(
+              `Cannot start competition: ${error.message}. Participant limit reached. Some agents may already be registered.`,
+            );
+          }
+          // Handle one-agent-per-user error
+          if (
+            error instanceof Error &&
+            error.message.includes("already has an agent registered")
+          ) {
+            throw new Error(
+              `Cannot start competition: A user has multiple agents in the participant list. Each user can only have one agent per competition.`,
+            );
+          }
+          throw error;
+        }
+
+        this.logger.debug(
+          `[CompetitionManager] Agent ${agentId} ready for competition`,
+        );
+      }
+
+      // Set up trading constraints before taking snapshots
+      const existingConstraints =
+        await this.tradingConstraintsService.getConstraints(competitionId);
+      newConstraints = existingConstraints;
+      if (tradingConstraints && existingConstraints) {
+        // If the caller provided constraints and they already exist, we update
+        newConstraints = await this.tradingConstraintsService.updateConstraints(
+          competitionId,
+          tradingConstraints,
+        );
+        this.logger.debug(
+          `[CompetitionManager] Updating trading constraints for competition ${competitionId}`,
+        );
+      } else if (!existingConstraints) {
+        // if the constraints don't exist, we create them with defaults and
+        // (optionally) caller provided values.
+        newConstraints =
+          (await this.tradingConstraintsService.createConstraints({
+            competitionId,
+            ...tradingConstraints,
+          })) || null;
+      }
+
       // Paper trading: Use portfolio snapshotter with reset balances
       this.logger.debug(
         `[CompetitionService] Taking initial paper trading portfolio snapshots for ${finalAgentIds.length} agents (competition still pending)`,
@@ -906,8 +911,6 @@ export class CompetitionService {
           );
         }
       }
-    } else {
-      throw new Error(`Unknown competition type: ${competition.type}`);
     }
 
     // NOW update the competition status to active
@@ -926,14 +929,22 @@ export class CompetitionService {
       `[CompetitionManager] Participating agents: ${finalAgentIds.join(", ")}`,
     );
 
+    // Only spot trading competitions have trading constraints
+    if (competition.type === "trading") {
+      return {
+        ...finalCompetition,
+        tradingConstraints: {
+          minimumPairAgeHours: newConstraints?.minimumPairAgeHours,
+          minimum24hVolumeUsd: newConstraints?.minimum24hVolumeUsd,
+          minimumLiquidityUsd: newConstraints?.minimumLiquidityUsd,
+          minimumFdvUsd: newConstraints?.minimumFdvUsd,
+        },
+        agentIds: finalAgentIds,
+      } as StartedCompetitionResult;
+    }
+
     return {
       ...finalCompetition,
-      tradingConstraints: {
-        minimumPairAgeHours: newConstraints?.minimumPairAgeHours,
-        minimum24hVolumeUsd: newConstraints?.minimum24hVolumeUsd,
-        minimumLiquidityUsd: newConstraints?.minimumLiquidityUsd,
-        minimumFdvUsd: newConstraints?.minimumFdvUsd,
-      },
       agentIds: finalAgentIds,
     } as StartedCompetitionResult;
   }

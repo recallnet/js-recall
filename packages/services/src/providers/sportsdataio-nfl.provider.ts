@@ -1,11 +1,41 @@
 import axios, { AxiosInstance } from "axios";
 import { Logger } from "pino";
+import { z } from "zod";
 
 /**
- * Predictable play types
+ * The full list of possible play types.
  */
-export const PREDICTABLE_PLAY_TYPES = ["Pass", "Rush", "Sack"];
+export const NFL_ALL_PLAY_TYPES = z.enum([
+  "Rush",
+  "PassCompleted",
+  "PassIncomplete",
+  "PassIntercepted",
+  "TwoPointConversion",
+  "Punt",
+  "Kickoff",
+  "FieldGoal",
+  "ExtraPoint",
+  "Fumble",
+  "Penalty",
+  "Sack",
+  "Timeout",
+  "Period",
+]);
 
+export type NflPlayType = z.infer<typeof NFL_ALL_PLAY_TYPES>;
+
+/**
+ * Predictable play types are only offensive plays. Note: certain defensive or "incomplete" plays
+ * are coerced to pass plays.
+ */
+export const NFL_PREDICTABLE_PLAY_TYPES = z.enum([
+  "Rush",
+  "PassCompleted",
+  "PassIncomplete",
+  "PassIntercepted",
+]);
+
+export type NflPredictablePlayType = z.infer<typeof NFL_PREDICTABLE_PLAY_TYPES>;
 /**
  * Default lock offset in milliseconds (10 seconds). This determines how long after the play starts
  * that predictions from the agent can be submitted.
@@ -33,6 +63,7 @@ export interface SportsDataIOScore {
   Distance: string | null;
   YardLine: number | null;
   YardLineTerritory: string | null;
+  DownAndDistance: string | null;
   HasStarted: boolean;
   IsInProgress: boolean;
   IsOver: boolean;
@@ -65,7 +96,7 @@ export interface SportsDataIOPlay {
   YardLine: number | null;
   YardLineTerritory: string | null;
   YardsToEndZone: number;
-  Type: string;
+  Type: NflPlayType;
   YardsGained: number;
   Description: string;
   IsScoringPlay: boolean;
@@ -194,7 +225,7 @@ export class SportsDataIONflProvider {
    * @returns True if play can be predicted
    */
   static isPlayPredictable(play: SportsDataIOPlay): boolean {
-    return PREDICTABLE_PLAY_TYPES.includes(play.Type);
+    return NFL_PREDICTABLE_PLAY_TYPES.safeParse(play.Type).success;
   }
 
   /**
@@ -204,8 +235,11 @@ export class SportsDataIONflProvider {
    */
   static determineOutcome(play: SportsDataIOPlay): "run" | "pass" | null {
     switch (play.Type) {
-      case "Pass":
-      case "Sack": // Sacks are pass plays
+      // Treat certain defensive or incomplete plays as pass plays
+      case "PassCompleted":
+      case "PassIncomplete":
+      case "PassIntercepted":
+      case "Sack":
         return "pass";
       case "Rush":
         return "run";

@@ -25,12 +25,12 @@ export function configureNflRoutes(
   router.get("/competitions/:competitionId/plays", controller.getPlays);
 
   /**
-   * POST /competitions/:competitionId/plays/:playId/predictions
-   * Create a prediction for a play
+   * POST /competitions/:competitionId/games/:globalGameId/predictions
+   * Create a prediction for the next play in a game
    * Rate limited to prevent spam
    */
   router.post(
-    "/competitions/:competitionId/plays/:playId/predictions",
+    "/competitions/:competitionId/games/:globalGameId/predictions",
     controller.createPrediction,
   );
 

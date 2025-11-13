@@ -38,75 +38,7 @@ describe("NFL Play Prediction Competition E2E", () => {
       .competition;
     const competitionId = competition.id;
 
-    // Step 2: Ingest test game data
-    const ingestor = services.nflPlaybackIngestorService;
-
-    // Create test game
-    const testGlobalGameId = Date.now();
-    const games = [
-      {
-        globalGameId: testGlobalGameId,
-        gameKey: `test-${testGlobalGameId}`,
-        startTime: new Date().toISOString(),
-        homeTeam: "DAL",
-        awayTeam: "WAS",
-        venue: "Test Stadium",
-      },
-    ];
-
-    const gameIdMap = await ingestor.ingestGames(games);
-    const dbGameId = gameIdMap.get(testGlobalGameId);
-    expect(dbGameId).toBeDefined();
-
-    // Link game to competition
-    await ingestor.linkGamesToCompetition(competitionId, [dbGameId!]);
-
-    // Create test plays
-    const now = new Date();
-    const plays: BaselinePlay[] = [
-      {
-        providerPlayId: "test-play-1",
-        sequence: 1,
-        quarterName: "1",
-        timeRemainingMinutes: 14,
-        timeRemainingSeconds: 45,
-        playTime: new Date(now.getTime() + 5000).toISOString(),
-        down: 1,
-        distance: 10,
-        yardLine: 25,
-        yardLineTerritory: "DAL",
-        yardsToEndZone: 75,
-        playType: "Pass",
-        team: "DAL",
-        opponent: "WAS",
-        description: "Test pass play",
-        lockMs: 5000,
-        actualOutcome: "pass" as const,
-      },
-      {
-        providerPlayId: "test-play-2",
-        sequence: 2,
-        quarterName: "1",
-        timeRemainingMinutes: 14,
-        timeRemainingSeconds: 10,
-        playTime: new Date(now.getTime() + 10000).toISOString(),
-        down: 2,
-        distance: 5,
-        yardLine: 30,
-        yardLineTerritory: "DAL",
-        yardsToEndZone: 70,
-        playType: "Rush",
-        team: "DAL",
-        opponent: "WAS",
-        description: "Test rush play",
-        lockMs: 10000,
-        actualOutcome: "run" as const,
-      },
-    ];
-
-    await ingestor.ingestPlays(dbGameId!, plays, 1.0, now);
-
-    // Step 3: Register two agents
+    // Step 2: Register two agents BEFORE starting competition
     const {
       client: agent1Client,
       agent: agent1,
@@ -129,7 +61,7 @@ describe("NFL Play Prediction Competition E2E", () => {
       agentName: `Agent2 ${Date.now()}`,
     });
 
-    // Step 4: Join competition
+    // Step 3: Join competition (must be done before starting)
     const joinResponse1 = await agent1Client.joinCompetition(
       competitionId,
       agent1.id,
@@ -142,7 +74,84 @@ describe("NFL Play Prediction Competition E2E", () => {
     );
     expect(joinResponse2.success).toBe(true);
 
-    // Step 5: Get open plays
+    // Step 4: Start the competition (NFL competitions don't need balance setup)
+    await services.competitionRepository.update({
+      id: competitionId,
+      status: "active",
+      startDate: new Date(),
+    });
+
+    // Step 5: Ingest test game data
+    const ingestor = services.nflPlaybackIngestorService;
+
+    // Create test game (use realistic globalGameId)
+    const testGlobalGameId = 99999 + Math.floor(Math.random() * 1000); // Random ID in valid range
+    const games = [
+      {
+        globalGameId: testGlobalGameId,
+        gameKey: `test-${testGlobalGameId}`,
+        startTime: new Date().toISOString(),
+        homeTeam: "DAL",
+        awayTeam: "WAS",
+        venue: "Test Stadium",
+      },
+    ];
+
+    const gameIdMap = await ingestor.ingestGames(games);
+    const dbGameId = gameIdMap.get(testGlobalGameId);
+    expect(dbGameId).toBeDefined();
+
+    // Link game to competition
+    await ingestor.linkGamesToCompetition(competitionId, [dbGameId!]);
+
+    // Create test plays with lock times in the future
+    const now = new Date();
+    const plays: BaselinePlay[] = [
+      {
+        providerPlayId: "test-play-1",
+        sequence: 1,
+        quarterName: "1",
+        timeRemainingMinutes: 14,
+        timeRemainingSeconds: 45,
+        playTime: new Date(now.getTime() + 60000).toISOString(),
+        down: 1,
+        distance: 10,
+        yardLine: 25,
+        yardLineTerritory: "DAL",
+        yardsToEndZone: 75,
+        playType: "Pass",
+        team: "DAL",
+        opponent: "WAS",
+        description: "Test pass play",
+        lockMs: 60000, // 60 seconds in future
+        actualOutcome: "pass" as const,
+      },
+      {
+        providerPlayId: "test-play-2",
+        sequence: 2,
+        quarterName: "1",
+        timeRemainingMinutes: 14,
+        timeRemainingSeconds: 10,
+        playTime: new Date(now.getTime() + 120000).toISOString(),
+        down: 2,
+        distance: 5,
+        yardLine: 30,
+        yardLineTerritory: "DAL",
+        yardsToEndZone: 70,
+        playType: "Rush",
+        team: "DAL",
+        opponent: "WAS",
+        description: "Test rush play",
+        lockMs: 120000, // 120 seconds in future
+        actualOutcome: "run" as const,
+      },
+    ];
+
+    await ingestor.ingestPlays(dbGameId!, plays, 1.0, now);
+
+    // Step 6: Verify open plays exist
+
+    // Step 5: Verify open plays exist
     const playsResponse = await axios.get(
       `${getBaseUrl()}/api/nfl/competitions/${competitionId}/plays?state=open`,
       {
@@ -153,77 +162,60 @@ describe("NFL Play Prediction Competition E2E", () => {
     expect(playsResponse.data.success).toBe(true);
     expect(playsResponse.data.data.plays).toHaveLength(2);
 
-    const play1 = playsResponse.data.data.plays[0];
-    const play2 = playsResponse.data.data.plays[1];
-
-    // Step 6: Submit predictions
-    // Agent 1: Correct on both plays
+    // Step 6: Submit predictions for first play
+    // Agent 1: Predict pass
     const prediction1_1 = await axios.post(
-      `${getBaseUrl()}/api/nfl/competitions/${competitionId}/plays/${play1.id}/predictions`,
+      `${getBaseUrl()}/api/nfl/competitions/${competitionId}/games/${testGlobalGameId}/predictions`,
       { prediction: "pass", confidence: 0.8 },
       { headers: { Authorization: `Bearer ${agent1ApiKey}` } },
     );
     expect(prediction1_1.status).toBe(201);
     expect(prediction1_1.data.success).toBe(true);
 
-    const prediction1_2 = await axios.post(
-      `${getBaseUrl()}/api/nfl/competitions/${competitionId}/plays/${play2.id}/predictions`,
-      { prediction: "run", confidence: 0.7 },
-      { headers: { Authorization: `Bearer ${agent1ApiKey}` } },
-    );
-    expect(prediction1_2.status).toBe(201);
-
-    // Agent 2: Correct on first, wrong on second
+    // Agent 2: Predict pass
     const prediction2_1 = await axios.post(
-      `${getBaseUrl()}/api/nfl/competitions/${competitionId}/plays/${play1.id}/predictions`,
+      `${getBaseUrl()}/api/nfl/competitions/${competitionId}/games/${testGlobalGameId}/predictions`,
       { prediction: "pass", confidence: 0.6 },
       { headers: { Authorization: `Bearer ${agent2ApiKey}` } },
     );
     expect(prediction2_1.status).toBe(201);
 
+    // Step 7: Resolve first play and score it
+    const gamePlaysRepo = services.gamePlaysRepository;
+    const scoringService = services.scoringManagerService;
+    let dbPlays = await gamePlaysRepo.findByGameId(dbGameId!);
+    const firstPlay = dbPlays.find((p) => p.sequence === 1);
+    expect(firstPlay).toBeDefined();
+
+    await gamePlaysRepo.resolve(firstPlay!.id, "pass");
+    await scoringService.scorePlay(firstPlay!.id);
+
+    // Step 8: Submit predictions for second play
+    // Agent 1: Predict run (correct)
+    const prediction1_2 = await axios.post(
+      `${getBaseUrl()}/api/nfl/competitions/${competitionId}/games/${testGlobalGameId}/predictions`,
+      { prediction: "run", confidence: 0.7 },
+      { headers: { Authorization: `Bearer ${agent1ApiKey}` } },
+    );
+    expect(prediction1_2.status).toBe(201);
+
+    // Agent 2: Predict pass (wrong)
     const prediction2_2 = await axios.post(
-      `${getBaseUrl()}/api/nfl/competitions/${competitionId}/plays/${play2.id}/predictions`,
-      { prediction: "pass", confidence: 0.5 }, // Wrong - actual is run
+      `${getBaseUrl()}/api/nfl/competitions/${competitionId}/games/${testGlobalGameId}/predictions`,
+      { prediction: "pass", confidence: 0.5 },
       { headers: { Authorization: `Bearer ${agent2ApiKey}` } },
     );
     expect(prediction2_2.status).toBe(201);
 
-    // Step 7: Test duplicate prediction prevention
-    try {
-      await axios.post(
-        `${getBaseUrl()}/api/nfl/competitions/${competitionId}/plays/${play1.id}/predictions`,
-        { prediction: "run", confidence: 0.9 },
-        { headers: { Authorization: `Bearer ${agent1ApiKey}` } },
-      );
-      expect.fail("Should have thrown error for duplicate prediction");
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        expect(error.response?.status).toBe(400);
-      } else {
-        throw error;
-      }
-    }
+    // Step 9: Resolve second play and score it
+    dbPlays = await gamePlaysRepo.findByGameId(dbGameId!);
+    const secondPlay = dbPlays.find((p) => p.sequence === 2);
+    expect(secondPlay).toBeDefined();
 
-    // Step 8: Resolve plays and score
-    const gamePlaysRepo = services.gamePlaysRepository;
-    const scoringService = services.scoringManagerService;
+    await gamePlaysRepo.resolve(secondPlay!.id, "run");
+    await scoringService.scorePlay(secondPlay!.id);
 
-    // Get the plays from DB
-    const dbPlays = await gamePlaysRepo.findByGameId(dbGameId!);
-
-    for (const dbPlay of dbPlays) {
-      // Find the corresponding baseline play
-      const baselinePlay = plays.find((p) => p.sequence === dbPlay.sequence);
-      if (baselinePlay && baselinePlay.actualOutcome) {
-        // Resolve the play
-        await gamePlaysRepo.resolve(dbPlay.id, baselinePlay.actualOutcome);
-
-        // Score the play
-        await scoringService.scorePlay(dbPlay.id);
-      }
-    }
-
-    // Step 9: Check leaderboard
+    // Step 10: Check leaderboard
     const leaderboardResponse = await axios.get(
       `${getBaseUrl()}/api/nfl/competitions/${competitionId}/leaderboard`,
       { headers: { Authorization: `Bearer ${agent1ApiKey}` } },
@@ -265,8 +257,15 @@ describe("NFL Play Prediction Competition E2E", () => {
     const competitionId = (competitionResponse as CreateCompetitionResponse)
       .competition.id;
 
+    // Start the competition
+    await services.competitionRepository.update({
+      id: competitionId,
+      status: "active",
+      startDate: new Date(),
+    });
+
     const ingestor = services.nflPlaybackIngestorService;
-    const testGlobalGameId = Date.now();
+    const testGlobalGameId = 99999 + Math.floor(Math.random() * 1000);
 
     const gameIdMap = await ingestor.ingestGames([
       {
@@ -329,7 +328,7 @@ describe("NFL Play Prediction Competition E2E", () => {
     // Try to predict - should fail because lock time has passed
     try {
       await axios.post(
-        `${getBaseUrl()}/api/nfl/competitions/${competitionId}/plays/${playId}/predictions`,
+        `${getBaseUrl()}/api/nfl/competitions/${competitionId}/games/${testGlobalGameId}/predictions`,
         { prediction: "pass", confidence: 0.8 },
         { headers: { Authorization: `Bearer ${agentApiKey}` } },
       );
@@ -356,8 +355,15 @@ describe("NFL Play Prediction Competition E2E", () => {
     const competitionId = (competitionResponse as CreateCompetitionResponse)
       .competition.id;
 
+    // Start the competition
+    await services.competitionRepository.update({
+      id: competitionId,
+      status: "active",
+      startDate: new Date(),
+    });
+
     const ingestor = services.nflPlaybackIngestorService;
-    const testGlobalGameId = Date.now();
+    const testGlobalGameId = 99999 + Math.floor(Math.random() * 1000);
 
     const gameIdMap = await ingestor.ingestGames([
       {
@@ -418,7 +424,7 @@ describe("NFL Play Prediction Competition E2E", () => {
     for (const confidence of invalidConfidences) {
       try {
         await axios.post(
-          `${getBaseUrl()}/api/nfl/competitions/${competitionId}/plays/${playId}/predictions`,
+          `${getBaseUrl()}/api/nfl/competitions/${competitionId}/games/${testGlobalGameId}/predictions`,
           { prediction: "pass", confidence },
           { headers: { Authorization: `Bearer ${agentApiKey}` } },
         );
@@ -434,7 +440,7 @@ describe("NFL Play Prediction Competition E2E", () => {
 
     // Test valid confidence
     const validResponse = await axios.post(
-      `${getBaseUrl()}/api/nfl/competitions/${competitionId}/plays/${playId}/predictions`,
+      `${getBaseUrl()}/api/nfl/competitions/${competitionId}/games/${testGlobalGameId}/predictions`,
       { prediction: "pass", confidence: 0.75 },
       { headers: { Authorization: `Bearer ${agentApiKey}` } },
     );

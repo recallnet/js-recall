@@ -73,7 +73,7 @@ export function makeNflController(services: ServiceRegistry) {
           },
         });
       } catch (error) {
-        competitionLogger.error("Error in getPlays:", error);
+        competitionLogger.error({ error }, "Error in getPlays");
         next(
           error instanceof ParsingError
             ? new ApiError(400, error.message)
@@ -83,8 +83,8 @@ export function makeNflController(services: ServiceRegistry) {
     },
 
     /**
-     * Create a prediction for a play
-     * POST /competitions/:competitionId/plays/:playId/predictions
+     * Create a prediction for the next play in a game
+     * POST /competitions/:competitionId/games/:globalGameId/predictions
      */
     async createPrediction(
       req: AuthenticatedRequest,
@@ -93,13 +93,13 @@ export function makeNflController(services: ServiceRegistry) {
     ) {
       try {
         const competitionId = ensureUuid(req.params.competitionId);
-        const playId = ensureUuid(req.params.playId);
-
         if (!competitionId) {
           throw new ApiError(400, "Competition ID is required");
         }
-        if (!playId) {
-          throw new ApiError(400, "Play ID is required");
+
+        const globalGameId = parseInt(req.params.globalGameId || "", 10);
+        if (isNaN(globalGameId)) {
+          throw new ApiError(400, "Valid global game ID is required");
         }
 
         // Ensure agent is authenticated
@@ -112,7 +112,7 @@ export function makeNflController(services: ServiceRegistry) {
         const prediction =
           await services.predictionsManagerService.createPrediction({
             competitionId,
-            gamePlayId: playId,
+            globalGameId,
             agentId: req.agentId,
             prediction: body.prediction,
             confidence: body.confidence,
@@ -129,12 +129,14 @@ export function makeNflController(services: ServiceRegistry) {
           message: "Prediction created successfully",
         });
       } catch (error) {
-        competitionLogger.error("Error in createPrediction:", error);
-        next(
-          error instanceof ParsingError
-            ? new ApiError(400, error.message)
-            : error,
-        );
+        competitionLogger.error({ error }, "Error in createPrediction");
+        if (error instanceof ParsingError) {
+          next(new ApiError(400, error.message));
+        } else if (error instanceof Error) {
+          next(new ApiError(400, error.message));
+        } else {
+          next(error);
+        }
       }
     },
 
@@ -170,8 +172,12 @@ export function makeNflController(services: ServiceRegistry) {
           },
         });
       } catch (error) {
-        competitionLogger.error("Error in getLeaderboard:", error);
-        next(error);
+        competitionLogger.error({ error }, "Error in getLeaderboard");
+        next(
+          error instanceof ParsingError
+            ? new ApiError(400, error.message)
+            : error,
+        );
       }
     },
   };

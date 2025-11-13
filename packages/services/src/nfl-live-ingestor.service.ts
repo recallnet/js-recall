@@ -93,6 +93,7 @@ export class NflLiveIngestorService {
 
   /**
    * Ingest plays for a game
+   * Ingests both completed plays (from Plays array) and current pending play (from Score object).
    */
   async #ingestPlays(
     data: SportsDataIOPlayByPlay,
@@ -103,6 +104,7 @@ export class NflLiveIngestorService {
     let ingestedCount = 0;
     let skippedCount = 0;
 
+    // First, ingest all completed plays from the Plays array
     for (const play of data.Plays) {
       try {
         // Only ingest predictable plays
@@ -118,19 +120,8 @@ export class NflLiveIngestorService {
           lockOffsetMs,
         );
 
-        // Determine outcome
+        // Determine outcome (completed plays always have outcomes)
         const actualOutcome = SportsDataIONflProvider.determineOutcome(play);
-
-        // Determine status based on lock time
-        const now = new Date();
-        let status: "open" | "locked" | "resolved";
-        if (actualOutcome !== null) {
-          status = "resolved";
-        } else if (now >= lockTime) {
-          status = "locked";
-        } else {
-          status = "open";
-        }
 
         await this.#gamePlaysRepo.upsert({
           gameId,
@@ -150,7 +141,7 @@ export class NflLiveIngestorService {
           opponent: play.Opponent,
           description: play.Description,
           lockTime,
-          status,
+          status: "resolved", // Completed plays are always resolved
           actualOutcome,
         });
 
@@ -164,8 +155,68 @@ export class NflLiveIngestorService {
       }
     }
 
+    // Second, create an "open" play for the current game state if game is in progress
+    if (data.Score.IsInProgress && data.Score.Down && data.Score.Possession) {
+      try {
+        const lastPlaySequence =
+          data.Plays.length > 0
+            ? Math.max(...data.Plays.map((p) => p.Sequence))
+            : 0;
+        const nextSequence = lastPlaySequence + 1;
+
+        // Calculate lock time for the pending play (now + lockOffset)
+        const lockTime = new Date(Date.now() + lockOffsetMs);
+
+        // Determine opponent
+        const opponent =
+          data.Score.Possession === data.Score.HomeTeam
+            ? data.Score.AwayTeam
+            : data.Score.HomeTeam;
+
+        await this.#gamePlaysRepo.upsert({
+          gameId,
+          providerPlayId: null, // No PlayID yet - play hasn't happened
+          sequence: nextSequence,
+          quarterName: data.Score.Quarter || "1",
+          timeRemainingMinutes: data.Score.TimeRemaining
+            ? parseInt(data.Score.TimeRemaining.split(":")[0] || "0")
+            : null,
+          timeRemainingSeconds: data.Score.TimeRemaining
+            ? parseInt(data.Score.TimeRemaining.split(":")[1] || "0")
+            : null,
+          playTime: null, // Play hasn't happened yet
+          down: data.Score.Down,
+          distance: data.Score.Distance
+            ? parseInt(data.Score.Distance.toString())
+            : null,
+          yardLine: data.Score.YardLine,
+          yardLineTerritory: data.Score.YardLineTerritory,
+          yardsToEndZone: null, // Calculate if needed
+          playType: null, // Unknown until play happens
+          team: data.Score.Possession,
+          opponent,
+          description: data.Score.DownAndDistance
+            ? `${data.Score.DownAndDistance} at ${data.Score.YardLineTerritory || ""} ${data.Score.YardLine || ""}`
+            : "Pending play",
+          lockTime,
+          status: "open",
+          actualOutcome: null, // Unknown until play happens
+        });
+
+        this.#logger.info(
+          `Created open play (sequence ${nextSequence}) for game ${gameId}`,
+        );
+        ingestedCount++;
+      } catch (error) {
+        this.#logger.error(
+          `Error creating open play for game ${gameId}:`,
+          error,
+        );
+      }
+    }
+
     this.#logger.info(
-      `Ingested ${ingestedCount} predictable plays for game ${gameId} (skipped ${skippedCount} non-predictable plays)`,
+      `Ingested ${ingestedCount} plays for game ${gameId} (skipped ${skippedCount} non-predictable plays)`,
     );
   }
 
