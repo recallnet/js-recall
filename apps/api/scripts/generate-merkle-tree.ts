@@ -173,9 +173,9 @@ function processAirdropFile(): Promise<void> {
 
   if (values.help) {
     console.log(`
-${colors.cyan}Calculate Next Season Eligibility for Conviction Claims Airdrop${colors.reset}
+${colors.cyan}Generate Merkle Tree for Next Season Eligibility for Conviction Claims Airdrop${colors.reset}
 
-Usage: pnpm tsx calculate-next-season-eligibility.ts --season <number> --time <ISO-date> [--concat]
+Usage: pnpm generate-merkle-tree.ts --filename <filename> --nextName <next-season-name>
 
 Options:
   -f, --filename  CSV filename to process with format airdrop_<season-number>_<iso-timestamp>.csv (required)
@@ -183,7 +183,7 @@ Options:
   -h, --help      Show this help message
 
 Examples:
-  pnpm tsx generate-merkle-tree.ts --filename airdrop_2_2024-12-31T00:00:00Z.csv --nextName "Januaray 2025"
+  pnpm tsx generate-merkle-tree.ts --filename ./data/airdrop_2_2024-12-31T00:00:00Z.csv --nextName "Januaray 2025"
 `);
     process.exit(0);
   }
