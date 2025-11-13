@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ChartNoAxesColumn, Loader2, Trophy, Users } from "lucide-react";
 import React, { useCallback, useState } from "react";
 
+import { getExpectedTypeForSkill } from "@recallnet/services/lib";
 import { Badge } from "@recallnet/ui2/components/badge";
 import { Button } from "@recallnet/ui2/components/button";
 import { Card } from "@recallnet/ui2/components/card";
@@ -41,9 +42,9 @@ export const ArenaDetailPage: React.FC<ArenaDetailPageProps> = ({
     }),
   );
 
-  // Derive competition type from arena skill
+  // Derive competition type from arena skill using shared validation registry
   const competitionType =
-    arena?.skill === "perpetual_futures" ? "perpetual_futures" : "trading";
+    getExpectedTypeForSkill(arena?.skill ?? "") ?? "trading";
 
   // Fetch leaderboard data
   const {

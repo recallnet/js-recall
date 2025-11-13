@@ -19,13 +19,6 @@ interface ArenaCardProps {
 }
 
 export const ArenaCard: React.FC<ArenaCardProps> = ({ arena, className }) => {
-  const skillLabel =
-    arena.skill === "spot_paper_trading"
-      ? "Paper Trading"
-      : arena.skill === "perpetual_futures"
-        ? "Perpetual Futures"
-        : arena.skill;
-
   const hasCompetitionCount = "competitionCount" in arena;
   const competitionCount = hasCompetitionCount
     ? (arena as typeof arena & { competitionCount: number }).competitionCount
@@ -117,7 +110,7 @@ export const ArenaCard: React.FC<ArenaCardProps> = ({ arena, className }) => {
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <Badge variant="gray" className="px-3 py-1 text-xs">
-              {skillLabel}
+              {arena.skill.toUpperCase().replace(/_/g, " ")}
             </Badge>
           </div>
         </div>

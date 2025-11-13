@@ -1,4 +1,5 @@
 export * from "./api-key-utils.js";
+export * from "./arena-validation.js";
 export * from "./config-utils.js";
 export * from "./error-to-message.js";
 export * from "./error-utils.js";
