@@ -4,6 +4,7 @@ import { Logger } from "pino";
 import { valueToAttoBigInt } from "@recallnet/conversions/atto-conversions";
 import { AgentRepository } from "@recallnet/db/repositories/agent";
 import { AgentScoreRepository } from "@recallnet/db/repositories/agent-score";
+import { ArenaRepository } from "@recallnet/db/repositories/arena";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { PerpsRepository } from "@recallnet/db/repositories/perps";
 import { StakesRepository } from "@recallnet/db/repositories/stakes";
@@ -28,6 +29,7 @@ import { AgentService } from "./agent.service.js";
 import { AgentRankService } from "./agentrank.service.js";
 import { BalanceService } from "./balance.service.js";
 import { CompetitionRewardService } from "./competition-reward.service.js";
+import { isCompatibleType } from "./lib/arena-validation.js";
 import {
   PaginationResponse,
   buildPaginationResponse,
@@ -359,6 +361,7 @@ export class CompetitionService {
   private perpsDataProcessor: PerpsDataProcessor;
   private agentRepo: AgentRepository;
   private agentScoreRepo: AgentScoreRepository;
+  private arenaRepo: ArenaRepository;
   private perpsRepo: PerpsRepository;
   private competitionRepo: CompetitionRepository;
   private stakesRepo: StakesRepository;
@@ -379,6 +382,7 @@ export class CompetitionService {
     perpsDataProcessor: PerpsDataProcessor,
     agentRepo: AgentRepository,
     agentScoreRepo: AgentScoreRepository,
+    arenaRepo: ArenaRepository,
     perpsRepo: PerpsRepository,
     competitionRepo: CompetitionRepository,
     stakesRepo: StakesRepository,
@@ -398,6 +402,7 @@ export class CompetitionService {
     this.perpsDataProcessor = perpsDataProcessor;
     this.agentRepo = agentRepo;
     this.agentScoreRepo = agentScoreRepo;
+    this.arenaRepo = arenaRepo;
     this.perpsRepo = perpsRepo;
     this.competitionRepo = competitionRepo;
     this.stakesRepo = stakesRepo;
@@ -469,6 +474,21 @@ export class CompetitionService {
     const id = randomUUID();
 
     const competitionType = type ?? "trading";
+
+    // Validate arena compatibility if arenaId provided
+    if (arenaId) {
+      const arena = await this.arenaRepo.findById(arenaId);
+      if (!arena) {
+        throw new ApiError(404, `Arena with ID ${arenaId} not found`);
+      }
+
+      if (!isCompatibleType(arena.skill, competitionType)) {
+        throw new ApiError(
+          400,
+          `Competition type "${competitionType}" incompatible with arena skill "${arena.skill}"`,
+        );
+      }
+    }
 
     const competition: Parameters<typeof this.competitionRepo.create>[0] = {
       id,

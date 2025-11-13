@@ -5,6 +5,7 @@ import { MockProxy, mock } from "vitest-mock-extended";
 
 import { AgentRepository } from "@recallnet/db/repositories/agent";
 import { AgentScoreRepository } from "@recallnet/db/repositories/agent-score";
+import { ArenaRepository } from "@recallnet/db/repositories/arena";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { PerpsRepository } from "@recallnet/db/repositories/perps";
 import { StakesRepository } from "@recallnet/db/repositories/stakes";
@@ -93,6 +94,7 @@ describe("CompetitionService", () => {
   let perpsDataProcessor: MockProxy<PerpsDataProcessor>;
   let agentRepo: MockProxy<AgentRepository>;
   let agentScoreRepo: MockProxy<AgentScoreRepository>;
+  let arenaRepo: MockProxy<ArenaRepository>;
   let perpsRepo: MockProxy<PerpsRepository>;
   let competitionRepo: MockProxy<CompetitionRepository>;
   let stakesRepo: MockProxy<StakesRepository>;
@@ -183,6 +185,7 @@ describe("CompetitionService", () => {
     perpsDataProcessor = mock<PerpsDataProcessor>();
     agentRepo = mock<AgentRepository>();
     agentScoreRepo = mock<AgentScoreRepository>();
+    arenaRepo = mock<ArenaRepository>();
     perpsRepo = mock<PerpsRepository>();
     competitionRepo = mock<CompetitionRepository>();
     stakesRepo = mock<StakesRepository>();
@@ -211,6 +214,7 @@ describe("CompetitionService", () => {
       perpsDataProcessor,
       agentRepo,
       agentScoreRepo,
+      arenaRepo,
       perpsRepo,
       competitionRepo,
       stakesRepo,
