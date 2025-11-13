@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { skipToken, useQuery } from "@tanstack/react-query";
 import { ChartNoAxesColumn, Loader2, Trophy, Users } from "lucide-react";
 import React, { useCallback, useState } from "react";
 
@@ -8,12 +8,21 @@ import { getExpectedTypeForSkill } from "@recallnet/services/lib";
 import { Badge } from "@recallnet/ui2/components/badge";
 import { Button } from "@recallnet/ui2/components/button";
 import { Card } from "@recallnet/ui2/components/card";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@recallnet/ui2/components/tabs";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { BreadcrumbNav } from "@/components/breadcrumb-nav";
+import { CompetitionCard } from "@/components/competition-card";
+import { useSession } from "@/hooks/useSession";
 import { client } from "@/rpc/clients/client-side";
 import { tanstackClient } from "@/rpc/clients/tanstack-query";
 import { LeaderboardAgent } from "@/types/agent";
+import { mergeCompetitionsWithUserData } from "@/utils/competition-utils";
 
 import { ArenaDetailLeaderboardTable } from "./arena-detail-leaderboard-table";
 import { ArenaDetailLeaderboardTableMobile } from "./arena-detail-leaderboard-table-mobile";
@@ -30,6 +39,8 @@ export const ArenaDetailPage: React.FC<ArenaDetailPageProps> = ({
   );
   const [currentOffset, setCurrentOffset] = useState(100); // Start at 100 since initial load gets first 100
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const session = useSession();
+  const { isAuthenticated } = session;
 
   // Fetch arena data
   const {
@@ -39,6 +50,23 @@ export const ArenaDetailPage: React.FC<ArenaDetailPageProps> = ({
   } = useQuery(
     tanstackClient.arena.getById.queryOptions({
       input: { id: arenaId },
+    }),
+  );
+
+  // Fetch all competitions for this arena
+  const { data: arenaCompetitionsData } = useQuery(
+    tanstackClient.arena.getCompetitions.queryOptions({
+      input: {
+        arenaId,
+        paging: { limit: 100, offset: 0, sort: "-startDate" },
+      },
+    }),
+  );
+
+  const { data: userCompetitions } = useQuery(
+    tanstackClient.user.getCompetitions.queryOptions({
+      input: isAuthenticated ? {} : skipToken,
+      placeholderData: (prev) => prev,
     }),
   );
 
@@ -78,8 +106,6 @@ export const ArenaDetailPage: React.FC<ArenaDetailPageProps> = ({
         setAdditionalAgents((prev) => [...prev, ...result.agents]);
         setCurrentOffset((prev) => prev + 100);
       }
-    } catch (error) {
-      console.error("Failed to load more agents:", error);
     } finally {
       setIsLoadingMore(false);
     }
@@ -144,6 +170,29 @@ export const ArenaDetailPage: React.FC<ArenaDetailPageProps> = ({
 
   // Combine agents
   const allAgents = [...leaderboardData.agents, ...additionalAgents];
+
+  // Separate by status and merge with user data
+  const allArenaCompetitions = arenaCompetitionsData?.competitions || [];
+  const [activeComps, upcomingComps, endedComps] = [
+    mergeCompetitionsWithUserData(
+      allArenaCompetitions.filter((c) => c.status === "active"),
+      userCompetitions?.competitions ?? [],
+    ).map((competition) => (
+      <CompetitionCard key={competition.id} competition={competition} />
+    )),
+    mergeCompetitionsWithUserData(
+      allArenaCompetitions.filter((c) => c.status === "pending"),
+      userCompetitions?.competitions ?? [],
+    ).map((competition) => (
+      <CompetitionCard key={competition.id} competition={competition} />
+    )),
+    mergeCompetitionsWithUserData(
+      allArenaCompetitions.filter((c) => c.status === "ended"),
+      userCompetitions?.competitions ?? [],
+    ).map((competition) => (
+      <CompetitionCard key={competition.id} competition={competition} />
+    )),
+  ];
 
   return (
     <div className="space-y-8 pb-16">
@@ -313,6 +362,85 @@ export const ArenaDetailPage: React.FC<ArenaDetailPageProps> = ({
               </Button>
             </div>
           )}
+        </div>
+
+        {/* Arena Competitions */}
+        <div className="space-y-6">
+          <h2 className="text-2xl font-bold text-white">Competitions</h2>
+          <Tabs defaultValue="All" className="text-secondary-foreground w-full">
+            <TabsList className="mb-4 flex flex-wrap gap-2">
+              <TabsTrigger
+                value="All"
+                className={cn(
+                  "rounded border p-2",
+                  "data-[state=active]:bg-white data-[state=active]:text-black",
+                  "data-[state=inactive]:text-secondary-foreground",
+                )}
+              >
+                All
+              </TabsTrigger>
+              <TabsTrigger
+                value="Ongoing"
+                className={cn(
+                  "rounded border p-2",
+                  "data-[state=active]:bg-white data-[state=active]:text-black",
+                  "data-[state=inactive]:text-secondary-foreground",
+                )}
+              >
+                Ongoing
+              </TabsTrigger>
+              <TabsTrigger
+                value="Upcoming"
+                className={cn(
+                  "rounded border p-2",
+                  "data-[state=active]:bg-white data-[state=active]:text-black",
+                  "data-[state=inactive]:text-secondary-foreground",
+                )}
+              >
+                Upcoming
+              </TabsTrigger>
+              <TabsTrigger
+                value="Complete"
+                className={cn(
+                  "rounded border p-2",
+                  "data-[state=active]:bg-white data-[state=active]:text-black",
+                  "data-[state=inactive]:text-secondary-foreground",
+                )}
+              >
+                Complete
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent
+              className="flex flex-col gap-x-4 gap-y-10 md:grid md:grid-cols-2"
+              value="All"
+            >
+              {activeComps}
+              {upcomingComps}
+              {endedComps}
+            </TabsContent>
+
+            <TabsContent
+              className="flex flex-col gap-x-4 gap-y-10 md:grid md:grid-cols-2"
+              value="Ongoing"
+            >
+              {activeComps}
+            </TabsContent>
+
+            <TabsContent
+              className="flex flex-col gap-x-4 gap-y-10 md:grid md:grid-cols-2"
+              value="Upcoming"
+            >
+              {upcomingComps}
+            </TabsContent>
+
+            <TabsContent
+              className="flex flex-col gap-x-4 gap-y-10 md:grid md:grid-cols-2"
+              value="Complete"
+            >
+              {endedComps}
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </div>

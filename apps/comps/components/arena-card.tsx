@@ -35,30 +35,12 @@ export const ArenaCard: React.FC<ArenaCardProps> = ({ arena, className }) => {
     }),
   );
 
-  // Fetch all competitions to find ones in this arena
-  const { data: allCompetitions } = useQuery(
-    tanstackClient.competitions.list.queryOptions({
+  // Fetch competitions for this specific arena (efficient - only fetches 4)
+  const { data: arenaCompetitionsData } = useQuery(
+    tanstackClient.arena.getCompetitions.queryOptions({
       input: {
-        status: "active",
-        paging: { limit: 100, offset: 0, sort: "-startDate" },
-      },
-    }),
-  );
-
-  const { data: endedCompetitions } = useQuery(
-    tanstackClient.competitions.list.queryOptions({
-      input: {
-        status: "ended",
-        paging: { limit: 100, offset: 0, sort: "-endDate" },
-      },
-    }),
-  );
-
-  const { data: upcomingCompetitions } = useQuery(
-    tanstackClient.competitions.list.queryOptions({
-      input: {
-        status: "pending",
-        paging: { limit: 100, offset: 0, sort: "startDate" },
+        arenaId: arena.id,
+        paging: { limit: 4, offset: 0, sort: "-startDate" },
       },
     }),
   );
@@ -66,17 +48,14 @@ export const ArenaCard: React.FC<ArenaCardProps> = ({ arena, className }) => {
   const topAgents = leaderboard?.agents || [];
   const topScore = topAgents[0]?.score || 0;
 
-  // Combine and filter to only this arena
-  const allComps = [
-    ...(allCompetitions?.competitions || []),
-    ...(endedCompetitions?.competitions || []),
-    ...(upcomingCompetitions?.competitions || []),
-  ];
-
-  const filteredComps = allComps.filter((c) => c.arenaId === arena.id);
-  const totalCompetitions = filteredComps.length;
-  const arenaCompetitions = filteredComps.slice(0, 4); // Show 4 if more than 5
-  const remainingCount = Math.max(0, totalCompetitions - 4);
+  // Use competition count from arena data if available, otherwise use fetched count
+  const totalCompetitions =
+    competitionCount ?? arenaCompetitionsData?.pagination.total ?? 0;
+  const arenaCompetitions = arenaCompetitionsData?.competitions || [];
+  const remainingCount = Math.max(
+    0,
+    totalCompetitions - arenaCompetitions.length,
+  );
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -109,20 +88,20 @@ export const ArenaCard: React.FC<ArenaCardProps> = ({ arena, className }) => {
             </h3>
           </div>
           <div className="flex shrink-0 items-center gap-2">
-            <Badge variant="gray" className="px-3 py-1 text-xs">
-              {arena.skill.toUpperCase().replace(/_/g, " ")}
-            </Badge>
-          </div>
-        </div>
-
-        {/* Venue Badge - Fixed height */}
-        <div className="h-10 shrink-0 px-4 md:px-6">
-          <div className="flex flex-wrap gap-2">
             {arena.venues && arena.venues.length > 0 && (
               <Badge variant="white" className="px-2 py-1 text-xs capitalize">
                 {arena.venues.join(", ")}
               </Badge>
             )}
+          </div>
+        </div>
+
+        {/* Skill Badge - Fixed height */}
+        <div className="h-10 shrink-0 px-4 md:px-6">
+          <div className="flex flex-wrap gap-2">
+            <Badge variant="gray" className="px-3 py-1 text-xs">
+              {arena.skill.toUpperCase().replace(/_/g, " ")}
+            </Badge>
           </div>
         </div>
 

@@ -3028,6 +3028,83 @@ export class CompetitionService {
   }
 
   /**
+   * Get enriched competitions for a specific arena
+   * @param arenaId Arena ID
+   * @param pagingParams Pagination parameters
+   * @returns Enriched competitions list for the arena
+   */
+  async getCompetitionsByArenaId(arenaId: string, pagingParams: PagingParams) {
+    try {
+      const { competitions, total } = await this.competitionRepo.findByArenaId(
+        arenaId,
+        pagingParams,
+      );
+
+      // Batch fetch perps configs for perps competitions (same as getEnrichedCompetitions)
+      const perpsCompetitionIds = competitions
+        .filter((c) => c.type === "perpetual_futures")
+        .map((c) => c.id);
+
+      const perpsConfigsMap = new Map<string, EvaluationMetric>();
+      if (perpsCompetitionIds.length > 0) {
+        const perpsConfigs = await Promise.all(
+          perpsCompetitionIds.map(async (id) => {
+            const config = await this.perpsRepo.getPerpsCompetitionConfig(id);
+            return { id, evaluationMetric: config?.evaluationMetric };
+          }),
+        );
+
+        perpsConfigs.forEach(({ id, evaluationMetric }) => {
+          if (evaluationMetric) {
+            perpsConfigsMap.set(id, evaluationMetric);
+          }
+        });
+      }
+
+      const enrichedCompetitions = competitions.map((competition) => {
+        const {
+          minimumPairAgeHours,
+          minimum24hVolumeUsd,
+          minimumLiquidityUsd,
+          minimumFdvUsd,
+          minTradesPerDay,
+          ...competitionData
+        } = competition;
+
+        const evaluationMetric = perpsConfigsMap.get(competition.id);
+
+        return {
+          ...competitionData,
+          ...(evaluationMetric ? { evaluationMetric } : {}),
+          tradingConstraints: {
+            minimumPairAgeHours,
+            minimum24hVolumeUsd,
+            minimumLiquidityUsd,
+            minimumFdvUsd,
+            minTradesPerDay,
+          },
+        };
+      });
+
+      return {
+        success: true,
+        competitions: enrichedCompetitions,
+        pagination: buildPaginationResponse(
+          total,
+          pagingParams.limit,
+          pagingParams.offset,
+        ),
+      };
+    } catch (error) {
+      this.logger.error(
+        `[CompetitionService] Error in getCompetitionsByArenaId (${arenaId}):`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  /**
    * Get enriched competitions with trading constraint data
    * @param params Parameters for competitions request
    * @returns Enriched competitions list
