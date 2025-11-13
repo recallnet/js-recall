@@ -208,7 +208,7 @@ Examples:
   }
 
   const seasonString = filenameParts[1]!;
-  const timestampString = filenameParts[2]!;
+  const timestampString = filenameParts[2]!.replace('.csv', '');
   const nextSeasonName = values.nextName;
 
   const seasonNumber = parseInt(seasonString);
