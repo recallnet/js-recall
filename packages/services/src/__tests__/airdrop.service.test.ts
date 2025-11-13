@@ -1,57 +1,27 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { Logger } from "pino";
+import { beforeEach, describe, expect, it } from "vitest";
+import { DeepMockProxy, mockDeep } from "vitest-mock-extended";
 
 import { AirdropRepository } from "@recallnet/db/repositories/airdrop";
 import { ConvictionClaimsRepository } from "@recallnet/db/repositories/conviction-claims";
 
-import { AirdropService, ClaimData } from "../airdrop.service";
+import { AirdropService, ClaimData } from "../airdrop.service.js";
 
 describe("AirdropService", () => {
   let service: AirdropService;
-  let mockAirdropRepository: {
-    getAllClaimsForAddress: ReturnType<typeof vi.fn>;
-    getClaimByAddress: ReturnType<typeof vi.fn>;
-    getClaimStatus: ReturnType<typeof vi.fn>;
-    updateClaimStatus: ReturnType<typeof vi.fn>;
-  };
-  let mockConvictionClaimsRepository: {
-    getClaimsByAccount: ReturnType<typeof vi.fn>;
-    getClaimByAccountAndSeason: ReturnType<typeof vi.fn>;
-    hasClaimedForSeason: ReturnType<typeof vi.fn>;
-    getTotalClaimedByAccount: ReturnType<typeof vi.fn>;
-  };
-  let mockLogger: {
-    info: ReturnType<typeof vi.fn>;
-    error: ReturnType<typeof vi.fn>;
-    warn: ReturnType<typeof vi.fn>;
-    debug: ReturnType<typeof vi.fn>;
-  };
+  let mockAirdropRepository: DeepMockProxy<AirdropRepository>;
+  let mockConvictionClaimsRepository: DeepMockProxy<ConvictionClaimsRepository>;
+  let mockLogger: DeepMockProxy<Logger>;
 
   beforeEach(() => {
-    mockLogger = {
-      info: vi.fn(),
-      error: vi.fn(),
-      warn: vi.fn(),
-      debug: vi.fn(),
-    };
-
-    mockAirdropRepository = {
-      getAllClaimsForAddress: vi.fn(),
-      getClaimByAddress: vi.fn(),
-      getClaimStatus: vi.fn(),
-      updateClaimStatus: vi.fn(),
-    };
-
-    mockConvictionClaimsRepository = {
-      getClaimsByAccount: vi.fn(),
-      getClaimByAccountAndSeason: vi.fn(),
-      hasClaimedForSeason: vi.fn(),
-      getTotalClaimedByAccount: vi.fn(),
-    };
+    mockLogger = mockDeep<Logger>();
+    mockAirdropRepository = mockDeep<AirdropRepository>();
+    mockConvictionClaimsRepository = mockDeep<ConvictionClaimsRepository>();
 
     service = new AirdropService(
-      mockAirdropRepository as AirdropRepository,
+      mockAirdropRepository,
       mockLogger,
-      mockConvictionClaimsRepository as ConvictionClaimsRepository,
+      mockConvictionClaimsRepository,
     );
   });
 
@@ -158,6 +128,8 @@ describe("AirdropService", () => {
           transactionHash: "0xtxhash",
           stakingDuration: 30,
           stakedAmount: "1000000000000000000",
+          createdAt: new Date(),
+          updatedAt: new Date(),
         },
       });
 
@@ -178,13 +150,15 @@ describe("AirdropService", () => {
       const result = await service.getAccountClaimsData(mockAddress);
 
       expect(result).toHaveLength(1);
-      expect(result[0].season).toBe(0);
-      expect(result[0].seasonName).toBe("Genesis");
-      expect(result[0].allocation.amount).toBe(BigInt("1000000000000000000"));
-      expect(result[0].claim.status).toBe("claimed");
-      expect(result[0].claim.claimedAmount).toBe(BigInt("1000000000000000000"));
-      expect(result[0].claim.stakeDuration).toBe(30); // 30 days
-      expect(result[0].claim.unlocksAt).toEqual(
+      expect(result[0]!.season).toBe(0);
+      expect(result[0]!.seasonName).toBe("Genesis");
+      expect(result[0]!.allocation.amount).toBe(BigInt("1000000000000000000"));
+      expect(result[0]!.claim.status).toBe("claimed");
+      expect(result[0]!.claim.claimedAmount).toBe(
+        BigInt("1000000000000000000"),
+      );
+      expect(result[0]!.claim.stakeDuration).toBe(30); // 30 days
+      expect(result[0]!.claim.unlocksAt).toEqual(
         new Date("2024-01-31T00:00:00Z"),
       );
     });
@@ -217,10 +191,10 @@ describe("AirdropService", () => {
       const result = await service.getAccountClaimsData(mockAddress);
 
       expect(result).toHaveLength(1);
-      expect(result[0].allocation.ineligibleReason).toBe(
+      expect(result[0]!.allocation.ineligibleReason).toBe(
         "Suspicious activity detected",
       );
-      expect(result[0].claim.status).toBe("expired");
+      expect(result[0]!.claim.status).toBe("expired");
     });
 
     it("should mark maybe-sybil accounts with review message", async () => {
@@ -251,10 +225,10 @@ describe("AirdropService", () => {
       const result = await service.getAccountClaimsData(mockAddress);
 
       expect(result).toHaveLength(1);
-      expect(result[0].allocation.ineligibleReason).toBe(
+      expect(result[0]!.allocation.ineligibleReason).toBe(
         "Account under review for potential sybil activity",
       );
-      expect(result[0].claim.status).toBe("expired");
+      expect(result[0]!.claim.status).toBe("expired");
     });
 
     it("should handle multiple seasons with different claim statuses", async () => {
@@ -328,25 +302,27 @@ describe("AirdropService", () => {
       expect(result).toHaveLength(3);
 
       // Check sorting (most recent season first)
-      expect(result[0].season).toBe(2);
-      expect(result[1].season).toBe(1);
-      expect(result[2].season).toBe(0);
+      expect(result[0]!.season).toBe(2);
+      expect(result[1]!.season).toBe(1);
+      expect(result[2]!.season).toBe(0);
 
       // Season 2 - Sybil flagged
-      expect(result[0].claim.status).toBe("expired");
-      expect(result[0].allocation.ineligibleReason).toBe(
+      expect(result[0]!.claim.status).toBe("expired");
+      expect(result[0]!.allocation.ineligibleReason).toBe(
         "Account flagged as sybil",
       );
 
       // Season 1 - Available
-      expect(result[1].claim.status).toBe("available");
-      expect(result[1].allocation.ineligibleReason).toBeUndefined();
+      expect(result[1]!.claim.status).toBe("available");
+      expect(result[1]!.allocation.ineligibleReason).toBeUndefined();
 
       // Season 0 - Claimed without staking
-      expect(result[2].claim.status).toBe("claimed");
-      expect(result[2].claim.claimedAmount).toBe(BigInt("1000000000000000000"));
-      expect(result[2].claim.stakeDuration).toBe(0);
-      expect(result[2].claim.unlocksAt).toBeUndefined();
+      expect(result[2]!.claim.status).toBe("claimed");
+      expect(result[2]!.claim.claimedAmount).toBe(
+        BigInt("1000000000000000000"),
+      );
+      expect(result[2]!.claim.stakeDuration).toBe(0);
+      expect(result[2]!.claim.unlocksAt).toBeUndefined();
     });
 
     it("should handle empty allocations", async () => {
@@ -366,7 +342,7 @@ describe("AirdropService", () => {
 
     it("should work without conviction claims repository", async () => {
       const serviceWithoutConviction = new AirdropService(
-        mockAirdropRepository as AirdropRepository,
+        mockAirdropRepository,
         mockLogger,
       );
 
@@ -396,8 +372,8 @@ describe("AirdropService", () => {
         await serviceWithoutConviction.getAccountClaimsData(mockAddress);
 
       expect(result).toHaveLength(1);
-      expect(result[0].claim.status).toBe("available");
-      expect(result[0].claim.claimedAmount).toBeUndefined();
+      expect(result[0]!.claim.status).toBe("available");
+      expect(result[0]!.claim.claimedAmount).toBeUndefined();
     });
 
     it("should handle errors gracefully", async () => {
@@ -493,7 +469,13 @@ describe("AirdropService", () => {
         season: 0,
         proof: ["0xproof1"],
         category: "early",
-        sybilClassification: "approved",
+        sybilClassification: "approved" as const,
+        flaggedAt: null,
+        flaggingReason: null,
+        powerUser: false,
+        recallSnapper: false,
+        aiBuilder: false,
+        aiExplorer: false,
       };
 
       mockAirdropRepository.getClaimByAddress.mockResolvedValue(mockClaim);

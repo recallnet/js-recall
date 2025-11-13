@@ -18,24 +18,7 @@ export const getClaimsData = base
         input.address,
       );
 
-      // Convert BigInt values to strings for JSON serialization
-      const serializedData = claimsData.map((claim) => ({
-        season: claim.season,
-        seasonName: claim.seasonName,
-        allocation: {
-          amount: claim.allocation.amount.toString(),
-          proof: claim.allocation.proof,
-          ineligibleReason: claim.allocation.ineligibleReason,
-        },
-        claim: {
-          status: claim.claim.status,
-          claimedAmount: claim.claim.claimedAmount?.toString(),
-          stakeDuration: claim.claim.stakeDuration,
-          unlocksAt: claim.claim.unlocksAt?.toISOString(),
-        },
-      }));
-
-      return serializedData;
+      return claimsData;
     } catch (error) {
       context.logger.error("Error fetching claims data:", error);
       throw error;

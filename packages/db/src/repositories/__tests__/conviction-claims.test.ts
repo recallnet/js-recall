@@ -1,37 +1,19 @@
+import { Logger } from "pino";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { DeepMockProxy, mockDeep } from "vitest-mock-extended";
 
 import { convictionClaims } from "../../schema/conviction-claims/defs.js";
+import { Database } from "../../types.js";
 import { ConvictionClaimsRepository } from "../conviction-claims.js";
 
 describe("ConvictionClaimsRepository", () => {
   let repository: ConvictionClaimsRepository;
-  let mockDb: {
-    select: ReturnType<typeof vi.fn>;
-    insert: ReturnType<typeof vi.fn>;
-    update: ReturnType<typeof vi.fn>;
-    delete: ReturnType<typeof vi.fn>;
-  };
-  let mockLogger: {
-    info: ReturnType<typeof vi.fn>;
-    error: ReturnType<typeof vi.fn>;
-    warn: ReturnType<typeof vi.fn>;
-    debug: ReturnType<typeof vi.fn>;
-  };
+  let mockDb: DeepMockProxy<Database>;
+  let mockLogger: DeepMockProxy<Logger>;
 
   beforeEach(() => {
-    mockLogger = {
-      info: vi.fn(),
-      error: vi.fn(),
-      warn: vi.fn(),
-      debug: vi.fn(),
-    };
-
-    mockDb = {
-      select: vi.fn(),
-      insert: vi.fn(),
-      update: vi.fn(),
-      delete: vi.fn(),
-    };
+    mockLogger = mockDeep<Logger>();
+    mockDb = mockDeep<Database>();
 
     repository = new ConvictionClaimsRepository(mockDb, mockLogger);
   });
@@ -63,13 +45,18 @@ describe("ConvictionClaimsRepository", () => {
         },
       ];
 
-      const selectMock = {
-        from: vi.fn().mockReturnThis(),
-        where: vi.fn().mockReturnThis(),
-        orderBy: vi.fn().mockResolvedValue(mockClaims),
-      };
+      // Mock the chain using vitest mocks
+      const orderByMock = vi.fn().mockResolvedValue(mockClaims);
+      const whereMock = vi.fn().mockReturnValue({ orderBy: orderByMock });
+      const fromMock = vi.fn().mockReturnValue({ where: whereMock });
+      const selectMock = vi.fn().mockReturnValue({ from: fromMock });
 
-      mockDb.select = vi.fn().mockReturnValue(selectMock);
+      // Override the select method
+      Object.defineProperty(mockDb, "select", {
+        value: selectMock,
+        writable: true,
+        configurable: true,
+      });
 
       const result = await repository.getClaimsByAccount(
         "0x1234567890123456789012345678901234567890",
@@ -81,34 +68,41 @@ describe("ConvictionClaimsRepository", () => {
       );
       expect(result[0]!.season).toBe(0);
       expect(result[1]!.season).toBe(1);
-      expect(mockDb.select).toHaveBeenCalled();
+      expect(selectMock).toHaveBeenCalled();
     });
 
     it("should normalize account address to lowercase", async () => {
-      const selectMock = {
-        from: vi.fn().mockReturnThis(),
-        where: vi.fn().mockReturnThis(),
-        orderBy: vi.fn().mockResolvedValue([]),
-      };
+      const orderByMock = vi.fn().mockResolvedValue([]);
+      const whereMock = vi.fn().mockReturnValue({ orderBy: orderByMock });
+      const fromMock = vi.fn().mockReturnValue({ where: whereMock });
+      const selectMock = vi.fn().mockReturnValue({ from: fromMock });
 
-      mockDb.select = vi.fn().mockReturnValue(selectMock);
+      Object.defineProperty(mockDb, "select", {
+        value: selectMock,
+        writable: true,
+        configurable: true,
+      });
 
       await repository.getClaimsByAccount(
         "0xABCDEF1234567890123456789012345678901234",
       );
 
-      expect(selectMock.where).toHaveBeenCalled();
+      expect(whereMock).toHaveBeenCalled();
     });
 
     it("should handle errors gracefully", async () => {
       const error = new Error("Database error");
-      const selectMock = {
-        from: vi.fn().mockReturnThis(),
-        where: vi.fn().mockReturnThis(),
-        orderBy: vi.fn().mockRejectedValue(error),
-      };
 
-      mockDb.select = vi.fn().mockReturnValue(selectMock);
+      const orderByMock = vi.fn().mockRejectedValue(error);
+      const whereMock = vi.fn().mockReturnValue({ orderBy: orderByMock });
+      const fromMock = vi.fn().mockReturnValue({ where: whereMock });
+      const selectMock = vi.fn().mockReturnValue({ from: fromMock });
+
+      Object.defineProperty(mockDb, "select", {
+        value: selectMock,
+        writable: true,
+        configurable: true,
+      });
 
       await expect(
         repository.getClaimsByAccount(
@@ -137,13 +131,16 @@ describe("ConvictionClaimsRepository", () => {
         transactionHash: Buffer.from("tx-hash-1"),
       };
 
-      const selectMock = {
-        from: vi.fn().mockReturnThis(),
-        where: vi.fn().mockReturnThis(),
-        limit: vi.fn().mockResolvedValue([mockClaim]),
-      };
+      const limitMock = vi.fn().mockResolvedValue([mockClaim]);
+      const whereMock = vi.fn().mockReturnValue({ limit: limitMock });
+      const fromMock = vi.fn().mockReturnValue({ where: whereMock });
+      const selectMock = vi.fn().mockReturnValue({ from: fromMock });
 
-      mockDb.select = vi.fn().mockReturnValue(selectMock);
+      Object.defineProperty(mockDb, "select", {
+        value: selectMock,
+        writable: true,
+        configurable: true,
+      });
 
       const result = await repository.getClaimByAccountAndSeason(
         "0x1234567890123456789012345678901234567890",
@@ -158,13 +155,16 @@ describe("ConvictionClaimsRepository", () => {
     });
 
     it("should return null when no claim exists", async () => {
-      const selectMock = {
-        from: vi.fn().mockReturnThis(),
-        where: vi.fn().mockReturnThis(),
-        limit: vi.fn().mockResolvedValue([]),
-      };
+      const limitMock = vi.fn().mockResolvedValue([]);
+      const whereMock = vi.fn().mockReturnValue({ limit: limitMock });
+      const fromMock = vi.fn().mockReturnValue({ where: whereMock });
+      const selectMock = vi.fn().mockReturnValue({ from: fromMock });
 
-      mockDb.select = vi.fn().mockReturnValue(selectMock);
+      Object.defineProperty(mockDb, "select", {
+        value: selectMock,
+        writable: true,
+        configurable: true,
+      });
 
       const result = await repository.getClaimByAccountAndSeason(
         "0x1234567890123456789012345678901234567890",
@@ -189,13 +189,16 @@ describe("ConvictionClaimsRepository", () => {
         transactionHash: Buffer.from("tx-hash-1"),
       };
 
-      const selectMock = {
-        from: vi.fn().mockReturnThis(),
-        where: vi.fn().mockReturnThis(),
-        limit: vi.fn().mockResolvedValue([mockClaim]),
-      };
+      const limitMock = vi.fn().mockResolvedValue([mockClaim]);
+      const whereMock = vi.fn().mockReturnValue({ limit: limitMock });
+      const fromMock = vi.fn().mockReturnValue({ where: whereMock });
+      const selectMock = vi.fn().mockReturnValue({ from: fromMock });
 
-      mockDb.select = vi.fn().mockReturnValue(selectMock);
+      Object.defineProperty(mockDb, "select", {
+        value: selectMock,
+        writable: true,
+        configurable: true,
+      });
 
       const result = await repository.hasClaimedForSeason(
         "0x1234567890123456789012345678901234567890",
@@ -206,13 +209,16 @@ describe("ConvictionClaimsRepository", () => {
     });
 
     it("should return false if no claim exists", async () => {
-      const selectMock = {
-        from: vi.fn().mockReturnThis(),
-        where: vi.fn().mockReturnThis(),
-        limit: vi.fn().mockResolvedValue([]),
-      };
+      const limitMock = vi.fn().mockResolvedValue([]);
+      const whereMock = vi.fn().mockReturnValue({ limit: limitMock });
+      const fromMock = vi.fn().mockReturnValue({ where: whereMock });
+      const selectMock = vi.fn().mockReturnValue({ from: fromMock });
 
-      mockDb.select = vi.fn().mockReturnValue(selectMock);
+      Object.defineProperty(mockDb, "select", {
+        value: selectMock,
+        writable: true,
+        configurable: true,
+      });
 
       const result = await repository.hasClaimedForSeason(
         "0x1234567890123456789012345678901234567890",
@@ -250,13 +256,16 @@ describe("ConvictionClaimsRepository", () => {
         },
       ];
 
-      const selectMock = {
-        from: vi.fn().mockReturnThis(),
-        where: vi.fn().mockReturnThis(),
-        orderBy: vi.fn().mockResolvedValue(mockClaims),
-      };
+      const orderByMock = vi.fn().mockResolvedValue(mockClaims);
+      const whereMock = vi.fn().mockReturnValue({ orderBy: orderByMock });
+      const fromMock = vi.fn().mockReturnValue({ where: whereMock });
+      const selectMock = vi.fn().mockReturnValue({ from: fromMock });
 
-      mockDb.select = vi.fn().mockReturnValue(selectMock);
+      Object.defineProperty(mockDb, "select", {
+        value: selectMock,
+        writable: true,
+        configurable: true,
+      });
 
       const result = await repository.getTotalClaimedByAccount(
         "0x1234567890123456789012345678901234567890",
@@ -266,13 +275,16 @@ describe("ConvictionClaimsRepository", () => {
     });
 
     it("should return 0 if no claims exist", async () => {
-      const selectMock = {
-        from: vi.fn().mockReturnThis(),
-        where: vi.fn().mockReturnThis(),
-        orderBy: vi.fn().mockResolvedValue([]),
-      };
+      const orderByMock = vi.fn().mockResolvedValue([]);
+      const whereMock = vi.fn().mockReturnValue({ orderBy: orderByMock });
+      const fromMock = vi.fn().mockReturnValue({ where: whereMock });
+      const selectMock = vi.fn().mockReturnValue({ from: fromMock });
 
-      mockDb.select = vi.fn().mockReturnValue(selectMock);
+      Object.defineProperty(mockDb, "select", {
+        value: selectMock,
+        writable: true,
+        configurable: true,
+      });
 
       const result = await repository.getTotalClaimedByAccount(
         "0x1234567890123456789012345678901234567890",
@@ -302,18 +314,21 @@ describe("ConvictionClaimsRepository", () => {
         updatedAt: new Date(),
       };
 
-      const insertMock = {
-        values: vi.fn().mockReturnThis(),
-        returning: vi.fn().mockResolvedValue([mockInsertResult]),
-      };
+      const returningMock = vi.fn().mockResolvedValue([mockInsertResult]);
+      const valuesMock = vi.fn().mockReturnValue({ returning: returningMock });
+      const insertMock = vi.fn().mockReturnValue({ values: valuesMock });
 
-      mockDb.insert = vi.fn().mockReturnValue(insertMock);
+      Object.defineProperty(mockDb, "insert", {
+        value: insertMock,
+        writable: true,
+        configurable: true,
+      });
 
       const result = await repository.insertClaim(claimData);
 
       expect(result.id).toBe("new-claim-id");
-      expect(mockDb.insert).toHaveBeenCalledWith(convictionClaims);
-      expect(insertMock.values).toHaveBeenCalledWith({
+      expect(insertMock).toHaveBeenCalledWith(convictionClaims);
+      expect(valuesMock).toHaveBeenCalledWith({
         account: claimData.account.toLowerCase(),
         eligibleAmount: claimData.eligibleAmount,
         claimedAmount: claimData.claimedAmount,
@@ -323,8 +338,12 @@ describe("ConvictionClaimsRepository", () => {
         blockTimestamp: claimData.blockTimestamp,
         transactionHash: claimData.transactionHash,
       });
+
       expect(mockLogger.info).toHaveBeenCalledWith(
         `Inserting conviction claim for account ${claimData.account}, season ${claimData.season}`,
+      );
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        `Successfully inserted conviction claim with id new-claim-id`,
       );
     });
 
@@ -341,12 +360,16 @@ describe("ConvictionClaimsRepository", () => {
       };
 
       const error = new Error("Insert failed");
-      const insertMock = {
-        values: vi.fn().mockReturnThis(),
-        returning: vi.fn().mockRejectedValue(error),
-      };
 
-      mockDb.insert = vi.fn().mockReturnValue(insertMock);
+      const returningMock = vi.fn().mockRejectedValue(error);
+      const valuesMock = vi.fn().mockReturnValue({ returning: returningMock });
+      const insertMock = vi.fn().mockReturnValue({ values: valuesMock });
+
+      Object.defineProperty(mockDb, "insert", {
+        value: insertMock,
+        writable: true,
+        configurable: true,
+      });
 
       await expect(repository.insertClaim(claimData)).rejects.toThrow(
         "Insert failed",
@@ -386,13 +409,16 @@ describe("ConvictionClaimsRepository", () => {
         },
       ];
 
-      const selectMock = {
-        from: vi.fn().mockReturnThis(),
-        where: vi.fn().mockReturnThis(),
-        orderBy: vi.fn().mockResolvedValue(mockClaims),
-      };
+      const orderByMock = vi.fn().mockResolvedValue(mockClaims);
+      const whereMock = vi.fn().mockReturnValue({ orderBy: orderByMock });
+      const fromMock = vi.fn().mockReturnValue({ where: whereMock });
+      const selectMock = vi.fn().mockReturnValue({ from: fromMock });
 
-      mockDb.select = vi.fn().mockReturnValue(selectMock);
+      Object.defineProperty(mockDb, "select", {
+        value: selectMock,
+        writable: true,
+        configurable: true,
+      });
 
       const result = await repository.getClaimsByAccounts([
         "0x1234567890123456789012345678901234567890",
