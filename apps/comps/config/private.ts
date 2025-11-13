@@ -78,6 +78,11 @@ const configSchema = z.strictObject({
   healthCheck: z.object({
     apiKey: z.string().optional(),
   }),
+  rewards: z.object({
+    slackWebhookUrl: z.string().default(""),
+    tokenContractAddress: z.string().default(""),
+    contractAddress: z.string().default(""),
+  }),
 });
 
 export const rawConfig = {
@@ -120,6 +125,11 @@ export const rawConfig = {
   },
   healthCheck: {
     apiKey: process.env.HEALTH_CHECK_API_KEY,
+  },
+  rewards: {
+    slackWebhookUrl: process.env.REWARDS_SLACK_WEBHOOK_URL,
+    tokenContractAddress: process.env.REWARDS_TOKEN_CONTRACT_ADDRESS,
+    contractAddress: process.env.REWARDS_CONTRACT_ADDRESS,
   },
 };
 
