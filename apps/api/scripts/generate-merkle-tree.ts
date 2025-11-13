@@ -3,12 +3,24 @@ import fs from "fs";
 import Papa from "papaparse";
 import path from "path";
 import { fileURLToPath } from "url";
+import { parseArgs } from "util";
 import { isAddress } from "viem";
 
 import { AirdropRepository } from "@recallnet/db/repositories/airdrop";
 
 import { db } from "@/database/db.js";
 import { logger } from "@/lib/logger.js";
+
+// Colors for console output
+const colors = {
+  red: "\x1b[31m",
+  yellow: "\x1b[33m",
+  green: "\x1b[32m",
+  blue: "\x1b[34m",
+  cyan: "\x1b[36m",
+  magenta: "\x1b[35m",
+  reset: "\x1b[0m",
+};
 
 // Types
 interface Recipient {
@@ -25,7 +37,7 @@ interface Recipient {
   aiExplorer: boolean;
 }
 
-interface Claim {
+interface Allocation {
   address: string;
   amount: string;
   season: number;
@@ -64,7 +76,6 @@ interface CsvRow {
 // Constants
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const INPUT_FILE_PATH = path.join(__dirname, "data", "airdrop-data.csv");
 const EXPECTED_HEADERS = ["address", "amount", "season"];
 const OPTIONAL_HEADERS = [
   "category",
@@ -98,21 +109,21 @@ const parseBooleanFromCsv = (value: string | undefined): boolean => {
 //   });
 // }
 
-// TODO: in the claims app we can nuke the db and reload from the csv because
+// TODO: in the airdrop app we can nuke the db and reload from the csv because
 //  the data is fixed. Now we are going to update the airdrop each month. need
 //  to figure out if this nuke and reload strat will continue to work.
 // async function clearExistingData(): Promise<void> {
 //   console.log("🗑️  Clearing existing data...");
 //   try {
-//     // Clear claims table
-//     await db.delete(schema.airdropClaims);
+//     // Clear allocations table
+//     await db.delete(schema.airdropAllocations);
 //   } catch (err) {
-//     console.log("could not delete airdrop_claims table:", err);
-//     // Ask for confirmation before clearing claims table
-//     const confirmClaims = await promptUser(
-//       "⚠️  Do you want to continue even though the airdrop_claims table cannot be deleted? (y/n): ",
+//     console.log("could not delete airdrop_allocations table:", err);
+//     // Ask for confirmation before clearing allocations table
+//     const confirmAllocations = await promptUser(
+//       "⚠️  Do you want to continue even though the airdrop_allocations table cannot be deleted? (y/n): ",
 //     );
-//     if (!confirmClaims) {
+//     if (!confirmAllocations) {
 //       throw err;
 //     }
 //   }
@@ -138,6 +149,86 @@ const airdropRepository = new AirdropRepository(
 );
 
 function processAirdropFile(): Promise<void> {
+  // Parse command line arguments
+  const { values } = parseArgs({
+    args: process.argv.slice(2),
+    options: {
+      filename: {
+        type: "string",
+        short: "f",
+        description: "CSV filename to process",
+      },
+      nextName: {
+        type: "string",
+        short: "n",
+        description: "Next season name",
+      },
+      help: {
+        type: "boolean",
+        short: "h",
+        description: "Show help",
+      },
+    },
+  });
+
+  if (values.help) {
+    console.log(`
+${colors.cyan}Calculate Next Season Eligibility for Conviction Claims Airdrop${colors.reset}
+
+Usage: pnpm tsx calculate-next-season-eligibility.ts --season <number> --time <ISO-date> [--concat]
+
+Options:
+  -f, --filename  CSV filename to process with format airdrop_<season-number>_<iso-timestamp>.csv (required)
+  -n, --nextName  Next season name (required)
+  -h, --help      Show this help message
+
+Examples:
+  pnpm tsx generate-merkle-tree.ts --filename airdrop_2_2024-12-31T00:00:00Z.csv --nextName "Januaray 2025"
+`);
+    process.exit(0);
+  }
+
+  // Validate arguments
+  if (!values.filename) {
+    console.error(`${colors.red}Error: --filename is required${colors.reset}`);
+    process.exit(1);
+  }
+
+  if (!values.nextName) {
+    console.error(`${colors.red}Error: --nextName is required${colors.reset}`);
+    process.exit(1);
+  }
+
+  const pathParts = values.filename.split("/");
+  const filename = pathParts[pathParts.length - 1];
+  const filenameParts = filename?.split("_");
+  if (filenameParts?.length !== 3) {
+    console.error(`${colors.red}Error: Invalid filename format${colors.reset}`);
+    process.exit(1);
+  }
+
+  const seasonString = filenameParts[1]!;
+  const timestampString = filenameParts[2]!;
+  const nextSeasonName = values.nextName;
+
+  const seasonNumber = parseInt(seasonString);
+  if (isNaN(seasonNumber) || seasonNumber < 0) {
+    console.error(
+      `${colors.red}Error: Invalid season number in filename${colors.reset}`,
+    );
+    process.exit(1);
+  }
+
+  const referenceTime = new Date(timestampString);
+  if (isNaN(referenceTime.getTime())) {
+    console.error(
+      `${colors.red}Error: Invalid time format in filename. Use ISO format like airdrop_2_2024-12-31T00:00:00Z.csv${colors.reset}`,
+    );
+    process.exit(1);
+  }
+
+  const INPUT_FILE_PATH = path.join(__dirname, values.filename);
+
   const recipients: Recipient[] = [];
   let headersValidated = false;
 
@@ -266,15 +357,15 @@ function processAirdropFile(): Promise<void> {
             .size;
           const totalAmount = recipients.reduce((sum, r) => sum + r.amount, 0n);
 
-          // Prepare claims data with proofs
-          const claims: Claim[] = [];
+          // Prepare allocations data with proofs
+          const allocations: Allocation[] = [];
           for (const [i, value] of tree.entries()) {
             const [address] = value;
             const recipient = recipients[i];
             if (!recipient) {
               throw new Error(`No recipient found at index ${i}`);
             }
-            claims.push({
+            allocations.push({
               address: address.toLowerCase(),
               amount: recipient.amount.toString(),
               season: recipient.season,
@@ -309,8 +400,22 @@ function processAirdropFile(): Promise<void> {
 
           // TODO: Add clearAllData method to repository if you want to clear existing data first
 
-          await airdropRepository.insertClaimsBatch(claims);
-          await airdropRepository.upsertMetadata(metadata);
+          await db.transaction(async (tx) => {
+            await airdropRepository.insertAllocationsBatch(
+              allocations,
+              undefined,
+              tx,
+            );
+            await airdropRepository.upsertMetadata(metadata, tx);
+            await airdropRepository.newSeason(
+              {
+                number: seasonNumber + 1,
+                startDate: referenceTime,
+                name: nextSeasonName,
+              },
+              tx,
+            );
+          });
 
           console.log("✅ Data successfully saved to database!");
           resolve();

@@ -103,8 +103,8 @@ export class AirdropService {
       this.logger.info(`Fetching claims data for address: ${address}`);
 
       // Get all airdrop allocations and claim status for the address
-      const { claims: allocations } =
-        await this.airdropRepository.getAllClaimsForAddress(address);
+      const allocations =
+        await this.airdropRepository.getAllAllocationsForAddress(address);
 
       // Get conviction claims data if repository is available
       let convictionClaims: Array<{
@@ -201,7 +201,7 @@ export class AirdropService {
     // TODO: Whatever checks we want to do.
     // No idea if/how season fits in here.
     console.log(`season is ${season}, address is ${address}`); // log to fix lint
-    const res = await this.airdropRepository.getClaimByAddress(address);
+    const res = await this.airdropRepository.getAllocationByAddress(address);
     return res;
   }
 }

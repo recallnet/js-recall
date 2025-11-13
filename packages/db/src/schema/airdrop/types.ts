@@ -1,6 +1,7 @@
-import { airdropClaims, claimStatus, merkleMetadata } from "./defs.js";
+import { airdropAllocations, merkleMetadata, seasons } from "./defs.js";
 
-export type AirdropClaim = typeof airdropClaims.$inferSelect;
-export type NewAirdropClaim = typeof airdropClaims.$inferInsert;
+export type AirdropAllocation = typeof airdropAllocations.$inferSelect;
+export type NewAirdropAllocation = typeof airdropAllocations.$inferInsert;
 export type MerkleMetadata = typeof merkleMetadata.$inferSelect;
-export type ClaimStatus = typeof claimStatus.$inferSelect;
+export type Season = typeof seasons.$inferSelect;
+export type NewSeason = typeof seasons.$inferInsert;

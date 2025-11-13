@@ -3,6 +3,7 @@ import {
   index,
   integer,
   pgTable,
+  serial,
   text,
   timestamp,
   varchar,
@@ -10,17 +11,27 @@ import {
 
 import { tokenAmount } from "../custom-types.js";
 
-// Main table for storing airdrop claims data
-export const airdropClaims = pgTable(
-  "airdrop_claims",
+export const seasons = pgTable("seasons", {
+  id: serial().primaryKey().notNull(),
+  number: integer().notNull().unique(),
+  name: text().notNull().unique(),
+  startDate: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  endDate: timestamp({ withTimezone: true }),
+});
+
+// Main table for storing airdrop allocations data
+export const airdropAllocations = pgTable(
+  "airdrop_allocations",
   {
     address: varchar("address", { length: 42 }).primaryKey().notNull(),
-    // Claim amount as string to handle large numbers
+    // Allocation amount as string to handle large numbers
     amount: tokenAmount("amount").notNull(), // Max uint256 as string
-    season: integer("season").notNull(),
+    season: integer("season")
+      .notNull()
+      .references(() => seasons.id, { onDelete: "restrict" }),
     // Merkle proof stored as JSON array
     proof: text("proof").notNull(), // JSON array of hex strings
-    // Optional category for claim classification
+    // Optional category for allocation classification
     category: varchar("category", { length: 255 }).default(""),
     // Sybil classification: 'approved', 'maybe-sybil', 'sybil'
     sybilClassification: varchar("sybil_classification", { length: 20 })
@@ -63,26 +74,3 @@ export const merkleMetadata = pgTable("merkle_metadata", {
     .defaultNow()
     .notNull(),
 });
-
-// Optional: Table for tracking claim status (if needed for future)
-export const claimStatus = pgTable(
-  "claim_status",
-  {
-    address: varchar("address", { length: 42 }).primaryKey().notNull(),
-    claimed: boolean("claimed").default(false).notNull(),
-    claimedAt: timestamp("claimed_at", { withTimezone: true }),
-    transactionHash: varchar("transaction_hash", { length: 66 }),
-    stakingDuration: integer("staking_duration"), // In days
-    stakedAmount: varchar("staked_amount", { length: 78 }),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .defaultNow()
-      .notNull(),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
-      .defaultNow()
-      .notNull(),
-  },
-  (table) => [
-    index("idx_claimed").on(table.claimed),
-    index("idx_claimed_at").on(table.claimedAt),
-  ],
-);

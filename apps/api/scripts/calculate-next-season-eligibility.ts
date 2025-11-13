@@ -269,7 +269,7 @@ Examples:
       `${colors.blue}Step 7: Generating CSV output...${colors.reset}`,
     );
 
-    const csvFileName = `airdrop-season-${seasonNumber}.csv`;
+    const csvFileName = `airdrop_${seasonNumber}_${referenceTime.toISOString()}.csv`;
     const csvPath = path.join(process.cwd(), "scripts", "data", csvFileName);
 
     // Create CSV header

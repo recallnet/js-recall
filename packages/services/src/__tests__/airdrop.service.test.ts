@@ -29,39 +29,36 @@ describe("AirdropService", () => {
     it("should return claims data for an address with allocations and no claims", async () => {
       const mockAddress = "0x1234567890123456789012345678901234567890";
 
-      mockAirdropRepository.getAllClaimsForAddress.mockResolvedValue({
-        claims: [
-          {
-            address: mockAddress.toLowerCase(),
-            amount: BigInt("1000000000000000000"),
-            season: 0,
-            proof: ["0xproof1", "0xproof2"],
-            category: "early",
-            sybilClassification: "approved",
-            flaggedAt: null,
-            flaggingReason: null,
-            powerUser: true,
-            recallSnapper: false,
-            aiBuilder: false,
-            aiExplorer: false,
-          },
-          {
-            address: mockAddress.toLowerCase(),
-            amount: BigInt("2000000000000000000"),
-            season: 1,
-            proof: ["0xproof3", "0xproof4"],
-            category: "regular",
-            sybilClassification: "approved",
-            flaggedAt: null,
-            flaggingReason: null,
-            powerUser: false,
-            recallSnapper: true,
-            aiBuilder: false,
-            aiExplorer: false,
-          },
-        ],
-        claimStatus: null,
-      });
+      mockAirdropRepository.getAllAllocationsForAddress.mockResolvedValue([
+        {
+          address: mockAddress.toLowerCase(),
+          amount: BigInt("1000000000000000000"),
+          season: 0,
+          proof: ["0xproof1", "0xproof2"],
+          category: "early",
+          sybilClassification: "approved",
+          flaggedAt: null,
+          flaggingReason: null,
+          powerUser: true,
+          recallSnapper: false,
+          aiBuilder: false,
+          aiExplorer: false,
+        },
+        {
+          address: mockAddress.toLowerCase(),
+          amount: BigInt("2000000000000000000"),
+          season: 1,
+          proof: ["0xproof3", "0xproof4"],
+          category: "regular",
+          sybilClassification: "approved",
+          flaggedAt: null,
+          flaggingReason: null,
+          powerUser: false,
+          recallSnapper: true,
+          aiBuilder: false,
+          aiExplorer: false,
+        },
+      ]);
 
       mockConvictionClaimsRepository.getClaimsByAccount.mockResolvedValue([]);
 
@@ -100,91 +97,25 @@ describe("AirdropService", () => {
       });
     });
 
-    it("should return claims data with claimed tokens and staking info", async () => {
-      const mockAddress = "0x1234567890123456789012345678901234567890";
-      const claimTimestamp = new Date("2024-01-01T00:00:00Z");
-
-      mockAirdropRepository.getAllClaimsForAddress.mockResolvedValue({
-        claims: [
-          {
-            address: mockAddress.toLowerCase(),
-            amount: BigInt("1000000000000000000"),
-            season: 0,
-            proof: ["0xproof1", "0xproof2"],
-            category: "early",
-            sybilClassification: "approved",
-            flaggedAt: null,
-            flaggingReason: null,
-            powerUser: true,
-            recallSnapper: false,
-            aiBuilder: false,
-            aiExplorer: false,
-          },
-        ],
-        claimStatus: {
-          address: mockAddress.toLowerCase(),
-          claimed: true,
-          claimedAt: claimTimestamp,
-          transactionHash: "0xtxhash",
-          stakingDuration: 30,
-          stakedAmount: "1000000000000000000",
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-      });
-
-      mockConvictionClaimsRepository.getClaimsByAccount.mockResolvedValue([
-        {
-          id: "claim-1",
-          account: mockAddress.toLowerCase(),
-          eligibleAmount: BigInt("1000000000000000000"),
-          claimedAmount: BigInt("1000000000000000000"),
-          season: 0,
-          duration: BigInt(2592000), // 30 days in seconds
-          blockNumber: BigInt(1000000),
-          blockTimestamp: claimTimestamp,
-          transactionHash: Buffer.from("txhash"),
-        },
-      ]);
-
-      const result = await service.getAccountClaimsData(mockAddress);
-
-      expect(result).toHaveLength(1);
-      expect(result[0]!.season).toBe(0);
-      expect(result[0]!.seasonName).toBe("Genesis");
-      expect(result[0]!.allocation.amount).toBe(BigInt("1000000000000000000"));
-      expect(result[0]!.claim.status).toBe("claimed");
-      expect(result[0]!.claim.claimedAmount).toBe(
-        BigInt("1000000000000000000"),
-      );
-      expect(result[0]!.claim.stakeDuration).toBe(30); // 30 days
-      expect(result[0]!.claim.unlocksAt).toEqual(
-        new Date("2024-01-31T00:00:00Z"),
-      );
-    });
-
     it("should mark sybil accounts as ineligible", async () => {
       const mockAddress = "0x1234567890123456789012345678901234567890";
 
-      mockAirdropRepository.getAllClaimsForAddress.mockResolvedValue({
-        claims: [
-          {
-            address: mockAddress.toLowerCase(),
-            amount: BigInt("1000000000000000000"),
-            season: 0,
-            proof: ["0xproof1", "0xproof2"],
-            category: "early",
-            sybilClassification: "sybil",
-            flaggedAt: new Date("2024-01-01"),
-            flaggingReason: "Suspicious activity detected",
-            powerUser: false,
-            recallSnapper: false,
-            aiBuilder: false,
-            aiExplorer: false,
-          },
-        ],
-        claimStatus: null,
-      });
+      mockAirdropRepository.getAllAllocationsForAddress.mockResolvedValue([
+        {
+          address: mockAddress.toLowerCase(),
+          amount: BigInt("1000000000000000000"),
+          season: 0,
+          proof: ["0xproof1", "0xproof2"],
+          category: "early",
+          sybilClassification: "sybil",
+          flaggedAt: new Date("2024-01-01"),
+          flaggingReason: "Suspicious activity detected",
+          powerUser: false,
+          recallSnapper: false,
+          aiBuilder: false,
+          aiExplorer: false,
+        },
+      ]);
 
       mockConvictionClaimsRepository.getClaimsByAccount.mockResolvedValue([]);
 
@@ -200,25 +131,22 @@ describe("AirdropService", () => {
     it("should mark maybe-sybil accounts with review message", async () => {
       const mockAddress = "0x1234567890123456789012345678901234567890";
 
-      mockAirdropRepository.getAllClaimsForAddress.mockResolvedValue({
-        claims: [
-          {
-            address: mockAddress.toLowerCase(),
-            amount: BigInt("1000000000000000000"),
-            season: 0,
-            proof: ["0xproof1", "0xproof2"],
-            category: "early",
-            sybilClassification: "maybe-sybil",
-            flaggedAt: null,
-            flaggingReason: null,
-            powerUser: false,
-            recallSnapper: false,
-            aiBuilder: false,
-            aiExplorer: false,
-          },
-        ],
-        claimStatus: null,
-      });
+      mockAirdropRepository.getAllAllocationsForAddress.mockResolvedValue([
+        {
+          address: mockAddress.toLowerCase(),
+          amount: BigInt("1000000000000000000"),
+          season: 0,
+          proof: ["0xproof1", "0xproof2"],
+          category: "early",
+          sybilClassification: "maybe-sybil",
+          flaggedAt: null,
+          flaggingReason: null,
+          powerUser: false,
+          recallSnapper: false,
+          aiBuilder: false,
+          aiExplorer: false,
+        },
+      ]);
 
       mockConvictionClaimsRepository.getClaimsByAccount.mockResolvedValue([]);
 
@@ -235,53 +163,50 @@ describe("AirdropService", () => {
       const mockAddress = "0x1234567890123456789012345678901234567890";
       const claimTimestamp = new Date("2024-01-01T00:00:00Z");
 
-      mockAirdropRepository.getAllClaimsForAddress.mockResolvedValue({
-        claims: [
-          {
-            address: mockAddress.toLowerCase(),
-            amount: BigInt("1000000000000000000"),
-            season: 0,
-            proof: ["0xproof1"],
-            category: "early",
-            sybilClassification: "approved",
-            flaggedAt: null,
-            flaggingReason: null,
-            powerUser: true,
-            recallSnapper: false,
-            aiBuilder: false,
-            aiExplorer: false,
-          },
-          {
-            address: mockAddress.toLowerCase(),
-            amount: BigInt("2000000000000000000"),
-            season: 1,
-            proof: ["0xproof2"],
-            category: "regular",
-            sybilClassification: "approved",
-            flaggedAt: null,
-            flaggingReason: null,
-            powerUser: false,
-            recallSnapper: true,
-            aiBuilder: false,
-            aiExplorer: false,
-          },
-          {
-            address: mockAddress.toLowerCase(),
-            amount: BigInt("3000000000000000000"),
-            season: 2,
-            proof: ["0xproof3"],
-            category: "bonus",
-            sybilClassification: "sybil",
-            flaggedAt: new Date(),
-            flaggingReason: "Account flagged as sybil",
-            powerUser: false,
-            recallSnapper: false,
-            aiBuilder: true,
-            aiExplorer: true,
-          },
-        ],
-        claimStatus: null,
-      });
+      mockAirdropRepository.getAllAllocationsForAddress.mockResolvedValue([
+        {
+          address: mockAddress.toLowerCase(),
+          amount: BigInt("1000000000000000000"),
+          season: 0,
+          proof: ["0xproof1"],
+          category: "early",
+          sybilClassification: "approved",
+          flaggedAt: null,
+          flaggingReason: null,
+          powerUser: true,
+          recallSnapper: false,
+          aiBuilder: false,
+          aiExplorer: false,
+        },
+        {
+          address: mockAddress.toLowerCase(),
+          amount: BigInt("2000000000000000000"),
+          season: 1,
+          proof: ["0xproof2"],
+          category: "regular",
+          sybilClassification: "approved",
+          flaggedAt: null,
+          flaggingReason: null,
+          powerUser: false,
+          recallSnapper: true,
+          aiBuilder: false,
+          aiExplorer: false,
+        },
+        {
+          address: mockAddress.toLowerCase(),
+          amount: BigInt("3000000000000000000"),
+          season: 2,
+          proof: ["0xproof3"],
+          category: "bonus",
+          sybilClassification: "sybil",
+          flaggedAt: new Date(),
+          flaggingReason: "Account flagged as sybil",
+          powerUser: false,
+          recallSnapper: false,
+          aiBuilder: true,
+          aiExplorer: true,
+        },
+      ]);
 
       mockConvictionClaimsRepository.getClaimsByAccount.mockResolvedValue([
         {
@@ -328,10 +253,7 @@ describe("AirdropService", () => {
     it("should handle empty allocations", async () => {
       const mockAddress = "0x1234567890123456789012345678901234567890";
 
-      mockAirdropRepository.getAllClaimsForAddress.mockResolvedValue({
-        claims: [],
-        claimStatus: null,
-      });
+      mockAirdropRepository.getAllAllocationsForAddress.mockResolvedValue([]);
 
       mockConvictionClaimsRepository.getClaimsByAccount.mockResolvedValue([]);
 
@@ -348,25 +270,22 @@ describe("AirdropService", () => {
 
       const mockAddress = "0x1234567890123456789012345678901234567890";
 
-      mockAirdropRepository.getAllClaimsForAddress.mockResolvedValue({
-        claims: [
-          {
-            address: mockAddress.toLowerCase(),
-            amount: BigInt("1000000000000000000"),
-            season: 0,
-            proof: ["0xproof1"],
-            category: "early",
-            sybilClassification: "approved",
-            flaggedAt: null,
-            flaggingReason: null,
-            powerUser: true,
-            recallSnapper: false,
-            aiBuilder: false,
-            aiExplorer: false,
-          },
-        ],
-        claimStatus: null,
-      });
+      mockAirdropRepository.getAllAllocationsForAddress.mockResolvedValue([
+        {
+          address: mockAddress.toLowerCase(),
+          amount: BigInt("1000000000000000000"),
+          season: 0,
+          proof: ["0xproof1"],
+          category: "early",
+          sybilClassification: "approved",
+          flaggedAt: null,
+          flaggingReason: null,
+          powerUser: true,
+          recallSnapper: false,
+          aiBuilder: false,
+          aiExplorer: false,
+        },
+      ]);
 
       const result =
         await serviceWithoutConviction.getAccountClaimsData(mockAddress);
@@ -380,7 +299,9 @@ describe("AirdropService", () => {
       const mockAddress = "0x1234567890123456789012345678901234567890";
       const error = new Error("Database connection failed");
 
-      mockAirdropRepository.getAllClaimsForAddress.mockRejectedValue(error);
+      mockAirdropRepository.getAllAllocationsForAddress.mockRejectedValue(
+        error,
+      );
 
       await expect(service.getAccountClaimsData(mockAddress)).rejects.toThrow(
         "Database connection failed",
@@ -395,53 +316,50 @@ describe("AirdropService", () => {
     it("should assign correct season names", async () => {
       const mockAddress = "0x1234567890123456789012345678901234567890";
 
-      mockAirdropRepository.getAllClaimsForAddress.mockResolvedValue({
-        claims: [
-          {
-            address: mockAddress.toLowerCase(),
-            amount: BigInt("1000"),
-            season: 0,
-            proof: [],
-            category: "",
-            sybilClassification: "approved",
-            flaggedAt: null,
-            flaggingReason: null,
-            powerUser: false,
-            recallSnapper: false,
-            aiBuilder: false,
-            aiExplorer: false,
-          },
-          {
-            address: mockAddress.toLowerCase(),
-            amount: BigInt("1000"),
-            season: 3,
-            proof: [],
-            category: "",
-            sybilClassification: "approved",
-            flaggedAt: null,
-            flaggingReason: null,
-            powerUser: false,
-            recallSnapper: false,
-            aiBuilder: false,
-            aiExplorer: false,
-          },
-          {
-            address: mockAddress.toLowerCase(),
-            amount: BigInt("1000"),
-            season: 99,
-            proof: [],
-            category: "",
-            sybilClassification: "approved",
-            flaggedAt: null,
-            flaggingReason: null,
-            powerUser: false,
-            recallSnapper: false,
-            aiBuilder: false,
-            aiExplorer: false,
-          },
-        ],
-        claimStatus: null,
-      });
+      mockAirdropRepository.getAllAllocationsForAddress.mockResolvedValue([
+        {
+          address: mockAddress.toLowerCase(),
+          amount: BigInt("1000"),
+          season: 0,
+          proof: [],
+          category: "",
+          sybilClassification: "approved",
+          flaggedAt: null,
+          flaggingReason: null,
+          powerUser: false,
+          recallSnapper: false,
+          aiBuilder: false,
+          aiExplorer: false,
+        },
+        {
+          address: mockAddress.toLowerCase(),
+          amount: BigInt("1000"),
+          season: 3,
+          proof: [],
+          category: "",
+          sybilClassification: "approved",
+          flaggedAt: null,
+          flaggingReason: null,
+          powerUser: false,
+          recallSnapper: false,
+          aiBuilder: false,
+          aiExplorer: false,
+        },
+        {
+          address: mockAddress.toLowerCase(),
+          amount: BigInt("1000"),
+          season: 99,
+          proof: [],
+          category: "",
+          sybilClassification: "approved",
+          flaggedAt: null,
+          flaggingReason: null,
+          powerUser: false,
+          recallSnapper: false,
+          aiBuilder: false,
+          aiExplorer: false,
+        },
+      ]);
 
       mockConvictionClaimsRepository.getClaimsByAccount.mockResolvedValue([]);
 
@@ -478,12 +396,12 @@ describe("AirdropService", () => {
         aiExplorer: false,
       };
 
-      mockAirdropRepository.getClaimByAddress.mockResolvedValue(mockClaim);
+      mockAirdropRepository.getAllocationByAddress.mockResolvedValue(mockClaim);
 
       const result = await service.checkEligibility(mockAddress, mockSeason);
 
       expect(result).toEqual(mockClaim);
-      expect(mockAirdropRepository.getClaimByAddress).toHaveBeenCalledWith(
+      expect(mockAirdropRepository.getAllocationByAddress).toHaveBeenCalledWith(
         mockAddress,
       );
     });

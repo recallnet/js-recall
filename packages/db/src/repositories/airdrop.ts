@@ -2,20 +2,18 @@ import { eq, sql } from "drizzle-orm";
 import { Logger } from "pino";
 
 import {
-  airdropClaims,
-  claimStatus,
+  airdropAllocations,
   merkleMetadata,
+  seasons,
 } from "../schema/airdrop/defs.js";
-import { Database } from "../types.js";
+import { NewSeason } from "../schema/airdrop/types.js";
+import { Database, Transaction } from "../types.js";
 
 /**
  * Database service for airdrop data operations
  * Replaces file-based data storage with PostgreSQL
  */
 export class AirdropRepository {
-  // TODO: I just copied these functions from the airdrop claims portal repo.
-  // We probably want methods more specific to our use case.
-
   readonly #db: Database;
   readonly #logger: Logger;
 
@@ -25,90 +23,92 @@ export class AirdropRepository {
   }
 
   /**
-   * Get claim data for a specific address
+   * Get allocation data for a specific address
    */
-  async getClaimByAddress(address: string) {
+  async getAllocationByAddress(address: string) {
     try {
       const normalizedAddress = address.toLowerCase();
 
       const result = await this.#db
         .select()
-        .from(airdropClaims)
-        .where(eq(airdropClaims.address, normalizedAddress))
+        .from(airdropAllocations)
+        .where(eq(airdropAllocations.address, normalizedAddress))
         .limit(1);
 
       if (result.length === 0) {
         return null;
       }
 
-      const claim = result[0];
-      if (!claim) {
-        throw new Error(`Claim not found for address ${address}`);
+      const allocation = result[0];
+      if (!allocation) {
+        throw new Error(`Allocation not found for address ${address}`);
       }
 
       // Parse the proof JSON string back to array
       let proofArray: string[] = [];
       try {
-        proofArray = JSON.parse(claim.proof);
+        proofArray = JSON.parse(allocation.proof);
       } catch (e) {
         this.#logger.error("Failed to parse proof JSON:", e);
         proofArray = [];
       }
 
       return {
-        address: claim.address,
-        amount: claim.amount,
-        season: claim.season,
+        address: allocation.address,
+        amount: allocation.amount,
+        season: allocation.season,
         proof: proofArray,
-        category: claim.category || "",
-        sybilClassification: claim.sybilClassification as
+        category: allocation.category || "",
+        sybilClassification: allocation.sybilClassification as
           | "approved"
           | "maybe-sybil"
           | "sybil",
-        flaggedAt: claim.flaggedAt || null,
-        flaggingReason: claim.flaggingReason || null,
-        powerUser: claim.powerUser || false,
-        recallSnapper: claim.recallSnapper || false,
-        aiBuilder: claim.aiBuilder || false,
-        aiExplorer: claim.aiExplorer || false,
+        flaggedAt: allocation.flaggedAt || null,
+        flaggingReason: allocation.flaggingReason || null,
+        powerUser: allocation.powerUser || false,
+        recallSnapper: allocation.recallSnapper || false,
+        aiBuilder: allocation.aiBuilder || false,
+        aiExplorer: allocation.aiExplorer || false,
       };
     } catch (error) {
-      this.#logger.error("Error fetching claim by address:", error);
+      this.#logger.error("Error fetching allocation by address:", error);
       throw error;
     }
   }
 
   /**
-   * Get multiple claims for batch processing
+   * Get multiple allocations for batch processing
    */
-  async getClaimsByAddresses(addresses: string[]) {
+  async getAllocationsByAddresses(addresses: string[]) {
     try {
       const normalizedAddresses = addresses.map((a) => a.toLowerCase());
 
       const results = await this.#db
         .select()
-        .from(airdropClaims)
-        .where(sql`${airdropClaims.address} = ANY(${normalizedAddresses})`);
+        .from(airdropAllocations)
+        .where(
+          sql`${airdropAllocations.address} = ANY(${normalizedAddresses})`,
+        );
 
-      return results.map((claim) => ({
-        address: claim.address,
-        amount: claim.amount,
-        season: claim.season,
-        proof: JSON.parse(claim.proof),
-        category: claim.category || "",
-        sybilClassification: claim.sybilClassification as
+      return results.map((allocation) => ({
+        address: allocation.address,
+        amount: allocation.amount,
+        season: allocation.season,
+        proof: JSON.parse(allocation.proof),
+        category: allocation.category || "",
+        sybilClassification: allocation.sybilClassification as
           | "approved"
           | "maybe-sybil"
           | "sybil",
-        flaggedAt: claim.flaggedAt || null,
-        flaggingReason: claim.flaggingReason || null,
-        powerUser: claim.powerUser || false,
-        recallSnapper: claim.recallSnapper || false,
-        aiBuilder: claim.aiBuilder || false,
-        aiExplorer: claim.aiExplorer || false,
+        flaggedAt: allocation.flaggedAt || null,
+        flaggingReason: allocation.flaggingReason || null,
+        powerUser: allocation.powerUser || false,
+        recallSnapper: allocation.recallSnapper || false,
+        aiBuilder: allocation.aiBuilder || false,
+        aiExplorer: allocation.aiExplorer || false,
       }));
     } catch (error) {
-      this.#logger.error("Error fetching claims by addresses:", error);
+      this.#logger.error("Error fetching allocations by addresses:", error);
       throw error;
     }
   }
@@ -136,7 +136,7 @@ export class AirdropRepository {
   }
 
   /**
-   * Get full airdrop data (metadata + specific claim)
+   * Get full airdrop data (metadata + specific allocation)
    * This mimics the structure of the original JSON file for backward compatibility
    */
   async getAirdropData(address?: string) {
@@ -147,26 +147,26 @@ export class AirdropRepository {
         return null;
       }
 
-      // If no address specified, just return metadata without claims
+      // If no address specified, just return metadata without allocations
       if (!address) {
         return {
           merkleRoot: metadata.merkleRoot,
           totalAmount: metadata.totalAmount,
           totalRows: metadata.totalRows,
           uniqueAddresses: metadata.uniqueAddresses,
-          claims: [],
+          allocations: [],
         };
       }
 
-      // Get the specific claim for the address
-      const claim = await this.getClaimByAddress(address);
+      // Get the specific allocation for the address
+      const allocation = await this.getAllocationByAddress(address);
 
       return {
         merkleRoot: metadata.merkleRoot,
         totalAmount: metadata.totalAmount,
         totalRows: metadata.totalRows,
         uniqueAddresses: metadata.uniqueAddresses,
-        claims: claim ? [claim] : [],
+        allocations: allocation ? [allocation] : [],
       };
     } catch (error) {
       this.#logger.error("Error fetching airdrop data:", error);
@@ -175,36 +175,39 @@ export class AirdropRepository {
   }
 
   /**
-   * Get all claims with a specific sybil classification
+   * Get all allocations with a specific sybil classification
    */
-  async getClaimsByClassification(
+  async getAllocationsByClassification(
     classification: "approved" | "maybe-sybil" | "sybil",
   ) {
     try {
       const results = await this.#db
         .select()
-        .from(airdropClaims)
-        .where(eq(airdropClaims.sybilClassification, classification));
+        .from(airdropAllocations)
+        .where(eq(airdropAllocations.sybilClassification, classification));
 
-      return results.map((claim) => ({
-        address: claim.address,
-        amount: claim.amount,
-        season: claim.season,
-        proof: JSON.parse(claim.proof),
-        category: claim.category || "",
-        sybilClassification: claim.sybilClassification as
+      return results.map((allocation) => ({
+        address: allocation.address,
+        amount: allocation.amount,
+        season: allocation.season,
+        proof: JSON.parse(allocation.proof),
+        category: allocation.category || "",
+        sybilClassification: allocation.sybilClassification as
           | "approved"
           | "maybe-sybil"
           | "sybil",
-        flaggedAt: claim.flaggedAt || null,
-        flaggingReason: claim.flaggingReason || null,
-        powerUser: claim.powerUser || false,
-        recallSnapper: claim.recallSnapper || false,
-        aiBuilder: claim.aiBuilder || false,
-        aiExplorer: claim.aiExplorer || false,
+        flaggedAt: allocation.flaggedAt || null,
+        flaggingReason: allocation.flaggingReason || null,
+        powerUser: allocation.powerUser || false,
+        recallSnapper: allocation.recallSnapper || false,
+        aiBuilder: allocation.aiBuilder || false,
+        aiExplorer: allocation.aiExplorer || false,
       }));
     } catch (error) {
-      this.#logger.error("Error fetching claims by classification:", error);
+      this.#logger.error(
+        "Error fetching allocations by classification:",
+        error,
+      );
       throw error;
     }
   }
@@ -223,11 +226,11 @@ export class AirdropRepository {
       // Get classification counts
       const classificationCounts = await this.#db
         .select({
-          classification: airdropClaims.sybilClassification,
+          classification: airdropAllocations.sybilClassification,
           count: sql<number>`count(*)::int`,
         })
-        .from(airdropClaims)
-        .groupBy(airdropClaims.sybilClassification);
+        .from(airdropAllocations)
+        .groupBy(airdropAllocations.sybilClassification);
 
       // Convert to object
       const counts = classificationCounts.reduce(
@@ -265,8 +268,8 @@ export class AirdropRepository {
 
       const result = await this.#db
         .select({ count: sql<number>`count(*)::int` })
-        .from(airdropClaims)
-        .where(eq(airdropClaims.address, normalizedAddress));
+        .from(airdropAllocations)
+        .where(eq(airdropAllocations.address, normalizedAddress));
 
       return (result[0]?.count || 0) > 0;
     } catch (error) {
@@ -276,52 +279,52 @@ export class AirdropRepository {
   }
 
   /**
-   * Get paginated claims (useful for admin interfaces)
+   * Get paginated allocations (useful for admin interfaces)
    */
-  async getClaimsPaginated(offset: number = 0, limit: number = 100) {
+  async getAllocationsPaginated(offset: number = 0, limit: number = 100) {
     try {
       const results = await this.#db
         .select()
-        .from(airdropClaims)
+        .from(airdropAllocations)
         .offset(offset)
         .limit(limit);
 
-      const claims = results.map((claim) => ({
-        address: claim.address,
-        amount: claim.amount,
-        season: claim.season,
-        proof: JSON.parse(claim.proof),
-        category: claim.category || "",
-        sybilClassification: claim.sybilClassification as
+      const allocations = results.map((allocation) => ({
+        address: allocation.address,
+        amount: allocation.amount,
+        season: allocation.season,
+        proof: JSON.parse(allocation.proof),
+        category: allocation.category || "",
+        sybilClassification: allocation.sybilClassification as
           | "approved"
           | "maybe-sybil"
           | "sybil",
-        flaggedAt: claim.flaggedAt || null,
-        flaggingReason: claim.flaggingReason || null,
+        flaggedAt: allocation.flaggedAt || null,
+        flaggingReason: allocation.flaggingReason || null,
       }));
 
       // Get total count for pagination
       const countResult = await this.#db
         .select({ count: sql<number>`count(*)::int` })
-        .from(airdropClaims);
+        .from(airdropAllocations);
 
       return {
-        claims,
+        allocations,
         total: countResult[0]?.count || 0,
         offset,
         limit,
       };
     } catch (error) {
-      this.#logger.error("Error fetching paginated claims:", error);
+      this.#logger.error("Error fetching paginated allocations:", error);
       throw error;
     }
   }
 
   /**
-   * Insert claims in batches
+   * Insert allocations in batches
    */
-  async insertClaimsBatch(
-    claims: Array<{
+  async insertAllocationsBatch(
+    allocations: Array<{
       address: string;
       amount: string;
       season: number;
@@ -336,51 +339,96 @@ export class AirdropRepository {
       aiExplorer: boolean;
     }>,
     batchSize: number = 1000,
+    tx?: Transaction,
   ): Promise<void> {
     this.#logger.info(
-      `Inserting ${claims.length} claims in batches of ${batchSize}`,
+      `Inserting ${allocations.length} allocations in batches of ${batchSize}`,
     );
 
-    for (let i = 0; i < claims.length; i += batchSize) {
-      const batch = claims.slice(i, i + batchSize);
+    for (let i = 0; i < allocations.length; i += batchSize) {
+      const batch = allocations.slice(i, i + batchSize);
 
-      const values = batch.map((claim) => ({
-        address: claim.address.toLowerCase(),
-        amount: BigInt(claim.amount),
-        season: claim.season,
-        proof: JSON.stringify(claim.proof),
-        category: claim.category || "",
-        sybilClassification: claim.sybilClassification || "approved",
-        flaggedAt: claim.flaggedAt ? new Date(claim.flaggedAt) : undefined,
-        flaggingReason: claim.flaggingReason || undefined,
-        powerUser: claim.powerUser,
-        recallSnapper: claim.recallSnapper,
-        aiBuilder: claim.aiBuilder,
-        aiExplorer: claim.aiExplorer,
+      const values = batch.map((allocation) => ({
+        address: allocation.address.toLowerCase(),
+        amount: BigInt(allocation.amount),
+        season: allocation.season,
+        proof: JSON.stringify(allocation.proof),
+        category: allocation.category || "",
+        sybilClassification: allocation.sybilClassification || "approved",
+        flaggedAt: allocation.flaggedAt
+          ? new Date(allocation.flaggedAt)
+          : undefined,
+        flaggingReason: allocation.flaggingReason || undefined,
+        powerUser: allocation.powerUser,
+        recallSnapper: allocation.recallSnapper,
+        aiBuilder: allocation.aiBuilder,
+        aiExplorer: allocation.aiExplorer,
       }));
 
-      await this.#db.insert(airdropClaims).values(values);
+      const executor = tx ?? this.#db;
+      await executor.insert(airdropAllocations).values(values);
 
       this.#logger.info(
-        `Inserted batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(claims.length / batchSize)}`,
+        `Inserted batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(allocations.length / batchSize)}`,
       );
     }
 
-    this.#logger.info("All claims inserted successfully");
+    this.#logger.info("All allocations inserted successfully");
+  }
+
+  /**
+   * Get all allocations data for a specific address across all seasons
+   */
+  async getAllAllocationsForAddress(address: string) {
+    try {
+      const normalizedAddress = address.toLowerCase();
+
+      const res = await this.#db
+        .select()
+        .from(airdropAllocations)
+        .where(eq(airdropAllocations.address, normalizedAddress));
+
+      const allocations = res.map((claim) => ({
+        address: claim.address,
+        amount: claim.amount,
+        season: claim.season,
+        proof: JSON.parse(claim.proof),
+        category: claim.category || "",
+        sybilClassification: claim.sybilClassification as
+          | "approved"
+          | "maybe-sybil"
+          | "sybil",
+        flaggedAt: claim.flaggedAt || null,
+        flaggingReason: claim.flaggingReason || null,
+        powerUser: claim.powerUser || false,
+        recallSnapper: claim.recallSnapper || false,
+        aiBuilder: claim.aiBuilder || false,
+        aiExplorer: claim.aiExplorer || false,
+      }));
+
+      return allocations;
+    } catch (error) {
+      this.#logger.error("Error fetching all claims for address:", error);
+      throw error;
+    }
   }
 
   /**
    * Insert or update merkle metadata
    */
-  async upsertMetadata(metadata: {
-    merkleRoot: string;
-    totalAmount: string;
-    totalRows: number;
-    uniqueAddresses: number;
-  }): Promise<void> {
+  async upsertMetadata(
+    metadata: {
+      merkleRoot: string;
+      totalAmount: string;
+      totalRows: number;
+      uniqueAddresses: number;
+    },
+    tx?: Transaction,
+  ): Promise<void> {
     this.#logger.info("Upserting merkle metadata");
 
-    await this.#db
+    const executor = tx ?? this.#db;
+    await executor
       .insert(merkleMetadata)
       .values({
         id: 1,
@@ -402,131 +450,18 @@ export class AirdropRepository {
     this.#logger.info("Merkle metadata upserted successfully");
   }
 
-  /**
-   * Get claim status for a specific address
-   */
-  async getClaimStatus(address: string) {
-    try {
-      const normalizedAddress = address.toLowerCase();
-
-      const result = await this.#db
-        .select()
-        .from(claimStatus)
-        .where(eq(claimStatus.address, normalizedAddress))
-        .limit(1);
-
-      if (result.length === 0) {
-        return null;
-      }
-
-      return result[0];
-    } catch (error) {
-      this.#logger.error("Error fetching claim status:", error);
-      throw error;
+  async newSeason(newSeason: NewSeason, tx?: Transaction) {
+    const executor = tx ?? this.#db;
+    const [res] = await executor.insert(seasons).values(newSeason).returning();
+    if (!res) {
+      this.#logger.error("Failed to insert season");
+      throw new Error("Failed to insert season");
     }
-  }
-
-  /**
-   * Get claim statuses for multiple addresses
-   */
-  async getClaimStatusesByAddresses(addresses: string[]) {
-    try {
-      const normalizedAddresses = addresses.map((a) => a.toLowerCase());
-
-      const results = await this.#db
-        .select()
-        .from(claimStatus)
-        .where(sql`${claimStatus.address} = ANY(${normalizedAddresses})`);
-
-      return results;
-    } catch (error) {
-      this.#logger.error("Error fetching claim statuses:", error);
-      throw error;
-    }
-  }
-
-  /**
-   * Update claim status when a claim is made
-   */
-  async updateClaimStatus(
-    address: string,
-    data: {
-      claimed: boolean;
-      claimedAt?: Date;
-      transactionHash?: string;
-      stakingDuration?: number;
-      stakedAmount?: string;
-    },
-  ) {
-    try {
-      const normalizedAddress = address.toLowerCase();
-
-      await this.#db
-        .insert(claimStatus)
-        .values({
-          address: normalizedAddress,
-          claimed: data.claimed,
-          claimedAt: data.claimedAt,
-          transactionHash: data.transactionHash,
-          stakingDuration: data.stakingDuration,
-          stakedAmount: data.stakedAmount,
-        })
-        .onConflictDoUpdate({
-          target: claimStatus.address,
-          set: {
-            claimed: data.claimed,
-            claimedAt: data.claimedAt,
-            transactionHash: data.transactionHash,
-            stakingDuration: data.stakingDuration,
-            stakedAmount: data.stakedAmount,
-            updatedAt: new Date(),
-          },
-        });
-
-      this.#logger.info(`Claim status updated for address ${address}`);
-    } catch (error) {
-      this.#logger.error("Error updating claim status:", error);
-      throw error;
-    }
-  }
-
-  /**
-   * Get all claims data for a specific address across all seasons
-   */
-  async getAllClaimsForAddress(address: string) {
-    try {
-      const normalizedAddress = address.toLowerCase();
-
-      const claims = await this.#db
-        .select()
-        .from(airdropClaims)
-        .where(eq(airdropClaims.address, normalizedAddress));
-
-      const status = await this.getClaimStatus(address);
-
-      return {
-        claims: claims.map((claim) => ({
-          address: claim.address,
-          amount: claim.amount,
-          season: claim.season,
-          proof: JSON.parse(claim.proof),
-          category: claim.category || "",
-          sybilClassification: claim.sybilClassification as
-            | "approved"
-            | "maybe-sybil"
-            | "sybil",
-          flaggedAt: claim.flaggedAt || null,
-          flaggingReason: claim.flaggingReason || null,
-          powerUser: claim.powerUser || false,
-          recallSnapper: claim.recallSnapper || false,
-          aiBuilder: claim.aiBuilder || false,
-          aiExplorer: claim.aiExplorer || false,
-        })),
-        claimStatus: status,
-      };
-    } catch (error) {
-      this.#logger.error("Error fetching all claims for address:", error);
-      throw error;
+    if (res.id > 0) {
+      await executor
+        .update(seasons)
+        .set({ endDate: res.startDate })
+        .where(eq(seasons.id, res.id - 1));
     }
   }
 }
