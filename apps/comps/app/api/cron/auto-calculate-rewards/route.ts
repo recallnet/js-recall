@@ -1,4 +1,3 @@
-import { execSync } from "child_process";
 import ejs from "ejs";
 import { readFileSync } from "fs";
 import { NextRequest } from "next/server";
@@ -69,16 +68,7 @@ function formatTokenAmount(amount: bigint): string {
   return attoValueToNumberValue(amount, "ROUND_DOWN", 3).toString();
 }
 
-/**
- * Get git commit hash
- */
-function getCommitHash(): string {
-  try {
-    return execSync("git rev-parse --short HEAD", { encoding: "utf-8" }).trim();
-  } catch {
-    return "unknown";
-  }
-}
+const COMMIT_HASH = process.env.VERCEL_GIT_COMMIT_SHA || "unknown";
 
 function formatBigIntWith18Decimals(value: bigint): string {
   const s = value.toString().padStart(19, "0"); // ensure at least 19 digits
@@ -173,7 +163,7 @@ async function generateAndSendReport(competitionId: string): Promise<void> {
       competitionName: reportData.competition.name,
       merkleRoot: reportData.merkleRoot,
       generatedDate,
-      commitHash: getCommitHash(),
+      commitHash: COMMIT_HASH,
       tokenContractAddress,
       rewardsContractAddress,
       totalRecipients: reportData.totalRecipients,

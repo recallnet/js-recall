@@ -56,7 +56,8 @@
         "TEST_MODE",
         "METRICS_PORT",
         "CI",
-        "CRON_SECRET"
+        "CRON_SECRET",
+        "VERCEL_GIT_COMMIT_SHA"
       ]
     }
   }
