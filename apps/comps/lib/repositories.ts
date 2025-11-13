@@ -6,6 +6,7 @@ import { BalanceRepository } from "@recallnet/db/repositories/balance";
 import { BoostRepository } from "@recallnet/db/repositories/boost";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { CompetitionRewardsRepository } from "@recallnet/db/repositories/competition-rewards";
+import { ConvictionClaimsRepository } from "@recallnet/db/repositories/conviction-claims";
 import { LeaderboardRepository } from "@recallnet/db/repositories/leaderboard";
 import { PerpsRepository } from "@recallnet/db/repositories/perps";
 import { RewardsRepository } from "@recallnet/db/repositories/rewards";
@@ -54,6 +55,11 @@ export const competitionRepository = new CompetitionRepository(
   db,
   db,
   createLogger("CompetitionRepository"),
+);
+
+export const convictionClaimsRepository = new ConvictionClaimsRepository(
+  db,
+  createLogger("ConvictionClaimsRepository"),
 );
 
 export const leaderboardRepository = new LeaderboardRepository(

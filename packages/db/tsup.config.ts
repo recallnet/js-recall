@@ -15,6 +15,7 @@ export default defineConfig({
     "src/repositories/boost.ts",
     "src/repositories/competition-rewards.ts",
     "src/repositories/competition.ts",
+    "src/repositories/conviction-claims.ts",
     "src/repositories/leaderboard.ts",
     "src/repositories/partner.ts",
     "src/repositories/perps.ts",

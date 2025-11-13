@@ -1,7 +1,11 @@
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { Logger } from "pino";
 
-import { airdropClaims, merkleMetadata } from "../schema/airdrop/defs.js";
+import {
+  airdropClaims,
+  claimStatus,
+  merkleMetadata,
+} from "../schema/airdrop/defs.js";
 import { Database } from "../types.js";
 
 /**
@@ -396,5 +400,133 @@ export class AirdropRepository {
       });
 
     this.#logger.info("Merkle metadata upserted successfully");
+  }
+
+  /**
+   * Get claim status for a specific address
+   */
+  async getClaimStatus(address: string) {
+    try {
+      const normalizedAddress = address.toLowerCase();
+
+      const result = await this.#db
+        .select()
+        .from(claimStatus)
+        .where(eq(claimStatus.address, normalizedAddress))
+        .limit(1);
+
+      if (result.length === 0) {
+        return null;
+      }
+
+      return result[0];
+    } catch (error) {
+      this.#logger.error("Error fetching claim status:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get claim statuses for multiple addresses
+   */
+  async getClaimStatusesByAddresses(addresses: string[]) {
+    try {
+      const normalizedAddresses = addresses.map((a) => a.toLowerCase());
+
+      const results = await this.#db
+        .select()
+        .from(claimStatus)
+        .where(sql`${claimStatus.address} = ANY(${normalizedAddresses})`);
+
+      return results;
+    } catch (error) {
+      this.#logger.error("Error fetching claim statuses:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update claim status when a claim is made
+   */
+  async updateClaimStatus(
+    address: string,
+    data: {
+      claimed: boolean;
+      claimedAt?: Date;
+      transactionHash?: string;
+      stakingDuration?: number;
+      stakedAmount?: string;
+    },
+  ) {
+    try {
+      const normalizedAddress = address.toLowerCase();
+
+      await this.#db
+        .insert(claimStatus)
+        .values({
+          address: normalizedAddress,
+          claimed: data.claimed,
+          claimedAt: data.claimedAt,
+          transactionHash: data.transactionHash,
+          stakingDuration: data.stakingDuration,
+          stakedAmount: data.stakedAmount,
+        })
+        .onConflictDoUpdate({
+          target: claimStatus.address,
+          set: {
+            claimed: data.claimed,
+            claimedAt: data.claimedAt,
+            transactionHash: data.transactionHash,
+            stakingDuration: data.stakingDuration,
+            stakedAmount: data.stakedAmount,
+            updatedAt: new Date(),
+          },
+        });
+
+      this.#logger.info(`Claim status updated for address ${address}`);
+    } catch (error) {
+      this.#logger.error("Error updating claim status:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get all claims data for a specific address across all seasons
+   */
+  async getAllClaimsForAddress(address: string) {
+    try {
+      const normalizedAddress = address.toLowerCase();
+
+      const claims = await this.#db
+        .select()
+        .from(airdropClaims)
+        .where(eq(airdropClaims.address, normalizedAddress));
+
+      const status = await this.getClaimStatus(address);
+
+      return {
+        claims: claims.map((claim) => ({
+          address: claim.address,
+          amount: claim.amount,
+          season: claim.season,
+          proof: JSON.parse(claim.proof),
+          category: claim.category || "",
+          sybilClassification: claim.sybilClassification as
+            | "approved"
+            | "maybe-sybil"
+            | "sybil",
+          flaggedAt: claim.flaggedAt || null,
+          flaggingReason: claim.flaggingReason || null,
+          powerUser: claim.powerUser || false,
+          recallSnapper: claim.recallSnapper || false,
+          aiBuilder: claim.aiBuilder || false,
+          aiExplorer: claim.aiExplorer || false,
+        })),
+        claimStatus: status,
+      };
+    } catch (error) {
+      this.#logger.error("Error fetching all claims for address:", error);
+      throw error;
+    }
   }
 }

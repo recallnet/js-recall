@@ -34,6 +34,7 @@ import {
   boostRepository,
   competitionRepository,
   competitionRewardsRepository,
+  convictionClaimsRepository,
   leaderboardRepository,
   perpsRepository,
   rewardsRepository,
@@ -59,6 +60,7 @@ export const walletWatchList = new WalletWatchlist(
 export const airdropService = new AirdropService(
   airdropRepository,
   createLogger("AirdropService"),
+  convictionClaimsRepository,
 );
 
 export const balanceService = new BalanceService(

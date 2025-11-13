@@ -132,6 +132,16 @@
         "default": "./dist/repositories/competition-rewards.cjs"
       }
     },
+    "./repositories/conviction-claims": {
+      "import": {
+        "types": "./dist/repositories/conviction-claims.d.ts",
+        "default": "./dist/repositories/conviction-claims.js"
+      },
+      "require": {
+        "types": "./dist/repositories/conviction-claims.d.cts",
+        "default": "./dist/repositories/conviction-claims.cjs"
+      }
+    },
     "./repositories/leaderboard": {
       "import": {
         "types": "./dist/repositories/leaderboard.d.ts",
