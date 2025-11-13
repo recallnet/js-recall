@@ -39,11 +39,14 @@ import { RewardsService } from "./rewards.service.js";
 import { TradeSimulatorService } from "./trade-simulator.service.js";
 import { TradingConstraintsService } from "./trading-constraints.service.js";
 import {
+  AllocationUnit,
   BaseEnrichedLeaderboardEntry,
   CompetitionAgentStatus,
   CompetitionStatus,
   CompetitionType,
   CrossChainTradingType,
+  DisplayState,
+  EngineType,
   EnrichedLeaderboardEntry,
   EvaluationMetric,
   PagingParams,
@@ -64,6 +67,7 @@ import {
  */
 export interface CreateCompetitionParams {
   name: string;
+  arenaId: string; // Required - admins must explicitly specify arena
   description?: string;
   tradingType?: CrossChainTradingType;
   sandboxMode?: boolean;
@@ -92,6 +96,29 @@ export interface CreateCompetitionParams {
     agent: number;
     users: number;
   };
+  rewardsIneligible?: string[];
+
+  // Engine routing (arenaId already defined above as required)
+  engineId?: EngineType;
+  engineVersion?: string;
+
+  // Participation rules
+  vips?: string[];
+  allowlist?: string[];
+  blocklist?: string[];
+  minRecallRank?: number;
+  allowlistOnly?: boolean;
+
+  // Reward allocation
+  agentAllocation?: number;
+  agentAllocationUnit?: AllocationUnit;
+  boosterAllocation?: number;
+  boosterAllocationUnit?: AllocationUnit;
+  rewardRules?: string;
+  rewardDetails?: string;
+
+  // Display
+  displayState?: DisplayState;
 }
 
 /**
@@ -422,6 +449,22 @@ export class CompetitionService {
     evaluationMetric,
     perpsProvider,
     prizePools,
+    rewardsIneligible,
+    arenaId,
+    engineId,
+    engineVersion,
+    vips,
+    allowlist,
+    blocklist,
+    minRecallRank,
+    allowlistOnly,
+    agentAllocation,
+    agentAllocationUnit,
+    boosterAllocation,
+    boosterAllocationUnit,
+    rewardRules,
+    rewardDetails,
+    displayState,
   }: CreateCompetitionParams) {
     const id = randomUUID();
 
@@ -441,12 +484,36 @@ export class CompetitionService {
       joinEndDate: joinEndDate ?? null,
       maxParticipants: maxParticipants ?? null,
       minimumStake: minimumStake ?? null,
+      rewardsIneligible: rewardsIneligible ?? null,
       status: "pending",
       crossChainTradingType: tradingType ?? "disallowAll",
       sandboxMode: sandboxMode ?? false,
       type: competitionType,
       createdAt: new Date(),
       updatedAt: new Date(),
+
+      // Arena and engine routing
+      arenaId,
+      engineId: engineId ?? null,
+      engineVersion: engineVersion ?? null,
+
+      // Participation rules
+      vips: vips ?? null,
+      allowlist: allowlist ?? null,
+      blocklist: blocklist ?? null,
+      minRecallRank: minRecallRank ?? null,
+      allowlistOnly: allowlistOnly ?? false,
+
+      // Reward allocation
+      agentAllocation: agentAllocation ?? null,
+      agentAllocationUnit: agentAllocationUnit ?? null,
+      boosterAllocation: boosterAllocation ?? null,
+      boosterAllocationUnit: boosterAllocationUnit ?? null,
+      rewardRules: rewardRules ?? null,
+      rewardDetails: rewardDetails ?? null,
+
+      // Display
+      displayState: displayState ?? null,
     };
 
     // Execute all operations in a single transaction
@@ -528,6 +595,9 @@ export class CompetitionService {
         constraints,
       };
     });
+
+    // Clear trading constraints cache after transaction commits
+    this.tradingConstraintsService.clearConstraintsCache(id);
 
     this.logger.debug(
       `[CompetitionManager] Created competition: ${name} (${id}), crossChainTradingType: ${tradingType}, type: ${type}}`,
@@ -691,6 +761,9 @@ export class CompetitionService {
       const agents = await this.agentService.getAgentsByIds(finalAgentIds);
       this.validateAgentsForPerpsCompetition(agents, competition.type);
     }
+
+    // Clear cached balances after validation, before processing agents
+    this.balanceService.clearCompetitionCache(competitionId);
 
     // Process all agent additions and activations
     for (const agentId of finalAgentIds) {
@@ -1185,15 +1258,37 @@ export class CompetitionService {
           tx,
         );
 
-        // Assign winners to rewards
+        // Fetch agents with lock to check for globally ineligible agents
+        // Lock prevents concurrent updates to agent eligibility during reward assignment
+        const agentIds = leaderboard.map((entry) => entry.agentId);
+        const agents = await this.agentRepo.findByIdsWithLock(agentIds, tx);
+        const globallyIneligibleAgents = agents
+          .filter((agent) => agent.isRewardsIneligible)
+          .map((agent) => agent.id);
+
+        // Combine competition-specific and global exclusions (deduplicated)
+        const competitionExclusions = updated.rewardsIneligible ?? [];
+        const allExcludedAgents = Array.from(
+          new Set([...competitionExclusions, ...globallyIneligibleAgents]),
+        );
+
+        // Assign winners to rewards (excluding both competition-specific and globally ineligible agents)
         await this.competitionRewardService.assignWinnersToRewards(
           competitionId,
           leaderboard,
+          allExcludedAgents.length > 0 ? allExcludedAgents : undefined,
           tx,
         );
 
         return { competition: updated, leaderboard };
       });
+
+    // Clear balance cache after transaction commits successfully
+    // Note: There is a small window between transaction commit and cache clear where concurrent
+    // requests might cache final balances, which we then evict. However, the next cache miss will
+    // correctly fetch the final balances from the database. This is preferable to clearing before
+    // commit, which could result in requests caching stale balances that persist indefinitely.
+    this.balanceService.clearCompetitionCache(competitionId);
 
     // Log success only after transaction has committed
     this.logger.debug(
@@ -2090,6 +2185,11 @@ export class CompetitionService {
       return { competition: updatedCompetition, updatedRewards };
     });
 
+    // Clear trading constraints cache after transaction commits (if constraints were updated)
+    if (tradingConstraints) {
+      this.tradingConstraintsService.clearConstraintsCache(competitionId);
+    }
+
     this.logger.debug(
       `[CompetitionService] Updated competition: ${competitionId}`,
     );
@@ -2208,6 +2308,54 @@ export class CompetitionService {
       );
     }
 
+    // Check blocklist FIRST - absolute exclusion that even VIPs cannot bypass
+    if (competition.blocklist?.includes(agentId)) {
+      throw new ApiError(
+        403,
+        "This agent is not permitted to join this competition",
+      );
+    }
+
+    // Check VIP status early - VIPs bypass soft requirements (stake, rank)
+    if (competition.vips && competition.vips.length > 0) {
+      if (competition.vips.includes(agentId)) {
+        try {
+          await this.competitionRepo.addAgentToCompetition(
+            competitionId,
+            agentId,
+          );
+        } catch (error) {
+          // Convert repository error to appropriate API error
+          if (
+            error instanceof Error &&
+            error.message.includes("maximum participant limit")
+          ) {
+            throw new ApiError(409, error.message);
+          }
+          // Handle one-agent-per-user error
+          if (
+            error instanceof Error &&
+            error.message.includes("already has an agent registered")
+          ) {
+            throw new ApiError(
+              409,
+              "You already have an agent registered in this competition. Each user can only register one agent per competition.",
+            );
+          }
+          throw error;
+        }
+        this.logger.debug(
+          `[CompetitionManager] VIP agent ${agentId} joined competition ${competitionId}, bypassing soft requirements`,
+        );
+        return;
+      }
+    }
+
+    // Validate participation rules (allowlist, rank requirements)
+    await this.validateParticipationRules(competition, agentId);
+
+    // Check minimum stake requirement (non-VIPs only)
+    // Note: Checked after participation rules so allowlist-only errors take precedence
     if (competition.minimumStake && competition.minimumStake > 0) {
       const user = await this.userRepo.findById(validatedUserId);
       if (!user) {
@@ -2252,6 +2400,74 @@ export class CompetitionService {
     this.logger.debug(
       `[CompetitionManager] Successfully joined agent ${agentId} to competition ${competitionId} for user ${validatedUserId}`,
     );
+  }
+
+  /**
+   * Validate agent against competition participation rules
+   * @param competition Competition with participation rules
+   * @param agentId Agent ID to validate
+   * @returns void (throws ApiError if validation fails)
+   */
+  private async validateParticipationRules(
+    competition: SelectCompetition,
+    agentId: string,
+  ): Promise<void> {
+    // Note: Blocklist check moved before VIP check in joinCompetition() - it's an absolute exclusion
+
+    // Rule 1: Allowlist-only mode
+    if (competition.allowlistOnly) {
+      if (!competition.allowlist || competition.allowlist.length === 0) {
+        // If allowlistOnly is true but no allowlist exists, competition is misconfigured
+        throw new ApiError(
+          500,
+          "This competition is misconfigured: allowlist-only mode is enabled but no allowlist is defined. Please contact an administrator.",
+        );
+      }
+      if (!competition.allowlist.includes(agentId)) {
+        throw new ApiError(
+          403,
+          "This competition is allowlist-only. Your agent is not on the allowlist",
+        );
+      }
+      // If agent is on allowlist in allowlist-only mode, they're approved - skip remaining checks
+      return;
+    }
+
+    // Rule 2: Allowlist bypass (bypasses rank check only)
+    // Note: VIPs are checked earlier in joinCompetition() and bypass ALL checks including stake
+    if (competition.allowlist && competition.allowlist.length > 0) {
+      if (competition.allowlist.includes(agentId)) {
+        return; // Allowlist bypass (rank only, stake still applies)
+      }
+    }
+
+    // Rule 3: Rank requirement check
+    if (
+      competition.minRecallRank !== null &&
+      competition.minRecallRank !== undefined
+    ) {
+      const agentRankData = await this.agentScoreRepo.getAgentRank(
+        agentId,
+        competition.type,
+      );
+
+      // No rank means agent hasn't competed yet
+      if (!agentRankData) {
+        throw new ApiError(
+          403,
+          `This competition requires a minimum Recall rank of ${competition.minRecallRank}. Your agent has not yet established a rank.`,
+        );
+      }
+
+      // Lower rank number = better (rank 1 is best)
+      // So if agent's rank > required rank, they don't meet the requirement
+      if (agentRankData.rank > competition.minRecallRank) {
+        throw new ApiError(
+          403,
+          `This competition requires a minimum Recall rank of ${competition.minRecallRank}. Your agent's current rank is ${agentRankData.rank}.`,
+        );
+      }
+    }
   }
 
   /**

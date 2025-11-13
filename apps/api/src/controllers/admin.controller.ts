@@ -616,6 +616,22 @@ export function makeAdminController(services: ServiceRegistry) {
           evaluationMetric,
           perpsProvider,
           prizePools,
+          rewardsIneligible,
+          arenaId,
+          engineId,
+          engineVersion,
+          vips,
+          allowlist,
+          blocklist,
+          minRecallRank,
+          allowlistOnly,
+          agentAllocation,
+          agentAllocationUnit,
+          boosterAllocation,
+          boosterAllocationUnit,
+          rewardRules,
+          rewardDetails,
+          displayState,
         } = flatParse(AdminCreateCompetitionSchema, req.body);
 
         // Create a new competition
@@ -643,6 +659,22 @@ export function makeAdminController(services: ServiceRegistry) {
             evaluationMetric,
             perpsProvider,
             prizePools,
+            rewardsIneligible,
+            arenaId,
+            engineId,
+            engineVersion,
+            vips,
+            allowlist,
+            blocklist,
+            minRecallRank,
+            allowlistOnly,
+            agentAllocation,
+            agentAllocationUnit,
+            boosterAllocation,
+            boosterAllocationUnit,
+            rewardRules,
+            rewardDetails,
+            displayState,
           },
         );
 
@@ -686,6 +718,22 @@ export function makeAdminController(services: ServiceRegistry) {
           evaluationMetric,
           perpsProvider,
           prizePools,
+          rewardsIneligible,
+          arenaId,
+          engineId,
+          engineVersion,
+          vips,
+          allowlist,
+          blocklist,
+          minRecallRank,
+          allowlistOnly,
+          agentAllocation,
+          agentAllocationUnit,
+          boosterAllocation,
+          boosterAllocationUnit,
+          rewardRules,
+          rewardDetails,
+          displayState,
         } = flatParse(AdminStartCompetitionSchema, req.body);
 
         // Call service method with creation params only if no competitionId
@@ -714,6 +762,22 @@ export function makeAdminController(services: ServiceRegistry) {
                   evaluationMetric,
                   perpsProvider,
                   prizePools,
+                  rewardsIneligible,
+                  arenaId: arenaId!, // Guaranteed by Zod refinement when creating new competition
+                  engineId,
+                  engineVersion,
+                  vips,
+                  allowlist,
+                  blocklist,
+                  minRecallRank,
+                  allowlistOnly,
+                  agentAllocation,
+                  agentAllocationUnit,
+                  boosterAllocation,
+                  boosterAllocationUnit,
+                  rewardRules,
+                  rewardDetails,
+                  displayState,
                 },
           });
 
@@ -1300,6 +1364,8 @@ export function makeAdminController(services: ServiceRegistry) {
           status: agent.status as ActorStatus,
           imageUrl: agent.imageUrl,
           metadata: agent.metadata,
+          isRewardsIneligible: agent.isRewardsIneligible,
+          rewardsIneligibilityReason: agent.rewardsIneligibilityReason,
           createdAt: agent.createdAt,
           updatedAt: agent.updatedAt,
         };
@@ -1323,8 +1389,16 @@ export function makeAdminController(services: ServiceRegistry) {
     async updateAgent(req: Request, res: Response, next: NextFunction) {
       try {
         const { agentId } = flatParse(AdminUpdateAgentParamsSchema, req.params);
-        const { name, handle, description, imageUrl, email, metadata } =
-          flatParse(AdminUpdateAgentBodySchema, req.body);
+        const {
+          name,
+          handle,
+          description,
+          imageUrl,
+          email,
+          metadata,
+          isRewardsIneligible,
+          rewardsIneligibilityReason,
+        } = flatParse(AdminUpdateAgentBodySchema, req.body);
 
         // Get the current agent
         const agent = await services.agentService.getAgent(agentId);
@@ -1344,6 +1418,9 @@ export function makeAdminController(services: ServiceRegistry) {
           imageUrl: imageUrl ?? agent.imageUrl,
           email: email ?? agent.email,
           metadata: metadata ?? agent.metadata,
+          isRewardsIneligible: isRewardsIneligible ?? agent.isRewardsIneligible,
+          rewardsIneligibilityReason:
+            rewardsIneligibilityReason ?? agent.rewardsIneligibilityReason,
         };
 
         const updatedAgent = await services.agentService.updateAgent({
@@ -1369,6 +1446,8 @@ export function makeAdminController(services: ServiceRegistry) {
           status: updatedAgent.status as ActorStatus,
           imageUrl: updatedAgent.imageUrl,
           metadata: updatedAgent.metadata,
+          isRewardsIneligible: updatedAgent.isRewardsIneligible,
+          rewardsIneligibilityReason: updatedAgent.rewardsIneligibilityReason,
           createdAt: updatedAgent.createdAt,
           updatedAt: updatedAgent.updatedAt,
         };

@@ -1,6 +1,11 @@
 import { z } from "zod/v4";
 
 import {
+  allocationUnit,
+  displayState,
+  engineType,
+} from "@recallnet/db/schema/core/defs";
+import {
   AgentHandleSchema,
   AgentMetadataSchema,
   CompetitionTypeSchema,
@@ -102,6 +107,30 @@ export const AdminCreateCompetitionSchema = z
         users: z.number().min(0),
       })
       .optional(),
+    rewardsIneligible: z.array(z.string()).optional(),
+
+    // Arena and engine routing
+    arenaId: z.string().min(1, "Arena ID is required"),
+    engineId: z.enum(engineType.enumValues).optional(),
+    engineVersion: z.string().optional(),
+
+    // Participation rules
+    vips: z.array(z.string()).optional(),
+    allowlist: z.array(z.string()).optional(),
+    blocklist: z.array(z.string()).optional(),
+    minRecallRank: z.number().int().optional(),
+    allowlistOnly: z.boolean().optional(),
+
+    // Reward allocation
+    agentAllocation: z.number().optional(),
+    agentAllocationUnit: z.enum(allocationUnit.enumValues).optional(),
+    boosterAllocation: z.number().optional(),
+    boosterAllocationUnit: z.enum(allocationUnit.enumValues).optional(),
+    rewardRules: z.string().optional(),
+    rewardDetails: z.string().optional(),
+
+    // Display
+    displayState: z.enum(displayState.enumValues).optional(),
   })
   .refine(
     (data) => {
@@ -123,8 +152,10 @@ export const AdminCreateCompetitionSchema = z
  */
 export const AdminUpdateCompetitionSchema = AdminCreateCompetitionSchema.omit({
   name: true,
+  arenaId: true,
 }).extend({
   name: z.string().optional(),
+  arenaId: z.string().min(1, "Arena ID is required").optional(),
 });
 
 /**
@@ -160,10 +191,47 @@ export const AdminStartCompetitionSchema = z
         users: z.number().min(0),
       })
       .optional(),
+    rewardsIneligible: z.array(z.string()).optional(),
+
+    // Arena and engine routing
+    arenaId: z.string().min(1, "Arena ID is required").optional(),
+    engineId: z.enum(engineType.enumValues).optional(),
+    engineVersion: z.string().optional(),
+
+    // Participation rules
+    vips: z.array(z.string()).optional(),
+    allowlist: z.array(z.string()).optional(),
+    blocklist: z.array(z.string()).optional(),
+    minRecallRank: z.number().int().optional(),
+    allowlistOnly: z.boolean().optional(),
+
+    // Reward allocation
+    agentAllocation: z.number().optional(),
+    agentAllocationUnit: z.enum(allocationUnit.enumValues).optional(),
+    boosterAllocation: z.number().optional(),
+    boosterAllocationUnit: z.enum(allocationUnit.enumValues).optional(),
+    rewardRules: z.string().optional(),
+    rewardDetails: z.string().optional(),
+
+    // Display
+    displayState: z.enum(displayState.enumValues).optional(),
   })
   .refine((data) => data.competitionId || data.name, {
     message: "Either competitionId or name must be provided",
-  });
+  })
+  .refine(
+    (data) => {
+      // If creating a new competition (no competitionId), arenaId is required
+      if (!data.competitionId && !data.arenaId) {
+        return false;
+      }
+      return true;
+    },
+    {
+      message: "Arena ID is required when creating a new competition",
+      path: ["arenaId"],
+    },
+  );
 
 /**
  * Admin end competition schema
@@ -285,6 +353,8 @@ export const AdminUpdateAgentBodySchema = z.object({
   imageUrl: z.url("Invalid image URL format").optional(),
   email: z.email("Invalid email format").optional(),
   metadata: z.record(z.string(), z.unknown()).optional(),
+  isRewardsIneligible: z.boolean().optional(),
+  rewardsIneligibilityReason: z.string().optional(),
 });
 
 /**

@@ -314,6 +314,7 @@ async function setupCompetition() {
     const competition = await services.competitionService.createCompetition({
       name,
       description,
+      arenaId: "default-paper-arena",
     });
 
     console.log(

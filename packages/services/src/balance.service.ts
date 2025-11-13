@@ -353,6 +353,33 @@ export class BalanceService {
   }
 
   /**
+   * Clear all cached balances for a specific competition
+   * @param competitionId The competition ID to clear cache for
+   */
+  clearCompetitionCache(competitionId: string): void {
+    this.logger.debug(
+      `[BalanceManager] Clearing balance cache for competition ${competitionId}`,
+    );
+
+    let clearedCount = 0;
+    // Iterate through all agents and clear the specific competition's cache
+    for (const [agentId, competitionMap] of this.balanceCache.entries()) {
+      if (competitionMap.has(competitionId)) {
+        competitionMap.delete(competitionId);
+        clearedCount++;
+      }
+      // If the agent has no more cached competitions, remove the agent entry
+      if (competitionMap.size === 0) {
+        this.balanceCache.delete(agentId);
+      }
+    }
+
+    this.logger.debug(
+      `[BalanceManager] Cleared balance cache for ${clearedCount} agents in competition ${competitionId}`,
+    );
+  }
+
+  /**
    * Check if balance manager is healthy
    * For system health check use
    */

@@ -2,7 +2,12 @@ import axios, { AxiosInstance } from "axios";
 import { wrapper } from "axios-cookiejar-support";
 import { CookieJar } from "tough-cookie";
 
-import { PagingParams } from "@recallnet/services/types";
+import {
+  AllocationUnit,
+  DisplayState,
+  EngineType,
+  PagingParams,
+} from "@recallnet/services/types";
 
 import {
   PrivyAuthProvider,
@@ -37,6 +42,7 @@ import {
   Competition,
   CompetitionAgentsResponse,
   CompetitionAllPerpsPositionsResponse,
+  CompetitionBoostsResponse,
   CompetitionDetailResponse,
   CompetitionJoinResponse,
   CompetitionLeaveResponse,
@@ -477,6 +483,8 @@ export class ApiClient {
             agent: number;
             users: number;
           };
+          rewardsIneligible?: string[];
+          arenaId?: string;
         }
       | string,
     description?: string,
@@ -514,6 +522,14 @@ export class ApiClient {
         };
       }
 
+      // Add default arenaId if not provided
+      if (!requestData.arenaId) {
+        requestData.arenaId =
+          requestData.type === "perpetual_futures"
+            ? "default-perps-arena"
+            : "default-paper-arena";
+      }
+
       const response = await this.axiosInstance.post(
         "/api/admin/competition/start",
         requestData,
@@ -549,6 +565,22 @@ export class ApiClient {
     evaluationMetric,
     perpsProvider,
     prizePools,
+    rewardsIneligible,
+    arenaId,
+    engineId,
+    engineVersion,
+    vips,
+    allowlist,
+    blocklist,
+    minRecallRank,
+    allowlistOnly,
+    agentAllocation,
+    agentAllocationUnit,
+    boosterAllocation,
+    boosterAllocationUnit,
+    rewardRules,
+    rewardDetails,
+    displayState,
   }: {
     name?: string;
     description?: string;
@@ -579,8 +611,29 @@ export class ApiClient {
       agent: number;
       users: number;
     };
+    rewardsIneligible?: string[];
+    arenaId?: string;
+    engineId?: EngineType;
+    engineVersion?: string;
+    vips?: string[];
+    allowlist?: string[];
+    blocklist?: string[];
+    minRecallRank?: number;
+    allowlistOnly?: boolean;
+    agentAllocation?: number;
+    agentAllocationUnit?: AllocationUnit;
+    boosterAllocation?: number;
+    boosterAllocationUnit?: AllocationUnit;
+    rewardRules?: string;
+    rewardDetails?: string;
+    displayState?: DisplayState;
   }): Promise<CreateCompetitionResponse | ErrorResponse> {
     const competitionName = name || `Test competition ${Date.now()}`;
+    // Default arenaId based on competition type
+    const defaultArenaId =
+      type === "perpetual_futures"
+        ? "default-perps-arena"
+        : "default-paper-arena";
     try {
       const response = await this.axiosInstance.post(
         "/api/admin/competition/create",
@@ -605,6 +658,22 @@ export class ApiClient {
           evaluationMetric,
           perpsProvider,
           prizePools,
+          rewardsIneligible,
+          arenaId: arenaId || defaultArenaId,
+          engineId,
+          engineVersion,
+          vips,
+          allowlist,
+          blocklist,
+          minRecallRank,
+          allowlistOnly,
+          agentAllocation,
+          agentAllocationUnit,
+          boosterAllocation,
+          boosterAllocationUnit,
+          rewardRules,
+          rewardDetails,
+          displayState,
         },
       );
 
@@ -633,6 +702,22 @@ export class ApiClient {
       evaluationMetric,
       perpsProvider,
       prizePools,
+      rewardsIneligible,
+      arenaId,
+      engineId,
+      engineVersion,
+      vips,
+      allowlist,
+      blocklist,
+      minRecallRank,
+      allowlistOnly,
+      agentAllocation,
+      agentAllocationUnit,
+      boosterAllocation,
+      boosterAllocationUnit,
+      rewardRules,
+      rewardDetails,
+      displayState,
     }: {
       name?: string;
       description?: string;
@@ -656,6 +741,22 @@ export class ApiClient {
         agent: number;
         users: number;
       };
+      rewardsIneligible?: string[];
+      arenaId?: string;
+      engineId?: EngineType;
+      engineVersion?: string;
+      vips?: string[];
+      allowlist?: string[];
+      blocklist?: string[];
+      minRecallRank?: number;
+      allowlistOnly?: boolean;
+      agentAllocation?: number;
+      agentAllocationUnit?: AllocationUnit;
+      boosterAllocation?: number;
+      boosterAllocationUnit?: AllocationUnit;
+      rewardRules?: string;
+      rewardDetails?: string;
+      displayState?: DisplayState;
     },
   ): Promise<UpdateCompetitionResponse | ErrorResponse> {
     try {
@@ -675,6 +776,22 @@ export class ApiClient {
           evaluationMetric,
           perpsProvider,
           prizePools,
+          rewardsIneligible,
+          arenaId,
+          engineId,
+          engineVersion,
+          vips,
+          allowlist,
+          blocklist,
+          minRecallRank,
+          allowlistOnly,
+          agentAllocation,
+          agentAllocationUnit,
+          boosterAllocation,
+          boosterAllocationUnit,
+          rewardRules,
+          rewardDetails,
+          displayState,
         },
       );
 
@@ -879,6 +996,8 @@ export class ApiClient {
       imageUrl?: string;
       email?: string;
       metadata?: Record<string, unknown>;
+      isRewardsIneligible?: boolean;
+      rewardsIneligibilityReason?: string;
     },
   ): Promise<ApiResponse | ErrorResponse> {
     try {
@@ -1657,6 +1776,34 @@ export class ApiClient {
       return this.handleApiError(
         error,
         `get competition trades: competitionId=${competitionId}, limit=${limit}, offset=${offset}`,
+      );
+    }
+  }
+
+  /**
+   * Get boost allocations for a competition
+   * @param competitionId Competition ID
+   * @param limit Optional number of boosts to return (default: 50, max: 100)
+   * @param offset Optional offset for pagination (default: 0)
+   * @returns Paginated boost allocations with agent information
+   */
+  async getCompetitionBoosts(
+    competitionId: string,
+    limit?: number,
+    offset?: number,
+  ): Promise<CompetitionBoostsResponse | ErrorResponse> {
+    try {
+      const params = new URLSearchParams();
+      if (limit !== undefined) params.append("limit", limit.toString());
+      if (offset !== undefined) params.append("offset", offset.toString());
+
+      const url = `/api/competitions/${competitionId}/boosts/all${params.toString() ? `?${params.toString()}` : ""}`;
+      const response = await this.axiosInstance.get(url);
+      return response.data as CompetitionBoostsResponse;
+    } catch (error) {
+      return this.handleApiError(
+        error,
+        `get competition boosts: competitionId=${competitionId}, limit=${limit}, offset=${offset}`,
       );
     }
   }

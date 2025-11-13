@@ -207,6 +207,10 @@ export const agents = pgTable(
     deactivationDate: timestamp("deactivation_date", {
       withTimezone: true,
     }),
+    isRewardsIneligible: boolean("is_rewards_ineligible")
+      .default(false)
+      .notNull(),
+    rewardsIneligibilityReason: text("rewards_ineligibility_reason"),
     createdAt: timestamp("created_at", {
       withTimezone: true,
     })
@@ -225,6 +229,7 @@ export const agents = pgTable(
     index("idx_agents_handle").on(table.handle),
     index("idx_agents_api_key").on(table.apiKey),
     index("idx_agents_api_key_hash").on(table.apiKeyHash),
+    index("idx_agents_rewards_ineligible").on(table.isRewardsIneligible),
     // NOTE: There is an extra index not listed here. There is a GIN index on the "name" that is
     // created via custom migration (0038_left_ultragirl) due to Drizzle limitations. That index
     // supports case-insensitive queries on agent names.
@@ -358,6 +363,7 @@ export const competitions = pgTable(
     boosterAllocationUnit: allocationUnit("booster_allocation_unit"),
     rewardRules: text("reward_rules"),
     rewardDetails: text("reward_details"),
+    rewardsIneligible: text("rewards_ineligible").array(),
 
     // Engine routing
     engineId: engineType("engine_id"),

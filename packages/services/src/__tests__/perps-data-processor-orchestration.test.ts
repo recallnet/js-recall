@@ -193,6 +193,8 @@ describe("PerpsDataProcessor - processPerpsCompetition", () => {
     status: "active",
     deactivationReason: null,
     deactivationDate: null,
+    isRewardsIneligible: false,
+    rewardsIneligibilityReason: null,
     createdAt: new Date(),
     updatedAt: new Date(),
   };

@@ -1417,6 +1417,148 @@ describe("Competition API", () => {
     expect(competitionDetail.endDate).toBeNull();
   });
 
+  test("should include arena and participation fields in competition details", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Create arena
+    const arenaId = `test-arena-${Date.now()}`;
+    await adminClient.createArena({
+      id: arenaId,
+      name: "Test Arena",
+      createdBy: "admin",
+      category: "crypto_trading",
+      skill: "spot_paper_trading",
+    });
+
+    // Create competition with all new fields
+    const competitionName = `Arena Fields Test ${Date.now()}`;
+    const createResponse = await adminClient.createCompetition({
+      name: competitionName,
+      description: "Test arena and participation fields",
+      type: "trading",
+      arenaId: arenaId,
+      engineId: "spot_paper_trading",
+      engineVersion: "1.0.0",
+      vips: ["vip-agent-1", "vip-agent-2"],
+      allowlist: ["allowed-1"],
+      blocklist: ["blocked-1"],
+      minRecallRank: 100,
+      allowlistOnly: true,
+      agentAllocation: 10000,
+      agentAllocationUnit: "RECALL",
+      boosterAllocation: 5000,
+      boosterAllocationUnit: "USDC",
+      rewardRules: "Top 10 winners",
+      rewardDetails: "Distributed weekly",
+      displayState: "active",
+    });
+
+    expect(createResponse.success).toBe(true);
+    const competitionId = (createResponse as CreateCompetitionResponse)
+      .competition.id;
+
+    // Register an agent to fetch the competition
+    const { client: agentClient } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Arena Fields Viewer",
+    });
+
+    // Get competition details and verify new fields are present
+    const detailResponse = (await agentClient.getCompetition(
+      competitionId,
+    )) as CompetitionDetailResponse;
+
+    expect(detailResponse.success).toBe(true);
+    const competition = detailResponse.competition;
+
+    // Verify arena and engine fields
+    expect(competition.arenaId).toBe(arenaId);
+    expect(competition.engineId).toBe("spot_paper_trading");
+    expect(competition.engineVersion).toBe("1.0.0");
+
+    // Verify participation fields
+    expect(competition.vips).toEqual(["vip-agent-1", "vip-agent-2"]);
+    expect(competition.allowlist).toEqual(["allowed-1"]);
+    expect(competition.blocklist).toEqual(["blocked-1"]);
+    expect(competition.minRecallRank).toBe(100);
+    expect(competition.allowlistOnly).toBe(true);
+
+    // Verify reward allocation fields
+    expect(competition.agentAllocation).toBe(10000);
+    expect(competition.agentAllocationUnit).toBe("RECALL");
+    expect(competition.boosterAllocation).toBe(5000);
+    expect(competition.boosterAllocationUnit).toBe("USDC");
+    expect(competition.rewardRules).toBe("Top 10 winners");
+    expect(competition.rewardDetails).toBe("Distributed weekly");
+
+    // Verify display state
+    expect(competition.displayState).toBe("active");
+  });
+
+  test("should return arena and participation fields when competition is modified", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Create basic competition
+    const createResponse = await adminClient.createCompetition({
+      name: "Basic Competition",
+      type: "trading",
+    });
+    expect(createResponse.success).toBe(true);
+    const competitionId = (createResponse as CreateCompetitionResponse)
+      .competition.id;
+
+    // Create arena for linking
+    const arenaId = `modify-test-arena-${Date.now()}`;
+    await adminClient.createArena({
+      id: arenaId,
+      name: "Modify Test Arena",
+      createdBy: "admin",
+      category: "crypto_trading",
+      skill: "spot_paper_trading",
+    });
+
+    // Modify competition to add arena and participation fields
+    await adminClient.updateCompetition(competitionId, {
+      arenaId: arenaId,
+      engineId: "spot_paper_trading",
+      engineVersion: "2.0.0",
+      vips: ["vip-agent"],
+      allowlist: ["allowed-agent"],
+      minRecallRank: 200,
+      agentAllocation: 20000,
+      agentAllocationUnit: "USDC",
+      displayState: "waitlist",
+    });
+
+    // Fetch competition and verify fields are returned
+    const { client: agentClient } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Field Viewer",
+    });
+
+    const detailResponse = (await agentClient.getCompetition(
+      competitionId,
+    )) as CompetitionDetailResponse;
+
+    expect(detailResponse.success).toBe(true);
+    const competition = detailResponse.competition;
+
+    // Verify fields are in the response
+    expect(competition.arenaId).toBe(arenaId);
+    expect(competition.engineId).toBe("spot_paper_trading");
+    expect(competition.engineVersion).toBe("2.0.0");
+    expect(competition.vips).toEqual(["vip-agent"]);
+    expect(competition.allowlist).toEqual(["allowed-agent"]);
+    expect(competition.minRecallRank).toBe(200);
+    expect(competition.agentAllocation).toBe(20000);
+    expect(competition.agentAllocationUnit).toBe("USDC");
+    expect(competition.displayState).toBe("waitlist");
+  });
+
   // test cases for GET /competitions/{competitionId}/agents
   test("should get competition agents with scores and ranks", async () => {
     // Setup admin client
@@ -5830,6 +5972,195 @@ describe("Competition API", () => {
     });
   });
 
+  describe("Participation Rules Enforcement", () => {
+    test("should reject blocklisted agent from joining", async () => {
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Create agent
+      const { agent, client: agentClient } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "Blocked Agent",
+        });
+
+      // Create competition with blocklist
+      const createResponse = await adminClient.createCompetition({
+        name: "Blocklist Test Competition",
+        type: "trading",
+        blocklist: [agent.id],
+      });
+      const competitionId = (createResponse as CreateCompetitionResponse)
+        .competition.id;
+
+      // Try to join - should be rejected
+      const joinResponse = await agentClient.joinCompetition(
+        competitionId,
+        agent.id,
+      );
+
+      expect(joinResponse.success).toBe(false);
+      expect((joinResponse as ErrorResponse).error).toContain("not permitted");
+    });
+
+    test("should reject agent when competition is allowlist-only", async () => {
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Create two agents
+      const { agent: allowedAgent } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Allowed Agent",
+      });
+      const { agent: notAllowedAgent, client: notAllowedClient } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "Not Allowed Agent",
+        });
+
+      // Create competition with allowlist-only mode
+      const createResponse = await adminClient.createCompetition({
+        name: "Allowlist Only Competition",
+        type: "trading",
+        allowlistOnly: true,
+        allowlist: [allowedAgent.id],
+      });
+      const competitionId = (createResponse as CreateCompetitionResponse)
+        .competition.id;
+
+      // Try to join with non-allowlisted agent - should be rejected
+      const joinResponse = await notAllowedClient.joinCompetition(
+        competitionId,
+        notAllowedAgent.id,
+      );
+
+      expect(joinResponse.success).toBe(false);
+      expect((joinResponse as ErrorResponse).error).toContain("allowlist-only");
+    });
+
+    test("should allow VIP agent to bypass all requirements", async () => {
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Create agent (with no rank)
+      const { agent, client: agentClient } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "VIP Agent",
+        });
+
+      // Create competition with VIP list, stake requirement, and rank requirement
+      const createResponse = await adminClient.createCompetition({
+        name: "VIP Bypass Competition",
+        type: "trading",
+        vips: [agent.id],
+        minimumStake: 1000, // VIP should bypass this
+        minRecallRank: 10, // VIP should bypass this too
+      });
+      const competitionId = (createResponse as CreateCompetitionResponse)
+        .competition.id;
+
+      // Join should succeed despite no stake and no rank
+      const joinResponse = await agentClient.joinCompetition(
+        competitionId,
+        agent.id,
+      );
+
+      expect(joinResponse.success).toBe(true);
+    });
+
+    test("should allow allowlisted agent to bypass rank requirement", async () => {
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Create agent (with no rank)
+      const { agent, client: agentClient } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "Allowlisted Agent",
+        });
+
+      // Create competition with allowlist and rank requirement (but no stake requirement)
+      const createResponse = await adminClient.createCompetition({
+        name: "Allowlist Bypass Competition",
+        type: "trading",
+        allowlist: [agent.id],
+        minRecallRank: 10, // Allowlist should bypass this
+      });
+      const competitionId = (createResponse as CreateCompetitionResponse)
+        .competition.id;
+
+      // Join should succeed despite no rank
+      const joinResponse = await agentClient.joinCompetition(
+        competitionId,
+        agent.id,
+      );
+
+      expect(joinResponse.success).toBe(true);
+    });
+
+    test("should reject agent with no rank when rank requirement exists", async () => {
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Create agent
+      const { agent, client: agentClient } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "No Rank Agent",
+        });
+
+      // Create competition with rank requirement
+      const createResponse = await adminClient.createCompetition({
+        name: "Rank Requirement Competition",
+        type: "trading",
+        minRecallRank: 5, // Requires top 5 rank
+      });
+      const competitionId = (createResponse as CreateCompetitionResponse)
+        .competition.id;
+
+      // Try to join - should be rejected (agent has no rank)
+      const joinResponse = await agentClient.joinCompetition(
+        competitionId,
+        agent.id,
+      );
+
+      expect(joinResponse.success).toBe(false);
+      expect((joinResponse as ErrorResponse).error).toContain(
+        "has not yet established a rank",
+      );
+    });
+
+    test("should allow agent to join when competition has no participation rules", async () => {
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Create agent
+      const { agent, client: agentClient } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "Regular Agent",
+        });
+
+      // Create competition with NO participation rules
+      const createResponse = await adminClient.createCompetition({
+        name: "No Rules Competition",
+        type: "trading",
+        // No vips, allowlist, blocklist, or minRecallRank
+      });
+      const competitionId = (createResponse as CreateCompetitionResponse)
+        .competition.id;
+
+      // Join should succeed (backward compatible)
+      const joinResponse = await agentClient.joinCompetition(
+        competitionId,
+        agent.id,
+      );
+
+      expect(joinResponse.success).toBe(true);
+    });
+  });
+
   describe("Competition Partners", () => {
     test("should get partners for a competition via public endpoint", async () => {
       // Setup admin client
@@ -5884,6 +6215,605 @@ describe("Competition API", () => {
       expect(partners[0]?.name).toContain("Public Partner 1");
       expect(partners[1]?.position).toBe(2);
       expect(partners[1]?.name).toContain("Public Partner 2");
+    });
+  });
+
+  describe("Rewards Ineligibility", () => {
+    test("should exclude ineligible agents from rank-based rewards", async () => {
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Create three agents
+      const { agent: agent1, client: client1 } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "Winner Agent",
+        });
+      const { agent: agent2, client: client2 } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "Excluded Agent",
+        });
+      const { agent: agent3, client: client3 } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "Third Place Agent",
+        });
+
+      // Create competition with rank-based rewards and exclusion list
+      const createResponse = await adminClient.createCompetition({
+        name: "Exclusion Test Competition",
+        type: "trading",
+        rewards: {
+          1: 1000,
+          2: 500,
+          3: 250,
+        },
+        rewardsIneligible: [agent2.id], // Exclude agent2
+      });
+      expect(createResponse.success).toBe(true);
+      const competitionId = (createResponse as CreateCompetitionResponse)
+        .competition.id;
+
+      // Start competition with all three agents
+      await adminClient.startExistingCompetition({
+        competitionId,
+        agentIds: [agent1.id, agent2.id, agent3.id],
+      });
+
+      // Make predictable trades so we know rankings (burn tokens - less burned = better)
+      // Agent 1: Best performer (burns least)
+      await client1.executeTrade({
+        competitionId,
+        fromToken: config.specificChainTokens.eth.usdc,
+        toToken: "0x000000000000000000000000000000000000dead",
+        amount: "10",
+        reason: "Agent1 wins - burns least",
+      });
+
+      // Agent 2: Second best but excluded from rewards
+      await client2.executeTrade({
+        competitionId,
+        fromToken: config.specificChainTokens.eth.usdc,
+        toToken: "0x000000000000000000000000000000000000dead",
+        amount: "100",
+        reason: "Agent2 rank 2 but excluded",
+      });
+
+      // Agent 3: Third place (burns most)
+      await client3.executeTrade({
+        competitionId,
+        fromToken: config.specificChainTokens.eth.usdc,
+        toToken: "0x000000000000000000000000000000000000dead",
+        amount: "500",
+        reason: "Agent3 loses - burns most",
+      });
+
+      // Wait for snapshots
+      await wait(2000);
+
+      // End competition
+      await adminClient.endCompetition(competitionId);
+
+      // Get competition with rewards
+      const detailResponse = await adminClient.getCompetition(competitionId);
+      expect(detailResponse.success).toBe(true);
+      const competition = (detailResponse as CompetitionDetailResponse)
+        .competition;
+
+      // Verify rewards were assigned
+      expect(competition.rewards).toBeDefined();
+      expect(competition.rewards?.length).toBeGreaterThan(0);
+
+      // Verify agent2 (excluded, rank 2) did not get assigned to any reward slot
+      const agent2Reward = competition.rewards?.find(
+        (r) => r.agentId === agent2.id,
+      );
+      expect(agent2Reward).toBeUndefined();
+
+      // Verify agent1 (leaderboard rank 1) got the rank 1 reward ($1000)
+      const agent1Reward = competition.rewards?.find(
+        (r) => r.agentId === agent1.id,
+      );
+      expect(agent1Reward).toBeDefined();
+      expect(agent1Reward?.rank).toBe(1);
+      expect(agent1Reward?.reward).toBe(1000);
+
+      // Verify agent3 (leaderboard rank 3) got the rank 3 reward ($250)
+      // Note: Excluded agents don't cause "bumping" - reward slots just stay empty
+      const agent3Reward = competition.rewards?.find(
+        (r) => r.agentId === agent3.id,
+      );
+      expect(agent3Reward).toBeDefined();
+      expect(agent3Reward?.rank).toBe(3); // Gets rank 3 slot
+      expect(agent3Reward?.reward).toBe(250); // Gets rank 3's reward amount
+
+      // Verify rank 2 reward slot is unassigned (excluded agent's slot stays empty)
+      const rank2Reward = competition.rewards?.find((r) => r.rank === 2);
+      expect(rank2Reward).toBeDefined();
+      expect(rank2Reward?.agentId).toBeNull(); // No agent assigned to this slot
+    });
+
+    test("should allow competition with no excluded agents (backward compatible)", async () => {
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Create agent
+      const { agent, client: agentClient } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "Regular Agent",
+        });
+
+      // Create competition without exclusions
+      const createResponse = await adminClient.createCompetition({
+        name: "No Exclusions Competition",
+        type: "trading",
+        rewards: { 1: 1000 },
+        // rewardsIneligible not set (null/undefined)
+      });
+      expect(createResponse.success).toBe(true);
+      const competitionId = (createResponse as CreateCompetitionResponse)
+        .competition.id;
+
+      // Start and end competition
+      await adminClient.startExistingCompetition({
+        competitionId,
+        agentIds: [agent.id],
+      });
+
+      await agentClient.executeTrade({
+        competitionId,
+        fromToken: config.specificChainTokens.eth.usdc,
+        toToken: "0x000000000000000000000000000000000000dead",
+        amount: "10",
+        reason: "Trade to establish rank",
+      });
+
+      await wait(2000);
+      await adminClient.endCompetition(competitionId);
+
+      // Verify agent gets reward
+      const detailResponse = await adminClient.getCompetition(competitionId);
+      const competition = (detailResponse as CompetitionDetailResponse)
+        .competition;
+      const agentReward = competition.rewards?.find(
+        (r) => r.agentId === agent.id,
+      );
+      expect(agentReward).toBeDefined();
+    });
+
+    test("should handle empty exclusion array (backward compatible)", async () => {
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Create agent
+      const { agent, client: agentClient } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "Agent With Empty Array",
+        });
+
+      // Create competition with empty exclusion array
+      const createResponse = await adminClient.createCompetition({
+        name: "Empty Array Competition",
+        type: "trading",
+        rewards: { 1: 1000 },
+        rewardsIneligible: [], // Empty array = no exclusions
+      });
+      const competitionId = (createResponse as CreateCompetitionResponse)
+        .competition.id;
+
+      // Start and end competition
+      await adminClient.startExistingCompetition({
+        competitionId,
+        agentIds: [agent.id],
+      });
+
+      await agentClient.executeTrade({
+        competitionId,
+        fromToken: config.specificChainTokens.eth.usdc,
+        toToken: "0x000000000000000000000000000000000000dead",
+        amount: "10",
+        reason: "Trade to establish rank",
+      });
+
+      await wait(2000);
+      await adminClient.endCompetition(competitionId);
+
+      // Verify agent gets reward (empty array should not exclude)
+      const detailResponse = await adminClient.getCompetition(competitionId);
+      const competition = (detailResponse as CompetitionDetailResponse)
+        .competition;
+      const agentReward = competition.rewards?.find(
+        (r) => r.agentId === agent.id,
+      );
+      expect(agentReward).toBeDefined();
+    });
+
+    test("should handle rewardsIneligible when using startCompetition endpoint", async () => {
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Create two agents
+      const { agent: agent1, client: client1 } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "Start Winner",
+        });
+      const { agent: agent2, client: client2 } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "Start Excluded",
+        });
+
+      // Use startCompetition (not createCompetition) with rewardsIneligible
+      const startResponse = await adminClient.startCompetition({
+        name: "Start Competition with Exclusions",
+        agentIds: [agent1.id, agent2.id],
+        rewards: {
+          1: 500,
+          2: 250,
+        },
+        rewardsIneligible: [agent2.id], // Exclude agent2
+      });
+
+      expect(startResponse.success).toBe(true);
+      const competitionId = (startResponse as StartCompetitionResponse)
+        .competition.id;
+
+      // Make trades
+      await client1.executeTrade({
+        competitionId,
+        fromToken: config.specificChainTokens.eth.usdc,
+        toToken: "0x000000000000000000000000000000000000dead",
+        amount: "10",
+        reason: "Winner",
+      });
+
+      await client2.executeTrade({
+        competitionId,
+        fromToken: config.specificChainTokens.eth.usdc,
+        toToken: "0x000000000000000000000000000000000000dead",
+        amount: "100",
+        reason: "Excluded agent",
+      });
+
+      await wait(2000);
+      await adminClient.endCompetition(competitionId);
+
+      // Verify exclusion worked via startCompetition endpoint
+      const detailResponse = await adminClient.getCompetition(competitionId);
+      const competition = (detailResponse as CompetitionDetailResponse)
+        .competition;
+
+      // Agent2 should not get reward
+      const agent2Reward = competition.rewards?.find(
+        (r) => r.agentId === agent2.id,
+      );
+      expect(agent2Reward).toBeUndefined();
+
+      // Agent1 should get reward
+      const agent1Reward = competition.rewards?.find(
+        (r) => r.agentId === agent1.id,
+      );
+      expect(agent1Reward).toBeDefined();
+      expect(agent1Reward?.rank).toBe(1);
+      expect(agent1Reward?.reward).toBe(500);
+    });
+
+    test("should exclude globally ineligible agents from rewards across all competitions", async () => {
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Create three agents
+      const { agent: agent1, client: client1 } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "Regular Agent",
+        });
+      const { agent: agent2, client: client2 } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "Globally Ineligible Agent",
+        });
+      const { agent: agent3, client: client3 } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "Another Regular Agent",
+        });
+
+      // Mark agent2 as globally ineligible via admin API
+      const updateResponse = await adminClient.updateAgentAsAdmin(agent2.id, {
+        isRewardsIneligible: true,
+        rewardsIneligibilityReason: "Test agent - not eligible for any rewards",
+      });
+      expect(updateResponse.success).toBe(true);
+
+      // Create competition with rewards (NO competition-specific exclusions)
+      const createResponse = await adminClient.createCompetition({
+        name: "Global Ineligibility Test",
+        type: "trading",
+        rewards: {
+          1: 1000,
+          2: 500,
+          3: 250,
+        },
+        // rewardsIneligible not set - testing ONLY global exclusions
+      });
+      expect(createResponse.success).toBe(true);
+      const competitionId = (createResponse as CreateCompetitionResponse)
+        .competition.id;
+
+      // Start competition with all three agents
+      await adminClient.startExistingCompetition({
+        competitionId,
+        agentIds: [agent1.id, agent2.id, agent3.id],
+      });
+
+      // Make predictable trades (burn tokens - less burned = better)
+      await client1.executeTrade({
+        competitionId,
+        fromToken: config.specificChainTokens.eth.usdc,
+        toToken: "0x000000000000000000000000000000000000dead",
+        amount: "10",
+        reason: "Agent1 rank 1",
+      });
+
+      await client2.executeTrade({
+        competitionId,
+        fromToken: config.specificChainTokens.eth.usdc,
+        toToken: "0x000000000000000000000000000000000000dead",
+        amount: "100",
+        reason: "Agent2 rank 2 but globally ineligible",
+      });
+
+      await client3.executeTrade({
+        competitionId,
+        fromToken: config.specificChainTokens.eth.usdc,
+        toToken: "0x000000000000000000000000000000000000dead",
+        amount: "500",
+        reason: "Agent3 rank 3",
+      });
+
+      await wait(2000);
+      await adminClient.endCompetition(competitionId);
+
+      // Verify agent2 (globally ineligible, rank 2) did not get reward
+      const detailResponse = await adminClient.getCompetition(competitionId);
+      const competition = (detailResponse as CompetitionDetailResponse)
+        .competition;
+
+      const agent2Reward = competition.rewards?.find(
+        (r) => r.agentId === agent2.id,
+      );
+      expect(agent2Reward).toBeUndefined();
+
+      // Verify agent1 and agent3 got their respective rewards
+      const agent1Reward = competition.rewards?.find(
+        (r) => r.agentId === agent1.id,
+      );
+      const agent3Reward = competition.rewards?.find(
+        (r) => r.agentId === agent3.id,
+      );
+      expect(agent1Reward).toBeDefined();
+      expect(agent1Reward?.rank).toBe(1);
+      expect(agent3Reward).toBeDefined();
+      expect(agent3Reward?.rank).toBe(3);
+
+      // Verify rank 2 slot is empty (globally ineligible agent's slot)
+      const rank2Reward = competition.rewards?.find((r) => r.rank === 2);
+      expect(rank2Reward).toBeDefined();
+      expect(rank2Reward?.agentId).toBeNull();
+    });
+
+    test("should combine global and competition-specific exclusions", async () => {
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Create four agents
+      const { agent: agent1, client: client1 } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "Agent Regular 1",
+        });
+      const { agent: agent2, client: client2 } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "Agent Comp Excluded",
+        });
+      const { agent: agent3, client: client3 } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "Agent Global Excluded",
+        });
+      const { agent: agent4, client: client4 } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "Agent Regular 2",
+        });
+
+      // Mark agent3 as globally ineligible
+      await adminClient.updateAgentAsAdmin(agent3.id, {
+        isRewardsIneligible: true,
+        rewardsIneligibilityReason: "Test agent - globally excluded",
+      });
+
+      // Create competition with agent2 in competition-specific exclusion list
+      const createResponse = await adminClient.createCompetition({
+        name: "Combined Exclusions Test",
+        type: "trading",
+        rewards: {
+          1: 1000,
+          2: 500,
+          3: 250,
+          4: 100,
+        },
+        rewardsIneligible: [agent2.id], // Competition-specific exclusion
+      });
+      const competitionId = (createResponse as CreateCompetitionResponse)
+        .competition.id;
+
+      // Start competition with all four agents
+      await adminClient.startExistingCompetition({
+        competitionId,
+        agentIds: [agent1.id, agent2.id, agent3.id, agent4.id],
+      });
+
+      // Make predictable trades
+      await client1.executeTrade({
+        competitionId,
+        fromToken: config.specificChainTokens.eth.usdc,
+        toToken: "0x000000000000000000000000000000000000dead",
+        amount: "10",
+        reason: "Agent1 rank 1",
+      });
+
+      await client2.executeTrade({
+        competitionId,
+        fromToken: config.specificChainTokens.eth.usdc,
+        toToken: "0x000000000000000000000000000000000000dead",
+        amount: "50",
+        reason: "Agent2 rank 2 - competition excluded",
+      });
+
+      await client3.executeTrade({
+        competitionId,
+        fromToken: config.specificChainTokens.eth.usdc,
+        toToken: "0x000000000000000000000000000000000000dead",
+        amount: "200",
+        reason: "Agent3 rank 3 - globally excluded",
+      });
+
+      await client4.executeTrade({
+        competitionId,
+        fromToken: config.specificChainTokens.eth.usdc,
+        toToken: "0x000000000000000000000000000000000000dead",
+        amount: "600",
+        reason: "Agent4 rank 4",
+      });
+
+      await wait(2000);
+      await adminClient.endCompetition(competitionId);
+
+      // Verify both agent2 (competition) and agent3 (global) are excluded
+      const detailResponse = await adminClient.getCompetition(competitionId);
+      const competition = (detailResponse as CompetitionDetailResponse)
+        .competition;
+
+      const agent2Reward = competition.rewards?.find(
+        (r) => r.agentId === agent2.id,
+      );
+      const agent3Reward = competition.rewards?.find(
+        (r) => r.agentId === agent3.id,
+      );
+      expect(agent2Reward).toBeUndefined();
+      expect(agent3Reward).toBeUndefined();
+
+      // Verify agent1 and agent4 got rewards
+      const agent1Reward = competition.rewards?.find(
+        (r) => r.agentId === agent1.id,
+      );
+      const agent4Reward = competition.rewards?.find(
+        (r) => r.agentId === agent4.id,
+      );
+      expect(agent1Reward).toBeDefined();
+      expect(agent1Reward?.rank).toBe(1);
+      expect(agent4Reward).toBeDefined();
+      expect(agent4Reward?.rank).toBe(4);
+
+      // Verify rank 2 and rank 3 slots are empty
+      const rank2Reward = competition.rewards?.find((r) => r.rank === 2);
+      const rank3Reward = competition.rewards?.find((r) => r.rank === 3);
+      expect(rank2Reward?.agentId).toBeNull();
+      expect(rank3Reward?.agentId).toBeNull();
+    });
+
+    test("should allow admin to toggle agent global ineligibility", async () => {
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Create an agent
+      const { agent, client: agentClient } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "Toggle Test Agent",
+        });
+
+      // Mark as ineligible
+      let updateResponse = await adminClient.updateAgentAsAdmin(agent.id, {
+        isRewardsIneligible: true,
+        rewardsIneligibilityReason: "Testing toggle functionality",
+      });
+      expect(updateResponse.success).toBe(true);
+
+      // Create first competition and verify exclusion works
+      const comp1Response = await adminClient.createCompetition({
+        name: "Toggle Test Competition 1",
+        rewards: { 1: 100 },
+      });
+      const comp1Id = (comp1Response as CreateCompetitionResponse).competition
+        .id;
+
+      await adminClient.startExistingCompetition({
+        competitionId: comp1Id,
+        agentIds: [agent.id],
+      });
+
+      await agentClient.executeTrade({
+        competitionId: comp1Id,
+        fromToken: config.specificChainTokens.eth.usdc,
+        toToken: "0x000000000000000000000000000000000000dead",
+        amount: "10",
+        reason: "Trade while ineligible",
+      });
+
+      await wait(2000);
+      await adminClient.endCompetition(comp1Id);
+
+      // Verify no reward
+      const comp1Detail = await adminClient.getCompetition(comp1Id);
+      const comp1 = (comp1Detail as CompetitionDetailResponse).competition;
+      const comp1Reward = comp1.rewards?.find((r) => r.agentId === agent.id);
+      expect(comp1Reward).toBeUndefined();
+
+      // Re-enable agent for rewards
+      updateResponse = await adminClient.updateAgentAsAdmin(agent.id, {
+        isRewardsIneligible: false,
+        rewardsIneligibilityReason: undefined,
+      });
+      expect(updateResponse.success).toBe(true);
+
+      // Create second competition and verify agent now gets rewards
+      const comp2Response = await adminClient.createCompetition({
+        name: "Toggle Test Competition 2",
+        rewards: { 1: 100 },
+      });
+      const comp2Id = (comp2Response as CreateCompetitionResponse).competition
+        .id;
+
+      await adminClient.startExistingCompetition({
+        competitionId: comp2Id,
+        agentIds: [agent.id],
+      });
+
+      await agentClient.executeTrade({
+        competitionId: comp2Id,
+        fromToken: config.specificChainTokens.eth.usdc,
+        toToken: "0x000000000000000000000000000000000000dead",
+        amount: "10",
+        reason: "Trade while eligible",
+      });
+
+      await wait(2000);
+      await adminClient.endCompetition(comp2Id);
+
+      // Verify agent gets reward this time
+      const comp2Detail = await adminClient.getCompetition(comp2Id);
+      const comp2 = (comp2Detail as CompetitionDetailResponse).competition;
+      const comp2Reward = comp2.rewards?.find((r) => r.agentId === agent.id);
+      expect(comp2Reward).toBeDefined();
+      expect(comp2Reward?.reward).toBe(100);
     });
   });
 });

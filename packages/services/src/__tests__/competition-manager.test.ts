@@ -73,6 +73,8 @@ function mockAgent({
     apiKeyHash: null,
     deactivationReason: null,
     deactivationDate: null,
+    isRewardsIneligible: false,
+    rewardsIneligibilityReason: null,
     competitionStatus,
     competitionDeactivationReason,
   };
@@ -138,6 +140,7 @@ describe("CompetitionService", () => {
     arenaId: "default-paper-arena",
     engineId: "spot_paper_trading" as const,
     engineVersion: "1.0.0",
+    rewardsIneligible: null,
   };
 
   const mockRewards: SelectCompetitionReward[] = [
@@ -488,6 +491,64 @@ describe("CompetitionService", () => {
 
       // Transaction should not be started if competition doesn't exist
       expect(mockDb.transaction).not.toHaveBeenCalled();
+    });
+
+    it("should update competition with arena routing and participation fields", async () => {
+      const competitionId = mockCompetition.id;
+
+      mockDb.transaction.mockImplementation(async (callback) => {
+        return await callback(mockTx);
+      });
+
+      const updates = {
+        description: "Updated with arena fields",
+        arenaId: "test-arena",
+        engineId: "spot_paper_trading" as const,
+        engineVersion: "1.0.0",
+        vips: ["vip-1"],
+        allowlist: ["allowed-1", "allowed-2"],
+        blocklist: ["blocked-1"],
+        minRecallRank: 75,
+        allowlistOnly: true,
+        agentAllocation: 8000,
+        agentAllocationUnit: "USDC" as const,
+        boosterAllocation: 3000,
+        boosterAllocationUnit: "RECALL" as const,
+        rewardRules: "Top 5 winners",
+        rewardDetails: "Monthly payout",
+        displayState: "waitlist" as const,
+      };
+
+      const result = await competitionService.updateCompetition(
+        competitionId,
+        updates,
+      );
+
+      expect(mockDb.transaction).toHaveBeenCalledTimes(1);
+      expect(competitionRepo.updateOne).toHaveBeenCalledWith(
+        competitionId,
+        expect.objectContaining({
+          description: "Updated with arena fields",
+          arenaId: "test-arena",
+          engineId: "spot_paper_trading",
+          engineVersion: "1.0.0",
+          vips: ["vip-1"],
+          allowlist: ["allowed-1", "allowed-2"],
+          blocklist: ["blocked-1"],
+          minRecallRank: 75,
+          allowlistOnly: true,
+          agentAllocation: 8000,
+          agentAllocationUnit: "USDC",
+          boosterAllocation: 3000,
+          boosterAllocationUnit: "RECALL",
+          rewardRules: "Top 5 winners",
+          rewardDetails: "Monthly payout",
+          displayState: "waitlist",
+        }),
+        mockTx,
+      );
+
+      expect(result.competition).toBeDefined();
     });
 
     it("should handle empty updates gracefully", async () => {

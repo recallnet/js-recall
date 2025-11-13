@@ -7,7 +7,7 @@ import { Button } from "@recallnet/ui2/components/button";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { openForBoosting } from "@/lib/open-for-boosting";
-import { CompetitionStatus, CompetitionWithUserAgents } from "@/types";
+import { CompetitionWithUserAgents } from "@/types";
 
 import { JoinCompetitionButton } from "./join-competition-button";
 
@@ -72,7 +72,7 @@ export const CompetitionActions: React.FC<CompetitionActionsProps> = ({
     [competition],
   );
 
-  if (competition.status === CompetitionStatus.Pending) {
+  if (competition.status === "pending") {
     return (
       <div className={containerClasses}>
         <div className="flex-1">
@@ -96,7 +96,7 @@ export const CompetitionActions: React.FC<CompetitionActionsProps> = ({
     );
   }
 
-  if (competition.status === CompetitionStatus.Active) {
+  if (competition.status === "active") {
     return (
       <div className={containerClasses}>
         <BoostButton
@@ -108,7 +108,7 @@ export const CompetitionActions: React.FC<CompetitionActionsProps> = ({
     );
   }
 
-  if (competition.status === CompetitionStatus.Ended) {
+  if (competition.status === "ended") {
     return (
       <div className={containerClasses}>
         <Link href={`/competitions/${competition.id}`} className="w-full">

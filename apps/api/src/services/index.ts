@@ -333,9 +333,11 @@ class ServiceRegistry {
       this._rewardsRepository,
       this._competitionRepository,
       this._boostRepository,
+      this._agentRepository,
       this._rewardsAllocator,
       db,
       serviceLogger,
+      config.rewards.boostTimeDecayRate,
     );
 
     this._competitionService = new CompetitionService(
@@ -366,7 +368,7 @@ class ServiceRegistry {
       this._balanceService,
       this._priceTrackerService,
       tradeRepository,
-      tradingConstraintsRepository,
+      this._tradingConstraintsService,
       dexScreenerProvider,
       config,
       serviceLogger,

@@ -190,6 +190,7 @@ export const rewardsService = new RewardsService(
   rewardsRepository,
   competitionRepository,
   boostRepository,
+  agentRepository,
   new NoopRewardsAllocator(),
   db,
   createLogger("RewardsService"),

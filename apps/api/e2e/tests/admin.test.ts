@@ -1095,6 +1095,7 @@ describe("Admin API", () => {
         type: "trading",
         externalUrl: "https://example.com",
         imageUrl: "https://example.com/image.jpg",
+        arenaId: "default-paper-arena",
       },
       {
         headers: {
@@ -1152,6 +1153,7 @@ describe("Admin API", () => {
       {
         name: "Test Competition for Auth Test",
         description: "Test description",
+        arenaId: "default-paper-arena",
       },
       {
         headers: {
@@ -1220,6 +1222,7 @@ describe("Admin API", () => {
       {
         name: "Test Competition for Validation",
         description: "Test description",
+        arenaId: "default-paper-arena",
       },
       {
         headers: {
@@ -1690,6 +1693,7 @@ describe("Admin API", () => {
         name: "Test Competition with Rewards",
         description: "Competition to test rewards update",
         type: "trading",
+        arenaId: "default-paper-arena",
       },
       {
         headers: {
@@ -2058,6 +2062,7 @@ describe("Admin API", () => {
         name: "Atomic Test Competition",
         description: "Testing atomic updates",
         type: "trading",
+        arenaId: "default-paper-arena",
       },
       {
         headers: {
@@ -2139,6 +2144,7 @@ describe("Admin API", () => {
         name: "Trading Constraints Test",
         description: "Testing constraints update",
         type: "trading",
+        arenaId: "default-paper-arena",
       },
       {
         headers: {
@@ -2222,6 +2228,7 @@ describe("Admin API", () => {
           tradingType: "disallowAll",
           sandboxMode: false,
           type: "trading",
+          arenaId: "default-paper-arena",
           rewards: {
             "-1": 1000, // Invalid rank (negative)
             "0": 500, // Invalid rank (zero)
@@ -2259,6 +2266,7 @@ describe("Admin API", () => {
         tradingType: "disallowAll",
         sandboxMode: false,
         type: "trading",
+        arenaId: "default-paper-arena",
       },
       {
         headers: {
@@ -2285,6 +2293,7 @@ describe("Admin API", () => {
         tradingType: "disallowAll",
         sandboxMode: false,
         type: "trading",
+        arenaId: "default-paper-arena",
         tradingConstraints: {
           minimumPairAgeHours: 96,
           minimum24hVolumeUsd: 75000,
@@ -2343,6 +2352,7 @@ describe("Admin API", () => {
       name: "Competition To Convert to Perps",
       description: "Test converting spot to perps",
       type: "trading",
+      arenaId: "default-paper-arena",
     });
 
     expect(createResponse.success).toBe(true);
@@ -2467,6 +2477,7 @@ describe("Admin API", () => {
       name: "Competition Missing PerpsProvider",
       description: "Test missing perpsProvider validation",
       type: "trading",
+      arenaId: "default-paper-arena",
     });
 
     expect(createResponse.success).toBe(true);
@@ -2505,6 +2516,7 @@ describe("Admin API", () => {
       name: "Pending Competition With Agents",
       description: "Test type conversion with registered agents",
       type: "trading",
+      arenaId: "default-paper-arena",
     });
 
     expect(createResponse.success).toBe(true);
@@ -2692,6 +2704,7 @@ describe("Admin API", () => {
       description: "Test competition with minimum stake requirement",
       type: "trading",
       minimumStake: 1000, // 1000 tokens minimum stake
+      arenaId: "default-paper-arena",
     });
 
     expect(createResponse.success).toBe(true);
@@ -2727,6 +2740,7 @@ describe("Admin API", () => {
       name: "Competition to Update with Minimum Stake",
       description: "Test updating competition with minimum stake",
       type: "trading",
+      arenaId: "default-paper-arena",
     });
 
     expect(createResponse.success).toBe(true);
@@ -2772,6 +2786,53 @@ describe("Admin API", () => {
     expect(updatedCompetitionDetails.competition.minimumStake).toBe(2500);
   });
 
+  test("should require arenaId when creating competition", async () => {
+    // Use raw axios to bypass ApiClient defaults
+    await expect(
+      axios.post(
+        `${getBaseUrl()}/api/admin/competition/create`,
+        {
+          name: "Competition Missing Arena",
+          description: "Test competition without arenaId",
+          type: "trading",
+          // arenaId intentionally omitted
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${adminApiKey}`,
+          },
+        },
+      ),
+    ).rejects.toThrow();
+  });
+
+  test("should require arenaId when creating new competition via start", async () => {
+    // Use raw axios to bypass ApiClient defaults
+    // This tests the create-and-start flow (no competitionId provided)
+    const { agent } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Test Agent for Arena Validation",
+    });
+
+    await expect(
+      axios.post(
+        `${getBaseUrl()}/api/admin/competition/start`,
+        {
+          name: "Competition Start Missing Arena",
+          description: "Test start competition without arenaId",
+          type: "trading",
+          agentIds: [agent.id],
+          // arenaId intentionally omitted - should fail because we're creating new competition
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${adminApiKey}`,
+          },
+        },
+      ),
+    ).rejects.toThrow();
+  });
+
   test("should throw ApiError for invalid fields in request body", async () => {
     const adminClient = createTestClient(getBaseUrl());
     await adminClient.loginAsAdmin(adminApiKey);
@@ -2780,6 +2841,7 @@ describe("Admin API", () => {
       name: "Competition with Invalid Fields",
       description: "Test competition with invalid fields",
       type: "foobar",
+      arenaId: "default-paper-arena",
     })) as ErrorResponse;
     expect(createResponse1.success).toBe(false);
     expect(createResponse1.status).toEqual(400);
@@ -2791,6 +2853,7 @@ describe("Admin API", () => {
       name: "Competition with Invalid Fields 2",
       description: "Test competition with invalid fields 2",
       type: "trading",
+      arenaId: "default-paper-arena",
       // @ts-expect-error - we're intentionally passing an invalid type
       minimumStake: "invalid",
       startDate: "invalid",
@@ -2806,6 +2869,7 @@ describe("Admin API", () => {
       competition: { id: competitionId },
     } = (await adminClient.createCompetition({
       name: "Competition to Update with Invalid Fields",
+      arenaId: "default-paper-arena",
       description: "Test updating competition with invalid fields",
       type: "trading",
     })) as CreateCompetitionResponse;
@@ -3077,6 +3141,104 @@ describe("Admin API", () => {
     expect((getResponse as ErrorResponse).error).toContain("not found");
   });
 
+  test("should create competition linked to arena", async () => {
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    const arenaId = `comp-arena-${Date.now()}`;
+
+    // Create arena first
+    const arenaResponse = await adminClient.createArena({
+      id: arenaId,
+      name: "Arena for Competition",
+      createdBy: "admin",
+      category: "crypto_trading",
+      skill: "spot_paper_trading",
+    });
+    expect(arenaResponse.success).toBe(true);
+
+    // Create competition linked to arena
+    const compResponse = await adminClient.createCompetition({
+      name: "Competition in Arena",
+      type: "trading",
+      arenaId: arenaId,
+      engineId: "spot_paper_trading",
+      engineVersion: "1.0.0",
+      vips: ["vip-agent-1"],
+      allowlist: ["allowed-agent-1", "allowed-agent-2"],
+      minRecallRank: 100,
+      agentAllocation: 5000,
+      agentAllocationUnit: "RECALL",
+      displayState: "active",
+    });
+
+    expect(compResponse.success).toBe(true);
+    expect(
+      (compResponse as CreateCompetitionResponse).competition,
+    ).toBeDefined();
+    expect((compResponse as CreateCompetitionResponse).competition.name).toBe(
+      "Competition in Arena",
+    );
+
+    // Now try to delete arena - should fail because it has a competition
+    const deleteResponse = await adminClient.deleteArena(arenaId);
+    expect(deleteResponse.success).toBe(false);
+    expect((deleteResponse as ErrorResponse).error).toContain(
+      "associated competitions",
+    );
+  });
+
+  test("should update competition with arena and participation fields", async () => {
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Create arena
+    const arenaId = `update-arena-${Date.now()}`;
+    await adminClient.createArena({
+      id: arenaId,
+      name: "Update Test Arena",
+      createdBy: "admin",
+      category: "crypto_trading",
+      skill: "spot_paper_trading",
+    });
+
+    // Create basic competition
+    const createResponse = await adminClient.createCompetition({
+      name: "Basic Competition",
+      type: "trading",
+      arenaId: "default-paper-arena",
+    });
+    expect(createResponse.success).toBe(true);
+    const competitionId = (createResponse as CreateCompetitionResponse)
+      .competition.id;
+
+    // Update with arena and participation fields
+    const updateResponse = await adminClient.updateCompetition(competitionId, {
+      description: "Updated with arena link",
+      arenaId: arenaId,
+      engineId: "spot_paper_trading",
+      engineVersion: "1.0.0",
+      vips: ["vip-1", "vip-2"],
+      allowlist: ["allowed-1"],
+      blocklist: ["blocked-1"],
+      minRecallRank: 50,
+      allowlistOnly: true,
+      agentAllocation: 10000,
+      agentAllocationUnit: "USDC",
+      boosterAllocation: 5000,
+      boosterAllocationUnit: "RECALL",
+      rewardRules: "Weekly distribution",
+      rewardDetails: "Paid in USDC",
+      displayState: "waitlist",
+    });
+
+    expect(updateResponse.success).toBe(true);
+    expect(
+      (updateResponse as UpdateCompetitionResponse).competition.description,
+    ).toBe("Updated with arena link");
+    // Note: We can't directly verify the new fields in the response
+    // without updating the response serialization, but we verified they're accepted
+  });
   // TODO: Add test for deleting arena with associated competitions
   // This requires updating createCompetition to accept arenaId parameter
   // Will be implemented when we update competition creation in next phase
