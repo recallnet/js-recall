@@ -9,10 +9,15 @@ import { ArenaRepository } from "@recallnet/db/repositories/arena";
 import { BalanceRepository } from "@recallnet/db/repositories/balance";
 import { BoostRepository } from "@recallnet/db/repositories/boost";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
+import { CompetitionGamesRepository } from "@recallnet/db/repositories/competition-games";
 import { CompetitionRewardsRepository } from "@recallnet/db/repositories/competition-rewards";
+import { CompetitionScoresRepository } from "@recallnet/db/repositories/competition-scores";
+import { GamePlaysRepository } from "@recallnet/db/repositories/game-plays";
+import { GamesRepository } from "@recallnet/db/repositories/games";
 import { LeaderboardRepository } from "@recallnet/db/repositories/leaderboard";
 import { PartnerRepository } from "@recallnet/db/repositories/partner";
 import { PerpsRepository } from "@recallnet/db/repositories/perps";
+import { PredictionsRepository } from "@recallnet/db/repositories/predictions";
 import { RewardsRepository } from "@recallnet/db/repositories/rewards";
 import { StakesRepository } from "@recallnet/db/repositories/stakes";
 import { TradeRepository } from "@recallnet/db/repositories/trade";
@@ -31,14 +36,20 @@ import {
   CompetitionService,
   EmailService,
   LeaderboardService,
+  NflLiveIngestorService,
+  NflPlaybackIngestorService,
   PartnerService,
   PerpsDataProcessor,
+  PlaysManagerService,
   PortfolioSnapshotterService,
+  PredictionsManagerService,
   PriceTrackerService,
   RewardsService,
   RiskMetricsService,
+  ScoringManagerService,
   SimulatedTradeExecutionService,
   SortinoRatioService,
+  SportsDataIONflProvider,
   TradeSimulatorService,
   TradingConstraintsService,
   UserService,
@@ -120,6 +131,17 @@ class ServiceRegistry {
   private _rewardsService: RewardsService;
   private readonly _rewardsRepository: RewardsRepository;
   private readonly _rewardsAllocator: RewardsAllocator;
+  private readonly _gamesRepository: GamesRepository;
+  private readonly _gamePlaysRepository: GamePlaysRepository;
+  private readonly _competitionGamesRepository: CompetitionGamesRepository;
+  private readonly _predictionsRepository: PredictionsRepository;
+  private readonly _competitionScoresRepository: CompetitionScoresRepository;
+  private readonly _nflPlaybackIngestorService: NflPlaybackIngestorService;
+  private readonly _nflLiveIngestorService: NflLiveIngestorService;
+  private readonly _sportsDataIOProvider: SportsDataIONflProvider;
+  private readonly _playsManagerService: PlaysManagerService;
+  private readonly _predictionsManagerService: PredictionsManagerService;
+  private readonly _scoringManagerService: ScoringManagerService;
 
   constructor() {
     // Initialize Privy client (use MockPrivyClient in test mode to avoid real API calls)
@@ -180,6 +202,22 @@ class ServiceRegistry {
     this._partnerRepository = new PartnerRepository(
       db,
       dbRead,
+      repositoryLogger,
+    );
+
+    // Initialize NFL repositories
+    this._gamesRepository = new GamesRepository(db, repositoryLogger);
+    this._gamePlaysRepository = new GamePlaysRepository(db, repositoryLogger);
+    this._competitionGamesRepository = new CompetitionGamesRepository(
+      db,
+      repositoryLogger,
+    );
+    this._predictionsRepository = new PredictionsRepository(
+      db,
+      repositoryLogger,
+    );
+    this._competitionScoresRepository = new CompetitionScoresRepository(
+      db,
       repositoryLogger,
     );
 
@@ -411,6 +449,51 @@ class ServiceRegistry {
         INDEXING_TRANSACTIONS_HYPERSYNC_QUERY,
       );
     }
+
+    // Initialize NFL services
+    this._nflPlaybackIngestorService = new NflPlaybackIngestorService(
+      this._gamesRepository,
+      this._gamePlaysRepository,
+      this._competitionGamesRepository,
+      serviceLogger,
+    );
+
+    // Initialize SportsDataIO provider
+    this._sportsDataIOProvider = new SportsDataIONflProvider(
+      config.sportsDataIO.apiKey,
+      serviceLogger,
+    );
+
+    // Initialize live ingestor
+    this._nflLiveIngestorService = new NflLiveIngestorService(
+      this._gamesRepository,
+      this._gamePlaysRepository,
+      this._competitionGamesRepository,
+      this._sportsDataIOProvider,
+      serviceLogger,
+    );
+
+    this._playsManagerService = new PlaysManagerService(
+      this._competitionRepository,
+      this._competitionGamesRepository,
+      this._gamesRepository,
+      this._gamePlaysRepository,
+      serviceLogger,
+    );
+
+    this._predictionsManagerService = new PredictionsManagerService(
+      this._competitionRepository,
+      this._gamePlaysRepository,
+      this._predictionsRepository,
+      serviceLogger,
+    );
+
+    this._scoringManagerService = new ScoringManagerService(
+      this._gamePlaysRepository,
+      this._predictionsRepository,
+      this._competitionScoresRepository,
+      serviceLogger,
+    );
   }
 
   public static getInstance(): ServiceRegistry {
@@ -551,6 +634,50 @@ class ServiceRegistry {
 
   get partnerService(): PartnerService {
     return this._partnerService;
+  }
+
+  get nflPlaybackIngestorService(): NflPlaybackIngestorService {
+    return this._nflPlaybackIngestorService;
+  }
+
+  get nflLiveIngestorService(): NflLiveIngestorService {
+    return this._nflLiveIngestorService;
+  }
+
+  get sportsDataIOProvider(): SportsDataIONflProvider {
+    return this._sportsDataIOProvider;
+  }
+
+  get playsManagerService(): PlaysManagerService {
+    return this._playsManagerService;
+  }
+
+  get predictionsManagerService(): PredictionsManagerService {
+    return this._predictionsManagerService;
+  }
+
+  get scoringManagerService(): ScoringManagerService {
+    return this._scoringManagerService;
+  }
+
+  get gamesRepository(): GamesRepository {
+    return this._gamesRepository;
+  }
+
+  get gamePlaysRepository(): GamePlaysRepository {
+    return this._gamePlaysRepository;
+  }
+
+  get competitionGamesRepository(): CompetitionGamesRepository {
+    return this._competitionGamesRepository;
+  }
+
+  get predictionsRepository(): PredictionsRepository {
+    return this._predictionsRepository;
+  }
+
+  get competitionScoresRepository(): CompetitionScoresRepository {
+    return this._competitionScoresRepository;
   }
 
   private getRewardsAllocator(): RewardsAllocator {

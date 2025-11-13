@@ -23,6 +23,7 @@ export * from "./sort/index.js";
 export * from "./agent-metrics.js";
 export * from "./perps.js";
 export * from "./unified-leaderboard.js";
+export * from "../nfl-playback-ingestor.service.js";
 
 /**
  * Trading constraints for token validation

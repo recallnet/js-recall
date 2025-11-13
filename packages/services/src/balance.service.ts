@@ -322,6 +322,11 @@ export class BalanceService {
             `[BalanceManager] Successfully cleared balances for perps agent ${agentId}`,
           );
           break;
+        case "nfl":
+          this.logger.debug(
+            `[BalanceManager] Successfully cleared balances for nfl agent ${agentId}`,
+          );
+          break;
         default:
           assertUnreachable(competitionType);
       }

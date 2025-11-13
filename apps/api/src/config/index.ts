@@ -66,6 +66,9 @@ validatePort(mainPort, "PORT");
 validatePort(metricsPort, "METRICS_PORT", [mainPort]);
 
 export const config = {
+  sportsDataIO: {
+    apiKey: process.env.SPORTSDATAIO_API_KEY || "",
+  },
   server: {
     port: mainPort,
     // TODO: these ports are going to be put into the openapi json spec, so they can't really be set at runtime, wtd?
