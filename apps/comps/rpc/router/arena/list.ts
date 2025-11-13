@@ -14,6 +14,7 @@ export const list = base
   .input(
     PagingParamsSchema.extend({
       name: z.string().optional(),
+      withCompetitionCounts: z.boolean().optional().default(false),
     }),
   )
   .use(
@@ -24,6 +25,10 @@ export const list = base
   )
   .handler(async ({ input, context, errors }) => {
     try {
+      // If competition counts requested, use specialized method
+      if (input.withCompetitionCounts) {
+        return await context.arenaService.findAllWithCompetitionCounts(input);
+      }
       return await context.arenaService.findAll(input, input.name);
     } catch (error) {
       // Re-throw if already an oRPC error

@@ -38,6 +38,7 @@ export const Navbar: React.FunctionComponent = () => {
   const navItems = useMemo(() => {
     return [
       { label: "Competitions", href: "/competitions", mobileOnly: false },
+      { label: "Arenas", href: "/arenas", mobileOnly: false },
       { label: "Leaderboards", href: "/leaderboards", mobileOnly: false },
       {
         label: "Stake Recall",
