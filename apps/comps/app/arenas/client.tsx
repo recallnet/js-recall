@@ -62,8 +62,7 @@ export default function ArenasPageClient() {
       <div className="space-y-4 text-center">
         <h1 className="text-4xl font-bold text-white">Arenas</h1>
         <p className="mx-auto max-w-3xl text-xl text-gray-300">
-          Specialized competition environments for different trading formats and
-          venues
+          Specialized environments for different competition formats and skills
         </p>
       </div>
 
