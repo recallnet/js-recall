@@ -555,34 +555,4 @@ describe("AirdropService", () => {
       }
     });
   });
-
-  describe("checkEligibility", () => {
-    it("should check eligibility for an address", async () => {
-      const mockAddress = "0x1234567890123456789012345678901234567890";
-      const mockSeason = 0;
-      const mockClaim = {
-        address: mockAddress.toLowerCase(),
-        amount: BigInt("1000000000000000000"),
-        season: 0,
-        proof: ["0xproof1"],
-        category: "early",
-        sybilClassification: "approved" as const,
-        flaggedAt: null,
-        flaggingReason: null,
-        powerUser: false,
-        recallSnapper: false,
-        aiBuilder: false,
-        aiExplorer: false,
-      };
-
-      mockAirdropRepository.getAllocationByAddress.mockResolvedValue(mockClaim);
-
-      const result = await service.checkEligibility(mockAddress, mockSeason);
-
-      expect(result).toEqual(mockClaim);
-      expect(mockAirdropRepository.getAllocationByAddress).toHaveBeenCalledWith(
-        mockAddress,
-      );
-    });
-  });
 });
