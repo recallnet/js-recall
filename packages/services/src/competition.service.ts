@@ -4,6 +4,7 @@ import { Logger } from "pino";
 import { valueToAttoBigInt } from "@recallnet/conversions/atto-conversions";
 import { AgentRepository } from "@recallnet/db/repositories/agent";
 import { AgentScoreRepository } from "@recallnet/db/repositories/agent-score";
+import { ArenaRepository } from "@recallnet/db/repositories/arena";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { PerpsRepository } from "@recallnet/db/repositories/perps";
 import { StakesRepository } from "@recallnet/db/repositories/stakes";
@@ -28,6 +29,7 @@ import { AgentService } from "./agent.service.js";
 import { AgentRankService } from "./agentrank.service.js";
 import { BalanceService } from "./balance.service.js";
 import { CompetitionRewardService } from "./competition-reward.service.js";
+import { isCompatibleType } from "./lib/arena-validation.js";
 import {
   PaginationResponse,
   buildPaginationResponse,
@@ -359,6 +361,7 @@ export class CompetitionService {
   private perpsDataProcessor: PerpsDataProcessor;
   private agentRepo: AgentRepository;
   private agentScoreRepo: AgentScoreRepository;
+  private arenaRepo: ArenaRepository;
   private perpsRepo: PerpsRepository;
   private competitionRepo: CompetitionRepository;
   private stakesRepo: StakesRepository;
@@ -379,6 +382,7 @@ export class CompetitionService {
     perpsDataProcessor: PerpsDataProcessor,
     agentRepo: AgentRepository,
     agentScoreRepo: AgentScoreRepository,
+    arenaRepo: ArenaRepository,
     perpsRepo: PerpsRepository,
     competitionRepo: CompetitionRepository,
     stakesRepo: StakesRepository,
@@ -398,6 +402,7 @@ export class CompetitionService {
     this.perpsDataProcessor = perpsDataProcessor;
     this.agentRepo = agentRepo;
     this.agentScoreRepo = agentScoreRepo;
+    this.arenaRepo = arenaRepo;
     this.perpsRepo = perpsRepo;
     this.competitionRepo = competitionRepo;
     this.stakesRepo = stakesRepo;
@@ -469,6 +474,21 @@ export class CompetitionService {
     const id = randomUUID();
 
     const competitionType = type ?? "trading";
+
+    // Validate arena compatibility if arenaId provided
+    if (arenaId) {
+      const arena = await this.arenaRepo.findById(arenaId);
+      if (!arena) {
+        throw new ApiError(404, `Arena with ID ${arenaId} not found`);
+      }
+
+      if (!isCompatibleType(arena.skill, competitionType)) {
+        throw new ApiError(
+          400,
+          `Competition type "${competitionType}" incompatible with arena skill "${arena.skill}"`,
+        );
+      }
+    }
 
     const competition: Parameters<typeof this.competitionRepo.create>[0] = {
       id,
@@ -1999,7 +2019,7 @@ export class CompetitionService {
       updates.type !== undefined && updates.type !== existingCompetition.type;
 
     if (isTypeChanging) {
-      // Only allow type changes for pending competitions
+      // Only allow type changes for pending competitions (check first - most fundamental constraint)
       if (existingCompetition.status !== "pending") {
         throw new ApiError(
           400,
@@ -2012,6 +2032,33 @@ export class CompetitionService {
         throw new ApiError(
           400,
           "Perps provider configuration is required when changing to perpetual futures type",
+        );
+      }
+    }
+
+    // Block arena changes on ended competitions (TrueSkill already calculated)
+    if (updates.arenaId && existingCompetition.status === "ended") {
+      throw new ApiError(
+        400,
+        "Cannot change arena for ended competition - rankings already finalized",
+      );
+    }
+
+    // Validate arena compatibility if arena or type is being changed
+    // This runs after status/provider checks so tests get expected error messages
+    const finalArenaId = updates.arenaId ?? existingCompetition.arenaId;
+    const finalType = updates.type ?? existingCompetition.type;
+
+    if ((updates.arenaId || updates.type) && finalArenaId) {
+      const arena = await this.arenaRepo.findById(finalArenaId);
+      if (!arena) {
+        throw new ApiError(404, `Arena with ID ${finalArenaId} not found`);
+      }
+
+      if (!isCompatibleType(arena.skill, finalType)) {
+        throw new ApiError(
+          400,
+          `Competition type "${finalType}" incompatible with arena skill "${arena.skill}"`,
         );
       }
     }
@@ -3001,6 +3048,83 @@ export class CompetitionService {
     } catch (error) {
       this.logger.error(
         `[CompetitionService] Error getting competition rules:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Get enriched competitions for a specific arena
+   * @param arenaId Arena ID
+   * @param pagingParams Pagination parameters
+   * @returns Enriched competitions list for the arena
+   */
+  async getCompetitionsByArenaId(arenaId: string, pagingParams: PagingParams) {
+    try {
+      const { competitions, total } = await this.competitionRepo.findByArenaId(
+        arenaId,
+        pagingParams,
+      );
+
+      // Batch fetch perps configs for perps competitions (same as getEnrichedCompetitions)
+      const perpsCompetitionIds = competitions
+        .filter((c) => c.type === "perpetual_futures")
+        .map((c) => c.id);
+
+      const perpsConfigsMap = new Map<string, EvaluationMetric>();
+      if (perpsCompetitionIds.length > 0) {
+        const perpsConfigs = await Promise.all(
+          perpsCompetitionIds.map(async (id) => {
+            const config = await this.perpsRepo.getPerpsCompetitionConfig(id);
+            return { id, evaluationMetric: config?.evaluationMetric };
+          }),
+        );
+
+        perpsConfigs.forEach(({ id, evaluationMetric }) => {
+          if (evaluationMetric) {
+            perpsConfigsMap.set(id, evaluationMetric);
+          }
+        });
+      }
+
+      const enrichedCompetitions = competitions.map((competition) => {
+        const {
+          minimumPairAgeHours,
+          minimum24hVolumeUsd,
+          minimumLiquidityUsd,
+          minimumFdvUsd,
+          minTradesPerDay,
+          ...competitionData
+        } = competition;
+
+        const evaluationMetric = perpsConfigsMap.get(competition.id);
+
+        return {
+          ...competitionData,
+          ...(evaluationMetric ? { evaluationMetric } : {}),
+          tradingConstraints: {
+            minimumPairAgeHours,
+            minimum24hVolumeUsd,
+            minimumLiquidityUsd,
+            minimumFdvUsd,
+            minTradesPerDay,
+          },
+        };
+      });
+
+      return {
+        success: true,
+        competitions: enrichedCompetitions,
+        pagination: buildPaginationResponse(
+          total,
+          pagingParams.limit,
+          pagingParams.offset,
+        ),
+      };
+    } catch (error) {
+      this.logger.error(
+        `[CompetitionService] Error in getCompetitionsByArenaId (${arenaId}):`,
         error,
       );
       throw error;

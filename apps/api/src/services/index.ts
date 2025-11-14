@@ -296,11 +296,16 @@ class ServiceRegistry {
     // Initialize LeaderboardService with required dependencies
     this._leaderboardService = new LeaderboardService(
       leaderboardRepository,
+      this._arenaRepository,
       serviceLogger,
     );
 
     // Initialize ArenaService and PartnerService
-    this._arenaService = new ArenaService(this._arenaRepository, serviceLogger);
+    this._arenaService = new ArenaService(
+      this._arenaRepository,
+      this._competitionRepository,
+      serviceLogger,
+    );
     this._partnerService = new PartnerService(
       this._partnerRepository,
       serviceLogger,
@@ -352,6 +357,7 @@ class ServiceRegistry {
       this._perpsDataProcessor,
       this._agentRepository,
       agentScoreRepository,
+      this._arenaRepository,
       this._perpsRepository,
       this._competitionRepository,
       this._stakesRepository,

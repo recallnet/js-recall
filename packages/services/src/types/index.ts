@@ -1068,6 +1068,7 @@ export const LEADERBOARD_SORT_FIELDS = [
  */
 export const LeaderboardParamsSchema = z.object({
   type: CompetitionTypeSchema.default("trading"),
+  arenaId: z.string().optional(),
   limit: z.coerce.number().min(1).max(100).default(50),
   offset: z.coerce.number().min(0).default(0),
 });

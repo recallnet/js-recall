@@ -384,6 +384,38 @@ export class CompetitionRepository {
   }
 
   /**
+   * Get competition type and arena ID for ranking calculations
+   * @param competitionId The competition ID
+   * @param tx Optional database transaction
+   * @returns Object with type and arenaId, or null if competition not found
+   */
+  async getCompetitionMetadata(
+    competitionId: string,
+    tx?: Transaction,
+  ): Promise<{ type: CompetitionType; arenaId: string | null } | null> {
+    const executor = tx || this.#dbRead;
+
+    try {
+      const [result] = await executor
+        .select({
+          type: competitions.type,
+          arenaId: competitions.arenaId,
+        })
+        .from(competitions)
+        .where(eq(competitions.id, competitionId))
+        .limit(1);
+
+      return result || null;
+    } catch (error) {
+      this.#logger.error(
+        { competitionId, error },
+        `[CompetitionRepository] Error getting competition metadata`,
+      );
+      throw error;
+    }
+  }
+
+  /**
    * Find a competition by ID
    * Optionally includes arena classification data
    * @param id The ID to search for
@@ -433,35 +465,28 @@ export class CompetitionRepository {
 
   /**
    * Find competitions by arena ID with pagination
+   * Uses buildFullCompetitionQuery to return enriched competition data
    * @param arenaId Arena ID to filter by
    * @param params Pagination and sorting parameters
-   * @returns Object containing competitions array and total count
+   * @returns Object containing enriched competitions array and total count
    */
-  async findByArenaId(
-    arenaId: string,
-    params: PagingParams,
-  ): Promise<{
-    competitions: Array<SelectCompetition & { crossChainTradingType: string }>;
-    total: number;
-  }> {
+  async findByArenaId(arenaId: string, params: PagingParams) {
     try {
-      // Build count query
+      // Count query
       const countQuery = this.#dbRead
         .select({ count: drizzleCount() })
-        .from(competitions)
-        .where(eq(competitions.arenaId, arenaId));
-
-      // Build data query
-      let dataQuery = this.#dbRead
-        .select({
-          crossChainTradingType: tradingCompetitions.crossChainTradingType,
-          ...getTableColumns(competitions),
-        })
         .from(tradingCompetitions)
         .innerJoin(
           competitions,
           eq(tradingCompetitions.competitionId, competitions.id),
         )
+        .where(eq(competitions.arenaId, arenaId));
+
+      const countResult = await countQuery;
+      const total = countResult[0]?.count ?? 0;
+
+      // Data query using buildFullCompetitionQuery for enriched data
+      let dataQuery = this.buildFullCompetitionQuery()
         .where(eq(competitions.arenaId, arenaId))
         .$dynamic();
 
@@ -469,13 +494,11 @@ export class CompetitionRepository {
         dataQuery = getSort(dataQuery, params.sort, competitionOrderByFields);
       }
 
-      // Execute count and data queries in parallel
-      const [results, countResult] = await Promise.all([
-        dataQuery.limit(params.limit).offset(params.offset),
-        countQuery,
-      ]);
+      const competitionResults = await dataQuery
+        .limit(params.limit)
+        .offset(params.offset);
 
-      return { competitions: results, total: countResult[0]?.count ?? 0 };
+      return { competitions: competitionResults, total };
     } catch (error) {
       this.#logger.error(
         `[CompetitionRepository] Error in findByArenaId (${arenaId}):`,

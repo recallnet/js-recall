@@ -1,26 +1,30 @@
 import { ORPCError } from "@orpc/server";
+import { z } from "zod/v4";
 
-import { ApiError, LeaderboardParamsSchema } from "@recallnet/services/types";
+import { ApiError, PagingParamsSchema } from "@recallnet/services/types";
 
+import { CacheTags } from "@/lib/cache-tags";
 import { base } from "@/rpc/context/base";
 import { cacheMiddleware } from "@/rpc/middleware/cache";
 
 /**
- * Get global leaderboard across all relevant competitions matching a specific competition type
- * or arena-specific leaderboard if arenaId is provided
+ * List all arenas with pagination
  */
-export const getGlobal = base
-  .use(
-    cacheMiddleware({
-      revalidateSecs: 30,
+export const list = base
+  .input(
+    PagingParamsSchema.extend({
+      name: z.string().optional(),
     }),
   )
-  .input(LeaderboardParamsSchema)
+  .use(
+    cacheMiddleware({
+      revalidateSecs: 300, // 5 minutes - arenas change infrequently
+      getTags: () => [CacheTags.arenaList()],
+    }),
+  )
   .handler(async ({ input, context, errors }) => {
     try {
-      return await context.leaderboardService.getGlobalLeaderboardForType(
-        input,
-      );
+      return await context.arenaService.findAll(input, input.name);
     } catch (error) {
       // Re-throw if already an oRPC error
       if (error instanceof ORPCError) {
@@ -45,6 +49,8 @@ export const getGlobal = base
       }
 
       // Unknown error type
-      throw errors.INTERNAL({ message: "Failed to get global leaderboard" });
+      throw errors.INTERNAL({ message: "Failed to list arenas" });
     }
   });
+
+export type ListType = typeof list;

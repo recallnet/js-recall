@@ -1790,8 +1790,9 @@ describe("Admin API", () => {
     expect(createResponse.competition).toBeDefined();
     const competitionId = createResponse.competition.id;
 
-    // Update ONLY the perpsProvider field to convert to perps competition
+    // Update perpsProvider and arena to convert to perps competition
     const updateResponse = (await client.updateCompetition(competitionId, {
+      arenaId: "default-perps-arena",
       perpsProvider: {
         provider: "symphony",
         initialCapital: 1000,
@@ -2369,6 +2370,7 @@ describe("Admin API", () => {
     // Convert to perps type
     const updateResponse = await adminClient.updateCompetition(competitionId, {
       type: "perpetual_futures",
+      arenaId: "default-perps-arena", // Change to perps arena for compatibility
       perpsProvider: {
         provider: "symphony",
         initialCapital: 1000,
@@ -2410,9 +2412,10 @@ describe("Admin API", () => {
       (detailsBeforeUpdate as CompetitionDetailResponse).competition.type,
     ).toBe("perpetual_futures");
 
-    // Convert to spot trading type
+    // Convert to spot trading type and move to paper arena
     const updateResponse = await adminClient.updateCompetition(competitionId, {
       type: "trading",
+      arenaId: "default-paper-arena", // Change to paper arena for compatibility
     });
 
     expect(updateResponse.success).toBe(true);
@@ -2535,9 +2538,10 @@ describe("Admin API", () => {
       2,
     );
 
-    // Convert to perps type (should succeed even with registered agents)
+    // Convert to perps type and move to perps arena (should succeed even with registered agents)
     const updateResponse = await adminClient.updateCompetition(competitionId, {
       type: "perpetual_futures",
+      arenaId: "default-perps-arena",
       perpsProvider: {
         provider: "symphony",
         initialCapital: 500,
