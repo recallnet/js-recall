@@ -1,7 +1,10 @@
 import { and, desc, eq } from "drizzle-orm";
 import { Logger } from "pino";
 
-import { convictionClaims } from "../schema/conviction-claims/defs.js";
+import {
+  NewConvictionClaim,
+  convictionClaims,
+} from "../schema/conviction-claims/defs.js";
 import { Database } from "../types.js";
 
 export class ConvictionClaimsRepository {
@@ -26,17 +29,7 @@ export class ConvictionClaimsRepository {
         .where(eq(convictionClaims.account, normalizedAccount))
         .orderBy(desc(convictionClaims.blockTimestamp));
 
-      return results.map((claim) => ({
-        id: claim.id,
-        account: claim.account,
-        eligibleAmount: claim.eligibleAmount,
-        claimedAmount: claim.claimedAmount,
-        season: claim.season,
-        duration: claim.duration,
-        blockNumber: claim.blockNumber,
-        blockTimestamp: claim.blockTimestamp,
-        transactionHash: claim.transactionHash,
-      }));
+      return results;
     } catch (error) {
       this.#logger.error("Error fetching claims by account:", error);
       throw error;
@@ -166,16 +159,7 @@ export class ConvictionClaimsRepository {
   /**
    * Insert a new conviction claim
    */
-  async insertClaim(claim: {
-    account: string;
-    eligibleAmount: bigint;
-    claimedAmount: bigint;
-    season: number;
-    duration: bigint;
-    blockNumber: bigint;
-    blockTimestamp: Date;
-    transactionHash: Buffer;
-  }) {
+  async insertClaim(claim: NewConvictionClaim) {
     try {
       this.#logger.info(
         `Inserting conviction claim for account ${claim.account}, season ${claim.season}`,
@@ -184,14 +168,8 @@ export class ConvictionClaimsRepository {
       const result = await this.#db
         .insert(convictionClaims)
         .values({
+          ...claim,
           account: claim.account.toLowerCase(),
-          eligibleAmount: claim.eligibleAmount,
-          claimedAmount: claim.claimedAmount,
-          season: claim.season,
-          duration: claim.duration,
-          blockNumber: claim.blockNumber,
-          blockTimestamp: claim.blockTimestamp,
-          transactionHash: claim.transactionHash,
         })
         .returning();
 

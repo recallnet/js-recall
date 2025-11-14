@@ -29,6 +29,23 @@ describe("AirdropService", () => {
     it("should return claims data for an address with allocations and no claims", async () => {
       const mockAddress = "0x1234567890123456789012345678901234567890";
 
+      mockAirdropRepository.getSeasons.mockResolvedValue([
+        {
+          id: 1,
+          number: 0,
+          name: "Genesis",
+          startDate: new Date("2024-01-01"),
+          endDate: new Date("2025-12-31"),
+        },
+        {
+          id: 2,
+          number: 1,
+          name: "Season 1",
+          startDate: new Date("2025-01-01"),
+          endDate: new Date("2026-12-31"),
+        },
+      ]);
+
       mockAirdropRepository.getAllAllocationsForAddress.mockResolvedValue([
         {
           address: mockAddress.toLowerCase(),
@@ -65,40 +82,40 @@ describe("AirdropService", () => {
       const result = await service.getAccountClaimsData(mockAddress);
 
       expect(result).toHaveLength(2);
-      expect(result[0]).toEqual({
-        season: 1,
-        seasonName: "Season 1",
-        allocation: {
-          amount: BigInt("2000000000000000000"),
-          proof: ["0xproof3", "0xproof4"],
-          ineligibleReason: undefined,
-        },
-        claim: {
-          status: "available",
-          claimedAmount: undefined,
-          stakeDuration: undefined,
-          unlocksAt: undefined,
-        },
-      });
-      expect(result[1]).toEqual({
-        season: 0,
-        seasonName: "Genesis",
-        allocation: {
-          amount: BigInt("1000000000000000000"),
-          proof: ["0xproof1", "0xproof2"],
-          ineligibleReason: undefined,
-        },
-        claim: {
-          status: "available",
-          claimedAmount: undefined,
-          stakeDuration: undefined,
-          unlocksAt: undefined,
-        },
-      });
+
+      const firstClaim = result[0]!;
+      expect(firstClaim.type).toBe("available");
+      expect(firstClaim.season).toBe(1);
+      expect(firstClaim.seasonName).toBe("Season 1");
+      if (firstClaim.type === "available") {
+        expect(firstClaim.eligibleAmount).toBe(BigInt("2000000000000000000"));
+        expect(firstClaim.proof).toEqual(["0xproof3", "0xproof4"]);
+        expect(firstClaim.expiresAt).toBeDefined();
+      }
+
+      const secondClaim = result[1]!;
+      expect(secondClaim.type).toBe("available");
+      expect(secondClaim.season).toBe(0);
+      expect(secondClaim.seasonName).toBe("Genesis");
+      if (secondClaim.type === "available") {
+        expect(secondClaim.eligibleAmount).toBe(BigInt("1000000000000000000"));
+        expect(secondClaim.proof).toEqual(["0xproof1", "0xproof2"]);
+        expect(secondClaim.expiresAt).toBeDefined();
+      }
     });
 
     it("should mark sybil accounts as ineligible", async () => {
       const mockAddress = "0x1234567890123456789012345678901234567890";
+
+      mockAirdropRepository.getSeasons.mockResolvedValue([
+        {
+          id: 1,
+          number: 0,
+          name: "Genesis",
+          startDate: new Date("2024-01-01"),
+          endDate: new Date("2025-12-31"),
+        },
+      ]);
 
       mockAirdropRepository.getAllAllocationsForAddress.mockResolvedValue([
         {
@@ -122,14 +139,25 @@ describe("AirdropService", () => {
       const result = await service.getAccountClaimsData(mockAddress);
 
       expect(result).toHaveLength(1);
-      expect(result[0]!.allocation.ineligibleReason).toBe(
-        "Suspicious activity detected",
-      );
-      expect(result[0]!.claim.status).toBe("expired");
+      const claim = result[0]!;
+      expect(claim.type).toBe("ineligible");
+      if (claim.type === "ineligible") {
+        expect(claim.ineligibleReason).toBe("Suspicious activity detected");
+      }
     });
 
     it("should mark maybe-sybil accounts with review message", async () => {
       const mockAddress = "0x1234567890123456789012345678901234567890";
+
+      mockAirdropRepository.getSeasons.mockResolvedValue([
+        {
+          id: 1,
+          number: 0,
+          name: "Genesis",
+          startDate: new Date("2024-01-01"),
+          endDate: new Date("2025-12-31"),
+        },
+      ]);
 
       mockAirdropRepository.getAllAllocationsForAddress.mockResolvedValue([
         {
@@ -140,7 +168,7 @@ describe("AirdropService", () => {
           category: "early",
           sybilClassification: "maybe-sybil",
           flaggedAt: null,
-          flaggingReason: null,
+          flaggingReason: "Account under review for potential sybil activity",
           powerUser: false,
           recallSnapper: false,
           aiBuilder: false,
@@ -153,15 +181,42 @@ describe("AirdropService", () => {
       const result = await service.getAccountClaimsData(mockAddress);
 
       expect(result).toHaveLength(1);
-      expect(result[0]!.allocation.ineligibleReason).toBe(
-        "Account under review for potential sybil activity",
-      );
-      expect(result[0]!.claim.status).toBe("expired");
+      const claim = result[0]!;
+      expect(claim.type).toBe("ineligible");
+      if (claim.type === "ineligible") {
+        expect(claim.ineligibleReason).toBe(
+          "Account under review for potential sybil activity",
+        );
+      }
     });
 
     it("should handle multiple seasons with different claim statuses", async () => {
       const mockAddress = "0x1234567890123456789012345678901234567890";
       const claimTimestamp = new Date("2024-01-01T00:00:00Z");
+
+      mockAirdropRepository.getSeasons.mockResolvedValue([
+        {
+          id: 1,
+          number: 0,
+          name: "Genesis",
+          startDate: new Date("2024-01-01"),
+          endDate: new Date("2025-12-31"),
+        },
+        {
+          id: 2,
+          number: 1,
+          name: "Season 1",
+          startDate: new Date("2025-01-01"),
+          endDate: new Date("2026-12-31"),
+        },
+        {
+          id: 3,
+          number: 2,
+          name: "Season 2",
+          startDate: new Date("2026-01-01"),
+          endDate: new Date("2027-12-31"),
+        },
+      ]);
 
       mockAirdropRepository.getAllAllocationsForAddress.mockResolvedValue([
         {
@@ -215,10 +270,12 @@ describe("AirdropService", () => {
           eligibleAmount: BigInt("1000000000000000000"),
           claimedAmount: BigInt("1000000000000000000"),
           season: 0,
-          duration: BigInt(0), // No staking
+          duration: 0n, // No staking
           blockNumber: BigInt(1000000),
           blockTimestamp: claimTimestamp,
           transactionHash: Buffer.from("txhash"),
+          createdAt: claimTimestamp,
+          updatedAt: claimTimestamp,
         },
       ]);
 
@@ -232,43 +289,45 @@ describe("AirdropService", () => {
       expect(result[2]!.season).toBe(0);
 
       // Season 2 - Sybil flagged
-      expect(result[0]!.claim.status).toBe("expired");
-      expect(result[0]!.allocation.ineligibleReason).toBe(
-        "Account flagged as sybil",
-      );
+      const season2Claim = result[0]!;
+      expect(season2Claim.type).toBe("ineligible");
+      if (season2Claim.type === "ineligible") {
+        expect(season2Claim.ineligibleReason).toBe("Account flagged as sybil");
+      }
 
       // Season 1 - Available
-      expect(result[1]!.claim.status).toBe("available");
-      expect(result[1]!.allocation.ineligibleReason).toBeUndefined();
+      const season1Claim = result[1]!;
+      expect(season1Claim.type).toBe("available");
+      if (season1Claim.type === "available") {
+        expect(season1Claim.eligibleAmount).toBe(BigInt("2000000000000000000"));
+        expect(season1Claim.expiresAt).toBeDefined();
+        expect(season1Claim.proof).toEqual(["0xproof2"]);
+      }
 
       // Season 0 - Claimed without staking
-      expect(result[2]!.claim.status).toBe("claimed");
-      expect(result[2]!.claim.claimedAmount).toBe(
-        BigInt("1000000000000000000"),
-      );
-      expect(result[2]!.claim.stakeDuration).toBe(0);
-      expect(result[2]!.claim.unlocksAt).toBeUndefined();
+      const season0Claim = result[2]!;
+      expect(season0Claim.type).toBe("claimed-and-not-staked");
+      if (season0Claim.type === "claimed-and-not-staked") {
+        expect(season0Claim.eligibleAmount).toBe(BigInt("1000000000000000000"));
+        expect(season0Claim.claimedAmount).toBe(BigInt("1000000000000000000"));
+        expect(season0Claim.claimedAt).toEqual(claimTimestamp);
+      }
     });
 
-    it("should handle empty allocations", async () => {
+    it("should handle claimed allocation with staking", async () => {
       const mockAddress = "0x1234567890123456789012345678901234567890";
+      const claimTimestamp = new Date("2024-01-01T00:00:00Z");
+      const stakeDurationSeconds = 86400n; // 1 day
 
-      mockAirdropRepository.getAllAllocationsForAddress.mockResolvedValue([]);
-
-      mockConvictionClaimsRepository.getClaimsByAccount.mockResolvedValue([]);
-
-      const result = await service.getAccountClaimsData(mockAddress);
-
-      expect(result).toHaveLength(0);
-    });
-
-    it("should work without conviction claims repository", async () => {
-      const serviceWithoutConviction = new AirdropService(
-        mockAirdropRepository,
-        mockLogger,
-      );
-
-      const mockAddress = "0x1234567890123456789012345678901234567890";
+      mockAirdropRepository.getSeasons.mockResolvedValue([
+        {
+          id: 1,
+          number: 0,
+          name: "Genesis",
+          startDate: new Date("2024-01-01"),
+          endDate: new Date("2025-12-31"),
+        },
+      ]);
 
       mockAirdropRepository.getAllAllocationsForAddress.mockResolvedValue([
         {
@@ -287,17 +346,69 @@ describe("AirdropService", () => {
         },
       ]);
 
-      const result =
-        await serviceWithoutConviction.getAccountClaimsData(mockAddress);
+      mockConvictionClaimsRepository.getClaimsByAccount.mockResolvedValue([
+        {
+          id: "claim-1",
+          account: mockAddress.toLowerCase(),
+          eligibleAmount: BigInt("1000000000000000000"),
+          claimedAmount: BigInt("1000000000000000000"),
+          season: 0,
+          duration: stakeDurationSeconds,
+          blockNumber: BigInt(1000000),
+          blockTimestamp: claimTimestamp,
+          transactionHash: Buffer.from("txhash"),
+          createdAt: claimTimestamp,
+          updatedAt: claimTimestamp,
+        },
+      ]);
+
+      const result = await service.getAccountClaimsData(mockAddress);
 
       expect(result).toHaveLength(1);
-      expect(result[0]!.claim.status).toBe("available");
-      expect(result[0]!.claim.claimedAmount).toBeUndefined();
+      const claim = result[0]!;
+      expect(claim.type).toBe("claimed-and-staked");
+      expect(claim.season).toBe(0);
+      expect(claim.seasonName).toBe("Genesis");
+      if (claim.type === "claimed-and-staked") {
+        expect(claim.eligibleAmount).toBe(BigInt("1000000000000000000"));
+        expect(claim.claimedAmount).toBe(BigInt("1000000000000000000"));
+        expect(claim.stakeDuration).toBe(stakeDurationSeconds);
+        expect(claim.claimedAt).toEqual(claimTimestamp);
+        expect(claim.unlocksAt).toEqual(
+          new Date(
+            claimTimestamp.getTime() + Number(stakeDurationSeconds) * 1000,
+          ),
+        );
+      }
+    });
+
+    it("should handle empty allocations", async () => {
+      const mockAddress = "0x1234567890123456789012345678901234567890";
+
+      mockAirdropRepository.getSeasons.mockResolvedValue([]);
+
+      mockAirdropRepository.getAllAllocationsForAddress.mockResolvedValue([]);
+
+      mockConvictionClaimsRepository.getClaimsByAccount.mockResolvedValue([]);
+
+      const result = await service.getAccountClaimsData(mockAddress);
+
+      expect(result).toHaveLength(0);
     });
 
     it("should handle errors gracefully", async () => {
       const mockAddress = "0x1234567890123456789012345678901234567890";
       const error = new Error("Database connection failed");
+
+      mockAirdropRepository.getSeasons.mockResolvedValue([
+        {
+          id: 1,
+          number: 0,
+          name: "Genesis",
+          startDate: new Date("2024-01-01"),
+          endDate: new Date("2025-12-31"),
+        },
+      ]);
 
       mockAirdropRepository.getAllAllocationsForAddress.mockRejectedValue(
         error,
@@ -315,6 +426,30 @@ describe("AirdropService", () => {
 
     it("should assign correct season names", async () => {
       const mockAddress = "0x1234567890123456789012345678901234567890";
+
+      mockAirdropRepository.getSeasons.mockResolvedValue([
+        {
+          id: 1,
+          number: 0,
+          name: "Genesis",
+          startDate: new Date("2024-01-01"),
+          endDate: new Date("2025-12-31"),
+        },
+        {
+          id: 2,
+          number: 3,
+          name: "Season 3",
+          startDate: new Date("2025-01-01"),
+          endDate: new Date("2026-12-31"),
+        },
+        {
+          id: 3,
+          number: 99,
+          name: "Season 99",
+          startDate: new Date("2026-01-01"),
+          endDate: new Date("2027-12-31"),
+        },
+      ]);
 
       mockAirdropRepository.getAllAllocationsForAddress.mockResolvedValue([
         {
@@ -374,6 +509,52 @@ describe("AirdropService", () => {
       expect(result.find((c: ClaimData) => c.season === 99)?.seasonName).toBe(
         "Season 99",
       );
+    });
+
+    it("should mark unclaimed allocation as expired when season has ended", async () => {
+      const mockAddress = "0x1234567890123456789012345678901234567890";
+      const expiredDate = new Date("2024-01-01");
+
+      mockAirdropRepository.getSeasons.mockResolvedValue([
+        {
+          id: 1,
+          number: 0,
+          name: "Genesis",
+          startDate: new Date("2023-01-01"),
+          endDate: expiredDate,
+        },
+      ]);
+
+      mockAirdropRepository.getAllAllocationsForAddress.mockResolvedValue([
+        {
+          address: mockAddress.toLowerCase(),
+          amount: BigInt("1000000000000000000"),
+          season: 0,
+          proof: ["0xproof1", "0xproof2"],
+          category: "early",
+          sybilClassification: "approved",
+          flaggedAt: null,
+          flaggingReason: null,
+          powerUser: false,
+          recallSnapper: false,
+          aiBuilder: false,
+          aiExplorer: false,
+        },
+      ]);
+
+      mockConvictionClaimsRepository.getClaimsByAccount.mockResolvedValue([]);
+
+      const result = await service.getAccountClaimsData(mockAddress);
+
+      expect(result).toHaveLength(1);
+      const claim = result[0]!;
+      expect(claim.type).toBe("expired");
+      expect(claim.season).toBe(0);
+      expect(claim.seasonName).toBe("Genesis");
+      if (claim.type === "expired") {
+        expect(claim.eligibleAmount).toBe(BigInt("1000000000000000000"));
+        expect(claim.expiredAt).toEqual(expiredDate);
+      }
     });
   });
 

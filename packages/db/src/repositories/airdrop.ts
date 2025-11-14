@@ -464,4 +464,9 @@ export class AirdropRepository {
         .where(eq(seasons.id, res.id - 1));
     }
   }
+
+  async getSeasons(tx?: Transaction) {
+    const executor = tx ?? this.#db;
+    return await executor.select().from(seasons);
+  }
 }

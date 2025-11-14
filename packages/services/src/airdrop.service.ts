@@ -2,65 +2,67 @@ import { Logger } from "pino";
 
 import { AirdropRepository } from "@recallnet/db/repositories/airdrop";
 import { ConvictionClaimsRepository } from "@recallnet/db/repositories/conviction-claims";
+import { Season } from "@recallnet/db/schema/airdrop/types";
 
-export interface ClaimData {
+export type BaseClaim = {
   season: number;
   seasonName: string;
-  allocation: {
-    amount: bigint;
-    proof: string[];
-    ineligibleReason?: string;
-  };
-  claim: {
-    status: "available" | "claimed" | "expired";
-    claimedAmount?: bigint;
-    stakeDuration?: number;
-    unlocksAt?: Date;
-  };
-}
+};
+
+export type AvailableClaim = BaseClaim & {
+  type: "available";
+  eligibleAmount: bigint;
+  expiresAt: Date;
+  proof: string[];
+};
+
+export type ClaimedAndStakedClaim = BaseClaim & {
+  type: "claimed-and-staked";
+  eligibleAmount: bigint;
+  claimedAmount: bigint;
+  stakeDuration: number;
+  claimedAt: Date;
+  unlocksAt: Date;
+};
+
+export type ClaimedAndNotStakedClaim = BaseClaim & {
+  type: "claimed-and-not-staked";
+  eligibleAmount: bigint;
+  claimedAmount: bigint;
+  claimedAt: Date;
+};
+
+export type ExpiredClaim = BaseClaim & {
+  type: "expired";
+  eligibleAmount: bigint;
+  expiredAt: Date;
+};
+
+export type IneligibleClaim = BaseClaim & {
+  type: "ineligible";
+  ineligibleReason: string;
+};
+
+export type ClaimData =
+  | AvailableClaim
+  | ClaimedAndStakedClaim
+  | ClaimedAndNotStakedClaim
+  | ExpiredClaim
+  | IneligibleClaim;
 
 export class AirdropService {
   private readonly airdropRepository: AirdropRepository;
-  private readonly convictionClaimsRepository?: ConvictionClaimsRepository;
+  private readonly convictionClaimsRepository: ConvictionClaimsRepository;
   private readonly logger: Logger;
 
   constructor(
     airdropRepository: AirdropRepository,
     logger: Logger,
-    convictionClaimsRepository?: ConvictionClaimsRepository,
+    convictionClaimsRepository: ConvictionClaimsRepository,
   ) {
     this.airdropRepository = airdropRepository;
     this.convictionClaimsRepository = convictionClaimsRepository;
     this.logger = logger;
-  }
-
-  /**
-   * Get season name based on season number
-   */
-  private getSeasonName(season: number): string {
-    const seasonNames: Record<number, string> = {
-      0: "Genesis",
-      1: "Season 1",
-      2: "Season 2",
-      3: "Season 3",
-    };
-    return seasonNames[season] || `Season ${season}`;
-  }
-
-  /**
-   * Determine if a claim is eligible based on sybil classification
-   */
-  private getIneligibilityReason(
-    sybilClassification: string,
-    flaggingReason?: string | null,
-  ): string | undefined {
-    if (sybilClassification === "sybil") {
-      return flaggingReason || "Account flagged as sybil";
-    }
-    if (sybilClassification === "maybe-sybil") {
-      return "Account under review for potential sybil activity";
-    }
-    return undefined;
   }
 
   /**
@@ -76,52 +78,28 @@ export class AirdropService {
   }
 
   /**
-   * Determine claim status based on various factors
-   */
-  private determineClaimStatus(
-    claimed: boolean,
-    ineligible: boolean,
-    expiryDate?: Date,
-  ): "available" | "claimed" | "expired" {
-    if (claimed) {
-      return "claimed";
-    }
-    if (ineligible) {
-      return "expired"; // Ineligible claims are treated as expired
-    }
-    if (expiryDate && new Date() > expiryDate) {
-      return "expired";
-    }
-    return "available";
-  }
-
-  /**
    * Get all airdrop claims data for an account across all seasons
    */
   async getAccountClaimsData(address: string): Promise<ClaimData[]> {
     try {
       this.logger.info(`Fetching claims data for address: ${address}`);
 
-      // Get all airdrop allocations and claim status for the address
+      const seasons = await this.airdropRepository.getSeasons();
+      const seasonsByNumber = seasons.reduce(
+        (acc, season) => {
+          acc[season.number] = season;
+          return acc;
+        },
+        {} as Record<number, Season>,
+      );
+
+      // Get all airdrop allocations for the address
       const allocations =
         await this.airdropRepository.getAllAllocationsForAddress(address);
 
       // Get conviction claims data if repository is available
-      let convictionClaims: Array<{
-        id: string;
-        account: string;
-        eligibleAmount: bigint;
-        claimedAmount: bigint;
-        season: number;
-        duration: bigint;
-        blockNumber: bigint;
-        blockTimestamp: Date;
-        transactionHash: Buffer | Uint8Array;
-      }> = [];
-      if (this.convictionClaimsRepository) {
-        convictionClaims =
-          await this.convictionClaimsRepository.getClaimsByAccount(address);
-      }
+      const convictionClaims =
+        await this.convictionClaimsRepository.getClaimsByAccount(address);
 
       // Build claims data for each allocation
       const claimsData: ClaimData[] = allocations.map((allocation) => {
@@ -130,53 +108,67 @@ export class AirdropService {
           (cc) => cc.season === allocation.season,
         );
 
-        // Determine eligibility
-        const ineligibleReason = this.getIneligibilityReason(
-          allocation.sybilClassification,
-          allocation.flaggingReason,
-        );
+        const season = seasonsByNumber[allocation.season]!;
 
-        // Determine claim status
-        const isClaimed = convictionClaim !== undefined;
-        const isIneligible = ineligibleReason !== undefined;
-        // TODO: Add actual expiry date logic based on business rules
-        const expiryDate = undefined; // Placeholder for expiry logic
+        const ineligibleReason =
+          allocation.sybilClassification !== "approved"
+            ? allocation.flaggingReason || "Sybil flagged"
+            : allocation.flaggingReason
+              ? allocation.flaggingReason
+              : undefined;
 
-        const status = this.determineClaimStatus(
-          isClaimed,
-          isIneligible,
-          expiryDate,
-        );
-
-        // Calculate unlock date if claimed with staking
-        let unlocksAt: Date | undefined;
-        if (convictionClaim && convictionClaim.duration > 0n) {
-          unlocksAt = this.calculateUnlockDate(
-            convictionClaim.blockTimestamp,
-            convictionClaim.duration,
-          );
-        }
-
-        // Convert stake duration from seconds to days
-        const stakeDurationInDays = convictionClaim
-          ? Number(convictionClaim.duration) / 86400
-          : undefined;
-
-        return {
-          season: allocation.season,
-          seasonName: this.getSeasonName(allocation.season),
-          allocation: {
-            amount: allocation.amount,
-            proof: allocation.proof,
+        if (ineligibleReason) {
+          return {
+            type: "ineligible",
+            season: allocation.season,
+            seasonName: season.name,
             ineligibleReason,
-          },
-          claim: {
-            status,
-            claimedAmount: convictionClaim?.claimedAmount,
-            stakeDuration: stakeDurationInDays,
-            unlocksAt,
-          },
-        };
+          };
+        } else if (!convictionClaim && !ineligibleReason) {
+          const expiresAt = new Date();
+          expiresAt.setDate(season.startDate.getDate() + 30);
+          return {
+            type: "available",
+            season: allocation.season,
+            seasonName: season.name,
+            eligibleAmount: allocation.amount,
+            expiresAt,
+            proof: allocation.proof,
+          };
+        } else if (convictionClaim && convictionClaim.duration > 0n) {
+          return {
+            type: "claimed-and-staked",
+            season: allocation.season,
+            seasonName: season.name,
+            eligibleAmount: convictionClaim.eligibleAmount,
+            claimedAmount: convictionClaim.claimedAmount,
+            stakeDuration: Number(convictionClaim.duration),
+            claimedAt: convictionClaim.createdAt,
+            unlocksAt: this.calculateUnlockDate(
+              convictionClaim.blockTimestamp,
+              convictionClaim.duration,
+            ),
+          };
+        } else if (convictionClaim && convictionClaim.duration === 0n) {
+          return {
+            type: "claimed-and-not-staked",
+            season: allocation.season,
+            seasonName: season.name,
+            eligibleAmount: convictionClaim.eligibleAmount,
+            claimedAmount: convictionClaim.claimedAmount,
+            claimedAt: convictionClaim.createdAt,
+          };
+        } else if (season.endDate) {
+          return {
+            type: "expired",
+            season: allocation.season,
+            seasonName: season.name,
+            eligibleAmount: allocation.amount,
+            expiredAt: season.endDate,
+          };
+        } else {
+          throw new Error("Invalid season data");
+        }
       });
 
       // Sort by season (most recent first)
