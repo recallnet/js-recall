@@ -108,7 +108,12 @@ export class AirdropService {
           (cc) => cc.season === allocation.season,
         );
 
-        const season = seasonsByNumber[allocation.season]!;
+        const season = seasonsByNumber[allocation.season];
+        if (!season) {
+          throw new Error(
+            `Season ${allocation.season} not found for allocation`,
+          );
+        }
 
         const ineligibleReason =
           allocation.sybilClassification !== "approved"
@@ -132,9 +137,9 @@ export class AirdropService {
             eligibleAmount: allocation.amount,
             expiredAt: season.endDate,
           };
-        } else if (!season.endDate && !convictionClaim && !ineligibleReason) {
-          const expiresAt = new Date();
-          expiresAt.setDate(season.startDate.getDate() + 30);
+        } else if (!season.endDate && !convictionClaim) {
+          const expiresAt = new Date(season.startDate);
+          expiresAt.setDate(expiresAt.getDate() + 30);
           return {
             type: "available",
             season: allocation.season,
@@ -167,7 +172,12 @@ export class AirdropService {
             claimedAt: convictionClaim.createdAt,
           };
         } else {
-          throw new Error("Invalid season data");
+          // This should be unreachable if all conditions are properly handled
+          throw new Error(
+            `Unexpected state for allocation: season=${allocation.season}, ` +
+              `hasEndDate=${!!season.endDate}, hasConvictionClaim=${!!convictionClaim}, ` +
+              `ineligibleReason=${ineligibleReason}`,
+          );
         }
       });
 
