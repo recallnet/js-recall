@@ -317,7 +317,7 @@ describe("AirdropService", () => {
     it("should handle claimed allocation with staking", async () => {
       const mockAddress = "0x1234567890123456789012345678901234567890";
       const claimTimestamp = new Date("2024-01-01T00:00:00Z");
-      const stakeDurationSeconds = 86400n; // 1 day
+      const stakeDurationSeconds = 86400; // 1 day
 
       mockAirdropRepository.getSeasons.mockResolvedValue([
         {
@@ -353,7 +353,7 @@ describe("AirdropService", () => {
           eligibleAmount: BigInt("1000000000000000000"),
           claimedAmount: BigInt("1000000000000000000"),
           season: 0,
-          duration: stakeDurationSeconds,
+          duration: BigInt(stakeDurationSeconds),
           blockNumber: BigInt(1000000),
           blockTimestamp: claimTimestamp,
           transactionHash: Buffer.from("txhash"),

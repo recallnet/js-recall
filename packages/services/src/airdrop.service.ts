@@ -124,7 +124,15 @@ export class AirdropService {
             seasonName: season.name,
             ineligibleReason,
           };
-        } else if (!convictionClaim && !ineligibleReason) {
+        } else if (season.endDate && !convictionClaim) {
+          return {
+            type: "expired",
+            season: allocation.season,
+            seasonName: season.name,
+            eligibleAmount: allocation.amount,
+            expiredAt: season.endDate,
+          };
+        } else if (!season.endDate && !convictionClaim && !ineligibleReason) {
           const expiresAt = new Date();
           expiresAt.setDate(season.startDate.getDate() + 30);
           return {
@@ -157,14 +165,6 @@ export class AirdropService {
             eligibleAmount: convictionClaim.eligibleAmount,
             claimedAmount: convictionClaim.claimedAmount,
             claimedAt: convictionClaim.createdAt,
-          };
-        } else if (season.endDate) {
-          return {
-            type: "expired",
-            season: allocation.season,
-            seasonName: season.name,
-            eligibleAmount: allocation.amount,
-            expiredAt: season.endDate,
           };
         } else {
           throw new Error("Invalid season data");
