@@ -521,7 +521,7 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
                         <span className="text-yellow-400">
                           30-day cooldown period
                         </span>{" "}
-                        will begin. Tokens are only withdrawalable after the
+                        will begin. Tokens are only withdrawable after the
                         cooldown.
                       </div>
                     </div>
