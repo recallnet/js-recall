@@ -176,6 +176,7 @@ const perpsDataProcessor = new PerpsDataProcessor(
 
 export const arenaService = new ArenaService(
   arenaRepository,
+  competitionRepository,
   createLogger("ArenaService"),
 );
 

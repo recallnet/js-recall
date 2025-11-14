@@ -2,8 +2,10 @@ import { Logger } from "pino";
 
 import { ArenaRepository } from "@recallnet/db/repositories/arena";
 import type { ClassificationFilters } from "@recallnet/db/repositories/arena";
+import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { InsertArena, SelectArena } from "@recallnet/db/schema/core/types";
 
+import { isCompatibleType } from "./lib/arena-validation.js";
 import { buildPaginationResponse } from "./lib/pagination-utils.js";
 import { ApiError, PagingParams } from "./types/index.js";
 
@@ -37,10 +39,16 @@ export interface UpdateArenaParams {
  */
 export class ArenaService {
   private arenaRepo: ArenaRepository;
+  private competitionRepo: CompetitionRepository;
   private logger: Logger;
 
-  constructor(arenaRepo: ArenaRepository, logger: Logger) {
+  constructor(
+    arenaRepo: ArenaRepository,
+    competitionRepo: CompetitionRepository,
+    logger: Logger,
+  ) {
     this.arenaRepo = arenaRepo;
+    this.competitionRepo = competitionRepo;
     this.logger = logger;
   }
 
@@ -172,6 +180,39 @@ export class ArenaService {
     updateData: UpdateArenaParams,
   ): Promise<SelectArena> {
     try {
+      // If skill is being changed, validate all existing competitions are compatible
+      if (updateData.skill) {
+        const existingArena = await this.arenaRepo.findById(id);
+        if (!existingArena) {
+          throw new ApiError(404, `Arena with ID ${id} not found`);
+        }
+
+        // Only validate if skill is actually changing
+        if (updateData.skill !== existingArena.skill) {
+          // Get all competitions in this arena
+          const competitions = await this.competitionRepo.findByArenaId(id, {
+            limit: 1000,
+            offset: 0,
+            sort: "",
+          });
+
+          // Check if any competition would become incompatible with new skill
+          const incompatibleCompetitions = competitions.competitions.filter(
+            (comp) => !isCompatibleType(updateData.skill!, comp.type),
+          );
+
+          if (incompatibleCompetitions.length > 0) {
+            const competitionNames = incompatibleCompetitions
+              .map((c) => c.name)
+              .join(", ");
+            throw new ApiError(
+              400,
+              `Cannot change arena skill to "${updateData.skill}": ${incompatibleCompetitions.length} existing competition(s) would become incompatible (${competitionNames})`,
+            );
+          }
+        }
+      }
+
       const updated = await this.arenaRepo.update(id, updateData);
 
       this.logger.debug(`[ArenaService] Updated arena: ${id}`);

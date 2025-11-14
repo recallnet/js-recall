@@ -301,7 +301,11 @@ class ServiceRegistry {
     );
 
     // Initialize ArenaService and PartnerService
-    this._arenaService = new ArenaService(this._arenaRepository, serviceLogger);
+    this._arenaService = new ArenaService(
+      this._arenaRepository,
+      this._competitionRepository,
+      serviceLogger,
+    );
     this._partnerService = new PartnerService(
       this._partnerRepository,
       serviceLogger,
