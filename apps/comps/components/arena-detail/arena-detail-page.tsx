@@ -179,7 +179,9 @@ export const ArenaDetailPage: React.FC<ArenaDetailPageProps> = ({
     []) as RouterOutputs["competitions"]["list"]["competitions"];
   const [activeComps, upcomingComps, endedComps] = [
     mergeCompetitionsWithUserData(
-      allArenaCompetitions.filter((c) => c.status === "active"),
+      allArenaCompetitions.filter(
+        (c) => c.status === "active" || c.status === "ending",
+      ),
       userCompetitions?.competitions ?? [],
     ).map((competition) => (
       <CompetitionCard key={competition.id} competition={competition} />
