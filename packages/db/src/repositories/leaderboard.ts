@@ -616,9 +616,25 @@ export class LeaderboardRepository {
     );
 
     try {
+      // Get total count of agents in this arena (separate query for accurate pagination)
+      const [countResult] = await this.#dbRead
+        .select({ count: drizzleCount() })
+        .from(agentScore)
+        .where(eq(agentScore.arenaId, params.arenaId));
+
+      const totalCount = countResult?.count ?? 0;
+
+      // Early return if no agents in arena at all
+      if (totalCount === 0) {
+        return {
+          agents: [],
+          totalCount: 0,
+        };
+      }
+
       // Get paginated agents with their basic info and scores, sorted by score descending
       // Filter by arena_id for arena-specific rankings
-      const query = this.#dbRead
+      const agentsWithScores = await this.#dbRead
         .select({
           id: agents.id,
           name: agents.name,
@@ -634,14 +650,6 @@ export class LeaderboardRepository {
         .orderBy(desc(agentScore.ordinal))
         .limit(params.limit)
         .offset(params.offset);
-
-      const agentsWithScores = await query;
-      if (agentsWithScores.length === 0) {
-        return {
-          agents: [],
-          totalCount: 0,
-        };
-      }
 
       const agentIds = agentsWithScores.map((agent) => agent.id);
 
@@ -677,15 +685,6 @@ export class LeaderboardRepository {
         ...agent,
         numCompetitions: competitionCountMap.get(agent.id) ?? 0,
       }));
-
-      // Get the total count of all agents in this arena, needed for pagination
-      const totalCountResult = await this.#dbRead
-        .select({
-          count: drizzleCount(),
-        })
-        .from(agentScore)
-        .where(eq(agentScore.arenaId, params.arenaId));
-      const totalCount = totalCountResult[0]?.count ?? 0;
 
       this.#logger.debug(
         {

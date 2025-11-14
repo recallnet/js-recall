@@ -2019,7 +2019,7 @@ export class CompetitionService {
       updates.type !== undefined && updates.type !== existingCompetition.type;
 
     if (isTypeChanging) {
-      // Only allow type changes for pending competitions
+      // Only allow type changes for pending competitions (check first - most fundamental constraint)
       if (existingCompetition.status !== "pending") {
         throw new ApiError(
           400,
@@ -2032,6 +2032,33 @@ export class CompetitionService {
         throw new ApiError(
           400,
           "Perps provider configuration is required when changing to perpetual futures type",
+        );
+      }
+    }
+
+    // Block arena changes on ended competitions (TrueSkill already calculated)
+    if (updates.arenaId && existingCompetition.status === "ended") {
+      throw new ApiError(
+        400,
+        "Cannot change arena for ended competition - rankings already finalized",
+      );
+    }
+
+    // Validate arena compatibility if arena or type is being changed
+    // This runs after status/provider checks so tests get expected error messages
+    const finalArenaId = updates.arenaId ?? existingCompetition.arenaId;
+    const finalType = updates.type ?? existingCompetition.type;
+
+    if ((updates.arenaId || updates.type) && finalArenaId) {
+      const arena = await this.arenaRepo.findById(finalArenaId);
+      if (!arena) {
+        throw new ApiError(404, `Arena with ID ${finalArenaId} not found`);
+      }
+
+      if (!isCompatibleType(arena.skill, finalType)) {
+        throw new ApiError(
+          400,
+          `Competition type "${finalType}" incompatible with arena skill "${arena.skill}"`,
         );
       }
     }

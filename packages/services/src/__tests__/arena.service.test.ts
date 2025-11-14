@@ -4,6 +4,7 @@ import { MockProxy, mock } from "vitest-mock-extended";
 
 import { ArenaRepository } from "@recallnet/db/repositories/arena";
 import type { ClassificationFilters } from "@recallnet/db/repositories/arena";
+import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { SelectArena } from "@recallnet/db/schema/core/types";
 
 import { ArenaService } from "../arena.service.js";
@@ -31,8 +32,9 @@ describe("ArenaService", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockRepo = mock<ArenaRepository>();
+    const mockCompetitionRepo = mock<CompetitionRepository>();
     mockLogger = mock<Logger>();
-    service = new ArenaService(mockRepo, mockLogger);
+    service = new ArenaService(mockRepo, mockCompetitionRepo, mockLogger);
   });
 
   describe("createArena", () => {

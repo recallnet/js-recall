@@ -500,6 +500,20 @@ describe("CompetitionService", () => {
     it("should update competition with arena routing and participation fields", async () => {
       const competitionId = mockCompetition.id;
 
+      // Mock arena for validation
+      arenaRepo.findById.mockResolvedValue({
+        id: "test-arena",
+        name: "Test Arena",
+        createdBy: "admin",
+        category: "crypto_trading",
+        skill: "spot_paper_trading",
+        venues: null,
+        chains: null,
+        kind: "Competition",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
       mockDb.transaction.mockImplementation(async (callback) => {
         return await callback(mockTx);
       });
