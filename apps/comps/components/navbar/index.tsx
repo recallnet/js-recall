@@ -74,7 +74,7 @@ export const Navbar: React.FunctionComponent = () => {
                     href={item.href}
                     key={item.href}
                     className={cn(
-                      "px-15 radial-hover flex h-14 items-center justify-center border-r",
+                      "radial-hover flex h-14 items-center justify-center border-r px-12",
                       isActive ? "border-b-2 border-b-yellow-500" : "",
                     )}
                   >
