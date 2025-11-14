@@ -216,15 +216,15 @@ export const ArenaDetailPage: React.FC<ArenaDetailPageProps> = ({
 
         {/* Arena Metadata */}
         <Card className="border-gray-800 bg-gray-900/30 p-4">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center">
+            <div className="flex items-center justify-between gap-2 md:justify-start">
               <span className="text-sm text-gray-400">Skill:</span>
               <Badge className={cn("text-sm", "bg-green-900 text-green-300")}>
                 {arena.skill.toUpperCase().replace(/_/g, " ")}
               </Badge>
             </div>
             {arena.venues && arena.venues.length > 0 && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center justify-between gap-2 md:justify-start">
                 <span className="text-sm text-gray-400">Venues:</span>
                 {arena.venues.map((venue) => (
                   <Badge

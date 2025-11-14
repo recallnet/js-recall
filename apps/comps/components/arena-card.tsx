@@ -204,7 +204,7 @@ export const ArenaCard: React.FC<ArenaCardProps> = ({ arena, className }) => {
                       <div
                         className="h-2 rounded-full"
                         style={{
-                          width: `${Math.max(barWidth, 5)}%`,
+                          width: `${Math.max(barWidth, 2)}%`,
                           backgroundColor: barColor,
                         }}
                       />
