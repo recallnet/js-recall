@@ -3,12 +3,12 @@
 import { ArrowRightIcon } from "@radix-ui/react-icons";
 import React from "react";
 
-import { Button } from "@recallnet/ui2/components/button";
 import { Spinner } from "@recallnet/ui2/components/spinner";
 import { Tooltip } from "@recallnet/ui2/components/tooltip";
 
 import { BoostIcon } from "../BoostIcon";
 import { Recall } from "../Recall";
+import { Button } from "./Button";
 import { StatusPill } from "./StatusPill";
 
 /**
@@ -62,7 +62,7 @@ export const StakeEntryBase: React.FunctionComponent<StakeEntryBaseProps> = ({
   progress,
 }) => {
   return (
-    <div className="xs:p-4 rounded-lg border border-[#212C3A] bg-gray-900 p-3 transition-colors hover:bg-gray-800">
+    <div className="xs:p-4 border-gray-4 bg-gray-2 rounded-lg border p-3">
       <div className="flex flex-col items-stretch justify-between">
         <div className="flex flex-col items-center justify-between gap-4 sm:flex-row sm:items-center">
           <div className="flex flex-col items-center gap-4 sm:flex-row">
@@ -74,13 +74,13 @@ export const StakeEntryBase: React.FunctionComponent<StakeEntryBaseProps> = ({
                   {formattedAmount}
                 </span>
               </div>
-              <div className="hidden text-gray-400 sm:block">
+              <div className="text-gray-6 hidden sm:block">
                 <ArrowRightIcon />
               </div>
               <div className="flex items-center gap-1 text-yellow-400">
                 <BoostIcon />
                 <span className="font-bold">{boostAmount}</span>
-                <span className="text-gray-400">per competition.</span>
+                <span className="text-gray-6">per competition.</span>
               </div>
             </div>
           </div>
@@ -88,7 +88,6 @@ export const StakeEntryBase: React.FunctionComponent<StakeEntryBaseProps> = ({
             {actions.map((action, index) => (
               <Button
                 key={index}
-                variant={action.variant ?? "outline"}
                 disabled={Boolean(action.disabled || action.isLoading)}
                 onClick={action.onClick}
               >
@@ -107,20 +106,18 @@ export const StakeEntryBase: React.FunctionComponent<StakeEntryBaseProps> = ({
       </div>
 
       {progress && (
-        <div className="mt-4 flex items-center justify-between gap-8 text-sm text-gray-400">
+        <div className="text-gray-6 mt-4 flex items-center justify-between gap-8 text-sm">
           <Tooltip content={progress.leftLabelTooltip}>
             <span className="cursor-help">{progress.leftLabel}</span>
           </Tooltip>
           <div className="xs:flex hidden max-w-md flex-1 items-center gap-2">
-            <div className="h-2 flex-1 overflow-hidden rounded-full bg-gray-700">
+            <div className="bg-gray-3 h-2 flex-1 overflow-hidden rounded-full">
               <div
-                className="h-full bg-[#6D85A4] transition-all duration-300"
+                className="bg-gray-5 h-full transition-all duration-300"
                 style={{ width: `${progress.progressPercent}%` }}
               />
             </div>
-            <span className="text-primary-foreground">
-              {progress.progressText}
-            </span>
+            <span className="text-gray-6">{progress.progressText}</span>
           </div>
           <Tooltip content={progress.rightLabelTooltip} className="text-right">
             <span className="cursor-help">{progress.rightLabel}</span>

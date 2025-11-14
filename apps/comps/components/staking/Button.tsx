@@ -15,7 +15,7 @@ export function Button(props: ButtonProps): React.JSX.Element {
       className={cn(
         "bg-gray-6 text-black",
         "hover:bg-gray-5",
-        "disabled:bg-gray-4 disabled:text-gray-5",
+        "disabled:bg-gray-4 disabled:text-gray-5 disabled:hover:bg-gray-4",
         "focus-visible:bg-gray-6 focus-visible:border-2 focus-visible:border-[#33A5FF]",
         "active:bg-gray-6 active:border-2 active:border-[#33A5FF]",
         className as string | undefined,
