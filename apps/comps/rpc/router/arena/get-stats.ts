@@ -1,35 +1,28 @@
 import { ORPCError } from "@orpc/server";
 import { z } from "zod/v4";
 
-import { ApiError, PagingParamsSchema } from "@recallnet/services/types";
+import { ApiError } from "@recallnet/services/types";
 
-import { CacheTags } from "@/lib/cache-tags";
 import { base } from "@/rpc/context/base";
 import { cacheMiddleware } from "@/rpc/middleware/cache";
 
 /**
- * List all arenas with pagination
+ * Get arena statistics (avg score, top score, total agents)
  */
-export const list = base
+export const getStats = base
   .input(
-    PagingParamsSchema.extend({
-      name: z.string().optional(),
-      withCompetitionCounts: z.boolean().optional().default(false),
+    z.object({
+      arenaId: z.string(),
     }),
   )
   .use(
     cacheMiddleware({
-      revalidateSecs: 300, // 5 minutes - arenas change infrequently
-      getTags: () => [CacheTags.arenaList()],
+      revalidateSecs: 60, // 1 minute - stats don't change frequently
     }),
   )
   .handler(async ({ input, context, errors }) => {
     try {
-      // If competition counts requested, use specialized method
-      if (input.withCompetitionCounts) {
-        return await context.arenaService.findAllWithCompetitionCounts(input);
-      }
-      return await context.arenaService.findAll(input, input.name);
+      return await context.leaderboardService.getArenaStats(input.arenaId);
     } catch (error) {
       // Re-throw if already an oRPC error
       if (error instanceof ORPCError) {
@@ -54,8 +47,8 @@ export const list = base
       }
 
       // Unknown error type
-      throw errors.INTERNAL({ message: "Failed to list arenas" });
+      throw errors.INTERNAL({ message: "Failed to get arena stats" });
     }
   });
 
-export type ListType = typeof list;
+export type GetStatsType = typeof getStats;

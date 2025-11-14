@@ -1,6 +1,6 @@
 "use client";
 
-import { Info, TrendingUp, Users } from "lucide-react";
+import { Info, Users } from "lucide-react";
 import Link from "next/link";
 
 import { BenchmarkModel } from "@recallnet/services/types";
@@ -93,18 +93,6 @@ export const SkillOverviewCard: React.FC<SkillOverviewCardProps> = ({
               {stats.totalParticipants} {isAgentSkill ? "agents" : "models"}
             </span>
           </div>
-
-          {stats.topScore && (
-            <div className="flex items-center gap-2">
-              <TrendingUp size={14} className="text-gray-500" />
-              <span className="text-sm text-gray-300">
-                Top:{" "}
-                {typeof stats.topScore === "number"
-                  ? stats.topScore.toFixed(0)
-                  : stats.topScore}
-              </span>
-            </div>
-          )}
         </div>
 
         {/* Top Participants - Simplified */}
