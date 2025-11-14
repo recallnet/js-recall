@@ -35,14 +35,14 @@ describe("AirdropService", () => {
           number: 0,
           name: "Genesis",
           startDate: new Date("2024-01-01"),
-          endDate: new Date("2025-12-31"),
+          endDate: new Date("2025-01-01"),
         },
         {
           id: 2,
           number: 1,
           name: "Season 1",
           startDate: new Date("2025-01-01"),
-          endDate: new Date("2026-12-31"),
+          endDate: null,
         },
       ]);
 
@@ -94,13 +94,12 @@ describe("AirdropService", () => {
       }
 
       const secondClaim = result[1]!;
-      expect(secondClaim.type).toBe("available");
+      expect(secondClaim.type).toBe("expired");
       expect(secondClaim.season).toBe(0);
       expect(secondClaim.seasonName).toBe("Genesis");
-      if (secondClaim.type === "available") {
+      if (secondClaim.type === "expired") {
         expect(secondClaim.eligibleAmount).toBe(BigInt("1000000000000000000"));
-        expect(secondClaim.proof).toEqual(["0xproof1", "0xproof2"]);
-        expect(secondClaim.expiresAt).toBeDefined();
+        expect(secondClaim.expiredAt).toEqual(new Date("2025-01-01"));
       }
     });
 
@@ -113,7 +112,7 @@ describe("AirdropService", () => {
           number: 0,
           name: "Genesis",
           startDate: new Date("2024-01-01"),
-          endDate: new Date("2025-12-31"),
+          endDate: null,
         },
       ]);
 
@@ -155,7 +154,7 @@ describe("AirdropService", () => {
           number: 0,
           name: "Genesis",
           startDate: new Date("2024-01-01"),
-          endDate: new Date("2025-12-31"),
+          endDate: null,
         },
       ]);
 
@@ -200,21 +199,21 @@ describe("AirdropService", () => {
           number: 0,
           name: "Genesis",
           startDate: new Date("2024-01-01"),
-          endDate: new Date("2025-12-31"),
+          endDate: new Date("2025-01-01"),
         },
         {
           id: 2,
           number: 1,
           name: "Season 1",
           startDate: new Date("2025-01-01"),
-          endDate: new Date("2026-12-31"),
+          endDate: new Date("2026-01-01"),
         },
         {
           id: 3,
           number: 2,
           name: "Season 2",
           startDate: new Date("2026-01-01"),
-          endDate: new Date("2027-12-31"),
+          endDate: null,
         },
       ]);
 
@@ -295,13 +294,12 @@ describe("AirdropService", () => {
         expect(season2Claim.ineligibleReason).toBe("Account flagged as sybil");
       }
 
-      // Season 1 - Available
+      // Season 1 - Expired
       const season1Claim = result[1]!;
-      expect(season1Claim.type).toBe("available");
-      if (season1Claim.type === "available") {
+      expect(season1Claim.type).toBe("expired");
+      if (season1Claim.type === "expired") {
         expect(season1Claim.eligibleAmount).toBe(BigInt("2000000000000000000"));
-        expect(season1Claim.expiresAt).toBeDefined();
-        expect(season1Claim.proof).toEqual(["0xproof2"]);
+        expect(season1Claim.expiredAt).toEqual(new Date("2026-01-01"));
       }
 
       // Season 0 - Claimed without staking
@@ -406,7 +404,7 @@ describe("AirdropService", () => {
           number: 0,
           name: "Genesis",
           startDate: new Date("2024-01-01"),
-          endDate: new Date("2025-12-31"),
+          endDate: null,
         },
       ]);
 
@@ -433,21 +431,21 @@ describe("AirdropService", () => {
           number: 0,
           name: "Genesis",
           startDate: new Date("2024-01-01"),
-          endDate: new Date("2025-12-31"),
+          endDate: new Date("2025-01-01"),
         },
         {
           id: 2,
-          number: 3,
-          name: "Season 3",
+          number: 1,
+          name: "Season 1",
           startDate: new Date("2025-01-01"),
-          endDate: new Date("2026-12-31"),
+          endDate: new Date("2026-01-01"),
         },
         {
           id: 3,
-          number: 99,
-          name: "Season 99",
+          number: 2,
+          name: "Season 2",
           startDate: new Date("2026-01-01"),
-          endDate: new Date("2027-12-31"),
+          endDate: null,
         },
       ]);
 
@@ -469,7 +467,7 @@ describe("AirdropService", () => {
         {
           address: mockAddress.toLowerCase(),
           amount: BigInt("1000"),
-          season: 3,
+          season: 1,
           proof: [],
           category: "",
           sybilClassification: "approved",
@@ -483,7 +481,7 @@ describe("AirdropService", () => {
         {
           address: mockAddress.toLowerCase(),
           amount: BigInt("1000"),
-          season: 99,
+          season: 2,
           proof: [],
           category: "",
           sybilClassification: "approved",
@@ -503,11 +501,11 @@ describe("AirdropService", () => {
       expect(result.find((c: ClaimData) => c.season === 0)?.seasonName).toBe(
         "Genesis",
       );
-      expect(result.find((c: ClaimData) => c.season === 3)?.seasonName).toBe(
-        "Season 3",
+      expect(result.find((c: ClaimData) => c.season === 1)?.seasonName).toBe(
+        "Season 1",
       );
-      expect(result.find((c: ClaimData) => c.season === 99)?.seasonName).toBe(
-        "Season 99",
+      expect(result.find((c: ClaimData) => c.season === 2)?.seasonName).toBe(
+        "Season 2",
       );
     });
 
