@@ -21,6 +21,7 @@ import { CompetitionCard } from "@/components/competition-card";
 import { useSession } from "@/hooks/useSession";
 import { client } from "@/rpc/clients/client-side";
 import { tanstackClient } from "@/rpc/clients/tanstack-query";
+import { RouterOutputs } from "@/rpc/router";
 import { LeaderboardAgent } from "@/types/agent";
 import { mergeCompetitionsWithUserData } from "@/utils/competition-utils";
 
@@ -172,7 +173,10 @@ export const ArenaDetailPage: React.FC<ArenaDetailPageProps> = ({
   const allAgents = [...leaderboardData.agents, ...additionalAgents];
 
   // Separate by status and merge with user data
-  const allArenaCompetitions = arenaCompetitionsData?.competitions || [];
+  // Type assertion: Both arena.getCompetitions and competitions.list use buildFullCompetitionQuery()
+  // and apply identical transformations, so runtime shapes are guaranteed to match
+  const allArenaCompetitions = (arenaCompetitionsData?.competitions ||
+    []) as RouterOutputs["competitions"]["list"]["competitions"];
   const [activeComps, upcomingComps, endedComps] = [
     mergeCompetitionsWithUserData(
       allArenaCompetitions.filter((c) => c.status === "active"),
