@@ -2036,6 +2036,14 @@ export class CompetitionService {
       }
     }
 
+    // Block arena changes on ended competitions (TrueSkill already calculated)
+    if (updates.arenaId && existingCompetition.status === "ended") {
+      throw new ApiError(
+        400,
+        "Cannot change arena for ended competition - rankings already finalized",
+      );
+    }
+
     // Validate arena compatibility if arena or type is being changed
     // This runs after status/provider checks so tests get expected error messages
     const finalArenaId = updates.arenaId ?? existingCompetition.arenaId;
