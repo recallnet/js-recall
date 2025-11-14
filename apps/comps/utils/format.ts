@@ -113,7 +113,7 @@ export const formatAmount = (
 export const shouldShowCompact = (
   amount: bigint,
   decimals: number = 18,
-  compareTo: bigint = 1_000n,
+  compareTo: bigint = 1_000_000n,
 ): boolean => cmp([amount, decimals], compareTo) === 1;
 
 /**

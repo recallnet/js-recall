@@ -64,6 +64,14 @@
   --trophy-first-bg: oklch(0.3911 0.080176 84.7396);
   --trophy-second-bg: oklch(0.2428 0.0231 277.17);
   --trophy-third-bg: oklch(0.1778 0.0275 59.55);
+
+  /* Gray scale colors */
+  --gray-6: #e5e5e5;
+  --gray-5: #a7a7a7;
+  --gray-4: #383838;
+  --gray-3: #282828;
+  --gray-2: #141414;
+  --gray-1: #070707;
 }
 
 @theme inline {
@@ -114,6 +122,13 @@
   --color-blue-700: var(--blue-700);
   --color-blue-800: var(--blue-800);
   --color-blue-900: var(--blue-900);
+
+  --color-gray-1: var(--gray-1);
+  --color-gray-2: var(--gray-2);
+  --color-gray-3: var(--gray-3);
+  --color-gray-4: var(--gray-4);
+  --color-gray-5: var(--gray-5);
+  --color-gray-6: var(--gray-6);
 
   --breakpoint-*: initial;
   --breakpoint-xs: 42rem;

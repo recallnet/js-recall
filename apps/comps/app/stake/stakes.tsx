@@ -51,7 +51,7 @@ export default function Stakes() {
   } else {
     return (
       <>
-        <div className="mx-auto max-w-screen-xl px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto my-20 max-w-screen-xl px-4 sm:px-6 lg:px-8">
           <StakeSummary onStakeClick={() => setIsStakeModalOpen(true)} />
 
           {isZeroState ? (
@@ -66,9 +66,9 @@ export default function Stakes() {
               </div>
 
               <div>
-                <h3 className="text-primary-foreground mb-2 text-xl font-bold">
+                <h2 className="text-primary-foreground mb-2 text-xl">
                   Active Stakes
-                </h3>
+                </h2>
                 <p className="text-secondary-foreground text-sm">
                   No active stakes yet. Stake to earn Boost.
                 </p>
@@ -94,9 +94,9 @@ export default function Stakes() {
               </div>
 
               <div>
-                <h3 className="text-primary-foreground mb-2 text-xl font-bold">
+                <h2 className="text-primary-foreground mb-2 text-xl">
                   Active Stakes
-                </h3>
+                </h2>
                 <p className="text-secondary-foreground text-sm">
                   No active stakes yet. Stake to earn Boost.
                 </p>

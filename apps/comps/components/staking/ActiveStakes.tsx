@@ -12,6 +12,7 @@ import type { StakeInfoWithId } from "@/types/staking";
 import { formatAmount } from "@/utils/format";
 
 import { RelockRecallModal } from "../modals/relock-recall";
+import { Heading } from "./Heading";
 import type { StakeEntryAction } from "./StakeEntryBase";
 import { StakeEntryBase } from "./StakeEntryBase";
 import { calculateTimeProgress } from "./stakeTime";
@@ -161,7 +162,7 @@ export const ActiveStakes: React.FunctionComponent = () => {
   if (isLoading) {
     return (
       <div className="mb-8">
-        <h2 className="mb-2 text-2xl font-bold text-white">Active Stakes</h2>
+        <Heading text1="Active" text2="Stakes" className="mb-2" />
         <p className="mb-4 text-sm text-gray-400">Loading your stakes...</p>
       </div>
     );
@@ -170,7 +171,7 @@ export const ActiveStakes: React.FunctionComponent = () => {
   if (error) {
     return (
       <div className="mb-8">
-        <h2 className="mb-2 text-2xl font-bold text-white">Active Stakes</h2>
+        <Heading text1="Active" text2="Stakes" className="mb-2" />
         <p className="mb-4 text-sm text-red-400">
           Error loading stakes: {error.message}
         </p>
@@ -181,7 +182,7 @@ export const ActiveStakes: React.FunctionComponent = () => {
   if (!stakes || stakes.length === 0) {
     return (
       <div className="mb-8">
-        <h2 className="mb-2 text-2xl font-bold text-white">Active Stakes</h2>
+        <Heading text1="Active" text2="Stakes" className="mb-2" />
         <p className="mb-4 text-sm text-gray-400">
           No active stakes yet. Stake to earn Boost.
         </p>
@@ -191,7 +192,7 @@ export const ActiveStakes: React.FunctionComponent = () => {
 
   return (
     <div className="mb-8 flex flex-col gap-4">
-      <h2 className="text-2xl font-bold text-white">Active Stakes</h2>
+      <Heading text1="Active" text2="Stakes" />
       <div className="flex flex-col gap-8">
         {stakes.map((stake: StakeInfoWithId) => (
           <ActiveStakeEntry
