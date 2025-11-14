@@ -13,6 +13,9 @@ import { tanstackClient } from "@/rpc/clients/tanstack-query";
 import { RouterOutputs } from "@/rpc/router";
 import { getAgentColor } from "@/utils/lab-colors";
 
+// Maximum agent name length before truncation in compact views
+const MAX_AGENT_NAME_LENGTH = 12;
+
 interface ArenaCardProps {
   arena: RouterOutputs["arena"]["list"]["arenas"][number];
   className?: string;
@@ -192,8 +195,8 @@ export const ArenaCard: React.FC<ArenaCardProps> = ({ arena, className }) => {
                     {/* Name */}
                     <div className="min-w-0 flex-1">
                       <div className="truncate text-xs text-white md:text-sm">
-                        {agent.name.length > 12
-                          ? `${agent.name.substring(0, 12)}...`
+                        {agent.name.length > MAX_AGENT_NAME_LENGTH
+                          ? `${agent.name.substring(0, MAX_AGENT_NAME_LENGTH)}...`
                           : agent.name}
                       </div>
                       <div className="text-xs text-gray-500">agent</div>
