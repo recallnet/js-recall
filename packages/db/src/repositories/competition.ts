@@ -473,7 +473,7 @@ export class CompetitionRepository {
   async findByArenaId(arenaId: string, params: PagingParams) {
     try {
       // Count query
-      const countQuery = this.#db
+      const countQuery = this.#dbRead
         .select({ count: drizzleCount() })
         .from(tradingCompetitions)
         .innerJoin(
