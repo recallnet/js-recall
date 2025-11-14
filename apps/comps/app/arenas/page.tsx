@@ -7,7 +7,7 @@ import ArenasPageClient from "./client";
 export async function generateMetadata(): Promise<Metadata> {
   return createMetadata(
     "Arenas",
-    "Explore specialized competition arenas for different trading formats and venues",
+    "Explore specialized environments for different competition formats and skills",
   );
 }
 
