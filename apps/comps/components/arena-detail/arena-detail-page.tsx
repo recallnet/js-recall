@@ -94,6 +94,13 @@ export const ArenaDetailPage: React.FC<ArenaDetailPageProps> = ({
     enabled: !!arena,
   });
 
+  // Fetch arena stats (calculated across ALL agents, not just paginated)
+  const { data: arenaStats } = useQuery(
+    tanstackClient.arena.getStats.queryOptions({
+      input: { arenaId },
+    }),
+  );
+
   const handleLoadMore = useCallback(async () => {
     setIsLoadingMore(true);
     try {
@@ -249,41 +256,34 @@ export const ArenaDetailPage: React.FC<ArenaDetailPageProps> = ({
                 <div className="mb-1 flex items-center justify-center gap-1">
                   <Users size={16} className="text-gray-400" />
                   <span className="text-lg font-bold text-white">
-                    {leaderboardData.pagination.total}
+                    {arenaStats?.totalAgents ??
+                      leaderboardData.pagination.total}
                   </span>
                 </div>
                 <div className="text-xs text-gray-400">Agents</div>
               </div>
 
-              {leaderboardData.agents.length > 0 &&
-                leaderboardData.agents[0]?.score && (
-                  <div>
-                    <div className="mb-1 flex items-center justify-center gap-1">
-                      <Trophy size={16} className="text-green-400" />
-                      <span className="text-lg font-bold text-green-400">
-                        {leaderboardData.agents[0].score.toFixed(0)}
-                      </span>
-                    </div>
-                    <div className="text-xs text-gray-400">Top Score</div>
-                  </div>
-                )}
-
-              {leaderboardData.agents.length > 0 && (
-                <div>
-                  <div className="mb-1 flex items-center justify-center gap-1">
-                    <ChartNoAxesColumn size={16} className="text-blue-400" />
-                    <span className="text-lg font-bold text-blue-400">
-                      {(
-                        leaderboardData.agents.reduce(
-                          (sum, agent) => sum + agent.score,
-                          0,
-                        ) / leaderboardData.agents.length
-                      ).toFixed(0)}
-                    </span>
-                  </div>
-                  <div className="text-xs text-gray-400">Average</div>
+              <div>
+                <div className="mb-1 flex items-center justify-center gap-1">
+                  <Trophy size={16} className="text-green-400" />
+                  <span className="text-lg font-bold text-green-400">
+                    {arenaStats?.topScore?.toFixed(0) ??
+                      leaderboardData.agents[0]?.score?.toFixed(0) ??
+                      0}
+                  </span>
                 </div>
-              )}
+                <div className="text-xs text-gray-400">Top Score</div>
+              </div>
+
+              <div>
+                <div className="mb-1 flex items-center justify-center gap-1">
+                  <ChartNoAxesColumn size={16} className="text-blue-400" />
+                  <span className="text-lg font-bold text-blue-400">
+                    {arenaStats?.avgScore?.toFixed(0) ?? 0}
+                  </span>
+                </div>
+                <div className="text-xs text-gray-400">Average</div>
+              </div>
             </div>
           </Card>
         </div>
@@ -294,41 +294,33 @@ export const ArenaDetailPage: React.FC<ArenaDetailPageProps> = ({
             <div className="mb-2 flex items-center justify-center gap-2">
               <Users size={20} className="text-gray-400" />
               <span className="text-2xl font-bold text-white">
-                {leaderboardData.pagination.total}
+                {arenaStats?.totalAgents ?? leaderboardData.pagination.total}
               </span>
             </div>
             <div className="text-sm text-gray-400">Total Agents</div>
           </Card>
 
-          {leaderboardData.agents.length > 0 &&
-            leaderboardData.agents[0]?.score && (
-              <Card className="p-6 text-center">
-                <div className="mb-2 flex items-center justify-center gap-2">
-                  <Trophy size={20} className="text-green-400" />
-                  <span className="text-2xl font-bold text-green-400">
-                    {leaderboardData.agents[0].score.toFixed(0)}
-                  </span>
-                </div>
-                <div className="text-sm text-gray-400">Top Score</div>
-              </Card>
-            )}
+          <Card className="p-6 text-center">
+            <div className="mb-2 flex items-center justify-center gap-2">
+              <Trophy size={20} className="text-green-400" />
+              <span className="text-2xl font-bold text-green-400">
+                {arenaStats?.topScore?.toFixed(0) ??
+                  leaderboardData.agents[0]?.score?.toFixed(0) ??
+                  0}
+              </span>
+            </div>
+            <div className="text-sm text-gray-400">Top Score</div>
+          </Card>
 
-          {leaderboardData.agents.length > 0 && (
-            <Card className="p-6 text-center">
-              <div className="mb-2 flex items-center justify-center gap-2">
-                <ChartNoAxesColumn size={20} className="text-blue-400" />
-                <span className="text-2xl font-bold text-blue-400">
-                  {(
-                    leaderboardData.agents.reduce(
-                      (sum, agent) => sum + agent.score,
-                      0,
-                    ) / leaderboardData.agents.length
-                  ).toFixed(0)}
-                </span>
-              </div>
-              <div className="text-sm text-gray-400">Average Score</div>
-            </Card>
-          )}
+          <Card className="p-6 text-center">
+            <div className="mb-2 flex items-center justify-center gap-2">
+              <ChartNoAxesColumn size={20} className="text-blue-400" />
+              <span className="text-2xl font-bold text-blue-400">
+                {arenaStats?.avgScore?.toFixed(0) ?? 0}
+              </span>
+            </div>
+            <div className="text-sm text-gray-400">Average Score</div>
+          </Card>
         </div>
 
         {/* Leaderboard Table */}

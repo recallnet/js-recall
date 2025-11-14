@@ -292,4 +292,22 @@ export class LeaderboardService {
       throw error;
     }
   }
+
+  /**
+   * Get arena statistics calculated across all agents in the arena
+   * @param arenaId Arena ID
+   * @returns Arena statistics (avg score, top score, total agents)
+   */
+  async getArenaStats(arenaId: string): Promise<{
+    avgScore: number;
+    topScore: number;
+    totalAgents: number;
+  }> {
+    try {
+      return await this.leaderboardRepo.getArenaStats(arenaId);
+    } catch (error) {
+      this.logger.error(`Error getting arena stats for ${arenaId}:`, error);
+      throw error;
+    }
+  }
 }
