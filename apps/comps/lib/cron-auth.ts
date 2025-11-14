@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 
 import { createLogger } from "@/lib/logger";
@@ -36,7 +37,21 @@ function validateCronSecret(request: NextRequest): boolean {
     return false;
   }
 
-  const isValid = token === expectedToken;
+  // Use constant-time comparison to prevent timing attacks
+  // timingSafeEqual requires buffers of equal length
+  let isValid = false;
+  try {
+    const tokenBuffer = Buffer.from(token);
+    const expectedBuffer = Buffer.from(expectedToken);
+
+    // Only compare if lengths match (timing-safe length check)
+    if (tokenBuffer.length === expectedBuffer.length) {
+      isValid = timingSafeEqual(tokenBuffer, expectedBuffer);
+    }
+  } catch (error) {
+    logger.warn("Error during token comparison:", error);
+    isValid = false;
+  }
 
   if (!isValid) {
     logger.warn("Cron request with invalid token");
