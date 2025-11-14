@@ -154,8 +154,8 @@ export class UserService {
         }
       } catch (subErr) {
         this.logger.error(
+          { error: subErr },
           `[UserManager] Unexpected error during email subscription for ${savedUser.id}:`,
-          subErr,
         );
       }
 
@@ -174,7 +174,10 @@ export class UserService {
         throw error;
       }
 
-      this.logger.error("[UserManager] Unknown error registering user:", error);
+      this.logger.error(
+        { error },
+        "[UserManager] Unknown error registering user",
+      );
       throw new Error(`Failed to register user: ${error}`);
     }
   }
@@ -205,8 +208,8 @@ export class UserService {
       return null;
     } catch (error) {
       this.logger.error(
+        { error },
         `[UserManager] Error retrieving user ${userId}:`,
-        error,
       );
       return null;
     }
@@ -385,8 +388,8 @@ export class UserService {
       return null;
     } catch (error) {
       this.logger.error(
+        { error },
         `[UserManager] Error retrieving user by wallet address ${walletAddress}:`,
-        error,
       );
       return null;
     }
@@ -413,8 +416,8 @@ export class UserService {
       return null;
     } catch (error) {
       this.logger.error(
+        { error },
         `[UserManager] Error retrieving user by Privy ID ${privyId}:`,
-        error,
       );
       return null;
     }
@@ -524,8 +527,8 @@ export class UserService {
       return null;
     } catch (error) {
       this.logger.error(
+        { error },
         `[UserManager] Error retrieving user by email ${email}:`,
-        error,
       );
       return null;
     }
@@ -562,7 +565,7 @@ export class UserService {
       const res = await this.userRepo.count();
       return res >= 0;
     } catch (error) {
-      this.logger.error("[UserManager] Health check failed:", error);
+      this.logger.error({ error }, "[UserManager] Health check failed");
       return false;
     }
   }

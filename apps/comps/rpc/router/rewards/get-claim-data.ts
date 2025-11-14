@@ -23,11 +23,14 @@ export const getClaimData = base
 
       return rewards;
     } catch (error) {
-      context.logger.error("Failed to get rewards with proofs", {
-        error,
-        userId: context.user.id,
-        walletAddress: context.user.walletAddress,
-      });
+      context.logger.error(
+        {
+          error,
+          userId: context.user.id,
+          walletAddress: context.user.walletAddress,
+        },
+        "Failed to get rewards with proofs",
+      );
       throw errors.INTERNAL({
         message: "Failed to retrieve claim data",
       });

@@ -278,8 +278,8 @@ const gracefulShutdown = async (signal: string) => {
         apiLogger.info("[Shutdown] Database connections closed");
       } catch (error) {
         apiLogger.error(
+          { error },
           "[Shutdown] Error closing database connections:",
-          error,
         );
       }
 

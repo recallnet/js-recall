@@ -1,4 +1,4 @@
-import pino from "pino";
+import { pino } from "pino";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { RetryConfig, RetryExhaustedError } from "../retry-helper.js";
@@ -33,7 +33,7 @@ vi.mock("@/config/index.js", () => ({
 
 describe("WatchlistService", () => {
   let watchlistService: WalletWatchlist;
-  const logger = pino.default();
+  const logger = pino({});
 
   beforeEach(async () => {
     vi.clearAllMocks();

@@ -51,7 +51,7 @@ export class CompetitionRewardsRepository {
       }
       return result;
     } catch (error) {
-      this.#logger.error(`Error in createRewards: ${error}`);
+      this.#logger.error({ error }, "Error in createRewards");
       throw error;
     }
   }
@@ -70,7 +70,7 @@ export class CompetitionRewardsRepository {
         .from(competitionRewards)
         .where(eq(competitionRewards.competitionId, competitionId));
     } catch (error) {
-      this.#logger.error(`Error in findRewardsByCompetition: ${error}`, error);
+      this.#logger.error({ error }, "Error in findRewardsByCompetition");
       throw error;
     }
   }
@@ -94,7 +94,7 @@ export class CompetitionRewardsRepository {
         .where(inArray(competitionRewards.competitionId, competitionIds))
         .orderBy(competitionRewards.rank);
     } catch (error) {
-      this.#logger.error(`Error in findRewardsByCompetitions: ${error}`, error);
+      this.#logger.error({ error }, "Error in findRewardsByCompetitions");
       throw error;
     }
   }
@@ -116,10 +116,7 @@ export class CompetitionRewardsRepository {
         .where(eq(competitionRewards.competitionId, competitionId));
       return (result?.rowCount ?? 0) > 0;
     } catch (error) {
-      this.#logger.error(
-        `Error in deleteRewardsByCompetition: ${error}`,
-        error,
-      );
+      this.#logger.error({ error }, "Error in deleteRewardsByCompetition");
       throw error;
     }
   }
@@ -174,7 +171,7 @@ export class CompetitionRewardsRepository {
         }
       });
     } catch (error) {
-      this.#logger.error(`Error in assignWinnersToRewards: ${error}`);
+      this.#logger.error({ error }, "Error in assignWinnersToRewards");
       throw error;
     }
   }

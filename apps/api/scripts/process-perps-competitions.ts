@@ -115,8 +115,8 @@ async function processPerpsCompetitions() {
         }
       } catch (perpsError) {
         logger.error(
+          { error: perpsError },
           `Error processing perps competition ${activeCompetition.id}:`,
-          perpsError instanceof Error ? perpsError.message : String(perpsError),
         );
         // Continue processing other competitions even if one fails
       }
@@ -127,10 +127,7 @@ async function processPerpsCompetitions() {
       `Perps processing completed for ${activePerpsCompetitions.length} competition(s) in ${duration}ms!`,
     );
   } catch (error) {
-    logger.error(
-      "Error in perps processing task:",
-      error instanceof Error ? error.message : String(error),
-    );
+    logger.error({ error }, "Error in perps processing task:");
 
     throw error;
   }

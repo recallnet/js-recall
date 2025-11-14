@@ -58,7 +58,7 @@ export class LeaderboardRepository {
     totalCompetitions: number;
     competitionIds: string[];
   }> {
-    this.#logger.debug("getGlobalStats called for type:", type);
+    this.#logger.debug({ type }, "getGlobalStats called for type");
 
     // Filter competitions by `type` and `status` IN ['active', 'ended'].
     const relevantCompetitions = await this.#dbRead
@@ -323,7 +323,7 @@ export class LeaderboardRepository {
         totalRois,
       };
     } catch (error) {
-      this.#logger.error("Error in getBulkAgentMetrics:", error);
+      this.#logger.error({ error }, "Error in getBulkAgentMetrics");
       throw error;
     }
   }

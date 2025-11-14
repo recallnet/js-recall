@@ -92,10 +92,8 @@ async function takePortfolioSnapshots() {
           );
         } catch (paperError) {
           logger.error(
+            { error: paperError },
             `Error taking paper trading snapshots for ${activeCompetition.id}:`,
-            paperError instanceof Error
-              ? paperError.message
-              : String(paperError),
           );
           // Continue processing other competitions even if one fails
         }
@@ -111,10 +109,7 @@ async function takePortfolioSnapshots() {
       `Portfolio snapshots completed for ${activeTradingCompetitions.length} competition(s) in ${duration}ms!`,
     );
   } catch (error) {
-    logger.error(
-      "Error in portfolio snapshots task:",
-      error instanceof Error ? error.message : String(error),
-    );
+    logger.error({ error }, "Error in portfolio snapshots task:");
 
     throw error;
   }

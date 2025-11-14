@@ -192,7 +192,7 @@ async function backfillArenaScores(): Promise<void> {
     logger.info(`  Processed ${allArenas.length} arenas`);
     process.exit(0);
   } catch (error) {
-    logger.error("Error during backfill:", error);
+    logger.error({ error }, "Error during backfill");
     process.exit(1);
   }
 }

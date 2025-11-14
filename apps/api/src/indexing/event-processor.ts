@@ -141,11 +141,14 @@ class EventProcessor {
       // Create raw event data
       const event = this.createEventData(eventName, rawLog);
 
-      this.#logger.debug("Preparing to store raw event with metadata:", {
-        eventName,
-        blockNumber: event.blockNumber.toString(),
-        transactionHash: event.transactionHash,
-      });
+      this.#logger.debug(
+        {
+          eventName,
+          blockNumber: event.blockNumber.toString(),
+          transactionHash: event.transactionHash,
+        },
+        "Preparing to store raw event with metadata:",
+      );
 
       await this.processEvent(event, eventName);
     } else {

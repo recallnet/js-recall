@@ -490,8 +490,8 @@ describe("LeaderboardService", () => {
 
         // Verify error was logged
         expect(mockLogger.error).toHaveBeenCalledWith(
-          "[LeaderboardService] Failed to build unified leaderboard:",
-          expect.any(Error),
+          { error: expect.any(Error) },
+          "[LeaderboardService] Failed to build unified leaderboard",
         );
       });
 

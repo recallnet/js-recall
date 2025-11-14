@@ -347,8 +347,8 @@ export class DexScreenerProvider implements PriceSource {
         return null;
       } catch (error) {
         this.logger.error(
+          { error },
           `Error fetching price from DexScreener for ${tokenAddress} on ${dexScreenerChain}:`,
-          error,
         );
         retries++;
 
@@ -523,8 +523,10 @@ export class DexScreenerProvider implements PriceSource {
           }
         } catch (error) {
           this.logger.error(
+            {
+              error,
+            },
             `[DexScreenerProvider] Error during individual retry for ${tokenAddress}:`,
-            error instanceof Error ? error.message : "Unknown error",
           );
         }
       }
@@ -653,8 +655,10 @@ export class DexScreenerProvider implements PriceSource {
         return results;
       } catch (error) {
         this.logger.error(
+          {
+            error,
+          },
           `[DexScreenerProvider] Error fetching batch prices (attempt ${retries + 1}):`,
-          error instanceof Error ? error.message : "Unknown error",
         );
 
         retries++;
