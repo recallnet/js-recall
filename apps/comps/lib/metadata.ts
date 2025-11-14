@@ -19,7 +19,11 @@ export const createMetadata = (
   ogImageUrl?: string,
 ): Metadata => {
   const baseUrl = getBaseUrl();
-  const imageUrl = ogImageUrl || `${baseUrl}/og_image.png`;
+  const imageUrl = ogImageUrl
+    ? ogImageUrl.startsWith("http")
+      ? ogImageUrl
+      : `${baseUrl}${ogImageUrl}`
+    : `${baseUrl}/og_image.png`;
   return {
     title,
     description,

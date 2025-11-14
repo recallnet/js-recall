@@ -50,6 +50,31 @@ const formatEventDate = (date: Date | string | null | undefined): string => {
 
 const formatNumber = (num: number | null | undefined): string => {
   if (num === null || num === undefined) return "0";
+
+  if (num >= 1_000_000_000) {
+    return (
+      (num / 1_000_000_000).toLocaleString("en-US", {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2,
+      }) + "B"
+    );
+  }
+  if (num >= 1_000_000) {
+    return (
+      (num / 1_000_000).toLocaleString("en-US", {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2,
+      }) + "M"
+    );
+  }
+  if (num >= 1_000) {
+    return (
+      (num / 1_000).toLocaleString("en-US", {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2,
+      }) + "K"
+    );
+  }
   return num.toLocaleString("en-US");
 };
 
@@ -236,7 +261,11 @@ export async function GET(
             <div style={styles.infoSection}>
               <div style={styles.amountCard}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={recallSvgUrl} style={{ width: 24, height: 24 }} />
+                <img
+                  src={recallSvgUrl}
+                  alt={"Recall token icon"}
+                  style={{ width: 24, height: 24 }}
+                />
                 <span style={styles.amount}>
                   {formatNumber(Number(competition.rewardsTge?.agentPool ?? 0))}
                 </span>
@@ -256,7 +285,11 @@ export async function GET(
             <div style={styles.infoSection}>
               <div style={styles.amountCard}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={recallSvgUrl} style={{ width: 24, height: 24 }} />
+                <img
+                  src={recallSvgUrl}
+                  alt={"Recall token icon"}
+                  style={{ width: 24, height: 24 }}
+                />
                 <span style={styles.amount}>
                   {formatNumber(Number(competition.rewardsTge?.userPool ?? 0))}
                 </span>
@@ -273,7 +306,11 @@ export async function GET(
 
           <div style={styles.footer}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={recallTextSvgUrl} style={{ height: 32 }} />
+            <img
+              src={recallTextSvgUrl}
+              alt={"Recall text icon"}
+              style={{ height: 32 }}
+            />
             <div style={styles.url}>https://app.recall.network</div>
           </div>
         </div>
