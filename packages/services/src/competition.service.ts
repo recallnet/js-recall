@@ -2014,31 +2014,12 @@ export class CompetitionService {
       updates.type = "perpetual_futures";
     }
 
-    // Determine final arenaId and type for validation
-    const finalArenaId = updates.arenaId ?? existingCompetition.arenaId;
-    const finalType = updates.type ?? existingCompetition.type;
-
-    // Validate arena compatibility if arena or type is being changed
-    if ((updates.arenaId || updates.type) && finalArenaId) {
-      const arena = await this.arenaRepo.findById(finalArenaId);
-      if (!arena) {
-        throw new ApiError(404, `Arena with ID ${finalArenaId} not found`);
-      }
-
-      if (!isCompatibleType(arena.skill, finalType)) {
-        throw new ApiError(
-          400,
-          `Competition type "${finalType}" incompatible with arena skill "${arena.skill}"`,
-        );
-      }
-    }
-
     // Check if type is being changed
     const isTypeChanging =
       updates.type !== undefined && updates.type !== existingCompetition.type;
 
     if (isTypeChanging) {
-      // Only allow type changes for pending competitions
+      // Only allow type changes for pending competitions (check first - most fundamental constraint)
       if (existingCompetition.status !== "pending") {
         throw new ApiError(
           400,
@@ -2051,6 +2032,25 @@ export class CompetitionService {
         throw new ApiError(
           400,
           "Perps provider configuration is required when changing to perpetual futures type",
+        );
+      }
+    }
+
+    // Validate arena compatibility if arena or type is being changed
+    // This runs after status/provider checks so tests get expected error messages
+    const finalArenaId = updates.arenaId ?? existingCompetition.arenaId;
+    const finalType = updates.type ?? existingCompetition.type;
+
+    if ((updates.arenaId || updates.type) && finalArenaId) {
+      const arena = await this.arenaRepo.findById(finalArenaId);
+      if (!arena) {
+        throw new ApiError(404, `Arena with ID ${finalArenaId} not found`);
+      }
+
+      if (!isCompatibleType(arena.skill, finalType)) {
+        throw new ApiError(
+          400,
+          `Competition type "${finalType}" incompatible with arena skill "${arena.skill}"`,
         );
       }
     }
