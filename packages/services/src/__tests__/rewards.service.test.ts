@@ -1309,9 +1309,7 @@ describe("RewardsService", () => {
       expect(valuesCalls.length).toBeGreaterThanOrEqual(2);
       const rootInsertArgs = valuesCalls[valuesCalls.length - 1]?.[0];
       expect(rootInsertArgs).toBeDefined();
-      expect(rootInsertArgs.tx).toBe(
-        "0x0000000000000000000000000000000000000000",
-      );
+      expect(rootInsertArgs.tx).toBeNull();
     });
   });
 

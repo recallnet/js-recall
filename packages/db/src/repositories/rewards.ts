@@ -1,4 +1,4 @@
-import { and, eq, sum } from "drizzle-orm";
+import { and, eq, isNotNull, sum } from "drizzle-orm";
 import { Logger } from "pino";
 
 import { rewards, rewardsRoots, rewardsTree } from "../schema/rewards/defs.js";
@@ -266,6 +266,7 @@ export class RewardsRepository {
           and(
             eq(rewards.address, address.toLowerCase()),
             eq(rewards.claimed, false),
+            isNotNull(rewardsRoots.tx),
           ),
         );
 
