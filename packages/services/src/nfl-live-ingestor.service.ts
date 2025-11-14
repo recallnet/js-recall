@@ -93,7 +93,9 @@ export class NflLiveIngestorService {
 
   /**
    * Ingest plays for a game
-   * Ingests both completed plays (from Plays array) and current pending play (from Score object).
+   * Ingests all plays (predictable and non-predictable) from Plays array,
+   * and creates an open play from current game state in Score object.
+   * Non-predictable plays have actualOutcome=null and are excluded from predictions.
    */
   async #ingestPlays(
     data: SportsDataIOPlayByPlay,
@@ -102,17 +104,10 @@ export class NflLiveIngestorService {
   ): Promise<void> {
     const gameStartTime = new Date(data.Score.Date);
     let ingestedCount = 0;
-    let skippedCount = 0;
 
     // First, ingest all completed plays from the Plays array
     for (const play of data.Plays) {
       try {
-        // Only ingest predictable plays
-        if (!SportsDataIONflProvider.isPlayPredictable(play)) {
-          skippedCount++;
-          continue;
-        }
-
         // Calculate lock time
         const lockTime = SportsDataIONflProvider.calculateLockTime(
           play,
@@ -120,8 +115,10 @@ export class NflLiveIngestorService {
           lockOffsetMs,
         );
 
-        // Determine outcome (completed plays always have outcomes)
-        const actualOutcome = SportsDataIONflProvider.determineOutcome(play);
+        // Determine outcome (null for non-predictable plays)
+        const actualOutcome = SportsDataIONflProvider.isPlayPredictable(play)
+          ? SportsDataIONflProvider.determineOutcome(play)
+          : null;
 
         await this.#gamePlaysRepo.upsert({
           gameId,
@@ -142,7 +139,7 @@ export class NflLiveIngestorService {
           description: play.Description,
           lockTime,
           status: "resolved", // Completed plays are always resolved
-          actualOutcome,
+          actualOutcome, // null for non-predictable plays
         });
 
         ingestedCount++;
@@ -216,7 +213,7 @@ export class NflLiveIngestorService {
     }
 
     this.#logger.info(
-      `Ingested ${ingestedCount} plays for game ${gameId} (skipped ${skippedCount} non-predictable plays)`,
+      `Ingested ${ingestedCount} plays for game ${gameId} (${data.Plays.length - ingestedCount} non-predictable)`,
     );
   }
 

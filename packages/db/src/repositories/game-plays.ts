@@ -1,4 +1,4 @@
-import { and, eq, inArray, lte, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, lte, sql } from "drizzle-orm";
 import { Logger } from "pino";
 
 import { gamePlays } from "../schema/sports/defs.js";
@@ -123,6 +123,7 @@ export class GamePlaysRepository {
 
   /**
    * Find open plays for specific games
+   * Only returns plays where actualOutcome is null (predictable plays that haven't been resolved)
    * @param gameIds Array of game IDs
    * @param limit Maximum number of plays to return
    * @param offset Offset for pagination
@@ -142,7 +143,11 @@ export class GamePlaysRepository {
         .select()
         .from(gamePlays)
         .where(
-          and(inArray(gamePlays.gameId, gameIds), eq(gamePlays.status, "open")),
+          and(
+            inArray(gamePlays.gameId, gameIds),
+            eq(gamePlays.status, "open"),
+            isNull(gamePlays.actualOutcome), // Only predictable plays
+          ),
         )
         .orderBy(gamePlays.lockTime)
         .limit(limit)
