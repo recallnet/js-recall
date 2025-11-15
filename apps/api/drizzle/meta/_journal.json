@@ -428,6 +428,13 @@
       "when": 1762972572473,
       "tag": "0060_stormy_sugar_man",
       "breakpoints": true
+    },
+    {
+      "idx": 61,
+      "version": "7",
+      "when": 1763208616283,
+      "tag": "0061_famous_kate_bishop",
+      "breakpoints": true
     }
   ]
 }
