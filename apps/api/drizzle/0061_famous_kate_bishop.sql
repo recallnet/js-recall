@@ -43,5 +43,5 @@ CREATE INDEX "idx_amount" ON "airdrop_allocations" USING btree ("amount");--> st
 CREATE INDEX "idx_address_lower" ON "airdrop_allocations" USING btree ("address");--> statement-breakpoint
 ALTER TABLE "conviction_claims" ADD CONSTRAINT "conviction_claims_season_seasons_id_fk" FOREIGN KEY ("season") REFERENCES "public"."seasons"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 INSERT INTO seasons (id, number, name, start_date, end_date)
-VALUES (0, 0, 'Genesis', '2024-01-01T00:00:00Z', null)
+VALUES (0, 0, 'Genesis', '2025-10-13T00:00:00Z', null)
 ON CONFLICT DO NOTHING;
