@@ -1,10 +1,19 @@
 #!/usr/bin/env tsx
-import { and, gte, sql } from "drizzle-orm";
+import { and, eq, gte, lte, sql, sum } from "drizzle-orm";
 import * as fs from "fs";
 import * as path from "path";
 import { parseArgs } from "util";
 
+import { BlockchainAddressAsU8A } from "@recallnet/db/coders";
+import { seasons } from "@recallnet/db/schema/airdrop/defs";
+import { agentBoosts, boostChanges } from "@recallnet/db/schema/boost/defs";
 import { convictionClaims } from "@recallnet/db/schema/conviction-claims/defs";
+import {
+  agents,
+  competitionAgents,
+  competitions,
+  users,
+} from "@recallnet/db/schema/core/defs";
 
 import { db } from "@/database/db.js";
 
@@ -19,10 +28,11 @@ const colors = {
   reset: "\x1b[0m",
 };
 
-interface EligibleAccount {
+interface EligibilityEntry {
   address: string;
   activeStake: bigint;
   reward: bigint;
+  ineligibleReason?: string;
 }
 
 /**
@@ -235,36 +245,98 @@ Examples:
       `   (${totalForfeited.toString()} forfeited - ${totalSubsequentClaims.toString()} already claimed)\n`,
     );
 
-    // Step 6: Calculate individual rewards
+    // Step 6: Query for all agent boosters during the season.
+    const [season] = await db
+      .select()
+      .from(seasons)
+      .where(eq(seasons.number, seasonNumber));
+    if (!season) {
+      console.error(`Season ${seasonNumber} not found`);
+      process.exit(1);
+    }
+    const userAgentBoosts = await db
+      .select({
+        address: boostChanges.wallet,
+        boostAmount: sum(boostChanges.deltaAmount),
+      })
+      .from(agentBoosts)
+      .innerJoin(boostChanges, eq(agentBoosts.changeId, boostChanges.id))
+      .where(gte(agentBoosts.createdAt, season.startDate))
+      .groupBy(boostChanges.wallet);
+
+    const userAgentBoostsMap = userAgentBoosts.reduce(
+      (acc, boost) =>
+        acc.set(
+          BlockchainAddressAsU8A.decode(boost.address),
+          BigInt(boost.boostAmount || "0"),
+        ),
+      new Map<string, bigint>(),
+    );
+
+    // Step 7: Query for all users that had an agent compete in a competition during the season.
+    const userCompetitions = await db
+      .select({
+        address: users.walletAddress,
+        competitionIds: sql<
+          string[]
+        >`array_agg(DISTINCT ${competitions.id})`.as("competitionIds"),
+      })
+      .from(users)
+      .innerJoin(agents, eq(users.id, agents.ownerId))
+      .innerJoin(competitionAgents, eq(agents.id, competitionAgents.agentId))
+      .innerJoin(
+        competitions,
+        eq(competitionAgents.competitionId, competitions.id),
+      )
+      .where(
+        and(
+          gte(competitions.startDate, season.startDate),
+          lte(competitions.startDate, referenceTime),
+          eq(competitionAgents.status, "active"),
+        ),
+      )
+      .groupBy(users.walletAddress);
+
+    const userCompetitionsMap = userCompetitions.reduce(
+      (acc, userCompetition) =>
+        acc.set(userCompetition.address, userCompetition.competitionIds),
+      new Map<string, string[]>(),
+    );
+
+    // Step 7: Calculate individual rewards
     console.log(
       `${colors.blue}Step 6: Calculating individual rewards...${colors.reset}`,
     );
 
-    const eligibleAccounts: EligibleAccount[] = [];
+    const eligibilityEntries: EligibilityEntry[] = [];
 
     if (totalActiveStakes > 0n && availableRewards > 0n) {
       for (const [address, activeStake] of accountStakes.entries()) {
+        const isEligible =
+          userAgentBoostsMap.has(address) || userCompetitionsMap.has(address);
+
         // Calculate proportional reward: (account_stake / total_stakes) * available_rewards
         const reward = (activeStake * availableRewards) / totalActiveStakes;
 
-        eligibleAccounts.push({
+        eligibilityEntries.push({
           address,
           activeStake,
           reward,
+          ineligibleReason: isEligible
+            ? undefined
+            : "no boost or competition activity",
         });
       }
     }
 
-    // Sort by reward amount (descending)
-    eligibleAccounts.sort((a, b) => {
+    // Sort by reward amount (descending), then by address (ascending)
+    eligibilityEntries.sort((a, b) => {
       if (a.reward > b.reward) return -1;
       if (a.reward < b.reward) return 1;
+      if (a.address < b.address) return -1;
+      if (a.address > b.address) return 1;
       return 0;
     });
-
-    console.log(
-      `✅ Calculated rewards for ${eligibleAccounts.length} accounts\n`,
-    );
 
     // Step 7: Generate CSV output
     console.log(
@@ -280,18 +352,18 @@ Examples:
     ];
 
     // Add data rows
-    for (const account of eligibleAccounts) {
+    for (const entry of eligibilityEntries) {
       // Format: address,amount,season,category,sybilClassification,flaggedAt,flaggingReason,powerUser,recallSnapper,aiBuilder,aiExplorer
       // We're only filling in address, amount, season, and category
       // Other fields are left empty or set to 0 as defaults
       const row = [
-        account.address,
-        account.reward.toString(),
+        entry.address,
+        entry.reward.toString(),
         seasonNumber.toString(),
         "conviction_staking", // category
         "approved", // sybilClassification
         "", // flaggedAt
-        "", // flaggingReason
+        entry.ineligibleReason || "", // flaggingReason
         "0", // powerUser
         "0", // recallSnapper
         "0", // aiBuilder
@@ -365,17 +437,109 @@ Examples:
 
     // Summary
     console.log(`${colors.magenta}📊 Summary:${colors.reset}`);
-    console.log(`   Total eligible accounts: ${eligibleAccounts.length}`);
+    console.log(`   Total eligigibility entries: ${eligibilityEntries.length}`);
     console.log(`   Total active stakes: ${totalActiveStakes.toString()}`);
     console.log(`   Total available rewards: ${availableRewards.toString()}`);
     console.log(
-      `   Total distributed: ${eligibleAccounts.reduce((sum, a) => sum + a.reward, 0n).toString()}`,
+      `✅ Calculated rewards for ${eligibilityEntries.length} accounts\n`,
     );
 
-    if (eligibleAccounts.length > 0) {
+    const eligibleEntries = eligibilityEntries.filter(
+      (e) => !e.ineligibleReason,
+    );
+    const ineligibleEntries = eligibilityEntries.filter(
+      (e) => e.ineligibleReason,
+    );
+
+    console.log(`${colors.cyan}📋 Eligibility Summary:${colors.reset}`);
+    console.log(`   Total entries: ${eligibilityEntries.length}`);
+    console.log(`   Eligible: ${eligibleEntries.length}`);
+    console.log(`   Ineligible: ${ineligibleEntries.length}`);
+
+    if (ineligibleEntries.length > 0) {
+      const reasonCounts = new Map<string, number>();
+      for (const entry of ineligibleEntries) {
+        const reason = entry.ineligibleReason || "unknown";
+        reasonCounts.set(reason, (reasonCounts.get(reason) || 0) + 1);
+      }
+
+      console.log(`\n   Ineligibility reasons:`);
+      for (const [reason, count] of reasonCounts.entries()) {
+        console.log(`      ${reason}: ${count}`);
+      }
+    }
+
+    // Calculate and display reward statistics for eligible entries
+    if (eligibleEntries.length > 0) {
+      const eligibleRewards = eligibleEntries.map((e) => e.reward);
+      const totalEligible = eligibleRewards.reduce((sum, r) => sum + r, 0n);
+      const meanEligible = totalEligible / BigInt(eligibleRewards.length);
+      const maxEligible = eligibleRewards.reduce(
+        (max, r) => (r > max ? r : max),
+        0n,
+      );
+      const minEligible = eligibleRewards.reduce(
+        (min, r) => (r < min ? r : min),
+        eligibleRewards[0] || 0n,
+      );
+
+      // Calculate median
+      const sortedEligibleRewards = [...eligibleRewards].sort((a, b) =>
+        a < b ? -1 : a > b ? 1 : 0,
+      );
+      const medianEligible =
+        sortedEligibleRewards[Math.floor(sortedEligibleRewards.length / 2)] ||
+        0n;
+
+      console.log(
+        `\n${colors.cyan}📊 Eligible Reward Statistics:${colors.reset}`,
+      );
+      console.log(`   Total rewards: ${totalEligible.toString()}`);
+      console.log(`   Mean reward: ${meanEligible.toString()}`);
+      console.log(`   Median reward: ${medianEligible.toString()}`);
+      console.log(`   Max reward: ${maxEligible.toString()}`);
+      console.log(`   Min reward: ${minEligible.toString()}`);
+    }
+
+    // Calculate and display reward statistics for ineligible entries
+    if (ineligibleEntries.length > 0) {
+      const ineligibleRewards = ineligibleEntries.map((e) => e.reward);
+      const totalIneligible = ineligibleRewards.reduce((sum, r) => sum + r, 0n);
+      const meanIneligible = totalIneligible / BigInt(ineligibleRewards.length);
+      const maxIneligible = ineligibleRewards.reduce(
+        (max, r) => (r > max ? r : max),
+        0n,
+      );
+      const minIneligible = ineligibleRewards.reduce(
+        (min, r) => (r < min ? r : min),
+        ineligibleRewards[0] || 0n,
+      );
+
+      // Calculate median
+      const sortedIneligibleRewards = [...ineligibleRewards].sort((a, b) =>
+        a < b ? -1 : a > b ? 1 : 0,
+      );
+      const medianIneligible =
+        sortedIneligibleRewards[
+          Math.floor(sortedIneligibleRewards.length / 2)
+        ] || 0n;
+
+      console.log(
+        `\n${colors.cyan}📊 Ineligible Reward Statistics:${colors.reset}`,
+      );
+      console.log(`   Total rewards: ${totalIneligible.toString()}`);
+      console.log(`   Mean reward: ${meanIneligible.toString()}`);
+      console.log(`   Median reward: ${medianIneligible.toString()}`);
+      console.log(`   Max reward: ${maxIneligible.toString()}`);
+      console.log(`   Min reward: ${minIneligible.toString()}`);
+    }
+
+    console.log("");
+
+    if (eligibilityEntries.length > 0) {
       console.log(`\n${colors.cyan}Top 5 recipients:${colors.reset}`);
-      for (let i = 0; i < Math.min(5, eligibleAccounts.length); i++) {
-        const account = eligibleAccounts[i];
+      for (let i = 0; i < Math.min(5, eligibilityEntries.length); i++) {
+        const account = eligibilityEntries[i];
         console.log(
           `   ${i + 1}. ${account?.address}: ${account?.reward.toString()}`,
         );
