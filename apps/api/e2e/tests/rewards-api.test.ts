@@ -1,8 +1,10 @@
 import { hexToBytes } from "viem";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 
+import { AgentRepository } from "@recallnet/db/repositories/agent";
 import { BoostRepository } from "@recallnet/db/repositories/boost";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
+import { CompetitionRewardsRepository } from "@recallnet/db/repositories/competition-rewards";
 import { RewardsRepository } from "@recallnet/db/repositories/rewards";
 import { competitions } from "@recallnet/db/schema/core/defs";
 import { InsertReward } from "@recallnet/db/schema/rewards/types";
@@ -23,14 +25,13 @@ import { db } from "@/database/db.js";
 import { logger } from "@/lib/logger.js";
 
 // Mock the RewardsAllocator class
-const mockRewardsAllocator = {
+const createMockRewardsAllocator = (transactionHash: string | null) => ({
   allocate: vi.fn().mockResolvedValue({
-    transactionHash:
-      "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
-    blockNumber: BigInt(12345),
-    gasUsed: BigInt(100000),
+    transactionHash,
+    blockNumber: transactionHash ? BigInt(12345) : null,
+    gasUsed: transactionHash ? BigInt(100000) : null,
   }),
-};
+});
 
 let testUserAddress: string;
 let testClient: ApiClient;
@@ -41,17 +42,28 @@ describe("Rewards API", () => {
   let testCompetitionId: string;
   let testRewards: InsertReward[];
   let testUser: TestPrivyUser;
+  let mockRewardsAllocator: ReturnType<typeof createMockRewardsAllocator>;
 
   // Test constants for the allocate method
   const testStartTimestamp = Math.floor(Date.now() / 1000); // Current timestamp
 
   beforeEach(async () => {
     const rewardsRepository = new RewardsRepository(db, logger);
+    const agentRepository = new AgentRepository(
+      db,
+      logger,
+      new CompetitionRewardsRepository(db, logger),
+    );
+    // Create mock allocator with valid transaction hash by default
+    mockRewardsAllocator = createMockRewardsAllocator(
+      "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+    );
     // Create RewardsService with mock RewardsAllocator
     rewardsService = new RewardsService(
       rewardsRepository,
       new CompetitionRepository(db, db, logger),
       new BoostRepository(db),
+      agentRepository,
       mockRewardsAllocator as any, // eslint-disable-line
       db,
       logger,
@@ -169,5 +181,87 @@ describe("Rewards API", () => {
         expect(proofItem).toMatch(/^0x[a-fA-F0-9]{64}$/);
       });
     });
+  });
+
+  test("getRewardsWithProofs returns empty when allocator returns null transaction hash", async () => {
+    // Create a new competition for this test
+    const competitionId = "876fddf2-d5a3-4d07-b769-109583469c99";
+    const [competition] = await db
+      .insert(competitions)
+      .values({
+        id: competitionId,
+        name: "Test Competition Null TX",
+        description: "A test competition for null transaction hash",
+        status: "active",
+        type: "trading",
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+      })
+      .returning();
+
+    expect(!competition).toBe(false);
+
+    // Create a SIWE-authenticated client to get a test user address
+    const { client, user } = await createPrivyAuthenticatedClient({
+      userName: `Test User Null TX ${Date.now()}`,
+      userEmail: `test-user-null-tx-${Date.now()}@test.com`,
+    });
+
+    const userAddress = user.walletAddress;
+    const clientForTest = client;
+
+    // Create rewards repository and service with null-returning allocator
+    const rewardsRepository = new RewardsRepository(db, logger);
+    const agentRepository = new AgentRepository(
+      db,
+      logger,
+      new CompetitionRewardsRepository(db, logger),
+    );
+    const nullAllocator = createMockRewardsAllocator(null);
+    const serviceWithNullAllocator = new RewardsService(
+      rewardsRepository,
+      new CompetitionRepository(db, db, logger),
+      new BoostRepository(db),
+      agentRepository,
+      nullAllocator as any, // eslint-disable-line
+      db,
+      logger,
+    );
+
+    // Create test rewards data
+    const totalAmount = BigInt(5);
+    const leafHashHex = createLeafNode(
+      userAddress as `0x${string}`,
+      totalAmount,
+    );
+
+    const rewards: InsertReward[] = [
+      {
+        id: crypto.randomUUID(),
+        competitionId: competitionId,
+        userId: user.id,
+        address: userAddress as `0x${string}`,
+        amount: totalAmount,
+        leafHash: hexToBytes(leafHashHex),
+        claimed: false,
+      },
+    ];
+
+    // Insert test rewards into database
+    await rewardsRepository.insertRewards(rewards);
+
+    // Execute the allocate method with null-returning allocator
+    await serviceWithNullAllocator.allocate(competitionId, testStartTimestamp);
+
+    // Verify that allocate was called
+    expect(nullAllocator.allocate).toHaveBeenCalled();
+
+    // Verify that getRewardsWithProofs returns empty array even though rewards were added
+    const response = await clientForTest.getRewardsWithProofs();
+    expect(response.success).toBe(true);
+    const responseData = response as RewardsProofsResponse;
+    expect(responseData.address.toLowerCase()).toBe(userAddress?.toLowerCase());
+    expect(Array.isArray(responseData.rewards)).toBe(true);
+    expect(responseData.rewards.length).toBe(0); // Should be empty because tx is null
   });
 });

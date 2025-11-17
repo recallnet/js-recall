@@ -38,6 +38,7 @@ export const Navbar: React.FunctionComponent = () => {
   const navItems = useMemo(() => {
     return [
       { label: "Competitions", href: "/competitions", mobileOnly: false },
+      { label: "Arenas", href: "/arenas", mobileOnly: false },
       { label: "Leaderboards", href: "/leaderboards", mobileOnly: false },
       {
         label: "Stake Recall",
@@ -73,7 +74,7 @@ export const Navbar: React.FunctionComponent = () => {
                     href={item.href}
                     key={item.href}
                     className={cn(
-                      "px-15 radial-hover flex h-14 items-center justify-center border-r",
+                      "radial-hover flex h-14 w-[clamp(140px,10vw,180px)] items-center justify-center border-r",
                       isActive ? "border-b-2 border-b-yellow-500" : "",
                     )}
                   >

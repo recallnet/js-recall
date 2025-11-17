@@ -1161,6 +1161,7 @@ describe("User API", () => {
       fromToken: specificChainTokens.eth.usdc,
       toToken: "0x0000000000000000000000000000000000000000", // Zero address trade
       amount: "1000",
+      competitionId: competition.id,
       reason: "Bad trade for Agent 1",
     });
 
@@ -1169,6 +1170,7 @@ describe("User API", () => {
       fromToken: specificChainTokens.eth.usdc,
       toToken: "0x0000000000000000000000000000000000000000",
       amount: "10",
+      competitionId: competition.id,
       reason: "Good trade for Agent 2",
     });
 
@@ -1177,6 +1179,7 @@ describe("User API", () => {
       fromToken: specificChainTokens.eth.usdc,
       toToken: "0x0000000000000000000000000000000000000000",
       amount: "100",
+      competitionId: competition.id,
       reason: "Medium trade for Agent 3",
     });
 
@@ -1710,6 +1713,7 @@ describe("User API", () => {
         fromToken: specificChainTokens.eth.usdc,
         toToken: specificChainTokens.eth.eth, // ETH - should maintain/increase value
         amount: "50",
+        competitionId: comp1.id,
         reason: "Agent 1 small trade - USDC to ETH",
       });
 
@@ -1718,6 +1722,7 @@ describe("User API", () => {
         fromToken: specificChainTokens.eth.usdc,
         toToken: "0x000000000000000000000000000000000000dead", // Burn - bad trade
         amount: "25",
+        competitionId: comp1.id,
         reason: "Agent 2 bad trade - burning tokens",
       });
 
@@ -1726,6 +1731,7 @@ describe("User API", () => {
         fromToken: specificChainTokens.eth.usdc,
         toToken: "0x000000000000000000000000000000000000dead", // Burn address
         amount: "50",
+        competitionId: comp1.id,
         reason: "Agent 3 terrible trade - burning large amount",
       });
 
@@ -2093,6 +2099,7 @@ describe("User API", () => {
             fromToken: specificChainTokens.eth.usdc,
             toToken: specificChainTokens.eth.eth,
             amount: "100",
+            competitionId: competition.id,
             reason: "Smart trade - buying ETH",
           });
         } else {
@@ -2101,6 +2108,7 @@ describe("User API", () => {
             fromToken: specificChainTokens.eth.usdc,
             toToken: "0x000000000000000000000000000000000000dead", // Burn address
             amount: "150",
+            competitionId: competition.id,
             reason: "Bad trade - burning tokens",
           });
         }
@@ -2384,6 +2392,7 @@ describe("User API", () => {
         fromToken: specificChainTokens.eth.usdc,
         toToken: "0x000000000000000000000000000000000000dead",
         amount: "10",
+        competitionId,
         reason: `Alpha Agent smart trade ${i + 1} - buying ETH`,
       });
       await wait(50);
@@ -2395,6 +2404,7 @@ describe("User API", () => {
         fromToken: specificChainTokens.eth.usdc,
         toToken: "0x000000000000000000000000000000000000dead",
         amount: "100",
+        competitionId,
         reason: `Bravo Agent good trade ${i + 1}`,
       });
       await wait(50);
@@ -2405,6 +2415,7 @@ describe("User API", () => {
       fromToken: specificChainTokens.eth.usdc,
       toToken: "0x000000000000000000000000000000000000dead",
       amount: "1000",
+      competitionId,
       reason: "Charlie Agent trade",
     });
     await wait(50);
@@ -2414,6 +2425,7 @@ describe("User API", () => {
       fromToken: specificChainTokens.eth.usdc,
       toToken: "0x000000000000000000000000000000000000dead", // Burn address
       amount: "2000",
+      competitionId,
       reason: "Delta Agent bad trade - burning tokens",
     });
     await wait(50);
@@ -2424,6 +2436,7 @@ describe("User API", () => {
         fromToken: specificChainTokens.eth.usdc,
         toToken: "0x000000000000000000000000000000000000dead",
         amount: "2000",
+        competitionId,
         reason: `Echo Agent terrible trade ${i + 1} - burning tokens`,
       });
       await wait(50);
@@ -2559,6 +2572,7 @@ describe("User API", () => {
       fromToken: specificChainTokens.eth.usdc,
       toToken: specificChainTokens.eth.eth,
       amount: "1000",
+      competitionId: competition1Id,
       reason: `Agent Foxtrot trade - stable USDC to ETH`,
     });
 
@@ -2567,6 +2581,7 @@ describe("User API", () => {
       fromToken: specificChainTokens.eth.usdc,
       toToken: "0x000000000000000000000000000000000000dead",
       amount: "1000",
+      competitionId: competition1Id,
       reason: "Agent Hotel trade - volatile USDC to burn",
     });
 
@@ -2600,6 +2615,7 @@ describe("User API", () => {
       fromToken: specificChainTokens.eth.usdc,
       toToken: "0x000000000000000000000000000000000000dead",
       amount: "1200",
+      competitionId: competition2Id,
       reason: "Agent Foxtrot volatile trade - USDC to burn",
     });
 
@@ -2607,6 +2623,7 @@ describe("User API", () => {
     await agent2Client.executeTrade({
       fromToken: specificChainTokens.eth.usdc,
       toToken: specificChainTokens.eth.eth,
+      competitionId: competition2Id,
       amount: "1200",
       reason: `Agent Hotel stable trade - stable USDC to ETH`,
     });

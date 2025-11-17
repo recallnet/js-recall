@@ -2,7 +2,6 @@ import { randomUUID } from "crypto";
 import { Logger } from "pino";
 
 import { TradeRepository } from "@recallnet/db/repositories/trade";
-import { TradingConstraintsRepository } from "@recallnet/db/repositories/trading-constraints";
 import { InsertTrade, SelectTrade } from "@recallnet/db/schema/trading/types";
 
 import { BalanceService } from "./balance.service.js";
@@ -11,6 +10,7 @@ import { EXEMPT_TOKENS, calculateSlippage } from "./lib/trade-utils.js";
 import { PriceTrackerService } from "./price-tracker.service.js";
 import { DexScreenerProvider } from "./providers/price/dexscreener.provider.js";
 import { TradeSimulatorService } from "./trade-simulator.service.js";
+import { TradingConstraintsService } from "./trading-constraints.service.js";
 import {
   ApiError,
   BlockchainType,
@@ -18,17 +18,10 @@ import {
   PriceReport,
   SpecificChain,
   SpecificChainTokens,
+  TradingConstraints,
 } from "./types/index.js";
 
 const MIN_TRADE_AMOUNT = 0.000001;
-
-// Interface for trading constraints
-interface TradingConstraints {
-  minimumPairAgeHours: number;
-  minimum24hVolumeUsd: number;
-  minimumLiquidityUsd: number;
-  minimumFdvUsd: number;
-}
 
 /**
  * Interface for chain specification options
@@ -70,8 +63,6 @@ export interface SimulatedTradeExecutionServiceConfig {
  * Handles business logic for trade execution including competition checks
  */
 export class SimulatedTradeExecutionService {
-  // Maximum percentage of portfolio that can be traded in a single transaction
-  private readonly constraintsCache = new Map<string, TradingConstraints>();
   private exemptTokens: Set<string>;
 
   constructor(
@@ -80,7 +71,7 @@ export class SimulatedTradeExecutionService {
     private readonly balanceService: BalanceService,
     private readonly priceTrackerService: PriceTrackerService,
     private readonly tradeRepo: TradeRepository,
-    private readonly tradingConstraintsRepo: TradingConstraintsRepository,
+    private readonly tradingConstraintsService: TradingConstraintsService,
     private readonly dexScreenerProvider: DexScreenerProvider,
     private readonly config: SimulatedTradeExecutionServiceConfig,
     private readonly logger: Logger,
@@ -186,11 +177,13 @@ export class SimulatedTradeExecutionService {
       const currentBalance = await this.balanceService.getBalance(
         agentId,
         fromToken,
+        competitionId,
       );
 
       // Validate balances and portfolio limits
       await this.validateBalancesAndPortfolio(
         agentId,
+        competitionId,
         fromToken,
         fromAmount,
         fromValueUSD,
@@ -243,10 +236,7 @@ export class SimulatedTradeExecutionService {
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error during trade";
-      this.logger.error(
-        `[TradeSimulator] Trade execution failed:`,
-        errorMessage,
-      );
+      this.logger.error({ error }, `[TradeSimulator] Trade execution failed`);
 
       // If it's already an ApiError, re-throw it
       if (error instanceof ApiError) {
@@ -296,46 +286,17 @@ export class SimulatedTradeExecutionService {
   }
 
   /**
-   * Gets trading constraints for a competition, using cache when possible
+   * Gets trading constraints for a competition
    * @param competitionId The competition ID
    * @returns Trading constraints for the competition
    */
   private async getTradingConstraints(
     competitionId: string,
   ): Promise<TradingConstraints> {
-    // Check cache first
-    if (this.constraintsCache.has(competitionId)) {
-      return this.constraintsCache.get(competitionId)!;
-    }
-
-    // Try to get from database
-    const dbConstraints =
-      await this.tradingConstraintsRepo.findByCompetitionId(competitionId);
-
-    let constraints: TradingConstraints;
-    if (dbConstraints) {
-      constraints = {
-        minimumPairAgeHours: dbConstraints.minimumPairAgeHours,
-        minimum24hVolumeUsd: dbConstraints.minimum24hVolumeUsd,
-        minimumLiquidityUsd: dbConstraints.minimumLiquidityUsd,
-        minimumFdvUsd: dbConstraints.minimumFdvUsd,
-      };
-    } else {
-      // Fall back to default values
-      constraints = {
-        minimumPairAgeHours:
-          this.config.tradingConstraints.defaultMinimumPairAgeHours,
-        minimum24hVolumeUsd:
-          this.config.tradingConstraints.defaultMinimum24hVolumeUsd,
-        minimumLiquidityUsd:
-          this.config.tradingConstraints.defaultMinimumLiquidityUsd,
-        minimumFdvUsd: this.config.tradingConstraints.defaultMinimumFdvUsd,
-      };
-    }
-
-    // Cache the result
-    this.constraintsCache.set(competitionId, constraints);
-    return constraints;
+    // Use TradingConstraintsService which handles caching and defaults
+    return await this.tradingConstraintsService.getConstraintsWithDefaults(
+      competitionId,
+    );
   }
 
   /**
@@ -695,6 +656,7 @@ export class SimulatedTradeExecutionService {
    */
   private async validateBalancesAndPortfolio(
     agentId: string,
+    competitionId: string,
     fromToken: string,
     fromAmount: number,
     fromValueUSD: number,
@@ -714,7 +676,10 @@ export class SimulatedTradeExecutionService {
 
     // Calculate portfolio value to check maximum trade size (configurable percentage of portfolio)
     const portfolioValue =
-      await this.tradeSimulatorService.calculatePortfolioValue(agentId);
+      await this.tradeSimulatorService.calculatePortfolioValue(
+        agentId,
+        competitionId,
+      );
     // TODO: maxTradePercentage should probably be a setting per comp.
     const maxTradeValue =
       portfolioValue * (this.config.maxTradePercentage / 100);
@@ -866,12 +831,14 @@ export class SimulatedTradeExecutionService {
     // Update balance cache with absolute values from the database
     this.balanceService.setBalanceCache(
       agentId,
+      competitionId,
       fromToken,
       result.updatedBalances.fromTokenBalance,
     );
     if (result.updatedBalances.toTokenBalance !== undefined) {
       this.balanceService.setBalanceCache(
         agentId,
+        competitionId,
         toToken,
         result.updatedBalances.toTokenBalance,
       );

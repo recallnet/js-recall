@@ -5,6 +5,8 @@ import {
 } from "@recallnet/db/schema/trading/types";
 import { Transaction } from "@recallnet/db/types";
 
+import { TradingConstraints } from "./types/index.js";
+
 export interface TradingConstraintsInput {
   competitionId: string;
   minimumPairAgeHours?: number;
@@ -32,6 +34,7 @@ export class TradingConstraintsService {
   private defaultMinimum24hVolumeUsd: number;
   private defaultMinimumLiquidityUsd: number;
   private defaultMinimumFdvUsd: number;
+  private constraintsCache: Map<string, TradingConstraints | null>;
 
   constructor(
     tradingConstraintsRepo: TradingConstraintsRepository,
@@ -45,6 +48,15 @@ export class TradingConstraintsService {
     this.defaultMinimumLiquidityUsd =
       config.tradingConstraints.defaultMinimumLiquidityUsd;
     this.defaultMinimumFdvUsd = config.tradingConstraints.defaultMinimumFdvUsd;
+    this.constraintsCache = new Map<string, TradingConstraints | null>();
+  }
+
+  /**
+   * Clear cached trading constraints for a specific competition
+   * @param competitionId The competition ID to clear cache for
+   */
+  clearConstraintsCache(competitionId: string): void {
+    this.constraintsCache.delete(competitionId);
   }
 
   /**
@@ -69,16 +81,51 @@ export class TradingConstraintsService {
       minTradesPerDay: input.minTradesPerDay ?? null,
     };
 
-    return await this.tradingConstraintsRepo.create(constraintsData, tx);
+    const result = await this.tradingConstraintsRepo.create(
+      constraintsData,
+      tx,
+    );
+
+    // Only clear cache if no transaction was provided.
+    // When a transaction is provided, the caller must clear the cache after committing.
+    if (!tx) {
+      this.clearConstraintsCache(input.competitionId);
+    }
+
+    return result;
   }
 
   /**
-   * Gets trading constraints for a competition
+   * Gets trading constraints for a competition, using cache when possible
    */
   async getConstraints(
     competitionId: string,
-  ): Promise<SelectTradingConstraints | null> {
-    return await this.tradingConstraintsRepo.findByCompetitionId(competitionId);
+  ): Promise<TradingConstraints | null> {
+    // Check cache first
+    if (this.constraintsCache.has(competitionId)) {
+      return this.constraintsCache.get(competitionId) ?? null;
+    }
+
+    // Try to get from database
+    const dbConstraints =
+      await this.tradingConstraintsRepo.findByCompetitionId(competitionId);
+
+    if (dbConstraints) {
+      // Cache only business data (exclude DB metadata)
+      const cached: TradingConstraints = {
+        minimumPairAgeHours: dbConstraints.minimumPairAgeHours,
+        minimum24hVolumeUsd: dbConstraints.minimum24hVolumeUsd,
+        minimumLiquidityUsd: dbConstraints.minimumLiquidityUsd,
+        minimumFdvUsd: dbConstraints.minimumFdvUsd,
+        minTradesPerDay: dbConstraints.minTradesPerDay,
+      };
+      this.constraintsCache.set(competitionId, cached);
+      return cached;
+    }
+
+    // Cache null results to avoid repeated DB queries for non-existent constraints
+    this.constraintsCache.set(competitionId, null);
+    return null;
   }
 
   /**
@@ -117,6 +164,13 @@ export class TradingConstraintsService {
         `Failed to update trading constraints for competition ${competitionId}`,
       );
     }
+
+    // Only clear cache if no transaction was provided.
+    // When a transaction is provided, the caller must clear the cache after committing.
+    if (!tx) {
+      this.clearConstraintsCache(competitionId);
+    }
+
     return result;
   }
 
@@ -124,7 +178,12 @@ export class TradingConstraintsService {
    * Deletes trading constraints for a competition
    */
   async deleteConstraints(competitionId: string): Promise<boolean> {
-    return await this.tradingConstraintsRepo.delete(competitionId);
+    const result = await this.tradingConstraintsRepo.delete(competitionId);
+
+    // Clear the cache for this competition after deleting constraints
+    this.clearConstraintsCache(competitionId);
+
+    return result;
   }
 
   /**
@@ -151,19 +210,19 @@ export class TradingConstraintsService {
         `Failed to upsert trading constraints for competition ${input.competitionId}`,
       );
     }
+
+    // Clear the cache for this competition after upserting constraints
+    this.clearConstraintsCache(input.competitionId);
+
     return result;
   }
 
   /**
    * Gets constraints with defaults if not set
    */
-  async getConstraintsWithDefaults(competitionId: string): Promise<{
-    minimumPairAgeHours: number;
-    minimum24hVolumeUsd: number;
-    minimumLiquidityUsd: number;
-    minimumFdvUsd: number;
-    minTradesPerDay: number | null;
-  }> {
+  async getConstraintsWithDefaults(
+    competitionId: string,
+  ): Promise<TradingConstraints> {
     const constraints = await this.getConstraints(competitionId);
 
     if (constraints) {

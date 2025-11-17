@@ -88,8 +88,8 @@ export class PerpsMonitoringService {
     };
 
     this.logger.info(
+      { config: this.config },
       `[PerpsMonitoringService] Initialized with provider: ${provider.getName()}`,
-      this.config,
     );
   }
 
@@ -192,8 +192,8 @@ export class PerpsMonitoringService {
         );
       } catch (error) {
         this.logger.error(
+          { error },
           `[PerpsMonitoringService] Failed to create alerts:`,
-          error,
         );
       }
     }
@@ -224,8 +224,8 @@ export class PerpsMonitoringService {
       return alertsMap;
     } catch (error) {
       this.logger.error(
+        { error },
         `[PerpsMonitoringService] Failed to batch fetch alerts:`,
-        error,
       );
 
       // DECISION: Return empty alerts map on database error rather than failing.
@@ -306,8 +306,8 @@ export class PerpsMonitoringService {
       return { ...agent, alerts };
     } catch (error) {
       this.logger.error(
+        { error },
         `[PerpsMonitoringService] Error monitoring agent ${agent.agentId}:`,
-        error,
       );
       throw error;
     }
@@ -415,8 +415,8 @@ export class PerpsMonitoringService {
       };
     } catch (error) {
       this.logger.error(
+        { error },
         `[PerpsMonitoringService] Error checking transfer history:`,
-        error,
       );
       // DECISION: Transfer history is optional - we continue with balance reconciliation.
       // This is because:
@@ -541,8 +541,8 @@ export class PerpsMonitoringService {
       return !isNaN(threshold) && threshold >= 0;
     } catch (error) {
       this.logger.error(
+        { error },
         `[PerpsMonitoringService] Error checking competition config:`,
-        error,
       );
       return false;
     }
@@ -587,8 +587,8 @@ export class PerpsMonitoringService {
       // Log error but don't fail the monitoring process
       // Primary goal is violation detection, saving is for audit trail
       this.logger.error(
+        { error },
         `[PerpsMonitoringService] Failed to save transfer history:`,
-        error,
       );
     }
   }

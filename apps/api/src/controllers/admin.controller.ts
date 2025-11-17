@@ -13,12 +13,17 @@ import {
 
 import { flatParse } from "@/lib/flat-parse.js";
 import { adminLogger } from "@/lib/logger.js";
-import { updateFeaturesWithCompetition } from "@/lib/update-features-with-comp.js";
 import { ServiceRegistry } from "@/services/index.js";
 
 import {
   AdminAddAgentToCompetitionParamsSchema,
+  AdminAddPartnerToCompetitionSchema,
+  AdminArenaParamsSchema,
+  AdminCompetitionParamsSchema,
+  AdminCompetitionPartnerParamsSchema,
+  AdminCreateArenaSchema,
   AdminCreateCompetitionSchema,
+  AdminCreatePartnerSchema,
   AdminDeactivateAgentBodySchema,
   AdminDeactivateAgentParamsSchema,
   AdminDeleteAgentParamsSchema,
@@ -30,18 +35,25 @@ import {
   AdminGetCompetitionTransferViolationsParamsSchema,
   AdminGetPerformanceReportsQuerySchema,
   AdminListAllAgentsQuerySchema,
+  AdminListArenasQuerySchema,
+  AdminListPartnersQuerySchema,
+  AdminPartnerParamsSchema,
   AdminReactivateAgentInCompetitionParamsSchema,
   AdminReactivateAgentParamsSchema,
   AdminRegisterUserSchema,
   AdminRemoveAgentFromCompetitionBodySchema,
   AdminRemoveAgentFromCompetitionParamsSchema,
+  AdminReplaceCompetitionPartnersSchema,
   AdminRewardsAllocationSchema,
   AdminSetupSchema,
   AdminStartCompetitionSchema,
   AdminUpdateAgentBodySchema,
   AdminUpdateAgentParamsSchema,
+  AdminUpdateArenaSchema,
   AdminUpdateCompetitionParamsSchema,
   AdminUpdateCompetitionSchema,
+  AdminUpdatePartnerPositionSchema,
+  AdminUpdatePartnerSchema,
 } from "./admin.schema.js";
 import { parseAdminSearchQuery } from "./request-helpers.js";
 
@@ -182,6 +194,401 @@ export function makeAdminController(services: ServiceRegistry) {
     },
 
     /**
+     * Create a new arena
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async createArena(req: Request, res: Response, next: NextFunction) {
+      try {
+        const arenaData = flatParse(AdminCreateArenaSchema, req.body);
+
+        const arena = await services.arenaService.createArena(arenaData);
+
+        res.status(201).json({
+          success: true,
+          arena,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Get an arena by ID
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async getArena(req: Request, res: Response, next: NextFunction) {
+      try {
+        const { id } = flatParse(AdminArenaParamsSchema, req.params);
+
+        const arena = await services.arenaService.findById(id);
+
+        res.status(200).json({
+          success: true,
+          arena,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * List all arenas with pagination
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async listArenas(req: Request, res: Response, next: NextFunction) {
+      try {
+        const { limit, offset, sort, nameFilter } = flatParse(
+          AdminListArenasQuerySchema,
+          req.query,
+        );
+
+        const result = await services.arenaService.findAll(
+          { limit, offset, sort },
+          nameFilter,
+        );
+
+        res.status(200).json({
+          success: true,
+          arenas: result.arenas,
+          pagination: result.pagination,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Update an arena
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async updateArena(req: Request, res: Response, next: NextFunction) {
+      try {
+        const { id } = flatParse(AdminArenaParamsSchema, req.params);
+        const updateData = flatParse(AdminUpdateArenaSchema, req.body);
+
+        const arena = await services.arenaService.update(id, updateData);
+
+        res.status(200).json({
+          success: true,
+          arena,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Delete an arena
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async deleteArena(req: Request, res: Response, next: NextFunction) {
+      try {
+        const { id } = flatParse(AdminArenaParamsSchema, req.params);
+
+        await services.arenaService.delete(id);
+
+        res.status(200).json({
+          success: true,
+          message: `Arena ${id} deleted successfully`,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Create a new partner
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async createPartner(req: Request, res: Response, next: NextFunction) {
+      try {
+        const partnerData = flatParse(AdminCreatePartnerSchema, req.body);
+
+        const partner =
+          await services.partnerService.createPartner(partnerData);
+
+        res.status(201).json({
+          success: true,
+          partner,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Get a partner by ID
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async getPartner(req: Request, res: Response, next: NextFunction) {
+      try {
+        const { id } = flatParse(AdminPartnerParamsSchema, req.params);
+
+        const partner = await services.partnerService.findById(id);
+
+        res.status(200).json({
+          success: true,
+          partner,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * List all partners with pagination
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async listPartners(req: Request, res: Response, next: NextFunction) {
+      try {
+        const { limit, offset, sort, nameFilter } = flatParse(
+          AdminListPartnersQuerySchema,
+          req.query,
+        );
+
+        const result = await services.partnerService.findAll(
+          { limit, offset, sort },
+          nameFilter,
+        );
+
+        res.status(200).json({
+          success: true,
+          partners: result.partners,
+          pagination: result.pagination,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Update a partner
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async updatePartner(req: Request, res: Response, next: NextFunction) {
+      try {
+        const { id } = flatParse(AdminPartnerParamsSchema, req.params);
+        const updateData = flatParse(AdminUpdatePartnerSchema, req.body);
+
+        const partner = await services.partnerService.update(id, updateData);
+
+        res.status(200).json({
+          success: true,
+          partner,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Delete a partner
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async deletePartner(req: Request, res: Response, next: NextFunction) {
+      try {
+        const { id } = flatParse(AdminPartnerParamsSchema, req.params);
+
+        await services.partnerService.delete(id);
+
+        res.status(200).json({
+          success: true,
+          message: `Partner ${id} deleted successfully`,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Get partners for a competition
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async getCompetitionPartners(
+      req: Request,
+      res: Response,
+      next: NextFunction,
+    ) {
+      try {
+        const { competitionId } = flatParse(
+          AdminCompetitionParamsSchema,
+          req.params,
+        );
+
+        const partners =
+          await services.partnerService.findByCompetition(competitionId);
+
+        res.status(200).json({
+          success: true,
+          partners,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Add partner to competition
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async addPartnerToCompetition(
+      req: Request,
+      res: Response,
+      next: NextFunction,
+    ) {
+      try {
+        const { competitionId } = flatParse(
+          AdminCompetitionParamsSchema,
+          req.params,
+        );
+        const { partnerId, position } = flatParse(
+          AdminAddPartnerToCompetitionSchema,
+          req.body,
+        );
+
+        const association = await services.partnerService.addToCompetition({
+          competitionId,
+          partnerId,
+          position,
+        });
+
+        res.status(201).json({
+          success: true,
+          association,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Update partner position in competition
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async updatePartnerPosition(
+      req: Request,
+      res: Response,
+      next: NextFunction,
+    ) {
+      try {
+        const { competitionId, partnerId } = flatParse(
+          AdminCompetitionPartnerParamsSchema,
+          req.params,
+        );
+        const { position } = flatParse(
+          AdminUpdatePartnerPositionSchema,
+          req.body,
+        );
+
+        const association = await services.partnerService.updatePosition(
+          competitionId,
+          partnerId,
+          position,
+        );
+
+        res.status(200).json({
+          success: true,
+          association,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Remove partner from competition
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async removePartnerFromCompetition(
+      req: Request,
+      res: Response,
+      next: NextFunction,
+    ) {
+      try {
+        const { competitionId, partnerId } = flatParse(
+          AdminCompetitionPartnerParamsSchema,
+          req.params,
+        );
+
+        await services.partnerService.removeFromCompetition(
+          competitionId,
+          partnerId,
+        );
+
+        res.status(200).json({
+          success: true,
+          message: `Partner removed from competition successfully`,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Replace all partners for a competition
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async replaceCompetitionPartners(
+      req: Request,
+      res: Response,
+      next: NextFunction,
+    ) {
+      try {
+        const { competitionId } = flatParse(
+          AdminCompetitionParamsSchema,
+          req.params,
+        );
+        const { partners } = flatParse(
+          AdminReplaceCompetitionPartnersSchema,
+          req.body,
+        );
+
+        const associations =
+          await services.partnerService.replaceCompetitionPartners(
+            competitionId,
+            partners,
+          );
+
+        res.status(200).json({
+          success: true,
+          partners: associations,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
      * @param req Express request
      * @param res Express response
      * @param next Express next function
@@ -209,6 +616,22 @@ export function makeAdminController(services: ServiceRegistry) {
           evaluationMetric,
           perpsProvider,
           prizePools,
+          rewardsIneligible,
+          arenaId,
+          engineId,
+          engineVersion,
+          vips,
+          allowlist,
+          blocklist,
+          minRecallRank,
+          allowlistOnly,
+          agentAllocation,
+          agentAllocationUnit,
+          boosterAllocation,
+          boosterAllocationUnit,
+          rewardRules,
+          rewardDetails,
+          displayState,
         } = flatParse(AdminCreateCompetitionSchema, req.body);
 
         // Create a new competition
@@ -236,6 +659,22 @@ export function makeAdminController(services: ServiceRegistry) {
             evaluationMetric,
             perpsProvider,
             prizePools,
+            rewardsIneligible,
+            arenaId,
+            engineId,
+            engineVersion,
+            vips,
+            allowlist,
+            blocklist,
+            minRecallRank,
+            allowlistOnly,
+            agentAllocation,
+            agentAllocationUnit,
+            boosterAllocation,
+            boosterAllocationUnit,
+            rewardRules,
+            rewardDetails,
+            displayState,
           },
         );
 
@@ -279,6 +718,22 @@ export function makeAdminController(services: ServiceRegistry) {
           evaluationMetric,
           perpsProvider,
           prizePools,
+          rewardsIneligible,
+          arenaId,
+          engineId,
+          engineVersion,
+          vips,
+          allowlist,
+          blocklist,
+          minRecallRank,
+          allowlistOnly,
+          agentAllocation,
+          agentAllocationUnit,
+          boosterAllocation,
+          boosterAllocationUnit,
+          rewardRules,
+          rewardDetails,
+          displayState,
         } = flatParse(AdminStartCompetitionSchema, req.body);
 
         // Call service method with creation params only if no competitionId
@@ -307,12 +762,24 @@ export function makeAdminController(services: ServiceRegistry) {
                   evaluationMetric,
                   perpsProvider,
                   prizePools,
+                  rewardsIneligible,
+                  arenaId: arenaId!, // Guaranteed by Zod refinement when creating new competition
+                  engineId,
+                  engineVersion,
+                  vips,
+                  allowlist,
+                  blocklist,
+                  minRecallRank,
+                  allowlistOnly,
+                  agentAllocation,
+                  agentAllocationUnit,
+                  boosterAllocation,
+                  boosterAllocationUnit,
+                  rewardRules,
+                  rewardDetails,
+                  displayState,
                 },
           });
-
-        const activeCompetition =
-          await services.competitionService.getActiveCompetition();
-        updateFeaturesWithCompetition(activeCompetition);
 
         // Return the started competition
         res.status(200).json({
@@ -339,10 +806,6 @@ export function makeAdminController(services: ServiceRegistry) {
         // End the competition
         const { competition: endedCompetition, leaderboard } =
           await services.competitionService.endCompetition(competitionId);
-
-        const activeCompetition =
-          await services.competitionService.getActiveCompetition();
-        updateFeaturesWithCompetition(activeCompetition);
 
         adminLogger.info(
           `Successfully ended competition, id: ${competitionId}`,
@@ -901,6 +1364,8 @@ export function makeAdminController(services: ServiceRegistry) {
           status: agent.status as ActorStatus,
           imageUrl: agent.imageUrl,
           metadata: agent.metadata,
+          isRewardsIneligible: agent.isRewardsIneligible,
+          rewardsIneligibilityReason: agent.rewardsIneligibilityReason,
           createdAt: agent.createdAt,
           updatedAt: agent.updatedAt,
         };
@@ -924,8 +1389,16 @@ export function makeAdminController(services: ServiceRegistry) {
     async updateAgent(req: Request, res: Response, next: NextFunction) {
       try {
         const { agentId } = flatParse(AdminUpdateAgentParamsSchema, req.params);
-        const { name, handle, description, imageUrl, email, metadata } =
-          flatParse(AdminUpdateAgentBodySchema, req.body);
+        const {
+          name,
+          handle,
+          description,
+          imageUrl,
+          email,
+          metadata,
+          isRewardsIneligible,
+          rewardsIneligibilityReason,
+        } = flatParse(AdminUpdateAgentBodySchema, req.body);
 
         // Get the current agent
         const agent = await services.agentService.getAgent(agentId);
@@ -945,6 +1418,9 @@ export function makeAdminController(services: ServiceRegistry) {
           imageUrl: imageUrl ?? agent.imageUrl,
           email: email ?? agent.email,
           metadata: metadata ?? agent.metadata,
+          isRewardsIneligible: isRewardsIneligible ?? agent.isRewardsIneligible,
+          rewardsIneligibilityReason:
+            rewardsIneligibilityReason ?? agent.rewardsIneligibilityReason,
         };
 
         const updatedAgent = await services.agentService.updateAgent({
@@ -970,6 +1446,8 @@ export function makeAdminController(services: ServiceRegistry) {
           status: updatedAgent.status as ActorStatus,
           imageUrl: updatedAgent.imageUrl,
           metadata: updatedAgent.metadata,
+          isRewardsIneligible: updatedAgent.isRewardsIneligible,
+          rewardsIneligibilityReason: updatedAgent.rewardsIneligibilityReason,
           createdAt: updatedAgent.createdAt,
           updatedAt: updatedAgent.updatedAt,
         };
@@ -1242,6 +1720,7 @@ export function makeAdminController(services: ServiceRegistry) {
 
           await services.balanceService.resetAgentBalances(
             agentId,
+            competitionId,
             competition.type,
           );
         }

@@ -133,8 +133,8 @@ export class MultiChainProvider implements PriceSource {
           return null;
         } catch (error) {
           this.logger.debug(
-            `[MultiChainProvider] Error fetching price for ${tokenAddress} on specified chain ${specificChain}:`,
-            error instanceof Error ? error.message : "Unknown error",
+            { error },
+            `[MultiChainProvider] Error fetching price for ${tokenAddress} on specified chain ${specificChain}`,
           );
           // Important: Return null here without falling back to other chains
           return null;
@@ -165,9 +165,9 @@ export class MultiChainProvider implements PriceSource {
             };
           }
         } catch (error) {
-          this.logger.debug(
-            `[MultiChainProvider] Error fetching price for ${tokenAddress} on ${chain} chain:`,
-            error instanceof Error ? error.message : "Unknown error",
+          this.logger.error(
+            { error },
+            `[MultiChainProvider] Error fetching price for ${tokenAddress} on ${chain} chain`,
           );
 
           // Continue to next chain
@@ -181,8 +181,8 @@ export class MultiChainProvider implements PriceSource {
       return null;
     } catch (error) {
       this.logger.error(
-        `[MultiChainProvider] Unexpected error fetching price for ${tokenAddress}:`,
-        error instanceof Error ? error.message : "Unknown error",
+        { error },
+        `[MultiChainProvider] Unexpected error fetching price for ${tokenAddress}`,
       );
       return null;
     }
@@ -241,8 +241,10 @@ export class MultiChainProvider implements PriceSource {
         });
       } catch (error) {
         this.logger.debug(
+          {
+            error,
+          },
           `[MultiChainProvider] Error fetching batch prices for Solana tokens:`,
-          error instanceof Error ? error.message : "Unknown error",
         );
         // Set all tokens to null on error
         tokenAddresses.forEach((addr) => {
@@ -284,9 +286,9 @@ export class MultiChainProvider implements PriceSource {
           }
         });
       } catch (error) {
-        this.logger.debug(
-          `[MultiChainProvider] Error fetching batch prices for EVM tokens on ${specificChain}:`,
-          error instanceof Error ? error.message : "Unknown error",
+        this.logger.error(
+          { error },
+          `[MultiChainProvider] Error fetching batch prices for EVM tokens on ${specificChain}`,
         );
         // Set all tokens to null on error
         tokenAddresses.forEach((addr) => {
@@ -332,8 +334,10 @@ export class MultiChainProvider implements PriceSource {
         });
       } catch (error) {
         this.logger.debug(
+          {
+            error,
+          },
           `[MultiChainProvider] Error fetching batch prices on ${chain} chain:`,
-          error instanceof Error ? error.message : "Unknown error",
         );
         // Continue to next chain
         continue;

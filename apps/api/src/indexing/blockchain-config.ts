@@ -199,6 +199,43 @@ export const EVENTS = {
       },
     ],
   },
+  AllocationAdded: {
+    name: "AllocationAdded",
+    type: "allocationAdded",
+    abi: [
+      {
+        anonymous: false,
+        inputs: [
+          {
+            indexed: true,
+            internalType: "bytes32",
+            name: "root",
+            type: "bytes32",
+          },
+          {
+            indexed: true,
+            internalType: "address",
+            name: "token",
+            type: "address",
+          },
+          {
+            indexed: false,
+            internalType: "uint256",
+            name: "allocatedAmount",
+            type: "uint256",
+          },
+          {
+            indexed: false,
+            internalType: "uint256",
+            name: "startTimestamp",
+            type: "uint256",
+          },
+        ],
+        name: "AllocationAdded",
+        type: "event",
+      },
+    ],
+  },
 } as const;
 
 /**
@@ -239,6 +276,11 @@ export type HypersyncQuery = {
     address: string[];
     topics: string[][];
   }>;
+  transactions?: Array<{
+    to: string[];
+    sighash: string[];
+    status: number;
+  }>;
   fieldSelection: {
     block: BlockField[];
     log: LogField[];
@@ -249,12 +291,12 @@ export type HypersyncQuery = {
 };
 
 // Internal builder var; do not export directly.
-let query_: HypersyncQuery | undefined = undefined;
+let events_query_: HypersyncQuery | undefined = undefined;
 const isIndexingEnabled = config.stakingIndex.isEnabled;
 if (isIndexingEnabled) {
-  const fromBlock = config.stakingIndex.startBlock;
+  const fromBlock = config.stakingIndex.eventStartBlock;
   if (!fromBlock) {
-    throw new Error("startBlock is not set for indexing");
+    throw new Error("eventStartBlock is not set for indexing");
   }
   const stakingContractAddress = config.stakingIndex.stakingContract;
   if (!stakingContractAddress) {
@@ -264,7 +306,8 @@ if (isIndexingEnabled) {
   if (!rewardsContractAddress) {
     throw new Error("rewardsContractAddress is not set for indexing");
   }
-  query_ = {
+
+  events_query_ = {
     fromBlock: fromBlock,
     logs: [
       {
@@ -297,6 +340,47 @@ if (isIndexingEnabled) {
   };
 }
 
+// Internal builder var for transactions; do not export directly.
+let transactions_query_: HypersyncQuery | undefined = undefined;
+if (isIndexingEnabled) {
+  const convictionClaimsContractAddress =
+    config.stakingIndex.convictionClaimsContract;
+  if (!convictionClaimsContractAddress) {
+    throw new Error("convictionClaimsContractAddress is not set for indexing");
+  }
+  const claimFunctionSighash = "0x2ac96e2a"; // claim function signature hash
+  const transactionsStartBlock = config.stakingIndex.transactionsStartBlock;
+  if (!transactionsStartBlock) {
+    throw new Error("transactionsStartBlock is not set for indexing");
+  }
+
+  transactions_query_ = {
+    fromBlock: transactionsStartBlock,
+    logs: [], // No logs needed for transaction queries
+    transactions: [
+      {
+        to: [convictionClaimsContractAddress],
+        sighash: [claimFunctionSighash],
+        status: 1,
+      },
+    ],
+    fieldSelection: {
+      block: [BlockField.Number, BlockField.Timestamp, BlockField.Hash],
+      log: [], // No log fields needed
+      transaction: [
+        TransactionField.BlockNumber,
+        TransactionField.TransactionIndex,
+        TransactionField.Hash,
+        TransactionField.From,
+        TransactionField.To,
+        TransactionField.Input,
+      ],
+    },
+    joinMode: JoinMode.JoinAll,
+    delayMs: config.stakingIndex.delayMs,
+  };
+}
+
 /**
  * Hypersync query definition for Recall staking events.
  *
@@ -304,7 +388,7 @@ if (isIndexingEnabled) {
  * - Retrieve staking-related events from the Recall staking contract.
  *
  * Built from config:
- * - startBlock (`config.stakingIndex.startBlock`) — required
+ * - eventStartBlock (`config.stakingIndex.eventStartBlock`) — required
  * - stakingContract (`config.stakingIndex.stakingContract`) — required
  * - rewardsContract (`config.stakingIndex.rewardsContract`) — required
  * - delayMs (`config.stakingIndex.delayMs`) — polling backoff
@@ -324,4 +408,31 @@ if (isIndexingEnabled) {
  * Disabled case:
  * - If `config.stakingIndex.isEnabled` is false, this is `undefined`.
  */
-export const INDEXING_HYPERSYNC_QUERY: HypersyncQuery | undefined = query_;
+export const INDEXING_EVENTS_HYPERSYNC_QUERY: HypersyncQuery | undefined =
+  events_query_;
+
+/**
+ * Hypersync query definition for conviction claims transactions.
+ *
+ * Purpose:
+ * - Retrieve claim transactions from the conviction claims contract.
+ * - Decode transaction input to extract stake duration information.
+ *
+ * Configuration:
+ * - Contract: 0x6A3044c1Cf077F386c9345eF84f2518A2682Dfff
+ * - Function: claim() with sighash 0x2ac96e2a
+ * - Start block: 36871780 (no relevant transactions before this)
+ *
+ * Field selection:
+ * - Block: number, timestamp, hash
+ * - Transaction: blockNumber, transactionIndex, hash, from, to, input
+ * - Log: none (transaction-only query)
+ *
+ * Join mode:
+ * - JoinAll → block metadata attached to each transaction row.
+ *
+ * Disabled case:
+ * - If `config.stakingIndex.isEnabled` is false, this is `undefined`.
+ */
+export const INDEXING_TRANSACTIONS_HYPERSYNC_QUERY: HypersyncQuery | undefined =
+  transactions_query_;

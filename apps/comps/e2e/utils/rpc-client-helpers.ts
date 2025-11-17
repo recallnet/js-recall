@@ -12,6 +12,7 @@ import { MockPrivyClient } from "@recallnet/services/lib";
 import { createLogger } from "../../lib/logger.js";
 import {
   agentService,
+  arenaService,
   boostAwardService,
   boostService,
   competitionService,
@@ -65,6 +66,7 @@ export async function createTestRpcClient(
       userService,
       competitionService,
       agentService,
+      arenaService,
       emailService,
       leaderboardService,
       rewardsService,

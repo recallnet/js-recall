@@ -21,7 +21,7 @@ export const StatusPill: React.FunctionComponent<StatusPillProps> = ({
     staked: "UNLOCKED",
     locked: "LOCKED",
     unstaked: "AVAILABLE",
-    cooldown: "UNBONDING",
+    cooldown: "COOLDOWN",
   };
 
   const getStatusStyles = (status: StatusType): string => {

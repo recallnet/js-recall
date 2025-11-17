@@ -11,7 +11,6 @@ import {
 } from "vitest";
 
 import { TradeRepository } from "@recallnet/db/repositories/trade";
-import { TradingConstraintsRepository } from "@recallnet/db/repositories/trading-constraints";
 
 import { BalanceService } from "../balance.service.js";
 import { CompetitionService } from "../competition.service.js";
@@ -24,6 +23,7 @@ import { MultiChainProvider } from "../providers/multi-chain.provider.js";
 import { DexScreenerProvider } from "../providers/price/dexscreener.provider.js";
 import { SimulatedTradeExecutionService } from "../simulated-trade-execution.service.js";
 import { TradeSimulatorService } from "../trade-simulator.service.js";
+import { TradingConstraintsService } from "../trading-constraints.service.js";
 import {
   BlockchainType,
   PriceReport,
@@ -80,8 +80,8 @@ describe("SimulatedTradeExecutionService - Trading Constraints", () => {
     let mockTradeRepo: {
       create: ReturnType<typeof vi.fn>;
     };
-    let mockTradingConstraintsRepo: {
-      findByCompetitionId: ReturnType<typeof vi.fn>;
+    let mockTradingConstraintsService: {
+      getConstraintsWithDefaults: ReturnType<typeof vi.fn>;
     };
     let mockDexScreenerProvider: {
       getTokenPairData: ReturnType<typeof vi.fn>;
@@ -135,8 +135,8 @@ describe("SimulatedTradeExecutionService - Trading Constraints", () => {
         create: vi.fn(),
       };
 
-      mockTradingConstraintsRepo = {
-        findByCompetitionId: vi.fn(),
+      mockTradingConstraintsService = {
+        getConstraintsWithDefaults: vi.fn(),
       };
 
       mockDexScreenerProvider = {
@@ -177,7 +177,7 @@ describe("SimulatedTradeExecutionService - Trading Constraints", () => {
         mockBalanceService as unknown as BalanceService,
         mockPriceTracker as unknown as PriceTrackerService,
         mockTradeRepo as unknown as TradeRepository,
-        mockTradingConstraintsRepo as unknown as TradingConstraintsRepository,
+        mockTradingConstraintsService as unknown as TradingConstraintsService,
         mockDexScreenerProvider as unknown as DexScreenerProvider,
         mockConfig,
         mockLogger,
@@ -587,7 +587,7 @@ describe("SimulatedTradeExecutionService - Trading Constraints", () => {
           .mockResolvedValueOnce(fromPrice)
           .mockResolvedValueOnce(toPrice);
 
-        mockTradingConstraintsRepo.findByCompetitionId.mockResolvedValue(
+        mockTradingConstraintsService.getConstraintsWithDefaults.mockResolvedValue(
           mockConstraints,
         );
 
@@ -681,6 +681,17 @@ describe("SimulatedTradeExecutionService - Trading Constraints", () => {
         mockPriceTracker.getPrice
           .mockResolvedValueOnce(validFromPrice)
           .mockResolvedValueOnce(invalidToPrice);
+
+        // Mock trading constraints
+        mockTradingConstraintsService.getConstraintsWithDefaults.mockResolvedValue(
+          {
+            minimumPairAgeHours: 168, // 7 days
+            minimum24hVolumeUsd: 100000,
+            minimumLiquidityUsd: 100000,
+            minimumFdvUsd: 1000000,
+            minTradesPerDay: null,
+          },
+        );
 
         // Mock competition service responses
         mockCompetitionService.getCompetition.mockResolvedValue({

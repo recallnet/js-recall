@@ -330,8 +330,8 @@ export class AgentService {
       return await this.agentRepository.findById(agentId);
     } catch (error) {
       this.logger.error(
-        `[AgentManager] Error retrieving agent ${agentId}:`,
-        error,
+        { error },
+        `[AgentManager] Error retrieving agent ${agentId}`,
       );
       return null;
     }
@@ -347,8 +347,8 @@ export class AgentService {
       return await this.agentRepository.findByOwnerId(ownerId, pagingParams);
     } catch (error) {
       this.logger.error(
-        `[AgentManager] Error retrieving agents for owner ${ownerId}:`,
-        error,
+        { error },
+        `[AgentManager] Error retrieving agents for owner ${ownerId}`,
       );
       return [];
     }
@@ -369,8 +369,8 @@ export class AgentService {
       return bestPlacement;
     } catch (error) {
       this.logger.error(
-        `[AgentManager] Error retrieving agent rank for ${agentId}:`,
-        error,
+        { error },
+        `[AgentManager] Error retrieving agent rank for ${agentId}`,
       );
       return null;
     }
@@ -389,8 +389,8 @@ export class AgentService {
       return await this.agentRepository.findByIds(agentIds);
     } catch (error) {
       this.logger.error(
-        "[AgentManager] Error retrieving agents by IDs:",
-        error,
+        { error },
+        "[AgentManager] Error retrieving agents by IDs",
       );
       return [];
     }
@@ -571,8 +571,8 @@ export class AgentService {
       };
     } catch (decryptError) {
       this.logger.error(
-        `[AgentManager] Error decrypting API key for agent ${agentId}:`,
-        decryptError,
+        { error: decryptError },
+        `[AgentManager] Error decrypting API key for agent ${agentId}`,
       );
       throw new ApiError(500, "Failed to decrypt API key");
     }
@@ -586,7 +586,7 @@ export class AgentService {
       const res = await this.agentRepository.count();
       return res >= 0;
     } catch (error) {
-      this.logger.error("[AgentManager] Health check failed:", error);
+      this.logger.error({ error }, "[AgentManager] Health check failed");
       return false;
     }
   }
@@ -635,8 +635,8 @@ export class AgentService {
       return deleted;
     } catch (error) {
       this.logger.error(
-        `[AgentManager] Error deleting agent ${agentId}:`,
-        error,
+        { error },
+        `[AgentManager] Error deleting agent ${agentId}`,
       );
       throw new Error(
         `Failed to delete agent: ${error instanceof Error ? error.message : error}`,
@@ -682,8 +682,8 @@ export class AgentService {
       return deactivatedAgent;
     } catch (error) {
       this.logger.error(
-        `[AgentManager] Error deactivating agent ${agentId}:`,
-        error,
+        { error },
+        `[AgentManager] Error deactivating agent ${agentId}`,
       );
       throw new Error(
         `Failed to deactivate agent: ${error instanceof Error ? error.message : error}`,
@@ -721,8 +721,8 @@ export class AgentService {
       return reactivatedAgent;
     } catch (error) {
       this.logger.error(
-        `[AgentManager] Error reactivating agent ${agentId}:`,
-        error,
+        { error },
+        `[AgentManager] Error reactivating agent ${agentId}`,
       );
       throw new Error(
         `Failed to reactivate agent: ${error instanceof Error ? error.message : error}`,
@@ -801,8 +801,8 @@ export class AgentService {
       }
 
       this.logger.error(
-        `[AgentManager] Error updating agent ${agent.id}:`,
-        error,
+        { error },
+        `[AgentManager] Error updating agent ${agent.id}`,
       );
       throw new Error(
         `Failed to update agent: ${error instanceof Error ? error.message : error}`,
@@ -875,8 +875,8 @@ export class AgentService {
       };
     } catch (error) {
       this.logger.error(
-        `[AgentManager] Error resetting API key for agent ${agentId}:`,
-        error,
+        { error },
+        `[AgentManager] Error resetting API key for agent ${agentId}`,
       );
       throw error;
     }
@@ -890,8 +890,8 @@ export class AgentService {
   async searchAgents(searchParams: AgentSearchParams): Promise<AgentPublic[]> {
     try {
       this.logger.debug(
+        { searchParams },
         `[AgentManager] Searching for agents with params:`,
-        searchParams,
       );
 
       // Get matching agents from repository
@@ -919,8 +919,8 @@ export class AgentService {
   ) {
     try {
       this.logger.debug(
+        { params },
         `[AgentManager] Retrieving agents for competition ${competitionId} with params:`,
-        params,
       );
 
       // Get agents from repository
@@ -935,8 +935,8 @@ export class AgentService {
       return { agents, total };
     } catch (error) {
       this.logger.error(
-        `[AgentManager] Error retrieving agents for competition ${competitionId}:`,
-        error,
+        { error },
+        `[AgentManager] Error retrieving agents for competition ${competitionId}`,
       );
       return { agents: [], total: 0 };
     }
@@ -961,8 +961,8 @@ export class AgentService {
         ...paging,
       };
       this.logger.debug(
+        { params },
         `[AgentManager] Retrieving competitions for agent ${agentId} with params:`,
-        params,
       );
 
       // Get competitions from repository
@@ -1005,8 +1005,8 @@ export class AgentService {
       };
     } catch (error) {
       this.logger.error(
-        `[AgentManager] Error retrieving competitions for agent ${agentId}:`,
-        error,
+        { error },
+        `[AgentManager] Error retrieving competitions for agent ${agentId}`,
       );
       return { competitions: [], total: 0 };
     }
@@ -1024,8 +1024,8 @@ export class AgentService {
   ) {
     try {
       this.logger.debug(
+        { params },
         `[AgentManager] Retrieving competitions for user ${userId} agents with params:`,
-        params,
       );
 
       // Service layer validates business inputs
@@ -1308,8 +1308,8 @@ export class AgentService {
       };
     } catch (error) {
       this.logger.error(
-        `[AgentManager] Error retrieving competitions for user ${userId} agents:`,
-        error,
+        { error },
+        `[AgentManager] Error retrieving competitions for user ${userId} agents`,
       );
       // Re-throw ApiErrors (validation errors) to be handled by controller
       if (error instanceof ApiError) {
@@ -1457,8 +1457,8 @@ export class AgentService {
       });
     } catch (error) {
       this.logger.error(
-        "[AgentManager] Error in attachBulkAgentMetrics:",
-        error,
+        { error },
+        "[AgentManager] Error in attachBulkAgentMetrics",
       );
 
       throw error;
@@ -1611,8 +1611,8 @@ export class AgentService {
       });
     } catch (error) {
       this.logger.error(
-        `[AgentManager] Error attaching bulk competition metrics for agent ${agentId}:`,
-        error,
+        { error },
+        `[AgentManager] Error attaching bulk competition metrics for agent ${agentId}`,
       );
       throw error;
     }
@@ -1663,6 +1663,28 @@ export class AgentService {
             const aValue = a.totalPositions || 0;
             const bValue = b.totalPositions || 0;
             comparison = isDesc ? bValue - aValue : aValue - bValue;
+            break;
+          }
+          case "bestPlacement": {
+            // Note: `undefined` bestPlacement is pushed to the end (e.g., pending comps or DQ'd)
+            const aRank =
+              typeof a.bestPlacement?.rank === "number"
+                ? a.bestPlacement.rank
+                : undefined;
+            const bRank =
+              typeof b.bestPlacement?.rank === "number"
+                ? b.bestPlacement.rank
+                : undefined;
+            if (aRank === undefined && bRank === undefined) {
+              comparison = 0;
+            } else if (aRank === undefined) {
+              // For ascending, undefined goes last; for descending, undefined goes first
+              comparison = isDesc ? -1 : 1;
+            } else if (bRank === undefined) {
+              comparison = isDesc ? 1 : -1;
+            } else {
+              comparison = isDesc ? bRank - aRank : aRank - bRank;
+            }
             break;
           }
           case "rank": {
@@ -1828,8 +1850,8 @@ export class AgentService {
         ).toLowerCase();
       } catch (error) {
         this.logger.error(
-          "[AgentManager] Error recovering wallet address:",
-          error,
+          { error },
+          "[AgentManager] Error recovering wallet address",
         );
         throw new ApiError(400, "Invalid signature");
       }
@@ -1874,8 +1896,8 @@ export class AgentService {
       return walletAddress;
     } catch (error) {
       this.logger.error(
-        "[AgentManager] Error in verifyWalletOwnership:",
-        error,
+        { error },
+        "[AgentManager] Error in verifyWalletOwnership",
       );
       if (error instanceof ApiError) {
         throw error;
@@ -1928,8 +1950,8 @@ export class AgentService {
       };
     } catch (error) {
       this.logger.error(
-        "[AgentManager] Error parsing verification message:",
-        error,
+        { error },
+        "[AgentManager] Error parsing verification message",
       );
       if (error instanceof ApiError) {
         throw error;
@@ -2018,8 +2040,8 @@ export class AgentService {
       return await this.agentNonceRepository.deleteExpired();
     } catch (error) {
       this.logger.error(
-        "[AgentManager] Error cleaning up expired nonces:",
-        error,
+        { error },
+        "[AgentManager] Error cleaning up expired nonces",
       );
       return 0;
     }
@@ -2028,12 +2050,19 @@ export class AgentService {
   /**
    * Get enhanced balances for an agent with price data and chain information
    * @param agentId The agent ID
+   * @param competitionId The competition ID
    * @returns Array of balances enhanced with price data, chain info, and values
    */
-  async getEnhancedBalances(agentId: string): Promise<EnhancedBalance[]> {
+  async getEnhancedBalances(
+    agentId: string,
+    competitionId: string,
+  ): Promise<EnhancedBalance[]> {
     try {
       // Get all balances for the agent
-      const balances = await this.balanceService.getAllBalances(agentId);
+      const balances = await this.balanceService.getAllBalances(
+        agentId,
+        competitionId,
+      );
 
       // Extract all unique token addresses
       const tokenAddresses = balances.map((b) => b.tokenAddress);
@@ -2071,8 +2100,8 @@ export class AgentService {
       return enhancedBalances;
     } catch (error) {
       this.logger.error(
-        `[AgentManager] Error getting enhanced balances for agent ${agentId}:`,
-        error,
+        { error },
+        `[AgentManager] Error getting enhanced balances for agent ${agentId}`,
       );
       throw new ApiError(
         500,

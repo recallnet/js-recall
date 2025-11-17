@@ -1,6 +1,11 @@
 import { z } from "zod/v4";
 
 import {
+  allocationUnit,
+  displayState,
+  engineType,
+} from "@recallnet/db/schema/core/defs";
+import {
   AgentHandleSchema,
   AgentMetadataSchema,
   CompetitionTypeSchema,
@@ -102,6 +107,30 @@ export const AdminCreateCompetitionSchema = z
         users: z.number().min(0),
       })
       .optional(),
+    rewardsIneligible: z.array(z.string()).optional(),
+
+    // Arena and engine routing
+    arenaId: z.string().min(1, "Arena ID is required"),
+    engineId: z.enum(engineType.enumValues).optional(),
+    engineVersion: z.string().optional(),
+
+    // Participation rules
+    vips: z.array(z.string()).optional(),
+    allowlist: z.array(z.string()).optional(),
+    blocklist: z.array(z.string()).optional(),
+    minRecallRank: z.number().int().optional(),
+    allowlistOnly: z.boolean().optional(),
+
+    // Reward allocation
+    agentAllocation: z.number().optional(),
+    agentAllocationUnit: z.enum(allocationUnit.enumValues).optional(),
+    boosterAllocation: z.number().optional(),
+    boosterAllocationUnit: z.enum(allocationUnit.enumValues).optional(),
+    rewardRules: z.string().optional(),
+    rewardDetails: z.string().optional(),
+
+    // Display
+    displayState: z.enum(displayState.enumValues).optional(),
   })
   .refine(
     (data) => {
@@ -123,8 +152,10 @@ export const AdminCreateCompetitionSchema = z
  */
 export const AdminUpdateCompetitionSchema = AdminCreateCompetitionSchema.omit({
   name: true,
+  arenaId: true,
 }).extend({
   name: z.string().optional(),
+  arenaId: z.string().min(1, "Arena ID is required").optional(),
 });
 
 /**
@@ -160,10 +191,47 @@ export const AdminStartCompetitionSchema = z
         users: z.number().min(0),
       })
       .optional(),
+    rewardsIneligible: z.array(z.string()).optional(),
+
+    // Arena and engine routing
+    arenaId: z.string().min(1, "Arena ID is required").optional(),
+    engineId: z.enum(engineType.enumValues).optional(),
+    engineVersion: z.string().optional(),
+
+    // Participation rules
+    vips: z.array(z.string()).optional(),
+    allowlist: z.array(z.string()).optional(),
+    blocklist: z.array(z.string()).optional(),
+    minRecallRank: z.number().int().optional(),
+    allowlistOnly: z.boolean().optional(),
+
+    // Reward allocation
+    agentAllocation: z.number().optional(),
+    agentAllocationUnit: z.enum(allocationUnit.enumValues).optional(),
+    boosterAllocation: z.number().optional(),
+    boosterAllocationUnit: z.enum(allocationUnit.enumValues).optional(),
+    rewardRules: z.string().optional(),
+    rewardDetails: z.string().optional(),
+
+    // Display
+    displayState: z.enum(displayState.enumValues).optional(),
   })
   .refine((data) => data.competitionId || data.name, {
     message: "Either competitionId or name must be provided",
-  });
+  })
+  .refine(
+    (data) => {
+      // If creating a new competition (no competitionId), arenaId is required
+      if (!data.competitionId && !data.arenaId) {
+        return false;
+      }
+      return true;
+    },
+    {
+      message: "Arena ID is required when creating a new competition",
+      path: ["arenaId"],
+    },
+  );
 
 /**
  * Admin end competition schema
@@ -285,6 +353,8 @@ export const AdminUpdateAgentBodySchema = z.object({
   imageUrl: z.url("Invalid image URL format").optional(),
   email: z.email("Invalid email format").optional(),
   metadata: z.record(z.string(), z.unknown()).optional(),
+  isRewardsIneligible: z.boolean().optional(),
+  rewardsIneligibilityReason: z.string().optional(),
 });
 
 /**
@@ -333,4 +403,131 @@ export const AdminRewardsAllocationSchema = z.object({
     .describe(
       "The timestamp from which rewards can be claimed (optional, defaults to competition end date + 1 hour)",
     ),
+});
+
+/**
+ * Admin create arena schema
+ */
+export const AdminCreateArenaSchema = z.object({
+  id: z
+    .string()
+    .regex(
+      /^[a-z0-9-]+$/,
+      "Arena ID must be lowercase kebab-case (e.g., 'aerodrome-base-weekly')",
+    )
+    .min(3)
+    .max(80),
+  name: z.string().min(4).max(80),
+  createdBy: z.string().min(1),
+  category: z.string().min(1),
+  skill: z.string().min(1),
+  venues: z.array(z.string()).optional(),
+  chains: z.array(z.string()).optional(),
+});
+
+/**
+ * Admin update arena schema
+ */
+export const AdminUpdateArenaSchema = z.object({
+  name: z.string().min(4).max(80).optional(),
+  category: z.string().min(1).optional(),
+  skill: z.string().min(1).optional(),
+  venues: z.array(z.string()).optional(),
+  chains: z.array(z.string()).optional(),
+});
+
+/**
+ * Admin arena params schema (for :id in path)
+ */
+export const AdminArenaParamsSchema = z.object({
+  id: z.string().min(1),
+});
+
+/**
+ * Admin list arenas query schema
+ */
+export const AdminListArenasQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+  offset: z.coerce.number().int().min(0).default(0),
+  sort: z.string().default(""),
+  nameFilter: z.string().optional(),
+});
+
+/**
+ * Admin create partner schema
+ */
+export const AdminCreatePartnerSchema = z.object({
+  name: z.string().min(1).max(100),
+  url: z.string().url().optional(),
+  logoUrl: z.string().url().optional(),
+  details: z.string().max(500).optional(),
+});
+
+/**
+ * Admin update partner schema
+ */
+export const AdminUpdatePartnerSchema = z.object({
+  name: z.string().min(1).max(100).optional(),
+  url: z.string().url().optional(),
+  logoUrl: z.string().url().optional(),
+  details: z.string().max(500).optional(),
+});
+
+/**
+ * Admin partner params schema (for :id in path)
+ */
+export const AdminPartnerParamsSchema = z.object({
+  id: UuidSchema,
+});
+
+/**
+ * Admin list partners query schema
+ */
+export const AdminListPartnersQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+  offset: z.coerce.number().int().min(0).default(0),
+  sort: z.string().default(""),
+  nameFilter: z.string().optional(),
+});
+
+/**
+ * Admin add partner to competition schema
+ */
+export const AdminAddPartnerToCompetitionSchema = z.object({
+  partnerId: UuidSchema,
+  position: z.number().int().min(1),
+});
+
+/**
+ * Admin update partner position schema
+ */
+export const AdminUpdatePartnerPositionSchema = z.object({
+  position: z.number().int().min(1),
+});
+
+/**
+ * Admin replace competition partners schema
+ */
+export const AdminReplaceCompetitionPartnersSchema = z.object({
+  partners: z.array(
+    z.object({
+      partnerId: UuidSchema,
+      position: z.number().int().min(1),
+    }),
+  ),
+});
+
+/**
+ * Admin competition params schema (for :competitionId in path)
+ */
+export const AdminCompetitionParamsSchema = z.object({
+  competitionId: UuidSchema,
+});
+
+/**
+ * Admin competition partner params schema (for :competitionId/:partnerId in path)
+ */
+export const AdminCompetitionPartnerParamsSchema = z.object({
+  competitionId: UuidSchema,
+  partnerId: UuidSchema,
 });

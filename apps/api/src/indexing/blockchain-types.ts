@@ -59,6 +59,7 @@ export type EventData = {
  * - "relock"   → Relock(staker, tokenId, updatedOldStakeAmount)
  * - "withdraw" → Withdraw(staker, tokenId, amount)
  * - "rewardClaimed" → RewardClaimed(root, user, amount)
+ * - "allocationAdded" → AllocationAdded(root, token, allocatedAmount, startTimestamp)
  * - "unknown"  → Fallback when topic0 doesn't match our ABI set.
  *
  * This is the discriminator used throughout the indexer / DB schema.
@@ -69,4 +70,5 @@ export type EventType =
   | "relock"
   | "withdraw"
   | "rewardClaimed"
+  | "allocationAdded"
   | "unknown";

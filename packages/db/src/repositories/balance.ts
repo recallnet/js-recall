@@ -32,9 +32,16 @@ export class BalanceRepository {
 
   /**
    * Count all balances
+   * @param competitionId Optional competition ID to filter by
    */
-  async count() {
-    const res = await this.#db.select({ count: drizzleCount() }).from(balances);
+  async count(competitionId?: string): Promise<number> {
+    const query = this.#db.select({ count: drizzleCount() }).from(balances);
+
+    if (competitionId) {
+      query.where(eq(balances.competitionId, competitionId));
+    }
+
+    const res = await query;
     if (!res.length) {
       throw new Error("No count result returned");
     }
@@ -45,8 +52,13 @@ export class BalanceRepository {
    * Get a specific balance
    * @param agentId Agent ID
    * @param tokenAddress Token address
+   * @param competitionId Competition ID
    */
-  async getBalance(agentId: string, tokenAddress: string) {
+  async getBalance(
+    agentId: string,
+    tokenAddress: string,
+    competitionId: string,
+  ): Promise<SelectBalance | undefined> {
     try {
       // Use case-insensitive comparison for EVM addresses (0x prefix)
       // Preserve exact case for Solana addresses (base58, case-sensitive)
@@ -61,12 +73,13 @@ export class BalanceRepository {
             isEvmAddress
               ? sql`LOWER(${balances.tokenAddress}) = LOWER(${tokenAddress})`
               : eq(balances.tokenAddress, tokenAddress),
+            eq(balances.competitionId, competitionId),
           ),
         );
 
       return result;
     } catch (error) {
-      this.#logger.error("Error in getBalance:", error);
+      this.#logger.error({ error }, "Error in getBalance");
       throw error;
     }
   }
@@ -74,15 +87,24 @@ export class BalanceRepository {
   /**
    * Get all balances for an agent
    * @param agentId Agent ID
+   * @param competitionId Competition ID
    */
-  async getAgentBalances(agentId: string): Promise<SelectBalance[]> {
+  async getAgentBalances(
+    agentId: string,
+    competitionId: string,
+  ): Promise<SelectBalance[]> {
     try {
       return await this.#db
         .select()
         .from(balances)
-        .where(eq(balances.agentId, agentId));
+        .where(
+          and(
+            eq(balances.agentId, agentId),
+            eq(balances.competitionId, competitionId),
+          ),
+        );
     } catch (error) {
-      this.#logger.error("Error in getAgentBalances:", error);
+      this.#logger.error({ error }, "Error in getAgentBalances");
       throw error;
     }
   }
@@ -90,8 +112,12 @@ export class BalanceRepository {
   /**
    * Get all balances for multiple agents in bulk
    * @param agentIds Array of agent IDs
+   * @param competitionId Competition ID
    */
-  async getAgentsBulkBalances(agentIds: string[]): Promise<SelectBalance[]> {
+  async getAgentsBulkBalances(
+    agentIds: string[],
+    competitionId: string,
+  ): Promise<SelectBalance[]> {
     try {
       if (agentIds.length === 0) {
         return [];
@@ -100,9 +126,14 @@ export class BalanceRepository {
       return await this.#db
         .select()
         .from(balances)
-        .where(inArray(balances.agentId, agentIds));
+        .where(
+          and(
+            inArray(balances.agentId, agentIds),
+            eq(balances.competitionId, competitionId),
+          ),
+        );
     } catch (error) {
-      this.#logger.error("Error in getAgentsBulkBalances:", error);
+      this.#logger.error({ error }, "Error in getAgentsBulkBalances");
       throw error;
     }
   }
@@ -136,16 +167,25 @@ export class BalanceRepository {
   /**
    * Reset balances for an agent
    * @param agentId Agent ID
+   * @param competitionId Competition ID
    * @param initialBalances Map of token addresses to amounts and symbols
    */
   async resetAgentBalances(
     agentId: string,
+    competitionId: string,
     initialBalances: Map<string, { amount: number; symbol: string }>,
-  ) {
+  ): Promise<void> {
     try {
       await this.#db.transaction(async (tx) => {
-        // First delete all current balances
-        await tx.delete(balances).where(eq(balances.agentId, agentId));
+        // First delete all current balances for this agent in this competition
+        await tx
+          .delete(balances)
+          .where(
+            and(
+              eq(balances.agentId, agentId),
+              eq(balances.competitionId, competitionId),
+            ),
+          );
 
         // Then initialize with new balances
         const now = new Date();
@@ -158,6 +198,7 @@ export class BalanceRepository {
           ) as SpecificChain;
           await tx.insert(balances).values({
             agentId,
+            competitionId,
             tokenAddress,
             amount,
             specificChain,
@@ -168,7 +209,7 @@ export class BalanceRepository {
         }
       });
     } catch (error) {
-      this.#logger.error("Error in resetAgentBalances:", error);
+      this.#logger.error({ error }, "Error in resetAgentBalances");
       throw error;
     }
   }
@@ -178,6 +219,7 @@ export class BalanceRepository {
    * @param tx Database transaction
    * @param agentId Agent ID
    * @param tokenAddress Token address
+   * @param competitionId Competition ID
    * @param amountDelta Positive for increment, negative for decrement
    * @param specificChain Specific chain for the token
    * @param symbol Token symbol
@@ -187,6 +229,7 @@ export class BalanceRepository {
     tx: Transaction,
     agentId: string,
     tokenAddress: string,
+    competitionId: string,
     amountDelta: number,
     specificChain: SpecificChain,
     symbol: string,
@@ -209,6 +252,7 @@ export class BalanceRepository {
           isEvmAddress
             ? sql`LOWER(${balances.tokenAddress}) = LOWER(${tokenAddress})`
             : eq(balances.tokenAddress, tokenAddress),
+          eq(balances.competitionId, competitionId),
         ),
       )
       .returning();
@@ -220,6 +264,7 @@ export class BalanceRepository {
           .insert(balances)
           .values({
             agentId,
+            competitionId,
             tokenAddress,
             amount: amountDelta,
             specificChain,
@@ -258,6 +303,7 @@ export class BalanceRepository {
    * @param tx Database transaction
    * @param agentId Agent ID
    * @param tokenAddress Token address
+   * @param competitionId Competition ID
    * @param amount Amount to add
    * @param specificChain Specific chain for the token
    * @param symbol Token symbol
@@ -267,6 +313,7 @@ export class BalanceRepository {
     tx: Transaction,
     agentId: string,
     tokenAddress: string,
+    competitionId: string,
     amount: number,
     specificChain: SpecificChain,
     symbol: string,
@@ -275,6 +322,7 @@ export class BalanceRepository {
       tx,
       agentId,
       tokenAddress,
+      competitionId,
       amount,
       specificChain,
       symbol,
@@ -286,6 +334,7 @@ export class BalanceRepository {
    * @param tx Database transaction
    * @param agentId Agent ID
    * @param tokenAddress Token address
+   * @param competitionId Competition ID
    * @param amount Amount to subtract
    * @param specificChain Specific chain for the token
    * @param symbol Token symbol
@@ -295,6 +344,7 @@ export class BalanceRepository {
     tx: Transaction,
     agentId: string,
     tokenAddress: string,
+    competitionId: string,
     amount: number,
     specificChain: SpecificChain,
     symbol: string,
@@ -303,6 +353,7 @@ export class BalanceRepository {
       tx,
       agentId,
       tokenAddress,
+      competitionId,
       -amount,
       specificChain,
       symbol,

@@ -31,8 +31,8 @@ export const getUnified = base
       // Handle unexpected errors
       if (error instanceof Error) {
         context.logger.error(
+          { error },
           "[getUnified] Failed to get unified leaderboard:",
-          error,
         );
         throw errors.INTERNAL({ message: error.message });
       }

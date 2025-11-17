@@ -7,6 +7,7 @@ import { ApiError } from "@recallnet/services/types";
 import { config } from "@/config/index.js";
 import { makeAdminController } from "@/controllers/admin.controller.js";
 import { makeAgentController } from "@/controllers/agent.controller.js";
+import { makeArenaController } from "@/controllers/arena.controller.js";
 import { makeAuthController } from "@/controllers/auth.controller.js";
 import { makeCompetitionController } from "@/controllers/competition.controller.js";
 import { makeDocsController } from "@/controllers/docs.controller.js";
@@ -29,6 +30,7 @@ import { configureAdminSetupRoutes } from "@/routes/admin-setup.routes.js";
 import { configureAdminRoutes } from "@/routes/admin.routes.js";
 import { configureAgentRoutes } from "@/routes/agent.routes.js";
 import { configureAgentsRoutes } from "@/routes/agents.routes.js";
+import { configureArenaRoutes } from "@/routes/arena.routes.js";
 import { configureAuthRoutes } from "@/routes/auth.routes.js";
 import { configureCompetitionsRoutes } from "@/routes/competitions.routes.js";
 import { configureDocsRoutes } from "@/routes/docs.routes.js";
@@ -40,8 +42,6 @@ import { startMetricsServer } from "@/servers/metrics.server.js";
 import { ServiceRegistry } from "@/services/index.js";
 
 import { makeBoostController } from "./controllers/boost.controller.js";
-import { updateFeaturesWithCompetition } from "./lib/update-features-with-comp.js";
-import { activeCompMiddleware } from "./middleware/active-comp-filter.middleware.js";
 import { configureLeaderboardRoutes } from "./routes/leaderboard.routes.js";
 
 // Sentry configuration defaults
@@ -82,12 +82,6 @@ try {
 }
 
 const services = new ServiceRegistry();
-
-// Load competition-specific configuration settings
-const activeCompetition =
-  await services.competitionService.getActiveCompetition();
-updateFeaturesWithCompetition(activeCompetition);
-apiLogger.info("Competition-specific configuration settings loaded");
 
 // Configure middleware
 // Trust proxy to get real IP addresses (important for rate limiting)
@@ -164,6 +158,7 @@ const optionalAuth = optionalAuthMiddleware(
 
 const adminController = makeAdminController(services);
 const authController = makeAuthController(services);
+const arenaController = makeArenaController(services);
 const competitionController = makeCompetitionController(services);
 const docsController = makeDocsController();
 const healthController = makeHealthController();
@@ -180,6 +175,7 @@ const boostController = makeBoostController(services);
 
 const adminRoutes = configureAdminRoutes(adminController, adminMiddleware);
 const adminSetupRoutes = configureAdminSetupRoutes(adminController);
+const arenaRoutes = configureArenaRoutes(arenaController);
 const authRoutes = configureAuthRoutes(authController, authMiddlewareInstance);
 const competitionsRoutes = configureCompetitionsRoutes(
   competitionController,
@@ -196,11 +192,10 @@ const agentRoutes = configureAgentRoutes(agentController);
 const agentsRoutes = configureAgentsRoutes(agentController);
 const leaderboardRoutes = configureLeaderboardRoutes(leaderboardController);
 
-const activeCompFilter = activeCompMiddleware();
 // Apply routes to the API router
 apiRouter.use("/auth", authRoutes);
-apiRouter.use("/trade", activeCompFilter, tradeRoutes);
-apiRouter.use("/price", activeCompFilter, priceRoutes);
+apiRouter.use("/trade", tradeRoutes);
+apiRouter.use("/price", priceRoutes);
 apiRouter.use("/competitions", competitionsRoutes);
 apiRouter.use("/admin/setup", adminSetupRoutes);
 apiRouter.use("/admin", adminRoutes);
@@ -209,6 +204,7 @@ apiRouter.use("/docs", docsRoutes);
 apiRouter.use("/user", userRoutes);
 apiRouter.use("/agent", agentRoutes);
 apiRouter.use("/agents", agentsRoutes);
+apiRouter.use("/arenas", arenaRoutes);
 apiRouter.use("/leaderboard", leaderboardRoutes);
 
 // Mount the API router with the prefix + /api path
@@ -282,8 +278,8 @@ const gracefulShutdown = async (signal: string) => {
         apiLogger.info("[Shutdown] Database connections closed");
       } catch (error) {
         apiLogger.error(
+          { error },
           "[Shutdown] Error closing database connections:",
-          error,
         );
       }
 

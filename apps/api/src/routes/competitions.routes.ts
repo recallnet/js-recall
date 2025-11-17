@@ -156,6 +156,81 @@ export function configureCompetitionsRoutes(
    *                             type: number
    *                             nullable: true
    *                             description: Minimum number of trades required per day (null if no requirement)
+   *                       arenaId:
+   *                         type: string
+   *                         nullable: true
+   *                         description: Arena ID for grouping competitions
+   *                       engineId:
+   *                         type: string
+   *                         nullable: true
+   *                         enum: [spot_paper_trading, perpetual_futures, spot_live_trading]
+   *                         description: Engine type identifier
+   *                       engineVersion:
+   *                         type: string
+   *                         nullable: true
+   *                         description: Engine version
+   *                       vips:
+   *                         type: array
+   *                         nullable: true
+   *                         items:
+   *                           type: string
+   *                         description: VIP agent IDs with special access
+   *                       allowlist:
+   *                         type: array
+   *                         nullable: true
+   *                         items:
+   *                           type: string
+   *                         description: Allowlisted agent IDs
+   *                       blocklist:
+   *                         type: array
+   *                         nullable: true
+   *                         items:
+   *                           type: string
+   *                         description: Blocklisted agent IDs
+   *                       minRecallRank:
+   *                         type: integer
+   *                         nullable: true
+   *                         description: Minimum global Recall rank required to join
+   *                       allowlistOnly:
+   *                         type: boolean
+   *                         description: Whether only allowlisted agents can join
+   *                       agentAllocation:
+   *                         type: number
+   *                         nullable: true
+   *                         description: Agent reward pool allocation amount
+   *                       agentAllocationUnit:
+   *                         type: string
+   *                         nullable: true
+   *                         enum: [RECALL, USDC, USD]
+   *                         description: Unit for agent reward allocation
+   *                       boosterAllocation:
+   *                         type: number
+   *                         nullable: true
+   *                         description: Booster reward pool allocation amount
+   *                       boosterAllocationUnit:
+   *                         type: string
+   *                         nullable: true
+   *                         enum: [RECALL, USDC, USD]
+   *                         description: Unit for booster reward allocation
+   *                       rewardRules:
+   *                         type: string
+   *                         nullable: true
+   *                         description: Rules for reward distribution
+   *                       rewardDetails:
+   *                         type: string
+   *                         nullable: true
+   *                         description: Additional reward details
+   *                       displayState:
+   *                         type: string
+   *                         nullable: true
+   *                         enum: [active, waitlist, cancelled, pending, paused]
+   *                         description: UI display state
+   *                       rewardsIneligible:
+   *                         type: array
+   *                         nullable: true
+   *                         items:
+   *                           type: string
+   *                         description: Agent IDs ineligible to receive rewards from this competition
    *                 pagination:
    *                   type: object
    *                   description: Pagination metadata
@@ -437,6 +512,81 @@ export function configureCompetitionsRoutes(
    *                           type: number
    *                           nullable: true
    *                           description: Minimum number of trades required per day (null if no requirement)
+   *                     arenaId:
+   *                       type: string
+   *                       nullable: true
+   *                       description: Arena ID for grouping competitions
+   *                     engineId:
+   *                       type: string
+   *                       nullable: true
+   *                       enum: [spot_paper_trading, perpetual_futures, spot_live_trading]
+   *                       description: Engine type identifier
+   *                     engineVersion:
+   *                       type: string
+   *                       nullable: true
+   *                       description: Engine version
+   *                     vips:
+   *                       type: array
+   *                       nullable: true
+   *                       items:
+   *                         type: string
+   *                       description: VIP agent IDs with special access
+   *                     allowlist:
+   *                       type: array
+   *                       nullable: true
+   *                       items:
+   *                         type: string
+   *                       description: Allowlisted agent IDs
+   *                     blocklist:
+   *                       type: array
+   *                       nullable: true
+   *                       items:
+   *                         type: string
+   *                       description: Blocklisted agent IDs
+   *                     minRecallRank:
+   *                       type: integer
+   *                       nullable: true
+   *                       description: Minimum global Recall rank required to join
+   *                     allowlistOnly:
+   *                       type: boolean
+   *                       description: Whether only allowlisted agents can join
+   *                     agentAllocation:
+   *                       type: number
+   *                       nullable: true
+   *                       description: Agent reward pool allocation amount
+   *                     agentAllocationUnit:
+   *                       type: string
+   *                       nullable: true
+   *                       enum: [RECALL, USDC, USD]
+   *                       description: Unit for agent reward allocation
+   *                     boosterAllocation:
+   *                       type: number
+   *                       nullable: true
+   *                       description: Booster reward pool allocation amount
+   *                     boosterAllocationUnit:
+   *                       type: string
+   *                       nullable: true
+   *                       enum: [RECALL, USDC, USD]
+   *                       description: Unit for booster reward allocation
+   *                     rewardRules:
+   *                       type: string
+   *                       nullable: true
+   *                       description: Rules for reward distribution
+   *                     rewardDetails:
+   *                       type: string
+   *                       nullable: true
+   *                       description: Additional reward details
+   *                     displayState:
+   *                       type: string
+   *                       nullable: true
+   *                       enum: [active, waitlist, cancelled, pending, paused]
+   *                       description: UI display state
+   *                     rewardsIneligible:
+   *                       type: array
+   *                       nullable: true
+   *                       items:
+   *                         type: string
+   *                       description: Agent IDs ineligible to receive rewards from this competition
    *       400:
    *         description: Bad request - Invalid competition ID format
    *       404:
@@ -1041,7 +1191,7 @@ export function configureCompetitionsRoutes(
    * /api/competitions/{competitionId}/agents/{agentId}/perps/positions:
    *   get:
    *     tags:
-   *       - Competitions
+   *       - Competition
    *     summary: Get perps positions for an agent in a competition
    *     description: |
    *       Returns the current perpetual futures positions for a specific agent in a specific competition.
@@ -1206,7 +1356,7 @@ export function configureCompetitionsRoutes(
    * /api/competitions/{competitionId}/perps/all-positions:
    *   get:
    *     tags:
-   *       - Competitions
+   *       - Competition
    *     summary: Get all perps positions for a competition
    *     description: |
    *       Returns all perpetual futures positions for a competition with pagination support.
@@ -1400,6 +1550,75 @@ export function configureCompetitionsRoutes(
     "/:competitionId/perps/all-positions",
     ...authMiddlewares,
     competitionController.getCompetitionPerpsPositions,
+  );
+
+  /**
+   * @openapi
+   * /api/competitions/{competitionId}/partners:
+   *   get:
+   *     tags:
+   *       - Competition
+   *     summary: Get partners for a competition
+   *     description: Retrieve all partners/sponsors associated with a competition (public access)
+   *     parameters:
+   *       - in: path
+   *         name: competitionId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         description: Competition ID
+   *     responses:
+   *       200:
+   *         description: Partners retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                 partners:
+   *                   type: array
+   *                   items:
+   *                     type: object
+   *                     properties:
+   *                       id:
+   *                         type: string
+   *                         format: uuid
+   *                       name:
+   *                         type: string
+   *                       url:
+   *                         type: string
+   *                         nullable: true
+   *                       logoUrl:
+   *                         type: string
+   *                         nullable: true
+   *                       details:
+   *                         type: string
+   *                         nullable: true
+   *                       position:
+   *                         type: integer
+   *                       competitionPartnerId:
+   *                         type: string
+   *                         format: uuid
+   *                       createdAt:
+   *                         type: string
+   *                         format: date-time
+   *                       updatedAt:
+   *                         type: string
+   *                         format: date-time
+   *       400:
+   *         description: Bad Request
+   *       404:
+   *         description: Competition not found
+   *       500:
+   *         description: Server error
+   */
+  router.get(
+    "/:competitionId/partners",
+    optionalAuthMiddleware,
+    competitionController.getCompetitionPartners,
   );
 
   return router;

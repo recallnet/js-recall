@@ -1,9 +1,10 @@
-import { pino } from "pino";
+import { pino, stdSerializers } from "pino";
 
 export function createLogger(name: string) {
   return pino({
     name,
     level: process.env.LOG_LEVEL || "info",
+    serializers: { error: stdSerializers.err },
     transport:
       process.env.NODE_ENV !== "production"
         ? {

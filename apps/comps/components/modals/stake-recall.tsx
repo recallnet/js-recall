@@ -5,6 +5,7 @@ import {
   Ban,
   Check,
   Lock,
+  OctagonMinus,
   Share2Icon,
   TrendingUp,
   Wallet,
@@ -14,11 +15,6 @@ import React, { useEffect, useState } from "react";
 import { useAccount, useChainId } from "wagmi";
 
 import { Button } from "@recallnet/ui2/components/button";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@recallnet/ui2/components/collapsible";
 import {
   Dialog,
   DialogContent,
@@ -41,6 +37,7 @@ import {
   handleApprovalError,
   handleStakeTransactionError,
 } from "@/lib/error-handling";
+import { formatDateRange } from "@/lib/format-date-range";
 import { formatBigintAmount, shouldShowCompact } from "@/utils/format";
 
 import { BoostIcon } from "../BoostIcon";
@@ -96,7 +93,6 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
     useState<StakeDurationKey>("30");
   const [error, setError] = useState<string | null>(null);
   const [termsAccepted, setTermsAccepted] = useState<boolean>(false);
-  const [isCollapsibleOpen, setIsCollapsibleOpen] = useState<boolean>(true);
 
   const { address } = useAccount();
   const chainId = useChainId();
@@ -208,7 +204,6 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
       setSelectedDuration("30");
       setError(null);
       setTermsAccepted(false);
-      setIsCollapsibleOpen(true);
     }
   }, [isOpen]);
 
@@ -291,7 +286,6 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
     setStep("stake");
     setError(null);
     setTermsAccepted(false);
-    setIsCollapsibleOpen(true);
   };
 
   const handleClose = () => {
@@ -328,7 +322,7 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="min-w-xs">
+      <DialogContent className="min-w-xs max-w-lg">
         {/* Header */}
         <DialogHeader>
           <div className="flex items-center justify-between">
@@ -473,99 +467,89 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
                 {/* Unlock Date */}
                 <div className="space-y-2 text-center">
                   <div className="text-secondary-foreground text-sm font-bold">
-                    UNLOCK DATE
+                    STAKE PERIOD
                   </div>
                   <div className="font-bold">
-                    {formatUnlockDate(unlockDate)} UTC
+                    {formatDateRange(new Date(), unlockDate)}
                   </div>
                 </div>
 
                 {/* Terms and Conditions */}
                 <div className="space-y-3">
-                  <Collapsible
-                    open={isCollapsibleOpen}
-                    onOpenChange={setIsCollapsibleOpen}
-                  >
-                    <div className="flex w-full items-center justify-between">
-                      <label className="flex w-full items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={termsAccepted}
-                          onChange={(e) => {
-                            setTermsAccepted(e.target.checked);
-                            setIsCollapsibleOpen(!e.target.checked);
-                          }}
-                        />
-
-                        <span className="text-primary-foreground text-sm">
-                          I have read and accepted the{" "}
-                          <a
-                            href="https://recall.network/terms"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="underline"
-                          >
-                            Terms and Conditions
-                          </a>
-                          .
+                  <div className="rounded-2xl border p-0">
+                    <div className="text-secondary-foreground flex items-center gap-2 px-4 py-3 text-sm">
+                      <Lock className="size-4 flex-shrink-0" />
+                      <div className="text-primary-foreground">
+                        Your RECALL tokens will be{" "}
+                        <span className="text-yellow-400">
+                          {" "}
+                          staked for {selectedDuration} days.
                         </span>
-                      </label>
-
-                      <CollapsibleTrigger className="w-fit" />
+                      </div>
                     </div>
 
-                    <CollapsibleContent className="rounded-2xl border p-0">
-                      <div className="text-secondary-foreground flex items-center gap-2 px-4 py-3 text-sm">
-                        <Lock className="size-4 flex-shrink-0" />
-                        <div className="text-primary-foreground">
-                          Your RECALL tokens will be{" "}
-                          <span className="text-yellow-400">
-                            {" "}
-                            locked for {selectedDuration} days.
-                          </span>
-                        </div>
+                    <div className="border-t"></div>
+
+                    <div className="text-secondary-foreground flex items-center gap-2 px-4 py-3 text-sm">
+                      <Ban className="size-4 flex-shrink-0" />
+                      <div className="text-primary-foreground">
+                        You{" "}
+                        <span className="text-yellow-400">cannot unstake</span>{" "}
+                        before the unlock date.
                       </div>
+                    </div>
 
-                      <div className="border-t"></div>
+                    <div className="border-t"></div>
 
-                      <div className="text-secondary-foreground flex items-center gap-2 px-4 py-3 text-sm">
-                        <Ban className="size-4 flex-shrink-0" />
-                        <div className="text-primary-foreground">
-                          You{" "}
-                          <span className="text-yellow-400">
-                            cannot unstake
-                          </span>{" "}
-                          before the unlock date.
-                        </div>
+                    <div className="text-secondary-foreground flex items-center gap-2 px-4 py-3 text-sm">
+                      <TrendingUp className="text-secondary-foreground size-4 flex-shrink-0" />
+                      <div className="text-primary-foreground">
+                        Your Boost will be{" "}
+                        <span className="text-yellow-400">
+                          increased instantly
+                        </span>{" "}
+                        after staking.
                       </div>
+                    </div>
 
-                      <div className="border-t"></div>
+                    <div className="border-t"></div>
 
-                      <div className="text-secondary-foreground flex items-center gap-2 px-4 py-3 text-sm">
-                        <TrendingUp className="text-secondary-foreground size-4 flex-shrink-0" />
-                        <div className="text-primary-foreground">
-                          Your Boost will be{" "}
-                          <span className="text-yellow-400">
-                            increased instantly
-                          </span>{" "}
-                          after staking.
-                        </div>
+                    <div className="text-secondary-foreground flex items-center gap-2 px-4 py-3 text-sm">
+                      <OctagonMinus className="size-4 shrink-0" />
+                      <div className="text-primary-foreground">
+                        After Unstaking, a{" "}
+                        <span className="text-yellow-400">
+                          30-day cooldown period
+                        </span>{" "}
+                        will begin. Tokens are only withdrawable after the
+                        cooldown.
                       </div>
+                    </div>
+                  </div>
+                  <div className="flex w-full items-center justify-between">
+                    <label className="flex w-full items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={termsAccepted}
+                        onChange={(e) => {
+                          setTermsAccepted(e.target.checked);
+                        }}
+                      />
 
-                      <div className="border-t"></div>
-
-                      <div className="text-secondary-foreground flex items-center gap-2 px-4 py-3 text-sm">
-                        <BoostIcon className="size-4" />
-                        <div className="text-primary-foreground">
-                          Use Boost to{" "}
-                          <span className="text-yellow-400">
-                            compete or vote
-                          </span>{" "}
-                          on agents.
-                        </div>
-                      </div>
-                    </CollapsibleContent>
-                  </Collapsible>
+                      <span className="text-primary-foreground text-sm">
+                        I have read and accepted the{" "}
+                        <a
+                          href="https://recall.network/terms"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="underline"
+                        >
+                          Terms and Conditions
+                        </a>
+                        .
+                      </span>
+                    </label>
+                  </div>
                 </div>
               </div>
             </div>

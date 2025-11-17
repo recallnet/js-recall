@@ -5,6 +5,7 @@ import { MockProxy, mock } from "vitest-mock-extended";
 
 import { AgentRepository } from "@recallnet/db/repositories/agent";
 import { AgentScoreRepository } from "@recallnet/db/repositories/agent-score";
+import { ArenaRepository } from "@recallnet/db/repositories/arena";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { PerpsRepository } from "@recallnet/db/repositories/perps";
 import { StakesRepository } from "@recallnet/db/repositories/stakes";
@@ -34,6 +35,7 @@ describe("CompetitionService - createCompetition", () => {
   let perpsDataProcessor: MockProxy<PerpsDataProcessor>;
   let agentRepo: MockProxy<AgentRepository>;
   let agentScoreRepo: MockProxy<AgentScoreRepository>;
+  let arenaRepo: MockProxy<ArenaRepository>;
   let perpsRepo: MockProxy<PerpsRepository>;
   let competitionRepo: MockProxy<CompetitionRepository>;
   let stakesRepo: MockProxy<StakesRepository>;
@@ -55,6 +57,7 @@ describe("CompetitionService - createCompetition", () => {
     perpsDataProcessor = mock<PerpsDataProcessor>();
     agentRepo = mock<AgentRepository>();
     agentScoreRepo = mock<AgentScoreRepository>();
+    arenaRepo = mock<ArenaRepository>();
     perpsRepo = mock<PerpsRepository>();
     competitionRepo = mock<CompetitionRepository>();
     stakesRepo = mock<StakesRepository>();
@@ -63,6 +66,38 @@ describe("CompetitionService - createCompetition", () => {
     logger = mock<Logger>();
 
     // Setup default mock return values
+    arenaRepo.findById.mockImplementation(async (id) => {
+      if (id === "default-paper-arena" || id === "test-arena") {
+        return {
+          id,
+          name: id === "test-arena" ? "Test Arena" : "Default Paper Arena",
+          kind: "default",
+          createdBy: null,
+          skill: "spot_paper_trading",
+          category: "crypto_trading",
+          venues: null,
+          chains: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+      }
+      if (id === "default-perps-arena") {
+        return {
+          id,
+          name: "Default Perps Arena",
+          kind: "default",
+          createdBy: null,
+          skill: "perpetual_futures",
+          category: "crypto_trading",
+          venues: null,
+          chains: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+      }
+      return undefined;
+    });
+
     competitionRewardService.createRewards.mockResolvedValue([
       {
         id: "reward1",
@@ -111,6 +146,7 @@ describe("CompetitionService - createCompetition", () => {
       perpsDataProcessor,
       agentRepo,
       agentScoreRepo,
+      arenaRepo,
       perpsRepo,
       competitionRepo,
       stakesRepo,
@@ -179,6 +215,7 @@ describe("CompetitionService - createCompetition", () => {
       arenaId: "default-paper-arena",
       engineId: "spot_paper_trading" as const,
       engineVersion: "1.0.0",
+      rewardsIneligible: null,
     }));
   });
 
@@ -196,6 +233,7 @@ describe("CompetitionService - createCompetition", () => {
     const result = await competitionService.createCompetition({
       name: "New Competition",
       description: "Test Description",
+      arenaId: "default-paper-arena",
       tradingType: "disallowAll",
       sandboxMode: false,
       type: "trading",
@@ -268,6 +306,7 @@ describe("CompetitionService - createCompetition", () => {
     const result = await competitionService.createCompetition({
       name: "No Rewards Competition",
       description: "Test without rewards",
+      arenaId: "default-paper-arena",
       tradingType: "disallowAll",
     });
 
@@ -277,6 +316,67 @@ describe("CompetitionService - createCompetition", () => {
     expect(tradingConstraintsService.createConstraints).toHaveBeenCalled();
 
     expect(result.rewards).toEqual([]);
+  });
+
+  test("should create competition with arena routing and participation rules", async () => {
+    mockDb.transaction.mockImplementation(async (callback) => {
+      const mockTx = mock<Transaction>();
+      return await callback(mockTx);
+    });
+
+    const result = await competitionService.createCompetition({
+      name: "Competition with Arena Link",
+      description: "Test arena routing and participation rules",
+      tradingType: "disallowAll",
+      type: "trading",
+      arenaId: "test-arena",
+      engineId: "spot_paper_trading",
+      engineVersion: "1.0.0",
+      vips: ["agent-1", "agent-2"],
+      allowlist: ["agent-3", "agent-4"],
+      blocklist: ["agent-5"],
+      minRecallRank: 100,
+      allowlistOnly: true,
+      agentAllocation: 5000,
+      agentAllocationUnit: "RECALL",
+      boosterAllocation: 2000,
+      boosterAllocationUnit: "USDC",
+      rewardRules: "Top 10 get rewards",
+      rewardDetails: "Distributed weekly",
+      displayState: "active",
+    });
+
+    // Verify transaction was called
+    expect(mockDb.transaction).toHaveBeenCalledTimes(1);
+
+    // Verify competition was created with all fields
+    expect(competitionRepo.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: "Competition with Arena Link",
+        description: "Test arena routing and participation rules",
+        arenaId: "test-arena",
+        engineId: "spot_paper_trading",
+        engineVersion: "1.0.0",
+        vips: ["agent-1", "agent-2"],
+        allowlist: ["agent-3", "agent-4"],
+        blocklist: ["agent-5"],
+        minRecallRank: 100,
+        allowlistOnly: true,
+        agentAllocation: 5000,
+        agentAllocationUnit: "RECALL",
+        boosterAllocation: 2000,
+        boosterAllocationUnit: "USDC",
+        rewardRules: "Top 10 get rewards",
+        rewardDetails: "Distributed weekly",
+        displayState: "active",
+      }),
+      expect.any(Object), // The transaction object
+    );
+
+    // Verify result structure
+    expect(result).toMatchObject({
+      name: "Competition with Arena Link",
+    });
   });
 
   test("should rollback transaction when competition creation fails", async () => {
@@ -293,6 +393,7 @@ describe("CompetitionService - createCompetition", () => {
       competitionService.createCompetition({
         name: "Failing Competition",
         description: "This should fail",
+        arenaId: "default-paper-arena",
       }),
     ).rejects.toThrow("Database error");
 
@@ -319,6 +420,7 @@ describe("CompetitionService - createCompetition", () => {
       competitionService.createCompetition({
         name: "Competition with Bad Rewards",
         description: "Rewards will fail",
+        arenaId: "default-paper-arena",
         rewards: {
           1: 1000,
           "-1": 500, // Invalid rank
@@ -349,6 +451,7 @@ describe("CompetitionService - createCompetition", () => {
       competitionService.createCompetition({
         name: "Competition with Bad Constraints",
         description: "Constraints will fail",
+        arenaId: "default-paper-arena",
         tradingConstraints: {
           minimumPairAgeHours: -1, // Invalid value
         },
@@ -372,6 +475,7 @@ describe("CompetitionService - createCompetition", () => {
     const result = await competitionService.createCompetition({
       name: "Staked Competition",
       description: "Competition with minimum stake",
+      arenaId: "default-paper-arena",
       minimumStake: 1000,
       tradingType: "disallowAll",
       sandboxMode: false,
@@ -413,6 +517,7 @@ describe("CompetitionService - createCompetition", () => {
     const result = await competitionService.createCompetition({
       name: "No Stake Competition",
       description: "Competition without minimum stake",
+      arenaId: "default-paper-arena",
       tradingType: "disallowAll",
     });
 
@@ -448,6 +553,7 @@ describe("CompetitionService - createCompetition", () => {
     const result = await competitionService.createCompetition({
       name: "Perps Competition",
       description: "Test perps competition with min funding",
+      arenaId: "default-perps-arena",
       type: "perpetual_futures",
       sandboxMode: false,
       perpsProvider: {
@@ -481,6 +587,7 @@ describe("CompetitionService - createCompetition", () => {
     const result = await competitionService.createCompetition({
       name: "Perps Competition No Min",
       description: "Test perps competition without min funding",
+      arenaId: "default-perps-arena",
       type: "perpetual_futures",
       sandboxMode: false,
       perpsProvider: {
@@ -504,6 +611,71 @@ describe("CompetitionService - createCompetition", () => {
 
     expect(result.name).toBe("Perps Competition No Min");
   });
+
+  test("should reject when arena does not exist", async () => {
+    mockDb.transaction.mockImplementation(async (callback) => {
+      const mockTx = mock<Transaction>();
+      return await callback(mockTx);
+    });
+
+    await expect(
+      competitionService.createCompetition({
+        name: "Competition with Invalid Arena",
+        description: "Arena does not exist",
+        arenaId: "nonexistent-arena",
+        tradingType: "disallowAll",
+      }),
+    ).rejects.toThrow("Arena with ID nonexistent-arena not found");
+
+    // Verify transaction was never called
+    expect(mockDb.transaction).not.toHaveBeenCalled();
+  });
+
+  test("should reject when competition type is incompatible with arena skill", async () => {
+    mockDb.transaction.mockImplementation(async (callback) => {
+      const mockTx = mock<Transaction>();
+      return await callback(mockTx);
+    });
+
+    // Trying to create a perpetual_futures competition in a spot_paper_trading arena
+    await expect(
+      competitionService.createCompetition({
+        name: "Mismatched Competition",
+        description: "Wrong type for arena",
+        arenaId: "default-paper-arena", // spot_paper_trading arena
+        type: "perpetual_futures", // incompatible type
+        sandboxMode: false,
+        perpsProvider: {
+          provider: "hyperliquid",
+          initialCapital: 1000,
+          selfFundingThreshold: 0,
+        },
+      }),
+    ).rejects.toThrow(
+      'Competition type "perpetual_futures" incompatible with arena skill "spot_paper_trading"',
+    );
+
+    // Verify transaction was never called
+    expect(mockDb.transaction).not.toHaveBeenCalled();
+  });
+
+  test("should allow trading type in spot_paper_trading arena", async () => {
+    mockDb.transaction.mockImplementation(async (callback) => {
+      const mockTx = mock<Transaction>();
+      return await callback(mockTx);
+    });
+
+    const result = await competitionService.createCompetition({
+      name: "Correct Trading Competition",
+      description: "Trading type matches spot_paper_trading arena",
+      arenaId: "default-paper-arena",
+      type: "trading", // compatible with spot_paper_trading
+      tradingType: "disallowAll",
+    });
+
+    expect(result.name).toBe("Correct Trading Competition");
+    expect(mockDb.transaction).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe("CompetitionService - startCompetition with minFundingThreshold", () => {
@@ -519,6 +691,7 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
   let perpsDataProcessor: MockProxy<PerpsDataProcessor>;
   let agentRepo: MockProxy<AgentRepository>;
   let agentScoreRepo: MockProxy<AgentScoreRepository>;
+  let arenaRepo: MockProxy<ArenaRepository>;
   let perpsRepo: MockProxy<PerpsRepository>;
   let competitionRepo: MockProxy<CompetitionRepository>;
   let stakesRepo: MockProxy<StakesRepository>;
@@ -541,6 +714,7 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
     perpsDataProcessor = mock<PerpsDataProcessor>();
     agentRepo = mock<AgentRepository>();
     agentScoreRepo = mock<AgentScoreRepository>();
+    arenaRepo = mock<ArenaRepository>();
     perpsRepo = mock<PerpsRepository>();
     competitionRepo = mock<CompetitionRepository>();
     stakesRepo = mock<StakesRepository>();
@@ -561,6 +735,7 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
       perpsDataProcessor,
       agentRepo,
       agentScoreRepo,
+      arenaRepo,
       perpsRepo,
       competitionRepo,
       stakesRepo,
@@ -620,6 +795,7 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
       boosterAllocationUnit: null,
       rewardRules: null,
       rewardDetails: null,
+      rewardsIneligible: null,
       displayState: null,
       arenaId: "default-perps-arena",
       engineId: "perpetual_futures" as const,
@@ -696,6 +872,8 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
         metadata: null,
         deactivationReason: null,
         deactivationDate: null,
+        isRewardsIneligible: false,
+        rewardsIneligibilityReason: null,
       },
       {
         id: agent2Id,
@@ -714,6 +892,8 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
         metadata: null,
         deactivationReason: null,
         deactivationDate: null,
+        isRewardsIneligible: false,
+        rewardsIneligibilityReason: null,
       },
       {
         id: agent3Id,
@@ -732,6 +912,8 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
         metadata: null,
         deactivationReason: null,
         deactivationDate: null,
+        isRewardsIneligible: false,
+        rewardsIneligibilityReason: null,
       },
     ]);
     competitionRepo.getAgentCompetitionRecord.mockResolvedValue({
@@ -892,6 +1074,7 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
       boosterAllocationUnit: null,
       rewardRules: null,
       rewardDetails: null,
+      rewardsIneligible: null,
       displayState: null,
       arenaId: "default-perps-arena",
       engineId: "perpetual_futures" as const,
@@ -951,6 +1134,8 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
         metadata: null,
         deactivationReason: null,
         deactivationDate: null,
+        isRewardsIneligible: false,
+        rewardsIneligibilityReason: null,
       },
       {
         id: agent2Id,
@@ -969,6 +1154,8 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
         metadata: null,
         deactivationReason: null,
         deactivationDate: null,
+        isRewardsIneligible: false,
+        rewardsIneligibilityReason: null,
       },
     ]);
 
@@ -1095,6 +1282,7 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
       boosterAllocationUnit: null,
       rewardRules: null,
       rewardDetails: null,
+      rewardsIneligible: null,
       displayState: null,
       arenaId: "default-perps-arena",
       engineId: "perpetual_futures" as const,
@@ -1171,6 +1359,8 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
         metadata: null,
         deactivationReason: null,
         deactivationDate: null,
+        isRewardsIneligible: false,
+        rewardsIneligibilityReason: null,
       },
       {
         id: agent2Id,
@@ -1189,6 +1379,8 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
         metadata: null,
         deactivationReason: null,
         deactivationDate: null,
+        isRewardsIneligible: false,
+        rewardsIneligibilityReason: null,
       },
     ]);
 

@@ -5,11 +5,13 @@ import { AdminRepository } from "@recallnet/db/repositories/admin";
 import { AgentRepository } from "@recallnet/db/repositories/agent";
 import { AgentNonceRepository } from "@recallnet/db/repositories/agent-nonce";
 import { AgentScoreRepository } from "@recallnet/db/repositories/agent-score";
+import { ArenaRepository } from "@recallnet/db/repositories/arena";
 import { BalanceRepository } from "@recallnet/db/repositories/balance";
 import { BoostRepository } from "@recallnet/db/repositories/boost";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { CompetitionRewardsRepository } from "@recallnet/db/repositories/competition-rewards";
 import { LeaderboardRepository } from "@recallnet/db/repositories/leaderboard";
+import { PartnerRepository } from "@recallnet/db/repositories/partner";
 import { PerpsRepository } from "@recallnet/db/repositories/perps";
 import { RewardsRepository } from "@recallnet/db/repositories/rewards";
 import { StakesRepository } from "@recallnet/db/repositories/stakes";
@@ -20,6 +22,7 @@ import {
   AdminService,
   AgentRankService,
   AgentService,
+  ArenaService,
   BalanceService,
   BoostAwardService,
   BoostService,
@@ -28,6 +31,7 @@ import {
   CompetitionService,
   EmailService,
   LeaderboardService,
+  PartnerService,
   PerpsDataProcessor,
   PortfolioSnapshotterService,
   PriceTrackerService,
@@ -55,9 +59,15 @@ import {
 
 import config from "@/config/index.js";
 import { db, dbRead } from "@/database/db.js";
+import {
+  INDEXING_EVENTS_HYPERSYNC_QUERY,
+  INDEXING_TRANSACTIONS_HYPERSYNC_QUERY,
+} from "@/indexing/blockchain-config.js";
+import { ConvictionClaimsRepository } from "@/indexing/conviction-claims.repository.js";
 import { EventProcessor } from "@/indexing/event-processor.js";
 import { EventsRepository } from "@/indexing/events.repository.js";
 import { IndexingService } from "@/indexing/indexing.service.js";
+import { TransactionProcessor } from "@/indexing/transaction-processor.js";
 import {
   configLogger,
   indexingLogger,
@@ -81,6 +91,8 @@ class ServiceRegistry {
   private _userService: UserService;
   private _agentService: AgentService;
   private _adminService: AdminService;
+  private _arenaService: ArenaService;
+  private _partnerService: PartnerService;
   private _portfolioSnapshotterService: PortfolioSnapshotterService;
   private _leaderboardService: LeaderboardService;
   private _agentRankService: AgentRankService;
@@ -95,9 +107,14 @@ class ServiceRegistry {
   private readonly _boostRepository: BoostRepository;
   private readonly _stakesRepository: StakesRepository;
   private readonly _userRepository: UserRepository;
-  private readonly _indexingService: IndexingService;
+  private readonly _arenaRepository: ArenaRepository;
+  private readonly _partnerRepository: PartnerRepository;
+  private readonly _eventIndexingService: IndexingService | undefined;
+  private readonly _transactionIndexingService: IndexingService | undefined;
   private readonly _eventsRepository: EventsRepository;
   private readonly _eventProcessor: EventProcessor;
+  private readonly _transactionProcessor: TransactionProcessor;
+  private readonly _convictionClaimsRepository: ConvictionClaimsRepository;
   private readonly _boostAwardService: BoostAwardService;
   private readonly _privyClient: PrivyClient;
   private _rewardsService: RewardsService;
@@ -159,6 +176,12 @@ class ServiceRegistry {
     );
     this._perpsRepository = new PerpsRepository(db, dbRead, repositoryLogger);
     const adminRepository = new AdminRepository(db, repositoryLogger);
+    this._arenaRepository = new ArenaRepository(db, dbRead, repositoryLogger);
+    this._partnerRepository = new PartnerRepository(
+      db,
+      dbRead,
+      repositoryLogger,
+    );
 
     const walletWatchlist = new WalletWatchlist(config, serviceLogger);
 
@@ -273,6 +296,18 @@ class ServiceRegistry {
     // Initialize LeaderboardService with required dependencies
     this._leaderboardService = new LeaderboardService(
       leaderboardRepository,
+      this._arenaRepository,
+      serviceLogger,
+    );
+
+    // Initialize ArenaService and PartnerService
+    this._arenaService = new ArenaService(
+      this._arenaRepository,
+      this._competitionRepository,
+      serviceLogger,
+    );
+    this._partnerService = new PartnerService(
+      this._partnerRepository,
       serviceLogger,
     );
 
@@ -303,9 +338,11 @@ class ServiceRegistry {
       this._rewardsRepository,
       this._competitionRepository,
       this._boostRepository,
+      this._agentRepository,
       this._rewardsAllocator,
       db,
       serviceLogger,
+      config.rewards.boostTimeDecayRate,
     );
 
     this._competitionService = new CompetitionService(
@@ -320,6 +357,7 @@ class ServiceRegistry {
       this._perpsDataProcessor,
       this._agentRepository,
       agentScoreRepository,
+      this._arenaRepository,
       this._perpsRepository,
       this._competitionRepository,
       this._stakesRepository,
@@ -336,11 +374,14 @@ class ServiceRegistry {
       this._balanceService,
       this._priceTrackerService,
       tradeRepository,
-      tradingConstraintsRepository,
+      this._tradingConstraintsService,
       dexScreenerProvider,
       config,
       serviceLogger,
     );
+
+    this._convictionClaimsRepository = new ConvictionClaimsRepository(db);
+
     this._eventProcessor = new EventProcessor(
       db,
       this._rewardsRepository,
@@ -350,10 +391,26 @@ class ServiceRegistry {
       this._competitionService,
       indexingLogger,
     );
-    this._indexingService = new IndexingService(
+
+    if (INDEXING_EVENTS_HYPERSYNC_QUERY) {
+      this._eventIndexingService = new IndexingService(
+        indexingLogger,
+        this._eventProcessor,
+        INDEXING_EVENTS_HYPERSYNC_QUERY,
+      );
+    }
+
+    this._transactionProcessor = new TransactionProcessor(
+      this._convictionClaimsRepository,
       indexingLogger,
-      this._eventProcessor,
     );
+    if (INDEXING_TRANSACTIONS_HYPERSYNC_QUERY) {
+      this._transactionIndexingService = new IndexingService(
+        indexingLogger,
+        this._transactionProcessor,
+        INDEXING_TRANSACTIONS_HYPERSYNC_QUERY,
+      );
+    }
   }
 
   public static getInstance(): ServiceRegistry {
@@ -424,8 +481,20 @@ class ServiceRegistry {
     return this._perpsDataProcessor;
   }
 
-  get indexingService(): IndexingService {
-    return this._indexingService;
+  get eventIndexingService(): IndexingService | undefined {
+    return this._eventIndexingService;
+  }
+
+  get transactionIndexingService(): IndexingService | undefined {
+    return this._transactionIndexingService;
+  }
+
+  get convictionClaimsRepository(): ConvictionClaimsRepository {
+    return this._convictionClaimsRepository;
+  }
+
+  get transactionProcessor(): TransactionProcessor {
+    return this._transactionProcessor;
   }
 
   get competitionRepository(): CompetitionRepository {
@@ -466,6 +535,22 @@ class ServiceRegistry {
 
   get perpsRepository(): PerpsRepository {
     return this._perpsRepository;
+  }
+
+  get arenaRepository(): ArenaRepository {
+    return this._arenaRepository;
+  }
+
+  get partnerRepository(): PartnerRepository {
+    return this._partnerRepository;
+  }
+
+  get arenaService(): ArenaService {
+    return this._arenaService;
+  }
+
+  get partnerService(): PartnerService {
+    return this._partnerService;
   }
 
   private getRewardsAllocator(): RewardsAllocator {

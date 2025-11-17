@@ -1,5 +1,5 @@
 import * as dotenv from "dotenv";
-import { eq, isNull } from "drizzle-orm";
+import { eq, isNotNull, isNull, sql } from "drizzle-orm";
 import * as path from "path";
 
 import { arenas, competitions } from "@recallnet/db/schema/core/defs";
@@ -20,8 +20,8 @@ const logger = createLogger("BackfillArenas");
  * Backfill arenas and engine configuration for existing competitions
  *
  * Creates:
- * - Default arenas for grouping existing competitions
- * - Populates competitions with engineId, engineVersion, engineConfig, arena_id
+ * - 5 production arenas based on competition themes and providers
+ * - Populates competitions with engineId, engineVersion, arena_id
  *
  * Safe to run multiple times (idempotent - skips already backfilled)
  */
@@ -30,14 +30,32 @@ async function backfillArenasAndEngineConfig(): Promise<void> {
 
   try {
     // ========================================
-    // 1. Create Default Arenas
+    // 1. Create Production Arenas
     // ========================================
-    logger.info("Creating default arenas...");
+    logger.info("Creating production arenas...");
 
-    const defaultArenas = [
+    const productionArenas = [
       {
-        id: "default-paper-arena",
-        name: "Default Paper Trading Arena",
+        id: "open-paper-trading",
+        name: "Open Paper Trading",
+        createdBy: "system",
+        category: "crypto_trading",
+        skill: "spot_paper_trading",
+        venues: null,
+        chains: ["eth", "polygon", "base", "arbitrum", "optimism", "svm"],
+      },
+      {
+        id: "evm-paper-trading",
+        name: "EVM Paper Trading",
+        createdBy: "system",
+        category: "crypto_trading",
+        skill: "spot_paper_trading",
+        venues: null,
+        chains: ["eth", "polygon", "base", "arbitrum", "optimism"],
+      },
+      {
+        id: "chain-battles",
+        name: "Chain Battles",
         createdBy: "system",
         category: "crypto_trading",
         skill: "spot_paper_trading",
@@ -45,22 +63,31 @@ async function backfillArenasAndEngineConfig(): Promise<void> {
         chains: null,
       },
       {
-        id: "default-perps-arena",
-        name: "Default Perpetual Futures Arena",
+        id: "hyperliquid-perps",
+        name: "Perpetual Futures on Hyperliquid",
         createdBy: "system",
         category: "crypto_trading",
         skill: "perpetual_futures",
-        venues: null,
+        venues: ["hyperliquid"],
+        chains: null,
+      },
+      {
+        id: "symphony-perps",
+        name: "Perpetual Futures on Symphony",
+        createdBy: "system",
+        category: "crypto_trading",
+        skill: "perpetual_futures",
+        venues: ["symphony"],
         chains: null,
       },
     ];
 
-    for (const arena of defaultArenas) {
+    for (const arena of productionArenas) {
       await db.insert(arenas).values(arena).onConflictDoNothing().execute();
       logger.debug(`Created/verified arena: ${arena.id}`);
     }
 
-    logger.info("✓ Default arenas created");
+    logger.info("✓ Production arenas created");
 
     // ========================================
     // 2. Backfill Paper Trading Competitions
@@ -105,17 +132,33 @@ async function backfillArenasAndEngineConfig(): Promise<void> {
         continue;
       }
 
+      // Determine arena based on competition name and purpose
+      let arenaId: string;
+
+      if (comp.name === "Ethereum Paper Trading Challenge") {
+        // EVM-only DevConnect week competition
+        arenaId = "evm-paper-trading";
+      } else if (comp.name === "ETH v SOL") {
+        // Ecosystem battle (EVM vs SVM showdown)
+        arenaId = "chain-battles";
+      } else {
+        // Generic multi-chain competitions and partnership events
+        // Includes: Paper Trading Competition, Crypto Trading Competition/Challenge,
+        //           AlphaWave, Autonomous Apes Hackathon Finale
+        arenaId = "open-paper-trading";
+      }
+
       await db
         .update(competitions)
         .set({
-          arenaId: "default-paper-arena",
+          arenaId,
           engineId: "spot_paper_trading",
           engineVersion: "1.0.0",
         })
         .where(eq(competitions.id, comp.id));
 
       paperUpdated++;
-      logger.debug(`Updated ${comp.name}`);
+      logger.debug(`Updated ${comp.name} → ${arenaId}`);
     }
 
     logger.info(`✓ Backfilled ${paperUpdated} paper trading competitions`);
@@ -163,17 +206,39 @@ async function backfillArenasAndEngineConfig(): Promise<void> {
       }
 
       // Extract provider from dataSourceConfig
+      const dataSourceConfig = comp.dataSourceConfig as {
+        provider?: string;
+        type?: string;
+      };
+      const provider = dataSourceConfig?.provider?.toLowerCase();
+
+      // Determine arena based on provider
+      let arenaId: string;
+      if (provider === "hyperliquid") {
+        arenaId = "hyperliquid-perps";
+      } else if (provider === "symphony") {
+        arenaId = "symphony-perps";
+      } else {
+        // Default fallback if provider is unknown
+        logger.warn(
+          `Unknown provider for competition ${comp.name}: ${provider}. Defaulting to hyperliquid-perps`,
+        );
+        arenaId = "hyperliquid-perps";
+      }
+
       await db
         .update(competitions)
         .set({
-          arenaId: "default-perps-arena",
+          arenaId,
           engineId: "perpetual_futures",
           engineVersion: "1.0.0",
         })
         .where(eq(competitions.id, comp.id));
 
       perpsUpdated++;
-      logger.debug(`Updated ${comp.name}`);
+      logger.debug(
+        `Updated ${comp.name} → ${arenaId} (provider: ${provider || "unknown"})`,
+      );
     }
 
     logger.info(`✓ Backfilled ${perpsUpdated} perpetual futures competitions`);
@@ -197,12 +262,29 @@ async function backfillArenasAndEngineConfig(): Promise<void> {
       logger.info("✓ All competitions successfully backfilled");
     }
 
+    // ========================================
+    // 5. Arena Assignment Summary
+    // ========================================
+    logger.info("\n=== Arena Assignment Summary ===");
+    const arenaStats = await db
+      .select({
+        arenaId: competitions.arenaId,
+        count: sql<number>`count(*)::int`,
+      })
+      .from(competitions)
+      .where(isNotNull(competitions.arenaId))
+      .groupBy(competitions.arenaId);
+
+    arenaStats.forEach((stat) => {
+      logger.info(`  ${stat.arenaId}: ${stat.count} competitions`);
+    });
+
     logger.info(
       `\nBackfill complete: ${paperUpdated} paper + ${perpsUpdated} perps = ${paperUpdated + perpsUpdated} total`,
     );
     process.exit(0);
   } catch (error) {
-    logger.error("Error during backfill:", error);
+    logger.error({ error }, "Error during backfill:");
     process.exit(1);
   }
 }

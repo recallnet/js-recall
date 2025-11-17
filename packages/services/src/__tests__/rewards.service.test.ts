@@ -3,6 +3,7 @@ import { type Hex, encodePacked, hexToBytes, keccak256 } from "viem";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { type DeepMockProxy } from "vitest-mock-extended";
 
+import { AgentRepository } from "@recallnet/db/repositories/agent";
 import { BoostRepository } from "@recallnet/db/repositories/boost";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { RewardsRepository } from "@recallnet/db/repositories/rewards";
@@ -23,6 +24,7 @@ import { RewardsService, createLeafNode } from "../rewards.service.js";
 vi.mock("@recallnet/db/repositories/rewards");
 vi.mock("@recallnet/db/repositories/boost");
 vi.mock("@recallnet/db/repositories/competition");
+vi.mock("@recallnet/db/repositories/agent");
 // Note: The test provides its own in-memory RewardsAllocator mock instance,
 // so there is no need to mock the staking-contracts module here.
 
@@ -31,6 +33,7 @@ describe("RewardsService", () => {
   let mockRewardsRepo: DeepMockProxy<RewardsRepository>;
   let mockCompetitionRepository: DeepMockProxy<CompetitionRepository>;
   let mockBoostRepository: DeepMockProxy<BoostRepository>;
+  let mockAgentRepo: DeepMockProxy<AgentRepository>;
   let mockDb: Database;
   let mockLogger: Logger;
   let mockTransaction: DeepMockProxy<{
@@ -79,6 +82,7 @@ describe("RewardsService", () => {
     arenaId: "default-paper-arena",
     engineId: "spot_paper_trading" as const,
     engineVersion: "1.0.0",
+    rewardsIneligible: null,
   });
 
   // Helper function to create a mock leaderboard entry
@@ -117,6 +121,11 @@ describe("RewardsService", () => {
     mockBoostRepository = {
       userBoostSpending: vi.fn().mockResolvedValue([]),
     } as unknown as DeepMockProxy<BoostRepository>;
+
+    mockAgentRepo = {
+      findByIds: vi.fn().mockResolvedValue([]),
+      findByIdsWithLock: vi.fn().mockResolvedValue([]),
+    } as unknown as DeepMockProxy<AgentRepository>;
 
     mockDb = {
       transaction: vi.fn(),
@@ -159,6 +168,7 @@ describe("RewardsService", () => {
         mockRewardsRepo,
         mockCompetitionRepository,
         mockBoostRepository,
+        mockAgentRepo,
         mockRewardsAllocator,
         mockDb,
         mockLogger,
@@ -172,6 +182,7 @@ describe("RewardsService", () => {
         mockRewardsRepo,
         mockCompetitionRepository,
         mockBoostRepository,
+        mockAgentRepo,
         mockRewardsAllocator,
         mockDb,
         mockLogger,
@@ -190,6 +201,7 @@ describe("RewardsService", () => {
         mockRewardsRepo,
         mockCompetitionRepository,
         mockBoostRepository,
+        mockAgentRepo,
         mockRewardsAllocator,
         mockDb,
         mockLogger,
@@ -222,6 +234,7 @@ describe("RewardsService", () => {
         mockRewardsRepo,
         mockCompetitionRepository,
         mockBoostRepository,
+        mockAgentRepo,
         mockRewardsAllocator,
         mockDb,
         mockLogger,
@@ -256,6 +269,7 @@ describe("RewardsService", () => {
         mockRewardsRepo,
         mockCompetitionRepository,
         mockBoostRepository,
+        mockAgentRepo,
         mockRewardsAllocator,
         mockDb,
         mockLogger,
@@ -295,6 +309,7 @@ describe("RewardsService", () => {
         mockRewardsRepo,
         mockCompetitionRepository,
         mockBoostRepository,
+        mockAgentRepo,
         mockRewardsAllocator,
         mockDb,
         mockLogger,
@@ -369,6 +384,7 @@ describe("RewardsService", () => {
         mockRewardsRepo,
         mockCompetitionRepository,
         mockBoostRepository,
+        mockAgentRepo,
         mockRewardsAllocator,
         mockDb,
         mockLogger,
@@ -388,6 +404,7 @@ describe("RewardsService", () => {
         mockRewardsRepo,
         mockCompetitionRepository,
         mockBoostRepository,
+        mockAgentRepo,
         mockRewardsAllocator,
         mockDb,
         mockLogger,
@@ -417,6 +434,7 @@ describe("RewardsService", () => {
         mockRewardsRepo,
         mockCompetitionRepository,
         mockBoostRepository,
+        mockAgentRepo,
         mockRewardsAllocator,
         mockDb,
         mockLogger,
@@ -459,6 +477,7 @@ describe("RewardsService", () => {
         mockRewardsRepo,
         mockCompetitionRepository,
         mockBoostRepository,
+        mockAgentRepo,
         mockRewardsAllocator,
         mockDb,
         mockLogger,
@@ -522,6 +541,7 @@ describe("RewardsService", () => {
         mockRewardsRepo,
         mockCompetitionRepository,
         mockBoostRepository,
+        mockAgentRepo,
         mockRewardsAllocator,
         mockDb,
         mockLogger,
@@ -620,6 +640,7 @@ describe("RewardsService", () => {
         mockRewardsRepo,
         mockCompetitionRepository,
         mockBoostRepository,
+        mockAgentRepo,
         mockRewardsAllocator,
         mockDb,
         mockLogger,
@@ -645,6 +666,7 @@ describe("RewardsService", () => {
         mockRewardsRepo,
         mockCompetitionRepository,
         mockBoostRepository,
+        mockAgentRepo,
         mockRewardsAllocator,
         mockDb,
         mockLogger,
@@ -693,6 +715,7 @@ describe("RewardsService", () => {
         mockRewardsRepo,
         mockCompetitionRepository,
         mockBoostRepository,
+        mockAgentRepo,
         mockRewardsAllocator,
         mockDb,
         mockLogger,
@@ -734,6 +757,7 @@ describe("RewardsService", () => {
         mockRewardsRepo,
         mockCompetitionRepository,
         mockBoostRepository,
+        mockAgentRepo,
         mockRewardsAllocator,
         mockDb,
         mockLogger,
@@ -778,6 +802,7 @@ describe("RewardsService", () => {
         mockRewardsRepo,
         mockCompetitionRepository,
         mockBoostRepository,
+        mockAgentRepo,
         mockRewardsAllocator,
         mockDb,
         mockLogger,
@@ -822,6 +847,7 @@ describe("RewardsService", () => {
         mockRewardsRepo,
         mockCompetitionRepository,
         mockBoostRepository,
+        mockAgentRepo,
         mockRewardsAllocator,
         mockDb,
         mockLogger,
@@ -901,6 +927,7 @@ describe("RewardsService", () => {
         mockRewardsRepo,
         mockCompetitionRepository,
         mockBoostRepository,
+        mockAgentRepo,
         mockRewardsAllocator,
         mockDb,
         mockLogger,
@@ -944,6 +971,7 @@ describe("RewardsService", () => {
         mockRewardsRepo,
         mockCompetitionRepository,
         mockBoostRepository,
+        mockAgentRepo,
         mockRewardsAllocator,
         mockDb,
         mockLogger,
@@ -966,6 +994,7 @@ describe("RewardsService", () => {
         mockRewardsRepo,
         mockCompetitionRepository,
         mockBoostRepository,
+        mockAgentRepo,
         mockRewardsAllocator,
         mockDb,
         mockLogger,
@@ -1069,6 +1098,7 @@ describe("RewardsService", () => {
         mockRewardsRepo,
         mockCompetitionRepository,
         mockBoostRepository,
+        mockAgentRepo,
         mockRewardsAllocator,
         mockDb,
         mockLogger,
@@ -1117,6 +1147,7 @@ describe("RewardsService", () => {
         mockRewardsRepo,
         mockCompetitionRepository,
         mockBoostRepository,
+        mockAgentRepo,
         mockRewardsAllocator,
         mockDb,
         mockLogger,
@@ -1177,6 +1208,7 @@ describe("RewardsService", () => {
         mockRewardsRepo,
         mockCompetitionRepository,
         mockBoostRepository,
+        mockAgentRepo,
         mockRewardsAllocator,
         mockDb,
         mockLogger,
@@ -1216,6 +1248,7 @@ describe("RewardsService", () => {
         mockRewardsRepo,
         mockCompetitionRepository,
         mockBoostRepository,
+        mockAgentRepo,
         mockRewardsAllocator,
         mockDb,
         mockLogger,
@@ -1257,6 +1290,7 @@ describe("RewardsService", () => {
         mockRewardsRepo,
         mockCompetitionRepository,
         mockBoostRepository,
+        mockAgentRepo,
         new NoopRewardsAllocator(),
         mockDb,
         mockLogger,
@@ -1275,9 +1309,7 @@ describe("RewardsService", () => {
       expect(valuesCalls.length).toBeGreaterThanOrEqual(2);
       const rootInsertArgs = valuesCalls[valuesCalls.length - 1]?.[0];
       expect(rootInsertArgs).toBeDefined();
-      expect(rootInsertArgs.tx).toBe(
-        "0x0000000000000000000000000000000000000000",
-      );
+      expect(rootInsertArgs.tx).toBeNull();
     });
   });
 
@@ -1353,6 +1385,7 @@ describe("RewardsService", () => {
         mockRewardsRepo,
         mockCompetitionRepository,
         mockBoostRepository,
+        mockAgentRepo,
         mockRewardsAllocator,
         mockDb,
         mockLogger,
@@ -1406,6 +1439,7 @@ describe("RewardsService", () => {
         mockRewardsRepo,
         mockCompetitionRepository,
         mockBoostRepository,
+        mockAgentRepo,
         mockRewardsAllocator,
         mockDb,
         mockLogger,
@@ -1564,6 +1598,562 @@ describe("RewardsService", () => {
         0n;
       expect(totalRewards).toBeLessThanOrEqual(BigInt(testCaseData.prizePool));
     });
+
+    it("should exclude ineligible agents from competitor rewards", async () => {
+      const service = new RewardsService(
+        mockRewardsRepo,
+        mockCompetitionRepository,
+        mockBoostRepository,
+        mockAgentRepo,
+        mockRewardsAllocator,
+        mockDb,
+        mockLogger,
+      );
+
+      // Create competition with excluded agents
+      const competitionWithExclusions = {
+        ...createMockCompetition(testCompetitionId),
+        rewardsIneligible: ["Competitor B"], // Exclude agent B
+      };
+
+      const leaderboardWithExcluded: Leaderboard = [
+        {
+          owner: "owner-1",
+          competitor: "Competitor A",
+          wallet: "0x1111111111111111111111111111111111111111",
+          rank: 1,
+        },
+        {
+          owner: "owner-2",
+          competitor: "Competitor B", // This one is excluded
+          wallet: "0x2222222222222222222222222222222222222222",
+          rank: 2,
+        },
+        {
+          owner: "owner-3",
+          competitor: "Competitor C",
+          wallet: "0x3333333333333333333333333333333333333333",
+          rank: 3,
+        },
+      ];
+
+      mockCompetitionRepository.findById.mockResolvedValue(
+        competitionWithExclusions,
+      );
+      vi.mocked(
+        mockCompetitionRepository.findLeaderboardByCompetitionWithWallets,
+      ).mockResolvedValue(
+        leaderboardWithExcluded.map((entry) =>
+          createMockLeaderboardEntry(
+            entry.competitor,
+            entry.wallet,
+            entry.rank,
+          ),
+        ),
+      );
+      mockBoostRepository.userBoostSpending.mockResolvedValue([]);
+      mockRewardsRepo.insertRewards.mockResolvedValue([]);
+
+      await service.calculateRewards(
+        testCompetitionId,
+        testPrizePoolUsers,
+        testPrizePoolCompetitors,
+      );
+
+      expect(mockRewardsRepo.insertRewards).toHaveBeenCalled();
+      const insertCall = mockRewardsRepo.insertRewards.mock.calls[0]?.[0];
+
+      // Verify Competitor B (excluded) does not receive rewards
+      const competitorBReward = insertCall?.find(
+        (reward) => reward.agentId === "Competitor B",
+      );
+      expect(competitorBReward).toBeUndefined();
+
+      // Verify Competitor A and C still receive rewards
+      const competitorAReward = insertCall?.find(
+        (reward) => reward.agentId === "Competitor A",
+      );
+      const competitorCReward = insertCall?.find(
+        (reward) => reward.agentId === "Competitor C",
+      );
+      expect(competitorAReward).toBeDefined();
+      expect(competitorCReward).toBeDefined();
+    });
+
+    it("should handle empty exclusion list (backward compatible)", async () => {
+      const service = new RewardsService(
+        mockRewardsRepo,
+        mockCompetitionRepository,
+        mockBoostRepository,
+        mockAgentRepo,
+        mockRewardsAllocator,
+        mockDb,
+        mockLogger,
+      );
+
+      const competitionNoExclusions = {
+        ...createMockCompetition(testCompetitionId),
+        rewardsIneligible: [], // Empty array
+      };
+
+      mockCompetitionRepository.findById.mockResolvedValue(
+        competitionNoExclusions,
+      );
+      vi.mocked(
+        mockCompetitionRepository.findLeaderboardByCompetitionWithWallets,
+      ).mockResolvedValue([
+        createMockLeaderboardEntry(
+          "agent-1",
+          "0x1111111111111111111111111111111111111111",
+          1,
+        ),
+      ]);
+      mockBoostRepository.userBoostSpending.mockResolvedValue([]);
+      mockRewardsRepo.insertRewards.mockResolvedValue([]);
+
+      await service.calculateRewards(
+        testCompetitionId,
+        testPrizePoolUsers,
+        testPrizePoolCompetitors,
+      );
+
+      // Should insert rewards normally (no exclusions)
+      expect(mockRewardsRepo.insertRewards).toHaveBeenCalled();
+      const insertCall = mockRewardsRepo.insertRewards.mock.calls[0]?.[0];
+      expect(insertCall?.length).toBeGreaterThan(0);
+    });
+
+    it("should exclude globally ineligible agents from rewards", async () => {
+      const service = new RewardsService(
+        mockRewardsRepo,
+        mockCompetitionRepository,
+        mockBoostRepository,
+        mockAgentRepo,
+        mockRewardsAllocator,
+        mockDb,
+        mockLogger,
+      );
+
+      const competitionNoExclusions = {
+        ...createMockCompetition(testCompetitionId),
+        rewardsIneligible: null, // No competition-specific exclusions
+      };
+
+      const leaderboard: Leaderboard = [
+        {
+          owner: "owner-1",
+          competitor: "Competitor A",
+          wallet: "0x1111111111111111111111111111111111111111",
+          rank: 1,
+        },
+        {
+          owner: "owner-2",
+          competitor: "Competitor B", // This one is globally ineligible
+          wallet: "0x2222222222222222222222222222222222222222",
+          rank: 2,
+        },
+        {
+          owner: "owner-3",
+          competitor: "Competitor C",
+          wallet: "0x3333333333333333333333333333333333333333",
+          rank: 3,
+        },
+      ];
+
+      // Mock agents with Competitor B marked as globally ineligible
+      mockAgentRepo.findByIdsWithLock.mockResolvedValue([
+        {
+          id: "Competitor A",
+          ownerId: "owner-1",
+          name: "Agent A",
+          handle: "agent-a",
+          email: null,
+          description: null,
+          imageUrl: null,
+          apiKey: "key-a",
+          apiKeyHash: "hash-a",
+          metadata: null,
+          status: "active",
+          walletAddress: null,
+          deactivationReason: null,
+          deactivationDate: null,
+          isRewardsIneligible: false, // Eligible
+          rewardsIneligibilityReason: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: "Competitor B",
+          ownerId: "owner-2",
+          name: "Agent B",
+          handle: "agent-b",
+          email: null,
+          description: null,
+          imageUrl: null,
+          apiKey: "key-b",
+          apiKeyHash: "hash-b",
+          metadata: null,
+          status: "active",
+          walletAddress: null,
+          deactivationReason: null,
+          deactivationDate: null,
+          isRewardsIneligible: true, // Globally ineligible
+          rewardsIneligibilityReason: "Test agent",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: "Competitor C",
+          ownerId: "owner-3",
+          name: "Agent C",
+          handle: "agent-c",
+          email: null,
+          description: null,
+          imageUrl: null,
+          apiKey: "key-c",
+          apiKeyHash: "hash-c",
+          metadata: null,
+          status: "active",
+          walletAddress: null,
+          deactivationReason: null,
+          deactivationDate: null,
+          isRewardsIneligible: false, // Eligible
+          rewardsIneligibilityReason: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ]);
+
+      mockCompetitionRepository.findById.mockResolvedValue(
+        competitionNoExclusions,
+      );
+      vi.mocked(
+        mockCompetitionRepository.findLeaderboardByCompetitionWithWallets,
+      ).mockResolvedValue(
+        leaderboard.map((entry) =>
+          createMockLeaderboardEntry(
+            entry.competitor,
+            entry.wallet,
+            entry.rank,
+          ),
+        ),
+      );
+      mockBoostRepository.userBoostSpending.mockResolvedValue([]);
+      mockRewardsRepo.insertRewards.mockResolvedValue([]);
+
+      await service.calculateRewards(
+        testCompetitionId,
+        testPrizePoolUsers,
+        testPrizePoolCompetitors,
+      );
+
+      expect(mockRewardsRepo.insertRewards).toHaveBeenCalled();
+      const insertCall = mockRewardsRepo.insertRewards.mock.calls[0]?.[0];
+
+      // Verify Competitor B (globally ineligible) does not receive rewards
+      const competitorBReward = insertCall?.find(
+        (reward) => reward.agentId === "Competitor B",
+      );
+      expect(competitorBReward).toBeUndefined();
+
+      // Verify Competitor A and C still receive rewards
+      const competitorAReward = insertCall?.find(
+        (reward) => reward.agentId === "Competitor A",
+      );
+      const competitorCReward = insertCall?.find(
+        (reward) => reward.agentId === "Competitor C",
+      );
+      expect(competitorAReward).toBeDefined();
+      expect(competitorCReward).toBeDefined();
+    });
+
+    it("should combine competition-specific and global exclusions", async () => {
+      const service = new RewardsService(
+        mockRewardsRepo,
+        mockCompetitionRepository,
+        mockBoostRepository,
+        mockAgentRepo,
+        mockRewardsAllocator,
+        mockDb,
+        mockLogger,
+      );
+
+      const competitionWithExclusions = {
+        ...createMockCompetition(testCompetitionId),
+        rewardsIneligible: ["Competitor B"], // Competition-specific exclusion
+      };
+
+      const leaderboard: Leaderboard = [
+        {
+          owner: "owner-1",
+          competitor: "Competitor A",
+          wallet: "0x1111111111111111111111111111111111111111",
+          rank: 1,
+        },
+        {
+          owner: "owner-2",
+          competitor: "Competitor B", // Competition-specific exclusion
+          wallet: "0x2222222222222222222222222222222222222222",
+          rank: 2,
+        },
+        {
+          owner: "owner-3",
+          competitor: "Competitor C", // Globally ineligible
+          wallet: "0x3333333333333333333333333333333333333333",
+          rank: 3,
+        },
+        {
+          owner: "owner-4",
+          competitor: "Competitor D",
+          wallet: "0x4444444444444444444444444444444444444444",
+          rank: 4,
+        },
+      ];
+
+      // Mock agents with Competitor C marked as globally ineligible
+      mockAgentRepo.findByIdsWithLock.mockResolvedValue([
+        {
+          id: "Competitor A",
+          ownerId: "owner-1",
+          name: "Agent A",
+          handle: "agent-a",
+          email: null,
+          description: null,
+          imageUrl: null,
+          apiKey: "key-a",
+          apiKeyHash: "hash-a",
+          metadata: null,
+          status: "active",
+          walletAddress: null,
+          deactivationReason: null,
+          deactivationDate: null,
+          isRewardsIneligible: false,
+          rewardsIneligibilityReason: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: "Competitor B",
+          ownerId: "owner-2",
+          name: "Agent B",
+          handle: "agent-b",
+          email: null,
+          description: null,
+          imageUrl: null,
+          apiKey: "key-b",
+          apiKeyHash: "hash-b",
+          metadata: null,
+          status: "active",
+          walletAddress: null,
+          deactivationReason: null,
+          deactivationDate: null,
+          isRewardsIneligible: false,
+          rewardsIneligibilityReason: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: "Competitor C",
+          ownerId: "owner-3",
+          name: "Agent C",
+          handle: "agent-c",
+          email: null,
+          description: null,
+          imageUrl: null,
+          apiKey: "key-c",
+          apiKeyHash: "hash-c",
+          metadata: null,
+          status: "active",
+          walletAddress: null,
+          deactivationReason: null,
+          deactivationDate: null,
+          isRewardsIneligible: true, // Globally ineligible
+          rewardsIneligibilityReason: "Test agent",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: "Competitor D",
+          ownerId: "owner-4",
+          name: "Agent D",
+          handle: "agent-d",
+          email: null,
+          description: null,
+          imageUrl: null,
+          apiKey: "key-d",
+          apiKeyHash: "hash-d",
+          metadata: null,
+          status: "active",
+          walletAddress: null,
+          deactivationReason: null,
+          deactivationDate: null,
+          isRewardsIneligible: false,
+          rewardsIneligibilityReason: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ]);
+
+      mockCompetitionRepository.findById.mockResolvedValue(
+        competitionWithExclusions,
+      );
+      vi.mocked(
+        mockCompetitionRepository.findLeaderboardByCompetitionWithWallets,
+      ).mockResolvedValue(
+        leaderboard.map((entry) =>
+          createMockLeaderboardEntry(
+            entry.competitor,
+            entry.wallet,
+            entry.rank,
+          ),
+        ),
+      );
+      mockBoostRepository.userBoostSpending.mockResolvedValue([]);
+      mockRewardsRepo.insertRewards.mockResolvedValue([]);
+
+      await service.calculateRewards(
+        testCompetitionId,
+        testPrizePoolUsers,
+        testPrizePoolCompetitors,
+      );
+
+      expect(mockRewardsRepo.insertRewards).toHaveBeenCalled();
+      const insertCall = mockRewardsRepo.insertRewards.mock.calls[0]?.[0];
+
+      // Verify both Competitor B (competition exclusion) and C (global) are excluded
+      const competitorBReward = insertCall?.find(
+        (reward) => reward.agentId === "Competitor B",
+      );
+      const competitorCReward = insertCall?.find(
+        (reward) => reward.agentId === "Competitor C",
+      );
+      expect(competitorBReward).toBeUndefined();
+      expect(competitorCReward).toBeUndefined();
+
+      // Verify Competitor A and D still receive rewards
+      const competitorAReward = insertCall?.find(
+        (reward) => reward.agentId === "Competitor A",
+      );
+      const competitorDReward = insertCall?.find(
+        (reward) => reward.agentId === "Competitor D",
+      );
+      expect(competitorAReward).toBeDefined();
+      expect(competitorDReward).toBeDefined();
+    });
+
+    it("should handle agent in both exclusion lists (deduplication)", async () => {
+      const service = new RewardsService(
+        mockRewardsRepo,
+        mockCompetitionRepository,
+        mockBoostRepository,
+        mockAgentRepo,
+        mockRewardsAllocator,
+        mockDb,
+        mockLogger,
+      );
+
+      const competitionWithExclusions = {
+        ...createMockCompetition(testCompetitionId),
+        rewardsIneligible: ["Competitor B"], // Also in competition list
+      };
+
+      const leaderboard: Leaderboard = [
+        {
+          owner: "owner-1",
+          competitor: "Competitor A",
+          wallet: "0x1111111111111111111111111111111111111111",
+          rank: 1,
+        },
+        {
+          owner: "owner-2",
+          competitor: "Competitor B", // In BOTH lists
+          wallet: "0x2222222222222222222222222222222222222222",
+          rank: 2,
+        },
+      ];
+
+      // Mock Competitor B as globally ineligible (also in competition list)
+      mockAgentRepo.findByIds.mockResolvedValue([
+        {
+          id: "Competitor A",
+          ownerId: "owner-1",
+          name: "Agent A",
+          handle: "agent-a",
+          email: null,
+          description: null,
+          imageUrl: null,
+          apiKey: "key-a",
+          apiKeyHash: "hash-a",
+          metadata: null,
+          status: "active",
+          walletAddress: null,
+          deactivationReason: null,
+          deactivationDate: null,
+          isRewardsIneligible: false,
+          rewardsIneligibilityReason: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: "Competitor B",
+          ownerId: "owner-2",
+          name: "Agent B",
+          handle: "agent-b",
+          email: null,
+          description: null,
+          imageUrl: null,
+          apiKey: "key-b",
+          apiKeyHash: "hash-b",
+          metadata: null,
+          status: "active",
+          walletAddress: null,
+          deactivationReason: null,
+          deactivationDate: null,
+          isRewardsIneligible: true, // Globally ineligible
+          rewardsIneligibilityReason: "Test agent",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ]);
+
+      mockCompetitionRepository.findById.mockResolvedValue(
+        competitionWithExclusions,
+      );
+      vi.mocked(
+        mockCompetitionRepository.findLeaderboardByCompetitionWithWallets,
+      ).mockResolvedValue(
+        leaderboard.map((entry) =>
+          createMockLeaderboardEntry(
+            entry.competitor,
+            entry.wallet,
+            entry.rank,
+          ),
+        ),
+      );
+      mockBoostRepository.userBoostSpending.mockResolvedValue([]);
+      mockRewardsRepo.insertRewards.mockResolvedValue([]);
+
+      await service.calculateRewards(
+        testCompetitionId,
+        testPrizePoolUsers,
+        testPrizePoolCompetitors,
+      );
+
+      expect(mockRewardsRepo.insertRewards).toHaveBeenCalled();
+      const insertCall = mockRewardsRepo.insertRewards.mock.calls[0]?.[0];
+
+      // Verify Competitor B is excluded (appears in both lists, but should only be filtered once)
+      const competitorBReward = insertCall?.find(
+        (reward) => reward.agentId === "Competitor B",
+      );
+      expect(competitorBReward).toBeUndefined();
+
+      // Verify Competitor A still receives rewards
+      const competitorAReward = insertCall?.find(
+        (reward) => reward.agentId === "Competitor A",
+      );
+      expect(competitorAReward).toBeDefined();
+    });
   });
 
   describe("Error handling and edge cases", () => {
@@ -1572,6 +2162,7 @@ describe("RewardsService", () => {
         mockRewardsRepo,
         mockCompetitionRepository,
         mockBoostRepository,
+        mockAgentRepo,
         mockRewardsAllocator,
         mockDb,
         mockLogger,
@@ -1590,6 +2181,7 @@ describe("RewardsService", () => {
         mockRewardsRepo,
         mockCompetitionRepository,
         mockBoostRepository,
+        mockAgentRepo,
         mockRewardsAllocator,
         mockDb,
         mockLogger,
@@ -1608,6 +2200,7 @@ describe("RewardsService", () => {
         mockRewardsRepo,
         mockCompetitionRepository,
         mockBoostRepository,
+        mockAgentRepo,
         mockRewardsAllocator,
         mockDb,
         mockLogger,

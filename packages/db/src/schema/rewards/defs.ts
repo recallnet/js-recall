@@ -93,7 +93,7 @@ export const rewardsRoots = pgTable(
       .notNull()
       .references(() => competitions.id, { onDelete: "cascade" }),
     rootHash: bytea("root_hash").notNull(),
-    tx: text().notNull(),
+    tx: text(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),

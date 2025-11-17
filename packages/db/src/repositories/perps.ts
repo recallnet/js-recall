@@ -134,7 +134,7 @@ export class PerpsRepository {
 
       return result;
     } catch (error) {
-      this.#logger.error("Error in createPerpsCompetitionConfig:", error);
+      this.#logger.error({ error }, "Error in createPerpsCompetitionConfig");
       throw error;
     }
   }
@@ -156,7 +156,7 @@ export class PerpsRepository {
 
       return result || null;
     } catch (error) {
-      this.#logger.error("Error in getPerpsCompetitionConfig:", error);
+      this.#logger.error({ error }, "Error in getPerpsCompetitionConfig");
       throw error;
     }
   }
@@ -194,7 +194,7 @@ export class PerpsRepository {
 
       return result || null;
     } catch (error) {
-      this.#logger.error("Error in updatePerpsCompetitionConfig:", error);
+      this.#logger.error({ error }, "Error in updatePerpsCompetitionConfig");
       throw error;
     }
   }
@@ -225,7 +225,7 @@ export class PerpsRepository {
 
       return deleted;
     } catch (error) {
-      this.#logger.error("Error in deletePerpsCompetitionConfig:", error);
+      this.#logger.error({ error }, "Error in deletePerpsCompetitionConfig");
       throw error;
     }
   }
@@ -281,7 +281,7 @@ export class PerpsRepository {
 
       return results;
     } catch (error) {
-      this.#logger.error("Error in batchUpsertPerpsPositions:", error);
+      this.#logger.error({ error }, "Error in batchUpsertPerpsPositions");
       throw error;
     }
   }
@@ -345,7 +345,7 @@ export class PerpsRepository {
 
       return results;
     } catch (error) {
-      this.#logger.error("Error in getPerpsPositions:", error);
+      this.#logger.error({ error }, "Error in getPerpsPositions");
       throw error;
     }
   }
@@ -381,7 +381,7 @@ export class PerpsRepository {
 
       return result;
     } catch (error) {
-      this.#logger.error("Error in createPerpsAccountSummary:", error);
+      this.#logger.error({ error }, "Error in createPerpsAccountSummary");
       throw error;
     }
   }
@@ -421,7 +421,10 @@ export class PerpsRepository {
 
       return results;
     } catch (error) {
-      this.#logger.error("Error in batchCreatePerpsAccountSummaries:", error);
+      this.#logger.error(
+        { error },
+        "Error in batchCreatePerpsAccountSummaries",
+      );
       throw error;
     }
   }
@@ -451,7 +454,7 @@ export class PerpsRepository {
 
       return result || null;
     } catch (error) {
-      this.#logger.error("Error in getLatestPerpsAccountSummary:", error);
+      this.#logger.error({ error }, "Error in getLatestPerpsAccountSummary");
       throw error;
     }
   }
@@ -484,7 +487,7 @@ export class PerpsRepository {
 
       return result;
     } catch (error) {
-      this.#logger.error("Error in createPerpsSelfFundingAlert:", error);
+      this.#logger.error({ error }, "Error in createPerpsSelfFundingAlert");
       throw error;
     }
   }
@@ -519,7 +522,10 @@ export class PerpsRepository {
 
       return results;
     } catch (error) {
-      this.#logger.error("Error in batchCreatePerpsSelfFundingAlerts:", error);
+      this.#logger.error(
+        { error },
+        "Error in batchCreatePerpsSelfFundingAlerts",
+      );
       throw error;
     }
   }
@@ -546,7 +552,7 @@ export class PerpsRepository {
 
       return alerts;
     } catch (error) {
-      this.#logger.error("Error in getUnreviewedPerpsAlerts:", error);
+      this.#logger.error({ error }, "Error in getUnreviewedPerpsAlerts");
       throw error;
     }
   }
@@ -578,7 +584,7 @@ export class PerpsRepository {
 
       return result;
     } catch (error) {
-      this.#logger.error("Error in reviewPerpsSelfFundingAlert:", error);
+      this.#logger.error({ error }, "Error in reviewPerpsSelfFundingAlert");
       throw error;
     }
   }
@@ -607,7 +613,7 @@ export class PerpsRepository {
 
       return alerts;
     } catch (error) {
-      this.#logger.error("Error in getAgentSelfFundingAlerts:", error);
+      this.#logger.error({ error }, "Error in getAgentSelfFundingAlerts");
       throw error;
     }
   }
@@ -669,7 +675,7 @@ export class PerpsRepository {
 
       return alertsMap;
     } catch (error) {
-      this.#logger.error("Error in batchGetAgentsSelfFundingAlerts:", error);
+      this.#logger.error({ error }, "Error in batchGetAgentsSelfFundingAlerts");
       throw error;
     }
   }
@@ -749,8 +755,8 @@ export class PerpsRepository {
         };
       } catch (error) {
         this.#logger.error(
-          `[PerpsRepository] Failed to sync agent ${agentId}:`,
-          error,
+          { error },
+          `[PerpsRepository] Failed to sync agent ${agentId}`,
         );
         throw error;
       }
@@ -970,7 +976,7 @@ export class PerpsRepository {
 
       return leaderboard;
     } catch (error) {
-      this.#logger.error("Error in getRiskAdjustedLeaderboard:", error);
+      this.#logger.error({ error }, "Error in getRiskAdjustedLeaderboard");
       throw error;
     }
   }
@@ -1020,7 +1026,10 @@ export class PerpsRepository {
 
       return summaries;
     } catch (error) {
-      this.#logger.error("Error in getCompetitionLeaderboardSummaries:", error);
+      this.#logger.error(
+        { error },
+        "Error in getCompetitionLeaderboardSummaries",
+      );
       throw error;
     }
   }
@@ -1086,7 +1095,7 @@ export class PerpsRepository {
         averageEquity: Number(stats?.averageEquity ?? 0),
       };
     } catch (error) {
-      this.#logger.error("Error in getPerpsCompetitionStats:", error);
+      this.#logger.error({ error }, "Error in getPerpsCompetitionStats");
       throw error;
     }
   }
@@ -1145,8 +1154,8 @@ export class PerpsRepository {
       return countMap;
     } catch (error) {
       this.#logger.error(
-        "Error in countBulkAgentPositionsInCompetitions:",
-        error,
+        { error },
+        "Error in countBulkAgentPositionsInCompetitions",
       );
       throw error;
     }
@@ -1226,7 +1235,7 @@ export class PerpsRepository {
         total: total[0]?.count ?? 0,
       };
     } catch (error) {
-      this.#logger.error("Error in getCompetitionPerpsPositions:", error);
+      this.#logger.error({ error }, "Error in getCompetitionPerpsPositions");
       throw error;
     }
   }
@@ -1263,7 +1272,7 @@ export class PerpsRepository {
 
       return result;
     } catch (error) {
-      this.#logger.error("Error in saveTransferHistory:", error);
+      this.#logger.error({ error }, "Error in saveTransferHistory");
       throw error;
     }
   }
@@ -1302,7 +1311,7 @@ export class PerpsRepository {
 
       return allResults;
     } catch (error) {
-      this.#logger.error("Error in batchSaveTransferHistory:", error);
+      this.#logger.error({ error }, "Error in batchSaveTransferHistory");
       throw error;
     }
   }
@@ -1353,7 +1362,7 @@ export class PerpsRepository {
 
       return transfers;
     } catch (error) {
-      this.#logger.error("Error in getAgentTransferHistory:", error);
+      this.#logger.error({ error }, "Error in getAgentTransferHistory");
       throw error;
     }
   }
@@ -1405,8 +1414,8 @@ export class PerpsRepository {
       return mappedResults;
     } catch (error) {
       this.#logger.error(
-        "Error in getCompetitionTransferViolationCounts:",
-        error,
+        { error },
+        "Error in getCompetitionTransferViolationCounts",
       );
       throw error;
     }
@@ -1456,7 +1465,7 @@ export class PerpsRepository {
 
       return result;
     } catch (error) {
-      this.#logger.error("Error in upsertRiskMetrics:", error);
+      this.#logger.error({ error }, "Error in upsertRiskMetrics");
       throw error;
     }
   }
@@ -1499,7 +1508,7 @@ export class PerpsRepository {
 
       return results;
     } catch (error) {
-      this.#logger.error("Error in batchCreateRiskMetricsSnapshots:", error);
+      this.#logger.error({ error }, "Error in batchCreateRiskMetricsSnapshots");
       throw error;
     }
   }
@@ -1611,7 +1620,7 @@ export class PerpsRepository {
 
       return metricsMap;
     } catch (error) {
-      this.#logger.error("Error in getBulkAgentRiskMetrics:", error);
+      this.#logger.error({ error }, "Error in getBulkAgentRiskMetrics");
       throw error;
     }
   }

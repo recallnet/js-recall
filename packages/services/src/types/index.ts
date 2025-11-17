@@ -25,6 +25,22 @@ export * from "./perps.js";
 export * from "./unified-leaderboard.js";
 
 /**
+ * Trading constraints for token validation
+ */
+export interface TradingConstraints {
+  /** Minimum age of trading pair in hours */
+  minimumPairAgeHours: number;
+  /** Minimum 24-hour trading volume in USD */
+  minimum24hVolumeUsd: number;
+  /** Minimum liquidity in USD */
+  minimumLiquidityUsd: number;
+  /** Minimum fully diluted valuation in USD */
+  minimumFdvUsd: number;
+  /** Minimum trades per day (null = no constraint) */
+  minTradesPerDay: number | null;
+}
+
+/**
  * Custom error class with HTTP status code
  */
 export class ApiError extends Error {
@@ -725,6 +741,36 @@ export const EvaluationMetricSchema = z.enum(evaluationMetricEnum.enumValues);
  */
 export type EvaluationMetric = z.infer<typeof EvaluationMetricSchema>;
 
+/**
+ * Zod schema for engine types
+ */
+export const EngineTypeSchema = z.enum(engineType.enumValues);
+
+/**
+ * Engine type for competition routing
+ */
+export type EngineType = z.infer<typeof EngineTypeSchema>;
+
+/**
+ * Zod schema for allocation units
+ */
+export const AllocationUnitSchema = z.enum(allocationUnit.enumValues);
+
+/**
+ * Allocation unit for rewards
+ */
+export type AllocationUnit = z.infer<typeof AllocationUnitSchema>;
+
+/**
+ * Zod schema for display states
+ */
+export const DisplayStateSchema = z.enum(displayState.enumValues);
+
+/**
+ * Display state for UI
+ */
+export type DisplayState = z.infer<typeof DisplayStateSchema>;
+
 export const CompetitionAllowedUpdateSchema = z.strictObject({
   name: z.string().optional(),
   description: z.string().optional(),
@@ -1022,6 +1068,7 @@ export const LEADERBOARD_SORT_FIELDS = [
  */
 export const LeaderboardParamsSchema = z.object({
   type: CompetitionTypeSchema.default("trading"),
+  arenaId: z.string().optional(),
   limit: z.coerce.number().min(1).max(100).default(50),
   offset: z.coerce.number().min(0).default(0),
 });

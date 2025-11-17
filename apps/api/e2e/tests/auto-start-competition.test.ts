@@ -78,7 +78,9 @@ describe("Competition Start Date Processing", () => {
     expect(snapshotsResponse.snapshots.length).toBeGreaterThan(0);
 
     // Verify balances were initialized/reset for the agent
-    const balances = (await agentClient.getBalance()) as BalancesResponse;
+    const balances = (await agentClient.getBalance(
+      competition.id,
+    )) as BalancesResponse;
     expect(balances.success).toBe(true);
     expect(balances.balances.length).toBeGreaterThan(0);
   });
@@ -143,137 +145,6 @@ describe("Competition Start Date Processing", () => {
     );
   });
 
-  test("should not start competitions when another is already active", async () => {
-    const adminClient = createTestClient();
-    const loginSuccess = await adminClient.loginAsAdmin(adminApiKey);
-    expect(loginSuccess).toBe(true);
-
-    // Create and start an active competition
-    const { agent: activeAgent, client: activeAgentClient } =
-      await registerUserAndAgentAndGetClient({
-        adminApiKey,
-        agentName: "Active Comp Agent",
-      });
-
-    const activeCompCreate = await adminClient.createCompetition({
-      name: `Active Competition ${Date.now()}`,
-      description: "Active competition",
-      sandboxMode: false,
-    });
-    expect(activeCompCreate.success).toBe(true);
-    const activeCompId = (activeCompCreate as CreateCompetitionResponse)
-      .competition.id;
-
-    // Join the agent and start it
-    const joinActive = await activeAgentClient.joinCompetition(
-      activeCompId,
-      activeAgent.id,
-    );
-    expect(joinActive.success).toBe(true);
-
-    const startActive = await adminClient.startExistingCompetition({
-      competitionId: activeCompId,
-      agentIds: [activeAgent.id],
-    });
-    expect(startActive.success).toBe(true);
-
-    // Now create another competition that is eligible to start
-    const { agent: pendingAgent, client: pendingAgentClient } =
-      await registerUserAndAgentAndGetClient({
-        adminApiKey,
-        agentName: "Pending Start Agent",
-      });
-
-    const startNow = new Date(Date.now() + 2000);
-    const pendingCreate = await adminClient.createCompetition({
-      name: `Queued Competition ${Date.now()}`,
-      description: "Should not start due to existing active comp",
-      sandboxMode: false,
-      startDate: startNow.toISOString(),
-    });
-
-    const pendingComp = (pendingCreate as CreateCompetitionResponse)
-      .competition;
-    const joinPending = await pendingAgentClient.joinCompetition(
-      pendingComp.id,
-      pendingAgent.id,
-    );
-    expect(joinPending.success).toBe(true);
-
-    // Wait and attempt auto-start processing
-    const services = new ServiceRegistry();
-    await services.competitionService.processCompetitionStartDateChecks();
-
-    // The queued competition should still be pending
-    const queued = await adminClient.getCompetition(pendingComp.id);
-    expect(queued.success).toBe(true);
-    expect((queued as CompetitionDetailResponse).competition.status).toBe(
-      "pending",
-    );
-  });
-
-  test("should not start competitions when there are multiple competitions ready to start", async () => {
-    const adminClient = createTestClient();
-    const loginSuccess = await adminClient.loginAsAdmin(adminApiKey);
-    expect(loginSuccess).toBe(true);
-
-    const startDate = new Date(Date.now()).toISOString();
-
-    // Create two competitions
-    const { agent: activeAgent, client: activeAgentClient } =
-      await registerUserAndAgentAndGetClient({
-        adminApiKey,
-        agentName: "Competition Agent 1",
-      });
-
-    const pendingComp1Create = await adminClient.createCompetition({
-      name: `Active Competition ${startDate}`,
-      description: "Competition 1",
-      sandboxMode: false,
-      startDate,
-    });
-    expect(pendingComp1Create.success).toBe(true);
-    const pendingComp1Id = (pendingComp1Create as CreateCompetitionResponse)
-      .competition.id;
-    const joinActive = await activeAgentClient.joinCompetition(
-      pendingComp1Id,
-      activeAgent.id,
-    );
-    expect(joinActive.success).toBe(true);
-
-    // Now create another competition with the same start date
-    const pendingComp2Create = await adminClient.createCompetition({
-      name: `Queued Competition ${Date.now()}`,
-      description: "Should not start due to existing active comp",
-      sandboxMode: false,
-      startDate,
-    });
-    const pendingComp2 = (pendingComp2Create as CreateCompetitionResponse)
-      .competition;
-    const pendingComp2Id = pendingComp2.id;
-    const joinPending2 = await activeAgentClient.joinCompetition(
-      pendingComp2Id,
-      activeAgent.id,
-    );
-    expect(joinPending2.success).toBe(true);
-
-    // Attempt auto-start processing
-    const services = new ServiceRegistry();
-    await services.competitionService.processCompetitionStartDateChecks();
-
-    // Both pending competitions should still be pending because we avoid starting multiple competitions
-    const queued1 = await adminClient.getCompetition(pendingComp1Id);
-    expect(queued1.success).toBe(true);
-    expect((queued1 as CompetitionDetailResponse).competition.status).toBe(
-      "pending",
-    );
-    const queued2 = await adminClient.getCompetition(pendingComp2Id);
-    expect(queued2.success).toBe(true);
-    expect((queued2 as CompetitionDetailResponse).competition.status).toBe(
-      "pending",
-    );
-  });
-
   test("should skip sandbox mode competitions during auto-start", async () => {
     const adminClient = createTestClient();
     const loginSuccess = await adminClient.loginAsAdmin(adminApiKey);
@@ -314,5 +185,105 @@ describe("Competition Start Date Processing", () => {
     expect((result as CompetitionDetailResponse).competition.status).toBe(
       "pending",
     );
+  });
+
+  test("should auto-start multiple concurrent competitions", async () => {
+    const adminClient = createTestClient();
+    const loginSuccess = await adminClient.loginAsAdmin(adminApiKey);
+    expect(loginSuccess).toBe(true);
+
+    // Create 3 agents for the competitions
+    const { agent: agent1, client: client1 } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Concurrent Agent 1",
+      });
+    const { agent: agent2, client: client2 } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Concurrent Agent 2",
+      });
+    const { agent: agent3, client: client3 } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Concurrent Agent 3",
+      });
+
+    // Create 3 competitions with staggered start times (all in the past)
+    const now = Date.now();
+    const comp1Start = new Date(now - 5000); // 5 seconds ago
+    const comp2Start = new Date(now - 3000); // 3 seconds ago
+    const comp3Start = new Date(now - 1000); // 1 second ago
+
+    const comp1Create = await adminClient.createCompetition({
+      name: `Concurrent Comp 1 ${now}`,
+      description: "First concurrent competition",
+      sandboxMode: false,
+      startDate: comp1Start.toISOString(),
+    });
+    expect(comp1Create.success).toBe(true);
+    const comp1 = (comp1Create as CreateCompetitionResponse).competition;
+
+    const comp2Create = await adminClient.createCompetition({
+      name: `Concurrent Comp 2 ${now}`,
+      description: "Second concurrent competition",
+      sandboxMode: false,
+      startDate: comp2Start.toISOString(),
+    });
+    expect(comp2Create.success).toBe(true);
+    const comp2 = (comp2Create as CreateCompetitionResponse).competition;
+
+    const comp3Create = await adminClient.createCompetition({
+      name: `Concurrent Comp 3 ${now}`,
+      description: "Third concurrent competition",
+      sandboxMode: false,
+      startDate: comp3Start.toISOString(),
+    });
+    expect(comp3Create.success).toBe(true);
+    const comp3 = (comp3Create as CreateCompetitionResponse).competition;
+
+    // Join each competition with an agent
+    await client1.joinCompetition(comp1.id, agent1.id);
+    await client2.joinCompetition(comp2.id, agent2.id);
+    await client3.joinCompetition(comp3.id, agent3.id);
+
+    // Wait to ensure all data is persisted
+    await wait(2000);
+
+    // Process auto-start
+    const services = new ServiceRegistry();
+    await services.competitionService.processCompetitionStartDateChecks();
+
+    // All 3 competitions should now be active
+    const comp1Updated = await adminClient.getCompetition(comp1.id);
+    expect(comp1Updated.success).toBe(true);
+    expect((comp1Updated as CompetitionDetailResponse).competition.status).toBe(
+      "active",
+    );
+
+    const comp2Updated = await adminClient.getCompetition(comp2.id);
+    expect(comp2Updated.success).toBe(true);
+    expect((comp2Updated as CompetitionDetailResponse).competition.status).toBe(
+      "active",
+    );
+
+    const comp3Updated = await adminClient.getCompetition(comp3.id);
+    expect(comp3Updated.success).toBe(true);
+    expect((comp3Updated as CompetitionDetailResponse).competition.status).toBe(
+      "active",
+    );
+
+    // Verify balances were initialized for all competitions
+    const balances1 = (await client1.getBalance(comp1.id)) as BalancesResponse;
+    expect(balances1.success).toBe(true);
+    expect(balances1.balances.length).toBeGreaterThan(0);
+
+    const balances2 = (await client2.getBalance(comp2.id)) as BalancesResponse;
+    expect(balances2.success).toBe(true);
+    expect(balances2.balances.length).toBeGreaterThan(0);
+
+    const balances3 = (await client3.getBalance(comp3.id)) as BalancesResponse;
+    expect(balances3.success).toBe(true);
+    expect(balances3.balances.length).toBeGreaterThan(0);
   });
 });

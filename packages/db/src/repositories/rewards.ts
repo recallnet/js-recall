@@ -1,4 +1,4 @@
-import { and, eq, sum } from "drizzle-orm";
+import { and, eq, isNotNull, sum } from "drizzle-orm";
 import { Logger } from "pino";
 
 import { rewards, rewardsRoots, rewardsTree } from "../schema/rewards/defs.js";
@@ -37,7 +37,7 @@ export class RewardsRepository {
         .from(rewards)
         .where(eq(rewards.competitionId, competitionId));
     } catch (error) {
-      this.#logger.error("Error in getRewardsByCompetition:", error);
+      this.#logger.error({ error }, "Error in getRewardsByCompetition");
       throw error;
     }
   }
@@ -56,7 +56,7 @@ export class RewardsRepository {
       const executor = tx || this.#db;
       return await executor.insert(rewards).values(rewardsToInsert).returning();
     } catch (error) {
-      this.#logger.error("Error in insertRewards:", error);
+      this.#logger.error({ error }, "Error in insertRewards");
       throw error;
     }
   }
@@ -87,7 +87,7 @@ export class RewardsRepository {
         .values(entriesWithIds)
         .returning();
     } catch (error) {
-      this.#logger.error("Error in insertRewardsTree:", error);
+      this.#logger.error({ error }, "Error in insertRewardsTree");
       throw error;
     }
   }
@@ -112,7 +112,7 @@ export class RewardsRepository {
 
       return inserted;
     } catch (error) {
-      this.#logger.error("Error in insertRewardsRoot:", error);
+      this.#logger.error({ error }, "Error in insertRewardsRoot");
       throw error;
     }
   }
@@ -131,7 +131,7 @@ export class RewardsRepository {
         .from(rewardsTree)
         .where(eq(rewardsTree.competitionId, competitionId));
     } catch (error) {
-      this.#logger.error("Error in getRewardsTreeByCompetition:", error);
+      this.#logger.error({ error }, "Error in getRewardsTreeByCompetition");
       throw error;
     }
   }
@@ -153,7 +153,29 @@ export class RewardsRepository {
 
       return result?.competitionId;
     } catch (error) {
-      this.#logger.error("Error in findCompetitionByRootHash:", error);
+      this.#logger.error({ error }, "Error in findCompetitionByRootHash");
+      throw error;
+    }
+  }
+
+  /**
+   * Get the rewards root for a specific competition
+   * @param competitionId The competition ID (UUID) to get the root for
+   * @returns The rewards root entry if found, undefined otherwise
+   */
+  async getRewardsRootByCompetition(
+    competitionId: string,
+  ): Promise<SelectRewardsRoot | undefined> {
+    try {
+      const [result] = await this.#db
+        .select()
+        .from(rewardsRoots)
+        .where(eq(rewardsRoots.competitionId, competitionId))
+        .limit(1);
+
+      return result;
+    } catch (error) {
+      this.#logger.error({ error }, "Error in getRewardsRootByCompetition");
       throw error;
     }
   }
@@ -188,7 +210,7 @@ export class RewardsRepository {
 
       return updated;
     } catch (error) {
-      this.#logger.error("Error in markRewardAsClaimed:", error);
+      this.#logger.error({ error }, "Error in markRewardAsClaimed");
       throw error;
     }
   }
@@ -213,7 +235,10 @@ export class RewardsRepository {
       const total = result[0]?.total;
       return total ? BigInt(total) : 0n;
     } catch (error) {
-      this.#logger.error("Error in getTotalClaimableRewardsByAddress:", error);
+      this.#logger.error(
+        { error },
+        "Error in getTotalClaimableRewardsByAddress",
+      );
       throw error;
     }
   }
@@ -244,12 +269,42 @@ export class RewardsRepository {
           and(
             eq(rewards.address, address.toLowerCase()),
             eq(rewards.claimed, false),
+            isNotNull(rewardsRoots.tx),
           ),
         );
 
       return result;
     } catch (error) {
-      this.#logger.error("Error in getRewardsWithRootsByAddress:", error);
+      this.#logger.error({ error }, "Error in getRewardsWithRootsByAddress");
+      throw error;
+    }
+  }
+
+  /**
+   * Update the transaction hash for a rewards root entry by root hash
+   * @param rootHash The root hash to identify the entry
+   * @param tx The transaction hash to update
+   * @param dbTx Optional database transaction to use for the operation
+   * @returns The updated root entry if found, undefined otherwise
+   */
+  async updateRewardsRootTx(
+    rootHash: Uint8Array,
+    tx: string,
+    dbTx?: Transaction,
+  ): Promise<SelectRewardsRoot | undefined> {
+    try {
+      const executor = dbTx || this.#db;
+      const [updated] = await executor
+        .update(rewardsRoots)
+        .set({
+          tx: tx,
+        })
+        .where(eq(rewardsRoots.rootHash, rootHash))
+        .returning();
+
+      return updated;
+    } catch (error) {
+      this.#logger.error({ error }, "Error in updateRewardsRootTx");
       throw error;
     }
   }

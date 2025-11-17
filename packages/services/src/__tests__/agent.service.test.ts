@@ -68,6 +68,7 @@ function createMockCompetition(
       arenaId: "default-paper-arena",
       engineId: "spot_paper_trading" as const,
       engineVersion: "1.0.0",
+      rewardsIneligible: null,
     };
   } else if (competitionType === "perpetual_futures") {
     return {
@@ -75,6 +76,7 @@ function createMockCompetition(
       arenaId: "default-perps-arena",
       engineId: "perpetual_futures" as const,
       engineVersion: "1.0.0",
+      rewardsIneligible: null,
     };
   }
 
@@ -84,6 +86,7 @@ function createMockCompetition(
     arenaId: null,
     engineId: null,
     engineVersion: null,
+    rewardsIneligible: null,
   };
 }
 

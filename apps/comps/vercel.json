@@ -1,0 +1,24 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/auto-start-competitions",
+      "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/cron/auto-end-competitions",
+      "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/cron/auto-calculate-rewards",
+      "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/cron/process-perps-competitions",
+      "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/cron/take-portfolio-snapshots",
+      "schedule": "*/5 * * * *"
+    }
+  ]
+}

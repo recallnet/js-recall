@@ -129,7 +129,7 @@ export class SafeTransactionProposer implements RewardsAllocator {
     });
 
     return {
-      transactionHash: safeTxHash,
+      transactionHash: null,
     };
   }
 }

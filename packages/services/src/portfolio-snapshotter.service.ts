@@ -76,7 +76,10 @@ export class PortfolioSnapshotterService {
       );
     }
 
-    const balances = await this.balanceService.getAllBalances(agentId);
+    const balances = await this.balanceService.getAllBalances(
+      agentId,
+      competitionId,
+    );
 
     // Skip if no balances
     if (balances.length === 0) {
@@ -209,7 +212,10 @@ export class PortfolioSnapshotterService {
       await this.competitionRepo.findAll();
       return true;
     } catch (error) {
-      this.logger.error("[PortfolioSnapshotter] Health check failed:", error);
+      this.logger.error(
+        { error },
+        "[PortfolioSnapshotter] Health check failed",
+      );
       return false;
     }
   }

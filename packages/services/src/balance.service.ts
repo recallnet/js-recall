@@ -21,8 +21,8 @@ export interface BalanceServiceConfig {
  * Manages token balances for agents
  */
 export class BalanceService {
-  // Cache of agentId -> Map of tokenAddress -> balance
-  private balanceCache: Map<string, Map<string, number>>;
+  // Cache structure: agentId → competitionId → (tokenAddress → amount)
+  private balanceCache: Map<string, Map<string, Map<string, number>>>;
   private balanceRepo: BalanceRepository;
   private specificChainBalances: SpecificChainBalances;
   private specificChainTokens: SpecificChainTokens;
@@ -43,18 +43,24 @@ export class BalanceService {
   /**
    * Set the balance cache for an agent to an absolute value
    * @param agentId The agent ID
+   * @param competitionId The competition ID
    * @param tokenAddress The token address
    * @param absoluteBalance The absolute balance amount to set
    */
   setBalanceCache(
     agentId: string,
+    competitionId: string,
     tokenAddress: string,
     absoluteBalance: number,
   ): void {
     if (!this.balanceCache.has(agentId)) {
-      this.balanceCache.set(agentId, new Map<string, number>());
+      this.balanceCache.set(agentId, new Map());
     }
-    this.balanceCache.get(agentId)?.set(tokenAddress, absoluteBalance);
+    const agentCache = this.balanceCache.get(agentId)!;
+    if (!agentCache.has(competitionId)) {
+      agentCache.set(competitionId, new Map());
+    }
+    agentCache.get(competitionId)!.set(tokenAddress, absoluteBalance);
   }
 
   /**
@@ -95,7 +101,7 @@ export class BalanceService {
             }
           });
         } else {
-          console.warn(
+          this.logger.warn(
             `[BalanceManager] No token configuration found for specific chain: ${chain}`,
           );
         }
@@ -107,33 +113,47 @@ export class BalanceService {
    * Get an agent's balance for a specific token
    * @param agentId The agent ID
    * @param tokenAddress The token address
+   * @param competitionId The competition ID
    * @returns The balance amount or 0 if not found
    */
-  async getBalance(agentId: string, tokenAddress: string): Promise<number> {
+  async getBalance(
+    agentId: string,
+    tokenAddress: string,
+    competitionId: string,
+  ): Promise<number> {
     try {
       // First check cache
-      const cachedBalances = this.balanceCache.get(agentId);
-      if (cachedBalances && cachedBalances.has(tokenAddress)) {
-        return cachedBalances.get(tokenAddress) || 0;
+      const agentCache = this.balanceCache.get(agentId);
+      const competitionCache = agentCache?.get(competitionId);
+      if (competitionCache && competitionCache.has(tokenAddress)) {
+        return competitionCache.get(tokenAddress) || 0;
       }
 
       // Get from database
-      const balance = await this.balanceRepo.getBalance(agentId, tokenAddress);
+      const balance = await this.balanceRepo.getBalance(
+        agentId,
+        tokenAddress,
+        competitionId,
+      );
 
       // If balance exists, update cache
       if (balance) {
         if (!this.balanceCache.has(agentId)) {
-          this.balanceCache.set(agentId, new Map<string, number>());
+          this.balanceCache.set(agentId, new Map());
         }
-        this.balanceCache.get(agentId)?.set(tokenAddress, balance.amount);
+        const agentCache = this.balanceCache.get(agentId)!;
+        if (!agentCache.has(competitionId)) {
+          agentCache.set(competitionId, new Map());
+        }
+        agentCache.get(competitionId)!.set(tokenAddress, balance.amount);
         return balance.amount;
       }
 
       return 0;
     } catch (error) {
       this.logger.error(
+        { error },
         `[BalanceManager] Error getting balance for agent ${agentId}, token ${tokenAddress}:`,
-        error,
       );
       return 0;
     }
@@ -142,25 +162,40 @@ export class BalanceService {
   /**
    * Get all balances for an agent
    * @param agentId The agent ID
+   * @param competitionId The competition ID
    * @returns Array of Balance objects
    */
-  async getAllBalances(agentId: string): Promise<SelectBalance[]> {
+  async getAllBalances(
+    agentId: string,
+    competitionId: string,
+  ): Promise<SelectBalance[]> {
     try {
       // Get from database
-      const balances = await this.balanceRepo.getAgentBalances(agentId);
+      const balances = await this.balanceRepo.getAgentBalances(
+        agentId,
+        competitionId,
+      );
 
       // Update cache
       const balanceMap = new Map<string, number>();
       balances.forEach((balance) => {
         balanceMap.set(balance.tokenAddress, balance.amount);
       });
-      this.balanceCache.set(agentId, balanceMap);
+
+      if (!this.balanceCache.has(agentId)) {
+        this.balanceCache.set(agentId, new Map());
+      }
+      this.balanceCache.get(agentId)!.set(competitionId, balanceMap);
 
       return balances;
     } catch (error) {
       this.logger.error(
-        `[BalanceManager] Error getting all balances for agent ${agentId}:`,
-        error,
+        {
+          error,
+          agentId,
+          competitionId,
+        },
+        `[BalanceManager] Error getting all balances for agent ${agentId}`,
       );
       return [];
     }
@@ -169,9 +204,13 @@ export class BalanceService {
   /**
    * Get all balances for multiple agents in bulk
    * @param agentIds Array of agent IDs
+   * @param competitionId The competition ID
    * @returns Array of Balance objects for all agents
    */
-  async getBulkBalances(agentIds: string[]) {
+  async getBulkBalances(
+    agentIds: string[],
+    competitionId: string,
+  ): Promise<SelectBalance[]> {
     try {
       if (agentIds.length === 0) {
         return [];
@@ -182,7 +221,10 @@ export class BalanceService {
       );
 
       // Get all balances from database in one query
-      const balances = await this.balanceRepo.getAgentsBulkBalances(agentIds);
+      const balances = await this.balanceRepo.getAgentsBulkBalances(
+        agentIds,
+        competitionId,
+      );
 
       // Update cache for all agents
       const agentBalanceMap = new Map<string, Map<string, number>>();
@@ -202,7 +244,10 @@ export class BalanceService {
 
       // Update the main cache
       agentBalanceMap.forEach((balanceMap, agentId) => {
-        this.balanceCache.set(agentId, balanceMap);
+        if (!this.balanceCache.has(agentId)) {
+          this.balanceCache.set(agentId, new Map());
+        }
+        this.balanceCache.get(agentId)!.set(competitionId, balanceMap);
       });
 
       this.logger.debug(
@@ -212,8 +257,8 @@ export class BalanceService {
       return balances;
     } catch (error) {
       this.logger.error(
+        { error },
         `[BalanceManager] Error getting bulk balances for ${agentIds.length} agents:`,
-        error,
       );
       return [];
     }
@@ -225,10 +270,12 @@ export class BalanceService {
    * - "trading": Resets to standard paper trading balances (5k USDC per chain)
    * - "perpetual_futures": Clears all balances (empty balance map)
    * @param agentId The agent ID
+   * @param competitionId The competition ID
    * @param competitionType The competition type
    */
   async resetAgentBalances(
     agentId: string,
+    competitionId: string,
     competitionType: CompetitionType,
   ): Promise<void> {
     try {
@@ -247,14 +294,22 @@ export class BalanceService {
       }
 
       // Reset in database
-      await this.balanceRepo.resetAgentBalances(agentId, initialBalances);
+      await this.balanceRepo.resetAgentBalances(
+        agentId,
+        competitionId,
+        initialBalances,
+      );
 
       // Update cache
       const balanceMap = new Map<string, number>();
       initialBalances.forEach(({ amount }, tokenAddress) => {
         balanceMap.set(tokenAddress, amount);
       });
-      this.balanceCache.set(agentId, balanceMap);
+
+      if (!this.balanceCache.has(agentId)) {
+        this.balanceCache.set(agentId, new Map());
+      }
+      this.balanceCache.get(agentId)!.set(competitionId, balanceMap);
 
       switch (competitionType) {
         case "trading":
@@ -272,8 +327,8 @@ export class BalanceService {
       }
     } catch (error) {
       this.logger.error(
+        { error },
         `[BalanceManager] Error resetting balances for agent ${agentId}:`,
-        error,
       );
       throw error;
     }
@@ -284,15 +339,44 @@ export class BalanceService {
    * @param agentId The agent ID
    * @param tokenAddress The token address
    * @param amount The amount to check
+   * @param competitionId The competition ID
    * @returns True if the agent has sufficient balance
    */
   async hasSufficientBalance(
     agentId: string,
     tokenAddress: string,
     amount: number,
+    competitionId: string,
   ): Promise<boolean> {
-    const balance = await this.getBalance(agentId, tokenAddress);
+    const balance = await this.getBalance(agentId, tokenAddress, competitionId);
     return balance >= amount;
+  }
+
+  /**
+   * Clear all cached balances for a specific competition
+   * @param competitionId The competition ID to clear cache for
+   */
+  clearCompetitionCache(competitionId: string): void {
+    this.logger.debug(
+      `[BalanceManager] Clearing balance cache for competition ${competitionId}`,
+    );
+
+    let clearedCount = 0;
+    // Iterate through all agents and clear the specific competition's cache
+    for (const [agentId, competitionMap] of this.balanceCache.entries()) {
+      if (competitionMap.has(competitionId)) {
+        competitionMap.delete(competitionId);
+        clearedCount++;
+      }
+      // If the agent has no more cached competitions, remove the agent entry
+      if (competitionMap.size === 0) {
+        this.balanceCache.delete(agentId);
+      }
+    }
+
+    this.logger.debug(
+      `[BalanceManager] Cleared balance cache for ${clearedCount} agents in competition ${competitionId}`,
+    );
   }
 
   /**
@@ -305,7 +389,7 @@ export class BalanceService {
       await this.balanceRepo.count();
       return true;
     } catch (error) {
-      this.logger.error("[BalanceManager] Health check failed:", error);
+      this.logger.error({ error }, "[BalanceManager] Health check failed");
       return false;
     }
   }

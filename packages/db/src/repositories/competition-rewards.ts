@@ -51,7 +51,7 @@ export class CompetitionRewardsRepository {
       }
       return result;
     } catch (error) {
-      this.#logger.error(`Error in createRewards: ${error}`);
+      this.#logger.error({ error }, "Error in createRewards");
       throw error;
     }
   }
@@ -70,7 +70,7 @@ export class CompetitionRewardsRepository {
         .from(competitionRewards)
         .where(eq(competitionRewards.competitionId, competitionId));
     } catch (error) {
-      this.#logger.error(`Error in findRewardsByCompetition: ${error}`, error);
+      this.#logger.error({ error }, "Error in findRewardsByCompetition");
       throw error;
     }
   }
@@ -94,7 +94,7 @@ export class CompetitionRewardsRepository {
         .where(inArray(competitionRewards.competitionId, competitionIds))
         .orderBy(competitionRewards.rank);
     } catch (error) {
-      this.#logger.error(`Error in findRewardsByCompetitions: ${error}`, error);
+      this.#logger.error({ error }, "Error in findRewardsByCompetitions");
       throw error;
     }
   }
@@ -116,10 +116,7 @@ export class CompetitionRewardsRepository {
         .where(eq(competitionRewards.competitionId, competitionId));
       return (result?.rowCount ?? 0) > 0;
     } catch (error) {
-      this.#logger.error(
-        `Error in deleteRewardsByCompetition: ${error}`,
-        error,
-      );
+      this.#logger.error({ error }, "Error in deleteRewardsByCompetition");
       throw error;
     }
   }
@@ -128,22 +125,34 @@ export class CompetitionRewardsRepository {
    * Assign winners to rewards for a competition by updating agentIds based on leaderboard
    * @param competitionId The competition ID
    * @param leaderboard Array of { agentId, value } objects, index+1 = rank
+   * @param excludedAgentIds Optional array of agent IDs ineligible for rewards
    * @param tx Optional database transaction
    * @returns void
    */
   async assignWinnersToRewards(
     competitionId: string,
     leaderboard: { agentId: string; value: number }[],
+    excludedAgentIds?: string[],
     tx?: Transaction,
   ): Promise<void> {
     try {
       // Fetch all rewards for the competition
       const rewardRecords = await this.findRewardsByCompetition(competitionId);
 
+      const excludedSet = excludedAgentIds
+        ? new Set(excludedAgentIds)
+        : new Set();
+
       const updates = rewardRecords
         .map((reward) => {
           const leaderboardEntry = leaderboard[reward.rank - 1];
           if (!leaderboardEntry) return null;
+
+          // Skip if agent is ineligible for rewards
+          if (excludedSet.has(leaderboardEntry.agentId)) {
+            return null;
+          }
+
           return {
             id: reward.id,
             agentId: leaderboardEntry.agentId,
@@ -162,7 +171,7 @@ export class CompetitionRewardsRepository {
         }
       });
     } catch (error) {
-      this.#logger.error(`Error in assignWinnersToRewards: ${error}`);
+      this.#logger.error({ error }, "Error in assignWinnersToRewards");
       throw error;
     }
   }

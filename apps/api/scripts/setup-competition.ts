@@ -204,39 +204,61 @@ async function setupCompetition() {
       `\nThis script will help you set up a new trading competition.`,
     );
 
-    // Check if a competition is already active
-    const activeCompetition =
-      await services.competitionService.getActiveCompetition();
+    // Check if any competitions are already active
+    const allCompetitions = await services.competitionRepository.findAll();
+    const activeCompetitions = allCompetitions.filter(
+      (c) => c.status === "active",
+    );
 
-    if (activeCompetition) {
+    if (activeCompetitions.length > 0) {
       console.log(
-        `\n${colors.yellow}WARNING: There is already an active competition:${colors.reset}`,
+        `\n${colors.yellow}INFO: There are ${activeCompetitions.length} active competition(s):${colors.reset}`,
       );
-      console.log(`- ID: ${activeCompetition.id}`);
-      console.log(`- Name: ${activeCompetition.name}`);
-      console.log(
-        `- Started: ${new Date(activeCompetition.startDate!).toLocaleString()}`,
+      activeCompetitions.forEach((comp) => {
+        console.log(`- ID: ${comp.id}`);
+        console.log(`  Name: ${comp.name}`);
+        console.log(`  Started: ${new Date(comp.startDate!).toLocaleString()}`);
+      });
+
+      const action = await prompt(
+        `\n${colors.yellow}What would you like to do?\n` +
+          `  1) Continue and run competitions concurrently\n` +
+          `  2) End active competitions before creating new one\n` +
+          `  3) Cancel\n` +
+          `Enter choice (1/2/3):${colors.reset} `,
       );
 
-      const proceed = await prompt(
-        `\n${colors.red}Do you want to end the current competition and start a new one? (y/n):${colors.reset} `,
-      );
-
-      if (proceed.toLowerCase() !== "y") {
+      if (action === "3") {
         console.log(
-          `\n${colors.blue}Setup cancelled. Use the admin dashboard to manage the current competition.${colors.reset}`,
+          `\n${colors.blue}Setup cancelled. Use the admin dashboard to manage active competitions.${colors.reset}`,
         );
         return;
       }
 
-      // End the current competition
-      console.log(
-        `\n${colors.blue}Ending current competition...${colors.reset}`,
-      );
-      await services.competitionService.endCompetition(activeCompetition.id);
-      console.log(
-        `${colors.green}Successfully ended previous competition.${colors.reset}`,
-      );
+      if (action === "2") {
+        // End all active competitions
+        console.log(
+          `\n${colors.blue}Ending ${activeCompetitions.length} active competition(s)...${colors.reset}`,
+        );
+        for (const comp of activeCompetitions) {
+          await services.competitionService.endCompetition(comp.id);
+          console.log(
+            `${colors.green}Ended competition: ${comp.name}${colors.reset}`,
+          );
+        }
+        console.log(
+          `${colors.green}Successfully ended all previous competitions.${colors.reset}`,
+        );
+      } else if (action === "1") {
+        console.log(
+          `\n${colors.green}Continuing with concurrent competitions...${colors.reset}`,
+        );
+      } else {
+        console.log(
+          `\n${colors.red}Invalid choice. Setup cancelled.${colors.reset}`,
+        );
+        return;
+      }
     }
 
     // Get competition details
@@ -292,6 +314,7 @@ async function setupCompetition() {
     const competition = await services.competitionService.createCompetition({
       name,
       description,
+      arenaId: "default-paper-arena",
     });
 
     console.log(

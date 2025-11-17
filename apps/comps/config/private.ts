@@ -10,6 +10,9 @@ import { SpecificChainSchema } from "@recallnet/services/types";
 import { config as publicConfig } from "./public";
 
 const configSchema = z.strictObject({
+  server: z.object({
+    nodeEnv: z.string().default("development"),
+  }),
   evmChains: z
     .array(SpecificChainSchema)
     .default([
@@ -78,9 +81,40 @@ const configSchema = z.strictObject({
   healthCheck: z.object({
     apiKey: z.string().optional(),
   }),
+  rewards: z.object({
+    // Whether to use the externally owned account allocator
+    eoaEnabled: z.boolean().default(false),
+    // Private key for the rewards allocator account
+    eoaPrivateKey: z.string().default(""),
+
+    // Whether to use the Safe transaction proposer
+    safeProposerEnabled: z.boolean().default(false),
+    // Private key for the Safe transaction proposer
+    safeProposerPrivateKey: z.string().default(""),
+    // Address of the Safe contract
+    safeAddress: z.string().default(""),
+    // API key for the Safe API
+    safeApiKey: z.string().default(""),
+
+    // Contract address for the rewards contract
+    contractAddress: z.string().default(""),
+    // Contract address of the ERC20 token
+    tokenContractAddress: z.string().default(""),
+    // RPC provider URL for blockchain interactions
+    rpcProvider: z.string().default(""),
+    // Network for the rewards allocator
+    network: z.string().default(""),
+    // Slack webhook URL for rewards notifications
+    slackWebhookUrl: z.string().default(""),
+    // Decay rate for boost time calculations
+    boostTimeDecayRate: z.float64(),
+  }),
 });
 
 export const rawConfig = {
+  server: z.object({
+    nodeEnv: process.env.NODE_ENV,
+  }),
   evmChains: parseEvmChains(),
   specificChainBalances: getSpecificChainBalances(),
   watchlist: { chainalysisApiKey: process.env.WATCHLIST_CHAINALYSIS_API_KEY },
@@ -120,6 +154,36 @@ export const rawConfig = {
   },
   healthCheck: {
     apiKey: process.env.HEALTH_CHECK_API_KEY,
+  },
+  rewards: {
+    // Whether to use the externally owned account allocator
+    eoaEnabled: process.env.REWARDS_EOA_ENABLED === "true",
+    // Private key for the rewards allocator account
+    eoaPrivateKey: process.env.REWARDS_EOA_PRIVATE_KEY,
+
+    // Whether to use the Safe transaction proposer
+    safeProposerEnabled: process.env.REWARDS_SAFE_PROPOSER_ENABLED === "true",
+    // Private key for the Safe transaction proposer
+    safeProposerPrivateKey: process.env.REWARDS_SAFE_PROPOSER_PRIVATE_KEY,
+    // Address of the Safe contract
+    safeAddress: process.env.REWARDS_SAFE_ADDRESS,
+    // API key for the Safe API
+    safeApiKey: process.env.REWARDS_SAFE_API_KEY,
+
+    // Contract address for the rewards contract
+    contractAddress: process.env.REWARDS_CONTRACT_ADDRESS,
+    // Contract address of the ERC20 token
+    tokenContractAddress: process.env.REWARDS_TOKEN_CONTRACT_ADDRESS,
+    // RPC provider URL for blockchain interactions
+    rpcProvider: process.env.RPC_PROVIDER,
+    // Network for the rewards allocator
+    network: process.env.REWARDS_NETWORK || "baseSepolia",
+    // Slack webhook URL for rewards notifications
+    slackWebhookUrl: process.env.REWARDS_SLACK_WEBHOOK_URL,
+    // Decay rate for boost time calculations
+    boostTimeDecayRate: process.env.REWARDS_BOOST_TIME_DECAY_RATE
+      ? parseFloat(process.env.REWARDS_BOOST_TIME_DECAY_RATE)
+      : 0.5,
   },
 };
 
