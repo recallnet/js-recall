@@ -261,7 +261,12 @@ Examples:
       })
       .from(agentBoosts)
       .innerJoin(boostChanges, eq(agentBoosts.changeId, boostChanges.id))
-      .where(gte(agentBoosts.createdAt, season.startDate))
+      .where(
+        and(
+          gte(agentBoosts.createdAt, season.startDate),
+          lte(agentBoosts.createdAt, referenceTime),
+        ),
+      )
       .groupBy(boostChanges.wallet);
 
     const userAgentBoostsMap = userAgentBoosts.reduce(
@@ -303,7 +308,7 @@ Examples:
       new Map<string, string[]>(),
     );
 
-    // Step 7: Calculate individual rewards
+    // Step 8: Calculate individual rewards
     console.log(
       `${colors.blue}Step 6: Calculating individual rewards...${colors.reset}`,
     );
@@ -338,7 +343,7 @@ Examples:
       return 0;
     });
 
-    // Step 7: Generate CSV output
+    // Step 9: Generate CSV output
     console.log(
       `${colors.blue}Step 7: Generating CSV output...${colors.reset}`,
     );
@@ -380,7 +385,7 @@ Examples:
       `✅ CSV file written to: ${colors.green}scripts/data/${csvFileName}${colors.reset}\n`,
     );
 
-    // Step 8: Append to master airdrop-data.csv if --concat flag is set
+    // Step 10: Append to master airdrop-data.csv if --concat flag is set
     if (values.concat) {
       console.log(
         `${colors.blue}Step 8: Appending to airdrop-data.csv...${colors.reset}`,
@@ -437,7 +442,7 @@ Examples:
 
     // Summary
     console.log(`${colors.magenta}📊 Summary:${colors.reset}`);
-    console.log(`   Total eligigibility entries: ${eligibilityEntries.length}`);
+    console.log(`   Total eligibility entries: ${eligibilityEntries.length}`);
     console.log(`   Total active stakes: ${totalActiveStakes.toString()}`);
     console.log(`   Total available rewards: ${availableRewards.toString()}`);
     console.log(
@@ -488,8 +493,15 @@ Examples:
         a < b ? -1 : a > b ? 1 : 0,
       );
       const medianEligible =
-        sortedEligibleRewards[Math.floor(sortedEligibleRewards.length / 2)] ||
-        0n;
+        sortedEligibleRewards.length === 0
+          ? 0n
+          : sortedEligibleRewards.length % 2 === 1
+            ? sortedEligibleRewards[
+                Math.floor(sortedEligibleRewards.length / 2)
+              ]!
+            : (sortedEligibleRewards[sortedEligibleRewards.length / 2 - 1]! +
+                sortedEligibleRewards[sortedEligibleRewards.length / 2]!) /
+              2n;
 
       console.log(
         `\n${colors.cyan}📊 Eligible Reward Statistics:${colors.reset}`,
@@ -520,9 +532,17 @@ Examples:
         a < b ? -1 : a > b ? 1 : 0,
       );
       const medianIneligible =
-        sortedIneligibleRewards[
-          Math.floor(sortedIneligibleRewards.length / 2)
-        ] || 0n;
+        sortedIneligibleRewards.length === 0
+          ? 0n
+          : sortedIneligibleRewards.length % 2 === 1
+            ? sortedIneligibleRewards[
+                Math.floor(sortedIneligibleRewards.length / 2)
+              ]!
+            : (sortedIneligibleRewards[
+                sortedIneligibleRewards.length / 2 - 1
+              ]! +
+                sortedIneligibleRewards[sortedIneligibleRewards.length / 2]!) /
+              2n;
 
       console.log(
         `\n${colors.cyan}📊 Ineligible Reward Statistics:${colors.reset}`,
