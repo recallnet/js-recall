@@ -36,6 +36,22 @@ interface EligibilityEntry {
 }
 
 /**
+ * Calculates the median of an array of bigints.
+ * For even-length arrays, returns the average of the two middle elements.
+ */
+function calculateMedian(values: bigint[]): bigint {
+  if (values.length === 0) return 0n;
+
+  const sorted = [...values].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+
+  if (sorted.length % 2 === 1) {
+    return sorted[Math.floor(sorted.length / 2)]!;
+  }
+
+  return (sorted[sorted.length / 2 - 1]! + sorted[sorted.length / 2]!) / 2n;
+}
+
+/**
  * Calculate eligibility for the next season of conviction claims airdrop.
  *
  * This script:
@@ -488,20 +504,7 @@ Examples:
         eligibleRewards[0] || 0n,
       );
 
-      // Calculate median
-      const sortedEligibleRewards = [...eligibleRewards].sort((a, b) =>
-        a < b ? -1 : a > b ? 1 : 0,
-      );
-      const medianEligible =
-        sortedEligibleRewards.length === 0
-          ? 0n
-          : sortedEligibleRewards.length % 2 === 1
-            ? sortedEligibleRewards[
-                Math.floor(sortedEligibleRewards.length / 2)
-              ]!
-            : (sortedEligibleRewards[sortedEligibleRewards.length / 2 - 1]! +
-                sortedEligibleRewards[sortedEligibleRewards.length / 2]!) /
-              2n;
+      const medianEligible = calculateMedian(eligibleRewards);
 
       console.log(
         `\n${colors.cyan}📊 Eligible Reward Statistics:${colors.reset}`,
@@ -527,22 +530,7 @@ Examples:
         ineligibleRewards[0] || 0n,
       );
 
-      // Calculate median
-      const sortedIneligibleRewards = [...ineligibleRewards].sort((a, b) =>
-        a < b ? -1 : a > b ? 1 : 0,
-      );
-      const medianIneligible =
-        sortedIneligibleRewards.length === 0
-          ? 0n
-          : sortedIneligibleRewards.length % 2 === 1
-            ? sortedIneligibleRewards[
-                Math.floor(sortedIneligibleRewards.length / 2)
-              ]!
-            : (sortedIneligibleRewards[
-                sortedIneligibleRewards.length / 2 - 1
-              ]! +
-                sortedIneligibleRewards[sortedIneligibleRewards.length / 2]!) /
-              2n;
+      const medianIneligible = calculateMedian(ineligibleRewards);
 
       console.log(
         `\n${colors.cyan}📊 Ineligible Reward Statistics:${colors.reset}`,
