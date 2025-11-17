@@ -214,9 +214,7 @@ describe("NoopRewardsAllocator", () => {
       0,
     );
 
-    expect(result.transactionHash).toBe(
-      "0x0000000000000000000000000000000000000000",
-    );
+    expect(result.transactionHash).toBeNull();
   });
 });
 
