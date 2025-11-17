@@ -1191,7 +1191,7 @@ export function configureCompetitionsRoutes(
    * /api/competitions/{competitionId}/agents/{agentId}/perps/positions:
    *   get:
    *     tags:
-   *       - Competitions
+   *       - Competition
    *     summary: Get perps positions for an agent in a competition
    *     description: |
    *       Returns the current perpetual futures positions for a specific agent in a specific competition.
@@ -1356,7 +1356,7 @@ export function configureCompetitionsRoutes(
    * /api/competitions/{competitionId}/perps/all-positions:
    *   get:
    *     tags:
-   *       - Competitions
+   *       - Competition
    *     summary: Get all perps positions for a competition
    *     description: |
    *       Returns all perpetual futures positions for a competition with pagination support.
