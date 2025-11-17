@@ -107,7 +107,7 @@ export function sumTokenAmounts(amounts: (string | bigint)[]): bigint {
 /**
  * Safely convert value to BigInt with validation
  */
-function safeToBigInt(value: string | bigint | number): bigint {
+export function safeToBigInt(value: string | bigint | number): bigint {
   if (typeof value === "bigint") {
     return value;
   }

@@ -127,7 +127,6 @@
     "zod": "3.25.76"
   },
   "devDependencies": {
-    "@elizaos/core": "^0.25.9",
     "@recallnet/eslint-config": "workspace:^",
     "@recallnet/test-utils": "workspace:*",
     "@recallnet/typescript-config": "workspace:*",

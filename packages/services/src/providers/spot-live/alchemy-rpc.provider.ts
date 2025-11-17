@@ -328,6 +328,32 @@ export class AlchemyRpcProvider {
         );
       });
 
+      // Sampling for raw data storage (1% of requests)
+      const shouldSample = Math.random() < this.SAMPLING_RATE;
+
+      if (shouldSample) {
+        // Send to Sentry for monitoring
+        Sentry.captureMessage("Alchemy RPC Response Sample", {
+          level: "debug",
+          extra: {
+            response: {
+              transferCount: result.transfers.length,
+              hasPageKey: !!result.pageKey,
+              sampleTransfers: result.transfers.slice(0, 3), // First 3 transfers as sample
+            },
+            walletAddress: maskedAddress,
+            chain,
+            fromBlock: fromBlock.toString(),
+            toBlock: toBlock.toString(),
+            processingTime: Date.now() - startTime,
+          },
+        });
+
+        this.logger.debug(
+          `[AlchemyRpcProvider] Sampled request - sent to Sentry for ${maskedAddress} on ${chain}`,
+        );
+      }
+
       this.logger.debug(
         `[AlchemyRpcProvider] Found ${result.transfers.length} transfers for ${maskedAddress} on ${chain} in ${Date.now() - startTime}ms`,
       );
@@ -537,6 +563,32 @@ export class AlchemyRpcProvider {
           },
         );
       });
+
+      // Sampling for raw data storage (1% of requests)
+      const shouldSample = Math.random() < this.SAMPLING_RATE;
+
+      if (shouldSample) {
+        // Send to Sentry for monitoring
+        Sentry.captureMessage("Alchemy RPC Response Sample", {
+          level: "debug",
+          extra: {
+            response: {
+              balanceCount: result.length,
+              sampleBalances: result.slice(0, 5).map((b) => ({
+                address: b.contractAddress,
+                balance: b.balance,
+              })), // First 5 balances as sample
+            },
+            walletAddress: maskedAddress,
+            chain,
+            processingTime: Date.now() - startTime,
+          },
+        });
+
+        this.logger.debug(
+          `[AlchemyRpcProvider] Sampled request - sent to Sentry for ${maskedAddress} on ${chain}`,
+        );
+      }
 
       this.logger.debug(
         `[AlchemyRpcProvider] Found ${result.length} non-zero token balances for ${maskedAddress} on ${chain} in ${Date.now() - startTime}ms`,
@@ -776,7 +828,10 @@ export class AlchemyRpcProvider {
 
             // Convert hex result to number
             if (result && result !== "0x") {
-              return parseInt(result, 16);
+              const parsed = parseInt(result, 16);
+              if (!Number.isNaN(parsed)) {
+                return parsed;
+              }
             }
 
             // Default to 18 if call fails (common for ETH/WETH)

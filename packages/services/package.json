@@ -61,7 +61,7 @@
     "@recallnet/staking-contracts": "workspace:*",
     "@sentry/node": "^10.5.0",
     "@solana/web3.js": "^1.98.4",
-    "alchemy-sdk": "^3.6.3",
+    "alchemy-sdk": "3.6.5",
     "axios": "^1.6.0",
     "decimal.js": "^10.6.0",
     "jose": "^5.10.0",
