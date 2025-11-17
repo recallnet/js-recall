@@ -171,18 +171,43 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
 
     for (const chain of chains) {
       try {
-        // Get all transfers for this wallet on this chain
-        const transfersResponse = await this.rpcProvider.getAssetTransfers(
-          walletAddress,
-          chain as SpecificChain,
-          sinceBlock,
-          "latest",
+        // Fetch all transfers with pagination support
+        // Alchemy limits responses to 1000 results per request
+        const allTransfers: AssetTransfersWithMetadataResult[] = [];
+        let pageKey: string | undefined;
+
+        do {
+          const transfersResponse = await this.rpcProvider.getAssetTransfers(
+            walletAddress,
+            chain as SpecificChain,
+            sinceBlock,
+            pageKey || "latest",
+          );
+
+          allTransfers.push(...transfersResponse.transfers);
+          pageKey = transfersResponse.pageKey;
+
+          if (pageKey) {
+            this.logger.debug(
+              {
+                chain,
+                currentCount: allTransfers.length,
+              },
+              `[RpcSpotProvider] Fetching next page of transfers`,
+            );
+          }
+        } while (pageKey);
+
+        this.logger.debug(
+          {
+            chain,
+            totalTransfers: allTransfers.length,
+          },
+          `[RpcSpotProvider] Fetched all transfers`,
         );
 
         // Group transfers by transaction
-        const transfersByTx = this.groupTransfersByTransaction(
-          transfersResponse.transfers,
-        );
+        const transfersByTx = this.groupTransfersByTransaction(allTransfers);
 
         this.logger.debug(
           {
@@ -327,17 +352,43 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
 
     for (const chain of chains) {
       try {
-        const transfersResponse = await this.rpcProvider.getAssetTransfers(
-          walletAddress,
-          chain as SpecificChain,
-          sinceBlock,
-          "latest",
+        // Fetch all transfers with pagination support
+        // Alchemy limits responses to 1000 results per request
+        const chainTransfers: AssetTransfersWithMetadataResult[] = [];
+        let pageKey: string | undefined;
+
+        do {
+          const transfersResponse = await this.rpcProvider.getAssetTransfers(
+            walletAddress,
+            chain as SpecificChain,
+            sinceBlock,
+            pageKey || "latest",
+          );
+
+          chainTransfers.push(...transfersResponse.transfers);
+          pageKey = transfersResponse.pageKey;
+
+          if (pageKey) {
+            this.logger.debug(
+              {
+                chain,
+                currentCount: chainTransfers.length,
+              },
+              `[RpcSpotProvider] Fetching next page of transfers`,
+            );
+          }
+        } while (pageKey);
+
+        this.logger.debug(
+          {
+            chain,
+            totalTransfers: chainTransfers.length,
+          },
+          `[RpcSpotProvider] Fetched all transfers for transfer history`,
         );
 
         // Group by transaction to identify swaps (which we want to exclude)
-        const transfersByTx = this.groupTransfersByTransaction(
-          transfersResponse.transfers,
-        );
+        const transfersByTx = this.groupTransfersByTransaction(chainTransfers);
 
         // Only include transactions that are NOT swaps (deposits/withdrawals)
         for (const [, txTransfers] of transfersByTx) {
