@@ -63,8 +63,8 @@ vercel --prod
 You can test cron endpoints locally:
 
 ```bash
-# Set CRON_SECRET in .env.local
-echo "CRON_SECRET=test-secret-123" >> .env.local
+# Set CRON_SECRET in .env
+echo "CRON_SECRET=test-secret-123" >> .env
 
 # Start dev server
 pnpm dev
