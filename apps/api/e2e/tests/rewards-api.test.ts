@@ -176,6 +176,23 @@ describe("Rewards API", () => {
       reward.proof.forEach((proofItem: string) => {
         expect(proofItem).toMatch(/^0x[a-fA-F0-9]{64}$/);
       });
+
+      // Validate agent field (can be null for booster rewards)
+      if (reward.agent !== null) {
+        expect(typeof reward.agent.id).toBe("string");
+        expect(typeof reward.agent.name).toBe("string");
+        expect(
+          reward.agent.imageUrl === null ||
+            typeof reward.agent.imageUrl === "string",
+        ).toBe(true);
+      }
+
+      // Validate competition field
+      expect(reward.competition).toBeDefined();
+      expect(typeof reward.competition.id).toBe("string");
+      expect(typeof reward.competition.name).toBe("string");
+      expect(reward.competition.id).toBe(testCompetitionId);
+      expect(reward.competition.name).toBe("Test Competition");
     });
   });
 });

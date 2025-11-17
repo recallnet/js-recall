@@ -1227,6 +1227,15 @@ export interface RewardProof {
   merkleRoot: string;
   amount: string;
   proof: string[];
+  agent: {
+    id: string;
+    name: string;
+    imageUrl: string | null;
+  } | null;
+  competition: {
+    id: string;
+    name: string;
+  };
 }
 
 export interface RewardsProofsResponse {

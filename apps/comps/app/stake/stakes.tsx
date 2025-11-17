@@ -7,6 +7,7 @@ import { Button } from "@recallnet/ui2/components/button";
 import StakeRecallModal from "@/components/modals/stake-recall";
 import { ActiveStakes } from "@/components/staking/ActiveStakes";
 import { InactiveStakes } from "@/components/staking/InactiveStakes";
+import { Rewards } from "@/components/staking/Rewards";
 import { StakeSummary } from "@/components/staking/StakeSummary";
 import { StakeSkeleton } from "@/components/staking/stake-skeleton";
 import { config } from "@/config/public";
@@ -114,6 +115,8 @@ export default function Stakes() {
                   further!
                 </p>
               </div>
+
+              <Rewards />
 
               <ActiveStakes />
 
