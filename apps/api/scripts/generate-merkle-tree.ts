@@ -341,11 +341,22 @@ Examples:
         try {
           console.log("recipients.length:", recipients.length);
 
-          const values: [string, bigint, number][] = recipients.map((r) => [
-            r.address,
-            r.amount,
-            r.season,
-          ]);
+          const eligibleRecipients = recipients.filter(
+            (recipient) => recipient.flaggingReason === null,
+          );
+          const ineligibleRecipients = recipients.filter(
+            (recipient) => recipient.flaggingReason !== null,
+          );
+
+          console.log("eligibleRecipients.length:", eligibleRecipients.length);
+          console.log(
+            "ineligibleRecipients.length:",
+            ineligibleRecipients.length,
+          );
+
+          const values: [string, bigint, number][] = eligibleRecipients.map(
+            (r) => [r.address, r.amount, r.season],
+          );
 
           const tree = StandardMerkleTree.of(values, [
             "address",
@@ -353,15 +364,19 @@ Examples:
             "uint8",
           ]);
 
-          const uniqueAddresses = new Set(recipients.map((r) => r.address))
-            .size;
-          const totalAmount = recipients.reduce((sum, r) => sum + r.amount, 0n);
+          const uniqueAddresses = new Set(
+            eligibleRecipients.map((r) => r.address),
+          ).size;
+          const totalAmount = eligibleRecipients.reduce(
+            (sum, r) => sum + r.amount,
+            0n,
+          );
 
           // Prepare allocations data with proofs
           const allocations: Allocation[] = [];
           for (const [i, value] of tree.entries()) {
             const [address] = value;
-            const recipient = recipients[i];
+            const recipient = eligibleRecipients[i];
             if (!recipient) {
               throw new Error(`No recipient found at index ${i}`);
             }
@@ -380,19 +395,37 @@ Examples:
               aiExplorer: recipient.aiExplorer,
             });
           }
+          // We excluded ineligibleRecipients from the tree,
+          // but we want to store them in our db with an empty proof.
+          for (const recipient of ineligibleRecipients) {
+            allocations.push({
+              address: recipient.address.toLowerCase(),
+              amount: recipient.amount.toString(),
+              season: recipient.season,
+              proof: [],
+              category: recipient.category,
+              sybilClassification: recipient.sybilClassification,
+              flaggedAt: recipient.flaggedAt,
+              flaggingReason: recipient.flaggingReason,
+              powerUser: recipient.powerUser,
+              recallSnapper: recipient.recallSnapper,
+              aiBuilder: recipient.aiBuilder,
+              aiExplorer: recipient.aiExplorer,
+            });
+          }
 
           // Prepare metadata
           const metadata: MerkleMetadata = {
             merkleRoot: tree.root,
             totalAmount: totalAmount.toString(),
-            totalRows: recipients.length,
+            totalRows: eligibleRecipients.length,
             uniqueAddresses: uniqueAddresses,
           };
 
           console.log(`🌳 Merkle tree generated successfully!`);
           console.log(`   Root: ${tree.root}`);
           console.log(`   Total Amount: ${totalAmount.toString()}`);
-          console.log(`   Total Rows: ${recipients.length}`);
+          console.log(`   Total Rows: ${eligibleRecipients.length}`);
           console.log(`   Unique Addresses: ${uniqueAddresses}`);
 
           // Save to database using repository
