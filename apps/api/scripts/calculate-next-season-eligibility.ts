@@ -4,6 +4,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { parseArgs } from "util";
 
+import { attoValueToStringValue } from "@recallnet/conversions/atto-conversions";
 import { BlockchainAddressAsU8A } from "@recallnet/db/coders";
 import { seasons } from "@recallnet/db/schema/airdrop/defs";
 import { agentBoosts, boostChanges } from "@recallnet/db/schema/boost/defs";
@@ -459,8 +460,12 @@ Examples:
     // Summary
     console.log(`${colors.magenta}📊 Summary:${colors.reset}`);
     console.log(`   Total eligibility entries: ${eligibilityEntries.length}`);
-    console.log(`   Total active stakes: ${totalActiveStakes.toString()}`);
-    console.log(`   Total available rewards: ${availableRewards.toString()}`);
+    console.log(
+      `   Total active stakes: ${attoValueToStringValue(totalActiveStakes)}`,
+    );
+    console.log(
+      `   Total available rewards: ${attoValueToStringValue(availableRewards)}`,
+    );
     console.log(
       `✅ Calculated rewards for ${eligibilityEntries.length} accounts\n`,
     );
@@ -509,11 +514,13 @@ Examples:
       console.log(
         `\n${colors.cyan}📊 Eligible Reward Statistics:${colors.reset}`,
       );
-      console.log(`   Total rewards: ${totalEligible.toString()}`);
-      console.log(`   Mean reward: ${meanEligible.toString()}`);
-      console.log(`   Median reward: ${medianEligible.toString()}`);
-      console.log(`   Max reward: ${maxEligible.toString()}`);
-      console.log(`   Min reward: ${minEligible.toString()}`);
+      console.log(`   Total rewards: ${attoValueToStringValue(totalEligible)}`);
+      console.log(`   Mean reward: ${attoValueToStringValue(meanEligible)}`);
+      console.log(
+        `   Median reward: ${attoValueToStringValue(medianEligible)}`,
+      );
+      console.log(`   Max reward: ${attoValueToStringValue(maxEligible)}`);
+      console.log(`   Min reward: ${attoValueToStringValue(minEligible)}`);
     }
 
     // Calculate and display reward statistics for ineligible entries
@@ -535,21 +542,25 @@ Examples:
       console.log(
         `\n${colors.cyan}📊 Ineligible Reward Statistics:${colors.reset}`,
       );
-      console.log(`   Total rewards: ${totalIneligible.toString()}`);
-      console.log(`   Mean reward: ${meanIneligible.toString()}`);
-      console.log(`   Median reward: ${medianIneligible.toString()}`);
-      console.log(`   Max reward: ${maxIneligible.toString()}`);
-      console.log(`   Min reward: ${minIneligible.toString()}`);
+      console.log(
+        `   Total rewards: ${attoValueToStringValue(totalIneligible)}`,
+      );
+      console.log(`   Mean reward: ${attoValueToStringValue(meanIneligible)}`);
+      console.log(
+        `   Median reward: ${attoValueToStringValue(medianIneligible)}`,
+      );
+      console.log(`   Max reward: ${attoValueToStringValue(maxIneligible)}`);
+      console.log(`   Min reward: ${attoValueToStringValue(minIneligible)}`);
     }
 
     console.log("");
 
-    if (eligibilityEntries.length > 0) {
+    if (eligibleEntries.length > 0) {
       console.log(`\n${colors.cyan}Top 5 recipients:${colors.reset}`);
-      for (let i = 0; i < Math.min(5, eligibilityEntries.length); i++) {
-        const account = eligibilityEntries[i];
+      for (let i = 0; i < Math.min(5, eligibleEntries.length); i++) {
+        const account = eligibleEntries[i];
         console.log(
-          `   ${i + 1}. ${account?.address}: ${account?.reward.toString()}`,
+          `   ${i + 1}. ${account?.address}: ${attoValueToStringValue(account?.reward || 0n)}`,
         );
       }
     }

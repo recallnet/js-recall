@@ -6,6 +6,7 @@ import { fileURLToPath } from "url";
 import { parseArgs } from "util";
 import { isAddress } from "viem";
 
+import { attoValueToStringValue } from "@recallnet/conversions/atto-conversions";
 import { AirdropRepository } from "@recallnet/db/repositories/airdrop";
 
 import { db } from "@/database/db.js";
@@ -424,7 +425,9 @@ Examples:
 
           console.log(`🌳 Merkle tree generated successfully!`);
           console.log(`   Root: ${tree.root}`);
-          console.log(`   Total Amount: ${totalAmount.toString()}`);
+          console.log(
+            `   Total Amount: ${attoValueToStringValue(totalAmount)}`,
+          );
           console.log(`   Total Rows: ${eligibleRecipients.length}`);
           console.log(`   Unique Addresses: ${uniqueAddresses}`);
 
