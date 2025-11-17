@@ -310,7 +310,7 @@ Examples:
 
     // Step 8: Calculate individual rewards
     console.log(
-      `${colors.blue}Step 6: Calculating individual rewards...${colors.reset}`,
+      `${colors.blue}Step 8: Calculating individual rewards...${colors.reset}`,
     );
 
     const eligibilityEntries: EligibilityEntry[] = [];
@@ -345,7 +345,7 @@ Examples:
 
     // Step 9: Generate CSV output
     console.log(
-      `${colors.blue}Step 7: Generating CSV output...${colors.reset}`,
+      `${colors.blue}Step 9: Generating CSV output...${colors.reset}`,
     );
 
     const csvFileName = `airdrop_${seasonNumber}_${referenceTime.toISOString()}.csv`;
@@ -388,7 +388,7 @@ Examples:
     // Step 10: Append to master airdrop-data.csv if --concat flag is set
     if (values.concat) {
       console.log(
-        `${colors.blue}Step 8: Appending to airdrop-data.csv...${colors.reset}`,
+        `${colors.blue}Step 10: Appending to airdrop-data.csv...${colors.reset}`,
       );
 
       const masterCsvPath = path.join(
