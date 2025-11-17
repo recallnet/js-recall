@@ -92,10 +92,7 @@ async function awardAllBoost() {
     const duration = Date.now() - startTime;
     logger.info(`Awarding Boost completed successfully in ${duration}ms!`);
   } catch (error) {
-    logger.error(
-      "Error awarding Boost:",
-      error instanceof Error ? error.message : String(error),
-    );
+    logger.error({ error }, "Error awarding Boost:");
 
     throw error;
   }

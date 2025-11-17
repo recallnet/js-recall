@@ -37,7 +37,7 @@ export class RewardsRepository {
         .from(rewards)
         .where(eq(rewards.competitionId, competitionId));
     } catch (error) {
-      this.#logger.error("Error in getRewardsByCompetition:", error);
+      this.#logger.error({ error }, "Error in getRewardsByCompetition");
       throw error;
     }
   }
@@ -56,7 +56,7 @@ export class RewardsRepository {
       const executor = tx || this.#db;
       return await executor.insert(rewards).values(rewardsToInsert).returning();
     } catch (error) {
-      this.#logger.error("Error in insertRewards:", error);
+      this.#logger.error({ error }, "Error in insertRewards");
       throw error;
     }
   }
@@ -87,7 +87,7 @@ export class RewardsRepository {
         .values(entriesWithIds)
         .returning();
     } catch (error) {
-      this.#logger.error("Error in insertRewardsTree:", error);
+      this.#logger.error({ error }, "Error in insertRewardsTree");
       throw error;
     }
   }
@@ -112,7 +112,7 @@ export class RewardsRepository {
 
       return inserted;
     } catch (error) {
-      this.#logger.error("Error in insertRewardsRoot:", error);
+      this.#logger.error({ error }, "Error in insertRewardsRoot");
       throw error;
     }
   }
@@ -131,7 +131,7 @@ export class RewardsRepository {
         .from(rewardsTree)
         .where(eq(rewardsTree.competitionId, competitionId));
     } catch (error) {
-      this.#logger.error("Error in getRewardsTreeByCompetition:", error);
+      this.#logger.error({ error }, "Error in getRewardsTreeByCompetition");
       throw error;
     }
   }
@@ -153,7 +153,7 @@ export class RewardsRepository {
 
       return result?.competitionId;
     } catch (error) {
-      this.#logger.error("Error in findCompetitionByRootHash:", error);
+      this.#logger.error({ error }, "Error in findCompetitionByRootHash");
       throw error;
     }
   }
@@ -210,7 +210,7 @@ export class RewardsRepository {
 
       return updated;
     } catch (error) {
-      this.#logger.error("Error in markRewardAsClaimed:", error);
+      this.#logger.error({ error }, "Error in markRewardAsClaimed");
       throw error;
     }
   }
@@ -235,7 +235,10 @@ export class RewardsRepository {
       const total = result[0]?.total;
       return total ? BigInt(total) : 0n;
     } catch (error) {
-      this.#logger.error("Error in getTotalClaimableRewardsByAddress:", error);
+      this.#logger.error(
+        { error },
+        "Error in getTotalClaimableRewardsByAddress",
+      );
       throw error;
     }
   }
@@ -272,7 +275,7 @@ export class RewardsRepository {
 
       return result;
     } catch (error) {
-      this.#logger.error("Error in getRewardsWithRootsByAddress:", error);
+      this.#logger.error({ error }, "Error in getRewardsWithRootsByAddress");
       throw error;
     }
   }
@@ -301,7 +304,7 @@ export class RewardsRepository {
 
       return updated;
     } catch (error) {
-      this.#logger.error("Error in updateRewardsRootTx:", error);
+      this.#logger.error({ error }, "Error in updateRewardsRootTx");
       throw error;
     }
   }

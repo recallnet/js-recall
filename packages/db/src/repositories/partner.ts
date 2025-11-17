@@ -64,7 +64,7 @@ export class PartnerRepository {
 
       return result;
     } catch (error) {
-      this.#logger.error("[PartnerRepository] Error in create:", error);
+      this.#logger.error({ error }, "[PartnerRepository] Error in create");
       throw error;
     }
   }
@@ -85,8 +85,8 @@ export class PartnerRepository {
       return result;
     } catch (error) {
       this.#logger.error(
-        `[PartnerRepository] Error in findById (${id}):`,
-        error,
+        { error },
+        `[PartnerRepository] Error in findById (${id})`,
       );
       throw error;
     }
@@ -109,8 +109,8 @@ export class PartnerRepository {
       return result;
     } catch (error) {
       this.#logger.error(
-        `[PartnerRepository] Error in findByName (${name}):`,
-        error,
+        { error },
+        `[PartnerRepository] Error in findByName (${name})`,
       );
       throw error;
     }
@@ -162,7 +162,7 @@ export class PartnerRepository {
 
       return { partners: results, total: countResult[0]?.count ?? 0 };
     } catch (error) {
-      this.#logger.error("[PartnerRepository] Error in findAll:", error);
+      this.#logger.error({ error }, "[PartnerRepository] Error in findAll");
       throw error;
     }
   }
@@ -196,7 +196,10 @@ export class PartnerRepository {
 
       return result;
     } catch (error) {
-      this.#logger.error(`[PartnerRepository] Error in update (${id}):`, error);
+      this.#logger.error(
+        { error },
+        `[PartnerRepository] Error in update (${id})`,
+      );
       throw error;
     }
   }
@@ -218,7 +221,10 @@ export class PartnerRepository {
 
       return result.length > 0;
     } catch (error) {
-      this.#logger.error(`[PartnerRepository] Error in delete (${id}):`, error);
+      this.#logger.error(
+        { error },
+        `[PartnerRepository] Error in delete (${id})`,
+      );
       throw error;
     }
   }
@@ -257,8 +263,8 @@ export class PartnerRepository {
       return results;
     } catch (error) {
       this.#logger.error(
-        `[PartnerRepository] Error in findByCompetition (${competitionId}):`,
-        error,
+        { error },
+        `[PartnerRepository] Error in findByCompetition (${competitionId})`,
       );
       throw error;
     }
@@ -308,8 +314,8 @@ export class PartnerRepository {
       return result;
     } catch (error) {
       this.#logger.error(
-        `[PartnerRepository] Error in addToCompetition (comp: ${competitionId}, partner: ${partnerId}):`,
-        error,
+        { error },
+        `[PartnerRepository] Error in addToCompetition (comp: ${competitionId}, partner: ${partnerId})`,
       );
       throw error;
     }
@@ -342,8 +348,8 @@ export class PartnerRepository {
       return result.length > 0;
     } catch (error) {
       this.#logger.error(
-        `[PartnerRepository] Error in removeFromCompetition (comp: ${competitionId}, partner: ${partnerId}):`,
-        error,
+        { error },
+        `[PartnerRepository] Error in removeFromCompetition (comp: ${competitionId}, partner: ${partnerId})`,
       );
       throw error;
     }
@@ -387,8 +393,8 @@ export class PartnerRepository {
       return result;
     } catch (error) {
       this.#logger.error(
+        { error },
         `[PartnerRepository] Error in updatePosition (comp: ${competitionId}, partner: ${partnerId}):`,
-        error,
       );
       throw error;
     }
@@ -410,8 +416,8 @@ export class PartnerRepository {
       return result[0]?.count ?? 0;
     } catch (error) {
       this.#logger.error(
-        `[PartnerRepository] Error in getCompetitionCount (${partnerId}):`,
-        error,
+        { error },
+        `[PartnerRepository] Error in getCompetitionCount (${partnerId})`,
       );
       throw error;
     }
@@ -490,8 +496,8 @@ export class PartnerRepository {
       });
     } catch (error) {
       this.#logger.error(
-        `[PartnerRepository] Error in replaceCompetitionPartners (${competitionId}):`,
-        error,
+        { error },
+        `[PartnerRepository] Error in replaceCompetitionPartners (${competitionId})`,
       );
       throw error;
     }
@@ -519,8 +525,8 @@ export class PartnerRepository {
       return await this.create(partnerData, tx);
     } catch (error) {
       this.#logger.error(
-        `[PartnerRepository] Error in findOrCreate (${partnerData.name}):`,
-        error,
+        { error },
+        `[PartnerRepository] Error in findOrCreate (${partnerData.name})`,
       );
       throw error;
     }

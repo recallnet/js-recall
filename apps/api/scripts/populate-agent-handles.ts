@@ -378,7 +378,7 @@ async function populateAgentHandles(batchSize: number, isDryRun: boolean) {
         console.log(
           chalk.red(`  ❌ Failed to update batch starting at index ${i}`),
         );
-        logger.error("Batch update error:", error);
+        logger.error({ error }, "Batch update error:");
       }
     }
 
@@ -409,7 +409,7 @@ async function populateAgentHandles(batchSize: number, isDryRun: boolean) {
 
     return { updated, skipped: failed };
   } catch (error) {
-    logger.error("Error populating agent handles:", error);
+    logger.error({ error }, "Error populating agent handles:");
     throw error;
   }
 }

@@ -74,8 +74,8 @@ export class LeaderboardService {
       }
 
       this.logger.error(
-        "[LeaderboardService] Failed to get leaderboard:",
-        error,
+        { error },
+        "[LeaderboardService] Failed to get global leaderboard",
       );
 
       // Return safe fallback for unexpected errors
@@ -168,7 +168,10 @@ export class LeaderboardService {
    * @returns Basic global stats
    */
   async getGlobalStats(type: CompetitionType) {
-    this.logger.debug("[LeaderboardService] getGlobalStats for type:", type);
+    this.logger.debug(
+      { type },
+      "[LeaderboardService] getGlobalStats for type:",
+    );
     return await this.leaderboardRepo.getGlobalStats(type);
   }
 
@@ -286,8 +289,8 @@ export class LeaderboardService {
       };
     } catch (error) {
       this.logger.error(
-        "[LeaderboardService] Failed to build unified leaderboard:",
-        error,
+        { error },
+        "[LeaderboardService] Failed to build unified leaderboard",
       );
       throw error;
     }
@@ -306,7 +309,7 @@ export class LeaderboardService {
     try {
       return await this.leaderboardRepo.getArenaStats(arenaId);
     } catch (error) {
-      this.logger.error(`Error getting arena stats for ${arenaId}:`, error);
+      this.logger.error({ error }, `Error getting arena stats for ${arenaId}`);
       throw error;
     }
   }

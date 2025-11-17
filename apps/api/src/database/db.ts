@@ -268,7 +268,7 @@ pinoDbLogger.info(
 
 // Access the underlying client through the base instance
 baseDb.$client.on("error", (err: Error) => {
-  pinoDbLogger.error("Unexpected error on idle client", err);
+  pinoDbLogger.error({ error: err }, "Unexpected error on idle client");
   process.exit(-1);
 });
 

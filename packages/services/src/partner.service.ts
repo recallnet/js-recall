@@ -89,7 +89,7 @@ export class PartnerService {
         throw error;
       }
 
-      this.logger.error("[PartnerService] Error creating partner:", error);
+      this.logger.error({ error }, "[PartnerService] Error creating partner");
       throw new ApiError(
         500,
         `Failed to create partner: ${error instanceof Error ? error.message : "Unknown error"}`,
@@ -116,7 +116,10 @@ export class PartnerService {
         throw error;
       }
 
-      this.logger.error(`[PartnerService] Error finding partner ${id}:`, error);
+      this.logger.error(
+        { error },
+        `[PartnerService] Error finding partner ${id}`,
+      );
       throw new ApiError(
         500,
         `Failed to find partner: ${error instanceof Error ? error.message : "Unknown error"}`,
@@ -153,7 +156,7 @@ export class PartnerService {
         pagination: buildPaginationResponse(total, params.limit, params.offset),
       };
     } catch (error) {
-      this.logger.error("[PartnerService] Error finding partners:", error);
+      this.logger.error({ error }, "[PartnerService] Error finding partners");
       throw new ApiError(
         500,
         `Failed to find partners: ${error instanceof Error ? error.message : "Unknown error"}`,
@@ -183,8 +186,8 @@ export class PartnerService {
       }
 
       this.logger.error(
+        { error },
         `[PartnerService] Error updating partner ${id}:`,
-        error,
       );
       throw new ApiError(
         500,
@@ -216,8 +219,8 @@ export class PartnerService {
       }
 
       this.logger.error(
+        { error },
         `[PartnerService] Error deleting partner ${id}:`,
-        error,
       );
       throw new ApiError(
         500,
@@ -243,8 +246,8 @@ export class PartnerService {
       return await this.partnerRepo.findByCompetition(competitionId);
     } catch (error) {
       this.logger.error(
+        { error },
         `[PartnerService] Error finding partners for competition ${competitionId}:`,
-        error,
       );
       throw new ApiError(
         500,
@@ -282,8 +285,8 @@ export class PartnerService {
       }
 
       this.logger.error(
+        { error },
         `[PartnerService] Error adding partner to competition:`,
-        error,
       );
       throw new ApiError(
         500,
@@ -326,8 +329,8 @@ export class PartnerService {
       }
 
       this.logger.error(
+        { error },
         `[PartnerService] Error removing partner from competition:`,
-        error,
       );
       throw new ApiError(
         500,
@@ -366,8 +369,8 @@ export class PartnerService {
       }
 
       this.logger.error(
+        { error },
         `[PartnerService] Error updating partner position:`,
-        error,
       );
       throw new ApiError(
         500,
@@ -418,8 +421,8 @@ export class PartnerService {
       }
 
       this.logger.error(
+        { error },
         `[PartnerService] Error replacing competition partners:`,
-        error,
       );
       throw new ApiError(
         500,
@@ -452,8 +455,8 @@ export class PartnerService {
       return result;
     } catch (error) {
       this.logger.error(
+        { error },
         `[PartnerService] Error in findOrCreate for ${partnerData.name}:`,
-        error,
       );
       throw new ApiError(
         500,

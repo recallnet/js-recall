@@ -616,9 +616,6 @@ export class CompetitionService {
       };
     });
 
-    // Clear trading constraints cache after transaction commits
-    this.tradingConstraintsService.clearConstraintsCache(id);
-
     this.logger.debug(
       `[CompetitionManager] Created competition: ${name} (${id}), crossChainTradingType: ${tradingType}, type: ${type}}`,
     );
@@ -781,9 +778,6 @@ export class CompetitionService {
       const agents = await this.agentService.getAgentsByIds(finalAgentIds);
       this.validateAgentsForPerpsCompetition(agents, competition.type);
     }
-
-    // Clear cached balances after validation, before processing agents
-    this.balanceService.clearCompetitionCache(competitionId);
 
     // Process all agent additions and activations
     for (const agentId of finalAgentIds) {
@@ -1303,13 +1297,6 @@ export class CompetitionService {
         return { competition: updated, leaderboard };
       });
 
-    // Clear balance cache after transaction commits successfully
-    // Note: There is a small window between transaction commit and cache clear where concurrent
-    // requests might cache final balances, which we then evict. However, the next cache miss will
-    // correctly fetch the final balances from the database. This is preferable to clearing before
-    // commit, which could result in requests caching stale balances that persist indefinitely.
-    this.balanceService.clearCompetitionCache(competitionId);
-
     // Log success only after transaction has committed
     this.logger.debug(
       `[CompetitionManager] Competition ended successfully: ${competition.name} (${competitionId}) - ` +
@@ -1747,8 +1734,8 @@ export class CompetitionService {
       }
     } catch (error) {
       this.logger.error(
-        `[CompetitionManager] Error getting leaderboard for competition ${competitionId}:`,
-        error,
+        { error },
+        `[CompetitionManager] Error getting leaderboard for competition ${competitionId}`,
       );
       return [];
     }
@@ -1843,8 +1830,8 @@ export class CompetitionService {
       };
     } catch (error) {
       this.logger.error(
-        `[CompetitionManager] Error getting leaderboard with inactive agents for competition ${competitionId}:`,
-        error,
+        { error },
+        `[CompetitionManager] Error getting leaderboard with inactive agents for competition ${competitionId}`,
       );
       // Re-throw the error so callers can handle it appropriately
       // This prevents silent failures that could mislead users
@@ -1945,8 +1932,8 @@ export class CompetitionService {
       return metricsMap;
     } catch (error) {
       this.logger.error(
-        `[CompetitionManager] Error in calculateBulkAgentMetrics:`,
-        error,
+        { error },
+        `[CompetitionManager] Error in calculateBulkAgentMetrics`,
       );
 
       throw new ApiError(
@@ -1966,7 +1953,7 @@ export class CompetitionService {
       await this.competitionRepo.findAll();
       return true;
     } catch (error) {
-      this.logger.error("[CompetitionManager] Health check failed:", error);
+      this.logger.error({ error }, "[CompetitionManager] Health check failed");
       return false;
     }
   }
@@ -2231,11 +2218,6 @@ export class CompetitionService {
 
       return { competition: updatedCompetition, updatedRewards };
     });
-
-    // Clear trading constraints cache after transaction commits (if constraints were updated)
-    if (tradingConstraints) {
-      this.tradingConstraintsService.clearConstraintsCache(competitionId);
-    }
 
     this.logger.debug(
       `[CompetitionService] Updated competition: ${competitionId}`,
@@ -2790,14 +2772,16 @@ export class CompetitionService {
           );
         } catch (error) {
           this.logger.error(
-            `[CompetitionManager] Error auto-ending competition ${competition.id}: ${error instanceof Error ? error : String(error)}`,
+            { error },
+            `[CompetitionManager] Error auto-ending competition ${competition.id}`,
           );
           // Continue processing other competitions even if one fails
         }
       }
     } catch (error) {
       this.logger.error(
-        `[CompetitionManager] Error in processCompetitionEndDateChecks: ${error instanceof Error ? error : String(error)}`,
+        { error },
+        `[CompetitionManager] Error in processCompetitionEndDateChecks`,
       );
       throw error;
     }
@@ -2875,14 +2859,16 @@ export class CompetitionService {
           );
         } catch (error) {
           this.logger.error(
-            `[CompetitionManager] Error auto-starting competition ${competition.id}: ${error instanceof Error ? error : String(error)}`,
+            { error },
+            `[CompetitionManager] Error auto-starting competition ${competition.id}`,
           );
           // Continue processing other competitions even if one fails
         }
       }
     } catch (error) {
       this.logger.error(
-        `[CompetitionManager] Error in processCompetitionStartDateChecks: ${error instanceof Error ? error : String(error)}`,
+        { error },
+        `[CompetitionManager] Error in processCompetitionStartDateChecks`,
       );
       throw error;
     }
@@ -3047,8 +3033,8 @@ export class CompetitionService {
       return await this.assembleCompetitionRules(competition);
     } catch (error) {
       this.logger.error(
-        `[CompetitionService] Error getting competition rules:`,
-        error,
+        { error },
+        `[CompetitionService] Error getting competition rules`,
       );
       throw error;
     }
@@ -3124,8 +3110,8 @@ export class CompetitionService {
       };
     } catch (error) {
       this.logger.error(
-        `[CompetitionService] Error in getCompetitionsByArenaId (${arenaId}):`,
-        error,
+        { error },
+        `[CompetitionService] Error in getCompetitionsByArenaId (${arenaId})`,
       );
       throw error;
     }
@@ -3203,8 +3189,8 @@ export class CompetitionService {
       };
     } catch (error) {
       this.logger.error(
-        `[CompetitionService] Error getting enriched competitions:`,
-        error,
+        { error },
+        `[CompetitionService] Error getting enriched competitions`,
       );
       throw error;
     }
@@ -3321,8 +3307,8 @@ export class CompetitionService {
       return result;
     } catch (error) {
       this.logger.error(
-        `[CompetitionService] Error getting competition by ID with auth:`,
-        error,
+        { error },
+        `[CompetitionService] Error getting competition by ID with auth`,
       );
       throw error;
     }
@@ -3366,8 +3352,8 @@ export class CompetitionService {
       return result;
     } catch (error) {
       this.logger.error(
-        `[CompetitionService] Error getting competition agents with auth:`,
-        error,
+        { error },
+        `[CompetitionService] Error getting competition agents with auth`,
       );
       throw error;
     }
@@ -3447,8 +3433,8 @@ export class CompetitionService {
       return Array.from(agentsMap.values());
     } catch (error) {
       this.logger.error(
-        `[CompetitionService] Error getting competition timeline with auth:`,
-        error,
+        { error },
+        `[CompetitionService] Error getting competition timeline with auth`,
       );
       throw error;
     }
@@ -3488,8 +3474,8 @@ export class CompetitionService {
       return result;
     } catch (error) {
       this.logger.error(
-        `[CompetitionService] Error getting competition trades with auth:`,
-        error,
+        { error },
+        `[CompetitionService] Error getting competition trades with auth`,
       );
       throw error;
     }
@@ -3537,8 +3523,8 @@ export class CompetitionService {
       return { positions, total };
     } catch (error) {
       this.logger.error(
-        `[CompetitionService] Error getting competition perps positions:`,
-        error,
+        { error },
+        `[CompetitionService] Error getting competition perps positions`,
       );
       throw error;
     }
@@ -3585,8 +3571,8 @@ export class CompetitionService {
       return result;
     } catch (error) {
       this.logger.error(
-        `[CompetitionService] Error getting agent competition trades with auth:`,
-        error,
+        { error },
+        `[CompetitionService] Error getting agent competition trades with auth`,
       );
       throw error;
     }
@@ -3643,8 +3629,8 @@ export class CompetitionService {
       return results;
     } catch (error) {
       this.logger.error(
-        `[CompetitionService] Error getting competition transfer violations:`,
-        error,
+        { error },
+        `[CompetitionService] Error getting competition transfer violations`,
       );
       throw error;
     }

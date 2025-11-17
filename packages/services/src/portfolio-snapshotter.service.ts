@@ -212,7 +212,10 @@ export class PortfolioSnapshotterService {
       await this.competitionRepo.findAll();
       return true;
     } catch (error) {
-      this.logger.error("[PortfolioSnapshotter] Health check failed:", error);
+      this.logger.error(
+        { error },
+        "[PortfolioSnapshotter] Health check failed",
+      );
       return false;
     }
   }

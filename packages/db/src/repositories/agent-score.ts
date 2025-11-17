@@ -221,7 +221,7 @@ export class AgentScoreRepository {
         return results;
       });
     } catch (error) {
-      this.#logger.error("Error in batchUpdateAgentRanks:", error);
+      this.#logger.error({ error }, "Error in batchUpdateAgentRanks");
       throw error;
     }
   }
@@ -305,7 +305,7 @@ export class AgentScoreRepository {
         return results;
       });
     } catch (error) {
-      this.#logger.error("Error in batchUpdateArenaRanks:", error);
+      this.#logger.error({ error }, "Error in batchUpdateArenaRanks");
       throw error;
     }
   }
@@ -351,7 +351,7 @@ export class AgentScoreRepository {
 
       return await query;
     } catch (error) {
-      this.#logger.error("Error in getAllAgentRankHistory:", error);
+      this.#logger.error({ error }, "Error in getAllAgentRankHistory");
       throw error;
     }
   }

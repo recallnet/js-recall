@@ -141,7 +141,7 @@ export class TradeRepository {
 
       return await query;
     } catch (error) {
-      this.#logger.error("Error in getAgentTrades:", error);
+      this.#logger.error({ error }, "Error in getAgentTrades");
       throw error;
     }
   }
@@ -183,7 +183,7 @@ export class TradeRepository {
         uniqueTokens: Number(result.unique_tokens),
       };
     } catch (error) {
-      this.#logger.error("Error in getCompetitionTradeMetrics:", error);
+      this.#logger.error({ error }, "Error in getCompetitionTradeMetrics");
       throw error;
     }
   }
@@ -248,7 +248,7 @@ export class TradeRepository {
         total: total[0]?.count ?? 0,
       };
     } catch (error) {
-      this.#logger.error("Error in getCompetitionTrades:", error);
+      this.#logger.error({ error }, "Error in getCompetitionTrades");
       throw error;
     }
   }
@@ -309,7 +309,10 @@ export class TradeRepository {
 
       return countMap;
     } catch (error) {
-      this.#logger.error("Error in countBulkAgentTradesInCompetitions:", error);
+      this.#logger.error(
+        { error },
+        "Error in countBulkAgentTradesInCompetitions",
+      );
       throw error;
     }
   }
@@ -359,7 +362,7 @@ export class TradeRepository {
         total: total[0]?.count ?? 0,
       };
     } catch (error) {
-      this.#logger.error("Error in getAgentTradesInCompetition:", error);
+      this.#logger.error({ error }, "Error in getAgentTradesInCompetition");
       throw error;
     }
   }
@@ -375,7 +378,7 @@ export class TradeRepository {
 
       return result?.count ?? 0;
     } catch (error) {
-      this.#logger.error("Error in count:", error);
+      this.#logger.error({ error }, "Error in count");
       throw error;
     }
   }
