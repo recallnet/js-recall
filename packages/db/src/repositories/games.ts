@@ -55,7 +55,7 @@ export class GamesRepository {
 
       return result;
     } catch (error) {
-      this.#logger.error("Error in upsert:", error);
+      this.#logger.error({ error }, "Error in upsert");
       throw error;
     }
   }
@@ -75,7 +75,7 @@ export class GamesRepository {
 
       return result;
     } catch (error) {
-      this.#logger.error("Error in findById:", error);
+      this.#logger.error({ error }, "Error in findById");
       throw error;
     }
   }
@@ -97,7 +97,7 @@ export class GamesRepository {
 
       return result;
     } catch (error) {
-      this.#logger.error("Error in findByGlobalGameId:", error);
+      this.#logger.error({ error }, "Error in findByGlobalGameId");
       throw error;
     }
   }
@@ -117,7 +117,7 @@ export class GamesRepository {
 
       return result;
     } catch (error) {
-      this.#logger.error("Error in findByGameKey:", error);
+      this.#logger.error({ error }, "Error in findByGameKey");
       throw error;
     }
   }
@@ -140,7 +140,7 @@ export class GamesRepository {
 
       return results;
     } catch (error) {
-      this.#logger.error("Error in findByIds:", error);
+      this.#logger.error({ error }, "Error in findByIds");
       throw error;
     }
   }
@@ -168,7 +168,7 @@ export class GamesRepository {
 
       return result;
     } catch (error) {
-      this.#logger.error("Error in updateStatus:", error);
+      this.#logger.error({ error }, "Error in updateStatus");
       throw error;
     }
   }

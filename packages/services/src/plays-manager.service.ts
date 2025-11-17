@@ -102,7 +102,7 @@ export class PlaysManagerService {
 
       return { plays: playsWithContext, total };
     } catch (error) {
-      this.#logger.error("Error in getOpenPlays:", error);
+      this.#logger.error({ error }, "Error in getOpenPlays");
       throw error;
     }
   }
@@ -134,7 +134,7 @@ export class PlaysManagerService {
         },
       };
     } catch (error) {
-      this.#logger.error("Error in getPlayById:", error);
+      this.#logger.error({ error }, "Error in getPlayById");
       throw error;
     }
   }
@@ -154,7 +154,7 @@ export class PlaysManagerService {
       const now = new Date();
       return play.status === "open" && play.lockTime > now;
     } catch (error) {
-      this.#logger.error("Error in isPlayOpen:", error);
+      this.#logger.error({ error }, "Error in isPlayOpen");
       throw error;
     }
   }

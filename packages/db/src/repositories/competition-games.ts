@@ -56,7 +56,7 @@ export class CompetitionGamesRepository {
 
       return result;
     } catch (error) {
-      this.#logger.error("Error in create:", error);
+      this.#logger.error({ error }, "Error in create");
       throw error;
     }
   }
@@ -75,7 +75,7 @@ export class CompetitionGamesRepository {
 
       return results.map((r) => r.gameId);
     } catch (error) {
-      this.#logger.error("Error in findGameIdsByCompetitionId:", error);
+      this.#logger.error({ error }, "Error in findGameIdsByCompetitionId");
       throw error;
     }
   }
@@ -104,7 +104,7 @@ export class CompetitionGamesRepository {
 
       return result;
     } catch (error) {
-      this.#logger.error("Error in findByCompetitionAndGame:", error);
+      this.#logger.error({ error }, "Error in findByCompetitionAndGame");
       throw error;
     }
   }
@@ -128,7 +128,7 @@ export class CompetitionGamesRepository {
 
       return result.rowCount || 0;
     } catch (error) {
-      this.#logger.error("Error in delete:", error);
+      this.#logger.error({ error }, "Error in delete");
       throw error;
     }
   }

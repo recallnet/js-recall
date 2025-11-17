@@ -159,8 +159,8 @@ export class SportsDataIONflProvider {
       return response.data;
     } catch (error) {
       this.#logger.error(
-        `Error fetching play-by-play for ${globalGameId}:`,
-        error,
+        { error, globalGameId },
+        "Error fetching play-by-play for game",
       );
       throw error;
     }
@@ -184,14 +184,15 @@ export class SportsDataIONflProvider {
       );
 
       this.#logger.info(
-        `Fetched ${response.data.length} games for ${season} week ${week}`,
+        { season, week, fetchedCount: response.data.length },
+        "Fetched scores for week",
       );
 
       return response.data;
     } catch (error) {
       this.#logger.error(
-        `Error fetching scores for ${season} week ${week}:`,
-        error,
+        { error, season, week },
+        "Error fetching scores for season week",
       );
       throw error;
     }
@@ -204,17 +205,20 @@ export class SportsDataIONflProvider {
    */
   async getScoresBySeason(season: number = 2025): Promise<SportsDataIOScore[]> {
     try {
-      this.#logger.debug(`Fetching scores for ${season}`);
+      this.#logger.debug({ season }, "Fetching scores for season");
 
       const response = await this.#client.get<SportsDataIOScore[]>(
         `/nfl/scores/json/Scores/${season}`,
       );
 
-      this.#logger.info(`Fetched ${response.data.length} games for ${season}`);
+      this.#logger.info(
+        { season, fetchedCount: response.data.length },
+        "Fetched scores for season",
+      );
 
       return response.data;
     } catch (error) {
-      this.#logger.error(`Error fetching scores for ${season}:`, error);
+      this.#logger.error({ error, season }, "Error fetching scores for season");
       throw error;
     }
   }

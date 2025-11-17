@@ -77,7 +77,7 @@ export class NflPlaybackIngestorService {
       this.#logger.info(`Loaded ${games.length} games from ${gamesPath}`);
       return games;
     } catch (error) {
-      this.#logger.error("Error loading games:", error);
+      this.#logger.error({ error }, "Error loading games");
       throw error;
     }
   }
@@ -98,13 +98,14 @@ export class NflPlaybackIngestorService {
       const plays = JSON.parse(content) as BaselinePlay[];
 
       this.#logger.info(
-        `Loaded ${plays.length} plays for game ${globalGameId} from ${playsPath}`,
+        { globalGameId, playsPath, playsLength: plays.length },
+        "Loaded plays for game",
       );
       return plays;
     } catch (error) {
       this.#logger.error(
-        `Error loading plays for game ${globalGameId}:`,
-        error,
+        { error, globalGameId },
+        "Error loading plays for game",
       );
       throw error;
     }
@@ -132,10 +133,18 @@ export class NflPlaybackIngestorService {
 
         gameIdMap.set(game.globalGameId, dbGame.id);
         this.#logger.info(
-          `Ingested game ${game.globalGameId} (${game.gameKey}) -> ${dbGame.id}`,
+          {
+            globalGameId: game.globalGameId,
+            gameKey: game.gameKey,
+            dbGameId: dbGame.id,
+          },
+          "Ingested game data",
         );
       } catch (error) {
-        this.#logger.error(`Error ingesting game ${game.globalGameId}:`, error);
+        this.#logger.error(
+          { error, globalGameId: game.globalGameId, gameKey: game.gameKey },
+          "Error ingesting game data",
+        );
         throw error;
       }
     }
@@ -159,12 +168,13 @@ export class NflPlaybackIngestorService {
           gameId,
         });
         this.#logger.info(
-          `Linked game ${gameId} to competition ${competitionId}`,
+          { gameId, competitionId },
+          "Linked game to competition",
         );
       } catch (error) {
         this.#logger.error(
-          `Error linking game ${gameId} to competition ${competitionId}:`,
-          error,
+          { error, gameId, competitionId },
+          "Error linking game to competition",
         );
         // Continue with other games even if one fails
       }
@@ -220,8 +230,8 @@ export class NflPlaybackIngestorService {
         );
       } catch (error) {
         this.#logger.error(
-          `Error ingesting play ${play.sequence} for game ${gameId}:`,
-          error,
+          { error, gameId, sequence: play.sequence },
+          "Error ingesting play",
         );
         throw error;
       }
@@ -254,10 +264,7 @@ export class NflPlaybackIngestorService {
         `Resolved play ${sequence} for game ${gameId}: ${outcome}`,
       );
     } catch (error) {
-      this.#logger.error(
-        `Error resolving play ${sequence} for game ${gameId}:`,
-        error,
-      );
+      this.#logger.error({ error, gameId, sequence }, "Error resolving play");
       throw error;
     }
   }
@@ -278,9 +285,9 @@ export class NflPlaybackIngestorService {
       }
 
       await this.#gamesRepo.updateStatus(game.id, status);
-      this.#logger.info(`Updated game ${globalGameId} status to ${status}`);
+      this.#logger.info({ globalGameId, status }, "Updated game status");
     } catch (error) {
-      this.#logger.error(`Error updating game ${globalGameId} status:`, error);
+      this.#logger.error({ error, globalGameId }, "Error updating game status");
       throw error;
     }
   }

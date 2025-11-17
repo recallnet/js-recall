@@ -56,7 +56,7 @@ export class CompetitionScoresRepository {
 
       return result;
     } catch (error) {
-      this.#logger.error("Error in upsert:", error);
+      this.#logger.error({ error }, "Error in upsert");
       throw error;
     }
   }
@@ -85,7 +85,7 @@ export class CompetitionScoresRepository {
 
       return result;
     } catch (error) {
-      this.#logger.error("Error in findByCompetitionAndAgent:", error);
+      this.#logger.error({ error }, "Error in findByCompetitionAndAgent");
       throw error;
     }
   }
@@ -109,7 +109,7 @@ export class CompetitionScoresRepository {
 
       return results;
     } catch (error) {
-      this.#logger.error("Error in findByCompetition:", error);
+      this.#logger.error({ error }, "Error in findByCompetition");
       throw error;
     }
   }
@@ -163,7 +163,7 @@ export class CompetitionScoresRepository {
         brierSum: brierTerm.toString(),
       });
     } catch (error) {
-      this.#logger.error("Error in increment:", error);
+      this.#logger.error({ error }, "Error in increment");
       throw error;
     }
   }

@@ -42,7 +42,7 @@ export class PredictionsRepository {
 
       return result;
     } catch (error) {
-      this.#logger.error("Error in create:", error);
+      this.#logger.error({ error }, "Error in create");
       throw error;
     }
   }

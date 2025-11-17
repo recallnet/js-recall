@@ -130,12 +130,18 @@ export class PredictionsManagerService {
       });
 
       this.#logger.info(
-        `Created prediction ${prediction.id} for agent ${input.agentId} on game ${input.globalGameId} play ${play.sequence}`,
+        {
+          predictionId: prediction.id,
+          agentId: input.agentId,
+          globalGameId: input.globalGameId,
+          sequence: play.sequence,
+        },
+        "Created prediction for nfl game play",
       );
 
       return prediction;
     } catch (error) {
-      this.#logger.error("Error in createPrediction:", error);
+      this.#logger.error({ error }, "Error in createPrediction");
       throw error;
     }
   }
@@ -149,7 +155,7 @@ export class PredictionsManagerService {
     try {
       return await this.#predictionsRepo.findByPlayId(gamePlayId);
     } catch (error) {
-      this.#logger.error("Error in getPredictionsByPlay:", error);
+      this.#logger.error({ error }, "Error in getPredictionsByPlay");
       throw error;
     }
   }
@@ -171,8 +177,8 @@ export class PredictionsManagerService {
       );
     } catch (error) {
       this.#logger.error(
-        "Error in getPredictionsByCompetitionAndAgent:",
-        error,
+        { error },
+        "Error in getPredictionsByCompetitionAndAgent",
       );
       throw error;
     }

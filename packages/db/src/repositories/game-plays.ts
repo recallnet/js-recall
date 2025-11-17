@@ -43,7 +43,7 @@ export class GamePlaysRepository {
 
       return result;
     } catch (error) {
-      this.#logger.error("Error in insert:", error);
+      this.#logger.error({ error }, "Error in insert");
       throw error;
     }
   }
@@ -96,7 +96,7 @@ export class GamePlaysRepository {
 
       return result;
     } catch (error) {
-      this.#logger.error("Error in upsert:", error);
+      this.#logger.error({ error }, "Error in upsert");
       throw error;
     }
   }
@@ -116,7 +116,7 @@ export class GamePlaysRepository {
 
       return result;
     } catch (error) {
-      this.#logger.error("Error in findById:", error);
+      this.#logger.error({ error }, "Error in findById");
       throw error;
     }
   }
@@ -155,7 +155,7 @@ export class GamePlaysRepository {
 
       return results;
     } catch (error) {
-      this.#logger.error("Error in findOpenByGameIds:", error);
+      this.#logger.error({ error }, "Error in findOpenByGameIds");
       throw error;
     }
   }
@@ -180,7 +180,7 @@ export class GamePlaysRepository {
 
       return result?.count || 0;
     } catch (error) {
-      this.#logger.error("Error in countOpenByGameIds:", error);
+      this.#logger.error({ error }, "Error in countOpenByGameIds");
       throw error;
     }
   }
@@ -199,7 +199,7 @@ export class GamePlaysRepository {
 
       return result.rowCount || 0;
     } catch (error) {
-      this.#logger.error("Error in lockExpiredPlays:", error);
+      this.#logger.error({ error }, "Error in lockExpiredPlays");
       throw error;
     }
   }
@@ -228,7 +228,7 @@ export class GamePlaysRepository {
 
       return result;
     } catch (error) {
-      this.#logger.error("Error in resolve:", error);
+      this.#logger.error({ error }, "Error in resolve");
       throw error;
     }
   }
@@ -248,7 +248,7 @@ export class GamePlaysRepository {
 
       return results;
     } catch (error) {
-      this.#logger.error("Error in findByGameId:", error);
+      this.#logger.error({ error }, "Error in findByGameId");
       throw error;
     }
   }

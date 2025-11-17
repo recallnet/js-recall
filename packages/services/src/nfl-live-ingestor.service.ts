@@ -57,8 +57,8 @@ export class NflLiveIngestorService {
       return dbGame.id;
     } catch (error) {
       this.#logger.error(
-        `Error ingesting play-by-play for game ${globalGameId}:`,
-        error,
+        { error, globalGameId },
+        "Error ingesting play-by-play for game",
       );
       throw error;
     }
@@ -145,8 +145,8 @@ export class NflLiveIngestorService {
         ingestedCount++;
       } catch (error) {
         this.#logger.error(
-          `Error ingesting play ${play.Sequence} for game ${gameId}:`,
-          error,
+          { error, gameId, sequence: play.Sequence },
+          "Error ingesting play",
         );
         // Continue with other plays
       }
@@ -201,19 +201,25 @@ export class NflLiveIngestorService {
         });
 
         this.#logger.info(
-          `Created open play (sequence ${nextSequence}) for game ${gameId}`,
+          { gameId, sequence: nextSequence },
+          "Created open play",
         );
         ingestedCount++;
       } catch (error) {
         this.#logger.error(
-          `Error creating open play for game ${gameId}:`,
-          error,
+          { error, gameId },
+          "Error creating open play for game",
         );
       }
     }
 
     this.#logger.info(
-      `Ingested ${ingestedCount} plays for game ${gameId} (${data.Plays.length - ingestedCount} non-predictable)`,
+      {
+        gameId,
+        ingestedCount,
+        nonPredictableCount: data.Plays.length - ingestedCount,
+      },
+      "Ingested plays for game",
     );
   }
 
@@ -247,20 +253,21 @@ export class NflLiveIngestorService {
           }
         } catch (error) {
           this.#logger.error(
-            `Error ingesting game ${score.GlobalGameID} (${score.GameKey}):`,
-            error,
+            { error, globalGameId: score.GlobalGameID, gameKey: score.GameKey },
+            "Error ingesting game",
           );
           // Continue with other games
         }
       }
 
       this.#logger.info(
-        `Ingested ${gameIds.length} games for ${season} week ${week}`,
+        { season, week, ingestedCount: gameIds.length },
+        "Ingested games for week",
       );
 
       return gameIds;
     } catch (error) {
-      this.#logger.error(`Error ingesting week ${season} W${week}:`, error);
+      this.#logger.error({ error, season, week }, "Error ingesting week");
       throw error;
     }
   }
