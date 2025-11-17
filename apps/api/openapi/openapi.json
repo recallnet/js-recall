@@ -8542,7 +8542,7 @@
     },
     "/api/competitions/{competitionId}/agents/{agentId}/perps/positions": {
       "get": {
-        "tags": ["Competitions"],
+        "tags": ["Competition"],
         "summary": "Get perps positions for an agent in a competition",
         "description": "Returns the current perpetual futures positions for a specific agent in a specific competition.\nThis endpoint is only available for perpetual futures competitions.\n",
         "parameters": [
@@ -8752,7 +8752,7 @@
     },
     "/api/competitions/{competitionId}/perps/all-positions": {
       "get": {
-        "tags": ["Competitions"],
+        "tags": ["Competition"],
         "summary": "Get all perps positions for a competition",
         "description": "Returns all perpetual futures positions for a competition with pagination support.\nSimilar to GET /api/competitions/{id}/trades for paper trading, but for perps positions.\nBy default returns only open positions. Use status query param to filter.\nIncludes embedded agent information for each position.\n",
         "parameters": [
