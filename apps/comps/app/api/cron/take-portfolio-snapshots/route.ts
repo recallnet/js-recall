@@ -104,10 +104,8 @@ export const POST = withCronAuth(async (_: NextRequest) => {
           });
         } catch (paperError) {
           logger.error(
+            { paperError },
             `Error taking paper trading snapshots for ${activeCompetition.id}:`,
-            paperError instanceof Error
-              ? paperError.message
-              : String(paperError),
           );
           failedCount++;
           results.push({
@@ -151,8 +149,7 @@ export const POST = withCronAuth(async (_: NextRequest) => {
       message: "Portfolio snapshots completed",
     };
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    logger.error("Error in portfolio snapshots task:", errorMessage);
+    logger.error({ error }, "Error in portfolio snapshots task:");
 
     throw error;
   }

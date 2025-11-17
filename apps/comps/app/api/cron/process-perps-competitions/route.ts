@@ -130,8 +130,8 @@ export const POST = withCronAuth(async (_: NextRequest) => {
         });
       } catch (perpsError) {
         logger.error(
+          { perpsError },
           `Error processing perps competition ${activeCompetition.id}:`,
-          perpsError instanceof Error ? perpsError.message : String(perpsError),
         );
         failedCount++;
         results.push({
@@ -163,8 +163,7 @@ export const POST = withCronAuth(async (_: NextRequest) => {
       message: "Perps competition processing completed",
     };
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    logger.error("Error in perps processing task:", errorMessage);
+    logger.error({ error }, "Error in perps processing task:");
 
     throw error;
   }

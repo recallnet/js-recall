@@ -29,8 +29,7 @@ export const POST = withCronAuth(async (_: NextRequest) => {
       message: "Auto start competitions completed successfully",
     };
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    logger.error("Error checking competition start dates:", errorMessage);
+    logger.error({ error }, "Error checking competition start dates:");
 
     throw error;
   }

@@ -51,11 +51,7 @@ export const POST = withCronAuth(async (_: NextRequest) => {
       message: "Auto calculate rewards completed successfully",
     };
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    logger.error(
-      "Error processing pending rewards competitions:",
-      errorMessage,
-    );
+    logger.error({ error }, "Error processing pending rewards competitions:");
 
     throw error;
   }

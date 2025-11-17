@@ -49,7 +49,7 @@ function validateCronSecret(request: NextRequest): boolean {
       isValid = timingSafeEqual(tokenBuffer, expectedBuffer);
     }
   } catch (error) {
-    logger.warn("Error during token comparison:", error);
+    logger.warn({ error }, "Error during token comparison:");
     isValid = false;
   }
 
@@ -141,7 +141,7 @@ export function withCronAuth(
       const errorMessage =
         error instanceof Error ? error.message : String(error);
 
-      logger.error("Cron job failed:", errorMessage);
+      logger.error({ error }, "Cron job failed:");
 
       return NextResponse.json(
         {
