@@ -1,5 +1,5 @@
 import { Request } from "express";
-import { v4 as uuidv4 } from "uuid";
+import { v7 as uuidv7 } from "uuid";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import {
@@ -39,7 +39,7 @@ describe("Request Helpers", () => {
     });
 
     it("should return the user ID if it is provided", () => {
-      const userId = uuidv4();
+      const userId = uuidv7();
       const req = { userId } as AuthenticatedRequest;
       expect(ensureUserId(req)).toBe(userId);
     });
@@ -54,7 +54,7 @@ describe("Request Helpers", () => {
     });
 
     it("should return the agent ID if it is provided", () => {
-      const agentId = uuidv4();
+      const agentId = uuidv7();
       const req = { agentId } as AuthenticatedRequest;
       expect(ensureAgentId(req)).toBe(agentId);
     });
@@ -81,7 +81,7 @@ describe("Request Helpers", () => {
     });
 
     it("should return the UUID if it is provided", () => {
-      const uuid = uuidv4();
+      const uuid = uuidv7();
       expect(ensureUuid(uuid)).toBe(uuid);
     });
   });
@@ -145,7 +145,7 @@ describe("Request Helpers", () => {
     it("should throw an error if forbidden fields are included", () => {
       const req = {
         body: {
-          id: uuidv4(), // This is a forbidden field for updates
+          id: uuidv7(), // This is a forbidden field for updates
           name: "Updated Competition",
           description: "Updated description",
         },
@@ -341,12 +341,12 @@ describe("Request Helpers", () => {
     });
 
     it("should return true for user authenticated requests", () => {
-      const req = { userId: uuidv4() } as AuthenticatedRequest;
+      const req = { userId: uuidv7() } as AuthenticatedRequest;
       expect(checkIsPublicOrUserRequest(req)).toBe(true);
     });
 
     it("should return false for agent requests", () => {
-      const req = { agentId: uuidv4() } as AuthenticatedRequest;
+      const req = { agentId: uuidv7() } as AuthenticatedRequest;
       expect(checkIsPublicOrUserRequest(req)).toBe(false);
     });
 
@@ -356,7 +356,7 @@ describe("Request Helpers", () => {
     });
 
     it("should return false for agent admin requests", () => {
-      const req = { agentId: uuidv4(), isAdmin: true } as AuthenticatedRequest;
+      const req = { agentId: uuidv7(), isAdmin: true } as AuthenticatedRequest;
       expect(checkIsPublicOrUserRequest(req)).toBe(false);
     });
   });
@@ -402,12 +402,12 @@ describe("Request Helpers", () => {
     });
 
     it("should return true for user requests when caching is enabled", () => {
-      const req = { userId: uuidv4() } as AuthenticatedRequest;
+      const req = { userId: uuidv7() } as AuthenticatedRequest;
       expect(checkShouldCacheResponse(req)).toBe(true);
     });
 
     it("should return false for agent requests", () => {
-      const req = { agentId: uuidv4() } as AuthenticatedRequest;
+      const req = { agentId: uuidv7() } as AuthenticatedRequest;
       expect(checkShouldCacheResponse(req)).toBe(false);
     });
 
@@ -424,7 +424,7 @@ describe("Request Helpers", () => {
     });
 
     it("should generate user cache key for authenticated users", () => {
-      const userId = uuidv4();
+      const userId = uuidv7();
       const req = { userId } as AuthenticatedRequest;
       expect(generateCacheKey(req, "testCache")).toBe("testCache:user");
     });
@@ -438,7 +438,7 @@ describe("Request Helpers", () => {
     });
 
     it("should include params in cache key for authenticated users", () => {
-      const userId = uuidv4();
+      const userId = uuidv7();
       const req = { userId } as AuthenticatedRequest;
       const params = { competitionId: "123", status: "active" };
       expect(generateCacheKey(req, "testCache", params)).toBe(
@@ -447,8 +447,8 @@ describe("Request Helpers", () => {
     });
 
     it("should generate different cache keys when userId is included in params", () => {
-      const userId1 = uuidv4();
-      const userId2 = uuidv4();
+      const userId1 = uuidv7();
+      const userId2 = uuidv7();
       const req1 = { userId: userId1 } as AuthenticatedRequest;
       const req2 = { userId: userId2 } as AuthenticatedRequest;
       const params1 = { competitionId: "123", userId: userId1 };
@@ -463,8 +463,8 @@ describe("Request Helpers", () => {
     });
 
     it("should generate same cache key when userId is not in params", () => {
-      const userId1 = uuidv4();
-      const userId2 = uuidv4();
+      const userId1 = uuidv7();
+      const userId2 = uuidv7();
       const req1 = { userId: userId1 } as AuthenticatedRequest;
       const req2 = { userId: userId2 } as AuthenticatedRequest;
       const params = { competitionId: "123" };
