@@ -15,38 +15,21 @@ import {
 } from "../../lib/circuit-breaker.js";
 import { withRetry } from "../../lib/retry-helper.js";
 import { SpecificChain } from "../../types/index.js";
-
-/**
- * Transaction receipt from blockchain
- */
-export interface TransactionReceipt {
-  transactionHash: string;
-  blockNumber: number;
-  gasUsed: string;
-  effectiveGasPrice: string;
-  status: boolean;
-  from: string;
-  to?: string;
-  logs: Log[];
-}
-
-/**
- * Token balance information
- */
-export interface TokenBalance {
-  contractAddress: string;
-  balance: string; // Hex string
-  decimals?: number;
-  symbol?: string;
-  name?: string;
-}
+import {
+  IRpcProvider,
+  TokenBalance,
+  TransactionData,
+  TransactionReceipt,
+} from "../../types/rpc.js";
 
 /**
  * Alchemy Provider
  * Handles all blockchain RPC interactions using Alchemy SDK
  * Provides methods for scanning transactions, getting balances, and more
+ *
+ * Implements IRpcProvider interface for compatibility with RpcSpotProvider
  */
-export class AlchemyRpcProvider {
+export class AlchemyRpcProvider implements IRpcProvider {
   private alchemyInstances: Partial<Record<SpecificChain, Alchemy>> = {};
   private readonly maxRetries: number;
   private readonly retryDelayMs: number;
@@ -864,7 +847,7 @@ export class AlchemyRpcProvider {
   async getTransaction(
     txHash: string,
     chain: SpecificChain,
-  ): Promise<{ to: string | null; from: string } | null> {
+  ): Promise<TransactionData | null> {
     try {
       const result = await this.circuitBreaker.execute(async () => {
         return await withRetry(
