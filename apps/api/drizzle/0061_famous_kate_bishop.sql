@@ -35,6 +35,10 @@ CREATE TABLE "seasons" (
 	CONSTRAINT "seasons_number_unique" UNIQUE("number"),
 	CONSTRAINT "seasons_name_unique" UNIQUE("name")
 );
+INSERT INTO seasons (id, number, name, start_date, end_date)
+	VALUES (0, 0, 'Genesis', '2025-10-13T00:00:00Z', null)
+	ON CONFLICT DO NOTHING;
+
 --> statement-breakpoint
 ALTER TABLE "airdrop_allocations" ADD CONSTRAINT "airdrop_allocations_season_seasons_id_fk" FOREIGN KEY ("season") REFERENCES "public"."seasons"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "idx_sybil_classification" ON "airdrop_allocations" USING btree ("sybil_classification");--> statement-breakpoint
@@ -42,6 +46,3 @@ CREATE INDEX "idx_season" ON "airdrop_allocations" USING btree ("season");--> st
 CREATE INDEX "idx_amount" ON "airdrop_allocations" USING btree ("amount");--> statement-breakpoint
 CREATE INDEX "idx_address_lower" ON "airdrop_allocations" USING btree ("address");--> statement-breakpoint
 ALTER TABLE "conviction_claims" ADD CONSTRAINT "conviction_claims_season_seasons_id_fk" FOREIGN KEY ("season") REFERENCES "public"."seasons"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
-INSERT INTO seasons (id, number, name, start_date, end_date)
-VALUES (0, 0, 'Genesis', '2025-10-13T00:00:00Z', null)
-ON CONFLICT DO NOTHING;
