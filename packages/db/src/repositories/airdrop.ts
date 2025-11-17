@@ -464,7 +464,7 @@ export class AirdropRepository {
       await executor
         .update(seasons)
         .set({ endDate: res.startDate })
-        .where(eq(seasons.id, res.id - 1));
+        .where(eq(seasons.number, res.number - 1));
     }
   }
 

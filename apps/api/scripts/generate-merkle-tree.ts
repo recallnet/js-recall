@@ -179,7 +179,7 @@ ${colors.cyan}Generate Merkle Tree for Next Season Eligibility for Conviction Cl
 Usage: pnpm generate-merkle-tree.ts --filename <filename> --nextName <next-season-name>
 
 Options:
-  -f, --filename  CSV filename to process with format airdrop_<season-number>_<iso-timestamp>.csv (required)
+  -f, --filename  CSV filename, relative to ./scripts/data/, to process with format airdrop_<season-number>_<iso-timestamp>.csv (required)
   -n, --nextName  Next season name (required)
   -h, --help      Show this help message
 
@@ -200,9 +200,7 @@ Examples:
     process.exit(1);
   }
 
-  const pathParts = values.filename.split("/");
-  const filename = pathParts[pathParts.length - 1];
-  const filenameParts = filename?.split("_");
+  const filenameParts = values.filename.split("_");
   if (filenameParts?.length !== 3) {
     console.error(`${colors.red}Error: Invalid filename format${colors.reset}`);
     process.exit(1);
@@ -228,7 +226,7 @@ Examples:
     process.exit(1);
   }
 
-  const INPUT_FILE_PATH = path.join(__dirname, values.filename);
+  const INPUT_FILE_PATH = path.join(__dirname, "data", values.filename);
 
   const recipients: Recipient[] = [];
   let headersValidated = false;
