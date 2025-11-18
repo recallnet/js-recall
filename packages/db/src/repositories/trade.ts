@@ -3,10 +3,29 @@ import { Logger } from "pino";
 
 import { agents } from "../schema/core/defs.js";
 import { trades } from "../schema/trading/defs.js";
-import { InsertTrade } from "../schema/trading/types.js";
+import type { InsertTrade, SelectTrade } from "../schema/trading/types.js";
 import { Database } from "../types.js";
 import { BalanceRepository } from "./balance.js";
 import { SpecificChainSchema } from "./types/index.js";
+
+/**
+ * Result of a single trade creation with balance updates
+ */
+export interface TradeCreationResult {
+  trade: SelectTrade;
+  updatedBalances: {
+    fromTokenBalance: number;
+    toTokenBalance?: number;
+  };
+}
+
+/**
+ * Result of batch trade creation
+ */
+export interface BatchTradeCreationResult {
+  successful: Array<TradeCreationResult & { agentId: string }>;
+  failed: Array<{ trade: InsertTrade; error: Error }>;
+}
 
 /**
  * Trade Repository
@@ -32,13 +51,9 @@ export class TradeRepository {
    * @param trade Trade to create
    * @returns Object containing the created trade and updated balance amounts
    */
-  async createTradeWithBalances(trade: InsertTrade): Promise<{
-    trade: typeof trades.$inferSelect;
-    updatedBalances: {
-      fromTokenBalance: number;
-      toTokenBalance?: number;
-    };
-  }> {
+  async createTradeWithBalances(
+    trade: InsertTrade,
+  ): Promise<TradeCreationResult> {
     return await this.#db.transaction(async (tx) => {
       // Validate and parse the fromSpecificChain
       const fromSpecificChain = SpecificChainSchema.parse(
@@ -381,5 +396,65 @@ export class TradeRepository {
       this.#logger.error({ error }, "Error in count");
       throw error;
     }
+  }
+
+  /**
+   * Batch create trades with balance updates
+   * Processes trades in controlled batches to avoid database contention
+   * @param tradesToCreate Array of trades to create
+   * @returns Results with successes and failures
+   */
+  async batchCreateTradesWithBalances(
+    tradesToCreate: InsertTrade[],
+  ): Promise<BatchTradeCreationResult> {
+    const successful: Array<TradeCreationResult & { agentId: string }> = [];
+    const failed: Array<{ trade: InsertTrade; error: Error }> = [];
+
+    if (tradesToCreate.length === 0) {
+      return { successful, failed };
+    }
+
+    const concurrencyLimit = 5;
+
+    for (let i = 0; i < tradesToCreate.length; i += concurrencyLimit) {
+      const batch = tradesToCreate.slice(i, i + concurrencyLimit);
+
+      const batchResults = await Promise.allSettled(
+        batch.map((trade) =>
+          this.createTradeWithBalances(trade).then((result) => ({
+            agentId: trade.agentId,
+            ...result,
+          })),
+        ),
+      );
+
+      batchResults.forEach((result, index) => {
+        const trade = batch[index];
+        if (!trade) {
+          this.#logger.error(
+            `[TradeRepository] Unexpected missing trade at index ${index}`,
+          );
+          return;
+        }
+
+        if (result.status === "fulfilled") {
+          successful.push(result.value);
+        } else {
+          failed.push({
+            trade,
+            error:
+              result.reason instanceof Error
+                ? result.reason
+                : new Error(String(result.reason)),
+          });
+        }
+      });
+    }
+
+    this.#logger.info(
+      `[TradeRepository] Batch trade creation completed: ${successful.length} successful, ${failed.length} failed`,
+    );
+
+    return { successful, failed };
   }
 }

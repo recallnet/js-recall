@@ -36,6 +36,14 @@ export const crossChainTradingType = tradingComps.enum(
 );
 
 /**
+ * Enum for trade types.
+ */
+export const tradeType = tradingComps.enum("trade_type", [
+  "simulated",
+  "spot_live",
+]);
+
+/**
  * Enum for evaluation metrics used in perps competitions.
  */
 export const evaluationMetricEnum = tradingComps.enum("evaluation_metric", [
@@ -200,6 +208,17 @@ export const trades = tradingComps.table(
     toChain: varchar("to_chain", { length: 10 }),
     fromSpecificChain: varchar("from_specific_chain", { length: 20 }),
     toSpecificChain: varchar("to_specific_chain", { length: 20 }),
+
+    // Trade type discriminator
+    tradeType: tradeType("trade_type").default("simulated"),
+
+    // On-chain specific fields (for spot_live trades)
+    txHash: varchar("tx_hash", { length: 100 }),
+    blockNumber: integer("block_number"),
+    protocol: varchar("protocol", { length: 50 }),
+    gasUsed: numeric("gas_used"),
+    gasPrice: numeric("gas_price"),
+    gasCostUsd: numeric("gas_cost_usd"),
   },
   (table) => [
     index("idx_trades_competition_id").on(table.competitionId),
@@ -217,6 +236,15 @@ export const trades = tradingComps.table(
     index("idx_trades_competition_agent_timestamp").on(
       table.competitionId,
       table.agentId,
+      sql`${table.timestamp} DESC`,
+    ),
+    // Spot live specific indexes
+    index("idx_trades_trade_type").on(table.tradeType),
+    index("idx_trades_tx_hash").on(table.txHash),
+    index("idx_trades_block_number").on(table.blockNumber),
+    index("idx_trades_type_competition_timestamp").on(
+      table.tradeType,
+      table.competitionId,
       sql`${table.timestamp} DESC`,
     ),
     foreignKey({
@@ -656,5 +684,265 @@ export const perpsSelfFundingAlerts = tradingComps.table(
       table.reviewed,
     ),
     index("idx_perps_alerts_detected").on(table.detectedAt.desc()),
+  ],
+);
+
+/**
+ * Data source types for spot live competitions
+ */
+export const spotLiveDataSourceEnum = tradingComps.enum(
+  "spot_live_data_source",
+  [
+    "rpc_direct", // Direct RPC provider (e.g., Alchemy)
+    "envio_indexing", // Envio indexing service
+    "hybrid", // Combination of both
+  ],
+);
+
+/**
+ * Configuration for spot live trading competitions
+ */
+export const spotLiveCompetitionConfig = tradingComps.table(
+  "spot_live_competition_config",
+  {
+    competitionId: uuid("competition_id")
+      .primaryKey()
+      .references(() => competitions.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+
+    // Data source configuration
+    dataSource: spotLiveDataSourceEnum("data_source").notNull(),
+    dataSourceConfig: jsonb("data_source_config").notNull(),
+    // For rpc_direct: { provider: "alchemy", apiKeys: {...}, ... }
+    // For envio_indexing: { indexerUrl: "...", ... }
+
+    // Monitoring thresholds
+    selfFundingThresholdUsd: numeric("self_funding_threshold_usd").default(
+      "10.00",
+    ),
+    minFundingThreshold: numeric("min_funding_threshold"),
+    inactivityHours: integer("inactivity_hours").default(24),
+
+    // Sync configuration
+    syncIntervalMinutes: integer("sync_interval_minutes").default(5),
+
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+  },
+  (table) => [
+    index("idx_spot_live_config_competition_id").on(table.competitionId),
+  ],
+);
+
+/**
+ * Whitelisted DEX protocols per competition
+ */
+export const spotLiveAllowedProtocols = tradingComps.table(
+  "spot_live_allowed_protocols",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    competitionId: uuid("competition_id")
+      .notNull()
+      .references(() => competitions.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    specificChain: varchar("specific_chain", { length: 20 }).notNull(),
+    protocol: varchar("protocol", { length: 50 }).notNull(),
+    routerAddress: varchar("router_address", { length: 66 }).notNull(),
+    swapEventSignature: varchar("swap_event_signature", {
+      length: 66,
+    }).notNull(),
+    factoryAddress: varchar("factory_address", { length: 66 }),
+
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  },
+  (table) => [
+    index("idx_spot_live_protocols_competition_id").on(table.competitionId),
+    index("idx_spot_live_protocols_chain").on(
+      table.competitionId,
+      table.specificChain,
+    ),
+    unique("spot_live_protocols_unique").on(
+      table.competitionId,
+      table.specificChain,
+      table.routerAddress,
+    ),
+  ],
+);
+
+/**
+ * Chains enabled for spot live competitions
+ */
+export const spotLiveCompetitionChains = tradingComps.table(
+  "spot_live_competition_chains",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    competitionId: uuid("competition_id")
+      .notNull()
+      .references(() => competitions.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    specificChain: varchar("specific_chain", { length: 20 }).notNull(),
+    enabled: boolean("enabled").notNull().default(true),
+
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  },
+  (table) => [
+    index("idx_spot_live_chains_competition_id").on(table.competitionId),
+    unique("spot_live_chains_unique").on(
+      table.competitionId,
+      table.specificChain,
+    ),
+  ],
+);
+
+/**
+ * Token whitelist for spot live competitions
+ */
+export const spotLiveAllowedTokens = tradingComps.table(
+  "spot_live_allowed_tokens",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    competitionId: uuid("competition_id")
+      .notNull()
+      .references(() => competitions.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    specificChain: varchar("specific_chain", { length: 20 }).notNull(),
+    tokenAddress: varchar("token_address", { length: 66 }).notNull(),
+    tokenSymbol: varchar("token_symbol", { length: 20 }).notNull(),
+
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  },
+  (table) => [
+    index("idx_spot_live_tokens_competition_id").on(table.competitionId),
+    index("idx_spot_live_tokens_chain").on(
+      table.competitionId,
+      table.specificChain,
+    ),
+    unique("spot_live_tokens_unique").on(
+      table.competitionId,
+      table.specificChain,
+      table.tokenAddress,
+    ),
+  ],
+);
+
+/**
+ * Transfer history for spot live competitions
+ */
+export const spotLiveTransferHistory = tradingComps.table(
+  "spot_live_transfer_history",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    agentId: uuid("agent_id")
+      .notNull()
+      .references(() => agents.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    competitionId: uuid("competition_id")
+      .notNull()
+      .references(() => competitions.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+
+    // Transfer details
+    type: varchar("type", { length: 20 }).notNull(), // 'deposit' | 'withdraw' | 'transfer'
+    specificChain: varchar("specific_chain", { length: 20 }).notNull(),
+    tokenAddress: varchar("token_address", { length: 66 }).notNull(),
+    tokenSymbol: varchar("token_symbol", { length: 20 }).notNull(),
+    amount: numeric("amount").notNull(),
+    amountUsd: numeric("amount_usd"),
+
+    // Addresses
+    fromAddress: varchar("from_address", { length: 66 }).notNull(),
+    toAddress: varchar("to_address", { length: 66 }).notNull(),
+
+    // On-chain details
+    txHash: varchar("tx_hash", { length: 66 }).notNull(),
+    blockNumber: integer("block_number").notNull(),
+    transferTimestamp: timestamp("transfer_timestamp", {
+      withTimezone: true,
+    }).notNull(),
+
+    // Metadata
+    capturedAt: timestamp("captured_at", { withTimezone: true }).defaultNow(),
+  },
+  (table) => [
+    index("idx_spot_live_transfers_agent_comp").on(
+      table.agentId,
+      table.competitionId,
+    ),
+    index("idx_spot_live_transfers_timestamp").on(table.transferTimestamp),
+    index("idx_spot_live_transfers_agent_comp_timestamp").on(
+      table.agentId,
+      table.competitionId,
+      table.transferTimestamp,
+    ),
+    index("idx_spot_live_transfers_type").on(table.type),
+    unique("spot_live_transfers_tx_hash_unique").on(table.txHash),
+  ],
+);
+
+/**
+ * Self-funding violation alerts for spot live competitions
+ */
+export const spotLiveSelfFundingAlerts = tradingComps.table(
+  "spot_live_self_funding_alerts",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    agentId: uuid("agent_id")
+      .notNull()
+      .references(() => agents.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    competitionId: uuid("competition_id")
+      .notNull()
+      .references(() => competitions.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+
+    // Detection details
+    detectionMethod: varchar("detection_method", { length: 50 }).notNull(), // 'transfer_history' | 'balance_reconciliation'
+    violationType: varchar("violation_type", { length: 50 }).notNull(), // 'deposit' | 'withdrawal_exceeds_limit'
+    detectedValue: numeric("detected_value").notNull(),
+    thresholdValue: numeric("threshold_value").notNull(),
+    specificChain: varchar("specific_chain", { length: 20 }),
+    txHash: varchar("tx_hash", { length: 66 }),
+
+    // Snapshot data
+    transferSnapshot: jsonb("transfer_snapshot"),
+
+    // Review status
+    detectedAt: timestamp("detected_at", { withTimezone: true }).defaultNow(),
+    reviewed: boolean("reviewed").default(false),
+    reviewNote: text("review_note"),
+    actionTaken: varchar("action_taken", { length: 50 }),
+    reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+    reviewedBy: uuid("reviewed_by").references(() => admins.id, {
+      onDelete: "set null",
+      onUpdate: "cascade",
+    }),
+  },
+  (table) => [
+    index("idx_spot_live_alerts_agent_comp").on(
+      table.agentId,
+      table.competitionId,
+    ),
+    index("idx_spot_live_alerts_comp_reviewed").on(
+      table.competitionId,
+      table.reviewed,
+    ),
+    index("idx_spot_live_alerts_detected").on(table.detectedAt.desc()),
+    index("idx_spot_live_alerts_violation_type").on(table.violationType),
   ],
 );
