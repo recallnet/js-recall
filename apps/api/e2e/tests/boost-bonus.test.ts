@@ -1,11 +1,6 @@
-import { beforeAll, describe, expect, test } from "vitest";
+import { beforeAll, describe, test } from "vitest";
 
-import {
-  generateRandomEthAddress,
-  getAdminApiKey,
-} from "@recallnet/test-utils";
-
-import { createTestClient } from "../utils/test-setup.js";
+import { createTestClient, getAdminApiKey } from "@recallnet/test-utils";
 
 /**
  * E2E tests for Bonus Boosts API endpoints
