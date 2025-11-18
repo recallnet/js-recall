@@ -204,26 +204,47 @@ describe("PortfolioSnapshotterService", () => {
         },
       ];
 
-      // Simulate getBulkPrices being called and returning both chain prices
-      vi.mocked(mockPriceTrackerService.getBulkPrices).mockResolvedValueOnce(
-        new Map([
-          [
-            orderTokenAddress,
-            {
-              price: 0.039, // Polygon price (first fetch)
-              symbol: "ORDER",
-              token: orderTokenAddress,
-              timestamp: new Date(),
-              chain: BlockchainType.EVM,
-              specificChain: "polygon",
-              pairCreatedAt: undefined,
-              volume: undefined,
-              liquidity: undefined,
-              fdv: undefined,
-            },
-          ],
-        ]),
-      );
+      // Simulate getBulkPrices being called and returning prices for both chains
+      // First call returns Polygon price, second call returns Arbitrum price
+      vi.mocked(mockPriceTrackerService.getBulkPrices)
+        .mockResolvedValueOnce(
+          new Map([
+            [
+              orderTokenAddress,
+              {
+                price: 0.039, // Polygon price
+                symbol: "ORDER",
+                token: orderTokenAddress,
+                timestamp: new Date(),
+                chain: BlockchainType.EVM,
+                specificChain: "polygon",
+                pairCreatedAt: undefined,
+                volume: undefined,
+                liquidity: undefined,
+                fdv: undefined,
+              },
+            ],
+          ]),
+        )
+        .mockResolvedValueOnce(
+          new Map([
+            [
+              orderTokenAddress,
+              {
+                price: 0.129, // Arbitrum price
+                symbol: "ORDER",
+                token: orderTokenAddress,
+                timestamp: new Date(),
+                chain: BlockchainType.EVM,
+                specificChain: "arbitrum",
+                pairCreatedAt: undefined,
+                volume: undefined,
+                liquidity: undefined,
+                fdv: undefined,
+              },
+            ],
+          ]),
+        );
 
       // Setup mocks
       vi.mocked(mockCompetitionRepo.findById).mockResolvedValue(
@@ -242,15 +263,109 @@ describe("PortfolioSnapshotterService", () => {
         mockAgentId,
       );
 
-      // With the fix, the calculation should use chain-specific prices:
-      // ORDER (arbitrum): 84647.58 × price from arbitrum
-      // ORDER (polygon): 100 × price from polygon
-      // Without proper chain matching, this would use wrong price for one chain
+      // Verify portfolio snapshot was created
+      expect(mockCompetitionRepo.createPortfolioSnapshot).toHaveBeenCalledTimes(
+        1,
+      );
 
-      expect(mockCompetitionRepo.createPortfolioSnapshot).toHaveBeenCalled();
+      const snapshotCall = vi.mocked(
+        mockCompetitionRepo.createPortfolioSnapshot,
+      ).mock.calls[0];
 
-      // Note: This test needs to be enhanced once we understand how getBulkPrices
-      // handles multiple chains for same address
+      expect(snapshotCall).toBeDefined();
+      const snapshotData = snapshotCall![0];
+
+      // Expected calculation with chain-specific prices:
+      // ORDER (arbitrum): 84647.58 × $0.129 = $10,919.54
+      // ORDER (polygon): 100 × $0.039 = $3.90
+      // Total: $10,923.44
+      const expectedValue = 84647.58 * 0.129 + 100 * 0.039;
+
+      expect(snapshotData?.totalValue).toBeCloseTo(expectedValue, 2);
+      expect(snapshotData?.agentId).toBe(mockAgentId);
+      expect(snapshotData?.competitionId).toBe(mockCompetitionId);
+
+      // Verify getBulkPrices was called twice (once per retry for missing chain)
+      expect(mockPriceTrackerService.getBulkPrices).toHaveBeenCalledTimes(2);
+    });
+
+    it("should mark unavailable chains as null when price found on only one chain", async () => {
+      const mockCompetition = {
+        id: mockCompetitionId,
+        status: "active",
+        endDate: null,
+      };
+
+      const orderTokenAddress = "0x4E200fE2f3eFb977d5fd9c430A41531FB04d97B8";
+
+      // Agent has ORDER on Arbitrum only, but system might check Polygon too
+      const mockBalances: SelectBalance[] = [
+        {
+          id: 1,
+          agentId: mockAgentId,
+          competitionId: mockCompetitionId,
+          tokenAddress: orderTokenAddress,
+          amount: 84647.58,
+          symbol: "ORDER",
+          specificChain: "arbitrum",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ];
+
+      // Mock: getBulkPrices returns Arbitrum price
+      vi.mocked(mockPriceTrackerService.getBulkPrices).mockResolvedValue(
+        new Map([
+          [
+            orderTokenAddress,
+            {
+              price: 0.129,
+              symbol: "ORDER",
+              token: orderTokenAddress,
+              timestamp: new Date(),
+              chain: BlockchainType.EVM,
+              specificChain: "arbitrum",
+              pairCreatedAt: undefined,
+              volume: undefined,
+              liquidity: undefined,
+              fdv: undefined,
+            },
+          ],
+        ]),
+      );
+
+      vi.mocked(mockCompetitionRepo.findById).mockResolvedValue(
+        mockCompetition as never,
+      );
+      vi.mocked(mockBalanceService.getAllBalances).mockResolvedValue(
+        mockBalances,
+      );
+      vi.mocked(mockCompetitionRepo.createPortfolioSnapshot).mockResolvedValue(
+        undefined as never,
+      );
+
+      // Execute
+      await portfolioSnapshotter.takePortfolioSnapshotForAgent(
+        mockCompetitionId,
+        mockAgentId,
+      );
+
+      // Verify snapshot created with correct value
+      expect(mockCompetitionRepo.createPortfolioSnapshot).toHaveBeenCalledTimes(
+        1,
+      );
+
+      const snapshotCall = vi.mocked(
+        mockCompetitionRepo.createPortfolioSnapshot,
+      ).mock.calls[0];
+
+      const snapshotData = snapshotCall![0];
+      const expectedValue = 84647.58 * 0.129;
+
+      expect(snapshotData?.totalValue).toBeCloseTo(expectedValue, 2);
+
+      // Verify no errors logged (price was found successfully)
+      expect(mockLogger.error).not.toHaveBeenCalled();
     });
   });
 });

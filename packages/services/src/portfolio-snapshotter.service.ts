@@ -102,7 +102,7 @@ export class PortfolioSnapshotterService {
         balance.tokenAddress,
         balance.specificChain,
       );
-      return balance.amount > 0 && priceMap.get(priceKey) === null;
+      return balance.amount > 0 && priceMap.get(priceKey) == null;
     });
     if (hasFailures) {
       // We have incomplete price data - skip snapshot creation
@@ -283,7 +283,7 @@ export class PortfolioSnapshotterService {
             balance.tokenAddress,
             balance.specificChain,
           );
-          if (balance.amount > 0 && priceMap.get(priceKey) === null) {
+          if (balance.amount > 0 && priceMap.get(priceKey) == null) {
             tokensNeedingPrices.push(balance.tokenAddress);
           }
         }
@@ -307,23 +307,33 @@ export class PortfolioSnapshotterService {
       // Merge new prices into our map (preserving existing successful prices)
       // Use chain-specific keys to prevent collisions for same address on different chains
       for (const [tokenAddress, priceReport] of newPrices) {
-        // Only update if we got a successful price (not null)
+        // Find all chains where this token exists in balances
+        const chainsWithToken = balances
+          .filter(
+            (b) => b.tokenAddress.toLowerCase() === tokenAddress.toLowerCase(),
+          )
+          .map((b) => b.specificChain);
+
         if (priceReport !== null && priceReport.specificChain) {
+          // Store successful price for the specific chain returned by API
           const priceKey = this.getPriceMapKey(
             tokenAddress,
             priceReport.specificChain,
           );
           priceMap.set(priceKey, priceReport);
-        } else {
-          // For null prices, we need to set for all chains this token might be on
-          // Find which chains have this token in balances
-          const chainsWithToken = balances
-            .filter(
-              (b) =>
-                b.tokenAddress.toLowerCase() === tokenAddress.toLowerCase(),
-            )
-            .map((b) => b.specificChain);
 
+          // Also mark other chains as attempted but unavailable (null)
+          // This prevents undefined checks from passing when price only exists on one chain
+          for (const chain of chainsWithToken) {
+            if (chain !== priceReport.specificChain) {
+              const otherChainKey = this.getPriceMapKey(tokenAddress, chain);
+              if (!priceMap.has(otherChainKey)) {
+                priceMap.set(otherChainKey, null);
+              }
+            }
+          }
+        } else {
+          // For null prices, set for all chains this token might be on
           for (const chain of chainsWithToken) {
             const priceKey = this.getPriceMapKey(tokenAddress, chain);
             if (!priceMap.has(priceKey)) {
@@ -340,7 +350,7 @@ export class PortfolioSnapshotterService {
           balance.tokenAddress,
           balance.specificChain,
         );
-        return balance.amount > 0 && priceMap.get(priceKey) === null;
+        return balance.amount > 0 && priceMap.get(priceKey) == null;
       });
 
       if (allPricesFetched) {
@@ -360,7 +370,7 @@ export class PortfolioSnapshotterService {
             balance.tokenAddress,
             balance.specificChain,
           );
-          if (priceMap.get(priceKey) === null && balance.amount > 0) {
+          if (priceMap.get(priceKey) == null && balance.amount > 0) {
             missingTokenDetails.push(
               `${balance.tokenAddress} on ${balance.specificChain} (${balance.symbol})`,
             );
@@ -378,7 +388,7 @@ export class PortfolioSnapshotterService {
             balance.tokenAddress,
             balance.specificChain,
           );
-          return balance.amount > 0 && priceMap.get(priceKey) === null;
+          return balance.amount > 0 && priceMap.get(priceKey) == null;
         }).length;
         this.logger.debug(
           `[PortfolioSnapshotter] ${failedCount} tokens still missing prices for agent ${agentId}, will retry entire batch`,
