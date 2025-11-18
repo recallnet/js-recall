@@ -37,7 +37,6 @@ import {
   EmailService,
   LeaderboardService,
   NflLiveIngestorService,
-  NflPlaybackIngestorService,
   PartnerService,
   PerpsDataProcessor,
   PlaysManagerService,
@@ -136,7 +135,6 @@ class ServiceRegistry {
   private readonly _competitionGamesRepository: CompetitionGamesRepository;
   private readonly _predictionsRepository: PredictionsRepository;
   private readonly _competitionScoresRepository: CompetitionScoresRepository;
-  private readonly _nflPlaybackIngestorService: NflPlaybackIngestorService;
   private readonly _nflLiveIngestorService: NflLiveIngestorService;
   private readonly _sportsDataIOProvider: SportsDataIONflProvider;
   private readonly _playsManagerService: PlaysManagerService;
@@ -396,6 +394,8 @@ class ServiceRegistry {
       this._agentRepository,
       agentScoreRepository,
       this._arenaRepository,
+      this._gamesRepository,
+      this._competitionGamesRepository,
       this._perpsRepository,
       this._competitionRepository,
       this._stakesRepository,
@@ -450,14 +450,6 @@ class ServiceRegistry {
       );
     }
 
-    // Initialize NFL services
-    this._nflPlaybackIngestorService = new NflPlaybackIngestorService(
-      this._gamesRepository,
-      this._gamePlaysRepository,
-      this._competitionGamesRepository,
-      serviceLogger,
-    );
-
     // Initialize SportsDataIO provider
     this._sportsDataIOProvider = new SportsDataIONflProvider(
       config.sportsDataIO.apiKey,
@@ -469,6 +461,7 @@ class ServiceRegistry {
     this._nflLiveIngestorService = new NflLiveIngestorService(
       this._gamesRepository,
       this._gamePlaysRepository,
+      this._competitionRepository,
       this._competitionGamesRepository,
       this._sportsDataIOProvider,
       serviceLogger,
@@ -636,10 +629,6 @@ class ServiceRegistry {
 
   get partnerService(): PartnerService {
     return this._partnerService;
-  }
-
-  get nflPlaybackIngestorService(): NflPlaybackIngestorService {
-    return this._nflPlaybackIngestorService;
   }
 
   get nflLiveIngestorService(): NflLiveIngestorService {

@@ -67,6 +67,60 @@ class SimpleMockSportsDataIOServer {
   private setupRoutes(): void {
     this.app.use(express.json());
 
+    // GET /scores/json/Schedules/:season
+    this.app.get(
+      "/scores/json/Schedules/:season",
+      async (req: Request, res: Response) => {
+        try {
+          const season = req.params.season;
+
+          if (!season) {
+            res.status(400).json({ error: "Season is required" });
+            return;
+          }
+
+          // Look for schedule files in baseline/nfl/schedule/
+          const scheduleDir = path.join(this.baselineDir, "schedule");
+          const files: string[] = [];
+
+          // Look for numbered schedule files
+          let index = 0;
+          while (true) {
+            const filePath = path.join(scheduleDir, `${season}-${index}.json`);
+            try {
+              await fs.access(filePath);
+              files.push(filePath);
+              index++;
+            } catch {
+              break;
+            }
+          }
+
+          if (files.length === 0) {
+            res.status(404).json({ error: "Schedule not found for season" });
+            return;
+          }
+
+          // Combine all schedule files into one array
+          const allGames = [];
+          for (const file of files) {
+            const content = await fs.readFile(file, "utf-8");
+            const games = JSON.parse(content);
+            allGames.push(...games);
+          }
+
+          logger.info(
+            `Serving schedule for season ${season} (${allGames.length} games from ${files.length} files)`,
+          );
+
+          res.json(allGames);
+        } catch (error) {
+          logger.error({ error }, "Error serving schedule");
+          res.status(500).json({ error: "Internal server error" });
+        }
+      },
+    );
+
     // GET /pbp/json/PlayByPlay/:globalGameId
     this.app.get(
       "/pbp/json/PlayByPlay/:globalGameId",
@@ -369,12 +423,16 @@ async function main(): Promise<void> {
   logger.info(`Mock SportsDataIO NFL Server Ready`);
   logger.info(`Base URL: http://localhost:${args.port}`);
   logger.info(`\nEndpoints:`);
+  logger.info(`  GET  /scores/json/Schedules/:season`);
   logger.info(`  GET  /pbp/json/PlayByPlay/:globalGameId`);
   logger.info(`  POST /mock/advance/:globalGameId`);
   logger.info(`  POST /mock/reset/:globalGameId`);
   logger.info(`  POST /mock/auto-advance/:globalGameId`);
   logger.info(`  POST /mock/stop-auto-advance/:globalGameId`);
-  logger.info(`\nExample:`);
+  logger.info(`\nExamples:`);
+  logger.info(
+    `  curl http://localhost:${args.port}/scores/json/Schedules/2025`,
+  );
   logger.info(`  curl http://localhost:${args.port}/pbp/json/PlayByPlay/19068`);
   logger.info(
     `  curl -X POST http://localhost:${args.port}/mock/advance/19068`,

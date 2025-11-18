@@ -43,6 +43,40 @@ export type NflPredictablePlayType = z.infer<typeof NFL_PREDICTABLE_PLAY_TYPES>;
 export const DEFAULT_LOCK_OFFSET_MS = 10_000;
 
 /**
+ * SportsDataIO Schedule Game response
+ */
+export interface SportsDataIOScheduleGame {
+  GameKey: string;
+  GlobalGameID: number;
+  SeasonType: number;
+  Season: number;
+  Week: number;
+  Date: string;
+  AwayTeam: string;
+  HomeTeam: string;
+  Channel: string | null;
+  PointSpread: number | null;
+  OverUnder: number | null;
+  StadiumID: number;
+  Canceled: boolean;
+  Status: string;
+  IsClosed: boolean | null;
+  DateTimeUTC: string;
+  StadiumDetails: {
+    StadiumID: number;
+    Name: string;
+    City: string;
+    State: string;
+    Country: string;
+    Capacity: number;
+    PlayingSurface: string;
+    GeoLat: number;
+    GeoLong: number;
+    Type: string;
+  };
+}
+
+/**
  * SportsDataIO Game Score response
  */
 export interface SportsDataIOScore {
@@ -223,6 +257,36 @@ export class SportsDataIONflProvider {
       return response.data;
     } catch (error) {
       this.#logger.error({ error, season }, "Error fetching scores for season");
+      throw error;
+    }
+  }
+
+  /**
+   * Get schedule for a specific season
+   * @param season Year (e.g., 2025), defaults to the current 2025 season
+   * @returns Array of games
+   */
+  async getSchedule(
+    season: number = 2025,
+  ): Promise<SportsDataIOScheduleGame[]> {
+    try {
+      this.#logger.debug({ season }, "Fetching schedule for season");
+
+      const response = await this.#client.get<SportsDataIOScheduleGame[]>(
+        `/nfl/scores/json/Schedules/${season}`,
+      );
+
+      this.#logger.info(
+        { season, fetchedCount: response.data.length },
+        "Fetched schedule for season",
+      );
+
+      return response.data;
+    } catch (error) {
+      this.#logger.error(
+        { error, season },
+        "Error fetching schedule for season",
+      );
       throw error;
     }
   }

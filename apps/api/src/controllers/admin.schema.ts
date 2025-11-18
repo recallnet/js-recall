@@ -131,6 +131,9 @@ export const AdminCreateCompetitionSchema = z
 
     // Display
     displayState: z.enum(displayState.enumValues).optional(),
+
+    // NFL schedule
+    gameIds: z.array(UuidSchema).optional(),
   })
   .refine(
     (data) => {

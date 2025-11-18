@@ -61,6 +61,52 @@ export class GamesRepository {
   }
 
   /**
+   * Upsert multiple games by globalGameId
+   * @param gamesData Array of game data to insert or update
+   * @returns The upserted games
+   */
+  async upsertMany(gamesData: InsertGame[]): Promise<SelectGame[]> {
+    try {
+      if (gamesData.length === 0) {
+        return [];
+      }
+
+      const now = new Date();
+      const data = gamesData.map((game) => ({
+        ...game,
+        createdAt: game.createdAt || now,
+        updatedAt: now,
+      }));
+
+      const results = await this.#db
+        .insert(games)
+        .values(data)
+        .onConflictDoUpdate({
+          target: games.globalGameId,
+          set: {
+            gameKey: data[0]?.gameKey,
+            startTime: data[0]?.startTime,
+            homeTeam: data[0]?.homeTeam,
+            awayTeam: data[0]?.awayTeam,
+            venue: data[0]?.venue,
+            status: data[0]?.status,
+            updatedAt: now,
+          },
+        })
+        .returning();
+
+      if (!results || results.length === 0) {
+        throw new Error("Failed to upsert games - no results returned");
+      }
+
+      return results;
+    } catch (error) {
+      this.#logger.error({ error }, "Error in upsertMany");
+      throw error;
+    }
+  }
+
+  /**
    * Find a game by ID
    * @param id Game ID
    * @returns The game or undefined
@@ -98,26 +144,6 @@ export class GamesRepository {
       return result;
     } catch (error) {
       this.#logger.error({ error }, "Error in findByGlobalGameId");
-      throw error;
-    }
-  }
-
-  /**
-   * Find a game by game key
-   * @param gameKey SportsDataIO game key (e.g., "202510106")
-   * @returns The game or undefined
-   */
-  async findByGameKey(gameKey: string): Promise<SelectGame | undefined> {
-    try {
-      const [result] = await this.#db
-        .select()
-        .from(games)
-        .where(eq(games.gameKey, gameKey))
-        .limit(1);
-
-      return result;
-    } catch (error) {
-      this.#logger.error({ error }, "Error in findByGameKey");
       throw error;
     }
   }

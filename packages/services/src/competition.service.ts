@@ -6,6 +6,8 @@ import { AgentRepository } from "@recallnet/db/repositories/agent";
 import { AgentScoreRepository } from "@recallnet/db/repositories/agent-score";
 import { ArenaRepository } from "@recallnet/db/repositories/arena";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
+import { CompetitionGamesRepository } from "@recallnet/db/repositories/competition-games";
+import { GamesRepository } from "@recallnet/db/repositories/games";
 import { PerpsRepository } from "@recallnet/db/repositories/perps";
 import { StakesRepository } from "@recallnet/db/repositories/stakes";
 import { UserRepository } from "@recallnet/db/repositories/user";
@@ -122,6 +124,9 @@ export interface CreateCompetitionParams {
 
   // Display
   displayState?: DisplayState;
+
+  // NFL-specific fields
+  gameIds?: string[]; // Array of game UUIDs from games table to link to competition
 }
 
 /**
@@ -363,6 +368,8 @@ export class CompetitionService {
   private agentRepo: AgentRepository;
   private agentScoreRepo: AgentScoreRepository;
   private arenaRepo: ArenaRepository;
+  private gamesRepo: GamesRepository;
+  private competitionGamesRepo: CompetitionGamesRepository;
   private perpsRepo: PerpsRepository;
   private competitionRepo: CompetitionRepository;
   private stakesRepo: StakesRepository;
@@ -384,6 +391,8 @@ export class CompetitionService {
     agentRepo: AgentRepository,
     agentScoreRepo: AgentScoreRepository,
     arenaRepo: ArenaRepository,
+    gamesRepo: GamesRepository,
+    competitionGamesRepo: CompetitionGamesRepository,
     perpsRepo: PerpsRepository,
     competitionRepo: CompetitionRepository,
     stakesRepo: StakesRepository,
@@ -404,6 +413,8 @@ export class CompetitionService {
     this.agentRepo = agentRepo;
     this.agentScoreRepo = agentScoreRepo;
     this.arenaRepo = arenaRepo;
+    this.gamesRepo = gamesRepo;
+    this.competitionGamesRepo = competitionGamesRepo;
     this.perpsRepo = perpsRepo;
     this.competitionRepo = competitionRepo;
     this.stakesRepo = stakesRepo;
@@ -432,6 +443,7 @@ export class CompetitionService {
    * @param tradingConstraints Optional trading constraints for the competition
    * @param rewards Optional rewards for the competition
    * @param minimumStake Optional minimum stake amount
+   * @param gameIds Optional array of game IDs
    * @returns The created competition
    */
   async createCompetition({
@@ -471,6 +483,7 @@ export class CompetitionService {
     rewardRules,
     rewardDetails,
     displayState,
+    gameIds,
   }: CreateCompetitionParams) {
     const id = randomUUID();
 
@@ -571,6 +584,36 @@ export class CompetitionService {
         await this.perpsRepo.createPerpsCompetitionConfig(perpsConfig, tx);
         this.logger.debug(
           `[CompetitionService] Created perps config for competition ${id}: ${JSON.stringify(perpsConfig)}`,
+        );
+      }
+
+      // Link games for NFL competitions
+      if (competitionType === "nfl") {
+        if (!gameIds || gameIds.length === 0) {
+          throw new ApiError(400, "Game IDs are required for NFL competitions");
+        }
+
+        // Validate all games exist
+        const games = await this.gamesRepo.findByIds(gameIds);
+        if (games.length !== gameIds.length) {
+          const foundIds = games.map((g) => g.id);
+          const notFoundIds = gameIds.filter((id) => !foundIds.includes(id));
+          throw new ApiError(
+            404,
+            `Games not found: ${notFoundIds.join(", ")}. Run schedule sync first.`,
+          );
+        }
+
+        // Create competition_games entries
+        for (const gameId of gameIds) {
+          await this.competitionGamesRepo.create({
+            competitionId: id,
+            gameId,
+          });
+        }
+
+        this.logger.info(
+          `Linked ${gameIds.length} games to NFL competition ${id}`,
         );
       }
 
@@ -1996,6 +2039,7 @@ export class CompetitionService {
       agent: number;
       users: number;
     },
+    gameIds?: string[],
   ): Promise<{
     competition: SelectCompetition;
     updatedRewards: SelectCompetitionReward[];
@@ -2010,6 +2054,11 @@ export class CompetitionService {
     // If perpsProvider is provided but type is not, auto-set type to perpetual_futures
     if (perpsProvider && !updates.type) {
       updates.type = "perpetual_futures";
+    }
+
+    // If gameIds are provided but type is not, auto-set type to nfl
+    if (gameIds && gameIds.length > 0) {
+      updates.type = "nfl";
     }
 
     // Check if type is being changed
@@ -2185,6 +2234,28 @@ export class CompetitionService {
             `[CompetitionService] Updated perps config for competition ${competitionId}: ` +
               updateDetails.join(", "),
           );
+        }
+      }
+      // Update NFL games if provided
+      else if (
+        existingCompetition.type === "nfl" &&
+        gameIds &&
+        gameIds.length > 0
+      ) {
+        // Validate all games exist
+        const games = await this.gamesRepo.findByIds(gameIds);
+        if (games.length !== gameIds.length) {
+          const foundIds = games.map((g) => g.id);
+          const notFoundIds = gameIds.filter((id) => !foundIds.includes(id));
+          throw new ApiError(404, `Games not found: ${notFoundIds.join(", ")}`);
+        }
+
+        // Create competition_games entries
+        for (const gameId of gameIds) {
+          await this.competitionGamesRepo.create({
+            competitionId,
+            gameId,
+          });
         }
       }
 

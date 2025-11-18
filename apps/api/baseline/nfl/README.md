@@ -56,7 +56,7 @@ cd apps/api
 export SPORTSDATAIO_API_KEY=your_key
 
 # Ingest live game with 3-second polling
-pnpm tsx scripts/nfl-live-ingestor.ts \
+pnpm tsx scripts/nfl-plays-ingestor.ts \
   --globalGameId 19068 \
   --competitionId <uuid> \
   --pollInterval 3000

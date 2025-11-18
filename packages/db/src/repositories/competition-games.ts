@@ -62,6 +62,38 @@ export class CompetitionGamesRepository {
   }
 
   /**
+   * Link multiple games to competitions
+   * @param data Array of competition-game link data
+   * @returns Array of created links
+   */
+  async createMany(
+    data: InsertCompetitionGame[],
+  ): Promise<SelectCompetitionGame[]> {
+    try {
+      if (data.length === 0) {
+        return [];
+      }
+
+      const now = new Date();
+      const insertData = data.map((item) => ({
+        ...item,
+        createdAt: item.createdAt || now,
+      }));
+
+      const results = await this.#db
+        .insert(competitionGames)
+        .values(insertData)
+        .onConflictDoNothing()
+        .returning();
+
+      return results;
+    } catch (error) {
+      this.#logger.error({ error }, "Error in createMany");
+      throw error;
+    }
+  }
+
+  /**
    * Find all games for a competition
    * @param competitionId Competition ID
    * @returns Array of game IDs

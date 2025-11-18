@@ -632,6 +632,7 @@ export function makeAdminController(services: ServiceRegistry) {
           rewardRules,
           rewardDetails,
           displayState,
+          gameIds,
         } = flatParse(AdminCreateCompetitionSchema, req.body);
 
         // Create a new competition
@@ -675,6 +676,7 @@ export function makeAdminController(services: ServiceRegistry) {
             rewardRules,
             rewardDetails,
             displayState,
+            gameIds,
           },
         );
 
