@@ -581,6 +581,7 @@ export class ApiClient {
     rewardRules,
     rewardDetails,
     displayState,
+    gameIds,
   }: {
     name?: string;
     description?: string;
@@ -627,6 +628,7 @@ export class ApiClient {
     rewardRules?: string;
     rewardDetails?: string;
     displayState?: DisplayState;
+    gameIds?: string[];
   }): Promise<CreateCompetitionResponse | ErrorResponse> {
     const competitionName = name || `Test competition ${Date.now()}`;
     // Default arenaId based on competition type
@@ -674,6 +676,7 @@ export class ApiClient {
           rewardRules,
           rewardDetails,
           displayState,
+          gameIds,
         },
       );
 
@@ -718,6 +721,7 @@ export class ApiClient {
       rewardRules,
       rewardDetails,
       displayState,
+      gameIds,
     }: {
       name?: string;
       description?: string;
@@ -757,6 +761,7 @@ export class ApiClient {
       rewardRules?: string;
       rewardDetails?: string;
       displayState?: DisplayState;
+      gameIds?: string[];
     },
   ): Promise<UpdateCompetitionResponse | ErrorResponse> {
     try {
@@ -792,6 +797,7 @@ export class ApiClient {
           rewardRules,
           rewardDetails,
           displayState,
+          gameIds,
         },
       );
 
@@ -2590,14 +2596,117 @@ export class ApiClient {
   /**
    * Get leaderboard for an NFL competition
    */
-  async getNflLeaderboard(competitionId: string) {
+  async getNflLeaderboard(competitionId: string, gameId?: string) {
     try {
-      const response = await this.axiosInstance.get(
-        `/api/nfl/competitions/${competitionId}/leaderboard`,
-      );
+      const url = gameId
+        ? `/api/nfl/competitions/${competitionId}/leaderboard?gameId=${gameId}`
+        : `/api/nfl/competitions/${competitionId}/leaderboard`;
+      const response = await this.axiosInstance.get(url);
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "get NFL leaderboard");
+    }
+  }
+
+  /**
+   * Get all games for an NFL competition
+   */
+  async getNflGames(competitionId: string) {
+    try {
+      const response = await this.axiosInstance.get(
+        `/api/nfl/competitions/${competitionId}/games`,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get NFL games");
+    }
+  }
+
+  /**
+   * Get NFL competition rules
+   */
+  async getNflRules(competitionId: string) {
+    try {
+      const response = await this.axiosInstance.get(
+        `/api/nfl/competitions/${competitionId}/rules`,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get NFL rules");
+    }
+  }
+
+  /**
+   * Get specific game info
+   */
+  async getNflGameInfo(competitionId: string, gameId: string) {
+    try {
+      const response = await this.axiosInstance.get(
+        `/api/nfl/competitions/${competitionId}/games/${gameId}`,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get NFL game info");
+    }
+  }
+
+  /**
+   * Get game plays
+   */
+  async getNflGamePlays(
+    competitionId: string,
+    gameId: string,
+    limit: number = 50,
+    offset: number = 0,
+    latest: boolean = false,
+  ) {
+    try {
+      const url = latest
+        ? `/api/nfl/competitions/${competitionId}/games/${gameId}/plays/latest`
+        : `/api/nfl/competitions/${competitionId}/games/${gameId}/plays?limit=${limit}&offset=${offset}`;
+      const response = await this.axiosInstance.get(url);
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get NFL game plays");
+    }
+  }
+
+  /**
+   * Predict game winner
+   */
+  async predictGameWinner(
+    competitionId: string,
+    gameId: string,
+    predictedWinner: string,
+    confidence: number,
+  ) {
+    try {
+      const response = await this.axiosInstance.post(
+        `/api/nfl/competitions/${competitionId}/games/${gameId}/predictions`,
+        { predictedWinner, confidence },
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "predict game winner");
+    }
+  }
+
+  /**
+   * Get game predictions
+   */
+  async getGamePredictions(
+    competitionId: string,
+    gameId: string,
+    agentId?: string,
+  ) {
+    try {
+      const url = agentId
+        ? `/api/nfl/competitions/${competitionId}/games/${gameId}/predictions?agentId=${agentId}`
+        : `/api/nfl/competitions/${competitionId}/games/${gameId}/predictions`;
+      const response = await this.axiosInstance.get(url);
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get game predictions");
     }
   }
 }

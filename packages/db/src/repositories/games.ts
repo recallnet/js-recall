@@ -198,4 +198,48 @@ export class GamesRepository {
       throw error;
     }
   }
+
+  /**
+   * Update game end time and winner when game finalizes
+   * @param id Game ID
+   * @param endTime End time of the game
+   * @param winner Winning team ticker
+   * @returns Updated game
+   */
+  async finalizeGame(
+    id: string,
+    endTime: Date,
+    winner: string,
+  ): Promise<SelectGame> {
+    try {
+      const [result] = await this.#db
+        .update(games)
+        .set({
+          status: "final",
+          endTime,
+          winner,
+          updatedAt: new Date(),
+        })
+        .where(eq(games.id, id))
+        .returning();
+
+      if (!result) {
+        throw new Error("Failed to finalize game - no result returned");
+      }
+
+      return result;
+    } catch (error) {
+      this.#logger.error({ error }, "Error in finalizeGame");
+      throw error;
+    }
+  }
+
+  /**
+   * Find game by ID (alias for findById for clarity)
+   * @param id Game ID
+   * @returns Game with end time or undefined
+   */
+  async findWithEndTime(id: string): Promise<SelectGame | undefined> {
+    return this.findById(id);
+  }
 }

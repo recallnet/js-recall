@@ -6,7 +6,7 @@ import {
   InsertCompetitionGame,
   SelectCompetitionGame,
 } from "../schema/sports/types.js";
-import { Database } from "../types.js";
+import { Database, Transaction } from "../types.js";
 
 /**
  * Competition Games Repository
@@ -24,17 +24,22 @@ export class CompetitionGamesRepository {
   /**
    * Link a game to a competition
    * @param data Competition-game link data
+   * @param tx Optional transaction
    * @returns The created link
    */
-  async create(data: InsertCompetitionGame): Promise<SelectCompetitionGame> {
+  async create(
+    data: InsertCompetitionGame,
+    tx?: Transaction,
+  ): Promise<SelectCompetitionGame> {
     try {
+      const executor = tx || this.#db;
       const now = new Date();
       const insertData = {
         ...data,
         createdAt: data.createdAt || now,
       };
 
-      const [result] = await this.#db
+      const [result] = await executor
         .insert(competitionGames)
         .values(insertData)
         .onConflictDoNothing()

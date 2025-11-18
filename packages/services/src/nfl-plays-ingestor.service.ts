@@ -138,47 +138,6 @@ export class NflLiveIngestorService {
   }
 
   /**
-   * Score all resolved plays for active games
-   * @param scoringService Service to use for scoring plays
-   * @returns Number of plays scored
-   */
-  async scoreResolvedPlays(scoringService: {
-    scorePlay: (playId: string) => Promise<number>;
-  }): Promise<number> {
-    const activeGames = await this.discoverActiveGames();
-
-    if (activeGames.length === 0) {
-      return 0;
-    }
-
-    this.#logger.debug(
-      `Scoring resolved plays for ${activeGames.length} active games`,
-    );
-
-    let scoredCount = 0;
-    for (const game of activeGames) {
-      const plays = await this.#gamePlaysRepo.findByGameId(game.id);
-      for (const play of plays) {
-        if (play.status === "resolved" && play.actualOutcome) {
-          try {
-            await scoringService.scorePlay(play.id);
-            scoredCount++;
-          } catch (error) {
-            // Play might already be scored, continue
-            this.#logger.debug(
-              { playId: play.id, error },
-              "Skipping play (likely already scored)",
-            );
-          }
-        }
-      }
-    }
-
-    this.#logger.debug(`Scored ${scoredCount} plays`);
-    return scoredCount;
-  }
-
-  /**
    * Sync NFL schedule for a season
    * Fetches schedule from SportsDataIO and upserts games into database
    * @param season Season year (e.g., 2025)
@@ -272,6 +231,43 @@ export class NflLiveIngestorService {
         { error, globalGameId },
         "Error ingesting play-by-play for game",
       );
+      throw error;
+    }
+  }
+
+  /**
+   * Finalize a game and trigger scoring
+   * @param gameId Database game ID
+   * @param endTime Game end time
+   * @param winner Winning team ticker
+   * @param gameScoringService Service to use for scoring
+   * @returns Number of agents scored
+   */
+  async finalizeGame(
+    gameId: string,
+    endTime: Date,
+    winner: string,
+    gameScoringService: {
+      scoreGame: (gameId: string) => Promise<number>;
+    },
+  ): Promise<number> {
+    try {
+      // Update game with end time and winner
+      await this.#gamesRepo.finalizeGame(gameId, endTime, winner);
+
+      this.#logger.info(
+        { gameId, winner, endTime },
+        "Game finalized, triggering scoring",
+      );
+
+      // Score all predictions for this game
+      const scoredCount = await gameScoringService.scoreGame(gameId);
+
+      this.#logger.info({ gameId, scoredCount }, "Game scoring complete");
+
+      return scoredCount;
+    } catch (error) {
+      this.#logger.error({ error, gameId }, "Error in finalizeGame");
       throw error;
     }
   }

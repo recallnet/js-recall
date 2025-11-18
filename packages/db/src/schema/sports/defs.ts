@@ -34,6 +34,44 @@ export const playStatus = pgEnum("play_status", ["open", "locked", "resolved"]);
 export const playOutcome = pgEnum("play_outcome", ["run", "pass"]);
 
 /**
+ * NFL team abbreviations
+ */
+export const nflTeam = pgEnum("nfl_team", [
+  "ARI",
+  "ATL",
+  "BAL",
+  "BUF",
+  "CAR",
+  "CHI",
+  "CIN",
+  "CLE",
+  "DAL",
+  "DEN",
+  "DET",
+  "GB",
+  "HOU",
+  "IND",
+  "JAX",
+  "KC",
+  "LAC",
+  "LAR",
+  "LV",
+  "MIA",
+  "MIN",
+  "NE",
+  "NO",
+  "NYG",
+  "NYJ",
+  "PHI",
+  "PIT",
+  "SEA",
+  "SF",
+  "TB",
+  "TEN",
+  "WAS",
+]);
+
+/**
  * NFL games tracked for competitions
  * Stores game metadata from SportsDataIO or other providers
  */
@@ -44,10 +82,12 @@ export const games = pgTable(
     globalGameId: integer("global_game_id").notNull().unique(), // GlobalGameID from SportsDataIO (e.g., 19068)
     gameKey: text("game_key").notNull(), // GameKey (e.g., "202510106")
     startTime: timestamp("start_time", { withTimezone: true }).notNull(),
+    endTime: timestamp("end_time", { withTimezone: true }), // Set when game status becomes "final"
     homeTeam: text("home_team").notNull(),
     awayTeam: text("away_team").notNull(),
     venue: text("venue"),
     status: gameStatus("status").notNull().default("scheduled"),
+    winner: text("winner"), // Team ticker of winner, set when game is final
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -149,18 +189,19 @@ export const competitionGames = pgTable(
 );
 
 /**
- * Agent predictions for game plays
- * Stores run/pass predictions with confidence scores
+ * Agent predictions for game winners
+ * Stores game winner predictions with confidence scores
+ * Agents can update predictions multiple times (history is preserved)
  */
-export const predictions = pgTable(
-  "predictions",
+export const gamePredictions = pgTable(
+  "game_predictions",
   {
     id: uuid().primaryKey().notNull().defaultRandom(),
     competitionId: uuid("competition_id").notNull(),
-    gamePlayId: uuid("game_play_id").notNull(),
+    gameId: uuid("game_id").notNull(),
     agentId: uuid("agent_id").notNull(),
-    prediction: playOutcome("prediction").notNull(),
-    confidence: numeric("confidence", { precision: 4, scale: 3 }).notNull(),
+    predictedWinner: text("predicted_winner").notNull(), // Team ticker: "MIN", "CHI", etc.
+    confidence: numeric("confidence", { precision: 4, scale: 3 }).notNull(), // 0.0 - 1.0
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -169,47 +210,52 @@ export const predictions = pgTable(
     foreignKey({
       columns: [table.competitionId],
       foreignColumns: [competitions.id],
-      name: "predictions_competition_id_fkey",
+      name: "game_predictions_competition_id_fkey",
     }).onDelete("cascade"),
     foreignKey({
-      columns: [table.gamePlayId],
-      foreignColumns: [gamePlays.id],
-      name: "predictions_game_play_id_fkey",
+      columns: [table.gameId],
+      foreignColumns: [games.id],
+      name: "game_predictions_game_id_fkey",
     }).onDelete("cascade"),
     foreignKey({
       columns: [table.agentId],
       foreignColumns: [agents.id],
-      name: "predictions_agent_id_fkey",
+      name: "game_predictions_agent_id_fkey",
     }).onDelete("cascade"),
-    unique("predictions_agent_id_competition_id_game_play_id_key").on(
+    index("idx_game_predictions_competition_id_game_id_agent_id_created_at").on(
+      table.competitionId,
+      table.gameId,
       table.agentId,
-      table.competitionId,
-      table.gamePlayId,
+      table.createdAt,
     ),
-    index("idx_predictions_competition_id_game_play_id").on(
-      table.competitionId,
-      table.gamePlayId,
+    index("idx_game_predictions_game_id_agent_id").on(
+      table.gameId,
+      table.agentId,
     ),
-    index("idx_predictions_game_play_id").on(table.gamePlayId),
-    index("idx_predictions_agent_id").on(table.agentId),
+    index("idx_game_predictions_competition_id").on(table.competitionId),
+    index("idx_game_predictions_game_id").on(table.gameId),
+    index("idx_game_predictions_agent_id").on(table.agentId),
   ],
 );
 
 /**
- * Aggregated competition scores for agents
- * Tracks accuracy and Brier score across all predictions
+ * Per-game prediction scores with time-weighted Brier scoring
+ * Tracks agent performance for individual games
  */
-export const competitionScores = pgTable(
-  "competition_scores",
+export const gamePredictionScores = pgTable(
+  "game_prediction_scores",
   {
     id: uuid().primaryKey().notNull().defaultRandom(),
     competitionId: uuid("competition_id").notNull(),
+    gameId: uuid("game_id").notNull(),
     agentId: uuid("agent_id").notNull(),
-    totalPredictions: integer("total_predictions").notNull().default(0),
-    correctPredictions: integer("correct_predictions").notNull().default(0),
-    brierSum: numeric("brier_sum", { precision: 10, scale: 6 })
-      .notNull()
-      .default("0"),
+    timeWeightedBrierScore: numeric("time_weighted_brier_score", {
+      precision: 10,
+      scale: 6,
+    }).notNull(),
+    finalPrediction: text("final_prediction"), // Last prediction before game ended
+    finalConfidence: numeric("final_confidence", { precision: 4, scale: 3 }),
+    predictionCount: integer("prediction_count").notNull().default(0),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -218,18 +264,66 @@ export const competitionScores = pgTable(
     foreignKey({
       columns: [table.competitionId],
       foreignColumns: [competitions.id],
-      name: "competition_scores_competition_id_fkey",
+      name: "game_prediction_scores_competition_id_fkey",
+    }).onDelete("cascade"),
+    foreignKey({
+      columns: [table.gameId],
+      foreignColumns: [games.id],
+      name: "game_prediction_scores_game_id_fkey",
     }).onDelete("cascade"),
     foreignKey({
       columns: [table.agentId],
       foreignColumns: [agents.id],
-      name: "competition_scores_agent_id_fkey",
+      name: "game_prediction_scores_agent_id_fkey",
     }).onDelete("cascade"),
-    unique("competition_scores_competition_id_agent_id_key").on(
+    unique("game_prediction_scores_competition_id_game_id_agent_id_key").on(
+      table.competitionId,
+      table.gameId,
+      table.agentId,
+    ),
+    index("idx_game_prediction_scores_competition_id").on(table.competitionId),
+    index("idx_game_prediction_scores_game_id").on(table.gameId),
+    index("idx_game_prediction_scores_agent_id").on(table.agentId),
+  ],
+);
+
+/**
+ * Aggregate scores across all games in a competition
+ * Used for overall competition leaderboard
+ */
+export const competitionAggregateScores = pgTable(
+  "competition_aggregate_scores",
+  {
+    id: uuid().primaryKey().notNull().defaultRandom(),
+    competitionId: uuid("competition_id").notNull(),
+    agentId: uuid("agent_id").notNull(),
+    averageBrierScore: numeric("average_brier_score", {
+      precision: 10,
+      scale: 6,
+    }).notNull(),
+    gamesScored: integer("games_scored").notNull().default(0),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.competitionId],
+      foreignColumns: [competitions.id],
+      name: "competition_aggregate_scores_competition_id_fkey",
+    }).onDelete("cascade"),
+    foreignKey({
+      columns: [table.agentId],
+      foreignColumns: [agents.id],
+      name: "competition_aggregate_scores_agent_id_fkey",
+    }).onDelete("cascade"),
+    unique("competition_aggregate_scores_competition_id_agent_id_key").on(
       table.competitionId,
       table.agentId,
     ),
-    index("idx_competition_scores_competition_id").on(table.competitionId),
-    index("idx_competition_scores_agent_id").on(table.agentId),
+    index("idx_competition_aggregate_scores_competition_id").on(
+      table.competitionId,
+    ),
+    index("idx_competition_aggregate_scores_agent_id").on(table.agentId),
   ],
 );

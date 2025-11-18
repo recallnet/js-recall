@@ -9,8 +9,15 @@ export type InsertGamePlay = typeof defs.gamePlays.$inferInsert;
 export type SelectCompetitionGame = typeof defs.competitionGames.$inferSelect;
 export type InsertCompetitionGame = typeof defs.competitionGames.$inferInsert;
 
-export type SelectPrediction = typeof defs.predictions.$inferSelect;
-export type InsertPrediction = typeof defs.predictions.$inferInsert;
+export type SelectGamePrediction = typeof defs.gamePredictions.$inferSelect;
+export type InsertGamePrediction = typeof defs.gamePredictions.$inferInsert;
 
-export type SelectCompetitionScore = typeof defs.competitionScores.$inferSelect;
-export type InsertCompetitionScore = typeof defs.competitionScores.$inferInsert;
+export type SelectGamePredictionScore =
+  typeof defs.gamePredictionScores.$inferSelect;
+export type InsertGamePredictionScore =
+  typeof defs.gamePredictionScores.$inferInsert;
+
+export type SelectCompetitionAggregateScore =
+  typeof defs.competitionAggregateScores.$inferSelect;
+export type InsertCompetitionAggregateScore =
+  typeof defs.competitionAggregateScores.$inferInsert;

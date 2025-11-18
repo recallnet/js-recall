@@ -606,10 +606,13 @@ export class CompetitionService {
 
         // Create competition_games entries
         for (const gameId of gameIds) {
-          await this.competitionGamesRepo.create({
-            competitionId: id,
-            gameId,
-          });
+          await this.competitionGamesRepo.create(
+            {
+              competitionId: id,
+              gameId,
+            },
+            tx,
+          );
         }
 
         this.logger.info(
@@ -2252,10 +2255,13 @@ export class CompetitionService {
 
         // Create competition_games entries
         for (const gameId of gameIds) {
-          await this.competitionGamesRepo.create({
-            competitionId,
-            gameId,
-          });
+          await this.competitionGamesRepo.create(
+            {
+              competitionId,
+              gameId,
+            },
+            tx,
+          );
         }
       }
 

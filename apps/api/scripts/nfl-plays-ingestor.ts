@@ -98,12 +98,6 @@ async function runPollingLoop(
       const ingestedCount =
         await services.nflLiveIngestorService.ingestActiveGames();
 
-      // Score resolved plays
-      logger.debug("Scoring resolved plays...");
-      await services.nflLiveIngestorService.scoreResolvedPlays(
-        services.scoringManagerService,
-      );
-
       // Check if all games are complete
       if (ingestedCount === 0) {
         logger.info("All games complete - stopping polling");

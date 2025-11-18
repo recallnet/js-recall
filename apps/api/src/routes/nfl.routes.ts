@@ -5,7 +5,7 @@ import { ServiceRegistry } from "@/services/index.js";
 
 /**
  * NFL routes
- * Handles NFL play prediction endpoints
+ * Handles NFL game winner prediction endpoints
  */
 export function configureNflRoutes(
   services: ServiceRegistry,
@@ -19,24 +19,69 @@ export function configureNflRoutes(
   }
 
   /**
-   * GET /competitions/:competitionId/plays
-   * Get open plays for a competition
+   * GET /nfl/competitions/:competitionId/rules
+   * Get competition rules (scoring methodology, etc.)
    */
-  router.get("/competitions/:competitionId/plays", controller.getPlays);
+  router.get("/competitions/:competitionId/rules", controller.getRules);
 
   /**
-   * POST /competitions/:competitionId/games/:globalGameId/predictions
-   * Create a prediction for the next play in a game
-   * Rate limited to prevent spam
+   * GET /nfl/competitions/:competitionId/games
+   * Get all games for a competition
    */
-  router.post(
-    "/competitions/:competitionId/games/:globalGameId/predictions",
-    controller.createPrediction,
+  router.get("/competitions/:competitionId/games", controller.getAllGames);
+
+  /**
+   * GET /nfl/competitions/:competitionId/games/:gameId
+   * Get specific game info
+   */
+  router.get(
+    "/competitions/:competitionId/games/:gameId",
+    controller.getGameInfo,
   );
 
   /**
-   * GET /competitions/:competitionId/leaderboard
+   * GET /nfl/competitions/:competitionId/games/:gameId/plays
+   * Get play-by-play data for a game (with pagination)
+   * Query params: limit, offset, latest (boolean)
+   */
+  router.get(
+    "/competitions/:competitionId/games/:gameId/plays",
+    controller.getGamePlays,
+  );
+
+  /**
+   * GET /nfl/competitions/:competitionId/games/:gameId/plays/latest
+   * Get the most recent play for a game
+   */
+  router.get(
+    "/competitions/:competitionId/games/:gameId/plays/latest",
+    controller.getLatestPlay,
+  );
+
+  /**
+   * POST /nfl/competitions/:competitionId/games/:gameId/predictions
+   * Make a prediction for game winner
+   * Body: { predictedWinner: string, confidence: number }
+   */
+  router.post(
+    "/competitions/:competitionId/games/:gameId/predictions",
+    controller.predictGameWinner,
+  );
+
+  /**
+   * GET /nfl/competitions/:competitionId/games/:gameId/predictions
+   * Get predictions for a game
+   * Query params: agentId (optional - filter to specific agent)
+   */
+  router.get(
+    "/competitions/:competitionId/games/:gameId/predictions",
+    controller.getGamePredictions,
+  );
+
+  /**
+   * GET /nfl/competitions/:competitionId/leaderboard
    * Get leaderboard for a competition
+   * Query params: gameId (optional - get leaderboard for specific game)
    */
   router.get(
     "/competitions/:competitionId/leaderboard",

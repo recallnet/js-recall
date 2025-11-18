@@ -122,14 +122,34 @@
         "default": "./dist/repositories/competition-games.cjs"
       }
     },
-    "./repositories/competition-scores": {
+    "./repositories/competition-aggregate-scores": {
       "import": {
-        "types": "./dist/repositories/competition-scores.d.ts",
-        "default": "./dist/repositories/competition-scores.js"
+        "types": "./dist/repositories/competition-aggregate-scores.d.ts",
+        "default": "./dist/repositories/competition-aggregate-scores.js"
+      },
+      "require": {
+        "types": "./dist/repositories/competition-aggregate-scores.d.cts",
+        "default": "./dist/repositories/competition-aggregate-scores.cjs"
+      }
+    },
+    "./repositories/game-prediction-scores": {
+      "import": {
+        "types": "./dist/repositories/game-prediction-scores.d.ts",
+        "default": "./dist/repositories/game-prediction-scores.js"
       },
       "require": {
         "types": "./dist/repositories/competition-scores.d.cts",
         "default": "./dist/repositories/competition-scores.cjs"
+      }
+    },
+    "./repositories/game-predictions": {
+      "import": {
+        "types": "./dist/repositories/game-predictions.d.ts",
+        "default": "./dist/repositories/game-predictions.js"
+      },
+      "require": {
+        "types": "./dist/repositories/game-predictions.d.cts",
+        "default": "./dist/repositories/game-predictions.cjs"
       }
     },
     "./repositories/game-plays": {
@@ -150,16 +170,6 @@
       "require": {
         "types": "./dist/repositories/games.d.cts",
         "default": "./dist/repositories/games.cjs"
-      }
-    },
-    "./repositories/predictions": {
-      "import": {
-        "types": "./dist/repositories/predictions.d.ts",
-        "default": "./dist/repositories/predictions.js"
-      },
-      "require": {
-        "types": "./dist/repositories/predictions.d.cts",
-        "default": "./dist/repositories/predictions.cjs"
       }
     },
     "./repositories/competition": {

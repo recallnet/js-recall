@@ -826,10 +826,12 @@ export async function createNflPlayPredictionTestCompetition({
   adminClient,
   name,
   description,
+  gameIds,
 }: {
   adminClient: ApiClient;
   name?: string;
   description?: string;
+  gameIds: string[];
 }): Promise<CreateCompetitionResponse> {
   const competitionName =
     name || `NFL Prediction Test Competition ${crypto.randomUUID()}`;
@@ -838,8 +840,8 @@ export async function createNflPlayPredictionTestCompetition({
     description:
       description || `NFL prediction test competition for ${competitionName}`,
     type: "nfl",
-
     arenaId: "default-nfl-play-prediction-arena",
+    gameIds,
   });
 
   if (!result.success) {
@@ -863,38 +865,85 @@ export class NflTestClient {
   }
 
   /**
-   * Get open plays for a competition
+   * Get all games for a competition
    */
-  async getOpenPlays(
-    competitionId: string,
-    limit: number = 50,
-    offset: number = 0,
-  ) {
-    return this.client.getNflOpenPlays(competitionId, limit, offset);
+  async getGames(competitionId: string) {
+    return this.client.getNflGames(competitionId);
   }
 
   /**
-   * Submit a prediction for the next play in a game
+   * Get competition rules
    */
-  async submitPrediction(
+  async getRules(competitionId: string) {
+    return this.client.getNflRules(competitionId);
+  }
+
+  /**
+   * Get specific game info
+   */
+  async getGameInfo(competitionId: string, gameId: string) {
+    return this.client.getNflGameInfo(competitionId, gameId);
+  }
+
+  /**
+   * Get game plays (play-by-play data)
+   */
+  async getGamePlays(
     competitionId: string,
-    globalGameId: number,
-    prediction: "run" | "pass",
+    gameId: string,
+    limit: number = 50,
+    offset: number = 0,
+    latest: boolean = false,
+  ) {
+    return this.client.getNflGamePlays(
+      competitionId,
+      gameId,
+      limit,
+      offset,
+      latest,
+    );
+  }
+
+  /**
+   * Get latest play for a game
+   */
+  async getLatestPlay(competitionId: string, gameId: string) {
+    return this.client.getNflGamePlays(competitionId, gameId, 50, 0, true);
+  }
+
+  /**
+   * Predict game winner
+   */
+  async predictGameWinner(
+    competitionId: string,
+    gameId: string,
+    predictedWinner: string,
     confidence: number,
   ) {
-    return this.client.submitNflPrediction(
+    return this.client.predictGameWinner(
       competitionId,
-      globalGameId,
-      prediction,
+      gameId,
+      predictedWinner,
       confidence,
     );
   }
 
   /**
-   * Get leaderboard for a competition
+   * Get game predictions
    */
-  async getLeaderboard(competitionId: string) {
-    return this.client.getNflLeaderboard(competitionId);
+  async getGamePredictions(
+    competitionId: string,
+    gameId: string,
+    agentId?: string,
+  ) {
+    return this.client.getGamePredictions(competitionId, gameId, agentId);
+  }
+
+  /**
+   * Get leaderboard for a competition or specific game
+   */
+  async getLeaderboard(competitionId: string, gameId?: string) {
+    return this.client.getNflLeaderboard(competitionId, gameId);
   }
 
   /**

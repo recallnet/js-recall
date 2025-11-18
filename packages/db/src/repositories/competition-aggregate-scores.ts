@@ -1,0 +1,118 @@
+import { and, asc, eq } from "drizzle-orm";
+import { Logger } from "pino";
+
+import { competitionAggregateScores } from "../schema/sports/defs.js";
+import {
+  InsertCompetitionAggregateScore,
+  SelectCompetitionAggregateScore,
+} from "../schema/sports/types.js";
+import { Database } from "../types.js";
+
+/**
+ * Competition Aggregate Scores Repository
+ * Handles database operations for competition-wide aggregate scores
+ */
+export class CompetitionAggregateScoresRepository {
+  readonly #db: Database;
+  readonly #logger: Logger;
+
+  constructor(database: Database, logger: Logger) {
+    this.#db = database;
+    this.#logger = logger;
+  }
+
+  /**
+   * Upsert competition aggregate score
+   * @param score Score data to insert or update
+   * @returns The upserted score
+   */
+  async upsert(
+    score: InsertCompetitionAggregateScore,
+  ): Promise<SelectCompetitionAggregateScore> {
+    try {
+      const now = new Date();
+      const data = {
+        ...score,
+        updatedAt: now,
+      };
+
+      const [result] = await this.#db
+        .insert(competitionAggregateScores)
+        .values(data)
+        .onConflictDoUpdate({
+          target: [
+            competitionAggregateScores.competitionId,
+            competitionAggregateScores.agentId,
+          ],
+          set: {
+            averageBrierScore: data.averageBrierScore,
+            gamesScored: data.gamesScored,
+            updatedAt: now,
+          },
+        })
+        .returning();
+
+      if (!result) {
+        throw new Error(
+          "Failed to upsert competition aggregate score - no result returned",
+        );
+      }
+
+      return result;
+    } catch (error) {
+      this.#logger.error({ error }, "Error in upsert");
+      throw error;
+    }
+  }
+
+  /**
+   * Find all aggregate scores for a competition (for leaderboard)
+   * @param competitionId Competition ID
+   * @returns Array of scores ordered by average Brier score (ascending = better)
+   */
+  async findByCompetition(
+    competitionId: string,
+  ): Promise<SelectCompetitionAggregateScore[]> {
+    try {
+      const results = await this.#db
+        .select()
+        .from(competitionAggregateScores)
+        .where(eq(competitionAggregateScores.competitionId, competitionId))
+        .orderBy(asc(competitionAggregateScores.averageBrierScore));
+
+      return results;
+    } catch (error) {
+      this.#logger.error({ error }, "Error in findByCompetition");
+      throw error;
+    }
+  }
+
+  /**
+   * Find specific aggregate score for an agent
+   * @param competitionId Competition ID
+   * @param agentId Agent ID
+   * @returns The score or undefined
+   */
+  async findByCompetitionAndAgent(
+    competitionId: string,
+    agentId: string,
+  ): Promise<SelectCompetitionAggregateScore | undefined> {
+    try {
+      const [result] = await this.#db
+        .select()
+        .from(competitionAggregateScores)
+        .where(
+          and(
+            eq(competitionAggregateScores.competitionId, competitionId),
+            eq(competitionAggregateScores.agentId, agentId),
+          ),
+        )
+        .limit(1);
+
+      return result;
+    } catch (error) {
+      this.#logger.error({ error }, "Error in findByCompetitionAndAgent");
+      throw error;
+    }
+  }
+}
