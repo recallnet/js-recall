@@ -308,21 +308,22 @@ export class PortfolioSnapshotterService {
         await this.priceTrackerService.getBulkPrices(tokensNeedingPrices);
 
       // Build token-to-chains mapping once before loop for efficiency
-      const tokenToChains = new Map<string, string[]>();
+      const tokenToChains = new Map<string, Set<string>>();
       for (const balance of balances) {
         const addr = balance.tokenAddress.toLowerCase();
         if (!tokenToChains.has(addr)) {
-          tokenToChains.set(addr, []);
+          tokenToChains.set(addr, new Set());
         }
-        tokenToChains.get(addr)!.push(balance.specificChain);
+        tokenToChains.get(addr)!.add(balance.specificChain);
       }
 
       // Merge new prices into our map (preserving existing successful prices)
       // Use chain-specific keys to prevent collisions for same address on different chains
       for (const [tokenAddress, priceReport] of newPrices) {
         // Get all chains where this token exists (from pre-built map)
-        const chainsWithToken =
-          tokenToChains.get(tokenAddress.toLowerCase()) ?? [];
+        const chainsWithToken = Array.from(
+          tokenToChains.get(tokenAddress.toLowerCase()) ?? [],
+        );
 
         if (priceReport !== null && priceReport.specificChain) {
           // Store successful price for the specific chain returned by API
