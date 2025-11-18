@@ -2,9 +2,8 @@ import { and, desc, eq } from "drizzle-orm";
 
 import { BlockHashCoder, TxHashCoder } from "@recallnet/db/coders";
 import { indexingEvents } from "@recallnet/db/schema/indexing/defs";
+import type { Database } from "@recallnet/db/types";
 
-import config from "@/config/index.js";
-import { db } from "@/database/db.js";
 import { EventData } from "@/indexing/blockchain-types.js";
 
 /**
@@ -29,9 +28,9 @@ import { EventData } from "@/indexing/blockchain-types.js";
  * - Timestamps are UTC (`timestamp` without time zone).
  */
 export class EventsRepository {
-  readonly #db: typeof db;
+  readonly #db: Database;
 
-  constructor(database: typeof db = db) {
+  constructor(database: Database) {
     this.#db = database;
   }
 
@@ -123,15 +122,14 @@ export class EventsRepository {
    * - Uses ORDER BY block_number DESC LIMIT 1; ensure an index on block_number
    *   exists (present in schema) for O(log N) retrieval.
    */
-  async lastBlockNumber(): Promise<bigint> {
+  async lastBlockNumber(eventStartBlock: number): Promise<bigint> {
     const [row] = await this.#db
       .select({ blockNumber: indexingEvents.blockNumber })
       .from(indexingEvents)
       .orderBy(desc(indexingEvents.blockNumber))
       .limit(1);
 
-    const lastBlockNumber =
-      row?.blockNumber ?? config.stakingIndex.eventStartBlock;
+    const lastBlockNumber = row?.blockNumber ?? eventStartBlock;
     return BigInt(lastBlockNumber);
   }
 }

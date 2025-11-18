@@ -2,9 +2,9 @@ import { QueryResponse } from "@envio-dev/hypersync-client";
 import type { Logger } from "pino";
 import { decodeEventLog, hexToBytes } from "viem";
 
-import { db } from "@recallnet/db";
 import { RewardsRepository } from "@recallnet/db/repositories/rewards";
 import type { StakesRepository } from "@recallnet/db/repositories/stakes";
+import type { Database } from "@recallnet/db/types";
 
 import type { BoostAwardService } from "@/boost-award.service.js";
 import type { CompetitionService } from "@/competition.service.js";
@@ -58,10 +58,10 @@ class EventProcessor {
   readonly #competitionService: CompetitionService;
 
   readonly #logger: Logger;
-  readonly #db: typeof db;
+  readonly #db: Database;
 
   constructor(
-    database: typeof db,
+    database: Database,
     rewardsRepository: RewardsRepository,
     eventsRepository: EventsRepository,
     stakesRepository: StakesRepository,
@@ -552,7 +552,7 @@ class EventProcessor {
    * Used by the indexing loop to set `fromBlock = lastBlock`
    * so we resume exactly where we left off after restarts.
    */
-  lastBlockNumber(): Promise<bigint> {
-    return this.#eventsRepository.lastBlockNumber();
+  lastBlockNumber(eventStartBlock: number): Promise<bigint> {
+    return this.#eventsRepository.lastBlockNumber(eventStartBlock);
   }
 }

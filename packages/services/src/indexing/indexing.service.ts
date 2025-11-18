@@ -38,6 +38,7 @@ export class IndexingService {
   readonly #logger: Logger;
   // readonly #eventHashNames: Record<string, string>;
   readonly #indexingProcessor: EventProcessor | TransactionProcessor;
+  readonly #eventStartBlock: number;
 
   #deferStop: Defer<void> | undefined;
   #abortController: AbortController | undefined;
@@ -48,6 +49,7 @@ export class IndexingService {
     indexingQuery: HypersyncQuery,
     hypersyncUrl: string,
     hypersyncBearerToken: string,
+    eventStartBlock: number,
   ) {
     // Hypersync query is distinct to this instance, the query
     // might be indexing events or blocks or transactions
@@ -61,6 +63,7 @@ export class IndexingService {
     this.#indexingProcessor = indexingProcessor;
     this.#deferStop = undefined;
     this.#abortController = undefined;
+    this.#eventStartBlock = eventStartBlock;
   }
 
   /**
@@ -119,7 +122,9 @@ export class IndexingService {
     const effectiveQuery = {
       ...query,
     };
-    const lastBlockNumber = await this.#indexingProcessor.lastBlockNumber();
+    const lastBlockNumber = await this.#indexingProcessor.lastBlockNumber(
+      this.#eventStartBlock,
+    );
     effectiveQuery.fromBlock = Number(lastBlockNumber);
     this.#logger.info(
       `Starting indexing from block ${effectiveQuery.fromBlock}`,

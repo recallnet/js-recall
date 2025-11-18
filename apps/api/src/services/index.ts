@@ -29,7 +29,11 @@ import {
   CalmarRatioService,
   CompetitionRewardService,
   CompetitionService,
+  ConvictionClaimsRepository,
   EmailService,
+  EventProcessor,
+  EventsRepository,
+  IndexingService,
   LeaderboardService,
   PartnerService,
   PerpsDataProcessor,
@@ -41,6 +45,7 @@ import {
   SortinoRatioService,
   TradeSimulatorService,
   TradingConstraintsService,
+  TransactionProcessor,
   UserService,
 } from "@recallnet/services";
 import { MockPrivyClient } from "@recallnet/services/lib";
@@ -59,15 +64,6 @@ import {
 
 import config from "@/config/index.js";
 import { db, dbRead } from "@/database/db.js";
-import {
-  INDEXING_EVENTS_HYPERSYNC_QUERY,
-  INDEXING_TRANSACTIONS_HYPERSYNC_QUERY,
-} from "@/indexing/blockchain-config.js";
-import { ConvictionClaimsRepository } from "@/indexing/conviction-claims.repository.js";
-import { EventProcessor } from "@/indexing/event-processor.js";
-import { EventsRepository } from "@/indexing/events.repository.js";
-import { IndexingService } from "@/indexing/indexing.service.js";
-import { TransactionProcessor } from "@/indexing/transaction-processor.js";
 import {
   configLogger,
   indexingLogger,

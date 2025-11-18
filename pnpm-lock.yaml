@@ -774,6 +774,9 @@ importers:
       decimal.js:
         specifier: ^10.6.0
         version: 10.6.0
+      drizzle-orm:
+        specifier: ^0.43.1
+        version: 0.43.1(@electric-sql/pglite@0.2.17)(@opentelemetry/api@1.9.0)(@types/pg@8.15.5)(@vercel/postgres@0.10.0(utf-8-validate@5.0.10))(better-sqlite3@11.8.1)(bun-types@1.2.17)(pg@8.16.0)(sql.js@1.13.0)
       jose:
         specifier: ^5.10.0
         version: 5.10.0

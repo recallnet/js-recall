@@ -64,6 +64,7 @@
     "@solana/web3.js": "^1.98.4",
     "axios": "^1.6.0",
     "decimal.js": "^10.6.0",
+    "drizzle-orm": "^0.43.1",
     "jose": "^5.10.0",
     "lru-cache": "^11.1.0",
     "merkletreejs": "^0.5.2",
