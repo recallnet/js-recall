@@ -4,8 +4,8 @@ import type { Logger } from "pino";
 import { type Defer, defer } from "@/lib/defer.js";
 import { delay } from "@/lib/delay.js";
 
-import { HypersyncQuery } from "./blockchain-config.js";
 import { EventProcessor } from "./event-processor.js";
+import { HypersyncQuery } from "./hypersync-query.js";
 import { TransactionProcessor } from "./transaction-processor.js";
 
 /**

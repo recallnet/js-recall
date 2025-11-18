@@ -300,141 +300,141 @@ export interface IndexingConfig {
   delayMs: number;
 }
 
-/**
- * Hypersync query definition for Recall staking events.
- *
- * Purpose:
- * - Retrieve staking-related events from the Recall staking contract.
- *
- * Built from config:
- * - eventStartBlock (`config.stakingIndex.eventStartBlock`) — required
- * - stakingContract (`config.stakingIndex.stakingContract`) — required
- * - rewardsContract (`config.stakingIndex.rewardsContract`) — required
- * - delayMs (`config.stakingIndex.delayMs`) — polling backoff
- *
- * Filters:
- * - Logs only from the Recall staking contract.
- * - topic0 must match one of the known `EVENT_HASH_NAMES`.
- *
- * Field selection:
- * - Block: number, hash, timestamp
- * - Log: blockNumber, blockHash, logIndex, txHash, data, address, topic0–3
- * - Tx: from, to, hash
- *
- * Join mode:
- * - JoinAll → block + tx metadata attached to each log row.
- *
- * Disabled case:
- * - If `config.stakingIndex.isEnabled` is false, this is `undefined`.
- */
-export function getEventsHypersyncQuery(
-  config: IndexingConfig,
-): HypersyncQuery {
-  const fromBlock = config.eventStartBlock;
-  if (!fromBlock) {
-    throw new Error("eventStartBlock is not set for indexing");
-  }
-  const stakingContractAddress = config.stakingContract;
-  if (!stakingContractAddress) {
-    throw new Error("stakingContractAddress is not set for indexing");
-  }
-  const rewardsContractAddress = config.rewardsContract;
-  if (!rewardsContractAddress) {
-    throw new Error("rewardsContractAddress is not set for indexing");
-  }
+export const HypersyncQueryProvider = class {
+  /**
+   * Hypersync query definition for Recall staking events.
+   *
+   * Purpose:
+   * - Retrieve staking-related events from the Recall staking contract.
+   *
+   * Built from config:
+   * - eventStartBlock (`config.stakingIndex.eventStartBlock`) — required
+   * - stakingContract (`config.stakingIndex.stakingContract`) — required
+   * - rewardsContract (`config.stakingIndex.rewardsContract`) — required
+   * - delayMs (`config.stakingIndex.delayMs`) — polling backoff
+   *
+   * Filters:
+   * - Logs only from the Recall staking contract.
+   * - topic0 must match one of the known `EVENT_HASH_NAMES`.
+   *
+   * Field selection:
+   * - Block: number, hash, timestamp
+   * - Log: blockNumber, blockHash, logIndex, txHash, data, address, topic0–3
+   * - Tx: from, to, hash
+   *
+   * Join mode:
+   * - JoinAll → block + tx metadata attached to each log row.
+   *
+   * Disabled case:
+   * - If `config.stakingIndex.isEnabled` is false, this is `undefined`.
+   */
+  static getEventsQuery(config: IndexingConfig): HypersyncQuery {
+    const fromBlock = config.eventStartBlock;
+    if (!fromBlock) {
+      throw new Error("eventStartBlock is not set for indexing");
+    }
+    const stakingContractAddress = config.stakingContract;
+    if (!stakingContractAddress) {
+      throw new Error("stakingContractAddress is not set for indexing");
+    }
+    const rewardsContractAddress = config.rewardsContract;
+    if (!rewardsContractAddress) {
+      throw new Error("rewardsContractAddress is not set for indexing");
+    }
 
-  return {
-    fromBlock: fromBlock,
-    logs: [
-      {
-        address: [stakingContractAddress, rewardsContractAddress],
-        topics: [Object.keys(EVENT_HASH_NAMES)],
+    return {
+      fromBlock: fromBlock,
+      logs: [
+        {
+          address: [stakingContractAddress, rewardsContractAddress],
+          topics: [Object.keys(EVENT_HASH_NAMES)],
+        },
+      ],
+      fieldSelection: {
+        block: [BlockField.Number, BlockField.Hash, BlockField.Timestamp],
+        log: [
+          LogField.BlockNumber,
+          LogField.BlockHash,
+          LogField.LogIndex,
+          LogField.TransactionHash,
+          LogField.Data,
+          LogField.Address,
+          LogField.Topic0,
+          LogField.Topic1,
+          LogField.Topic2,
+          LogField.Topic3,
+        ],
+        transaction: [
+          TransactionField.From,
+          TransactionField.To,
+          TransactionField.Hash,
+        ],
       },
-    ],
-    fieldSelection: {
-      block: [BlockField.Number, BlockField.Hash, BlockField.Timestamp],
-      log: [
-        LogField.BlockNumber,
-        LogField.BlockHash,
-        LogField.LogIndex,
-        LogField.TransactionHash,
-        LogField.Data,
-        LogField.Address,
-        LogField.Topic0,
-        LogField.Topic1,
-        LogField.Topic2,
-        LogField.Topic3,
-      ],
-      transaction: [
-        TransactionField.From,
-        TransactionField.To,
-        TransactionField.Hash,
-      ],
-    },
-    joinMode: JoinMode.JoinAll,
-    delayMs: config.delayMs,
-  };
-}
-
-/**
- * Hypersync query definition for conviction claims transactions.
- *
- * Purpose:
- * - Retrieve claim transactions from the conviction claims contract.
- * - Decode transaction input to extract stake duration information.
- *
- * Configuration:
- * - Contract: 0x6A3044c1Cf077F386c9345eF84f2518A2682Dfff
- * - Function: claim() with sighash 0x2ac96e2a
- * - Start block: 36871780 (no relevant transactions before this)
- *
- * Field selection:
- * - Block: number, timestamp, hash
- * - Transaction: blockNumber, transactionIndex, hash, from, to, input
- * - Log: none (transaction-only query)
- *
- * Join mode:
- * - JoinAll → block metadata attached to each transaction row.
- *
- * Disabled case:
- * - If `config.stakingIndex.isEnabled` is false, this is `undefined`.
- */
-export function getTransactionsHypersyncQuery(
-  config: IndexingConfig,
-): HypersyncQuery {
-  const convictionClaimsContractAddress = config.convictionClaimsContract;
-  if (!convictionClaimsContractAddress) {
-    throw new Error("convictionClaimsContractAddress is not set for indexing");
-  }
-  const claimFunctionSighash = "0x2ac96e2a"; // claim function signature hash
-  const transactionsStartBlock = config.transactionsStartBlock;
-  if (!transactionsStartBlock) {
-    throw new Error("transactionsStartBlock is not set for indexing");
+      joinMode: JoinMode.JoinAll,
+      delayMs: config.delayMs,
+    };
   }
 
-  return {
-    fromBlock: transactionsStartBlock,
-    logs: [], // No logs needed for transaction queries
-    transactions: [
-      {
-        to: [convictionClaimsContractAddress],
-        sighash: [claimFunctionSighash],
-        status: 1,
+  /**
+   * Hypersync query definition for conviction claims transactions.
+   *
+   * Purpose:
+   * - Retrieve claim transactions from the conviction claims contract.
+   * - Decode transaction input to extract stake duration information.
+   *
+   * Configuration:
+   * - Contract: 0x6A3044c1Cf077F386c9345eF84f2518A2682Dfff
+   * - Function: claim() with sighash 0x2ac96e2a
+   * - Start block: 36871780 (no relevant transactions before this)
+   *
+   * Field selection:
+   * - Block: number, timestamp, hash
+   * - Transaction: blockNumber, transactionIndex, hash, from, to, input
+   * - Log: none (transaction-only query)
+   *
+   * Join mode:
+   * - JoinAll → block metadata attached to each transaction row.
+   *
+   * Disabled case:
+   * - If `config.stakingIndex.isEnabled` is false, this is `undefined`.
+   */
+  static getTransactionsQuery(config: IndexingConfig): HypersyncQuery {
+    const convictionClaimsContractAddress = config.convictionClaimsContract;
+    if (!convictionClaimsContractAddress) {
+      throw new Error(
+        "convictionClaimsContractAddress is not set for indexing",
+      );
+    }
+    const claimFunctionSighash = "0x2ac96e2a"; // claim function signature hash
+    const transactionsStartBlock = config.transactionsStartBlock;
+    if (!transactionsStartBlock) {
+      throw new Error("transactionsStartBlock is not set for indexing");
+    }
+
+    return {
+      fromBlock: transactionsStartBlock,
+      logs: [], // No logs needed for transaction queries
+      transactions: [
+        {
+          to: [convictionClaimsContractAddress],
+          sighash: [claimFunctionSighash],
+          status: 1,
+        },
+      ],
+      fieldSelection: {
+        block: [BlockField.Number, BlockField.Timestamp, BlockField.Hash],
+        log: [], // No log fields needed
+        transaction: [
+          TransactionField.BlockNumber,
+          TransactionField.TransactionIndex,
+          TransactionField.Hash,
+          TransactionField.From,
+          TransactionField.To,
+          TransactionField.Input,
+        ],
       },
-    ],
-    fieldSelection: {
-      block: [BlockField.Number, BlockField.Timestamp, BlockField.Hash],
-      log: [], // No log fields needed
-      transaction: [
-        TransactionField.BlockNumber,
-        TransactionField.TransactionIndex,
-        TransactionField.Hash,
-        TransactionField.From,
-        TransactionField.To,
-        TransactionField.Input,
-      ],
-    },
-    joinMode: JoinMode.JoinAll,
-    delayMs: config.delayMs,
-  };
-}
+      joinMode: JoinMode.JoinAll,
+      delayMs: config.delayMs,
+    };
+  }
+};
