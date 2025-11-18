@@ -388,11 +388,12 @@ class ServiceRegistry {
       indexingLogger,
     );
 
-    if (INDEXING_EVENTS_HYPERSYNC_QUERY) {
-      this._eventIndexingService = new IndexingService(
+    const stakingConfig = config.stakingIndex();
+    if (stakingConfig.isEnabled) {
+      this._eventIndexingService = IndexingService.createEventsIndexingService(
         indexingLogger,
         this._eventProcessor,
-        INDEXING_EVENTS_HYPERSYNC_QUERY,
+        stakingConfig,
       );
     }
 
@@ -400,12 +401,13 @@ class ServiceRegistry {
       this._convictionClaimsRepository,
       indexingLogger,
     );
-    if (INDEXING_TRANSACTIONS_HYPERSYNC_QUERY) {
-      this._transactionIndexingService = new IndexingService(
-        indexingLogger,
-        this._transactionProcessor,
-        INDEXING_TRANSACTIONS_HYPERSYNC_QUERY,
-      );
+    if (stakingConfig.isEnabled) {
+      this._transactionIndexingService =
+        IndexingService.createTransactionsIndexingService(
+          indexingLogger,
+          this._transactionProcessor,
+          stakingConfig,
+        );
     }
   }
 

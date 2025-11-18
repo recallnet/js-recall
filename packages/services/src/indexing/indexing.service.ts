@@ -5,7 +5,11 @@ import { type Defer, defer } from "@/lib/defer.js";
 import { delay } from "@/lib/delay.js";
 
 import { EventProcessor } from "./event-processor.js";
-import { HypersyncQuery } from "./hypersync-query.js";
+import {
+  HypersyncQuery,
+  HypersyncQueryProvider,
+  IndexingConfig,
+} from "./hypersync-query.js";
 import { TransactionProcessor } from "./transaction-processor.js";
 
 /**
@@ -43,27 +47,51 @@ export class IndexingService {
   #deferStop: Defer<void> | undefined;
   #abortController: AbortController | undefined;
 
+  static createEventsIndexingService(
+    logger: Logger,
+    eventProcessor: EventProcessor,
+    config: IndexingConfig,
+  ): IndexingService {
+    return new IndexingService(
+      logger,
+      eventProcessor,
+      HypersyncQueryProvider.getEventsQuery(config),
+      config,
+    );
+  }
+
+  static createTransactionsIndexingService(
+    logger: Logger,
+    eventProcessor: TransactionProcessor,
+    config: IndexingConfig,
+  ): IndexingService {
+    return new IndexingService(
+      logger,
+      eventProcessor,
+      HypersyncQueryProvider.getTransactionsQuery(config),
+      config,
+    );
+  }
+
   constructor(
     logger: Logger,
     indexingProcessor: EventProcessor | TransactionProcessor,
     indexingQuery: HypersyncQuery,
-    hypersyncUrl: string,
-    hypersyncBearerToken: string,
-    eventStartBlock: number,
+    config: IndexingConfig,
   ) {
     // Hypersync query is distinct to this instance, the query
     // might be indexing events or blocks or transactions
     this.#indexingQuery = indexingQuery;
     this.#client = HypersyncClient.new({
-      url: hypersyncUrl,
-      bearerToken: hypersyncBearerToken,
+      url: config.hypersyncUrl,
+      bearerToken: config.hypersyncBearerToken,
     });
     this.#delayMs = indexingQuery?.delayMs || 3000;
     this.#logger = logger;
     this.#indexingProcessor = indexingProcessor;
     this.#deferStop = undefined;
     this.#abortController = undefined;
-    this.#eventStartBlock = eventStartBlock;
+    this.#eventStartBlock = config.eventStartBlock;
   }
 
   /**
