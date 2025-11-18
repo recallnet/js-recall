@@ -55,6 +55,7 @@
   },
   "dependencies": {
     "@coingecko/coingecko-typescript": "^2.0.0",
+    "@envio-dev/hypersync-client": "^0.6.5",
     "@recallnet/conversions": "workspace:*",
     "@recallnet/db": "workspace:*",
     "@recallnet/rewards": "workspace:*",
