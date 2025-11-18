@@ -1,6 +1,7 @@
 import { randomUUID } from "crypto";
 import { Logger } from "pino";
 
+import { PaperTradingConfigRepository } from "@recallnet/db/repositories/paper-trading-config";
 import { TradeRepository } from "@recallnet/db/repositories/trade";
 import { InsertTrade, SelectTrade } from "@recallnet/db/schema/trading/types";
 
@@ -73,6 +74,7 @@ export class SimulatedTradeExecutionService {
     private readonly tradeRepo: TradeRepository,
     private readonly tradingConstraintsService: TradingConstraintsService,
     private readonly dexScreenerProvider: DexScreenerProvider,
+    private readonly paperTradingConfigRepo: PaperTradingConfigRepository,
     private readonly config: SimulatedTradeExecutionServiceConfig,
     private readonly logger: Logger,
   ) {
@@ -680,20 +682,24 @@ export class SimulatedTradeExecutionService {
         agentId,
         competitionId,
       );
-    // TODO: maxTradePercentage should probably be a setting per comp.
-    const maxTradeValue =
-      portfolioValue * (this.config.maxTradePercentage / 100);
+    // Get maxTradePercentage from database, fallback to config default
+    const paperTradingConfig =
+      await this.paperTradingConfigRepo.findByCompetitionId(competitionId);
+    const maxTradePercentage = paperTradingConfig
+      ? paperTradingConfig.maxTradePercentage
+      : this.config.maxTradePercentage;
+    const maxTradeValue = portfolioValue * (maxTradePercentage / 100);
     this.logger.debug(
       `[TradeSimulator] Portfolio value: $${portfolioValue}, Max trade value: $${maxTradeValue}, Attempted trade value: $${fromValueUSD}`,
     );
 
     if (fromValueUSD > maxTradeValue) {
       this.logger.debug(
-        `[TradeSimulator] Trade exceeds maximum size: $${fromValueUSD} > $${maxTradeValue} (${this.config.maxTradePercentage}% of portfolio)`,
+        `[TradeSimulator] Trade exceeds maximum size: $${fromValueUSD} > $${maxTradeValue} (${maxTradePercentage}% of portfolio)`,
       );
       throw new ApiError(
         400,
-        `Trade exceeds maximum size (${this.config.maxTradePercentage}% of portfolio value)`,
+        `Trade exceeds maximum size (${maxTradePercentage}% of portfolio value)`,
       );
     }
   }

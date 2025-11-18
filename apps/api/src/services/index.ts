@@ -11,6 +11,8 @@ import { BoostRepository } from "@recallnet/db/repositories/boost";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { CompetitionRewardsRepository } from "@recallnet/db/repositories/competition-rewards";
 import { LeaderboardRepository } from "@recallnet/db/repositories/leaderboard";
+import { PaperTradingConfigRepository } from "@recallnet/db/repositories/paper-trading-config";
+import { PaperTradingInitialBalancesRepository } from "@recallnet/db/repositories/paper-trading-initial-balances";
 import { PartnerRepository } from "@recallnet/db/repositories/partner";
 import { PerpsRepository } from "@recallnet/db/repositories/perps";
 import { RewardsRepository } from "@recallnet/db/repositories/rewards";
@@ -109,6 +111,8 @@ class ServiceRegistry {
   private readonly _userRepository: UserRepository;
   private readonly _arenaRepository: ArenaRepository;
   private readonly _partnerRepository: PartnerRepository;
+  private readonly _paperTradingConfigRepository: PaperTradingConfigRepository;
+  private readonly _paperTradingInitialBalancesRepository: PaperTradingInitialBalancesRepository;
   private readonly _eventIndexingService: IndexingService | undefined;
   private readonly _transactionIndexingService: IndexingService | undefined;
   private readonly _eventsRepository: EventsRepository;
@@ -168,6 +172,9 @@ class ServiceRegistry {
       balanceRepository,
     );
     const tradingConstraintsRepository = new TradingConstraintsRepository(db);
+    this._paperTradingConfigRepository = new PaperTradingConfigRepository(db);
+    this._paperTradingInitialBalancesRepository =
+      new PaperTradingInitialBalancesRepository(db);
     const agentScoreRepository = new AgentScoreRepository(db, repositoryLogger);
     const agentNonceRepository = new AgentNonceRepository(db);
     const leaderboardRepository = new LeaderboardRepository(
@@ -195,7 +202,7 @@ class ServiceRegistry {
     // Initialize services in dependency order
     this._balanceService = new BalanceService(
       balanceRepository,
-      config,
+      this._paperTradingInitialBalancesRepository,
       serviceLogger,
     );
     this._priceTrackerService = new PriceTrackerService(
@@ -342,7 +349,6 @@ class ServiceRegistry {
       this._rewardsAllocator,
       db,
       serviceLogger,
-      config.rewards.boostTimeDecayRate,
     );
 
     this._competitionService = new CompetitionService(
@@ -360,6 +366,8 @@ class ServiceRegistry {
       this._arenaRepository,
       this._perpsRepository,
       this._competitionRepository,
+      this._paperTradingConfigRepository,
+      this._paperTradingInitialBalancesRepository,
       this._stakesRepository,
       this._userRepository,
       db,
@@ -376,6 +384,7 @@ class ServiceRegistry {
       tradeRepository,
       this._tradingConstraintsService,
       dexScreenerProvider,
+      this._paperTradingConfigRepository,
       config,
       serviceLogger,
     );
@@ -551,6 +560,14 @@ class ServiceRegistry {
 
   get partnerService(): PartnerService {
     return this._partnerService;
+  }
+
+  get paperTradingConfigRepository(): PaperTradingConfigRepository {
+    return this._paperTradingConfigRepository;
+  }
+
+  get paperTradingInitialBalancesRepository(): PaperTradingInitialBalancesRepository {
+    return this._paperTradingInitialBalancesRepository;
   }
 
   private getRewardsAllocator(): RewardsAllocator {

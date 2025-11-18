@@ -7,6 +7,8 @@ import { AgentRepository } from "@recallnet/db/repositories/agent";
 import { AgentScoreRepository } from "@recallnet/db/repositories/agent-score";
 import { ArenaRepository } from "@recallnet/db/repositories/arena";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
+import { PaperTradingConfigRepository } from "@recallnet/db/repositories/paper-trading-config";
+import { PaperTradingInitialBalancesRepository } from "@recallnet/db/repositories/paper-trading-initial-balances";
 import { PerpsRepository } from "@recallnet/db/repositories/perps";
 import { StakesRepository } from "@recallnet/db/repositories/stakes";
 import { UserRepository } from "@recallnet/db/repositories/user";
@@ -19,6 +21,7 @@ import type { AgentRankService } from "../agentrank.service.js";
 import type { BalanceService } from "../balance.service.js";
 import type { CompetitionRewardService } from "../competition-reward.service.js";
 import { CompetitionService } from "../competition.service.js";
+import { specificChainTokens } from "../lib/config-utils.js";
 import type { PerpsDataProcessor } from "../perps-data-processor.service.js";
 import type { PortfolioSnapshotterService } from "../portfolio-snapshotter.service.js";
 import { RewardsService } from "../rewards.service.js";
@@ -46,6 +49,8 @@ describe("CompetitionService - joinCompetition", () => {
   let arenaRepo: MockProxy<ArenaRepository>;
   let perpsRepo: MockProxy<PerpsRepository>;
   let competitionRepo: MockProxy<CompetitionRepository>;
+  let paperTradingConfigRepo: MockProxy<PaperTradingConfigRepository>;
+  let paperTradingInitialBalancesRepo: MockProxy<PaperTradingInitialBalancesRepository>;
   let stakesRepo: MockProxy<StakesRepository>;
   let userRepo: MockProxy<UserRepository>;
   let mockDb: MockProxy<Database>;
@@ -114,6 +119,7 @@ describe("CompetitionService - joinCompetition", () => {
     engineId: "spot_paper_trading" as const,
     engineVersion: "1.0.0",
     rewardsIneligible: null,
+    boostTimeDecayRate: null,
   };
 
   beforeEach(() => {
@@ -132,6 +138,9 @@ describe("CompetitionService - joinCompetition", () => {
     arenaRepo = mock<ArenaRepository>();
     perpsRepo = mock<PerpsRepository>();
     competitionRepo = mock<CompetitionRepository>();
+    paperTradingConfigRepo = mock<PaperTradingConfigRepository>();
+    paperTradingInitialBalancesRepo =
+      mock<PaperTradingInitialBalancesRepository>();
     stakesRepo = mock<StakesRepository>();
     userRepo = mock<UserRepository>();
     mockDb = mock<Database>();
@@ -150,6 +159,7 @@ describe("CompetitionService - joinCompetition", () => {
       specificChainBalances: {
         eth: { eth: 1 },
       } as SpecificChainBalances,
+      specificChainTokens,
       maxTradePercentage: 1,
       rateLimiting: {
         maxRequests: 100,
@@ -173,6 +183,8 @@ describe("CompetitionService - joinCompetition", () => {
       arenaRepo,
       perpsRepo,
       competitionRepo,
+      paperTradingConfigRepo,
+      paperTradingInitialBalancesRepo,
       stakesRepo,
       userRepo,
       mockDb,

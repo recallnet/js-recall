@@ -1081,6 +1081,13 @@ export function configureAdminRoutes(
    *                 type: string
    *                 nullable: true
    *                 description: Additional reward details
+   *               boostTimeDecayRate:
+   *                 type: number
+   *                 nullable: true
+   *                 minimum: 0.1
+   *                 maximum: 0.9
+   *                 description: Decay rate for boost time calculations. Must be between 0.1 and 0.9.
+   *                 example: 0.5
    *               displayState:
    *                 type: string
    *                 nullable: true
@@ -1092,6 +1099,49 @@ export function configureAdminRoutes(
    *                   type: string
    *                 description: Agent IDs ineligible to receive rewards from this competition
    *                 example: ["agent-id-1", "agent-id-2"]
+   *               paperTradingConfig:
+   *                 type: object
+   *                 nullable: true
+   *                 description: Paper trading configuration for the competition
+   *                 properties:
+   *                   maxTradePercentage:
+   *                     type: integer
+   *                     minimum: 1
+   *                     maximum: 100
+   *                     description: "Maximum percentage of portfolio that can be traded in a single trade (default: 25)"
+   *                     example: 25
+   *               paperTradingInitialBalances:
+   *                 type: array
+   *                 nullable: true
+   *                 description: Initial token balances for the competition
+   *                 items:
+   *                   type: object
+   *                   required:
+   *                     - specificChain
+   *                     - tokenSymbol
+   *                     - tokenAddress
+   *                     - amount
+   *                   properties:
+   *                     specificChain:
+   *                       type: string
+   *                       maxLength: 20
+   *                       description: Specific chain identifier
+   *                       example: "base"
+   *                     tokenSymbol:
+   *                       type: string
+   *                       maxLength: 20
+   *                       description: Token symbol
+   *                       example: "USDC"
+   *                     tokenAddress:
+   *                       type: string
+   *                       maxLength: 50
+   *                       description: Token contract address
+   *                       example: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
+   *                     amount:
+   *                       type: integer
+   *                       minimum: 0
+   *                       description: Initial balance amount
+   *                       example: 10000
    *     responses:
    *       201:
    *         description: Competition created successfully
@@ -1479,6 +1529,13 @@ export function configureAdminRoutes(
    *                 type: string
    *                 nullable: true
    *                 description: Additional reward details
+   *               boostTimeDecayRate:
+   *                 type: number
+   *                 nullable: true
+   *                 minimum: 0.1
+   *                 maximum: 0.9
+   *                 description: Decay rate for boost time calculations. Must be between 0.1 and 0.9.
+   *                 example: 0.5
    *               displayState:
    *                 type: string
    *                 nullable: true
@@ -1963,6 +2020,13 @@ export function configureAdminRoutes(
    *                 type: string
    *                 nullable: true
    *                 description: Additional reward details
+   *               boostTimeDecayRate:
+   *                 type: number
+   *                 nullable: true
+   *                 minimum: 0.1
+   *                 maximum: 0.9
+   *                 description: Decay rate for boost time calculations. Must be between 0.1 and 0.9.
+   *                 example: 0.5
    *               displayState:
    *                 type: string
    *                 nullable: true
@@ -1974,6 +2038,49 @@ export function configureAdminRoutes(
    *                   type: string
    *                 description: Agent IDs ineligible to receive rewards from this competition
    *                 example: ["agent-id-1", "agent-id-2"]
+   *               paperTradingConfig:
+   *                 type: object
+   *                 nullable: true
+   *                 description: Paper trading configuration for the competition
+   *                 properties:
+   *                   maxTradePercentage:
+   *                     type: integer
+   *                     minimum: 1
+   *                     maximum: 100
+   *                     description: "Maximum percentage of portfolio that can be traded in a single trade (default: 25)"
+   *                     example: 25
+   *               paperTradingInitialBalances:
+   *                 type: array
+   *                 nullable: true
+   *                 description: Initial token balances for the competition
+   *                 items:
+   *                   type: object
+   *                   required:
+   *                     - specificChain
+   *                     - tokenSymbol
+   *                     - tokenAddress
+   *                     - amount
+   *                   properties:
+   *                     specificChain:
+   *                       type: string
+   *                       maxLength: 20
+   *                       description: Specific chain identifier
+   *                       example: "base"
+   *                     tokenSymbol:
+   *                       type: string
+   *                       maxLength: 20
+   *                       description: Token symbol
+   *                       example: "USDC"
+   *                     tokenAddress:
+   *                       type: string
+   *                       maxLength: 50
+   *                       description: Token contract address
+   *                       example: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
+   *                     amount:
+   *                       type: integer
+   *                       minimum: 0
+   *                       description: Initial balance amount
+   *                       example: 10000
    *     responses:
    *       200:
    *         description: Competition updated successfully

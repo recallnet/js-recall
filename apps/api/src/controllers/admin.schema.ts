@@ -76,6 +76,32 @@ export const PerpsProviderSchema = z.object({
 });
 
 /**
+ * Paper trading config schema
+ */
+export const PaperTradingConfigSchema = z
+  .object({
+    maxTradePercentage: z.number().int().min(1).max(100).optional(),
+  })
+  .optional();
+
+/**
+ * Paper trading initial balance schema
+ */
+export const PaperTradingInitialBalanceSchema = z.object({
+  specificChain: z.string().min(1).max(20),
+  tokenSymbol: z.string().min(1).max(20),
+  tokenAddress: z.string().min(1).max(50),
+  amount: z.number().int().min(0),
+});
+
+/**
+ * Paper trading initial balances schema (array of balances)
+ */
+export const PaperTradingInitialBalancesSchema = z
+  .array(PaperTradingInitialBalanceSchema)
+  .optional();
+
+/**
  * Admin create or update competition schema
  */
 export const AdminCreateCompetitionSchema = z
@@ -128,9 +154,21 @@ export const AdminCreateCompetitionSchema = z
     boosterAllocationUnit: z.enum(allocationUnit.enumValues).optional(),
     rewardRules: z.string().optional(),
     rewardDetails: z.string().optional(),
+    boostTimeDecayRate: z
+      .number()
+      .min(0.1)
+      .max(0.9)
+      .optional()
+      .describe(
+        "Decay rate for boost time calculations. Must be between 0.1 and 0.9.",
+      ),
 
     // Display
     displayState: z.enum(displayState.enumValues).optional(),
+
+    // Paper trading configuration
+    paperTradingConfig: PaperTradingConfigSchema,
+    paperTradingInitialBalances: PaperTradingInitialBalancesSchema,
   })
   .refine(
     (data) => {
@@ -212,6 +250,14 @@ export const AdminStartCompetitionSchema = z
     boosterAllocationUnit: z.enum(allocationUnit.enumValues).optional(),
     rewardRules: z.string().optional(),
     rewardDetails: z.string().optional(),
+    boostTimeDecayRate: z
+      .number()
+      .min(0.1)
+      .max(0.9)
+      .optional()
+      .describe(
+        "Decay rate for boost time calculations. Must be between 0.1 and 0.9.",
+      ),
 
     // Display
     displayState: z.enum(displayState.enumValues).optional(),

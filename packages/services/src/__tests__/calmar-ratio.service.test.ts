@@ -52,6 +52,7 @@ describe("CalmarRatioService", () => {
     engineId: "perpetual_futures" as const,
     engineVersion: "1.0.0",
     rewardsIneligible: null,
+    boostTimeDecayRate: null,
   });
 
   // Helper to create mock portfolio snapshots

@@ -10,6 +10,7 @@ import {
   vi,
 } from "vitest";
 
+import { PaperTradingConfigRepository } from "@recallnet/db/repositories/paper-trading-config";
 import { TradeRepository } from "@recallnet/db/repositories/trade";
 
 import { BalanceService } from "../balance.service.js";
@@ -87,6 +88,12 @@ describe("SimulatedTradeExecutionService - Trading Constraints", () => {
       getTokenPairData: ReturnType<typeof vi.fn>;
       isStablecoin: ReturnType<typeof vi.fn>;
     };
+    let mockPaperTradingConfigRepo: {
+      findByCompetitionId: ReturnType<typeof vi.fn>;
+    };
+    let mockTradeSimulatorService: {
+      calculatePortfolioValue: ReturnType<typeof vi.fn>;
+    };
     let mockConfig: {
       specificChainTokens: SpecificChainTokens;
       maxTradePercentage: number;
@@ -127,7 +134,7 @@ describe("SimulatedTradeExecutionService - Trading Constraints", () => {
         getPrice: vi.fn(),
       };
 
-      const mockTradeSimulatorService = {
+      mockTradeSimulatorService = {
         calculatePortfolioValue: vi.fn(),
       };
 
@@ -145,6 +152,10 @@ describe("SimulatedTradeExecutionService - Trading Constraints", () => {
           // Return true for stablecoins and SOL to exempt them from FDV checks
           return symbol === "USDC" || symbol === "SOL";
         }),
+      };
+
+      mockPaperTradingConfigRepo = {
+        findByCompetitionId: vi.fn().mockResolvedValue(null),
       };
 
       mockConfig = {
@@ -179,6 +190,7 @@ describe("SimulatedTradeExecutionService - Trading Constraints", () => {
         mockTradeRepo as unknown as TradeRepository,
         mockTradingConstraintsService as unknown as TradingConstraintsService,
         mockDexScreenerProvider as unknown as DexScreenerProvider,
+        mockPaperTradingConfigRepo as unknown as PaperTradingConfigRepository,
         mockConfig,
         mockLogger,
       );
@@ -590,6 +602,19 @@ describe("SimulatedTradeExecutionService - Trading Constraints", () => {
         mockTradingConstraintsService.getConstraintsWithDefaults.mockResolvedValue(
           mockConstraints,
         );
+
+        // Mock portfolio value calculation
+        mockTradeSimulatorService.calculatePortfolioValue.mockResolvedValue(
+          1000,
+        );
+
+        // Mock paper trading config with maxTradePercentage
+        mockPaperTradingConfigRepo.findByCompetitionId.mockResolvedValue({
+          competitionId: "comp-1",
+          maxTradePercentage: 25,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
 
         mockTradeRepo.create.mockResolvedValue({
           id: randomUUID(),

@@ -9,6 +9,8 @@ import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { CompetitionRewardsRepository } from "@recallnet/db/repositories/competition-rewards";
 import { ConvictionClaimsRepository } from "@recallnet/db/repositories/conviction-claims";
 import { LeaderboardRepository } from "@recallnet/db/repositories/leaderboard";
+import { PaperTradingConfigRepository } from "@recallnet/db/repositories/paper-trading-config";
+import { PaperTradingInitialBalancesRepository } from "@recallnet/db/repositories/paper-trading-initial-balances";
 import { PerpsRepository } from "@recallnet/db/repositories/perps";
 import { RewardsRepository } from "@recallnet/db/repositories/rewards";
 import { StakesRepository } from "@recallnet/db/repositories/stakes";
@@ -101,3 +103,10 @@ export const rewardsRepository = new RewardsRepository(
   db,
   createLogger("RewardsRepository"),
 );
+
+export const paperTradingConfigRepository = new PaperTradingConfigRepository(
+  db,
+);
+
+export const paperTradingInitialBalancesRepository =
+  new PaperTradingInitialBalancesRepository(db);

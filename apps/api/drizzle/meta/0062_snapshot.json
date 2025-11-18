@@ -1088,6 +1088,7 @@
           "with": {}
         }
       },
+<<<<<<< HEAD
       "foreignKeys": {
         "conviction_claims_season_seasons_number_fk": {
           "name": "conviction_claims_season_seasons_number_fk",
