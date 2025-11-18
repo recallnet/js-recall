@@ -163,6 +163,8 @@ Examples:
         and(
           // Only claims with duration > 0 (actual stakes)
           gte(convictionClaims.duration, 1n),
+          // Only stakes from claims before the reference time
+          lte(convictionClaims.blockTimestamp, referenceTime),
           // Ex-date calculation: blockTimestamp + duration seconds > referenceTime
           sql`${convictionClaims.blockTimestamp} + (${convictionClaims.duration} * interval '1 second') > ${referenceTime}`,
         ),
@@ -187,7 +189,9 @@ Examples:
       totalActiveStakes += stakeAmount;
     }
 
-    console.log(`📊 Total active stakes: ${totalActiveStakes.toString()}\n`);
+    console.log(
+      `📊 Total active stakes: ${attoValueToStringValue(totalActiveStakes)}\n`,
+    );
 
     // Step 3: Calculate total forfeited amounts
     console.log(
@@ -216,12 +220,12 @@ Examples:
     }
 
     console.log(
-      `💰 Total forfeited across all seasons: ${totalForfeited.toString()}`,
+      `💰 Total forfeited across all seasons: ${attoValueToStringValue(totalForfeited)}`,
     );
 
     // Show breakdown by season
     for (const [season, amount] of forfeitedBySeason.entries()) {
-      console.log(`   Season ${season}: ${amount.toString()}`);
+      console.log(`   Season ${season}: ${attoValueToStringValue(amount)}`);
     }
 
     // Step 4: Calculate claims from subsequent seasons (seasons after 0)
@@ -244,7 +248,9 @@ Examples:
     for (const seasonData of subsequentSeasonClaims) {
       const claimed = BigInt(seasonData.totalClaimed || "0");
       totalSubsequentClaims += claimed;
-      console.log(`   Season ${seasonData.season}: ${claimed.toString()}`);
+      console.log(
+        `   Season ${seasonData.season}: ${attoValueToStringValue(claimed)}`,
+      );
     }
 
     if (subsequentSeasonClaims.length === 0) {
@@ -257,9 +263,11 @@ Examples:
     );
 
     const availableRewards = totalForfeited - totalSubsequentClaims;
-    console.log(`🎁 Available rewards: ${availableRewards.toString()}`);
     console.log(
-      `   (${totalForfeited.toString()} forfeited - ${totalSubsequentClaims.toString()} already claimed)\n`,
+      `🎁 Available rewards: ${attoValueToStringValue(availableRewards)}`,
+    );
+    console.log(
+      `   (${attoValueToStringValue(totalForfeited)} forfeited - ${attoValueToStringValue(totalSubsequentClaims)} already claimed)\n`,
     );
 
     // Step 6: Query for all agent boosters during the season.
