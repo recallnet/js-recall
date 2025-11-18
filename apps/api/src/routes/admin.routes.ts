@@ -3828,7 +3828,7 @@ export function configureAdminRoutes(
    *                       type: string
    *                       pattern: ^0x[0-9a-fA-F]{40}$
    *                       description: User wallet address (Ethereum hex address)
-   *                       example: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb"
+   *                       example: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0"
    *                     amount:
    *                       type: string
    *                       pattern: ^\d+$
@@ -3848,12 +3848,12 @@ export function configureAdminRoutes(
    *                         campaignId: "campaign-123"
    *           example:
    *             boosts:
-   *               - wallet: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb"
+   *               - wallet: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0"
    *                 amount: "1000000000000000000000"
    *                 expiresAt: "2025-12-31T23:59:59Z"
    *                 meta:
    *                   source: "farcaster"
-   *               - wallet: "0x8ba1f109551bD432803012645Hac136c22C172c8"
+   *               - wallet: "0x8ba1f109551bD432803012645Aac136c22C172c8"
    *                 amount: "500000000000000000000"
    *                 expiresAt: "2025-12-31T23:59:59Z"
    *     responses:
