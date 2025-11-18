@@ -823,6 +823,8 @@ export class SimulatedTradeExecutionService {
       toChain: chainInfo.toChain,
       fromSpecificChain: fromPrice.specificChain,
       toSpecificChain: toPrice.specificChain,
+      // Trade type (simulated for paper trading)
+      tradeType: "simulated",
     };
 
     // Execute the trade atomically (updates balances and creates trade record in one transaction)
