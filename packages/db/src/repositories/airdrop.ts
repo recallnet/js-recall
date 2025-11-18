@@ -6,7 +6,7 @@ import {
   merkleMetadata,
   seasons,
 } from "../schema/airdrop/defs.js";
-import { NewSeason } from "../schema/airdrop/types.js";
+import { NewAirdropAllocation, NewSeason } from "../schema/airdrop/types.js";
 import { Database, Transaction } from "../types.js";
 
 /**
@@ -44,20 +44,11 @@ export class AirdropRepository {
         throw new Error(`Allocation not found for address ${address}`);
       }
 
-      // Parse the proof JSON string back to array
-      let proofArray: string[] = [];
-      try {
-        proofArray = JSON.parse(allocation.proof);
-      } catch (e) {
-        this.#logger.error("Failed to parse proof JSON:", e);
-        proofArray = [];
-      }
-
       return {
         address: allocation.address,
         amount: allocation.amount,
         season: allocation.season,
-        proof: proofArray,
+        proof: allocation.proof,
         category: allocation.category || "",
         sybilClassification: allocation.sybilClassification as
           | "approved"
@@ -94,7 +85,7 @@ export class AirdropRepository {
         address: allocation.address,
         amount: allocation.amount,
         season: allocation.season,
-        proof: JSON.parse(allocation.proof),
+        proof: allocation.proof,
         category: allocation.category || "",
         sybilClassification: allocation.sybilClassification as
           | "approved"
@@ -190,7 +181,7 @@ export class AirdropRepository {
         address: allocation.address,
         amount: allocation.amount,
         season: allocation.season,
-        proof: JSON.parse(allocation.proof),
+        proof: allocation.proof,
         category: allocation.category || "",
         sybilClassification: allocation.sybilClassification as
           | "approved"
@@ -293,7 +284,7 @@ export class AirdropRepository {
         address: allocation.address,
         amount: allocation.amount,
         season: allocation.season,
-        proof: JSON.parse(allocation.proof),
+        proof: allocation.proof,
         category: allocation.category || "",
         sybilClassification: allocation.sybilClassification as
           | "approved"
@@ -324,20 +315,7 @@ export class AirdropRepository {
    * Insert allocations in batches
    */
   async insertAllocationsBatch(
-    allocations: Array<{
-      address: string;
-      amount: string;
-      season: number;
-      proof: string[];
-      category: string;
-      sybilClassification: string;
-      flaggedAt: string | null;
-      flaggingReason: string | null;
-      powerUser: boolean;
-      recallSnapper: boolean;
-      aiBuilder: boolean;
-      aiExplorer: boolean;
-    }>,
+    allocations: NewAirdropAllocation[],
     batchSize: number = 1000,
     tx?: Transaction,
   ): Promise<void> {
@@ -345,32 +323,14 @@ export class AirdropRepository {
       `Inserting ${allocations.length} allocations in batches of ${batchSize}`,
     );
 
+    const executor = tx ?? this.#db;
+
     for (let i = 0; i < allocations.length; i += batchSize) {
       const batch = allocations.slice(i, i + batchSize);
-
-      const values = batch.map((allocation) => ({
-        address: allocation.address.toLowerCase(),
-        amount: BigInt(allocation.amount),
-        season: allocation.season,
-        proof: JSON.stringify(allocation.proof),
-        category: allocation.category || "",
-        sybilClassification: allocation.sybilClassification || "approved",
-        flaggedAt: allocation.flaggedAt
-          ? new Date(allocation.flaggedAt)
-          : undefined,
-        flaggingReason: allocation.flaggingReason || undefined,
-        powerUser: allocation.powerUser,
-        recallSnapper: allocation.recallSnapper,
-        aiBuilder: allocation.aiBuilder,
-        aiExplorer: allocation.aiExplorer,
-      }));
-
-      const executor = tx ?? this.#db;
       await executor
         .insert(airdropAllocations)
-        .values(values)
+        .values(batch)
         .onConflictDoNothing();
-
       this.#logger.info(
         `Inserted batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(allocations.length / batchSize)}`,
       );
@@ -392,21 +352,11 @@ export class AirdropRepository {
         .where(eq(airdropAllocations.address, normalizedAddress));
 
       const allocations = res.map((claim) => ({
-        address: claim.address,
-        amount: claim.amount,
-        season: claim.season,
-        proof: JSON.parse(claim.proof),
-        category: claim.category || "",
+        ...claim,
         sybilClassification: claim.sybilClassification as
           | "approved"
           | "maybe-sybil"
           | "sybil",
-        flaggedAt: claim.flaggedAt || null,
-        flaggingReason: claim.flaggingReason || null,
-        powerUser: claim.powerUser || false,
-        recallSnapper: claim.recallSnapper || false,
-        aiBuilder: claim.aiBuilder || false,
-        aiExplorer: claim.aiExplorer || false,
       }));
 
       return allocations;

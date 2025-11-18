@@ -29,11 +29,10 @@ const colors = {
   reset: "\x1b[0m",
 };
 
-interface EligibilityEntry {
+interface EligibleAccount {
   address: string;
   activeStake: bigint;
   reward: bigint;
-  ineligibleReason?: string;
 }
 
 /**
@@ -53,7 +52,7 @@ function calculateMedian(values: bigint[]): bigint {
 }
 
 /**
- * Calculate eligibility for the next season of conviction claims airdrop.
+ * Calculate eligibility for the next conviction claims airdrop.
  *
  * This script:
  * 1. Finds accounts with active stakes (where ex-date > reference time)
@@ -66,10 +65,10 @@ async function calculateNextSeasonEligibility() {
   const { values } = parseArgs({
     args: process.argv.slice(2),
     options: {
-      season: {
+      airdrop: {
         type: "string",
-        short: "s",
-        description: "Season number for the output",
+        short: "a",
+        description: "Airdrop number for the output",
       },
       time: {
         type: "string",
@@ -77,12 +76,11 @@ async function calculateNextSeasonEligibility() {
         description:
           "Reference time in ISO format (e.g., 2024-12-31T00:00:00Z)",
       },
-      // TODO: change this to --prepend and create a new file that has the
-      //  existing file prepended
-      concat: {
-        type: "boolean",
-        short: "c",
-        description: "Append new data to existing airdrop-data.csv",
+      prepend: {
+        type: "string",
+        short: "p",
+        description:
+          "Prepend existing data from the specified file to the new csv file",
       },
       help: {
         type: "boolean",
@@ -99,22 +97,22 @@ ${colors.cyan}Calculate Next Season Eligibility for Conviction Claims Airdrop${c
 Usage: pnpm tsx calculate-next-season-eligibility.ts --season <number> --time <ISO-date> [--concat]
 
 Options:
-  -s, --season    Season number for the output (required)
+  -a, --airdrop   Airdrop number for the output (required)
   -t, --time      Reference time in ISO format (required)
                   Example: 2024-12-31T00:00:00Z
-  -c, --concat    Append new data to existing airdrop-data.csv
+  -p, --prepend   Prepend existing data from the specified file to the new csv file
   -h, --help      Show this help message
 
 Examples:
-  pnpm tsx calculate-next-season-eligibility.ts --season 2 --time "2024-12-31T00:00:00Z"
-  pnpm tsx calculate-next-season-eligibility.ts --season 2 --time "2024-12-31T00:00:00Z" --concat
+  pnpm tsx calculate-next-season-eligibility.ts --airdrop 2 --time "2024-12-31T00:00:00Z"
+  pnpm tsx calculate-next-season-eligibility.ts --airdrop 2 --time "2024-12-31T00:00:00Z" --prepend airdrop_1_2024-11-29T00:00:00.000Z
 `);
     process.exit(0);
   }
 
   // Validate arguments
-  if (!values.season) {
-    console.error(`${colors.red}Error: --season is required${colors.reset}`);
+  if (!values.airdrop) {
+    console.error(`${colors.red}Error: --airdrop is required${colors.reset}`);
     process.exit(1);
   }
 
@@ -123,9 +121,9 @@ Examples:
     process.exit(1);
   }
 
-  const seasonNumber = parseInt(values.season);
-  if (isNaN(seasonNumber) || seasonNumber < 0) {
-    console.error(`${colors.red}Error: Invalid season number${colors.reset}`);
+  const airdropNumber = parseInt(values.airdrop);
+  if (isNaN(airdropNumber) || airdropNumber < 0) {
+    console.error(`${colors.red}Error: Invalid airdrop number${colors.reset}`);
     process.exit(1);
   }
 
@@ -138,7 +136,7 @@ Examples:
   }
 
   console.log(
-    `${colors.cyan}🔍 Calculating eligibility for season ${seasonNumber}${colors.reset}`,
+    `${colors.cyan}🔍 Calculating eligibility for airdrop ${airdropNumber}${colors.reset}`,
   );
   console.log(`📅 Reference time: ${referenceTime.toISOString()}\n`);
 
@@ -274,9 +272,9 @@ Examples:
     const [season] = await db
       .select()
       .from(seasons)
-      .where(eq(seasons.number, seasonNumber));
+      .where(eq(seasons.number, airdropNumber - 1));
     if (!season) {
-      console.error(`Season ${seasonNumber} not found`);
+      console.error(`Season ${airdropNumber - 1} not found`);
       process.exit(1);
     }
     const userAgentBoosts = await db
@@ -338,29 +336,28 @@ Examples:
       `${colors.blue}Step 8: Calculating individual rewards...${colors.reset}`,
     );
 
-    const eligibilityEntries: EligibilityEntry[] = [];
+    const eligibleAccounts: EligibleAccount[] = [];
 
     if (totalActiveStakes > 0n && availableRewards > 0n) {
       for (const [address, activeStake] of accountStakes.entries()) {
         const isEligible =
           userAgentBoostsMap.has(address) || userCompetitionsMap.has(address);
 
-        // Calculate proportional reward: (account_stake / total_stakes) * available_rewards
-        const reward = (activeStake * availableRewards) / totalActiveStakes;
+        if (isEligible) {
+          // Calculate proportional reward: (account_stake / total_stakes) * available_rewards
+          const reward = (activeStake * availableRewards) / totalActiveStakes;
 
-        eligibilityEntries.push({
-          address,
-          activeStake,
-          reward,
-          ineligibleReason: isEligible
-            ? undefined
-            : "no boost or competition activity",
-        });
+          eligibleAccounts.push({
+            address,
+            activeStake,
+            reward: reward,
+          });
+        }
       }
     }
 
     // Sort by reward amount (descending), then by address (ascending)
-    eligibilityEntries.sort((a, b) => {
+    eligibleAccounts.sort((a, b) => {
       if (a.reward > b.reward) return -1;
       if (a.reward < b.reward) return 1;
       if (a.address < b.address) return -1;
@@ -373,27 +370,63 @@ Examples:
       `${colors.blue}Step 9: Generating CSV output...${colors.reset}`,
     );
 
-    const csvFileName = `airdrop_${seasonNumber}_${referenceTime.toISOString()}.csv`;
+    const csvFileName = `airdrop_${airdropNumber}_${referenceTime.toISOString()}.csv`;
     const csvPath = path.join(process.cwd(), "scripts", "data", csvFileName);
 
     // Create CSV header
-    const csvLines: string[] = [
+    let csvLines: string[] = [
       "address,amount,season,category,sybilClassification,flaggedAt,flaggingReason,powerUser,recallSnapper,aiBuilder,aiExplorer",
     ];
 
+    // Step 10: Prepend lines from the specified file to the new file if --prepend flag is set
+    if (values.prepend) {
+      console.log(
+        `${colors.blue}Step 10: Prepending from ${values.prepend} to ${csvFileName}...${colors.reset}`,
+      );
+
+      const prependSourceCsvPath = path.join(
+        process.cwd(),
+        "scripts",
+        "data",
+        values.prepend,
+      );
+
+      if (fs.existsSync(prependSourceCsvPath)) {
+        const existingData = fs
+          .readFileSync(prependSourceCsvPath, "utf-8")
+          .trimEnd();
+        const existingLines = existingData.split("\n");
+
+        // Skip the header from existing data (existingLines[0]) and prepend only the data rows
+        const existingLinesWithoutHeader = existingLines.slice(1);
+
+        csvLines = [csvLines[0]!, ...existingLinesWithoutHeader];
+
+        console.log(
+          `✅ Data from ${values.prepend} prepended to new csv lines${colors.reset}`,
+        );
+        console.log(
+          `   Prepended ${existingLinesWithoutHeader.length} entries\n`,
+        );
+      } else {
+        console.error(`❌ File ${values.prepend} does not exist. Exiting.\n`);
+        process.exit(1);
+      }
+    }
+
     // Add data rows
-    for (const entry of eligibilityEntries) {
+    for (const entry of eligibleAccounts) {
       // Format: address,amount,season,category,sybilClassification,flaggedAt,flaggingReason,powerUser,recallSnapper,aiBuilder,aiExplorer
       // We're only filling in address, amount, season, and category
       // Other fields are left empty or set to 0 as defaults
       const row = [
         entry.address,
         entry.reward.toString(),
-        seasonNumber.toString(),
+        airdropNumber.toString(),
         "conviction_staking", // category
         "approved", // sybilClassification
         "", // flaggedAt
-        entry.ineligibleReason || "", // flaggingReason
+        "", // flaggingReason
         "0", // powerUser
         "0", // recallSnapper
         "0", // aiBuilder
@@ -410,64 +443,9 @@ Examples:
       `✅ CSV file written to: ${colors.green}scripts/data/${csvFileName}${colors.reset}\n`,
     );
 
-    // Step 10: Append to master airdrop-data.csv if --concat flag is set
-    if (values.concat) {
-      console.log(
-        `${colors.blue}Step 10: Appending to airdrop-data.csv...${colors.reset}`,
-      );
-
-      const masterCsvPath = path.join(
-        process.cwd(),
-        "scripts",
-        "data",
-        "airdrop-data.csv",
-      );
-
-      // Read existing airdrop-data.csv
-      if (fs.existsSync(masterCsvPath)) {
-        const existingData = fs.readFileSync(masterCsvPath, "utf-8");
-        const existingLines = existingData.split("\n");
-
-        // Skip the header from new data (csvLines[0]) and append only the data rows
-        const newDataWithoutHeader = csvLines.slice(1);
-
-        // Combine existing data with new data
-        const combinedLines = [...existingLines];
-
-        // If existing file doesn't end with newline, add one before appending
-        if (existingLines[existingLines.length - 1] !== "") {
-          combinedLines.push(...newDataWithoutHeader);
-        } else {
-          // Replace the empty last line with new data
-          combinedLines.splice(
-            existingLines.length - 1,
-            1,
-            ...newDataWithoutHeader,
-          );
-        }
-
-        // Write the combined data back to airdrop-data.csv
-        fs.writeFileSync(masterCsvPath, combinedLines.join("\n"));
-
-        console.log(
-          `✅ Data appended to: ${colors.green}scripts/data/airdrop-data.csv${colors.reset}`,
-        );
-        console.log(`   Added ${newDataWithoutHeader.length} new entries\n`);
-      } else {
-        console.log(
-          `${colors.yellow}⚠️  Warning: airdrop-data.csv not found. Creating new file.${colors.reset}`,
-        );
-        // If master file doesn't exist, create it with full data including header
-        fs.writeFileSync(masterCsvPath, csvLines.join("\n"));
-        console.log(
-          `✅ Created new file: ${colors.green}scripts/data/airdrop-data.csv${colors.reset}\n`,
-        );
-      }
-    }
-
     // Summary
     console.log(`${colors.magenta}📊 Summary:${colors.reset}`);
-    console.log(`   Total eligibility entries: ${eligibilityEntries.length}`);
+    console.log(`   Total eligibility entries: ${eligibleAccounts.length}`);
     console.log(
       `   Total active stakes: ${attoValueToStringValue(totalActiveStakes)}`,
     );
@@ -475,37 +453,12 @@ Examples:
       `   Total available rewards: ${attoValueToStringValue(availableRewards)}`,
     );
     console.log(
-      `✅ Calculated rewards for ${eligibilityEntries.length} accounts\n`,
+      `✅ Calculated rewards for ${eligibleAccounts.length} accounts\n`,
     );
-
-    const eligibleEntries = eligibilityEntries.filter(
-      (e) => !e.ineligibleReason,
-    );
-    const ineligibleEntries = eligibilityEntries.filter(
-      (e) => e.ineligibleReason,
-    );
-
-    console.log(`${colors.cyan}📋 Eligibility Summary:${colors.reset}`);
-    console.log(`   Total entries: ${eligibilityEntries.length}`);
-    console.log(`   Eligible: ${eligibleEntries.length}`);
-    console.log(`   Ineligible: ${ineligibleEntries.length}`);
-
-    if (ineligibleEntries.length > 0) {
-      const reasonCounts = new Map<string, number>();
-      for (const entry of ineligibleEntries) {
-        const reason = entry.ineligibleReason || "unknown";
-        reasonCounts.set(reason, (reasonCounts.get(reason) || 0) + 1);
-      }
-
-      console.log(`\n   Ineligibility reasons:`);
-      for (const [reason, count] of reasonCounts.entries()) {
-        console.log(`      ${reason}: ${count}`);
-      }
-    }
 
     // Calculate and display reward statistics for eligible entries
-    if (eligibleEntries.length > 0) {
-      const eligibleRewards = eligibleEntries.map((e) => e.reward);
+    if (eligibleAccounts.length > 0) {
+      const eligibleRewards = eligibleAccounts.map((e) => e.reward);
       const totalEligible = eligibleRewards.reduce((sum, r) => sum + r, 0n);
       const meanEligible = totalEligible / BigInt(eligibleRewards.length);
       const maxEligible = eligibleRewards.reduce(
@@ -531,42 +484,12 @@ Examples:
       console.log(`   Min reward: ${attoValueToStringValue(minEligible)}`);
     }
 
-    // Calculate and display reward statistics for ineligible entries
-    if (ineligibleEntries.length > 0) {
-      const ineligibleRewards = ineligibleEntries.map((e) => e.reward);
-      const totalIneligible = ineligibleRewards.reduce((sum, r) => sum + r, 0n);
-      const meanIneligible = totalIneligible / BigInt(ineligibleRewards.length);
-      const maxIneligible = ineligibleRewards.reduce(
-        (max, r) => (r > max ? r : max),
-        0n,
-      );
-      const minIneligible = ineligibleRewards.reduce(
-        (min, r) => (r < min ? r : min),
-        ineligibleRewards[0] || 0n,
-      );
-
-      const medianIneligible = calculateMedian(ineligibleRewards);
-
-      console.log(
-        `\n${colors.cyan}📊 Ineligible Reward Statistics:${colors.reset}`,
-      );
-      console.log(
-        `   Total rewards: ${attoValueToStringValue(totalIneligible)}`,
-      );
-      console.log(`   Mean reward: ${attoValueToStringValue(meanIneligible)}`);
-      console.log(
-        `   Median reward: ${attoValueToStringValue(medianIneligible)}`,
-      );
-      console.log(`   Max reward: ${attoValueToStringValue(maxIneligible)}`);
-      console.log(`   Min reward: ${attoValueToStringValue(minIneligible)}`);
-    }
-
     console.log("");
 
-    if (eligibleEntries.length > 0) {
+    if (eligibleAccounts.length > 0) {
       console.log(`\n${colors.cyan}Top 5 recipients:${colors.reset}`);
-      for (let i = 0; i < Math.min(5, eligibleEntries.length); i++) {
-        const account = eligibleEntries[i];
+      for (let i = 0; i < Math.min(5, eligibleAccounts.length); i++) {
+        const account = eligibleAccounts[i];
         console.log(
           `   ${i + 1}. ${account?.address}: ${attoValueToStringValue(account?.reward || 0n)}`,
         );
