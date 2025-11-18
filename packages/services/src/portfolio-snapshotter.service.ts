@@ -278,15 +278,18 @@ export class PortfolioSnapshotterService {
         tokensNeedingPrices.push(...balances.map((b) => b.tokenAddress));
       } else {
         // Subsequent attempts: only fetch tokens that don't have prices yet
+        // Use Set to avoid duplicates when same address exists on multiple chains
+        const tokensNeedingSet = new Set<string>();
         for (const balance of balances) {
           const priceKey = this.getPriceMapKey(
             balance.tokenAddress,
             balance.specificChain,
           );
           if (balance.amount > 0 && priceMap.get(priceKey) == null) {
-            tokensNeedingPrices.push(balance.tokenAddress);
+            tokensNeedingSet.add(balance.tokenAddress);
           }
         }
+        tokensNeedingPrices.push(...Array.from(tokensNeedingSet));
       }
 
       // If we have all prices already, we're done
@@ -304,15 +307,22 @@ export class PortfolioSnapshotterService {
       const newPrices =
         await this.priceTrackerService.getBulkPrices(tokensNeedingPrices);
 
+      // Build token-to-chains mapping once before loop for efficiency
+      const tokenToChains = new Map<string, string[]>();
+      for (const balance of balances) {
+        const addr = balance.tokenAddress.toLowerCase();
+        if (!tokenToChains.has(addr)) {
+          tokenToChains.set(addr, []);
+        }
+        tokenToChains.get(addr)!.push(balance.specificChain);
+      }
+
       // Merge new prices into our map (preserving existing successful prices)
       // Use chain-specific keys to prevent collisions for same address on different chains
       for (const [tokenAddress, priceReport] of newPrices) {
-        // Find all chains where this token exists in balances
-        const chainsWithToken = balances
-          .filter(
-            (b) => b.tokenAddress.toLowerCase() === tokenAddress.toLowerCase(),
-          )
-          .map((b) => b.specificChain);
+        // Get all chains where this token exists (from pre-built map)
+        const chainsWithToken =
+          tokenToChains.get(tokenAddress.toLowerCase()) ?? [];
 
         if (priceReport !== null && priceReport.specificChain) {
           // Store successful price for the specific chain returned by API
