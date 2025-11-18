@@ -193,7 +193,11 @@ const userRoutes = configureUserRoutes(userController, rewardsController);
 const agentRoutes = configureAgentRoutes(agentController);
 const agentsRoutes = configureAgentsRoutes(agentController);
 const leaderboardRoutes = configureLeaderboardRoutes(leaderboardController);
-const nflRoutes = configureNflRoutes(services, optionalAuth);
+const nflRoutes = configureNflRoutes(
+  services,
+  optionalAuth,
+  authMiddlewareInstance,
+);
 
 // Apply routes to the API router
 apiRouter.use("/auth", authRoutes);

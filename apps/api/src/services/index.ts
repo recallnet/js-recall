@@ -472,8 +472,6 @@ class ServiceRegistry {
     );
 
     this._playsManagerService = new PlaysManagerService(
-      this._competitionRepository,
-      this._competitionGamesRepository,
       this._gamesRepository,
       this._gamePlaysRepository,
       serviceLogger,

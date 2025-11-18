@@ -8,15 +8,7 @@ import { competitionLogger } from "@/lib/logger.js";
 import { ServiceRegistry } from "@/services/index.js";
 import { AuthenticatedRequest } from "@/types/index.js";
 
-import { ensureUuid } from "./request-helpers.js";
-
-/**
- * Validation schemas
- */
-const PaginationSchema = z.object({
-  limit: z.coerce.number().int().min(1).max(100).default(50),
-  offset: z.coerce.number().int().min(0).default(0),
-});
+import { ensureAgentId, ensurePaging, ensureUuid } from "./request-helpers.js";
 
 const PredictGameWinnerSchema = z.object({
   predictedWinner: z.string().min(2).max(3), // Team ticker like "MIN", "CHI"
@@ -225,12 +217,19 @@ export function makeNflController(services: ServiceRegistry) {
           throw new ApiError(400, "Game ID is required");
         }
 
-        const { limit, offset } = PaginationSchema.parse(req.query);
+        const { limit, offset, sort } = ensurePaging(req);
         const latest = req.query.latest === "true";
 
         if (latest) {
           // Get only the latest play
-          const plays = await services.gamePlaysRepository.findByGameId(gameId);
+          const plays = await services.gamePlaysRepository.findByGameId(
+            gameId,
+            {
+              limit: 1,
+              offset: 0,
+              sort: "-createdAt",
+            },
+          );
           const latestPlay = plays[plays.length - 1]; // Last play in sequence
 
           res.status(200).json({
@@ -257,14 +256,19 @@ export function makeNflController(services: ServiceRegistry) {
           });
         } else {
           // Get paginated plays
-          const allPlays =
-            await services.gamePlaysRepository.findByGameId(gameId);
-          const paginatedPlays = allPlays.slice(offset, offset + limit);
+          const plays = await services.gamePlaysRepository.findByGameId(
+            gameId,
+            {
+              limit,
+              offset,
+              sort,
+            },
+          );
 
           res.status(200).json({
             success: true,
             data: {
-              plays: paginatedPlays.map((play) => ({
+              plays: plays.map((play) => ({
                 id: play.id,
                 sequence: play.sequence,
                 quarterName: play.quarterName,
@@ -280,71 +284,16 @@ export function makeNflController(services: ServiceRegistry) {
                 status: play.status,
               })),
               pagination: {
-                total: allPlays.length,
+                total: plays.length,
                 limit,
                 offset,
-                hasMore: offset + limit < allPlays.length,
+                hasMore: offset + limit < plays.length,
               },
             },
           });
         }
       } catch (error) {
         competitionLogger.error({ error }, "Error in getGamePlays");
-        next(
-          error instanceof ParsingError
-            ? new ApiError(400, error.message)
-            : error,
-        );
-      }
-    },
-
-    /**
-     * Get latest play for a game
-     * GET /nfl/competitions/:competitionId/games/:gameId/plays/latest
-     */
-    async getLatestPlay(
-      req: AuthenticatedRequest,
-      res: Response,
-      next: NextFunction,
-    ) {
-      try {
-        const competitionId = ensureUuid(req.params.competitionId);
-        if (!competitionId) {
-          throw new ApiError(400, "Competition ID is required");
-        }
-
-        const gameId = ensureUuid(req.params.gameId);
-        if (!gameId) {
-          throw new ApiError(400, "Game ID is required");
-        }
-
-        const plays = await services.gamePlaysRepository.findByGameId(gameId);
-        const latestPlay = plays[plays.length - 1]; // Last play in sequence
-
-        res.status(200).json({
-          success: true,
-          data: {
-            play: latestPlay
-              ? {
-                  id: latestPlay.id,
-                  sequence: latestPlay.sequence,
-                  quarterName: latestPlay.quarterName,
-                  timeRemainingMinutes: latestPlay.timeRemainingMinutes,
-                  timeRemainingSeconds: latestPlay.timeRemainingSeconds,
-                  down: latestPlay.down,
-                  distance: latestPlay.distance,
-                  yardLine: latestPlay.yardLine,
-                  team: latestPlay.team,
-                  opponent: latestPlay.opponent,
-                  description: latestPlay.description,
-                  playType: latestPlay.playType,
-                  status: latestPlay.status,
-                }
-              : null,
-          },
-        });
-      } catch (error) {
-        competitionLogger.error({ error }, "Error in getLatestPlay");
         next(
           error instanceof ParsingError
             ? new ApiError(400, error.message)
@@ -421,20 +370,12 @@ export function makeNflController(services: ServiceRegistry) {
       next: NextFunction,
     ) {
       try {
-        const competitionId = ensureUuid(req.params.competitionId);
-        if (!competitionId) {
-          throw new ApiError(400, "Competition ID is required");
-        }
-
+        ensureUuid(req.params.competitionId);
         const gameId = ensureUuid(req.params.gameId);
-        if (!gameId) {
-          throw new ApiError(400, "Game ID is required");
-        }
-
-        const agentId = req.query.agentId as string | undefined;
 
         let predictions;
-        if (agentId) {
+        if (req.agentId) {
+          const agentId = ensureAgentId(req);
           // Get predictions for specific agent
           predictions =
             await services.gamePredictionService.getPredictionHistory(

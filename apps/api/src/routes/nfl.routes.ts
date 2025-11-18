@@ -9,14 +9,13 @@ import { ServiceRegistry } from "@/services/index.js";
  */
 export function configureNflRoutes(
   services: ServiceRegistry,
-  ...middlewares: RequestHandler[]
+  optionalAuthMiddleware: RequestHandler,
+  ...authMiddlewares: RequestHandler[]
 ): Router {
   const router = Router();
   const controller = makeNflController(services);
 
-  if (middlewares.length) {
-    router.use(...middlewares);
-  }
+  router.use(optionalAuthMiddleware);
 
   /**
    * GET /nfl/competitions/:competitionId/rules
@@ -50,21 +49,13 @@ export function configureNflRoutes(
   );
 
   /**
-   * GET /nfl/competitions/:competitionId/games/:gameId/plays/latest
-   * Get the most recent play for a game
-   */
-  router.get(
-    "/competitions/:competitionId/games/:gameId/plays/latest",
-    controller.getLatestPlay,
-  );
-
-  /**
    * POST /nfl/competitions/:competitionId/games/:gameId/predictions
    * Make a prediction for game winner
    * Body: { predictedWinner: string, confidence: number }
    */
   router.post(
     "/competitions/:competitionId/games/:gameId/predictions",
+    ...authMiddlewares,
     controller.predictGameWinner,
   );
 

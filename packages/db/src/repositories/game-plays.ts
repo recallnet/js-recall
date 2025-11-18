@@ -1,9 +1,16 @@
-import { and, eq, inArray, isNull, lte, sql } from "drizzle-orm";
+import { AnyColumn, and, eq, inArray, isNull, sql } from "drizzle-orm";
 import { Logger } from "pino";
 
 import { gamePlays } from "../schema/sports/defs.js";
 import { InsertGamePlay, SelectGamePlay } from "../schema/sports/types.js";
 import { Database } from "../types.js";
+import { PagingParams } from "./types/index.js";
+import { getSort } from "./util/query.js";
+
+const gamePlaysFields: Record<string, AnyColumn> = {
+  sequence: gamePlays.sequence,
+  createdAt: gamePlays.createdAt,
+};
 
 /**
  * Game Plays Repository
@@ -186,65 +193,29 @@ export class GamePlaysRepository {
   }
 
   /**
-   * Update play status to locked for plays past their lock time
-   * @returns Number of plays updated
-   */
-  async lockExpiredPlays(): Promise<number> {
-    try {
-      const now = new Date();
-      const result = await this.#db
-        .update(gamePlays)
-        .set({ status: "locked", updatedAt: now })
-        .where(and(eq(gamePlays.status, "open"), lte(gamePlays.lockTime, now)));
-
-      return result.rowCount || 0;
-    } catch (error) {
-      this.#logger.error({ error }, "Error in lockExpiredPlays");
-      throw error;
-    }
-  }
-
-  /**
-   * Resolve a play with the actual outcome
-   * @param id Play ID
-   * @param outcome Actual outcome (run or pass)
-   * @returns The updated play
-   */
-  async resolve(id: string, outcome: "run" | "pass"): Promise<SelectGamePlay> {
-    try {
-      const [result] = await this.#db
-        .update(gamePlays)
-        .set({
-          status: "resolved",
-          actualOutcome: outcome,
-          updatedAt: new Date(),
-        })
-        .where(eq(gamePlays.id, id))
-        .returning();
-
-      if (!result) {
-        throw new Error("Failed to resolve play - no result returned");
-      }
-
-      return result;
-    } catch (error) {
-      this.#logger.error({ error }, "Error in resolve");
-      throw error;
-    }
-  }
-
-  /**
    * Find plays by game ID
    * @param gameId Game ID
    * @returns Array of plays
    */
-  async findByGameId(gameId: string): Promise<SelectGamePlay[]> {
+  async findByGameId(
+    gameId: string,
+    params: PagingParams,
+  ): Promise<SelectGamePlay[]> {
     try {
-      const results = await this.#db
+      const { limit, offset } = params;
+
+      let query = this.#db
         .select()
         .from(gamePlays)
         .where(eq(gamePlays.gameId, gameId))
-        .orderBy(gamePlays.sequence);
+        .$dynamic();
+
+      if (params.sort) {
+        query = getSort(query, params.sort, gamePlaysFields);
+      }
+      query = query.limit(limit).offset(offset);
+
+      const results = await query.execute();
 
       return results;
     } catch (error) {

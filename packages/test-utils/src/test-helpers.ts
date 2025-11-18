@@ -905,13 +905,6 @@ export class NflTestClient {
   }
 
   /**
-   * Get latest play for a game
-   */
-  async getLatestPlay(competitionId: string, gameId: string) {
-    return this.client.getNflGamePlays(competitionId, gameId, 50, 0, true);
-  }
-
-  /**
    * Predict game winner
    */
   async predictGameWinner(
