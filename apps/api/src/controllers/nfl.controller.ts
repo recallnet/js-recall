@@ -38,12 +38,13 @@ export function makeNflController(services: ServiceRegistry) {
 
         // Get game IDs from competition_games
         const gameIds =
-          await services.competitionGamesRepository.findGameIdsByCompetitionId(
+          await services.sportsService.competitionGamesRepository.findGameIdsByCompetitionId(
             competitionId,
           );
 
         // Get game details
-        const games = await services.gamesRepository.findByIds(gameIds);
+        const games =
+          await services.sportsService.gamesRepository.findByIds(gameIds);
 
         res.status(200).json({
           success: true,
@@ -147,7 +148,8 @@ export function makeNflController(services: ServiceRegistry) {
           throw new ApiError(400, "Game ID is required");
         }
 
-        const game = await services.gamesRepository.findById(gameId);
+        const game =
+          await services.sportsService.gamesRepository.findById(gameId);
         if (!game) {
           throw new ApiError(404, "Game not found");
         }
@@ -156,7 +158,7 @@ export function makeNflController(services: ServiceRegistry) {
         let latestPrediction = null;
         if (req.agentId) {
           const prediction =
-            await services.gamePredictionService.getLatestPrediction(
+            await services.sportsService.gamePredictionService.getLatestPrediction(
               gameId,
               req.agentId,
             );
@@ -222,48 +224,34 @@ export function makeNflController(services: ServiceRegistry) {
 
         if (latest) {
           // Get only the latest play
-          const plays = await services.gamePlaysRepository.findByGameId(
-            gameId,
-            {
-              limit: 1,
-              offset: 0,
-              sort: "-createdAt",
-            },
-          );
-          const latestPlay = plays[plays.length - 1]; // Last play in sequence
+          const plays =
+            await services.sportsService.gamePlaysRepository.findByGameId(
+              gameId,
+              {
+                limit: 1,
+                offset: 0,
+                sort: "-createdAt",
+              },
+            );
+          const latestPlay = plays.length > 0 ? plays[0] : null;
 
           res.status(200).json({
             success: true,
             data: {
-              play: latestPlay
-                ? {
-                    id: latestPlay.id,
-                    sequence: latestPlay.sequence,
-                    quarterName: latestPlay.quarterName,
-                    timeRemainingMinutes: latestPlay.timeRemainingMinutes,
-                    timeRemainingSeconds: latestPlay.timeRemainingSeconds,
-                    down: latestPlay.down,
-                    distance: latestPlay.distance,
-                    yardLine: latestPlay.yardLine,
-                    team: latestPlay.team,
-                    opponent: latestPlay.opponent,
-                    description: latestPlay.description,
-                    playType: latestPlay.playType,
-                    status: latestPlay.status,
-                  }
-                : null,
+              play: latestPlay,
             },
           });
         } else {
           // Get paginated plays
-          const plays = await services.gamePlaysRepository.findByGameId(
-            gameId,
-            {
-              limit,
-              offset,
-              sort,
-            },
-          );
+          const plays =
+            await services.sportsService.gamePlaysRepository.findByGameId(
+              gameId,
+              {
+                limit,
+                offset,
+                sort,
+              },
+            );
 
           res.status(200).json({
             success: true,
@@ -330,7 +318,7 @@ export function makeNflController(services: ServiceRegistry) {
         const body = PredictGameWinnerSchema.parse(req.body);
 
         const prediction =
-          await services.gamePredictionService.createPrediction(
+          await services.sportsService.gamePredictionService.createPrediction(
             competitionId,
             gameId,
             req.agentId,
@@ -378,14 +366,16 @@ export function makeNflController(services: ServiceRegistry) {
           const agentId = ensureAgentId(req);
           // Get predictions for specific agent
           predictions =
-            await services.gamePredictionService.getPredictionHistory(
+            await services.sportsService.gamePredictionService.getPredictionHistory(
               gameId,
               agentId,
             );
         } else {
           // Get all predictions for game
           predictions =
-            await services.gamePredictionService.getGamePredictions(gameId);
+            await services.sportsService.gamePredictionService.getGamePredictions(
+              gameId,
+            );
         }
 
         res.status(200).json({
@@ -430,7 +420,7 @@ export function makeNflController(services: ServiceRegistry) {
         if (gameId) {
           // Get leaderboard for specific game
           const leaderboard =
-            await services.gameScoringService.getGameLeaderboard(
+            await services.sportsService.gameScoringService.getGameLeaderboard(
               competitionId,
               gameId,
             );
@@ -452,7 +442,7 @@ export function makeNflController(services: ServiceRegistry) {
         } else {
           // Get overall competition leaderboard
           const leaderboard =
-            await services.gameScoringService.getCompetitionLeaderboard(
+            await services.sportsService.gameScoringService.getCompetitionLeaderboard(
               competitionId,
             );
 

@@ -57,7 +57,9 @@ async function ingestLiveData(): Promise<void> {
   try {
     // Ingest all active games
     const ingestedCount =
-      await services.nflLiveIngestorService.ingestActiveGames();
+      await services.sportsService.nflLiveIngestorService.ingestActiveGames(
+        3000,
+      );
 
     if (ingestedCount === 0) {
       logger.warn(
@@ -96,7 +98,9 @@ async function runPollingLoop(
 
       // Ingest all active games
       const ingestedCount =
-        await services.nflLiveIngestorService.ingestActiveGames();
+        await services.sportsService.nflLiveIngestorService.ingestActiveGames(
+          3000,
+        );
 
       // Check if all games are complete
       if (ingestedCount === 0) {

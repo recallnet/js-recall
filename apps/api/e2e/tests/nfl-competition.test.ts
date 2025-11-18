@@ -28,7 +28,9 @@ describe("NFL Game Winner Prediction Competition E2E", () => {
 
     // Ingest initial game state (snapshot 0 - pre-game)
     const dbGameId =
-      await services.nflLiveIngestorService.ingestGamePlayByPlay(globalGameId);
+      await services.sportsService.nflLiveIngestorService.ingestGamePlayByPlay(
+        globalGameId,
+      );
 
     // Step 2: Create competition with the game ID
     const adminClient = createTestClient();
@@ -126,7 +128,9 @@ describe("NFL Game Winner Prediction Competition E2E", () => {
 
     // Step 8: Advance mock server to start the game (snapshot 1)
     await nflClient1.advanceMockServer(globalGameId);
-    await services.nflLiveIngestorService.ingestGamePlayByPlay(globalGameId);
+    await services.sportsService.nflLiveIngestorService.ingestGamePlayByPlay(
+      globalGameId,
+    );
 
     // Verify game is now in progress
     const gameInfoResponse = await nflClient1.getGameInfo(
@@ -154,30 +158,42 @@ describe("NFL Game Winner Prediction Competition E2E", () => {
 
     // Step 11: Advance mock server multiple times to progress through game
     await nflClient1.advanceMockServer(globalGameId); // Snapshot 2
-    await services.nflLiveIngestorService.ingestGamePlayByPlay(globalGameId);
+    await services.sportsService.nflLiveIngestorService.ingestGamePlayByPlay(
+      globalGameId,
+    );
 
     await nflClient1.advanceMockServer(globalGameId); // Snapshot 3
-    await services.nflLiveIngestorService.ingestGamePlayByPlay(globalGameId);
+    await services.sportsService.nflLiveIngestorService.ingestGamePlayByPlay(
+      globalGameId,
+    );
 
     // Step 12: Advance to final snapshot (game progresses)
     await nflClient1.advanceMockServer(globalGameId); // Snapshot 4
     await nflClient1.advanceMockServer(globalGameId); // Snapshot 5
-    await services.nflLiveIngestorService.ingestGamePlayByPlay(globalGameId);
+    await services.sportsService.nflLiveIngestorService.ingestGamePlayByPlay(
+      globalGameId,
+    );
 
     // Step 13: Manually finalize game for testing
     // (In production, this would happen when SportsDataIO reports IsOver=true)
     // For this test, MIN wins
     const gameEndTime = new Date();
-    await services.gamesRepository.finalizeGame(dbGameId, gameEndTime, "MIN");
+    await services.sportsService.gamesRepository.finalizeGame(
+      dbGameId,
+      gameEndTime,
+      "MIN",
+    );
 
     // Verify game is now final
-    const finalGame = await services.gamesRepository.findById(dbGameId);
+    const finalGame =
+      await services.sportsService.gamesRepository.findById(dbGameId);
     expect(finalGame).toBeDefined();
     expect(finalGame!.status).toBe("final");
     expect(finalGame!.winner).toBe("MIN");
 
     // Step 14: Score the game
-    const scoredCount = await services.gameScoringService.scoreGame(dbGameId);
+    const scoredCount =
+      await services.sportsService.gameScoringService.scoreGame(dbGameId);
     expect(scoredCount).toBe(2); // Both agents scored
 
     // Step 15: Verify leaderboard
