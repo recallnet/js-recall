@@ -1,7 +1,6 @@
 import { HypersyncClient } from "@envio-dev/hypersync-client";
 import type { Logger } from "pino";
 
-import config from "@/config/index.js";
 import { type Defer, defer } from "@/lib/defer.js";
 import { delay } from "@/lib/delay.js";
 
@@ -47,13 +46,15 @@ export class IndexingService {
     logger: Logger,
     indexingProcessor: EventProcessor | TransactionProcessor,
     indexingQuery: HypersyncQuery,
+    hypersyncUrl: string,
+    hypersyncBearerToken: string,
   ) {
     // Hypersync query is distinct to this instance, the query
     // might be indexing events or blocks or transactions
     this.#indexingQuery = indexingQuery;
     this.#client = HypersyncClient.new({
-      url: config.stakingIndex.hypersyncUrl,
-      bearerToken: config.stakingIndex.hypersyncBearerToken,
+      url: hypersyncUrl,
+      bearerToken: hypersyncBearerToken,
     });
     this.#delayMs = indexingQuery?.delayMs || 3000;
     this.#logger = logger;

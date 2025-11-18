@@ -2,15 +2,15 @@ import { QueryResponse } from "@envio-dev/hypersync-client";
 import type { Logger } from "pino";
 import { decodeEventLog, hexToBytes } from "viem";
 
+import { db } from "@recallnet/db";
 import { RewardsRepository } from "@recallnet/db/repositories/rewards";
 import type { StakesRepository } from "@recallnet/db/repositories/stakes";
-import type { BoostAwardService } from "@recallnet/services";
 
-import { db } from "@/database/db.js";
+import type { BoostAwardService } from "@/boost-award.service.js";
+import type { CompetitionService } from "@/competition.service.js";
 import { EVENTS, EVENT_HASH_NAMES } from "@/indexing/blockchain-config.js";
 import type { EventData, RawLog } from "@/indexing/blockchain-types.js";
 import type { EventsRepository } from "@/indexing/events.repository.js";
-import type { CompetitionService } from "@/services/index.js";
 
 export { EventProcessor };
 

@@ -6,8 +6,6 @@ import {
 } from "@envio-dev/hypersync-client";
 import { encodeEventTopics } from "viem";
 
-import config from "@/config/index.js";
-
 /**
  * EVENT ABIs we care about from the Recall staking contract.
  *
@@ -290,95 +288,16 @@ export type HypersyncQuery = {
   delayMs: number;
 };
 
-// Internal builder var; do not export directly.
-let events_query_: HypersyncQuery | undefined = undefined;
-const isIndexingEnabled = config.stakingIndex.isEnabled;
-if (isIndexingEnabled) {
-  const fromBlock = config.stakingIndex.eventStartBlock;
-  if (!fromBlock) {
-    throw new Error("eventStartBlock is not set for indexing");
-  }
-  const stakingContractAddress = config.stakingIndex.stakingContract;
-  if (!stakingContractAddress) {
-    throw new Error("stakingContractAddress is not set for indexing");
-  }
-  const rewardsContractAddress = config.stakingIndex.rewardsContract;
-  if (!rewardsContractAddress) {
-    throw new Error("rewardsContractAddress is not set for indexing");
-  }
-
-  events_query_ = {
-    fromBlock: fromBlock,
-    logs: [
-      {
-        address: [stakingContractAddress, rewardsContractAddress],
-        topics: [Object.keys(EVENT_HASH_NAMES)],
-      },
-    ],
-    fieldSelection: {
-      block: [BlockField.Number, BlockField.Hash, BlockField.Timestamp],
-      log: [
-        LogField.BlockNumber,
-        LogField.BlockHash,
-        LogField.LogIndex,
-        LogField.TransactionHash,
-        LogField.Data,
-        LogField.Address,
-        LogField.Topic0,
-        LogField.Topic1,
-        LogField.Topic2,
-        LogField.Topic3,
-      ],
-      transaction: [
-        TransactionField.From,
-        TransactionField.To,
-        TransactionField.Hash,
-      ],
-    },
-    joinMode: JoinMode.JoinAll,
-    delayMs: config.stakingIndex.delayMs,
-  };
-}
-
-// Internal builder var for transactions; do not export directly.
-let transactions_query_: HypersyncQuery | undefined = undefined;
-if (isIndexingEnabled) {
-  const convictionClaimsContractAddress =
-    config.stakingIndex.convictionClaimsContract;
-  if (!convictionClaimsContractAddress) {
-    throw new Error("convictionClaimsContractAddress is not set for indexing");
-  }
-  const claimFunctionSighash = "0x2ac96e2a"; // claim function signature hash
-  const transactionsStartBlock = config.stakingIndex.transactionsStartBlock;
-  if (!transactionsStartBlock) {
-    throw new Error("transactionsStartBlock is not set for indexing");
-  }
-
-  transactions_query_ = {
-    fromBlock: transactionsStartBlock,
-    logs: [], // No logs needed for transaction queries
-    transactions: [
-      {
-        to: [convictionClaimsContractAddress],
-        sighash: [claimFunctionSighash],
-        status: 1,
-      },
-    ],
-    fieldSelection: {
-      block: [BlockField.Number, BlockField.Timestamp, BlockField.Hash],
-      log: [], // No log fields needed
-      transaction: [
-        TransactionField.BlockNumber,
-        TransactionField.TransactionIndex,
-        TransactionField.Hash,
-        TransactionField.From,
-        TransactionField.To,
-        TransactionField.Input,
-      ],
-    },
-    joinMode: JoinMode.JoinAll,
-    delayMs: config.stakingIndex.delayMs,
-  };
+export interface IndexingConfig {
+  isEnabled: boolean;
+  stakingContract: string;
+  rewardsContract: string;
+  convictionClaimsContract: string;
+  eventStartBlock: number;
+  transactionsStartBlock: number;
+  hypersyncUrl: string;
+  hypersyncBearerToken: string;
+  delayMs: number;
 }
 
 /**
@@ -408,8 +327,54 @@ if (isIndexingEnabled) {
  * Disabled case:
  * - If `config.stakingIndex.isEnabled` is false, this is `undefined`.
  */
-export const INDEXING_EVENTS_HYPERSYNC_QUERY: HypersyncQuery | undefined =
-  events_query_;
+export function getEventsHypersyncQuery(
+  config: IndexingConfig,
+): HypersyncQuery {
+  const fromBlock = config.eventStartBlock;
+  if (!fromBlock) {
+    throw new Error("eventStartBlock is not set for indexing");
+  }
+  const stakingContractAddress = config.stakingContract;
+  if (!stakingContractAddress) {
+    throw new Error("stakingContractAddress is not set for indexing");
+  }
+  const rewardsContractAddress = config.rewardsContract;
+  if (!rewardsContractAddress) {
+    throw new Error("rewardsContractAddress is not set for indexing");
+  }
+
+  return {
+    fromBlock: fromBlock,
+    logs: [
+      {
+        address: [stakingContractAddress, rewardsContractAddress],
+        topics: [Object.keys(EVENT_HASH_NAMES)],
+      },
+    ],
+    fieldSelection: {
+      block: [BlockField.Number, BlockField.Hash, BlockField.Timestamp],
+      log: [
+        LogField.BlockNumber,
+        LogField.BlockHash,
+        LogField.LogIndex,
+        LogField.TransactionHash,
+        LogField.Data,
+        LogField.Address,
+        LogField.Topic0,
+        LogField.Topic1,
+        LogField.Topic2,
+        LogField.Topic3,
+      ],
+      transaction: [
+        TransactionField.From,
+        TransactionField.To,
+        TransactionField.Hash,
+      ],
+    },
+    joinMode: JoinMode.JoinAll,
+    delayMs: config.delayMs,
+  };
+}
 
 /**
  * Hypersync query definition for conviction claims transactions.
@@ -434,5 +399,42 @@ export const INDEXING_EVENTS_HYPERSYNC_QUERY: HypersyncQuery | undefined =
  * Disabled case:
  * - If `config.stakingIndex.isEnabled` is false, this is `undefined`.
  */
-export const INDEXING_TRANSACTIONS_HYPERSYNC_QUERY: HypersyncQuery | undefined =
-  transactions_query_;
+export function getTransactionsHypersyncQuery(
+  config: IndexingConfig,
+): HypersyncQuery {
+  const convictionClaimsContractAddress = config.convictionClaimsContract;
+  if (!convictionClaimsContractAddress) {
+    throw new Error("convictionClaimsContractAddress is not set for indexing");
+  }
+  const claimFunctionSighash = "0x2ac96e2a"; // claim function signature hash
+  const transactionsStartBlock = config.transactionsStartBlock;
+  if (!transactionsStartBlock) {
+    throw new Error("transactionsStartBlock is not set for indexing");
+  }
+
+  return {
+    fromBlock: transactionsStartBlock,
+    logs: [], // No logs needed for transaction queries
+    transactions: [
+      {
+        to: [convictionClaimsContractAddress],
+        sighash: [claimFunctionSighash],
+        status: 1,
+      },
+    ],
+    fieldSelection: {
+      block: [BlockField.Number, BlockField.Timestamp, BlockField.Hash],
+      log: [], // No log fields needed
+      transaction: [
+        TransactionField.BlockNumber,
+        TransactionField.TransactionIndex,
+        TransactionField.Hash,
+        TransactionField.From,
+        TransactionField.To,
+        TransactionField.Input,
+      ],
+    },
+    joinMode: JoinMode.JoinAll,
+    delayMs: config.delayMs,
+  };
+}
