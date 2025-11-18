@@ -60,6 +60,10 @@ describe("AirdropService", () => {
           recallSnapper: false,
           aiBuilder: false,
           aiExplorer: false,
+          ineligibleReason: null,
+          ineligibleReward: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
         },
         {
           address: mockAddress.toLowerCase(),
@@ -74,6 +78,10 @@ describe("AirdropService", () => {
           recallSnapper: true,
           aiBuilder: false,
           aiExplorer: false,
+          ineligibleReason: null,
+          ineligibleReward: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
         },
       ]);
 
@@ -132,6 +140,10 @@ describe("AirdropService", () => {
           recallSnapper: false,
           aiBuilder: false,
           aiExplorer: false,
+          ineligibleReason: null,
+          ineligibleReward: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
         },
       ]);
 
@@ -174,6 +186,10 @@ describe("AirdropService", () => {
           recallSnapper: false,
           aiBuilder: false,
           aiExplorer: false,
+          ineligibleReason: null,
+          ineligibleReward: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
         },
       ]);
 
@@ -233,6 +249,10 @@ describe("AirdropService", () => {
           recallSnapper: false,
           aiBuilder: false,
           aiExplorer: false,
+          ineligibleReason: null,
+          ineligibleReward: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
         },
         {
           address: mockAddress.toLowerCase(),
@@ -247,6 +267,10 @@ describe("AirdropService", () => {
           recallSnapper: true,
           aiBuilder: false,
           aiExplorer: false,
+          ineligibleReason: null,
+          ineligibleReward: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
         },
         {
           address: mockAddress.toLowerCase(),
@@ -261,6 +285,10 @@ describe("AirdropService", () => {
           recallSnapper: false,
           aiBuilder: true,
           aiExplorer: true,
+          ineligibleReason: null,
+          ineligibleReward: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
         },
       ]);
 
@@ -343,6 +371,10 @@ describe("AirdropService", () => {
           recallSnapper: false,
           aiBuilder: false,
           aiExplorer: false,
+          ineligibleReason: null,
+          ineligibleReward: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
         },
       ]);
 
@@ -465,6 +497,10 @@ describe("AirdropService", () => {
           recallSnapper: false,
           aiBuilder: false,
           aiExplorer: false,
+          ineligibleReason: null,
+          ineligibleReward: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
         },
         {
           address: mockAddress.toLowerCase(),
@@ -479,6 +515,10 @@ describe("AirdropService", () => {
           recallSnapper: false,
           aiBuilder: false,
           aiExplorer: false,
+          ineligibleReason: null,
+          ineligibleReward: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
         },
         {
           address: mockAddress.toLowerCase(),
@@ -493,6 +533,10 @@ describe("AirdropService", () => {
           recallSnapper: false,
           aiBuilder: false,
           aiExplorer: false,
+          ineligibleReason: null,
+          ineligibleReward: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
         },
       ]);
 
@@ -540,6 +584,10 @@ describe("AirdropService", () => {
           recallSnapper: false,
           aiBuilder: false,
           aiExplorer: false,
+          ineligibleReason: null,
+          ineligibleReward: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
         },
       ]);
 
@@ -593,6 +641,10 @@ describe("AirdropService", () => {
           recallSnapper: false,
           aiBuilder: false,
           aiExplorer: false,
+          ineligibleReason: null,
+          ineligibleReward: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
         },
       ]);
 
@@ -645,6 +697,10 @@ describe("AirdropService", () => {
           recallSnapper: false,
           aiBuilder: false,
           aiExplorer: false,
+          ineligibleReason: null,
+          ineligibleReward: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
         },
       ]);
 
@@ -692,6 +748,10 @@ describe("AirdropService", () => {
           recallSnapper: false,
           aiBuilder: false,
           aiExplorer: false,
+          ineligibleReason: null,
+          ineligibleReward: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
         },
       ]);
 
