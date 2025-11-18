@@ -152,6 +152,16 @@
         "default": "./dist/repositories/perps.cjs"
       }
     },
+    "./repositories/spot-live": {
+      "import": {
+        "types": "./dist/repositories/spot-live.d.ts",
+        "default": "./dist/repositories/spot-live.js"
+      },
+      "require": {
+        "types": "./dist/repositories/spot-live.d.cts",
+        "default": "./dist/repositories/spot-live.cjs"
+      }
+    },
     "./repositories/rewards": {
       "import": {
         "types": "./dist/repositories/rewards.d.ts",

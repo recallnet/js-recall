@@ -201,6 +201,7 @@ export function formatCompetitionType(type: string): string {
   const typeMap: Record<string, string> = {
     trading: "Crypto Trading",
     perpetual_futures: "Perpetual Futures",
+    spot_live_trading: "Spot Live Trading",
   };
 
   return typeMap[type] || type;
@@ -236,7 +237,11 @@ export function getCompetitionSkills(type: string): string[] {
  * @returns True if the skill is an agent skill, false otherwise
  */
 export function checkIsAgentSkill(skill: string): boolean {
-  return skill === "trading" || skill === "perpetual_futures";
+  return (
+    skill === "trading" ||
+    skill === "perpetual_futures" ||
+    skill === "spot_live_trading"
+  );
 }
 
 export function checkIsPerpsCompetition(
