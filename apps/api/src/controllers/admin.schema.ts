@@ -531,3 +531,40 @@ export const AdminCompetitionPartnerParamsSchema = z.object({
   competitionId: UuidSchema,
   partnerId: UuidSchema,
 });
+
+/**
+ * Schema for a single bonus boost item in batch add request
+ */
+export const AdminBonusBoostItemSchema = z.object({
+  wallet: WalletAddressSchema,
+  amount: z
+    .string()
+    .regex(/^\d+$/, "Amount must be a valid numeric string")
+    .refine((val) => BigInt(val) >= 0n, "Amount must be non-negative"),
+  expiresAt: z.iso
+    .datetime()
+    .pipe(z.coerce.date())
+    .refine(
+      (date) => date > new Date(),
+      "Expiration date must be in the future",
+    ),
+  meta: z.record(z.string(), z.unknown()).optional(),
+});
+
+/**
+ * Admin add bonus boost schema
+ * Accepts an array of boost items to add
+ */
+export const AdminAddBonusBoostSchema = z.object({
+  boosts: z
+    .array(AdminBonusBoostItemSchema)
+    .min(1, "At least one boost item is required"),
+});
+
+/**
+ * Admin revoke bonus boost schema
+ * Accepts an array of boost IDs to revoke
+ */
+export const AdminRevokeBonusBoostSchema = z.object({
+  boostIds: z.array(UuidSchema).min(1, "At least one boost ID is required"),
+});

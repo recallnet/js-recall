@@ -3790,5 +3790,178 @@ export function configureAdminRoutes(
    */
   router.post("/rewards/allocate", controller.allocateRewards);
 
+  /**
+   * @openapi
+   * /api/admin/boost-bonus:
+   *   post:
+   *     tags:
+   *       - Admin
+   *     summary: Add bonus boost to users
+   *     description: |
+   *       Add bonus boosts to multiple users in a single request. Each boost applies to all competitions
+   *       that start before the expiration date.
+   *
+   *       **Note**: This endpoint is currently stubbed and returns 501 Not Implemented for API contract validation.
+   *     security:
+   *       - BearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - boosts
+   *             properties:
+   *               boosts:
+   *                 type: array
+   *                 minItems: 1
+   *                 description: Array of boost items to add
+   *                 items:
+   *                   type: object
+   *                   required:
+   *                     - wallet
+   *                     - amount
+   *                     - expiresAt
+   *                   properties:
+   *                     wallet:
+   *                       type: string
+   *                       pattern: ^0x[0-9a-fA-F]{40}$
+   *                       description: User wallet address (Ethereum hex address)
+   *                       example: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb"
+   *                     amount:
+   *                       type: string
+   *                       pattern: ^\d+$
+   *                       description: Boost amount as numeric string (BigInt)
+   *                       example: "1000000000000000000000"
+   *                     expiresAt:
+   *                       type: string
+   *                       format: date-time
+   *                       description: ISO 8601 expiration date (must be in the future)
+   *                       example: "2025-12-31T23:59:59Z"
+   *                     meta:
+   *                       type: object
+   *                       description: Optional metadata (e.g., source, campaignId)
+   *                       additionalProperties: true
+   *                       example:
+   *                         source: "farcaster"
+   *                         campaignId: "campaign-123"
+   *           example:
+   *             boosts:
+   *               - wallet: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb"
+   *                 amount: "1000000000000000000000"
+   *                 expiresAt: "2025-12-31T23:59:59Z"
+   *                 meta:
+   *                   source: "farcaster"
+   *               - wallet: "0x8ba1f109551bD432803012645Hac136c22C172c8"
+   *                 amount: "500000000000000000000"
+   *                 expiresAt: "2025-12-31T23:59:59Z"
+   *     responses:
+   *       501:
+   *         description: Not Implemented - Endpoint is stubbed for API contract validation
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: false
+   *                 error:
+   *                   type: string
+   *                   example: "Not Implemented"
+   *                 message:
+   *                   type: string
+   *                   example: "This endpoint is stubbed for API contract validation. Full implementation pending."
+   *                 data:
+   *                   type: object
+   *                   properties:
+   *                     requestedCount:
+   *                       type: number
+   *                       description: Number of boost items in the request
+   *                     note:
+   *                       type: string
+   *       400:
+   *         description: Bad Request - Invalid request format, validation errors, or empty array
+   *       401:
+   *         description: Unauthorized - Admin authentication required
+   *       500:
+   *         description: Internal server error
+   */
+  router.post("/boost-bonus", controller.addBonusBoost);
+
+  /**
+   * @openapi
+   * /api/admin/boost-bonus/revoke:
+   *   post:
+   *     tags:
+   *       - Admin
+   *     summary: Revoke bonus boost
+   *     description: |
+   *       Revoke multiple bonus boosts in a single request. Prevents future applications and removes
+   *       from pending competitions where the boosting window hasn't opened.
+   *
+   *       **Note**: This endpoint is currently stubbed and returns 501 Not Implemented for API contract validation.
+   *     security:
+   *       - BearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - boostIds
+   *             properties:
+   *               boostIds:
+   *                 type: array
+   *                 minItems: 1
+   *                 description: Array of boost IDs to revoke
+   *                 items:
+   *                   type: string
+   *                   format: uuid
+   *                 example:
+   *                   - "12345678-1234-1234-1234-123456789012"
+   *                   - "87654321-4321-4321-4321-210987654321"
+   *           example:
+   *             boostIds:
+   *               - "12345678-1234-1234-1234-123456789012"
+   *               - "87654321-4321-4321-4321-210987654321"
+   *     responses:
+   *       501:
+   *         description: Not Implemented - Endpoint is stubbed for API contract validation
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: false
+   *                 error:
+   *                   type: string
+   *                   example: "Not Implemented"
+   *                 message:
+   *                   type: string
+   *                   example: "This endpoint is stubbed for API contract validation. Full implementation pending."
+   *                 data:
+   *                   type: object
+   *                   properties:
+   *                     requestedCount:
+   *                       type: number
+   *                       description: Number of boost IDs in the request
+   *                     note:
+   *                       type: string
+   *       400:
+   *         description: Bad Request - Invalid request format, validation errors, empty array, or boost already revoked
+   *       401:
+   *         description: Unauthorized - Admin authentication required
+   *       404:
+   *         description: Not Found - One or more boost IDs not found
+   *       500:
+   *         description: Internal server error
+   */
+  router.post("/boost-bonus/revoke", controller.revokeBonusBoost);
+
   return router;
 }
