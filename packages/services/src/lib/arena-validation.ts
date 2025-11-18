@@ -8,6 +8,7 @@ export const SKILL_TYPE_COMPATIBILITY: Record<string, CompetitionType[]> = {
   // Trading arenas
   spot_paper_trading: ["trading"],
   perpetual_futures: ["perpetual_futures"],
+  spot_live_trading: ["spot_live_trading"],
 
   // Future expansion examples:
   // Prediction markets
@@ -70,7 +71,11 @@ export function getSkillForCompetitionType(
   }
 
   // Fallback for unknown types
-  return competitionType === "perpetual_futures"
-    ? "perpetual_futures"
-    : "spot_paper_trading";
+  if (competitionType === "perpetual_futures") {
+    return "perpetual_futures";
+  }
+  if (competitionType === "spot_live_trading") {
+    return "spot_live_trading";
+  }
+  return "spot_paper_trading";
 }
