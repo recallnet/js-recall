@@ -226,10 +226,11 @@ export class PortfolioSnapshotterService {
   /**
    * Generate cache key for price map that includes chain
    * Prevents chain collision for tokens with same address on multiple chains
+   * Uses same format as PriceTrackerService.getCacheKey() for consistency
    * @private
    */
   private getPriceMapKey(tokenAddress: string, specificChain: string): string {
-    return `${tokenAddress.toLowerCase()}-${specificChain}`;
+    return `${tokenAddress.toLowerCase()}:${specificChain}`;
   }
 
   /**
