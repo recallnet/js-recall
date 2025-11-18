@@ -662,6 +662,18 @@ async function ensureDefaultArenas() {
       kind: "Competition",
     })
     .onConflictDoNothing();
+
+  await db
+    .insert(arenas)
+    .values({
+      id: "default-nfl-play-prediction-arena",
+      name: "Default NFL Play Prediction Arena",
+      createdBy: "system",
+      category: "sports",
+      skill: "nfl_play_prediction",
+      kind: "Competition",
+    })
+    .onConflictDoNothing();
 }
 
 /**
@@ -805,4 +817,129 @@ export async function startPerpsTestCompetition({
   }
 
   return result as StartCompetitionResponse;
+}
+
+/**
+ * Create an NFL play prediction competition
+ */
+export async function createNflPlayPredictionTestCompetition({
+  adminClient,
+  name,
+  description,
+}: {
+  adminClient: ApiClient;
+  name?: string;
+  description?: string;
+}): Promise<CreateCompetitionResponse> {
+  const competitionName =
+    name || `NFL Prediction Test Competition ${crypto.randomUUID()}`;
+  const result = await adminClient.createCompetition({
+    name: competitionName,
+    description:
+      description || `NFL prediction test competition for ${competitionName}`,
+    type: "nfl",
+
+    arenaId: "default-nfl-play-prediction-arena",
+  });
+
+  if (!result.success) {
+    throw new Error("Failed to create NFL play prediction competition");
+  }
+
+  return result as CreateCompetitionResponse;
+}
+
+/**
+ * NFL Test Client
+ * Wrapper around NFL API endpoints and mock server controls
+ */
+export class NflTestClient {
+  private client: ApiClient;
+  private mockServerUrl: string;
+
+  constructor(apiKey: string, mockServerUrl: string = "http://localhost:4569") {
+    this.client = new ApiClient(apiKey);
+    this.mockServerUrl = mockServerUrl;
+  }
+
+  /**
+   * Get open plays for a competition
+   */
+  async getOpenPlays(
+    competitionId: string,
+    limit: number = 50,
+    offset: number = 0,
+  ) {
+    return this.client.getNflOpenPlays(competitionId, limit, offset);
+  }
+
+  /**
+   * Submit a prediction for the next play in a game
+   */
+  async submitPrediction(
+    competitionId: string,
+    globalGameId: number,
+    prediction: "run" | "pass",
+    confidence: number,
+  ) {
+    return this.client.submitNflPrediction(
+      competitionId,
+      globalGameId,
+      prediction,
+      confidence,
+    );
+  }
+
+  /**
+   * Get leaderboard for a competition
+   */
+  async getLeaderboard(competitionId: string) {
+    return this.client.getNflLeaderboard(competitionId);
+  }
+
+  /**
+   * Mock Server Controls
+   */
+
+  /**
+   * Reset mock server to first snapshot
+   */
+  async resetMockServer(globalGameId: number) {
+    const response = await axios.post(
+      `${this.mockServerUrl}/mock/reset/${globalGameId}`,
+    );
+    return response.data;
+  }
+
+  /**
+   * Advance mock server to next snapshot
+   */
+  async advanceMockServer(globalGameId: number) {
+    const response = await axios.post(
+      `${this.mockServerUrl}/mock/advance/${globalGameId}`,
+    );
+    return response.data;
+  }
+
+  /**
+   * Start auto-advance on mock server
+   */
+  async startAutoAdvance(globalGameId: number, intervalMs: number = 30000) {
+    const response = await axios.post(
+      `${this.mockServerUrl}/mock/auto-advance/${globalGameId}`,
+      { intervalMs },
+      { headers: { "Content-Type": "application/json" } },
+    );
+    return response.data;
+  }
+
+  /**
+   * Stop auto-advance on mock server
+   */
+  async stopAutoAdvance(globalGameId: number) {
+    const response = await axios.post(
+      `${this.mockServerUrl}/mock/stop-auto-advance/${globalGameId}`,
+    );
+    return response.data;
+  }
 }

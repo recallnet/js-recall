@@ -66,7 +66,9 @@
         "METRICS_PORT",
         "CI",
         "CRON_SECRET",
-        "VERCEL_GIT_COMMIT_SHA"
+        "VERCEL_GIT_COMMIT_SHA",
+        "SPORTSDATAIO_API_KEY",
+        "SPORTSDATAIO_BASE_URL"
       ]
     }
   }

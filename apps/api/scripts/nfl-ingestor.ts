@@ -119,7 +119,7 @@ async function ingestNflData(): Promise<void> {
       await runResolveLoop(services, args.dir, gameIdMap, games);
     }
   } catch (error) {
-    logger.error("Error during NFL data ingestion:", error);
+    logger.error({ error }, "Error during NFL data ingestion");
     throw error;
   }
 }
@@ -191,7 +191,7 @@ async function runResolveLoop(
         }
       }
     } catch (error) {
-      logger.error("Error in resolve loop:", error);
+      logger.error({ error }, "Error in resolve loop");
     }
   }, 5000);
 

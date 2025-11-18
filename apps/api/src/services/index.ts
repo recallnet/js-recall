@@ -462,6 +462,7 @@ class ServiceRegistry {
     this._sportsDataIOProvider = new SportsDataIONflProvider(
       config.sportsDataIO.apiKey,
       serviceLogger,
+      config.sportsDataIO.baseUrl,
     );
 
     // Initialize live ingestor

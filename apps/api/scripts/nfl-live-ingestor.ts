@@ -126,7 +126,7 @@ async function ingestLiveData(): Promise<void> {
       await runPollingLoop(services, args);
     }
   } catch (error) {
-    logger.error("Error during live data ingestion:", error);
+    logger.error({ error }, "Error during live data ingestion");
     throw error;
   }
 }
@@ -189,7 +189,7 @@ async function runPollingLoop(
 
       logger.info("Poll complete");
     } catch (error) {
-      logger.error("Error in polling loop:", error);
+      logger.error({ error }, "Error in polling loop");
     }
   }, args.pollInterval);
 

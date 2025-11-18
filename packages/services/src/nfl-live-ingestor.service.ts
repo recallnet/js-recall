@@ -217,7 +217,6 @@ export class NflLiveIngestorService {
       {
         gameId,
         ingestedCount,
-        nonPredictableCount: data.Plays.length - ingestedCount,
       },
       "Ingested plays for game",
     );

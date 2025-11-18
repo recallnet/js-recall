@@ -1,59 +1,78 @@
 # NFL Baseline Data
 
-This directory contains baseline NFL game and play data for Phase 0 simulation testing.
+This directory contains real SportsDataIO API responses for simulation and testing.
 
 ## Structure
 
-- `games.json` - Array of game metadata
-- `plays/<gameId>.json` - Array of plays for each game
+- `games.json` - Game metadata
+- `plays/19068-{0..5}.json` - Chronological snapshots of game 19068 (MIN @ CHI)
+- `plays/19068-full.json` - Complete game with all plays
+- `SIMULATION_GUIDE.md` - Detailed guide on using the data
 
-## Game Format
+## Data Format
 
-```json
-{
-  "sportsdataioGameId": "string",
-  "startTime": "2025-11-27T17:30:00Z",
-  "homeTeam": "DAL",
-  "awayTeam": "WAS",
-  "venue": "AT&T Stadium"
-}
-```
-
-## Play Format
+Files use the actual SportsDataIO Play-by-Play API response format:
 
 ```json
 {
-  "sequence": 1,
-  "quarter": 1,
-  "clock": "15:00",
-  "down": 1,
-  "distance": 10,
-  "yardLine": 25,
-  "offenseTeam": "DAL",
-  "defenseTeam": "WAS",
-  "lockMs": 5000,
-  "actualOutcome": "run"
+  "Score": {
+    "GlobalGameID": 19068,
+    "GameKey": "202510106",
+    "Status": "InProgress",
+    "IsInProgress": true,
+    "Quarter": "1",
+    "TimeRemaining": "14:53",
+    "Possession": "MIN",
+    "Down": 2,
+    "Distance": "7",
+    "YardLine": 28,
+    "YardLineTerritory": "MIN",
+    "DownAndDistance": "2nd & 7",
+    ...
+  },
+  "Quarters": [...],
+  "Plays": [...]
 }
 ```
 
-## Fields
+## Chronological Snapshots
 
-- `sequence`: Monotonically increasing play number within the game
-- `quarter`: Quarter number (1-4)
-- `clock`: Time remaining in quarter (mm:ss)
-- `down`: Down number (1-4)
-- `distance`: Yards to go for first down
-- `yardLine`: Field position (0-100)
-- `offenseTeam`: Team abbreviation on offense
-- `defenseTeam`: Team abbreviation on defense
-- `lockMs`: Milliseconds from start before play outcome is revealed
-- `actualOutcome`: "run" or "pass"
+- **19068-0.json** - Pre-game (0 plays)
+- **19068-1.json** - After kickoff (1 play)
+- **19068-2.json** - After first rush (2 plays)
+- **19068-3.json** - After pass completion (3 plays)
+- **19068-4.json** - Duplicate of snapshot 3 (for testing)
+- **19068-5.json** - After sack (4 plays)
+- **19068-full.json** - Complete game (all plays)
+
+Each snapshot's `Score` object represents the **current game state** (what the next play will be), and the `Plays` array contains all plays that have already happened.
 
 ## Usage
 
-The ingestor script reads these files and replays them into the database:
+### Live Ingestor (Production)
 
 ```bash
 cd apps/api
-pnpm tsx scripts/nfl-ingestor.ts --dir baseline/nfl --competitionId <uuid> --replaySpeed 1.0 --loop
+export SPORTSDATAIO_API_KEY=your_key
+
+# Ingest live game with 3-second polling
+pnpm tsx scripts/nfl-live-ingestor.ts \
+  --globalGameId 19068 \
+  --competitionId <uuid> \
+  --pollInterval 3000
 ```
+
+### Baseline Ingestor (Testing)
+
+```bash
+cd apps/api
+
+# Replay baseline data with loop mode
+pnpm tsx scripts/nfl-ingestor.ts \
+  --dir baseline/nfl \
+  --competitionId <uuid> \
+  --replaySpeed 10.0 \
+  --loop
+```
+
+See `SIMULATION_GUIDE.md` for detailed testing scenarios.

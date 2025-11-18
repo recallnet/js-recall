@@ -2544,4 +2544,60 @@ export class ApiClient {
       return this.handleApiError(error, "get rewards with proofs");
     }
   }
+
+  /**
+   * NFL API Methods
+   */
+
+  /**
+   * Get open plays for an NFL competition
+   */
+  async getNflOpenPlays(
+    competitionId: string,
+    limit: number = 50,
+    offset: number = 0,
+  ) {
+    try {
+      const response = await this.axiosInstance.get(
+        `/api/nfl/competitions/${competitionId}/plays?state=open&limit=${limit}&offset=${offset}`,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get NFL open plays");
+    }
+  }
+
+  /**
+   * Submit a prediction for the next play in a game
+   */
+  async submitNflPrediction(
+    competitionId: string,
+    globalGameId: number,
+    prediction: "run" | "pass",
+    confidence: number,
+  ) {
+    try {
+      const response = await this.axiosInstance.post(
+        `/api/nfl/competitions/${competitionId}/games/${globalGameId}/predictions`,
+        { prediction, confidence },
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "submit NFL prediction");
+    }
+  }
+
+  /**
+   * Get leaderboard for an NFL competition
+   */
+  async getNflLeaderboard(competitionId: string) {
+    try {
+      const response = await this.axiosInstance.get(
+        `/api/nfl/competitions/${competitionId}/leaderboard`,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get NFL leaderboard");
+    }
+  }
 }

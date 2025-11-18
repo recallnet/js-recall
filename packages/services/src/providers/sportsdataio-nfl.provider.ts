@@ -130,11 +130,15 @@ export class SportsDataIONflProvider {
     this.#baseUrl = baseUrl || "https://api.sportsdata.io/v3/nfl";
     this.#logger = logger;
 
+    // Only add API key header if not using mock server
+    const headers: Record<string, string> = {};
+    if (!baseUrl || !baseUrl.includes("localhost")) {
+      headers["Ocp-Apim-Subscription-Key"] = this.#apiKey;
+    }
+
     this.#client = axios.create({
       baseURL: this.#baseUrl,
-      headers: {
-        "Ocp-Apim-Subscription-Key": this.#apiKey,
-      },
+      headers,
       timeout: 10000,
     });
   }
