@@ -4,7 +4,7 @@ import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 
 import { BalanceService } from "./balance.service.js";
 import { PriceTrackerService } from "./price-tracker.service.js";
-import { PriceReport } from "./types/index.js";
+import { BlockchainType, PriceReport, SpecificChain } from "./types/index.js";
 
 /**
  * Portfolio Snapshotter Service
@@ -97,10 +97,13 @@ export class PortfolioSnapshotterService {
     );
 
     // Check if we have any price failures for non-zero balances and fail fast
-    const hasFailures = balances.some(
-      (balance) =>
-        balance.amount > 0 && priceMap.get(balance.tokenAddress) === null,
-    );
+    const hasFailures = balances.some((balance) => {
+      const priceKey = this.getPriceMapKey(
+        balance.tokenAddress,
+        balance.specificChain,
+      );
+      return balance.amount > 0 && priceMap.get(priceKey) == null;
+    });
     if (hasFailures) {
       // We have incomplete price data - skip snapshot creation
       // Detailed error logging already done in fetchPricesWithRetries
@@ -221,11 +224,26 @@ export class PortfolioSnapshotterService {
   }
 
   /**
+   * Generate cache key for price map that includes chain
+   * Prevents chain collision for tokens with same address on multiple chains
+   * Uses same format as PriceTrackerService.getCacheKey() for consistency
+   * @private
+   */
+  private getPriceMapKey(tokenAddress: string, specificChain: string): string {
+    return `${tokenAddress.toLowerCase()}:${specificChain}`;
+  }
+
+  /**
    * Fetch prices for tokens with retry logic and exponential backoff
    * @private
    */
   private async fetchPricesWithRetries(
-    balances: Array<{ tokenAddress: string; amount: number; symbol: string }>,
+    balances: Array<{
+      tokenAddress: string;
+      amount: number;
+      symbol: string;
+      specificChain: string;
+    }>,
     agentId: string,
     maxRetries: number,
   ): Promise<Map<string, PriceReport | null>> {
@@ -260,14 +278,18 @@ export class PortfolioSnapshotterService {
         tokensNeedingPrices.push(...balances.map((b) => b.tokenAddress));
       } else {
         // Subsequent attempts: only fetch tokens that don't have prices yet
+        // Use Set to avoid duplicates when same address exists on multiple chains
+        const tokensNeedingSet = new Set<string>();
         for (const balance of balances) {
-          if (
-            balance.amount > 0 &&
-            priceMap.get(balance.tokenAddress) === null
-          ) {
-            tokensNeedingPrices.push(balance.tokenAddress);
+          const priceKey = this.getPriceMapKey(
+            balance.tokenAddress,
+            balance.specificChain,
+          );
+          if (balance.amount > 0 && priceMap.get(priceKey) == null) {
+            tokensNeedingSet.add(balance.tokenAddress);
           }
         }
+        tokensNeedingPrices.push(...Array.from(tokensNeedingSet));
       }
 
       // If we have all prices already, we're done
@@ -285,22 +307,112 @@ export class PortfolioSnapshotterService {
       const newPrices =
         await this.priceTrackerService.getBulkPrices(tokensNeedingPrices);
 
+      // Build token-to-chains mapping once before loop for efficiency
+      const tokenToChains = new Map<string, Set<string>>();
+      for (const balance of balances) {
+        const addr = balance.tokenAddress.toLowerCase();
+        if (!tokenToChains.has(addr)) {
+          tokenToChains.set(addr, new Set());
+        }
+        tokenToChains.get(addr)!.add(balance.specificChain);
+      }
+
       // Merge new prices into our map (preserving existing successful prices)
+      // Use chain-specific keys to prevent collisions for same address on different chains
       for (const [tokenAddress, priceReport] of newPrices) {
-        // Only update if we got a successful price (not null)
-        if (priceReport !== null) {
-          priceMap.set(tokenAddress, priceReport);
-        } else if (!priceMap.has(tokenAddress)) {
-          // Set to null if we don't have it yet (to track that we tried)
-          priceMap.set(tokenAddress, null);
+        // Get all chains where this token exists (from pre-built map)
+        const chainsWithToken = Array.from(
+          tokenToChains.get(tokenAddress.toLowerCase()) ?? [],
+        );
+
+        if (priceReport !== null && priceReport.specificChain) {
+          // Store successful price for the specific chain returned by API
+          const priceKey = this.getPriceMapKey(
+            tokenAddress,
+            priceReport.specificChain,
+          );
+          priceMap.set(priceKey, priceReport);
+
+          // Also mark other chains as attempted but unavailable (null)
+          // This prevents undefined checks from passing when price only exists on one chain
+          for (const chain of chainsWithToken) {
+            if (chain !== priceReport.specificChain) {
+              const otherChainKey = this.getPriceMapKey(tokenAddress, chain);
+              if (!priceMap.has(otherChainKey)) {
+                priceMap.set(otherChainKey, null);
+              }
+            }
+          }
+        } else {
+          // For null prices, set for all chains this token might be on
+          for (const chain of chainsWithToken) {
+            const priceKey = this.getPriceMapKey(tokenAddress, chain);
+            if (!priceMap.has(priceKey)) {
+              // Set to null if we don't have it yet (to track that we tried)
+              priceMap.set(priceKey, null);
+            }
+          }
         }
       }
 
-      // Step 3: Check if we have all prices we need
-      const allPricesFetched = !balances.some(
-        (balance) =>
-          balance.amount > 0 && priceMap.get(balance.tokenAddress) === null,
-      );
+      // Step 3: Handle multi-chain token edge case
+      // Edge case: If the same token address exists on multiple chains (e.g., ORDER on Arbitrum and Polygon)
+      // and an agent holds it on multiple chains, getBulkPrices only returns ONE price (first chain found).
+      // For any token+chain combinations still missing, we need to fetch them individually with the specific chain parameter.
+      for (const balance of balances) {
+        if (balance.amount === 0) {
+          continue;
+        }
+
+        const priceKey = this.getPriceMapKey(
+          balance.tokenAddress,
+          balance.specificChain,
+        );
+
+        // If this specific token+chain combination is still missing after batch fetch
+        if (priceMap.get(priceKey) == null) {
+          this.logger.debug(
+            `[PortfolioSnapshotter] Token ${balance.tokenAddress} on ${balance.specificChain} still missing after batch, fetching individually`,
+          );
+
+          try {
+            const blockchainType =
+              balance.specificChain === "svm"
+                ? BlockchainType.SVM
+                : BlockchainType.EVM;
+
+            const chainSpecificPrice = await this.priceTrackerService.getPrice(
+              balance.tokenAddress,
+              blockchainType,
+              balance.specificChain as SpecificChain,
+            );
+
+            if (chainSpecificPrice) {
+              priceMap.set(priceKey, chainSpecificPrice);
+              this.logger.debug(
+                `[PortfolioSnapshotter] Successfully fetched chain-specific price for ${balance.tokenAddress} on ${balance.specificChain}: $${chainSpecificPrice.price}`,
+              );
+            } else {
+              priceMap.set(priceKey, null);
+            }
+          } catch (error) {
+            this.logger.debug(
+              { error },
+              `[PortfolioSnapshotter] Error fetching chain-specific price for ${balance.tokenAddress} on ${balance.specificChain}`,
+            );
+            priceMap.set(priceKey, null);
+          }
+        }
+      }
+
+      // Step 4: Check if we have all prices we need
+      const allPricesFetched = !balances.some((balance) => {
+        const priceKey = this.getPriceMapKey(
+          balance.tokenAddress,
+          balance.specificChain,
+        );
+        return balance.amount > 0 && priceMap.get(priceKey) == null;
+      });
 
       if (allPricesFetched) {
         this.logger.debug(
@@ -309,18 +421,19 @@ export class PortfolioSnapshotterService {
         break;
       }
 
-      // Log remaining failures for this attempt
+      // Step 5: Log remaining failures for this attempt
       if (attemptNumber === maxRetries + 1) {
         // Build detailed list of missing tokens for final error
         const missingTokenDetails: string[] = [];
         let failedCount = 0;
         for (const balance of balances) {
-          if (
-            priceMap.get(balance.tokenAddress) === null &&
-            balance.amount > 0
-          ) {
+          const priceKey = this.getPriceMapKey(
+            balance.tokenAddress,
+            balance.specificChain,
+          );
+          if (priceMap.get(priceKey) == null && balance.amount > 0) {
             missingTokenDetails.push(
-              `${balance.tokenAddress} (${balance.symbol})`,
+              `${balance.tokenAddress} on ${balance.specificChain} (${balance.symbol})`,
             );
             failedCount++;
           }
@@ -331,10 +444,13 @@ export class PortfolioSnapshotterService {
         );
       } else {
         // Count failures for debug message
-        const failedCount = balances.filter(
-          (balance) =>
-            balance.amount > 0 && priceMap.get(balance.tokenAddress) === null,
-        ).length;
+        const failedCount = balances.filter((balance) => {
+          const priceKey = this.getPriceMapKey(
+            balance.tokenAddress,
+            balance.specificChain,
+          );
+          return balance.amount > 0 && priceMap.get(priceKey) == null;
+        }).length;
         this.logger.debug(
           `[PortfolioSnapshotter] ${failedCount} tokens still missing prices for agent ${agentId}, will retry entire batch`,
         );
@@ -347,10 +463,17 @@ export class PortfolioSnapshotterService {
   /**
    * Calculate the total portfolio value from balances and prices
    * Assumes all prices are available (verified by caller)
+   * Matches prices to balances using both token address and chain to handle
+   * tokens with same address on multiple chains
    * @private
    */
   private calculatePortfolioValue(
-    balances: Array<{ tokenAddress: string; amount: number; symbol: string }>,
+    balances: Array<{
+      tokenAddress: string;
+      amount: number;
+      symbol: string;
+      specificChain: string;
+    }>,
     priceMap: Map<string, PriceReport | null>,
   ): number {
     let totalValue = 0;
@@ -361,7 +484,12 @@ export class PortfolioSnapshotterService {
         continue;
       }
 
-      const priceResult = priceMap.get(balance.tokenAddress);
+      // Use chain-specific key to lookup price
+      const priceKey = this.getPriceMapKey(
+        balance.tokenAddress,
+        balance.specificChain,
+      );
+      const priceResult = priceMap.get(priceKey);
       // We know all prices are available since we checked before calling this
       if (priceResult) {
         const valueUsd = balance.amount * priceResult.price;
