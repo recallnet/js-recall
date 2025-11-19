@@ -1,3 +1,4 @@
+import * as airdropDefs from "./airdrop/defs.js";
 import * as boostDefs from "./boost/defs.js";
 import * as convictionClaimsDefs from "./conviction-claims/defs.js";
 import * as coreDefs from "./core/defs.js";
@@ -22,6 +23,7 @@ const schema = {
   ...indexingDefs,
   ...rewardsDefs,
   ...rewardsRelations,
+  ...airdropDefs,
 };
 
 export default schema;

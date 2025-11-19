@@ -12,6 +12,7 @@ import { MockPrivyClient } from "@recallnet/services/lib";
 import { createLogger } from "../../lib/logger.js";
 import {
   agentService,
+  airdropService,
   arenaService,
   boostAwardService,
   boostService,
@@ -61,6 +62,7 @@ export async function createTestRpcClient(
     context: {
       cookies: createMockCookies(privyToken),
       privyClient: mockPrivyClient as unknown as PrivyClient, // MockPrivyClient implements subset of PrivyClient interface
+      airdropService,
       boostService,
       boostAwardService,
       userService,

@@ -18,6 +18,7 @@ import { Logger } from "pino";
 
 import {
   AgentService,
+  AirdropService,
   ArenaService,
   BoostAwardService,
   BoostService,
@@ -58,6 +59,7 @@ export const base = os
   .$context<{
     cookies: CookieStore;
     privyClient: PrivyClient;
+    airdropService: AirdropService;
     boostService: BoostService;
     boostAwardService: BoostAwardService;
     userService: UserService;
