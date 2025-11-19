@@ -1,5 +1,5 @@
 {
-  "id": "cfcbbd2a-5ff8-44b0-99a5-d30550ae01c3",
+  "id": "0aba408d-05f1-4bbc-98ab-3bddd3fad43c",
   "prevId": "34f557d7-6b5f-40ea-97d9-8ed3ea6299b4",
   "version": "7",
   "dialect": "postgresql",
@@ -3906,9 +3906,9 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.competition_aggregate_scores": {
+    "sports.competition_aggregate_scores": {
       "name": "competition_aggregate_scores",
-      "schema": "",
+      "schema": "sports",
       "columns": {
         "id": {
           "name": "id",
@@ -4014,9 +4014,9 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.competition_games": {
+    "sports.competition_games": {
       "name": "competition_games",
-      "schema": "",
+      "schema": "sports",
       "columns": {
         "id": {
           "name": "id",
@@ -4091,6 +4091,7 @@
           "name": "competition_games_game_id_fkey",
           "tableFrom": "competition_games",
           "tableTo": "games",
+          "schemaTo": "sports",
           "columnsFrom": ["game_id"],
           "columnsTo": ["id"],
           "onDelete": "cascade",
@@ -4109,9 +4110,9 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.game_plays": {
+    "sports.game_plays": {
       "name": "game_plays",
-      "schema": "",
+      "schema": "sports",
       "columns": {
         "id": {
           "name": "id",
@@ -4216,24 +4217,9 @@
           "primaryKey": false,
           "notNull": false
         },
-        "lock_time": {
-          "name": "lock_time",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "status": {
-          "name": "status",
-          "type": "play_status",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'open'"
-        },
-        "actual_outcome": {
-          "name": "actual_outcome",
-          "type": "play_outcome",
-          "typeSchema": "public",
+        "outcome": {
+          "name": "outcome",
+          "type": "text",
           "primaryKey": false,
           "notNull": false
         },
@@ -4283,42 +4269,6 @@
           "method": "btree",
           "with": {}
         },
-        "idx_game_plays_status_lock_time": {
-          "name": "idx_game_plays_status_lock_time",
-          "columns": [
-            {
-              "expression": "status",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "lock_time",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_game_plays_status": {
-          "name": "idx_game_plays_status",
-          "columns": [
-            {
-              "expression": "status",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
         "idx_game_plays_play_type": {
           "name": "idx_game_plays_play_type",
           "columns": [
@@ -4340,6 +4290,7 @@
           "name": "game_plays_game_id_fkey",
           "tableFrom": "game_plays",
           "tableTo": "games",
+          "schemaTo": "sports",
           "columnsFrom": ["game_id"],
           "columnsTo": ["id"],
           "onDelete": "cascade",
@@ -4358,9 +4309,9 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.game_prediction_scores": {
+    "sports.game_prediction_scores": {
       "name": "game_prediction_scores",
-      "schema": "",
+      "schema": "sports",
       "columns": {
         "id": {
           "name": "id",
@@ -4395,7 +4346,8 @@
         },
         "final_prediction": {
           "name": "final_prediction",
-          "type": "text",
+          "type": "nfl_team",
+          "typeSchema": "sports",
           "primaryKey": false,
           "notNull": false
         },
@@ -4481,6 +4433,7 @@
           "name": "game_prediction_scores_game_id_fkey",
           "tableFrom": "game_prediction_scores",
           "tableTo": "games",
+          "schemaTo": "sports",
           "columnsFrom": ["game_id"],
           "columnsTo": ["id"],
           "onDelete": "cascade",
@@ -4508,9 +4461,9 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.game_predictions": {
+    "sports.game_predictions": {
       "name": "game_predictions",
-      "schema": "",
+      "schema": "sports",
       "columns": {
         "id": {
           "name": "id",
@@ -4539,7 +4492,8 @@
         },
         "predicted_winner": {
           "name": "predicted_winner",
-          "type": "text",
+          "type": "nfl_team",
+          "typeSchema": "sports",
           "primaryKey": false,
           "notNull": true
         },
@@ -4672,6 +4626,7 @@
           "name": "game_predictions_game_id_fkey",
           "tableFrom": "game_predictions",
           "tableTo": "games",
+          "schemaTo": "sports",
           "columnsFrom": ["game_id"],
           "columnsTo": ["id"],
           "onDelete": "cascade",
@@ -4693,9 +4648,9 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.games": {
+    "sports.games": {
       "name": "games",
-      "schema": "",
+      "schema": "sports",
       "columns": {
         "id": {
           "name": "id",
@@ -4730,13 +4685,15 @@
         },
         "home_team": {
           "name": "home_team",
-          "type": "text",
+          "type": "nfl_team",
+          "typeSchema": "sports",
           "primaryKey": false,
           "notNull": true
         },
         "away_team": {
           "name": "away_team",
-          "type": "text",
+          "type": "nfl_team",
+          "typeSchema": "sports",
           "primaryKey": false,
           "notNull": true
         },
@@ -4749,14 +4706,15 @@
         "status": {
           "name": "status",
           "type": "game_status",
-          "typeSchema": "public",
+          "typeSchema": "sports",
           "primaryKey": false,
           "notNull": true,
           "default": "'scheduled'"
         },
         "winner": {
           "name": "winner",
-          "type": "text",
+          "type": "nfl_team",
+          "typeSchema": "sports",
           "primaryKey": false,
           "notNull": false
         },
@@ -6988,14 +6946,14 @@
       "schema": "public",
       "values": ["spot_paper_trading", "perpetual_futures", "spot_live_trading"]
     },
-    "public.game_status": {
+    "sports.game_status": {
       "name": "game_status",
-      "schema": "public",
+      "schema": "sports",
       "values": ["scheduled", "in_progress", "final"]
     },
-    "public.nfl_team": {
+    "sports.nfl_team": {
       "name": "nfl_team",
-      "schema": "public",
+      "schema": "sports",
       "values": [
         "ARI",
         "ATL",
@@ -7031,16 +6989,6 @@
         "WAS"
       ]
     },
-    "public.play_outcome": {
-      "name": "play_outcome",
-      "schema": "public",
-      "values": ["run", "pass"]
-    },
-    "public.play_status": {
-      "name": "play_status",
-      "schema": "public",
-      "values": ["open", "locked", "resolved"]
-    },
     "trading_comps.cross_chain_trading_type": {
       "name": "cross_chain_trading_type",
       "schema": "trading_comps",
@@ -7058,6 +7006,7 @@
     }
   },
   "schemas": {
+    "sports": "sports",
     "trading_comps": "trading_comps"
   },
   "sequences": {},

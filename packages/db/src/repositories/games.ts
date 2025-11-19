@@ -2,7 +2,7 @@ import { eq, inArray } from "drizzle-orm";
 import { Logger } from "pino";
 
 import { games } from "../schema/sports/defs.js";
-import { InsertGame, SelectGame } from "../schema/sports/types.js";
+import { InsertGame, NflTeam, SelectGame } from "../schema/sports/types.js";
 import { Database } from "../types.js";
 
 /**
@@ -209,7 +209,7 @@ export class GamesRepository {
   async finalizeGame(
     id: string,
     endTime: Date,
-    winner: string,
+    winner: NflTeam,
   ): Promise<SelectGame> {
     try {
       const [result] = await this.#db

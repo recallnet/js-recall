@@ -2,6 +2,7 @@ import { NextFunction, Response } from "express";
 import { z } from "zod/v4";
 
 import { ParsingError } from "@recallnet/db/errors";
+import { NFL_TEAMS } from "@recallnet/db/schema/sports/types";
 import { ApiError } from "@recallnet/services/types";
 
 import { competitionLogger } from "@/lib/logger.js";
@@ -11,7 +12,7 @@ import { AuthenticatedRequest } from "@/types/index.js";
 import { ensureAgentId, ensurePaging, ensureUuid } from "./request-helpers.js";
 
 const PredictGameWinnerSchema = z.object({
-  predictedWinner: z.string().min(2).max(3), // Team ticker like "MIN", "CHI"
+  predictedWinner: z.enum(NFL_TEAMS),
   confidence: z.number().min(0).max(1),
 });
 
@@ -138,16 +139,9 @@ export function makeNflController(services: ServiceRegistry) {
       next: NextFunction,
     ) {
       try {
-        const competitionId = ensureUuid(req.params.competitionId);
-        if (!competitionId) {
-          throw new ApiError(400, "Competition ID is required");
-        }
-
+        // Note: require competition ID to be present in the URL, but it's not actually used in the request
+        ensureUuid(req.params.competitionId);
         const gameId = ensureUuid(req.params.gameId);
-        if (!gameId) {
-          throw new ApiError(400, "Game ID is required");
-        }
-
         const game =
           await services.sportsService.gamesRepository.findById(gameId);
         if (!game) {
@@ -157,10 +151,11 @@ export function makeNflController(services: ServiceRegistry) {
         // Get agent's latest prediction if authenticated
         let latestPrediction = null;
         if (req.agentId) {
+          const agentId = ensureAgentId(req);
           const prediction =
             await services.sportsService.gamePredictionService.getLatestPrediction(
               gameId,
-              req.agentId,
+              agentId,
             );
           if (prediction) {
             latestPrediction = {
@@ -209,16 +204,9 @@ export function makeNflController(services: ServiceRegistry) {
       next: NextFunction,
     ) {
       try {
-        const competitionId = ensureUuid(req.params.competitionId);
-        if (!competitionId) {
-          throw new ApiError(400, "Competition ID is required");
-        }
-
+        // Note: require competition ID to be present in the URL, but it's not actually used in the request
+        ensureUuid(req.params.competitionId);
         const gameId = ensureUuid(req.params.gameId);
-        if (!gameId) {
-          throw new ApiError(400, "Game ID is required");
-        }
-
         const { limit, offset, sort } = ensurePaging(req);
         const latest = req.query.latest === "true";
 
@@ -269,7 +257,6 @@ export function makeNflController(services: ServiceRegistry) {
                 opponent: play.opponent,
                 description: play.description,
                 playType: play.playType,
-                status: play.status,
               })),
               pagination: {
                 total: plays.length,
@@ -301,29 +288,22 @@ export function makeNflController(services: ServiceRegistry) {
     ) {
       try {
         const competitionId = ensureUuid(req.params.competitionId);
-        if (!competitionId) {
-          throw new ApiError(400, "Competition ID is required");
-        }
-
         const gameId = ensureUuid(req.params.gameId);
-        if (!gameId) {
-          throw new ApiError(400, "Game ID is required");
-        }
+        const agentId = ensureAgentId(req);
 
-        // Ensure agent is authenticated
-        if (!req.agentId) {
-          throw new ApiError(401, "Agent authentication required");
+        const body = PredictGameWinnerSchema.safeParse(req.body);
+        if (!body.success) {
+          throw new ApiError(400, body.error.message);
         }
-
-        const body = PredictGameWinnerSchema.parse(req.body);
+        const { predictedWinner, confidence } = body.data;
 
         const prediction =
           await services.sportsService.gamePredictionService.createPrediction(
             competitionId,
             gameId,
-            req.agentId,
-            body.predictedWinner,
-            body.confidence,
+            agentId,
+            predictedWinner,
+            confidence,
           );
 
         res.status(201).json({
@@ -411,18 +391,15 @@ export function makeNflController(services: ServiceRegistry) {
     ) {
       try {
         const competitionId = ensureUuid(req.params.competitionId);
-        if (!competitionId) {
-          throw new ApiError(400, "Competition ID is required");
-        }
-
         const gameId = req.query.gameId as string | undefined;
 
         if (gameId) {
+          const parsedGameId = ensureUuid(gameId);
           // Get leaderboard for specific game
           const leaderboard =
             await services.sportsService.gameScoringService.getGameLeaderboard(
               competitionId,
-              gameId,
+              parsedGameId,
             );
 
           res.status(200).json({
@@ -436,7 +413,7 @@ export function makeNflController(services: ServiceRegistry) {
                 finalConfidence: entry.finalConfidence,
                 predictionCount: entry.predictionCount,
               })),
-              gameId,
+              gameId: parsedGameId,
             },
           });
         } else {

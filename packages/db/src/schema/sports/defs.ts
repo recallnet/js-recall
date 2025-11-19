@@ -3,8 +3,7 @@ import {
   index,
   integer,
   numeric,
-  pgEnum,
-  pgTable,
+  pgSchema,
   text,
   timestamp,
   unique,
@@ -15,28 +14,23 @@ import { agents } from "../core/defs.js";
 import { competitions } from "../core/defs.js";
 
 /**
+ * Sports schema for all sports prediction-related components.
+ */
+export const sportsSchema = pgSchema("sports");
+
+/**
  * Status of an NFL game
  */
-export const gameStatus = pgEnum("game_status", [
+export const gameStatus = sportsSchema.enum("game_status", [
   "scheduled",
   "in_progress",
   "final",
 ]);
 
 /**
- * Status of a game play for prediction purposes
- */
-export const playStatus = pgEnum("play_status", ["open", "locked", "resolved"]);
-
-/**
- * Outcome of a play (run or pass)
- */
-export const playOutcome = pgEnum("play_outcome", ["run", "pass"]);
-
-/**
  * NFL team abbreviations
  */
-export const nflTeam = pgEnum("nfl_team", [
+export const nflTeam = sportsSchema.enum("nfl_team", [
   "ARI",
   "ATL",
   "BAL",
@@ -75,7 +69,7 @@ export const nflTeam = pgEnum("nfl_team", [
  * NFL games tracked for competitions
  * Stores game metadata from SportsDataIO or other providers
  */
-export const games = pgTable(
+export const games = sportsSchema.table(
   "games",
   {
     id: uuid().primaryKey().notNull().defaultRandom(),
@@ -83,11 +77,11 @@ export const games = pgTable(
     gameKey: text("game_key").notNull(), // GameKey (e.g., "202510106")
     startTime: timestamp("start_time", { withTimezone: true }).notNull(),
     endTime: timestamp("end_time", { withTimezone: true }), // Set when game status becomes "final"
-    homeTeam: text("home_team").notNull(),
-    awayTeam: text("away_team").notNull(),
+    homeTeam: nflTeam("home_team").notNull(),
+    awayTeam: nflTeam("away_team").notNull(),
     venue: text("venue"),
     status: gameStatus("status").notNull().default("scheduled"),
-    winner: text("winner"), // Team ticker of winner, set when game is final
+    winner: nflTeam("winner"), // Team ticker of winner, set when game is final
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -109,14 +103,14 @@ export const games = pgTable(
  * Tracks play-by-play data for prediction competitions
  * Schema aligned with SportsDataIO Play-by-Play API
  */
-export const gamePlays = pgTable(
+export const gamePlays = sportsSchema.table(
   "game_plays",
   {
     id: uuid().primaryKey().notNull().defaultRandom(),
     gameId: uuid("game_id").notNull(),
     providerPlayId: text("provider_play_id"), // PlayID from SportsDataIO
     sequence: integer("sequence").notNull(),
-    quarterName: text("quarter_name").notNull(), // "1", "2", "3", "4", "OT"
+    quarterName: text("quarter_name").notNull(), // "1", "2", "3", "4", "OT", "F/OT", or null
     timeRemainingMinutes: integer("time_remaining_minutes"),
     timeRemainingSeconds: integer("time_remaining_seconds"),
     playTime: timestamp("play_time", { withTimezone: true }), // Actual timestamp from API
@@ -129,9 +123,7 @@ export const gamePlays = pgTable(
     team: text("team").notNull(), // Team with possession
     opponent: text("opponent").notNull(), // Opposing team
     description: text("description"), // Human-readable play description
-    lockTime: timestamp("lock_time", { withTimezone: true }).notNull(),
-    status: playStatus("status").notNull().default("open"),
-    actualOutcome: playOutcome("actual_outcome"), // Derived from playType
+    outcome: text("outcome"), // Rush, Pass, Kickoff, Punt, etc.
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -148,8 +140,6 @@ export const gamePlays = pgTable(
     unique("game_plays_game_id_sequence_key").on(table.gameId, table.sequence),
     index("idx_game_plays_game_id").on(table.gameId),
     index("idx_game_plays_provider_play_id").on(table.providerPlayId),
-    index("idx_game_plays_status_lock_time").on(table.status, table.lockTime),
-    index("idx_game_plays_status").on(table.status),
     index("idx_game_plays_play_type").on(table.playType),
   ],
 );
@@ -158,7 +148,7 @@ export const gamePlays = pgTable(
  * Links competitions to NFL games
  * Allows a single competition to track multiple concurrent games
  */
-export const competitionGames = pgTable(
+export const competitionGames = sportsSchema.table(
   "competition_games",
   {
     id: uuid().primaryKey().notNull().defaultRandom(),
@@ -193,14 +183,14 @@ export const competitionGames = pgTable(
  * Stores game winner predictions with confidence scores
  * Agents can update predictions multiple times (history is preserved)
  */
-export const gamePredictions = pgTable(
+export const gamePredictions = sportsSchema.table(
   "game_predictions",
   {
     id: uuid().primaryKey().notNull().defaultRandom(),
     competitionId: uuid("competition_id").notNull(),
     gameId: uuid("game_id").notNull(),
     agentId: uuid("agent_id").notNull(),
-    predictedWinner: text("predicted_winner").notNull(), // Team ticker: "MIN", "CHI", etc.
+    predictedWinner: nflTeam("predicted_winner").notNull(), // Team ticker: "MIN", "CHI", etc.
     confidence: numeric("confidence", { precision: 4, scale: 3 }).notNull(), // 0.0 - 1.0
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
@@ -242,7 +232,7 @@ export const gamePredictions = pgTable(
  * Per-game prediction scores with time-weighted Brier scoring
  * Tracks agent performance for individual games
  */
-export const gamePredictionScores = pgTable(
+export const gamePredictionScores = sportsSchema.table(
   "game_prediction_scores",
   {
     id: uuid().primaryKey().notNull().defaultRandom(),
@@ -253,7 +243,7 @@ export const gamePredictionScores = pgTable(
       precision: 10,
       scale: 6,
     }).notNull(),
-    finalPrediction: text("final_prediction"), // Last prediction before game ended
+    finalPrediction: nflTeam("final_prediction"), // Last prediction before game ended
     finalConfidence: numeric("final_confidence", { precision: 4, scale: 3 }),
     predictionCount: integer("prediction_count").notNull().default(0),
     updatedAt: timestamp("updated_at", { withTimezone: true })
@@ -291,7 +281,7 @@ export const gamePredictionScores = pgTable(
  * Aggregate scores across all games in a competition
  * Used for overall competition leaderboard
  */
-export const competitionAggregateScores = pgTable(
+export const competitionAggregateScores = sportsSchema.table(
   "competition_aggregate_scores",
   {
     id: uuid().primaryKey().notNull().defaultRandom(),

@@ -4,7 +4,10 @@ import { CompetitionAggregateScoresRepository } from "@recallnet/db/repositories
 import { GamePredictionScoresRepository } from "@recallnet/db/repositories/game-prediction-scores";
 import { GamePredictionsRepository } from "@recallnet/db/repositories/game-predictions";
 import { GamesRepository } from "@recallnet/db/repositories/games";
-import { SelectGamePrediction } from "@recallnet/db/schema/sports/types";
+import {
+  NflTeam,
+  SelectGamePrediction,
+} from "@recallnet/db/schema/sports/types";
 
 /**
  * Leaderboard entry for a single game
@@ -12,7 +15,7 @@ import { SelectGamePrediction } from "@recallnet/db/schema/sports/types";
 export interface GameLeaderboardEntry {
   agentId: string;
   timeWeightedBrierScore: number;
-  finalPrediction: string | null;
+  finalPrediction: NflTeam | null;
   finalConfidence: number | null;
   predictionCount: number;
   rank: number;

@@ -2,8 +2,10 @@ import axios, { AxiosInstance } from "axios";
 import { Logger } from "pino";
 import { z } from "zod";
 
+import { NflTeam } from "@recallnet/db/schema/sports/types";
+
 /**
- * The full list of possible play types.
+ * The full list of possible play types for NFL games.
  */
 export const NFL_ALL_PLAY_TYPES = z.enum([
   "Rush",
@@ -25,22 +27,21 @@ export const NFL_ALL_PLAY_TYPES = z.enum([
 export type NflPlayType = z.infer<typeof NFL_ALL_PLAY_TYPES>;
 
 /**
- * Predictable play types are only offensive plays. Note: certain defensive or "incomplete" plays
- * are coerced to pass plays.
+ * The full list of possible game statuses for NFL games.
  */
-export const NFL_PREDICTABLE_PLAY_TYPES = z.enum([
-  "Rush",
-  "PassCompleted",
-  "PassIncomplete",
-  "PassIntercepted",
+export const GameStatus = z.enum([
+  "Scheduled",
+  "InProgress",
+  "Final",
+  "F/OT",
+  "Suspended",
+  "Postponed",
+  "Delayed",
+  "Canceled",
+  "Forfeit",
 ]);
 
-export type NflPredictablePlayType = z.infer<typeof NFL_PREDICTABLE_PLAY_TYPES>;
-/**
- * Default lock offset in milliseconds (10 seconds). This determines how long after the play starts
- * that predictions from the agent can be submitted.
- */
-export const DEFAULT_LOCK_OFFSET_MS = 10_000;
+export type GameStatus = z.infer<typeof GameStatus>;
 
 /**
  * SportsDataIO Schedule Game response
@@ -52,14 +53,14 @@ export interface SportsDataIOScheduleGame {
   Season: number;
   Week: number;
   Date: string;
-  AwayTeam: string;
-  HomeTeam: string;
+  AwayTeam: NflTeam;
+  HomeTeam: NflTeam;
   Channel: string | null;
   PointSpread: number | null;
   OverUnder: number | null;
   StadiumID: number;
   Canceled: boolean;
-  Status: string;
+  Status: GameStatus;
   IsClosed: boolean | null;
   DateTimeUTC: string;
   StadiumDetails: {
@@ -86,8 +87,8 @@ export interface SportsDataIOScore {
   Season: number;
   Week: number;
   Date: string;
-  AwayTeam: string;
-  HomeTeam: string;
+  AwayTeam: NflTeam;
+  HomeTeam: NflTeam;
   AwayScore: number | null;
   HomeScore: number | null;
   Quarter: string | null;
@@ -101,7 +102,7 @@ export interface SportsDataIOScore {
   HasStarted: boolean;
   IsInProgress: boolean;
   IsOver: boolean;
-  Status: string;
+  Status: GameStatus;
   StadiumDetails: {
     StadiumID: number;
     Name: string;
@@ -123,8 +124,8 @@ export interface SportsDataIOPlay {
   PlayTime: string;
   Updated: string;
   Created: string;
-  Team: string;
-  Opponent: string;
+  Team: NflTeam;
+  Opponent: NflTeam;
   Down: number | null;
   Distance: number | null;
   YardLine: number | null;
@@ -289,69 +290,5 @@ export class SportsDataIONflProvider {
       );
       throw error;
     }
-  }
-
-  /**
-   * Determine if a play is predictable (run vs pass)
-   * @param play SportsDataIO play
-   * @returns True if play can be predicted
-   */
-  static isPlayPredictable(play: SportsDataIOPlay): boolean {
-    return NFL_PREDICTABLE_PLAY_TYPES.safeParse(play.Type).success;
-  }
-
-  /**
-   * Determine the outcome of a play
-   * @param play SportsDataIO play
-   * @returns "run", "pass", or null if not predictable
-   */
-  static determineOutcome(play: SportsDataIOPlay): "run" | "pass" | null {
-    switch (play.Type) {
-      // Treat certain defensive or incomplete plays as pass plays
-      case "PassCompleted":
-      case "PassIncomplete":
-      case "PassIntercepted":
-      case "Sack":
-        return "pass";
-      case "Rush":
-        return "run";
-      default:
-        // Kickoff, Punt, Field Goal, Penalty, etc. - not predictable
-        return null;
-    }
-  }
-
-  /**
-   * Calculate lock time for a play
-   * Uses PlayTime if available, otherwise estimates from game time
-   * @param play SportsDataIO play
-   * @param gameStartTime Game start time
-   * @param lockOffsetMs Milliseconds before play to lock predictions (default: 10 seconds)
-   * @returns Lock time for predictions
-   */
-  static calculateLockTime(
-    play: SportsDataIOPlay,
-    gameStartTime: Date,
-    lockOffsetMs: number = DEFAULT_LOCK_OFFSET_MS,
-  ): Date {
-    // Option 1: Use PlayTime (most accurate)
-    if (play.PlayTime) {
-      const playTime = new Date(play.PlayTime);
-      return new Date(playTime.getTime() - lockOffsetMs);
-    }
-
-    // Option 2: Estimate from game start + quarter + time remaining
-    const quarterDuration = 15 * 60 * 1000; // 15 minutes in ms
-    const quarterNumber = parseInt(play.QuarterName);
-    const quarterOffset = (quarterNumber - 1) * quarterDuration;
-    const timeElapsed =
-      quarterDuration -
-      (play.TimeRemainingMinutes * 60 + play.TimeRemainingSeconds) * 1000;
-
-    const estimatedPlayTime = new Date(
-      gameStartTime.getTime() + quarterOffset + timeElapsed,
-    );
-
-    return new Date(estimatedPlayTime.getTime() - lockOffsetMs);
   }
 }

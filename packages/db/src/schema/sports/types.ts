@@ -21,3 +21,6 @@ export type SelectCompetitionAggregateScore =
   typeof defs.competitionAggregateScores.$inferSelect;
 export type InsertCompetitionAggregateScore =
   typeof defs.competitionAggregateScores.$inferInsert;
+
+export const NFL_TEAMS = defs.nflTeam.enumValues;
+export type NflTeam = (typeof NFL_TEAMS)[number];

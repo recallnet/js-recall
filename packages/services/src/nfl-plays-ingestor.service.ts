@@ -4,7 +4,7 @@ import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { CompetitionGamesRepository } from "@recallnet/db/repositories/competition-games";
 import { GamePlaysRepository } from "@recallnet/db/repositories/game-plays";
 import { GamesRepository } from "@recallnet/db/repositories/games";
-import { SelectGame } from "@recallnet/db/schema/sports/types";
+import { NflTeam, SelectGame } from "@recallnet/db/schema/sports/types";
 
 import {
   SportsDataIONflProvider,
@@ -101,7 +101,7 @@ export class NflLiveIngestorService {
    * @param lockOffsetMs Milliseconds before play to lock predictions
    * @returns Number of games ingested
    */
-  async ingestActiveGames(lockOffsetMs: number = 3000): Promise<number> {
+  async ingestActiveGames(): Promise<number> {
     const activeGames = await this.discoverActiveGames();
 
     if (activeGames.length === 0) {
@@ -119,7 +119,7 @@ export class NflLiveIngestorService {
         this.#logger.info(
           `Ingesting game ${game.globalGameId} (${game.awayTeam} @ ${game.homeTeam})...`,
         );
-        await this.ingestGamePlayByPlay(game.globalGameId, lockOffsetMs);
+        await this.ingestGamePlayByPlay(game.globalGameId);
         ingestedCount++;
       } catch (error) {
         this.#logger.error(
@@ -211,10 +211,7 @@ export class NflLiveIngestorService {
    * @param lockOffsetMs Milliseconds before play to lock predictions
    * @returns Database game ID
    */
-  async ingestGamePlayByPlay(
-    globalGameId: number,
-    lockOffsetMs: number = 3000,
-  ): Promise<string> {
+  async ingestGamePlayByPlay(globalGameId: number): Promise<string> {
     try {
       // Fetch play-by-play data
       const data = await this.#provider.getPlayByPlay(globalGameId);
@@ -223,7 +220,7 @@ export class NflLiveIngestorService {
       const dbGame = await this.#ingestGame(data);
 
       // Ingest plays
-      await this.#ingestPlays(data, dbGame.id, lockOffsetMs);
+      await this.#ingestPlays(data, dbGame.id);
 
       return dbGame.id;
     } catch (error) {
@@ -246,7 +243,7 @@ export class NflLiveIngestorService {
   async finalizeGame(
     gameId: string,
     endTime: Date,
-    winner: string,
+    winner: NflTeam,
     gameScoringService: {
       scoreGame: (gameId: string) => Promise<number>;
     },
@@ -308,26 +305,12 @@ export class NflLiveIngestorService {
   async #ingestPlays(
     data: SportsDataIOPlayByPlay,
     gameId: string,
-    lockOffsetMs: number,
   ): Promise<void> {
-    const gameStartTime = new Date(data.Score.Date);
     let ingestedCount = 0;
 
     // First, ingest all completed plays from the Plays array
     for (const play of data.Plays) {
       try {
-        // Calculate lock time
-        const lockTime = SportsDataIONflProvider.calculateLockTime(
-          play,
-          gameStartTime,
-          lockOffsetMs,
-        );
-
-        // Determine outcome (null for non-predictable plays)
-        const actualOutcome = SportsDataIONflProvider.isPlayPredictable(play)
-          ? SportsDataIONflProvider.determineOutcome(play)
-          : null;
-
         await this.#gamePlaysRepo.upsert({
           gameId,
           providerPlayId: play.PlayID.toString(),
@@ -345,9 +328,7 @@ export class NflLiveIngestorService {
           team: play.Team,
           opponent: play.Opponent,
           description: play.Description,
-          lockTime,
-          status: "resolved", // Completed plays are always resolved
-          actualOutcome, // null for non-predictable plays
+          outcome: play.Type,
         });
 
         ingestedCount++;
@@ -357,67 +338,6 @@ export class NflLiveIngestorService {
           "Error ingesting play",
         );
         // Continue with other plays
-      }
-    }
-
-    // Second, create an "open" play for the current game state if game is in progress
-    if (data.Score.IsInProgress && data.Score.Down && data.Score.Possession) {
-      try {
-        const lastPlaySequence =
-          data.Plays.length > 0
-            ? Math.max(...data.Plays.map((p) => p.Sequence))
-            : 0;
-        const nextSequence = lastPlaySequence + 1;
-
-        // Calculate lock time for the pending play (now + lockOffset)
-        const lockTime = new Date(Date.now() + lockOffsetMs);
-
-        // Determine opponent
-        const opponent =
-          data.Score.Possession === data.Score.HomeTeam
-            ? data.Score.AwayTeam
-            : data.Score.HomeTeam;
-
-        await this.#gamePlaysRepo.upsert({
-          gameId,
-          providerPlayId: null, // No PlayID yet - play hasn't happened
-          sequence: nextSequence,
-          quarterName: data.Score.Quarter || "1",
-          timeRemainingMinutes: data.Score.TimeRemaining
-            ? parseInt(data.Score.TimeRemaining.split(":")[0] || "0")
-            : null,
-          timeRemainingSeconds: data.Score.TimeRemaining
-            ? parseInt(data.Score.TimeRemaining.split(":")[1] || "0")
-            : null,
-          playTime: null, // Play hasn't happened yet
-          down: data.Score.Down,
-          distance: data.Score.Distance
-            ? parseInt(data.Score.Distance.toString())
-            : null,
-          yardLine: data.Score.YardLine,
-          yardLineTerritory: data.Score.YardLineTerritory,
-          yardsToEndZone: null, // Calculate if needed
-          playType: null, // Unknown until play happens
-          team: data.Score.Possession,
-          opponent,
-          description: data.Score.DownAndDistance
-            ? `${data.Score.DownAndDistance} at ${data.Score.YardLineTerritory || ""} ${data.Score.YardLine || ""}`
-            : "Pending play",
-          lockTime,
-          status: "open",
-          actualOutcome: null, // Unknown until play happens
-        });
-
-        this.#logger.info(
-          { gameId, sequence: nextSequence },
-          "Created open play",
-        );
-        ingestedCount++;
-      } catch (error) {
-        this.#logger.error(
-          { error, gameId },
-          "Error creating open play for game",
-        );
       }
     }
 
