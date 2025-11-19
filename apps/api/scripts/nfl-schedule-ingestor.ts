@@ -23,6 +23,7 @@ function parseArguments(): {
       season: {
         type: "string",
         short: "s",
+        default: "2025",
       },
       runOnce: {
         type: "boolean",
@@ -32,8 +33,8 @@ function parseArguments(): {
   });
 
   return {
-    season: values.season ? parseInt(values.season) : new Date().getFullYear(),
-    runOnce: values.runOnce as boolean,
+    season: parseInt(values.season),
+    runOnce: values.runOnce,
   };
 }
 

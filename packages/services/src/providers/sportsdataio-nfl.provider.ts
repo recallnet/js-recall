@@ -206,63 +206,6 @@ export class SportsDataIONflProvider {
   }
 
   /**
-   * Get scores for games in a specific week
-   * @param season Year (e.g., 2025), defaults to the current 2025 season
-   * @param week Week number (1-18 for regular season)
-   * @returns Array of game scores
-   */
-  async getScoresByWeek(
-    season: number = 2025,
-    week: number,
-  ): Promise<SportsDataIOScore[]> {
-    try {
-      this.#logger.debug(`Fetching scores for ${season} week ${week}`);
-
-      const response = await this.#client.get<SportsDataIOScore[]>(
-        `/nfl/scores/json/ScoresByWeek/${season}/${week}`,
-      );
-
-      this.#logger.info(
-        { season, week, fetchedCount: response.data.length },
-        "Fetched scores for week",
-      );
-
-      return response.data;
-    } catch (error) {
-      this.#logger.error(
-        { error, season, week },
-        "Error fetching scores for season week",
-      );
-      throw error;
-    }
-  }
-
-  /**
-   * Get scores for games in a specific season
-   * @param season Year (e.g., 2025), defaults to the current 2025 season
-   * @returns Array of game scores
-   */
-  async getScoresBySeason(season: number = 2025): Promise<SportsDataIOScore[]> {
-    try {
-      this.#logger.debug({ season }, "Fetching scores for season");
-
-      const response = await this.#client.get<SportsDataIOScore[]>(
-        `/nfl/scores/json/Scores/${season}`,
-      );
-
-      this.#logger.info(
-        { season, fetchedCount: response.data.length },
-        "Fetched scores for season",
-      );
-
-      return response.data;
-    } catch (error) {
-      this.#logger.error({ error, season }, "Error fetching scores for season");
-      throw error;
-    }
-  }
-
-  /**
    * Get schedule for a specific season
    * @param season Year (e.g., 2025), defaults to the current 2025 season
    * @returns Array of games
@@ -274,7 +217,7 @@ export class SportsDataIONflProvider {
       this.#logger.debug({ season }, "Fetching schedule for season");
 
       const response = await this.#client.get<SportsDataIOScheduleGame[]>(
-        `/nfl/scores/json/Schedules/${season}`,
+        `/scores/json/Schedules/${season}`,
       );
 
       this.#logger.info(

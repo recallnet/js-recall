@@ -1,7 +1,7 @@
 CREATE SCHEMA IF NOT EXISTS "sports";
 --> statement-breakpoint
 CREATE TYPE "sports"."game_status" AS ENUM('scheduled', 'in_progress', 'final');--> statement-breakpoint
-CREATE TYPE "sports"."nfl_team" AS ENUM('ARI', 'ATL', 'BAL', 'BUF', 'CAR', 'CHI', 'CIN', 'CLE', 'DAL', 'DEN', 'DET', 'GB', 'HOU', 'IND', 'JAX', 'KC', 'LAC', 'LAR', 'LV', 'MIA', 'MIN', 'NE', 'NO', 'NYG', 'NYJ', 'PHI', 'PIT', 'SEA', 'SF', 'TB', 'TEN', 'WAS');--> statement-breakpoint
+CREATE TYPE "sports"."nfl_team" AS ENUM('ARI', 'ATL', 'BAL', 'BUF', 'BYE', 'CAR', 'CHI', 'CIN', 'CLE', 'DAL', 'DEN', 'DET', 'GB', 'HOU', 'IND', 'JAX', 'KC', 'LAC', 'LAR', 'LV', 'MIA', 'MIN', 'NE', 'NO', 'NYG', 'NYJ', 'PHI', 'PIT', 'SEA', 'SF', 'TB', 'TEN', 'WAS');--> statement-breakpoint
 ALTER TYPE "public"."competition_type" ADD VALUE 'nfl';--> statement-breakpoint
 CREATE TABLE "sports"."competition_aggregate_scores" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
