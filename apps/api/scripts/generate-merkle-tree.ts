@@ -6,6 +6,7 @@ import { fileURLToPath } from "url";
 import { parseArgs } from "util";
 import { isAddress } from "viem";
 
+import { attoValueToStringValue } from "@recallnet/conversions/atto-conversions";
 import { AirdropRepository } from "@recallnet/db/repositories/airdrop";
 
 import { db } from "@/database/db.js";
@@ -23,34 +24,23 @@ const colors = {
 };
 
 // Types
-interface Recipient {
+type Recipient = {
   address: string;
   amount: bigint;
   season: number;
   category: string;
   sybilClassification: string;
-  flaggedAt: string | null;
+  flaggedAt: Date | null;
   flaggingReason: string | null;
   powerUser: boolean;
   recallSnapper: boolean;
   aiBuilder: boolean;
   aiExplorer: boolean;
-}
+};
 
-interface Allocation {
-  address: string;
-  amount: string;
-  season: number;
+type Allocation = Recipient & {
   proof: string[];
-  category: string;
-  sybilClassification: string;
-  flaggedAt: string | null;
-  flaggingReason: string | null;
-  powerUser: boolean;
-  recallSnapper: boolean;
-  aiBuilder: boolean;
-  aiExplorer: boolean;
-}
+};
 
 interface MerkleMetadata {
   merkleRoot: string;
@@ -92,6 +82,10 @@ const VALID_SYBIL_CLASSIFICATIONS = ["approved", "maybe-sybil", "sybil"];
 // Helper function to parse boolean values from CSV
 const parseBooleanFromCsv = (value: string | undefined): boolean => {
   return value === "1" || value?.toLowerCase() === "true";
+};
+
+const parseBigIntFromCsv = (value: string | undefined): bigint | null => {
+  return value ? BigInt(value) : null;
 };
 
 // Helper function to prompt user for confirmation
@@ -178,7 +172,7 @@ ${colors.cyan}Generate Merkle Tree for Next Season Eligibility for Conviction Cl
 Usage: pnpm generate-merkle-tree.ts --filename <filename> --nextName <next-season-name>
 
 Options:
-  -f, --filename  CSV filename to process with format airdrop_<season-number>_<iso-timestamp>.csv (required)
+  -f, --filename  CSV filename, relative to ./scripts/data/, to process with format airdrop_<season-number>_<iso-timestamp>.csv (required)
   -n, --nextName  Next season name (required)
   -h, --help      Show this help message
 
@@ -199,22 +193,20 @@ Examples:
     process.exit(1);
   }
 
-  const pathParts = values.filename.split("/");
-  const filename = pathParts[pathParts.length - 1];
-  const filenameParts = filename?.split("_");
+  const filenameParts = values.filename.split("_");
   if (filenameParts?.length !== 3) {
     console.error(`${colors.red}Error: Invalid filename format${colors.reset}`);
     process.exit(1);
   }
 
-  const seasonString = filenameParts[1]!;
+  const airdropString = filenameParts[1]!;
   const timestampString = filenameParts[2]!.replace(".csv", "");
   const nextSeasonName = values.nextName;
 
-  const seasonNumber = parseInt(seasonString);
-  if (isNaN(seasonNumber) || seasonNumber < 0) {
+  const airdropNumber = parseInt(airdropString);
+  if (isNaN(airdropNumber) || airdropNumber < 0) {
     console.error(
-      `${colors.red}Error: Invalid season number in filename${colors.reset}`,
+      `${colors.red}Error: Invalid airdrop number in filename${colors.reset}`,
     );
     process.exit(1);
   }
@@ -227,7 +219,7 @@ Examples:
     process.exit(1);
   }
 
-  const INPUT_FILE_PATH = path.join(__dirname, values.filename);
+  const INPUT_FILE_PATH = path.join(__dirname, "data", values.filename);
 
   const recipients: Recipient[] = [];
   let headersValidated = false;
@@ -262,7 +254,7 @@ Examples:
         }
 
         const address = row.address?.trim();
-        const amount = row.amount?.trim();
+        const amount = parseBigIntFromCsv(row.amount?.trim());
         const season = row.season?.trim();
 
         // Optional fields
@@ -317,12 +309,12 @@ Examples:
         }
 
         recipients.push({
-          address: address,
-          amount: BigInt(amount),
+          address,
+          amount,
           season: parseInt(season, 10),
           category,
           sybilClassification,
-          flaggedAt: flaggedAt || null,
+          flaggedAt: flaggedAt ? new Date(flaggedAt) : null,
           flaggingReason: flaggingReason || null,
           powerUser,
           recallSnapper,
@@ -359,25 +351,14 @@ Examples:
 
           // Prepare allocations data with proofs
           const allocations: Allocation[] = [];
-          for (const [i, value] of tree.entries()) {
-            const [address] = value;
+          for (const [i] of tree.entries()) {
             const recipient = recipients[i];
             if (!recipient) {
               throw new Error(`No recipient found at index ${i}`);
             }
             allocations.push({
-              address: address.toLowerCase(),
-              amount: recipient.amount.toString(),
-              season: recipient.season,
+              ...recipient,
               proof: tree.getProof(i),
-              category: recipient.category,
-              sybilClassification: recipient.sybilClassification,
-              flaggedAt: recipient.flaggedAt,
-              flaggingReason: recipient.flaggingReason,
-              powerUser: recipient.powerUser,
-              recallSnapper: recipient.recallSnapper,
-              aiBuilder: recipient.aiBuilder,
-              aiExplorer: recipient.aiExplorer,
             });
           }
 
@@ -391,7 +372,9 @@ Examples:
 
           console.log(`🌳 Merkle tree generated successfully!`);
           console.log(`   Root: ${tree.root}`);
-          console.log(`   Total Amount: ${totalAmount.toString()}`);
+          console.log(
+            `   Total Amount: ${attoValueToStringValue(totalAmount)}`,
+          );
           console.log(`   Total Rows: ${recipients.length}`);
           console.log(`   Unique Addresses: ${uniqueAddresses}`);
 
@@ -401,20 +384,20 @@ Examples:
           // TODO: Add clearAllData method to repository if you want to clear existing data first
 
           await db.transaction(async (tx) => {
+            await airdropRepository.newSeason(
+              {
+                number: airdropNumber,
+                startDate: referenceTime,
+                name: nextSeasonName,
+              },
+              tx,
+            );
             await airdropRepository.insertAllocationsBatch(
               allocations,
               undefined,
               tx,
             );
             await airdropRepository.upsertMetadata(metadata, tx);
-            await airdropRepository.newSeason(
-              {
-                number: seasonNumber + 1,
-                startDate: referenceTime,
-                name: nextSeasonName,
-              },
-              tx,
-            );
           });
 
           console.log("✅ Data successfully saved to database!");

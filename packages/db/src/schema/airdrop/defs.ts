@@ -2,6 +2,7 @@ import {
   boolean,
   index,
   integer,
+  jsonb,
   pgTable,
   primaryKey,
   serial,
@@ -33,7 +34,7 @@ export const airdropAllocations = pgTable(
       .notNull()
       .references(() => seasons.id, { onDelete: "restrict" }),
     // Merkle proof stored as JSON array
-    proof: text("proof").notNull(), // JSON array of hex strings
+    proof: jsonb("proof").$type<string[]>().notNull().default([]), // JSON array of hex strings
     // Optional category for allocation classification
     category: varchar("category", { length: 255 }).default(""),
     // Sybil classification: 'approved', 'maybe-sybil', 'sybil'
@@ -47,6 +48,8 @@ export const airdropAllocations = pgTable(
     recallSnapper: boolean("recall_snapper").default(false).notNull(),
     aiBuilder: boolean("ai_builder").default(false).notNull(),
     aiExplorer: boolean("ai_explorer").default(false).notNull(),
+    ineligibleReason: text("ineligible_reason"),
+    ineligibleReward: tokenAmount("ineligible_reward"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),

@@ -1,10 +1,20 @@
 #!/usr/bin/env tsx
-import { and, gte, sql } from "drizzle-orm";
+import { and, eq, gte, lte, sql, sum } from "drizzle-orm";
 import * as fs from "fs";
 import * as path from "path";
 import { parseArgs } from "util";
 
+import { attoValueToStringValue } from "@recallnet/conversions/atto-conversions";
+import { BlockchainAddressAsU8A } from "@recallnet/db/coders";
+import { seasons } from "@recallnet/db/schema/airdrop/defs";
+import { agentBoosts, boostChanges } from "@recallnet/db/schema/boost/defs";
 import { convictionClaims } from "@recallnet/db/schema/conviction-claims/defs";
+import {
+  agents,
+  competitionAgents,
+  competitions,
+  users,
+} from "@recallnet/db/schema/core/defs";
 
 import { db } from "@/database/db.js";
 
@@ -26,7 +36,23 @@ interface EligibleAccount {
 }
 
 /**
- * Calculate eligibility for the next season of conviction claims airdrop.
+ * Calculates the median of an array of bigints.
+ * For even-length arrays, returns the average of the two middle elements.
+ */
+function calculateMedian(values: bigint[]): bigint {
+  if (values.length === 0) return 0n;
+
+  const sorted = [...values].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+
+  if (sorted.length % 2 === 1) {
+    return sorted[Math.floor(sorted.length / 2)]!;
+  }
+
+  return (sorted[sorted.length / 2 - 1]! + sorted[sorted.length / 2]!) / 2n;
+}
+
+/**
+ * Calculate eligibility for the next conviction claims airdrop.
  *
  * This script:
  * 1. Finds accounts with active stakes (where ex-date > reference time)
@@ -39,10 +65,10 @@ async function calculateNextSeasonEligibility() {
   const { values } = parseArgs({
     args: process.argv.slice(2),
     options: {
-      season: {
+      airdrop: {
         type: "string",
-        short: "s",
-        description: "Season number for the output",
+        short: "a",
+        description: "Airdrop number for the output",
       },
       time: {
         type: "string",
@@ -50,12 +76,11 @@ async function calculateNextSeasonEligibility() {
         description:
           "Reference time in ISO format (e.g., 2024-12-31T00:00:00Z)",
       },
-      // TODO: change this to --prepend and create a new file that has the
-      //  existing file prepended
-      concat: {
-        type: "boolean",
-        short: "c",
-        description: "Append new data to existing airdrop-data.csv",
+      prepend: {
+        type: "string",
+        short: "p",
+        description:
+          "Prepend existing data from the specified file to the new csv file",
       },
       help: {
         type: "boolean",
@@ -72,22 +97,22 @@ ${colors.cyan}Calculate Next Season Eligibility for Conviction Claims Airdrop${c
 Usage: pnpm tsx calculate-next-season-eligibility.ts --season <number> --time <ISO-date> [--concat]
 
 Options:
-  -s, --season    Season number for the output (required)
+  -a, --airdrop   Airdrop number for the output (required)
   -t, --time      Reference time in ISO format (required)
                   Example: 2024-12-31T00:00:00Z
-  -c, --concat    Append new data to existing airdrop-data.csv
+  -p, --prepend   Prepend existing data from the specified file to the new csv file
   -h, --help      Show this help message
 
 Examples:
-  pnpm tsx calculate-next-season-eligibility.ts --season 2 --time "2024-12-31T00:00:00Z"
-  pnpm tsx calculate-next-season-eligibility.ts --season 2 --time "2024-12-31T00:00:00Z" --concat
+  pnpm tsx calculate-next-season-eligibility.ts --airdrop 2 --time "2024-12-31T00:00:00Z"
+  pnpm tsx calculate-next-season-eligibility.ts --airdrop 2 --time "2024-12-31T00:00:00Z" --prepend airdrop_1_2024-11-29T00:00:00.000Z
 `);
     process.exit(0);
   }
 
   // Validate arguments
-  if (!values.season) {
-    console.error(`${colors.red}Error: --season is required${colors.reset}`);
+  if (!values.airdrop) {
+    console.error(`${colors.red}Error: --airdrop is required${colors.reset}`);
     process.exit(1);
   }
 
@@ -96,9 +121,9 @@ Examples:
     process.exit(1);
   }
 
-  const seasonNumber = parseInt(values.season);
-  if (isNaN(seasonNumber) || seasonNumber < 0) {
-    console.error(`${colors.red}Error: Invalid season number${colors.reset}`);
+  const airdropNumber = parseInt(values.airdrop);
+  if (isNaN(airdropNumber) || airdropNumber < 0) {
+    console.error(`${colors.red}Error: Invalid airdrop number${colors.reset}`);
     process.exit(1);
   }
 
@@ -111,7 +136,7 @@ Examples:
   }
 
   console.log(
-    `${colors.cyan}🔍 Calculating eligibility for season ${seasonNumber}${colors.reset}`,
+    `${colors.cyan}🔍 Calculating eligibility for airdrop ${airdropNumber}${colors.reset}`,
   );
   console.log(`📅 Reference time: ${referenceTime.toISOString()}\n`);
 
@@ -136,6 +161,8 @@ Examples:
         and(
           // Only claims with duration > 0 (actual stakes)
           gte(convictionClaims.duration, 1n),
+          // Only stakes from claims before the reference time
+          lte(convictionClaims.blockTimestamp, referenceTime),
           // Ex-date calculation: blockTimestamp + duration seconds > referenceTime
           sql`${convictionClaims.blockTimestamp} + (${convictionClaims.duration} * interval '1 second') > ${referenceTime}`,
         ),
@@ -160,7 +187,9 @@ Examples:
       totalActiveStakes += stakeAmount;
     }
 
-    console.log(`📊 Total active stakes: ${totalActiveStakes.toString()}\n`);
+    console.log(
+      `📊 Total active stakes: ${attoValueToStringValue(totalActiveStakes)}\n`,
+    );
 
     // Step 3: Calculate total forfeited amounts
     console.log(
@@ -189,12 +218,12 @@ Examples:
     }
 
     console.log(
-      `💰 Total forfeited across all seasons: ${totalForfeited.toString()}`,
+      `💰 Total forfeited across all seasons: ${attoValueToStringValue(totalForfeited)}`,
     );
 
     // Show breakdown by season
     for (const [season, amount] of forfeitedBySeason.entries()) {
-      console.log(`   Season ${season}: ${amount.toString()}`);
+      console.log(`   Season ${season}: ${attoValueToStringValue(amount)}`);
     }
 
     // Step 4: Calculate claims from subsequent seasons (seasons after 0)
@@ -217,7 +246,9 @@ Examples:
     for (const seasonData of subsequentSeasonClaims) {
       const claimed = BigInt(seasonData.totalClaimed || "0");
       totalSubsequentClaims += claimed;
-      console.log(`   Season ${seasonData.season}: ${claimed.toString()}`);
+      console.log(
+        `   Season ${seasonData.season}: ${attoValueToStringValue(claimed)}`,
+      );
     }
 
     if (subsequentSeasonClaims.length === 0) {
@@ -230,64 +261,168 @@ Examples:
     );
 
     const availableRewards = totalForfeited - totalSubsequentClaims;
-    console.log(`🎁 Available rewards: ${availableRewards.toString()}`);
     console.log(
-      `   (${totalForfeited.toString()} forfeited - ${totalSubsequentClaims.toString()} already claimed)\n`,
+      `🎁 Available rewards: ${attoValueToStringValue(availableRewards)}`,
+    );
+    console.log(
+      `   (${attoValueToStringValue(totalForfeited)} forfeited - ${attoValueToStringValue(totalSubsequentClaims)} already claimed)\n`,
     );
 
-    // Step 6: Calculate individual rewards
+    // Step 6: Query for all agent boosters during the season.
+    const [season] = await db
+      .select()
+      .from(seasons)
+      .where(eq(seasons.number, airdropNumber - 1));
+    if (!season) {
+      console.error(`Season ${airdropNumber - 1} not found`);
+      process.exit(1);
+    }
+    const userAgentBoosts = await db
+      .select({
+        address: boostChanges.wallet,
+        boostAmount: sum(boostChanges.deltaAmount),
+      })
+      .from(agentBoosts)
+      .innerJoin(boostChanges, eq(agentBoosts.changeId, boostChanges.id))
+      .where(
+        and(
+          gte(agentBoosts.createdAt, season.startDate),
+          lte(agentBoosts.createdAt, referenceTime),
+        ),
+      )
+      .groupBy(boostChanges.wallet);
+
+    const userAgentBoostsMap = userAgentBoosts.reduce(
+      (acc, boost) =>
+        acc.set(
+          BlockchainAddressAsU8A.decode(boost.address),
+          BigInt(boost.boostAmount || "0"),
+        ),
+      new Map<string, bigint>(),
+    );
+
+    // Step 7: Query for all users that had an agent compete in a competition during the season.
+    const userCompetitions = await db
+      .select({
+        address: users.walletAddress,
+        competitionIds: sql<
+          string[]
+        >`array_agg(DISTINCT ${competitions.id})`.as("competitionIds"),
+      })
+      .from(users)
+      .innerJoin(agents, eq(users.id, agents.ownerId))
+      .innerJoin(competitionAgents, eq(agents.id, competitionAgents.agentId))
+      .innerJoin(
+        competitions,
+        eq(competitionAgents.competitionId, competitions.id),
+      )
+      .where(
+        and(
+          gte(competitions.startDate, season.startDate),
+          lte(competitions.startDate, referenceTime),
+          eq(competitionAgents.status, "active"),
+        ),
+      )
+      .groupBy(users.walletAddress);
+
+    const userCompetitionsMap = userCompetitions.reduce(
+      (acc, userCompetition) =>
+        acc.set(userCompetition.address, userCompetition.competitionIds),
+      new Map<string, string[]>(),
+    );
+
+    // Step 8: Calculate individual rewards
     console.log(
-      `${colors.blue}Step 6: Calculating individual rewards...${colors.reset}`,
+      `${colors.blue}Step 8: Calculating individual rewards...${colors.reset}`,
     );
 
     const eligibleAccounts: EligibleAccount[] = [];
 
     if (totalActiveStakes > 0n && availableRewards > 0n) {
       for (const [address, activeStake] of accountStakes.entries()) {
-        // Calculate proportional reward: (account_stake / total_stakes) * available_rewards
-        const reward = (activeStake * availableRewards) / totalActiveStakes;
+        const isEligible =
+          userAgentBoostsMap.has(address) || userCompetitionsMap.has(address);
 
-        eligibleAccounts.push({
-          address,
-          activeStake,
-          reward,
-        });
+        if (isEligible) {
+          // Calculate proportional reward: (account_stake / total_stakes) * available_rewards
+          const reward = (activeStake * availableRewards) / totalActiveStakes;
+
+          eligibleAccounts.push({
+            address,
+            activeStake,
+            reward: reward,
+          });
+        }
       }
     }
 
-    // Sort by reward amount (descending)
+    // Sort by reward amount (descending), then by address (ascending)
     eligibleAccounts.sort((a, b) => {
       if (a.reward > b.reward) return -1;
       if (a.reward < b.reward) return 1;
+      if (a.address < b.address) return -1;
+      if (a.address > b.address) return 1;
       return 0;
     });
 
+    // Step 9: Generate CSV output
     console.log(
-      `✅ Calculated rewards for ${eligibleAccounts.length} accounts\n`,
+      `${colors.blue}Step 9: Generating CSV output...${colors.reset}`,
     );
 
-    // Step 7: Generate CSV output
-    console.log(
-      `${colors.blue}Step 7: Generating CSV output...${colors.reset}`,
-    );
-
-    const csvFileName = `airdrop_${seasonNumber}_${referenceTime.toISOString()}.csv`;
+    const csvFileName = `airdrop_${airdropNumber}_${referenceTime.toISOString()}.csv`;
     const csvPath = path.join(process.cwd(), "scripts", "data", csvFileName);
 
     // Create CSV header
-    const csvLines: string[] = [
+    let csvLines: string[] = [
       "address,amount,season,category,sybilClassification,flaggedAt,flaggingReason,powerUser,recallSnapper,aiBuilder,aiExplorer",
     ];
 
+    // Step 10: Prepend lines from the specified file to the new file if --prepend flag is set
+    if (values.prepend) {
+      console.log(
+        `${colors.blue}Step 10: Prepending from ${values.prepend} to ${csvFileName}...${colors.reset}`,
+      );
+
+      const prependSourceCsvPath = path.join(
+        process.cwd(),
+        "scripts",
+        "data",
+        values.prepend,
+      );
+
+      if (fs.existsSync(prependSourceCsvPath)) {
+        const existingData = fs
+          .readFileSync(prependSourceCsvPath, "utf-8")
+          .trimEnd();
+        const existingLines = existingData.split("\n");
+
+        // Skip the header from existing data (existingLines[0]) and prepend only the data rows
+        const existingLinesWithoutHeader = existingLines.slice(1);
+
+        csvLines = [csvLines[0]!, ...existingLinesWithoutHeader];
+
+        console.log(
+          `✅ Data from ${values.prepend} prepended to new csv lines${colors.reset}`,
+        );
+        console.log(
+          `   Prepended ${existingLinesWithoutHeader.length} entries\n`,
+        );
+      } else {
+        console.error(`❌ File ${values.prepend} does not exist. Exiting.\n`);
+        process.exit(1);
+      }
+    }
+
     // Add data rows
-    for (const account of eligibleAccounts) {
+    for (const entry of eligibleAccounts) {
       // Format: address,amount,season,category,sybilClassification,flaggedAt,flaggingReason,powerUser,recallSnapper,aiBuilder,aiExplorer
       // We're only filling in address, amount, season, and category
       // Other fields are left empty or set to 0 as defaults
       const row = [
-        account.address,
-        account.reward.toString(),
-        seasonNumber.toString(),
+        entry.address,
+        entry.reward.toString(),
+        airdropNumber.toString(),
         "conviction_staking", // category
         "approved", // sybilClassification
         "", // flaggedAt
@@ -308,76 +443,55 @@ Examples:
       `✅ CSV file written to: ${colors.green}scripts/data/${csvFileName}${colors.reset}\n`,
     );
 
-    // Step 8: Append to master airdrop-data.csv if --concat flag is set
-    if (values.concat) {
-      console.log(
-        `${colors.blue}Step 8: Appending to airdrop-data.csv...${colors.reset}`,
-      );
-
-      const masterCsvPath = path.join(
-        process.cwd(),
-        "scripts",
-        "data",
-        "airdrop-data.csv",
-      );
-
-      // Read existing airdrop-data.csv
-      if (fs.existsSync(masterCsvPath)) {
-        const existingData = fs.readFileSync(masterCsvPath, "utf-8");
-        const existingLines = existingData.split("\n");
-
-        // Skip the header from new data (csvLines[0]) and append only the data rows
-        const newDataWithoutHeader = csvLines.slice(1);
-
-        // Combine existing data with new data
-        const combinedLines = [...existingLines];
-
-        // If existing file doesn't end with newline, add one before appending
-        if (existingLines[existingLines.length - 1] !== "") {
-          combinedLines.push(...newDataWithoutHeader);
-        } else {
-          // Replace the empty last line with new data
-          combinedLines.splice(
-            existingLines.length - 1,
-            1,
-            ...newDataWithoutHeader,
-          );
-        }
-
-        // Write the combined data back to airdrop-data.csv
-        fs.writeFileSync(masterCsvPath, combinedLines.join("\n"));
-
-        console.log(
-          `✅ Data appended to: ${colors.green}scripts/data/airdrop-data.csv${colors.reset}`,
-        );
-        console.log(`   Added ${newDataWithoutHeader.length} new entries\n`);
-      } else {
-        console.log(
-          `${colors.yellow}⚠️  Warning: airdrop-data.csv not found. Creating new file.${colors.reset}`,
-        );
-        // If master file doesn't exist, create it with full data including header
-        fs.writeFileSync(masterCsvPath, csvLines.join("\n"));
-        console.log(
-          `✅ Created new file: ${colors.green}scripts/data/airdrop-data.csv${colors.reset}\n`,
-        );
-      }
-    }
-
     // Summary
     console.log(`${colors.magenta}📊 Summary:${colors.reset}`);
-    console.log(`   Total eligible accounts: ${eligibleAccounts.length}`);
-    console.log(`   Total active stakes: ${totalActiveStakes.toString()}`);
-    console.log(`   Total available rewards: ${availableRewards.toString()}`);
+    console.log(`   Total eligibility entries: ${eligibleAccounts.length}`);
     console.log(
-      `   Total distributed: ${eligibleAccounts.reduce((sum, a) => sum + a.reward, 0n).toString()}`,
+      `   Total active stakes: ${attoValueToStringValue(totalActiveStakes)}`,
     );
+    console.log(
+      `   Total available rewards: ${attoValueToStringValue(availableRewards)}`,
+    );
+    console.log(
+      `✅ Calculated rewards for ${eligibleAccounts.length} accounts\n`,
+    );
+
+    // Calculate and display reward statistics for eligible entries
+    if (eligibleAccounts.length > 0) {
+      const eligibleRewards = eligibleAccounts.map((e) => e.reward);
+      const totalEligible = eligibleRewards.reduce((sum, r) => sum + r, 0n);
+      const meanEligible = totalEligible / BigInt(eligibleRewards.length);
+      const maxEligible = eligibleRewards.reduce(
+        (max, r) => (r > max ? r : max),
+        0n,
+      );
+      const minEligible = eligibleRewards.reduce(
+        (min, r) => (r < min ? r : min),
+        eligibleRewards[0] || 0n,
+      );
+
+      const medianEligible = calculateMedian(eligibleRewards);
+
+      console.log(
+        `\n${colors.cyan}📊 Eligible Reward Statistics:${colors.reset}`,
+      );
+      console.log(`   Total rewards: ${attoValueToStringValue(totalEligible)}`);
+      console.log(`   Mean reward: ${attoValueToStringValue(meanEligible)}`);
+      console.log(
+        `   Median reward: ${attoValueToStringValue(medianEligible)}`,
+      );
+      console.log(`   Max reward: ${attoValueToStringValue(maxEligible)}`);
+      console.log(`   Min reward: ${attoValueToStringValue(minEligible)}`);
+    }
+
+    console.log("");
 
     if (eligibleAccounts.length > 0) {
       console.log(`\n${colors.cyan}Top 5 recipients:${colors.reset}`);
       for (let i = 0; i < Math.min(5, eligibleAccounts.length); i++) {
         const account = eligibleAccounts[i];
         console.log(
-          `   ${i + 1}. ${account?.address}: ${account?.reward.toString()}`,
+          `   ${i + 1}. ${account?.address}: ${attoValueToStringValue(account?.reward || 0n)}`,
         );
       }
     }

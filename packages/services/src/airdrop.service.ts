@@ -41,6 +41,7 @@ export type ExpiredClaim = BaseClaim & {
 export type IneligibleClaim = BaseClaim & {
   type: "ineligible";
   ineligibleReason: string;
+  ineligibleAmount: bigint;
 };
 
 export type ClaimData =
@@ -122,7 +123,9 @@ export class AirdropService {
             ? allocation.flaggingReason || "Sybil flagged"
             : allocation.flaggingReason
               ? allocation.flaggingReason
-              : undefined;
+              : allocation.ineligibleReason
+                ? allocation.ineligibleReason
+                : undefined;
 
         if (ineligibleReason) {
           return {
@@ -130,6 +133,7 @@ export class AirdropService {
             season: allocation.season,
             seasonName: season.name,
             ineligibleReason,
+            ineligibleAmount: allocation.ineligibleReward || 0n,
           };
         } else if (!convictionClaim) {
           // Determine if the claim has expired

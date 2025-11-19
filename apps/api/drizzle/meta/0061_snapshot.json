@@ -1,5 +1,5 @@
 {
-  "id": "9c1b0413-6339-458d-9e30-28c303655204",
+  "id": "8d8da13e-2910-4ee9-a24d-91e94ffb4ed6",
   "prevId": "fcf3c249-122d-4b71-86e0-3b7d0d1d2e68",
   "version": "7",
   "dialect": "postgresql",
@@ -28,9 +28,10 @@
         },
         "proof": {
           "name": "proof",
-          "type": "text",
+          "type": "jsonb",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "default": "'[]'::jsonb"
         },
         "category": {
           "name": "category",
@@ -85,6 +86,18 @@
           "primaryKey": false,
           "notNull": true,
           "default": false
+        },
+        "ineligible_reason": {
+          "name": "ineligible_reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ineligible_reward": {
+          "name": "ineligible_reward",
+          "type": "numeric(78, 0)",
+          "primaryKey": false,
+          "notNull": false
         },
         "created_at": {
           "name": "created_at",
