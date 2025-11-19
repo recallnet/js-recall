@@ -254,7 +254,7 @@ Examples:
         }
 
         const address = row.address?.trim().toLowerCase();
-        const amount = parseBigIntFromCsv(row.amount?.trim());
+        const amount = row.amount?.trim();
         const season = row.season?.trim();
 
         // Optional fields
@@ -310,7 +310,7 @@ Examples:
 
         recipients.push({
           address,
-          amount,
+          amount: BigInt(amount),
           season: parseInt(season, 10),
           category,
           sybilClassification,
