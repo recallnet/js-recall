@@ -84,10 +84,6 @@ const parseBooleanFromCsv = (value: string | undefined): boolean => {
   return value === "1" || value?.toLowerCase() === "true";
 };
 
-const parseBigIntFromCsv = (value: string | undefined): bigint | null => {
-  return value ? BigInt(value) : null;
-};
-
 // Helper function to prompt user for confirmation
 // async function promptUser(question: string): Promise<boolean> {
 //   const rl = readline.createInterface({
