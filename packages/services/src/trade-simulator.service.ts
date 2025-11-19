@@ -205,7 +205,7 @@ export class TradeSimulatorService {
   /**
    * Calculate an agent's portfolio value in USD
    * @param agentId The agent ID
-   * @param competitionId The competition ID (optional, will use active competition if not provided)
+   * @param competitionId The competition ID
    * @returns Total portfolio value in USD
    */
   async calculatePortfolioValue(agentId: string, competitionId: string) {
@@ -216,8 +216,15 @@ export class TradeSimulatorService {
     );
 
     for (const balance of balances) {
+      // Get price with chain specificity to avoid multi-chain collision bug
+      const chainType =
+        balance.specificChain === "svm"
+          ? BlockchainType.SVM
+          : BlockchainType.EVM;
       const price = await this.priceTrackerService.getPrice(
         balance.tokenAddress,
+        chainType,
+        balance.specificChain as SpecificChain,
       );
       if (price) {
         totalValue += balance.amount * price.price;
