@@ -14,8 +14,16 @@ describe("TransactionProcessor", () => {
   let services: ServiceRegistry;
 
   beforeEach(async () => {
+    // Initialize services using ServiceRegistry first
+    services = new ServiceRegistry();
+
+    // Get the transaction processor and repository from the service registry
+    transactionProcessor = services.transactionProcessor;
+    convictionClaimsRepository = services.convictionClaimsRepository;
+
     // Clean up existing data
     await db.delete(convictionClaims);
+    await db.delete(seasons);
 
     // Insert required seasons for the tests
     // Season 1 is used in multiple tests
@@ -28,13 +36,6 @@ describe("TransactionProcessor", () => {
         startDate: new Date("2024-01-01T00:00:00Z"),
       })
       .onConflictDoNothing();
-
-    // Initialize services using ServiceRegistry
-    services = new ServiceRegistry();
-
-    // Get the transaction processor and repository from the service registry
-    transactionProcessor = services.transactionProcessor;
-    convictionClaimsRepository = services.convictionClaimsRepository;
   });
 
   describe("conviction claim insertion", () => {
