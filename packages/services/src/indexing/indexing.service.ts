@@ -127,6 +127,7 @@ export class IndexingService {
     this.#abortController = new AbortController();
     this.#deferStop = defer();
     void this.loop(query);
+    this.#deferStop?.resolve();
   }
 
   /**
@@ -148,19 +149,37 @@ export class IndexingService {
    */
   async loop(query: HypersyncQuery): Promise<void> {
     const effectiveQuery = await this.#initQuery(query);
+    while (this.isRunning && !this.#abortController?.signal.aborted) {
+      await this.runUntilTip(effectiveQuery);
+      this.#logger.info("Waiting for new events");
+      await delay(this.#delayMs, this.#abortController?.signal);
+    }
+  }
+
+  /**
+   * Process blockchain data until reaching the tip.
+   *
+   * - Continuously streams and processes batches from Hypersync.
+   * - Updates `effectiveQuery.fromBlock` after each successful batch.
+   * - Returns when the tip of the blockchain is reached (no more data available).
+   * - Returns immediately on AbortError without throwing.
+   * - Re-throws all other errors after logging.
+   *
+   * @param effectiveQuery - The query object (mutated to update fromBlock)
+   *
+   * @internal
+   */
+  async runUntilTip(effectiveQuery: HypersyncQuery): Promise<void> {
     this.#logger.info(
       `Starting indexing from block ${effectiveQuery.fromBlock}`,
     );
-    while (this.isRunning && !this.#abortController?.signal.aborted) {
+    while (true) {
       try {
         const stream = await this.#client.stream(effectiveQuery, {});
         const res = await stream.recv();
         if (!res) {
-          this.#logger.info(
-            "Reached the tip of the blockchain - waiting for new events",
-          );
-          await delay(this.#delayMs, this.#abortController?.signal);
-          continue;
+          this.#logger.info("Reached the tip of the blockchain");
+          return;
         }
 
         await this.#indexingProcessor.process(res);
@@ -177,15 +196,14 @@ export class IndexingService {
           "name" in e &&
           e.name === "AbortError"
         ) {
-          // Silence when AbortError is thrown, just stop the loop
-          break;
+          // Silence when AbortError is thrown, just return
+          return;
         } else {
-          this.#logger.error({ error: e }, "Error in indexing loop");
+          this.#logger.error({ error: e }, "Error in runUntilTip");
           throw e;
         }
       }
     }
-    this.#deferStop?.resolve();
   }
 
   /**
