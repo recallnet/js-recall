@@ -320,6 +320,7 @@ Examples:
         and(
           gte(competitions.startDate, season.startDate),
           lte(competitions.startDate, referenceTime),
+          // TODO: Why are we including the active comps?
           eq(competitionAgents.status, "active"),
         ),
       )
