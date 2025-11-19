@@ -148,10 +148,10 @@ export class NflLiveIngestorService {
   /**
    * Sync NFL schedule for a season
    * Fetches schedule from SportsDataIO and upserts games into database
-   * @param season Season year (e.g., 2025)
+   * @param season Season year (e.g., "2025" or "2025reg")
    * @returns Object with synced and error counts
    */
-  async syncSchedule(season: number): Promise<{
+  async syncSchedule(season: string): Promise<{
     syncedCount: number;
     errorCount: number;
     totalGames: number;

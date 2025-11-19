@@ -139,15 +139,12 @@ export class GameScoringService {
       if (!game) {
         throw new Error(`Game ${gameId} not found`);
       }
-
       if (game.status !== "final") {
         throw new Error(`Game ${gameId} is not final (status: ${game.status})`);
       }
-
       if (!game.endTime) {
         throw new Error(`Game ${gameId} has no end time`);
       }
-
       if (!game.winner) {
         throw new Error(`Game ${gameId} has no winner`);
       }

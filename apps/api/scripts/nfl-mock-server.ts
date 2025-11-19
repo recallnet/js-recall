@@ -68,11 +68,11 @@ class SimpleMockSportsDataIOServer {
     this.app.use(express.json());
 
     /**
-     * GET /scores/json/schedules/:season
+     * GET /stats/json/schedules/:season
      * Returns schedule data for a season
      */
     this.app.get(
-      "/scores/json/schedules/:season",
+      "/stats/json/schedules/:season",
       async (req: Request, res: Response) => {
         try {
           const season = req.params.season;
@@ -441,16 +441,14 @@ async function main(): Promise<void> {
   logger.info(`Mock SportsDataIO NFL Server Ready`);
   logger.info(`Base URL: http://localhost:${args.port}`);
   logger.info(`\nEndpoints:`);
-  logger.info(`  GET  /scores/json/Schedules/:season`);
+  logger.info(`  GET  /stats/json/Schedules/:season`);
   logger.info(`  GET  /pbp/json/PlayByPlay/:globalGameId`);
   logger.info(`  POST /mock/advance/:globalGameId`);
   logger.info(`  POST /mock/reset/:globalGameId`);
   logger.info(`  POST /mock/auto-advance/:globalGameId`);
   logger.info(`  POST /mock/stop-auto-advance/:globalGameId`);
   logger.info(`\nExamples:`);
-  logger.info(
-    `  curl http://localhost:${args.port}/scores/json/Schedules/2025`,
-  );
+  logger.info(`  curl http://localhost:${args.port}/stats/json/Schedules/2025`);
   logger.info(`  curl http://localhost:${args.port}/pbp/json/PlayByPlay/19068`);
   logger.info(
     `  curl -X POST http://localhost:${args.port}/mock/advance/19068`,

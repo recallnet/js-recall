@@ -370,6 +370,7 @@ class ServiceRegistry {
       this._arenaRepository,
       this._sportsService.gamesRepository,
       this._sportsService.competitionGamesRepository,
+      this._sportsService.gameScoringService,
       this._perpsRepository,
       this._competitionRepository,
       this._stakesRepository,

@@ -122,11 +122,11 @@ export class MockSportsDataIONflServer {
     );
 
     /**
-     * GET /scores/json/scores/:season/:week
+     * GET /stats/json/scores/:season/:week
      * Returns scores for all games in a week
      */
     this.app.get(
-      "/scores/json/scores/:season/:week",
+      "/stats/json/scores/:season/:week",
       async (req: Request, res: Response) => {
         try {
           const season = parseInt(req.params.season || "", 10);

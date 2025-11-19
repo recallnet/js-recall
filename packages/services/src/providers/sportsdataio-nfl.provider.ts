@@ -201,17 +201,19 @@ export class SportsDataIONflProvider {
 
   /**
    * Get schedule for a specific season
-   * @param season Year (e.g., 2025), defaults to the current 2025 season
+   * @param season Year (e.g., "2025" or "2025reg"), defaults to the current 2025 season
    * @returns Array of games
    */
   async getSchedule(
-    season: number = 2025,
+    season: string = "2025",
   ): Promise<SportsDataIOScheduleGame[]> {
     try {
       this.#logger.debug({ season }, "Fetching schedule for season");
 
       const response = await this.#client.get<SportsDataIOScheduleGame[]>(
-        `/scores/json/schedules/${season}?key=${this.#apiKey}`,
+        // Note: `stats` or `scores` provide the same response. B ut, if you use the "replay" API
+        // during testing, only `stats` is supported. The `scores` is in the documentation, though.
+        `/stats/json/schedules/${season}?key=${this.#apiKey}`,
       );
 
       this.#logger.info(

@@ -17,6 +17,7 @@ import {
   SelectCompetitionReward,
   UpdateCompetition,
 } from "@recallnet/db/schema/core/types";
+import { SelectGame } from "@recallnet/db/schema/sports/types";
 import {
   PerpetualPositionWithAgent,
   SelectPerpsCompetitionConfig,
@@ -31,6 +32,7 @@ import { AgentService } from "./agent.service.js";
 import { AgentRankService } from "./agentrank.service.js";
 import { BalanceService } from "./balance.service.js";
 import { CompetitionRewardService } from "./competition-reward.service.js";
+import { GameScoringService } from "./game-scoring.service.js";
 import { isCompatibleType } from "./lib/arena-validation.js";
 import {
   PaginationResponse,
@@ -139,6 +141,7 @@ export type StartedCompetitionResult = SelectCompetition & {
     minimumLiquidityUsd?: number;
     minimumFdvUsd?: number;
   };
+  gameIds?: string[];
   agentIds: string[];
 };
 
@@ -370,6 +373,7 @@ export class CompetitionService {
   private arenaRepo: ArenaRepository;
   private gamesRepo: GamesRepository;
   private competitionGamesRepo: CompetitionGamesRepository;
+  private gameScoringService: GameScoringService;
   private perpsRepo: PerpsRepository;
   private competitionRepo: CompetitionRepository;
   private stakesRepo: StakesRepository;
@@ -393,6 +397,7 @@ export class CompetitionService {
     arenaRepo: ArenaRepository,
     gamesRepo: GamesRepository,
     competitionGamesRepo: CompetitionGamesRepository,
+    gameScoringService: GameScoringService,
     perpsRepo: PerpsRepository,
     competitionRepo: CompetitionRepository,
     stakesRepo: StakesRepository,
@@ -415,6 +420,7 @@ export class CompetitionService {
     this.arenaRepo = arenaRepo;
     this.gamesRepo = gamesRepo;
     this.competitionGamesRepo = competitionGamesRepo;
+    this.gameScoringService = gameScoringService;
     this.perpsRepo = perpsRepo;
     this.competitionRepo = competitionRepo;
     this.stakesRepo = stakesRepo;
@@ -588,6 +594,7 @@ export class CompetitionService {
       }
 
       // Link games for NFL competitions
+      const gameIdsToLink: string[] = [];
       if (competitionType === "nfl") {
         if (!gameIds || gameIds.length === 0) {
           throw new ApiError(400, "Game IDs are required for NFL competitions");
@@ -606,6 +613,7 @@ export class CompetitionService {
 
         // Create competition_games entries
         for (const gameId of gameIds) {
+          gameIdsToLink.push(gameId);
           await this.competitionGamesRepo.create(
             {
               competitionId: id,
@@ -659,6 +667,7 @@ export class CompetitionService {
         competition,
         createdRewards,
         constraints,
+        gameIds: gameIdsToLink.length > 0 ? gameIdsToLink : null,
       };
     });
 
@@ -680,6 +689,7 @@ export class CompetitionService {
             minimumFdvUsd: result.constraints.minimumFdvUsd,
           }
         : undefined,
+      gameIds: result.gameIds ?? undefined,
     };
   }
 
@@ -827,74 +837,78 @@ export class CompetitionService {
       this.validateAgentsForPerpsCompetition(agents, competition.type);
     }
 
+    // Register all agents in the competition (for all competition types)
+    for (const agentId of finalAgentIds) {
+      // Note: Agent validation already done above, so we know agent exists and is active
+
+      // Register agent in the competition (automatically sets status to 'active')
+      try {
+        await this.competitionRepo.addAgentToCompetition(
+          competitionId,
+          agentId,
+        );
+      } catch (error) {
+        // If participant limit error, provide a more helpful error message
+        if (
+          error instanceof Error &&
+          error.message.includes("maximum participant limit")
+        ) {
+          throw new Error(
+            `Cannot start competition: ${error.message}. Participant limit reached. Some agents may already be registered.`,
+          );
+        }
+        // Handle one-agent-per-user error
+        if (
+          error instanceof Error &&
+          error.message.includes("already has an agent registered")
+        ) {
+          throw new Error(
+            `Cannot start competition: A user has multiple agents in the participant list. Each user can only have one agent per competition.`,
+          );
+        }
+        throw error;
+      }
+
+      this.logger.debug(
+        `[CompetitionManager] Agent ${agentId} registered for competition`,
+      );
+    }
+
     // Take initial portfolio snapshots BEFORE setting status to active
     // This ensures no trades can happen during snapshot initialization
     // Different approach based on competition type:
-    let newConstraints: TradingConstraints | null = null;
+    let competitionTradingConstraints: TradingConstraints | null = null;
     if (competition.type === "trading") {
       // Clear cached balances after validation, before processing agents
       this.balanceService.clearCompetitionCache(competitionId);
 
-      // Process all agent additions and activations
+      // Reset balances for trading competitions
       for (const agentId of finalAgentIds) {
         await this.balanceService.resetAgentBalances(
           agentId,
           competitionId,
           competition.type,
         );
-
-        // Note: Agent validation already done above, so we know agent exists and is active
-
-        // Register agent in the competition (automatically sets status to 'active')
-        try {
-          await this.competitionRepo.addAgentToCompetition(
-            competitionId,
-            agentId,
-          );
-        } catch (error) {
-          // If participant limit error, provide a more helpful error message
-          if (
-            error instanceof Error &&
-            error.message.includes("maximum participant limit")
-          ) {
-            throw new Error(
-              `Cannot start competition: ${error.message}. Participant limit reached. Some agents may already be registered.`,
-            );
-          }
-          // Handle one-agent-per-user error
-          if (
-            error instanceof Error &&
-            error.message.includes("already has an agent registered")
-          ) {
-            throw new Error(
-              `Cannot start competition: A user has multiple agents in the participant list. Each user can only have one agent per competition.`,
-            );
-          }
-          throw error;
-        }
-
-        this.logger.debug(
-          `[CompetitionManager] Agent ${agentId} ready for competition`,
-        );
       }
 
       // Set up trading constraints before taking snapshots
       const existingConstraints =
         await this.tradingConstraintsService.getConstraints(competitionId);
-      newConstraints = existingConstraints;
+      competitionTradingConstraints = existingConstraints;
       if (tradingConstraints && existingConstraints) {
         // If the caller provided constraints and they already exist, we update
-        newConstraints = await this.tradingConstraintsService.updateConstraints(
-          competitionId,
-          tradingConstraints,
-        );
+        competitionTradingConstraints =
+          await this.tradingConstraintsService.updateConstraints(
+            competitionId,
+            tradingConstraints,
+          );
         this.logger.debug(
           `[CompetitionManager] Updating trading constraints for competition ${competitionId}`,
         );
       } else if (!existingConstraints) {
         // if the constraints don't exist, we create them with defaults and
         // (optionally) caller provided values.
-        newConstraints =
+        competitionTradingConstraints =
           (await this.tradingConstraintsService.createConstraints({
             competitionId,
             ...tradingConstraints,
@@ -958,6 +972,12 @@ export class CompetitionService {
           );
         }
       }
+    } else if (competition.type === "nfl") {
+      // NFL competitions don't need initial snapshots
+      // Scoring data comes from game predictions as games are played
+      this.logger.debug(
+        `[CompetitionService] Starting NFL competition with ${finalAgentIds.length} agents (no initial snapshots needed)`,
+      );
     }
 
     // NOW update the competition status to active
@@ -968,6 +988,13 @@ export class CompetitionService {
       startDate: new Date(),
       updatedAt: new Date(),
     });
+    // Only include game IDs for NFL competitions
+    const gameIds =
+      finalCompetition.type === "nfl"
+        ? await this.competitionGamesRepo.findGameIdsByCompetitionId(
+            competitionId,
+          )
+        : null;
 
     this.logger.debug(
       `[CompetitionManager] Started competition: ${competition.name} (${competitionId})`,
@@ -976,22 +1003,10 @@ export class CompetitionService {
       `[CompetitionManager] Participating agents: ${finalAgentIds.join(", ")}`,
     );
 
-    // Only spot trading competitions have trading constraints
-    if (competition.type === "trading") {
-      return {
-        ...finalCompetition,
-        tradingConstraints: {
-          minimumPairAgeHours: newConstraints?.minimumPairAgeHours,
-          minimum24hVolumeUsd: newConstraints?.minimum24hVolumeUsd,
-          minimumLiquidityUsd: newConstraints?.minimumLiquidityUsd,
-          minimumFdvUsd: newConstraints?.minimumFdvUsd,
-        },
-        agentIds: finalAgentIds,
-      } as StartedCompetitionResult;
-    }
-
     return {
       ...finalCompetition,
+      tradingConstraints: competitionTradingConstraints ?? undefined,
+      gameIds: gameIds ?? undefined,
       agentIds: finalAgentIds,
     } as StartedCompetitionResult;
   }
@@ -1227,7 +1242,7 @@ export class CompetitionService {
   }
 
   /**
-   * End a competition
+   * End a competition for trading or perpetual futures competitions
    * @param competitionId The competition ID
    * @returns The updated competition and final leaderboard
    */
@@ -1358,6 +1373,283 @@ export class CompetitionService {
     // Log success only after transaction has committed
     this.logger.debug(
       `[CompetitionManager] Competition ended successfully: ${competition.name} (${competitionId}) - ` +
+        `${competitionAgents.length} agents, ${leaderboard.length} leaderboard entries`,
+    );
+
+    return { competition: finalCompetition, leaderboard };
+  }
+
+  /**
+   * Validate that all final games in an NFL competition are ready for scoring
+   * Throws an error if any final game is missing required data (end time, winner)
+   * @param competitionId The competition ID
+   * @returns void
+   * @throws Error if any final game is missing required data
+   */
+  async #validateNflGamesReadyForScoring(competitionId: string): Promise<void> {
+    // Get all games for this competition
+    const gameIds =
+      await this.competitionGamesRepo.findGameIdsByCompetitionId(competitionId);
+
+    if (gameIds.length === 0) {
+      throw new Error(
+        `Cannot end NFL competition ${competitionId}: No games found`,
+      );
+    }
+
+    // Get game details to check which are final
+    const games = await this.gamesRepo.findByIds(gameIds);
+    const finalGames = games.filter((game) => game.status === "final");
+
+    if (finalGames.length === 0) {
+      throw new Error(
+        `Cannot end NFL competition ${competitionId}: No final games found. All games must be completed before ending the competition.`,
+      );
+    }
+
+    // Validate each final game has required scoring data
+    const invalidGames: Array<{
+      game: SelectGame;
+      reason: string;
+    }> = [];
+
+    for (const game of finalGames) {
+      if (!game.endTime) {
+        invalidGames.push({
+          game,
+          reason: "missing end time",
+        });
+      } else if (!game.winner) {
+        invalidGames.push({
+          game,
+          reason: "missing winner",
+        });
+      }
+    }
+
+    if (invalidGames.length > 0) {
+      const details = invalidGames
+        .map(
+          ({ game, reason }) =>
+            `${game.awayTeam} @ ${game.homeTeam} (${game.id}): ${reason}`,
+        )
+        .join("; ");
+
+      throw new Error(
+        `Cannot end NFL competition ${competitionId}: ${invalidGames.length} final game(s) are not ready for scoring. ` +
+          `Games must have end times and winners before the competition can end. Details: ${details}`,
+      );
+    }
+
+    this.logger.debug(
+      `[CompetitionService] Validated ${finalGames.length} final games are ready for scoring`,
+    );
+  }
+
+  /**
+   * Ensure all final games in an NFL competition are scored
+   * This validates all games are finalized and scored, else, throws an error.
+   * @param competitionId The competition ID
+   * @returns void
+   * @throws Error if any games are not finalized or scored
+   */
+  async #ensureNflGamesScored(competitionId: string): Promise<void> {
+    // Get all games for this competition
+    const gameIds =
+      await this.competitionGamesRepo.findGameIdsByCompetitionId(competitionId);
+
+    // Get game details to check which are final
+    const games = await this.gamesRepo.findByIds(gameIds);
+    const finalGames = games.filter((game) => game.status === "final");
+
+    this.logger.debug(
+      `[CompetitionService] Ensuring ${finalGames.length} final games are scored for competition ${competitionId}`,
+    );
+
+    let scoredCount = 0;
+    let alreadyScoredCount = 0;
+    const errors: Array<{ gameId: string; error: unknown }> = [];
+
+    // Score each final game (note: `scoreGame` is idempotent)
+    for (const game of finalGames) {
+      try {
+        const agentsScoredCount = await this.gameScoringService.scoreGame(
+          game.id,
+        );
+
+        if (agentsScoredCount > 0) {
+          scoredCount++;
+          this.logger.debug(
+            `[CompetitionService] Scored game ${game.id} (${game.awayTeam} @ ${game.homeTeam}): ${agentsScoredCount} agents`,
+          );
+        } else {
+          alreadyScoredCount++;
+        }
+      } catch (error) {
+        errors.push({ gameId: game.id, error });
+        this.logger.error(
+          { error, gameId: game.id },
+          `[CompetitionService] Error scoring game ${game.id} (${game.awayTeam} @ ${game.homeTeam})`,
+        );
+      }
+    }
+
+    // If any games failed to score after validation, this is a serious error
+    if (errors.length > 0) {
+      throw new Error(
+        `Failed to score ${errors.length} game(s) for competition ${competitionId}. ` +
+          `This should not happen after validation. Game IDs: ${errors.map((e) => e.gameId).join(", ")}`,
+      );
+    }
+
+    this.logger.info(
+      `[CompetitionService] Game scoring complete for competition ${competitionId}: ` +
+        `${scoredCount} newly scored, ${alreadyScoredCount} already scored`,
+    );
+  }
+
+  /**
+   * End a competition for NFL competitions only
+   * @param competitionId The competition ID
+   * @returns The updated competition and final NFL-specific leaderboard
+   */
+  async endNflCompetition(competitionId: string): Promise<{
+    competition: SelectCompetition;
+    leaderboard: Array<{
+      agentId: string;
+      averageBrierScore: number;
+      gamesScored: number;
+      rank: number;
+    }>;
+  }> {
+    // Validate all games are ready prior to marking as ending
+    // This ensures atomicity - if games aren't ready, competition stays in current state
+    await this.#validateNflGamesReadyForScoring(competitionId);
+
+    // Mark as ending (active -> ending)
+    let competition =
+      await this.competitionRepo.markCompetitionAsEnding(competitionId);
+
+    if (!competition) {
+      const current = await this.competitionRepo.findById(competitionId);
+      if (!current) {
+        throw new Error(`Competition not found: ${competitionId}`);
+      }
+      if (current.status === "ended") {
+        // Competition already ended, get the leaderboard and return
+        const leaderboard =
+          await this.gameScoringService.getCompetitionLeaderboard(
+            competitionId,
+          );
+        return { competition: current, leaderboard };
+      }
+      if (current.status !== "ending") {
+        throw new Error(
+          `Competition is not active or ending: ${current.status}`,
+        );
+      }
+      // If "ending", continue processing (retry scenario)
+      competition = current;
+    }
+
+    this.logger.debug(
+      `[CompetitionService] Marked NFL competition as ending: ${competitionId}`,
+    );
+
+    // Score all final games
+    await this.#ensureNflGamesScored(competitionId);
+
+    // Get agents in the competition
+    const competitionAgents =
+      await this.competitionRepo.getCompetitionAgents(competitionId);
+
+    // Persist results
+    const { competition: finalCompetition, leaderboard } =
+      await this.db.transaction(async (tx) => {
+        // Mark competition as ended
+        const updated = await this.competitionRepo.markCompetitionAsEnded(
+          competitionId,
+          tx,
+        );
+        if (!updated) {
+          throw new Error(
+            "Competition was already ended or not in ending state",
+          );
+        }
+
+        // Get final leaderboard from NFL scoring service
+        const leaderboard =
+          await this.gameScoringService.getCompetitionLeaderboard(
+            competitionId,
+          );
+        this.logger.info(
+          { competitionId, leaderboard },
+          "Final NFL leaderboard",
+        );
+
+        // Persist NFL leaderboard to competitions_leaderboard table
+        // This is required for agent rank updates to work correctly
+        const leaderboardEntries: BaseEnrichedLeaderboardEntry[] =
+          leaderboard.map((entry) => ({
+            agentId: entry.agentId,
+            competitionId,
+            rank: entry.rank,
+            pnl: 0, // Not applicable for NFL competitions
+            startingValue: 0, // Not applicable for NFL competitions
+            totalAgents: competitionAgents.length,
+            score: entry.averageBrierScore, // Use Brier score as the score
+            hasRiskMetrics: false,
+          }));
+
+        if (leaderboardEntries.length > 0) {
+          await this.competitionRepo.batchInsertLeaderboard(
+            leaderboardEntries,
+            tx,
+          );
+        }
+
+        // Update agent ranks based on competition results
+        await this.agentRankService.updateAgentRanksForCompetition(
+          competitionId,
+          tx,
+        );
+
+        // Fetch agents with lock to check for globally ineligible agents
+        const agentIds = leaderboard.map((entry) => entry.agentId);
+        const agents = await this.agentRepo.findByIdsWithLock(agentIds, tx);
+        const globallyIneligibleAgents = agents
+          .filter((agent) => agent.isRewardsIneligible)
+          .map((agent) => agent.id);
+
+        // Combine competition-specific and global exclusions
+        const competitionExclusions = updated.rewardsIneligible ?? [];
+        const allExcludedAgents = Array.from(
+          new Set([...competitionExclusions, ...globallyIneligibleAgents]),
+        );
+
+        // Convert NFL leaderboard to format expected by reward service
+        // For NFL competitions, we use rank directly since higher Brier scores are better
+        const rewardLeaderboard: LeaderboardEntry[] = leaderboard.map(
+          (entry) => ({
+            agentId: entry.agentId,
+            value: entry.averageBrierScore, // Use Brier score as "value"
+            pnl: 0, // Not applicable for NFL competitions
+          }),
+        );
+
+        // Assign winners to rewards
+        await this.competitionRewardService.assignWinnersToRewards(
+          competitionId,
+          rewardLeaderboard,
+          allExcludedAgents.length > 0 ? allExcludedAgents : undefined,
+          tx,
+        );
+
+        return { competition: updated, leaderboard };
+      });
+
+    this.logger.debug(
+      `[CompetitionService] NFL competition ended successfully: ${competition.name} (${competitionId}) - ` +
         `${competitionAgents.length} agents, ${leaderboard.length} leaderboard entries`,
     );
 
@@ -2242,7 +2534,7 @@ export class CompetitionService {
       }
       // Update NFL games if provided
       else if (
-        existingCompetition.type === "nfl" &&
+        (existingCompetition.type === "nfl" || updates.type === "nfl") &&
         gameIds &&
         gameIds.length > 0
       ) {
@@ -2854,7 +3146,11 @@ export class CompetitionService {
             `[CompetitionManager] Auto-ending competition: ${competition.name} (${competition.id}) - scheduled end: ${competition.endDate!.toISOString()} - status: ${competition.status}`,
           );
 
-          await this.endCompetition(competition.id);
+          if (competition.type === "nfl") {
+            await this.endNflCompetition(competition.id);
+          } else {
+            await this.endCompetition(competition.id);
+          }
 
           this.logger.debug(
             `[CompetitionManager] Successfully auto-ended competition: ${competition.name} (${competition.id})`,

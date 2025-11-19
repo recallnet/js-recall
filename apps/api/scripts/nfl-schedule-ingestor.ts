@@ -15,7 +15,7 @@ const logger = createLogger("NFLScheduleIngestor");
  * Parse command line arguments
  */
 function parseArguments(): {
-  season: number;
+  season: string;
 } {
   const { values } = parseArgs({
     options: {
@@ -28,7 +28,7 @@ function parseArguments(): {
   });
 
   return {
-    season: parseInt(values.season),
+    season: values.season,
   };
 }
 
@@ -58,8 +58,22 @@ async function syncSchedule(): Promise<void> {
   }
 }
 
-// Schedule the task to run every 5 minutes
-cron.schedule("*/5 * * * *", async () => {
+async function syncScheduleTask(): Promise<void> {
   logger.info("Running scheduled NFL schedule sync task");
-  await syncSchedule();
-});
+  try {
+    await syncSchedule();
+  } catch (error) {
+    logger.error({ error }, "Error during schedule sync");
+  }
+}
+
+// Schedule the task to run every 5 minutes
+cron.schedule("*/5 * * * *", syncScheduleTask);
+
+// Run immediately
+try {
+  await syncScheduleTask();
+} catch (error) {
+  logger.error({ error }, "Error during schedule sync");
+  process.exit(1);
+}
