@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import { Logger } from "pino";
 
 import {
@@ -96,11 +96,7 @@ export class ConvictionClaimsRepository {
         .where(
           normalizedAccounts.length === 1
             ? eq(convictionClaims.account, normalizedAccounts[0]!)
-            : and(
-                ...normalizedAccounts.map((account) =>
-                  eq(convictionClaims.account, account),
-                ),
-              ),
+            : inArray(convictionClaims.account, normalizedAccounts),
         )
         .orderBy(desc(convictionClaims.blockTimestamp));
 
