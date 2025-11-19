@@ -22,6 +22,13 @@ import {
   TradingConstraintsService,
   UserService,
 } from "@recallnet/services";
+import {
+  ConvictionClaimsRepository,
+  EventProcessor,
+  EventsRepository,
+  IndexingService,
+  TransactionProcessor,
+} from "@recallnet/services/indexing";
 import { WalletWatchlist } from "@recallnet/services/lib";
 import { MultiChainProvider } from "@recallnet/services/providers";
 import {
@@ -277,4 +284,36 @@ function getRewardsAllocator(): RewardsAllocator {
   }
 
   return new NoopRewardsAllocator();
+}
+
+const stakingIndexerLogger = createLogger("StakingIndexer");
+const eventProcessor = new EventProcessor(
+  db,
+  rewardsRepository,
+  new EventsRepository(db),
+  stakesRepository,
+  boostAwardService,
+  competitionService,
+  stakingIndexerLogger,
+);
+const stakingConfig = config.stakingIndex();
+if (stakingConfig.isEnabled) {
+  this._eventIndexingService = IndexingService.createEventsIndexingService(
+    indexingLogger,
+    this._eventProcessor,
+    stakingConfig,
+  );
+}
+
+this._transactionProcessor = new TransactionProcessor(
+  this._convictionClaimsRepository,
+  indexingLogger,
+);
+if (stakingConfig.isEnabled) {
+  this._transactionIndexingService =
+    IndexingService.createTransactionsIndexingService(
+      indexingLogger,
+      this._transactionProcessor,
+      stakingConfig,
+    );
 }
