@@ -1,5 +1,9 @@
 import { beforeEach, describe, expect, test } from "vitest";
 
+import { seasons } from "@recallnet/db/schema/airdrop/defs";
+import { convictionClaims } from "@recallnet/db/schema/conviction-claims/defs";
+
+import { db } from "@/database/db.js";
 import { ConvictionClaimsRepository } from "@/indexing/conviction-claims.repository.js";
 import { TransactionProcessor } from "@/indexing/transaction-processor.js";
 import { ServiceRegistry } from "@/services/index.js";
@@ -10,6 +14,21 @@ describe("TransactionProcessor", () => {
   let services: ServiceRegistry;
 
   beforeEach(async () => {
+    // Clean up existing data
+    await db.delete(convictionClaims);
+
+    // Insert required seasons for the tests
+    // Season 1 is used in multiple tests
+    await db
+      .insert(seasons)
+      .values({
+        id: 1,
+        number: 1,
+        name: "Season 1",
+        startDate: new Date("2024-01-01T00:00:00Z"),
+      })
+      .onConflictDoNothing();
+
     // Initialize services using ServiceRegistry
     services = new ServiceRegistry();
 
@@ -74,7 +93,7 @@ describe("TransactionProcessor", () => {
         from: "0x4567890123456789012345678901234567890123",
         to: "0x6A3044c1Cf077F386c9345eF84f2518A2682Dfff",
         input:
-          "0x2ac96e2a00000000000000000000000000000000000000000000000000000000000000c000000000000000000000000045678901234567890123456789012345678901230000000000000000000000000000000000000000000000001bc16d674ec8000000000000000000000000000000000000000000000000000000000000000000050000000000000000000000000000000000000000000000000000000000ed4e0000000000000000000000000000000000000000000000000000000000000000e000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "0x2ac96e2a00000000000000000000000000000000000000000000000000000000000000c000000000000000000000000045678901234567890123456789012345678901230000000000000000000000000000000000000000000000001bc16d674ec8000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000ed4e0000000000000000000000000000000000000000000000000000000000000000e000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
         blockNumber: 36871803n,
         blockTimestamp: new Date("2024-01-01T00:03:00Z"),
       };
@@ -86,7 +105,7 @@ describe("TransactionProcessor", () => {
       const claims =
         await convictionClaimsRepository.getConvictionClaimsByAccount(
           "0x4567890123456789012345678901234567890123",
-          5,
+          1,
         );
 
       expect(claims).toHaveLength(1);
@@ -94,7 +113,7 @@ describe("TransactionProcessor", () => {
         account: "0x4567890123456789012345678901234567890123".toLowerCase(),
         eligibleAmount: 2000000000000000000n, // 2e18
         claimedAmount: 1200000000000000000n, // 60% of 2e18 for 180 days
-        season: 5,
+        season: 1,
         duration: 15552000n, // 180 days in seconds
       });
     });

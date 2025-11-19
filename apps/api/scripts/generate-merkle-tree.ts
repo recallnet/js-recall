@@ -253,7 +253,7 @@ Examples:
           return reject(new Error(error));
         }
 
-        const address = row.address?.trim();
+        const address = row.address?.trim().toLowerCase();
         const amount = parseBigIntFromCsv(row.amount?.trim());
         const season = row.season?.trim();
 
