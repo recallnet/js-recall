@@ -405,12 +405,12 @@ export class AirdropRepository {
 
   async newSeason(newSeason: NewSeason, tx?: Transaction) {
     const executor = tx ?? this.#db;
-    const [res] = await executor.insert(seasons).values(newSeason).returning();
-    if (!res) {
-      this.#logger.error("Failed to insert season");
-      throw new Error("Failed to insert season");
-    }
-    if (res.number > 0) {
+    const [res] = await executor
+      .insert(seasons)
+      .values(newSeason)
+      .returning()
+      .onConflictDoNothing();
+    if (res && res.number > 0) {
       await executor
         .update(seasons)
         .set({ endDate: res.startDate })
