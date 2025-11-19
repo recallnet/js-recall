@@ -390,27 +390,23 @@ class ServiceRegistry {
       indexingLogger,
     );
 
-    const stakingConfig = config.stakingIndex();
-    if (stakingConfig.isEnabled) {
-      this._eventIndexingService = IndexingService.createEventsIndexingService(
-        indexingLogger,
-        this._eventProcessor,
-        stakingConfig,
-      );
-    }
+    const stakingConfig = config.stakingIndex;
+    this._eventIndexingService = IndexingService.createEventsIndexingService(
+      indexingLogger,
+      this._eventProcessor,
+      stakingConfig,
+    );
 
     this._transactionProcessor = new TransactionProcessor(
       this._convictionClaimsRepository,
       indexingLogger,
     );
-    if (stakingConfig.isEnabled) {
-      this._transactionIndexingService =
-        IndexingService.createTransactionsIndexingService(
-          indexingLogger,
-          this._transactionProcessor,
-          stakingConfig,
-        );
-    }
+    this._transactionIndexingService =
+      IndexingService.createTransactionsIndexingService(
+        indexingLogger,
+        this._transactionProcessor,
+        stakingConfig,
+      );
   }
 
   public static getInstance(): ServiceRegistry {

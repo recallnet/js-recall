@@ -150,10 +150,27 @@ export class IndexingService {
   async loop(query: HypersyncQuery): Promise<void> {
     const effectiveQuery = await this.#initQuery(query);
     while (this.isRunning && !this.#abortController?.signal.aborted) {
-      await this.runUntilTip(effectiveQuery);
+      await this.#runUntilTip(effectiveQuery);
       this.#logger.info("Waiting for new events");
       await delay(this.#delayMs, this.#abortController?.signal);
     }
+  }
+
+  /**
+   * Run a single indexing pass until reaching the tip of the blockchain.
+   *
+   * - Initializes the query with the last processed block number.
+   * - Processes all available blockchain data until the tip is reached.
+   * - Does not loop or wait for new events (unlike `start()`).
+   * - Useful for one-time indexing tasks or testing.
+   *
+   * Usage:
+   * - Call this method when you want to index once without starting a long-running process.
+   * - The method returns when all available data has been processed.
+   */
+  async runOnce(): Promise<void> {
+    const effectiveQuery = await this.#initQuery(this.#indexingQuery);
+    await this.#runUntilTip(effectiveQuery);
   }
 
   /**
@@ -169,7 +186,7 @@ export class IndexingService {
    *
    * @internal
    */
-  async runUntilTip(effectiveQuery: HypersyncQuery): Promise<void> {
+  async #runUntilTip(effectiveQuery: HypersyncQuery): Promise<void> {
     this.#logger.info(
       `Starting indexing from block ${effectiveQuery.fromBlock}`,
     );

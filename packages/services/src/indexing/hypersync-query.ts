@@ -289,7 +289,6 @@ export type HypersyncQuery = {
 };
 
 export interface IndexingConfig {
-  isEnabled: boolean;
   stakingContract: string;
   rewardsContract: string;
   convictionClaimsContract: string;

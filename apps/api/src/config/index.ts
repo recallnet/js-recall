@@ -232,8 +232,7 @@ export const config = {
       },
     },
   },
-  stakingIndex: () => ({
-    isEnabled: process.env.INDEXING_ENABLED === "true",
+  stakingIndex: {
     stakingContract: process.env.INDEXING_STAKING_CONTRACT!,
     rewardsContract: process.env.INDEXING_REWARDS_CONTRACT!,
     convictionClaimsContract:
@@ -250,7 +249,7 @@ export const config = {
     delayMs: process.env.INDEXING_DELAY
       ? parseInt(process.env.INDEXING_DELAY, 10)
       : 3000,
-  }),
+  },
   // Sentry configuration (imported from shared config)
   sentry: createSentryConfig(),
   // Rewards allocation configuration
