@@ -133,6 +133,17 @@ export function isEvmChain(chain: SpecificChain | BlockchainType): boolean {
 }
 
 /**
+ * Request structure for fetching token prices with chain specificity
+ * Used by getBulkPrices to fetch prices for token+chain combinations
+ */
+export interface TokenPriceRequest {
+  /** Token contract address */
+  tokenAddress: string;
+  /** Specific blockchain where the token exists */
+  specificChain: SpecificChain;
+}
+
+/**
  * Balance interface
  */
 export interface Balance {

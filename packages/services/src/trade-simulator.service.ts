@@ -6,7 +6,12 @@ import { SelectTrade } from "@recallnet/db/schema/trading/types";
 import { BalanceService } from "./balance.service.js";
 import { calculateSlippage } from "./lib/trade-utils.js";
 import { PriceTrackerService } from "./price-tracker.service.js";
-import { ApiError, BlockchainType, SpecificChain } from "./types/index.js";
+import {
+  ApiError,
+  BlockchainType,
+  SpecificChain,
+  TokenPriceRequest,
+} from "./types/index.js";
 
 // Result types inferred from repository functions to ensure consistency
 type CompetitionTradesResult = Awaited<
@@ -249,14 +254,22 @@ export class TradeSimulatorService {
         competitionId,
       );
 
-      // Step 2: Get unique token addresses
-      const uniqueTokens = [
-        ...new Set(allBalances.map((balance) => balance.tokenAddress)),
-      ];
+      // Step 2: Build unique token+chain requests
+      const uniqueRequests = new Map<string, TokenPriceRequest>();
+      for (const balance of allBalances) {
+        const key = `${balance.tokenAddress.toLowerCase()}:${balance.specificChain}`;
+        if (!uniqueRequests.has(key)) {
+          uniqueRequests.set(key, {
+            tokenAddress: balance.tokenAddress,
+            specificChain: balance.specificChain as SpecificChain,
+          });
+        }
+      }
 
-      // Step 3: Get all token prices USD in bulk
-      const priceMap =
-        await this.priceTrackerService.getBulkPrices(uniqueTokens);
+      // Step 3: Get all token prices USD in bulk with chain specificity
+      const priceMap = await this.priceTrackerService.getBulkPrices(
+        Array.from(uniqueRequests.values()),
+      );
 
       // Step 4: Initialize portfolio values for all agents
       agentIds.forEach((agentId) => {
@@ -265,7 +278,8 @@ export class TradeSimulatorService {
 
       // Step 5: Calculate portfolio values efficiently
       allBalances.forEach((balance) => {
-        const priceReport = priceMap.get(balance.tokenAddress);
+        const priceKey = `${balance.tokenAddress.toLowerCase()}:${balance.specificChain}`;
+        const priceReport = priceMap.get(priceKey);
         if (priceReport && priceReport.price) {
           const currentValue = portfolioValues.get(balance.agentId) || 0;
           const tokenValue = balance.amount * priceReport.price;
@@ -274,7 +288,7 @@ export class TradeSimulatorService {
       });
 
       this.logger.debug(
-        `[TradeSimulator] Successfully calculated ${portfolioValues.size} portfolio values using ${uniqueTokens.length} unique tokens`,
+        `[TradeSimulator] Successfully calculated ${portfolioValues.size} portfolio values using ${uniqueRequests.size} unique token+chain combinations`,
       );
 
       return portfolioValues;
