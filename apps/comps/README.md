@@ -122,6 +122,18 @@ PORT=3001 pnpm dev
 - Regular: `/competitions/{id}/agents/{id}` - NO balance reset
 - Admin proxy: `/admin/competitions/{id}/agents/{id}` - RESETS balances
 
+## Vercel Deployment
+
+### Cron Jobs
+
+This app uses Vercel Cron Jobs for scheduled tasks like auto-starting competitions. See [CRON_SETUP.md](./CRON_SETUP.md) for:
+
+- Configuration instructions
+- Available cron jobs
+- Testing and monitoring
+- Security setup
+- Migration guide from on-prem cron
+
 ## Contributing
 
 PRs accepted.

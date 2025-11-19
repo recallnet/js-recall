@@ -28,10 +28,7 @@ async function autoEndCompetitions() {
       `Auto end competitions completed successfully in ${duration}ms!`,
     );
   } catch (error) {
-    logger.error(
-      "Error checking competition end dates:",
-      error instanceof Error ? error.message : String(error),
-    );
+    logger.error({ error }, "Error checking competition end dates:");
 
     throw error;
   }

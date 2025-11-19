@@ -150,8 +150,8 @@ export class PerpsDataProcessor {
     } catch (error) {
       // If Decimal.js can't handle it, log and return null
       this.logger.warn(
+        { error },
         `[PerpsDataProcessor] Failed to convert number to string: ${value}`,
-        error,
       );
       return null;
     }
@@ -827,8 +827,8 @@ export class PerpsDataProcessor {
           );
         } catch (error) {
           this.logger.error(
+            { error },
             `[PerpsDataProcessor] Error calculating risk metrics:`,
-            error,
           );
           // Don't fail the entire process if risk metrics calculation fails
           calmarRatioResult = {
@@ -846,8 +846,8 @@ export class PerpsDataProcessor {
       };
     } catch (error) {
       this.logger.error(
+        { error },
         `[PerpsDataProcessor] Error processing perps competition ${competitionId}:`,
-        error,
       );
 
       return {
@@ -1097,8 +1097,8 @@ export class PerpsDataProcessor {
       return await this.perpsRepo.getPerpsCompetitionStats(competitionId);
     } catch (error) {
       this.logger.error(
+        { error },
         `[PerpsDataProcessor] Error getting competition stats for ${competitionId}:`,
-        error,
       );
       throw error;
     }
@@ -1124,8 +1124,8 @@ export class PerpsDataProcessor {
       );
     } catch (error) {
       this.logger.error(
+        { error },
         `[PerpsDataProcessor] Error getting positions for agent ${agentId}:`,
-        error,
       );
       throw error;
     }
@@ -1145,8 +1145,8 @@ export class PerpsDataProcessor {
       );
     } catch (error) {
       this.logger.error(
+        { error },
         `[PerpsDataProcessor] Error getting account summary for agent ${agentId}:`,
-        error,
       );
       throw error;
     }

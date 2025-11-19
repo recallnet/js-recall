@@ -128,11 +128,8 @@ export class SafeTransactionProposer implements RewardsAllocator {
       senderSignature: signature.data,
     });
 
-    // NOTE: There's no way to know ahead of the time the final tx hash, so we return a placeholder
-    // The correct tx value is captured by the indexer
     return {
-      transactionHash:
-        "0x0000000000000000000000000000000000000000000000000000000000000000",
+      transactionHash: null,
     };
   }
 }

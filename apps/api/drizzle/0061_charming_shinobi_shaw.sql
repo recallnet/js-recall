@@ -1,0 +1,1 @@
+ALTER TABLE "rewards_roots" ALTER COLUMN "tx" DROP NOT NULL;

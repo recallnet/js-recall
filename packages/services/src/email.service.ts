@@ -102,8 +102,8 @@ export class EmailService {
       return await this.updateContact(payload);
     } catch (error) {
       this.logger.error(
+        { error },
         `[EmailService] Error subscribing user ${email}:`,
-        error,
       );
       return {
         success: false,
@@ -147,8 +147,8 @@ export class EmailService {
       return await this.updateContact(payload);
     } catch (error) {
       this.logger.error(
+        { error },
         `[EmailService] Error unsubscribing user ${email}:`,
-        error,
       );
       return {
         success: false,
@@ -181,7 +181,7 @@ export class EmailService {
       const data: LoopsResponse = await response.json();
 
       if (!data.success) {
-        this.logger.error("[EmailService] Update contact failed:", data);
+        this.logger.error({ data }, "[EmailService] Update contact failed:");
         throw new Error(data.message || `Loops API error: ${response.status}`);
       }
       return { success: true };

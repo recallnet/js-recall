@@ -152,8 +152,8 @@ export class BalanceService {
       return 0;
     } catch (error) {
       this.logger.error(
+        { error },
         `[BalanceManager] Error getting balance for agent ${agentId}, token ${tokenAddress}:`,
-        error,
       );
       return 0;
     }
@@ -257,8 +257,8 @@ export class BalanceService {
       return balances;
     } catch (error) {
       this.logger.error(
+        { error },
         `[BalanceManager] Error getting bulk balances for ${agentIds.length} agents:`,
-        error,
       );
       return [];
     }
@@ -327,8 +327,8 @@ export class BalanceService {
       }
     } catch (error) {
       this.logger.error(
+        { error },
         `[BalanceManager] Error resetting balances for agent ${agentId}:`,
-        error,
       );
       throw error;
     }
@@ -389,7 +389,7 @@ export class BalanceService {
       await this.balanceRepo.count();
       return true;
     } catch (error) {
-      this.logger.error("[BalanceManager] Health check failed:", error);
+      this.logger.error({ error }, "[BalanceManager] Health check failed");
       return false;
     }
   }

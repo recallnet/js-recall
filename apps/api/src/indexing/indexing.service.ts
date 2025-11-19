@@ -152,7 +152,7 @@ export class IndexingService {
           // Silence when AbortError is thrown, just stop the loop
           break;
         } else {
-          this.#logger.error("Error in indexing loop:", e);
+          this.#logger.error({ error: e }, "Error in indexing loop");
           throw e;
         }
       }

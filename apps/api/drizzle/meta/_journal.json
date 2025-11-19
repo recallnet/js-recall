@@ -432,8 +432,15 @@
     {
       "idx": 61,
       "version": "7",
-      "when": 1763487581003,
-      "tag": "0061_perpetual_brother_voodoo",
+      "when": 1763153540763,
+      "tag": "0061_charming_shinobi_shaw",
+      "breakpoints": true
+    },
+    {
+      "idx": 62,
+      "version": "7",
+      "when": 1763513455739,
+      "tag": "0062_unknown_silvermane",
       "breakpoints": true
     }
   ]

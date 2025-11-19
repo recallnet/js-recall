@@ -139,8 +139,8 @@ export class TradeSimulatorService {
       );
     } catch (error) {
       this.logger.error(
+        { error },
         `[TradeSimulator] Error getting competition trades:`,
-        error,
       );
       return { trades: [], total: 0 };
     }
@@ -160,8 +160,8 @@ export class TradeSimulatorService {
       return await this.tradeRepo.getCompetitionTradeMetrics(competitionId);
     } catch (error) {
       this.logger.error(
+        { error },
         `[TradeSimulator] Error getting competition trade metrics:`,
-        error,
       );
       return { totalTrades: 0, totalVolume: 0, uniqueTokens: 0 };
     }
@@ -190,8 +190,8 @@ export class TradeSimulatorService {
       );
     } catch (error) {
       this.logger.error(
+        { error },
         `[TradeSimulator] Error getting agent trades in competition:`,
-        error,
       );
       return { trades: [], total: 0 };
     }
@@ -280,8 +280,8 @@ export class TradeSimulatorService {
       return portfolioValues;
     } catch (error) {
       this.logger.error(
+        { error },
         `[TradeSimulator] Error calculating bulk portfolio values:`,
-        error,
       );
 
       // Fallback to individual calculations
@@ -297,8 +297,8 @@ export class TradeSimulatorService {
           portfolioValues.set(agentId, value);
         } catch (agentError) {
           this.logger.error(
+            { error: agentError },
             `[TradeSimulator] Error calculating portfolio for agent ${agentId}:`,
-            agentError,
           );
           portfolioValues.set(agentId, 0);
         }
@@ -420,7 +420,7 @@ export class TradeSimulatorService {
       await this.tradeRepo.count();
       return true;
     } catch (error) {
-      this.logger.error("[TradeSimulator] Health check failed:", error);
+      this.logger.error({ error }, "[TradeSimulator] Health check failed");
       return false;
     }
   }

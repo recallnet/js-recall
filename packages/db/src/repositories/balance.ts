@@ -79,7 +79,7 @@ export class BalanceRepository {
 
       return result;
     } catch (error) {
-      this.#logger.error("Error in getBalance:", error);
+      this.#logger.error({ error }, "Error in getBalance");
       throw error;
     }
   }
@@ -104,7 +104,7 @@ export class BalanceRepository {
           ),
         );
     } catch (error) {
-      this.#logger.error("Error in getAgentBalances:", error);
+      this.#logger.error({ error }, "Error in getAgentBalances");
       throw error;
     }
   }
@@ -133,7 +133,7 @@ export class BalanceRepository {
           ),
         );
     } catch (error) {
-      this.#logger.error("Error in getAgentsBulkBalances:", error);
+      this.#logger.error({ error }, "Error in getAgentsBulkBalances");
       throw error;
     }
   }
@@ -209,7 +209,7 @@ export class BalanceRepository {
         }
       });
     } catch (error) {
-      this.#logger.error("Error in resetAgentBalances:", error);
+      this.#logger.error({ error }, "Error in resetAgentBalances");
       throw error;
     }
   }

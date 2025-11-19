@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 export interface AllocationResult {
-  transactionHash: string;
+  transactionHash: string | null;
 }
 
 export interface RewardsAllocator {
@@ -18,7 +18,7 @@ export class NoopRewardsAllocator implements RewardsAllocator {
     startTimestamp: number,
   ): Promise<AllocationResult> {
     return {
-      transactionHash: "0x0000000000000000000000000000000000000000",
+      transactionHash: null,
     };
   }
 }
