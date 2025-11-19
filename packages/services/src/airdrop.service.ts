@@ -192,7 +192,7 @@ export class AirdropService {
             eligibleAmount: convictionClaim.eligibleAmount,
             claimedAmount: convictionClaim.claimedAmount,
             stakeDuration: Number(convictionClaim.duration),
-            claimedAt: convictionClaim.createdAt,
+            claimedAt: convictionClaim.blockTimestamp,
             unlocksAt: this.calculateUnlockDate(
               convictionClaim.blockTimestamp,
               convictionClaim.duration,
@@ -205,7 +205,7 @@ export class AirdropService {
             seasonName: season.name,
             eligibleAmount: convictionClaim.eligibleAmount,
             claimedAmount: convictionClaim.claimedAmount,
-            claimedAt: convictionClaim.createdAt,
+            claimedAt: convictionClaim.blockTimestamp,
           };
         } else {
           // This should be unreachable if all conditions are properly handled
