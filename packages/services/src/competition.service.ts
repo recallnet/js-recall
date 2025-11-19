@@ -635,18 +635,17 @@ export class CompetitionService {
       }
 
       // Always create trading constraints (with defaults if not provided)
-      const constraints =
-        await this.tradingConstraintsService.createConstraints(
-          {
-            competitionId: id,
-            ...tradingConstraints,
-          },
-          tx,
+      let constraints: TradingConstraints | null = null;
+      if (competitionType === "trading") {
+        constraints =
+          (await this.tradingConstraintsService.createConstraints(
+            { competitionId: id, ...tradingConstraints },
+            tx,
+          )) || null;
+        this.logger.debug(
+          `[CompetitionManager] Created trading constraints for competition ${id}`,
         );
-      this.logger.debug(
-        `[CompetitionManager] Created trading constraints for competition ${id}`,
-      );
-
+      }
       // Create prize pools if provided
       if (prizePools) {
         const attoPrizePools = {
@@ -673,12 +672,14 @@ export class CompetitionService {
         rank: reward.rank,
         reward: reward.reward,
       })),
-      tradingConstraints: {
-        minimumPairAgeHours: result.constraints?.minimumPairAgeHours,
-        minimum24hVolumeUsd: result.constraints?.minimum24hVolumeUsd,
-        minimumLiquidityUsd: result.constraints?.minimumLiquidityUsd,
-        minimumFdvUsd: result.constraints?.minimumFdvUsd,
-      },
+      tradingConstraints: result.constraints
+        ? {
+            minimumPairAgeHours: result.constraints.minimumPairAgeHours,
+            minimum24hVolumeUsd: result.constraints.minimum24hVolumeUsd,
+            minimumLiquidityUsd: result.constraints.minimumLiquidityUsd,
+            minimumFdvUsd: result.constraints.minimumFdvUsd,
+          }
+        : undefined,
     };
   }
 

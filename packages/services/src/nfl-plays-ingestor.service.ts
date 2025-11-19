@@ -4,9 +4,14 @@ import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { CompetitionGamesRepository } from "@recallnet/db/repositories/competition-games";
 import { GamePlaysRepository } from "@recallnet/db/repositories/game-plays";
 import { GamesRepository } from "@recallnet/db/repositories/games";
-import { NflTeam, SelectGame } from "@recallnet/db/schema/sports/types";
+import {
+  NflGameStatus,
+  NflTeam,
+  SelectGame,
+} from "@recallnet/db/schema/sports/types";
 
 import {
+  SportsDataIOGameStatus,
   SportsDataIONflProvider,
   SportsDataIOPlayByPlay,
 } from "./providers/sportsdataio-nfl.provider.js";
@@ -98,10 +103,12 @@ export class NflLiveIngestorService {
 
   /**
    * Ingest play-by-play data for all active games in active competitions
-   * @param lockOffsetMs Milliseconds before play to lock predictions
+   * @param gameScoringService Optional scoring service for finalizing games
    * @returns Number of games ingested
    */
-  async ingestActiveGames(): Promise<number> {
+  async ingestActiveGames(gameScoringService?: {
+    scoreGame: (gameId: string) => Promise<number>;
+  }): Promise<number> {
     const activeGames = await this.discoverActiveGames();
 
     if (activeGames.length === 0) {
@@ -117,9 +124,9 @@ export class NflLiveIngestorService {
     for (const game of activeGames) {
       try {
         this.#logger.info(
-          `Ingesting game ${game.globalGameId} (${game.awayTeam} @ ${game.homeTeam})...`,
+          `Ingesting game ${game.id} (${game.awayTeam} @ ${game.homeTeam})...`,
         );
-        await this.ingestGamePlayByPlay(game.globalGameId);
+        await this.ingestGamePlayByPlay(game.globalGameId, gameScoringService);
         ingestedCount++;
       } catch (error) {
         this.#logger.error(
@@ -152,12 +159,20 @@ export class NflLiveIngestorService {
 
     const schedule = await this.#provider.getSchedule(season);
 
-    this.#logger.info(`Fetched ${schedule.length} games from SportsDataIO`);
+    this.#logger.info(`Fetched ${schedule.length} entries from SportsDataIO`);
+
+    // Filter out BYE weeks
+    const actualGames = schedule.filter(
+      (game) => game.AwayTeam !== "BYE" && game.HomeTeam !== "BYE",
+    );
+
+    this.#logger.info(
+      `Filtered to ${actualGames.length} actual games (${schedule.length - actualGames.length} BYE weeks skipped)`,
+    );
 
     let syncedCount = 0;
     let errorCount = 0;
-
-    for (const game of schedule) {
+    for (const game of actualGames) {
       try {
         await this.#gamesRepo.upsert({
           globalGameId: game.GlobalGameID,
@@ -166,19 +181,14 @@ export class NflLiveIngestorService {
           homeTeam: game.HomeTeam,
           awayTeam: game.AwayTeam,
           venue: game.StadiumDetails?.Name || null,
-          status:
-            game.Status === "Final"
-              ? "final"
-              : game.Status === "InProgress"
-                ? "in_progress"
-                : "scheduled",
+          status: this.#mapNflGameStatus(game.Status),
         });
 
         syncedCount++;
 
         if (syncedCount % 10 === 0) {
           this.#logger.info(
-            `Synced ${syncedCount}/${schedule.length} games...`,
+            `Synced ${syncedCount}/${actualGames.length} games...`,
           );
         }
       } catch (error) {
@@ -195,29 +205,58 @@ export class NflLiveIngestorService {
     }
 
     this.#logger.info(
-      `Schedule sync complete: ${syncedCount} synced, ${errorCount} errors`,
+      `Schedule sync complete: ${syncedCount} synced, ${errorCount} errors (${schedule.length - actualGames.length} BYE weeks skipped)`,
     );
 
     return {
       syncedCount,
       errorCount,
-      totalGames: schedule.length,
+      totalGames: actualGames.length,
     };
+  }
+
+  /**
+   * Map SportsDataIO game status to database game status
+   * @param status SportsDataIO status.
+   * @returns Database game status
+   */
+  #mapNflGameStatus(status: SportsDataIOGameStatus): NflGameStatus {
+    switch (status) {
+      case "Scheduled":
+      case "Delayed":
+      case "Postponed":
+        return "scheduled";
+      case "InProgress":
+        return "in_progress";
+      case "Final":
+      case "F/OT":
+      case "Suspended":
+      case "Canceled":
+      case "Forfeit":
+        return "final";
+      default:
+        throw new Error(`Unknown game status "${status}"`);
+    }
   }
 
   /**
    * Ingest play-by-play data for a game
    * @param globalGameId SportsDataIO global game ID (e.g., 19068)
-   * @param lockOffsetMs Milliseconds before play to lock predictions
+   * @param gameScoringService Optional scoring service for finalizing games
    * @returns Database game ID
    */
-  async ingestGamePlayByPlay(globalGameId: number): Promise<string> {
+  async ingestGamePlayByPlay(
+    globalGameId: number,
+    gameScoringService?: {
+      scoreGame: (gameId: string) => Promise<number>;
+    },
+  ): Promise<string> {
     try {
       // Fetch play-by-play data
       const data = await this.#provider.getPlayByPlay(globalGameId);
 
       // Ingest or update game
-      const dbGame = await this.#ingestGame(data);
+      const dbGame = await this.#ingestGame(data, gameScoringService);
 
       // Ingest plays
       await this.#ingestPlays(data, dbGame.id);
@@ -270,13 +309,18 @@ export class NflLiveIngestorService {
   }
 
   /**
-   * Ingest game metadata
+   * Ingest game metadata and finalize if game is over
    */
-  async #ingestGame(data: SportsDataIOPlayByPlay) {
+  async #ingestGame(
+    data: SportsDataIOPlayByPlay,
+    gameScoringService?: {
+      scoreGame: (gameId: string) => Promise<number>;
+    },
+  ) {
     const score = data.Score;
 
     // Map SportsDataIO status to our status
-    let status: "scheduled" | "in_progress" | "final";
+    let status: NflGameStatus;
     if (score.IsOver) {
       status = "final";
     } else if (score.IsInProgress) {
@@ -285,7 +329,14 @@ export class NflLiveIngestorService {
       status = "scheduled";
     }
 
-    return await this.#gamesRepo.upsert({
+    // Check if game was already final
+    const existingGame = await this.#gamesRepo.findByGlobalGameId(
+      score.GlobalGameID,
+    );
+    const wasAlreadyFinal = existingGame?.status === "final";
+
+    // Upsert game
+    const game = await this.#gamesRepo.upsert({
       globalGameId: score.GlobalGameID,
       gameKey: score.GameKey,
       startTime: new Date(score.Date),
@@ -294,6 +345,72 @@ export class NflLiveIngestorService {
       venue: score.StadiumDetails?.Name || null,
       status,
     });
+
+    // If game just became final (wasn't final before), finalize and score it
+    if (status === "final" && !wasAlreadyFinal && gameScoringService) {
+      this.#logger.info(
+        { status, wasAlreadyFinal, gameScoringService },
+        "Game is final, checking scores",
+      );
+      if (score.AwayScore === null || score.HomeScore === null) {
+        this.#logger.warn(
+          { gameId: game.id, globalGameId: score.GlobalGameID },
+          "Game is final but scores are missing, skipping finalization",
+        );
+        return game;
+      }
+
+      // Determine winner
+      const winner: NflTeam =
+        score.AwayScore > score.HomeScore ? score.AwayTeam : score.HomeTeam;
+
+      // Determine end time with fallback chain:
+      // 1. GameEndDateTime from API (most accurate)
+      // 2. Last play time from play-by-play data
+      // 3. Current time (fallback)
+      let endTime: Date;
+      if (score.GameEndDateTime) {
+        endTime = new Date(score.GameEndDateTime);
+        this.#logger.debug(
+          { gameEndDateTime: score.GameEndDateTime },
+          "Using GameEndDateTime from API as game end time",
+        );
+      } else if (data.Plays && data.Plays.length > 0) {
+        // Find the most recent play (highest sequence number)
+        const lastPlay = data.Plays.reduce((latest, play) =>
+          play.Sequence > latest.Sequence ? play : latest,
+        );
+        endTime = new Date(lastPlay.PlayTime);
+        this.#logger.debug(
+          { lastPlayTime: lastPlay.PlayTime, sequence: lastPlay.Sequence },
+          "GameEndDateTime not available, using last play time as game end time",
+        );
+      } else {
+        // Fallback to current time if no plays available
+        endTime = new Date();
+        this.#logger.warn(
+          { gameId: game.id, globalGameId: score.GlobalGameID },
+          "No GameEndDateTime or plays available, using current time as game end time",
+        );
+      }
+
+      this.#logger.info(
+        {
+          gameId: game.id,
+          globalGameId: score.GlobalGameID,
+          winner,
+          awayScore: score.AwayScore,
+          homeScore: score.HomeScore,
+          endTime,
+        },
+        "Game ended, finalizing and scoring",
+      );
+
+      // Finalize game and trigger scoring
+      await this.finalizeGame(game.id, endTime, winner, gameScoringService);
+    }
+
+    return game;
   }
 
   /**

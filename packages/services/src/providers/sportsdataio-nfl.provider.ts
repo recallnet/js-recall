@@ -27,9 +27,9 @@ export const NFL_ALL_PLAY_TYPES = z.enum([
 export type NflPlayType = z.infer<typeof NFL_ALL_PLAY_TYPES>;
 
 /**
- * The full list of possible game statuses for NFL games.
+ * The full list of possible game statuses for NFL games from SportsDataIO.
  */
-export const GameStatus = z.enum([
+export const SportsDataIOGameStatus = z.enum([
   "Scheduled",
   "InProgress",
   "Final",
@@ -41,7 +41,7 @@ export const GameStatus = z.enum([
   "Forfeit",
 ]);
 
-export type GameStatus = z.infer<typeof GameStatus>;
+export type SportsDataIOGameStatus = z.infer<typeof SportsDataIOGameStatus>;
 
 /**
  * SportsDataIO Schedule Game response
@@ -60,7 +60,7 @@ export interface SportsDataIOScheduleGame {
   OverUnder: number | null;
   StadiumID: number;
   Canceled: boolean;
-  Status: GameStatus;
+  Status: SportsDataIOGameStatus;
   IsClosed: boolean | null;
   DateTimeUTC: string;
   StadiumDetails: {
@@ -87,6 +87,7 @@ export interface SportsDataIOScore {
   Season: number;
   Week: number;
   Date: string;
+  GameEndDateTime: string | null;
   AwayTeam: NflTeam;
   HomeTeam: NflTeam;
   AwayScore: number | null;
@@ -102,7 +103,7 @@ export interface SportsDataIOScore {
   HasStarted: boolean;
   IsInProgress: boolean;
   IsOver: boolean;
-  Status: GameStatus;
+  Status: SportsDataIOGameStatus;
   StadiumDetails: {
     StadiumID: number;
     Name: string;
@@ -165,15 +166,8 @@ export class SportsDataIONflProvider {
     this.#baseUrl = baseUrl || "https://api.sportsdata.io/v3/nfl";
     this.#logger = logger;
 
-    // Only add API key header if not using mock server
-    const headers: Record<string, string> = {};
-    if (!baseUrl || !baseUrl.includes("localhost")) {
-      headers["Ocp-Apim-Subscription-Key"] = this.#apiKey;
-    }
-
     this.#client = axios.create({
       baseURL: this.#baseUrl,
-      headers,
       timeout: 10000,
     });
   }
@@ -188,7 +182,7 @@ export class SportsDataIONflProvider {
       this.#logger.debug(`Fetching play-by-play for game ${globalGameId}`);
 
       const response = await this.#client.get<SportsDataIOPlayByPlay>(
-        `/pbp/json/PlayByPlay/${globalGameId}`,
+        `/pbp/json/playbyplay/${globalGameId}?key=${this.#apiKey}`,
       );
 
       this.#logger.info(
@@ -217,7 +211,7 @@ export class SportsDataIONflProvider {
       this.#logger.debug({ season }, "Fetching schedule for season");
 
       const response = await this.#client.get<SportsDataIOScheduleGame[]>(
-        `/scores/json/Schedules/${season}`,
+        `/scores/json/schedules/${season}?key=${this.#apiKey}`,
       );
 
       this.#logger.info(

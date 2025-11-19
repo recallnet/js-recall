@@ -16,7 +16,6 @@ const logger = createLogger("NFLScheduleIngestor");
  */
 function parseArguments(): {
   season: number;
-  runOnce: boolean;
 } {
   const { values } = parseArgs({
     options: {
@@ -25,16 +24,11 @@ function parseArguments(): {
         short: "s",
         default: "2025",
       },
-      runOnce: {
-        type: "boolean",
-        default: false,
-      },
     },
   });
 
   return {
     season: parseInt(values.season),
-    runOnce: values.runOnce,
   };
 }
 
@@ -69,18 +63,3 @@ cron.schedule("*/5 * * * *", async () => {
   logger.info("Running scheduled NFL schedule sync task");
   await syncSchedule();
 });
-
-// Run the sync
-if (process.argv.includes("--run-once")) {
-  logger.info("Running NFL schedule sync once");
-  try {
-    await syncSchedule();
-  } catch {
-    process.exit(1);
-  } finally {
-    process.exit(0);
-  }
-} else {
-  // Run immediately
-  await syncSchedule();
-}

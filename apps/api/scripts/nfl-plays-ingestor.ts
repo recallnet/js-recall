@@ -15,25 +15,19 @@ const logger = createLogger("NFLPlaysIngestor");
  */
 function parseArguments(): {
   pollInterval: number;
-  runOnce: boolean;
 } {
   const { values } = parseArgs({
     options: {
       pollInterval: {
         type: "string",
         short: "p",
-        default: "3000", // 3 seconds
-      },
-      runOnce: {
-        type: "boolean",
-        default: false,
+        default: "30000", // 30 seconds
       },
     },
   });
 
   return {
-    pollInterval: parseInt(values.pollInterval as string),
-    runOnce: values.runOnce as boolean,
+    pollInterval: parseInt(values.pollInterval),
   };
 }
 
@@ -55,26 +49,23 @@ async function ingestLiveData(): Promise<void> {
   logger.info("Auto-discovering active competitions and in-progress games...");
 
   try {
-    // Ingest all active games
+    // Ingest all active games (pass scoring service for automatic game finalization)
     const ingestedCount =
-      await services.sportsService.nflLiveIngestorService.ingestActiveGames();
+      await services.sportsService.nflLiveIngestorService.ingestActiveGames(
+        services.sportsService.gameScoringService,
+      );
 
     if (ingestedCount === 0) {
       logger.warn(
-        "No active competitions with in-progress games found. Ensure competitions are active and games are in progress.",
+        "No active competitions with in-progress games found initially.",
       );
-      return;
-    }
-
-    logger.info("Live data ingestion completed successfully!");
-
-    // Poll mode
-    if (!args.runOnce) {
+    } else {
       logger.info(
-        `Polling mode enabled - will refresh every ${args.pollInterval}ms`,
+        `Live data ingestion completed for ${ingestedCount} competitions`,
       );
-      await runPollingLoop(services, args);
     }
+
+    await runPollingLoop(services, args);
   } catch (error) {
     logger.error({ error }, "Error during live data ingestion");
     throw error;
@@ -92,20 +83,17 @@ async function runPollingLoop(
 ): Promise<void> {
   const interval = setInterval(async () => {
     try {
-      logger.info("Polling for updates...");
-
-      // Ingest all active games
+      logger.info("Polling for active games...");
       const ingestedCount =
-        await services.sportsService.nflLiveIngestorService.ingestActiveGames();
+        await services.sportsService.nflLiveIngestorService.ingestActiveGames(
+          services.sportsService.gameScoringService,
+        );
 
-      // Check if all games are complete
       if (ingestedCount === 0) {
-        logger.info("All games complete - stopping polling");
-        clearInterval(interval);
-        process.exit(0);
+        logger.debug("No active games found");
+      } else {
+        logger.info(`Ingested data for ${ingestedCount} active games`);
       }
-
-      logger.info("Poll complete");
     } catch (error) {
       logger.error({ error }, "Error in polling loop");
     }
@@ -126,16 +114,4 @@ async function runPollingLoop(
 }
 
 // Run the ingestor
-if (process.argv.includes("--run-once")) {
-  logger.info("Running NFL live ingestor once");
-  try {
-    await ingestLiveData();
-  } catch {
-    process.exit(1);
-  } finally {
-    process.exit(0);
-  }
-} else {
-  // Run in continuous mode
-  await ingestLiveData();
-}
+await ingestLiveData();

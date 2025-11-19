@@ -71,11 +71,11 @@ export class MockSportsDataIONflServer {
     this.app.use(express.json());
 
     /**
-     * GET /pbp/json/PlayByPlay/:globalGameId
+     * GET /pbp/json/playbyplay/:globalGameId
      * Returns play-by-play data for a game
      */
     this.app.get(
-      "/pbp/json/PlayByPlay/:globalGameId",
+      "/pbp/json/playbyplay/:globalGameId",
       async (req: Request, res: Response) => {
         try {
           const globalGameId = parseInt(req.params.globalGameId || "", 10);
@@ -122,11 +122,11 @@ export class MockSportsDataIONflServer {
     );
 
     /**
-     * GET /scores/json/Scores/:season/:week
+     * GET /scores/json/scores/:season/:week
      * Returns scores for all games in a week
      */
     this.app.get(
-      "/scores/json/Scores/:season/:week",
+      "/scores/json/scores/:season/:week",
       async (req: Request, res: Response) => {
         try {
           const season = parseInt(req.params.season || "", 10);

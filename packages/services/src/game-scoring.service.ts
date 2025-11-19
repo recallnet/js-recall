@@ -152,6 +152,16 @@ export class GameScoringService {
         throw new Error(`Game ${gameId} has no winner`);
       }
 
+      // Validate game duration
+      const gameDuration = game.endTime.getTime() - game.startTime.getTime();
+      if (gameDuration <= 0) {
+        throw new Error(
+          `Game ${gameId} has invalid duration: ` +
+            `start=${game.startTime.toISOString()}, end=${game.endTime.toISOString()}, ` +
+            `duration=${gameDuration}ms. End time must be after start time.`,
+        );
+      }
+
       // Get all predictions for this game
       const allPredictions = await this.#gamePredictionsRepo.findByGame(gameId);
 

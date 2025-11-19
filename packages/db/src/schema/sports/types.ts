@@ -24,3 +24,6 @@ export type InsertCompetitionAggregateScore =
 
 export const NFL_TEAMS = defs.nflTeam.enumValues;
 export type NflTeam = (typeof NFL_TEAMS)[number];
+
+export const NFL_GAME_STATUS = defs.gameStatus.enumValues;
+export type NflGameStatus = (typeof NFL_GAME_STATUS)[number];

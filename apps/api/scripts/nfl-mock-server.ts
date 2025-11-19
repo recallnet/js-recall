@@ -67,9 +67,12 @@ class SimpleMockSportsDataIOServer {
   private setupRoutes(): void {
     this.app.use(express.json());
 
-    // GET /scores/json/Schedules/:season
+    /**
+     * GET /scores/json/schedules/:season
+     * Returns schedule data for a season
+     */
     this.app.get(
-      "/scores/json/Schedules/:season",
+      "/scores/json/schedules/:season",
       async (req: Request, res: Response) => {
         try {
           const season = req.params.season;
@@ -121,9 +124,12 @@ class SimpleMockSportsDataIOServer {
       },
     );
 
-    // GET /pbp/json/PlayByPlay/:globalGameId
+    /**
+     * GET /pbp/json/playbyplay/:globalGameId
+     * Returns play-by-play data for a game
+     */
     this.app.get(
-      "/pbp/json/PlayByPlay/:globalGameId",
+      "/pbp/json/playbyplay/:globalGameId",
       async (req: Request, res: Response) => {
         try {
           const globalGameId = parseInt(req.params.globalGameId || "", 10);
@@ -164,7 +170,10 @@ class SimpleMockSportsDataIOServer {
       },
     );
 
-    // POST /mock/advance/:globalGameId
+    /**
+     * POST /mock/advance/:globalGameId
+     * Advances to the next snapshot for a game
+     */
     this.app.post(
       "/mock/advance/:globalGameId",
       async (req: Request, res: Response) => {
@@ -197,7 +206,10 @@ class SimpleMockSportsDataIOServer {
       },
     );
 
-    // POST /mock/reset/:globalGameId
+    /**
+     * POST /mock/reset/:globalGameId
+     * Resets to the first snapshot for a game
+     */
     this.app.post(
       "/mock/reset/:globalGameId",
       (req: Request, res: Response) => {
@@ -214,7 +226,10 @@ class SimpleMockSportsDataIOServer {
       },
     );
 
-    // POST /mock/auto-advance/:globalGameId
+    /**
+     * POST /mock/auto-advance/:globalGameId
+     * Starts auto-advance for a game
+     */
     this.app.post(
       "/mock/auto-advance/:globalGameId",
       async (req: Request, res: Response) => {
@@ -279,7 +294,10 @@ class SimpleMockSportsDataIOServer {
       },
     );
 
-    // POST /mock/stop-auto-advance/:globalGameId
+    /**
+     * POST /mock/stop-auto-advance/:globalGameId
+     * Stops auto-advance for a game
+     */
     this.app.post(
       "/mock/stop-auto-advance/:globalGameId",
       (req: Request, res: Response) => {

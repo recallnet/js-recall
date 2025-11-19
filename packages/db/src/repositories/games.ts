@@ -2,7 +2,12 @@ import { eq, inArray } from "drizzle-orm";
 import { Logger } from "pino";
 
 import { games } from "../schema/sports/defs.js";
-import { InsertGame, NflTeam, SelectGame } from "../schema/sports/types.js";
+import {
+  InsertGame,
+  NflGameStatus,
+  NflTeam,
+  SelectGame,
+} from "../schema/sports/types.js";
 import { Database } from "../types.js";
 
 /**
@@ -61,52 +66,6 @@ export class GamesRepository {
   }
 
   /**
-   * Upsert multiple games by globalGameId
-   * @param gamesData Array of game data to insert or update
-   * @returns The upserted games
-   */
-  async upsertMany(gamesData: InsertGame[]): Promise<SelectGame[]> {
-    try {
-      if (gamesData.length === 0) {
-        return [];
-      }
-
-      const now = new Date();
-      const data = gamesData.map((game) => ({
-        ...game,
-        createdAt: game.createdAt || now,
-        updatedAt: now,
-      }));
-
-      const results = await this.#db
-        .insert(games)
-        .values(data)
-        .onConflictDoUpdate({
-          target: games.globalGameId,
-          set: {
-            gameKey: data[0]?.gameKey,
-            startTime: data[0]?.startTime,
-            homeTeam: data[0]?.homeTeam,
-            awayTeam: data[0]?.awayTeam,
-            venue: data[0]?.venue,
-            status: data[0]?.status,
-            updatedAt: now,
-          },
-        })
-        .returning();
-
-      if (!results || results.length === 0) {
-        throw new Error("Failed to upsert games - no results returned");
-      }
-
-      return results;
-    } catch (error) {
-      this.#logger.error({ error }, "Error in upsertMany");
-      throw error;
-    }
-  }
-
-  /**
    * Find a game by ID
    * @param id Game ID
    * @returns The game or undefined
@@ -127,9 +86,9 @@ export class GamesRepository {
   }
 
   /**
-   * Find a game by global game ID
+   * Find game by global game ID (from SportsDataIO)
    * @param globalGameId SportsDataIO global game ID
-   * @returns The game or undefined
+   * @returns Game or undefined
    */
   async findByGlobalGameId(
     globalGameId: number,
@@ -177,10 +136,7 @@ export class GamesRepository {
    * @param status New status
    * @returns The updated game
    */
-  async updateStatus(
-    id: string,
-    status: "scheduled" | "in_progress" | "final",
-  ): Promise<SelectGame> {
+  async updateStatus(id: string, status: NflGameStatus): Promise<SelectGame> {
     try {
       const [result] = await this.#db
         .update(games)
@@ -232,14 +188,5 @@ export class GamesRepository {
       this.#logger.error({ error }, "Error in finalizeGame");
       throw error;
     }
-  }
-
-  /**
-   * Find game by ID (alias for findById for clarity)
-   * @param id Game ID
-   * @returns Game with end time or undefined
-   */
-  async findWithEndTime(id: string): Promise<SelectGame | undefined> {
-    return this.findById(id);
   }
 }
