@@ -296,24 +296,36 @@ const eventProcessor = new EventProcessor(
   competitionService,
   stakingIndexerLogger,
 );
-const stakingConfig = config.stakingIndex();
-if (stakingConfig.isEnabled) {
-  this._eventIndexingService = IndexingService.createEventsIndexingService(
-    indexingLogger,
-    this._eventProcessor,
-    stakingConfig,
-  );
-}
 
-this._transactionProcessor = new TransactionProcessor(
-  this._convictionClaimsRepository,
-  indexingLogger,
+const transactionProcessor = new TransactionProcessor(
+  new ConvictionClaimsRepository(db),
+  stakingIndexerLogger,
 );
-if (stakingConfig.isEnabled) {
-  this._transactionIndexingService =
-    IndexingService.createTransactionsIndexingService(
-      indexingLogger,
-      this._transactionProcessor,
+
+let eventsIndexingService: IndexingService | null = null;
+let transactionsIndexingService: IndexingService | null = null;
+
+export function getEventsIndexingService(): IndexingService {
+  if (!eventsIndexingService) {
+    const stakingConfig = config.stakingIndex();
+    eventsIndexingService = IndexingService.createEventsIndexingService(
+      stakingIndexerLogger,
+      eventProcessor,
       stakingConfig,
     );
+  }
+  return eventsIndexingService;
+}
+
+export function getTransactionsIndexingService(): IndexingService {
+  if (!transactionsIndexingService) {
+    const stakingConfig = config.stakingIndex();
+    transactionsIndexingService =
+      IndexingService.createTransactionsIndexingService(
+        stakingIndexerLogger,
+        transactionProcessor,
+        stakingConfig,
+      );
+  }
+  return transactionsIndexingService;
 }

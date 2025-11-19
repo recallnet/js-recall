@@ -109,10 +109,10 @@ const configSchema = z.strictObject({
     // Decay rate for boost time calculations
     boostTimeDecayRate: z.float64(),
   }),
-  stakingIndex: z.function().output(z.object({})),
+  stakingIndex: z.function(),
 });
 
-export const rawConfig = {
+const rawConfig = {
   server: z.object({
     nodeEnv: process.env.NODE_ENV,
   }),
