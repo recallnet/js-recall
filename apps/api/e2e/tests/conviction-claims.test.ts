@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, test } from "vitest";
 
+import { seasons } from "@recallnet/db/schema/airdrop/defs";
 import { convictionClaims } from "@recallnet/db/schema/conviction-claims/defs";
 import { ConvictionClaimsRepository } from "@recallnet/services/indexing";
 
@@ -15,6 +16,17 @@ describe("ConvictionClaimsRepository", () => {
   beforeEach(async () => {
     // Clean up existing data
     await db.delete(convictionClaims);
+
+    // Ensure Genesis season exists (in case it was deleted by resetDatabase)
+    await db
+      .insert(seasons)
+      .values({
+        id: 0,
+        number: 0,
+        name: "Genesis",
+        startDate: new Date("2025-10-13T00:00:00Z"),
+      })
+      .onConflictDoNothing();
 
     // Initialize repository
     convictionClaimsRepository = new ConvictionClaimsRepository(db);
@@ -159,7 +171,7 @@ describe("ConvictionClaimsRepository", () => {
   });
 
   test("getConvictionClaimsByAccount with season filter", async () => {
-    // Save claims for different seasons
+    // Save multiple claims for the same season
     await convictionClaimsRepository.saveConvictionClaim({
       account: testAccount1,
       eligibleAmount: BigInt("1000000000000000000"),
@@ -175,7 +187,7 @@ describe("ConvictionClaimsRepository", () => {
       account: testAccount1,
       eligibleAmount: BigInt("2000000000000000000"),
       claimedAmount: BigInt("2000000000000000000"),
-      season: 1,
+      season: 0,
       duration: BigInt(31536000),
       blockNumber: BigInt(36891707),
       blockTimestamp: new Date("2025-10-16T00:00:00Z"),
@@ -195,21 +207,21 @@ describe("ConvictionClaimsRepository", () => {
         testAccount1,
         0,
       );
-    expect(season0Claims).toHaveLength(1);
+    expect(season0Claims).toHaveLength(2);
     expect(season0Claims[0]!.season).toBe(0);
+    expect(season0Claims[1]!.season).toBe(0);
 
-    // Get claims for season 1
-    const season1Claims =
+    // Get claims for non-existent season
+    const noSeasonClaims =
       await convictionClaimsRepository.getConvictionClaimsByAccount(
         testAccount1,
-        1,
+        99,
       );
-    expect(season1Claims).toHaveLength(1);
-    expect(season1Claims[0]!.season).toBe(1);
+    expect(noSeasonClaims).toHaveLength(0);
   });
 
   test("getTotalConvictionClaimedByAccount should sum claimed amounts", async () => {
-    // Save multiple claims
+    // Save multiple claims for the same season
     await convictionClaimsRepository.saveConvictionClaim({
       account: testAccount1,
       eligibleAmount: BigInt("1000000000000000000"),
@@ -225,14 +237,14 @@ describe("ConvictionClaimsRepository", () => {
       account: testAccount1,
       eligibleAmount: BigInt("3000000000000000000"),
       claimedAmount: BigInt("1800000000000000000"),
-      season: 1,
+      season: 0,
       duration: BigInt(15552000),
       blockNumber: BigInt(36891707),
       blockTimestamp: new Date("2025-10-16T00:00:00Z"),
       transactionHash: testTxHash2,
     });
 
-    // Get total claimed
+    // Get total claimed across all seasons
     const totalClaimed =
       await convictionClaimsRepository.getTotalConvictionClaimedByAccount(
         testAccount1,
@@ -245,15 +257,22 @@ describe("ConvictionClaimsRepository", () => {
         testAccount1,
         0,
       );
-    expect(totalSeason0).toBe(BigInt("600000000000000000"));
+    expect(totalSeason0).toBe(BigInt("2400000000000000000"));
 
     // Get total for non-existent season
-    const totalSeason1 =
+    const totalSeason99 =
       await convictionClaimsRepository.getTotalConvictionClaimedByAccount(
         testAccount1,
-        1,
+        99,
       );
-    expect(totalSeason1).toBe(BigInt("1800000000000000000"));
+    expect(totalSeason99).toBe(BigInt(0));
+
+    // Get total for non-existent account
+    const totalNonExistent =
+      await convictionClaimsRepository.getTotalConvictionClaimedByAccount(
+        "0x0000000000000000000000000000000000000000",
+      );
+    expect(totalNonExistent).toBe(BigInt(0));
   });
 
   test("getConvictionClaimsBySeason should return conviction claims for specific season", async () => {
@@ -332,7 +351,7 @@ describe("ConvictionClaimsRepository", () => {
   });
 
   test("getLatestConvictionClaim should return most recent conviction claim", async () => {
-    // Save multiple claims for the same account and season
+    // Save multiple claims with different block numbers for same season
     await convictionClaimsRepository.saveConvictionClaim({
       account: testAccount1,
       eligibleAmount: BigInt("1000000000000000000"),
@@ -348,18 +367,18 @@ describe("ConvictionClaimsRepository", () => {
       account: testAccount1,
       eligibleAmount: BigInt("2000000000000000000"),
       claimedAmount: BigInt("1200000000000000000"),
-      season: 1,
+      season: 0,
       duration: BigInt(15552000),
       blockNumber: BigInt(36891708), // Higher block number
       blockTimestamp: new Date("2025-10-16T00:00:00Z"),
       transactionHash: testTxHash2,
     });
 
-    // Get latest claim
+    // Get latest claim for season 0
     const latestClaim =
       await convictionClaimsRepository.getLatestConvictionClaim(
         testAccount1,
-        1,
+        0,
       );
     expect(latestClaim).not.toBeNull();
     expect(latestClaim!.blockNumber).toBe(BigInt(36891708));

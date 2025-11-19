@@ -9,6 +9,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
+import { seasons } from "../airdrop/defs.js";
 import { bytea, tokenAmount } from "../custom-types.js";
 
 /**
@@ -34,7 +35,9 @@ export const convictionClaims = pgTable(
     account: text("account").notNull(), // Address that claimed
     eligibleAmount: tokenAmount("eligible_amount").notNull(),
     claimedAmount: tokenAmount("claimed_amount").notNull(),
-    season: integer("season").notNull(), // Season number (0, 1, 2, etc.)
+    season: integer("season") // Season number (0, 1, 2, etc.)
+      .notNull()
+      .references(() => seasons.number, { onDelete: "restrict" }),
     duration: bigint("duration", { mode: "bigint" }).notNull(), // Stake duration in seconds
 
     // Blockchain metadata
