@@ -6,7 +6,7 @@ import { competitionService } from "@/lib/services";
 
 const logger = createLogger("CronAutoEndCompetitions");
 
-export const POST = withCronAuth(async (_: NextRequest) => {
+export const GET = withCronAuth(async (_: NextRequest) => {
   const startTime = Date.now();
   logger.info("Starting auto end competitions task...");
 
