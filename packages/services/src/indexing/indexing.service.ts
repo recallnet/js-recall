@@ -147,13 +147,7 @@ export class IndexingService {
    * @internal
    */
   async loop(query: HypersyncQuery): Promise<void> {
-    const effectiveQuery = {
-      ...query,
-    };
-    const lastBlockNumber =
-      (await this.#indexingProcessor.lastBlockNumber()) ??
-      this.#eventStartBlock;
-    effectiveQuery.fromBlock = Number(lastBlockNumber);
+    const effectiveQuery = await this.#initQuery(query);
     this.#logger.info(
       `Starting indexing from block ${effectiveQuery.fromBlock}`,
     );
@@ -192,6 +186,30 @@ export class IndexingService {
       }
     }
     this.#deferStop?.resolve();
+  }
+
+  /**
+   * Initialize the query with the starting block number.
+   *
+   * - Creates a copy of the provided query.
+   * - Retrieves the last processed block number from the indexing processor.
+   * - Falls back to the configured event start block if no events exist.
+   * - Sets the fromBlock to resume indexing from the correct position.
+   *
+   * @param query - The base query configuration
+   * @returns The initialized query with fromBlock set
+   *
+   * @internal
+   */
+  async #initQuery(query: HypersyncQuery): Promise<HypersyncQuery> {
+    const effectiveQuery = {
+      ...query,
+    };
+    const lastBlockNumber =
+      (await this.#indexingProcessor.lastBlockNumber()) ??
+      this.#eventStartBlock;
+    effectiveQuery.fromBlock = Number(lastBlockNumber);
+    return effectiveQuery;
   }
 
   /**
