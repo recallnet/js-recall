@@ -564,8 +564,8 @@ describe("AirdropService", () => {
 
     it("should mark unclaimed allocation as expired when 90 days past season start for season 0", async () => {
       const mockAddress = "0x1234567890123456789012345678901234567890";
-      const seasonStartDate = new Date("2023-01-01");
-      const expectedExpiryDate = new Date("2023-04-01"); // 90 days after season start
+      const seasonStartDate = new Date("2023-01-01T00:00:00.000Z");
+      const expectedExpiryDate = new Date("2023-04-01T00:00:00.000Z"); // 90 days after season start
 
       mockAirdropRepository.getSeasons.mockResolvedValue([
         {
@@ -615,8 +615,8 @@ describe("AirdropService", () => {
 
     it("should mark allocation as expired when 30 days past season start for season > 0", async () => {
       const mockAddress = "0x1234567890123456789012345678901234567890";
-      const seasonStartDate = new Date("2023-01-01");
-      const expectedExpiryDate = new Date("2023-01-31"); // 30 days after season start
+      const seasonStartDate = new Date("2023-01-01T00:00:00.000Z");
+      const expectedExpiryDate = new Date("2023-01-31T00:00:00.000Z"); // 30 days after season start
 
       mockAirdropRepository.getSeasons.mockResolvedValue([
         {
