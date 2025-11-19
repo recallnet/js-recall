@@ -442,6 +442,13 @@
       "when": 1763556336527,
       "tag": "0062_yummy_paladin",
       "breakpoints": true
+    },
+    {
+      "idx": 63,
+      "version": "7",
+      "when": 1763564163838,
+      "tag": "0063_whole_lockjaw",
+      "breakpoints": true
     }
   ]
 }
