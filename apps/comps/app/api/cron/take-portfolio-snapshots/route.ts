@@ -35,7 +35,7 @@ async function shouldTakeSnapshot(competitionId: string): Promise<boolean> {
  * Perps competitions are handled by process-perps-competitions cron job
  * Cron handler wrapped with authentication
  */
-export const POST = withCronAuth(async (_: NextRequest) => {
+export const GET = withCronAuth(async (_: NextRequest) => {
   const startTime = Date.now();
   logger.info("Starting portfolio snapshots task...");
 
