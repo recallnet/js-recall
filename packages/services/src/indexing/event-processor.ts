@@ -553,7 +553,7 @@ class EventProcessor {
    * Used by the indexing loop to set `fromBlock = lastBlock`
    * so we resume exactly where we left off after restarts.
    */
-  lastBlockNumber(eventStartBlock: number): Promise<bigint> {
-    return this.#eventsRepository.lastBlockNumber(eventStartBlock);
+  lastBlockNumber(): Promise<bigint | undefined> {
+    return this.#eventsRepository.lastBlockNumber();
   }
 }

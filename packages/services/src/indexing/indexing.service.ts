@@ -150,9 +150,9 @@ export class IndexingService {
     const effectiveQuery = {
       ...query,
     };
-    const lastBlockNumber = await this.#indexingProcessor.lastBlockNumber(
-      this.#eventStartBlock,
-    );
+    const lastBlockNumber =
+      (await this.#indexingProcessor.lastBlockNumber()) ??
+      this.#eventStartBlock;
     effectiveQuery.fromBlock = Number(lastBlockNumber);
     this.#logger.info(
       `Starting indexing from block ${effectiveQuery.fromBlock}`,
