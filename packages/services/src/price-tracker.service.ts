@@ -8,6 +8,7 @@ import {
   PriceSource,
   SpecificChain,
   TokenPriceRequest,
+  getBlockchainType,
 } from "./types/index.js";
 
 export interface PriceTrackerServiceConfig {
@@ -397,7 +398,7 @@ export class PriceTrackerService {
     const chainPromises = Array.from(requestsByChain.entries()).map(
       async ([chain, chainRequests]) => {
         try {
-          const chainType = this.determineChain(chainRequests[0]!.tokenAddress);
+          const chainType = getBlockchainType(chain);
           const tokenAddresses = chainRequests.map((r) => r.tokenAddress);
 
           const batchResults = await this.multiChainProvider.getBatchPrices(
