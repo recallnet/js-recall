@@ -37,7 +37,7 @@ export const convictionClaims = pgTable(
     claimedAmount: tokenAmount("claimed_amount").notNull(),
     season: integer("season") // Season number (0, 1, 2, etc.)
       .notNull()
-      .references(() => seasons.id, { onDelete: "restrict" }),
+      .references(() => seasons.number, { onDelete: "restrict" }),
     duration: bigint("duration", { mode: "bigint" }).notNull(), // Stake duration in seconds
 
     // Blockchain metadata

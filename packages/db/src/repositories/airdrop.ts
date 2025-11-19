@@ -410,7 +410,7 @@ export class AirdropRepository {
       this.#logger.error("Failed to insert season");
       throw new Error("Failed to insert season");
     }
-    if (res.id > 0) {
+    if (res.number > 0) {
       await executor
         .update(seasons)
         .set({ endDate: res.startDate })

@@ -32,7 +32,7 @@ export const airdropAllocations = pgTable(
     amount: tokenAmount("amount").notNull(), // Max uint256 as string
     season: integer("season")
       .notNull()
-      .references(() => seasons.id, { onDelete: "restrict" }),
+      .references(() => seasons.number, { onDelete: "restrict" }),
     // Merkle proof stored as JSON array
     proof: jsonb("proof").$type<string[]>().notNull().default([]), // JSON array of hex strings
     // Optional category for allocation classification

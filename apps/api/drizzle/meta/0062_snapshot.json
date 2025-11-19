@@ -1,5 +1,5 @@
 {
-  "id": "d8120301-c726-4e7c-b60a-3baab677fcff",
+  "id": "2bbf21af-ca68-4023-80e7-ae4f2fd9cfc5",
   "prevId": "34f557d7-6b5f-40ea-97d9-8ed3ea6299b4",
   "version": "7",
   "dialect": "postgresql",
@@ -177,12 +177,12 @@
         }
       },
       "foreignKeys": {
-        "airdrop_allocations_season_seasons_id_fk": {
-          "name": "airdrop_allocations_season_seasons_id_fk",
+        "airdrop_allocations_season_seasons_number_fk": {
+          "name": "airdrop_allocations_season_seasons_number_fk",
           "tableFrom": "airdrop_allocations",
           "tableTo": "seasons",
           "columnsFrom": ["season"],
-          "columnsTo": ["id"],
+          "columnsTo": ["number"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -1089,12 +1089,12 @@
         }
       },
       "foreignKeys": {
-        "conviction_claims_season_seasons_id_fk": {
-          "name": "conviction_claims_season_seasons_id_fk",
+        "conviction_claims_season_seasons_number_fk": {
+          "name": "conviction_claims_season_seasons_number_fk",
           "tableFrom": "conviction_claims",
           "tableTo": "seasons",
           "columnsFrom": ["season"],
-          "columnsTo": ["id"],
+          "columnsTo": ["number"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
