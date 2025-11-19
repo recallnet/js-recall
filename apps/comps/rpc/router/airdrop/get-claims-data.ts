@@ -10,7 +10,7 @@ export const getClaimsData = base
         .regex(/^0x[a-fA-F0-9]{40}$/, "Invalid Ethereum address"),
     }),
   )
-  .handler(async ({ input, context }) => {
+  .handler(async ({ input, context, errors }) => {
     try {
       context.logger.info(`Getting claims data for address: ${input.address}`);
 
@@ -20,7 +20,7 @@ export const getClaimsData = base
 
       return claimsData;
     } catch (error) {
-      context.logger.error("Error fetching claims data:", error);
-      throw error;
+      context.logger.error({ error }, "Error fetching claims data");
+      throw errors.INTERNAL({ message: "Error fetching claims data" });
     }
   });
