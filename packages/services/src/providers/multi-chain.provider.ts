@@ -219,6 +219,7 @@ export class MultiChainProvider implements PriceSource {
       );
 
       // Process results and enrich with chain information
+      let successCount = 0;
       batchResults.forEach((result, tokenAddress) => {
         if (result) {
           results.set(tokenAddress, {
@@ -228,14 +229,12 @@ export class MultiChainProvider implements PriceSource {
             chain: blockchainType,
             specificChain,
           });
+          successCount++;
         } else {
           results.set(tokenAddress, null);
         }
       });
 
-      const successCount = Array.from(results.values()).filter(
-        (v) => v !== null,
-      ).length;
       this.logger.debug(
         `[MultiChainProvider] Batch processing complete: ${successCount}/${tokenAddresses.length} tokens found on ${specificChain}`,
       );
