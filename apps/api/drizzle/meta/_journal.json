@@ -421,6 +421,27 @@
       "when": 1762896074549,
       "tag": "0059_curious_thundra",
       "breakpoints": true
+    },
+    {
+      "idx": 60,
+      "version": "7",
+      "when": 1762972572473,
+      "tag": "0060_stormy_sugar_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 61,
+      "version": "7",
+      "when": 1763153540763,
+      "tag": "0061_charming_shinobi_shaw",
+      "breakpoints": true
+    },
+    {
+      "idx": 62,
+      "version": "7",
+      "when": 1763556336527,
+      "tag": "0062_yummy_paladin",
+      "breakpoints": true
     }
   ]
 }

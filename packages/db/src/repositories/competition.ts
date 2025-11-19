@@ -384,6 +384,38 @@ export class CompetitionRepository {
   }
 
   /**
+   * Get competition type and arena ID for ranking calculations
+   * @param competitionId The competition ID
+   * @param tx Optional database transaction
+   * @returns Object with type and arenaId, or null if competition not found
+   */
+  async getCompetitionMetadata(
+    competitionId: string,
+    tx?: Transaction,
+  ): Promise<{ type: CompetitionType; arenaId: string | null } | null> {
+    const executor = tx || this.#dbRead;
+
+    try {
+      const [result] = await executor
+        .select({
+          type: competitions.type,
+          arenaId: competitions.arenaId,
+        })
+        .from(competitions)
+        .where(eq(competitions.id, competitionId))
+        .limit(1);
+
+      return result || null;
+    } catch (error) {
+      this.#logger.error(
+        { competitionId, error },
+        `[CompetitionRepository] Error getting competition metadata`,
+      );
+      throw error;
+    }
+  }
+
+  /**
    * Find a competition by ID
    * Optionally includes arena classification data
    * @param id The ID to search for
@@ -433,35 +465,28 @@ export class CompetitionRepository {
 
   /**
    * Find competitions by arena ID with pagination
+   * Uses buildFullCompetitionQuery to return enriched competition data
    * @param arenaId Arena ID to filter by
    * @param params Pagination and sorting parameters
-   * @returns Object containing competitions array and total count
+   * @returns Object containing enriched competitions array and total count
    */
-  async findByArenaId(
-    arenaId: string,
-    params: PagingParams,
-  ): Promise<{
-    competitions: Array<SelectCompetition & { crossChainTradingType: string }>;
-    total: number;
-  }> {
+  async findByArenaId(arenaId: string, params: PagingParams) {
     try {
-      // Build count query
+      // Count query
       const countQuery = this.#dbRead
         .select({ count: drizzleCount() })
-        .from(competitions)
-        .where(eq(competitions.arenaId, arenaId));
-
-      // Build data query
-      let dataQuery = this.#dbRead
-        .select({
-          crossChainTradingType: tradingCompetitions.crossChainTradingType,
-          ...getTableColumns(competitions),
-        })
         .from(tradingCompetitions)
         .innerJoin(
           competitions,
           eq(tradingCompetitions.competitionId, competitions.id),
         )
+        .where(eq(competitions.arenaId, arenaId));
+
+      const countResult = await countQuery;
+      const total = countResult[0]?.count ?? 0;
+
+      // Data query using buildFullCompetitionQuery for enriched data
+      let dataQuery = this.buildFullCompetitionQuery()
         .where(eq(competitions.arenaId, arenaId))
         .$dynamic();
 
@@ -469,17 +494,15 @@ export class CompetitionRepository {
         dataQuery = getSort(dataQuery, params.sort, competitionOrderByFields);
       }
 
-      // Execute count and data queries in parallel
-      const [results, countResult] = await Promise.all([
-        dataQuery.limit(params.limit).offset(params.offset),
-        countQuery,
-      ]);
+      const competitionResults = await dataQuery
+        .limit(params.limit)
+        .offset(params.offset);
 
-      return { competitions: results, total: countResult[0]?.count ?? 0 };
+      return { competitions: competitionResults, total };
     } catch (error) {
       this.#logger.error(
-        `[CompetitionRepository] Error in findByArenaId (${arenaId}):`,
-        error,
+        { error },
+        `[CompetitionRepository] Error in findByArenaId (${arenaId})`,
       );
       throw error;
     }
@@ -774,8 +797,8 @@ export class CompetitionRepository {
       });
     } catch (error) {
       this.#logger.error(
-        `Error adding agent ${agentId} to competition ${competitionId} with limit check:`,
-        error,
+        { error },
+        `Error adding agent ${agentId} to competition ${competitionId} with limit check`,
       );
       throw error;
     }
@@ -837,8 +860,8 @@ export class CompetitionRepository {
       return true;
     } catch (error) {
       this.#logger.error(
-        `Error removing agent ${agentId} from competition ${competitionId}:`,
-        error,
+        { error },
+        `Error removing agent ${agentId} from competition ${competitionId}`,
       );
       throw error;
     }
@@ -1117,7 +1140,7 @@ export class CompetitionRepository {
 
       return result;
     } catch (error) {
-      this.#logger.error("Error in getBulkAgentCompetitionRecords:", error);
+      this.#logger.error({ error }, "Error in getBulkAgentCompetitionRecords");
       throw error;
     }
   }
@@ -1257,7 +1280,7 @@ export class CompetitionRepository {
 
       return wasUpdated;
     } catch (error) {
-      this.#logger.error("Error in updateAgentCompetitionStatus:", error);
+      this.#logger.error({ error }, "Error in updateAgentCompetitionStatus");
       throw error;
     }
   }
@@ -1328,7 +1351,7 @@ export class CompetitionRepository {
 
       return result;
     } catch (error) {
-      this.#logger.error("Error in createPortfolioSnapshot:", error);
+      this.#logger.error({ error }, "Error in createPortfolioSnapshot");
       throw error;
     }
   }
@@ -1367,7 +1390,7 @@ export class CompetitionRepository {
 
       return results;
     } catch (error) {
-      this.#logger.error("Error in batchCreatePortfolioSnapshots:", error);
+      this.#logger.error({ error }, "Error in batchCreatePortfolioSnapshots");
       throw error;
     }
   }
@@ -1430,7 +1453,7 @@ export class CompetitionRepository {
       // Convert snake_case to camelCase to match Drizzle `SelectPortfolioSnapshot` type
       return result.rows.map((row) => this.convertBasicSnapshotRow(row));
     } catch (error) {
-      this.#logger.error("Error in getLatestPortfolioSnapshots:", error);
+      this.#logger.error({ error }, "Error in getLatestPortfolioSnapshots");
       throw error;
     }
   }
@@ -1481,7 +1504,7 @@ export class CompetitionRepository {
       // Convert snake_case to camelCase to match Drizzle SelectPortfolioSnapshot type
       return result.rows.map((row) => this.convertBasicSnapshotRow(row));
     } catch (error) {
-      this.#logger.error("Error in getBulkLatestPortfolioSnapshots:", error);
+      this.#logger.error({ error }, "Error in getBulkLatestPortfolioSnapshots");
       throw error;
     }
   }
@@ -1551,7 +1574,7 @@ export class CompetitionRepository {
         ) ps
       `);
       } catch (error) {
-        this.#logger.error("Error executing earliestResult query:", error);
+        this.#logger.error({ error }, "Error executing earliestResult query");
         throw new Error(
           `Failed to get earliest snapshots: ${error instanceof Error ? error.message : "Unknown error"}`,
         );
@@ -1579,7 +1602,10 @@ export class CompetitionRepository {
         ) ps
       `);
       } catch (error) {
-        this.#logger.error("Error executing snapshots24hResult query:", error);
+        this.#logger.error(
+          { error },
+          "Error executing snapshots24hResult query",
+        );
         throw new Error(
           `Failed to get 24h snapshots: ${error instanceof Error ? error.message : "Unknown error"}`,
         );
@@ -1626,7 +1652,7 @@ export class CompetitionRepository {
       this.#snapshotCache.set(cacheKey, [now, result]);
       return result;
     } catch (error) {
-      this.#logger.error("Error in get24hSnapshots:", error);
+      this.#logger.error({ error }, "Error in get24hSnapshots");
       throw error;
     }
   }
@@ -1661,7 +1687,7 @@ export class CompetitionRepository {
 
       return await query;
     } catch (error) {
-      this.#logger.error("Error in getAgentPortfolioSnapshots:", error);
+      this.#logger.error({ error }, "Error in getAgentPortfolioSnapshots");
       throw error;
     }
   }
@@ -1718,7 +1744,7 @@ export class CompetitionRepository {
         last: lastResult[0] || null,
       };
     } catch (error) {
-      this.#logger.error("Error in getFirstAndLastSnapshots:", error);
+      this.#logger.error({ error }, "Error in getFirstAndLastSnapshots");
       throw error;
     }
   }
@@ -1961,7 +1987,7 @@ export class CompetitionRepository {
         oldest: sortedResults[sortedResults.length - 1],
       };
     } catch (error) {
-      this.#logger.error("Error in getAgentPortfolioSnapshotBounds:", error);
+      this.#logger.error({ error }, "Error in getAgentPortfolioSnapshotBounds");
       throw error;
     }
   }
@@ -2084,7 +2110,7 @@ export class CompetitionRepository {
 
       return snapshotMap;
     } catch (error) {
-      this.#logger.error("Error in getBulkBoundedSnapshots:", error);
+      this.#logger.error({ error }, "Error in getBulkBoundedSnapshots");
       throw error;
     }
   }
@@ -2249,7 +2275,7 @@ export class CompetitionRepository {
 
       return await query;
     } catch (error) {
-      this.#logger.error("Error in getAllPortfolioSnapshots:", error);
+      this.#logger.error({ error }, "Error in getAllPortfolioSnapshots");
       throw error;
     }
   }
@@ -2265,7 +2291,7 @@ export class CompetitionRepository {
 
       return result?.count ?? 0;
     } catch (error) {
-      this.#logger.error("[CompetitionRepository] Error in count:", error);
+      this.#logger.error({ error }, "[CompetitionRepository] Error in count");
       throw error;
     }
   }
@@ -2294,8 +2320,8 @@ export class CompetitionRepository {
       return result?.count ?? 0;
     } catch (error) {
       this.#logger.error(
-        `[CompetitionRepository] Error counting competitions for agent ${agentId}:`,
-        error,
+        { error },
+        `[CompetitionRepository] Error counting competitions for agent ${agentId}`,
       );
       throw error;
     }
@@ -2350,8 +2376,8 @@ export class CompetitionRepository {
       return { competitions: competitionResults, total };
     } catch (error) {
       this.#logger.error(
-        "[CompetitionRepository] Error in findByStatus:",
-        error,
+        { error },
+        "[CompetitionRepository] Error in findByStatus",
       );
       throw error;
     }
@@ -2404,8 +2430,8 @@ export class CompetitionRepository {
       };
     } catch (error) {
       this.#logger.error(
-        "[CompetitionRepository] Error in findAgentBestCompetitionRank:",
-        error,
+        { error },
+        "[CompetitionRepository] Error in findAgentBestCompetitionRank",
       );
       throw error;
     }
@@ -2514,8 +2540,8 @@ export class CompetitionRepository {
       return results;
     } catch (error) {
       this.#logger.error(
-        "[CompetitionRepository] Error batch inserting leaderboard entries:",
-        error,
+        { error },
+        "[CompetitionRepository] Error batch inserting leaderboard entries",
       );
       throw error;
     }
@@ -2541,8 +2567,8 @@ export class CompetitionRepository {
         .orderBy(competitionsLeaderboard.rank);
     } catch (error) {
       this.#logger.error(
-        `[CompetitionRepository] Error finding leaderboard for competition ${competitionId}:`,
-        error,
+        { error },
+        `[CompetitionRepository] Error finding leaderboard for competition ${competitionId}`,
       );
       throw error;
     }
@@ -2573,8 +2599,8 @@ export class CompetitionRepository {
         .orderBy(competitionsLeaderboard.rank);
     } catch (error) {
       this.#logger.error(
-        `[CompetitionRepository] Error finding leaderboard for competition ${competitionId}:`,
-        error,
+        { error },
+        `[CompetitionRepository] Error finding leaderboard for competition ${competitionId}`,
       );
       throw error;
     }
@@ -2619,8 +2645,8 @@ export class CompetitionRepository {
       }));
     } catch (error) {
       this.#logger.error(
-        `[CompetitionRepository] Error finding perps leaderboard for competition ${competitionId}:`,
-        error,
+        { error },
+        `[CompetitionRepository] Error finding perps leaderboard for competition ${competitionId}`,
       );
       throw error;
     }
@@ -2644,8 +2670,8 @@ export class CompetitionRepository {
       return await query;
     } catch (error) {
       this.#logger.error(
-        "[CompetitionRepository] Error in getAllCompetitionsLeaderboard:",
-        error,
+        { error },
+        "[CompetitionRepository] Error in getAllCompetitionsLeaderboard",
       );
       throw error;
     }
@@ -2667,8 +2693,8 @@ export class CompetitionRepository {
       return result.map((row) => row.agentId);
     } catch (error) {
       this.#logger.error(
-        "[CompetitionRepository] Error in getAllCompetitionAgents:",
-        error,
+        { error },
+        "[CompetitionRepository] Error in getAllCompetitionAgents",
       );
       throw error;
     }
@@ -2734,8 +2760,8 @@ export class CompetitionRepository {
       return rankingsMap;
     } catch (error) {
       this.#logger.error(
-        "[CompetitionRepository] Error in getBulkAgentCompetitionRankings:",
-        error,
+        { error },
+        "[CompetitionRepository] Error in getBulkAgentCompetitionRankings",
       );
       // Return empty map on error - no reliable ranking data
       return new Map();
@@ -2775,8 +2801,8 @@ export class CompetitionRepository {
       return result;
     } catch (error) {
       this.#logger.error(
-        "[CompetitionRepository] Error in findCompetitionsNeedingEnding:",
-        error,
+        { error },
+        "[CompetitionRepository] Error in findCompetitionsNeedingEnding",
       );
       throw error;
     }
@@ -2944,7 +2970,7 @@ export class CompetitionRepository {
         this.convertEnrichedSnapshotRow(row, includeRiskMetrics),
       );
     } catch (error) {
-      this.#logger.error("Error in getAgentPortfolioTimeline:", error);
+      this.#logger.error({ error }, "Error in getAgentPortfolioTimeline");
       throw error;
     }
   }
@@ -3001,8 +3027,8 @@ export class CompetitionRepository {
       return result || null;
     } catch (error) {
       this.#logger.error(
-        `[CompetitionRepository] Error getting prize pools for competition ${competitionId}:`,
-        error,
+        { error },
+        `[CompetitionRepository] Error getting prize pools for competition ${competitionId}`,
       );
       throw error;
     }
@@ -3050,8 +3076,8 @@ export class CompetitionRepository {
       return result;
     } catch (error) {
       this.#logger.error(
-        `[CompetitionRepository] Error upserting prize pools for competition ${competitionId}:`,
-        error,
+        { error },
+        `[CompetitionRepository] Error upserting prize pools for competition ${competitionId}`,
       );
       throw error;
     }

@@ -1,6 +1,10 @@
+import { Hex } from "viem";
+
 import {
   AgentRankService,
   AgentService,
+  AirdropService,
+  ArenaService,
   BalanceService,
   BoostAwardService,
   BoostService,
@@ -21,17 +25,26 @@ import {
 } from "@recallnet/services";
 import { WalletWatchlist } from "@recallnet/services/lib";
 import { MultiChainProvider } from "@recallnet/services/providers";
-import { NoopRewardsAllocator } from "@recallnet/staking-contracts";
+import {
+  ExternallyOwnedAccountAllocator,
+  Network,
+  NoopRewardsAllocator,
+  RewardsAllocator,
+  SafeTransactionProposer,
+} from "@recallnet/staking-contracts";
 
 import { config } from "@/config/private";
 import {
   agentNonceRepository,
   agentRepository,
   agentScoreRepository,
+  airdropRepository,
+  arenaRepository,
   balanceRepository,
   boostRepository,
   competitionRepository,
   competitionRewardsRepository,
+  convictionClaimsRepository,
   leaderboardRepository,
   perpsRepository,
   rewardsRepository,
@@ -52,6 +65,12 @@ const multichainProvider = new MultiChainProvider(
 export const walletWatchList = new WalletWatchlist(
   config,
   createLogger("WalletWatchlist"),
+);
+
+export const airdropService = new AirdropService(
+  airdropRepository,
+  createLogger("AirdropService"),
+  convictionClaimsRepository,
 );
 
 export const balanceService = new BalanceService(
@@ -164,7 +183,7 @@ const riskMetricsService = new RiskMetricsService(
   createLogger("RiskMetricsService"),
 );
 
-const perpsDataProcessor = new PerpsDataProcessor(
+export const perpsDataProcessor = new PerpsDataProcessor(
   riskMetricsService,
   agentRepository,
   competitionRepository,
@@ -172,8 +191,15 @@ const perpsDataProcessor = new PerpsDataProcessor(
   createLogger("PerpsDataProcessor"),
 );
 
+export const arenaService = new ArenaService(
+  arenaRepository,
+  competitionRepository,
+  createLogger("ArenaService"),
+);
+
 export const leaderboardService = new LeaderboardService(
   leaderboardRepository,
+  arenaRepository,
   createLogger("LeaderboardService"),
 );
 
@@ -182,9 +208,10 @@ export const rewardsService = new RewardsService(
   competitionRepository,
   boostRepository,
   agentRepository,
-  new NoopRewardsAllocator(),
+  getRewardsAllocator(),
   db,
   createLogger("RewardsService"),
+  config.rewards.boostTimeDecayRate,
 );
 
 export const competitionService = new CompetitionService(
@@ -199,6 +226,7 @@ export const competitionService = new CompetitionService(
   perpsDataProcessor,
   agentRepository,
   agentScoreRepository,
+  arenaRepository,
   perpsRepository,
   competitionRepository,
   stakesRepository,
@@ -207,3 +235,55 @@ export const competitionService = new CompetitionService(
   config,
   createLogger("CompetitionService"),
 );
+
+function getRewardsAllocator(): RewardsAllocator {
+  if (config.server.nodeEnv === "test") {
+    return new NoopRewardsAllocator();
+  }
+
+  const logger = createLogger("RewardAllocatorProvider");
+
+  if (config.rewards.eoaEnabled) {
+    if (
+      !config.rewards.eoaPrivateKey ||
+      !config.rewards.contractAddress ||
+      !config.rewards.rpcProvider
+    ) {
+      logger.warn("Rewards EOA config is not set");
+      return new NoopRewardsAllocator();
+    }
+
+    return new ExternallyOwnedAccountAllocator(
+      config.rewards.eoaPrivateKey as Hex,
+      config.rewards.rpcProvider,
+      config.rewards.contractAddress as Hex,
+      config.rewards.tokenContractAddress as Hex,
+      config.rewards.network as Network,
+    );
+  }
+
+  if (config.rewards.safeProposerEnabled) {
+    if (
+      !config.rewards.safeAddress ||
+      !config.rewards.safeProposerPrivateKey ||
+      !config.rewards.safeApiKey ||
+      !config.rewards.contractAddress ||
+      !config.rewards.rpcProvider
+    ) {
+      logger.warn("Rewards safe proposer config is not set");
+      return new NoopRewardsAllocator();
+    }
+
+    return new SafeTransactionProposer({
+      safeAddress: config.rewards.safeAddress as Hex,
+      proposerPrivateKey: config.rewards.safeProposerPrivateKey as Hex,
+      apiKey: config.rewards.safeApiKey,
+      contractAddress: config.rewards.contractAddress as Hex,
+      rpcUrl: config.rewards.rpcProvider,
+      network: config.rewards.network as Network,
+      tokenAddress: config.rewards.tokenContractAddress as Hex,
+    });
+  }
+
+  return new NoopRewardsAllocator();
+}

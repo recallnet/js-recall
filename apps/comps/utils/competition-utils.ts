@@ -163,7 +163,7 @@ export function formatCompetitionDates(
  * Merges a list of competitions with user competitions data to create a list of competitions
  * with their associated agents.
  *
- * @param competitions - List of competitions to merge
+ * @param competitions - List of competitions from competitions endpoint
  * @param userCompetitions - List of user competitions containing agent data
  * @returns List of competitions with their associated agents
  */

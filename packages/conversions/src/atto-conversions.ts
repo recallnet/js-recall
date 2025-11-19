@@ -14,6 +14,18 @@ export function attoValueToNumberValue(
   return dnum.toNumber(res);
 }
 
+export const attoValueToStringValue = (
+  attoValue: dnum.Numberish,
+  rounding: dnum.Rounding = "ROUND_DOWN", // Default round down to avoid overestimating balance
+  decimals: number = 18,
+) => {
+  const res = dnum.div(attoValue, attoDivisor, {
+    rounding,
+    decimals,
+  });
+  return dnum.toString(res);
+};
+
 export function valueToAttoString(value: dnum.Numberish) {
   const res = dnum.mul(dnum.from(value), attoDivisor);
   return dnum.toString(res);

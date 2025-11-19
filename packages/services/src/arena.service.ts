@@ -2,8 +2,10 @@ import { Logger } from "pino";
 
 import { ArenaRepository } from "@recallnet/db/repositories/arena";
 import type { ClassificationFilters } from "@recallnet/db/repositories/arena";
+import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { InsertArena, SelectArena } from "@recallnet/db/schema/core/types";
 
+import { isCompatibleType } from "./lib/arena-validation.js";
 import { buildPaginationResponse } from "./lib/pagination-utils.js";
 import { ApiError, PagingParams } from "./types/index.js";
 
@@ -37,10 +39,16 @@ export interface UpdateArenaParams {
  */
 export class ArenaService {
   private arenaRepo: ArenaRepository;
+  private competitionRepo: CompetitionRepository;
   private logger: Logger;
 
-  constructor(arenaRepo: ArenaRepository, logger: Logger) {
+  constructor(
+    arenaRepo: ArenaRepository,
+    competitionRepo: CompetitionRepository,
+    logger: Logger,
+  ) {
     this.arenaRepo = arenaRepo;
+    this.competitionRepo = competitionRepo;
     this.logger = logger;
   }
 
@@ -89,7 +97,7 @@ export class ArenaService {
         throw error;
       }
 
-      this.logger.error("[ArenaService] Error creating arena:", error);
+      this.logger.error({ error }, "[ArenaService] Error creating arena");
       throw new ApiError(
         500,
         `Failed to create arena: ${error instanceof Error ? error.message : "Unknown error"}`,
@@ -116,7 +124,7 @@ export class ArenaService {
         throw error;
       }
 
-      this.logger.error(`[ArenaService] Error finding arena ${id}:`, error);
+      this.logger.error({ error }, `[ArenaService] Error finding arena ${id}:`);
       throw new ApiError(
         500,
         `Failed to find arena: ${error instanceof Error ? error.message : "Unknown error"}`,
@@ -153,7 +161,7 @@ export class ArenaService {
         pagination: buildPaginationResponse(total, params.limit, params.offset),
       };
     } catch (error) {
-      this.logger.error("[ArenaService] Error finding arenas:", error);
+      this.logger.error({ error }, "[ArenaService] Error finding arenas");
       throw new ApiError(
         500,
         `Failed to find arenas: ${error instanceof Error ? error.message : "Unknown error"}`,
@@ -172,6 +180,39 @@ export class ArenaService {
     updateData: UpdateArenaParams,
   ): Promise<SelectArena> {
     try {
+      // If skill is being changed, validate all existing competitions are compatible
+      if (updateData.skill) {
+        const existingArena = await this.arenaRepo.findById(id);
+        if (!existingArena) {
+          throw new ApiError(404, `Arena with ID ${id} not found`);
+        }
+
+        // Only validate if skill is actually changing
+        if (updateData.skill !== existingArena.skill) {
+          // Get all competitions in this arena
+          const competitions = await this.competitionRepo.findByArenaId(id, {
+            limit: 1000,
+            offset: 0,
+            sort: "",
+          });
+
+          // Check if any competition would become incompatible with new skill
+          const incompatibleCompetitions = competitions.competitions.filter(
+            (comp) => !isCompatibleType(updateData.skill!, comp.type),
+          );
+
+          if (incompatibleCompetitions.length > 0) {
+            const competitionNames = incompatibleCompetitions
+              .map((c) => c.name)
+              .join(", ");
+            throw new ApiError(
+              400,
+              `Cannot change arena skill to "${updateData.skill}": ${incompatibleCompetitions.length} existing competition(s) would become incompatible (${competitionNames})`,
+            );
+          }
+        }
+      }
+
       const updated = await this.arenaRepo.update(id, updateData);
 
       this.logger.debug(`[ArenaService] Updated arena: ${id}`);
@@ -182,7 +223,10 @@ export class ArenaService {
         throw error;
       }
 
-      this.logger.error(`[ArenaService] Error updating arena ${id}:`, error);
+      this.logger.error(
+        { error },
+        `[ArenaService] Error updating arena ${id}:`,
+      );
       throw new ApiError(
         500,
         `Failed to update arena: ${error instanceof Error ? error.message : "Unknown error"}`,
@@ -221,7 +265,10 @@ export class ArenaService {
         throw error;
       }
 
-      this.logger.error(`[ArenaService] Error deleting arena ${id}:`, error);
+      this.logger.error(
+        { error },
+        `[ArenaService] Error deleting arena ${id}:`,
+      );
       throw new ApiError(
         500,
         `Failed to delete arena: ${error instanceof Error ? error.message : "Unknown error"}`,
@@ -241,8 +288,8 @@ export class ArenaService {
       return await this.arenaRepo.searchByClassification(filters);
     } catch (error) {
       this.logger.error(
+        { error },
         "[ArenaService] Error searching arenas by classification:",
-        error,
       );
       throw new ApiError(
         500,
@@ -276,8 +323,8 @@ export class ArenaService {
       };
     } catch (error) {
       this.logger.error(
+        { error },
         "[ArenaService] Error finding arenas with counts:",
-        error,
       );
       throw new ApiError(
         500,
@@ -296,8 +343,8 @@ export class ArenaService {
       return await this.arenaRepo.findByCategory(category);
     } catch (error) {
       this.logger.error(
+        { error },
         `[ArenaService] Error finding arenas by category ${category}:`,
-        error,
       );
       throw new ApiError(
         500,
@@ -316,8 +363,8 @@ export class ArenaService {
       return await this.arenaRepo.findBySkill(skill);
     } catch (error) {
       this.logger.error(
+        { error },
         `[ArenaService] Error finding arenas by skill ${skill}:`,
-        error,
       );
       throw new ApiError(
         500,
@@ -336,8 +383,8 @@ export class ArenaService {
       return await this.arenaRepo.getCompetitionCount(arenaId);
     } catch (error) {
       this.logger.error(
+        { error },
         `[ArenaService] Error getting competition count for arena ${arenaId}:`,
-        error,
       );
       throw new ApiError(
         500,

@@ -1,10 +1,13 @@
 import { AgentRepository } from "@recallnet/db/repositories/agent";
 import { AgentNonceRepository } from "@recallnet/db/repositories/agent-nonce";
 import { AgentScoreRepository } from "@recallnet/db/repositories/agent-score";
+import { AirdropRepository } from "@recallnet/db/repositories/airdrop";
+import { ArenaRepository } from "@recallnet/db/repositories/arena";
 import { BalanceRepository } from "@recallnet/db/repositories/balance";
 import { BoostRepository } from "@recallnet/db/repositories/boost";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { CompetitionRewardsRepository } from "@recallnet/db/repositories/competition-rewards";
+import { ConvictionClaimsRepository } from "@recallnet/db/repositories/conviction-claims";
 import { LeaderboardRepository } from "@recallnet/db/repositories/leaderboard";
 import { PerpsRepository } from "@recallnet/db/repositories/perps";
 import { RewardsRepository } from "@recallnet/db/repositories/rewards";
@@ -23,6 +26,11 @@ export const competitionRewardsRepository = new CompetitionRewardsRepository(
   createLogger("CompetitionRewardsRepository"),
 );
 
+export const airdropRepository = new AirdropRepository(
+  db,
+  createLogger("AirdropRepository"),
+);
+
 export const agentRepository = new AgentRepository(
   db,
   createLogger("AgentRepository"),
@@ -34,6 +42,12 @@ export const agentNonceRepository = new AgentNonceRepository(db);
 export const agentScoreRepository = new AgentScoreRepository(
   db,
   createLogger("AgentScoreRepository"),
+);
+
+export const arenaRepository = new ArenaRepository(
+  db,
+  db,
+  createLogger("ArenaRepository"),
 );
 
 export const balanceRepository = new BalanceRepository(
@@ -48,6 +62,11 @@ export const competitionRepository = new CompetitionRepository(
   db,
   db,
   createLogger("CompetitionRepository"),
+);
+
+export const convictionClaimsRepository = new ConvictionClaimsRepository(
+  db,
+  createLogger("ConvictionClaimsRepository"),
 );
 
 export const leaderboardRepository = new LeaderboardRepository(

@@ -1,10 +1,11 @@
-import pino from "pino";
+import { pino, stdSerializers } from "pino";
 
 import { config } from "../config/index.js";
 
 // Create logger instance with appropriate configuration
-const logger = (pino.default || pino)({
+const logger = pino({
   level: config.logging.level,
+  serializers: { error: stdSerializers.err },
 
   // In development, use pretty printing for better readability
   ...(config.server.nodeEnv === "development" && {

@@ -197,8 +197,8 @@ class TransactionProcessor {
       return true;
     } catch (error) {
       this.#logger.error(
-        `Failed to process transaction ${transaction.hash}:`,
-        error,
+        { error },
+        `Failed to process transaction ${transaction.hash}`,
       );
       return false;
     }
@@ -318,7 +318,8 @@ class TransactionProcessor {
       }
     } catch (error) {
       this.#logger.error(
-        `Failed to insert conviction claim for tx ${transactionHash}: ${error}`,
+        { error },
+        `Failed to insert conviction claim for tx ${transactionHash}`,
       );
       throw error;
     }

@@ -131,7 +131,10 @@ export class AdminService {
         this.logger.error(`${envFile} file not found at expected location`);
       }
     } catch (envError) {
-      this.logger.error("Error updating ROOT_ENCRYPTION_KEY:", envError);
+      this.logger.error(
+        { error: envError },
+        "Error updating ROOT_ENCRYPTION_KEY",
+      );
       // Continue with admin setup even if the env update fails
     }
   }
@@ -225,15 +228,15 @@ export class AdminService {
     } catch (error) {
       if (error instanceof Error) {
         this.logger.error(
-          "[AdminManager] Error setting up initial admin:",
-          error,
+          { error },
+          "[AdminManager] Error setting up initial admin",
         );
         throw error;
       }
 
       this.logger.error(
-        "[AdminManager] Unknown error setting up admin:",
-        error,
+        { error },
+        "[AdminManager] Unknown error setting up admin",
       );
       throw new Error(`Failed to setup admin: ${error}`);
     }
@@ -313,7 +316,10 @@ export class AdminService {
         throw error;
       }
 
-      this.logger.error("[AdminManager] Unknown error creating admin:", error);
+      this.logger.error(
+        { error },
+        "[AdminManager] Unknown error creating admin",
+      );
       throw new Error(`Failed to create admin: ${error}`);
     }
   }
@@ -343,8 +349,8 @@ export class AdminService {
       return null;
     } catch (error) {
       this.logger.error(
-        `[AdminManager] Error retrieving admin ${adminId}:`,
-        error,
+        { error },
+        `[AdminManager] Error retrieving admin ${adminId}`,
       );
       return null;
     }
@@ -395,8 +401,8 @@ export class AdminService {
       return updatedAdmin;
     } catch (error) {
       this.logger.error(
-        `[AdminManager] Error updating admin ${admin.id}:`,
-        error,
+        { error },
+        `[AdminManager] Error updating admin ${admin.id}`,
       );
       throw new Error(
         `Failed to update admin: ${error instanceof Error ? error.message : error}`,
@@ -441,8 +447,8 @@ export class AdminService {
       return deleted;
     } catch (error) {
       this.logger.error(
-        `[AdminManager] Error deleting admin ${adminId}:`,
-        error,
+        { error },
+        `[AdminManager] Error deleting admin ${adminId}`,
       );
       throw new Error(
         `Failed to delete admin: ${error instanceof Error ? error.message : error}`,
@@ -482,8 +488,8 @@ export class AdminService {
       return admin.id;
     } catch (error) {
       this.logger.error(
-        `[AdminManager] Error authenticating admin ${username}:`,
-        error,
+        { error },
+        `[AdminManager] Error authenticating admin ${username}`,
       );
       return null;
     }
@@ -525,8 +531,8 @@ export class AdminService {
             }
           } catch (decryptError) {
             this.logger.error(
-              `[AdminManager] Error decrypting API key for admin ${admin.id}:`,
-              decryptError,
+              { error: decryptError },
+              `[AdminManager] Error decrypting API key for admin ${admin.id}`,
             );
             // Skip this admin if decryption fails
             continue;
@@ -563,8 +569,8 @@ export class AdminService {
       return apiKey;
     } catch (error) {
       this.logger.error(
-        `[AdminManager] Error generating API key for admin ${adminId}:`,
-        error,
+        { error },
+        `[AdminManager] Error generating API key for admin ${adminId}`,
       );
       throw new Error(
         `Failed to generate API key: ${error instanceof Error ? error.message : error}`,
@@ -591,8 +597,8 @@ export class AdminService {
       return await this.generateApiKeyForAdmin(adminId);
     } catch (error) {
       this.logger.error(
-        `[AdminManager] Error resetting API key for admin ${adminId}:`,
-        error,
+        { error },
+        `[AdminManager] Error resetting API key for admin ${adminId}`,
       );
       throw new Error(
         `Failed to reset API key: ${error instanceof Error ? error.message : error}`,
@@ -637,8 +643,8 @@ export class AdminService {
       );
     } catch (error) {
       this.logger.error(
-        `[AdminManager] Error updating password for admin ${adminId}:`,
-        error,
+        { error },
+        `[AdminManager] Error updating password for admin ${adminId}`,
       );
       throw new Error(
         `Failed to update password: ${error instanceof Error ? error.message : error}`,
@@ -670,8 +676,8 @@ export class AdminService {
       return testHash === hash;
     } catch (error) {
       this.logger.error(
-        `[AdminManager] Error validating password for admin ${adminId}:`,
-        error,
+        { error },
+        `[AdminManager] Error validating password for admin ${adminId}`,
       );
       return false;
     }
@@ -686,8 +692,8 @@ export class AdminService {
       await this.adminRepository.updateLastLogin(adminId);
     } catch (error) {
       this.logger.error(
-        `[AdminManager] Error updating last login for admin ${adminId}:`,
-        error,
+        { error },
+        `[AdminManager] Error updating last login for admin ${adminId}`,
       );
       // Don't throw here as this is not critical
     }
@@ -704,8 +710,8 @@ export class AdminService {
       return admin?.status === "active";
     } catch (error) {
       this.logger.error(
-        `[AdminManager] Error checking admin status ${adminId}:`,
-        error,
+        { error },
+        `[AdminManager] Error checking admin status ${adminId}`,
       );
       return false;
     }
@@ -733,8 +739,8 @@ export class AdminService {
       );
     } catch (error) {
       this.logger.error(
-        `[AdminManager] Error suspending admin ${adminId}:`,
-        error,
+        { error },
+        `[AdminManager] Error suspending admin ${adminId}`,
       );
       throw new Error(
         `Failed to suspend admin: ${error instanceof Error ? error.message : error}`,
@@ -761,8 +767,8 @@ export class AdminService {
       this.logger.debug(`[AdminManager] Reactivated admin: ${adminId}`);
     } catch (error) {
       this.logger.error(
-        `[AdminManager] Error reactivating admin ${adminId}:`,
-        error,
+        { error },
+        `[AdminManager] Error reactivating admin ${adminId}`,
       );
       throw new Error(
         `Failed to reactivate admin: ${error instanceof Error ? error.message : error}`,
@@ -879,7 +885,7 @@ export class AdminService {
       const res = await this.adminRepository.count();
       return res >= 0;
     } catch (error) {
-      this.logger.error("[AdminManager] Health check failed:", error);
+      this.logger.error({ error }, "[AdminManager] Health check failed");
       return false;
     }
   }

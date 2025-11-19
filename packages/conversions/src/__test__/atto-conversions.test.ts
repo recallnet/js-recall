@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   attoValueToNumberValue,
+  attoValueToStringValue,
   valueToAttoBigInt,
   valueToAttoString,
 } from "../atto-conversions.js";
@@ -51,6 +52,14 @@ describe("atto-conversions", () => {
     it("should handle large values", () => {
       expect(attoValueToNumberValue("1000000000000000000000")).toBe(1000);
       expect(attoValueToNumberValue("123000000000000000000000")).toBe(123000);
+    });
+  });
+
+  describe("attoValueToStringValue", () => {
+    it("should convert basic atto values to string values", () => {
+      expect(attoValueToStringValue("1000000000000000000")).toBe("1");
+      expect(attoValueToStringValue("2000000000000000000")).toBe("2");
+      expect(attoValueToStringValue("500000000000000000")).toBe("0.5");
     });
   });
 

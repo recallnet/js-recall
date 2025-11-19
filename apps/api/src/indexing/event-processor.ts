@@ -141,11 +141,14 @@ class EventProcessor {
       // Create raw event data
       const event = this.createEventData(eventName, rawLog);
 
-      this.#logger.debug("Preparing to store raw event with metadata:", {
-        eventName,
-        blockNumber: event.blockNumber.toString(),
-        transactionHash: event.transactionHash,
-      });
+      this.#logger.debug(
+        {
+          eventName,
+          blockNumber: event.blockNumber.toString(),
+          transactionHash: event.transactionHash,
+        },
+        "Preparing to store raw event with metadata:",
+      );
 
       await this.processEvent(event, eventName);
     } else {
@@ -213,6 +216,9 @@ class EventProcessor {
         break;
       case "RewardClaimed":
         await this.processRewardClaimedEvent(event);
+        break;
+      case "AllocationAdded":
+        await this.processAllocationAddedEvent(event);
         break;
       default:
         this.#logger.warn(
@@ -498,6 +504,44 @@ class EventProcessor {
     } else {
       this.#logger.warn(
         `No reward found to mark as claimed for user ${user} in competition ${competitionId}`,
+      );
+    }
+  }
+
+  /**
+   * Handle the "AllocationAdded" event.
+   *
+   * Decoding (from `EVENTS.AllocationAdded.abi`):
+   * - root: bytes32 (merkle root hash)
+   * - token: address (token address)
+   * - allocatedAmount: uint256 (amount allocated)
+   * - startTimestamp: uint256 (start timestamp)
+   *
+   * Persistence:
+   * - Calls `updateRewardsRootTx` to update the transaction hash for the rewards root
+   */
+  async processAllocationAddedEvent(event: EventData) {
+    const decodedEvent = decodeEventLog({
+      abi: EVENTS.AllocationAdded.abi,
+      data: event.raw.data,
+      topics: event.raw.topics,
+    });
+
+    const root = decodedEvent.args.root;
+    const rootHashBytes = hexToBytes(root);
+
+    const updatedRoot = await this.#rewardsRepository.updateRewardsRootTx(
+      rootHashBytes,
+      event.transactionHash,
+    );
+
+    if (updatedRoot) {
+      this.#logger.info(
+        `Updated rewards root tx for root ${root} to ${event.transactionHash}`,
+      );
+    } else {
+      this.#logger.warn(
+        `No rewards root found to update for root ${root} (tx: ${event.transactionHash})`,
       );
     }
   }

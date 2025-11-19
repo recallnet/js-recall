@@ -53,8 +53,8 @@ export function makeRewardsController(services: ServiceRegistry) {
         });
       } catch (error) {
         serviceLogger.error(
+          { error },
           "[RewardsController] Error in getTotalClaimableRewards:",
-          error,
         );
         next(error);
       }
@@ -97,8 +97,8 @@ export function makeRewardsController(services: ServiceRegistry) {
         });
       } catch (error) {
         serviceLogger.error(
+          { error },
           "[RewardsController] Error in getRewardsWithProofs:",
-          error,
         );
         next(error);
       }

@@ -28,10 +28,7 @@ async function autoStartCompetitions() {
       `Auto start competitions completed successfully in ${duration}ms!`,
     );
   } catch (error) {
-    logger.error(
-      "Error checking competition start dates:",
-      error instanceof Error ? error.message : String(error),
-    );
+    logger.error({ error }, "Error checking competition start dates:");
 
     throw error;
   }

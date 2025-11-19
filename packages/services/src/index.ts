@@ -2,6 +2,7 @@ export * from "./admin.service.js";
 export * from "./agent.service.js";
 export * from "./agent-metrics-helper.js";
 export * from "./agentrank.service.js";
+export * from "./airdrop.service.js";
 export * from "./arena.service.js";
 export * from "./balance.service.js";
 export * from "./boost.service.js";

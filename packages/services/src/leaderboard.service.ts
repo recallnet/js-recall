@@ -1,10 +1,12 @@
 import { Logger } from "pino";
 
+import { ArenaRepository } from "@recallnet/db/repositories/arena";
 import { LeaderboardRepository } from "@recallnet/db/repositories/leaderboard";
 
 import { buildPaginationResponse } from "./lib/pagination-utils.js";
 import {
   AgentMetadata,
+  ApiError,
   BenchmarkLeaderboardData,
   CompetitionType,
   LeaderboardAgent,
@@ -19,21 +21,41 @@ import {
  */
 export class LeaderboardService {
   private leaderboardRepo: LeaderboardRepository;
+  private arenaRepo: ArenaRepository;
   private logger: Logger;
 
-  constructor(leaderboardRepo: LeaderboardRepository, logger: Logger) {
+  constructor(
+    leaderboardRepo: LeaderboardRepository,
+    arenaRepo: ArenaRepository,
+    logger: Logger,
+  ) {
     this.leaderboardRepo = leaderboardRepo;
+    this.arenaRepo = arenaRepo;
     this.logger = logger;
   }
 
   /**
-   * Get global leaderboard data with pagination
-   * @param params Query parameters including limit, offset
+   * Get leaderboard data with pagination
+   * Returns global leaderboard by type or arena-specific leaderboard if arenaId provided
+   * @param params Query parameters including type, arenaId, limit, offset
+   * @param params.type - Competition type for global leaderboard
+   * @param params.arenaId - Optional arena ID for arena-specific leaderboard
+   * @param params.limit - Maximum number of results to return
+   * @param params.offset - Number of results to skip
    * @returns Complete leaderboard response with ranked agents and metadata
    */
   async getGlobalLeaderboardForType(params: LeaderboardParams) {
     try {
-      // Get paginated global metrics from database
+      // If arenaId provided, validate arena exists then return arena-specific leaderboard
+      if (params.arenaId) {
+        const arena = await this.arenaRepo.findById(params.arenaId);
+        if (!arena) {
+          throw new ApiError(404, `Arena with ID ${params.arenaId} not found`);
+        }
+        return await this.getArenaLeaderboard(params.arenaId, params);
+      }
+
+      // Otherwise return global leaderboard by type
       const { agents, totalCount } =
         await this.getGlobalAgentMetricsForType(params);
 
@@ -46,14 +68,53 @@ export class LeaderboardService {
         ),
       };
     } catch (error) {
+      // Re-throw ApiError instances (validation errors, not found, etc.)
+      if (error instanceof ApiError) {
+        throw error;
+      }
+
       this.logger.error(
-        "[LeaderboardService] Failed to get global leaderboard:",
-        error,
+        { error },
+        "[LeaderboardService] Failed to get global leaderboard",
       );
 
-      // Return safe fallback instead of throwing
+      // Return safe fallback for unexpected errors
       return this.emptyLeaderboardResponse(params);
     }
+  }
+
+  /**
+   * Get arena-specific leaderboard data with pagination
+   * @param arenaId Arena ID to get leaderboard for
+   * @param params Pagination parameters
+   * @returns Complete leaderboard response with ranked agents and metadata
+   */
+  private async getArenaLeaderboard(
+    arenaId: string,
+    params: Pick<LeaderboardParams, "limit" | "offset">,
+  ) {
+    const { agents, totalCount } =
+      await this.leaderboardRepo.getArenaLeaderboard({
+        arenaId,
+        limit: params.limit,
+        offset: params.offset,
+      });
+
+    // Calculate ranks using arithmetic (offset + index + 1)
+    const rankedAgents = agents.map((agent, index) => ({
+      ...agent,
+      rank: params.offset + index + 1,
+      metadata: agent.metadata as AgentMetadata,
+    }));
+
+    return {
+      agents: rankedAgents,
+      pagination: buildPaginationResponse(
+        totalCount,
+        params.limit,
+        params.offset,
+      ),
+    };
   }
 
   /**
@@ -107,7 +168,10 @@ export class LeaderboardService {
    * @returns Basic global stats
    */
   async getGlobalStats(type: CompetitionType) {
-    this.logger.debug("[LeaderboardService] getGlobalStats for type:", type);
+    this.logger.debug(
+      { type },
+      "[LeaderboardService] getGlobalStats for type:",
+    );
     return await this.leaderboardRepo.getGlobalStats(type);
   }
 
@@ -225,9 +289,27 @@ export class LeaderboardService {
       };
     } catch (error) {
       this.logger.error(
-        "[LeaderboardService] Failed to build unified leaderboard:",
-        error,
+        { error },
+        "[LeaderboardService] Failed to build unified leaderboard",
       );
+      throw error;
+    }
+  }
+
+  /**
+   * Get arena statistics calculated across all agents in the arena
+   * @param arenaId Arena ID
+   * @returns Arena statistics (avg score, top score, total agents)
+   */
+  async getArenaStats(arenaId: string): Promise<{
+    avgScore: number;
+    topScore: number;
+    totalAgents: number;
+  }> {
+    try {
+      return await this.leaderboardRepo.getArenaStats(arenaId);
+    } catch (error) {
+      this.logger.error({ error }, `Error getting arena stats for ${arenaId}`);
       throw error;
     }
   }

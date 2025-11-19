@@ -232,8 +232,8 @@ export class PriceTrackerService {
           return price !== null;
         } catch (error) {
           this.logger.error(
+            { error },
             "[PriceTracker] Health check failed on price fetch:",
-            error,
           );
           return false;
         }
@@ -241,7 +241,7 @@ export class PriceTrackerService {
 
       return false;
     } catch (error) {
-      this.logger.error("[PriceTracker] Health check failed:", error);
+      this.logger.error({ error }, "[PriceTracker] Health check failed");
       return false;
     }
   }
@@ -386,8 +386,8 @@ export class PriceTrackerService {
       return priceResult;
     } catch (error) {
       this.logger.error(
+        { error },
         `[PriceTracker] Error fetching price from API:`,
-        error instanceof Error ? error.message : "Unknown error",
       );
       return null;
     }
@@ -454,8 +454,8 @@ export class PriceTrackerService {
         );
       } catch (error) {
         this.logger.debug(
+          { error },
           `[PriceTracker] Error with cached chain ${cachedChain}, tokens will fallback to multi-chain search:`,
-          error instanceof Error ? error.message : "Unknown error",
         );
       }
     }
@@ -510,8 +510,8 @@ export class PriceTrackerService {
       }
     } catch (error) {
       this.logger.error(
+        { error },
         `[PriceTracker] Error in batch API processing:`,
-        error instanceof Error ? error.message : "Unknown error",
       );
 
       // Fallback: set remaining tokens to null

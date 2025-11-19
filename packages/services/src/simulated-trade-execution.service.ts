@@ -236,10 +236,7 @@ export class SimulatedTradeExecutionService {
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error during trade";
-      this.logger.error(
-        `[TradeSimulator] Trade execution failed:`,
-        errorMessage,
-      );
+      this.logger.error({ error }, `[TradeSimulator] Trade execution failed`);
 
       // If it's already an ApiError, re-throw it
       if (error instanceof ApiError) {

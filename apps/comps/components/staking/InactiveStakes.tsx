@@ -96,7 +96,7 @@ const InactiveStakeEntry: React.FunctionComponent<InactiveStakeEntryProps> = ({
 
   return (
     <StakeEntryBase
-      status={isWithdrawable ? "cooldown" : "unstaked"}
+      status={isWithdrawable ? "unstaked" : "cooldown"}
       formattedAmount={formattedAmount}
       boostAmount={boostAmount}
       actions={actions}

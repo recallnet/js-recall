@@ -139,8 +139,8 @@ export const authMiddleware = (
       } catch (error) {
         // Agent API key validation failed, try admin API key
         authLogger.error(
+          { error },
           "[AuthMiddleware] Agent API key validation failed, trying admin API key:",
-          error,
         );
       }
 
@@ -176,8 +176,8 @@ export const authMiddleware = (
         }
       } catch (error) {
         authLogger.error(
+          { error },
           "[AuthMiddleware] Admin API key validation also failed: ",
-          error,
         );
       }
 

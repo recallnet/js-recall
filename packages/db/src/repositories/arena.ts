@@ -75,7 +75,7 @@ export class ArenaRepository {
 
       return result;
     } catch (error) {
-      this.#logger.error("[ArenaRepository] Error in create:", error);
+      this.#logger.error({ error }, "[ArenaRepository] Error in create");
       throw error;
     }
   }
@@ -95,7 +95,10 @@ export class ArenaRepository {
 
       return result;
     } catch (error) {
-      this.#logger.error(`[ArenaRepository] Error in findById (${id}):`, error);
+      this.#logger.error(
+        { error },
+        `[ArenaRepository] Error in findById (${id})`,
+      );
       throw error;
     }
   }
@@ -146,7 +149,7 @@ export class ArenaRepository {
 
       return { arenas: results, total: countResult[0]?.count ?? 0 };
     } catch (error) {
-      this.#logger.error("[ArenaRepository] Error in findAll:", error);
+      this.#logger.error({ error }, "[ArenaRepository] Error in findAll");
       throw error;
     }
   }
@@ -180,7 +183,10 @@ export class ArenaRepository {
 
       return result;
     } catch (error) {
-      this.#logger.error(`[ArenaRepository] Error in update (${id}):`, error);
+      this.#logger.error(
+        { error },
+        `[ArenaRepository] Error in update (${id})`,
+      );
       throw error;
     }
   }
@@ -202,7 +208,10 @@ export class ArenaRepository {
 
       return result.length > 0;
     } catch (error) {
-      this.#logger.error(`[ArenaRepository] Error in delete (${id}):`, error);
+      this.#logger.error(
+        { error },
+        `[ArenaRepository] Error in delete (${id})`,
+      );
       throw error;
     }
   }
@@ -222,8 +231,8 @@ export class ArenaRepository {
       return results;
     } catch (error) {
       this.#logger.error(
-        `[ArenaRepository] Error in findByCategory (${category}):`,
-        error,
+        { error },
+        `[ArenaRepository] Error in findByCategory (${category})`,
       );
       throw error;
     }
@@ -244,8 +253,8 @@ export class ArenaRepository {
       return results;
     } catch (error) {
       this.#logger.error(
-        `[ArenaRepository] Error in findBySkill (${skill}):`,
-        error,
+        { error },
+        `[ArenaRepository] Error in findBySkill (${skill})`,
       );
       throw error;
     }
@@ -299,8 +308,8 @@ export class ArenaRepository {
       return results;
     } catch (error) {
       this.#logger.error(
-        "[ArenaRepository] Error in searchByClassification:",
-        error,
+        { error },
+        "[ArenaRepository] Error in searchByClassification",
       );
       throw error;
     }
@@ -321,8 +330,8 @@ export class ArenaRepository {
       return result[0]?.count ?? 0;
     } catch (error) {
       this.#logger.error(
-        `[ArenaRepository] Error in getCompetitionCount (${arenaId}):`,
-        error,
+        { error },
+        `[ArenaRepository] Error in getCompetitionCount (${arenaId})`,
       );
       throw error;
     }
@@ -340,8 +349,8 @@ export class ArenaRepository {
       return count === 0;
     } catch (error) {
       this.#logger.error(
-        `[ArenaRepository] Error in canDelete (${arenaId}):`,
-        error,
+        { error },
+        `[ArenaRepository] Error in canDelete (${arenaId})`,
       );
       throw error;
     }
@@ -387,8 +396,8 @@ export class ArenaRepository {
       return { arenas: results, total: countResult[0]?.count ?? 0 };
     } catch (error) {
       this.#logger.error(
-        "[ArenaRepository] Error in findAllWithCompetitionCounts:",
-        error,
+        { error },
+        "[ArenaRepository] Error in findAllWithCompetitionCounts",
       );
       throw error;
     }
