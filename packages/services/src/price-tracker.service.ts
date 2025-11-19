@@ -1,6 +1,7 @@
 import { LRUCache } from "lru-cache";
 import { Logger } from "pino";
 
+import { getPriceMapKey } from "./lib/price-map-key.js";
 import { MultiChainProvider } from "./providers/multi-chain.provider.js";
 import {
   BlockchainType,
@@ -163,7 +164,7 @@ export class PriceTrackerService {
         request.specificChain,
       );
 
-      const mapKey = this.getCacheKey(
+      const mapKey = getPriceMapKey(
         request.tokenAddress,
         request.specificChain,
       );
@@ -410,7 +411,7 @@ export class PriceTrackerService {
           // Process results and cache with chain-specific keys
           for (const request of chainRequests) {
             const priceResult = batchResults.get(request.tokenAddress);
-            const mapKey = this.getCacheKey(
+            const mapKey = getPriceMapKey(
               request.tokenAddress,
               request.specificChain,
             );
@@ -435,7 +436,7 @@ export class PriceTrackerService {
 
           // Set all requests for this chain to null on error
           for (const request of chainRequests) {
-            const mapKey = this.getCacheKey(
+            const mapKey = getPriceMapKey(
               request.tokenAddress,
               request.specificChain,
             );

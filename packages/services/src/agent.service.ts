@@ -26,6 +26,7 @@ import { BalanceService } from "./balance.service.js";
 import { EmailService } from "./email.service.js";
 import { decryptApiKey, hashApiKey } from "./lib/api-key-utils.js";
 import { generateHandleFromName } from "./lib/handle-utils.js";
+import { getPriceMapKey } from "./lib/price-map-key.js";
 import { PriceTrackerService } from "./price-tracker.service.js";
 import type { AgentWithMetrics } from "./types/agent-metrics.js";
 import { ApiError } from "./types/index.js";
@@ -2078,7 +2079,10 @@ export class AgentService {
 
       // Enhance balances with the price data
       const enhancedBalances = balances.map((balance) => {
-        const priceKey = `${balance.tokenAddress.toLowerCase()}:${balance.specificChain}`;
+        const priceKey = getPriceMapKey(
+          balance.tokenAddress,
+          balance.specificChain,
+        );
         const priceReport = priceMap.get(priceKey);
 
         if (priceReport) {

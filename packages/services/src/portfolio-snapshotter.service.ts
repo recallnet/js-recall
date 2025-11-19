@@ -3,6 +3,7 @@ import { Logger } from "pino";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 
 import { BalanceService } from "./balance.service.js";
+import { getPriceMapKey } from "./lib/price-map-key.js";
 import { PriceTrackerService } from "./price-tracker.service.js";
 import {
   PriceReport,
@@ -102,7 +103,7 @@ export class PortfolioSnapshotterService {
 
     // Check if we have any price failures for non-zero balances and fail fast
     const hasFailures = balances.some((balance) => {
-      const priceKey = this.getPriceMapKey(
+      const priceKey = getPriceMapKey(
         balance.tokenAddress,
         balance.specificChain,
       );
@@ -228,16 +229,6 @@ export class PortfolioSnapshotterService {
   }
 
   /**
-   * Generate cache key for price map that includes chain
-   * Prevents chain collision for tokens with same address on multiple chains
-   * Uses same format as PriceTrackerService.getCacheKey() for consistency
-   * @private
-   */
-  private getPriceMapKey(tokenAddress: string, specificChain: string): string {
-    return `${tokenAddress.toLowerCase()}:${specificChain}`;
-  }
-
-  /**
    * Fetch prices for tokens with retry logic and exponential backoff
    * @private
    */
@@ -289,7 +280,7 @@ export class PortfolioSnapshotterService {
       } else {
         // Subsequent attempts: only fetch token+chain combinations that don't have prices yet
         for (const balance of balances) {
-          const priceKey = this.getPriceMapKey(
+          const priceKey = getPriceMapKey(
             balance.tokenAddress,
             balance.specificChain,
           );
@@ -330,7 +321,7 @@ export class PortfolioSnapshotterService {
 
       // Check if we have all prices we need
       const allPricesFetched = !balances.some((balance) => {
-        const priceKey = this.getPriceMapKey(
+        const priceKey = getPriceMapKey(
           balance.tokenAddress,
           balance.specificChain,
         );
@@ -350,7 +341,7 @@ export class PortfolioSnapshotterService {
         const missingTokenDetails: string[] = [];
         let failedCount = 0;
         for (const balance of balances) {
-          const priceKey = this.getPriceMapKey(
+          const priceKey = getPriceMapKey(
             balance.tokenAddress,
             balance.specificChain,
           );
@@ -368,7 +359,7 @@ export class PortfolioSnapshotterService {
       } else {
         // Count failures for debug message
         const failedCount = balances.filter((balance) => {
-          const priceKey = this.getPriceMapKey(
+          const priceKey = getPriceMapKey(
             balance.tokenAddress,
             balance.specificChain,
           );
@@ -408,7 +399,7 @@ export class PortfolioSnapshotterService {
       }
 
       // Use chain-specific key to lookup price
-      const priceKey = this.getPriceMapKey(
+      const priceKey = getPriceMapKey(
         balance.tokenAddress,
         balance.specificChain,
       );

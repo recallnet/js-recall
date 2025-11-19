@@ -4,6 +4,7 @@ import { TradeRepository } from "@recallnet/db/repositories/trade";
 import { SelectTrade } from "@recallnet/db/schema/trading/types";
 
 import { BalanceService } from "./balance.service.js";
+import { getPriceMapKey } from "./lib/price-map-key.js";
 import { calculateSlippage } from "./lib/trade-utils.js";
 import { PriceTrackerService } from "./price-tracker.service.js";
 import {
@@ -264,7 +265,7 @@ export class TradeSimulatorService {
       // Step 2: Build unique token+chain requests
       const uniqueRequests = new Map<string, TokenPriceRequest>();
       for (const balance of allBalances) {
-        const key = `${balance.tokenAddress.toLowerCase()}:${balance.specificChain}`;
+        const key = getPriceMapKey(balance.tokenAddress, balance.specificChain);
         if (!uniqueRequests.has(key)) {
           uniqueRequests.set(key, {
             tokenAddress: balance.tokenAddress,
@@ -285,7 +286,10 @@ export class TradeSimulatorService {
 
       // Step 5: Calculate portfolio values efficiently
       allBalances.forEach((balance) => {
-        const priceKey = `${balance.tokenAddress.toLowerCase()}:${balance.specificChain}`;
+        const priceKey = getPriceMapKey(
+          balance.tokenAddress,
+          balance.specificChain,
+        );
         const priceReport = priceMap.get(priceKey);
         if (priceReport && priceReport.price) {
           const currentValue = portfolioValues.get(balance.agentId) || 0;
