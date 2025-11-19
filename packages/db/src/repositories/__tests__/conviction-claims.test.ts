@@ -111,8 +111,8 @@ describe("ConvictionClaimsRepository", () => {
       ).rejects.toThrow("Database error");
 
       expect(mockLogger.error).toHaveBeenCalledWith(
-        "Error fetching claims by account:",
-        error,
+        { error },
+        "Error fetching claims by account",
       );
     });
   });
@@ -376,8 +376,8 @@ describe("ConvictionClaimsRepository", () => {
       );
 
       expect(mockLogger.error).toHaveBeenCalledWith(
-        "Error inserting conviction claim:",
-        error,
+        { error },
+        "Error inserting conviction claim",
       );
     });
   });

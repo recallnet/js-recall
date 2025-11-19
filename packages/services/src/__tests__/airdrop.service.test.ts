@@ -451,8 +451,8 @@ describe("AirdropService", () => {
       );
 
       expect(mockLogger.error).toHaveBeenCalledWith(
-        `Error fetching claims data for address ${mockAddress}:`,
-        error,
+        { error },
+        `Error fetching claims data for address ${mockAddress}`,
       );
     });
 
