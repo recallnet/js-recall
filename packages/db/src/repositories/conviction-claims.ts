@@ -31,7 +31,7 @@ export class ConvictionClaimsRepository {
 
       return results;
     } catch (error) {
-      this.#logger.error("Error fetching claims by account:", error);
+      this.#logger.error({ error }, "Error fetching claims by account");
       throw error;
     }
   }
@@ -72,8 +72,8 @@ export class ConvictionClaimsRepository {
       };
     } catch (error) {
       this.#logger.error(
+        { error },
         `Error fetching claim for account ${account} and season ${season}:`,
-        error,
       );
       throw error;
     }
@@ -116,7 +116,7 @@ export class ConvictionClaimsRepository {
         transactionHash: claim.transactionHash,
       }));
     } catch (error) {
-      this.#logger.error("Error fetching claims by accounts:", error);
+      this.#logger.error({ error }, "Error fetching claims by accounts");
       throw error;
     }
   }
@@ -130,8 +130,8 @@ export class ConvictionClaimsRepository {
       return claim !== null;
     } catch (error) {
       this.#logger.error(
+        { error },
         `Error checking claim status for account ${account} and season ${season}:`,
-        error,
       );
       throw error;
     }
@@ -149,8 +149,8 @@ export class ConvictionClaimsRepository {
       );
     } catch (error) {
       this.#logger.error(
+        { error },
         `Error getting total claimed for account ${account}:`,
-        error,
       );
       throw error;
     }
@@ -179,7 +179,7 @@ export class ConvictionClaimsRepository {
 
       return result[0]!;
     } catch (error) {
-      this.#logger.error("Error inserting conviction claim:", error);
+      this.#logger.error({ error }, "Error inserting conviction claim");
       throw error;
     }
   }

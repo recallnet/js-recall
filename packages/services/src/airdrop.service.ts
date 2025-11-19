@@ -227,8 +227,8 @@ export class AirdropService {
       return claimsData;
     } catch (error) {
       this.logger.error(
-        `Error fetching claims data for address ${address}:`,
-        error,
+        { error },
+        `Error fetching claims data for address ${address}`,
       );
       throw error;
     }

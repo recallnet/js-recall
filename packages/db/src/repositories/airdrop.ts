@@ -62,7 +62,7 @@ export class AirdropRepository {
         aiExplorer: allocation.aiExplorer || false,
       };
     } catch (error) {
-      this.#logger.error("Error fetching allocation by address:", error);
+      this.#logger.error({ error }, "Error fetching allocation by address");
       throw error;
     }
   }
@@ -99,7 +99,7 @@ export class AirdropRepository {
         aiExplorer: allocation.aiExplorer || false,
       }));
     } catch (error) {
-      this.#logger.error("Error fetching allocations by addresses:", error);
+      this.#logger.error({ error }, "Error fetching allocations by addresses");
       throw error;
     }
   }
@@ -121,7 +121,7 @@ export class AirdropRepository {
 
       return result[0];
     } catch (error) {
-      this.#logger.error("Error fetching merkle metadata:", error);
+      this.#logger.error({ error }, "Error fetching merkle metadata");
       throw error;
     }
   }
@@ -160,7 +160,7 @@ export class AirdropRepository {
         allocations: allocation ? [allocation] : [],
       };
     } catch (error) {
-      this.#logger.error("Error fetching airdrop data:", error);
+      this.#logger.error({ error }, "Error fetching airdrop data");
       throw error;
     }
   }
@@ -196,8 +196,8 @@ export class AirdropRepository {
       }));
     } catch (error) {
       this.#logger.error(
-        "Error fetching allocations by classification:",
-        error,
+        { error },
+        "Error fetching allocations by classification",
       );
       throw error;
     }
@@ -245,7 +245,7 @@ export class AirdropRepository {
         generatedAt: metadata.generatedAt,
       };
     } catch (error) {
-      this.#logger.error("Error fetching statistics:", error);
+      this.#logger.error({ error }, "Error fetching statistics");
       throw error;
     }
   }
@@ -264,7 +264,7 @@ export class AirdropRepository {
 
       return (result[0]?.count || 0) > 0;
     } catch (error) {
-      this.#logger.error("Error checking address existence:", error);
+      this.#logger.error({ error }, "Error checking address existence");
       throw error;
     }
   }
@@ -306,7 +306,7 @@ export class AirdropRepository {
         limit,
       };
     } catch (error) {
-      this.#logger.error("Error fetching paginated allocations:", error);
+      this.#logger.error({ error }, "Error fetching paginated allocations");
       throw error;
     }
   }
@@ -361,7 +361,7 @@ export class AirdropRepository {
 
       return allocations;
     } catch (error) {
-      this.#logger.error("Error fetching all claims for address:", error);
+      this.#logger.error({ error }, "Error fetching all claims for address");
       throw error;
     }
   }
