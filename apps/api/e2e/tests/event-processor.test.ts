@@ -3,11 +3,13 @@ import { beforeEach, describe, expect, test } from "vitest";
 
 import { competitions, users } from "@recallnet/db/schema/core/defs";
 import { rewards, rewardsRoots } from "@recallnet/db/schema/rewards/defs";
+import {
+  EventData,
+  EventProcessor,
+  EventsRepository,
+} from "@recallnet/services/indexing";
 
 import { db } from "@/database/db.js";
-import { EventData } from "@/indexing/blockchain-types.js";
-import { EventProcessor } from "@/indexing/event-processor.js";
-import { EventsRepository } from "@/indexing/events.repository.js";
 import { ServiceRegistry } from "@/services/index.js";
 
 describe("EventProcessor", () => {

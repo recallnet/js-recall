@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, test } from "vitest";
 
 import { convictionClaims } from "@recallnet/db/schema/conviction-claims/defs";
+import { ConvictionClaimsRepository } from "@recallnet/services/indexing";
 
 import { db } from "@/database/db.js";
-import { ConvictionClaimsRepository } from "@/indexing/conviction-claims.repository.js";
 
 describe("ConvictionClaimsRepository", () => {
   let convictionClaimsRepository: ConvictionClaimsRepository;

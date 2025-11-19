@@ -35,6 +35,12 @@
         "types": "./dist/types/index.d.ts",
         "default": "./dist/types/index.js"
       }
+    },
+    "./indexing": {
+      "import": {
+        "types": "./dist/indexing/index.d.ts",
+        "default": "./dist/indexing/index.js"
+      }
     }
   },
   "files": [

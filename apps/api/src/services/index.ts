@@ -29,11 +29,7 @@ import {
   CalmarRatioService,
   CompetitionRewardService,
   CompetitionService,
-  ConvictionClaimsRepository,
   EmailService,
-  EventProcessor,
-  EventsRepository,
-  IndexingService,
   LeaderboardService,
   PartnerService,
   PerpsDataProcessor,
@@ -45,9 +41,15 @@ import {
   SortinoRatioService,
   TradeSimulatorService,
   TradingConstraintsService,
-  TransactionProcessor,
   UserService,
 } from "@recallnet/services";
+import {
+  ConvictionClaimsRepository,
+  EventProcessor,
+  EventsRepository,
+  IndexingService,
+  TransactionProcessor,
+} from "@recallnet/services/indexing";
 import { MockPrivyClient } from "@recallnet/services/lib";
 import { WalletWatchlist } from "@recallnet/services/lib";
 import {

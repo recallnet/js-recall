@@ -84,6 +84,7 @@
   "author": "",
   "license": "MIT OR Apache-2.0",
   "dependencies": {
+    "@envio-dev/hypersync-client": "^0.6.5",
     "@privy-io/server-auth": "^1.31.0",
     "@recallnet/conversions": "workspace:*",
     "@recallnet/db": "workspace:*",
