@@ -49,22 +49,6 @@ async function ingestLiveData(): Promise<void> {
   logger.info("Auto-discovering active competitions and in-progress games...");
 
   try {
-    // Ingest all active games (pass scoring service for automatic game finalization)
-    const ingestedCount =
-      await services.sportsService.nflLiveIngestorService.ingestActiveGames(
-        services.sportsService.gameScoringService,
-      );
-
-    if (ingestedCount === 0) {
-      logger.warn(
-        "No active competitions with in-progress games found initially.",
-      );
-    } else {
-      logger.info(
-        `Live data ingestion completed for ${ingestedCount} competitions`,
-      );
-    }
-
     await runPollingLoop(services, args);
   } catch (error) {
     logger.error({ error }, "Error during live data ingestion");
@@ -74,6 +58,7 @@ async function ingestLiveData(): Promise<void> {
 
 /**
  * Run polling loop to continuously update game data
+ * Executes immediately on start, then repeats at the specified interval
  */
 async function runPollingLoop(
   services: ServiceRegistry,
@@ -81,13 +66,11 @@ async function runPollingLoop(
     pollInterval: number;
   },
 ): Promise<void> {
-  const interval = setInterval(async () => {
+  const pollActiveGames = async (): Promise<void> => {
     try {
       logger.info("Polling for active games...");
       const ingestedCount =
-        await services.sportsService.nflLiveIngestorService.ingestActiveGames(
-          services.sportsService.gameScoringService,
-        );
+        await services.sportsService.nflLiveIngestorService.ingestActiveGames();
 
       if (ingestedCount === 0) {
         logger.debug("No active games found");
@@ -97,7 +80,11 @@ async function runPollingLoop(
     } catch (error) {
       logger.error({ error }, "Error in polling loop");
     }
-  }, args.pollInterval);
+  };
+
+  // Execute immediately on startup, then repeat at the specified interval
+  await pollActiveGames();
+  const interval = setInterval(pollActiveGames, args.pollInterval);
 
   // Handle graceful shutdown
   process.on("SIGINT", () => {

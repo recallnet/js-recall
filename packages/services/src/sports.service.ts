@@ -67,12 +67,21 @@ export class SportsService {
       config.sportsDataIO.baseUrl,
     );
 
+    this.gameScoringService = new GameScoringService(
+      this.gamePredictionsRepository,
+      this.gamePredictionScoresRepository,
+      this.competitionAggregateScoresRepository,
+      this.gamesRepository,
+      logger,
+    );
+
     // Initialize services
     this.nflLiveIngestorService = new NflLiveIngestorService(
       this.gamesRepository,
       this.gamePlaysRepository,
       competitionRepo,
       this.competitionGamesRepository,
+      this.gameScoringService,
       this.sportsDataIOProvider,
       logger,
     );
@@ -81,14 +90,6 @@ export class SportsService {
       this.gamePredictionsRepository,
       this.gamesRepository,
       competitionRepo,
-      logger,
-    );
-
-    this.gameScoringService = new GameScoringService(
-      this.gamePredictionsRepository,
-      this.gamePredictionScoresRepository,
-      this.competitionAggregateScoresRepository,
-      this.gamesRepository,
       logger,
     );
   }

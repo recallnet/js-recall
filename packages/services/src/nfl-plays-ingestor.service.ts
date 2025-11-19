@@ -10,6 +10,7 @@ import {
   SelectGame,
 } from "@recallnet/db/schema/sports/types";
 
+import { GameScoringService } from "./game-scoring.service.js";
 import {
   SportsDataIOGameStatus,
   SportsDataIONflProvider,
@@ -25,6 +26,7 @@ export class NflLiveIngestorService {
   readonly #gamePlaysRepo: GamePlaysRepository;
   readonly #competitionRepo: CompetitionRepository;
   readonly #competitionGamesRepo: CompetitionGamesRepository;
+  readonly #gameScoringService: GameScoringService;
   readonly #provider: SportsDataIONflProvider;
   readonly #logger: Logger;
 
@@ -33,6 +35,7 @@ export class NflLiveIngestorService {
     gamePlaysRepo: GamePlaysRepository,
     competitionRepo: CompetitionRepository,
     competitionGamesRepo: CompetitionGamesRepository,
+    gameScoringService: GameScoringService,
     provider: SportsDataIONflProvider,
     logger: Logger,
   ) {
@@ -41,6 +44,7 @@ export class NflLiveIngestorService {
     this.#competitionRepo = competitionRepo;
     this.#competitionGamesRepo = competitionGamesRepo;
     this.#provider = provider;
+    this.#gameScoringService = gameScoringService;
     this.#logger = logger;
   }
 
@@ -103,12 +107,9 @@ export class NflLiveIngestorService {
 
   /**
    * Ingest play-by-play data for all active games in active competitions
-   * @param gameScoringService Optional scoring service for finalizing games
    * @returns Number of games ingested
    */
-  async ingestActiveGames(gameScoringService?: {
-    scoreGame: (gameId: string) => Promise<number>;
-  }): Promise<number> {
+  async ingestActiveGames(): Promise<number> {
     const activeGames = await this.discoverActiveGames();
 
     if (activeGames.length === 0) {
@@ -126,7 +127,7 @@ export class NflLiveIngestorService {
         this.#logger.info(
           `Ingesting game ${game.id} (${game.awayTeam} @ ${game.homeTeam})...`,
         );
-        await this.ingestGamePlayByPlay(game.globalGameId, gameScoringService);
+        await this.ingestGamePlayByPlay(game.globalGameId);
         ingestedCount++;
       } catch (error) {
         this.#logger.error(
@@ -181,7 +182,7 @@ export class NflLiveIngestorService {
           homeTeam: game.HomeTeam,
           awayTeam: game.AwayTeam,
           venue: game.StadiumDetails?.Name || null,
-          status: this.#mapNflGameStatus(game.Status),
+          status: this.#mapResponseToNflGameStatus(game.Status),
         });
 
         syncedCount++;
@@ -220,7 +221,7 @@ export class NflLiveIngestorService {
    * @param status SportsDataIO status.
    * @returns Database game status
    */
-  #mapNflGameStatus(status: SportsDataIOGameStatus): NflGameStatus {
+  #mapResponseToNflGameStatus(status: SportsDataIOGameStatus): NflGameStatus {
     switch (status) {
       case "Scheduled":
       case "Delayed":
@@ -242,21 +243,15 @@ export class NflLiveIngestorService {
   /**
    * Ingest play-by-play data for a game
    * @param globalGameId SportsDataIO global game ID (e.g., 19068)
-   * @param gameScoringService Optional scoring service for finalizing games
    * @returns Database game ID
    */
-  async ingestGamePlayByPlay(
-    globalGameId: number,
-    gameScoringService?: {
-      scoreGame: (gameId: string) => Promise<number>;
-    },
-  ): Promise<string> {
+  async ingestGamePlayByPlay(globalGameId: number): Promise<string> {
     try {
       // Fetch play-by-play data
       const data = await this.#provider.getPlayByPlay(globalGameId);
 
       // Ingest or update game
-      const dbGame = await this.#ingestGame(data, gameScoringService);
+      const dbGame = await this.#ingestGame(data);
 
       // Ingest plays
       await this.#ingestPlays(data, dbGame.id);
@@ -276,16 +271,12 @@ export class NflLiveIngestorService {
    * @param gameId Database game ID
    * @param endTime Game end time
    * @param winner Winning team ticker
-   * @param gameScoringService Service to use for scoring
    * @returns Number of agents scored
    */
   async finalizeGame(
     gameId: string,
     endTime: Date,
     winner: NflTeam,
-    gameScoringService: {
-      scoreGame: (gameId: string) => Promise<number>;
-    },
   ): Promise<number> {
     try {
       // Update game with end time and winner
@@ -297,7 +288,7 @@ export class NflLiveIngestorService {
       );
 
       // Score all predictions for this game
-      const scoredCount = await gameScoringService.scoreGame(gameId);
+      const scoredCount = await this.#gameScoringService.scoreGame(gameId);
 
       this.#logger.info({ gameId, scoredCount }, "Game scoring complete");
 
@@ -311,12 +302,7 @@ export class NflLiveIngestorService {
   /**
    * Ingest game metadata and finalize if game is over
    */
-  async #ingestGame(
-    data: SportsDataIOPlayByPlay,
-    gameScoringService?: {
-      scoreGame: (gameId: string) => Promise<number>;
-    },
-  ) {
+  async #ingestGame(data: SportsDataIOPlayByPlay): Promise<SelectGame> {
     const score = data.Score;
 
     // Map SportsDataIO status to our status
@@ -334,6 +320,10 @@ export class NflLiveIngestorService {
       score.GlobalGameID,
     );
     const wasAlreadyFinal = existingGame?.status === "final";
+    // If game was already final, return the existing game
+    if (wasAlreadyFinal) {
+      return existingGame;
+    }
 
     // Upsert game
     const game = await this.#gamesRepo.upsert({
@@ -347,9 +337,9 @@ export class NflLiveIngestorService {
     });
 
     // If game just became final (wasn't final before), finalize and score it
-    if (status === "final" && !wasAlreadyFinal && gameScoringService) {
+    if (status === "final") {
       this.#logger.info(
-        { status, wasAlreadyFinal, gameScoringService },
+        { status, wasAlreadyFinal },
         "Game is final, checking scores",
       );
       if (score.AwayScore === null || score.HomeScore === null) {
@@ -407,7 +397,7 @@ export class NflLiveIngestorService {
       );
 
       // Finalize game and trigger scoring
-      await this.finalizeGame(game.id, endTime, winner, gameScoringService);
+      await this.finalizeGame(game.id, endTime, winner);
     }
 
     return game;
