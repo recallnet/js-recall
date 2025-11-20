@@ -42,6 +42,8 @@ class MockSpotLiveRepository {
   getAllowedTokenAddresses = vi.fn();
   batchSaveSpotLiveTransfers = vi.fn();
   getLatestSpotLiveTransferBlock = vi.fn();
+  getAgentSyncState = vi.fn();
+  upsertAgentSyncState = vi.fn();
 }
 
 class MockTradeRepository {
@@ -182,6 +184,8 @@ describe("SpotDataProcessor", () => {
     // Mock block tracking - return null by default (first sync scenario)
     mockTradeRepo.getLatestSpotLiveTradeBlock.mockResolvedValue(null);
     mockSpotLiveRepo.getLatestSpotLiveTransferBlock.mockResolvedValue(null);
+    mockSpotLiveRepo.getAgentSyncState.mockResolvedValue(null);
+    mockSpotLiveRepo.upsertAgentSyncState.mockResolvedValue(undefined);
 
     // Mock bulk price fetching - return price for all tokens
     mockPriceTracker.getBulkPrices.mockResolvedValue(
@@ -316,6 +320,15 @@ describe("SpotDataProcessor", () => {
       expect(mockLogger.warn).toHaveBeenCalledWith(
         expect.stringContaining("token whitelist"),
       );
+
+      // Sync state SHOULD be updated even when all trades filtered
+      // This prevents infinite loops on blocks with only non-whitelisted trades
+      expect(mockSpotLiveRepo.upsertAgentSyncState).toHaveBeenCalledWith(
+        "agent-1",
+        "comp-1",
+        "base",
+        1000000, // Highest block from sample trade
+      );
     });
 
     it("should handle empty trade list gracefully", async () => {
@@ -336,6 +349,10 @@ describe("SpotDataProcessor", () => {
       expect(
         mockTradeRepo.batchCreateTradesWithBalances,
       ).not.toHaveBeenCalled();
+
+      // Sync state should NOT be updated when no trades found
+      // (No highestBlock to track if provider returned empty)
+      expect(mockSpotLiveRepo.upsertAgentSyncState).not.toHaveBeenCalled();
     });
 
     it("should enrich transfers with price data when available", async () => {
@@ -430,19 +447,23 @@ describe("SpotDataProcessor", () => {
         new Date("2024-01-01"),
       );
 
-      // Should query for latest block
-      expect(mockTradeRepo.getLatestSpotLiveTradeBlock).toHaveBeenCalledWith(
+      // Should query sync state first (falls back to trade block if not available)
+      expect(mockSpotLiveRepo.getAgentSyncState).toHaveBeenCalledWith(
         "agent-1",
         "comp-1",
         "base",
       );
 
-      // Should use block number (with overlap) for incremental sync
+      // Should use 10-block overlap for retry window
+      // 1000000 - 9 = 999991 (retries last 10 blocks)
       expect(mockProvider.getTradesSince).toHaveBeenCalledWith(
         "0xagent123",
-        1000000, // Uses latestBlock (not +1) for gap prevention
+        999991, // 10-block overlap for transient failure retry
         ["base"],
       );
+
+      // Should update sync state after processing
+      expect(mockSpotLiveRepo.upsertAgentSyncState).toHaveBeenCalled();
     });
 
     it("should scan per-chain independently for multi-chain agents", async () => {
@@ -462,33 +483,24 @@ describe("SpotDataProcessor", () => {
         new Date("2024-01-01"),
       );
 
-      // Should query latest block for each chain
-      expect(mockTradeRepo.getLatestSpotLiveTradeBlock).toHaveBeenCalledTimes(
-        2,
-      );
-      expect(mockTradeRepo.getLatestSpotLiveTradeBlock).toHaveBeenCalledWith(
-        "agent-1",
-        "comp-1",
-        "base",
-      );
-      expect(mockTradeRepo.getLatestSpotLiveTradeBlock).toHaveBeenCalledWith(
-        "agent-1",
-        "comp-1",
-        "arbitrum",
-      );
+      // Should query sync state for each chain
+      expect(mockSpotLiveRepo.getAgentSyncState).toHaveBeenCalledTimes(2);
 
-      // Should call getTradesSince separately for each chain with its specific block
+      // Should call getTradesSince separately for each chain with 10-block overlap
       expect(mockProvider.getTradesSince).toHaveBeenCalledTimes(2);
       expect(mockProvider.getTradesSince).toHaveBeenCalledWith(
         "0xagent123",
-        1000000, // base block
+        999991, // base: 1000000 - 9 (10-block retry window)
         ["base"],
       );
       expect(mockProvider.getTradesSince).toHaveBeenCalledWith(
         "0xagent123",
-        150000000, // arbitrum block
+        149999991, // arbitrum: 150000000 - 9 (10-block retry window)
         ["arbitrum"],
       );
+
+      // Should update sync state for chains that had trades
+      expect(mockSpotLiveRepo.upsertAgentSyncState).toHaveBeenCalled();
     });
   });
 

@@ -11,6 +11,7 @@ import { Logger } from "pino";
 
 import { agents } from "../schema/core/defs.js";
 import {
+  spotLiveAgentSyncState,
   spotLiveAllowedProtocols,
   spotLiveAllowedTokens,
   spotLiveCompetitionChains,
@@ -971,6 +972,90 @@ export class SpotLiveRepository {
         "Error in batchGetAgentsSpotLiveSelfFundingAlerts",
       );
       throw error;
+    }
+  }
+
+  // =============================================================================
+  // AGENT SYNC STATE (Block Tracking for Gap-Free Syncing)
+  // =============================================================================
+
+  /**
+   * Get the last scanned block for an agent in a competition on a specific chain
+   * Used for gap-free incremental syncing - tracks highest block SCANNED (not highest SAVED)
+   * @param agentId Agent ID
+   * @param competitionId Competition ID
+   * @param specificChain Specific chain
+   * @returns Last scanned block number or null if never synced
+   */
+  async getAgentSyncState(
+    agentId: string,
+    competitionId: string,
+    specificChain: SpecificChain,
+  ): Promise<number | null> {
+    try {
+      const [result] = await this.#dbRead
+        .select({ lastScannedBlock: spotLiveAgentSyncState.lastScannedBlock })
+        .from(spotLiveAgentSyncState)
+        .where(
+          and(
+            eq(spotLiveAgentSyncState.agentId, agentId),
+            eq(spotLiveAgentSyncState.competitionId, competitionId),
+            eq(spotLiveAgentSyncState.specificChain, specificChain),
+          ),
+        )
+        .limit(1);
+
+      return result?.lastScannedBlock ?? null;
+    } catch (error) {
+      this.#logger.error({ error }, "Error in getAgentSyncState");
+      throw error;
+    }
+  }
+
+  /**
+   * Update the last scanned block for an agent (upsert)
+   * Creates record if doesn't exist, updates if it does
+   * Updates after EVERY sync attempt (success or failure) to track scan progress
+   * @param agentId Agent ID
+   * @param competitionId Competition ID
+   * @param specificChain Specific chain
+   * @param blockNumber Last scanned block number
+   */
+  async upsertAgentSyncState(
+    agentId: string,
+    competitionId: string,
+    specificChain: SpecificChain,
+    blockNumber: number,
+  ): Promise<void> {
+    try {
+      await this.#db
+        .insert(spotLiveAgentSyncState)
+        .values({
+          agentId,
+          competitionId,
+          specificChain,
+          lastScannedBlock: blockNumber,
+          lastScannedAt: new Date(),
+        })
+        .onConflictDoUpdate({
+          target: [
+            spotLiveAgentSyncState.agentId,
+            spotLiveAgentSyncState.competitionId,
+            spotLiveAgentSyncState.specificChain,
+          ],
+          set: {
+            lastScannedBlock: blockNumber,
+            lastScannedAt: new Date(),
+          },
+        });
+
+      this.#logger.debug(
+        `[SpotLiveRepository] Updated sync state for agent ${agentId} on ${specificChain}: block ${blockNumber}`,
+      );
+    } catch (error) {
+      this.#logger.error({ error }, "Error in upsertAgentSyncState");
+      // Don't throw - sync state update failure shouldn't fail the entire sync
+      // State is an optimization; worst case we fall back to MAX(block_number) query
     }
   }
 }

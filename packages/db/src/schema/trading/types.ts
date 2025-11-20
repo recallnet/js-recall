@@ -106,6 +106,11 @@ export type SelectSpotLiveTransferHistory =
 export type InsertSpotLiveTransferHistory =
   typeof defs.spotLiveTransferHistory.$inferInsert;
 
+export type SelectSpotLiveAgentSyncState =
+  typeof defs.spotLiveAgentSyncState.$inferSelect;
+export type InsertSpotLiveAgentSyncState =
+  typeof defs.spotLiveAgentSyncState.$inferInsert;
+
 export type SelectSpotLiveSelfFundingAlert =
   typeof defs.spotLiveSelfFundingAlerts.$inferSelect;
 export type InsertSpotLiveSelfFundingAlert =

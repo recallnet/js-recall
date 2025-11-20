@@ -911,6 +911,47 @@ export const spotLiveTransferHistory = tradingComps.table(
 );
 
 /**
+ * Agent sync state for incremental block scanning
+ * Tracks the highest block scanned per agent per chain to enable gap-free incremental syncing
+ */
+export const spotLiveAgentSyncState = tradingComps.table(
+  "spot_live_agent_sync_state",
+  {
+    agentId: uuid("agent_id")
+      .notNull()
+      .references(() => agents.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    competitionId: uuid("competition_id")
+      .notNull()
+      .references(() => competitions.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    specificChain: varchar("specific_chain", { length: 20 })
+      .$type<SpecificChain>()
+      .notNull(),
+    lastScannedBlock: integer("last_scanned_block").notNull(),
+    lastScannedAt: timestamp("last_scanned_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("idx_sync_state_agent_comp_chain").on(
+      table.agentId,
+      table.competitionId,
+      table.specificChain,
+    ),
+    unique("sync_state_unique").on(
+      table.agentId,
+      table.competitionId,
+      table.specificChain,
+    ),
+  ],
+);
+
+/**
  * Self-funding violation alerts for spot live competitions
  */
 export const spotLiveSelfFundingAlerts = tradingComps.table(

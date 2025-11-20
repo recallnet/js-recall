@@ -256,30 +256,43 @@ export class SpotDataProcessor {
       );
 
       // 1. Determine sync start point per chain for incremental processing
-      // Uses overlapping scans to prevent gaps from partial failures
+      // Uses sync state + bounded overlap for gap-free syncing with retry capability
       const allTrades: OnChainTrade[] = [];
+      const syncStateUpdates: Array<{
+        chain: SpecificChain;
+        highestBlock: number;
+      }> = [];
+
+      const RETRY_WINDOW_BLOCKS = 10; // Retry last 10 blocks for transient failures
 
       for (const chain of chains) {
-        // Query latest synced block for this agent on this chain
-        const latestBlock = await this.tradeRepo.getLatestSpotLiveTradeBlock(
+        // Query sync state (highest block SCANNED, regardless of success/failure)
+        let lastScannedBlock = await this.spotLiveRepo.getAgentSyncState(
           agentId,
           competitionId,
           chain,
         );
 
+        // Fallback: If sync state unavailable, use highest SAVED block from trades
+        if (lastScannedBlock === null) {
+          lastScannedBlock = await this.tradeRepo.getLatestSpotLiveTradeBlock(
+            agentId,
+            competitionId,
+            chain,
+          );
+        }
+
         let since: Date | number;
 
-        if (latestBlock !== null) {
-          // IMPORTANT: Use latestBlock (not +1) to allow overlap
-          // This prevents gaps when some trades in a block fail while others succeed.
-          // Example: Block 1000 has 3 trades, 2 succeed, 1 fails due to transient error.
-          // Without overlap: Next sync starts from 1001 → Failed trade lost forever
-          // With overlap: Next sync includes 1000 → Failed trade retried
-          // The unique constraint (txHash, competitionId, agentId) prevents duplicates
-          since = latestBlock;
+        if (lastScannedBlock !== null) {
+          // Bounded overlap: Retry last N blocks for transient failures
+          // Example: lastScanned=1000 → scan from 991 (retry 991-1000, scan new 1001+)
+          // This handles: Price API temporarily down, network blips, rate limits
+          // Sync state prevents infinite loops by always moving forward
+          since = Math.max(lastScannedBlock - (RETRY_WINDOW_BLOCKS - 1), 0);
 
           this.logger.debug(
-            `[SpotDataProcessor] Agent ${agentId} on ${chain}: incremental sync from block ${latestBlock} (with overlap)`,
+            `[SpotDataProcessor] Agent ${agentId} on ${chain}: incremental sync from block ${since} (retry window: ${RETRY_WINDOW_BLOCKS} blocks)`,
           );
         } else {
           // First sync - use competition start date
@@ -299,16 +312,49 @@ export class SpotDataProcessor {
 
         allTrades.push(...chainTrades);
 
-        this.logger.debug(
-          `[SpotDataProcessor] Fetched ${chainTrades.length} trades for agent ${agentId} on ${chain} (including potential duplicates from block ${latestBlock ?? "start"})`,
-        );
+        // Update sync state to highest block SEEN
+        // CRITICAL: Update even if no trades found to prevent getting stuck
+        if (chainTrades.length > 0) {
+          const highestBlockSeen = Math.max(
+            ...chainTrades.map((t) => t.blockNumber),
+          );
+          syncStateUpdates.push({ chain, highestBlock: highestBlockSeen });
+
+          this.logger.debug(
+            `[SpotDataProcessor] Fetched ${chainTrades.length} trades for agent ${agentId} on ${chain}, highest block: ${highestBlockSeen}`,
+          );
+        } else {
+          // No trades found - still need to update state to move forward
+          // Use lastScannedBlock as the new state (we scanned this range)
+          if (lastScannedBlock !== null) {
+            syncStateUpdates.push({ chain, highestBlock: lastScannedBlock });
+          }
+
+          this.logger.debug(
+            `[SpotDataProcessor] No trades found for agent ${agentId} on ${chain}`,
+          );
+        }
       }
 
       this.logger.debug(
         `[SpotDataProcessor] Fetched ${allTrades.length} total on-chain trades for agent ${agentId} across ${chains.length} chains`,
       );
 
+      // Update sync state BEFORE any early returns
+      // This ensures we move forward even if all trades are filtered/rejected
+      for (const { chain, highestBlock } of syncStateUpdates) {
+        await this.spotLiveRepo.upsertAgentSyncState(
+          agentId,
+          competitionId,
+          chain,
+          highestBlock,
+        );
+      }
+
       if (allTrades.length === 0) {
+        this.logger.debug(
+          `[SpotDataProcessor] No trades found for agent ${agentId}, sync state updated`,
+        );
         return {
           agentId,
           tradesProcessed: 0,
@@ -549,6 +595,7 @@ export class SpotDataProcessor {
         `[SpotDataProcessor] Processed agent ${agentId}: ` +
           `trades=${tradesCreated}, ` +
           `transfers=${transfersRecorded}, ` +
+          `syncStateUpdates=${syncStateUpdates.length}, ` +
           `time=${processingTime}ms`,
       );
 
