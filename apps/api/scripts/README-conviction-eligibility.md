@@ -8,9 +8,18 @@ The `calculate-next-season-eligibility.ts` script calculates which accounts are 
 
 ### 1. Eligibility Criteria
 
-- An account is eligible if they have **active stakes** at the reference time
-- Active stake = conviction claim where `blockTimestamp + duration > reference_time`
-- Only claims with `duration > 0` are considered (excludes instant claims)
+An account is eligible if it meets **BOTH** of the following criteria:
+
+1.  **Has Active Stakes**:
+
+    - Active stake = conviction claim where `blockTimestamp + duration > reference_time`
+    - Only claims with `duration > 0` are considered (excludes instant claims)
+
+2.  **Ecosystem Participation** (during the qualifying season):
+    - The qualifying season is `airdrop_number - 1`.
+    - **Agent Boosting**: The account has boosted an agent (accumulated boost > 0) during the season window.
+    - **OR**
+    - **Competition Participation**: The account owns an agent that participated in a competition (`active` status) starting within the season window.
 
 ### 2. Reward Pool Calculation
 
@@ -57,62 +66,63 @@ export PATH="/home/joe/.nvm/versions/node/v22.13.1/bin:$PATH"
 
 ```bash
 cd apps/api
-pnpm tsx scripts/calculate-next-season-eligibility.ts --season <number> --time <ISO-date> [--concat]
+pnpm tsx scripts/calculate-next-season-eligibility.ts --airdrop <number> --time <ISO-date> [--prepend <filename>]
 ```
 
 ### Parameters
 
-- `--season, -s`: Season number for the output (required)
+- `--airdrop, -a`: Airdrop number for the output (required)
 
   - Used in the output CSV filename and data
-  - Example: `--season 2`
+  - Example: `--airdrop 2`
 
 - `--time, -t`: Reference time in ISO format (required)
 
-  - Determines which stakes are active
+  - Determines which stakes are active and defines the eligibility window for boosts/competitions
   - Format: `YYYY-MM-DDTHH:MM:SSZ`
   - Example: `--time "2024-12-31T00:00:00Z"`
 
-- `--concat, -c`: Append new data to existing airdrop-data.csv (optional)
+- `--prepend, -p`: Prepend existing data from a specified CSV file (optional)
 
-  - When set, adds the new season data to the master CSV file
-  - Preserves existing data and appends new entries
+  - Reads data from `scripts/data/<filename>`
+  - Creates a NEW file containing the existing data followed by the new season data
+  - Useful for building a cumulative airdrop file
 
 - `--help, -h`: Show help message
 
 ### Examples
 
-Calculate eligibility for season 2 as of December 31, 2024:
+Calculate eligibility for airdrop 2 as of December 31, 2024:
 
 ```bash
-pnpm tsx scripts/calculate-next-season-eligibility.ts --season 2 --time "2024-12-31T00:00:00Z"
+pnpm tsx scripts/calculate-next-season-eligibility.ts --airdrop 2 --time "2024-12-31T00:00:00Z"
 ```
 
-Calculate eligibility and append to master airdrop-data.csv:
+Calculate eligibility and include previous data from an existing file:
 
 ```bash
-pnpm tsx scripts/calculate-next-season-eligibility.ts --season 2 --time "2024-12-31T00:00:00Z" --concat
+pnpm tsx scripts/calculate-next-season-eligibility.ts --airdrop 2 --time "2024-12-31T00:00:00Z" --prepend "airdrop_1_2024-11-29.csv"
 ```
 
 ## Output
 
-The script generates a CSV file named `airdrop-season-<season_number>.csv` in the `scripts/data/` directory. If the `--concat` flag is used, the data is also appended to `scripts/data/airdrop-data.csv`.
+The script generates a CSV file named `airdrop_<airdrop_number>_<iso_time>.csv` in the `scripts/data/` directory.
 
 The CSV contains the following columns:
 
-| Column              | Description                              |
-| ------------------- | ---------------------------------------- |
-| address             | Wallet address eligible for rewards      |
-| amount              | Reward amount in wei                     |
-| season              | Season number (as specified in --season) |
-| category            | Set to "conviction_staking"              |
-| sybilClassification | Empty (for compatibility)                |
-| flaggedAt           | Empty (for compatibility)                |
-| flaggingReason      | Empty (for compatibility)                |
-| powerUser           | Default: 0                               |
-| recallSnapper       | Default: 0                               |
-| aiBuilder           | Default: 0                               |
-| aiExplorer          | Default: 0                               |
+| Column              | Description                                |
+| ------------------- | ------------------------------------------ |
+| address             | Wallet address eligible for rewards        |
+| amount              | Reward amount in wei                       |
+| season              | Airdrop number (as specified in --airdrop) |
+| category            | Set to "conviction_staking"                |
+| sybilClassification | Set to "approved"                          |
+| flaggedAt           | Empty                                      |
+| flaggingReason      | Empty                                      |
+| powerUser           | Default: 0                                 |
+| recallSnapper       | Default: 0                                 |
+| aiBuilder           | Default: 0                                 |
+| aiExplorer          | Default: 0                                 |
 
 ### Console Output
 
@@ -197,6 +207,7 @@ Individual Reward = (Individual Active Stake / Sum of All Active Stakes) × Avai
 ### No eligible accounts found
 
 - Check if the reference time is too far in the future (no stakes active)
+- Verify that stakers have also participated (boosted an agent or competed)
 - Verify that there are claims with duration > 0 in the database
 
 ### Zero available rewards
