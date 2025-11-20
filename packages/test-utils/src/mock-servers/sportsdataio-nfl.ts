@@ -123,30 +123,6 @@ export class MockSportsDataIONflServer {
     );
 
     /**
-     * GET /stats/json/scores/:season/:week
-     * Returns scores for all games in a week
-     */
-    this.app.get(
-      "/stats/json/scores/:season/:week",
-      async (req: Request, res: Response) => {
-        try {
-          const season = parseInt(req.params.season || "", 10);
-          const week = parseInt(req.params.week || "", 10);
-
-          // For now, return empty array or mock data
-          // In the future, could load from games.json
-          res.json([]);
-        } catch (error) {
-          this.logger.error(
-            { error },
-            "[MockSportsDataIO] Error serving scores",
-          );
-          res.status(500).json({ error: "Internal server error" });
-        }
-      },
-    );
-
-    /**
      * POST /mock/advance/:providerGameId
      * Advance to next snapshot (for testing)
      */
