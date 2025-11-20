@@ -1,4 +1,4 @@
-# NFL Baseline Data
+# NFL Test Fixtures
 
 This directory contains real SportsDataIO API responses for simulation and testing.
 
@@ -83,7 +83,7 @@ pnpm tsx scripts/nfl-mock-server.ts --port 4569
 
 Then, call the `/mock/auto-advance/:providerGameId` endpoint to auto-advance through snapshots.
 
-The only game ID we have in the `baseline/nfl/plays` directory is `19068`.
+The only game ID we have in the `fixtures/nfl/plays` directory is `19068`.
 
 ### Manual Play-by-Play Replay
 

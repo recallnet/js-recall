@@ -4,7 +4,7 @@ export * from "./db-manager.js";
 export * from "./logger.js";
 export * from "./mock-servers/hyperliquid.js";
 export * from "./mock-servers/loops.js";
-export * from "./mock-servers/sportsdataio-nfl.js";
+export * from "./mock-servers/sportsdataio.js";
 export * from "./mock-servers/symphony.js";
 export * from "./privy.js";
 export * from "./server.js";

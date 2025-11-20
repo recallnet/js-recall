@@ -12,7 +12,7 @@ import { arenas } from "@recallnet/db/schema/core/defs";
 import { dbManager } from "@recallnet/test-utils";
 import {
   MockHyperliquidServer,
-  MockSportsDataIONflServer,
+  MockSportsDataIOServer,
   MockSymphonyServer,
   startLoopsMockServer,
   stopLoopsMockServer,
@@ -33,7 +33,7 @@ export let mockSymphonyServer: MockSymphonyServer | null = null;
 // Mock Hyperliquid server instance
 export let mockHyperliquidServer: MockHyperliquidServer | null = null;
 // Mock SportsDataIO NFL server instance
-export let mockSportsDataIOServer: MockSportsDataIONflServer | null = null;
+export let mockSportsDataIOServer: MockSportsDataIOServer | null = null;
 
 // Function to log to both Pino logger and file
 const log = (message: string) => {
@@ -240,8 +240,8 @@ export async function setup() {
 
     // Start mock SportsDataIO NFL server
     log("🏈 Starting mock SportsDataIO NFL server...");
-    const baselineDir = path.resolve(__dirname, "../baseline/nfl");
-    mockSportsDataIOServer = new MockSportsDataIONflServer(
+    const baselineDir = path.resolve(__dirname, "../fixtures/nfl");
+    mockSportsDataIOServer = new MockSportsDataIOServer(
       4569,
       testLogger,
       baselineDir,
