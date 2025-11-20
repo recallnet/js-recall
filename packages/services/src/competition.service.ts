@@ -6,8 +6,6 @@ import { AgentRepository } from "@recallnet/db/repositories/agent";
 import { AgentScoreRepository } from "@recallnet/db/repositories/agent-score";
 import { ArenaRepository } from "@recallnet/db/repositories/arena";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
-import { CompetitionGamesRepository } from "@recallnet/db/repositories/competition-games";
-import { GamesRepository } from "@recallnet/db/repositories/games";
 import { PerpsRepository } from "@recallnet/db/repositories/perps";
 import { StakesRepository } from "@recallnet/db/repositories/stakes";
 import { UserRepository } from "@recallnet/db/repositories/user";
@@ -32,7 +30,6 @@ import { AgentService } from "./agent.service.js";
 import { AgentRankService } from "./agentrank.service.js";
 import { BalanceService } from "./balance.service.js";
 import { CompetitionRewardService } from "./competition-reward.service.js";
-import { GameScoringService } from "./game-scoring.service.js";
 import { isCompatibleType } from "./lib/arena-validation.js";
 import {
   PaginationResponse,
@@ -42,6 +39,7 @@ import { applySortingAndPagination, splitSortField } from "./lib/sort.js";
 import { PerpsDataProcessor } from "./perps-data-processor.service.js";
 import { PortfolioSnapshotterService } from "./portfolio-snapshotter.service.js";
 import { RewardsService } from "./rewards.service.js";
+import { SportsService } from "./sports.service.js";
 import { TradeSimulatorService } from "./trade-simulator.service.js";
 import { TradingConstraintsService } from "./trading-constraints.service.js";
 import {
@@ -371,9 +369,7 @@ export class CompetitionService {
   private agentRepo: AgentRepository;
   private agentScoreRepo: AgentScoreRepository;
   private arenaRepo: ArenaRepository;
-  private gamesRepo: GamesRepository;
-  private competitionGamesRepo: CompetitionGamesRepository;
-  private gameScoringService: GameScoringService;
+  private sportsService: SportsService;
   private perpsRepo: PerpsRepository;
   private competitionRepo: CompetitionRepository;
   private stakesRepo: StakesRepository;
@@ -395,9 +391,7 @@ export class CompetitionService {
     agentRepo: AgentRepository,
     agentScoreRepo: AgentScoreRepository,
     arenaRepo: ArenaRepository,
-    gamesRepo: GamesRepository,
-    competitionGamesRepo: CompetitionGamesRepository,
-    gameScoringService: GameScoringService,
+    sportsService: SportsService,
     perpsRepo: PerpsRepository,
     competitionRepo: CompetitionRepository,
     stakesRepo: StakesRepository,
@@ -418,9 +412,7 @@ export class CompetitionService {
     this.agentRepo = agentRepo;
     this.agentScoreRepo = agentScoreRepo;
     this.arenaRepo = arenaRepo;
-    this.gamesRepo = gamesRepo;
-    this.competitionGamesRepo = competitionGamesRepo;
-    this.gameScoringService = gameScoringService;
+    this.sportsService = sportsService;
     this.perpsRepo = perpsRepo;
     this.competitionRepo = competitionRepo;
     this.stakesRepo = stakesRepo;
@@ -601,7 +593,8 @@ export class CompetitionService {
         }
 
         // Validate all games exist
-        const games = await this.gamesRepo.findByIds(gameIds);
+        const games =
+          await this.sportsService.gamesRepository.findByIds(gameIds);
         if (games.length !== gameIds.length) {
           const foundIds = games.map((g) => g.id);
           const notFoundIds = gameIds.filter((id) => !foundIds.includes(id));
@@ -614,7 +607,7 @@ export class CompetitionService {
         // Create competition_games entries
         for (const gameId of gameIds) {
           gameIdsToLink.push(gameId);
-          await this.competitionGamesRepo.create(
+          await this.sportsService.competitionGamesRepository.create(
             {
               competitionId: id,
               gameId,
@@ -991,7 +984,7 @@ export class CompetitionService {
     // Only include game IDs for NFL competitions
     const gameIds =
       finalCompetition.type === "sports_prediction"
-        ? await this.competitionGamesRepo.findGameIdsByCompetitionId(
+        ? await this.sportsService.competitionGamesRepository.findGameIdsByCompetitionId(
             competitionId,
           )
         : null;
@@ -1389,7 +1382,9 @@ export class CompetitionService {
   async #validateNflGamesReadyForScoring(competitionId: string): Promise<void> {
     // Get all games for this competition
     const gameIds =
-      await this.competitionGamesRepo.findGameIdsByCompetitionId(competitionId);
+      await this.sportsService.competitionGamesRepository.findGameIdsByCompetitionId(
+        competitionId,
+      );
 
     if (gameIds.length === 0) {
       throw new Error(
@@ -1398,7 +1393,7 @@ export class CompetitionService {
     }
 
     // Get game details to check which are final
-    const games = await this.gamesRepo.findByIds(gameIds);
+    const games = await this.sportsService.gamesRepository.findByIds(gameIds);
     const finalGames = games.filter((game) => game.status === "final");
 
     if (finalGames.length === 0) {
@@ -1456,10 +1451,12 @@ export class CompetitionService {
   async #ensureNflGamesScored(competitionId: string): Promise<void> {
     // Get all games for this competition
     const gameIds =
-      await this.competitionGamesRepo.findGameIdsByCompetitionId(competitionId);
+      await this.sportsService.competitionGamesRepository.findGameIdsByCompetitionId(
+        competitionId,
+      );
 
     // Get game details to check which are final
-    const games = await this.gamesRepo.findByIds(gameIds);
+    const games = await this.sportsService.gamesRepository.findByIds(gameIds);
     const finalGames = games.filter((game) => game.status === "final");
 
     this.logger.debug(
@@ -1473,9 +1470,8 @@ export class CompetitionService {
     // Score each final game (note: `scoreGame` is idempotent)
     for (const game of finalGames) {
       try {
-        const agentsScoredCount = await this.gameScoringService.scoreGame(
-          game.id,
-        );
+        const agentsScoredCount =
+          await this.sportsService.gameScoringService.scoreGame(game.id);
 
         if (agentsScoredCount > 0) {
           scoredCount++;
@@ -1538,7 +1534,7 @@ export class CompetitionService {
       if (current.status === "ended") {
         // Competition already ended, get the leaderboard and return
         const leaderboard =
-          await this.gameScoringService.getCompetitionLeaderboard(
+          await this.sportsService.gameScoringService.getCompetitionLeaderboard(
             competitionId,
           );
         return { competition: current, leaderboard };
@@ -1579,7 +1575,7 @@ export class CompetitionService {
 
         // Get final leaderboard from NFL scoring service
         const leaderboard =
-          await this.gameScoringService.getCompetitionLeaderboard(
+          await this.sportsService.gameScoringService.getCompetitionLeaderboard(
             competitionId,
           );
         this.logger.info(
@@ -2540,7 +2536,8 @@ export class CompetitionService {
         gameIds.length > 0
       ) {
         // Validate all games exist
-        const games = await this.gamesRepo.findByIds(gameIds);
+        const games =
+          await this.sportsService.gamesRepository.findByIds(gameIds);
         if (games.length !== gameIds.length) {
           const foundIds = games.map((g) => g.id);
           const notFoundIds = gameIds.filter((id) => !foundIds.includes(id));
@@ -2549,7 +2546,7 @@ export class CompetitionService {
 
         // Create competition_games entries
         for (const gameId of gameIds) {
-          await this.competitionGamesRepo.create(
+          await this.sportsService.competitionGamesRepository.create(
             {
               competitionId,
               gameId,
