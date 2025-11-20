@@ -1332,7 +1332,7 @@ export class CompetitionService {
    */
   async checkCompetitionType(
     competitionId: string,
-    type: "trading" | "perpetual_futures",
+    type: "trading" | "perpetual_futures" | "spot_live_trading",
   ): Promise<{ exists: boolean; isType: boolean }> {
     const competition = await this.competitionRepo.findById(competitionId);
     return {
