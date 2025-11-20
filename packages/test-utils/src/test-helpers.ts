@@ -857,11 +857,11 @@ export async function createSportsPredictionTestCompetition({
  */
 export class NflTestClient {
   private client: ApiClient;
-  private mockServerUrl: string;
+  private baseUrl: string;
 
-  constructor(apiKey: string, mockServerUrl: string = "http://localhost:4569") {
+  constructor(apiKey: string, baseUrl: string = "http://localhost:4569") {
     this.client = new ApiClient(apiKey);
-    this.mockServerUrl = mockServerUrl;
+    this.baseUrl = baseUrl;
   }
 
   /**
@@ -950,7 +950,7 @@ export class NflTestClient {
    */
   async resetMockServer(providerGameId: number) {
     const response = await axios.post(
-      `${this.mockServerUrl}/mock/reset/${providerGameId}`,
+      `${this.baseUrl}/mock/reset/${providerGameId}`,
     );
     return response.data;
   }
@@ -960,7 +960,7 @@ export class NflTestClient {
    */
   async advanceMockServer(providerGameId: number) {
     const response = await axios.post(
-      `${this.mockServerUrl}/mock/advance/${providerGameId}`,
+      `${this.baseUrl}/mock/advance/${providerGameId}`,
     );
     return response.data;
   }
@@ -970,7 +970,7 @@ export class NflTestClient {
    */
   async startAutoAdvance(providerGameId: number, intervalMs: number = 30000) {
     const response = await axios.post(
-      `${this.mockServerUrl}/mock/auto-advance/${providerGameId}`,
+      `${this.baseUrl}/mock/auto-advance/${providerGameId}`,
       { intervalMs },
       { headers: { "Content-Type": "application/json" } },
     );
@@ -982,7 +982,7 @@ export class NflTestClient {
    */
   async stopAutoAdvance(providerGameId: number) {
     const response = await axios.post(
-      `${this.mockServerUrl}/mock/stop-auto-advance/${providerGameId}`,
+      `${this.baseUrl}/mock/stop-auto-advance/${providerGameId}`,
     );
     return response.data;
   }
