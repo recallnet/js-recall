@@ -109,7 +109,6 @@ const configSchema = z.strictObject({
     // Decay rate for boost time calculations
     boostTimeDecayRate: z.float64(),
   }),
-  stakingIndex: z.function(),
 });
 
 const rawConfig = {
@@ -186,24 +185,38 @@ const rawConfig = {
       ? parseFloat(process.env.REWARDS_BOOST_TIME_DECAY_RATE)
       : 0.5,
   },
-  stakingIndex: () => ({
-    stakingContract: process.env.INDEXING_STAKING_CONTRACT!,
-    rewardsContract: process.env.INDEXING_REWARDS_CONTRACT!,
-    convictionClaimsContract:
-      process.env.INDEXING_CONVICTION_CLAIMS_CONTRACT ||
-      "0x6A3044c1Cf077F386c9345eF84f2518A2682Dfff",
-    eventStartBlock: process.env.INDEXING_EVENTS_START_BLOCK
-      ? parseInt(process.env.INDEXING_EVENTS_START_BLOCK, 10)
-      : 27459229,
-    transactionsStartBlock: process.env.INDEXING_TRANSACTIONS_START_BLOCK
-      ? parseInt(process.env.INDEXING_TRANSACTIONS_START_BLOCK, 10)
-      : 36800000,
-    hypersyncUrl: process.env.INDEXING_HYPERSYNC_URL!,
-    hypersyncBearerToken: process.env.INDEXING_HYPERSYNC_BEARER_TOKEN!,
-    delayMs: process.env.INDEXING_DELAY
-      ? parseInt(process.env.INDEXING_DELAY, 10)
-      : 3000,
-  }),
 };
 
-export const config = { ...publicConfig, ...configSchema.parse(rawConfig) };
+const StakingIndexConfig = z.object({
+  stakingContract: z.string().min(10),
+  rewardsContract: z.string().min(10),
+  convictionClaimsContract: z
+    .string()
+    .min(10)
+    .default("0x6A3044c1Cf077F386c9345eF84f2518A2682Dfff"),
+  eventStartBlock: z.int().positive().default(27459229),
+  transactionsStartBlock: z.int().positive().default(36800000),
+  hypersyncUrl: z.url(),
+  hypersyncBearerToken: z.string().min(1),
+  delayMs: z.int().positive().default(3000),
+});
+
+export type StakingIndexConfig = z.infer<typeof StakingIndexConfig>;
+
+export const config = {
+  ...publicConfig,
+  ...configSchema.parse(rawConfig),
+
+  getStackingIndexConfig(): StakingIndexConfig {
+    return StakingIndexConfig.parse({
+      stakingContract: process.env.INDEXING_STAKING_CONTRACT,
+      rewardsContract: process.env.INDEXING_REWARDS_CONTRACT,
+      convictionClaimsContract: process.env.INDEXING_CONVICTION_CLAIMS_CONTRACT,
+      eventStartBlock: process.env.INDEXING_EVENTS_START_BLOCK,
+      transactionsStartBlock: process.env.INDEXING_TRANSACTIONS_START_BLOCK,
+      hypersyncUrl: process.env.INDEXING_HYPERSYNC_URL,
+      hypersyncBearerToken: process.env.INDEXING_HYPERSYNC_BEARER_TOKEN!,
+      delayMs: process.env.INDEXING_DELAY,
+    });
+  },
+};

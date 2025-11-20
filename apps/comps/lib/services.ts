@@ -295,30 +295,24 @@ function getRewardsAllocator(): RewardsAllocator {
   return new NoopRewardsAllocator();
 }
 
-const stakingIndexerLogger = createLogger("StakingIndexer");
-const eventProcessor = new EventProcessor(
-  db,
-  rewardsRepository,
-  new EventsRepository(db),
-  stakesRepository,
-  boostAwardService,
-  competitionService,
-  stakingIndexerLogger,
-);
-
-const transactionProcessor = new TransactionProcessor(
-  new ConvictionClaimsRepository(db),
-  stakingIndexerLogger,
-);
-
 let eventsIndexingService: IndexingService | null = null;
 let transactionsIndexingService: IndexingService | null = null;
 
 export function getEventsIndexingService(): IndexingService {
   if (!eventsIndexingService) {
-    const stakingConfig = config.stakingIndex();
+    const stakingConfig = config.getStackingIndexConfig();
+    const logger = createLogger("EventsIndexingService");
+    const eventProcessor = new EventProcessor(
+      db,
+      rewardsRepository,
+      new EventsRepository(db),
+      stakesRepository,
+      boostAwardService,
+      competitionService,
+      logger,
+    );
     eventsIndexingService = IndexingService.createEventsIndexingService(
-      stakingIndexerLogger,
+      logger,
       eventProcessor,
       stakingConfig,
     );
@@ -328,10 +322,15 @@ export function getEventsIndexingService(): IndexingService {
 
 export function getTransactionsIndexingService(): IndexingService {
   if (!transactionsIndexingService) {
-    const stakingConfig = config.stakingIndex();
+    const stakingConfig = config.getStackingIndexConfig();
+    const logger = createLogger("TransactionsIndexingService");
+    const transactionProcessor = new TransactionProcessor(
+      new ConvictionClaimsRepository(db),
+      logger,
+    );
     transactionsIndexingService =
       IndexingService.createTransactionsIndexingService(
-        stakingIndexerLogger,
+        logger,
         transactionProcessor,
         stakingConfig,
       );
