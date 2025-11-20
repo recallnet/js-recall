@@ -153,13 +153,26 @@ export class SpotDataProcessor {
   }
 
   /**
-   * Fetch prices for all tokens in trades
-   * @returns Map of lowercase token address to price report
+   * Fetch prices for all tokens (one call per unique token+chain pair)
+   * @returns Map of "address:chain" key to price report
+   *
+   * TODO: Once PR #1588 (https://github.com/recallnet/js-recall/pull/1588) is merged,
+   * switch to the refactored getBulkPrices() method that accepts TokenPriceRequest[]
+   * and properly handles multi-chain tokens with batched API calls (up to 30 per request).
+   * Current implementation uses individual getPrice() calls which works correctly for
+   * multi-chain scenarios but is less efficient.
    */
   private async fetchPricesForTrades(
     tokens: Array<{ address: string; chain: SpecificChain }>,
   ): Promise<Map<string, PriceReport>> {
     const priceMap = new Map<string, PriceReport>();
+
+    if (tokens.length === 0) {
+      return priceMap;
+    }
+
+    let successCount = 0;
+    let failCount = 0;
 
     for (const { address, chain } of tokens) {
       try {
@@ -171,15 +184,24 @@ export class SpotDataProcessor {
         );
 
         if (price) {
-          priceMap.set(address.toLowerCase(), price);
+          // Key by address:chain for multi-chain support
+          priceMap.set(`${address.toLowerCase()}:${chain}`, price);
+          successCount++;
+        } else {
+          failCount++;
         }
       } catch (error) {
         this.logger.warn(
           `[SpotDataProcessor] Failed to fetch price for token ${address} on ${chain}: ${error}`,
         );
-        // Continue - will be filtered out
+        failCount++;
       }
     }
+
+    this.logger.debug(
+      `[SpotDataProcessor] Price fetch complete: ${successCount}/${tokens.length} tokens priced` +
+        (failCount > 0 ? `, ${failCount} failed` : ""),
+    );
 
     return priceMap;
   }
@@ -287,8 +309,11 @@ export class SpotDataProcessor {
       const unpriceableTrades: RejectedTrade[] = [];
 
       for (const trade of whitelistedTrades) {
-        const fromPrice = priceMap.get(trade.fromToken.toLowerCase());
-        const toPrice = priceMap.get(trade.toToken.toLowerCase());
+        // Key by address:chain for multi-chain support
+        const fromPriceKey = `${trade.fromToken.toLowerCase()}:${trade.chain}`;
+        const toPriceKey = `${trade.toToken.toLowerCase()}:${trade.chain}`;
+        const fromPrice = priceMap.get(fromPriceKey);
+        const toPrice = priceMap.get(toPriceKey);
 
         if (!fromPrice || !toPrice) {
           unpriceableTrades.push({
@@ -366,7 +391,9 @@ export class SpotDataProcessor {
 
             // Enrich transfers with price data
             const enrichedTransferRecords = transfers.map((t) => {
-              const price = transferPriceMap.get(t.tokenAddress.toLowerCase());
+              // Key by address:chain for multi-chain support
+              const priceKey = `${t.tokenAddress.toLowerCase()}:${t.chain}`;
+              const price = transferPriceMap.get(priceKey);
               const tokenSymbol = price?.symbol ?? "UNKNOWN";
               const amountUsd = price
                 ? (t.amount * price.price).toString()
