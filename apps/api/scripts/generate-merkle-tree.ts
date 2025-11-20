@@ -329,6 +329,13 @@ Examples:
         try {
           console.log("recipients.length:", recipients.length);
 
+          // Check for single recipient case which produces empty proofs
+          if (recipients.length === 1) {
+            throw new Error(
+              "Cannot generate Merkle tree with a single recipient. The Merkle tree library produces an empty proof for single-leaf trees, which causes transaction failures. Please add at least one more recipient (e.g. zero address with 0 amount).",
+            );
+          }
+
           const values: [string, bigint, number][] = recipients.map((r) => [
             r.address,
             r.amount,
