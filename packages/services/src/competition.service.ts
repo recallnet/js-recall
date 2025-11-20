@@ -2179,6 +2179,9 @@ export class CompetitionService {
 
     // Execute all updates in a single transaction
     const result = await this.db.transaction(async (tx) => {
+      // FIX ME: there is a race condition where another call to updateCompetition could have updated existingCompetition first.
+      // A possible fix is to add a lock to the service level.
+
       // Handle type conversion if needed
       if (isTypeChanging && updates.type) {
         const oldType = existingCompetition.type;

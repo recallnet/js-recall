@@ -8,7 +8,6 @@ import { assertUnreachable } from "./lib/typescript-utils.js";
 import {
   CompetitionType,
   SpecificChainBalances,
-  SpecificChainSchema,
   SpecificChainTokens,
 } from "./types/index.js";
 
