@@ -359,8 +359,12 @@ describe("SpotDataProcessor", () => {
       expect(mockSpotLiveRepo.batchSaveSpotLiveTransfers).toHaveBeenCalledWith(
         expect.arrayContaining([
           expect.objectContaining({
-            tokenSymbol: "USDC", // Enriched
-            amountUsd: expect.any(String), // Calculated
+            tokenSymbol: "USDC", // Enriched with price data
+            amountUsd: expect.any(String), // Calculated from price
+            blockNumber: 1000000, // From provider transfer data
+            specificChain: "base",
+            type: "deposit",
+            txHash: "0xdef456",
           }),
         ]),
       );
@@ -388,6 +392,9 @@ describe("SpotDataProcessor", () => {
           expect.objectContaining({
             tokenSymbol: "UNKNOWN", // Failed to price
             amountUsd: null,
+            blockNumber: 1000000, // Still includes block number for sync tracking
+            specificChain: "base",
+            type: "deposit",
           }),
         ]),
       );
