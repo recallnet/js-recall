@@ -55,6 +55,31 @@ export class TradeRepository {
     trade: InsertTrade,
   ): Promise<TradeCreationResult> {
     return await this.#db.transaction(async (tx) => {
+      // For spot_live trades with txHash, check if already exists BEFORE touching balances
+      // This optimization avoids wasted balance operations for duplicates during re-sync
+      if (trade.tradeType === "spot_live" && trade.txHash) {
+        const existing = await tx
+          .select({ id: trades.id })
+          .from(trades)
+          .where(
+            and(
+              eq(trades.txHash, trade.txHash),
+              eq(trades.competitionId, trade.competitionId),
+              eq(trades.agentId, trade.agentId),
+            ),
+          )
+          .limit(1);
+
+        if (existing.length > 0) {
+          this.#logger.debug(
+            `[TradeRepository] Trade already exists (txHash=${trade.txHash}), skipping duplicate`,
+          );
+          throw new Error(
+            `Duplicate trade: txHash=${trade.txHash} already exists for agent ${trade.agentId}`,
+          );
+        }
+      }
+
       // Validate and parse the fromSpecificChain
       const fromSpecificChain = SpecificChainSchema.parse(
         trade.fromSpecificChain,
@@ -106,7 +131,9 @@ export class TradeRepository {
       }
 
       // Create the trade record
-      const [result] = await tx
+      // Note: We already checked for duplicates above for spot_live trades
+      // The unique constraint serves as a safety net if the check is bypassed
+      const [insertedTrade] = await tx
         .insert(trades)
         .values({
           ...trade,
@@ -114,16 +141,16 @@ export class TradeRepository {
         })
         .returning();
 
-      if (!result) {
+      if (!insertedTrade) {
         throw new Error("Failed to create trade - no result returned");
       }
 
       this.#logger.debug(
-        `[TradeRepository] Trade created successfully: agent=${trade.agentId}, tradeId=${result.id}, fromBalance=${fromTokenBalance}, toBalance=${toTokenBalance ?? "N/A (burn)"}`,
+        `[TradeRepository] Trade created successfully: agent=${trade.agentId}, tradeId=${insertedTrade.id}, fromBalance=${fromTokenBalance}, toBalance=${toTokenBalance ?? "N/A (burn)"}`,
       );
 
       return {
-        trade: result,
+        trade: insertedTrade,
         updatedBalances: {
           fromTokenBalance,
           toTokenBalance,

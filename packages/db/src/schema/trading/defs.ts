@@ -247,6 +247,14 @@ export const trades = tradingComps.table(
       table.competitionId,
       sql`${table.timestamp} DESC`,
     ),
+    // Unique constraint for spot_live trades to prevent duplicates
+    // Only applies when txHash is not null (spot_live trades only)
+    // Allows the same txHash across different competitions or agents
+    unique("trades_tx_hash_competition_agent_unique").on(
+      table.txHash,
+      table.competitionId,
+      table.agentId,
+    ),
     foreignKey({
       columns: [table.agentId],
       foreignColumns: [agents.id],

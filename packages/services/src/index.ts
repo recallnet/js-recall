@@ -20,6 +20,8 @@ export * from "./price-tracker.service.js";
 export * from "./rewards.service.js";
 export * from "./risk-metrics.service.js";
 export * from "./simulated-trade-execution.service.js";
+export * from "./spot-data-processor.service.js";
+export * from "./spot-live-monitoring.service.js";
 export * from "./trade-simulator.service.js";
 export * from "./trading-constraints.service.js";
 export * from "./user.service.js";
