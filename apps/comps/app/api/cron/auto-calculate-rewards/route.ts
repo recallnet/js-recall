@@ -16,7 +16,7 @@ const logger = createLogger("CronAutoCalculateRewards");
 /**
  * Cron handler wrapped with authentication
  */
-export const POST = withCronAuth(async (_: NextRequest) => {
+export const GET = withCronAuth(async (_: NextRequest) => {
   const startTime = Date.now();
   logger.info("Starting auto calculate rewards task...");
 

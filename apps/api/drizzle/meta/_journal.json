@@ -435,6 +435,20 @@
       "when": 1763153540763,
       "tag": "0061_charming_shinobi_shaw",
       "breakpoints": true
+    },
+    {
+      "idx": 62,
+      "version": "7",
+      "when": 1763556336527,
+      "tag": "0062_yummy_paladin",
+      "breakpoints": true
+    },
+    {
+      "idx": 63,
+      "version": "7",
+      "when": 1763665790738,
+      "tag": "0063_dusty_ultragirl",
+      "breakpoints": true
     }
   ]
 }

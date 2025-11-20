@@ -1,7 +1,10 @@
 import { and, desc, eq } from "drizzle-orm";
 
 import { TxHashCoder } from "@recallnet/db/coders";
-import { convictionClaims } from "@recallnet/db/schema/conviction-claims/defs";
+import {
+  NewConvictionClaim,
+  convictionClaims,
+} from "@recallnet/db/schema/conviction-claims/defs";
 import { Transaction } from "@recallnet/db/types";
 
 import { db } from "@/database/db.js";
@@ -76,14 +79,7 @@ export class ConvictionClaimsRepository {
    * - All addresses and hashes are normalized to lowercase
    */
   async saveConvictionClaim(
-    params: {
-      account: string;
-      eligibleAmount: bigint;
-      claimedAmount: bigint;
-      season: number;
-      duration: bigint;
-      blockNumber: bigint;
-      blockTimestamp: Date;
+    params: Omit<NewConvictionClaim, "transactionHash"> & {
       transactionHash: string;
     },
     tx?: Transaction,

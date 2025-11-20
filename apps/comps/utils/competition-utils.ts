@@ -210,7 +210,8 @@ export function formatCompetitionType(type: string): string {
 /**
  * Gets the skills for a competition type.
  * All competitions include "Crypto Trading" as a base skill.
- * Perpetual futures competitions also include "Perpetual Futures" and "Live Trading" as additional skills.
+ * Live trading competitions (perpetual futures and spot live) include "Live Trading" as an additional skill.
+ * Perpetual futures competitions also include "Perpetual Futures" as a specialized skill.
  *
  * @param type - The raw competition type from the API
  * @returns An array of skills for the competition
@@ -219,6 +220,7 @@ export function formatCompetitionType(type: string): string {
  * ```ts
  * getCompetitionSkills("trading"); // ["Crypto Trading"]
  * getCompetitionSkills("perpetual_futures"); // ["Crypto Trading", "Perpetual Futures", "Live Trading"]
+ * getCompetitionSkills("spot_live_trading"); // ["Crypto Trading", "Live Trading"]
  * ```
  */
 export function getCompetitionSkills(type: string): string[] {
@@ -226,6 +228,10 @@ export function getCompetitionSkills(type: string): string[] {
 
   if (type === "perpetual_futures") {
     return [...baseSkills, "Perpetual Futures", "Live Trading"];
+  }
+
+  if (type === "spot_live_trading") {
+    return [...baseSkills, "Live Trading"];
   }
 
   return baseSkills;

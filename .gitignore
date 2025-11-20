@@ -61,3 +61,6 @@ coverage/
 
 # Load test reports
 packages/load-test/reports
+
+# Airdrop csv data
+apps/api/scripts/data/airdrop_*_*.csv
