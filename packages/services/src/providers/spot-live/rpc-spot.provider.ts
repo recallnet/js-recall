@@ -413,7 +413,8 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
                 to: transfer.to,
                 timestamp: new Date(transfer.metadata.blockTimestamp),
                 txHash: transfer.hash,
-                chain,
+                blockNumber: parseInt(transfer.blockNum, 16),
+                chain: chain as SpecificChain,
               });
             }
           }

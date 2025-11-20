@@ -35,6 +35,7 @@ export interface SpotTransfer {
   to: string;
   timestamp: Date;
   txHash: string;
+  blockNumber: number;
   chain: SpecificChain;
 }
 

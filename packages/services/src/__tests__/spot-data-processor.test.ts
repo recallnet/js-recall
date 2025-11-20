@@ -135,6 +135,7 @@ describe("SpotDataProcessor", () => {
     to: "0xagent",
     timestamp: new Date("2024-01-14"),
     txHash: "0xdef456",
+    blockNumber: 1000000,
     chain: "base",
   };
 

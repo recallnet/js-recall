@@ -511,7 +511,7 @@ export class SpotDataProcessor {
                   fromAddress: t.from,
                   toAddress: t.to,
                   txHash: t.txHash,
-                  blockNumber: 0, // Transfer doesn't include block number
+                  blockNumber: t.blockNumber,
                   transferTimestamp: t.timestamp,
                 };
               });
