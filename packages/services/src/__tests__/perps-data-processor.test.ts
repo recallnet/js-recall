@@ -1244,6 +1244,7 @@ describe("PerpsDataProcessor", () => {
         arenaId: "default-perps-arena",
         engineId: "perpetual_futures" as const,
         engineVersion: "1.0.0",
+        boostTimeDecayRate: null,
       };
 
       vi.mocked(mockCompetitionRepo.findById).mockResolvedValue(
@@ -1298,6 +1299,7 @@ describe("PerpsDataProcessor", () => {
         crossChainTradingType: "allow" as const,
         minimumStake: null,
         evaluationMetric: "calmar_ratio" as const,
+        boostTimeDecayRate: null,
       };
 
       vi.mocked(mockCompetitionRepo.findById).mockResolvedValue(

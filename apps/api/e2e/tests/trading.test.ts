@@ -590,6 +590,186 @@ describe("Trading API", () => {
     );
   });
 
+  test("custom maxTradePercentage is enforced when set during competition creation", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agent and get client
+    const { client: agentClient, agent } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Custom Max Trade Percentage Agent",
+      });
+
+    // Start a competition with a custom maxTradePercentage of 10%
+    const customMaxTradePercentage = 10;
+    const competitionName = `Custom Max Trade Percentage Test ${Date.now()}`;
+    const competitionResponse = (await adminClient.startCompetition({
+      name: competitionName,
+      agentIds: [agent.id],
+      arenaId: "default-paper-arena",
+      paperTradingConfig: {
+        maxTradePercentage: customMaxTradePercentage,
+      },
+      tradingType: CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
+    } as Parameters<
+      typeof adminClient.startCompetition
+    >[0])) as StartCompetitionResponse;
+    const competitionId = competitionResponse.competition.id;
+
+    expect(competitionResponse.success).toBe(true);
+
+    // Check initial balance
+    const initialBalanceResponse = (await agentClient.getBalance(
+      competitionId,
+    )) as BalancesResponse;
+
+    const usdcTokenAddress = config.specificChainTokens.svm.usdc;
+
+    // Consolidate all non-USDC SVM tokens into USDC
+    const tokenAddressesBefore = Object.keys(initialBalanceResponse.balances);
+    for (const tokenAddress of tokenAddressesBefore) {
+      if (tokenAddress === usdcTokenAddress) continue;
+
+      const tokenChain =
+        services.priceTrackerService.determineChain(tokenAddress);
+      if (tokenChain !== BlockchainType.SVM) {
+        continue;
+      }
+
+      const balance = parseFloat(
+        initialBalanceResponse.balances
+          .find((b) => b.tokenAddress === tokenAddress)
+          ?.amount.toString() || "0",
+      );
+
+      if (balance > 0) {
+        const consolidateResponse = await agentClient.executeTrade({
+          fromToken: tokenAddress,
+          toToken: usdcTokenAddress,
+          amount: balance.toString(),
+          competitionId,
+          fromChain: BlockchainType.SVM,
+          toChain: BlockchainType.SVM,
+          reason,
+        });
+
+        expect(consolidateResponse.success).toBe(true);
+      }
+    }
+
+    // Get consolidated USDC balance and portfolio value
+    const balanceAfterConsolidation =
+      await agentClient.getBalance(competitionId);
+    const consolidatedUsdcBalance = parseFloat(
+      (balanceAfterConsolidation as BalancesResponse).balances
+        .find((b) => b.tokenAddress === usdcTokenAddress)
+        ?.amount.toString() || "0",
+    );
+    expect(consolidatedUsdcBalance).toBeGreaterThan(0);
+
+    // Calculate initial portfolio value to determine trade limits
+    let portfolioValue = (
+      balanceAfterConsolidation as BalancesResponse
+    ).balances.reduce((sum, balance) => sum + (balance.value || 0), 0);
+    expect(portfolioValue).toBeGreaterThan(0);
+
+    // Test 1: Trade within the custom maxTradePercentage (10%) should succeed
+    // Use 5% which is well within the 10% limit
+    const withinLimitAmount = (portfolioValue * 5) / 100;
+    const withinLimitTradeResponse = await agentClient.executeTrade({
+      fromToken: usdcTokenAddress,
+      toToken: config.specificChainTokens.svm.sol,
+      amount: withinLimitAmount.toString(),
+      competitionId,
+      fromChain: BlockchainType.SVM,
+      toChain: BlockchainType.SVM,
+      reason: "Testing trade within custom maxTradePercentage limit",
+    });
+
+    expect(withinLimitTradeResponse.success).toBe(true);
+
+    // Test 2: Trade exceeding the custom maxTradePercentage (10%) should fail
+    // Recalculate portfolio value after the successful trade
+    const balanceAfterFirstTrade = await agentClient.getBalance(competitionId);
+    portfolioValue = (
+      balanceAfterFirstTrade as BalancesResponse
+    ).balances.reduce((sum, balance) => sum + (balance.value || 0), 0);
+
+    // Get available USDC balance
+    const availableUsdcBalance = parseFloat(
+      (balanceAfterFirstTrade as BalancesResponse).balances
+        .find((b) => b.tokenAddress === usdcTokenAddress)
+        ?.amount.toString() || "0",
+    );
+
+    // Use 15% which exceeds the 10% limit
+    // But ensure we don't exceed available balance (to avoid "Insufficient balance" error)
+    const exceedingLimitUsdValue = (portfolioValue * 15) / 100;
+    const exceedingLimitAmount = Math.min(
+      exceedingLimitUsdValue,
+      availableUsdcBalance,
+    );
+
+    // Only test if we have enough balance to attempt the trade
+    // (we want the error to be about maxTradePercentage, not insufficient balance)
+    if (
+      exceedingLimitAmount > 0 &&
+      exceedingLimitAmount <= availableUsdcBalance
+    ) {
+      const exceedingLimitTradeResponse = await agentClient.executeTrade({
+        fromToken: usdcTokenAddress,
+        toToken: config.specificChainTokens.svm.sol,
+        amount: exceedingLimitAmount.toString(),
+        competitionId,
+        fromChain: BlockchainType.SVM,
+        toChain: BlockchainType.SVM,
+        reason: "Testing trade exceeding custom maxTradePercentage limit",
+      });
+
+      expect(exceedingLimitTradeResponse.success).toBe(false);
+      expect((exceedingLimitTradeResponse as ErrorResponse).error).toContain(
+        "exceeds maximum size",
+      );
+    }
+
+    // Test 3: Verify that another trade within the limit still succeeds
+    // Recalculate portfolio value again (should be unchanged since previous trade failed)
+    const balanceBeforeThirdTest = await agentClient.getBalance(competitionId);
+    portfolioValue = (
+      balanceBeforeThirdTest as BalancesResponse
+    ).balances.reduce((sum, balance) => sum + (balance.value || 0), 0);
+
+    // Get available USDC balance
+    const availableUsdcForThirdTest = parseFloat(
+      (balanceBeforeThirdTest as BalancesResponse).balances
+        .find((b) => b.tokenAddress === usdcTokenAddress)
+        ?.amount.toString() || "0",
+    );
+
+    // Try a trade at 7% which is within the 10% limit
+    const withinLimitUsdValue = (portfolioValue * 7) / 100;
+    const withinLimitAmountForThirdTest = Math.min(
+      withinLimitUsdValue,
+      availableUsdcForThirdTest,
+    );
+
+    expect(withinLimitAmountForThirdTest).toBeGreaterThan(0);
+
+    const thirdTradeResponse = await agentClient.executeTrade({
+      fromToken: usdcTokenAddress,
+      toToken: config.specificChainTokens.svm.sol,
+      amount: withinLimitAmountForThirdTest.toString(),
+      competitionId,
+      fromChain: BlockchainType.SVM,
+      toChain: BlockchainType.SVM,
+      reason: "Testing another trade within custom maxTradePercentage limit",
+    });
+
+    expect(thirdTradeResponse.success).toBe(true);
+  });
+
   test("agent can fetch price and execute a calculated trade", async () => {
     // Setup admin client
     const adminClient = createTestClient();
@@ -1311,6 +1491,11 @@ describe("Trading API", () => {
       name: competitionName,
       agentIds: [agent.id],
       tradingType: CROSS_CHAIN_TRADING_TYPE.DISALLOW_X_PARENT,
+      paperTradingInitialBalances: [
+        { specificChain: "base", tokenSymbol: "usdc", amount: 10 },
+        { specificChain: "eth", tokenSymbol: "usdc", amount: 10 },
+        { specificChain: "svm", tokenSymbol: "usdc", amount: 10 },
+      ],
     });
     const competitionId = (competitionResponse as StartCompetitionResponse)
       .competition.id;

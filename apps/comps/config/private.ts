@@ -106,8 +106,6 @@ const configSchema = z.strictObject({
     network: z.string().default(""),
     // Slack webhook URL for rewards notifications
     slackWebhookUrl: z.string().default(""),
-    // Decay rate for boost time calculations
-    boostTimeDecayRate: z.float64(),
   }),
 });
 
@@ -180,10 +178,6 @@ export const rawConfig = {
     network: process.env.REWARDS_NETWORK || "baseSepolia",
     // Slack webhook URL for rewards notifications
     slackWebhookUrl: process.env.REWARDS_SLACK_WEBHOOK_URL,
-    // Decay rate for boost time calculations
-    boostTimeDecayRate: process.env.REWARDS_BOOST_TIME_DECAY_RATE
-      ? parseFloat(process.env.REWARDS_BOOST_TIME_DECAY_RATE)
-      : 0.5,
   },
 };
 

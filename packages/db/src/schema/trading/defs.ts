@@ -661,3 +661,69 @@ export const perpsSelfFundingAlerts = tradingComps.table(
     index("idx_perps_alerts_detected").on(table.detectedAt.desc()),
   ],
 );
+
+/**
+ * Table for paper trading competition runtime configurations.
+ */
+export const paperTradingConfig = tradingComps.table(
+  "paper_trading_config",
+  {
+    competitionId: uuid("competition_id")
+      .primaryKey()
+      .references(() => competitions.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    // Trading configuration
+    maxTradePercentage: integer("max_trade_percentage").notNull().default(25), // 25% default
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+    }).defaultNow(),
+    updatedAt: timestamp("updated_at", {
+      withTimezone: true,
+    }).defaultNow(),
+  },
+  (table) => [
+    index("idx_paper_trading_config_competition_id").on(table.competitionId),
+  ],
+);
+
+/**
+ * Table for competition initial token balances.
+ */
+export const paperTradingInitialBalances = tradingComps.table(
+  "paper_trading_initial_balances",
+  {
+    id: uuid().primaryKey().notNull(),
+    competitionId: uuid("competition_id")
+      .notNull()
+      .references(() => competitions.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    specificChain: varchar("specific_chain", { length: 20 }).notNull(),
+    tokenSymbol: varchar("token_symbol", { length: 20 }).notNull(),
+    tokenAddress: varchar("token_address", { length: 50 }).notNull(),
+    amount: numeric("amount", {
+      precision: 12,
+      scale: 2,
+      mode: "number",
+    }).notNull(),
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+    }).defaultNow(),
+    updatedAt: timestamp("updated_at", {
+      withTimezone: true,
+    }).defaultNow(),
+  },
+  (table) => [
+    index("idx_paper_trading_initial_balances_competition_id").on(
+      table.competitionId,
+    ),
+    unique("paper_trading_initial_balances_unique").on(
+      table.competitionId,
+      table.specificChain,
+      table.tokenSymbol,
+    ),
+  ],
+);

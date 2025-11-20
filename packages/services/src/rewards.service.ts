@@ -20,6 +20,11 @@ import {
 import { RewardsAllocator } from "@recallnet/staking-contracts";
 
 /**
+ * Default boost time decay rate used when competition does not specify one
+ */
+const DEFAULT_BOOST_TIME_DECAY_RATE = 0.5;
+
+/**
  * Service for handling reward-related operations
  */
 export class RewardsService {
@@ -30,7 +35,6 @@ export class RewardsService {
   private rewardsAllocator: RewardsAllocator;
   private db: Database;
   private logger: Logger;
-  private boostTimeDecayRate?: number;
 
   constructor(
     rewardsRepo: RewardsRepository,
@@ -40,7 +44,6 @@ export class RewardsService {
     rewardsAllocator: RewardsAllocator,
     db: Database,
     logger: Logger,
-    boostTimeDecayRate?: number,
   ) {
     this.rewardsRepo = rewardsRepo;
     this.competitionRepository = competitionRepository;
@@ -49,7 +52,6 @@ export class RewardsService {
     this.rewardsAllocator = rewardsAllocator;
     this.db = db;
     this.logger = logger;
-    this.boostTimeDecayRate = boostTimeDecayRate;
   }
 
   /**
@@ -195,6 +197,7 @@ export class RewardsService {
         leaderBoard,
         boostAllocationWindow,
         allExcludedAgents.length > 0 ? allExcludedAgents : undefined,
+        competition.boostTimeDecayRate ?? DEFAULT_BOOST_TIME_DECAY_RATE,
       );
 
       const rewardsToInsert = rewards.map((reward) => ({
@@ -633,6 +636,7 @@ export class RewardsService {
     leaderBoard: Leaderboard,
     window: BoostAllocationWindow,
     excludedAgentIds?: string[],
+    boostTimeDecayRate?: number,
   ): Reward[] {
     const userRewards = calculateRewardsForUsers(
       prizePoolUsers,
@@ -640,7 +644,7 @@ export class RewardsService {
       leaderBoard,
       window,
       PrizePoolDecayRate,
-      this.boostTimeDecayRate,
+      boostTimeDecayRate,
     );
     const competitorRewards = calculateRewardsForCompetitors(
       prizePoolCompetitors,

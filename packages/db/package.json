@@ -162,6 +162,26 @@
         "default": "./dist/repositories/partner.cjs"
       }
     },
+    "./repositories/paper-trading-config": {
+      "import": {
+        "types": "./dist/repositories/paper-trading-config.d.ts",
+        "default": "./dist/repositories/paper-trading-config.js"
+      },
+      "require": {
+        "types": "./dist/repositories/paper-trading-config.d.cts",
+        "default": "./dist/repositories/paper-trading-config.cjs"
+      }
+    },
+    "./repositories/paper-trading-initial-balances": {
+      "import": {
+        "types": "./dist/repositories/paper-trading-initial-balances.d.ts",
+        "default": "./dist/repositories/paper-trading-initial-balances.js"
+      },
+      "require": {
+        "types": "./dist/repositories/paper-trading-initial-balances.d.cts",
+        "default": "./dist/repositories/paper-trading-initial-balances.cjs"
+      }
+    },
     "./repositories/perps": {
       "import": {
         "types": "./dist/repositories/perps.d.ts",

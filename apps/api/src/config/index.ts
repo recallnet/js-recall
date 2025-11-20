@@ -279,10 +279,6 @@ export const config = {
     network: process.env.REWARDS_NETWORK || "baseSepolia",
     // Slack webhook URL for rewards notifications
     slackWebhookUrl: process.env.REWARDS_SLACK_WEBHOOK_URL || "",
-    // Decay rate for boost time calculations
-    boostTimeDecayRate: process.env.REWARDS_BOOST_TIME_DECAY_RATE
-      ? parseFloat(process.env.REWARDS_BOOST_TIME_DECAY_RATE)
-      : undefined,
   },
   boost: {
     // Amount of boost (in wei) to grant on wallet linking pre TGE

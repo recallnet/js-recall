@@ -69,6 +69,11 @@ describe("Base Chain Trading", () => {
       agentIds: [agent.id],
       // disable trading constraints for testing base chain functionality
       tradingConstraints: noTradingConstraints,
+      paperTradingInitialBalances: [
+        { specificChain: "base", tokenSymbol: "usdc", amount: 10 },
+        { specificChain: "eth", tokenSymbol: "usdc", amount: 10 },
+        { specificChain: "svm", tokenSymbol: "usdc", amount: 10 },
+      ],
     });
     const competitionId = competitionResponse.competition.id;
 
@@ -233,6 +238,11 @@ describe("Base Chain Trading", () => {
       adminClient,
       name: competitionName,
       agentIds: [agent.id],
+      paperTradingInitialBalances: [
+        { specificChain: "base", tokenSymbol: "usdc", amount: 10 },
+        { specificChain: "eth", tokenSymbol: "usdc", amount: 10 },
+        { specificChain: "svm", tokenSymbol: "usdc", amount: 10 },
+      ],
     });
     const competitionId2 = competitionResponse2.competition.id;
 
@@ -363,6 +373,9 @@ describe("Base Chain Trading", () => {
       agentIds: [agent.id],
       // disable trading constraints for testing base chain functionality
       tradingConstraints: noTradingConstraints,
+      paperTradingInitialBalances: [
+        { specificChain: "base", tokenSymbol: "usdc", amount: 10 },
+      ],
     });
     const competitionId3 = competitionResponse3.competition.id;
 
@@ -431,7 +444,7 @@ describe("Base Chain Trading", () => {
     await wait(3000);
 
     // Verify that a valid trade with proper amount works
-    const validAmount = (initialBaseUsdcBalance * 0.5).toString(); // 50% of balance
+    const validAmount = (initialBaseUsdcBalance * 0.1).toString(); // 10% of balance
 
     // Execute a valid trade
     const validTradeResponse = (await client.executeTrade({

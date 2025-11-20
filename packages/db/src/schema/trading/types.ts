@@ -54,6 +54,16 @@ export type SelectRiskMetricsSnapshot =
 export type InsertRiskMetricsSnapshot =
   typeof defs.riskMetricsSnapshots.$inferInsert;
 
+export type SelectPaperTradingConfig =
+  typeof defs.paperTradingConfig.$inferSelect;
+export type InsertPaperTradingConfig =
+  typeof defs.paperTradingConfig.$inferInsert;
+
+export type SelectPaperTradingInitialBalances =
+  typeof defs.paperTradingInitialBalances.$inferSelect;
+export type InsertPaperTradingInitialBalances =
+  typeof defs.paperTradingInitialBalances.$inferInsert;
+
 /**
  * Perpetual position with embedded agent information
  */

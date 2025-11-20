@@ -52,6 +52,7 @@ describe("SortinoRatioService", () => {
     arenaId: "default-perps-arena",
     engineId: "perpetual_futures" as const,
     engineVersion: "1.0.0",
+    boostTimeDecayRate: null,
   });
 
   // Helper to create mock Sortino metrics from SQL calculation

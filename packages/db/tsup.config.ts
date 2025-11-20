@@ -23,6 +23,8 @@ export default defineConfig({
     "src/repositories/stakes.ts",
     "src/repositories/trade.ts",
     "src/repositories/trading-constraints.ts",
+    "src/repositories/paper-trading-config.ts",
+    "src/repositories/paper-trading-initial-balances.ts",
     "src/repositories/types/index.ts",
     "src/repositories/user.ts",
     "src/schema/airdrop/defs.ts",
