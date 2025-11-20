@@ -27,7 +27,8 @@
         "INITIAL_OPTIMISM_OP_BALANCE",
         "INITIAL_SVM_SOL_BALANCE",
         "INITIAL_SVM_USDC_BALANCE",
-        "INITIAL_SVM_USDT_BALANCE"
+        "INITIAL_SVM_USDT_BALANCE",
+        "ALCHEMY_API_KEY"
       ]
     }
   }
