@@ -63,7 +63,9 @@ export class NflLiveIngestorService {
       },
     });
 
-    const activeNflCompetitions = competitions.filter((c) => c.type === "nfl");
+    const activeNflCompetitions = competitions.filter(
+      (c) => c.type === "sports_prediction",
+    );
 
     if (activeNflCompetitions.length === 0) {
       this.#logger.debug("No active NFL competitions found");

@@ -1,5 +1,5 @@
 {
-  "id": "1be4a682-176b-47ad-9550-3c1ec015eae8",
+  "id": "16f18bf8-9b05-400b-a137-7abaa4f401f5",
   "prevId": "34f557d7-6b5f-40ea-97d9-8ed3ea6299b4",
   "version": "7",
   "dialect": "postgresql",
@@ -6939,7 +6939,7 @@
     "public.competition_type": {
       "name": "competition_type",
       "schema": "public",
-      "values": ["trading", "perpetual_futures", "nfl"]
+      "values": ["trading", "perpetual_futures", "sports_prediction"]
     },
     "public.display_state": {
       "name": "display_state",

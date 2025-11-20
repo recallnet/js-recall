@@ -666,11 +666,11 @@ async function ensureDefaultArenas() {
   await db
     .insert(arenas)
     .values({
-      id: "default-nfl-play-prediction-arena",
-      name: "Default NFL Play Prediction Arena",
+      id: "default-nfl-game-prediction-arena",
+      name: "Default NFL Game Prediction Arena",
       createdBy: "system",
       category: "sports",
-      skill: "nfl_play_prediction",
+      skill: "sports_prediction",
       kind: "Competition",
     })
     .onConflictDoNothing();
@@ -839,8 +839,8 @@ export async function createNflPlayPredictionTestCompetition({
     name: competitionName,
     description:
       description || `NFL prediction test competition for ${competitionName}`,
-    type: "nfl",
-    arenaId: "default-nfl-play-prediction-arena",
+    type: "sports_prediction",
+    arenaId: "default-nfl-game-prediction-arena",
     gameIds,
   });
 

@@ -595,7 +595,7 @@ export class CompetitionService {
 
       // Link games for NFL competitions
       const gameIdsToLink: string[] = [];
-      if (competitionType === "nfl") {
+      if (competitionType === "sports_prediction") {
         if (!gameIds || gameIds.length === 0) {
           throw new ApiError(400, "Game IDs are required for NFL competitions");
         }
@@ -972,7 +972,7 @@ export class CompetitionService {
           );
         }
       }
-    } else if (competition.type === "nfl") {
+    } else if (competition.type === "sports_prediction") {
       // NFL competitions don't need initial snapshots
       // Scoring data comes from game predictions as games are played
       this.logger.debug(
@@ -990,7 +990,7 @@ export class CompetitionService {
     });
     // Only include game IDs for NFL competitions
     const gameIds =
-      finalCompetition.type === "nfl"
+      finalCompetition.type === "sports_prediction"
         ? await this.competitionGamesRepo.findGameIdsByCompetitionId(
             competitionId,
           )
@@ -2354,7 +2354,7 @@ export class CompetitionService {
 
     // If gameIds are provided but type is not, auto-set type to nfl
     if (gameIds && gameIds.length > 0) {
-      updates.type = "nfl";
+      updates.type = "sports_prediction";
     }
 
     // Check if type is being changed
@@ -2534,7 +2534,8 @@ export class CompetitionService {
       }
       // Update NFL games if provided
       else if (
-        (existingCompetition.type === "nfl" || updates.type === "nfl") &&
+        (existingCompetition.type === "sports_prediction" ||
+          updates.type === "sports_prediction") &&
         gameIds &&
         gameIds.length > 0
       ) {
@@ -3146,7 +3147,7 @@ export class CompetitionService {
             `[CompetitionManager] Auto-ending competition: ${competition.name} (${competition.id}) - scheduled end: ${competition.endDate!.toISOString()} - status: ${competition.status}`,
           );
 
-          if (competition.type === "nfl") {
+          if (competition.type === "sports_prediction") {
             await this.endNflCompetition(competition.id);
           } else {
             await this.endCompetition(competition.id);

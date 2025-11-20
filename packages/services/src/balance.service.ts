@@ -322,9 +322,9 @@ export class BalanceService {
             `[BalanceManager] Successfully cleared balances for perps agent ${agentId}`,
           );
           break;
-        case "nfl":
+        case "sports_prediction":
           this.logger.debug(
-            `[BalanceManager] Successfully cleared balances for nfl agent ${agentId}`,
+            `[BalanceManager] Successfully cleared balances for sports prediction agent ${agentId}`,
           );
           break;
         default:

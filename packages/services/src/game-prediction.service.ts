@@ -56,7 +56,7 @@ export class GamePredictionService {
       );
     }
 
-    if (competition.type !== "nfl") {
+    if (competition.type !== "sports_prediction") {
       throw new Error(
         `Competition ${competitionId} is not an NFL competition (type: ${competition.type})`,
       );

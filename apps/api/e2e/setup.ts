@@ -219,11 +219,11 @@ export async function setup() {
       .onConflictDoNothing();
 
     await db.insert(arenas).values({
-      id: "default-nfl-play-prediction-arena",
-      name: "Default NFL Play Prediction Arena",
+      id: "default-nfl-game-prediction-arena",
+      name: "Default NFL Game Prediction Arena",
       createdBy: "system",
       category: "sports",
-      skill: "nfl_play_prediction",
+      skill: "sports_prediction",
       kind: "Competition",
     });
     log("✅ Default arenas created");
