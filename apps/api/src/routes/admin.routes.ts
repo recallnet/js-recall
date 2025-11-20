@@ -1119,7 +1119,6 @@ export function configureAdminRoutes(
    *                   required:
    *                     - specificChain
    *                     - tokenSymbol
-   *                     - tokenAddress
    *                     - amount
    *                   properties:
    *                     specificChain:
@@ -1132,11 +1131,6 @@ export function configureAdminRoutes(
    *                       maxLength: 20
    *                       description: Token symbol
    *                       example: "USDC"
-   *                     tokenAddress:
-   *                       type: string
-   *                       maxLength: 50
-   *                       description: Token contract address
-   *                       example: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
    *                     amount:
    *                       type: integer
    *                       minimum: 0
@@ -2058,7 +2052,6 @@ export function configureAdminRoutes(
    *                   required:
    *                     - specificChain
    *                     - tokenSymbol
-   *                     - tokenAddress
    *                     - amount
    *                   properties:
    *                     specificChain:
@@ -2071,11 +2064,6 @@ export function configureAdminRoutes(
    *                       maxLength: 20
    *                       description: Token symbol
    *                       example: "USDC"
-   *                     tokenAddress:
-   *                       type: string
-   *                       maxLength: 50
-   *                       description: Token contract address
-   *                       example: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
    *                     amount:
    *                       type: integer
    *                       minimum: 0

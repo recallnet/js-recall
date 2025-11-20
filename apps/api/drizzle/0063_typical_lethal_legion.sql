@@ -11,7 +11,7 @@ CREATE TABLE "trading_comps"."paper_trading_initial_balances" (
 	"specific_chain" varchar(20) NOT NULL,
 	"token_symbol" varchar(20) NOT NULL,
 	"token_address" varchar(50) NOT NULL,
-	"amount" integer DEFAULT 0 NOT NULL,
+	"amount" numeric NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now(),
 	"updated_at" timestamp with time zone DEFAULT now(),
 	CONSTRAINT "paper_trading_initial_balances_unique" UNIQUE("competition_id","specific_chain","token_symbol")

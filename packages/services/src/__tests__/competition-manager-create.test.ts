@@ -265,6 +265,13 @@ describe("CompetitionService - createCompetition", () => {
         2: 2500,
         3: 1000,
       },
+      paperTradingInitialBalances: [
+        {
+          specificChain: "eth",
+          tokenSymbol: "usdc",
+          amount: 10000,
+        },
+      ],
     });
 
     // Verify transaction was called
@@ -325,6 +332,13 @@ describe("CompetitionService - createCompetition", () => {
       description: "Test without rewards",
       arenaId: "default-paper-arena",
       tradingType: "disallowAll",
+      paperTradingInitialBalances: [
+        {
+          specificChain: "eth",
+          tokenSymbol: "usdc",
+          amount: 10000,
+        },
+      ],
     });
 
     expect(mockDb.transaction).toHaveBeenCalledTimes(1);
@@ -361,6 +375,13 @@ describe("CompetitionService - createCompetition", () => {
       rewardRules: "Top 10 get rewards",
       rewardDetails: "Distributed weekly",
       displayState: "active",
+      paperTradingInitialBalances: [
+        {
+          specificChain: "eth",
+          tokenSymbol: "usdc",
+          amount: 10000,
+        },
+      ],
     });
 
     // Verify transaction was called
@@ -411,6 +432,13 @@ describe("CompetitionService - createCompetition", () => {
         name: "Failing Competition",
         description: "This should fail",
         arenaId: "default-paper-arena",
+        paperTradingInitialBalances: [
+          {
+            specificChain: "eth",
+            tokenSymbol: "usdc",
+            amount: 10000,
+          },
+        ],
       }),
     ).rejects.toThrow("Database error");
 
@@ -442,6 +470,13 @@ describe("CompetitionService - createCompetition", () => {
           1: 1000,
           "-1": 500, // Invalid rank
         },
+        paperTradingInitialBalances: [
+          {
+            specificChain: "eth",
+            tokenSymbol: "usdc",
+            amount: 10000,
+          },
+        ],
       }),
     ).rejects.toThrow("Invalid reward rank");
 
@@ -472,6 +507,13 @@ describe("CompetitionService - createCompetition", () => {
         tradingConstraints: {
           minimumPairAgeHours: -1, // Invalid value
         },
+        paperTradingInitialBalances: [
+          {
+            specificChain: "eth",
+            tokenSymbol: "usdc",
+            amount: 10000,
+          },
+        ],
       }),
     ).rejects.toThrow("Invalid constraints");
 
@@ -497,6 +539,13 @@ describe("CompetitionService - createCompetition", () => {
       tradingType: "disallowAll",
       sandboxMode: false,
       type: "trading",
+      paperTradingInitialBalances: [
+        {
+          specificChain: "eth",
+          tokenSymbol: "usdc",
+          amount: 10000,
+        },
+      ],
     });
 
     // Verify transaction was called
@@ -536,6 +585,13 @@ describe("CompetitionService - createCompetition", () => {
       description: "Competition without minimum stake",
       arenaId: "default-paper-arena",
       tradingType: "disallowAll",
+      paperTradingInitialBalances: [
+        {
+          specificChain: "eth",
+          tokenSymbol: "usdc",
+          amount: 10000,
+        },
+      ],
     });
 
     // Verify competition was created with null minimum stake
@@ -641,6 +697,13 @@ describe("CompetitionService - createCompetition", () => {
         description: "Arena does not exist",
         arenaId: "nonexistent-arena",
         tradingType: "disallowAll",
+        paperTradingInitialBalances: [
+          {
+            specificChain: "eth",
+            tokenSymbol: "usdc",
+            amount: 10000,
+          },
+        ],
       }),
     ).rejects.toThrow("Arena with ID nonexistent-arena not found");
 
@@ -688,6 +751,13 @@ describe("CompetitionService - createCompetition", () => {
       arenaId: "default-paper-arena",
       type: "trading", // compatible with spot_paper_trading
       tradingType: "disallowAll",
+      paperTradingInitialBalances: [
+        {
+          specificChain: "eth",
+          tokenSymbol: "usdc",
+          amount: 10000,
+        },
+      ],
     });
 
     expect(result.name).toBe("Correct Trading Competition");

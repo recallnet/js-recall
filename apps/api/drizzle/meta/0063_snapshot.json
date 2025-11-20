@@ -1,6 +1,6 @@
 {
-  "id": "2bbf21af-ca68-4023-80e7-ae4f2fd9cfc5",
-  "prevId": "34f557d7-6b5f-40ea-97d9-8ed3ea6299b4",
+  "id": "1f533022-6eca-4526-8889-a35dd1f9cf72",
+  "prevId": "2bbf21af-ca68-4023-80e7-ae4f2fd9cfc5",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -2395,6 +2395,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "boost_time_decay_rate": {
+          "name": "boost_time_decay_rate",
+          "type": "numeric(5, 4)",
+          "primaryKey": false,
+          "notNull": false
+        },
         "engine_id": {
           "name": "engine_id",
           "type": "engine_type",
@@ -4378,6 +4384,167 @@
           "name": "balances_agent_id_token_address_competition_id_key",
           "nullsNotDistinct": false,
           "columns": ["agent_id", "token_address", "competition_id"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "trading_comps.paper_trading_config": {
+      "name": "paper_trading_config",
+      "schema": "trading_comps",
+      "columns": {
+        "competition_id": {
+          "name": "competition_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "max_trade_percentage": {
+          "name": "max_trade_percentage",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 25
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "idx_paper_trading_config_competition_id": {
+          "name": "idx_paper_trading_config_competition_id",
+          "columns": [
+            {
+              "expression": "competition_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "paper_trading_config_competition_id_competitions_id_fk": {
+          "name": "paper_trading_config_competition_id_competitions_id_fk",
+          "tableFrom": "paper_trading_config",
+          "tableTo": "competitions",
+          "columnsFrom": ["competition_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "trading_comps.paper_trading_initial_balances": {
+      "name": "paper_trading_initial_balances",
+      "schema": "trading_comps",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "competition_id": {
+          "name": "competition_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "specific_chain": {
+          "name": "specific_chain",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "token_symbol": {
+          "name": "token_symbol",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "token_address": {
+          "name": "token_address",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "amount": {
+          "name": "amount",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "idx_paper_trading_initial_balances_competition_id": {
+          "name": "idx_paper_trading_initial_balances_competition_id",
+          "columns": [
+            {
+              "expression": "competition_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "paper_trading_initial_balances_competition_id_competitions_id_fk": {
+          "name": "paper_trading_initial_balances_competition_id_competitions_id_fk",
+          "tableFrom": "paper_trading_initial_balances",
+          "tableTo": "competitions",
+          "columnsFrom": ["competition_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "paper_trading_initial_balances_unique": {
+          "name": "paper_trading_initial_balances_unique",
+          "nullsNotDistinct": false,
+          "columns": ["competition_id", "specific_chain", "token_symbol"]
         }
       },
       "policies": {},

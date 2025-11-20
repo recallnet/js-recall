@@ -704,7 +704,7 @@ export const paperTradingInitialBalances = tradingComps.table(
     specificChain: varchar("specific_chain", { length: 20 }).notNull(),
     tokenSymbol: varchar("token_symbol", { length: 20 }).notNull(),
     tokenAddress: varchar("token_address", { length: 50 }).notNull(),
-    amount: integer("amount").notNull().default(0),
+    amount: numeric("amount", { mode: "number" }).notNull(),
     createdAt: timestamp("created_at", {
       withTimezone: true,
     }).defaultNow(),

@@ -3,7 +3,11 @@ import { Logger } from "pino";
 
 import { PaperTradingConfigRepository } from "@recallnet/db/repositories/paper-trading-config";
 import { TradeRepository } from "@recallnet/db/repositories/trade";
-import { InsertTrade, SelectTrade } from "@recallnet/db/schema/trading/types";
+import {
+  InsertTrade,
+  SelectPaperTradingConfig,
+  SelectTrade,
+} from "@recallnet/db/schema/trading/types";
 
 import { BalanceService } from "./balance.service.js";
 import { CompetitionService } from "./competition.service.js";
@@ -65,6 +69,7 @@ export interface SimulatedTradeExecutionServiceConfig {
  */
 export class SimulatedTradeExecutionService {
   private exemptTokens: Set<string>;
+  private paperTradingConfigCache: Map<string, SelectPaperTradingConfig | null>;
 
   constructor(
     private readonly competitionService: CompetitionService,
@@ -79,6 +84,7 @@ export class SimulatedTradeExecutionService {
     private readonly logger: Logger,
   ) {
     this.exemptTokens = EXEMPT_TOKENS(config.specificChainTokens);
+    this.paperTradingConfigCache = new Map();
   }
 
   /**
@@ -299,6 +305,26 @@ export class SimulatedTradeExecutionService {
     return await this.tradingConstraintsService.getConstraintsWithDefaults(
       competitionId,
     );
+  }
+
+  /**
+   * Gets paper trading config for a competition, using cache when possible
+   * @param competitionId The competition ID
+   * @returns Paper trading config or null if not found
+   */
+  private async getPaperTradingConfig(
+    competitionId: string,
+  ): Promise<SelectPaperTradingConfig | null> {
+    if (this.paperTradingConfigCache.has(competitionId)) {
+      return this.paperTradingConfigCache.get(competitionId) ?? null;
+    }
+
+    const config =
+      await this.paperTradingConfigRepo.findByCompetitionId(competitionId);
+
+    this.paperTradingConfigCache.set(competitionId, config);
+
+    return config;
   }
 
   /**
@@ -683,8 +709,7 @@ export class SimulatedTradeExecutionService {
         competitionId,
       );
     // Get maxTradePercentage from database, fallback to config default
-    const paperTradingConfig =
-      await this.paperTradingConfigRepo.findByCompetitionId(competitionId);
+    const paperTradingConfig = await this.getPaperTradingConfig(competitionId);
     const maxTradePercentage = paperTradingConfig
       ? paperTradingConfig.maxTradePercentage
       : this.config.maxTradePercentage;

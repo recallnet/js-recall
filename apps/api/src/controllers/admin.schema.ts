@@ -11,6 +11,7 @@ import {
   CompetitionTypeSchema,
   CrossChainTradingTypeSchema,
   EvaluationMetricSchema,
+  SpecificChainSchema,
   TradingConstraintsSchema,
   UuidSchema,
 } from "@recallnet/services/types";
@@ -88,10 +89,9 @@ export const PaperTradingConfigSchema = z
  * Paper trading initial balance schema
  */
 export const PaperTradingInitialBalanceSchema = z.object({
-  specificChain: z.string().min(1).max(20),
+  specificChain: SpecificChainSchema,
   tokenSymbol: z.string().min(1).max(20),
-  tokenAddress: z.string().min(1).max(50),
-  amount: z.number().int().min(0),
+  amount: z.number().gt(0),
 });
 
 /**
@@ -99,7 +99,28 @@ export const PaperTradingInitialBalanceSchema = z.object({
  */
 export const PaperTradingInitialBalancesSchema = z
   .array(PaperTradingInitialBalanceSchema)
-  .optional();
+  .min(1, "At least one initial balance is required")
+  .optional()
+  .refine(
+    (balances) => {
+      if (!balances || balances.length === 0) return true;
+
+      // Check for duplicates using Set
+      const seen = new Set<string>();
+      for (const balance of balances) {
+        const key = `${balance.specificChain}:${balance.tokenSymbol}`;
+        if (seen.has(key)) {
+          return false; // Duplicate found
+        }
+        seen.add(key);
+      }
+      return true;
+    },
+    {
+      message:
+        "Duplicate entries detected: each (specificChain, tokenSymbol) pair must be unique",
+    },
+  );
 
 /**
  * Admin create or update competition schema
@@ -191,9 +212,11 @@ export const AdminCreateCompetitionSchema = z
 export const AdminUpdateCompetitionSchema = AdminCreateCompetitionSchema.omit({
   name: true,
   arenaId: true,
+  paperTradingInitialBalances: true,
 }).extend({
   name: z.string().optional(),
   arenaId: z.string().min(1, "Arena ID is required").optional(),
+  paperTradingInitialBalances: PaperTradingInitialBalancesSchema.optional(),
 });
 
 /**
@@ -261,6 +284,10 @@ export const AdminStartCompetitionSchema = z
 
     // Display
     displayState: z.enum(displayState.enumValues).optional(),
+
+    // Paper trading configuration
+    paperTradingConfig: PaperTradingConfigSchema,
+    paperTradingInitialBalances: PaperTradingInitialBalancesSchema,
   })
   .refine((data) => data.competitionId || data.name, {
     message: "Either competitionId or name must be provided",
