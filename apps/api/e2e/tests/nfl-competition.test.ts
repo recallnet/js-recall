@@ -206,6 +206,79 @@ describe("NFL Game Winner Prediction Competition E2E", () => {
     }
   });
 
+  test("should reject prediction if game is not part of competition", async () => {
+    const globalGameId1 = 19068;
+    const tempClient = new NflTestClient("temp-key");
+    await tempClient.resetMockServer(globalGameId1);
+
+    // Ingest two games
+    const dbGameId1 =
+      await services.sportsService.nflIngestorService.ingestGamePlayByPlay(
+        globalGameId1,
+      );
+
+    // Create a second game by resetting mock server with different game
+    // (in real scenario this would be a different globalGameId)
+    await tempClient.resetMockServer(globalGameId1);
+    const dbGameId2 =
+      await services.sportsService.nflIngestorService.ingestGamePlayByPlay(
+        globalGameId1,
+      );
+
+    // Create competition with only game 1
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    const competitionName = `NFL Test Competition ${Date.now()}`;
+    const createResponse = await createSportsPredictionTestCompetition({
+      adminClient,
+      name: competitionName,
+      description: "Test competition with one game",
+      gameIds: [dbGameId1], // Only game 1
+    });
+
+    const competition = (createResponse as CreateCompetitionResponse)
+      .competition;
+
+    // Register agent
+    const { agent, apiKey } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      userName: `User ${Date.now()}`,
+      userEmail: `user-${Date.now()}@example.com`,
+      agentName: `Agent ${Date.now()}`,
+    });
+
+    await adminClient.addAgentToCompetition(competition.id, agent.id);
+    await adminClient.startCompetition({ competitionId: competition.id });
+
+    const nflClient = new NflTestClient(apiKey);
+
+    // Try to predict on game 2 (not in competition) - should fail with 400
+    try {
+      await nflClient.predictGameWinner(
+        competition.id,
+        dbGameId2, // Game not in competition
+        "MIN",
+        0.7,
+        "Test prediction",
+      );
+      expect.fail("Should have thrown 400 error - game not in competition");
+    } catch (error) {
+      expect(error).toBeDefined();
+      // Verify it's a 400 error about game not being part of competition
+    }
+
+    // Prediction on game 1 (in competition) should succeed
+    const validPrediction = await nflClient.predictGameWinner(
+      competition.id,
+      dbGameId1,
+      "CHI",
+      0.7,
+      "Test prediction",
+    );
+    expect(validPrediction.success).toBe(true);
+  });
+
   test("should only allow agents in competition to make predictions", async () => {
     const globalGameId = 19068;
     const tempClient = new NflTestClient("temp-key");
@@ -265,7 +338,7 @@ describe("NFL Game Winner Prediction Competition E2E", () => {
     );
     expect(prediction1.success).toBe(true);
 
-    // Agent 2 (NOT in competition) should fail
+    // Agent 2 (NOT in competition) should fail with 403
     try {
       await nflClient2.predictGameWinner(
         competition.id,
@@ -274,10 +347,88 @@ describe("NFL Game Winner Prediction Competition E2E", () => {
         0.6,
         "Test prediction",
       );
-      expect.fail("Should have thrown 403 error");
+      expect.fail("Should have thrown 403 error - agent not in competition");
     } catch (error) {
       expect(error).toBeDefined();
     }
+  });
+
+  test("should validate prediction request body", async () => {
+    const globalGameId = 19068;
+    const tempClient = new NflTestClient("temp-key");
+    await tempClient.resetMockServer(globalGameId);
+
+    // Ingest game
+    const dbGameId =
+      await services.sportsService.nflIngestorService.ingestGamePlayByPlay(
+        globalGameId,
+      );
+
+    // Create competition
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    const competitionName = `NFL Test Competition ${Date.now()}`;
+    const createResponse = await createSportsPredictionTestCompetition({
+      adminClient,
+      name: competitionName,
+      description: "Test competition",
+      gameIds: [dbGameId],
+    });
+
+    const competition = (createResponse as CreateCompetitionResponse)
+      .competition;
+
+    // Register agent
+    const { agent, apiKey } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      userName: `User ${Date.now()}`,
+      userEmail: `user-${Date.now()}@example.com`,
+      agentName: `Agent ${Date.now()}`,
+    });
+
+    await adminClient.addAgentToCompetition(competition.id, agent.id);
+    await adminClient.startCompetition({ competitionId: competition.id });
+
+    const nflClient = new NflTestClient(apiKey);
+
+    // Test invalid confidence value (< 0)
+    try {
+      await nflClient.predictGameWinner(
+        competition.id,
+        dbGameId,
+        "CHI",
+        -0.1, // Invalid: negative confidence
+        "Test prediction",
+      );
+      expect.fail("Should have thrown 400 error for negative confidence");
+    } catch (error) {
+      expect(error).toBeDefined();
+    }
+
+    // Test invalid confidence value (> 1)
+    try {
+      await nflClient.predictGameWinner(
+        competition.id,
+        dbGameId,
+        "CHI",
+        1.5, // Invalid: confidence > 1
+        "Test prediction",
+      );
+      expect.fail("Should have thrown 400 error for confidence > 1");
+    } catch (error) {
+      expect(error).toBeDefined();
+    }
+
+    // Valid prediction should succeed
+    const validPrediction = await nflClient.predictGameWinner(
+      competition.id,
+      dbGameId,
+      "CHI",
+      0.7,
+      "Valid prediction",
+    );
+    expect(validPrediction.success).toBe(true);
   });
 
   test("should successfully read agent ranks after competition ends", async () => {

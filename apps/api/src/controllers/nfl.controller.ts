@@ -282,6 +282,14 @@ export function makeNflController(services: ServiceRegistry) {
         const competitionId = ensureUuid(req.params.competitionId);
         const gameId = ensureUuid(req.params.gameId);
         const agentId = ensureAgentId(req);
+        const gameIsInCompetition =
+          await services.sportsService.competitionGamesRepository.findByCompetitionAndGame(
+            competitionId,
+            gameId,
+          );
+        if (!gameIsInCompetition) {
+          throw new ApiError(400, "Game is not part of this competition");
+        }
         const agentIsInCompetition =
           await services.competitionService.isAgentInCompetition(
             competitionId,
@@ -290,13 +298,12 @@ export function makeNflController(services: ServiceRegistry) {
         if (!agentIsInCompetition) {
           throw new ApiError(403, "Agent not in competition");
         }
-
         const body = PredictGameWinnerSchema.safeParse(req.body);
         if (!body.success) {
           throw new ApiError(400, body.error.message);
         }
-        const { predictedWinner, confidence, reason } = body.data;
 
+        const { predictedWinner, confidence, reason } = body.data;
         const prediction =
           await services.sportsService.gamePredictionService.createPrediction(
             competitionId,
