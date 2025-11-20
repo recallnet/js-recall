@@ -237,7 +237,7 @@ export class PortfolioSnapshotterService {
       tokenAddress: string;
       amount: number;
       symbol: string;
-      specificChain: string;
+      specificChain: SpecificChain;
     }>,
     agentId: string,
     maxRetries: number,
@@ -274,7 +274,7 @@ export class PortfolioSnapshotterService {
         requestsNeeded.push(
           ...balances.map((b) => ({
             tokenAddress: b.tokenAddress,
-            specificChain: b.specificChain as SpecificChain,
+            specificChain: b.specificChain,
           })),
         );
       } else {
@@ -287,7 +287,7 @@ export class PortfolioSnapshotterService {
           if (balance.amount > 0 && priceMap.get(priceKey) == null) {
             requestsNeeded.push({
               tokenAddress: balance.tokenAddress,
-              specificChain: balance.specificChain as SpecificChain,
+              specificChain: balance.specificChain,
             });
           }
         }

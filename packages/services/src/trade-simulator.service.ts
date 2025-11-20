@@ -225,7 +225,7 @@ export class TradeSimulatorService {
       const price = await this.priceTrackerService.getPrice(
         balance.tokenAddress,
         chainType,
-        balance.specificChain as SpecificChain,
+        balance.specificChain,
       );
       if (price) {
         totalValue += balance.amount * price.price;
@@ -269,7 +269,7 @@ export class TradeSimulatorService {
         if (!uniqueRequests.has(key)) {
           uniqueRequests.set(key, {
             tokenAddress: balance.tokenAddress,
-            specificChain: balance.specificChain as SpecificChain,
+            specificChain: balance.specificChain,
           });
         }
       }

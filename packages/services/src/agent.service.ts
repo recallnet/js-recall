@@ -41,7 +41,6 @@ import {
   EnhancedCompetition,
   PagingParams,
   PagingParamsSchema,
-  SpecificChain,
   TokenPriceRequest,
 } from "./types/index.js";
 import { AgentQueryParams } from "./types/sort/agent.js";
@@ -2070,7 +2069,7 @@ export class AgentService {
       // Build token+chain price requests
       const priceRequests: TokenPriceRequest[] = balances.map((b) => ({
         tokenAddress: b.tokenAddress,
-        specificChain: b.specificChain as SpecificChain,
+        specificChain: b.specificChain,
       }));
 
       // Get all prices in bulk with chain specificity
