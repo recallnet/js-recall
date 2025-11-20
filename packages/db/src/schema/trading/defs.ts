@@ -15,6 +15,7 @@ import {
   varchar,
 } from "drizzle-orm/pg-core";
 
+import type { SpecificChain } from "../../repositories/types/index.js";
 import {
   admins,
   agents,
@@ -148,7 +149,9 @@ export const balances = tradingComps.table(
     updatedAt: timestamp("updated_at", {
       withTimezone: true,
     }).defaultNow(),
-    specificChain: varchar("specific_chain", { length: 20 }).notNull(),
+    specificChain: varchar("specific_chain", { length: 20 })
+      .$type<SpecificChain>()
+      .notNull(),
     symbol: varchar("symbol", { length: 20 }).notNull(),
   },
   (table) => [

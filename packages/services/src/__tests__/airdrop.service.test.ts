@@ -28,20 +28,23 @@ describe("AirdropService", () => {
   describe("getAccountClaimsData", () => {
     it("should return claims data for an address with allocations and no claims", async () => {
       const mockAddress = "0x1234567890123456789012345678901234567890";
+      const now = new Date();
+      const season0Start = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000); // 60 days ago
+      const season1Start = new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000); // 10 days ago
 
       mockAirdropRepository.getSeasons.mockResolvedValue([
         {
           id: 1,
           number: 0,
           name: "Genesis",
-          startDate: new Date("2024-01-01"),
-          endDate: new Date("2025-01-01"),
+          startDate: season0Start,
+          endDate: null,
         },
         {
           id: 2,
           number: 1,
           name: "Season 1",
-          startDate: new Date("2025-01-01"),
+          startDate: season1Start,
           endDate: null,
         },
       ]);
@@ -108,7 +111,7 @@ describe("AirdropService", () => {
       expect(secondClaim.seasonName).toBe("Genesis");
       if (secondClaim.type === "available") {
         expect(secondClaim.eligibleAmount).toBe(BigInt("1000000000000000000"));
-        expect(secondClaim.proof).toEqual(["0xproof1", "0xproof2"]);
+        expect(secondClaim.proof).toEqual([]); // Season 0 has empty proof array
         expect(secondClaim.expiresAt).toBeDefined();
       }
     });
@@ -209,28 +212,32 @@ describe("AirdropService", () => {
 
     it("should handle multiple seasons with different claim statuses", async () => {
       const mockAddress = "0x1234567890123456789012345678901234567890";
-      const claimTimestamp = new Date("2024-01-01T00:00:00Z");
+      const now = new Date();
+      const claimTimestamp = new Date(now.getTime() - 50 * 24 * 60 * 60 * 1000); // 50 days ago
+      const season0Start = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000); // 60 days ago
+      const season1Start = new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000); // 10 days ago
+      const season2Start = new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000); // 5 days ago
 
       mockAirdropRepository.getSeasons.mockResolvedValue([
         {
           id: 1,
           number: 0,
           name: "Genesis",
-          startDate: new Date("2024-01-01"),
-          endDate: new Date("2025-01-01"),
+          startDate: season0Start,
+          endDate: null,
         },
         {
           id: 2,
           number: 1,
           name: "Season 1",
-          startDate: new Date("2025-01-01"),
-          endDate: new Date("2026-01-01"),
+          startDate: season1Start,
+          endDate: null,
         },
         {
           id: 3,
           number: 2,
           name: "Season 2",
-          startDate: new Date("2026-01-01"),
+          startDate: season2Start,
           endDate: null,
         },
       ]);
@@ -555,18 +562,18 @@ describe("AirdropService", () => {
       );
     });
 
-    it("should mark unclaimed allocation as expired when 30 days past season end and no following season", async () => {
+    it("should mark unclaimed allocation as expired when 90 days past season start for season 0", async () => {
       const mockAddress = "0x1234567890123456789012345678901234567890";
-      const seasonEndDate = new Date("2023-01-01");
-      const expectedExpiryDate = new Date("2023-01-31"); // 30 days after season end
+      const seasonStartDate = new Date("2023-01-01T00:00:00.000Z");
+      const expectedExpiryDate = new Date("2023-04-01T00:00:00.000Z"); // 90 days after season start
 
       mockAirdropRepository.getSeasons.mockResolvedValue([
         {
           id: 1,
           number: 0,
           name: "Genesis",
-          startDate: new Date("2022-12-01"),
-          endDate: seasonEndDate,
+          startDate: seasonStartDate,
+          endDate: null,
         },
       ]);
 
@@ -575,7 +582,7 @@ describe("AirdropService", () => {
           address: mockAddress.toLowerCase(),
           amount: BigInt("1000000000000000000"),
           season: 0,
-          proof: ["0xproof1", "0xproof2"],
+          proof: [],
           category: "early",
           sybilClassification: "approved",
           flaggedAt: null,
@@ -606,24 +613,18 @@ describe("AirdropService", () => {
       }
     });
 
-    it("should mark allocation as expired when following season has ended", async () => {
+    it("should mark allocation as expired when 30 days past season start for season > 0", async () => {
       const mockAddress = "0x1234567890123456789012345678901234567890";
-      const followingSeasonEndDate = new Date("2024-01-01");
+      const seasonStartDate = new Date("2023-01-01T00:00:00.000Z");
+      const expectedExpiryDate = new Date("2023-01-31T00:00:00.000Z"); // 30 days after season start
 
       mockAirdropRepository.getSeasons.mockResolvedValue([
-        {
-          id: 1,
-          number: 0,
-          name: "Genesis",
-          startDate: new Date("2023-01-01"),
-          endDate: new Date("2023-06-01"),
-        },
         {
           id: 2,
           number: 1,
           name: "Season 1",
-          startDate: new Date("2023-06-01"),
-          endDate: followingSeasonEndDate,
+          startDate: seasonStartDate,
+          endDate: null,
         },
       ]);
 
@@ -631,7 +632,7 @@ describe("AirdropService", () => {
         {
           address: mockAddress.toLowerCase(),
           amount: BigInt("1000000000000000000"),
-          season: 0,
+          season: 1,
           proof: ["0xproof1", "0xproof2"],
           category: "early",
           sybilClassification: "approved",
@@ -655,31 +656,31 @@ describe("AirdropService", () => {
       expect(result).toHaveLength(1);
       const claim = result[0]!;
       expect(claim.type).toBe("expired");
-      expect(claim.season).toBe(0);
-      expect(claim.seasonName).toBe("Genesis");
+      expect(claim.season).toBe(1);
+      expect(claim.seasonName).toBe("Season 1");
       if (claim.type === "expired") {
         expect(claim.eligibleAmount).toBe(BigInt("1000000000000000000"));
-        expect(claim.expiredAt).toEqual(followingSeasonEndDate);
+        expect(claim.expiredAt).toEqual(expectedExpiryDate);
       }
     });
 
-    it("should mark allocation as available when season ended but within 30-day claim window and no following season", async () => {
+    it("should mark allocation as available when within 90-day claim window for season 0", async () => {
       const mockAddress = "0x1234567890123456789012345678901234567890";
       const now = new Date();
-      const seasonEndDate = new Date(now.getTime() - 15 * 24 * 60 * 60 * 1000); // 15 days ago
+      const seasonStartDate = new Date(
+        now.getTime() - 45 * 24 * 60 * 60 * 1000,
+      ); // 45 days ago
       const expectedExpiryDate = new Date(
-        seasonEndDate.getTime() + 30 * 24 * 60 * 60 * 1000,
-      ); // 30 days after season end
+        seasonStartDate.getTime() + 90 * 24 * 60 * 60 * 1000,
+      ); // 90 days after season start
 
       mockAirdropRepository.getSeasons.mockResolvedValue([
         {
           id: 1,
           number: 0,
           name: "Genesis",
-          startDate: new Date(
-            seasonEndDate.getTime() - 30 * 24 * 60 * 60 * 1000,
-          ),
-          endDate: seasonEndDate,
+          startDate: seasonStartDate,
+          endDate: null,
         },
       ]);
 
@@ -688,7 +689,7 @@ describe("AirdropService", () => {
           address: mockAddress.toLowerCase(),
           amount: BigInt("1000000000000000000"),
           season: 0,
-          proof: ["0xproof1", "0xproof2"],
+          proof: [],
           category: "early",
           sybilClassification: "approved",
           flaggedAt: null,
@@ -719,16 +720,21 @@ describe("AirdropService", () => {
       }
     });
 
-    it("should mark allocation as available when active season has no end date and no following season", async () => {
+    it("should mark allocation as available when within 30-day claim window for season > 0", async () => {
       const mockAddress = "0x1234567890123456789012345678901234567890";
-      const seasonStartDate = new Date("2024-01-01");
-      const expectedExpiryDate = new Date("2024-03-01"); // 60 days after season start
+      const now = new Date();
+      const seasonStartDate = new Date(
+        now.getTime() - 15 * 24 * 60 * 60 * 1000,
+      ); // 15 days ago
+      const expectedExpiryDate = new Date(
+        seasonStartDate.getTime() + 30 * 24 * 60 * 60 * 1000,
+      ); // 30 days after season start
 
       mockAirdropRepository.getSeasons.mockResolvedValue([
         {
-          id: 1,
-          number: 0,
-          name: "Genesis",
+          id: 2,
+          number: 1,
+          name: "Season 1",
           startDate: seasonStartDate,
           endDate: null,
         },
@@ -738,7 +744,7 @@ describe("AirdropService", () => {
         {
           address: mockAddress.toLowerCase(),
           amount: BigInt("1000000000000000000"),
-          season: 0,
+          season: 1,
           proof: ["0xproof1", "0xproof2"],
           category: "early",
           sybilClassification: "approved",
@@ -762,8 +768,8 @@ describe("AirdropService", () => {
       expect(result).toHaveLength(1);
       const claim = result[0]!;
       expect(claim.type).toBe("available");
-      expect(claim.season).toBe(0);
-      expect(claim.seasonName).toBe("Genesis");
+      expect(claim.season).toBe(1);
+      expect(claim.seasonName).toBe("Season 1");
       if (claim.type === "available") {
         expect(claim.eligibleAmount).toBe(BigInt("1000000000000000000"));
         expect(claim.expiresAt).toEqual(expectedExpiryDate);
