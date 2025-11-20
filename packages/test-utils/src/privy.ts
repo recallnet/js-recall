@@ -1,6 +1,6 @@
 import { LinkedAccountWithMetadata } from "@privy-io/server-auth";
 import { SignJWT, importPKCS8 } from "jose";
-import { v4 as uuidv4 } from "uuid";
+import { randomUUID } from "crypto";
 
 import { generateRandomEthAddress } from "./test-helpers.js";
 
@@ -271,7 +271,7 @@ export function generateRandomPrivyId(): string {
 export function createTestPrivyUser(
   overrides: Partial<TestPrivyUser> = {},
 ): TestPrivyUser {
-  const id = uuidv4().slice(0, 8);
+  const id = randomUUID().slice(0, 8);
   const privyId = generateRandomPrivyId();
   return {
     privyId,
