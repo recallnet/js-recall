@@ -66,11 +66,6 @@ validatePort(mainPort, "PORT");
 validatePort(metricsPort, "METRICS_PORT", [mainPort]);
 
 export const config = {
-  sportsDataIO: {
-    apiKey: process.env.SPORTSDATAIO_API_KEY || "",
-    baseUrl:
-      process.env.SPORTSDATAIO_BASE_URL || "https://api.sportsdata.io/v3/nfl", // Optional: for mock server
-  },
   server: {
     port: mainPort,
     // TODO: these ports are going to be put into the openapi json spec, so they can't really be set at runtime, wtd?
@@ -301,6 +296,12 @@ export const config = {
   },
   symphony: {
     apiUrl: process.env.SYMPHONY_API_URL || "https://api.symphony.io",
+  },
+  // For sports prediction data
+  sportsDataApi: {
+    apiKey: process.env.SPORTSDATAIO_API_KEY || "",
+    baseUrl:
+      process.env.SPORTSDATAIO_BASE_URL || "https://api.sportsdata.io/v3/nfl", // Optional: for mock server
   },
 };
 

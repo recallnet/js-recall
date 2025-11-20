@@ -14,6 +14,13 @@ import { GameScoringService } from "./game-scoring.service.js";
 import { SportsDataIONflProvider } from "./providers/sportsdataio.provider.js";
 import { NflIngestorService } from "./sports-nfl-ingestor.service.js";
 
+export interface SportsServiceConfig {
+  sportsDataApi: {
+    apiKey: string;
+    baseUrl?: string;
+  };
+}
+
 /**
  * Sports Service
  * Encapsulates all NFL/sports prediction functionality
@@ -38,12 +45,7 @@ export class SportsService {
     db: Database,
     competitionRepo: CompetitionRepository,
     logger: Logger,
-    config: {
-      sportsDataIO: {
-        apiKey: string;
-        baseUrl?: string;
-      };
-    },
+    config: SportsServiceConfig,
   ) {
     // Initialize repositories
     this.gamesRepository = new GamesRepository(db, logger);
@@ -62,9 +64,9 @@ export class SportsService {
 
     // Initialize provider
     this.sportsDataIOProvider = new SportsDataIONflProvider(
-      config.sportsDataIO.apiKey,
+      config.sportsDataApi.apiKey,
       logger,
-      config.sportsDataIO.baseUrl,
+      config.sportsDataApi.baseUrl,
     );
 
     this.gameScoringService = new GameScoringService(

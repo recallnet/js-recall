@@ -19,6 +19,7 @@ import {
   RewardsService,
   RiskMetricsService,
   SortinoRatioService,
+  SportsService,
   TradeSimulatorService,
   TradingConstraintsService,
   UserService,
@@ -42,11 +43,9 @@ import {
   arenaRepository,
   balanceRepository,
   boostRepository,
-  competitionGamesRepository,
   competitionRepository,
   competitionRewardsRepository,
   convictionClaimsRepository,
-  gamesRepository,
   leaderboardRepository,
   perpsRepository,
   rewardsRepository,
@@ -216,6 +215,13 @@ export const rewardsService = new RewardsService(
   config.rewards.boostTimeDecayRate,
 );
 
+export const sportsService = new SportsService(
+  db,
+  competitionRepository,
+  createLogger("SportsService"),
+  config,
+);
+
 export const competitionService = new CompetitionService(
   balanceService,
   tradeSimulatorService,
@@ -229,8 +235,9 @@ export const competitionService = new CompetitionService(
   agentRepository,
   agentScoreRepository,
   arenaRepository,
-  gamesRepository,
-  competitionGamesRepository,
+  sportsService.gamesRepository,
+  sportsService.competitionGamesRepository,
+  sportsService.gameScoringService,
   perpsRepository,
   competitionRepository,
   stakesRepository,
