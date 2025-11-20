@@ -2662,7 +2662,7 @@ export class ApiClient {
   ) {
     try {
       const url = latest
-        ? `/api/nfl/competitions/${competitionId}/games/${gameId}/plays/latest`
+        ? `/api/nfl/competitions/${competitionId}/games/${gameId}/plays?latest=true`
         : `/api/nfl/competitions/${competitionId}/games/${gameId}/plays?limit=${limit}&offset=${offset}`;
       const response = await this.axiosInstance.get(url);
       return response.data;
