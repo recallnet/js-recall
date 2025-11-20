@@ -7,8 +7,6 @@ import { AgentRepository } from "@recallnet/db/repositories/agent";
 import { AgentScoreRepository } from "@recallnet/db/repositories/agent-score";
 import { ArenaRepository } from "@recallnet/db/repositories/arena";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
-import { CompetitionGamesRepository } from "@recallnet/db/repositories/competition-games";
-import { GamesRepository } from "@recallnet/db/repositories/games";
 import { PerpsRepository } from "@recallnet/db/repositories/perps";
 import { StakesRepository } from "@recallnet/db/repositories/stakes";
 import { UserRepository } from "@recallnet/db/repositories/user";
@@ -22,6 +20,7 @@ import { CompetitionService } from "../competition.service.js";
 import type { PerpsDataProcessor } from "../perps-data-processor.service.js";
 import type { PortfolioSnapshotterService } from "../portfolio-snapshotter.service.js";
 import { RewardsService } from "../rewards.service.js";
+import type { SportsService } from "../sports.service.js";
 import type { TradeSimulatorService } from "../trade-simulator.service.js";
 import type { TradingConstraintsService } from "../trading-constraints.service.js";
 
@@ -38,8 +37,7 @@ describe("CompetitionService - createCompetition", () => {
   let agentRepo: MockProxy<AgentRepository>;
   let agentScoreRepo: MockProxy<AgentScoreRepository>;
   let arenaRepo: MockProxy<ArenaRepository>;
-  let gamesRepo: MockProxy<GamesRepository>;
-  let competitionGamesRepo: MockProxy<CompetitionGamesRepository>;
+  let sportsService: MockProxy<SportsService>;
   let perpsRepo: MockProxy<PerpsRepository>;
   let competitionRepo: MockProxy<CompetitionRepository>;
   let stakesRepo: MockProxy<StakesRepository>;
@@ -62,8 +60,7 @@ describe("CompetitionService - createCompetition", () => {
     agentRepo = mock<AgentRepository>();
     agentScoreRepo = mock<AgentScoreRepository>();
     arenaRepo = mock<ArenaRepository>();
-    gamesRepo = mock<GamesRepository>();
-    competitionGamesRepo = mock<CompetitionGamesRepository>();
+    sportsService = mock<SportsService>();
     perpsRepo = mock<PerpsRepository>();
     competitionRepo = mock<CompetitionRepository>();
     stakesRepo = mock<StakesRepository>();
@@ -153,8 +150,7 @@ describe("CompetitionService - createCompetition", () => {
       agentRepo,
       agentScoreRepo,
       arenaRepo,
-      gamesRepo,
-      competitionGamesRepo,
+      sportsService,
       perpsRepo,
       competitionRepo,
       stakesRepo,
@@ -700,8 +696,7 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
   let agentRepo: MockProxy<AgentRepository>;
   let agentScoreRepo: MockProxy<AgentScoreRepository>;
   let arenaRepo: MockProxy<ArenaRepository>;
-  let gamesRepo: MockProxy<GamesRepository>;
-  let competitionGamesRepo: MockProxy<CompetitionGamesRepository>;
+  let sportsService: MockProxy<SportsService>;
   let perpsRepo: MockProxy<PerpsRepository>;
   let competitionRepo: MockProxy<CompetitionRepository>;
   let stakesRepo: MockProxy<StakesRepository>;
@@ -725,8 +720,7 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
     agentRepo = mock<AgentRepository>();
     agentScoreRepo = mock<AgentScoreRepository>();
     arenaRepo = mock<ArenaRepository>();
-    gamesRepo = mock<GamesRepository>();
-    competitionGamesRepo = mock<CompetitionGamesRepository>();
+    sportsService = mock<SportsService>();
     perpsRepo = mock<PerpsRepository>();
     competitionRepo = mock<CompetitionRepository>();
     stakesRepo = mock<StakesRepository>();
@@ -748,8 +742,7 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
       agentRepo,
       agentScoreRepo,
       arenaRepo,
-      gamesRepo,
-      competitionGamesRepo,
+      sportsService,
       perpsRepo,
       competitionRepo,
       stakesRepo,
