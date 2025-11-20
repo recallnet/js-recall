@@ -74,7 +74,7 @@ export class SpotDataProcessor {
   private isValidProviderConfig(
     config: unknown,
   ): config is SpotLiveProviderConfig {
-    if (!config || typeof config !== "object" || config === null) {
+    if (typeof config !== "object" || config === null) {
       return false;
     }
 
@@ -144,7 +144,7 @@ export class SpotDataProcessor {
     const uniqueTokensMap = new Map<string, SpecificChain>();
 
     for (const trade of trades) {
-      const chain = trade.chain as SpecificChain;
+      const chain = trade.chain;
       uniqueTokensMap.set(trade.fromToken.toLowerCase(), chain);
       uniqueTokensMap.set(trade.toToken.toLowerCase(), chain);
     }

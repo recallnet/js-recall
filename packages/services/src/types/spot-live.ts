@@ -70,7 +70,7 @@ export interface ISpotLiveDataProvider {
   getTradesSince(
     walletAddress: string,
     since: Date | number,
-    chains: string[],
+    chains: SpecificChain[],
   ): Promise<OnChainTrade[]>;
 
   /**
@@ -84,7 +84,7 @@ export interface ISpotLiveDataProvider {
   getTransferHistory?(
     walletAddress: string,
     since: Date | number,
-    chains: string[],
+    chains: SpecificChain[],
   ): Promise<SpotTransfer[]>;
 
   /**
