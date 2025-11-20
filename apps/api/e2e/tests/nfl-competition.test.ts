@@ -28,7 +28,7 @@ describe("NFL Game Winner Prediction Competition E2E", () => {
 
     // Ingest initial game state (snapshot 0 - pre-game)
     const dbGameId =
-      await services.sportsService.nflLiveIngestorService.ingestGamePlayByPlay(
+      await services.sportsService.nflIngestorService.ingestGamePlayByPlay(
         globalGameId,
       );
 
@@ -130,7 +130,7 @@ describe("NFL Game Winner Prediction Competition E2E", () => {
 
     // Step 8: Advance mock server to start the game (snapshot 1)
     await nflClient1.advanceMockServer(globalGameId);
-    await services.sportsService.nflLiveIngestorService.ingestGamePlayByPlay(
+    await services.sportsService.nflIngestorService.ingestGamePlayByPlay(
       globalGameId,
     );
 
@@ -161,19 +161,19 @@ describe("NFL Game Winner Prediction Competition E2E", () => {
 
     // Step 11: Advance mock server multiple times to progress through game
     await nflClient1.advanceMockServer(globalGameId); // Snapshot 2
-    await services.sportsService.nflLiveIngestorService.ingestGamePlayByPlay(
+    await services.sportsService.nflIngestorService.ingestGamePlayByPlay(
       globalGameId,
     );
 
     await nflClient1.advanceMockServer(globalGameId); // Snapshot 3
-    await services.sportsService.nflLiveIngestorService.ingestGamePlayByPlay(
+    await services.sportsService.nflIngestorService.ingestGamePlayByPlay(
       globalGameId,
     );
 
     // Step 12: Advance to final snapshot (game progresses)
     await nflClient1.advanceMockServer(globalGameId); // Snapshot 4
     await nflClient1.advanceMockServer(globalGameId); // Snapshot 5
-    await services.sportsService.nflLiveIngestorService.ingestGamePlayByPlay(
+    await services.sportsService.nflIngestorService.ingestGamePlayByPlay(
       globalGameId,
     );
 

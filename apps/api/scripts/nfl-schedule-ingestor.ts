@@ -49,9 +49,7 @@ async function syncSchedule(): Promise<void> {
   logger.info(`Starting NFL schedule sync for ${args.season} season...`);
 
   try {
-    await services.sportsService.nflLiveIngestorService.syncSchedule(
-      args.season,
-    );
+    await services.sportsService.nflIngestorService.syncSchedule(args.season);
   } catch (error) {
     logger.error({ error }, "Error during schedule sync");
     throw error;
@@ -67,10 +65,8 @@ async function syncScheduleTask(): Promise<void> {
   }
 }
 
-// Schedule the task to run every 5 minutes
 cron.schedule("*/5 * * * *", syncScheduleTask);
 
-// Run immediately
 try {
   await syncScheduleTask();
 } catch (error) {

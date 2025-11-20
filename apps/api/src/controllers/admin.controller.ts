@@ -811,7 +811,7 @@ export function makeAdminController(services: ServiceRegistry) {
         }
 
         // End the NFL competition (note: slightly different leaderboard format)
-        if (competition.type === "nfl") {
+        if (competition.type === "sports_prediction") {
           const { competition: endedCompetition, leaderboard } =
             await services.competitionService.endNflCompetition(competitionId);
           return res.status(200).json({

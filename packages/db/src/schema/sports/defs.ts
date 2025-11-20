@@ -71,7 +71,7 @@ export const nflTeam = sportsSchema.enum("nfl_team", [
  * Stores game metadata from SportsDataIO or other providers
  */
 export const games = sportsSchema.table(
-  "games",
+  "nfl_games",
   {
     id: uuid().primaryKey().notNull().defaultRandom(),
     providerGameId: integer("provider_game_id").notNull().unique(), // GlobalGameId from SportsDataIO (e.g., 19068)
@@ -111,7 +111,7 @@ export const games = sportsSchema.table(
  * Schema aligned with SportsDataIO Play-by-Play API
  */
 export const gamePlays = sportsSchema.table(
-  "game_plays",
+  "nfl_game_plays",
   {
     id: uuid().primaryKey().notNull().defaultRandom(),
     gameId: uuid("game_id").notNull(),
@@ -151,7 +151,7 @@ export const gamePlays = sportsSchema.table(
 );
 
 /**
- * Links competitions to NFL games
+ * Links competitions to sports games
  * Allows a single competition to track multiple concurrent games
  */
 export const competitionGames = sportsSchema.table(

@@ -15,13 +15,13 @@ import {
   SportsDataIOGameStatus,
   SportsDataIONflProvider,
   SportsDataIOPlayByPlay,
-} from "./providers/sportsdataio-nfl.provider.js";
+} from "./providers/sportsdataio.provider.js";
 
 /**
  * NFL Live Ingestor Service
  * Fetches live data from SportsDataIO and ingests into database
  */
-export class NflLiveIngestorService {
+export class NflIngestorService {
   readonly #gamesRepo: GamesRepository;
   readonly #gamePlaysRepo: GamePlaysRepository;
   readonly #competitionRepo: CompetitionRepository;

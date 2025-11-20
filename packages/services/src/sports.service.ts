@@ -11,8 +11,8 @@ import { Database } from "@recallnet/db/types";
 
 import { GamePredictionService } from "./game-prediction.service.js";
 import { GameScoringService } from "./game-scoring.service.js";
-import { NflLiveIngestorService } from "./nfl-plays-ingestor.service.js";
-import { SportsDataIONflProvider } from "./providers/sportsdataio-nfl.provider.js";
+import { SportsDataIONflProvider } from "./providers/sportsdataio.provider.js";
+import { NflIngestorService } from "./sports-nfl-ingestor.service.js";
 
 /**
  * Sports Service
@@ -29,7 +29,7 @@ export class SportsService {
   readonly competitionAggregateScoresRepository: CompetitionAggregateScoresRepository;
 
   // Services
-  readonly nflLiveIngestorService: NflLiveIngestorService;
+  readonly nflIngestorService: NflIngestorService;
   readonly gamePredictionService: GamePredictionService;
   readonly gameScoringService: GameScoringService;
   readonly sportsDataIOProvider: SportsDataIONflProvider;
@@ -76,7 +76,7 @@ export class SportsService {
     );
 
     // Initialize services
-    this.nflLiveIngestorService = new NflLiveIngestorService(
+    this.nflIngestorService = new NflIngestorService(
       this.gamesRepository,
       this.gamePlaysRepository,
       competitionRepo,

@@ -634,6 +634,7 @@ export {
   PortfolioSnapshotterService,
   PriceTrackerService,
   ServiceRegistry,
+  SportsService,
   SimulatedTradeExecutionService,
   TradeSimulatorService,
   TradingConstraintsService,

@@ -1,5 +1,5 @@
 {
-  "id": "16f18bf8-9b05-400b-a137-7abaa4f401f5",
+  "id": "6f5c0c1f-0d78-44fd-86ed-ad6a7b796d5f",
   "prevId": "34f557d7-6b5f-40ea-97d9-8ed3ea6299b4",
   "version": "7",
   "dialect": "postgresql",
@@ -4090,7 +4090,7 @@
         "competition_games_game_id_fkey": {
           "name": "competition_games_game_id_fkey",
           "tableFrom": "competition_games",
-          "tableTo": "games",
+          "tableTo": "nfl_games",
           "schemaTo": "sports",
           "columnsFrom": ["game_id"],
           "columnsTo": ["id"],
@@ -4110,8 +4110,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "sports.game_plays": {
-      "name": "game_plays",
+    "sports.nfl_game_plays": {
+      "name": "nfl_game_plays",
       "schema": "sports",
       "columns": {
         "id": {
@@ -4284,8 +4284,8 @@
       "foreignKeys": {
         "game_plays_game_id_fkey": {
           "name": "game_plays_game_id_fkey",
-          "tableFrom": "game_plays",
-          "tableTo": "games",
+          "tableFrom": "nfl_game_plays",
+          "tableTo": "nfl_games",
           "schemaTo": "sports",
           "columnsFrom": ["game_id"],
           "columnsTo": ["id"],
@@ -4428,7 +4428,7 @@
         "game_prediction_scores_game_id_fkey": {
           "name": "game_prediction_scores_game_id_fkey",
           "tableFrom": "game_prediction_scores",
-          "tableTo": "games",
+          "tableTo": "nfl_games",
           "schemaTo": "sports",
           "columnsFrom": ["game_id"],
           "columnsTo": ["id"],
@@ -4627,7 +4627,7 @@
         "game_predictions_game_id_fkey": {
           "name": "game_predictions_game_id_fkey",
           "tableFrom": "game_predictions",
-          "tableTo": "games",
+          "tableTo": "nfl_games",
           "schemaTo": "sports",
           "columnsFrom": ["game_id"],
           "columnsTo": ["id"],
@@ -4650,8 +4650,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "sports.games": {
-      "name": "games",
+    "sports.nfl_games": {
+      "name": "nfl_games",
       "schema": "sports",
       "columns": {
         "id": {
@@ -4803,8 +4803,8 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "games_provider_game_id_unique": {
-          "name": "games_provider_game_id_unique",
+        "nfl_games_provider_game_id_unique": {
+          "name": "nfl_games_provider_game_id_unique",
           "nullsNotDistinct": false,
           "columns": ["provider_game_id"]
         },

@@ -18,20 +18,77 @@ export function configureNflRoutes(
   router.use(optionalAuthMiddleware);
 
   /**
-   * GET /nfl/competitions/:competitionId/rules
-   * Get competition rules (scoring methodology, etc.)
+   * @openapi
+   * /nfl/competitions/{competitionId}/rules:
+   *   get:
+   *     summary: Get competition rules
+   *     description: Get competition rules including scoring methodology
+   *     tags:
+   *       - NFL
+   *     parameters:
+   *       - in: path
+   *         name: competitionId
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: Competition ID
+   *     responses:
+   *       200:
+   *         description: Competition rules retrieved successfully
+   *       404:
+   *         description: Competition not found
    */
   router.get("/competitions/:competitionId/rules", controller.getRules);
 
   /**
-   * GET /nfl/competitions/:competitionId/games
-   * Get all games for a competition
+   * @openapi
+   * /nfl/competitions/{competitionId}/games:
+   *   get:
+   *     summary: Get all games for a competition
+   *     description: Retrieve all games associated with a specific competition
+   *     tags:
+   *       - NFL
+   *     parameters:
+   *       - in: path
+   *         name: competitionId
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: Competition ID
+   *     responses:
+   *       200:
+   *         description: Games retrieved successfully
+   *       404:
+   *         description: Competition not found
    */
   router.get("/competitions/:competitionId/games", controller.getAllGames);
 
   /**
-   * GET /nfl/competitions/:competitionId/games/:gameId
-   * Get specific game info
+   * @openapi
+   * /nfl/competitions/{competitionId}/games/{gameId}:
+   *   get:
+   *     summary: Get specific game info
+   *     description: Retrieve detailed information about a specific game
+   *     tags:
+   *       - NFL
+   *     parameters:
+   *       - in: path
+   *         name: competitionId
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: Competition ID
+   *       - in: path
+   *         name: gameId
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: Game ID
+   *     responses:
+   *       200:
+   *         description: Game info retrieved successfully
+   *       404:
+   *         description: Game not found
    */
   router.get(
     "/competitions/:competitionId/games/:gameId",
@@ -39,9 +96,46 @@ export function configureNflRoutes(
   );
 
   /**
-   * GET /nfl/competitions/:competitionId/games/:gameId/plays
-   * Get play-by-play data for a game (with pagination)
-   * Query params: limit, offset, latest (boolean)
+   * @openapi
+   * /nfl/competitions/{competitionId}/games/{gameId}/plays:
+   *   get:
+   *     summary: Get play-by-play data for a game
+   *     description: Retrieve play-by-play data with pagination support
+   *     tags:
+   *       - NFL
+   *     parameters:
+   *       - in: path
+   *         name: competitionId
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: Competition ID
+   *       - in: path
+   *         name: gameId
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: Game ID
+   *       - in: query
+   *         name: limit
+   *         schema:
+   *           type: integer
+   *         description: Number of plays to return
+   *       - in: query
+   *         name: offset
+   *         schema:
+   *           type: integer
+   *         description: Number of plays to skip
+   *       - in: query
+   *         name: latest
+   *         schema:
+   *           type: boolean
+   *         description: Get only the latest plays
+   *     responses:
+   *       200:
+   *         description: Play-by-play data retrieved successfully
+   *       404:
+   *         description: Game not found
    */
   router.get(
     "/competitions/:competitionId/games/:gameId/plays",
@@ -49,9 +143,57 @@ export function configureNflRoutes(
   );
 
   /**
-   * POST /nfl/competitions/:competitionId/games/:gameId/predictions
-   * Make a prediction for game winner
-   * Body: { predictedWinner: string, confidence: number, reason: string }
+   * @openapi
+   * /nfl/competitions/{competitionId}/games/{gameId}/predictions:
+   *   post:
+   *     summary: Make a prediction for game winner
+   *     description: Submit a prediction for the winner of a specific game
+   *     tags:
+   *       - NFL
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: competitionId
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: Competition ID
+   *       - in: path
+   *         name: gameId
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: Game ID
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - predictedWinner
+   *               - confidence
+   *               - reason
+   *             properties:
+   *               predictedWinner:
+   *                 type: string
+   *                 description: Team predicted to win
+   *               confidence:
+   *                 type: number
+   *                 description: Confidence level (0-1)
+   *               reason:
+   *                 type: string
+   *                 description: Reasoning for the prediction
+   *     responses:
+   *       201:
+   *         description: Prediction created successfully
+   *       400:
+   *         description: Invalid request body
+   *       401:
+   *         description: Unauthorized
+   *       404:
+   *         description: Game not found
    */
   router.post(
     "/competitions/:competitionId/games/:gameId/predictions",
@@ -60,9 +202,36 @@ export function configureNflRoutes(
   );
 
   /**
-   * GET /nfl/competitions/:competitionId/games/:gameId/predictions
-   * Get predictions for a game
-   * Query params: agentId (optional - filter to specific agent)
+   * @openapi
+   * /nfl/competitions/{competitionId}/games/{gameId}/predictions:
+   *   get:
+   *     summary: Get predictions for a game
+   *     description: Retrieve all predictions made for a specific game
+   *     tags:
+   *       - NFL
+   *     parameters:
+   *       - in: path
+   *         name: competitionId
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: Competition ID
+   *       - in: path
+   *         name: gameId
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: Game ID
+   *       - in: query
+   *         name: agentId
+   *         schema:
+   *           type: string
+   *         description: Filter predictions by specific agent
+   *     responses:
+   *       200:
+   *         description: Predictions retrieved successfully
+   *       404:
+   *         description: Game not found
    */
   router.get(
     "/competitions/:competitionId/games/:gameId/predictions",
@@ -70,9 +239,30 @@ export function configureNflRoutes(
   );
 
   /**
-   * GET /nfl/competitions/:competitionId/leaderboard
-   * Get leaderboard for a competition
-   * Query params: gameId (optional - get leaderboard for specific game)
+   * @openapi
+   * /nfl/competitions/{competitionId}/leaderboard:
+   *   get:
+   *     summary: Get leaderboard for a competition
+   *     description: Retrieve the leaderboard showing agent rankings
+   *     tags:
+   *       - NFL
+   *     parameters:
+   *       - in: path
+   *         name: competitionId
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: Competition ID
+   *       - in: query
+   *         name: gameId
+   *         schema:
+   *           type: string
+   *         description: Get leaderboard for specific game
+   *     responses:
+   *       200:
+   *         description: Leaderboard retrieved successfully
+   *       404:
+   *         description: Competition not found
    */
   router.get(
     "/competitions/:competitionId/leaderboard",
