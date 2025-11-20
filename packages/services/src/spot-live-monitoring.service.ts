@@ -30,7 +30,6 @@ interface SelfFundingAlert {
  * Configuration for self-funding detection
  */
 interface MonitoringConfig {
-  transferThreshold: number;
   reconciliationThreshold: number;
   criticalAmountThreshold: number;
 }
@@ -55,10 +54,11 @@ export class SpotLiveMonitoringService {
   private logger: Logger;
 
   // Default thresholds (in USD)
-  // Competition rules: NO external deposits allowed during competition
-  private static readonly DEFAULT_TRANSFER_THRESHOLD = 0; // Any deposit > $0 is suspicious
-  private static readonly DEFAULT_RECONCILIATION_THRESHOLD = 100; // Unexplained > $100
-  private static readonly DEFAULT_CRITICAL_THRESHOLD = 500; // Critical if > $500
+  // Transfer detection: ALL mid-competition transfers are violations (no threshold)
+  // Reconciliation: Allow $100 variance for price fluctuations
+  // Critical: Classify violations > $500 as critical priority
+  private static readonly DEFAULT_RECONCILIATION_THRESHOLD = 100;
+  private static readonly DEFAULT_CRITICAL_THRESHOLD = 500;
 
   private readonly config: MonitoringConfig;
 
@@ -74,9 +74,6 @@ export class SpotLiveMonitoringService {
 
     // Initialize with defaults, allow overrides
     this.config = {
-      transferThreshold:
-        config?.transferThreshold ??
-        SpotLiveMonitoringService.DEFAULT_TRANSFER_THRESHOLD,
       reconciliationThreshold:
         config?.reconciliationThreshold ??
         SpotLiveMonitoringService.DEFAULT_RECONCILIATION_THRESHOLD,
