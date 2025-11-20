@@ -2850,7 +2850,7 @@ describe("Admin API", () => {
     expect(createResponse1.success).toBe(false);
     expect(createResponse1.status).toEqual(400);
     expect(createResponse1.error).toContain(
-      'type (invalid option: expected one of "trading"|"perpetual_futures")',
+      'type (invalid option: expected one of "trading"|"perpetual_futures"|"nfl")',
     );
 
     const createResponse2 = (await adminClient.createCompetition({
