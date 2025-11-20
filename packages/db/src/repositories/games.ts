@@ -105,7 +105,7 @@ export class GamesRepository {
 
       return result;
     } catch (error) {
-      this.#logger.error({ error }, "Error in findByproviderGameId");
+      this.#logger.error({ error }, "Error in findByProviderGameId");
       throw error;
     }
   }

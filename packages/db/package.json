@@ -138,8 +138,8 @@
         "default": "./dist/repositories/game-prediction-scores.js"
       },
       "require": {
-        "types": "./dist/repositories/competition-scores.d.cts",
-        "default": "./dist/repositories/competition-scores.cjs"
+        "types": "./dist/repositories/game-prediction-scores.d.cts",
+        "default": "./dist/repositories/game-prediction-scores.cjs"
       }
     },
     "./repositories/game-predictions": {

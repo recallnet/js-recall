@@ -820,9 +820,9 @@ export async function startPerpsTestCompetition({
 }
 
 /**
- * Create an NFL play prediction competition
+ * Create a sports (NFL) game prediction competition
  */
-export async function createNflPlayPredictionTestCompetition({
+export async function createSportsPredictionTestCompetition({
   adminClient,
   name,
   description,
@@ -845,7 +845,7 @@ export async function createNflPlayPredictionTestCompetition({
   });
 
   if (!result.success) {
-    throw new Error("Failed to create NFL play prediction competition");
+    throw new Error("Failed to create sports game prediction competition");
   }
 
   return result as CreateCompetitionResponse;

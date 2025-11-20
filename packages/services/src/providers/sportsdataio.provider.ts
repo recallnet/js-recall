@@ -211,7 +211,7 @@ export class SportsDataIONflProvider {
       this.#logger.debug({ season }, "Fetching schedule for season");
 
       const response = await this.#client.get<SportsDataIOScheduleGame[]>(
-        // Note: `stats` or `scores` provide the same response. B ut, if you use the "replay" API
+        // Note: `stats` or `scores` provide the same response. But, if you use the "replay" API
         // during testing, only `stats` is supported. The `scores` is in the documentation, though.
         `/stats/json/schedules/${season}?key=${this.#apiKey}`,
       );

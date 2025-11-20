@@ -1,7 +1,6 @@
 import { NextFunction, Response } from "express";
 import { z } from "zod/v4";
 
-import { ParsingError } from "@recallnet/db/errors";
 import { NFL_TEAMS } from "@recallnet/db/schema/sports/types";
 import { ApiError } from "@recallnet/services/types";
 
@@ -66,11 +65,7 @@ export function makeNflController(services: ServiceRegistry) {
         });
       } catch (error) {
         competitionLogger.error({ error }, "Error in getAllGames");
-        next(
-          error instanceof ParsingError
-            ? new ApiError(400, error.message)
-            : error,
-        );
+        next(error);
       }
     },
 
@@ -121,11 +116,7 @@ export function makeNflController(services: ServiceRegistry) {
         });
       } catch (error) {
         competitionLogger.error({ error }, "Error in getRules");
-        next(
-          error instanceof ParsingError
-            ? new ApiError(400, error.message)
-            : error,
-        );
+        next(error);
       }
     },
 
@@ -185,11 +176,7 @@ export function makeNflController(services: ServiceRegistry) {
         });
       } catch (error) {
         competitionLogger.error({ error }, "Error in getGameInfo");
-        next(
-          error instanceof ParsingError
-            ? new ApiError(400, error.message)
-            : error,
-        );
+        next(error);
       }
     },
 
@@ -261,18 +248,14 @@ export function makeNflController(services: ServiceRegistry) {
                 total: plays.length,
                 limit,
                 offset,
-                hasMore: offset + limit < plays.length,
+                hasMore: plays.length === limit,
               },
             },
           });
         }
       } catch (error) {
         competitionLogger.error({ error }, "Error in getGamePlays");
-        next(
-          error instanceof ParsingError
-            ? new ApiError(400, error.message)
-            : error,
-        );
+        next(error);
       }
     },
 
@@ -289,6 +272,14 @@ export function makeNflController(services: ServiceRegistry) {
         const competitionId = ensureUuid(req.params.competitionId);
         const gameId = ensureUuid(req.params.gameId);
         const agentId = ensureAgentId(req);
+        const agentIsInCompetition =
+          await services.competitionService.isAgentInCompetition(
+            competitionId,
+            agentId,
+          );
+        if (!agentIsInCompetition) {
+          throw new ApiError(403, "Agent not in competition");
+        }
 
         const body = PredictGameWinnerSchema.safeParse(req.body);
         if (!body.success) {
@@ -319,13 +310,7 @@ export function makeNflController(services: ServiceRegistry) {
         });
       } catch (error) {
         competitionLogger.error({ error }, "Error in predictGameWinner");
-        if (error instanceof ParsingError) {
-          next(new ApiError(400, error.message));
-        } else if (error instanceof Error) {
-          next(new ApiError(400, error.message));
-        } else {
-          next(error);
-        }
+        next(error);
       }
     },
 
@@ -373,11 +358,7 @@ export function makeNflController(services: ServiceRegistry) {
         });
       } catch (error) {
         competitionLogger.error({ error }, "Error in getGamePredictions");
-        next(
-          error instanceof ParsingError
-            ? new ApiError(400, error.message)
-            : error,
-        );
+        next(error);
       }
     },
 
@@ -438,11 +419,7 @@ export function makeNflController(services: ServiceRegistry) {
         }
       } catch (error) {
         competitionLogger.error({ error }, "Error in getLeaderboard");
-        next(
-          error instanceof ParsingError
-            ? new ApiError(400, error.message)
-            : error,
-        );
+        next(error);
       }
     },
   };

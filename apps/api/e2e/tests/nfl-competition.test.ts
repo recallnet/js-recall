@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, test } from "vitest";
 import {
   CreateCompetitionResponse,
   NflTestClient,
-  createNflPlayPredictionTestCompetition,
+  createSportsPredictionTestCompetition,
   createTestClient,
   getAdminApiKey,
   registerUserAndAgentAndGetClient,
@@ -38,7 +38,7 @@ describe("NFL Game Winner Prediction Competition E2E", () => {
 
     const competitionName = `NFL Test Competition ${Date.now()}`;
     const createCompetitionResponse =
-      await createNflPlayPredictionTestCompetition({
+      await createSportsPredictionTestCompetition({
         adminClient,
         name: competitionName,
         description: "Test NFL game winner prediction competition",

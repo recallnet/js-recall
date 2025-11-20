@@ -49,13 +49,11 @@ export class GamePredictionService {
     if (!competition) {
       throw new Error(`Competition ${competitionId} not found`);
     }
-
     if (competition.status !== "active") {
       throw new Error(
         `Competition ${competitionId} is not active (status: ${competition.status})`,
       );
     }
-
     if (competition.type !== "sports_prediction") {
       throw new Error(
         `Competition ${competitionId} is not an NFL competition (type: ${competition.type})`,
