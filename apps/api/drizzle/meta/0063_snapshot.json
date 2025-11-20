@@ -1,5 +1,5 @@
 {
-  "id": "bc247971-6786-47af-85ab-503174b6872e",
+  "id": "fe811757-2bc6-416f-a95a-b7bc71715801",
   "prevId": "2bbf21af-ca68-4023-80e7-ae4f2fd9cfc5",
   "version": "7",
   "dialect": "postgresql",
@@ -6263,7 +6263,7 @@
         },
         "tx_hash": {
           "name": "tx_hash",
-          "type": "varchar(66)",
+          "type": "varchar(100)",
           "primaryKey": false,
           "notNull": false
         },
@@ -6494,7 +6494,7 @@
         },
         "tx_hash": {
           "name": "tx_hash",
-          "type": "varchar(66)",
+          "type": "varchar(100)",
           "primaryKey": false,
           "notNull": true
         },

@@ -3,6 +3,9 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { config } from "@/config/private";
 import { db } from "@/lib/db";
+import { createLogger } from "@/lib/logger";
+
+const logger = createLogger("HealthCheck");
 
 /**
  * Health check endpoint with database connectivity check
@@ -23,7 +26,7 @@ function validateBearerToken(request: NextRequest): boolean {
   const expectedToken = config.healthCheck.apiKey;
 
   if (!expectedToken) {
-    console.error(
+    logger.error(
       "[Health Check] HEALTH_CHECK_API_KEY environment variable not set",
     );
     return false;
@@ -40,8 +43,21 @@ async function checkDatabaseHealth(): Promise<{
   const startTime = Date.now();
 
   try {
-    // Execute a simple query to verify database connectivity
-    await db.execute(sql`SELECT 1 as health_check`);
+    logger.info("start");
+
+    // Execute a simple query to verify database connectivity with a timeout
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(
+        () => reject(new Error("Database query timeout after 5s")),
+        5000,
+      );
+    });
+
+    await Promise.race([
+      db.execute(sql`SELECT 1 as health_check`),
+      timeoutPromise,
+    ]);
+    logger.info("done");
 
     const latencyMs = Date.now() - startTime;
 

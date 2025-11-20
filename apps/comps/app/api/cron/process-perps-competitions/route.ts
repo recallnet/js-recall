@@ -34,7 +34,7 @@ async function shouldProcessPerps(competitionId: string): Promise<boolean> {
  * Process perps competitions - creates portfolio snapshots and calculates risk metrics
  * Cron handler wrapped with authentication
  */
-export const POST = withCronAuth(async (_: NextRequest) => {
+export const GET = withCronAuth(async (_: NextRequest) => {
   const startTime = Date.now();
   logger.info("Starting perps competition processing...");
 

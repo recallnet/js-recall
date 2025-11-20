@@ -260,6 +260,10 @@ export class BalanceRepository {
     if (!result) {
       if (amountDelta > 0) {
         // Create balance if it doesn't exist for increments
+        // Use ON CONFLICT DO UPDATE to handle concurrent INSERTs
+        // Scenario: Multiple trades create same toToken balance concurrently
+        // Without ON CONFLICT: Second INSERT fails on unique constraint
+        // With ON CONFLICT: Second INSERT becomes UPDATE, adding to amount
         const [newResult] = await tx
           .insert(balances)
           .values({
@@ -271,6 +275,19 @@ export class BalanceRepository {
             symbol,
             createdAt: new Date(),
             updatedAt: new Date(),
+          })
+          .onConflictDoUpdate({
+            target: [
+              balances.agentId,
+              balances.tokenAddress,
+              balances.competitionId,
+            ],
+            set: {
+              amount: sql`${balances.amount} + ${amountDelta}`,
+              updatedAt: new Date(),
+              specificChain,
+              symbol,
+            },
           })
           .returning();
 
