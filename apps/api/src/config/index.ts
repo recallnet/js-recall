@@ -301,7 +301,7 @@ export const config = {
   sportsDataApi: {
     apiKey: process.env.SPORTSDATAIO_API_KEY || "",
     baseUrl:
-      process.env.SPORTSDATAIO_BASE_URL || "https://api.sportsdata.io/v3/nfl", // Optional: for mock server
+      process.env.SPORTSDATAIO_BASE_URL || "https://api.sportsdata.io/v3/nfl",
   },
 };
 

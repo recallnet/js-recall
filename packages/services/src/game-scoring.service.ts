@@ -195,10 +195,11 @@ export class GameScoringService {
 
           // Get final prediction (most recent)
           const finalPrediction = predictions[0]; // Already sorted by createdAt desc
+          const competitionId = predictions[0]!.competitionId;
 
           // Store per-game score
           await this.#gamePredictionScoresRepo.upsert({
-            competitionId: predictions[0]!.competitionId,
+            competitionId,
             gameId,
             agentId,
             timeWeightedBrierScore: timeWeightedBrierScore.toString(),
@@ -208,17 +209,14 @@ export class GameScoringService {
           });
 
           // Update competition aggregate
-          await this.#updateCompetitionAggregate(
-            predictions[0]!.competitionId,
-            agentId,
-          );
-
+          await this.#updateCompetitionAggregate(competitionId, agentId);
           scoredCount++;
 
           this.#logger.debug(
             {
               gameId,
               agentId,
+              competitionId,
               score: timeWeightedBrierScore,
               predictionCount: predictions.length,
             },
