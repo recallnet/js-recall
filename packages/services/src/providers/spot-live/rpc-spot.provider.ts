@@ -306,7 +306,7 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
    */
   async getTransferHistory(
     walletAddress: string,
-    since: Date,
+    since: Date | number,
     chains: string[],
   ): Promise<SpotTransfer[]> {
     const startTime = Date.now();
@@ -325,7 +325,10 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
       return [];
     }
 
-    const sinceBlock = await this.dateToBlockNumber(since, firstChain);
+    const sinceBlock =
+      typeof since === "number"
+        ? since
+        : await this.dateToBlockNumber(since, firstChain);
 
     // Add Sentry breadcrumb for debugging
     Sentry.addBreadcrumb({
@@ -334,7 +337,8 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
       level: "info",
       data: {
         walletAddress: maskedAddress,
-        since: since.toISOString(),
+        since:
+          typeof since === "number" ? `block ${since}` : since.toISOString(),
         chains,
       },
     });
@@ -342,7 +346,8 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
     this.logger.debug(
       {
         wallet: maskedAddress,
-        since: since.toISOString(),
+        since:
+          typeof since === "number" ? `block ${since}` : since.toISOString(),
         chains,
       },
       `[RpcSpotProvider] Fetching transfer history`,
@@ -419,7 +424,10 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
           extra: {
             walletAddress: maskedAddress,
             chain,
-            since: since.toISOString(),
+            since:
+              typeof since === "number"
+                ? `block ${since}`
+                : since.toISOString(),
             method: "getTransferHistory",
           },
         });

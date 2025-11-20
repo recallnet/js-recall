@@ -874,6 +874,45 @@ export class SpotLiveRepository {
   }
 
   /**
+   * Get the latest transfer block number for an agent in a competition on a specific chain
+   * Used to determine incremental sync starting point for transfer history
+   *
+   * IMPORTANT: The returned block number should be used WITH OVERLAP (not +1) to prevent gaps.
+   * Same reasoning as trades - allows retry of failed transfers in the same block.
+   * The unique constraint on txHash prevents duplicates during overlapping scans.
+   *
+   * @param agentId Agent ID
+   * @param competitionId Competition ID
+   * @param specificChain Specific chain to query
+   * @returns Latest block number or null if no transfers exist
+   */
+  async getLatestSpotLiveTransferBlock(
+    agentId: string,
+    competitionId: string,
+    specificChain: string,
+  ): Promise<number | null> {
+    try {
+      const [result] = await this.#dbRead
+        .select({ blockNumber: spotLiveTransferHistory.blockNumber })
+        .from(spotLiveTransferHistory)
+        .where(
+          and(
+            eq(spotLiveTransferHistory.agentId, agentId),
+            eq(spotLiveTransferHistory.competitionId, competitionId),
+            eq(spotLiveTransferHistory.specificChain, specificChain),
+          ),
+        )
+        .orderBy(desc(spotLiveTransferHistory.blockNumber))
+        .limit(1);
+
+      return result?.blockNumber ?? null;
+    } catch (error) {
+      this.#logger.error({ error }, "Error in getLatestSpotLiveTransferBlock");
+      throw error;
+    }
+  }
+
+  /**
    * Batch get self-funding alerts for multiple agents
    * @param agentIds Array of agent IDs
    * @param competitionId Competition ID

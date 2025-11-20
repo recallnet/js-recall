@@ -208,13 +208,35 @@ export class SpotDataProcessor {
 
   /**
    * Process data for a single agent
+   *
+   * Gap Prevention Strategy:
+   * This method uses incremental block-based syncing with overlapping scans to guarantee
+   * no missed transactions even when partial failures occur.
+   *
+   * How it works:
+   * 1. Query latest processed block number per chain from trades table
+   * 2. Sync from latestBlock (with overlap), NOT latestBlock+1
+   * 3. Unique constraint (txHash, competitionId, agentId) prevents duplicates
+   * 4. Duplicate check BEFORE balance updates (efficient)
+   *
+   * Why overlap prevents gaps:
+   * - Block 1000: [Trade A ✅, Trade B ❌, Trade C ✅] - B fails, A & C succeed
+   * - MAX(block_number) = 1000 (from A or C)
+   * - Next sync from block 1000 (overlap) → Retries B ✅
+   * - Duplicates from A & C are caught by duplicate check (no balance impact)
+   *
+   * Cost vs Safety:
+   * - Overhead: ~1 block worth of duplicate checks per sync (minimal)
+   * - Benefit: Zero transaction gaps, automatic retry of failures
+   *
    * @param agentId Agent ID
    * @param competitionId Competition ID
    * @param walletAddress Agent's wallet address
    * @param provider The spot live data provider
    * @param allowedTokens Map of chain to Set of allowed token addresses
    * @param tokenWhitelistEnabled Whether token filtering is enabled
-   * @param lastSyncTime Last time this agent was synced
+   * @param chains Array of chains to scan
+   * @param competitionStartDate Competition start date (fallback for first sync)
    * @returns Processing result
    */
   async processAgentData(
@@ -225,7 +247,7 @@ export class SpotDataProcessor {
     allowedTokens: Map<string, Set<string>>,
     tokenWhitelistEnabled: boolean,
     chains: string[],
-    lastSyncTime: Date,
+    competitionStartDate: Date,
   ): Promise<AgentSpotSyncResult> {
     if (!provider) {
       throw new Error("[SpotDataProcessor] Provider is required");
@@ -238,18 +260,60 @@ export class SpotDataProcessor {
         `[SpotDataProcessor] Processing agent ${agentId} for competition ${competitionId}`,
       );
 
-      // 1. Fetch trades from provider
-      const onChainTrades = await provider.getTradesSince(
-        walletAddress,
-        lastSyncTime,
-        chains,
-      );
+      // 1. Determine sync start point per chain for incremental processing
+      // Uses overlapping scans to prevent gaps from partial failures
+      const allTrades: OnChainTrade[] = [];
+
+      for (const chain of chains) {
+        // Query latest synced block for this agent on this chain
+        const latestBlock = await this.tradeRepo.getLatestSpotLiveTradeBlock(
+          agentId,
+          competitionId,
+          chain,
+        );
+
+        let since: Date | number;
+
+        if (latestBlock !== null) {
+          // IMPORTANT: Use latestBlock (not +1) to allow overlap
+          // This prevents gaps when some trades in a block fail while others succeed.
+          // Example: Block 1000 has 3 trades, 2 succeed, 1 fails due to transient error.
+          // Without overlap: Next sync starts from 1001 → Failed trade lost forever
+          // With overlap: Next sync includes 1000 → Failed trade retried
+          // The unique constraint (txHash, competitionId, agentId) prevents duplicates
+          since = latestBlock;
+
+          this.logger.debug(
+            `[SpotDataProcessor] Agent ${agentId} on ${chain}: incremental sync from block ${latestBlock} (with overlap)`,
+          );
+        } else {
+          // First sync - use competition start date
+          since = competitionStartDate;
+
+          this.logger.debug(
+            `[SpotDataProcessor] Agent ${agentId} on ${chain}: first sync from competition start`,
+          );
+        }
+
+        // Fetch trades for this chain only (per-chain incremental sync)
+        const chainTrades = await provider.getTradesSince(
+          walletAddress,
+          since,
+          [chain], // Single chain per request
+        );
+
+        allTrades.push(...chainTrades);
+
+        this.logger.debug(
+          `[SpotDataProcessor] Fetched ${chainTrades.length} trades for agent ${agentId} on ${chain} (including potential duplicates from block ${latestBlock ?? "start"})`,
+        );
+      }
 
       this.logger.debug(
-        `[SpotDataProcessor] Fetched ${onChainTrades.length} on-chain trades for agent ${agentId}`,
+        `[SpotDataProcessor] Fetched ${allTrades.length} total on-chain trades for agent ${agentId} across ${chains.length} chains`,
       );
 
-      if (onChainTrades.length === 0) {
+      if (allTrades.length === 0) {
         return {
           agentId,
           tradesProcessed: 0,
@@ -262,7 +326,8 @@ export class SpotDataProcessor {
       const whitelistedTrades: OnChainTrade[] = [];
       const rejectedTrades: RejectedTrade[] = [];
 
-      for (const trade of onChainTrades) {
+      for (const trade of allTrades) {
+        // Continue with whitelist filtering
         if (tokenWhitelistEnabled) {
           const chainTokens = allowedTokens.get(trade.chain);
 
@@ -364,14 +429,60 @@ export class SpotDataProcessor {
       }
 
       // 6. Fetch and save transfer history (optional, depends on provider)
+      // Use incremental sync for transfers too (same pattern as trades)
       let transfersRecorded = 0;
       if (provider.getTransferHistory) {
         try {
-          const transfers = await provider.getTransferHistory(
-            walletAddress,
-            lastSyncTime,
-            chains,
-          );
+          // Determine sync start point per chain for transfers (same as trades)
+          const allTransfers: Array<{
+            type: string;
+            tokenAddress: string;
+            amount: number;
+            from: string;
+            to: string;
+            timestamp: Date;
+            txHash: string;
+            chain: string;
+          }> = [];
+
+          for (const chain of chains) {
+            // Query latest synced transfer block for this agent on this chain
+            const latestBlock =
+              await this.spotLiveRepo.getLatestSpotLiveTransferBlock(
+                agentId,
+                competitionId,
+                chain,
+              );
+
+            let since: Date | number;
+
+            if (latestBlock !== null) {
+              // IMPORTANT: Use latestBlock (not +1) to allow overlap for gap prevention
+              // Same reasoning as trades: if some transfers fail, next sync will retry them
+              // The unique constraint on txHash prevents duplicates
+              since = latestBlock;
+              this.logger.debug(
+                `[SpotDataProcessor] Agent ${agentId} on ${chain}: incremental transfer sync from block ${latestBlock} (with overlap)`,
+              );
+            } else {
+              // First sync: from competition start
+              since = competitionStartDate;
+              this.logger.debug(
+                `[SpotDataProcessor] Agent ${agentId} on ${chain}: first transfer sync from competition start`,
+              );
+            }
+
+            // Fetch transfers for this chain only
+            const chainTransfers = await provider.getTransferHistory(
+              walletAddress,
+              since,
+              [chain],
+            );
+
+            allTransfers.push(...chainTransfers);
+          }
+
+          const transfers = allTransfers;
 
           if (transfers.length > 0) {
             // Extract unique tokens from transfers
@@ -770,13 +881,60 @@ export class SpotDataProcessor {
         }
       }
 
-      // 7. Run monitoring if configured (future: SpotLiveMonitoringService)
+      // 7. Run monitoring if configured
       let monitoringResult;
-      if (!skipMonitoring && spotLiveConfig.selfFundingThresholdUsd) {
-        this.logger.debug(
-          `[SpotDataProcessor] Self-funding monitoring not yet implemented`,
+      if (
+        !skipMonitoring &&
+        spotLiveConfig.selfFundingThresholdUsd &&
+        syncResult.successful.length > 0
+      ) {
+        this.logger.info(
+          `[SpotDataProcessor] Running self-funding monitoring for competition ${competitionId}`,
         );
-        // TODO: Implement in Phase 3.2
+
+        const { SpotLiveMonitoringService } = await import(
+          "./spot-live-monitoring.service.js"
+        );
+
+        const monitoring = new SpotLiveMonitoringService(
+          this.spotLiveRepo,
+          this.competitionRepo,
+          this.logger,
+        );
+
+        // Get agents to monitor (only successfully synced ones)
+        const successfulAgentIds = new Set(
+          syncResult.successful.map((r) => r.agentId),
+        );
+
+        const agentIds =
+          await this.competitionRepo.getCompetitionAgents(competitionId);
+        const agents = await this.agentRepo.findByIds(agentIds);
+
+        const agentsToMonitor = agents
+          .filter(
+            (agent): agent is typeof agent & { walletAddress: string } =>
+              agent.walletAddress !== null && successfulAgentIds.has(agent.id),
+          )
+          .map((agent) => ({
+            agentId: agent.id,
+            walletAddress: agent.walletAddress,
+          }));
+
+        const monitorResult = await monitoring.monitorAgents(
+          agentsToMonitor,
+          competitionId,
+          competition.startDate,
+        );
+
+        monitoringResult = {
+          agentsMonitored: monitorResult.successful.length,
+          alertsCreated: monitorResult.totalAlertsCreated,
+        };
+
+        this.logger.info(
+          `[SpotDataProcessor] Monitoring complete: ${monitoringResult.alertsCreated} alerts created`,
+        );
       }
 
       return {

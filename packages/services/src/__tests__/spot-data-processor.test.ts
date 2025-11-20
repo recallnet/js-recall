@@ -41,10 +41,12 @@ class MockSpotLiveRepository {
   getEnabledChains = vi.fn();
   getAllowedTokenAddresses = vi.fn();
   batchSaveSpotLiveTransfers = vi.fn();
+  getLatestSpotLiveTransferBlock = vi.fn();
 }
 
 class MockTradeRepository {
   batchCreateTradesWithBalances = vi.fn();
+  getLatestSpotLiveTradeBlock = vi.fn();
 }
 
 class MockPortfolioSnapshotterService {
@@ -176,6 +178,10 @@ describe("SpotDataProcessor", () => {
       failed: [],
     });
 
+    // Mock block tracking - return null by default (first sync scenario)
+    mockTradeRepo.getLatestSpotLiveTradeBlock.mockResolvedValue(null);
+    mockSpotLiveRepo.getLatestSpotLiveTransferBlock.mockResolvedValue(null);
+
     mockPriceTracker.getPrice.mockResolvedValue(samplePrice);
     mockPortfolioSnapshotter.takePortfolioSnapshots.mockResolvedValue(
       undefined,
@@ -226,10 +232,18 @@ describe("SpotDataProcessor", () => {
         new Date("2024-01-01"),
       );
 
+      // Now calls getLatestSpotLiveTradeBlock for block tracking
+      expect(mockTradeRepo.getLatestSpotLiveTradeBlock).toHaveBeenCalledWith(
+        "agent-1",
+        "comp-1",
+        "base",
+      );
+
+      // Now calls getTradesSince once per chain (with single-chain array)
       expect(mockProvider.getTradesSince).toHaveBeenCalledWith(
         "0xagent123",
-        expect.any(Date),
-        ["base"],
+        expect.any(Date), // First sync uses Date (null latestBlock)
+        ["base"], // Single chain per request
       );
 
       expect(mockPriceTracker.getPrice).toHaveBeenCalled();
@@ -380,6 +394,82 @@ describe("SpotDataProcessor", () => {
           new Date(),
         ),
       ).rejects.toThrow("[SpotDataProcessor] Provider is required");
+    });
+
+    it("should use incremental block syncing when latest block exists", async () => {
+      // Mock latest block as 1000000
+      mockTradeRepo.getLatestSpotLiveTradeBlock.mockResolvedValue(1000000);
+
+      await processor.processAgentData(
+        "agent-1",
+        "comp-1",
+        "0xagent123",
+        mockProvider,
+        new Map(),
+        false,
+        ["base"],
+        new Date("2024-01-01"),
+      );
+
+      // Should query for latest block
+      expect(mockTradeRepo.getLatestSpotLiveTradeBlock).toHaveBeenCalledWith(
+        "agent-1",
+        "comp-1",
+        "base",
+      );
+
+      // Should use block number (with overlap) for incremental sync
+      expect(mockProvider.getTradesSince).toHaveBeenCalledWith(
+        "0xagent123",
+        1000000, // Uses latestBlock (not +1) for gap prevention
+        ["base"],
+      );
+    });
+
+    it("should scan per-chain independently for multi-chain agents", async () => {
+      // Mock different latest blocks per chain
+      mockTradeRepo.getLatestSpotLiveTradeBlock
+        .mockResolvedValueOnce(1000000) // base
+        .mockResolvedValueOnce(150000000); // arbitrum
+
+      await processor.processAgentData(
+        "agent-1",
+        "comp-1",
+        "0xagent123",
+        mockProvider,
+        new Map(),
+        false,
+        ["base", "arbitrum"],
+        new Date("2024-01-01"),
+      );
+
+      // Should query latest block for each chain
+      expect(mockTradeRepo.getLatestSpotLiveTradeBlock).toHaveBeenCalledTimes(
+        2,
+      );
+      expect(mockTradeRepo.getLatestSpotLiveTradeBlock).toHaveBeenCalledWith(
+        "agent-1",
+        "comp-1",
+        "base",
+      );
+      expect(mockTradeRepo.getLatestSpotLiveTradeBlock).toHaveBeenCalledWith(
+        "agent-1",
+        "comp-1",
+        "arbitrum",
+      );
+
+      // Should call getTradesSince separately for each chain with its specific block
+      expect(mockProvider.getTradesSince).toHaveBeenCalledTimes(2);
+      expect(mockProvider.getTradesSince).toHaveBeenCalledWith(
+        "0xagent123",
+        1000000, // base block
+        ["base"],
+      );
+      expect(mockProvider.getTradesSince).toHaveBeenCalledWith(
+        "0xagent123",
+        150000000, // arbitrum block
+        ["arbitrum"],
+      );
     });
   });
 
