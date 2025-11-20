@@ -182,7 +182,13 @@ describe("SpotDataProcessor", () => {
     mockTradeRepo.getLatestSpotLiveTradeBlock.mockResolvedValue(null);
     mockSpotLiveRepo.getLatestSpotLiveTransferBlock.mockResolvedValue(null);
 
-    mockPriceTracker.getPrice.mockResolvedValue(samplePrice);
+    // Mock bulk price fetching - return price for all tokens
+    mockPriceTracker.getBulkPrices.mockResolvedValue(
+      new Map([
+        ["0x833589fcd6edb6e08f4c7c32d4f71b54bda02913:base", samplePrice],
+        ["0x940181a94a35a4569e4529a3cdfb74e38fd98631:base", samplePrice],
+      ]),
+    );
     mockPortfolioSnapshotter.takePortfolioSnapshots.mockResolvedValue(
       undefined,
     );
@@ -246,7 +252,7 @@ describe("SpotDataProcessor", () => {
         ["base"], // Single chain per request
       );
 
-      expect(mockPriceTracker.getPrice).toHaveBeenCalled();
+      expect(mockPriceTracker.getBulkPrices).toHaveBeenCalled();
       expect(mockTradeRepo.batchCreateTradesWithBalances).toHaveBeenCalled();
 
       expect(result.agentId).toBe("agent-1");
@@ -255,9 +261,13 @@ describe("SpotDataProcessor", () => {
     });
 
     it("should filter out trades with unpriceable tokens", async () => {
-      mockPriceTracker.getPrice
-        .mockResolvedValueOnce(samplePrice) // fromToken succeeds
-        .mockResolvedValueOnce(null); // toToken fails
+      // Mock bulk prices with one token missing
+      mockPriceTracker.getBulkPrices.mockResolvedValue(
+        new Map([
+          ["0x833589fcd6edb6e08f4c7c32d4f71b54bda02913:base", samplePrice], // fromToken
+          // toToken missing (unpriceable)
+        ]),
+      );
 
       const result = await processor.processAgentData(
         "agent-1",
@@ -358,7 +368,8 @@ describe("SpotDataProcessor", () => {
     });
 
     it("should record transfers even when price fetch fails", async () => {
-      mockPriceTracker.getPrice.mockResolvedValue(null);
+      // Mock bulk prices returning empty (all tokens unpriceable)
+      mockPriceTracker.getBulkPrices.mockResolvedValue(new Map());
 
       await processor.processAgentData(
         "agent-1",

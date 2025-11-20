@@ -153,14 +153,8 @@ export class SpotDataProcessor {
   }
 
   /**
-   * Fetch prices for all tokens (one call per unique token+chain pair)
+   * Fetch prices for all tokens using bulk price API
    * @returns Map of "address:chain" key to price report
-   *
-   * TODO: Once PR #1588 (https://github.com/recallnet/js-recall/pull/1588) is merged,
-   * switch to the refactored getBulkPrices() method that accepts TokenPriceRequest[]
-   * and properly handles multi-chain tokens with batched API calls (up to 30 per request).
-   * Current implementation uses individual getPrice() calls which works correctly for
-   * multi-chain scenarios but is less efficient.
    */
   private async fetchPricesForTrades(
     tokens: Array<{ address: string; chain: SpecificChain }>,
@@ -171,35 +165,33 @@ export class SpotDataProcessor {
       return priceMap;
     }
 
+    // Transform to TokenPriceRequest format for bulk API
+    const priceRequests = tokens.map((t) => ({
+      tokenAddress: t.address,
+      specificChain: t.chain,
+    }));
+
+    // Use bulk price API (batches up to 30 tokens per request)
+    const bulkPriceMap = await this.priceTracker.getBulkPrices(priceRequests);
+
+    // Transform results to use "address:chain" keying
     let successCount = 0;
     let failCount = 0;
 
     for (const { address, chain } of tokens) {
-      try {
-        const blockchainType = getBlockchainType(chain);
-        const price = await this.priceTracker.getPrice(
-          address,
-          blockchainType,
-          chain,
-        );
+      const mapKey = `${address.toLowerCase()}:${chain}`;
+      const price = bulkPriceMap.get(mapKey);
 
-        if (price) {
-          // Key by address:chain for multi-chain support
-          priceMap.set(`${address.toLowerCase()}:${chain}`, price);
-          successCount++;
-        } else {
-          failCount++;
-        }
-      } catch (error) {
-        this.logger.warn(
-          `[SpotDataProcessor] Failed to fetch price for token ${address} on ${chain}: ${error}`,
-        );
+      if (price) {
+        priceMap.set(mapKey, price);
+        successCount++;
+      } else {
         failCount++;
       }
     }
 
     this.logger.debug(
-      `[SpotDataProcessor] Price fetch complete: ${successCount}/${tokens.length} tokens priced` +
+      `[SpotDataProcessor] Bulk price fetch complete: ${successCount}/${tokens.length} tokens priced` +
         (failCount > 0 ? `, ${failCount} failed` : ""),
     );
 
