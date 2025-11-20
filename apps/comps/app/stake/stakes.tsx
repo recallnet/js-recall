@@ -6,6 +6,7 @@ import { Button } from "@recallnet/ui2/components/button";
 
 import StakeRecallModal from "@/components/modals/stake-recall";
 import { ActiveStakes } from "@/components/staking/ActiveStakes";
+import { ConvictionRewards } from "@/components/staking/ConvictionRewards";
 import { InactiveStakes } from "@/components/staking/InactiveStakes";
 import { Rewards } from "@/components/staking/Rewards";
 import { StakeSummary } from "@/components/staking/StakeSummary";
@@ -33,7 +34,6 @@ export default function Stakes() {
   const hasBalance = !recall.isLoading && (recall.value ?? 0n) > 0n;
   const activeCount = stakes?.length ?? 0;
   const isLoading = recall.isLoading || stakesLoading;
-  const isZeroState = !hasBalance && activeCount === 0 && !isLoading;
   const hasBalanceNoStakes = hasBalance && activeCount === 0 && !isLoading;
 
   const pending =
@@ -55,27 +55,7 @@ export default function Stakes() {
         <div className="mx-auto my-20 max-w-screen-xl px-4 sm:px-6 lg:px-8">
           <StakeSummary onStakeClick={() => setIsStakeModalOpen(true)} />
 
-          {isZeroState ? (
-            <div className="mb-16">
-              <div className="mb-10">
-                <h2 className="text-primary-foreground mb-2 text-xl font-semibold">
-                  Acquire RECALL to get started.
-                </h2>
-                <p className="text-secondary-foreground text-sm">
-                  You need RECALL to Stake and start getting Boost.
-                </p>
-              </div>
-
-              <div>
-                <h2 className="text-primary-foreground mb-2 text-xl">
-                  Active Stakes
-                </h2>
-                <p className="text-secondary-foreground text-sm">
-                  No active stakes yet. Stake to earn Boost.
-                </p>
-              </div>
-            </div>
-          ) : hasBalanceNoStakes ? (
+          {hasBalanceNoStakes && (
             <div className="mb-20">
               <div className="mb-10">
                 <h2 className="text-primary-foreground mb-2 text-xl font-semibold">
@@ -93,39 +73,25 @@ export default function Stakes() {
                   STAKE NOW
                 </Button>
               </div>
-
-              <div>
-                <h2 className="text-primary-foreground mb-2 text-xl">
-                  Active Stakes
-                </h2>
-                <p className="text-secondary-foreground text-sm">
-                  No active stakes yet. Stake to earn Boost.
-                </p>
-              </div>
             </div>
-          ) : (
-            <>
-              {/* Missing Out Section */}
-              <div className="mb-20">
-                <h2 className="text-primary-foreground mb-2 text-xl font-bold">
-                  More Stakes = more Boost!
-                </h2>
-                <p className="text-secondary-foreground text-base">
-                  With more RECALL, you can Boost your favorite agents even
-                  further!
-                </p>
-              </div>
-
-              <Rewards />
-
-              <ActiveStakes />
-
-              <hr className="my-8" />
-
-              <InactiveStakes />
-            </>
           )}
+
+          <div className="mb-8 flex flex-col gap-6 sm:flex-row">
+            <div className="flex-1">
+              <Rewards />
+            </div>
+            <div className="flex-1">
+              <ConvictionRewards />
+            </div>
+          </div>
+
+          <ActiveStakes />
+
+          <hr className="my-8" />
+
+          <InactiveStakes />
         </div>
+
         {/* Stake Modal */}
         <StakeRecallModal
           isOpen={isStakeModalOpen}

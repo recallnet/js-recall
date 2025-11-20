@@ -183,9 +183,11 @@ export const ActiveStakes: React.FunctionComponent = () => {
     return (
       <div className="mb-8">
         <Heading text1="Active" text2="Stakes" className="mb-2" />
-        <p className="mb-4 text-sm text-gray-400">
-          No active stakes yet. Stake to earn Boost.
-        </p>
+        <div className="border-gray-4 bg-gray-2 px-auto flex flex-col gap-2 rounded-lg border px-6 py-8">
+          <p className="text-sm text-gray-400">
+            No active stakes yet. Stake to earn Boost.
+          </p>
+        </div>
       </div>
     );
   }

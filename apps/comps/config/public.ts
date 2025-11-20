@@ -17,6 +17,9 @@ export const configSchema = z
       rewardAllocationContractAddress: z
         .string()
         .default("0x08EB26382777B344e21d0EbE92bB4B32a5FF63b6"),
+      airdropContractAddress: z
+        .string()
+        .default("0x6A3044c1Cf077F386c9345eF84f2518A2682Dfff"),
     }),
     boost: z.object({
       noStakeBoostAmount: z.coerce.bigint().default(0n),
@@ -58,6 +61,7 @@ export const rawConfig = {
     stakingContractAddress: process.env.NEXT_PUBLIC_STAKING_CONTRACT_ADDRESS,
     rewardAllocationContractAddress:
       process.env.NEXT_PUBLIC_REWARD_ALLOCATION_CONTRACT_ADDRESS,
+    airdropContractAddress: process.env.NEXT_PUBLIC_AIRDROP_CONTRACT_ADDRESS,
   },
   boost: {
     noStakeBoostAmount: process.env.NEXT_PUBLIC_NO_STAKE_BOOST_AMOUNT,

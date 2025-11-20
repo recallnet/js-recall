@@ -88,12 +88,14 @@ export const Rewards: React.FunctionComponent = () => {
 
     return (
       <div className="mb-8">
-        <Heading text1="Arena" text2="Rewards" className="mb-2" />
-        <p className="mb-4 text-sm text-gray-400">
-          {hasScheduledRewards
-            ? "Rewards will be claimable once the release window opens."
-            : "No rewards available yet."}
-        </p>
+        <Heading text1="Arena" text2="Rewards" className="mb-4" />
+        <div className="border-gray-4 bg-gray-2 flex flex-col gap-2 rounded-lg border px-6 py-8">
+          <p className="text-sm text-gray-400">
+            {hasScheduledRewards
+              ? "Rewards will be claimable once the release window opens."
+              : "No pending rewards."}
+          </p>
+        </div>
       </div>
     );
   }
