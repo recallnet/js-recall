@@ -115,4 +115,5 @@ CREATE INDEX "idx_spot_live_transfers_type" ON "trading_comps"."spot_live_transf
 CREATE INDEX "idx_trades_trade_type" ON "trading_comps"."trades" USING btree ("trade_type");--> statement-breakpoint
 CREATE INDEX "idx_trades_tx_hash" ON "trading_comps"."trades" USING btree ("tx_hash");--> statement-breakpoint
 CREATE INDEX "idx_trades_block_number" ON "trading_comps"."trades" USING btree ("block_number");--> statement-breakpoint
-CREATE INDEX "idx_trades_type_competition_timestamp" ON "trading_comps"."trades" USING btree ("trade_type","competition_id","timestamp" DESC);
+CREATE INDEX "idx_trades_type_competition_timestamp" ON "trading_comps"."trades" USING btree ("trade_type","competition_id","timestamp" DESC);--> statement-breakpoint
+ALTER TABLE "trading_comps"."trades" ADD CONSTRAINT "trades_tx_hash_competition_agent_unique" UNIQUE("tx_hash","competition_id","agent_id");

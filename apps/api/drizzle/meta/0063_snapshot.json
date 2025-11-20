@@ -1,5 +1,5 @@
 {
-  "id": "fe811757-2bc6-416f-a95a-b7bc71715801",
+  "id": "f507f072-96b5-4c6b-acc6-6272e68126a1",
   "prevId": "2bbf21af-ca68-4023-80e7-ae4f2fd9cfc5",
   "version": "7",
   "dialect": "postgresql",
@@ -7048,7 +7048,13 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "trades_tx_hash_competition_agent_unique": {
+          "name": "trades_tx_hash_competition_agent_unique",
+          "nullsNotDistinct": false,
+          "columns": ["tx_hash", "competition_id", "agent_id"]
+        }
+      },
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
