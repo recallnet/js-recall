@@ -115,12 +115,20 @@ export class SimulatedTradeExecutionService {
         throw new ApiError(404, `Competition not found: ${competitionId}`);
       }
 
-      // Check if this is a perps competition - trading endpoint is supported for paper trading competitions only
+      // Check competition type - trading endpoint is only for paper trading competitions
       if (competition.type === "perpetual_futures") {
         throw new ApiError(
           400,
           "This endpoint is not available for perpetual futures competitions. " +
-            "Perpetual futures positions are managed through Symphony, not through this API.",
+            "Perpetual futures positions are managed through external providers, not through this API.",
+        );
+      }
+
+      if (competition.type === "spot_live_trading") {
+        throw new ApiError(
+          400,
+          "This endpoint is not available for spot live trading competitions. " +
+            "Spot live trades occur on-chain through DEXs and are detected automatically.",
         );
       }
 
