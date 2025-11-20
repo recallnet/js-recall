@@ -322,6 +322,11 @@ export class BalanceService {
             `[BalanceManager] Successfully cleared balances for perps agent ${agentId}`,
           );
           break;
+        case "spot_live_trading":
+          this.logger.debug(
+            `[BalanceManager] Successfully cleared balances for spot live agent ${agentId}`,
+          );
+          break;
         default:
           assertUnreachable(competitionType);
       }

@@ -80,3 +80,33 @@ export interface RiskAdjustedLeaderboardEntry {
   downsideDeviation: string | null;
   hasRiskMetrics: boolean;
 }
+
+export type SelectSpotLiveCompetitionConfig =
+  typeof defs.spotLiveCompetitionConfig.$inferSelect;
+export type InsertSpotLiveCompetitionConfig =
+  typeof defs.spotLiveCompetitionConfig.$inferInsert;
+
+export type SelectSpotLiveAllowedProtocol =
+  typeof defs.spotLiveAllowedProtocols.$inferSelect;
+export type InsertSpotLiveAllowedProtocol =
+  typeof defs.spotLiveAllowedProtocols.$inferInsert;
+
+export type SelectSpotLiveCompetitionChain =
+  typeof defs.spotLiveCompetitionChains.$inferSelect;
+export type InsertSpotLiveCompetitionChain =
+  typeof defs.spotLiveCompetitionChains.$inferInsert;
+
+export type SelectSpotLiveAllowedToken =
+  typeof defs.spotLiveAllowedTokens.$inferSelect;
+export type InsertSpotLiveAllowedToken =
+  typeof defs.spotLiveAllowedTokens.$inferInsert;
+
+export type SelectSpotLiveTransferHistory =
+  typeof defs.spotLiveTransferHistory.$inferSelect;
+export type InsertSpotLiveTransferHistory =
+  typeof defs.spotLiveTransferHistory.$inferInsert;
+
+export type SelectSpotLiveSelfFundingAlert =
+  typeof defs.spotLiveSelfFundingAlerts.$inferSelect;
+export type InsertSpotLiveSelfFundingAlert =
+  typeof defs.spotLiveSelfFundingAlerts.$inferInsert;
