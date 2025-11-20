@@ -2578,13 +2578,13 @@ export class ApiClient {
    */
   async submitNflPrediction(
     competitionId: string,
-    globalGameId: number,
+    providerGameId: number,
     prediction: "run" | "pass",
     confidence: number,
   ) {
     try {
       const response = await this.axiosInstance.post(
-        `/api/nfl/competitions/${competitionId}/games/${globalGameId}/predictions`,
+        `/api/nfl/competitions/${competitionId}/games/${providerGameId}/predictions`,
         { prediction, confidence },
       );
       return response.data;
@@ -2679,11 +2679,12 @@ export class ApiClient {
     gameId: string,
     predictedWinner: string,
     confidence: number,
+    reason: string,
   ) {
     try {
       const response = await this.axiosInstance.post(
         `/api/nfl/competitions/${competitionId}/games/${gameId}/predictions`,
-        { predictedWinner, confidence },
+        { predictedWinner, confidence, reason },
       );
       return response.data;
     } catch (error) {

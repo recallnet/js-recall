@@ -24,7 +24,7 @@ export class GamesRepository {
   }
 
   /**
-   * Upsert a game by globalGameId
+   * Upsert a game by providerGameId
    * @param game Game data to insert or update
    * @returns The upserted game
    */
@@ -41,12 +41,15 @@ export class GamesRepository {
         .insert(games)
         .values(data)
         .onConflictDoUpdate({
-          target: games.globalGameId,
+          target: games.providerGameId,
           set: {
-            gameKey: data.gameKey,
+            season: data.season,
+            week: data.week,
             startTime: data.startTime,
             homeTeam: data.homeTeam,
             awayTeam: data.awayTeam,
+            spread: data.spread,
+            overUnder: data.overUnder,
             venue: data.venue,
             status: data.status,
             updatedAt: now,
@@ -86,23 +89,23 @@ export class GamesRepository {
   }
 
   /**
-   * Find game by global game ID (from SportsDataIO)
-   * @param globalGameId SportsDataIO global game ID
+   * Find game by provider game ID (from SportsDataIO)
+   * @param providerGameId SportsDataIO provider game ID
    * @returns Game or undefined
    */
-  async findByGlobalGameId(
-    globalGameId: number,
+  async findByProviderGameId(
+    providerGameId: number,
   ): Promise<SelectGame | undefined> {
     try {
       const [result] = await this.#db
         .select()
         .from(games)
-        .where(eq(games.globalGameId, globalGameId))
+        .where(eq(games.providerGameId, providerGameId))
         .limit(1);
 
       return result;
     } catch (error) {
-      this.#logger.error({ error }, "Error in findByGlobalGameId");
+      this.#logger.error({ error }, "Error in findByproviderGameId");
       throw error;
     }
   }

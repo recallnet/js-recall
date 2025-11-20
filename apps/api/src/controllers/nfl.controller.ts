@@ -14,6 +14,7 @@ import { ensureAgentId, ensurePaging, ensureUuid } from "./request-helpers.js";
 const PredictGameWinnerSchema = z.object({
   predictedWinner: z.enum(NFL_TEAMS),
   confidence: z.number().min(0).max(1),
+  reason: z.string().min(1, "Reason is required"),
 });
 
 /**
@@ -52,8 +53,7 @@ export function makeNflController(services: ServiceRegistry) {
           data: {
             games: games.map((game) => ({
               id: game.id,
-              globalGameId: game.globalGameId,
-              gameKey: game.gameKey,
+              providerGameId: game.providerGameId,
               startTime: game.startTime.toISOString(),
               endTime: game.endTime?.toISOString() || null,
               homeTeam: game.homeTeam,
@@ -171,8 +171,7 @@ export function makeNflController(services: ServiceRegistry) {
           data: {
             game: {
               id: game.id,
-              globalGameId: game.globalGameId,
-              gameKey: game.gameKey,
+              providerGameId: game.providerGameId,
               startTime: game.startTime.toISOString(),
               endTime: game.endTime?.toISOString() || null,
               homeTeam: game.homeTeam,
@@ -295,7 +294,7 @@ export function makeNflController(services: ServiceRegistry) {
         if (!body.success) {
           throw new ApiError(400, body.error.message);
         }
-        const { predictedWinner, confidence } = body.data;
+        const { predictedWinner, confidence, reason } = body.data;
 
         const prediction =
           await services.sportsService.gamePredictionService.createPrediction(
@@ -304,6 +303,7 @@ export function makeNflController(services: ServiceRegistry) {
             agentId,
             predictedWinner,
             confidence,
+            reason,
           );
 
         res.status(201).json({
@@ -312,6 +312,7 @@ export function makeNflController(services: ServiceRegistry) {
             id: prediction.id,
             predictedWinner: prediction.predictedWinner,
             confidence: Number(prediction.confidence),
+            reason: prediction.reason,
             createdAt: prediction.createdAt.toISOString(),
           },
           message: "Prediction created successfully",

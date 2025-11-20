@@ -51,7 +51,7 @@ export function configureNflRoutes(
   /**
    * POST /nfl/competitions/:competitionId/games/:gameId/predictions
    * Make a prediction for game winner
-   * Body: { predictedWinner: string, confidence: number }
+   * Body: { predictedWinner: string, confidence: number, reason: string }
    */
   router.post(
     "/competitions/:competitionId/games/:gameId/predictions",

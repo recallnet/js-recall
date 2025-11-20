@@ -56,23 +56,7 @@ cd apps/api
 export SPORTSDATAIO_API_KEY=your_key
 
 # Ingest live game with 3-second polling
-pnpm tsx scripts/nfl-plays-ingestor.ts \
-  --globalGameId 19068 \
-  --competitionId <uuid> \
-  --pollInterval 3000
-```
-
-### Baseline Ingestor (Testing)
-
-```bash
-cd apps/api
-
-# Replay baseline data with loop mode
-pnpm tsx scripts/nfl-ingestor.ts \
-  --dir baseline/nfl \
-  --competitionId <uuid> \
-  --replaySpeed 10.0 \
-  --loop
+pnpm tsx scripts/nfl-plays-ingestor.ts --pollInterval 3000
 ```
 
 See `SIMULATION_GUIDE.md` for detailed testing scenarios.

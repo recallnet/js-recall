@@ -174,25 +174,25 @@ export class SportsDataIONflProvider {
 
   /**
    * Get play-by-play data for a specific game
-   * @param globalGameId Global game identifier (e.g., 19068)
+   * @param providerGameId provider game identifier (e.g., 19068)
    * @returns Play-by-play data including score and plays
    */
-  async getPlayByPlay(globalGameId: number): Promise<SportsDataIOPlayByPlay> {
+  async getPlayByPlay(providerGameId: number): Promise<SportsDataIOPlayByPlay> {
     try {
-      this.#logger.debug(`Fetching play-by-play for game ${globalGameId}`);
+      this.#logger.debug(`Fetching play-by-play for game ${providerGameId}`);
 
       const response = await this.#client.get<SportsDataIOPlayByPlay>(
-        `/pbp/json/playbyplay/${globalGameId}?key=${this.#apiKey}`,
+        `/pbp/json/playbyplay/${providerGameId}?key=${this.#apiKey}`,
       );
 
       this.#logger.info(
-        `Fetched ${response.data.Plays.length} plays for game ${globalGameId}`,
+        `Fetched ${response.data.Plays.length} plays for game ${providerGameId}`,
       );
 
       return response.data;
     } catch (error) {
       this.#logger.error(
-        { error, globalGameId },
+        { error, providerGameId },
         "Error fetching play-by-play for game",
       );
       throw error;

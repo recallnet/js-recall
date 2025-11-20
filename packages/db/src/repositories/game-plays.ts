@@ -89,7 +89,6 @@ export class GamePlaysRepository {
             team: data.team,
             opponent: data.opponent,
             description: data.description,
-            outcome: data.outcome,
             updatedAt: now,
           },
         })

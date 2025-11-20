@@ -42,6 +42,7 @@ export class GamePredictionService {
     agentId: string,
     predictedWinner: string,
     confidence: number,
+    reason: string,
   ): Promise<SelectGamePrediction> {
     // Validate competition is active
     const competition = await this.#competitionRepo.findById(competitionId);
@@ -88,9 +89,6 @@ export class GamePredictionService {
       );
     }
 
-    // TODO: Validate agent is registered in competition
-    // This would require CompetitionAgentsRepository or similar
-
     // Create prediction
     const prediction = await this.#gamePredictionsRepo.create({
       competitionId,
@@ -98,6 +96,7 @@ export class GamePredictionService {
       agentId,
       predictedWinner,
       confidence: confidence.toString(),
+      reason,
     });
 
     this.#logger.info(
@@ -107,6 +106,7 @@ export class GamePredictionService {
         agentId,
         predictedWinner,
         confidence,
+        reason,
       },
       "Created game prediction",
     );

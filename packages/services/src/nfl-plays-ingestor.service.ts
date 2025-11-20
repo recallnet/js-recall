@@ -127,11 +127,11 @@ export class NflLiveIngestorService {
         this.#logger.info(
           `Ingesting game ${game.id} (${game.awayTeam} @ ${game.homeTeam})...`,
         );
-        await this.ingestGamePlayByPlay(game.globalGameId);
+        await this.ingestGamePlayByPlay(game.providerGameId);
         ingestedCount++;
       } catch (error) {
         this.#logger.error(
-          { error, gameId: game.id, globalGameId: game.globalGameId },
+          { error, gameId: game.id, providerGameId: game.providerGameId },
           "Error ingesting game, continuing with others",
         );
         // Continue with other games
@@ -176,11 +176,14 @@ export class NflLiveIngestorService {
     for (const game of actualGames) {
       try {
         await this.#gamesRepo.upsert({
-          globalGameId: game.GlobalGameID,
-          gameKey: game.GameKey,
+          providerGameId: game.GlobalGameID,
+          season: game.Season,
+          week: game.Week,
           startTime: new Date(game.Date),
           homeTeam: game.HomeTeam,
           awayTeam: game.AwayTeam,
+          spread: game.PointSpread,
+          overUnder: game.OverUnder,
           venue: game.StadiumDetails?.Name || null,
           status: this.#mapResponseToNflGameStatus(game.Status),
         });
@@ -196,8 +199,7 @@ export class NflLiveIngestorService {
         this.#logger.error(
           {
             error,
-            globalGameId: game.GlobalGameID,
-            gameKey: game.GameKey,
+            providerGameId: game.GlobalGameID,
           },
           "Error syncing game",
         );
@@ -242,13 +244,13 @@ export class NflLiveIngestorService {
 
   /**
    * Ingest play-by-play data for a game
-   * @param globalGameId SportsDataIO global game ID (e.g., 19068)
+   * @param providerGameId SportsDataIO provider game ID (e.g., 19068)
    * @returns Database game ID
    */
-  async ingestGamePlayByPlay(globalGameId: number): Promise<string> {
+  async ingestGamePlayByPlay(providerGameId: number): Promise<string> {
     try {
       // Fetch play-by-play data
-      const data = await this.#provider.getPlayByPlay(globalGameId);
+      const data = await this.#provider.getPlayByPlay(providerGameId);
 
       // Ingest or update game
       const dbGame = await this.#ingestGame(data);
@@ -259,7 +261,7 @@ export class NflLiveIngestorService {
       return dbGame.id;
     } catch (error) {
       this.#logger.error(
-        { error, globalGameId },
+        { error, providerGameId },
         "Error ingesting play-by-play for game",
       );
       throw error;
@@ -316,7 +318,7 @@ export class NflLiveIngestorService {
     }
 
     // Check if game was already final
-    const existingGame = await this.#gamesRepo.findByGlobalGameId(
+    const existingGame = await this.#gamesRepo.findByProviderGameId(
       score.GlobalGameID,
     );
     const wasAlreadyFinal = existingGame?.status === "final";
@@ -327,8 +329,9 @@ export class NflLiveIngestorService {
 
     // Upsert game
     const game = await this.#gamesRepo.upsert({
-      globalGameId: score.GlobalGameID,
-      gameKey: score.GameKey,
+      providerGameId: score.GlobalGameID,
+      season: score.Season,
+      week: score.Week,
       startTime: new Date(score.Date),
       homeTeam: score.HomeTeam,
       awayTeam: score.AwayTeam,
@@ -344,7 +347,7 @@ export class NflLiveIngestorService {
       );
       if (score.AwayScore === null || score.HomeScore === null) {
         this.#logger.warn(
-          { gameId: game.id, globalGameId: score.GlobalGameID },
+          { gameId: game.id, providerGameId: score.GlobalGameID },
           "Game is final but scores are missing, skipping finalization",
         );
         return game;
@@ -379,7 +382,7 @@ export class NflLiveIngestorService {
         // Fallback to current time if no plays available
         endTime = new Date();
         this.#logger.warn(
-          { gameId: game.id, globalGameId: score.GlobalGameID },
+          { gameId: game.id, providerGameId: score.GlobalGameID },
           "No GameEndDateTime or plays available, using current time as game end time",
         );
       }
@@ -387,7 +390,7 @@ export class NflLiveIngestorService {
       this.#logger.info(
         {
           gameId: game.id,
-          globalGameId: score.GlobalGameID,
+          providerGameId: score.GlobalGameID,
           winner,
           awayScore: score.AwayScore,
           homeScore: score.HomeScore,
@@ -435,7 +438,6 @@ export class NflLiveIngestorService {
           team: play.Team,
           opponent: play.Opponent,
           description: play.Description,
-          outcome: play.Type,
         });
 
         ingestedCount++;

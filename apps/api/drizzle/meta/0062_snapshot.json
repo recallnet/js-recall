@@ -1,5 +1,5 @@
 {
-  "id": "a948048c-7c3c-4dd8-af22-2e96e4711db4",
+  "id": "1be4a682-176b-47ad-9550-3c1ec015eae8",
   "prevId": "34f557d7-6b5f-40ea-97d9-8ed3ea6299b4",
   "version": "7",
   "dialect": "postgresql",
@@ -4201,24 +4201,20 @@
         },
         "team": {
           "name": "team",
-          "type": "text",
+          "type": "nfl_team",
+          "typeSchema": "sports",
           "primaryKey": false,
           "notNull": true
         },
         "opponent": {
           "name": "opponent",
-          "type": "text",
+          "type": "nfl_team",
+          "typeSchema": "sports",
           "primaryKey": false,
           "notNull": true
         },
         "description": {
           "name": "description",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "outcome": {
-          "name": "outcome",
           "type": "text",
           "primaryKey": false,
           "notNull": false
@@ -4503,6 +4499,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "reason": {
+          "name": "reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -4659,15 +4661,21 @@
           "notNull": true,
           "default": "gen_random_uuid()"
         },
-        "global_game_id": {
-          "name": "global_game_id",
+        "provider_game_id": {
+          "name": "provider_game_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": true
         },
-        "game_key": {
-          "name": "game_key",
-          "type": "text",
+        "season": {
+          "name": "season",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "week": {
+          "name": "week",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true
         },
@@ -4696,6 +4704,18 @@
           "typeSchema": "sports",
           "primaryKey": false,
           "notNull": true
+        },
+        "spread": {
+          "name": "spread",
+          "type": "numeric(10, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "over_under": {
+          "name": "over_under",
+          "type": "numeric(10, 2)",
+          "primaryKey": false,
+          "notNull": false
         },
         "venue": {
           "name": "venue",
@@ -4734,26 +4754,11 @@
         }
       },
       "indexes": {
-        "idx_games_global_game_id": {
-          "name": "idx_games_global_game_id",
+        "idx_games_provider_game_id": {
+          "name": "idx_games_provider_game_id",
           "columns": [
             {
-              "expression": "global_game_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_games_game_key": {
-          "name": "idx_games_game_key",
-          "columns": [
-            {
-              "expression": "game_key",
+              "expression": "provider_game_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -4798,15 +4803,15 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "games_global_game_id_unique": {
-          "name": "games_global_game_id_unique",
+        "games_provider_game_id_unique": {
+          "name": "games_provider_game_id_unique",
           "nullsNotDistinct": false,
-          "columns": ["global_game_id"]
+          "columns": ["provider_game_id"]
         },
-        "games_global_game_id_key": {
-          "name": "games_global_game_id_key",
+        "games_provider_game_id_key": {
+          "name": "games_provider_game_id_key",
           "nullsNotDistinct": false,
-          "columns": ["global_game_id"]
+          "columns": ["provider_game_id"]
         }
       },
       "policies": {},

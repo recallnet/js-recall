@@ -74,12 +74,19 @@ export const games = sportsSchema.table(
   "games",
   {
     id: uuid().primaryKey().notNull().defaultRandom(),
-    globalGameId: integer("global_game_id").notNull().unique(), // GlobalGameID from SportsDataIO (e.g., 19068)
-    gameKey: text("game_key").notNull(), // GameKey (e.g., "202510106")
+    providerGameId: integer("provider_game_id").notNull().unique(), // GlobalGameId from SportsDataIO (e.g., 19068)
+    season: integer("season").notNull(),
+    week: integer("week").notNull(),
     startTime: timestamp("start_time", { withTimezone: true }).notNull(),
     endTime: timestamp("end_time", { withTimezone: true }), // Set when game status becomes "final"
     homeTeam: nflTeam("home_team").notNull(),
     awayTeam: nflTeam("away_team").notNull(),
+    spread: numeric("spread", { precision: 10, scale: 2, mode: "number" }),
+    overUnder: numeric("over_under", {
+      precision: 10,
+      scale: 2,
+      mode: "number",
+    }),
     venue: text("venue"),
     status: gameStatus("status").notNull().default("scheduled"),
     winner: nflTeam("winner"), // Team ticker of winner, set when game is final
@@ -91,9 +98,8 @@ export const games = sportsSchema.table(
       .notNull(),
   },
   (table) => [
-    unique("games_global_game_id_key").on(table.globalGameId),
-    index("idx_games_global_game_id").on(table.globalGameId),
-    index("idx_games_game_key").on(table.gameKey),
+    unique("games_provider_game_id_key").on(table.providerGameId),
+    index("idx_games_provider_game_id").on(table.providerGameId),
     index("idx_games_status").on(table.status),
     index("idx_games_start_time").on(table.startTime),
   ],
@@ -114,17 +120,16 @@ export const gamePlays = sportsSchema.table(
     quarterName: text("quarter_name").notNull(), // "1", "2", "3", "4", "OT", "F/OT", or null
     timeRemainingMinutes: integer("time_remaining_minutes"),
     timeRemainingSeconds: integer("time_remaining_seconds"),
-    playTime: timestamp("play_time", { withTimezone: true }), // Actual timestamp from API
+    playTime: timestamp("play_time", { withTimezone: true }),
     down: integer("down"),
     distance: integer("distance"),
     yardLine: integer("yard_line"),
-    yardLineTerritory: text("yard_line_territory"), // Team abbreviation
+    yardLineTerritory: text("yard_line_territory"),
     yardsToEndZone: integer("yards_to_end_zone"),
     playType: text("play_type"), // "Pass", "Rush", "Kickoff", "Punt", etc.
-    team: text("team").notNull(), // Team with possession
-    opponent: text("opponent").notNull(), // Opposing team
+    team: nflTeam("team").notNull(), // Team with possession
+    opponent: nflTeam("opponent").notNull(), // Opposing team
     description: text("description"), // Human-readable play description
-    outcome: text("outcome"), // Rush, Pass, Kickoff, Punt, etc.
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -193,6 +198,7 @@ export const gamePredictions = sportsSchema.table(
     agentId: uuid("agent_id").notNull(),
     predictedWinner: nflTeam("predicted_winner").notNull(), // Team ticker: "MIN", "CHI", etc.
     confidence: numeric("confidence", { precision: 4, scale: 3 }).notNull(), // 0.0 - 1.0
+    reason: text("reason"), // Reason for prediction
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),

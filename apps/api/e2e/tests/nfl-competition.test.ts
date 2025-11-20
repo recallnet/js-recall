@@ -112,6 +112,7 @@ describe("NFL Game Winner Prediction Competition E2E", () => {
       dbGameId,
       "CHI",
       0.7,
+      "foobar",
     );
     expect(prediction1Response.success).toBe(true);
     expect(prediction1Response.data.predictedWinner).toBe("CHI");
@@ -123,6 +124,7 @@ describe("NFL Game Winner Prediction Competition E2E", () => {
       dbGameId,
       "MIN",
       0.6,
+      "foobar",
     );
     expect(prediction2Response.success).toBe(true);
 
@@ -145,6 +147,7 @@ describe("NFL Game Winner Prediction Competition E2E", () => {
       dbGameId,
       "MIN",
       0.8,
+      "foobar",
     );
     expect(updatedPrediction1.success).toBe(true);
 
@@ -231,7 +234,13 @@ describe("NFL Game Winner Prediction Competition E2E", () => {
 
     // Step 16: Verify cannot predict after game ends
     try {
-      await nflClient1.predictGameWinner(competitionId, dbGameId, "CHI", 0.9);
+      await nflClient1.predictGameWinner(
+        competitionId,
+        dbGameId,
+        "CHI",
+        0.9,
+        "foobar",
+      );
       expect.fail("Should not allow prediction after game ends");
     } catch (error) {
       // Expected error

@@ -1,4 +1,4 @@
-CREATE SCHEMA IF NOT EXISTS "sports";
+CREATE SCHEMA "sports";
 --> statement-breakpoint
 CREATE TYPE "sports"."game_status" AS ENUM('scheduled', 'in_progress', 'final');--> statement-breakpoint
 CREATE TYPE "sports"."nfl_team" AS ENUM('ARI', 'ATL', 'BAL', 'BUF', 'BYE', 'CAR', 'CHI', 'CIN', 'CLE', 'DAL', 'DEN', 'DET', 'GB', 'HOU', 'IND', 'JAX', 'KC', 'LAC', 'LAR', 'LV', 'MIA', 'MIN', 'NE', 'NO', 'NYG', 'NYJ', 'PHI', 'PIT', 'SEA', 'SF', 'TB', 'TEN', 'WAS');--> statement-breakpoint
@@ -36,10 +36,9 @@ CREATE TABLE "sports"."game_plays" (
 	"yard_line_territory" text,
 	"yards_to_end_zone" integer,
 	"play_type" text,
-	"team" text NOT NULL,
-	"opponent" text NOT NULL,
+	"team" "sports"."nfl_team" NOT NULL,
+	"opponent" "sports"."nfl_team" NOT NULL,
 	"description" text,
-	"outcome" text,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "game_plays_game_id_sequence_key" UNIQUE("game_id","sequence")
@@ -65,24 +64,28 @@ CREATE TABLE "sports"."game_predictions" (
 	"agent_id" uuid NOT NULL,
 	"predicted_winner" "sports"."nfl_team" NOT NULL,
 	"confidence" numeric(4, 3) NOT NULL,
+	"reason" text,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "sports"."games" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"global_game_id" integer NOT NULL,
-	"game_key" text NOT NULL,
+	"provider_game_id" integer NOT NULL,
+	"season" integer NOT NULL,
+	"week" integer NOT NULL,
 	"start_time" timestamp with time zone NOT NULL,
 	"end_time" timestamp with time zone,
 	"home_team" "sports"."nfl_team" NOT NULL,
 	"away_team" "sports"."nfl_team" NOT NULL,
+	"spread" numeric(10, 2),
+	"over_under" numeric(10, 2),
 	"venue" text,
 	"status" "sports"."game_status" DEFAULT 'scheduled' NOT NULL,
 	"winner" "sports"."nfl_team",
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
-	CONSTRAINT "games_global_game_id_unique" UNIQUE("global_game_id"),
-	CONSTRAINT "games_global_game_id_key" UNIQUE("global_game_id")
+	CONSTRAINT "games_provider_game_id_unique" UNIQUE("provider_game_id"),
+	CONSTRAINT "games_provider_game_id_key" UNIQUE("provider_game_id")
 );
 --> statement-breakpoint
 ALTER TABLE "sports"."competition_aggregate_scores" ADD CONSTRAINT "competition_aggregate_scores_competition_id_fkey" FOREIGN KEY ("competition_id") REFERENCES "public"."competitions"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
@@ -111,7 +114,6 @@ CREATE INDEX "idx_game_predictions_game_id_agent_id" ON "sports"."game_predictio
 CREATE INDEX "idx_game_predictions_competition_id" ON "sports"."game_predictions" USING btree ("competition_id");--> statement-breakpoint
 CREATE INDEX "idx_game_predictions_game_id" ON "sports"."game_predictions" USING btree ("game_id");--> statement-breakpoint
 CREATE INDEX "idx_game_predictions_agent_id" ON "sports"."game_predictions" USING btree ("agent_id");--> statement-breakpoint
-CREATE INDEX "idx_games_global_game_id" ON "sports"."games" USING btree ("global_game_id");--> statement-breakpoint
-CREATE INDEX "idx_games_game_key" ON "sports"."games" USING btree ("game_key");--> statement-breakpoint
+CREATE INDEX "idx_games_provider_game_id" ON "sports"."games" USING btree ("provider_game_id");--> statement-breakpoint
 CREATE INDEX "idx_games_status" ON "sports"."games" USING btree ("status");--> statement-breakpoint
 CREATE INDEX "idx_games_start_time" ON "sports"."games" USING btree ("start_time");

@@ -912,12 +912,14 @@ export class NflTestClient {
     gameId: string,
     predictedWinner: string,
     confidence: number,
+    reason: string,
   ) {
     return this.client.predictGameWinner(
       competitionId,
       gameId,
       predictedWinner,
       confidence,
+      reason,
     );
   }
 
@@ -946,9 +948,9 @@ export class NflTestClient {
   /**
    * Reset mock server to first snapshot
    */
-  async resetMockServer(globalGameId: number) {
+  async resetMockServer(providerGameId: number) {
     const response = await axios.post(
-      `${this.mockServerUrl}/mock/reset/${globalGameId}`,
+      `${this.mockServerUrl}/mock/reset/${providerGameId}`,
     );
     return response.data;
   }
@@ -956,9 +958,9 @@ export class NflTestClient {
   /**
    * Advance mock server to next snapshot
    */
-  async advanceMockServer(globalGameId: number) {
+  async advanceMockServer(providerGameId: number) {
     const response = await axios.post(
-      `${this.mockServerUrl}/mock/advance/${globalGameId}`,
+      `${this.mockServerUrl}/mock/advance/${providerGameId}`,
     );
     return response.data;
   }
@@ -966,9 +968,9 @@ export class NflTestClient {
   /**
    * Start auto-advance on mock server
    */
-  async startAutoAdvance(globalGameId: number, intervalMs: number = 30000) {
+  async startAutoAdvance(providerGameId: number, intervalMs: number = 30000) {
     const response = await axios.post(
-      `${this.mockServerUrl}/mock/auto-advance/${globalGameId}`,
+      `${this.mockServerUrl}/mock/auto-advance/${providerGameId}`,
       { intervalMs },
       { headers: { "Content-Type": "application/json" } },
     );
@@ -978,9 +980,9 @@ export class NflTestClient {
   /**
    * Stop auto-advance on mock server
    */
-  async stopAutoAdvance(globalGameId: number) {
+  async stopAutoAdvance(providerGameId: number) {
     const response = await axios.post(
-      `${this.mockServerUrl}/mock/stop-auto-advance/${globalGameId}`,
+      `${this.mockServerUrl}/mock/stop-auto-advance/${providerGameId}`,
     );
     return response.data;
   }

@@ -28,9 +28,9 @@ export class MockSportsDataIONflServer {
   /**
    * Load available snapshot files for a game
    */
-  private async loadSnapshotFiles(globalGameId: number): Promise<string[]> {
-    if (this.snapshotFiles.has(globalGameId)) {
-      return this.snapshotFiles.get(globalGameId)!;
+  private async loadSnapshotFiles(providerGameId: number): Promise<string[]> {
+    if (this.snapshotFiles.has(providerGameId)) {
+      return this.snapshotFiles.get(providerGameId)!;
     }
 
     const playsDir = path.join(this.baselineDir, "plays");
@@ -39,7 +39,7 @@ export class MockSportsDataIONflServer {
     // Look for numbered snapshots (19068-0.json, 19068-1.json, etc.)
     let index = 0;
     while (true) {
-      const filePath = path.join(playsDir, `${globalGameId}-${index}.json`);
+      const filePath = path.join(playsDir, `${providerGameId}-${index}.json`);
       try {
         await fs.access(filePath);
         files.push(filePath);
@@ -51,7 +51,7 @@ export class MockSportsDataIONflServer {
 
     // If no numbered files, try the base file
     if (files.length === 0) {
-      const basePath = path.join(playsDir, `${globalGameId}.json`);
+      const basePath = path.join(playsDir, `${providerGameId}.json`);
       try {
         await fs.access(basePath);
         files.push(basePath);
@@ -60,7 +60,7 @@ export class MockSportsDataIONflServer {
       }
     }
 
-    this.snapshotFiles.set(globalGameId, files);
+    this.snapshotFiles.set(providerGameId, files);
     return files;
   }
 
@@ -71,22 +71,22 @@ export class MockSportsDataIONflServer {
     this.app.use(express.json());
 
     /**
-     * GET /pbp/json/playbyplay/:globalGameId
+     * GET /pbp/json/playbyplay/:providerGameId
      * Returns play-by-play data for a game
      */
     this.app.get(
-      "/pbp/json/playbyplay/:globalGameId",
+      "/pbp/json/playbyplay/:providerGameId",
       async (req: Request, res: Response) => {
         try {
-          const globalGameId = parseInt(req.params.globalGameId || "", 10);
+          const providerGameId = parseInt(req.params.providerGameId || "", 10);
 
-          if (isNaN(globalGameId)) {
-            res.status(400).json({ error: "Invalid globalGameId" });
+          if (isNaN(providerGameId)) {
+            res.status(400).json({ error: "Invalid providerGameId" });
             return;
           }
 
           // Load available snapshots
-          const snapshots = await this.loadSnapshotFiles(globalGameId);
+          const snapshots = await this.loadSnapshotFiles(providerGameId);
 
           if (snapshots.length === 0) {
             res.status(404).json({ error: "Game not found" });
@@ -94,7 +94,8 @@ export class MockSportsDataIONflServer {
           }
 
           // Get current snapshot index (defaults to 0)
-          const currentIndex = this.currentSnapshotIndex.get(globalGameId) || 0;
+          const currentIndex =
+            this.currentSnapshotIndex.get(providerGameId) || 0;
           const snapshotIndex = Math.min(currentIndex, snapshots.length - 1);
           const snapshotPath = snapshots[snapshotIndex];
           if (!snapshotPath) {
@@ -107,7 +108,7 @@ export class MockSportsDataIONflServer {
           const data = JSON.parse(content);
 
           this.logger.info(
-            `[MockSportsDataIO] Serving snapshot ${snapshotIndex} for game ${globalGameId} (${snapshots.length} total)`,
+            `[MockSportsDataIO] Serving snapshot ${snapshotIndex} for game ${providerGameId} (${snapshots.length} total)`,
           );
 
           res.json(data);
@@ -146,32 +147,33 @@ export class MockSportsDataIONflServer {
     );
 
     /**
-     * POST /mock/advance/:globalGameId
+     * POST /mock/advance/:providerGameId
      * Advance to next snapshot (for testing)
      */
     this.app.post(
-      "/mock/advance/:globalGameId",
+      "/mock/advance/:providerGameId",
       async (req: Request, res: Response) => {
         try {
-          const globalGameId = parseInt(req.params.globalGameId || "", 10);
-          if (isNaN(globalGameId)) {
-            res.status(400).json({ error: "Invalid globalGameId" });
+          const providerGameId = parseInt(req.params.providerGameId || "", 10);
+          if (isNaN(providerGameId)) {
+            res.status(400).json({ error: "Invalid providerGameId" });
             return;
           }
 
-          const snapshots = await this.loadSnapshotFiles(globalGameId);
+          const snapshots = await this.loadSnapshotFiles(providerGameId);
 
-          const currentIndex = this.currentSnapshotIndex.get(globalGameId) || 0;
+          const currentIndex =
+            this.currentSnapshotIndex.get(providerGameId) || 0;
           const nextIndex = Math.min(currentIndex + 1, snapshots.length - 1);
 
-          this.currentSnapshotIndex.set(globalGameId, nextIndex);
+          this.currentSnapshotIndex.set(providerGameId, nextIndex);
 
           this.logger.info(
-            `[MockSportsDataIO] Advanced game ${globalGameId} to snapshot ${nextIndex}/${snapshots.length - 1}`,
+            `[MockSportsDataIO] Advanced game ${providerGameId} to snapshot ${nextIndex}/${snapshots.length - 1}`,
           );
 
           res.json({
-            globalGameId,
+            providerGameId,
             currentSnapshot: nextIndex,
             totalSnapshots: snapshots.length,
           });
@@ -186,38 +188,38 @@ export class MockSportsDataIONflServer {
     );
 
     /**
-     * POST /mock/reset/:globalGameId
+     * POST /mock/reset/:providerGameId
      * Reset to first snapshot (for testing)
      */
     this.app.post(
-      "/mock/reset/:globalGameId",
+      "/mock/reset/:providerGameId",
       (req: Request, res: Response) => {
-        const globalGameId = parseInt(req.params.globalGameId || "", 10);
-        if (isNaN(globalGameId)) {
-          res.status(400).json({ error: "Invalid globalGameId" });
+        const providerGameId = parseInt(req.params.providerGameId || "", 10);
+        if (isNaN(providerGameId)) {
+          res.status(400).json({ error: "Invalid providerGameId" });
           return;
         }
 
-        this.currentSnapshotIndex.set(globalGameId, 0);
+        this.currentSnapshotIndex.set(providerGameId, 0);
 
         this.logger.info(
-          `[MockSportsDataIO] Reset game ${globalGameId} to snapshot 0`,
+          `[MockSportsDataIO] Reset game ${providerGameId} to snapshot 0`,
         );
 
-        res.json({ globalGameId, currentSnapshot: 0 });
+        res.json({ providerGameId, currentSnapshot: 0 });
       },
     );
 
     /**
-     * POST /mock/auto-advance/:globalGameId
+     * POST /mock/auto-advance/:providerGameId
      * Auto-advance snapshots every N seconds
      */
     this.app.post(
-      "/mock/auto-advance/:globalGameId",
+      "/mock/auto-advance/:providerGameId",
       async (req: Request, res: Response) => {
-        const globalGameId = parseInt(req.params.globalGameId || "", 10);
-        if (isNaN(globalGameId)) {
-          res.status(400).json({ error: "Invalid globalGameId" });
+        const providerGameId = parseInt(req.params.providerGameId || "", 10);
+        if (isNaN(providerGameId)) {
+          res.status(400).json({ error: "Invalid providerGameId" });
           return;
         }
 
@@ -226,30 +228,31 @@ export class MockSportsDataIONflServer {
           10,
         );
 
-        const snapshots = await this.loadSnapshotFiles(globalGameId);
+        const snapshots = await this.loadSnapshotFiles(providerGameId);
 
         // Start auto-advance interval
         const interval = setInterval(async () => {
-          const currentIndex = this.currentSnapshotIndex.get(globalGameId) || 0;
+          const currentIndex =
+            this.currentSnapshotIndex.get(providerGameId) || 0;
 
           if (currentIndex >= snapshots.length - 1) {
             clearInterval(interval);
             this.logger.info(
-              `[MockSportsDataIO] Auto-advance complete for game ${globalGameId}`,
+              `[MockSportsDataIO] Auto-advance complete for game ${providerGameId}`,
             );
             return;
           }
 
           const nextIndex = currentIndex + 1;
-          this.currentSnapshotIndex.set(globalGameId, nextIndex);
+          this.currentSnapshotIndex.set(providerGameId, nextIndex);
 
           this.logger.info(
-            `[MockSportsDataIO] Auto-advanced game ${globalGameId} to snapshot ${nextIndex}`,
+            `[MockSportsDataIO] Auto-advanced game ${providerGameId} to snapshot ${nextIndex}`,
           );
         }, intervalMs);
 
         res.json({
-          globalGameId,
+          providerGameId,
           intervalMs,
           totalSnapshots: snapshots.length,
           message: "Auto-advance started",
