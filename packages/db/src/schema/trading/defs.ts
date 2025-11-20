@@ -869,7 +869,7 @@ export const spotLiveTransferHistory = tradingComps.table(
     toAddress: varchar("to_address", { length: 66 }).notNull(),
 
     // On-chain details
-    txHash: varchar("tx_hash", { length: 66 }).notNull(),
+    txHash: varchar("tx_hash", { length: 100 }).notNull(),
     blockNumber: integer("block_number").notNull(),
     transferTimestamp: timestamp("transfer_timestamp", {
       withTimezone: true,
@@ -920,7 +920,7 @@ export const spotLiveSelfFundingAlerts = tradingComps.table(
     detectedValue: numeric("detected_value").notNull(),
     thresholdValue: numeric("threshold_value").notNull(),
     specificChain: varchar("specific_chain", { length: 20 }),
-    txHash: varchar("tx_hash", { length: 66 }),
+    txHash: varchar("tx_hash", { length: 100 }),
 
     // Snapshot data
     transferSnapshot: jsonb("transfer_snapshot"),
