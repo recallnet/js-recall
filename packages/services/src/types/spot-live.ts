@@ -1,3 +1,5 @@
+import { SpecificChain } from "./index.js";
+
 /**
  * Types and interfaces for spot live trading competitions
  * Mirrors perps.ts structure for consistency
@@ -10,7 +12,7 @@ export interface OnChainTrade {
   txHash: string;
   blockNumber: number;
   timestamp: Date;
-  chain: string;
+  chain: SpecificChain;
   fromToken: string;
   toToken: string;
   fromAmount: number;
@@ -33,7 +35,7 @@ export interface SpotTransfer {
   to: string;
   timestamp: Date;
   txHash: string;
-  chain: string;
+  chain: SpecificChain;
 }
 
 /**
@@ -42,7 +44,7 @@ export interface SpotTransfer {
  */
 export interface ProtocolFilter {
   protocol: string;
-  chain: string;
+  chain: SpecificChain;
   routerAddress: string;
   swapEventSignature: string;
   factoryAddress: string | null;

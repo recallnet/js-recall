@@ -32,6 +32,7 @@ import type {
   SelectSpotLiveTransferHistory,
 } from "../schema/trading/types.js";
 import { Database, Transaction } from "../types.js";
+import type { SpecificChain } from "./types/index.js";
 
 /**
  * Review data for self-funding alerts
@@ -199,7 +200,7 @@ export class SpotLiveRepository {
    */
   async batchCreateCompetitionChains(
     competitionId: string,
-    chains: Array<{ specificChain: string; enabled: boolean }>,
+    chains: Array<{ specificChain: SpecificChain; enabled: boolean }>,
     tx?: Transaction,
   ): Promise<SelectSpotLiveCompetitionChain[]> {
     if (chains.length === 0) {
@@ -235,7 +236,7 @@ export class SpotLiveRepository {
    * @param competitionId Competition ID
    * @returns Array of enabled chain names
    */
-  async getEnabledChains(competitionId: string): Promise<string[]> {
+  async getEnabledChains(competitionId: string): Promise<SpecificChain[]> {
     try {
       const results = await this.#dbRead
         .select({ specificChain: spotLiveCompetitionChains.specificChain })
@@ -264,7 +265,7 @@ export class SpotLiveRepository {
    */
   async updateChainStatus(
     competitionId: string,
-    specificChain: string,
+    specificChain: SpecificChain,
     enabled: boolean,
     tx?: Transaction,
   ): Promise<SelectSpotLiveCompetitionChain | null> {
@@ -889,7 +890,7 @@ export class SpotLiveRepository {
   async getLatestSpotLiveTransferBlock(
     agentId: string,
     competitionId: string,
-    specificChain: string,
+    specificChain: SpecificChain,
   ): Promise<number | null> {
     try {
       const [result] = await this.#dbRead

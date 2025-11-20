@@ -760,7 +760,9 @@ export const spotLiveAllowedProtocols = tradingComps.table(
         onDelete: "cascade",
         onUpdate: "cascade",
       }),
-    specificChain: varchar("specific_chain", { length: 20 }).notNull(),
+    specificChain: varchar("specific_chain", { length: 20 })
+      .$type<SpecificChain>()
+      .notNull(),
     protocol: varchar("protocol", { length: 50 }).notNull(),
     routerAddress: varchar("router_address", { length: 66 }).notNull(),
     swapEventSignature: varchar("swap_event_signature", {
@@ -797,7 +799,9 @@ export const spotLiveCompetitionChains = tradingComps.table(
         onDelete: "cascade",
         onUpdate: "cascade",
       }),
-    specificChain: varchar("specific_chain", { length: 20 }).notNull(),
+    specificChain: varchar("specific_chain", { length: 20 })
+      .$type<SpecificChain>()
+      .notNull(),
     enabled: boolean("enabled").notNull().default(true),
 
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
@@ -824,7 +828,9 @@ export const spotLiveAllowedTokens = tradingComps.table(
         onDelete: "cascade",
         onUpdate: "cascade",
       }),
-    specificChain: varchar("specific_chain", { length: 20 }).notNull(),
+    specificChain: varchar("specific_chain", { length: 20 })
+      .$type<SpecificChain>()
+      .notNull(),
     tokenAddress: varchar("token_address", { length: 66 }).notNull(),
     tokenSymbol: varchar("token_symbol", { length: 20 }).notNull(),
 
@@ -866,7 +872,9 @@ export const spotLiveTransferHistory = tradingComps.table(
 
     // Transfer details
     type: varchar("type", { length: 20 }).notNull(), // 'deposit' | 'withdraw' | 'transfer'
-    specificChain: varchar("specific_chain", { length: 20 }).notNull(),
+    specificChain: varchar("specific_chain", { length: 20 })
+      .$type<SpecificChain>()
+      .notNull(),
     tokenAddress: varchar("token_address", { length: 66 }).notNull(),
     tokenSymbol: varchar("token_symbol", { length: 20 }).notNull(),
     amount: numeric("amount").notNull(),
@@ -927,7 +935,9 @@ export const spotLiveSelfFundingAlerts = tradingComps.table(
     violationType: varchar("violation_type", { length: 50 }).notNull(), // 'deposit' | 'withdrawal_exceeds_limit'
     detectedValue: numeric("detected_value").notNull(),
     thresholdValue: numeric("threshold_value").notNull(),
-    specificChain: varchar("specific_chain", { length: 20 }),
+    specificChain: varchar("specific_chain", {
+      length: 20,
+    }).$type<SpecificChain>(),
     txHash: varchar("tx_hash", { length: 100 }),
 
     // Snapshot data

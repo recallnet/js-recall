@@ -5,7 +5,10 @@ import { AgentRepository } from "@recallnet/db/repositories/agent";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { SpotLiveRepository } from "@recallnet/db/repositories/spot-live";
 import { TradeRepository } from "@recallnet/db/repositories/trade";
-import type { InsertTrade } from "@recallnet/db/schema/trading/types";
+import type {
+  InsertSpotLiveTransferHistory,
+  InsertTrade,
+} from "@recallnet/db/schema/trading/types";
 
 import { PortfolioSnapshotterService } from "./portfolio-snapshotter.service.js";
 import { PriceTrackerService } from "./price-tracker.service.js";
@@ -23,6 +26,7 @@ import type {
   OnChainTrade,
   SpotCompetitionProcessingResult,
   SpotLiveProviderConfig,
+  SpotTransfer,
 } from "./types/spot-live.js";
 
 /**
@@ -99,8 +103,7 @@ export class SpotDataProcessor {
     fromPrice: PriceReport,
     toPrice: PriceReport,
   ): InsertTrade {
-    const specificChain = trade.chain as SpecificChain;
-    const blockchainType = getBlockchainType(specificChain);
+    const blockchainType = getBlockchainType(trade.chain);
     const tradeAmountUsd = trade.fromAmount * fromPrice.price;
 
     return {
@@ -120,8 +123,8 @@ export class SpotDataProcessor {
       reason: "On-chain trade detected",
       fromChain: blockchainType,
       toChain: blockchainType,
-      fromSpecificChain: specificChain,
-      toSpecificChain: specificChain,
+      fromSpecificChain: trade.chain,
+      toSpecificChain: trade.chain,
       tradeType: "spot_live",
       txHash: trade.txHash,
       blockNumber: trade.blockNumber,
@@ -238,7 +241,7 @@ export class SpotDataProcessor {
     provider: ISpotLiveDataProvider,
     allowedTokens: Map<string, Set<string>>,
     tokenWhitelistEnabled: boolean,
-    chains: string[],
+    chains: SpecificChain[],
     competitionStartDate: Date,
   ): Promise<AgentSpotSyncResult> {
     if (!provider) {
@@ -426,16 +429,7 @@ export class SpotDataProcessor {
       if (provider.getTransferHistory) {
         try {
           // Determine sync start point per chain for transfers (same as trades)
-          const allTransfers: Array<{
-            type: string;
-            tokenAddress: string;
-            amount: number;
-            from: string;
-            to: string;
-            timestamp: Date;
-            txHash: string;
-            chain: string;
-          }> = [];
+          const allTransfers: SpotTransfer[] = [];
 
           for (const chain of chains) {
             // Query latest synced transfer block for this agent on this chain
@@ -479,45 +473,48 @@ export class SpotDataProcessor {
           if (transfers.length > 0) {
             // Extract unique tokens from transfers
             const uniqueTransferTokens = transfers.reduce((acc, t) => {
-              const chain = t.chain as SpecificChain;
-              acc.set(t.tokenAddress.toLowerCase(), chain);
+              acc.set(t.tokenAddress.toLowerCase(), t.chain);
               return acc;
             }, new Map<string, SpecificChain>());
 
-            const transferTokensList = Array.from(
-              uniqueTransferTokens.entries(),
-            ).map(([address, chain]) => ({ address, chain }));
+            const transferTokensList: Array<{
+              address: string;
+              chain: SpecificChain;
+            }> = Array.from(uniqueTransferTokens.entries()).map(
+              ([address, chain]) => ({ address, chain }),
+            );
 
             // Fetch prices for unique transfer tokens (best effort)
             const transferPriceMap =
               await this.fetchPricesForTrades(transferTokensList);
 
             // Enrich transfers with price data
-            const enrichedTransferRecords = transfers.map((t) => {
-              // Key by address:chain for multi-chain support
-              const priceKey = `${t.tokenAddress.toLowerCase()}:${t.chain}`;
-              const price = transferPriceMap.get(priceKey);
-              const tokenSymbol = price?.symbol ?? "UNKNOWN";
-              const amountUsd = price
-                ? (t.amount * price.price).toString()
-                : null;
+            const enrichedTransferRecords: InsertSpotLiveTransferHistory[] =
+              transfers.map((t): InsertSpotLiveTransferHistory => {
+                // Key by address:chain for multi-chain support
+                const priceKey = `${t.tokenAddress.toLowerCase()}:${t.chain}`;
+                const price = transferPriceMap.get(priceKey);
+                const tokenSymbol = price?.symbol ?? "UNKNOWN";
+                const amountUsd = price
+                  ? (t.amount * price.price).toString()
+                  : null;
 
-              return {
-                agentId,
-                competitionId,
-                type: t.type,
-                specificChain: t.chain,
-                tokenAddress: t.tokenAddress,
-                tokenSymbol,
-                amount: t.amount.toString(),
-                amountUsd,
-                fromAddress: t.from,
-                toAddress: t.to,
-                txHash: t.txHash,
-                blockNumber: 0, // Transfer doesn't include block number
-                transferTimestamp: t.timestamp,
-              };
-            });
+                return {
+                  agentId,
+                  competitionId,
+                  type: t.type,
+                  specificChain: t.chain, // Already typed as SpecificChain from SpotTransfer
+                  tokenAddress: t.tokenAddress,
+                  tokenSymbol,
+                  amount: t.amount.toString(),
+                  amountUsd,
+                  fromAddress: t.from,
+                  toAddress: t.to,
+                  txHash: t.txHash,
+                  blockNumber: 0, // Transfer doesn't include block number
+                  transferTimestamp: t.timestamp,
+                };
+              });
 
             const savedTransfers =
               await this.spotLiveRepo.batchSaveSpotLiveTransfers(
@@ -586,7 +583,7 @@ export class SpotDataProcessor {
     provider: ISpotLiveDataProvider,
     allowedTokens: Map<string, Set<string>>,
     tokenWhitelistEnabled: boolean,
-    chains: string[],
+    chains: SpecificChain[],
     competitionStartDate: Date,
   ): Promise<BatchSpotSyncResult> {
     if (!provider) {
@@ -690,7 +687,7 @@ export class SpotDataProcessor {
     provider: ISpotLiveDataProvider,
     allowedTokens: Map<string, Set<string>>,
     tokenWhitelistEnabled: boolean,
-    chains: string[],
+    chains: SpecificChain[],
     competitionStartDate: Date,
   ): Promise<BatchSpotSyncResult> {
     if (!provider) {
@@ -814,7 +811,8 @@ export class SpotDataProcessor {
         this.spotLiveRepo.getAllowedTokenAddresses(competitionId),
       ]);
 
-      // Transform protocol records to provider format (chain → specificChain)
+      // Transform protocol records to provider format
+      // No casting needed - database schema properly types specificChain
       const protocols = protocolRecords.map((p) => ({
         protocol: p.protocol,
         chain: p.specificChain,

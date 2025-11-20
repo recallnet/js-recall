@@ -3,6 +3,7 @@ import { Logger } from "pino";
 
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { SpotLiveRepository } from "@recallnet/db/repositories/spot-live";
+import { SpecificChain } from "@recallnet/db/repositories/types";
 import {
   InsertSpotLiveSelfFundingAlert,
   SelectSpotLiveTransferHistory,
@@ -18,7 +19,7 @@ interface SelfFundingAlert {
   thresholdValue: number;
   violationType: "deposit" | "withdrawal_exceeds_limit";
   detectionMethod: "transfer_history" | "balance_reconciliation";
-  specificChain: string | null;
+  specificChain: SpecificChain | null;
   txHash: string | null;
   confidence: "high" | "medium" | "low";
   severity: "critical" | "warning";
