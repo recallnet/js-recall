@@ -68,14 +68,15 @@ export class AirdropService {
 
   /**
    * Calculate unlock date for staked tokens
+   * Uses UTC-safe arithmetic to avoid DST issues
    */
   private calculateUnlockDate(
     claimTimestamp: Date,
     durationInSeconds: bigint,
   ): Date {
-    const unlockTime = new Date(claimTimestamp);
-    unlockTime.setSeconds(unlockTime.getSeconds() + Number(durationInSeconds));
-    return unlockTime;
+    return new Date(
+      claimTimestamp.getTime() + Number(durationInSeconds) * 1000,
+    );
   }
 
   /**
@@ -116,10 +117,8 @@ export class AirdropService {
           );
         }
 
-        const followingSeason = seasonsByNumber[allocation.season + 1];
-
         const ineligibleReason =
-          allocation.sybilClassification !== "approved"
+          allocation.sybilClassification === "sybil"
             ? allocation.flaggingReason || "Sybil flagged"
             : allocation.flaggingReason
               ? allocation.flaggingReason
@@ -137,52 +136,31 @@ export class AirdropService {
           };
         } else if (!convictionClaim) {
           // Determine if the claim has expired
+          // Use UTC-safe date arithmetic to avoid DST issues
+          const daysToAdd = season.number > 0 ? 30 : 90;
+          const expirationTimestamp = new Date(
+            season.startDate.getTime() + daysToAdd * 24 * 60 * 60 * 1000,
+          );
+
           const now = new Date();
-          let expiredAt: Date | null = null;
+          const expired = now > expirationTimestamp;
 
-          if (followingSeason?.endDate && followingSeason.endDate < now) {
-            // Following season has ended, so claim is expired
-            expiredAt = followingSeason.endDate;
-          } else if (!followingSeason && season.endDate) {
-            // No following season and current season has ended
-            const potentialExpiry = new Date(season.endDate);
-            potentialExpiry.setDate(potentialExpiry.getDate() + 30);
-            if (potentialExpiry < now) {
-              expiredAt = potentialExpiry;
-            }
-          }
-
-          if (expiredAt) {
+          if (expired) {
             return {
               type: "expired",
               season: allocation.season,
               seasonName: season.name,
               eligibleAmount: allocation.amount,
-              expiredAt,
+              expiredAt: expirationTimestamp,
             };
           }
-
-          // Claim is still available
-          // Calculate expiry date:
-          // - If following season exists and has ended, use its end date
-          // - If season has ended but no following season, add 30 days to season end
-          // - If season is still active, add 60 days to season start (30 day season + 30 day claim window)
-          const expiresAt = followingSeason?.endDate
-            ? followingSeason.endDate
-            : (() => {
-                const baseDate = season.endDate || season.startDate;
-                const daysToAdd = season.endDate ? 30 : 60;
-                const date = new Date(baseDate);
-                date.setDate(date.getDate() + daysToAdd);
-                return date;
-              })();
           return {
             type: "available",
             season: allocation.season,
             seasonName: season.name,
             eligibleAmount: allocation.amount,
-            expiresAt,
-            proof: allocation.proof,
+            expiresAt: expirationTimestamp,
+            proof: allocation.season > 0 ? allocation.proof : [],
           };
         } else if (convictionClaim.duration > 0n) {
           return {

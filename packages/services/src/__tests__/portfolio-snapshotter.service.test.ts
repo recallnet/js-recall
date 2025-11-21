@@ -93,10 +93,10 @@ describe("PortfolioSnapshotterService", () => {
         },
       ];
 
-      // Mock prices: ORDER has different prices on different chains
+      // Mock prices with chain-specific keys
       const mockPrices = new Map<string, PriceReport | null>([
         [
-          orderTokenAddress,
+          `${orderTokenAddress.toLowerCase()}:arbitrum`,
           {
             price: 0.129, // Arbitrum ORDER price
             symbol: "ORDER",
@@ -111,7 +111,7 @@ describe("PortfolioSnapshotterService", () => {
           },
         ],
         [
-          "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+          "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48:eth",
           {
             price: 1.0, // USDC
             symbol: "USDC",
@@ -205,47 +205,42 @@ describe("PortfolioSnapshotterService", () => {
         },
       ];
 
-      // Simulate getBulkPrices being called and returning prices for both chains
-      // First call returns Polygon price, second call returns Arbitrum price
-      vi.mocked(mockPriceTrackerService.getBulkPrices)
-        .mockResolvedValueOnce(
-          new Map([
-            [
-              orderTokenAddress,
-              {
-                price: 0.039, // Polygon price
-                symbol: "ORDER",
-                token: orderTokenAddress,
-                timestamp: new Date(),
-                chain: BlockchainType.EVM,
-                specificChain: "polygon",
-                pairCreatedAt: undefined,
-                volume: undefined,
-                liquidity: undefined,
-                fdv: undefined,
-              },
-            ],
-          ]),
-        )
-        .mockResolvedValueOnce(
-          new Map([
-            [
-              orderTokenAddress,
-              {
-                price: 0.129, // Arbitrum price
-                symbol: "ORDER",
-                token: orderTokenAddress,
-                timestamp: new Date(),
-                chain: BlockchainType.EVM,
-                specificChain: "arbitrum",
-                pairCreatedAt: undefined,
-                volume: undefined,
-                liquidity: undefined,
-                fdv: undefined,
-              },
-            ],
-          ]),
-        );
+      // Mock getBulkPrices to return chain-specific prices
+      // Now returns both chain combinations in a single call
+      vi.mocked(mockPriceTrackerService.getBulkPrices).mockResolvedValue(
+        new Map([
+          [
+            `${orderTokenAddress.toLowerCase()}:polygon`,
+            {
+              price: 0.039, // Polygon price
+              symbol: "ORDER",
+              token: orderTokenAddress,
+              timestamp: new Date(),
+              chain: BlockchainType.EVM,
+              specificChain: "polygon",
+              pairCreatedAt: undefined,
+              volume: undefined,
+              liquidity: undefined,
+              fdv: undefined,
+            },
+          ],
+          [
+            `${orderTokenAddress.toLowerCase()}:arbitrum`,
+            {
+              price: 0.129, // Arbitrum price
+              symbol: "ORDER",
+              token: orderTokenAddress,
+              timestamp: new Date(),
+              chain: BlockchainType.EVM,
+              specificChain: "arbitrum",
+              pairCreatedAt: undefined,
+              volume: undefined,
+              liquidity: undefined,
+              fdv: undefined,
+            },
+          ],
+        ]),
+      );
 
       // Setup mocks
       vi.mocked(mockCompetitionRepo.findById).mockResolvedValue(
@@ -276,7 +271,7 @@ describe("PortfolioSnapshotterService", () => {
       expect(snapshotCall).toBeDefined();
       const snapshotData = snapshotCall![0];
 
-      // Expected calculation with chain-specific prices:
+      // Expected calculation with chain-specific prices (same token, different chains):
       // ORDER (arbitrum): 84647.58 × $0.129 = $10,919.54
       // ORDER (polygon): 100 × $0.039 = $3.90
       // Total: $10,923.44
@@ -286,8 +281,8 @@ describe("PortfolioSnapshotterService", () => {
       expect(snapshotData?.agentId).toBe(mockAgentId);
       expect(snapshotData?.competitionId).toBe(mockCompetitionId);
 
-      // Verify getBulkPrices was called twice (once per retry for missing chain)
-      expect(mockPriceTrackerService.getBulkPrices).toHaveBeenCalledTimes(2);
+      // Verify getBulkPrices was called once with both token+chain combinations
+      expect(mockPriceTrackerService.getBulkPrices).toHaveBeenCalledTimes(1);
     });
 
     it("should mark unavailable chains as null when price found on only one chain", async () => {
@@ -314,11 +309,11 @@ describe("PortfolioSnapshotterService", () => {
         },
       ];
 
-      // Mock: getBulkPrices returns Arbitrum price
+      // Mock: getBulkPrices returns Arbitrum price with chain-specific key
       vi.mocked(mockPriceTrackerService.getBulkPrices).mockResolvedValue(
         new Map([
           [
-            orderTokenAddress,
+            `${orderTokenAddress.toLowerCase()}:arbitrum`,
             {
               price: 0.129,
               symbol: "ORDER",
@@ -367,122 +362,6 @@ describe("PortfolioSnapshotterService", () => {
 
       // Verify no errors logged (price was found successfully)
       expect(mockLogger.error).not.toHaveBeenCalled();
-    });
-
-    it("should handle multi-chain edge case: getBulkPrices returns only one price, fallback fetches missing chain", async () => {
-      // This test demonstrates the edge case where:
-      // 1. Agent holds same token address on multiple chains (ORDER on Arbitrum + Polygon)
-      // 2. getBulkPrices only returns price for ONE chain (first found)
-      // 3. Step 3 fallback logic calls getPrice individually for the missing chain
-      const mockCompetition = {
-        id: mockCompetitionId,
-        status: "active",
-        endDate: null,
-      };
-
-      const orderTokenAddress = "0x4E200fE2f3eFb977d5fd9c430A41531FB04d97B8";
-
-      const mockBalances: SelectBalance[] = [
-        {
-          id: 1,
-          agentId: mockAgentId,
-          competitionId: mockCompetitionId,
-          tokenAddress: orderTokenAddress,
-          amount: 1000,
-          symbol: "ORDER",
-          specificChain: "arbitrum", // ORDER on Arbitrum @ $0.129
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-        {
-          id: 2,
-          agentId: mockAgentId,
-          competitionId: mockCompetitionId,
-          tokenAddress: orderTokenAddress, // Same address!
-          amount: 500,
-          symbol: "ORDER",
-          specificChain: "polygon", // ORDER on Polygon @ $0.039
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-      ];
-
-      // Mock getBulkPrices to return only ONE price (Arbitrum) - simulates the real edge case
-      vi.mocked(mockPriceTrackerService.getBulkPrices).mockResolvedValue(
-        new Map([
-          [
-            orderTokenAddress,
-            {
-              price: 0.129, // Arbitrum price only
-              symbol: "ORDER",
-              token: orderTokenAddress,
-              timestamp: new Date(),
-              chain: BlockchainType.EVM,
-              specificChain: "arbitrum",
-              pairCreatedAt: undefined,
-              volume: undefined,
-              liquidity: undefined,
-              fdv: undefined,
-            },
-          ],
-        ]),
-      );
-
-      // Mock getPrice to be called for the missing Polygon price (Step 3 fallback logic)
-      vi.mocked(mockPriceTrackerService.getPrice).mockResolvedValue({
-        price: 0.039, // Polygon price
-        symbol: "ORDER",
-        token: orderTokenAddress,
-        timestamp: new Date(),
-        chain: BlockchainType.EVM,
-        specificChain: "polygon",
-        pairCreatedAt: undefined,
-        volume: undefined,
-        liquidity: undefined,
-        fdv: undefined,
-      });
-
-      // Setup mocks
-      vi.mocked(mockCompetitionRepo.findById).mockResolvedValue(
-        mockCompetition as never,
-      );
-      vi.mocked(mockBalanceService.getAllBalances).mockResolvedValue(
-        mockBalances,
-      );
-      vi.mocked(mockCompetitionRepo.createPortfolioSnapshot).mockResolvedValue(
-        undefined as never,
-      );
-
-      // Execute
-      await portfolioSnapshotter.takePortfolioSnapshotForAgent(
-        mockCompetitionId,
-        mockAgentId,
-      );
-
-      // Verify that getPrice was called for the missing Polygon chain
-      expect(mockPriceTrackerService.getPrice).toHaveBeenCalledWith(
-        orderTokenAddress,
-        BlockchainType.EVM,
-        "polygon",
-      );
-
-      // Verify portfolio snapshot was created
-      expect(mockCompetitionRepo.createPortfolioSnapshot).toHaveBeenCalledTimes(
-        1,
-      );
-
-      const snapshotCall = vi.mocked(
-        mockCompetitionRepo.createPortfolioSnapshot,
-      ).mock.calls[0];
-
-      expect(snapshotCall).toBeDefined();
-      const snapshotData = snapshotCall![0];
-
-      // Expected calculation with both chain-specific prices:
-      // ORDER (arbitrum): 1000 × $0.129 = $129.00
-      // ORDER (polygon): 500 × $0.039 = $19.50
-      // Total: $148.50
-      expect(snapshotData?.totalValue).toBeCloseTo(148.5, 2);
     });
   });
 });
