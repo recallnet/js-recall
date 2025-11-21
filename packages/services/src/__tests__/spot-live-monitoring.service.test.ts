@@ -37,6 +37,7 @@ describe("SpotLiveMonitoringService", () => {
   let mockLogger: MockLogger;
 
   const competitionStartDate = new Date("2024-01-01");
+  const competitionEndDate = new Date("2024-01-07"); // 1 week competition
 
   // Sample transfer data from database
   const sampleTransfer: SelectSpotLiveTransferHistory = {
@@ -161,6 +162,7 @@ describe("SpotLiveMonitoringService", () => {
           [],
           "comp-1",
           competitionStartDate,
+          competitionEndDate,
         );
 
         expect(result).toEqual({
@@ -212,6 +214,7 @@ describe("SpotLiveMonitoringService", () => {
           agents,
           "comp-1",
           competitionStartDate,
+          competitionEndDate,
         );
 
         // Should not fetch transfers or snapshots since agent is skipped
@@ -254,6 +257,7 @@ describe("SpotLiveMonitoringService", () => {
           agents,
           "comp-1",
           competitionStartDate,
+          competitionEndDate,
         );
 
         expect(
@@ -294,6 +298,7 @@ describe("SpotLiveMonitoringService", () => {
           agents,
           "comp-1",
           competitionStartDate,
+          competitionEndDate,
         );
 
         // Should process the agent since all alerts are reviewed
@@ -301,6 +306,7 @@ describe("SpotLiveMonitoringService", () => {
           "agent-1",
           "comp-1",
           competitionStartDate,
+          competitionEndDate,
         );
         expect(result.successful).toHaveLength(1);
       });
@@ -318,6 +324,7 @@ describe("SpotLiveMonitoringService", () => {
           agents,
           "comp-1",
           competitionStartDate,
+          competitionEndDate,
         );
 
         expect(result.totalAlertsCreated).toBe(1);
@@ -354,6 +361,7 @@ describe("SpotLiveMonitoringService", () => {
           agents,
           "comp-1",
           competitionStartDate,
+          competitionEndDate,
         );
 
         // Even $10 transfer should create alert
@@ -377,6 +385,7 @@ describe("SpotLiveMonitoringService", () => {
           agents,
           "comp-1",
           competitionStartDate,
+          competitionEndDate,
         );
 
         expect(result.totalAlertsCreated).toBe(1);
@@ -410,6 +419,7 @@ describe("SpotLiveMonitoringService", () => {
           agents,
           "comp-1",
           competitionStartDate,
+          competitionEndDate,
         );
 
         expect(result.totalAlertsCreated).toBe(1);
@@ -451,6 +461,7 @@ describe("SpotLiveMonitoringService", () => {
           agents,
           "comp-1",
           competitionStartDate,
+          competitionEndDate,
         );
 
         expect(result.totalAlertsCreated).toBe(1);
@@ -475,6 +486,7 @@ describe("SpotLiveMonitoringService", () => {
           agents,
           "comp-1",
           competitionStartDate,
+          competitionEndDate,
         );
 
         // Should still detect violation with 0 USD value
@@ -504,7 +516,12 @@ describe("SpotLiveMonitoringService", () => {
 
         const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
 
-        await service.monitorAgents(agents, "comp-1", competitionStartDate);
+        await service.monitorAgents(
+          agents,
+          "comp-1",
+          competitionStartDate,
+          competitionEndDate,
+        );
 
         expect(
           mockSpotLiveRepo.batchCreateSpotLiveSelfFundingAlerts,
@@ -553,7 +570,12 @@ describe("SpotLiveMonitoringService", () => {
           largeTransfer,
         ]);
 
-        await service.monitorAgents(agents, "comp-1", competitionStartDate);
+        await service.monitorAgents(
+          agents,
+          "comp-1",
+          competitionStartDate,
+          competitionEndDate,
+        );
 
         expect(
           mockSpotLiveRepo.batchCreateSpotLiveSelfFundingAlerts,
@@ -575,7 +597,12 @@ describe("SpotLiveMonitoringService", () => {
 
         const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
 
-        await service.monitorAgents(agents, "comp-1", competitionStartDate);
+        await service.monitorAgents(
+          agents,
+          "comp-1",
+          competitionStartDate,
+          competitionEndDate,
+        );
 
         expect(
           mockSpotLiveRepo.batchCreateSpotLiveSelfFundingAlerts,
@@ -600,6 +627,7 @@ describe("SpotLiveMonitoringService", () => {
           agents,
           "comp-1",
           competitionStartDate,
+          competitionEndDate,
         );
 
         // Should still check reconciliation (error logged, no throw)
@@ -634,6 +662,7 @@ describe("SpotLiveMonitoringService", () => {
           agents,
           "comp-1",
           competitionStartDate,
+          competitionEndDate,
         );
 
         // Unexplained: 1500 (above $100 threshold)
@@ -676,6 +705,7 @@ describe("SpotLiveMonitoringService", () => {
           agents,
           "comp-1",
           competitionStartDate,
+          competitionEndDate,
         );
 
         // $50 is below $100 threshold - no alert
@@ -707,6 +737,7 @@ describe("SpotLiveMonitoringService", () => {
           agents,
           "comp-1",
           competitionStartDate,
+          competitionEndDate,
         );
 
         // -$300 is > $100 threshold (absolute value)
@@ -732,6 +763,7 @@ describe("SpotLiveMonitoringService", () => {
           agents,
           "comp-1",
           competitionStartDate,
+          competitionEndDate,
         );
 
         // No reconciliation alert (no snapshots)
@@ -761,7 +793,12 @@ describe("SpotLiveMonitoringService", () => {
 
         const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
 
-        await service.monitorAgents(agents, "comp-1", competitionStartDate);
+        await service.monitorAgents(
+          agents,
+          "comp-1",
+          competitionStartDate,
+          competitionEndDate,
+        );
 
         expect(
           mockSpotLiveRepo.batchCreateSpotLiveSelfFundingAlerts,
@@ -799,7 +836,12 @@ describe("SpotLiveMonitoringService", () => {
           },
         });
 
-        await service.monitorAgents(agents, "comp-1", competitionStartDate);
+        await service.monitorAgents(
+          agents,
+          "comp-1",
+          competitionStartDate,
+          competitionEndDate,
+        );
 
         expect(
           mockSpotLiveRepo.batchCreateSpotLiveSelfFundingAlerts,
@@ -826,6 +868,7 @@ describe("SpotLiveMonitoringService", () => {
           agents,
           "comp-1",
           competitionStartDate,
+          competitionEndDate,
         );
 
         // Should still succeed (error logged, no throw)
@@ -865,6 +908,7 @@ describe("SpotLiveMonitoringService", () => {
           agents,
           "comp-1",
           competitionStartDate,
+          competitionEndDate,
         );
 
         // Should create 2 alerts (one from each method)
@@ -892,7 +936,12 @@ describe("SpotLiveMonitoringService", () => {
           { agentId: "agent-3", walletAddress: "0x333" },
         ];
 
-        await service.monitorAgents(agents, "comp-1", competitionStartDate);
+        await service.monitorAgents(
+          agents,
+          "comp-1",
+          competitionStartDate,
+          competitionEndDate,
+        );
 
         // Should batch fetch alerts for all agents
         expect(
@@ -928,6 +977,7 @@ describe("SpotLiveMonitoringService", () => {
           agents,
           "comp-1",
           competitionStartDate,
+          competitionEndDate,
         );
 
         // All agents succeed (graceful degradation - transfer error is logged but monitoring continues)
@@ -958,6 +1008,7 @@ describe("SpotLiveMonitoringService", () => {
           agents,
           "comp-1",
           competitionStartDate,
+          competitionEndDate,
         );
 
         // Should still report success for agent monitoring
@@ -983,6 +1034,7 @@ describe("SpotLiveMonitoringService", () => {
           agents,
           "comp-1",
           competitionStartDate,
+          competitionEndDate,
         );
 
         // Should still process all agents (failed fetch = empty alerts)

@@ -625,13 +625,15 @@ export class SpotLiveRepository {
    *
    * @param agentId Agent ID
    * @param competitionId Competition ID
-   * @param since Optional timestamp to get transfers after
+   * @param since Optional timestamp to get transfers after (inclusive)
+   * @param until Optional timestamp to get transfers before (exclusive)
    * @returns Array of transfer records
    */
   async getAgentSpotLiveTransfers(
     agentId: string,
     competitionId: string,
     since?: Date,
+    until?: Date,
   ): Promise<SelectSpotLiveTransferHistory[]> {
     try {
       const conditions = [
@@ -642,6 +644,12 @@ export class SpotLiveRepository {
       if (since) {
         conditions.push(
           sql`${spotLiveTransferHistory.transferTimestamp} > ${since}`,
+        );
+      }
+
+      if (until) {
+        conditions.push(
+          sql`${spotLiveTransferHistory.transferTimestamp} < ${until}`,
         );
       }
 

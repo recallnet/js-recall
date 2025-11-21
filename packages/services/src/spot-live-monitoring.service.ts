@@ -95,12 +95,14 @@ export class SpotLiveMonitoringService {
    * @param agents Array of agents to monitor
    * @param competitionId Competition ID
    * @param competitionStartDate Competition start date
+   * @param competitionEndDate Competition end date (null for active competitions)
    * @returns Monitoring results
    */
   async monitorAgents(
     agents: Array<{ agentId: string; walletAddress: string }>,
     competitionId: string,
     competitionStartDate: Date,
+    competitionEndDate: Date | null,
   ): Promise<{
     successful: AgentMonitoringResult[];
     failed: AgentMonitoringResult[];
@@ -131,6 +133,7 @@ export class SpotLiveMonitoringService {
           agent,
           competitionId,
           competitionStartDate,
+          competitionEndDate,
           existingAlerts.get(agent.agentId) ?? [],
         ),
       ),
@@ -233,6 +236,7 @@ export class SpotLiveMonitoringService {
     agent: { agentId: string; walletAddress: string },
     competitionId: string,
     competitionStartDate: Date,
+    competitionEndDate: Date | null,
     existingAlerts: Array<{ reviewed: boolean | null }>,
   ): Promise<AgentMonitoringResult> {
     const alerts: SelfFundingAlert[] = [];
@@ -252,6 +256,7 @@ export class SpotLiveMonitoringService {
         agent.agentId,
         competitionId,
         competitionStartDate,
+        competitionEndDate,
       );
 
       if (transferAlert) {
@@ -280,7 +285,7 @@ export class SpotLiveMonitoringService {
 
   /**
    * Check transfer history for violations
-   * ALL transfers after competition start are violations (deposits or withdrawals)
+   * ALL transfers during competition period are violations (deposits or withdrawals)
    * Note: Unlike perps which needs walletAddress to filter transfers from provider API,
    * spot live reads pre-filtered transfers from database using agentId
    */
@@ -288,13 +293,16 @@ export class SpotLiveMonitoringService {
     agentId: string,
     competitionId: string,
     competitionStartDate: Date,
+    competitionEndDate: Date | null,
   ): Promise<SelfFundingAlert | null> {
     try {
       // Read transfers from database (already saved by SpotDataProcessor)
+      // Filter by competition period: after start AND before end (if ended)
       const transfers = await this.spotLiveRepo.getAgentSpotLiveTransfers(
         agentId,
         competitionId,
-        competitionStartDate, // Only get transfers AFTER competition start
+        competitionStartDate,
+        competitionEndDate ?? undefined, // null → undefined for optional parameter
       );
 
       if (transfers.length === 0) {

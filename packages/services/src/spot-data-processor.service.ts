@@ -959,6 +959,7 @@ export class SpotDataProcessor {
           agentsToMonitor,
           competitionId,
           competition.startDate,
+          competition.endDate,
         );
 
         monitoringResult = {
