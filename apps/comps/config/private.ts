@@ -194,11 +194,11 @@ const StakingIndexConfig = z.object({
     .string()
     .min(10)
     .default("0x6A3044c1Cf077F386c9345eF84f2518A2682Dfff"),
-  eventStartBlock: z.int().positive().default(27459229),
-  transactionsStartBlock: z.int().positive().default(36800000),
+  eventStartBlock: z.coerce.number().int().positive().default(27459229),
+  transactionsStartBlock: z.coerce.number().int().positive().default(36800000),
   hypersyncUrl: z.url(),
   hypersyncBearerToken: z.string().min(1),
-  delayMs: z.int().positive().default(3000),
+  delayMs: z.coerce.number().int().positive().default(3000),
 });
 
 export type StakingIndexConfig = z.infer<typeof StakingIndexConfig>;
