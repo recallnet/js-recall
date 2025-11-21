@@ -14,6 +14,10 @@ const nextConfig = {
     ],
   },
   transpilePackages: ["@recallnet/ui2", "@recallnet/fonts"],
+  experimental: {
+    // This is required for turbopack (pnpm dev)
+    serverComponentsExternalPackages: ["@envio-dev/hypersync-client"],
+  },
   webpack: (config, { isServer }) => {
     if (isServer) {
       // Externalize native modules to prevent webpack from bundling them
