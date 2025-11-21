@@ -38,6 +38,7 @@ export type {
 /** Schema of an optional structured context to attach to each boost change. */
 const BoostChangeMetaSchema = z.object({
   description: z.string().optional(),
+  boostBonusId: z.string().optional(), // UUID of bonus boost that created this change
 });
 /** Optional structured context to attach to each boost change. */
 type BoostChangeMeta = z.infer<typeof BoostChangeMetaSchema>;

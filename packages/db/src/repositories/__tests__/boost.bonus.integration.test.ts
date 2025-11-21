@@ -32,7 +32,6 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
   beforeEach(async () => {
     repository = new BoostRepository(db);
 
-    // Create test user
     testUserId = randomUUID();
     testWallet = `0x${randomUUID().replace(/-/g, "").substring(0, 40).padEnd(40, "0")}`;
     await db.insert(coreSchema.users).values({
@@ -42,7 +41,6 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
       status: "active",
     });
 
-    // Create test admin
     testAdminId = randomUUID();
     await db.insert(coreSchema.admins).values({
       id: testAdminId,
@@ -52,7 +50,6 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
       name: "Test Admin",
     });
 
-    // Create test competition
     testCompetitionId = randomUUID();
     await db.insert(coreSchema.competitions).values({
       id: testCompetitionId,
@@ -64,8 +61,6 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
 
   afterEach(async () => {
     try {
-      // Clean up in proper FK order
-      // 1. Delete boost_changes first (has FK to boost_balances with restrict)
       const balances = await db
         .select({ id: schema.boostBalances.id })
         .from(schema.boostBalances)
@@ -77,27 +72,22 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
           .where(eq(schema.boostChanges.balanceId, balance.id));
       }
 
-      // 2. Delete boost_balances
       await db
         .delete(schema.boostBalances)
         .where(eq(schema.boostBalances.userId, testUserId));
 
-      // 3. Delete boost_bonus entries (cascade from user will handle this, but explicit is safer)
       await db
         .delete(schema.boostBonus)
         .where(eq(schema.boostBonus.userId, testUserId));
 
-      // 4. Delete competition (cascade will handle dependencies)
       await db
         .delete(coreSchema.competitions)
         .where(eq(coreSchema.competitions.id, testCompetitionId));
 
-      // 5. Delete user (cascade will handle dependencies)
       await db
         .delete(coreSchema.users)
         .where(eq(coreSchema.users.id, testUserId));
 
-      // 6. Delete admin (should NOT cascade to boost_bonus)
       await db
         .delete(coreSchema.admins)
         .where(eq(coreSchema.admins.id, testAdminId));
@@ -115,7 +105,6 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
         expiresAt,
       });
 
-      // Verify return value
       expect(result.id).toBeDefined();
       expect(result.userId).toBe(testUserId);
       expect(result.amount).toBe(1000n);
@@ -127,7 +116,6 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
       expect(result.createdAt).toBeInstanceOf(Date);
       expect(result.updatedAt).toBeInstanceOf(Date);
 
-      // Verify database state
       const [dbRecord] = await db
         .select()
         .from(schema.boostBonus)
@@ -154,7 +142,6 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
       expect(result.createdByAdminId).toBe(testAdminId);
       expect(result.meta).toEqual(meta);
 
-      // Verify database state
       const [dbRecord] = await db
         .select()
         .from(schema.boostBonus)
@@ -185,19 +172,16 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
     });
 
     test("should cascade delete when user is deleted", async () => {
-      // Create boost
       const boost = await repository.createBoostBonus({
         userId: testUserId,
         amount: 1000n,
         expiresAt: new Date("2025-12-31T23:59:59Z"),
       });
 
-      // Delete user
       await db
         .delete(coreSchema.users)
         .where(eq(coreSchema.users.id, testUserId));
 
-      // Verify boost was cascade deleted
       const [dbRecord] = await db
         .select()
         .from(schema.boostBonus)
@@ -207,7 +191,6 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
     });
 
     test("should preserve boost when admin is deleted (FK nullable)", async () => {
-      // Create boost with admin reference
       const boost = await repository.createBoostBonus({
         userId: testUserId,
         amount: 1000n,
@@ -215,12 +198,10 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
         createdByAdminId: testAdminId,
       });
 
-      // Delete admin
       await db
         .delete(coreSchema.admins)
         .where(eq(coreSchema.admins.id, testAdminId));
 
-      // Verify boost still exists with NULL admin reference
       const [dbRecord] = await db
         .select()
         .from(schema.boostBonus)
@@ -255,7 +236,6 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
         result.createdAt.getTime(),
       );
 
-      // Verify database state
       const [dbRecord] = await db
         .select()
         .from(schema.boostBonus)
@@ -271,7 +251,6 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
 
       expect(result.isActive).toBe(false);
 
-      // Verify database state
       const [dbRecord] = await db
         .select()
         .from(schema.boostBonus)
@@ -288,7 +267,6 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
 
       expect(result.revokedAt).toEqual(revokedAt);
 
-      // Verify database state
       const [dbRecord] = await db
         .select()
         .from(schema.boostBonus)
@@ -305,7 +283,6 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
 
       expect(result.meta).toEqual(newMeta);
 
-      // Verify database state
       const [dbRecord] = await db
         .select()
         .from(schema.boostBonus)
@@ -336,7 +313,6 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
       const originalUpdatedAt = (await repository.findBoostBonusById(boostId))!
         .updatedAt;
 
-      // Wait a bit to ensure timestamp difference
       await new Promise((resolve) => setTimeout(resolve, 10));
 
       const result = await repository.updateBoostBonus(boostId, {
@@ -357,24 +333,17 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
     });
 
     test("should NOT allow updating amount (immutability)", async () => {
-      // This test verifies that the TypeScript interface does NOT include amount
-      // The type system prevents us from passing amount to updateBoostBonus
-
-      // Verify amount field is not in the update interface at runtime either
       const result = await repository.updateBoostBonus(boostId, {
         meta: { test: true },
       });
 
-      // Amount should remain unchanged
       expect(result.amount).toBe(1000n);
 
-      // Even if we try to force it with type casting, amount should not change
       const result2 = await repository.updateBoostBonus(boostId, {
         meta: { updated: true },
-        amount: 2000n, // This is ignored by the implementation
-      } as any);
+      });
 
-      expect(result2.amount).toBe(1000n); // Still 1000n, not 2000n
+      expect(result2.amount).toBe(1000n);
     });
   });
 
@@ -403,7 +372,6 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
 
   describe("findActiveBoostBonusesByUserId()", () => {
     test("should return only active boosts for user", async () => {
-      // Create 2 active boosts
       const active1 = await repository.createBoostBonus({
         userId: testUserId,
         amount: 500n,
@@ -416,7 +384,6 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
         expiresAt: new Date("2026-12-31T23:59:59Z"),
       });
 
-      // Create 1 inactive boost
       const inactive = await repository.createBoostBonus({
         userId: testUserId,
         amount: 750n,
@@ -424,7 +391,6 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
       });
       await repository.updateBoostBonus(inactive.id, { isActive: false });
 
-      // Query active boosts
       const results =
         await repository.findActiveBoostBonusesByUserId(testUserId);
 
@@ -460,12 +426,11 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
       const results =
         await repository.findActiveBoostBonusesByUserId(testUserId);
 
-      expect(results[0]!.id).toBe(second.id); // Most recent first
+      expect(results[0]!.id).toBe(second.id);
       expect(results[1]!.id).toBe(first.id);
     });
 
     test("should not return boosts from other users", async () => {
-      // Create another user
       const otherUserId = randomUUID();
       const otherWallet = `0x${randomUUID().replace(/-/g, "").substring(0, 40).padEnd(40, "0")}`;
       await db.insert(coreSchema.users).values({
@@ -475,28 +440,24 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
         status: "active",
       });
 
-      // Create boost for other user
       await repository.createBoostBonus({
         userId: otherUserId,
         amount: 500n,
         expiresAt: new Date("2025-12-31T23:59:59Z"),
       });
 
-      // Create boost for test user
       const testUserBoost = await repository.createBoostBonus({
         userId: testUserId,
         amount: 1000n,
         expiresAt: new Date("2025-12-31T23:59:59Z"),
       });
 
-      // Query should only return test user's boost
       const results =
         await repository.findActiveBoostBonusesByUserId(testUserId);
 
       expect(results).toHaveLength(1);
       expect(results[0]!.id).toBe(testUserBoost.id);
 
-      // Cleanup
       await db
         .delete(coreSchema.users)
         .where(eq(coreSchema.users.id, otherUserId));
@@ -505,14 +466,12 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
 
   describe("findAllActiveBoostBonuses()", () => {
     test("should return all active boosts across all users", async () => {
-      // Create boost for test user
       const boost1 = await repository.createBoostBonus({
         userId: testUserId,
         amount: 500n,
         expiresAt: new Date("2025-12-31T23:59:59Z"),
       });
 
-      // Create another user and boost
       const otherUserId = randomUUID();
       const otherWallet = `0x${randomUUID().replace(/-/g, "").substring(0, 40).padEnd(40, "0")}`;
       await db.insert(coreSchema.users).values({
@@ -536,7 +495,6 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
       });
       await repository.updateBoostBonus(inactive.id, { isActive: false });
 
-      // Query all active boosts
       const results = await repository.findAllActiveBoostBonuses();
 
       expect(results.length).toBeGreaterThanOrEqual(2);
@@ -545,7 +503,6 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
       expect(ids).toContain(boost2.id);
       expect(ids).not.toContain(inactive.id);
 
-      // Cleanup
       await db
         .delete(coreSchema.users)
         .where(eq(coreSchema.users.id, otherUserId));
@@ -583,14 +540,12 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
     test("should return boosts expiring after given date", async () => {
       const cutoffDate = new Date("2025-06-01T00:00:00Z");
 
-      // Create boost expiring before cutoff (should NOT be returned)
       const expiredBoost = await repository.createBoostBonus({
         userId: testUserId,
         amount: 500n,
         expiresAt: new Date("2025-05-31T23:59:59Z"),
       });
 
-      // Create boost expiring after cutoff (should be returned)
       const validBoost = await repository.createBoostBonus({
         userId: testUserId,
         amount: 1000n,
@@ -608,14 +563,12 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
     test("should exclude inactive boosts", async () => {
       const cutoffDate = new Date("2025-06-01T00:00:00Z");
 
-      // Create active boost
       const activeBoost = await repository.createBoostBonus({
         userId: testUserId,
         amount: 1000n,
         expiresAt: new Date("2025-12-31T23:59:59Z"),
       });
 
-      // Create inactive boost
       const inactiveBoost = await repository.createBoostBonus({
         userId: testUserId,
         amount: 500n,
@@ -634,14 +587,12 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
     test("should handle boundary condition (expires exactly at cutoff)", async () => {
       const cutoffDate = new Date("2025-12-31T23:59:59Z");
 
-      // Create boost expiring exactly at cutoff (gt check, so should NOT be returned)
       const exactBoost = await repository.createBoostBonus({
         userId: testUserId,
         amount: 500n,
         expiresAt: cutoffDate,
       });
 
-      // Create boost expiring 1ms after cutoff (should be returned)
       const afterBoost = await repository.createBoostBonus({
         userId: testUserId,
         amount: 1000n,
@@ -659,7 +610,6 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
     test("should return empty array when no eligible boosts", async () => {
       const cutoffDate = new Date("2026-12-31T23:59:59Z");
 
-      // Create boost expiring before cutoff
       await repository.createBoostBonus({
         userId: testUserId,
         amount: 500n,
@@ -803,7 +753,6 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
     });
 
     test("should exclude inactive boosts from sum", async () => {
-      // Create active boost
       await repository.createBoostBonus({
         userId: testUserId,
         amount: 1000n,
@@ -820,7 +769,7 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
 
       const result = await repository.sumActiveBoostBonusesForUser(testUserId);
 
-      expect(result).toBe(1000n); // Only active boost
+      expect(result).toBe(1000n);
     });
 
     test("should return 0n when all boosts are inactive", async () => {
@@ -859,23 +808,20 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
 
   describe("findBoostChangesByBoostBonusId()", () => {
     test("should find boost_changes entries for a specific bonus boost", async () => {
-      // Create bonus boost
       const boost = await repository.createBoostBonus({
         userId: testUserId,
         amount: 1000n,
         expiresAt: new Date("2025-12-31T23:59:59Z"),
       });
 
-      // Apply boost to competition (simulate via increase method with meta)
       await repository.increase({
         userId: testUserId,
         wallet: testWallet,
         competitionId: testCompetitionId,
         amount: 1000n,
-        meta: { description: `bonus-${boost.id}` } as any, // Using description field, cast to bypass strict type
+        meta: { description: `bonus-${boost.id}` },
       });
 
-      // Manually update meta to include boostBonusId for testing
       const balanceRecord = await db
         .select()
         .from(schema.boostBalances)
@@ -889,10 +835,9 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
 
       await db
         .update(schema.boostChanges)
-        .set({ meta: { boostBonusId: boost.id } as any })
+        .set({ meta: { boostBonusId: boost.id } })
         .where(eq(schema.boostChanges.balanceId, balanceRecord[0]!.id));
 
-      // Query boost_changes by boostBonusId
       const results = await repository.findBoostChangesByBoostBonusId(boost.id);
 
       expect(results).toHaveLength(1);
@@ -914,14 +859,12 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
     });
 
     test("should find changes across multiple competitions", async () => {
-      // Create bonus boost
       const boost = await repository.createBoostBonus({
         userId: testUserId,
         amount: 1000n,
         expiresAt: new Date("2025-12-31T23:59:59Z"),
       });
 
-      // Create second competition
       const competition2Id = randomUUID();
       await db.insert(coreSchema.competitions).values({
         id: competition2Id,
@@ -930,7 +873,6 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
         status: "pending",
       });
 
-      // Apply boost to both competitions
       const increase1 = await repository.increase({
         userId: testUserId,
         wallet: testWallet,
@@ -945,21 +887,19 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
         amount: 500n,
       });
 
-      // Manually update meta to include boostBonusId for testing
       if (increase1.type === "applied") {
         await db
           .update(schema.boostChanges)
-          .set({ meta: { boostBonusId: boost.id } as any })
+          .set({ meta: { boostBonusId: boost.id } })
           .where(eq(schema.boostChanges.id, increase1.changeId));
       }
       if (increase2.type === "applied") {
         await db
           .update(schema.boostChanges)
-          .set({ meta: { boostBonusId: boost.id } as any })
+          .set({ meta: { boostBonusId: boost.id } })
           .where(eq(schema.boostChanges.id, increase2.changeId));
       }
 
-      // Query boost_changes by boostBonusId
       const results = await repository.findBoostChangesByBoostBonusId(boost.id);
 
       expect(results).toHaveLength(2);
@@ -967,7 +907,6 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
       expect(competitionIds).toContain(testCompetitionId);
       expect(competitionIds).toContain(competition2Id);
 
-      // Cleanup
       await db
         .delete(coreSchema.competitions)
         .where(eq(coreSchema.competitions.id, competition2Id));
@@ -980,7 +919,6 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
         expiresAt: new Date("2025-12-31T23:59:59Z"),
       });
 
-      // Apply boost without boostBonusId in meta
       await repository.increase({
         userId: testUserId,
         wallet: testWallet,
@@ -997,14 +935,12 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
 
   describe("findBoostChangesByCompetitionId()", () => {
     test("should find boost_changes entries for a specific competition", async () => {
-      // Create bonus boost
       const boost = await repository.createBoostBonus({
         userId: testUserId,
         amount: 1000n,
         expiresAt: new Date("2025-12-31T23:59:59Z"),
       });
 
-      // Apply boost to competition
       const increase = await repository.increase({
         userId: testUserId,
         wallet: testWallet,
@@ -1012,15 +948,13 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
         amount: 1000n,
       });
 
-      // Manually update meta to include boostBonusId for testing
       if (increase.type === "applied") {
         await db
           .update(schema.boostChanges)
-          .set({ meta: { boostBonusId: boost.id } as any })
+          .set({ meta: { boostBonusId: boost.id } })
           .where(eq(schema.boostChanges.id, increase.changeId));
       }
 
-      // Query boost_changes by competitionId
       const results =
         await repository.findBoostChangesByCompetitionId(testCompetitionId);
 
@@ -1031,7 +965,6 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
     });
 
     test("should return empty array when no bonus boost changes exist", async () => {
-      // Apply regular boost (no boostBonusId)
       await repository.increase({
         userId: testUserId,
         wallet: testWallet,
@@ -1047,7 +980,6 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
     });
 
     test("should find multiple bonus boost changes for same competition", async () => {
-      // Create 2 bonus boosts
       const boost1 = await repository.createBoostBonus({
         userId: testUserId,
         amount: 500n,
@@ -1060,7 +992,6 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
         expiresAt: new Date("2025-12-31T23:59:59Z"),
       });
 
-      // Apply both to same competition
       const increase1 = await repository.increase({
         userId: testUserId,
         wallet: testWallet,
@@ -1075,21 +1006,19 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
         amount: 1000n,
       });
 
-      // Manually update meta to include boostBonusId for testing
       if (increase1.type === "applied") {
         await db
           .update(schema.boostChanges)
-          .set({ meta: { boostBonusId: boost1.id } as any })
+          .set({ meta: { boostBonusId: boost1.id } })
           .where(eq(schema.boostChanges.id, increase1.changeId));
       }
       if (increase2.type === "applied") {
         await db
           .update(schema.boostChanges)
-          .set({ meta: { boostBonusId: boost2.id } as any })
+          .set({ meta: { boostBonusId: boost2.id } })
           .where(eq(schema.boostChanges.id, increase2.changeId));
       }
 
-      // Query boost_changes by competitionId
       const results =
         await repository.findBoostChangesByCompetitionId(testCompetitionId);
 
@@ -1100,14 +1029,12 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
     });
 
     test("should not return changes from other competitions", async () => {
-      // Create bonus boost
       const boost = await repository.createBoostBonus({
         userId: testUserId,
         amount: 1000n,
         expiresAt: new Date("2025-12-31T23:59:59Z"),
       });
 
-      // Create second competition
       const competition2Id = randomUUID();
       await db.insert(coreSchema.competitions).values({
         id: competition2Id,
@@ -1116,7 +1043,6 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
         status: "pending",
       });
 
-      // Apply boost to competition 2
       const increase = await repository.increase({
         userId: testUserId,
         wallet: testWallet,
@@ -1124,21 +1050,18 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
         amount: 1000n,
       });
 
-      // Manually update meta to include boostBonusId for testing
       if (increase.type === "applied") {
         await db
           .update(schema.boostChanges)
-          .set({ meta: { boostBonusId: boost.id } as any })
+          .set({ meta: { boostBonusId: boost.id } })
           .where(eq(schema.boostChanges.id, increase.changeId));
       }
 
-      // Query competition 1 (should be empty)
       const results =
         await repository.findBoostChangesByCompetitionId(testCompetitionId);
 
       expect(results).toHaveLength(0);
 
-      // Cleanup
       await db
         .delete(coreSchema.competitions)
         .where(eq(coreSchema.competitions.id, competition2Id));
