@@ -1,0 +1,62 @@
+name: "Setup E2E Tests"
+description: "Setup environment for E2E tests including postgres detection and .env.test creation"
+
+outputs:
+  db_host:
+    description: "Database host address"
+    value: ${{ steps.detect-env.outputs.db_host }}
+  test_host:
+    description: "Test server host address"
+    value: ${{ steps.detect-env.outputs.test_host }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Detect environment and get postgres IP
+      id: detect-env
+      shell: bash
+      working-directory: apps/api
+      run: |
+        # Default for GitHub Actions
+        echo "db_host=localhost" >> $GITHUB_OUTPUT
+        echo "test_host=localhost" >> $GITHUB_OUTPUT
+
+        # Check if we're running in act
+        if [ -z "$ACTIONS_RUNTIME_URL" ]; then
+          echo "Running in act - finding Postgres container IP"
+
+          # Get the container ID of the postgres container
+          POSTGRES_CONTAINER_ID=$(docker ps --filter "ancestor=postgres:14" --format "{{.ID}}")
+
+          if [ -n "$POSTGRES_CONTAINER_ID" ]; then
+            echo "Found postgres container: $POSTGRES_CONTAINER_ID"
+
+            # Get the IP address of the container
+            POSTGRES_IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $POSTGRES_CONTAINER_ID)
+
+            if [ -n "$POSTGRES_IP" ]; then
+              echo "Found postgres container IP: $POSTGRES_IP"
+              echo "db_host=$POSTGRES_IP" >> $GITHUB_OUTPUT
+            else
+              echo "Could not get IP, falling back to 127.0.0.1"
+              echo "db_host=127.0.0.1" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "Could not find postgres container, falling back to 127.0.0.1"
+            echo "db_host=127.0.0.1" >> $GITHUB_OUTPUT
+          fi
+
+          # For act, we need to use 0.0.0.0 to listen on all interfaces
+          echo "test_host=0.0.0.0" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Create .env.test file for API
+      shell: bash
+      working-directory: apps/api
+      run: |
+        DB_HOST_VALUE="${{ steps.detect-env.outputs.db_host }}"
+        echo "Using DB_HOST=$DB_HOST_VALUE"
+
+        cat .env.test | grep -v DATABASE_URL > .env.tmp
+        echo "DATABASE_URL=postgresql://postgres:postgres@${DB_HOST_VALUE}:5432/trading_simulator_test" >> .env.tmp
+        mv .env.tmp .env.test

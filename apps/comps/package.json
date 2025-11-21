@@ -21,6 +21,7 @@
     "docs:serve": "typedoc --watch --serve"
   },
   "dependencies": {
+    "@envio-dev/hypersync-client": "^0.6.5",
     "@hookform/resolvers": "^4.0.0",
     "@lottiefiles/dotlottie-react": "^0.14.3",
     "@next/third-parties": "^15.3.4",

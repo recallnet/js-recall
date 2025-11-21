@@ -4,13 +4,14 @@ import { decodeEventLog, hexToBytes } from "viem";
 
 import { RewardsRepository } from "@recallnet/db/repositories/rewards";
 import type { StakesRepository } from "@recallnet/db/repositories/stakes";
-import type { BoostAwardService } from "@recallnet/services";
+import type { Database } from "@recallnet/db/types";
 
-import { db } from "@/database/db.js";
-import { EVENTS, EVENT_HASH_NAMES } from "@/indexing/blockchain-config.js";
-import type { EventData, RawLog } from "@/indexing/blockchain-types.js";
-import type { EventsRepository } from "@/indexing/events.repository.js";
-import type { CompetitionService } from "@/services/index.js";
+import type { BoostAwardService } from "@/boost-award.service.js";
+import type { CompetitionService } from "@/competition.service.js";
+
+import type { EventData, RawLog } from "./blockchain-types.js";
+import type { EventsRepository } from "./events.repository.js";
+import { EVENTS, EVENT_HASH_NAMES } from "./hypersync-query.js";
 
 export { EventProcessor };
 
@@ -58,10 +59,10 @@ class EventProcessor {
   readonly #competitionService: CompetitionService;
 
   readonly #logger: Logger;
-  readonly #db: typeof db;
+  readonly #db: Database;
 
   constructor(
-    database: typeof db,
+    database: Database,
     rewardsRepository: RewardsRepository,
     eventsRepository: EventsRepository,
     stakesRepository: StakesRepository,
@@ -552,7 +553,7 @@ class EventProcessor {
    * Used by the indexing loop to set `fromBlock = lastBlock`
    * so we resume exactly where we left off after restarts.
    */
-  lastBlockNumber(): Promise<bigint> {
+  lastBlockNumber(): Promise<bigint | undefined> {
     return this.#eventsRepository.lastBlockNumber();
   }
 }

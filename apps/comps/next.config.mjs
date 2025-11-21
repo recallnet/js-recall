@@ -14,6 +14,7 @@ const nextConfig = {
     ],
   },
   transpilePackages: ["@recallnet/ui2", "@recallnet/fonts"],
+  serverExternalPackages: ["@envio-dev/hypersync-client"],
 };
 
 // Wrap the config with Sentry

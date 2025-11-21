@@ -6,8 +6,7 @@ import {
   convictionClaims,
 } from "@recallnet/db/schema/conviction-claims/defs";
 import { Transaction } from "@recallnet/db/types";
-
-import { db } from "@/database/db.js";
+import type { Database } from "@recallnet/db/types";
 
 /**
  * ConvictionClaimsRepository
@@ -30,9 +29,9 @@ import { db } from "@/database/db.js";
  * - Amounts are stored as bigint
  */
 export class ConvictionClaimsRepository {
-  readonly #db: typeof db;
+  readonly #db: Database;
 
-  constructor(database: typeof db = db) {
+  constructor(database: Database) {
     this.#db = database;
   }
 

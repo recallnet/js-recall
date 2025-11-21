@@ -1,5 +1,11 @@
+import { config } from "@/config/index.js";
 import { indexingLogger } from "@/lib/logger.js";
 import ServiceRegistry from "@/services/index.js";
+
+if (!config.stakingIndex.isEnabled) {
+  indexingLogger.info("Indexing is disabled");
+  process.exit(1);
+}
 
 const services = new ServiceRegistry();
 
