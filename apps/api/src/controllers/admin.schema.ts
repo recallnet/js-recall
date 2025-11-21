@@ -11,6 +11,7 @@ import {
   CompetitionTypeSchema,
   CrossChainTradingTypeSchema,
   EvaluationMetricSchema,
+  SpecificChainSchema,
   TradingConstraintsSchema,
   UuidSchema,
 } from "@recallnet/services/types";
@@ -76,6 +77,78 @@ export const PerpsProviderSchema = z.object({
 });
 
 /**
+ * Protocol filter input schema - Admin provides protocol name + chain only
+ * System resolves router address, event signature, and factory address from constants
+ */
+export const ProtocolFilterInputSchema = z.object({
+  protocol: z.string().min(1, "Protocol name is required"),
+  chain: SpecificChainSchema,
+});
+
+/**
+ * Token whitelist input schema - Admin provides address + specificChain
+ * System validates token is tradeable and fetches symbol via price API
+ */
+export const TokenWhitelistInputSchema = z.object({
+  address: z
+    .string()
+    .regex(/^0x[a-fA-F0-9]{40}$/, "Invalid token address format"),
+  specificChain: SpecificChainSchema,
+});
+
+/**
+ * Spot live data source configuration schema
+ */
+export const SpotLiveDataSourceConfigSchema = z.object({
+  type: z.enum(["rpc_direct", "envio_indexing", "hybrid"]),
+  provider: z.enum(["alchemy", "quicknode", "infura"]).optional(),
+  rpcUrls: z.record(z.string(), z.string().url()).optional(),
+  graphqlUrl: z.string().url().optional(),
+  chains: z.array(SpecificChainSchema).min(1, "At least one chain is required"),
+});
+
+/**
+ * Spot live configuration schema for competition creation
+ */
+export const SpotLiveConfigSchema = z.object({
+  dataSource: z.enum(["rpc_direct", "envio_indexing", "hybrid"]),
+  dataSourceConfig: SpotLiveDataSourceConfigSchema,
+  chains: z
+    .array(SpecificChainSchema)
+    .min(1, "At least one chain is required")
+    .describe("Chains enabled for this competition"),
+  allowedProtocols: z
+    .array(ProtocolFilterInputSchema)
+    .optional()
+    .describe(
+      "Protocol whitelist - Admin provides name + chain, system resolves addresses",
+    ),
+  allowedTokens: z
+    .array(TokenWhitelistInputSchema)
+    .min(2, "At least 2 tokens required for trading")
+    .optional()
+    .describe(
+      "Token whitelist - Admin provides address + chain, system validates and fetches symbol",
+    ),
+  selfFundingThresholdUsd: z
+    .number()
+    .min(0)
+    .default(10)
+    .describe("Threshold for flagging self-funding violations (USD)"),
+  minFundingThreshold: z
+    .number()
+    .min(0)
+    .optional()
+    .describe("Minimum portfolio balance to remain in competition (USD)"),
+  syncIntervalMinutes: z
+    .number()
+    .int()
+    .min(1)
+    .default(2)
+    .describe("How often to sync blockchain data (minutes)"),
+});
+
+/**
  * Admin create or update competition schema
  */
 export const AdminCreateCompetitionSchema = z
@@ -101,6 +174,7 @@ export const AdminCreateCompetitionSchema = z
       "Metric used for ranking agents. Defaults to calmar_ratio for perps, simple_return for spot trading",
     ),
     perpsProvider: PerpsProviderSchema.optional(), // Only required for perps competitions
+    spotLiveConfig: SpotLiveConfigSchema.optional(), // Only required for spot_live_trading competitions
     prizePools: z
       .object({
         agent: z.number().min(0),
@@ -185,6 +259,7 @@ export const AdminStartCompetitionSchema = z
       "Metric used for ranking agents. Defaults to calmar_ratio for perps, simple_return for spot trading",
     ),
     perpsProvider: PerpsProviderSchema.optional(), // Only required for perps competitions
+    spotLiveConfig: SpotLiveConfigSchema.optional(), // Only required for spot_live_trading competitions
     prizePools: z
       .object({
         agent: z.number().min(0),
