@@ -179,6 +179,7 @@ describe("SpotLiveProviderFactory", () => {
         getName: () => "TestProvider",
         isHealthy: vi.fn().mockResolvedValue(true),
         getTradesSince: vi.fn(),
+        getCurrentBlock: vi.fn().mockResolvedValue(1000000),
       };
 
       const result = await SpotLiveProviderFactory.validateProvider(
@@ -195,6 +196,7 @@ describe("SpotLiveProviderFactory", () => {
         getName: () => "TestProvider",
         isHealthy: vi.fn().mockResolvedValue(false),
         getTradesSince: vi.fn(),
+        getCurrentBlock: vi.fn().mockResolvedValue(1000000),
       };
 
       const result = await SpotLiveProviderFactory.validateProvider(
@@ -210,6 +212,7 @@ describe("SpotLiveProviderFactory", () => {
       const mockProvider = {
         getName: () => "TestProvider",
         getTradesSince: vi.fn(),
+        getCurrentBlock: vi.fn().mockResolvedValue(1000000),
         // No isHealthy method
       };
 
@@ -226,6 +229,7 @@ describe("SpotLiveProviderFactory", () => {
         getName: () => "TestProvider",
         isHealthy: vi.fn().mockRejectedValue(new Error("Connection failed")),
         getTradesSince: vi.fn(),
+        getCurrentBlock: vi.fn().mockResolvedValue(1000000),
       };
 
       const result = await SpotLiveProviderFactory.validateProvider(

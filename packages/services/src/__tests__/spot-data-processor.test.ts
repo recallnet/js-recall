@@ -167,6 +167,7 @@ describe("SpotDataProcessor", () => {
       getTradesSince: vi.fn().mockResolvedValue([sampleOnChainTrade]),
       getTransferHistory: vi.fn().mockResolvedValue([sampleTransfer]),
       isHealthy: vi.fn().mockResolvedValue(true),
+      getCurrentBlock: vi.fn().mockResolvedValue(2000000),
     };
 
     // Default mock implementations
@@ -350,9 +351,14 @@ describe("SpotDataProcessor", () => {
         mockTradeRepo.batchCreateTradesWithBalances,
       ).not.toHaveBeenCalled();
 
-      // Sync state should NOT be updated when no trades found
-      // (No highestBlock to track if provider returned empty)
-      expect(mockSpotLiveRepo.upsertAgentSyncState).not.toHaveBeenCalled();
+      // Sync state SHOULD be updated even when no trades (uses current block)
+      expect(mockProvider.getCurrentBlock).toHaveBeenCalledWith("base");
+      expect(mockSpotLiveRepo.upsertAgentSyncState).toHaveBeenCalledWith(
+        "agent-1",
+        "comp-1",
+        "base",
+        2000000, // Current block from mock
+      );
     });
 
     it("should enrich transfers with price data when available", async () => {

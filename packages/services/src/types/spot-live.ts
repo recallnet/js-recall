@@ -88,6 +88,14 @@ export interface ISpotLiveDataProvider {
   ): Promise<SpotTransfer[]>;
 
   /**
+   * Get current block number for a chain
+   * Used for sync state tracking when no trades found
+   * @param chain Specific chain
+   * @returns Current block number
+   */
+  getCurrentBlock(chain: SpecificChain): Promise<number>;
+
+  /**
    * Get provider name for logging and debugging
    * @returns Provider name
    */

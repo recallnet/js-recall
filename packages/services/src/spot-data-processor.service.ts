@@ -325,13 +325,12 @@ export class SpotDataProcessor {
           );
         } else {
           // No trades found - still need to update state to move forward
-          // Use lastScannedBlock as the new state (we scanned this range)
-          if (lastScannedBlock !== null) {
-            syncStateUpdates.push({ chain, highestBlock: lastScannedBlock });
-          }
+          // Get current chain tip to know what range we scanned
+          const currentBlock = await provider.getCurrentBlock(chain);
+          syncStateUpdates.push({ chain, highestBlock: currentBlock });
 
           this.logger.debug(
-            `[SpotDataProcessor] No trades found for agent ${agentId} on ${chain}`,
+            `[SpotDataProcessor] No trades for agent ${agentId} on ${chain}, scanned to block ${currentBlock}`,
           );
         }
       }

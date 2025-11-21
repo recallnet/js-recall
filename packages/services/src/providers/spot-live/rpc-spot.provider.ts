@@ -96,6 +96,16 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
   }
 
   /**
+   * Get current block number for a chain
+   * Used for sync state tracking when no trades found
+   * @param chain Specific chain
+   * @returns Current block number
+   */
+  async getCurrentBlock(chain: SpecificChain): Promise<number> {
+    return await this.rpcProvider.getBlockNumber(chain);
+  }
+
+  /**
    * Get provider name for logging and debugging
    * @returns Provider name combining spot provider type with underlying RPC provider
    */
