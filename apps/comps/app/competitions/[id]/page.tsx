@@ -1,9 +1,12 @@
 import { Metadata } from "next";
 
+import type { Competition } from "@recallnet/services/types";
+
 import { createMetadata } from "@/lib/metadata";
 import { createSafeClient } from "@/rpc/clients/server-side";
 
 import CompetitionPageClient, { CompetitionPageClientProps } from "./client";
+import NflCompetitionPage from "./nfl-client";
 
 export async function generateMetadata({
   params,
@@ -30,8 +33,33 @@ export async function generateMetadata({
   );
 }
 
-export default function CompetitionPage({
+export default async function CompetitionPage({
   params,
 }: CompetitionPageClientProps) {
-  return <CompetitionPageClient params={params} />;
+  const { id } = await params;
+
+  // Fetch competition to determine type
+  try {
+    const client = await createSafeClient();
+    const { data: competition } = await client.competitions.getById({
+      id,
+    });
+
+    // Route to appropriate client based on competition type
+    if (competition?.type === "sports_prediction") {
+      return (
+        <NflCompetitionPage
+          competitionId={id}
+          competition={competition as Competition}
+        />
+      );
+    }
+
+    // Default to trading/perps client
+    return <CompetitionPageClient params={params} />;
+  } catch (error) {
+    console.error("Failed to fetch competition:", error);
+    // Fallback to default client on error
+    return <CompetitionPageClient params={params} />;
+  }
 }
