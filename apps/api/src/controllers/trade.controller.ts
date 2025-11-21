@@ -150,7 +150,15 @@ export function makeTradeController(services: ServiceRegistry) {
           throw new ApiError(
             400,
             "This endpoint is not available for perpetual futures competitions. " +
-              "Perpetual futures positions are managed through Symphony, not through this API.",
+              "Perpetual futures positions are managed through external providers, not through this API.",
+          );
+        }
+
+        if (competition.type === "spot_live_trading") {
+          throw new ApiError(
+            400,
+            "This endpoint is not available for spot live trading competitions. " +
+              "Spot live trades occur on-chain through DEXs and are detected automatically.",
           );
         }
 

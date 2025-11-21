@@ -96,6 +96,16 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
   }
 
   /**
+   * Get current block number for a chain
+   * Used for sync state tracking when no trades found
+   * @param chain Specific chain
+   * @returns Current block number
+   */
+  async getCurrentBlock(chain: SpecificChain): Promise<number> {
+    return await this.rpcProvider.getBlockNumber(chain);
+  }
+
+  /**
    * Get provider name for logging and debugging
    * @returns Provider name combining spot provider type with underlying RPC provider
    */
@@ -122,7 +132,7 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
   async getTradesSince(
     walletAddress: string,
     since: Date | number,
-    chains: string[],
+    chains: SpecificChain[],
   ): Promise<OnChainTrade[]> {
     const startTime = Date.now();
     const maskedAddress = this.maskAddress(walletAddress);
@@ -179,7 +189,7 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
         do {
           const transfersResponse = await this.rpcProvider.getAssetTransfers(
             walletAddress,
-            chain as SpecificChain,
+            chain,
             sinceBlock,
             pageKey || "latest",
           );
@@ -232,7 +242,7 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
           if (hasFilters) {
             const filterResult = await this.checkProtocolFilter(
               txHash,
-              chain as SpecificChain,
+              chain,
               chainFilters,
             );
 
@@ -254,10 +264,7 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
           }
 
           // Transform to OnChainTrade format
-          const trade = await this.enrichSwapWithGasData(
-            swap,
-            chain as SpecificChain,
-          );
+          const trade = await this.enrichSwapWithGasData(swap, chain);
           allTrades.push(trade);
         }
       } catch (error) {
@@ -306,8 +313,8 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
    */
   async getTransferHistory(
     walletAddress: string,
-    since: Date,
-    chains: string[],
+    since: Date | number,
+    chains: SpecificChain[],
   ): Promise<SpotTransfer[]> {
     const startTime = Date.now();
     const maskedAddress = this.maskAddress(walletAddress);
@@ -325,7 +332,10 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
       return [];
     }
 
-    const sinceBlock = await this.dateToBlockNumber(since, firstChain);
+    const sinceBlock =
+      typeof since === "number"
+        ? since
+        : await this.dateToBlockNumber(since, firstChain);
 
     // Add Sentry breadcrumb for debugging
     Sentry.addBreadcrumb({
@@ -334,7 +344,8 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
       level: "info",
       data: {
         walletAddress: maskedAddress,
-        since: since.toISOString(),
+        since:
+          typeof since === "number" ? `block ${since}` : since.toISOString(),
         chains,
       },
     });
@@ -342,7 +353,8 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
     this.logger.debug(
       {
         wallet: maskedAddress,
-        since: since.toISOString(),
+        since:
+          typeof since === "number" ? `block ${since}` : since.toISOString(),
         chains,
       },
       `[RpcSpotProvider] Fetching transfer history`,
@@ -360,7 +372,7 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
         do {
           const transfersResponse = await this.rpcProvider.getAssetTransfers(
             walletAddress,
-            chain as SpecificChain,
+            chain,
             sinceBlock,
             pageKey || "latest",
           );
@@ -408,7 +420,8 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
                 to: transfer.to,
                 timestamp: new Date(transfer.metadata.blockTimestamp),
                 txHash: transfer.hash,
-                chain,
+                blockNumber: parseInt(transfer.blockNum, 16),
+                chain: chain,
               });
             }
           }
@@ -419,7 +432,10 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
           extra: {
             walletAddress: maskedAddress,
             chain,
-            since: since.toISOString(),
+            since:
+              typeof since === "number"
+                ? `block ${since}`
+                : since.toISOString(),
             method: "getTransferHistory",
           },
         });
@@ -713,14 +729,15 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
    * @param chain Chain to estimate block for
    * @returns Estimated block number
    */
-  private async dateToBlockNumber(date: Date, chain: string): Promise<number> {
+  private async dateToBlockNumber(
+    date: Date,
+    chain: SpecificChain,
+  ): Promise<number> {
     const now = new Date();
     const secondsAgo = (now.getTime() - date.getTime()) / 1000;
 
     // Get current block number
-    const currentBlock = await this.rpcProvider.getBlockNumber(
-      chain as SpecificChain,
-    );
+    const currentBlock = await this.rpcProvider.getBlockNumber(chain);
 
     // Estimate blocks per second by chain
     const blocksPerSecond = this.getBlocksPerSecond(chain);
@@ -746,7 +763,7 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
    * @param chain Chain identifier
    * @returns Blocks per second estimate
    */
-  private getBlocksPerSecond(chain: string): number {
+  private getBlocksPerSecond(chain: SpecificChain): number {
     const blockTimes: Record<string, number> = {
       eth: 12, // ~12 seconds per block
       base: 2, // ~2 seconds per block

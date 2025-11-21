@@ -2,7 +2,11 @@ import { Logger } from "pino";
 import { describe, expect, it, vi } from "vitest";
 import { MockProxy, mock } from "vitest-mock-extended";
 
-import { SpotLiveProviderConfig } from "../../types/spot-live.js";
+import { SpecificChain } from "../../types/index.js";
+import {
+  ProtocolFilter,
+  SpotLiveProviderConfig,
+} from "../../types/spot-live.js";
 import { SpotLiveProviderFactory } from "../spot-live-provider.factory.js";
 import { RpcSpotProvider } from "../spot-live/rpc-spot.provider.js";
 
@@ -43,10 +47,10 @@ describe("SpotLiveProviderFactory", () => {
         chains: ["base"],
       };
 
-      const protocolFilters = [
+      const protocolFilters: ProtocolFilter[] = [
         {
           protocol: "aerodrome",
-          chain: "base",
+          chain: "base" as SpecificChain,
           routerAddress: "0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43",
           swapEventSignature:
             "0xd78ad95fa46c994b6551d0da85fc275fe613ce37657fb8d5e3d130840159d822",
@@ -175,6 +179,7 @@ describe("SpotLiveProviderFactory", () => {
         getName: () => "TestProvider",
         isHealthy: vi.fn().mockResolvedValue(true),
         getTradesSince: vi.fn(),
+        getCurrentBlock: vi.fn().mockResolvedValue(1000000),
       };
 
       const result = await SpotLiveProviderFactory.validateProvider(
@@ -191,6 +196,7 @@ describe("SpotLiveProviderFactory", () => {
         getName: () => "TestProvider",
         isHealthy: vi.fn().mockResolvedValue(false),
         getTradesSince: vi.fn(),
+        getCurrentBlock: vi.fn().mockResolvedValue(1000000),
       };
 
       const result = await SpotLiveProviderFactory.validateProvider(
@@ -206,6 +212,7 @@ describe("SpotLiveProviderFactory", () => {
       const mockProvider = {
         getName: () => "TestProvider",
         getTradesSince: vi.fn(),
+        getCurrentBlock: vi.fn().mockResolvedValue(1000000),
         // No isHealthy method
       };
 
@@ -222,6 +229,7 @@ describe("SpotLiveProviderFactory", () => {
         getName: () => "TestProvider",
         isHealthy: vi.fn().mockRejectedValue(new Error("Connection failed")),
         getTradesSince: vi.fn(),
+        getCurrentBlock: vi.fn().mockResolvedValue(1000000),
       };
 
       const result = await SpotLiveProviderFactory.validateProvider(
