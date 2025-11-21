@@ -58,6 +58,8 @@ export interface SportsDataIOScheduleGame {
   Channel: string | null;
   PointSpread: number | null;
   OverUnder: number | null;
+  AwayTeamMoneyLine: number | null;
+  HomeTeamMoneyLine: number | null;
   StadiumID: number;
   Canceled: boolean;
   Status: SportsDataIOGameStatus;
