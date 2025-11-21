@@ -8,6 +8,7 @@ import { AgentScoreRepository } from "@recallnet/db/repositories/agent-score";
 import { ArenaRepository } from "@recallnet/db/repositories/arena";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { PerpsRepository } from "@recallnet/db/repositories/perps";
+import { SpotLiveRepository } from "@recallnet/db/repositories/spot-live";
 import { StakesRepository } from "@recallnet/db/repositories/stakes";
 import { CompetitionAgentStatus } from "@recallnet/db/repositories/types";
 import { UserRepository } from "@recallnet/db/repositories/user";
@@ -31,7 +32,9 @@ import type { CompetitionRewardService } from "../competition-reward.service.js"
 import { CompetitionService } from "../competition.service.js";
 import type { PerpsDataProcessor } from "../perps-data-processor.service.js";
 import type { PortfolioSnapshotterService } from "../portfolio-snapshotter.service.js";
+import type { PriceTrackerService } from "../price-tracker.service.js";
 import { RewardsService } from "../rewards.service.js";
+import type { SpotDataProcessor } from "../spot-data-processor.service.js";
 import type { TradeSimulatorService } from "../trade-simulator.service.js";
 import type { TradingConstraintsService } from "../trading-constraints.service.js";
 
@@ -86,12 +89,15 @@ describe("CompetitionService", () => {
   let balanceService: MockProxy<BalanceService>;
   let tradeSimulatorService: MockProxy<TradeSimulatorService>;
   let portfolioSnapshotterService: MockProxy<PortfolioSnapshotterService>;
+  let priceTrackerService: MockProxy<PriceTrackerService>;
   let agentService: MockProxy<AgentService>;
   let agentRankService: MockProxy<AgentRankService>;
   let tradingConstraintsService: MockProxy<TradingConstraintsService>;
   let competitionRewardService: MockProxy<CompetitionRewardService>;
   let rewardsService: MockProxy<RewardsService>;
   let perpsDataProcessor: MockProxy<PerpsDataProcessor>;
+  let spotDataProcessor: MockProxy<SpotDataProcessor>;
+  let spotLiveRepo: MockProxy<SpotLiveRepository>;
   let agentRepo: MockProxy<AgentRepository>;
   let agentScoreRepo: MockProxy<AgentScoreRepository>;
   let arenaRepo: MockProxy<ArenaRepository>;
@@ -177,12 +183,15 @@ describe("CompetitionService", () => {
     balanceService = mock<BalanceService>();
     tradeSimulatorService = mock<TradeSimulatorService>();
     portfolioSnapshotterService = mock<PortfolioSnapshotterService>();
+    priceTrackerService = mock<PriceTrackerService>();
     agentService = mock<AgentService>();
     agentRankService = mock<AgentRankService>();
     tradingConstraintsService = mock<TradingConstraintsService>();
     competitionRewardService = mock<CompetitionRewardService>();
     rewardsService = mock<RewardsService>();
     perpsDataProcessor = mock<PerpsDataProcessor>();
+    spotDataProcessor = mock<SpotDataProcessor>();
+    spotLiveRepo = mock<SpotLiveRepository>();
     agentRepo = mock<AgentRepository>();
     agentScoreRepo = mock<AgentScoreRepository>();
     arenaRepo = mock<ArenaRepository>();
@@ -206,16 +215,19 @@ describe("CompetitionService", () => {
       balanceService,
       tradeSimulatorService,
       portfolioSnapshotterService,
+      priceTrackerService,
       agentService,
       agentRankService,
       tradingConstraintsService,
       competitionRewardService,
       rewardsService,
       perpsDataProcessor,
+      spotDataProcessor,
       agentRepo,
       agentScoreRepo,
       arenaRepo,
       perpsRepo,
+      spotLiveRepo,
       competitionRepo,
       stakesRepo,
       userRepo,

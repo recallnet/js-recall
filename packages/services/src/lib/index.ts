@@ -2,6 +2,7 @@ export * from "./api-key-utils.js";
 export * from "./arena-validation.js";
 export * from "./circuit-breaker.js";
 export * from "./config-utils.js";
+export * from "./dex-protocols.js";
 export * from "./error-to-message.js";
 export * from "./error-utils.js";
 export * from "./handle-utils.js";
