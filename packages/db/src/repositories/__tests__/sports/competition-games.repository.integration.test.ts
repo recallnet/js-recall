@@ -89,18 +89,20 @@ describe("CompetitionGamesRepository Integration Tests", () => {
     });
 
     test("should enforce unique constraint on (competitionId, gameId)", async () => {
-      await repository.create({
+      const first = await repository.create({
         competitionId: testCompetitionId,
         gameId: testGame1Id,
       });
 
-      // Should throw due to unique constraint
-      await expect(
-        repository.create({
-          competitionId: testCompetitionId,
-          gameId: testGame1Id,
-        }),
-      ).rejects.toThrow();
+      // Second create should return existing link due to onConflictDoNothing
+      const second = await repository.create({
+        competitionId: testCompetitionId,
+        gameId: testGame1Id,
+      });
+
+      expect(second.id).toBe(first.id);
+      expect(second.competitionId).toBe(testCompetitionId);
+      expect(second.gameId).toBe(testGame1Id);
     });
   });
 

@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { Logger } from "pino";
 
 import { gamePredictionScores } from "../schema/sports/defs.js";
@@ -87,7 +87,8 @@ export class GamePredictionScoresRepository {
             eq(gamePredictionScores.competitionId, competitionId),
             eq(gamePredictionScores.gameId, gameId),
           ),
-        );
+        )
+        .orderBy(desc(gamePredictionScores.timeWeightedBrierScore));
 
       return results;
     } catch (error) {

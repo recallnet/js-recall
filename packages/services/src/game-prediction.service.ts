@@ -93,7 +93,7 @@ export class GamePredictionService {
       gameId,
       agentId,
       predictedWinner,
-      confidence: confidence.toString(),
+      confidence,
       reason,
     });
 

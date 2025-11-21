@@ -94,9 +94,9 @@ describe("GamePredictionScoresRepository Integration Tests", () => {
         competitionId: testCompetitionId,
         gameId: testGameId,
         agentId: testAgent1Id,
-        timeWeightedBrierScore: "0.850",
+        timeWeightedBrierScore: 0.85,
         finalPrediction: "MIN" as const,
-        finalConfidence: "0.90",
+        finalConfidence: 0.9,
         predictionCount: 3,
       };
 
@@ -106,9 +106,9 @@ describe("GamePredictionScoresRepository Integration Tests", () => {
       expect(result.competitionId).toBe(testCompetitionId);
       expect(result.gameId).toBe(testGameId);
       expect(result.agentId).toBe(testAgent1Id);
-      expect(result.timeWeightedBrierScore).toBe("0.850");
+      expect(result.timeWeightedBrierScore).toBeCloseTo(0.85, 6);
       expect(result.finalPrediction).toBe("MIN");
-      expect(result.finalConfidence).toBe("0.90");
+      expect(result.finalConfidence).toBeCloseTo(0.9, 6);
       expect(result.predictionCount).toBe(3);
     });
 
@@ -117,9 +117,9 @@ describe("GamePredictionScoresRepository Integration Tests", () => {
         competitionId: testCompetitionId,
         gameId: testGameId,
         agentId: testAgent1Id,
-        timeWeightedBrierScore: "0.850",
+        timeWeightedBrierScore: 0.85,
         finalPrediction: "MIN" as const,
-        finalConfidence: "0.90",
+        finalConfidence: 0.9,
         predictionCount: 3,
       };
 
@@ -128,12 +128,12 @@ describe("GamePredictionScoresRepository Integration Tests", () => {
       // Update score
       const updated = await repository.upsert({
         ...scoreData,
-        timeWeightedBrierScore: "0.900",
+        timeWeightedBrierScore: 0.9,
         predictionCount: 4,
       });
 
       expect(updated.id).toBe(first.id);
-      expect(updated.timeWeightedBrierScore).toBe("0.900");
+      expect(updated.timeWeightedBrierScore).toBeCloseTo(0.9, 6);
       expect(updated.predictionCount).toBe(4);
     });
   });
@@ -154,9 +154,9 @@ describe("GamePredictionScoresRepository Integration Tests", () => {
         competitionId: testCompetitionId,
         gameId: testGameId,
         agentId: testAgent1Id,
-        timeWeightedBrierScore: "0.700",
+        timeWeightedBrierScore: 0.7,
         finalPrediction: "CHI",
-        finalConfidence: "0.80",
+        finalConfidence: 0.8,
         predictionCount: 2,
       });
 
@@ -164,9 +164,9 @@ describe("GamePredictionScoresRepository Integration Tests", () => {
         competitionId: testCompetitionId,
         gameId: testGameId,
         agentId: agent2Id,
-        timeWeightedBrierScore: "0.950",
+        timeWeightedBrierScore: 0.95,
         finalPrediction: "MIN",
-        finalConfidence: "0.95",
+        finalConfidence: 0.95,
         predictionCount: 1,
       });
 
@@ -177,9 +177,9 @@ describe("GamePredictionScoresRepository Integration Tests", () => {
 
       expect(scores).toHaveLength(2);
       // Higher score first
-      expect(scores[0]!.timeWeightedBrierScore).toBe("0.950");
+      expect(scores[0]!.timeWeightedBrierScore).toBeCloseTo(0.95, 6);
       expect(scores[0]!.agentId).toBe(agent2Id);
-      expect(scores[1]!.timeWeightedBrierScore).toBe("0.700");
+      expect(scores[1]!.timeWeightedBrierScore).toBeCloseTo(0.7, 6);
       expect(scores[1]!.agentId).toBe(testAgent1Id);
     });
   });
@@ -204,9 +204,9 @@ describe("GamePredictionScoresRepository Integration Tests", () => {
         competitionId: testCompetitionId,
         gameId: testGameId,
         agentId: testAgent1Id,
-        timeWeightedBrierScore: "0.850",
+        timeWeightedBrierScore: 0.85,
         finalPrediction: "MIN",
-        finalConfidence: "0.90",
+        finalConfidence: 0.9,
         predictionCount: 2,
       });
 
@@ -214,9 +214,9 @@ describe("GamePredictionScoresRepository Integration Tests", () => {
         competitionId: testCompetitionId,
         gameId: game2Id,
         agentId: testAgent1Id,
-        timeWeightedBrierScore: "0.750",
+        timeWeightedBrierScore: 0.75,
         finalPrediction: "GB",
-        finalConfidence: "0.85",
+        finalConfidence: 0.85,
         predictionCount: 1,
       });
 
@@ -237,7 +237,7 @@ describe("GamePredictionScoresRepository Integration Tests", () => {
         competitionId: testCompetitionId,
         gameId: testGameId,
         agentId: testAgent1Id,
-        timeWeightedBrierScore: "0.850",
+        timeWeightedBrierScore: 0.85,
         finalPrediction: null,
         finalConfidence: null,
         predictionCount: 0,
@@ -253,13 +253,13 @@ describe("GamePredictionScoresRepository Integration Tests", () => {
         competitionId: testCompetitionId,
         gameId: testGameId,
         agentId: testAgent1Id,
-        timeWeightedBrierScore: "1.000000",
+        timeWeightedBrierScore: 1.0,
         finalPrediction: "MIN",
-        finalConfidence: "1.00",
+        finalConfidence: 1.0,
         predictionCount: 1,
       });
 
-      expect(result.timeWeightedBrierScore).toBe("1.000000");
+      expect(result.timeWeightedBrierScore).toBeCloseTo(1.0, 6);
     });
 
     test("should handle zero score", async () => {
@@ -267,13 +267,13 @@ describe("GamePredictionScoresRepository Integration Tests", () => {
         competitionId: testCompetitionId,
         gameId: testGameId,
         agentId: testAgent1Id,
-        timeWeightedBrierScore: "0.000000",
+        timeWeightedBrierScore: 0.0,
         finalPrediction: "CHI",
-        finalConfidence: "1.00",
+        finalConfidence: 1.0,
         predictionCount: 1,
       });
 
-      expect(result.timeWeightedBrierScore).toBe("0.000000");
+      expect(result.timeWeightedBrierScore).toBeCloseTo(0.0, 6);
     });
   });
 });

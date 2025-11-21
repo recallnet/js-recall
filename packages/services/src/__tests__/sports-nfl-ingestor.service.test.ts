@@ -580,8 +580,8 @@ describe("NflIngestorService", () => {
     });
   });
 
-  describe("Pre-game Prediction Snapshots", () => {
-    it("should snapshot pre-game predictions when game starts", async () => {
+  describe("Pregame Prediction Snapshots", () => {
+    it("should snapshot pregame predictions when game starts", async () => {
       const gameId = randomUUID();
       const competitionId = randomUUID();
       const agent1Id = randomUUID();
@@ -606,7 +606,7 @@ describe("NflIngestorService", () => {
         updatedAt: new Date(),
       };
 
-      // Pre-game predictions
+      // Pregame predictions
       const preGamePredictions: SelectGamePrediction[] = [
         {
           id: randomUUID(),
@@ -614,7 +614,7 @@ describe("NflIngestorService", () => {
           gameId,
           agentId: agent1Id,
           predictedWinner: "MIN",
-          confidence: "0.85",
+          confidence: 0.85,
           reason: "Strong offensive line",
           createdAt: new Date("2025-09-08T18:00:00Z"), // 1 hour before
         },
@@ -624,7 +624,7 @@ describe("NflIngestorService", () => {
           gameId,
           agentId: agent1Id,
           predictedWinner: "CHI",
-          confidence: "0.65",
+          confidence: 0.65,
           reason: "Home field advantage",
           createdAt: new Date("2025-09-08T19:00:00Z"), // 15 min before (more recent)
         },
@@ -634,7 +634,7 @@ describe("NflIngestorService", () => {
           gameId,
           agentId: agent2Id,
           predictedWinner: "MIN",
-          confidence: "0.90",
+          confidence: 0.9,
           reason: "Better defense",
           createdAt: new Date("2025-09-08T18:30:00Z"),
         },
@@ -694,7 +694,7 @@ describe("NflIngestorService", () => {
 
       await service.ingestGamePlayByPlay(19068);
 
-      // Should have created 2 snapshots (one per agent, using their most recent pre-game prediction)
+      // Should have created 2 snapshots (one per agent, using their most recent pregame prediction)
       expect(mockGamePredictionsRepo.create).toHaveBeenCalledTimes(2);
 
       // Agent 1's snapshot should use their most recent prediction (CHI @ 19:00)
@@ -703,7 +703,7 @@ describe("NflIngestorService", () => {
         gameId,
         agentId: agent1Id,
         predictedWinner: "CHI",
-        confidence: "0.65",
+        confidence: 0.65,
         reason: "[Snapshot at game start] Home field advantage",
         createdAt: gameStartTime,
       });
@@ -714,13 +714,13 @@ describe("NflIngestorService", () => {
         gameId,
         agentId: agent2Id,
         predictedWinner: "MIN",
-        confidence: "0.90",
+        confidence: 0.9,
         reason: "[Snapshot at game start] Better defense",
         createdAt: gameStartTime,
       });
     });
 
-    it("should not snapshot if no pre-game predictions exist", async () => {
+    it("should not snapshot if no pregame predictions exist", async () => {
       const gameId = randomUUID();
       const gameStartTime = new Date("2025-09-08T19:15:00Z");
 
@@ -904,7 +904,7 @@ describe("NflIngestorService", () => {
           gameId,
           agentId,
           predictedWinner: "MIN",
-          confidence: "0.75",
+          confidence: 0.75,
           reason: "First prediction",
           createdAt: new Date("2025-09-08T17:00:00Z"), // Oldest
         },
@@ -914,7 +914,7 @@ describe("NflIngestorService", () => {
           gameId,
           agentId,
           predictedWinner: "MIN",
-          confidence: "0.80",
+          confidence: 0.8,
           reason: "Updated prediction",
           createdAt: new Date("2025-09-08T18:00:00Z"),
         },
@@ -924,7 +924,7 @@ describe("NflIngestorService", () => {
           gameId,
           agentId,
           predictedWinner: "CHI",
-          confidence: "0.70",
+          confidence: 0.7,
           reason: "Final prediction before game", // Most recent!
           createdAt: new Date("2025-09-08T19:10:00Z"),
         },
@@ -991,7 +991,7 @@ describe("NflIngestorService", () => {
         gameId,
         agentId,
         predictedWinner: "CHI", // Changed from MIN to CHI
-        confidence: "0.70",
+        confidence: 0.7,
         reason: "[Snapshot at game start] Final prediction before game",
         createdAt: gameStartTime,
       });

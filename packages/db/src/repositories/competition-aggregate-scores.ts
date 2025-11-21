@@ -1,4 +1,4 @@
-import { and, asc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { Logger } from "pino";
 
 import { competitionAggregateScores } from "../schema/sports/defs.js";
@@ -68,7 +68,7 @@ export class CompetitionAggregateScoresRepository {
   /**
    * Find all aggregate scores for a competition (for leaderboard)
    * @param competitionId Competition ID
-   * @returns Array of scores ordered by average Brier score (ascending = better)
+   * @returns Array of scores ordered by average Brier score (descending = better)
    */
   async findByCompetition(
     competitionId: string,
@@ -78,7 +78,7 @@ export class CompetitionAggregateScoresRepository {
         .select()
         .from(competitionAggregateScores)
         .where(eq(competitionAggregateScores.competitionId, competitionId))
-        .orderBy(asc(competitionAggregateScores.averageBrierScore));
+        .orderBy(desc(competitionAggregateScores.averageBrierScore));
 
       return results;
     } catch (error) {

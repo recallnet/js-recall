@@ -1,4 +1,4 @@
-CREATE SCHEMA IF NOT EXISTS "sports";
+CREATE SCHEMA "sports";
 --> statement-breakpoint
 CREATE TYPE "sports"."game_status" AS ENUM('scheduled', 'in_progress', 'final');--> statement-breakpoint
 CREATE TYPE "sports"."nfl_team" AS ENUM('ARI', 'ATL', 'BAL', 'BUF', 'BYE', 'CAR', 'CHI', 'CIN', 'CLE', 'DAL', 'DEN', 'DET', 'GB', 'HOU', 'IND', 'JAX', 'KC', 'LAC', 'LAR', 'LV', 'MIA', 'MIN', 'NE', 'NO', 'NYG', 'NYJ', 'PHI', 'PIT', 'SEA', 'SF', 'TB', 'TEN', 'WAS');--> statement-breakpoint

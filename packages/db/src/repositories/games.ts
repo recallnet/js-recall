@@ -148,7 +148,7 @@ export class GamesRepository {
         .returning();
 
       if (!result) {
-        throw new Error("Failed to update game status - no result returned");
+        throw new Error("Game not found");
       }
 
       return result;
@@ -183,7 +183,7 @@ export class GamesRepository {
         .returning();
 
       if (!result) {
-        throw new Error("Failed to finalize game - no result returned");
+        throw new Error("Game not found");
       }
 
       return result;

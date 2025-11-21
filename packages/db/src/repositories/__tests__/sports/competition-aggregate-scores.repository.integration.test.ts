@@ -87,7 +87,7 @@ describe("CompetitionAggregateScoresRepository Integration Tests", () => {
       const scoreData = {
         competitionId: testCompetitionId,
         agentId: testAgent1Id,
-        averageBrierScore: "0.850",
+        averageBrierScore: 0.85,
         gamesScored: 5,
       };
 
@@ -96,7 +96,7 @@ describe("CompetitionAggregateScoresRepository Integration Tests", () => {
       expect(result.id).toBeDefined();
       expect(result.competitionId).toBe(testCompetitionId);
       expect(result.agentId).toBe(testAgent1Id);
-      expect(result.averageBrierScore).toBe("0.850");
+      expect(result.averageBrierScore).toBeCloseTo(0.85, 6);
       expect(result.gamesScored).toBe(5);
     });
 
@@ -104,7 +104,7 @@ describe("CompetitionAggregateScoresRepository Integration Tests", () => {
       const scoreData = {
         competitionId: testCompetitionId,
         agentId: testAgent1Id,
-        averageBrierScore: "0.850",
+        averageBrierScore: 0.85,
         gamesScored: 5,
       };
 
@@ -113,12 +113,12 @@ describe("CompetitionAggregateScoresRepository Integration Tests", () => {
       // Update with new score
       const updated = await repository.upsert({
         ...scoreData,
-        averageBrierScore: "0.900",
+        averageBrierScore: 0.9,
         gamesScored: 6,
       });
 
       expect(updated.id).toBe(first.id);
-      expect(updated.averageBrierScore).toBe("0.900");
+      expect(updated.averageBrierScore).toBeCloseTo(0.9, 6);
       expect(updated.gamesScored).toBe(6);
     });
 
@@ -126,7 +126,7 @@ describe("CompetitionAggregateScoresRepository Integration Tests", () => {
       const scoreData = {
         competitionId: testCompetitionId,
         agentId: testAgent1Id,
-        averageBrierScore: "0.850",
+        averageBrierScore: 0.85,
         gamesScored: 5,
       };
 
@@ -144,14 +144,14 @@ describe("CompetitionAggregateScoresRepository Integration Tests", () => {
       await repository.upsert({
         competitionId: testCompetitionId,
         agentId: testAgent1Id,
-        averageBrierScore: "0.850",
+        averageBrierScore: 0.85,
         gamesScored: 5,
       });
 
       await repository.upsert({
         competitionId: testCompetitionId,
         agentId: testAgent2Id,
-        averageBrierScore: "0.920",
+        averageBrierScore: 0.92,
         gamesScored: 5,
       });
 
@@ -159,9 +159,9 @@ describe("CompetitionAggregateScoresRepository Integration Tests", () => {
 
       expect(scores).toHaveLength(2);
       // Should be sorted by score descending (higher is better)
-      expect(scores[0]!.averageBrierScore).toBe("0.920");
+      expect(scores[0]!.averageBrierScore).toBeCloseTo(0.92, 6);
       expect(scores[0]!.agentId).toBe(testAgent2Id);
-      expect(scores[1]!.averageBrierScore).toBe("0.850");
+      expect(scores[1]!.averageBrierScore).toBeCloseTo(0.85, 6);
       expect(scores[1]!.agentId).toBe(testAgent1Id);
     });
 
@@ -177,14 +177,14 @@ describe("CompetitionAggregateScoresRepository Integration Tests", () => {
       await repository.upsert({
         competitionId: testCompetitionId,
         agentId: testAgent1Id,
-        averageBrierScore: "0.850",
+        averageBrierScore: 0.85,
         gamesScored: 5,
       });
 
       await repository.upsert({
         competitionId: testCompetitionId,
         agentId: testAgent2Id,
-        averageBrierScore: "0.920",
+        averageBrierScore: 0.92,
         gamesScored: 5,
       });
 
@@ -195,7 +195,7 @@ describe("CompetitionAggregateScoresRepository Integration Tests", () => {
 
       expect(score).toBeDefined();
       expect(score!.agentId).toBe(testAgent1Id);
-      expect(score!.averageBrierScore).toBe("0.850");
+      expect(score!.averageBrierScore).toBeCloseTo(0.85, 6);
     });
 
     test("should return undefined for non-existent score", async () => {
@@ -213,34 +213,34 @@ describe("CompetitionAggregateScoresRepository Integration Tests", () => {
       const result = await repository.upsert({
         competitionId: testCompetitionId,
         agentId: testAgent1Id,
-        averageBrierScore: "0.000",
+        averageBrierScore: 0.0,
         gamesScored: 0,
       });
 
       expect(result.gamesScored).toBe(0);
-      expect(result.averageBrierScore).toBe("0.000");
+      expect(result.averageBrierScore).toBeCloseTo(0.0, 6);
     });
 
     test("should handle perfect and zero scores", async () => {
       await repository.upsert({
         competitionId: testCompetitionId,
         agentId: testAgent1Id,
-        averageBrierScore: "1.000",
+        averageBrierScore: 1.0,
         gamesScored: 5,
       });
 
       await repository.upsert({
         competitionId: testCompetitionId,
         agentId: testAgent2Id,
-        averageBrierScore: "0.000",
+        averageBrierScore: 0.0,
         gamesScored: 5,
       });
 
       const scores = await repository.findByCompetition(testCompetitionId);
 
       expect(scores).toHaveLength(2);
-      expect(scores[0]!.averageBrierScore).toBe("1.000");
-      expect(scores[1]!.averageBrierScore).toBe("0.000");
+      expect(scores[0]!.averageBrierScore).toBeCloseTo(1.0, 6);
+      expect(scores[1]!.averageBrierScore).toBeCloseTo(0.0, 6);
     });
   });
 });

@@ -94,7 +94,7 @@ describe("GamePredictionsRepository Integration Tests", () => {
         gameId: testGameId,
         agentId: testAgentId,
         predictedWinner: "MIN" as const,
-        confidence: "0.85",
+        confidence: 0.85,
         reason: "Strong offensive line",
       };
 
@@ -105,7 +105,7 @@ describe("GamePredictionsRepository Integration Tests", () => {
       expect(result.gameId).toBe(testGameId);
       expect(result.agentId).toBe(testAgentId);
       expect(result.predictedWinner).toBe("MIN");
-      expect(result.confidence).toBe("0.85");
+      expect(result.confidence).toBeCloseTo(0.85, 5);
       expect(result.reason).toBe("Strong offensive line");
       expect(result.createdAt).toBeDefined();
     });
@@ -115,7 +115,7 @@ describe("GamePredictionsRepository Integration Tests", () => {
         competitionId: testCompetitionId,
         gameId: testGameId,
         agentId: testAgentId,
-        confidence: "0.85",
+        confidence: 0.85,
         reason: "Test",
       };
 
@@ -127,7 +127,7 @@ describe("GamePredictionsRepository Integration Tests", () => {
       await repository.create({
         ...baseData,
         predictedWinner: "MIN",
-        confidence: "0.90",
+        confidence: 0.9,
       });
 
       const history = await repository.findByGameAndAgent(
@@ -158,7 +158,7 @@ describe("GamePredictionsRepository Integration Tests", () => {
         gameId: testGameId,
         agentId: testAgentId,
         predictedWinner: "CHI",
-        confidence: "0.70",
+        confidence: 0.7,
         reason: "Test 1",
       });
 
@@ -167,7 +167,7 @@ describe("GamePredictionsRepository Integration Tests", () => {
         gameId: testGameId,
         agentId: agent2Id,
         predictedWinner: "MIN",
-        confidence: "0.80",
+        confidence: 0.8,
         reason: "Test 2",
       });
 
@@ -193,7 +193,7 @@ describe("GamePredictionsRepository Integration Tests", () => {
         gameId: testGameId,
         agentId: testAgentId,
         predictedWinner: "CHI",
-        confidence: "0.70",
+        confidence: 0.7,
         reason: "First",
       });
 
@@ -204,7 +204,7 @@ describe("GamePredictionsRepository Integration Tests", () => {
         gameId: testGameId,
         agentId: testAgentId,
         predictedWinner: "MIN",
-        confidence: "0.80",
+        confidence: 0.8,
         reason: "Second",
       });
 
@@ -227,7 +227,7 @@ describe("GamePredictionsRepository Integration Tests", () => {
         gameId: testGameId,
         agentId: testAgentId,
         predictedWinner: "CHI",
-        confidence: "0.70",
+        confidence: 0.7,
         reason: "First",
       });
 
@@ -238,7 +238,7 @@ describe("GamePredictionsRepository Integration Tests", () => {
         gameId: testGameId,
         agentId: testAgentId,
         predictedWinner: "MIN",
-        confidence: "0.90",
+        confidence: 0.9,
         reason: "Updated",
       });
 
@@ -250,16 +250,16 @@ describe("GamePredictionsRepository Integration Tests", () => {
       expect(found).toBeDefined();
       expect(found!.id).toBe(latest.id);
       expect(found!.predictedWinner).toBe("MIN");
-      expect(found!.confidence).toBe("0.90");
+      expect(found!.confidence).toBeCloseTo(0.9, 5);
     });
 
-    test("should return null for agent with no predictions", async () => {
+    test("should return undefined for agent with no predictions", async () => {
       const found = await repository.findLatestByGameAndAgent(
         testGameId,
         testAgentId,
       );
 
-      expect(found).toBeNull();
+      expect(found).toBeUndefined();
     });
   });
 
@@ -282,7 +282,7 @@ describe("GamePredictionsRepository Integration Tests", () => {
         gameId: testGameId,
         agentId: testAgentId,
         predictedWinner: "CHI",
-        confidence: "0.70",
+        confidence: 0.7,
         reason: "Test",
       });
 
@@ -291,7 +291,7 @@ describe("GamePredictionsRepository Integration Tests", () => {
         gameId: testGameId,
         agentId: agent2Id,
         predictedWinner: "MIN",
-        confidence: "0.80",
+        confidence: 0.8,
         reason: "Test",
       });
 

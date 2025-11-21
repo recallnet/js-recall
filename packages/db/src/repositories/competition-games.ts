@@ -46,7 +46,6 @@ export class CompetitionGamesRepository {
         .returning();
 
       if (!result) {
-        // Check if it already exists
         const existing = await this.findByCompetitionAndGame(
           data.competitionId,
           data.gameId,

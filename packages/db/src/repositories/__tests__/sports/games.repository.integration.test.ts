@@ -242,7 +242,7 @@ describe("GamesRepository Integration Tests", () => {
     test("should throw error for non-existent game", async () => {
       await expect(
         repository.updateStatus(randomUUID(), "in_progress"),
-      ).rejects.toThrow("not found");
+      ).rejects.toThrow("Game not found");
     });
   });
 
@@ -270,7 +270,7 @@ describe("GamesRepository Integration Tests", () => {
     test("should throw error for non-existent game", async () => {
       await expect(
         repository.finalizeGame(randomUUID(), new Date(), "CHI"),
-      ).rejects.toThrow("not found");
+      ).rejects.toThrow("Game not found");
     });
   });
 

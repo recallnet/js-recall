@@ -197,7 +197,11 @@ export const gamePredictions = sportsSchema.table(
     gameId: uuid("game_id").notNull(),
     agentId: uuid("agent_id").notNull(),
     predictedWinner: nflTeam("predicted_winner").notNull(), // Team ticker: "MIN", "CHI", etc.
-    confidence: numeric("confidence", { precision: 4, scale: 3 }).notNull(), // 0.0 - 1.0
+    confidence: numeric("confidence", {
+      precision: 4,
+      scale: 3,
+      mode: "number",
+    }).notNull(), // 0.0 - 1.0
     reason: text("reason"), // Reason for prediction
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
@@ -249,9 +253,14 @@ export const gamePredictionScores = sportsSchema.table(
     timeWeightedBrierScore: numeric("time_weighted_brier_score", {
       precision: 10,
       scale: 6,
+      mode: "number",
     }).notNull(),
     finalPrediction: nflTeam("final_prediction"), // Last prediction before game ended
-    finalConfidence: numeric("final_confidence", { precision: 4, scale: 3 }),
+    finalConfidence: numeric("final_confidence", {
+      precision: 4,
+      scale: 3,
+      mode: "number",
+    }),
     predictionCount: integer("prediction_count").notNull().default(0),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .defaultNow()
@@ -297,6 +306,7 @@ export const competitionAggregateScores = sportsSchema.table(
     averageBrierScore: numeric("average_brier_score", {
       precision: 10,
       scale: 6,
+      mode: "number",
     }).notNull(),
     gamesScored: integer("games_scored").notNull().default(0),
     updatedAt: timestamp("updated_at", { withTimezone: true })

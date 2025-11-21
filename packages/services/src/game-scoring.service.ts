@@ -105,7 +105,7 @@ export class GameScoringService {
       const weight = 0.5 + 0.5 * t;
 
       // Calculate probability p_t
-      const confidence = Number(prediction.confidence);
+      const confidence = prediction.confidence;
       const p_t =
         prediction.predictedWinner === actualWinner
           ? confidence
@@ -202,9 +202,9 @@ export class GameScoringService {
             competitionId,
             gameId,
             agentId,
-            timeWeightedBrierScore: timeWeightedBrierScore.toString(),
+            timeWeightedBrierScore,
             finalPrediction: finalPrediction?.predictedWinner || null,
-            finalConfidence: finalPrediction?.confidence || null,
+            finalConfidence: finalPrediction?.confidence ?? null,
             predictionCount: predictions.length,
           });
 
@@ -260,7 +260,7 @@ export class GameScoringService {
 
     // Calculate average Brier score
     const totalBrier = gameScores.reduce(
-      (sum, score) => sum + Number(score.timeWeightedBrierScore),
+      (sum, score) => sum + score.timeWeightedBrierScore,
       0,
     );
     const averageBrier = totalBrier / gameScores.length;
@@ -269,7 +269,7 @@ export class GameScoringService {
     await this.#competitionAggregateScoresRepo.upsert({
       competitionId,
       agentId,
-      averageBrierScore: averageBrier.toString(),
+      averageBrierScore: averageBrier,
       gamesScored: gameScores.length,
     });
   }
@@ -295,11 +295,9 @@ export class GameScoringService {
       const entries: GameLeaderboardEntry[] = scores
         .map((score) => ({
           agentId: score.agentId,
-          timeWeightedBrierScore: Number(score.timeWeightedBrierScore),
+          timeWeightedBrierScore: score.timeWeightedBrierScore,
           finalPrediction: score.finalPrediction,
-          finalConfidence: score.finalConfidence
-            ? Number(score.finalConfidence)
-            : null,
+          finalConfidence: score.finalConfidence ?? null,
           predictionCount: score.predictionCount,
           rank: 0, // Will be set below
         }))
@@ -338,7 +336,7 @@ export class GameScoringService {
       const entries: CompetitionLeaderboardEntry[] = scores.map(
         (score, index) => ({
           agentId: score.agentId,
-          averageBrierScore: Number(score.averageBrierScore),
+          averageBrierScore: score.averageBrierScore,
           gamesScored: score.gamesScored,
           rank: index + 1,
         }),
