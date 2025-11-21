@@ -300,7 +300,7 @@ let transactionsIndexingService: IndexingService | null = null;
 
 export function getEventsIndexingService(): IndexingService {
   if (!eventsIndexingService) {
-    const stakingConfig = config.getStackingIndexConfig();
+    const stakingConfig = config.getStakingIndexConfig();
     const logger = createLogger("EventsIndexingService");
     const eventProcessor = new EventProcessor(
       db,
@@ -322,7 +322,7 @@ export function getEventsIndexingService(): IndexingService {
 
 export function getTransactionsIndexingService(): IndexingService {
   if (!transactionsIndexingService) {
-    const stakingConfig = config.getStackingIndexConfig();
+    const stakingConfig = config.getStakingIndexConfig();
     const logger = createLogger("TransactionsIndexingService");
     const transactionProcessor = new TransactionProcessor(
       new ConvictionClaimsRepository(db),

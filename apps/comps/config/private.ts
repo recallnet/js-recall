@@ -209,7 +209,7 @@ export const config = {
   ...publicConfig,
   ...configSchema.parse(rawConfig),
 
-  getStackingIndexConfig(): StakingIndexConfig {
+  getStakingIndexConfig(): StakingIndexConfig {
     return StakingIndexConfig.parse({
       stakingContract: process.env.INDEXING_STAKING_CONTRACT,
       rewardsContract: process.env.INDEXING_REWARDS_CONTRACT,
