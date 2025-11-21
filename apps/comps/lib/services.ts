@@ -19,6 +19,7 @@ import {
   RewardsService,
   RiskMetricsService,
   SortinoRatioService,
+  SpotDataProcessor,
   TradeSimulatorService,
   TradingConstraintsService,
   UserService,
@@ -48,6 +49,7 @@ import {
   leaderboardRepository,
   perpsRepository,
   rewardsRepository,
+  spotLiveRepository,
   stakesRepository,
   tradeRepository,
   tradingConstraintsRepository,
@@ -191,6 +193,16 @@ export const perpsDataProcessor = new PerpsDataProcessor(
   createLogger("PerpsDataProcessor"),
 );
 
+export const spotDataProcessor = new SpotDataProcessor(
+  agentRepository,
+  competitionRepository,
+  spotLiveRepository,
+  tradeRepository,
+  portfolioSnapshotterService,
+  priceTrackerService,
+  createLogger("SpotDataProcessor"),
+);
+
 export const arenaService = new ArenaService(
   arenaRepository,
   competitionRepository,
@@ -224,6 +236,7 @@ export const competitionService = new CompetitionService(
   competitionRewardsService,
   rewardsService,
   perpsDataProcessor,
+  spotDataProcessor,
   agentRepository,
   agentScoreRepository,
   arenaRepository,

@@ -17,7 +17,6 @@ import {
 } from "@recallnet/db/schema/core/types";
 import {
   PerpetualPositionWithAgent,
-  SelectPerpsCompetitionConfig,
   SelectTrade,
 } from "@recallnet/db/schema/trading/types";
 import type {
@@ -38,6 +37,7 @@ import { applySortingAndPagination, splitSortField } from "./lib/sort.js";
 import { PerpsDataProcessor } from "./perps-data-processor.service.js";
 import { PortfolioSnapshotterService } from "./portfolio-snapshotter.service.js";
 import { RewardsService } from "./rewards.service.js";
+import { SpotDataProcessor } from "./spot-data-processor.service.js";
 import { TradeSimulatorService } from "./trade-simulator.service.js";
 import { TradingConstraintsService } from "./trading-constraints.service.js";
 import {
@@ -359,6 +359,7 @@ export class CompetitionService {
   private competitionRewardService: CompetitionRewardService;
   private rewardsService: RewardsService;
   private perpsDataProcessor: PerpsDataProcessor;
+  private spotDataProcessor: SpotDataProcessor;
   private agentRepo: AgentRepository;
   private agentScoreRepo: AgentScoreRepository;
   private arenaRepo: ArenaRepository;
@@ -380,6 +381,7 @@ export class CompetitionService {
     competitionRewardService: CompetitionRewardService,
     rewardsService: RewardsService,
     perpsDataProcessor: PerpsDataProcessor,
+    spotDataProcessor: SpotDataProcessor,
     agentRepo: AgentRepository,
     agentScoreRepo: AgentScoreRepository,
     arenaRepo: ArenaRepository,
@@ -400,6 +402,7 @@ export class CompetitionService {
     this.competitionRewardService = competitionRewardService;
     this.rewardsService = rewardsService;
     this.perpsDataProcessor = perpsDataProcessor;
+    this.spotDataProcessor = spotDataProcessor;
     this.agentRepo = agentRepo;
     this.agentScoreRepo = agentScoreRepo;
     this.arenaRepo = arenaRepo;
@@ -894,9 +897,57 @@ export class CompetitionService {
         await this.perpsRepo.getPerpsCompetitionConfig(competitionId);
 
       if (perpsConfig && perpsConfig.minFundingThreshold) {
+        const threshold = Number(perpsConfig.minFundingThreshold);
         const { removedAgents } = await this.enforceMinFundingThreshold(
           competitionId,
-          perpsConfig,
+          threshold,
+        );
+
+        // Remove the disqualified agents from finalAgentIds
+        if (removedAgents.length > 0) {
+          finalAgentIds = finalAgentIds.filter(
+            (id) => !removedAgents.includes(id),
+          );
+        }
+      }
+    } else if (competition.type === "spot_live_trading") {
+      // Spot Live: Sync initial data from blockchain
+      this.logger.debug(
+        `[CompetitionService] Syncing initial spot live data for ${finalAgentIds.length} agents (competition still pending)`,
+      );
+
+      // Pass skipMonitoring=true for initial sync during competition startup
+      const SKIP_MONITORING = true;
+      const result = await this.spotDataProcessor.processSpotLiveCompetition(
+        competitionId,
+        SKIP_MONITORING,
+      );
+
+      const successCount = result.syncResult.successful.length;
+      const failedCount = result.syncResult.failed.length;
+      const totalCount = successCount + failedCount;
+
+      this.logger.debug(
+        `[CompetitionService] Initial spot live sync completed: ${successCount}/${totalCount} agents synced successfully`,
+      );
+
+      if (failedCount > 0) {
+        const failedAgentIds = result.syncResult.failed.map((f) => f.agentId);
+        this.logger.warn(
+          `[CompetitionService] Failed to sync ${failedCount} agents: ${failedAgentIds.join(", ")}`,
+        );
+      }
+
+      // Enforce minimum funding threshold after initial sync
+      // This must happen BEFORE competition goes active
+      const spotLiveConfig =
+        await this.spotDataProcessor.getCompetitionConfig(competitionId);
+
+      if (spotLiveConfig && spotLiveConfig.minFundingThreshold) {
+        const threshold = Number(spotLiveConfig.minFundingThreshold);
+        const { removedAgents } = await this.enforceMinFundingThreshold(
+          competitionId,
+          threshold,
         );
 
         // Remove the disqualified agents from finalAgentIds
@@ -939,20 +990,18 @@ export class CompetitionService {
   }
 
   /**
-   * Check and enforce minimum funding threshold for perps competition
-   * Removes agents below the threshold from the competition
+   * Check and enforce minimum funding threshold for a competition
+   * Removes agents whose portfolio value is below the specified threshold
+   * Generic method that works for any competition type (perps, spot live, etc.)
    * @private
+   * @param competitionId Competition ID
+   * @param threshold Minimum portfolio value in USD
+   * @returns Array of agent IDs that were removed
    */
   private async enforceMinFundingThreshold(
     competitionId: string,
-    perpsConfig: SelectPerpsCompetitionConfig,
+    threshold: number,
   ): Promise<{ removedAgents: string[] }> {
-    // Only proceed if minFundingThreshold is configured
-    if (!perpsConfig.minFundingThreshold) {
-      return { removedAgents: [] };
-    }
-
-    const threshold = Number(perpsConfig.minFundingThreshold);
     const removedAgents: string[] = [];
 
     this.logger.info(
@@ -1231,6 +1280,24 @@ export class CompetitionService {
         // Log warning but don't fail the competition ending
         this.logger.warn(
           `[CompetitionService] Failed to sync final data for ${failedCount} out of ${totalCount} agents in ending competition`,
+        );
+      }
+    } else if (competition.type === "spot_live_trading") {
+      // Spot Live: Final sync from blockchain
+      const result =
+        await this.spotDataProcessor.processSpotLiveCompetition(competitionId);
+
+      const successCount = result.syncResult.successful.length;
+      const failedCount = result.syncResult.failed.length;
+      const totalCount = successCount + failedCount;
+
+      this.logger.debug(
+        `[CompetitionService] Final spot live sync completed: ${successCount}/${totalCount} agents synced successfully`,
+      );
+
+      if (failedCount > 0) {
+        this.logger.warn(
+          `[CompetitionService] Failed to sync final data for ${failedCount} agents in ending competition`,
         );
       }
     } else {

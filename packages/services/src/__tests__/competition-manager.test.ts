@@ -32,6 +32,7 @@ import { CompetitionService } from "../competition.service.js";
 import type { PerpsDataProcessor } from "../perps-data-processor.service.js";
 import type { PortfolioSnapshotterService } from "../portfolio-snapshotter.service.js";
 import { RewardsService } from "../rewards.service.js";
+import type { SpotDataProcessor } from "../spot-data-processor.service.js";
 import type { TradeSimulatorService } from "../trade-simulator.service.js";
 import type { TradingConstraintsService } from "../trading-constraints.service.js";
 
@@ -92,6 +93,7 @@ describe("CompetitionService", () => {
   let competitionRewardService: MockProxy<CompetitionRewardService>;
   let rewardsService: MockProxy<RewardsService>;
   let perpsDataProcessor: MockProxy<PerpsDataProcessor>;
+  let spotDataProcessor: MockProxy<SpotDataProcessor>;
   let agentRepo: MockProxy<AgentRepository>;
   let agentScoreRepo: MockProxy<AgentScoreRepository>;
   let arenaRepo: MockProxy<ArenaRepository>;
@@ -183,6 +185,7 @@ describe("CompetitionService", () => {
     competitionRewardService = mock<CompetitionRewardService>();
     rewardsService = mock<RewardsService>();
     perpsDataProcessor = mock<PerpsDataProcessor>();
+    spotDataProcessor = mock<SpotDataProcessor>();
     agentRepo = mock<AgentRepository>();
     agentScoreRepo = mock<AgentScoreRepository>();
     arenaRepo = mock<ArenaRepository>();
@@ -212,6 +215,7 @@ describe("CompetitionService", () => {
       competitionRewardService,
       rewardsService,
       perpsDataProcessor,
+      spotDataProcessor,
       agentRepo,
       agentScoreRepo,
       arenaRepo,
