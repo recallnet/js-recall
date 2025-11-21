@@ -643,7 +643,7 @@ export class SpotLiveRepository {
 
       if (since) {
         conditions.push(
-          sql`${spotLiveTransferHistory.transferTimestamp} > ${since}`,
+          sql`${spotLiveTransferHistory.transferTimestamp} >= ${since}`,
         );
       }
 
