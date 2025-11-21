@@ -127,7 +127,6 @@ export class IndexingService {
     this.#abortController = new AbortController();
     this.#deferStop = defer();
     void this.loop(query);
-    this.#deferStop?.resolve();
   }
 
   /**
@@ -154,6 +153,7 @@ export class IndexingService {
       this.#logger.info("Waiting for new events");
       await delay(this.#delayMs, this.#abortController?.signal);
     }
+    this.#deferStop?.resolve();
   }
 
   /**
