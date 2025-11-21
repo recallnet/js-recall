@@ -3816,7 +3816,8 @@ export function configureAdminRoutes(
    *               boosts:
    *                 type: array
    *                 minItems: 1
-   *                 description: Array of boost items to add
+   *                 maxItems: 100
+   *                 description: Array of boost items to add (max 100 items per batch, no duplicate wallets within batch)
    *                 items:
    *                   type: object
    *                   required:
@@ -3832,29 +3833,33 @@ export function configureAdminRoutes(
    *                     amount:
    *                       type: string
    *                       pattern: ^\d+$
-   *                       description: Boost amount as numeric string (BigInt)
-   *                       example: "1000000000000000000000"
+   *                       description: Boost amount as numeric string (BigInt). Must be > 0 and <= 10^18.
+   *                       example: "500000000000000000"
    *                     expiresAt:
    *                       type: string
    *                       format: date-time
-   *                       description: ISO 8601 expiration date (must be in the future)
+   *                       description: ISO 8601 expiration date (must be at least 1 minute in the future)
    *                       example: "2025-12-31T23:59:59Z"
    *                     meta:
    *                       type: object
-   *                       description: Optional metadata (e.g., source, campaignId)
-   *                       additionalProperties: true
+   *                       description: Optional metadata (primitives only - string, number, boolean). Max 1000 characters when serialized to JSON.
+   *                       additionalProperties:
+   *                         oneOf:
+   *                           - type: string
+   *                           - type: number
+   *                           - type: boolean
    *                       example:
    *                         source: "farcaster"
    *                         campaignId: "campaign-123"
    *           example:
    *             boosts:
    *               - wallet: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0"
-   *                 amount: "1000000000000000000000"
+   *                 amount: "500000000000000000"
    *                 expiresAt: "2025-12-31T23:59:59Z"
    *                 meta:
    *                   source: "farcaster"
    *               - wallet: "0x8ba1f109551bD432803012645Aac136c22C172c8"
-   *                 amount: "500000000000000000000"
+   *                 amount: "250000000000000000"
    *                 expiresAt: "2025-12-31T23:59:59Z"
    *     responses:
    *       501:
@@ -3879,8 +3884,10 @@ export function configureAdminRoutes(
    *                     requestedCount:
    *                       type: number
    *                       description: Number of boost items in the request
+   *                       example: 2
    *                     note:
    *                       type: string
+   *                       example: "When implemented, this will process 2 boost grants and apply them to eligible competitions"
    *       400:
    *         description: Bad Request - Invalid request format, validation errors, or empty array
    *       401:
@@ -3916,7 +3923,8 @@ export function configureAdminRoutes(
    *               boostIds:
    *                 type: array
    *                 minItems: 1
-   *                 description: Array of boost IDs to revoke
+   *                 maxItems: 100
+   *                 description: Array of boost IDs to revoke (max 100 items per batch)
    *                 items:
    *                   type: string
    *                   format: uuid
@@ -3950,8 +3958,10 @@ export function configureAdminRoutes(
    *                     requestedCount:
    *                       type: number
    *                       description: Number of boost IDs in the request
+   *                       example: 2
    *                     note:
    *                       type: string
+   *                       example: "When implemented, this will revoke 2 boosts and remove them from pending competitions"
    *       400:
    *         description: Bad Request - Invalid request format, validation errors, empty array, or boost already revoked
    *       401:
