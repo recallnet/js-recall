@@ -109,6 +109,7 @@ const configSchema = z.strictObject({
     // Decay rate for boost time calculations
     boostTimeDecayRate: z.float64(),
   }),
+  stakeIndexingEnabled: z.coerce.boolean().default(false),
 });
 
 const rawConfig = {
@@ -185,6 +186,7 @@ const rawConfig = {
       ? parseFloat(process.env.REWARDS_BOOST_TIME_DECAY_RATE)
       : 0.5,
   },
+  stakeIndexingEnabled: process.env.INDEXING_ENABLED,
 };
 
 const StakingIndexConfig = z.object({
