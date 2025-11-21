@@ -219,7 +219,7 @@ export const agentBoosts = pgTable(
  *
  * Invariants / notes:
  * - `expires_at` is always required (NOT NULL) - no infinite boosts.
- * - `amount` must be >= 0 (enforced by CHECK).
+ * - `amount` must be > 0 (enforced by CHECK).
  * - Multiple active boosts per user are summed when calculating total boost.
  * - `is_active = false` prevents future applications to new competitions.
  * - `revoked_at` tracks when boost was revoked (null if not revoked).
