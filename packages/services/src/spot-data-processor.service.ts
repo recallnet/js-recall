@@ -117,7 +117,7 @@ export class SpotDataProcessor {
       toAmount: trade.toAmount,
       fromTokenSymbol: fromPrice.symbol,
       toTokenSymbol: toPrice.symbol,
-      price: trade.toAmount / trade.fromAmount,
+      price: trade.fromAmount === 0 ? 0 : trade.toAmount / trade.fromAmount,
       tradeAmountUsd,
       success: true,
       reason: "On-chain trade detected",
@@ -514,11 +514,9 @@ export class SpotDataProcessor {
             allTransfers.push(...chainTransfers);
           }
 
-          const transfers = allTransfers;
-
-          if (transfers.length > 0) {
+          if (allTransfers.length > 0) {
             // Extract unique tokens from transfers
-            const uniqueTransferTokens = transfers.reduce((acc, t) => {
+            const uniqueTransferTokens = allTransfers.reduce((acc, t) => {
               acc.set(t.tokenAddress.toLowerCase(), t.chain);
               return acc;
             }, new Map<string, SpecificChain>());
@@ -536,7 +534,7 @@ export class SpotDataProcessor {
 
             // Enrich transfers with price data
             const enrichedTransferRecords: InsertSpotLiveTransferHistory[] =
-              transfers.map((t): InsertSpotLiveTransferHistory => {
+              allTransfers.map((t): InsertSpotLiveTransferHistory => {
                 // Key by address:chain for multi-chain support
                 const priceKey = `${t.tokenAddress.toLowerCase()}:${t.chain}`;
                 const price = transferPriceMap.get(priceKey);
