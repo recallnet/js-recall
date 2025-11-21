@@ -218,14 +218,17 @@ export async function setup() {
       })
       .onConflictDoNothing();
 
-    await db.insert(arenas).values({
-      id: "default-nfl-game-prediction-arena",
-      name: "Default NFL Game Prediction Arena",
-      createdBy: "system",
-      category: "sports",
-      skill: "sports_prediction",
-      kind: "Competition",
-    });
+    await db
+      .insert(arenas)
+      .values({
+        id: "default-nfl-game-prediction-arena",
+        name: "Default NFL Game Prediction Arena",
+        createdBy: "system",
+        category: "sports",
+        skill: "sports_prediction",
+        kind: "Competition",
+      })
+      .onConflictDoNothing();
     log("✅ Default arenas created");
 
     // Start mock Symphony server for perps testing

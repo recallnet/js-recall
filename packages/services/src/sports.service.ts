@@ -81,6 +81,7 @@ export class SportsService {
     this.nflIngestorService = new NflIngestorService(
       this.gamesRepository,
       this.gamePlaysRepository,
+      this.gamePredictionsRepository,
       competitionRepo,
       this.competitionGamesRepository,
       this.gameScoringService,

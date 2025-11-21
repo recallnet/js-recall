@@ -3,6 +3,7 @@ import { Logger } from "pino";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { CompetitionGamesRepository } from "@recallnet/db/repositories/competition-games";
 import { GamePlaysRepository } from "@recallnet/db/repositories/game-plays";
+import { GamePredictionsRepository } from "@recallnet/db/repositories/game-predictions";
 import { GamesRepository } from "@recallnet/db/repositories/games";
 import {
   NflGameStatus,
@@ -24,6 +25,7 @@ import {
 export class NflIngestorService {
   readonly #gamesRepo: GamesRepository;
   readonly #gamePlaysRepo: GamePlaysRepository;
+  readonly #gamePredictionsRepo: GamePredictionsRepository;
   readonly #competitionRepo: CompetitionRepository;
   readonly #competitionGamesRepo: CompetitionGamesRepository;
   readonly #gameScoringService: GameScoringService;
@@ -33,6 +35,7 @@ export class NflIngestorService {
   constructor(
     gamesRepo: GamesRepository,
     gamePlaysRepo: GamePlaysRepository,
+    gamePredictionsRepo: GamePredictionsRepository,
     competitionRepo: CompetitionRepository,
     competitionGamesRepo: CompetitionGamesRepository,
     gameScoringService: GameScoringService,
@@ -41,6 +44,7 @@ export class NflIngestorService {
   ) {
     this.#gamesRepo = gamesRepo;
     this.#gamePlaysRepo = gamePlaysRepo;
+    this.#gamePredictionsRepo = gamePredictionsRepo;
     this.#competitionRepo = competitionRepo;
     this.#competitionGamesRepo = competitionGamesRepo;
     this.#provider = provider;
@@ -304,6 +308,74 @@ export class NflIngestorService {
   }
 
   /**
+   * Snapshot pregame predictions when a game starts
+   * Takes the most recent prediction for each agent made before game start
+   * and creates a new prediction record at the game start time
+   * @param gameId Game ID
+   * @param gameStartTime Game start time
+   * @returns Number of predictions snapshotted
+   */
+  async #snapshotPregamePredictions(
+    gameId: string,
+    gameStartTime: Date,
+  ): Promise<number> {
+    try {
+      // Find all predictions made before the game started
+      const preGamePredictions =
+        await this.#gamePredictionsRepo.findPregamePredictions(
+          gameId,
+          gameStartTime,
+        );
+
+      if (preGamePredictions.length === 0) {
+        this.#logger.debug({ gameId }, "No pregame predictions to snapshot");
+        return 0;
+      }
+
+      // Group by agent and get most recent prediction for each
+      const latestByAgent = new Map<string, (typeof preGamePredictions)[0]>();
+      for (const pred of preGamePredictions) {
+        const existing = latestByAgent.get(pred.agentId);
+        if (!existing || pred.createdAt > existing.createdAt) {
+          latestByAgent.set(pred.agentId, pred);
+        }
+      }
+
+      // Create snapshot at game start time for each agent
+      let snapshotCount = 0;
+      for (const latestPred of latestByAgent.values()) {
+        await this.#gamePredictionsRepo.create({
+          competitionId: latestPred.competitionId,
+          gameId: latestPred.gameId,
+          agentId: latestPred.agentId,
+          predictedWinner: latestPred.predictedWinner,
+          confidence: latestPred.confidence,
+          reason: `[Snapshot at game start] ${latestPred.reason}`,
+          createdAt: gameStartTime,
+        });
+        snapshotCount++;
+      }
+
+      this.#logger.info(
+        {
+          gameId,
+          snapshotCount,
+          totalPreGamePredictions: preGamePredictions.length,
+        },
+        "Snapshotted pregame predictions at game start",
+      );
+
+      return snapshotCount;
+    } catch (error) {
+      this.#logger.error(
+        { error, gameId },
+        "Error in snapshotPregamePredictions",
+      );
+      throw error;
+    }
+  }
+
+  /**
    * Ingest game metadata and finalize if game is over
    */
   async #ingestGame(data: SportsDataIOPlayByPlay): Promise<SelectGame> {
@@ -340,6 +412,15 @@ export class NflIngestorService {
       venue: score.StadiumDetails?.Name || null,
       status,
     });
+
+    // If game just started (transitioned from scheduled to in_progress), snapshot pregame predictions
+    if (status === "in_progress" && existingGame?.status === "scheduled") {
+      this.#logger.info(
+        { gameId: game.id, providerGameId: score.GlobalGameID },
+        "Game just started, snapshotting pregame predictions",
+      );
+      await this.#snapshotPregamePredictions(game.id, game.startTime);
+    }
 
     // If game just became final (wasn't final before), finalize and score it
     if (status === "final") {

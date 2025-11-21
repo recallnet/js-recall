@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray, lt } from "drizzle-orm";
 import { Logger } from "pino";
 
 import { gamePredictions } from "../schema/sports/defs.js";
@@ -192,6 +192,35 @@ export class GamePredictionsRepository {
       return results;
     } catch (error) {
       this.#logger.error({ error }, "Error in findByGameIds");
+      throw error;
+    }
+  }
+
+  /**
+   * Find all predictions made before a specific time for a game
+   * @param gameId Game ID
+   * @param beforeTime Timestamp to compare against
+   * @returns Array of predictions created before the specified time
+   */
+  async findPregamePredictions(
+    gameId: string,
+    beforeTime: Date,
+  ): Promise<SelectGamePrediction[]> {
+    try {
+      const results = await this.#db
+        .select()
+        .from(gamePredictions)
+        .where(
+          and(
+            eq(gamePredictions.gameId, gameId),
+            lt(gamePredictions.createdAt, beforeTime),
+          ),
+        )
+        .orderBy(desc(gamePredictions.createdAt));
+
+      return results;
+    } catch (error) {
+      this.#logger.error({ error }, "Error in findPreGamePredictions");
       throw error;
     }
   }
