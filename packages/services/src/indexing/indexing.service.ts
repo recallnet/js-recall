@@ -205,7 +205,14 @@ export class IndexingService {
         if (res.nextBlock) {
           effectiveQuery.fromBlock = res.nextBlock;
         }
-        await delay(this.#delayMs, this.#abortController?.signal);
+
+        if (res.data.blocks?.length ?? 0 > 0) {
+          this.#logger.debug("sleeping...");
+          await delay(this.#delayMs, this.#abortController?.signal);
+        } else {
+          this.#logger.debug("no more blocks -> done");
+          return;
+        }
       } catch (e) {
         if (
           e &&
