@@ -118,7 +118,6 @@ function validateCronAuth(request: NextRequest): NextResponse | null {
 export function withCronAuth(
   handler: (request: NextRequest) => Promise<{
     success: boolean;
-    status?: number;
     [key: string]: unknown;
   }>,
 ) {
@@ -136,7 +135,7 @@ export function withCronAuth(
           ...result,
           timestamp: new Date().toISOString(),
         },
-        { status: result.status ?? 200 },
+        { status: 200 },
       );
     } catch (error) {
       const errorMessage =

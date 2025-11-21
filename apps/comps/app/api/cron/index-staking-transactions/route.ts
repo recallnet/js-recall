@@ -12,7 +12,6 @@ export const GET = withCronAuth(async (_: NextRequest) => {
     logger.info("Stake indexing is disabled");
     return {
       success: true,
-      status: 400,
       message: "Stake indexing is disabled",
     };
   }
