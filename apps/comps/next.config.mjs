@@ -14,6 +14,16 @@ const nextConfig = {
     ],
   },
   transpilePackages: ["@recallnet/ui2", "@recallnet/fonts"],
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+      // Externalize native modules to prevent webpack from bundling them
+      config.externals = config.externals || [];
+      config.externals.push({
+        "@envio-dev/hypersync-client": "commonjs @envio-dev/hypersync-client",
+      });
+    }
+    return config;
+  },
 };
 
 // Wrap the config with Sentry
