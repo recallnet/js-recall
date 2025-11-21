@@ -3,10 +3,15 @@ import { useCallback, useEffect, useMemo } from "react";
 import { Hex } from "viem";
 import {
   useAccount,
+  useReadContracts,
   useWaitForTransactionReceipt,
   useWriteContract,
 } from "wagmi";
-import { WriteContractErrorType, simulateContract } from "wagmi/actions";
+import {
+  WriteContractErrorType,
+  readContract,
+  simulateContract,
+} from "wagmi/actions";
 
 import { AirdropABI } from "@/abi/Airdrop";
 import { config as publicConfig } from "@/config/public";
@@ -28,6 +33,7 @@ export type AirdropClaimOperationResult = {
   isConfirmed: boolean;
   error: WriteContractErrorType | null;
   transactionHash: `0x${string}` | undefined;
+  nativeFeeAmount: bigint;
 };
 
 /**
@@ -38,6 +44,29 @@ export function useAirdropClaim(): AirdropClaimOperationResult {
   const { address } = useAccount();
   const queryClient = useQueryClient();
   const config = clientConfig;
+  const airdropContractAddress = publicConfig.blockchain.airdropContractAddress;
+
+  // Read native fee and staking contract address
+  const { data: airdropData } = useReadContracts({
+    contracts: [
+      {
+        address: airdropContractAddress as Hex,
+        abi: AirdropABI,
+        functionName: "nativeFeeAmount",
+      },
+      {
+        address: airdropContractAddress as Hex,
+        abi: AirdropABI,
+        functionName: "minimumTokenAmountForFee",
+      },
+    ],
+    query: {
+      enabled: !!airdropContractAddress,
+    },
+  });
+
+  const nativeFeeAmount = airdropData?.[0].result ?? 0n;
+  const minimumTokenAmountForFee = airdropData?.[1].result ?? 0n;
 
   const {
     writeContract,
@@ -71,7 +100,7 @@ export function useAirdropClaim(): AirdropClaimOperationResult {
         return;
       }
 
-      if (!publicConfig.blockchain.airdropContractAddress) {
+      if (!airdropContractAddress) {
         throw new Error("Airdrop contract address not configured");
       }
 
@@ -84,17 +113,39 @@ export function useAirdropClaim(): AirdropClaimOperationResult {
       const season = target.season as number;
       const signature = (target.signature ?? "0x") as Hex;
 
+      // Check if fee is required
+      const usersClaimedAmount = await readContract(config, {
+        address: airdropContractAddress as Hex,
+        abi: AirdropABI,
+        functionName: "usersClaimedAmount",
+        args: [address as Hex],
+      });
+
+      let valueToSend = 0n;
+      if (usersClaimedAmount + amount >= minimumTokenAmountForFee) {
+        valueToSend = nativeFeeAmount;
+      }
+
       const simulationResult = await simulateContract(config, {
-        address: publicConfig.blockchain.airdropContractAddress as Hex,
+        address: airdropContractAddress as Hex,
         abi: AirdropABI,
         functionName: "claim",
         args: [proof, address as Hex, amount, season, duration, signature],
         account: address,
+        value: valueToSend,
       });
 
       writeContract(simulationResult.request);
     },
-    [writeContract, config, address, reset],
+    [
+      writeContract,
+      config,
+      address,
+      reset,
+      airdropContractAddress,
+      nativeFeeAmount,
+      minimumTokenAmountForFee,
+    ],
   );
 
   return useMemo(
@@ -105,7 +156,16 @@ export function useAirdropClaim(): AirdropClaimOperationResult {
       isConfirmed,
       error,
       transactionHash,
+      nativeFeeAmount,
     }),
-    [claim, isPending, isConfirming, isConfirmed, error, transactionHash],
+    [
+      claim,
+      isPending,
+      isConfirming,
+      isConfirmed,
+      error,
+      transactionHash,
+      nativeFeeAmount,
+    ],
   );
 }

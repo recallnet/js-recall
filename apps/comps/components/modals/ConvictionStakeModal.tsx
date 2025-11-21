@@ -116,6 +116,16 @@ export const ConvictionStakeModal: React.FC<ConvictionStakeModalProps> = ({
   // Helper to narrow type
   const isClaimAvailable = claimItem && claimItem.type === "available";
 
+  // Calculations
+  const selectedOption = DURATION_OPTIONS[selectedDurationIndex];
+  const eligibleAmount = isClaimAvailable ? claimItem.eligibleAmount : 0n;
+
+  const percentage = selectedOption?.percentage ?? 0n;
+  const duration = selectedOption?.duration ?? 0n;
+
+  const unlockAmount = (eligibleAmount * percentage) / 100n;
+  const boostGain = unlockAmount;
+
   const handleStake = async () => {
     if (!isClaimAvailable) return;
 
@@ -142,16 +152,6 @@ export const ConvictionStakeModal: React.FC<ConvictionStakeModalProps> = ({
       setStep("error");
     }
   };
-
-  // Calculations
-  const selectedOption = DURATION_OPTIONS[selectedDurationIndex];
-  const eligibleAmount = isClaimAvailable ? claimItem.eligibleAmount : 0n;
-
-  const percentage = selectedOption?.percentage ?? 0n;
-  const duration = selectedOption?.duration ?? 0n;
-
-  const unlockAmount = (eligibleAmount * percentage) / 100n;
-  const boostGain = unlockAmount;
 
   // Unlock Date
   const unlockDate = useMemo(() => {
@@ -298,7 +298,7 @@ export const ConvictionStakeModal: React.FC<ConvictionStakeModalProps> = ({
             <div className="space-y-2 text-center">
               <div className="text-xl font-bold">Success!</div>
               <div className="text-gray-400">
-                You have successfully claimed and staked your rewards.
+                You have successfully claimed your rewards.
               </div>
               <div className="mx-auto grid max-w-[200px] grid-cols-2 gap-8 pt-4 text-left">
                 <div>
