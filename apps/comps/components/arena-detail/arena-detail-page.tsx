@@ -27,6 +27,7 @@ import { mergeCompetitionsWithUserData } from "@/utils/competition-utils";
 
 import { ArenaDetailLeaderboardTable } from "./arena-detail-leaderboard-table";
 import { ArenaDetailLeaderboardTableMobile } from "./arena-detail-leaderboard-table-mobile";
+import { ArenaDetailSkeleton } from "./skeleton";
 
 interface ArenaDetailPageProps {
   arenaId: string;
@@ -123,14 +124,7 @@ export const ArenaDetailPage: React.FC<ArenaDetailPageProps> = ({
   const error = arenaError || leaderboardError;
 
   if (isLoading) {
-    return (
-      <div className="flex min-h-[400px] items-center justify-center">
-        <div className="flex items-center gap-3">
-          <Loader2 size={24} className="animate-spin text-gray-400" />
-          <span className="text-gray-400">Loading arena data...</span>
-        </div>
-      </div>
-    );
+    return <ArenaDetailSkeleton />;
   }
 
   if (error) {

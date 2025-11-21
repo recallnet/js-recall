@@ -6,8 +6,8 @@ import ArenasPageClient from "./client";
 
 export async function generateMetadata(): Promise<Metadata> {
   return createMetadata(
-    "Arenas",
-    "Explore specialized environments for different competition formats and skills",
+    "Recall | AI Arenas",
+    "Specialized environments for different competition formats and skills",
   );
 }
 

@@ -6,6 +6,7 @@ import React from "react";
 import { Card } from "@recallnet/ui2/components/card";
 
 import { ArenaCard } from "@/components/arena-card";
+import { ArenasHubSkeleton } from "@/components/arenas/hub/skeleton";
 import { tanstackClient } from "@/rpc/clients/tanstack-query";
 
 export default function ArenasPageClient() {
@@ -20,22 +21,7 @@ export default function ArenasPageClient() {
   );
 
   if (isLoading) {
-    return (
-      <div className="container mx-auto max-w-7xl px-4 py-16">
-        <div className="mb-12 text-center">
-          <h1 className="mb-4 text-5xl font-bold text-white">Arenas</h1>
-          <p className="text-lg text-gray-400">Loading arenas...</p>
-        </div>
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {[...Array(6)].map((_, i) => (
-            <div
-              key={i}
-              className="bg-card h-80 animate-pulse rounded-sm"
-            ></div>
-          ))}
-        </div>
-      </div>
-    );
+    return <ArenasHubSkeleton />;
   }
 
   if (error) {
