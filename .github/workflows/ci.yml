@@ -101,52 +101,9 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Detect environment and get postgres IP
-        id: detect-env
-        working-directory: apps/api
-        run: |
-          # Default for GitHub Actions
-          echo "db_host=localhost" >> $GITHUB_OUTPUT
-          echo "test_host=localhost" >> $GITHUB_OUTPUT
-
-          # Check if we're running in act
-          if [ -z "$ACTIONS_RUNTIME_URL" ]; then
-            echo "Running in act - finding Postgres container IP"
-
-            # Get the container ID of the postgres container
-            POSTGRES_CONTAINER_ID=$(docker ps --filter "ancestor=postgres:14" --format "{{.ID}}")
-
-            if [ -n "$POSTGRES_CONTAINER_ID" ]; then
-              echo "Found postgres container: $POSTGRES_CONTAINER_ID"
-
-              # Get the IP address of the container
-              POSTGRES_IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $POSTGRES_CONTAINER_ID)
-
-              if [ -n "$POSTGRES_IP" ]; then
-                echo "Found postgres container IP: $POSTGRES_IP"
-                echo "db_host=$POSTGRES_IP" >> $GITHUB_OUTPUT
-              else
-                echo "Could not get IP, falling back to 127.0.0.1"
-                echo "db_host=127.0.0.1" >> $GITHUB_OUTPUT
-              fi
-            else
-              echo "Could not find postgres container, falling back to 127.0.0.1"
-              echo "db_host=127.0.0.1" >> $GITHUB_OUTPUT
-            fi
-
-            # For act, we need to use 0.0.0.0 to listen on all interfaces
-            echo "test_host=0.0.0.0" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Create .env.test file
-        working-directory: apps/api
-        run: |
-          DB_HOST_VALUE="${{ steps.detect-env.outputs.db_host }}"
-          echo "Using DB_HOST=$DB_HOST_VALUE"
-
-          cat .env.test | grep -v DATABASE_URL > .env.tmp
-          echo "DATABASE_URL=postgresql://postgres:postgres@${DB_HOST_VALUE}:5432/trading_simulator_test" >> .env.tmp
-          mv .env.tmp .env.test
+      - name: Setup E2E environment
+        id: setup-e2e
+        uses: ./.github/actions/setup-e2e
 
       - name: Run E2E tests
         working-directory: apps/api
@@ -231,8 +188,8 @@ jobs:
         env:
           TEST_MODE: true
           CI: true
-          DATABASE_URL: postgresql://postgres:postgres@${{ steps.detect-env.outputs.db_host }}:5432/trading_simulator_test
-          TEST_HOST: ${{ steps.detect-env.outputs.test_host }}
+          DATABASE_URL: postgresql://postgres:postgres@${{ steps.setup-e2e.outputs.db_host }}:5432/trading_simulator_test
+          TEST_HOST: ${{ steps.setup-e2e.outputs.test_host }}
           # TODO: I think the tests are Vitest, why do we have a JEST env here?
           JEST_WORKER_ID: 1 # Force single worker to prevent open handles from child processes
           DB_CONNECTION_TIMEOUT: 5000
@@ -265,54 +222,9 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Detect environment and get postgres IP
-        id: detect-env
-        working-directory: apps/api
-        run: |
-          # Default for GitHub Actions
-          echo "db_host=localhost" >> $GITHUB_OUTPUT
-          echo "test_host=localhost" >> $GITHUB_OUTPUT
-
-          # Check if we're running in act
-          if [ -z "$ACTIONS_RUNTIME_URL" ]; then
-            echo "Running in act - finding Postgres container IP"
-
-            # Get the container ID of the postgres container
-            POSTGRES_CONTAINER_ID=$(docker ps --filter "ancestor=postgres:14" --format "{{.ID}}")
-
-            if [ -n "$POSTGRES_CONTAINER_ID" ]; then
-              echo "Found postgres container: $POSTGRES_CONTAINER_ID"
-
-              # Get the IP address of the container
-              POSTGRES_IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $POSTGRES_CONTAINER_ID)
-
-              if [ -n "$POSTGRES_IP" ]; then
-                echo "Found postgres container IP: $POSTGRES_IP"
-                echo "db_host=$POSTGRES_IP" >> $GITHUB_OUTPUT
-              else
-                echo "Could not get IP, falling back to 127.0.0.1"
-                echo "db_host=127.0.0.1" >> $GITHUB_OUTPUT
-              fi
-            else
-              echo "Could not find postgres container, falling back to 127.0.0.1"
-              echo "db_host=127.0.0.1" >> $GITHUB_OUTPUT
-            fi
-
-            # For act, we need to use 0.0.0.0 to listen on all interfaces
-            echo "test_host=0.0.0.0" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Create .env.test file for API
-        # Both API and comps e2e tests use this file
-        # Comps tests start the API server for admin operations
-        working-directory: apps/api
-        run: |
-          DB_HOST_VALUE="${{ steps.detect-env.outputs.db_host }}"
-          echo "Using DB_HOST=$DB_HOST_VALUE"
-
-          cat .env.test | grep -v DATABASE_URL > .env.tmp
-          echo "DATABASE_URL=postgresql://postgres:postgres@${DB_HOST_VALUE}:5432/trading_simulator_test" >> .env.tmp
-          mv .env.tmp .env.test
+      - name: Setup E2E environment
+        id: setup-e2e
+        uses: ./.github/actions/setup-e2e
 
       - name: Run Comps E2E tests
         working-directory: apps/comps
@@ -339,9 +251,9 @@ jobs:
         env:
           TEST_MODE: true
           CI: true
-          DATABASE_URL: postgresql://postgres:postgres@${{ steps.detect-env.outputs.db_host }}:5432/trading_simulator_test
-          POSTGRES_URL: postgresql://postgres:postgres@${{ steps.detect-env.outputs.db_host }}:5432/trading_simulator_test
-          TEST_HOST: ${{ steps.detect-env.outputs.test_host }}
+          DATABASE_URL: postgresql://postgres:postgres@${{ steps.setup-e2e.outputs.db_host }}:5432/trading_simulator_test
+          POSTGRES_URL: postgresql://postgres:postgres@${{ steps.setup-e2e.outputs.db_host }}:5432/trading_simulator_test
+          TEST_HOST: ${{ steps.setup-e2e.outputs.test_host }}
           DB_CONNECTION_TIMEOUT: 5000
           DB_IDLE_TIMEOUT: 1000
           NODE_OPTIONS: "--max-old-space-size=4096"
