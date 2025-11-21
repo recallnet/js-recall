@@ -31,7 +31,9 @@ describe("Bonus Boosts E2E", () => {
       // System Behavior:
       // 1. Validates batch items (wallet, amount, expiration)
       // 2. Finds user by wallet for each item
-      // 3. Creates boost_bonus entry for each item (multiple per user allowed)
+      // 3. Creates boost_bonus entry for each item
+      //    (Note: Database allows multiple entries per user, but duplicates
+      //     within a single batch are rejected via validation)
       // 4. Immediately applies each boost to eligible competitions:
       //    - Checks eligibility: competition starts before boost expires, window hasn't ended
       //    - Updates boost_balances and creates boost_changes entries
@@ -62,12 +64,66 @@ describe("Bonus Boosts E2E", () => {
       //
       // Test Cases:
       // - Empty array: Rejects (at least one item required)
-      // - Expiration in past: Rejects (can't apply to competitions)
+      // - Array > 100 items: Rejects (max 100 items per batch)
+      // - Expiration in past: Rejects (must be at least 1 minute in future)
+      // - Expiration < 1 min away: Rejects (1-minute buffer required)
       // - User not found: Rejects (user must exist)
       // - Missing required fields: Rejects (wallet, amount, expiresAt required)
       // - Invalid wallet format: Rejects (must be valid Ethereum address)
-      // - Negative amount: Rejects (boosts must be positive)
+      // - Zero amount: Rejects (amount must be > 0)
+      // - Negative amount: Rejects (amount must be positive)
+      // - Amount > 10^18: Rejects (exceeds maximum allowed value)
       // - Invalid amount format: Rejects (must be numeric string parseable as BigInt)
+      // - Meta field too large: Rejects (max 1000 chars when serialized)
+      // - Meta field non-primitive: Rejects (only string, number, boolean allowed)
+    });
+
+    test.skip("rejects batch with duplicate wallet addresses", async () => {
+      // Duplicate wallet validation - verifies system detects duplicate wallets in same batch
+      //
+      // System Behavior:
+      // - Decision: **REJECT** duplicates (prevents confusion and accidental mistakes)
+      // - Validates that all wallet addresses in batch are unique
+      // - Rejects entire batch if any duplicates found
+      // - Returns clear error message indicating which wallet(s) are duplicated
+      //
+      // Rationale:
+      // - Prevents fat-finger errors (admin accidentally adds same wallet twice)
+      // - Forces explicit intent (if multiple boosts needed, make separate API calls)
+      // - Reduces confusion about whether duplicate was intentional
+      // - Maintains batch simplicity (all items are distinct operations)
+      //
+      // Alternative (NOT chosen): Allow duplicates would make it unclear whether
+      // duplicate entries are mistakes or intentional, and could lead to support issues
+      //
+      // Setup:
+      // - Register user
+      // - Batch: Two boosts for same wallet (500 + 1000)
+      //
+      // Expected:
+      // - 400 Bad Request
+      // - Error: "Duplicate wallet addresses found in batch"
+      // - No boost_bonus entries created
+    });
+
+    test.skip("rejects amount exceeding maximum limit", async () => {
+      // Max amount validation - verifies system enforces maximum amount limit
+      //
+      // System Behavior:
+      // - Maximum limit: 10^18 (1,000,000,000,000,000,000)
+      // - Validates amount must be > 0 and <= 10^18
+      // - Rejects with clear error message if exceeded
+      //
+      // Rationale: 10^18 provides reasonable upper bound while preventing
+      // overflow issues and administrative errors
+      //
+      // Setup:
+      // - Register user
+      // - Batch: Boost with amount > 10^18
+      //
+      // Expected:
+      // - 400 Bad Request
+      // - Error: "Amount exceeds maximum allowed value (10^18)"
     });
 
     test.skip("applies boosts only to eligible competitions", async () => {
@@ -96,8 +152,8 @@ describe("Bonus Boosts E2E", () => {
       // - Competitions 3, 4, 5, 6, 7 have no boost entries
     });
 
-    test.skip("sums multiple boosts for same user", async () => {
-      // Multiple boosts per user - verifies system handles multiple boosts and sums them
+    test.skip("sums multiple boosts for same user (across separate API calls)", async () => {
+      // Multiple boosts per user - verifies system handles multiple boosts via separate API calls
       //
       // System Behavior:
       // - Multiple boost_bonus entries allowed per user (no unique constraint)
@@ -105,12 +161,15 @@ describe("Bonus Boosts E2E", () => {
       // - boost_balances stores total summed amount
       // - boost_changes maintains separate audit entries per boost
       //
+      // Note: Duplicates within single batch are rejected; this tests separate API calls
+      //
       // Setup:
       // - Register user, create competition
-      // - Award two boosts: 500 units, then 1000 units
+      // - Call API first time: Award boost of 500 units
+      // - Call API second time: Award boost of 1000 units to same wallet
       //
       // Expected:
-      // - Two separate boost_bonus entries created
+      // - Two separate boost_bonus entries created (different IDs, same user_id)
       // - boost_balances shows total of 1500 (sum of both)
       // - boost_changes contains 2 entries (one per boost)
       // - Can revoke one boost without affecting the other
@@ -120,17 +179,22 @@ describe("Bonus Boosts E2E", () => {
       // Test: Partial batch success - verifies handling of batches with valid and invalid items
       //
       // System Behavior:
-      // Two possible approaches:
-      // - Option A: Partial success (process valid, return errors for invalid)
-      // - Option B: All-or-nothing (reject entire batch if any invalid)
+      // All-or-nothing transaction strategy** (simpler, more atomic)
+      // - If ANY item in batch is invalid, entire batch is rejected
+      // - Database transaction rolls back all changes
+      // - No partial state or orphaned records
+      // - Admin receives clear error message with details about which item(s) failed
+      //
       //
       // Setup:
       // - Register user1, do NOT register user2
       // - Batch: Valid boost for user1, boost for user2 (invalid), boost with negative amount (invalid)
       //
       // Expected:
-      // - System handles according to chosen approach
-      // - Database state reflects chosen approach (partial success or all rejected)
+      // - Entire batch rejected with 400 Bad Request
+      // - Error message lists all validation failures
+      // - No boost_bonus entries created (even for valid items)
+      // - Database remains unchanged
     });
   });
 
