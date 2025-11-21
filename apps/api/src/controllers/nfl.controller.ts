@@ -88,35 +88,13 @@ export function makeNflController(services: ServiceRegistry) {
           throw new ApiError(400, "Competition ID is required");
         }
 
-        // Return static rules for now
+        const rules =
+          await services.sportsService.gamePredictionService.getRules();
+
         res.status(200).json({
           success: true,
           data: {
-            predictionType: "game_winner",
-            scoringMethod: "time_weighted_brier",
-            scoringFormula: {
-              description:
-                "Score = 1 - Σ(w_t * (p_t - y)²) / Σ(w_t), where higher is better",
-              timeNormalization:
-                "t = (timestamp - game_start) / (game_end - game_start) ∈ [0, 1]",
-              weight:
-                "w_t = 1 - 0.75 * t (earlier predictions have higher weight)",
-              probability:
-                "p_t = confidence if predicted winner matches actual, else 1-confidence",
-              actual: "y = 1 (actual winner)",
-            },
-            confidenceRange: {
-              min: 0.0,
-              max: 1.0,
-              description:
-                "Confidence in predicted winner (0.0 = no confidence, 1.0 = certain)",
-            },
-            predictionRules: {
-              canUpdate: true,
-              updateWindow: "Anytime before game ends",
-              scoringWindow: "From game start to game end",
-              preGamePredictions: "Allowed (treated as t=0 for time weighting)",
-            },
+            ...rules,
           },
         });
       } catch (error) {

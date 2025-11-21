@@ -158,4 +158,59 @@ export class GamePredictionService {
   ): Promise<SelectGamePrediction[]> {
     return this.#gamePredictionsRepo.findByGame(gameId, options);
   }
+
+  /**
+   * Get competition rules for NFL predictions
+   * Returns the scoring methodology and prediction rules
+   * @returns Rules object
+   */
+  getRules(): {
+    predictionType: string;
+    scoringMethod: string;
+    scoringFormula: {
+      description: string;
+      timeNormalization: string;
+      weight: string;
+      probability: string;
+      actual: string;
+    };
+    confidenceRange: {
+      min: number;
+      max: number;
+      description: string;
+    };
+    predictionRules: {
+      canUpdate: boolean;
+      updateWindow: string;
+      scoringWindow: string;
+      preGamePredictions: string;
+    };
+  } {
+    return {
+      predictionType: "game_winner",
+      scoringMethod: "time_weighted_brier",
+      scoringFormula: {
+        description:
+          "Score = 1 - Σ(w_t * (p_t - y)²) / Σ(w_t), where higher is better",
+        timeNormalization:
+          "t = (timestamp - game_start) / (game_end - game_start) ∈ [0, 1]",
+        weight: "w_t = 0.5 + 0.5 * t (earlier predictions weighted less)",
+        probability:
+          "p_t = confidence if predicted winner matches actual, else 1-confidence",
+        actual: "y = 1 (actual winner)",
+      },
+      confidenceRange: {
+        min: 0.0,
+        max: 1.0,
+        description:
+          "Confidence in predicted winner (0.0 = no confidence, 1.0 = certain)",
+      },
+      predictionRules: {
+        canUpdate: true,
+        updateWindow: "Anytime before game ends",
+        scoringWindow: "From game start to game end",
+        preGamePredictions: "Allowed (treated as t=0 for time weighting)",
+      },
+    };
+  }
 }
