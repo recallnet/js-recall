@@ -48,7 +48,7 @@ CREATE TABLE "trading_comps"."spot_live_competition_config" (
 	"self_funding_threshold_usd" numeric DEFAULT '10.00',
 	"min_funding_threshold" numeric,
 	"inactivity_hours" integer DEFAULT 24,
-	"sync_interval_minutes" integer DEFAULT 5,
+	"sync_interval_minutes" integer DEFAULT 2,
 	"created_at" timestamp with time zone DEFAULT now(),
 	"updated_at" timestamp with time zone DEFAULT now()
 );

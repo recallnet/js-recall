@@ -934,7 +934,7 @@ export class CompetitionService {
       if (failedCount > 0) {
         const failedAgentIds = result.syncResult.failed.map((f) => f.agentId);
         this.logger.warn(
-          `[CompetitionService] Failed to sync ${failedCount} agents: ${failedAgentIds.join(", ")}`,
+          `[CompetitionService] Failed to sync ${failedCount} out of ${totalCount} agents during competition start: ${failedAgentIds.join(", ")}`,
         );
       }
 
@@ -1297,7 +1297,7 @@ export class CompetitionService {
 
       if (failedCount > 0) {
         this.logger.warn(
-          `[CompetitionService] Failed to sync final data for ${failedCount} agents in ending competition`,
+          `[CompetitionService] Failed to sync final data for ${failedCount} out of ${totalCount} agents in ending competition`,
         );
       }
     } else {

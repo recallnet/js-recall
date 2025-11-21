@@ -737,7 +737,7 @@ export const spotLiveCompetitionConfig = tradingComps.table(
     inactivityHours: integer("inactivity_hours").default(24),
 
     // Sync configuration
-    syncIntervalMinutes: integer("sync_interval_minutes").default(5),
+    syncIntervalMinutes: integer("sync_interval_minutes").default(2),
 
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
