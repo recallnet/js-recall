@@ -20,6 +20,7 @@ import { CompetitionService } from "../competition.service.js";
 import type { PerpsDataProcessor } from "../perps-data-processor.service.js";
 import type { PortfolioSnapshotterService } from "../portfolio-snapshotter.service.js";
 import { RewardsService } from "../rewards.service.js";
+import type { SportsService } from "../sports.service.js";
 import type { TradeSimulatorService } from "../trade-simulator.service.js";
 import type { TradingConstraintsService } from "../trading-constraints.service.js";
 
@@ -36,6 +37,7 @@ describe("CompetitionService - createCompetition", () => {
   let agentRepo: MockProxy<AgentRepository>;
   let agentScoreRepo: MockProxy<AgentScoreRepository>;
   let arenaRepo: MockProxy<ArenaRepository>;
+  let sportsService: MockProxy<SportsService>;
   let perpsRepo: MockProxy<PerpsRepository>;
   let competitionRepo: MockProxy<CompetitionRepository>;
   let stakesRepo: MockProxy<StakesRepository>;
@@ -58,6 +60,7 @@ describe("CompetitionService - createCompetition", () => {
     agentRepo = mock<AgentRepository>();
     agentScoreRepo = mock<AgentScoreRepository>();
     arenaRepo = mock<ArenaRepository>();
+    sportsService = mock<SportsService>();
     perpsRepo = mock<PerpsRepository>();
     competitionRepo = mock<CompetitionRepository>();
     stakesRepo = mock<StakesRepository>();
@@ -147,6 +150,7 @@ describe("CompetitionService - createCompetition", () => {
       agentRepo,
       agentScoreRepo,
       arenaRepo,
+      sportsService,
       perpsRepo,
       competitionRepo,
       stakesRepo,
@@ -692,6 +696,7 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
   let agentRepo: MockProxy<AgentRepository>;
   let agentScoreRepo: MockProxy<AgentScoreRepository>;
   let arenaRepo: MockProxy<ArenaRepository>;
+  let sportsService: MockProxy<SportsService>;
   let perpsRepo: MockProxy<PerpsRepository>;
   let competitionRepo: MockProxy<CompetitionRepository>;
   let stakesRepo: MockProxy<StakesRepository>;
@@ -715,6 +720,7 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
     agentRepo = mock<AgentRepository>();
     agentScoreRepo = mock<AgentScoreRepository>();
     arenaRepo = mock<ArenaRepository>();
+    sportsService = mock<SportsService>();
     perpsRepo = mock<PerpsRepository>();
     competitionRepo = mock<CompetitionRepository>();
     stakesRepo = mock<StakesRepository>();
@@ -736,6 +742,7 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
       agentRepo,
       agentScoreRepo,
       arenaRepo,
+      sportsService,
       perpsRepo,
       competitionRepo,
       stakesRepo,

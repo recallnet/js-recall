@@ -39,6 +39,7 @@ import {
   RiskMetricsService,
   SimulatedTradeExecutionService,
   SortinoRatioService,
+  SportsService,
   TradeSimulatorService,
   TradingConstraintsService,
   UserService,
@@ -120,6 +121,7 @@ class ServiceRegistry {
   private _rewardsService: RewardsService;
   private readonly _rewardsRepository: RewardsRepository;
   private readonly _rewardsAllocator: RewardsAllocator;
+  private readonly _sportsService: SportsService;
 
   constructor() {
     // Initialize Privy client (use MockPrivyClient in test mode to avoid real API calls)
@@ -181,6 +183,14 @@ class ServiceRegistry {
       db,
       dbRead,
       repositoryLogger,
+    );
+
+    // Initialize Sports Service (encapsulates all NFL sports prediction functionality)
+    this._sportsService = new SportsService(
+      db,
+      this._competitionRepository,
+      serviceLogger,
+      config,
     );
 
     const walletWatchlist = new WalletWatchlist(config, serviceLogger);
@@ -358,6 +368,7 @@ class ServiceRegistry {
       this._agentRepository,
       agentScoreRepository,
       this._arenaRepository,
+      this._sportsService,
       this._perpsRepository,
       this._competitionRepository,
       this._stakesRepository,
@@ -553,6 +564,10 @@ class ServiceRegistry {
     return this._partnerService;
   }
 
+  get sportsService(): SportsService {
+    return this._sportsService;
+  }
+
   private getRewardsAllocator(): RewardsAllocator {
     if (config.server.nodeEnv === "test") {
       return new NoopRewardsAllocator();
@@ -617,6 +632,7 @@ export {
   PortfolioSnapshotterService,
   PriceTrackerService,
   ServiceRegistry,
+  SportsService,
   SimulatedTradeExecutionService,
   TradeSimulatorService,
   TradingConstraintsService,

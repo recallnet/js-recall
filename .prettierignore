@@ -13,3 +13,4 @@ packages/fonts/src/*
 **/.turbo
 **/coverage
 **/reports
+apps/api/e2e/e2e-server.log

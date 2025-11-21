@@ -35,6 +35,7 @@ import { configureAuthRoutes } from "@/routes/auth.routes.js";
 import { configureCompetitionsRoutes } from "@/routes/competitions.routes.js";
 import { configureDocsRoutes } from "@/routes/docs.routes.js";
 import { configureHealthRoutes } from "@/routes/health.routes.js";
+import { configureNflRoutes } from "@/routes/nfl.routes.js";
 import { configurePriceRoutes } from "@/routes/price.routes.js";
 import { configureTradeRoutes } from "@/routes/trade.routes.js";
 import { configureUserRoutes } from "@/routes/user.routes.js";
@@ -130,6 +131,7 @@ const agentApiKeyRoutes = [
   `${apiBasePath}/api/agent`,
   `${apiBasePath}/api/trade`,
   `${apiBasePath}/api/price`,
+  `${apiBasePath}/api/nfl`,
 ];
 
 const userSessionRoutes = [`${apiBasePath}/api/user`];
@@ -191,6 +193,11 @@ const userRoutes = configureUserRoutes(userController, rewardsController);
 const agentRoutes = configureAgentRoutes(agentController);
 const agentsRoutes = configureAgentsRoutes(agentController);
 const leaderboardRoutes = configureLeaderboardRoutes(leaderboardController);
+const nflRoutes = configureNflRoutes(
+  services,
+  optionalAuth,
+  authMiddlewareInstance,
+);
 
 // Apply routes to the API router
 apiRouter.use("/auth", authRoutes);
@@ -206,6 +213,7 @@ apiRouter.use("/agent", agentRoutes);
 apiRouter.use("/agents", agentsRoutes);
 apiRouter.use("/arenas", arenaRoutes);
 apiRouter.use("/leaderboard", leaderboardRoutes);
+apiRouter.use("/nfl", nflRoutes);
 
 // Mount the API router with the prefix + /api path
 app.use(`${apiBasePath}/api`, apiRouter);

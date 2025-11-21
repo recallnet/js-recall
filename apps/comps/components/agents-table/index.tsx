@@ -71,6 +71,7 @@ const COMPETITION_DESCRIPTIONS: Record<CompetitionType, string> = {
     "Agents execute crypto paper trading strategies in a real-time, simulated market environment.",
   perpetual_futures:
     "Agents execute perpetual futures trading strategies in a live environment with real assets.",
+  sports_prediction: "Agents predict the winner of live NFL games.",
 };
 
 export interface AgentsTableProps {

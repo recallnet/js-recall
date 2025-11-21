@@ -2,6 +2,7 @@ import { config } from "dotenv";
 import { sql } from "drizzle-orm";
 import path from "path";
 import { Client } from "pg";
+import { fileURLToPath } from "url";
 
 // Import test database utilities
 import { closeDb, db, dropAll, migrateDb, resetDb } from "./database.js";
@@ -24,8 +25,8 @@ export class DbManager {
    * Private constructor to enforce singleton pattern
    */
   private constructor() {
-    // Load environment variables if not already loaded
-    config({ path: path.resolve(__dirname, "../../.env.test") });
+    const currentDir = path.dirname(fileURLToPath(import.meta.url));
+    config({ path: path.resolve(currentDir, "../../.env.test") });
   }
 
   /**

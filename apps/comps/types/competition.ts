@@ -41,7 +41,10 @@ export interface AgentStatus {
   };
 }
 
-export type CompetitionType = "trading" | "perpetual_futures";
+export type CompetitionType =
+  | "trading"
+  | "perpetual_futures"
+  | "sports_prediction";
 
 export type EvaluationMetric =
   | "calmar_ratio"

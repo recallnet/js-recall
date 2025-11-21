@@ -632,6 +632,7 @@ export function makeAdminController(services: ServiceRegistry) {
           rewardRules,
           rewardDetails,
           displayState,
+          gameIds,
         } = flatParse(AdminCreateCompetitionSchema, req.body);
 
         // Create a new competition
@@ -675,6 +676,7 @@ export function makeAdminController(services: ServiceRegistry) {
             rewardRules,
             rewardDetails,
             displayState,
+            gameIds,
           },
         );
 
@@ -802,8 +804,24 @@ export function makeAdminController(services: ServiceRegistry) {
           AdminEndCompetitionSchema,
           req.body,
         );
+        const competition =
+          await services.competitionService.getCompetition(competitionId);
+        if (!competition) {
+          throw new ApiError(404, "Competition not found");
+        }
 
-        // End the competition
+        // End the NFL competition (note: slightly different leaderboard format)
+        if (competition.type === "sports_prediction") {
+          const { competition: endedCompetition, leaderboard } =
+            await services.competitionService.endNflCompetition(competitionId);
+          return res.status(200).json({
+            success: true,
+            competition: endedCompetition,
+            leaderboard,
+          });
+        }
+
+        // End the competition for all other competition types
         const { competition: endedCompetition, leaderboard } =
           await services.competitionService.endCompetition(competitionId);
 
