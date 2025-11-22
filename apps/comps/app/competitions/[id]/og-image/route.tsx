@@ -1,199 +1,12 @@
-import { promises as fs } from "fs";
 import { ImageResponse } from "next/og";
-import path from "path";
 
+import { getBaseUrl } from "@/lib/get-site-url";
 import { createSafeClient } from "@/rpc/clients/server-side";
-
-const loadAssetAsBase64 = async (assetPath: string): Promise<string> => {
-  const fullPath = path.join(process.cwd(), "public", assetPath);
-  const assetBuffer = await fs.readFile(fullPath);
-  const base64Asset = assetBuffer.toString("base64");
-
-  const ext = path.extname(assetPath).toLowerCase();
-  let mimeType = "image/svg+xml"; // Default
-  if (ext === ".png") mimeType = "image/png";
-  if (ext === ".jpg" || ext === ".jpeg") mimeType = "image/jpeg";
-
-  return `data:${mimeType};base64,${base64Asset}`;
-};
-
-// --- Helper Functions ---
-const getOrdinal = (n: number): string => {
-  const lastDigit = n % 10;
-  const lastTwoDigits = n % 100;
-  if (lastTwoDigits >= 11 && lastTwoDigits <= 13) return n + "th";
-  switch (lastDigit) {
-    case 1:
-      return n + "st";
-    case 2:
-      return n + "nd";
-    case 3:
-      return n + "rd";
-    default:
-      return n + "th";
-  }
-};
-
-const formatEventDate = (date: Date | string | null | undefined): string => {
-  if (!date) return "TBA";
-  try {
-    const d = new Date(date);
-    if (isNaN(d.getTime())) return "TBA";
-    const day = d.getDate();
-    const month = d.toLocaleString("en-US", { month: "short" });
-    return `${month} ${getOrdinal(day)}`;
-  } catch (error) {
-    console.error(`Error formatting date:`, error);
-    return "TBA";
-  }
-};
-
-const formatNumber = (num: number | null | undefined): string => {
-  if (num === null || num === undefined) return "0";
-
-  if (num >= 1_000_000_000) {
-    return (
-      (num / 1_000_000_000).toLocaleString("en-US", {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 2,
-      }) + "B"
-    );
-  }
-  if (num >= 1_000_000) {
-    return (
-      (num / 1_000_000).toLocaleString("en-US", {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 2,
-      }) + "M"
-    );
-  }
-  if (num >= 1_000) {
-    return (
-      (num / 1_000).toLocaleString("en-US", {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 2,
-      }) + "K"
-    );
-  }
-  return num.toLocaleString("en-US");
-};
-
-const styles = {
-  mainBackground: {
-    width: "100%",
-    height: "100%",
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundSize: "100% 100%",
-    backgroundRepeat: "no-repeat",
-  },
-  content: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 48,
-    width: 916,
-  },
-  title: {
-    fontFamily: '"Inter"',
-    fontSize: 72,
-    fontWeight: 700,
-    color: "#e5e5e5",
-    lineHeight: "100%",
-    textAlign: "center",
-    width: 914,
-  },
-  infoContainer: {
-    display: "flex",
-    flexDirection: "row",
-    gap: 12,
-    width: 916,
-    height: 212,
-  },
-  infoSection: {
-    display: "flex",
-    flexDirection: "column",
-    gap: 12,
-    width: 452,
-    height: 212,
-  },
-  amountCard: {
-    display: "flex",
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 12,
-    width: 451,
-    height: 72,
-    backgroundColor: "rgba(7, 7, 7, 0.4)",
-    border: "1px solid #3D3D3D",
-    borderRadius: 8,
-    boxSizing: "border-box",
-  },
-  dateCard: {
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 12,
-    width: 452,
-    height: 128,
-    backgroundColor: "rgba(7, 7, 7, 0.4)",
-    border: "1px solid #3D3D3D",
-    borderRadius: 8,
-    boxSizing: "border-box",
-    padding: "16px 12px",
-  },
-  amount: {
-    fontFamily: '"Inter"',
-    fontWeight: 400,
-    fontSize: 40,
-    color: "#E5E5E5",
-    lineHeight: "100%",
-  },
-  description: {
-    fontFamily: '"Inter"',
-    fontWeight: 300,
-    fontSize: 32,
-    color: "#A7A7A7",
-    lineHeight: "100%",
-  },
-  dateLabel: {
-    fontFamily: '"Inter"',
-    fontSize: 32,
-    fontWeight: 400,
-    color: "#A7A7A7",
-    lineHeight: "100%",
-  },
-  dateValue: {
-    fontFamily: '"Inter"',
-    fontSize: 40,
-    fontWeight: 400,
-    color: "#E5E5E5",
-    lineHeight: "100%",
-  },
-  footer: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    gap: 16,
-    width: "100%",
-  },
-  url: {
-    fontFamily: '"Space Mono"',
-    fontSize: 32,
-    fontWeight: 400,
-    color: "#87B0D9",
-    letterSpacing: "0.04em",
-    lineHeight: "100%",
-  },
-} as const;
+import { formatCompetitionDates } from "@/utils/competition-utils";
+import { formatBigintAmount } from "@/utils/format";
 
 export async function GET(
-  req: Request,
+  _req: Request,
   context: { params: Promise<{ id: string }> },
 ) {
   const client = await createSafeClient();
@@ -207,16 +20,8 @@ export async function GET(
     return new ImageResponse(
       (
         <div
+          tw="flex w-full h-full items-center justify-center bg-[#020817] text-white text-[54px] font-bold"
           style={{
-            width: "100%",
-            height: "100%",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            background: "#020817",
-            color: "white",
-            fontSize: 54,
-            fontWeight: 700,
             fontFamily:
               "system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
           }}
@@ -228,90 +33,92 @@ export async function GET(
     );
   }
 
-  const interLight = fs.readFile(
-    path.join(process.cwd(), "assets/fonts/Inter_24pt-Light.ttf"),
-  );
-  const interRegular = fs.readFile(
-    path.join(process.cwd(), "assets/fonts/Inter_24pt-Regular.ttf"),
-  );
-  const interBold = fs.readFile(
-    path.join(process.cwd(), "assets/fonts/Inter_24pt-Bold.ttf"),
-  );
-  const spaceMonoRegular = fs.readFile(
-    path.join(process.cwd(), "assets/fonts/SpaceMono-Regular.ttf"),
-  );
-
-  const backgroundImage = await loadAssetAsBase64("og-background.svg");
-  const recallSvgUrl = await loadAssetAsBase64("recall-token-circle.svg");
-  const recallTextSvgUrl = await loadAssetAsBase64("recall-text.svg");
+  const baseUrl = getBaseUrl();
+  const backgroundImage = `${baseUrl}/og-background.svg`;
+  const recallSvgUrl = `${baseUrl}/recall-token.svg`;
+  const recallTextSvgUrl = `${baseUrl}/logo_white.svg`;
 
   return new ImageResponse(
     (
       <div
+        tw="flex flex-col items-center justify-center w-full h-full bg-no-repeat bg-[length:100%_100%]"
         style={{
-          ...styles.mainBackground,
           backgroundImage: `url(${backgroundImage})`,
         }}
       >
-        <div style={styles.content}>
-          <div style={styles.title}>{competition.name}</div>
+        <div tw="flex flex-col items-center justify-center gap-12 w-[916px]">
+          <div tw="font-bold text-[72px] text-[#e5e5e5] leading-none text-center w-[914px]">
+            {competition.name}
+          </div>
 
-          <div style={styles.infoContainer}>
-            {/* Column 1 */}
-            <div style={styles.infoSection}>
-              <div style={styles.amountCard}>
+          <div tw="flex flex-row gap-3 w-[916px] h-[212px]">
+            <div tw="flex flex-col gap-3 w-[452px] h-[212px]">
+              <div tw="flex flex-row justify-center items-center gap-3 w-[451px] h-[72px] bg-black/40 border border-[#3D3D3D] rounded-lg">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={recallSvgUrl}
                   alt={"Recall token icon"}
-                  style={{ width: 24, height: 24 }}
+                  tw="w-6 h-6 rounded-full"
                 />
-                <span style={styles.amount}>
-                  {formatNumber(Number(competition.rewardsTge?.agentPool ?? 0))}
+                <span tw="font-normal text-[40px] text-[#E5E5E5] leading-none">
+                  {formatBigintAmount(
+                    BigInt(competition.rewardsTge?.agentPool ?? 0),
+                  )}
                 </span>
-                <span style={styles.description}>for Agents</span>
+                <span tw="font-light text-[32px] text-[#A7A7A7] leading-none">
+                  for Agents
+                </span>
               </div>
-              <div style={styles.dateCard}>
-                <span style={styles.dateLabel}>Duration</span>
-                <span
-                  style={styles.dateValue}
-                >{`${formatEventDate(competition.startDate)} - ${formatEventDate(
-                  competition.endDate,
-                )}`}</span>
+              <div tw="flex flex-col justify-center items-center gap-3 w-[452px] h-[128px] bg-black/40 border border-[#3D3D3D] rounded-lg py-4 px-3">
+                <span tw="text-[32px] font-normal text-[#A7A7A7] leading-none">
+                  Duration
+                </span>
+                <span tw="text-[40px] font-normal text-[#E5E5E5] leading-none">
+                  {formatCompetitionDates(
+                    competition.startDate,
+                    competition.endDate,
+                  )}
+                </span>
               </div>
             </div>
 
-            {/* Column 2 */}
-            <div style={styles.infoSection}>
-              <div style={styles.amountCard}>
+            <div tw="flex flex-col gap-3 w-[452px] h-[212px]">
+              <div tw="flex flex-row justify-center items-center gap-3 w-[451px] h-[72px] bg-black/40 border border-[#3D3D3D] rounded-lg">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={recallSvgUrl}
                   alt={"Recall token icon"}
-                  style={{ width: 24, height: 24 }}
+                  tw="w-6 h-6 rounded-full"
                 />
-                <span style={styles.amount}>
-                  {formatNumber(Number(competition.rewardsTge?.userPool ?? 0))}
+                <span tw="font-normal text-[40px] text-[#E5E5E5] leading-none">
+                  {formatBigintAmount(
+                    BigInt(competition.rewardsTge?.userPool ?? 0),
+                  )}
                 </span>
-                <span style={styles.description}>for Boosters</span>
+                <span tw="font-light text-[32px] text-[#A7A7A7] leading-none">
+                  for Boosters
+                </span>
               </div>
-              <div style={styles.dateCard}>
-                <span style={styles.dateLabel}>Boost Window</span>
-                <span style={styles.dateValue}>{`${formatEventDate(
-                  competition.boostStartDate,
-                )} - ${formatEventDate(competition.boostEndDate)}`}</span>
+              <div tw="flex flex-col justify-center items-center gap-3 w-[452px] h-[128px] bg-black/40 border border-[#3D3D3D] rounded-lg py-4 px-3">
+                <span tw="text-[32px] font-normal text-[#A7A7A7] leading-none">
+                  Boost Window
+                </span>
+                <span tw="text-[40px] font-normal text-[#E5E5E5] leading-none">
+                  {formatCompetitionDates(
+                    competition.boostStartDate,
+                    competition.boostEndDate,
+                  )}
+                </span>
               </div>
             </div>
           </div>
 
-          <div style={styles.footer}>
+          <div tw="flex flex-col items-center gap-4 w-full">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={recallTextSvgUrl}
-              alt={"Recall text icon"}
-              style={{ height: 32 }}
-            />
-            <div style={styles.url}>https://app.recall.network</div>
+            <img src={recallTextSvgUrl} alt={"Recall text icon"} tw="h-8" />
+            <div tw="font-normal text-[32px] text-[#87B0D9] tracking-wider leading-none font-mono">
+              https://app.recall.network
+            </div>
           </div>
         </div>
       </div>
@@ -319,32 +126,6 @@ export async function GET(
     {
       width: 1200,
       height: 630,
-      fonts: [
-        {
-          name: "Inter",
-          data: await interLight,
-          weight: 300,
-          style: "normal",
-        },
-        {
-          name: "Inter",
-          data: await interRegular,
-          weight: 400,
-          style: "normal",
-        },
-        {
-          name: "Inter",
-          data: await interBold,
-          weight: 700,
-          style: "normal",
-        },
-        {
-          name: "Space Mono",
-          data: await spaceMonoRegular,
-          weight: 400,
-          style: "normal",
-        },
-      ],
     },
   );
 }
