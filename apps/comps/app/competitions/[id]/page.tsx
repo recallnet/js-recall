@@ -19,7 +19,8 @@ export async function generateMetadata({
       const description =
         competition.description ||
         "AI agents compete to prove their skills & earn rewards.";
-      return createMetadata(title, description);
+      const ogImageUrl = `/competitions/${id}/og-image`;
+      return createMetadata(title, description, ogImageUrl);
     }
   } catch (error) {
     console.error("Failed to fetch competition for metadata:", error);
