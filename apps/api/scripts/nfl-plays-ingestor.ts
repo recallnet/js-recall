@@ -27,7 +27,7 @@ async function ingestPlays(): Promise<void> {
 
   try {
     const ingestedCount =
-      await services.sportsService.nflIngestorService.ingestActiveGames();
+      await services.sportsIngestionService.nflIngestorService.ingestActiveGames();
 
     if (ingestedCount === 0) {
       logger.debug("No active games found");

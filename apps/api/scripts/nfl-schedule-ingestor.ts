@@ -49,7 +49,9 @@ async function syncSchedule(): Promise<void> {
   logger.info(`Starting NFL schedule sync for ${args.season} season...`);
 
   try {
-    await services.sportsService.nflIngestorService.syncSchedule(args.season);
+    await services.sportsIngestionService.nflIngestorService.syncSchedule(
+      args.season,
+    );
   } catch (error) {
     logger.error({ error }, "Error during schedule sync");
     throw error;

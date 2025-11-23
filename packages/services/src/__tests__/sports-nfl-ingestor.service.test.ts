@@ -15,14 +15,14 @@ import type {
 import type { Database, Transaction } from "@recallnet/db/types";
 
 import { GameScoringService } from "../game-scoring.service.js";
+import type { SportsDataIONflProvider } from "../providers/sportsdataio.provider.js";
+import { NflIngestorService } from "../sports-nfl-ingestor.service.js";
 import type {
-  SportsDataIONflProvider,
   SportsDataIOPlayByPlay,
   SportsDataIOScheduleGame,
-} from "../providers/sportsdataio.provider.js";
-import { NflIngestorService } from "../sports-nfl-ingestor.service.js";
+} from "../types/sports.js";
 
-describe("NflIngestorService", () => {
+describe("SportsNflIngestorService", () => {
   let service: NflIngestorService;
   let mockGamesRepo: MockProxy<GamesRepository>;
   let mockGamePlaysRepo: MockProxy<GamePlaysRepository>;

@@ -5,7 +5,7 @@ import { CompetitionGamesRepository } from "@recallnet/db/repositories/competiti
 import { GamePlaysRepository } from "@recallnet/db/repositories/game-plays";
 import { GamePredictionsRepository } from "@recallnet/db/repositories/game-predictions";
 import { GamesRepository } from "@recallnet/db/repositories/games";
-import {
+import type {
   NflGameStatus,
   NflTeam,
   SelectGame,
@@ -14,11 +14,11 @@ import {
 import type { Database, Transaction } from "@recallnet/db/types";
 
 import { GameScoringService } from "./game-scoring.service.js";
-import {
+import { SportsDataIONflProvider } from "./providers/sportsdataio.provider.js";
+import type {
   SportsDataIOGameStatus,
-  SportsDataIONflProvider,
   SportsDataIOPlayByPlay,
-} from "./providers/sportsdataio.provider.js";
+} from "./types/sports.js";
 
 /**
  * NFL Live Ingestor Service
