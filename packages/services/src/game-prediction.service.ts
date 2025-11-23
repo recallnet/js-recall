@@ -154,9 +154,13 @@ export class GamePredictionService {
   /**
    * Get all predictions for a game
    * @param gameId Game ID
+   * @param options Optional options or transaction
    * @returns Array of predictions
    */
-  async getGamePredictions(gameId: string): Promise<SelectGamePrediction[]> {
-    return this.#gamePredictionsRepo.findByGame(gameId);
+  async getGamePredictions(
+    gameId: string,
+    options?: { startTime?: Date; endTime?: Date; tx?: Transaction },
+  ): Promise<SelectGamePrediction[]> {
+    return this.#gamePredictionsRepo.findByGame(gameId, options);
   }
 }

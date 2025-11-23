@@ -159,17 +159,24 @@ export class GameScoringService {
         );
       }
 
-      // Get all predictions for this game
-      const allPredictions = await this.#gamePredictionsRepo.findByGame(gameId);
-
-      if (allPredictions.length === 0) {
-        this.#logger.info(`No predictions found for game ${gameId}`);
+      // Get all predictions at game start or before game end (note: pregame prediction snapshots happen at start time)
+      const validPredictions = await this.#gamePredictionsRepo.findByGame(
+        gameId,
+        {
+          startTime: game.startTime,
+          endTime: game.endTime,
+        },
+      );
+      if (validPredictions.length === 0) {
+        this.#logger.info(
+          `No valid predictions found for game ${gameId} (all predictions were before game start)`,
+        );
         return 0;
       }
 
       // Group predictions by agent
       const predictionsByAgent = new Map<string, SelectGamePrediction[]>();
-      for (const prediction of allPredictions) {
+      for (const prediction of validPredictions) {
         const agentPredictions =
           predictionsByAgent.get(prediction.agentId) || [];
         agentPredictions.push(prediction);

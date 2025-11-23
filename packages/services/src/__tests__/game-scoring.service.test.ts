@@ -176,7 +176,7 @@ describe("GameScoringService", () => {
       expect(mockGamePredictionScoresRepo.upsert).toHaveBeenCalledTimes(2);
     });
 
-    it("should handle predictions before game starts (t=0)", async () => {
+    it("should handle predictions at exactly game start time (t=0)", async () => {
       const predictions: SelectGamePrediction[] = [
         {
           id: randomUUID(),
@@ -186,7 +186,7 @@ describe("GameScoringService", () => {
           predictedWinner: "MIN",
           confidence: 1,
           reason: "Test",
-          createdAt: new Date("2025-09-08T18:00:00Z"), // Before game start
+          createdAt: new Date("2025-09-08T19:15:00Z"), // Exactly at game start
         },
       ];
 
@@ -422,6 +422,132 @@ describe("GameScoringService", () => {
       expect(result[0]!.averageBrierScore).toBe(0.92);
       expect(result[1]!.rank).toBe(2);
       expect(result[1]!.averageBrierScore).toBe(0.85);
+    });
+  });
+
+  describe("scoreGame with pregame predictions", () => {
+    it("should only use predictions at or after game start time", async () => {
+      const gameId = randomUUID();
+      const competitionId = randomUUID();
+      const agentId = randomUUID();
+      const gameStartTime = new Date("2025-09-08T19:15:00Z");
+      const gameEndTime = new Date("2025-09-08T23:15:00Z");
+
+      const mockGame: SelectGame = {
+        id: gameId,
+        providerGameId: 19068,
+        season: 2025,
+        week: 1,
+        startTime: gameStartTime,
+        endTime: gameEndTime,
+        homeTeam: "CHI",
+        awayTeam: "MIN",
+        spread: null,
+        overUnder: null,
+        venue: "Soldier Field",
+        status: "final",
+        winner: "MIN",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      // Agent made multiple pregame predictions, then the system snapshotted the latest at game start
+      const allPredictions: SelectGamePrediction[] = [
+        // Original pregame predictions (should NOT be used directly in scoring)
+        {
+          id: randomUUID(),
+          competitionId,
+          gameId,
+          agentId,
+          predictedWinner: "CHI",
+          confidence: 0.6,
+          reason: "Opening prediction",
+          createdAt: new Date("2025-09-08T17:30:00Z"), // T-1h45m
+        },
+        {
+          id: randomUUID(),
+          competitionId,
+          gameId,
+          agentId,
+          predictedWinner: "MIN",
+          confidence: 0.7,
+          reason: "Updated prediction",
+          createdAt: new Date("2025-09-08T18:45:00Z"), // T-30m
+        },
+        {
+          id: randomUUID(),
+          competitionId,
+          gameId,
+          agentId,
+          predictedWinner: "CHI",
+          confidence: 0.8,
+          reason: "Final pregame edit",
+          createdAt: new Date("2025-09-08T19:10:00Z"), // T-5m
+        },
+        // Snapshot at game start (SHOULD be used in scoring)
+        {
+          id: randomUUID(),
+          competitionId,
+          gameId,
+          agentId,
+          predictedWinner: "MIN",
+          confidence: 0.8,
+          reason: "Final pregame prediction",
+          createdAt: gameStartTime, // Exactly at game start
+        },
+      ];
+
+      mockGamesRepo.findById.mockResolvedValue(mockGame);
+      mockGamePredictionsRepo.findByGame.mockImplementation(
+        async (_gameId, options) => {
+          expect(options?.minCreatedAt).toEqual(gameStartTime);
+          return allPredictions.filter(
+            (prediction) => prediction.createdAt >= gameStartTime,
+          );
+        },
+      );
+
+      const mockPredictionScore: SelectGamePredictionScore = {
+        id: randomUUID(),
+        competitionId,
+        gameId,
+        agentId,
+        timeWeightedBrierScore: 0.85,
+        finalPrediction: "MIN",
+        finalConfidence: 0.8,
+        // Should be 1, not 4 because only the final pregame prediction is counted (snapshot within game window)
+        predictionCount: 1,
+        updatedAt: new Date(),
+      };
+      mockGamePredictionScoresRepo.upsert.mockResolvedValue(
+        mockPredictionScore,
+      );
+      mockGamePredictionScoresRepo.findByCompetitionAndAgent.mockResolvedValue([
+        mockPredictionScore,
+      ]);
+      mockCompetitionAggregateScoresRepo.upsert.mockResolvedValue({
+        id: randomUUID(),
+        competitionId,
+        agentId,
+        averageBrierScore: 0.85,
+        gamesScored: 1,
+        updatedAt: new Date(),
+      });
+
+      await service.scoreGame(gameId);
+
+      // Should only count the snapshot, not all of the pregame predictions
+      expect(mockGamePredictionScoresRepo.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          predictionCount: 1,
+          finalPrediction: "MIN",
+          finalConfidence: 0.8,
+        }),
+      );
+
+      expect(mockGamePredictionsRepo.findByGame).toHaveBeenCalledWith(gameId, {
+        minCreatedAt: gameStartTime,
+      });
     });
   });
 });
