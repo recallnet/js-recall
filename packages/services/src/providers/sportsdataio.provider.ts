@@ -172,8 +172,9 @@ export class SportsDataIONflProvider {
     this.#logger = logger;
 
     // SportsDataIO "replay" API (for development) requires query param auth, but the production
-    // API uses header-based auth
-    this.#useQueryParamAuth = this.#baseUrl.includes("replay.sportsdata.io");
+    // API uses header-based auth. Parse the hostname to determine which auth method to use.
+    this.#useQueryParamAuth =
+      new URL(this.#baseUrl).hostname === "replay.sportsdata.io";
     this.#client = axios.create({
       baseURL: this.#baseUrl,
       timeout: 10000,
