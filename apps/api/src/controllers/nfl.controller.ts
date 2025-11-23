@@ -156,6 +156,7 @@ export function makeNflController(services: ServiceRegistry) {
             latestPrediction = {
               predictedWinner: prediction.predictedWinner,
               confidence: prediction.confidence,
+              reason: prediction.reason,
               createdAt: prediction.createdAt.toISOString(),
             };
           }
@@ -367,7 +368,8 @@ export function makeNflController(services: ServiceRegistry) {
               id: p.id,
               agentId: p.agentId,
               predictedWinner: p.predictedWinner,
-              confidence: Number(p.confidence),
+              confidence: p.confidence,
+              reason: p.reason,
               createdAt: p.createdAt.toISOString(),
             })),
           },
