@@ -557,6 +557,7 @@ describe("Sports Prediction Competitions", () => {
     expect(prediction1Response.success).toBe(true);
     expect(prediction1Response.data.predictedWinner).toBe("CHI");
     expect(prediction1Response.data.confidence).toBe(0.7);
+    expect(prediction1Response.data.reason).toBe("foobar");
 
     // Step 6: Agent 2 makes pre-game prediction (MIN to win with 0.6 confidence)
     const prediction2Response = await nflClient2.predictGameWinner(
@@ -567,6 +568,9 @@ describe("Sports Prediction Competitions", () => {
       "foobar",
     );
     expect(prediction2Response.success).toBe(true);
+    expect(prediction2Response.data.predictedWinner).toBe("MIN");
+    expect(prediction2Response.data.confidence).toBe(0.6);
+    expect(prediction2Response.data.reason).toBe("foobar");
 
     // Step 7: Advance mock server to start the game (snapshot 1)
     await nflClient1.advanceMockServer(globalGameId);
