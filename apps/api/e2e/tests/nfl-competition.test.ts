@@ -2,7 +2,9 @@ import { beforeEach, describe, expect, test } from "vitest";
 
 import { AgentScoreRepository } from "@recallnet/db/repositories/agent-score";
 import {
+  CompetitionDetailResponse,
   CreateCompetitionResponse,
+  ErrorResponse,
   NflTestClient,
   createSportsPredictionTestCompetition,
   createTestClient,
@@ -836,5 +838,137 @@ describe("Sports Prediction Competitions", () => {
     );
     expect(finalLeaderboardResponse.success).toBe(true);
     expect(finalLeaderboardResponse.data.leaderboard).toHaveLength(1);
+  });
+
+  test("should prevent ending competition when not all games are final", async () => {
+    const providerGameId = 19068;
+    const tempClient = new NflTestClient("temp-key");
+    await tempClient.resetMockServer(providerGameId);
+
+    const dbGameId1 =
+      await services.sportsIngestionService.nflIngestorService.ingestGamePlayByPlay(
+        providerGameId,
+      );
+    const game2 = await services.sportsService.gamesRepository.upsert({
+      providerGameId: 99999,
+      season: 2025,
+      week: 1,
+      homeTeam: "MIN",
+      awayTeam: "GB",
+      startTime: new Date(),
+      status: "in_progress",
+    });
+    const dbGameId2 = game2.id;
+
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    const competitionName = `NFL Multi-Game Competition ${Date.now()}`;
+    const createResponse = await createSportsPredictionTestCompetition({
+      adminClient,
+      name: competitionName,
+      description: "Test competition with multiple games",
+      gameIds: [dbGameId1, dbGameId2],
+    });
+
+    expect(createResponse.success).toBe(true);
+    const competition = (createResponse as CreateCompetitionResponse)
+      .competition;
+
+    const { agent: agent1 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      userName: `User1 ${Date.now()}`,
+      userEmail: `user1-${Date.now()}@example.com`,
+      agentName: `Agent1 ${Date.now()}`,
+    });
+    await adminClient.addAgentToCompetition(competition.id, agent1.id);
+    await adminClient.startCompetition({ competitionId: competition.id });
+
+    // Finalize only the first game (second game still in progress)
+    const gameEndTime = new Date();
+    await services.sportsService.gamesRepository.finalizeGame(
+      dbGameId1,
+      gameEndTime,
+      "MIN",
+    );
+    await services.sportsService.gameScoringService.scoreGame(dbGameId1);
+
+    const endResponse = await adminClient.endCompetition(competition.id);
+    expect(endResponse.success).toBe(false);
+    expect((endResponse as ErrorResponse).error).toContain(
+      "All games must be completed",
+    );
+  });
+
+  test("should successfully end competition when all games are final", async () => {
+    const providerGameId = 19068;
+    const tempClient = new NflTestClient("temp-key");
+    await tempClient.resetMockServer(providerGameId);
+
+    const dbGameId1 =
+      await services.sportsIngestionService.nflIngestorService.ingestGamePlayByPlay(
+        providerGameId,
+      );
+    const game2 = await services.sportsService.gamesRepository.upsert({
+      providerGameId: 99999,
+      season: 2025,
+      week: 1,
+      homeTeam: "MIN",
+      awayTeam: "GB",
+      startTime: new Date(),
+      status: "in_progress",
+    });
+    const dbGameId2 = game2.id;
+
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    const competitionName = `NFL Multi-Game Competition ${Date.now()}`;
+    const createResponse = await createSportsPredictionTestCompetition({
+      adminClient,
+      name: competitionName,
+      description: "Test competition with multiple games",
+      gameIds: [dbGameId1, dbGameId2],
+    });
+
+    expect(createResponse.success).toBe(true);
+    const competition = (createResponse as CreateCompetitionResponse)
+      .competition;
+
+    const { agent: agent1 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      userName: `User1 ${Date.now()}`,
+      userEmail: `user1-${Date.now()}@example.com`,
+      agentName: `Agent1 ${Date.now()}`,
+    });
+    await adminClient.addAgentToCompetition(competition.id, agent1.id);
+    await adminClient.startCompetition({ competitionId: competition.id });
+
+    // Finalize both games
+    const gameEndTime = new Date();
+    await services.sportsService.gamesRepository.finalizeGame(
+      dbGameId1,
+      gameEndTime,
+      "MIN",
+    );
+    await services.sportsService.gameScoringService.scoreGame(dbGameId1);
+
+    await services.sportsService.gamesRepository.finalizeGame(
+      dbGameId2,
+      gameEndTime,
+      "GB",
+    );
+    await services.sportsService.gameScoringService.scoreGame(dbGameId2);
+
+    // Now ending the competition should succeed
+    const endResponse = await adminClient.endCompetition(competition.id);
+    expect(endResponse.success).toBe(true);
+
+    // Verify competition status is ended
+    const getResponse = await adminClient.getCompetition(competition.id);
+    expect(getResponse.success).toBe(true);
+    expect((getResponse as CompetitionDetailResponse).competition.status).toBe(
+      "ended",
+    );
   });
 });
