@@ -82,7 +82,6 @@ describe("CompetitionGamesRepository Integration Tests", () => {
         gameId: testGame1Id,
       });
 
-      expect(result.id).toBeDefined();
       expect(result.competitionId).toBe(testCompetitionId);
       expect(result.gameId).toBe(testGame1Id);
       expect(result.createdAt).toBeDefined();
@@ -100,9 +99,9 @@ describe("CompetitionGamesRepository Integration Tests", () => {
         gameId: testGame1Id,
       });
 
-      expect(second.id).toBe(first.id);
-      expect(second.competitionId).toBe(testCompetitionId);
-      expect(second.gameId).toBe(testGame1Id);
+      expect(second.competitionId).toBe(first.competitionId);
+      expect(second.gameId).toBe(first.gameId);
+      expect(second.createdAt).toEqual(first.createdAt);
     });
   });
 

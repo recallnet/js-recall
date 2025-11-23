@@ -442,13 +442,6 @@
       "when": 1763556336527,
       "tag": "0062_yummy_paladin",
       "breakpoints": true
-    },
-    {
-      "idx": 63,
-      "version": "7",
-      "when": 1763689770327,
-      "tag": "0063_bouncy_zodiak",
-      "breakpoints": true
     }
   ]
 }

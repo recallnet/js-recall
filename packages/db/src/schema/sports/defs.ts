@@ -1,9 +1,9 @@
 import {
-  foreignKey,
   index,
   integer,
   numeric,
   pgSchema,
+  primaryKey,
   text,
   timestamp,
   unique,
@@ -114,10 +114,12 @@ export const gamePlays = sportsSchema.table(
   "nfl_game_plays",
   {
     id: uuid().primaryKey().notNull().defaultRandom(),
-    gameId: uuid("game_id").notNull(),
+    gameId: uuid("game_id")
+      .notNull()
+      .references(() => games.id, { onDelete: "cascade" }),
     providerPlayId: text("provider_play_id"), // PlayID from SportsDataIO
     sequence: integer("sequence").notNull(),
-    quarterName: text("quarter_name").notNull(), // "1", "2", "3", "4", "OT", "F/OT", or null
+    quarterName: text("quarter_name"), // "1", "2", "3", "4", "OT", "F/OT", or null
     timeRemainingMinutes: integer("time_remaining_minutes"),
     timeRemainingSeconds: integer("time_remaining_seconds"),
     playTime: timestamp("play_time", { withTimezone: true }),
@@ -138,11 +140,6 @@ export const gamePlays = sportsSchema.table(
       .notNull(),
   },
   (table) => [
-    foreignKey({
-      columns: [table.gameId],
-      foreignColumns: [games.id],
-      name: "game_plays_game_id_fkey",
-    }).onDelete("cascade"),
     unique("game_plays_game_id_sequence_key").on(table.gameId, table.sequence),
     index("idx_game_plays_game_id").on(table.gameId),
     index("idx_game_plays_provider_play_id").on(table.providerPlayId),
@@ -157,28 +154,18 @@ export const gamePlays = sportsSchema.table(
 export const competitionGames = sportsSchema.table(
   "competition_games",
   {
-    id: uuid().primaryKey().notNull().defaultRandom(),
-    competitionId: uuid("competition_id").notNull(),
-    gameId: uuid("game_id").notNull(),
+    competitionId: uuid("competition_id")
+      .notNull()
+      .references(() => competitions.id, { onDelete: "cascade" }),
+    gameId: uuid("game_id")
+      .notNull()
+      .references(() => games.id, { onDelete: "cascade" }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
   },
   (table) => [
-    foreignKey({
-      columns: [table.competitionId],
-      foreignColumns: [competitions.id],
-      name: "competition_games_competition_id_fkey",
-    }).onDelete("cascade"),
-    foreignKey({
-      columns: [table.gameId],
-      foreignColumns: [games.id],
-      name: "competition_games_game_id_fkey",
-    }).onDelete("cascade"),
-    unique("competition_games_competition_id_game_id_key").on(
-      table.competitionId,
-      table.gameId,
-    ),
+    primaryKey({ columns: [table.competitionId, table.gameId] }),
     index("idx_competition_games_competition_id").on(table.competitionId),
     index("idx_competition_games_game_id").on(table.gameId),
   ],
@@ -193,9 +180,15 @@ export const gamePredictions = sportsSchema.table(
   "game_predictions",
   {
     id: uuid().primaryKey().notNull().defaultRandom(),
-    competitionId: uuid("competition_id").notNull(),
-    gameId: uuid("game_id").notNull(),
-    agentId: uuid("agent_id").notNull(),
+    competitionId: uuid("competition_id")
+      .notNull()
+      .references(() => competitions.id, { onDelete: "cascade" }),
+    gameId: uuid("game_id")
+      .notNull()
+      .references(() => games.id, { onDelete: "cascade" }),
+    agentId: uuid("agent_id")
+      .notNull()
+      .references(() => agents.id, { onDelete: "cascade" }),
     predictedWinner: nflTeam("predicted_winner").notNull(), // Team ticker: "MIN", "CHI", etc.
     confidence: numeric("confidence", {
       precision: 4,
@@ -208,21 +201,6 @@ export const gamePredictions = sportsSchema.table(
       .notNull(),
   },
   (table) => [
-    foreignKey({
-      columns: [table.competitionId],
-      foreignColumns: [competitions.id],
-      name: "game_predictions_competition_id_fkey",
-    }).onDelete("cascade"),
-    foreignKey({
-      columns: [table.gameId],
-      foreignColumns: [games.id],
-      name: "game_predictions_game_id_fkey",
-    }).onDelete("cascade"),
-    foreignKey({
-      columns: [table.agentId],
-      foreignColumns: [agents.id],
-      name: "game_predictions_agent_id_fkey",
-    }).onDelete("cascade"),
     index("idx_game_predictions_competition_id_game_id_agent_id_created_at").on(
       table.competitionId,
       table.gameId,
@@ -247,9 +225,15 @@ export const gamePredictionScores = sportsSchema.table(
   "game_prediction_scores",
   {
     id: uuid().primaryKey().notNull().defaultRandom(),
-    competitionId: uuid("competition_id").notNull(),
-    gameId: uuid("game_id").notNull(),
-    agentId: uuid("agent_id").notNull(),
+    competitionId: uuid("competition_id")
+      .notNull()
+      .references(() => competitions.id, { onDelete: "cascade" }),
+    gameId: uuid("game_id")
+      .notNull()
+      .references(() => games.id, { onDelete: "cascade" }),
+    agentId: uuid("agent_id")
+      .notNull()
+      .references(() => agents.id, { onDelete: "cascade" }),
     timeWeightedBrierScore: numeric("time_weighted_brier_score", {
       precision: 10,
       scale: 6,
@@ -267,21 +251,6 @@ export const gamePredictionScores = sportsSchema.table(
       .notNull(),
   },
   (table) => [
-    foreignKey({
-      columns: [table.competitionId],
-      foreignColumns: [competitions.id],
-      name: "game_prediction_scores_competition_id_fkey",
-    }).onDelete("cascade"),
-    foreignKey({
-      columns: [table.gameId],
-      foreignColumns: [games.id],
-      name: "game_prediction_scores_game_id_fkey",
-    }).onDelete("cascade"),
-    foreignKey({
-      columns: [table.agentId],
-      foreignColumns: [agents.id],
-      name: "game_prediction_scores_agent_id_fkey",
-    }).onDelete("cascade"),
     unique("game_prediction_scores_competition_id_game_id_agent_id_key").on(
       table.competitionId,
       table.gameId,
@@ -301,8 +270,12 @@ export const competitionAggregateScores = sportsSchema.table(
   "competition_aggregate_scores",
   {
     id: uuid().primaryKey().notNull().defaultRandom(),
-    competitionId: uuid("competition_id").notNull(),
-    agentId: uuid("agent_id").notNull(),
+    competitionId: uuid("competition_id")
+      .notNull()
+      .references(() => competitions.id, { onDelete: "cascade" }),
+    agentId: uuid("agent_id")
+      .notNull()
+      .references(() => agents.id, { onDelete: "cascade" }),
     averageBrierScore: numeric("average_brier_score", {
       precision: 10,
       scale: 6,
@@ -314,16 +287,6 @@ export const competitionAggregateScores = sportsSchema.table(
       .notNull(),
   },
   (table) => [
-    foreignKey({
-      columns: [table.competitionId],
-      foreignColumns: [competitions.id],
-      name: "competition_aggregate_scores_competition_id_fkey",
-    }).onDelete("cascade"),
-    foreignKey({
-      columns: [table.agentId],
-      foreignColumns: [agents.id],
-      name: "competition_aggregate_scores_agent_id_fkey",
-    }).onDelete("cascade"),
     unique("competition_aggregate_scores_competition_id_agent_id_key").on(
       table.competitionId,
       table.agentId,
