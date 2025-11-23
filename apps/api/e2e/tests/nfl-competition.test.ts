@@ -3,12 +3,14 @@ import { beforeEach, describe, expect, test } from "vitest";
 import { AgentScoreRepository } from "@recallnet/db/repositories/agent-score";
 import {
   CreateCompetitionResponse,
+  ErrorResponse,
   NflTestClient,
   createSportsPredictionTestCompetition,
   createTestClient,
   getAdminApiKey,
   registerUserAndAgentAndGetClient,
 } from "@recallnet/test-utils";
+import { CompetitionDetailResponse } from "@recallnet/test-utils";
 
 import { db } from "@/database/db.js";
 import { repositoryLogger } from "@/lib/logger.js";
@@ -24,13 +26,13 @@ describe("Sports Prediction Competitions", () => {
   });
 
   test("should successfully start competition with game IDs", async () => {
-    const globalGameId = 19068;
+    const providerGameId = 19068;
     const tempClient = new NflTestClient("temp-key");
-    await tempClient.resetMockServer(globalGameId);
+    await tempClient.resetMockServer(providerGameId);
 
     const dbGameId =
       await services.sportsService.nflIngestorService.ingestGamePlayByPlay(
-        globalGameId,
+        providerGameId,
       );
 
     const adminClient = createTestClient();
@@ -115,13 +117,13 @@ describe("Sports Prediction Competitions", () => {
   });
 
   test("should fail to end competition if game has not ended", async () => {
-    const globalGameId = 19068;
+    const providerGameId = 19068;
     const tempClient = new NflTestClient("temp-key");
-    await tempClient.resetMockServer(globalGameId);
+    await tempClient.resetMockServer(providerGameId);
 
     const dbGameId =
       await services.sportsService.nflIngestorService.ingestGamePlayByPlay(
-        globalGameId,
+        providerGameId,
       );
 
     const adminClient = createTestClient();
@@ -149,13 +151,13 @@ describe("Sports Prediction Competitions", () => {
   });
 
   test("should fail to end competition if game is missing end time or winner", async () => {
-    const globalGameId = 19068;
+    const providerGameId = 19068;
     const tempClient = new NflTestClient("temp-key");
-    await tempClient.resetMockServer(globalGameId);
+    await tempClient.resetMockServer(providerGameId);
 
     const dbGameId =
       await services.sportsService.nflIngestorService.ingestGamePlayByPlay(
-        globalGameId,
+        providerGameId,
       );
 
     await services.sportsService.gamesRepository.updateStatus(
@@ -188,19 +190,19 @@ describe("Sports Prediction Competitions", () => {
   });
 
   test("should reject prediction if game is not part of competition", async () => {
-    const globalGameId1 = 19068;
+    const providerGameId1 = 19068;
     const tempClient = new NflTestClient("temp-key");
-    await tempClient.resetMockServer(globalGameId1);
+    await tempClient.resetMockServer(providerGameId1);
 
     const dbGameId1 =
       await services.sportsService.nflIngestorService.ingestGamePlayByPlay(
-        globalGameId1,
+        providerGameId1,
       );
 
-    await tempClient.resetMockServer(globalGameId1);
+    await tempClient.resetMockServer(providerGameId1);
     const dbGameId2 =
       await services.sportsService.nflIngestorService.ingestGamePlayByPlay(
-        globalGameId1,
+        providerGameId1,
       );
 
     const adminClient = createTestClient();
@@ -253,13 +255,13 @@ describe("Sports Prediction Competitions", () => {
   });
 
   test("should only allow agents in competition to make predictions", async () => {
-    const globalGameId = 19068;
+    const providerGameId = 19068;
     const tempClient = new NflTestClient("temp-key");
-    await tempClient.resetMockServer(globalGameId);
+    await tempClient.resetMockServer(providerGameId);
 
     const dbGameId =
       await services.sportsService.nflIngestorService.ingestGamePlayByPlay(
-        globalGameId,
+        providerGameId,
       );
 
     const adminClient = createTestClient();
@@ -323,13 +325,13 @@ describe("Sports Prediction Competitions", () => {
   });
 
   test("should validate prediction request body", async () => {
-    const globalGameId = 19068;
+    const providerGameId = 19068;
     const tempClient = new NflTestClient("temp-key");
-    await tempClient.resetMockServer(globalGameId);
+    await tempClient.resetMockServer(providerGameId);
 
     const dbGameId =
       await services.sportsService.nflIngestorService.ingestGamePlayByPlay(
-        globalGameId,
+        providerGameId,
       );
 
     const adminClient = createTestClient();
@@ -397,21 +399,21 @@ describe("Sports Prediction Competitions", () => {
   });
 
   test("should successfully read agent ranks after competition ends", async () => {
-    const globalGameId = 19068;
+    const providerGameId = 19068;
     const tempClient = new NflTestClient("temp-key");
-    await tempClient.resetMockServer(globalGameId);
+    await tempClient.resetMockServer(providerGameId);
 
     const dbGameId =
       await services.sportsService.nflIngestorService.ingestGamePlayByPlay(
-        globalGameId,
+        providerGameId,
       );
 
     // Advance to final snapshot
     for (let i = 0; i < 5; i++) {
-      await tempClient.advanceMockServer(globalGameId);
+      await tempClient.advanceMockServer(providerGameId);
     }
     await services.sportsService.nflIngestorService.ingestGamePlayByPlay(
-      globalGameId,
+      providerGameId,
     );
 
     const adminClient = createTestClient();
@@ -473,13 +475,13 @@ describe("Sports Prediction Competitions", () => {
 
   test("full NFL game winner prediction flow with time-weighted Brier scoring", async () => {
     // Step 1: Ingest game first (before creating competition)
-    const globalGameId = 19068;
+    const providerGameId = 19068;
     const tempClient = new NflTestClient("temp-key");
-    await tempClient.resetMockServer(globalGameId);
+    await tempClient.resetMockServer(providerGameId);
 
     const dbGameId =
       await services.sportsService.nflIngestorService.ingestGamePlayByPlay(
-        globalGameId,
+        providerGameId,
       );
 
     // Step 2: Create competition with the game ID
@@ -573,9 +575,9 @@ describe("Sports Prediction Competitions", () => {
     expect(prediction2Response.data.reason).toBe("foobar");
 
     // Step 7: Advance mock server to start the game (snapshot 1)
-    await nflClient1.advanceMockServer(globalGameId);
+    await nflClient1.advanceMockServer(providerGameId);
     await services.sportsService.nflIngestorService.ingestGamePlayByPlay(
-      globalGameId,
+      providerGameId,
     );
 
     const gameInfoResponse = await nflClient1.getGameInfo(
@@ -603,21 +605,21 @@ describe("Sports Prediction Competitions", () => {
     expect(predictionsResponse.data.predictions).toHaveLength(2);
 
     // Step 10: Advance mock server multiple times to progress through game
-    await nflClient1.advanceMockServer(globalGameId);
+    await nflClient1.advanceMockServer(providerGameId);
     await services.sportsService.nflIngestorService.ingestGamePlayByPlay(
-      globalGameId,
+      providerGameId,
     );
 
-    await nflClient1.advanceMockServer(globalGameId);
+    await nflClient1.advanceMockServer(providerGameId);
     await services.sportsService.nflIngestorService.ingestGamePlayByPlay(
-      globalGameId,
+      providerGameId,
     );
 
     // Step 11: Advance to final snapshot (game progresses)
-    await nflClient1.advanceMockServer(globalGameId);
-    await nflClient1.advanceMockServer(globalGameId);
+    await nflClient1.advanceMockServer(providerGameId);
+    await nflClient1.advanceMockServer(providerGameId);
     await services.sportsService.nflIngestorService.ingestGamePlayByPlay(
-      globalGameId,
+      providerGameId,
     );
 
     // Step 12: Manually finalize game for testing
@@ -687,17 +689,17 @@ describe("Sports Prediction Competitions", () => {
   });
 
   test("should verify all NFL API endpoints are functional", async () => {
-    const globalGameId = 19068;
+    const providerGameId = 19068;
     const tempClient = new NflTestClient("temp-key");
-    await tempClient.resetMockServer(globalGameId);
+    await tempClient.resetMockServer(providerGameId);
 
     const dbGameId =
       await services.sportsService.nflIngestorService.ingestGamePlayByPlay(
-        globalGameId,
+        providerGameId,
       );
-    await tempClient.advanceMockServer(globalGameId);
+    await tempClient.advanceMockServer(providerGameId);
     await services.sportsService.nflIngestorService.ingestGamePlayByPlay(
-      globalGameId,
+      providerGameId,
     );
 
     const adminClient = createTestClient();
@@ -805,12 +807,12 @@ describe("Sports Prediction Competitions", () => {
     expect(leaderboardResponse.success).toBe(true);
 
     // 10. Finalize game and score
-    await tempClient.advanceMockServer(globalGameId);
-    await tempClient.advanceMockServer(globalGameId);
-    await tempClient.advanceMockServer(globalGameId);
+    await tempClient.advanceMockServer(providerGameId);
+    await tempClient.advanceMockServer(providerGameId);
+    await tempClient.advanceMockServer(providerGameId);
 
     await services.sportsService.nflIngestorService.ingestGamePlayByPlay(
-      globalGameId,
+      providerGameId,
     );
 
     const gameEndTime = new Date();
@@ -836,5 +838,137 @@ describe("Sports Prediction Competitions", () => {
     );
     expect(finalLeaderboardResponse.success).toBe(true);
     expect(finalLeaderboardResponse.data.leaderboard).toHaveLength(1);
+  });
+
+  test("should prevent ending competition when not all games are final", async () => {
+    const providerGameId = 19068;
+    const tempClient = new NflTestClient("temp-key");
+    await tempClient.resetMockServer(providerGameId);
+
+    const dbGameId1 =
+      await services.sportsService.nflIngestorService.ingestGamePlayByPlay(
+        providerGameId,
+      );
+    const game2 = await services.sportsService.gamesRepository.upsert({
+      providerGameId: 99999,
+      season: 2025,
+      week: 1,
+      homeTeam: "MIN",
+      awayTeam: "GB",
+      startTime: new Date(),
+      status: "in_progress",
+    });
+    const dbGameId2 = game2.id;
+
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    const competitionName = `NFL Multi-Game Competition ${Date.now()}`;
+    const createResponse = await createSportsPredictionTestCompetition({
+      adminClient,
+      name: competitionName,
+      description: "Test competition with multiple games",
+      gameIds: [dbGameId1, dbGameId2],
+    });
+
+    expect(createResponse.success).toBe(true);
+    const competition = (createResponse as CreateCompetitionResponse)
+      .competition;
+
+    const { agent: agent1 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      userName: `User1 ${Date.now()}`,
+      userEmail: `user1-${Date.now()}@example.com`,
+      agentName: `Agent1 ${Date.now()}`,
+    });
+    await adminClient.addAgentToCompetition(competition.id, agent1.id);
+    await adminClient.startCompetition({ competitionId: competition.id });
+
+    // Finalize only the first game (second game still in progress)
+    const gameEndTime = new Date();
+    await services.sportsService.gamesRepository.finalizeGame(
+      dbGameId1,
+      gameEndTime,
+      "MIN",
+    );
+    await services.sportsService.gameScoringService.scoreGame(dbGameId1);
+
+    const endResponse = await adminClient.endCompetition(competition.id);
+    expect(endResponse.success).toBe(false);
+    expect((endResponse as ErrorResponse).error).toContain(
+      "All games must be completed",
+    );
+  });
+
+  test("should successfully end competition when all games are final", async () => {
+    const providerGameId = 19068;
+    const tempClient = new NflTestClient("temp-key");
+    await tempClient.resetMockServer(providerGameId);
+
+    const dbGameId1 =
+      await services.sportsService.nflIngestorService.ingestGamePlayByPlay(
+        providerGameId,
+      );
+    const game2 = await services.sportsService.gamesRepository.upsert({
+      providerGameId: 99999,
+      season: 2025,
+      week: 1,
+      homeTeam: "MIN",
+      awayTeam: "GB",
+      startTime: new Date(),
+      status: "in_progress",
+    });
+    const dbGameId2 = game2.id;
+
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    const competitionName = `NFL Multi-Game Competition ${Date.now()}`;
+    const createResponse = await createSportsPredictionTestCompetition({
+      adminClient,
+      name: competitionName,
+      description: "Test competition with multiple games",
+      gameIds: [dbGameId1, dbGameId2],
+    });
+
+    expect(createResponse.success).toBe(true);
+    const competition = (createResponse as CreateCompetitionResponse)
+      .competition;
+
+    const { agent: agent1 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      userName: `User1 ${Date.now()}`,
+      userEmail: `user1-${Date.now()}@example.com`,
+      agentName: `Agent1 ${Date.now()}`,
+    });
+    await adminClient.addAgentToCompetition(competition.id, agent1.id);
+    await adminClient.startCompetition({ competitionId: competition.id });
+
+    // Finalize both games
+    const gameEndTime = new Date();
+    await services.sportsService.gamesRepository.finalizeGame(
+      dbGameId1,
+      gameEndTime,
+      "MIN",
+    );
+    await services.sportsService.gameScoringService.scoreGame(dbGameId1);
+
+    await services.sportsService.gamesRepository.finalizeGame(
+      dbGameId2,
+      gameEndTime,
+      "GB",
+    );
+    await services.sportsService.gameScoringService.scoreGame(dbGameId2);
+
+    // Now ending the competition should succeed
+    const endResponse = await adminClient.endCompetition(competition.id);
+    expect(endResponse.success).toBe(true);
+
+    // Verify competition status is ended
+    const getResponse = await adminClient.getCompetition(competition.id);
+    expect(getResponse.success).toBe(true);
+    expect((getResponse as CompetitionDetailResponse).competition.status).toBe(
+      "ended",
+    );
   });
 });

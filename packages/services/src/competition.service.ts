@@ -1396,9 +1396,12 @@ export class CompetitionService {
     const games = await this.sportsService.gamesRepository.findByIds(gameIds);
     const finalGames = games.filter((game) => game.status === "final");
 
-    if (finalGames.length === 0) {
-      throw new Error(
-        `Cannot end NFL competition ${competitionId}: No final games found. All games must be completed before ending the competition.`,
+    // Validate ALL games are final before allowing competition to end
+    if (finalGames.length !== games.length) {
+      const nonFinalCount = games.length - finalGames.length;
+      throw new ApiError(
+        400,
+        `Cannot end NFL competition ${competitionId}: ${nonFinalCount} of ${games.length} games are not yet final. All games must be completed before ending the competition.`,
       );
     }
 
@@ -1430,7 +1433,8 @@ export class CompetitionService {
         )
         .join("; ");
 
-      throw new Error(
+      throw new ApiError(
+        400,
         `Cannot end NFL competition ${competitionId}: ${invalidGames.length} final game(s) are not ready for scoring. ` +
           `Games must have end times and winners before the competition can end. Details: ${details}`,
       );
