@@ -208,9 +208,11 @@ export class GamePredictionsRepository {
   async findPregamePredictions(
     gameId: string,
     beforeTime: Date,
+    tx?: Transaction,
   ): Promise<SelectGamePrediction[]> {
     try {
-      const results = await this.#db
+      const executor = tx || this.#db;
+      const results = await executor
         .select()
         .from(gamePredictions)
         .where(

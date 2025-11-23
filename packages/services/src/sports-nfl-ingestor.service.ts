@@ -9,7 +9,9 @@ import {
   NflGameStatus,
   NflTeam,
   SelectGame,
+  SelectGamePrediction,
 } from "@recallnet/db/schema/sports/types";
+import type { Database, Transaction } from "@recallnet/db/types";
 
 import { GameScoringService } from "./game-scoring.service.js";
 import {
@@ -23,6 +25,7 @@ import {
  * Fetches live data from SportsDataIO and ingests into database
  */
 export class NflIngestorService {
+  readonly #db: Database;
   readonly #gamesRepo: GamesRepository;
   readonly #gamePlaysRepo: GamePlaysRepository;
   readonly #gamePredictionsRepo: GamePredictionsRepository;
@@ -33,6 +36,7 @@ export class NflIngestorService {
   readonly #logger: Logger;
 
   constructor(
+    db: Database,
     gamesRepo: GamesRepository,
     gamePlaysRepo: GamePlaysRepository,
     gamePredictionsRepo: GamePredictionsRepository,
@@ -42,6 +46,7 @@ export class NflIngestorService {
     provider: SportsDataIONflProvider,
     logger: Logger,
   ) {
+    this.#db = db;
     this.#gamesRepo = gamesRepo;
     this.#gamePlaysRepo = gamePlaysRepo;
     this.#gamePredictionsRepo = gamePredictionsRepo;
@@ -258,13 +263,24 @@ export class NflIngestorService {
       // Fetch play-by-play data
       const data = await this.#provider.getPlayByPlay(providerGameId);
 
-      // Ingest or update game
-      const dbGame = await this.#ingestGame(data);
+      // Execute game + play ingestion atomically
+      const { game, finalizeContext } = await this.#db.transaction(
+        async (tx: Transaction) => {
+          const gameResult = await this.#ingestGame(data, tx);
+          await this.#ingestPlays(data, gameResult.game.id, tx);
+          return gameResult;
+        },
+      );
 
-      // Ingest plays
-      await this.#ingestPlays(data, dbGame.id);
+      if (finalizeContext) {
+        await this.finalizeGame(
+          game.id,
+          finalizeContext.endTime,
+          finalizeContext.winner,
+        );
+      }
 
-      return dbGame.id;
+      return game.id;
     } catch (error) {
       this.#logger.error(
         { error, providerGameId },
@@ -318,6 +334,7 @@ export class NflIngestorService {
   async #snapshotPregamePredictions(
     gameId: string,
     gameStartTime: Date,
+    tx: Transaction,
   ): Promise<number> {
     try {
       // Find all predictions made before the game started
@@ -325,6 +342,7 @@ export class NflIngestorService {
         await this.#gamePredictionsRepo.findPregamePredictions(
           gameId,
           gameStartTime,
+          tx,
         );
 
       if (preGamePredictions.length === 0) {
@@ -333,7 +351,7 @@ export class NflIngestorService {
       }
 
       // Group by agent and get most recent prediction for each
-      const latestByAgent = new Map<string, (typeof preGamePredictions)[0]>();
+      const latestByAgent = new Map<string, SelectGamePrediction>();
       for (const pred of preGamePredictions) {
         const existing = latestByAgent.get(pred.agentId);
         if (!existing || pred.createdAt > existing.createdAt) {
@@ -344,15 +362,18 @@ export class NflIngestorService {
       // Create snapshot at game start time for each agent
       let snapshotCount = 0;
       for (const latestPred of latestByAgent.values()) {
-        await this.#gamePredictionsRepo.create({
-          competitionId: latestPred.competitionId,
-          gameId: latestPred.gameId,
-          agentId: latestPred.agentId,
-          predictedWinner: latestPred.predictedWinner,
-          confidence: latestPred.confidence,
-          reason: latestPred.reason,
-          createdAt: gameStartTime,
-        });
+        await this.#gamePredictionsRepo.create(
+          {
+            competitionId: latestPred.competitionId,
+            gameId: latestPred.gameId,
+            agentId: latestPred.agentId,
+            predictedWinner: latestPred.predictedWinner,
+            confidence: latestPred.confidence,
+            reason: latestPred.reason,
+            createdAt: gameStartTime,
+          },
+          tx,
+        );
         snapshotCount++;
       }
 
@@ -378,7 +399,13 @@ export class NflIngestorService {
   /**
    * Ingest game metadata and finalize if game is over
    */
-  async #ingestGame(data: SportsDataIOPlayByPlay): Promise<SelectGame> {
+  async #ingestGame(
+    data: SportsDataIOPlayByPlay,
+    tx: Transaction,
+  ): Promise<{
+    game: SelectGame;
+    finalizeContext?: { winner: NflTeam; endTime: Date };
+  }> {
     const score = data.Score;
 
     // Map SportsDataIO status to our status
@@ -394,24 +421,28 @@ export class NflIngestorService {
     // Check if game was already final
     const existingGame = await this.#gamesRepo.findByProviderGameId(
       score.GlobalGameID,
+      tx,
     );
     const wasAlreadyFinal = existingGame?.status === "final";
     // If game was already final, return the existing game
     if (wasAlreadyFinal) {
-      return existingGame;
+      return { game: existingGame };
     }
 
     // Upsert game
-    const game = await this.#gamesRepo.upsert({
-      providerGameId: score.GlobalGameID,
-      season: score.Season,
-      week: score.Week,
-      startTime: new Date(score.Date),
-      homeTeam: score.HomeTeam,
-      awayTeam: score.AwayTeam,
-      venue: score.StadiumDetails?.Name || null,
-      status,
-    });
+    const game = await this.#gamesRepo.upsert(
+      {
+        providerGameId: score.GlobalGameID,
+        season: score.Season,
+        week: score.Week,
+        startTime: new Date(score.Date),
+        homeTeam: score.HomeTeam,
+        awayTeam: score.AwayTeam,
+        venue: score.StadiumDetails?.Name || null,
+        status,
+      },
+      tx,
+    );
 
     // If game just started (transitioned from scheduled to in_progress), snapshot pregame predictions
     if (status === "in_progress" && existingGame?.status === "scheduled") {
@@ -419,7 +450,7 @@ export class NflIngestorService {
         { gameId: game.id, providerGameId: score.GlobalGameID },
         "Game just started, snapshotting pregame predictions",
       );
-      await this.#snapshotPregamePredictions(game.id, game.startTime);
+      await this.#snapshotPregamePredictions(game.id, game.startTime, tx);
     }
 
     // If game just became final (wasn't final before), finalize and score it
@@ -433,7 +464,7 @@ export class NflIngestorService {
           { gameId: game.id, providerGameId: score.GlobalGameID },
           "Game is final but scores are missing, skipping finalization",
         );
-        return game;
+        return { game };
       }
 
       // Determine winner
@@ -482,11 +513,14 @@ export class NflIngestorService {
         "Game ended, finalizing and scoring",
       );
 
-      // Finalize game and trigger scoring
-      await this.finalizeGame(game.id, endTime, winner);
+      // Finalize game after transaction completes
+      return {
+        game,
+        finalizeContext: { winner, endTime },
+      };
     }
 
-    return game;
+    return { game };
   }
 
   /**
@@ -498,30 +532,34 @@ export class NflIngestorService {
   async #ingestPlays(
     data: SportsDataIOPlayByPlay,
     gameId: string,
+    tx: Transaction,
   ): Promise<void> {
     let ingestedCount = 0;
 
     // First, ingest all completed plays from the Plays array
     for (const play of data.Plays) {
       try {
-        await this.#gamePlaysRepo.upsert({
-          gameId,
-          providerPlayId: play.PlayID.toString(),
-          sequence: play.Sequence,
-          quarterName: play.QuarterName,
-          timeRemainingMinutes: play.TimeRemainingMinutes,
-          timeRemainingSeconds: play.TimeRemainingSeconds,
-          playTime: new Date(play.PlayTime),
-          down: play.Down,
-          distance: play.Distance ? parseInt(play.Distance.toString()) : null,
-          yardLine: play.YardLine,
-          yardLineTerritory: play.YardLineTerritory,
-          yardsToEndZone: play.YardsToEndZone,
-          playType: play.Type,
-          team: play.Team,
-          opponent: play.Opponent,
-          description: play.Description,
-        });
+        await this.#gamePlaysRepo.upsert(
+          {
+            gameId,
+            providerPlayId: play.PlayID.toString(),
+            sequence: play.Sequence,
+            quarterName: play.QuarterName,
+            timeRemainingMinutes: play.TimeRemainingMinutes,
+            timeRemainingSeconds: play.TimeRemainingSeconds,
+            playTime: new Date(play.PlayTime),
+            down: play.Down,
+            distance: play.Distance ? parseInt(play.Distance.toString()) : null,
+            yardLine: play.YardLine,
+            yardLineTerritory: play.YardLineTerritory,
+            yardsToEndZone: play.YardsToEndZone,
+            playType: play.Type,
+            team: play.Team,
+            opponent: play.Opponent,
+            description: play.Description,
+          },
+          tx,
+        );
 
         ingestedCount++;
       } catch (error) {

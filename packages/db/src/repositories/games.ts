@@ -28,7 +28,7 @@ export class GamesRepository {
    * @param game Game data to insert or update
    * @returns The upserted game
    */
-  async upsert(game: InsertGame): Promise<SelectGame> {
+  async upsert(game: InsertGame, tx?: Transaction): Promise<SelectGame> {
     try {
       const now = new Date();
       const data = {
@@ -37,7 +37,8 @@ export class GamesRepository {
         updatedAt: now,
       };
 
-      const [result] = await this.#db
+      const executor = tx || this.#db;
+      const [result] = await executor
         .insert(games)
         .values(data)
         .onConflictDoUpdate({
@@ -121,9 +122,11 @@ export class GamesRepository {
    */
   async findByProviderGameId(
     providerGameId: number,
+    tx?: Transaction,
   ): Promise<SelectGame | undefined> {
     try {
-      const [result] = await this.#db
+      const executor = tx || this.#db;
+      const [result] = await executor
         .select()
         .from(games)
         .where(eq(games.providerGameId, providerGameId))

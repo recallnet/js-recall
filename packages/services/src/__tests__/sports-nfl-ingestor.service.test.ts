@@ -12,6 +12,7 @@ import type {
   SelectGame,
   SelectGamePrediction,
 } from "@recallnet/db/schema/sports/types";
+import type { Database, Transaction } from "@recallnet/db/types";
 
 import { GameScoringService } from "../game-scoring.service.js";
 import type {
@@ -31,6 +32,8 @@ describe("NflIngestorService", () => {
   let mockProvider: MockProxy<SportsDataIONflProvider>;
   let mockGameScoringService: MockProxy<GameScoringService>;
   let mockLogger: MockProxy<Logger>;
+  let mockDb: MockProxy<Database>;
+  let mockTransaction: Transaction;
 
   // Helper to create enriched competition mock matching buildFullCompetitionQuery return type
   const createMockCompetition = () => {
@@ -98,8 +101,16 @@ describe("NflIngestorService", () => {
     mockProvider = mock<SportsDataIONflProvider>();
     mockGameScoringService = mock<GameScoringService>();
     mockLogger = mock<Logger>();
+    mockDb = mock<Database>();
+    mockTransaction = {} as Transaction;
+    mockDb.transaction.mockImplementation(
+      async <T>(callback: (tx: Transaction) => Promise<T>) => {
+        return callback(mockTransaction);
+      },
+    );
 
     service = new NflIngestorService(
+      mockDb,
       mockGamesRepo,
       mockGamePlaysRepo,
       mockGamePredictionsRepo,
@@ -260,7 +271,11 @@ describe("NflIngestorService", () => {
 
       expect(result).toBe(mockGame.id);
       expect(mockProvider.getPlayByPlay).toHaveBeenCalledWith(19068);
-      expect(mockGamesRepo.upsert).toHaveBeenCalled();
+      expect(mockDb.transaction).toHaveBeenCalled();
+      expect(mockGamesRepo.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({ providerGameId: 19068 }),
+        mockTransaction,
+      );
     });
   });
 
@@ -702,26 +717,32 @@ describe("NflIngestorService", () => {
       expect(mockGamePredictionsRepo.create).toHaveBeenCalledTimes(2);
 
       // Agent 1's snapshot should use their most recent prediction (CHI @ 19:00)
-      expect(mockGamePredictionsRepo.create).toHaveBeenCalledWith({
-        competitionId,
-        gameId,
-        agentId: agent1Id,
-        predictedWinner: "CHI",
-        confidence: 0.65,
-        reason: "[Snapshot at game start] Home field advantage",
-        createdAt: gameStartTime,
-      });
+      expect(mockGamePredictionsRepo.create).toHaveBeenCalledWith(
+        {
+          competitionId,
+          gameId,
+          agentId: agent1Id,
+          predictedWinner: "CHI",
+          confidence: 0.65,
+          reason: "Home field advantage",
+          createdAt: gameStartTime,
+        },
+        mockTransaction,
+      );
 
       // Agent 2's snapshot
-      expect(mockGamePredictionsRepo.create).toHaveBeenCalledWith({
-        competitionId,
-        gameId,
-        agentId: agent2Id,
-        predictedWinner: "MIN",
-        confidence: 0.9,
-        reason: "[Snapshot at game start] Better defense",
-        createdAt: gameStartTime,
-      });
+      expect(mockGamePredictionsRepo.create).toHaveBeenCalledWith(
+        {
+          competitionId,
+          gameId,
+          agentId: agent2Id,
+          predictedWinner: "MIN",
+          confidence: 0.9,
+          reason: "Better defense",
+          createdAt: gameStartTime,
+        },
+        mockTransaction,
+      );
     });
 
     it("should not snapshot if no pregame predictions exist", async () => {
@@ -990,15 +1011,18 @@ describe("NflIngestorService", () => {
 
       // Should create exactly 1 snapshot using the most recent prediction (CHI @ 19:10)
       expect(mockGamePredictionsRepo.create).toHaveBeenCalledTimes(1);
-      expect(mockGamePredictionsRepo.create).toHaveBeenCalledWith({
-        competitionId,
-        gameId,
-        agentId,
-        predictedWinner: "CHI", // Changed from MIN to CHI
-        confidence: 0.7,
-        reason: "[Snapshot at game start] Final prediction before game",
-        createdAt: gameStartTime,
-      });
+      expect(mockGamePredictionsRepo.create).toHaveBeenCalledWith(
+        {
+          competitionId,
+          gameId,
+          agentId,
+          predictedWinner: "CHI", // Changed from MIN to CHI
+          confidence: 0.7,
+          reason: "Final prediction before game",
+          createdAt: gameStartTime,
+        },
+        mockTransaction,
+      );
     });
   });
 });

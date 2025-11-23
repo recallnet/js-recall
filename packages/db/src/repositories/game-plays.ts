@@ -3,7 +3,7 @@ import { Logger } from "pino";
 
 import { gamePlays } from "../schema/sports/defs.js";
 import { InsertGamePlay, SelectGamePlay } from "../schema/sports/types.js";
-import { Database } from "../types.js";
+import { Database, Transaction } from "../types.js";
 import { PagingParams } from "./types/index.js";
 import { getSort } from "./util/query.js";
 
@@ -60,7 +60,10 @@ export class GamePlaysRepository {
    * @param play Play data to insert or update
    * @returns The upserted play
    */
-  async upsert(play: InsertGamePlay): Promise<SelectGamePlay> {
+  async upsert(
+    play: InsertGamePlay,
+    tx?: Transaction,
+  ): Promise<SelectGamePlay> {
     try {
       const now = new Date();
       const data = {
@@ -69,7 +72,8 @@ export class GamePlaysRepository {
         updatedAt: now,
       };
 
-      const [result] = await this.#db
+      const executor = tx || this.#db;
+      const [result] = await executor
         .insert(gamePlays)
         .values(data)
         .onConflictDoUpdate({

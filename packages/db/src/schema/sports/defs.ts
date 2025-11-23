@@ -195,7 +195,7 @@ export const gamePredictions = sportsSchema.table(
       scale: 3,
       mode: "number",
     }).notNull(), // 0.0 - 1.0
-    reason: text("reason"), // Reason for prediction
+    reason: text("reason").notNull(), // Agent reasoning
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
