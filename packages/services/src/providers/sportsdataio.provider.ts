@@ -162,16 +162,43 @@ export class SportsDataIONflProvider {
   readonly #baseUrl: string;
   readonly #client: AxiosInstance;
   readonly #logger: Logger;
+  readonly #useQueryParamAuth: boolean;
 
   constructor(apiKey: string, logger: Logger, baseUrl?: string) {
     this.#apiKey = apiKey;
     this.#baseUrl = baseUrl || "https://api.sportsdata.io/v3/nfl";
     this.#logger = logger;
 
+    // SportsDataIO "replay" API (for development) requires query param auth, but the production
+    // API uses header-based auth
+    this.#useQueryParamAuth = this.#baseUrl.includes("replay.sportsdata.io");
     this.#client = axios.create({
       baseURL: this.#baseUrl,
       timeout: 10000,
+      headers: this.#useQueryParamAuth
+        ? {}
+        : {
+            "Ocp-Apim-Subscription-Key": this.#apiKey,
+          },
     });
+
+    this.#logger.debug({
+      baseUrl: this.#baseUrl,
+      authMethod: this.#useQueryParamAuth ? "query-param" : "header",
+    });
+  }
+
+  /**
+   * Build URL with API key query param if needed (for replay API)
+   * @param path API path
+   * @returns Full path with query param if using query param auth
+   */
+  #buildPath(path: string): string {
+    if (this.#useQueryParamAuth) {
+      const separator = path.includes("?") ? "&" : "?";
+      return `${path}${separator}key=${this.#apiKey}`;
+    }
+    return path;
   }
 
   /**
@@ -184,7 +211,7 @@ export class SportsDataIONflProvider {
       this.#logger.debug(`Fetching play-by-play for game ${providerGameId}`);
 
       const response = await this.#client.get<SportsDataIOPlayByPlay>(
-        `/pbp/json/playbyplay/${providerGameId}?key=${this.#apiKey}`,
+        this.#buildPath(`/pbp/json/playbyplay/${providerGameId}`),
       );
 
       this.#logger.info(
@@ -215,7 +242,7 @@ export class SportsDataIONflProvider {
       const response = await this.#client.get<SportsDataIOScheduleGame[]>(
         // Note: `stats` or `scores` provide the same response. But, if you use the "replay" API
         // during testing, only `stats` is supported. The `scores` is in the documentation, though.
-        `/stats/json/schedules/${season}?key=${this.#apiKey}`,
+        this.#buildPath(`/stats/json/schedules/${season}`),
       );
 
       this.#logger.info(
