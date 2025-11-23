@@ -225,15 +225,14 @@ export function makeNflController(services: ServiceRegistry) {
           });
         } else {
           // Get paginated plays
-          const plays =
-            await services.sportsService.gamePlaysRepository.findByGameId(
-              gameId,
-              {
-                limit,
-                offset,
-                sort,
-              },
-            );
+          const [plays, total] = await Promise.all([
+            services.sportsService.gamePlaysRepository.findByGameId(gameId, {
+              limit,
+              offset,
+              sort,
+            }),
+            services.sportsService.gamePlaysRepository.countByGameId(gameId),
+          ]);
 
           res.status(200).json({
             success: true,
@@ -255,10 +254,10 @@ export function makeNflController(services: ServiceRegistry) {
                 playType: play.playType,
               })),
               pagination: {
-                total: plays.length,
+                total,
                 limit,
                 offset,
-                hasMore: plays.length === limit,
+                hasMore: offset + plays.length < total,
               },
             },
           });

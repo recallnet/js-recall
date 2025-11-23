@@ -1,4 +1,4 @@
-import { AnyColumn, eq } from "drizzle-orm";
+import { AnyColumn, eq, sql } from "drizzle-orm";
 import { Logger } from "pino";
 
 import { gamePlays } from "../schema/sports/defs.js";
@@ -153,6 +153,25 @@ export class GamePlaysRepository {
       return results;
     } catch (error) {
       this.#logger.error({ error }, "Error in findByGameId");
+      throw error;
+    }
+  }
+
+  /**
+   * Count plays for a game
+   * @param gameId Game ID
+   * @returns Total number of plays
+   */
+  async countByGameId(gameId: string): Promise<number> {
+    try {
+      const [result] = await this.#db
+        .select({ count: sql<number>`count(*)` })
+        .from(gamePlays)
+        .where(eq(gamePlays.gameId, gameId));
+
+      return Number(result?.count ?? 0);
+    } catch (error) {
+      this.#logger.error({ error }, "Error in countByGameId");
       throw error;
     }
   }
