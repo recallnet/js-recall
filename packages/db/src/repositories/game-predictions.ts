@@ -6,7 +6,7 @@ import {
   InsertGamePrediction,
   SelectGamePrediction,
 } from "../schema/sports/types.js";
-import { Database } from "../types.js";
+import { Database, Transaction } from "../types.js";
 
 /**
  * Game Predictions Repository
@@ -24,13 +24,16 @@ export class GamePredictionsRepository {
   /**
    * Create a new prediction
    * @param prediction Prediction data
+   * @param tx Optional transaction
    * @returns The created prediction
    */
   async create(
     prediction: InsertGamePrediction,
+    tx?: Transaction,
   ): Promise<SelectGamePrediction> {
     try {
-      const [result] = await this.#db
+      const executor = tx || this.#db;
+      const [result] = await executor
         .insert(gamePredictions)
         .values(prediction)
         .returning();

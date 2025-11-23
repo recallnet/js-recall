@@ -93,6 +93,7 @@ export class SportsService {
       this.gamePredictionsRepository,
       this.gamesRepository,
       competitionRepo,
+      db,
       logger,
     );
   }

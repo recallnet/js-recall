@@ -8,7 +8,7 @@ import {
   NflTeam,
   SelectGame,
 } from "../schema/sports/types.js";
-import { Database } from "../types.js";
+import { Database, Transaction } from "../types.js";
 
 /**
  * Games Repository
@@ -84,6 +84,32 @@ export class GamesRepository {
       return result;
     } catch (error) {
       this.#logger.error({ error }, "Error in findById");
+      throw error;
+    }
+  }
+
+  /**
+   * Find a game by ID with row lock (SELECT FOR UPDATE)
+   * Use this within a transaction to prevent race conditions
+   * @param id Game ID
+   * @param tx Transaction instance
+   * @returns The game or undefined
+   */
+  async findByIdForUpdate(
+    id: string,
+    tx: Transaction,
+  ): Promise<SelectGame | undefined> {
+    try {
+      const [result] = await tx
+        .select()
+        .from(games)
+        .where(eq(games.id, id))
+        .for("update")
+        .limit(1);
+
+      return result;
+    } catch (error) {
+      this.#logger.error({ error }, "Error in findByIdForUpdate");
       throw error;
     }
   }

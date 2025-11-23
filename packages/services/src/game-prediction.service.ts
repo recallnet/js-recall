@@ -4,6 +4,7 @@ import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { GamePredictionsRepository } from "@recallnet/db/repositories/game-predictions";
 import { GamesRepository } from "@recallnet/db/repositories/games";
 import { SelectGamePrediction } from "@recallnet/db/schema/sports/types";
+import { Database, Transaction } from "@recallnet/db/types";
 
 /**
  * Game Prediction Service
@@ -13,22 +14,26 @@ export class GamePredictionService {
   readonly #gamePredictionsRepo: GamePredictionsRepository;
   readonly #gamesRepo: GamesRepository;
   readonly #competitionRepo: CompetitionRepository;
+  readonly #db: Database;
   readonly #logger: Logger;
 
   constructor(
     gamePredictionsRepo: GamePredictionsRepository,
     gamesRepo: GamesRepository,
     competitionRepo: CompetitionRepository,
+    db: Database,
     logger: Logger,
   ) {
     this.#gamePredictionsRepo = gamePredictionsRepo;
     this.#gamesRepo = gamesRepo;
     this.#competitionRepo = competitionRepo;
+    this.#db = db;
     this.#logger = logger;
   }
 
   /**
    * Create a prediction for a game winner
+   * Uses atomic transaction with row lock to prevent race conditions
    * @param competitionId Competition ID
    * @param gameId Game ID
    * @param agentId Agent ID
@@ -44,7 +49,7 @@ export class GamePredictionService {
     confidence: number,
     reason: string,
   ): Promise<SelectGamePrediction> {
-    // Validate competition is active
+    // Validate competition is active (outside transaction - read-only check)
     const competition = await this.#competitionRepo.findById(competitionId);
     if (!competition) {
       throw new Error(`Competition ${competitionId} not found`);
@@ -60,41 +65,49 @@ export class GamePredictionService {
       );
     }
 
-    // Validate game exists and is not final
-    const game = await this.#gamesRepo.findById(gameId);
-    if (!game) {
-      throw new Error(`Game ${gameId} not found`);
-    }
-
-    if (game.status === "final") {
-      throw new Error(`Game ${gameId} has already ended`);
-    }
-
-    // Validate predicted winner is one of the teams
-    if (
-      predictedWinner !== game.homeTeam &&
-      predictedWinner !== game.awayTeam
-    ) {
-      throw new Error(
-        `Invalid predicted winner "${predictedWinner}". Must be "${game.homeTeam}" or "${game.awayTeam}"`,
-      );
-    }
-
-    // Validate confidence range
+    // Validate confidence range early (no DB needed)
     if (confidence < 0 || confidence > 1) {
       throw new Error(
         `Invalid confidence ${confidence}. Must be between 0.0 and 1.0`,
       );
     }
 
-    // Create prediction
-    const prediction = await this.#gamePredictionsRepo.create({
-      competitionId,
-      gameId,
-      agentId,
-      predictedWinner,
-      confidence,
-      reason,
+    // Use transaction with row lock to prevent race condition
+    // Lock game row → validate → create prediction (atomic)
+    const prediction = await this.#db.transaction(async (tx: Transaction) => {
+      // Lock the game row to prevent concurrent modifications
+      const game = await this.#gamesRepo.findByIdForUpdate(gameId, tx);
+      if (!game) {
+        throw new Error(`Game ${gameId} not found`);
+      }
+
+      // Check game status while holding lock - prevents TOCTOU race condition
+      if (game.status === "final") {
+        throw new Error(`Game ${gameId} has already ended`);
+      }
+
+      // Validate predicted winner is one of the teams
+      if (
+        predictedWinner !== game.homeTeam &&
+        predictedWinner !== game.awayTeam
+      ) {
+        throw new Error(
+          `Invalid predicted winner "${predictedWinner}". Must be "${game.homeTeam}" or "${game.awayTeam}"`,
+        );
+      }
+
+      // Create prediction within same transaction
+      return await this.#gamePredictionsRepo.create(
+        {
+          competitionId,
+          gameId,
+          agentId,
+          predictedWinner,
+          confidence,
+          reason,
+        },
+        tx,
+      );
     });
 
     this.#logger.info(

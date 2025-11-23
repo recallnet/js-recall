@@ -11,6 +11,7 @@ import type {
   SelectGame,
   SelectGamePrediction,
 } from "@recallnet/db/schema/sports/types";
+import type { Database, Transaction } from "@recallnet/db/types";
 
 import { GamePredictionService } from "../game-prediction.service.js";
 
@@ -90,6 +91,7 @@ describe("GamePredictionService", () => {
   let mockGamePredictionsRepo: MockProxy<GamePredictionsRepository>;
   let mockGamesRepo: MockProxy<GamesRepository>;
   let mockCompetitionRepo: MockProxy<CompetitionRepository>;
+  let mockDb: MockProxy<Database>;
   let mockLogger: MockProxy<Logger>;
 
   const competitionId = randomUUID();
@@ -100,12 +102,14 @@ describe("GamePredictionService", () => {
     mockGamePredictionsRepo = mock<GamePredictionsRepository>();
     mockGamesRepo = mock<GamesRepository>();
     mockCompetitionRepo = mock<CompetitionRepository>();
+    mockDb = mock<Database>();
     mockLogger = mock<Logger>();
 
     service = new GamePredictionService(
       mockGamePredictionsRepo,
       mockGamesRepo,
       mockCompetitionRepo,
+      mockDb,
       mockLogger,
     );
   });
@@ -113,6 +117,15 @@ describe("GamePredictionService", () => {
   describe("createPrediction", () => {
     const competition = mockCompetition();
     const game = mockGame();
+
+    beforeEach(() => {
+      // Mock transaction to execute callback immediately with typed tx
+      mockDb.transaction.mockImplementation(
+        async <T>(callback: (tx: Transaction) => Promise<T>) => {
+          return await callback(mockDb as unknown as Transaction);
+        },
+      );
+    });
 
     it("should validate competition exists", async () => {
       mockCompetitionRepo.findById.mockResolvedValue(undefined);
@@ -165,7 +178,7 @@ describe("GamePredictionService", () => {
 
     it("should validate game exists", async () => {
       mockCompetitionRepo.findById.mockResolvedValue(competition);
-      mockGamesRepo.findById.mockResolvedValue(undefined);
+      mockGamesRepo.findByIdForUpdate.mockResolvedValue(undefined);
 
       await expect(
         service.createPrediction(
@@ -182,7 +195,7 @@ describe("GamePredictionService", () => {
     it("should validate game is not final", async () => {
       const finalGame = mockGame({ status: "final" as const });
       mockCompetitionRepo.findById.mockResolvedValue(competition);
-      mockGamesRepo.findById.mockResolvedValue(finalGame);
+      mockGamesRepo.findByIdForUpdate.mockResolvedValue(finalGame);
 
       await expect(
         service.createPrediction(
@@ -198,7 +211,7 @@ describe("GamePredictionService", () => {
 
     it("should validate predicted winner is one of the teams", async () => {
       mockCompetitionRepo.findById.mockResolvedValue(competition);
-      mockGamesRepo.findById.mockResolvedValue(game);
+      mockGamesRepo.findByIdForUpdate.mockResolvedValue(game);
 
       await expect(
         service.createPrediction(
@@ -214,7 +227,6 @@ describe("GamePredictionService", () => {
 
     it("should validate confidence range", async () => {
       mockCompetitionRepo.findById.mockResolvedValue(competition);
-      mockGamesRepo.findById.mockResolvedValue(game);
 
       await expect(
         service.createPrediction(
@@ -241,7 +253,7 @@ describe("GamePredictionService", () => {
 
     it("should create prediction successfully", async () => {
       mockCompetitionRepo.findById.mockResolvedValue(competition);
-      mockGamesRepo.findById.mockResolvedValue(game);
+      mockGamesRepo.findByIdForUpdate.mockResolvedValue(game);
 
       const mockPrediction: SelectGamePrediction = {
         id: randomUUID(),
@@ -266,14 +278,17 @@ describe("GamePredictionService", () => {
       );
 
       expect(result).toBe(mockPrediction);
-      expect(mockGamePredictionsRepo.create).toHaveBeenCalledWith({
-        competitionId,
-        gameId,
-        agentId,
-        predictedWinner: "MIN",
-        confidence: 0.85,
-        reason: "Test",
-      });
+      expect(mockGamePredictionsRepo.create).toHaveBeenCalledWith(
+        {
+          competitionId,
+          gameId,
+          agentId,
+          predictedWinner: "MIN",
+          confidence: 0.85,
+          reason: "Test",
+        },
+        mockDb,
+      );
     });
   });
 
