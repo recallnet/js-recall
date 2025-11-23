@@ -8,6 +8,7 @@ import {
   NflTeam,
   SelectGamePrediction,
 } from "@recallnet/db/schema/sports/types";
+import { Database, Transaction } from "@recallnet/db/types";
 
 /**
  * Leaderboard entry for a single game
@@ -40,6 +41,7 @@ export class GameScoringService {
   readonly #gamePredictionScoresRepo: GamePredictionScoresRepository;
   readonly #competitionAggregateScoresRepo: CompetitionAggregateScoresRepository;
   readonly #gamesRepo: GamesRepository;
+  readonly #db: Database;
   readonly #logger: Logger;
 
   constructor(
@@ -47,12 +49,14 @@ export class GameScoringService {
     gamePredictionScoresRepo: GamePredictionScoresRepository,
     competitionAggregateScoresRepo: CompetitionAggregateScoresRepository,
     gamesRepo: GamesRepository,
+    db: Database,
     logger: Logger,
   ) {
     this.#gamePredictionsRepo = gamePredictionsRepo;
     this.#gamePredictionScoresRepo = gamePredictionScoresRepo;
     this.#competitionAggregateScoresRepo = competitionAggregateScoresRepo;
     this.#gamesRepo = gamesRepo;
+    this.#db = db;
     this.#logger = logger;
   }
 
@@ -204,19 +208,25 @@ export class GameScoringService {
           const finalPrediction = predictions[0]; // Already sorted by createdAt desc
           const competitionId = predictions[0]!.competitionId;
 
-          // Store per-game score
-          await this.#gamePredictionScoresRepo.upsert({
-            competitionId,
-            gameId,
-            agentId,
-            timeWeightedBrierScore,
-            finalPrediction: finalPrediction?.predictedWinner || null,
-            finalConfidence: finalPrediction?.confidence ?? null,
-            predictionCount: predictions.length,
+          await this.#db.transaction(async (tx) => {
+            // Store per-game score
+            await this.#gamePredictionScoresRepo.upsert(
+              {
+                competitionId,
+                gameId,
+                agentId,
+                timeWeightedBrierScore,
+                finalPrediction: finalPrediction?.predictedWinner || null,
+                finalConfidence: finalPrediction?.confidence ?? null,
+                predictionCount: predictions.length,
+              },
+              tx,
+            );
+
+            // Update competition aggregate within same transaction
+            await this.#updateCompetitionAggregate(competitionId, agentId, tx);
           });
 
-          // Update competition aggregate
-          await this.#updateCompetitionAggregate(competitionId, agentId);
           scoredCount++;
 
           this.#logger.debug(
@@ -253,12 +263,14 @@ export class GameScoringService {
   async #updateCompetitionAggregate(
     competitionId: string,
     agentId: string,
+    tx: Transaction,
   ): Promise<void> {
     // Get all game scores for this agent in this competition
     const gameScores =
       await this.#gamePredictionScoresRepo.findByCompetitionAndAgent(
         competitionId,
         agentId,
+        tx,
       );
 
     if (gameScores.length === 0) {
@@ -272,13 +284,15 @@ export class GameScoringService {
     );
     const averageBrier = totalBrier / gameScores.length;
 
-    // Upsert aggregate
-    await this.#competitionAggregateScoresRepo.upsert({
-      competitionId,
-      agentId,
-      averageBrierScore: averageBrier,
-      gamesScored: gameScores.length,
-    });
+    await this.#competitionAggregateScoresRepo.upsert(
+      {
+        competitionId,
+        agentId,
+        averageBrierScore: averageBrier,
+        gamesScored: gameScores.length,
+      },
+      tx,
+    );
   }
 
   /**

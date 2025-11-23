@@ -13,6 +13,7 @@ import type {
   SelectGamePrediction,
   SelectGamePredictionScore,
 } from "@recallnet/db/schema/sports/types";
+import type { Database, Transaction } from "@recallnet/db/types";
 
 import { GameScoringService } from "../game-scoring.service.js";
 
@@ -22,6 +23,8 @@ describe("GameScoringService", () => {
   let mockGamePredictionScoresRepo: MockProxy<GamePredictionScoresRepository>;
   let mockCompetitionAggregateScoresRepo: MockProxy<CompetitionAggregateScoresRepository>;
   let mockGamesRepo: MockProxy<GamesRepository>;
+  let mockDb: MockProxy<Database>;
+  let mockTransaction: Transaction;
   let mockLogger: MockProxy<Logger>;
 
   beforeEach(() => {
@@ -30,6 +33,11 @@ describe("GameScoringService", () => {
     mockCompetitionAggregateScoresRepo =
       mock<CompetitionAggregateScoresRepository>();
     mockGamesRepo = mock<GamesRepository>();
+    mockDb = mock<Database>();
+    mockTransaction = {} as Transaction;
+    mockDb.transaction.mockImplementation(async (callback) =>
+      callback(mockTransaction),
+    );
     mockLogger = mock<Logger>();
 
     service = new GameScoringService(
@@ -37,6 +45,7 @@ describe("GameScoringService", () => {
       mockGamePredictionScoresRepo,
       mockCompetitionAggregateScoresRepo,
       mockGamesRepo,
+      mockDb,
       mockLogger,
     );
   });
@@ -500,9 +509,12 @@ describe("GameScoringService", () => {
       mockGamesRepo.findById.mockResolvedValue(mockGame);
       mockGamePredictionsRepo.findByGame.mockImplementation(
         async (_gameId, options) => {
-          expect(options?.minCreatedAt).toEqual(gameStartTime);
+          expect(options?.startTime).toEqual(gameStartTime);
+          expect(options?.endTime).toEqual(gameEndTime);
           return allPredictions.filter(
-            (prediction) => prediction.createdAt >= gameStartTime,
+            (prediction) =>
+              prediction.createdAt >= gameStartTime &&
+              prediction.createdAt <= gameEndTime,
           );
         },
       );
@@ -543,10 +555,12 @@ describe("GameScoringService", () => {
           finalPrediction: "MIN",
           finalConfidence: 0.8,
         }),
+        mockTransaction,
       );
 
       expect(mockGamePredictionsRepo.findByGame).toHaveBeenCalledWith(gameId, {
-        minCreatedAt: gameStartTime,
+        startTime: gameStartTime,
+        endTime: gameEndTime,
       });
     });
   });
