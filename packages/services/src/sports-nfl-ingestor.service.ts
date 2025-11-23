@@ -350,7 +350,7 @@ export class NflIngestorService {
           agentId: latestPred.agentId,
           predictedWinner: latestPred.predictedWinner,
           confidence: latestPred.confidence,
-          reason: `[Snapshot at game start] ${latestPred.reason}`,
+          reason: latestPred.reason,
           createdAt: gameStartTime,
         });
         snapshotCount++;

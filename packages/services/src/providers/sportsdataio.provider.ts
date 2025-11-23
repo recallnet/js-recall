@@ -4,6 +4,8 @@ import { z } from "zod";
 
 import { NflTeam } from "@recallnet/db/schema/sports/types";
 
+import { withRetry } from "../lib/retry-helper.js";
+
 /**
  * The full list of possible play types for NFL games.
  */
@@ -202,6 +204,28 @@ export class SportsDataIONflProvider {
   }
 
   /**
+   * Execute SportsDataIO requests with retry logic and structured logging
+   */
+  async #executeWithRetry<T>(
+    operation: () => Promise<T>,
+    context: Record<string, unknown>,
+  ): Promise<T> {
+    return withRetry(operation, {
+      onRetry: ({ attempt, nextDelayMs, error }) => {
+        this.#logger.warn(
+          {
+            ...context,
+            attempt,
+            nextDelayMs,
+            error: error instanceof Error ? error.message : String(error),
+          },
+          "Retrying SportsDataIO API call",
+        );
+      },
+    });
+  }
+
+  /**
    * Get play-by-play data for a specific game
    * @param providerGameId provider game identifier (e.g., 19068)
    * @returns Play-by-play data including score and plays
@@ -210,15 +234,23 @@ export class SportsDataIONflProvider {
     try {
       this.#logger.debug(`Fetching play-by-play for game ${providerGameId}`);
 
-      const response = await this.#client.get<SportsDataIOPlayByPlay>(
-        this.#buildPath(`/pbp/json/playbyplay/${providerGameId}`),
-      );
+      const fetchPlayByPlay = async () => {
+        const response = await this.#client.get<SportsDataIOPlayByPlay>(
+          this.#buildPath(`/pbp/json/playbyplay/${providerGameId}`),
+        );
+        return response.data;
+      };
+
+      const data = await this.#executeWithRetry(fetchPlayByPlay, {
+        providerGameId,
+        endpoint: "playbyplay",
+      });
 
       this.#logger.info(
-        `Fetched ${response.data.Plays.length} plays for game ${providerGameId}`,
+        `Fetched ${data.Plays.length} plays for game ${providerGameId}`,
       );
 
-      return response.data;
+      return data;
     } catch (error) {
       this.#logger.error(
         { error, providerGameId },
@@ -239,18 +271,26 @@ export class SportsDataIONflProvider {
     try {
       this.#logger.debug({ season }, "Fetching schedule for season");
 
-      const response = await this.#client.get<SportsDataIOScheduleGame[]>(
-        // Note: `stats` or `scores` provide the same response. But, if you use the "replay" API
-        // during testing, only `stats` is supported. The `scores` is in the documentation, though.
-        this.#buildPath(`/stats/json/schedules/${season}`),
-      );
+      const fetchSchedule = async () => {
+        const response = await this.#client.get<SportsDataIOScheduleGame[]>(
+          // Note: `stats` or `scores` provide the same response. But, if you use the "replay" API
+          // during testing, only `stats` is supported. The `scores` is in the documentation, though.
+          this.#buildPath(`/stats/json/schedules/${season}`),
+        );
+        return response.data;
+      };
+
+      const data = await this.#executeWithRetry(fetchSchedule, {
+        season,
+        endpoint: "schedule",
+      });
 
       this.#logger.info(
-        { season, fetchedCount: response.data.length },
+        { season, fetchedCount: data.length },
         "Fetched schedule for season",
       );
 
-      return response.data;
+      return data;
     } catch (error) {
       this.#logger.error(
         { error, season },
