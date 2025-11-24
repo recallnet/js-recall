@@ -1,3 +1,4 @@
+import { format } from "date-fns";
 import {
   Calendar,
   Check,
@@ -18,6 +19,7 @@ import {
   RadioGroup,
   RadioGroupItem,
 } from "@recallnet/ui2/components/radio-group";
+import { Tooltip } from "@recallnet/ui2/components/tooltip";
 
 import { BoostIcon } from "@/components/BoostIcon";
 import { Recall } from "@/components/Recall";
@@ -160,11 +162,7 @@ export const ConvictionStakeModal: React.FC<ConvictionStakeModalProps> = ({
     return date;
   }, [duration]);
 
-  const formattedUnlockDate = unlockDate.toLocaleDateString("en-US", {
-    month: "2-digit",
-    day: "2-digit",
-    year: "numeric",
-  });
+  const formattedUnlockDate = format(unlockDate, "yyyy/MM/dd");
 
   // Format amounts
   const decimals = 18; // Assuming 18 for RECALL
@@ -203,60 +201,67 @@ export const ConvictionStakeModal: React.FC<ConvictionStakeModalProps> = ({
         </div>
 
         {step === "select" && (
-          <div className="space-y-6 p-6 pt-2">
-            {/* Duration Selection */}
-            <RadioGroup
-              value={selectedDurationIndex.toString()}
-              onValueChange={(v: string) =>
-                setSelectedDurationIndex(parseInt(v))
-              }
-              className="flex flex-col gap-3"
-            >
-              {DURATION_OPTIONS.map((option, index) => (
-                <div key={index} className="flex items-center space-x-2">
-                  <RadioGroupItem
-                    value={index.toString()}
-                    id={`option-${index}`}
-                    className="border-gray-600 text-white data-[state=checked]:border-white data-[state=checked]:text-white"
-                  />
-                  <Label
-                    htmlFor={`option-${index}`}
-                    className="ml-2 flex w-full cursor-pointer flex-col items-start gap-1 text-left normal-case"
-                  >
-                    <span
-                      className={`text-base ${selectedDurationIndex === index ? "font-bold text-white" : "font-medium text-gray-400"}`}
+          <>
+            <div className="border-gray-4 border-t" />
+            <div className="space-y-6 px-6 py-3">
+              {/* Duration Selection */}
+              <RadioGroup
+                value={selectedDurationIndex.toString()}
+                onValueChange={(v: string) =>
+                  setSelectedDurationIndex(parseInt(v))
+                }
+                className="flex flex-col gap-3"
+              >
+                {DURATION_OPTIONS.map((option, index) => (
+                  <div key={index} className="flex items-start space-x-2">
+                    <RadioGroupItem
+                      value={index.toString()}
+                      id={`option-${index}`}
+                      className="mt-1 border-gray-600 text-white data-[state=checked]:border-white data-[state=checked]:text-white"
+                    />
+                    <Label
+                      htmlFor={`option-${index}`}
+                      className="flex w-full cursor-pointer flex-col items-start gap-1 text-left normal-case"
                     >
-                      {option.label}
-                    </span>
-                    <span className="text-sm text-gray-500">
-                      {option.subLabel}
-                    </span>
-                  </Label>
-                </div>
-              ))}
-            </RadioGroup>
+                      {" "}
+                      <span
+                        className={`text-base ${selectedDurationIndex === index ? "gray-6 font-bold" : "gray-5 font-normal"}`}
+                      >
+                        {option.label}
+                      </span>
+                      <span className="gray-5 text-sm font-normal">
+                        {option.subLabel}
+                      </span>{" "}
+                    </Label>
+                  </div>
+                ))}
+              </RadioGroup>
+            </div>
 
             {/* Summary Footer */}
-            <div className="border-gray-4 flex items-center justify-between border-t pt-4">
-              <div>
-                <div className="mb-1 flex items-center gap-1 text-xs text-gray-500">
-                  <Calendar size={12} /> {formattedUnlockDate}
+            <div className="border-gray-4 flex items-center justify-between border-t px-5 py-4">
+              <div className="border-gray-4 border-l pl-3">
+                <div className="gray-6 mb-1 flex items-center gap-1 text-xs font-semibold">
+                  <Calendar size={12} />{" "}
+                  <Tooltip content={unlockDate.toUTCString()}>
+                    {formattedUnlockDate}
+                  </Tooltip>
                 </div>
-                <div className="text-xs text-gray-500">Unlock Date</div>
+                <div className="gray-5 text-xs">Unlock Date</div>
               </div>
-              <div>
-                <div className="mb-1 flex items-center gap-1 text-sm font-semibold text-white">
+              <div className="border-gray-4 border-l pl-3">
+                <div className="gray-6 mb-1 flex items-center gap-1 text-sm font-semibold">
                   <Recall size="sm" backgroundClass="bg-white" />{" "}
                   {formattedUnlockAmount}
                 </div>
-                <div className="text-xs text-gray-500">Unlock Amount</div>
+                <div className="gray-5 text-xs">Unlock Amount</div>
               </div>
-              <div>
-                <div className="mb-1 flex items-center gap-1 text-sm font-semibold text-white">
+              <div className="border-gray-4 border-l pl-3">
+                <div className="gray-6 mb-1 flex items-center gap-1 text-sm font-semibold">
                   <BoostIcon className="h-4 w-4 text-yellow-500" />{" "}
                   {formattedBoostGain}
                 </div>
-                <div className="text-xs text-gray-500">Boost Gain</div>
+                <div className="gray-5 text-xs">Boost Gain</div>
               </div>
               <Button
                 onClick={handleStake}
@@ -265,7 +270,7 @@ export const ConvictionStakeModal: React.FC<ConvictionStakeModalProps> = ({
                 STAKE <ChevronRight size={16} className="ml-1" />
               </Button>
             </div>
-          </div>
+          </>
         )}
 
         {/* Processing Steps */}
