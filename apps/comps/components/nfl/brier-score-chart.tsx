@@ -36,10 +36,24 @@ export function BrierScoreChart({ competitionId, game }: BrierScoreChartProps) {
     error,
   } = useNflPredictions(gameId ? competitionId : undefined, gameId);
 
-  const { chartData, agentIds } = useMemo(() => {
+  const { chartData, agentIds, agentLabels } = useMemo(() => {
     if (!game || !predictionsData?.predictions?.length) {
-      return { chartData: [] as TimelinePoint[], agentIds: [] as string[] };
+      return {
+        chartData: [] as TimelinePoint[],
+        agentIds: [] as string[],
+        agentLabels: new Map<string, string>(),
+      };
     }
+
+    const agentLabelsMap = new Map<string, string>();
+    predictionsData.predictions.forEach((prediction) => {
+      if (!agentLabelsMap.has(prediction.agentId)) {
+        agentLabelsMap.set(
+          prediction.agentId,
+          prediction.agentName ?? `${prediction.agentId.slice(0, 8)}...`,
+        );
+      }
+    });
 
     const predictionsWithTimestamps = predictionsData.predictions
       .map((prediction) => ({
@@ -115,6 +129,7 @@ export function BrierScoreChart({ competitionId, game }: BrierScoreChartProps) {
     return {
       chartData: result,
       agentIds: Array.from(predictionsByAgent.keys()),
+      agentLabels: agentLabelsMap,
     };
   }, [game, predictionsData]);
 
@@ -198,7 +213,7 @@ export function BrierScoreChart({ competitionId, game }: BrierScoreChartProps) {
             key={agentId}
             type="stepAfter"
             dataKey={agentId}
-            name={agentId.slice(0, 8)}
+            name={agentLabels.get(agentId) ?? agentId.slice(0, 8)}
             stroke={colors[index % colors.length]}
             strokeWidth={2}
             dot={{ r: 3 }}

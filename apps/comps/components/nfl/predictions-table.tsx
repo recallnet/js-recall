@@ -51,25 +51,28 @@ export function PredictionsTable({
         <div className="text-right">Time</div>
       </div>
 
-      {data.predictions.map((prediction: NflPrediction) => (
-        <div
-          key={prediction.id}
-          className="border-border/50 grid grid-cols-[1fr_80px_100px_120px] items-center gap-4 border-b py-2 text-sm"
-        >
-          <div className="text-muted-foreground truncate text-xs">
-            {prediction.agentId.slice(0, 8)}...
+      {data.predictions.map((prediction: NflPrediction) => {
+        const agentLabel =
+          prediction.agentName ?? `${prediction.agentId.slice(0, 8)}...`;
+
+        return (
+          <div
+            key={prediction.id}
+            className="border-border/50 grid grid-cols-[1fr_80px_100px_120px] items-center gap-4 border-b py-2 text-sm"
+          >
+            <div className="truncate text-xs">{agentLabel}</div>
+            <div className="font-medium">{prediction.predictedWinner}</div>
+            <div className="text-right font-mono">
+              {(prediction.confidence * 100).toFixed(0)}%
+            </div>
+            <div className="text-muted-foreground text-right text-xs">
+              {formatDistanceToNow(new Date(prediction.createdAt), {
+                addSuffix: true,
+              })}
+            </div>
           </div>
-          <div className="font-medium">{prediction.predictedWinner}</div>
-          <div className="text-right font-mono">
-            {(prediction.confidence * 100).toFixed(0)}%
-          </div>
-          <div className="text-muted-foreground text-right text-xs">
-            {formatDistanceToNow(new Date(prediction.createdAt), {
-              addSuffix: true,
-            })}
-          </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

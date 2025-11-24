@@ -10,6 +10,9 @@ import { AuthenticatedRequest } from "@/types/index.js";
 
 import { ensureAgentId, ensurePaging, ensureUuid } from "./request-helpers.js";
 
+/**
+ * Schema for predicting a game winner
+ */
 const PredictGameWinnerSchema = z.object({
   predictedWinner: z.enum(NFL_TEAMS),
   confidence: z.number().min(0).max(1),
@@ -348,6 +351,7 @@ export function makeNflController(services: ServiceRegistry) {
             predictions: predictions.map((p) => ({
               id: p.id,
               agentId: p.agentId,
+              agentName: p.agentName ?? null,
               predictedWinner: p.predictedWinner,
               confidence: p.confidence,
               reason: p.reason,
@@ -389,6 +393,7 @@ export function makeNflController(services: ServiceRegistry) {
               leaderboard: leaderboard.map((entry) => ({
                 agentId: entry.agentId,
                 rank: entry.rank,
+                agentName: entry.agentName ?? null,
                 timeWeightedBrierScore: entry.timeWeightedBrierScore,
                 finalPrediction: entry.finalPrediction,
                 finalConfidence: entry.finalConfidence,
@@ -410,6 +415,7 @@ export function makeNflController(services: ServiceRegistry) {
               leaderboard: leaderboard.map((entry) => ({
                 agentId: entry.agentId,
                 rank: entry.rank,
+                agentName: entry.agentName ?? null,
                 averageBrierScore: entry.averageBrierScore,
                 gamesScored: entry.gamesScored,
               })),

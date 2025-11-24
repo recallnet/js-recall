@@ -17,6 +17,7 @@ import { Database, Transaction } from "@recallnet/db/types";
  */
 export interface GameLeaderboardEntry {
   agentId: string;
+  agentName: string | null;
   timeWeightedBrierScore: number;
   finalPrediction: NflTeam | null;
   finalConfidence: number | null;
@@ -29,6 +30,7 @@ export interface GameLeaderboardEntry {
  */
 export interface CompetitionLeaderboardEntry {
   agentId: string;
+  agentName: string | null;
   averageBrierScore: number;
   gamesScored: number;
   rank: number;
@@ -345,6 +347,7 @@ export class GameScoringService {
       const entries: GameLeaderboardEntry[] = scores
         .map((score) => ({
           agentId: score.agentId,
+          agentName: score.agentName ?? null,
           timeWeightedBrierScore: score.timeWeightedBrierScore,
           finalPrediction: score.finalPrediction,
           finalConfidence: score.finalConfidence ?? null,
@@ -386,6 +389,7 @@ export class GameScoringService {
       const entries: CompetitionLeaderboardEntry[] = scores.map(
         (score, index) => ({
           agentId: score.agentId,
+          agentName: score.agentName ?? null,
           averageBrierScore: score.averageBrierScore,
           gamesScored: score.gamesScored,
           rank: index + 1,

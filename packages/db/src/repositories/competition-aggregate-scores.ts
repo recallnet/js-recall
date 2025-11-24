@@ -1,12 +1,18 @@
 import { and, desc, eq } from "drizzle-orm";
 import { Logger } from "pino";
 
+import { agents } from "../schema/core/defs.js";
 import { competitionAggregateScores } from "../schema/sports/defs.js";
 import {
   InsertCompetitionAggregateScore,
   SelectCompetitionAggregateScore,
 } from "../schema/sports/types.js";
 import { Database, Transaction } from "../types.js";
+
+export type CompetitionAggregateScoreWithAgent =
+  SelectCompetitionAggregateScore & {
+    agentName: string | null;
+  };
 
 /**
  * Competition Aggregate Scores Repository
@@ -75,15 +81,22 @@ export class CompetitionAggregateScoresRepository {
    */
   async findByCompetition(
     competitionId: string,
-  ): Promise<SelectCompetitionAggregateScore[]> {
+  ): Promise<CompetitionAggregateScoreWithAgent[]> {
     try {
       const results = await this.#db
-        .select()
+        .select({
+          score: competitionAggregateScores,
+          agentName: agents.name,
+        })
         .from(competitionAggregateScores)
+        .leftJoin(agents, eq(competitionAggregateScores.agentId, agents.id))
         .where(eq(competitionAggregateScores.competitionId, competitionId))
         .orderBy(desc(competitionAggregateScores.averageBrierScore));
 
-      return results;
+      return results.map(({ score, agentName }) => ({
+        ...score,
+        agentName: agentName ?? null,
+      }));
     } catch (error) {
       this.#logger.error({ error }, "Error in findByCompetition");
       throw error;

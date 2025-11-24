@@ -39,6 +39,7 @@ export const getLeaderboard = base
       return {
         leaderboard: leaderboard.map((entry) => ({
           agentId: entry.agentId,
+          agentName: entry.agentName ?? null,
           rank: entry.rank,
           ...("timeWeightedBrierScore" in entry
             ? {

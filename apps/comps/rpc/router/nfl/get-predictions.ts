@@ -43,8 +43,10 @@ export const getPredictions = base
         predictions: predictions.map((p) => ({
           id: p.id,
           agentId: p.agentId,
+          agentName: p.agentName ?? null,
           predictedWinner: p.predictedWinner,
-          confidence: Number(p.confidence),
+          confidence: p.confidence,
+          reason: p.reason,
           createdAt: p.createdAt.toISOString(),
         })),
       };

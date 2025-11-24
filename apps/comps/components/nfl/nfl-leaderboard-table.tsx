@@ -47,7 +47,9 @@ export function NflLeaderboardTable({
           className="border-border/50 grid grid-cols-[auto_1fr_auto_auto] items-center gap-4 border-b py-2 text-sm"
         >
           <div className="text-muted-foreground font-mono">#{entry.rank}</div>
-          <div className="truncate font-medium">{entry.agentId}</div>
+          <div className="truncate font-medium">
+            {entry.agentName ?? `${entry.agentId.slice(0, 8)}...`}
+          </div>
           <div className="text-right font-mono">
             {("averageBrierScore" in entry
               ? entry.averageBrierScore

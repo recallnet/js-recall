@@ -31,6 +31,8 @@ export interface NflPrediction
     "id" | "agentId" | "predictedWinner" | "confidence"
   > {
   createdAt: string;
+  reason?: string | null;
+  agentName?: string | null;
 }
 
 export interface GameLeaderboardEntry
@@ -43,6 +45,7 @@ export interface GameLeaderboardEntry
     | "predictionCount"
   > {
   rank: number;
+  agentName?: string | null;
 }
 
 export interface CompetitionLeaderboardEntry
@@ -51,6 +54,7 @@ export interface CompetitionLeaderboardEntry
     "agentId" | "averageBrierScore" | "gamesScored"
   > {
   rank: number;
+  agentName?: string | null;
 }
 
 export type LeaderboardEntry =

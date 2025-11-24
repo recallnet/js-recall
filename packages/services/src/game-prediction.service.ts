@@ -1,7 +1,10 @@
 import { Logger } from "pino";
 
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
-import { GamePredictionsRepository } from "@recallnet/db/repositories/game-predictions";
+import {
+  type GamePredictionWithAgent,
+  GamePredictionsRepository,
+} from "@recallnet/db/repositories/game-predictions";
 import { GamesRepository } from "@recallnet/db/repositories/games";
 import { SelectGamePrediction } from "@recallnet/db/schema/sports/types";
 import { Database, Transaction } from "@recallnet/db/types";
@@ -130,7 +133,7 @@ export class GamePredictionService {
     gameId: string,
     agentId: string,
     competitionId: string,
-  ): Promise<SelectGamePrediction | undefined> {
+  ): Promise<GamePredictionWithAgent | undefined> {
     return this.#gamePredictionsRepo.findLatestByGameAndAgent(
       gameId,
       agentId,
@@ -148,7 +151,7 @@ export class GamePredictionService {
     gameId: string,
     agentId: string,
     competitionId: string,
-  ): Promise<SelectGamePrediction[]> {
+  ): Promise<GamePredictionWithAgent[]> {
     return this.#gamePredictionsRepo.findByGameAndAgent(
       gameId,
       agentId,
@@ -166,7 +169,7 @@ export class GamePredictionService {
     gameId: string,
     competitionId: string,
     options?: { startTime?: Date; endTime?: Date; tx?: Transaction },
-  ): Promise<SelectGamePrediction[]> {
+  ): Promise<GamePredictionWithAgent[]> {
     return this.#gamePredictionsRepo.findByGame(gameId, competitionId, {
       ...options,
     });
