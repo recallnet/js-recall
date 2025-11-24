@@ -210,7 +210,7 @@ export class GamePredictionService {
           "Score = 1 - Σ(w_t * (p_t - y)²) / Σ(w_t), where higher is better",
         timeNormalization:
           "t = (timestamp - game_start) / (game_end - game_start) ∈ [0, 1]",
-        weight: "w_t = 0.5 + 0.5 * t (earlier predictions weighted less)",
+        weight: "w_t = 1 - 0.5 * t (earlier predictions weighted more)",
         probability:
           "p_t = confidence if predicted winner matches actual, else 1-confidence",
         actual: "y = 1 (actual winner)",
