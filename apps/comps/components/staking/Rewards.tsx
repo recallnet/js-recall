@@ -168,8 +168,8 @@ export const Rewards: React.FunctionComponent = () => {
           <span className="text-gray-5 text-xl">Total Rewards</span>
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 px-3">
-              <Recall size="sm" backgroundClass="bg-white" />
-              <span className="text-gray-6 font-mono text-lg font-semibold">
+              <Recall size="md" backgroundClass="bg-white" />
+              <span className="text-gray-6 font-mono text-2xl font-semibold">
                 {totalFormatted}
               </span>
             </div>
