@@ -129,8 +129,13 @@ export class GamePredictionService {
   async getLatestPrediction(
     gameId: string,
     agentId: string,
+    competitionId: string,
   ): Promise<SelectGamePrediction | undefined> {
-    return this.#gamePredictionsRepo.findLatestByGameAndAgent(gameId, agentId);
+    return this.#gamePredictionsRepo.findLatestByGameAndAgent(
+      gameId,
+      agentId,
+      competitionId,
+    );
   }
 
   /**
@@ -142,8 +147,13 @@ export class GamePredictionService {
   async getPredictionHistory(
     gameId: string,
     agentId: string,
+    competitionId: string,
   ): Promise<SelectGamePrediction[]> {
-    return this.#gamePredictionsRepo.findByGameAndAgent(gameId, agentId);
+    return this.#gamePredictionsRepo.findByGameAndAgent(
+      gameId,
+      agentId,
+      competitionId,
+    );
   }
 
   /**
@@ -154,9 +164,12 @@ export class GamePredictionService {
    */
   async getGamePredictions(
     gameId: string,
+    competitionId: string,
     options?: { startTime?: Date; endTime?: Date; tx?: Transaction },
   ): Promise<SelectGamePrediction[]> {
-    return this.#gamePredictionsRepo.findByGame(gameId, options);
+    return this.#gamePredictionsRepo.findByGame(gameId, competitionId, {
+      ...options,
+    });
   }
 
   /**

@@ -19,9 +19,9 @@ export const getPredictions = base
       revalidateSecs: 5,
       getTags: (input) =>
         [
-          `nfl-predictions-${input.gameId}`,
+          `nfl-predictions-${input.gameId}-${input.competitionId}`,
           input.agentId
-            ? `nfl-predictions-${input.gameId}-${input.agentId}`
+            ? `nfl-predictions-${input.gameId}-${input.competitionId}-${input.agentId}`
             : null,
         ].filter(Boolean) as string[],
     }),
@@ -29,12 +29,14 @@ export const getPredictions = base
   .handler(async ({ context, input, errors }) => {
     try {
       const predictions = input.agentId
-        ? await context.sportsService.gamePredictionsRepository.findByGameAndAgent(
+        ? await context.sportsService.gamePredictionService.getPredictionHistory(
             input.gameId,
             input.agentId,
+            input.competitionId,
           )
-        : await context.sportsService.gamePredictionsRepository.findByGame(
+        : await context.sportsService.gamePredictionService.getGamePredictions(
             input.gameId,
+            input.competitionId,
           );
 
       return {

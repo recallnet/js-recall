@@ -53,11 +53,13 @@ export class GamePredictionsRepository {
    * Find all predictions for a game and agent (history)
    * @param gameId Game ID
    * @param agentId Agent ID
+   * @param competitionId Competition ID
    * @returns Array of predictions ordered by creation time (newest first)
    */
   async findByGameAndAgent(
     gameId: string,
     agentId: string,
+    competitionId: string,
   ): Promise<SelectGamePrediction[]> {
     try {
       const results = await this.#db
@@ -67,6 +69,7 @@ export class GamePredictionsRepository {
           and(
             eq(gamePredictions.gameId, gameId),
             eq(gamePredictions.agentId, agentId),
+            eq(gamePredictions.competitionId, competitionId),
           ),
         )
         .orderBy(desc(gamePredictions.createdAt));
@@ -87,6 +90,7 @@ export class GamePredictionsRepository {
   async findLatestByGameAndAgent(
     gameId: string,
     agentId: string,
+    competitionId: string,
   ): Promise<SelectGamePrediction | undefined> {
     try {
       const [result] = await this.#db
@@ -96,6 +100,7 @@ export class GamePredictionsRepository {
           and(
             eq(gamePredictions.gameId, gameId),
             eq(gamePredictions.agentId, agentId),
+            eq(gamePredictions.competitionId, competitionId),
           ),
         )
         .orderBy(desc(gamePredictions.createdAt))
@@ -115,11 +120,19 @@ export class GamePredictionsRepository {
    */
   async findByGame(
     gameId: string,
-    options?: { startTime?: Date; endTime?: Date; tx?: Transaction },
+    competitionId: string,
+    options?: {
+      startTime?: Date;
+      endTime?: Date;
+      tx?: Transaction;
+    },
   ): Promise<SelectGamePrediction[]> {
     try {
       const executor = options?.tx || this.#db;
-      const conditions = [eq(gamePredictions.gameId, gameId)];
+      const conditions = [
+        eq(gamePredictions.gameId, gameId),
+        eq(gamePredictions.competitionId, competitionId),
+      ];
       if (options?.startTime) {
         conditions.push(gte(gamePredictions.createdAt, options.startTime));
       }

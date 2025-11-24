@@ -309,9 +309,16 @@ describe("GamePredictionService", () => {
         mockPrediction,
       );
 
-      const result = await service.getLatestPrediction(gameId, agentId);
+      const result = await service.getLatestPrediction(
+        gameId,
+        agentId,
+        competitionId,
+      );
 
       expect(result).toBe(mockPrediction);
+      expect(
+        mockGamePredictionsRepo.findLatestByGameAndAgent,
+      ).toHaveBeenCalledWith(gameId, agentId, competitionId);
     });
   });
 
@@ -344,9 +351,18 @@ describe("GamePredictionService", () => {
         mockPredictions,
       );
 
-      const result = await service.getPredictionHistory(gameId, agentId);
+      const result = await service.getPredictionHistory(
+        gameId,
+        agentId,
+        competitionId,
+      );
 
       expect(result).toBe(mockPredictions);
+      expect(mockGamePredictionsRepo.findByGameAndAgent).toHaveBeenCalledWith(
+        gameId,
+        agentId,
+        competitionId,
+      );
     });
   });
 
@@ -377,9 +393,14 @@ describe("GamePredictionService", () => {
 
       mockGamePredictionsRepo.findByGame.mockResolvedValue(mockPredictions);
 
-      const result = await service.getGamePredictions(gameId);
+      const result = await service.getGamePredictions(gameId, competitionId);
 
       expect(result).toBe(mockPredictions);
+      expect(mockGamePredictionsRepo.findByGame).toHaveBeenCalledWith(
+        gameId,
+        competitionId,
+        {},
+      );
     });
   });
 });

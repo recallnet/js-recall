@@ -113,8 +113,7 @@ export function makeNflController(services: ServiceRegistry) {
       next: NextFunction,
     ) {
       try {
-        // Note: require competition ID to be present in the URL, but it's not actually used in the request
-        ensureUuid(req.params.competitionId);
+        const competitionId = ensureUuid(req.params.competitionId);
         const gameId = ensureUuid(req.params.gameId);
         const game =
           await services.sportsService.gamesRepository.findById(gameId);
@@ -130,6 +129,7 @@ export function makeNflController(services: ServiceRegistry) {
             await services.sportsService.gamePredictionService.getLatestPrediction(
               gameId,
               agentId,
+              competitionId,
             );
           if (prediction) {
             latestPrediction = {
@@ -320,7 +320,7 @@ export function makeNflController(services: ServiceRegistry) {
       next: NextFunction,
     ) {
       try {
-        ensureUuid(req.params.competitionId);
+        const competitionId = ensureUuid(req.params.competitionId);
         const gameId = ensureUuid(req.params.gameId);
 
         let predictions;
@@ -331,12 +331,14 @@ export function makeNflController(services: ServiceRegistry) {
             await services.sportsService.gamePredictionService.getPredictionHistory(
               gameId,
               agentId,
+              competitionId,
             );
         } else {
           // Get all predictions for game
           predictions =
             await services.sportsService.gamePredictionService.getGamePredictions(
               gameId,
+              competitionId,
             );
         }
 

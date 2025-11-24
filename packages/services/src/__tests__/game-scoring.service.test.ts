@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { MockProxy, mock } from "vitest-mock-extended";
 
 import { CompetitionAggregateScoresRepository } from "@recallnet/db/repositories/competition-aggregate-scores";
+import { CompetitionGamesRepository } from "@recallnet/db/repositories/competition-games";
 import { GamePredictionScoresRepository } from "@recallnet/db/repositories/game-prediction-scores";
 import { GamePredictionsRepository } from "@recallnet/db/repositories/game-predictions";
 import { GamesRepository } from "@recallnet/db/repositories/games";
@@ -23,6 +24,7 @@ describe("GameScoringService", () => {
   let mockGamePredictionScoresRepo: MockProxy<GamePredictionScoresRepository>;
   let mockCompetitionAggregateScoresRepo: MockProxy<CompetitionAggregateScoresRepository>;
   let mockGamesRepo: MockProxy<GamesRepository>;
+  let mockCompetitionGamesRepo: MockProxy<CompetitionGamesRepository>;
   let mockDb: MockProxy<Database>;
   let mockTransaction: Transaction;
   let mockLogger: MockProxy<Logger>;
@@ -33,6 +35,7 @@ describe("GameScoringService", () => {
     mockCompetitionAggregateScoresRepo =
       mock<CompetitionAggregateScoresRepository>();
     mockGamesRepo = mock<GamesRepository>();
+    mockCompetitionGamesRepo = mock<CompetitionGamesRepository>();
     mockDb = mock<Database>();
     mockTransaction = {} as Transaction;
     mockDb.transaction.mockImplementation(async (callback) =>
@@ -45,6 +48,7 @@ describe("GameScoringService", () => {
       mockGamePredictionScoresRepo,
       mockCompetitionAggregateScoresRepo,
       mockGamesRepo,
+      mockCompetitionGamesRepo,
       mockDb,
       mockLogger,
     );
@@ -113,6 +117,12 @@ describe("GameScoringService", () => {
 
     it("should return 0 for game with no predictions", async () => {
       mockGamesRepo.findById.mockResolvedValue(mockGame);
+      mockCompetitionGamesRepo.findCompetitionIdsByGameId.mockResolvedValue([
+        competitionId,
+      ]);
+      mockGamePredictionScoresRepo.findByCompetitionAndAgent.mockResolvedValue(
+        [],
+      );
       mockGamePredictionsRepo.findByGame.mockResolvedValue([]);
 
       const result = await service.scoreGame(gameId);
@@ -145,6 +155,9 @@ describe("GameScoringService", () => {
       ];
 
       mockGamesRepo.findById.mockResolvedValue(mockGame);
+      mockCompetitionGamesRepo.findCompetitionIdsByGameId.mockResolvedValue([
+        competitionId,
+      ]);
       mockGamePredictionsRepo.findByGame.mockResolvedValue(predictions);
 
       const mockPredictionScore: SelectGamePredictionScore = {
@@ -200,6 +213,9 @@ describe("GameScoringService", () => {
       ];
 
       mockGamesRepo.findById.mockResolvedValue(mockGame);
+      mockCompetitionGamesRepo.findCompetitionIdsByGameId.mockResolvedValue([
+        competitionId,
+      ]);
       mockGamePredictionsRepo.findByGame.mockResolvedValue(predictions);
 
       const mockScore1: SelectGamePredictionScore = {
@@ -252,6 +268,9 @@ describe("GameScoringService", () => {
       ];
 
       mockGamesRepo.findById.mockResolvedValue(mockGame);
+      mockCompetitionGamesRepo.findCompetitionIdsByGameId.mockResolvedValue([
+        competitionId,
+      ]);
       mockGamePredictionsRepo.findByGame.mockResolvedValue(predictions);
 
       const mockScore2: SelectGamePredictionScore = {
@@ -314,6 +333,9 @@ describe("GameScoringService", () => {
       ];
 
       mockGamesRepo.findById.mockResolvedValue(mockGame);
+      mockCompetitionGamesRepo.findCompetitionIdsByGameId.mockResolvedValue([
+        competitionId,
+      ]);
       mockGamePredictionsRepo.findByGame.mockResolvedValue(predictions);
 
       const mockScore3: SelectGamePredictionScore = {
@@ -350,6 +372,16 @@ describe("GameScoringService", () => {
 
       // Should score 1 agent (second one after first fails)
       expect(result).toBe(1);
+    });
+
+    it("should return 0 when game is not linked to any competition", async () => {
+      mockGamesRepo.findById.mockResolvedValue(mockGame);
+      mockCompetitionGamesRepo.findCompetitionIdsByGameId.mockResolvedValue([]);
+
+      const result = await service.scoreGame(gameId);
+
+      expect(result).toBe(0);
+      expect(mockGamePredictionsRepo.findByGame).not.toHaveBeenCalled();
     });
   });
 
@@ -508,7 +540,7 @@ describe("GameScoringService", () => {
 
       mockGamesRepo.findById.mockResolvedValue(mockGame);
       mockGamePredictionsRepo.findByGame.mockImplementation(
-        async (_gameId, options) => {
+        async (_gameId, _competitionId, options) => {
           expect(options?.startTime).toEqual(gameStartTime);
           expect(options?.endTime).toEqual(gameEndTime);
           return allPredictions.filter(
@@ -545,6 +577,9 @@ describe("GameScoringService", () => {
         gamesScored: 1,
         updatedAt: new Date(),
       });
+      mockCompetitionGamesRepo.findCompetitionIdsByGameId.mockResolvedValue([
+        competitionId,
+      ]);
 
       await service.scoreGame(gameId);
 
@@ -558,10 +593,14 @@ describe("GameScoringService", () => {
         mockTransaction,
       );
 
-      expect(mockGamePredictionsRepo.findByGame).toHaveBeenCalledWith(gameId, {
-        startTime: gameStartTime,
-        endTime: gameEndTime,
-      });
+      expect(mockGamePredictionsRepo.findByGame).toHaveBeenCalledWith(
+        gameId,
+        competitionId,
+        {
+          startTime: gameStartTime,
+          endTime: gameEndTime,
+        },
+      );
     });
   });
 });

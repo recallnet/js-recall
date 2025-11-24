@@ -1,11 +1,13 @@
 import { Logger } from "pino";
 
 import { CompetitionAggregateScoresRepository } from "@recallnet/db/repositories/competition-aggregate-scores";
+import { CompetitionGamesRepository } from "@recallnet/db/repositories/competition-games";
 import { GamePredictionScoresRepository } from "@recallnet/db/repositories/game-prediction-scores";
 import { GamePredictionsRepository } from "@recallnet/db/repositories/game-predictions";
 import { GamesRepository } from "@recallnet/db/repositories/games";
 import {
   NflTeam,
+  SelectGame,
   SelectGamePrediction,
 } from "@recallnet/db/schema/sports/types";
 import { Database, Transaction } from "@recallnet/db/types";
@@ -41,6 +43,7 @@ export class GameScoringService {
   readonly #gamePredictionScoresRepo: GamePredictionScoresRepository;
   readonly #competitionAggregateScoresRepo: CompetitionAggregateScoresRepository;
   readonly #gamesRepo: GamesRepository;
+  readonly #competitionGamesRepo: CompetitionGamesRepository;
   readonly #db: Database;
   readonly #logger: Logger;
 
@@ -49,6 +52,7 @@ export class GameScoringService {
     gamePredictionScoresRepo: GamePredictionScoresRepository,
     competitionAggregateScoresRepo: CompetitionAggregateScoresRepository,
     gamesRepo: GamesRepository,
+    competitionGamesRepo: CompetitionGamesRepository,
     db: Database,
     logger: Logger,
   ) {
@@ -56,6 +60,7 @@ export class GameScoringService {
     this.#gamePredictionScoresRepo = gamePredictionScoresRepo;
     this.#competitionAggregateScoresRepo = competitionAggregateScoresRepo;
     this.#gamesRepo = gamesRepo;
+    this.#competitionGamesRepo = competitionGamesRepo;
     this.#db = db;
     this.#logger = logger;
   }
@@ -163,97 +168,121 @@ export class GameScoringService {
         );
       }
 
-      // Get all predictions at game start or before game end (note: pregame prediction snapshots happen at start time)
-      const validPredictions = await this.#gamePredictionsRepo.findByGame(
-        gameId,
-        {
-          startTime: game.startTime,
-          endTime: game.endTime,
-        },
-      );
-      if (validPredictions.length === 0) {
+      const competitionIds =
+        await this.#competitionGamesRepo.findCompetitionIdsByGameId(gameId);
+
+      if (competitionIds.length === 0) {
         this.#logger.info(
-          `No valid predictions found for game ${gameId} (all predictions were before game start)`,
+          { gameId },
+          "Game is not linked to any competitions; skipping scoring",
         );
         return 0;
       }
 
-      // Group predictions by agent
-      const predictionsByAgent = new Map<string, SelectGamePrediction[]>();
-      for (const prediction of validPredictions) {
-        const agentPredictions =
-          predictionsByAgent.get(prediction.agentId) || [];
-        agentPredictions.push(prediction);
-        predictionsByAgent.set(prediction.agentId, agentPredictions);
-      }
+      let totalScored = 0;
+      for (const competitionId of competitionIds) {
+        const validPredictions = await this.#gamePredictionsRepo.findByGame(
+          gameId,
+          competitionId,
+          {
+            startTime: game.startTime,
+            endTime: game.endTime,
+          },
+        );
 
-      this.#logger.info(
-        `Scoring game ${gameId} for ${predictionsByAgent.size} agents`,
-      );
-
-      let scoredCount = 0;
-
-      // Score each agent
-      for (const [agentId, predictions] of predictionsByAgent.entries()) {
-        try {
-          // Calculate time-weighted Brier score
-          const timeWeightedBrierScore = this.#calculateTimeWeightedBrier(
-            predictions,
-            game.startTime,
-            game.endTime,
-            game.winner,
-          );
-
-          // Get final prediction (most recent)
-          const finalPrediction = predictions[0]; // Already sorted by createdAt desc
-          const competitionId = predictions[0]!.competitionId;
-
-          await this.#db.transaction(async (tx) => {
-            // Store per-game score
-            await this.#gamePredictionScoresRepo.upsert(
-              {
-                competitionId,
-                gameId,
-                agentId,
-                timeWeightedBrierScore,
-                finalPrediction: finalPrediction?.predictedWinner || null,
-                finalConfidence: finalPrediction?.confidence ?? null,
-                predictionCount: predictions.length,
-              },
-              tx,
-            );
-
-            // Update competition aggregate within same transaction
-            await this.#updateCompetitionAggregate(competitionId, agentId, tx);
-          });
-
-          scoredCount++;
-
-          this.#logger.debug(
+        if (validPredictions.length === 0) {
+          this.#logger.info(
             {
               gameId,
-              agentId,
               competitionId,
-              score: timeWeightedBrierScore,
-              predictionCount: predictions.length,
             },
-            "Scored agent for game",
+            "No valid predictions found for competition",
           );
-        } catch (error) {
-          this.#logger.error(
-            { error, gameId, agentId },
-            "Error scoring agent for game",
-          );
-          // Continue with other agents
+          continue;
         }
+
+        totalScored += await this.#scoreCompetitionPredictions(
+          competitionId,
+          game,
+          validPredictions,
+        );
       }
 
-      this.#logger.info(`Scored ${scoredCount} agents for game ${gameId}`);
-      return scoredCount;
+      this.#logger.info(`Scored ${totalScored} agents for game ${gameId}`);
+      return totalScored;
     } catch (error) {
       this.#logger.error({ error, gameId }, "Error in scoreGame");
       throw error;
     }
+  }
+
+  async #scoreCompetitionPredictions(
+    competitionId: string,
+    game: SelectGame,
+    predictions: SelectGamePrediction[],
+  ): Promise<number> {
+    const predictionsByAgent = new Map<string, SelectGamePrediction[]>();
+    for (const prediction of predictions) {
+      const agentPredictions = predictionsByAgent.get(prediction.agentId) || [];
+      agentPredictions.push(prediction);
+      predictionsByAgent.set(prediction.agentId, agentPredictions);
+    }
+
+    this.#logger.info(
+      `Scoring competition ${competitionId} for ${predictionsByAgent.size} agents`,
+    );
+
+    let scoredCount = 0;
+
+    for (const [agentId, agentPredictions] of predictionsByAgent.entries()) {
+      try {
+        const timeWeightedBrierScore = this.#calculateTimeWeightedBrier(
+          agentPredictions,
+          game.startTime,
+          game.endTime!,
+          game.winner!,
+        );
+
+        const finalPrediction = agentPredictions[0];
+
+        await this.#db.transaction(async (tx) => {
+          await this.#gamePredictionScoresRepo.upsert(
+            {
+              competitionId,
+              gameId: game.id,
+              agentId,
+              timeWeightedBrierScore,
+              finalPrediction: finalPrediction?.predictedWinner || null,
+              finalConfidence: finalPrediction?.confidence ?? null,
+              predictionCount: agentPredictions.length,
+            },
+            tx,
+          );
+
+          await this.#updateCompetitionAggregate(competitionId, agentId, tx);
+        });
+
+        scoredCount++;
+
+        this.#logger.debug(
+          {
+            gameId: game.id,
+            agentId,
+            competitionId,
+            score: timeWeightedBrierScore,
+            predictionCount: agentPredictions.length,
+          },
+          "Scored agent for game",
+        );
+      } catch (error) {
+        this.#logger.error(
+          { error, gameId: game.id, agentId, competitionId },
+          "Error scoring agent for game",
+        );
+      }
+    }
+
+    return scoredCount;
   }
 
   /**

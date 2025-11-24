@@ -117,6 +117,25 @@ export class CompetitionGamesRepository {
   }
 
   /**
+   * Find all competitions that include a game
+   * @param gameId Game ID
+   * @returns Array of competition IDs
+   */
+  async findCompetitionIdsByGameId(gameId: string): Promise<string[]> {
+    try {
+      const results = await this.#db
+        .select({ competitionId: competitionGames.competitionId })
+        .from(competitionGames)
+        .where(eq(competitionGames.gameId, gameId));
+
+      return results.map((r) => r.competitionId);
+    } catch (error) {
+      this.#logger.error({ error }, "Error in findCompetitionIdsByGameId");
+      throw error;
+    }
+  }
+
+  /**
    * Find a specific competition-game link
    * @param competitionId Competition ID
    * @param gameId Game ID
