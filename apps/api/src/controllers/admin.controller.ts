@@ -1,21 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 
 import {
-  ActorStatus,
-  AdminCreateAgentSchema,
-  Agent,
-  AgentPublic,
-  ApiError,
-  User,
-  toApiAgent,
-  toApiUser,
-} from "@recallnet/services/types";
-
-import { flatParse } from "@/lib/flat-parse.js";
-import { adminLogger } from "@/lib/logger.js";
-import { ServiceRegistry } from "@/services/index.js";
-
-import {
   AdminAddAgentToCompetitionParamsSchema,
   AdminAddPartnerToCompetitionSchema,
   AdminArenaParamsSchema,
@@ -54,7 +39,22 @@ import {
   AdminUpdateCompetitionSchema,
   AdminUpdatePartnerPositionSchema,
   AdminUpdatePartnerSchema,
-} from "./admin.schema.js";
+} from "@recallnet/services/lib";
+import {
+  ActorStatus,
+  AdminCreateAgentSchema,
+  Agent,
+  AgentPublic,
+  ApiError,
+  User,
+  toApiAgent,
+  toApiUser,
+} from "@recallnet/services/types";
+
+import { flatParse } from "@/lib/flat-parse.js";
+import { adminLogger } from "@/lib/logger.js";
+import { ServiceRegistry } from "@/services/index.js";
+
 import { parseAdminSearchQuery } from "./request-helpers.js";
 
 // TODO: need user deactivation logic
