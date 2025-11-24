@@ -18,6 +18,7 @@ import {
 } from "@recallnet/db/schema/core/types";
 import {
   PerpetualPositionWithAgent,
+  SelectSpotLiveSelfFundingAlert,
   SelectTrade,
 } from "@recallnet/db/schema/trading/types";
 import type {
@@ -3935,16 +3936,19 @@ export class CompetitionService {
     }>
   > {
     try {
-      // 1. Verify competition exists and is perps type
+      // 1. Verify competition exists and is perps or spot live type
       const competition = await this.getCompetition(competitionId);
       if (!competition) {
         throw new ApiError(404, `Competition ${competitionId} not found`);
       }
 
-      if (competition.type !== "perpetual_futures") {
+      if (
+        competition.type !== "perpetual_futures" &&
+        competition.type !== "spot_live_trading"
+      ) {
         throw new ApiError(
           400,
-          `Competition ${competitionId} is not a perpetual futures competition`,
+          `Transfer violations are only applicable to perpetual futures and spot live trading competitions`,
         );
       }
 
@@ -3954,11 +3958,25 @@ export class CompetitionService {
       }
 
       // 2. Get transfer violation counts with agent names from repository
-      const results =
-        await this.perpsRepo.getCompetitionTransferViolationCounts(
+      let results: Array<{
+        agentId: string;
+        agentName: string;
+        transferCount: number;
+      }>;
+
+      if (competition.type === "perpetual_futures") {
+        results = await this.perpsRepo.getCompetitionTransferViolationCounts(
           competitionId,
           competition.startDate,
         );
+      } else {
+        // spot_live_trading
+        results =
+          await this.spotLiveRepo.getCompetitionSpotLiveTransferViolationCounts(
+            competitionId,
+            competition.startDate,
+          );
+      }
 
       // Results already include agentName
       if (results.length === 0) {
@@ -3977,5 +3995,43 @@ export class CompetitionService {
       );
       throw error;
     }
+  }
+
+  /**
+   * Get spot live self-funding alerts with optional filters
+   * @param competitionId Competition ID
+   * @param filters Optional filters for reviewed status and violation type
+   * @returns Array of alerts
+   */
+  async getSpotLiveSelfFundingAlerts(
+    competitionId: string,
+    filters?: {
+      reviewed?: boolean;
+      violationType?: string;
+    },
+  ): Promise<SelectSpotLiveSelfFundingAlert[]> {
+    return this.spotLiveRepo.getSpotLiveAlerts(competitionId, filters);
+  }
+
+  /**
+   * Review a spot live self-funding alert
+   * @param alertId Alert ID
+   * @param reviewData Review information
+   * @returns Updated alert or null if not found
+   */
+  async reviewSpotLiveSelfFundingAlert(
+    alertId: string,
+    reviewData: {
+      reviewed: boolean;
+      reviewedBy: string;
+      reviewNote: string;
+      actionTaken: string;
+      reviewedAt: Date;
+    },
+  ): Promise<SelectSpotLiveSelfFundingAlert | null> {
+    return this.spotLiveRepo.reviewSpotLiveSelfFundingAlert(
+      alertId,
+      reviewData,
+    );
   }
 }

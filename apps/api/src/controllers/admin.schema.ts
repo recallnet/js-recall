@@ -464,6 +464,32 @@ export const AdminGetCompetitionTransferViolationsParamsSchema = z.object({
 });
 
 /**
+ * Admin get spot live self-funding alerts query schema
+ */
+export const AdminGetSpotLiveAlertsQuerySchema = z.object({
+  reviewed: z.enum(["true", "false", "all"]).optional().default("false"),
+  violationType: z
+    .enum(["transfer", "balance_reconciliation", "all"])
+    .optional(),
+});
+
+/**
+ * Admin review spot live self-funding alert params schema
+ */
+export const AdminReviewSpotLiveAlertParamsSchema = z.object({
+  competitionId: UuidSchema,
+  alertId: UuidSchema,
+});
+
+/**
+ * Admin review spot live self-funding alert body schema
+ */
+export const AdminReviewSpotLiveAlertBodySchema = z.object({
+  reviewNote: z.string().min(1, "Review note is required"),
+  actionTaken: z.enum(["dismissed", "disqualified", "warning"]),
+});
+
+/**
  * Admin rewards allocation schema
  */
 export const AdminRewardsAllocationSchema = z.object({

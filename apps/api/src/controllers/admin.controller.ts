@@ -34,6 +34,7 @@ import {
   AdminGetCompetitionSnapshotsQuerySchema,
   AdminGetCompetitionTransferViolationsParamsSchema,
   AdminGetPerformanceReportsQuerySchema,
+  AdminGetSpotLiveAlertsQuerySchema,
   AdminListAllAgentsQuerySchema,
   AdminListArenasQuerySchema,
   AdminListPartnersQuerySchema,
@@ -44,6 +45,8 @@ import {
   AdminRemoveAgentFromCompetitionBodySchema,
   AdminRemoveAgentFromCompetitionParamsSchema,
   AdminReplaceCompetitionPartnersSchema,
+  AdminReviewSpotLiveAlertBodySchema,
+  AdminReviewSpotLiveAlertParamsSchema,
   AdminRewardsAllocationSchema,
   AdminSetupSchema,
   AdminStartCompetitionSchema,
@@ -1852,6 +1855,105 @@ export function makeAdminController(services: ServiceRegistry) {
         res.json({
           success: true,
           violations,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Get unreviewed self-funding alerts for a spot live competition
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async getSpotLiveSelfFundingAlerts(
+      req: Request,
+      res: Response,
+      next: NextFunction,
+    ) {
+      try {
+        const { competitionId } = flatParse(
+          AdminGetCompetitionTransferViolationsParamsSchema,
+          req.params,
+        );
+        const query = flatParse(AdminGetSpotLiveAlertsQuerySchema, req.query);
+
+        // Build filters for repository query
+        const filters: {
+          reviewed?: boolean;
+          violationType?: string;
+        } = {};
+
+        if (query.reviewed !== "all") {
+          filters.reviewed = query.reviewed === "true";
+        }
+
+        if (query.violationType && query.violationType !== "all") {
+          filters.violationType = query.violationType;
+        }
+
+        // Get alerts from service with SQL filtering
+        const alerts =
+          await services.competitionService.getSpotLiveSelfFundingAlerts(
+            competitionId,
+            filters,
+          );
+
+        res.json({
+          success: true,
+          alerts,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Review a spot live self-funding alert
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async reviewSpotLiveSelfFundingAlert(
+      req: Request,
+      res: Response,
+      next: NextFunction,
+    ) {
+      try {
+        const { alertId } = flatParse(
+          AdminReviewSpotLiveAlertParamsSchema,
+          req.params,
+        );
+        const { reviewNote, actionTaken } = flatParse(
+          AdminReviewSpotLiveAlertBodySchema,
+          req.body,
+        );
+
+        // Update alert
+        const adminId = req.adminId as string;
+        const updatedAlert =
+          await services.competitionService.reviewSpotLiveSelfFundingAlert(
+            alertId,
+            {
+              reviewed: true,
+              reviewedAt: new Date(),
+              reviewNote,
+              actionTaken,
+              reviewedBy: adminId,
+            },
+          );
+
+        if (!updatedAlert) {
+          return res.status(404).json({
+            success: false,
+            error: "Alert not found",
+          });
+        }
+
+        res.json({
+          success: true,
+          alert: updatedAlert,
         });
       } catch (error) {
         next(error);
