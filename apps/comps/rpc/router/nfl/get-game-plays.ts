@@ -24,7 +24,7 @@ export const getGamePlays = base
   )
   .handler(async ({ context, input, errors }) => {
     try {
-      const allPlays =
+      const plays =
         await context.sportsService.gamePlaysRepository.findByGameId(
           input.gameId,
           {
@@ -36,25 +36,26 @@ export const getGamePlays = base
 
       if (input.latest) {
         // Return only the latest play
-        const latestPlay = allPlays[allPlays.length - 1];
+        const latestPlay = plays[plays.length - 1];
         return {
           play: latestPlay || null,
         };
       }
 
-      // Return paginated plays
-      const paginatedPlays = allPlays.slice(
-        input.offset,
-        input.offset + input.limit,
-      );
+      // Get total count for accurate pagination metadata
+      const totalCount =
+        await context.sportsService.gamePlaysRepository.countByGameId(
+          input.gameId,
+        );
 
+      // Return paginated plays (already paginated by the repository)
       return {
-        plays: paginatedPlays,
+        plays,
         pagination: {
-          total: allPlays.length,
+          total: totalCount,
           limit: input.limit,
           offset: input.offset,
-          hasMore: input.offset + input.limit < allPlays.length,
+          hasMore: input.offset + input.limit < totalCount,
         },
       };
     } catch (error) {
