@@ -491,6 +491,17 @@ export const AdminListPartnersQuerySchema = z.object({
 });
 
 /**
+ * Admin reset users' email and Privy state schema
+ */
+export const AdminResetUsersEmailSchema = z.object({
+  walletAddresses: z
+    .array(WalletAddressSchema)
+    .min(1)
+    .max(100)
+    .describe("List of wallet addresses to reset (case-insensitive)"),
+});
+
+/**
  * Admin add partner to competition schema
  */
 export const AdminAddPartnerToCompetitionSchema = z.object({

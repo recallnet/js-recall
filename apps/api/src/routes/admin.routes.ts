@@ -3790,5 +3790,50 @@ export function configureAdminRoutes(
    */
   router.post("/rewards/allocate", controller.allocateRewards);
 
+  /**
+   * @openapi
+   * /api/admin/users/reset-email:
+   *   post:
+   *     tags:
+   *       - Admin
+   *     summary: Reset users' email and Privy state
+   *     description: Resets email, privy_id, embedded_wallet_address, wallet_last_verified_at, and last_login_at to null for users matching the provided wallet addresses. Also deletes the corresponding users in Privy.
+   *     security:
+   *       - BearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               walletAddresses:
+   *                 type: array
+   *                 items:
+   *                   type: string
+   *                 description: Array of wallet addresses to reset
+   *     responses:
+   *       200:
+   *         description: Reset operation completed
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                 userIds:
+   *                   type: array
+   *                   items:
+   *                     type: string
+   *                 message:
+   *                   type: string
+   *       401:
+   *         description: Unauthorized - Admin authentication required
+   *       500:
+   *         description: Server error
+   */
+  router.post("/users/reset-email", controller.resetUsersEmail);
+
   return router;
 }

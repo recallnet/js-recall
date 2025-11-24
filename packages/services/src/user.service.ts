@@ -11,6 +11,7 @@ import { Database, Transaction } from "@recallnet/db/types";
 
 import { EmailService } from "./email.service.js";
 import { checkUserUniqueConstraintViolation } from "./lib/error-utils.js";
+import { withRetry } from "./lib/retry-helper.js";
 import { verifyAndGetPrivyUserInfo } from "./lib/privy-verification.js";
 import { WalletWatchlist } from "./lib/watchlist.js";
 import { ApiError } from "./types/index.js";
@@ -588,5 +589,78 @@ export class UserService {
       walletCacheSize: this.userWalletCache.size,
       profileCacheSize: this.userProfileCache.size,
     };
+  }
+
+  /**
+   * Reset email and Privy-related state for users by wallet address.
+   *
+   * This sets the following columns to null for each matched user:
+   * - email
+   * - privy_id
+   * - embedded_wallet_address
+   * - wallet_last_verified_at
+   * - last_login_at
+   *
+   * The operation runs within a single database transaction. For each affected
+   * user with a non-null privyId, the Privy user is deleted via the provided client.
+   * If any Privy deletion fails, the entire transaction is rolled back.
+   *
+   * @param walletAddresses Array of wallet addresses to reset (case-insensitive)
+   * @param privyClient Privy client used to perform user deletions
+   * @returns Object containing list of affected user IDs
+   */
+  async resetUsersEmailAndPrivy(
+    walletAddresses: string[],
+    privyClient: PrivyClient,
+  ): Promise<{ userIds: string[] }> {
+    if (walletAddresses.length === 0) {
+      return { userIds: [] };
+    }
+
+    const normalized = walletAddresses.map((w) => w.toLowerCase());
+
+    const result = await this.db.transaction(async (tx) => {
+      const affected = await this.userRepo.findByWalletAddresses(
+        normalized,
+        tx,
+      );
+      if (affected.length === 0) {
+        return { userIds: [] };
+      }
+
+      // Delete Privy users with retry for transient failures
+      for (const u of affected) {
+        if (u.privyId) {
+          await withRetry(async () => {
+            // deleteUser should resolve when deletion succeeds
+            await (
+              privyClient as unknown as { deleteUser: (id: string) => Promise<void> }
+            ).deleteUser(u.privyId as string);
+          });
+        }
+      }
+
+      // Nullify fields in database
+      await this.userRepo.resetEmailAndPrivyStateByWalletAddresses(
+        normalized,
+        tx,
+      );
+
+      const userIds = affected.map((u) => u.id);
+
+      // Clear caches for updated users
+      for (const u of affected) {
+        this.userProfileCache.delete(u.id);
+        // Keep wallet cache mapping, as wallet address remains the same
+      }
+
+      this.logger.debug(
+        `[UserManager] Reset email/privy state for users: ${userIds.join(", ")}`,
+      );
+
+      return { userIds };
+    });
+
+    return result;
   }
 }
