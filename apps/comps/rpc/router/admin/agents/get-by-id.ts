@@ -1,6 +1,6 @@
 import { ORPCError } from "@orpc/server";
-import { z } from "zod/v4";
 
+import { AdminGetAgentParamsSchema } from "@recallnet/services/types";
 import { ApiError } from "@recallnet/services/types";
 
 import { base } from "@/rpc/context/base";
@@ -11,12 +11,9 @@ import { adminMiddleware } from "@/rpc/middleware/admin";
  */
 export const getAgentById = base
   .use(adminMiddleware)
-  .input(
-    z.object({
-      agentId: z.string().uuid(),
-    }),
-  )
-  .handler(async ({ input, context, errors }) => {
+  .handler(async ({ context, errors }) => {
+    const input = AdminGetAgentParamsSchema.parse(context.params);
+
     try {
       const agent = await context.agentService.getAgent(input.agentId);
 

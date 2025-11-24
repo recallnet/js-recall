@@ -39,7 +39,7 @@ import {
   AdminUpdateCompetitionSchema,
   AdminUpdatePartnerPositionSchema,
   AdminUpdatePartnerSchema,
-} from "@recallnet/services/lib";
+} from "@recallnet/services/types";
 import {
   ActorStatus,
   AdminCreateAgentSchema,

@@ -1,6 +1,6 @@
 import { ORPCError } from "@orpc/server";
-import { z } from "zod/v4";
 
+import { AdminCreateAgentSchema } from "@recallnet/services/types";
 import { ApiError } from "@recallnet/services/types";
 
 import { base } from "@/rpc/context/base";
@@ -11,23 +11,7 @@ import { adminMiddleware } from "@/rpc/middleware/admin";
  */
 export const createAgent = base
   .use(adminMiddleware)
-  .input(
-    z.object({
-      user: z.object({
-        id: z.string().uuid().optional(),
-        walletAddress: z.string().optional(),
-      }),
-      agent: z.object({
-        name: z.string().min(1),
-        handle: z.string().optional(),
-        email: z.string().email().optional(),
-        description: z.string().optional(),
-        imageUrl: z.string().optional(),
-        metadata: z.record(z.string(), z.any()).optional(),
-        walletAddress: z.string().optional(),
-      }),
-    }),
-  )
+  .input(AdminCreateAgentSchema)
   .handler(async ({ input, context, errors }) => {
     try {
       const createdAgent = await context.agentService.createAgentForOwner(

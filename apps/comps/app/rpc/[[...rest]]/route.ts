@@ -23,12 +23,16 @@ import { router } from "@/rpc/router/index";
 
 const handler = new RPCHandler(router);
 
-async function handleRequest(request: Request) {
+async function handleRequest(
+  request: Request,
+  { params }: { params: Promise<Record<string, string | string[]>> },
+) {
   const { response } = await handler.handle(request, {
     prefix: "/rpc",
     context: {
       cookies: await cookies(),
       headers: await headers(),
+      params: await params,
       privyClient,
       adminService,
       airdropService,

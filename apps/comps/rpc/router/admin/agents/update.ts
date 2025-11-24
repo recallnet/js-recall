@@ -1,6 +1,9 @@
 import { ORPCError } from "@orpc/server";
-import { z } from "zod/v4";
 
+import {
+  AdminUpdateAgentBodySchema,
+  AdminUpdateAgentParamsSchema,
+} from "@recallnet/services/types";
 import { ApiError } from "@recallnet/services/types";
 
 import { base } from "@/rpc/context/base";
@@ -11,22 +14,13 @@ import { adminMiddleware } from "@/rpc/middleware/admin";
  */
 export const updateAgent = base
   .use(adminMiddleware)
-  .input(
-    z.object({
-      agentId: z.string().uuid(),
-      name: z.string().optional(),
-      handle: z.string().optional(),
-      description: z.string().optional(),
-      imageUrl: z.string().optional(),
-      email: z.string().email().optional(),
-      metadata: z.record(z.any()).optional(),
-      isRewardsIneligible: z.boolean().optional(),
-      rewardsIneligibilityReason: z.string().optional(),
-    }),
-  )
+  .input(AdminUpdateAgentBodySchema)
   .handler(async ({ input, context, errors }) => {
+    const params = AdminUpdateAgentParamsSchema.parse(context.params);
+
     try {
-      const { agentId, ...updateData } = input;
+      const { agentId } = params;
+      const updateData = input;
 
       // Get the current agent
       const agent = await context.agentService.getAgent(agentId);

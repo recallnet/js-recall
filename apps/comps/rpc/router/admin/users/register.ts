@@ -1,6 +1,6 @@
 import { ORPCError } from "@orpc/server";
-import { z } from "zod/v4";
 
+import { AdminRegisterUserSchema } from "@recallnet/services/types";
 import { ApiError } from "@recallnet/services/types";
 
 import { base } from "@/rpc/context/base";
@@ -11,27 +11,7 @@ import { adminMiddleware } from "@/rpc/middleware/admin";
  */
 export const registerUser = base
   .use(adminMiddleware)
-  .input(
-    z.object({
-      walletAddress: z
-        .string()
-        .regex(/^0x[a-fA-F0-9]{40}$/, "Invalid Ethereum wallet address"),
-      name: z.string().optional(),
-      email: z.string().email().optional(),
-      userImageUrl: z.string().optional(),
-      userMetadata: z.record(z.any()).optional(),
-      // Agent fields (optional)
-      agentName: z.string().optional(),
-      agentHandle: z.string().optional(),
-      agentDescription: z.string().optional(),
-      agentImageUrl: z.string().optional(),
-      agentMetadata: z.record(z.any()).optional(),
-      agentWalletAddress: z
-        .string()
-        .regex(/^0x[a-fA-F0-9]{40}$/)
-        .optional(),
-    }),
-  )
+  .input(AdminRegisterUserSchema)
   .handler(async ({ input, context, errors }) => {
     try {
       const { user, agent, agentError } =

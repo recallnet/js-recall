@@ -1,6 +1,7 @@
 import { ORPCError } from "@orpc/server";
 
-import { ApiError, PagingParamsSchema } from "@recallnet/services/types";
+import { AdminListAllAgentsQuerySchema } from "@recallnet/services/types";
+import { ApiError } from "@recallnet/services/types";
 
 import { base } from "@/rpc/context/base";
 import { adminMiddleware } from "@/rpc/middleware/admin";
@@ -10,7 +11,7 @@ import { adminMiddleware } from "@/rpc/middleware/admin";
  */
 export const listAgents = base
   .use(adminMiddleware)
-  .input(PagingParamsSchema)
+  .input(AdminListAllAgentsQuerySchema)
   .handler(async ({ input, context, errors }) => {
     try {
       const { limit = 50, offset = 0, sort = "-createdAt" } = input;

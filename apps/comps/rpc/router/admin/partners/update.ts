@@ -1,6 +1,9 @@
 import { ORPCError } from "@orpc/server";
-import { z } from "zod/v4";
 
+import {
+  AdminPartnerParamsSchema,
+  AdminUpdatePartnerSchema,
+} from "@recallnet/services/types";
 import { ApiError } from "@recallnet/services/types";
 
 import { base } from "@/rpc/context/base";
@@ -11,18 +14,13 @@ import { adminMiddleware } from "@/rpc/middleware/admin";
  */
 export const updatePartner = base
   .use(adminMiddleware)
-  .input(
-    z.object({
-      id: z.string().uuid(),
-      name: z.string().optional(),
-      url: z.string().url().optional(),
-      logoUrl: z.string().url().optional(),
-      details: z.string().optional(),
-    }),
-  )
+  .input(AdminUpdatePartnerSchema)
   .handler(async ({ input, context, errors }) => {
+    const params = AdminPartnerParamsSchema.parse(context.params);
+
     try {
-      const { id, ...updateData } = input;
+      const { id } = params;
+      const updateData = input;
       const partner = await context.partnerService.update(id, updateData);
       return { success: true, partner };
     } catch (error) {

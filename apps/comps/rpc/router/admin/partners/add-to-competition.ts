@@ -1,6 +1,9 @@
 import { ORPCError } from "@orpc/server";
-import { z } from "zod/v4";
 
+import {
+  AdminAddPartnerToCompetitionSchema,
+  AdminCompetitionParamsSchema,
+} from "@recallnet/services/types";
 import { ApiError } from "@recallnet/services/types";
 
 import { base } from "@/rpc/context/base";
@@ -11,17 +14,13 @@ import { adminMiddleware } from "@/rpc/middleware/admin";
  */
 export const addPartnerToCompetition = base
   .use(adminMiddleware)
-  .input(
-    z.object({
-      competitionId: z.string().uuid(),
-      partnerId: z.string().uuid(),
-      position: z.number().int().min(1),
-    }),
-  )
+  .input(AdminAddPartnerToCompetitionSchema)
   .handler(async ({ input, context, errors }) => {
+    const params = AdminCompetitionParamsSchema.parse(context.params);
+
     try {
       const association = await context.partnerService.addToCompetition({
-        competitionId: input.competitionId,
+        competitionId: params.competitionId,
         partnerId: input.partnerId,
         position: input.position,
       });

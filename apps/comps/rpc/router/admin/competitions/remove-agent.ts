@@ -1,7 +1,10 @@
 import { ORPCError } from "@orpc/server";
-import { z } from "zod/v4";
 
-import { ApiError } from "@recallnet/services/types";
+import {
+  AdminRemoveAgentFromCompetitionBodySchema,
+  AdminRemoveAgentFromCompetitionParamsSchema,
+  ApiError,
+} from "@recallnet/services/types";
 
 import { base } from "@/rpc/context/base";
 import { adminMiddleware } from "@/rpc/middleware/admin";
@@ -11,25 +14,23 @@ import { adminMiddleware } from "@/rpc/middleware/admin";
  */
 export const removeAgentFromCompetition = base
   .use(adminMiddleware)
-  .input(
-    z.object({
-      competitionId: z.string().uuid(),
-      agentId: z.string().uuid(),
-      reason: z.string().optional(),
-    }),
-  )
+  .input(AdminRemoveAgentFromCompetitionBodySchema.partial())
   .handler(async ({ input, context, errors }) => {
+    const params = AdminRemoveAgentFromCompetitionParamsSchema.parse(
+      context.params,
+    );
+
     try {
       // Check if competition exists
       const competition = await context.competitionService.getCompetition(
-        input.competitionId,
+        params.competitionId,
       );
       if (!competition) {
         throw errors.NOT_FOUND({ message: "Competition not found" });
       }
 
       // Check if agent exists
-      const agent = await context.agentService.getAgent(input.agentId);
+      const agent = await context.agentService.getAgent(params.agentId);
       if (!agent) {
         throw errors.NOT_FOUND({ message: "Agent not found" });
       }
@@ -37,8 +38,8 @@ export const removeAgentFromCompetition = base
       // Check if agent is in the competition
       const isInCompetition =
         await context.competitionService.isAgentInCompetition(
-          input.competitionId,
-          input.agentId,
+          params.competitionId,
+          params.agentId,
         );
       if (!isInCompetition) {
         throw errors.BAD_REQUEST({
@@ -48,8 +49,8 @@ export const removeAgentFromCompetition = base
 
       // Remove agent from competition
       await context.competitionService.removeAgentFromCompetition(
-        input.competitionId,
-        input.agentId,
+        params.competitionId,
+        params.agentId,
         `Admin removal: ${input.reason || "No reason provided"}`,
       );
 

@@ -16,6 +16,7 @@ import { PrivyClient } from "@privy-io/server-auth";
 import { RequestCookie } from "next/dist/compiled/@edge-runtime/cookies";
 import { Logger } from "pino";
 
+import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import {
   AdminService,
   AgentService,
@@ -67,6 +68,7 @@ export const base = os
   .$context<{
     cookies: CookieStore;
     headers: Headers;
+    params: Record<string, string | string[]>;
     privyClient: PrivyClient;
     adminService: AdminService;
     airdropService: AirdropService;
@@ -74,6 +76,7 @@ export const base = os
     boostAwardService: BoostAwardService;
     userService: UserService;
     competitionService: CompetitionService;
+    competitionRepository: CompetitionRepository;
     agentService: AgentService;
     arenaService: ArenaService;
     partnerService: PartnerService;

@@ -1,6 +1,6 @@
 import { ORPCError } from "@orpc/server";
-import { z } from "zod/v4";
 
+import { AdminCreateArenaSchema } from "@recallnet/services/types";
 import { ApiError } from "@recallnet/services/types";
 
 import { base } from "@/rpc/context/base";
@@ -11,19 +11,7 @@ import { adminMiddleware } from "@/rpc/middleware/admin";
  */
 export const createArena = base
   .use(adminMiddleware)
-  .input(
-    z.object({
-      id: z
-        .string()
-        .regex(/^[a-z0-9-]+$/, "Arena ID must be lowercase kebab-case"),
-      name: z.string().min(1),
-      createdBy: z.string().min(1),
-      category: z.string().min(1),
-      skill: z.string().min(1),
-      venues: z.array(z.string()).optional(),
-      chains: z.array(z.string()).optional(),
-    }),
-  )
+  .input(AdminCreateArenaSchema)
   .handler(async ({ input, context, errors }) => {
     try {
       const arena = await context.arenaService.createArena(input);

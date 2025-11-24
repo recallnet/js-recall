@@ -1,6 +1,6 @@
 import { ORPCError } from "@orpc/server";
-import { z } from "zod/v4";
 
+import { AdminCreatePartnerSchema } from "@recallnet/services/types";
 import { ApiError } from "@recallnet/services/types";
 
 import { base } from "@/rpc/context/base";
@@ -11,14 +11,7 @@ import { adminMiddleware } from "@/rpc/middleware/admin";
  */
 export const createPartner = base
   .use(adminMiddleware)
-  .input(
-    z.object({
-      name: z.string().min(1),
-      url: z.string().url().optional(),
-      logoUrl: z.string().url().optional(),
-      details: z.string().optional(),
-    }),
-  )
+  .input(AdminCreatePartnerSchema)
   .handler(async ({ input, context, errors }) => {
     try {
       const partner = await context.partnerService.createPartner(input);

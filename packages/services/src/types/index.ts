@@ -19,6 +19,7 @@ import {
 
 import { specificChainTokens } from "../lib/config-utils.js";
 
+export * from "./admin.schema.js";
 export * from "./sort/index.js";
 export * from "./agent-metrics.js";
 export * from "./perps.js";

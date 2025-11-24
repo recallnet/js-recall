@@ -1,10 +1,7 @@
 {
   "extends": "@recallnet/typescript-config/base.json",
   "compilerOptions": {
-    "outDir": "dist",
-    "paths": {
-      "@/*": ["./src/*"]
-    }
+    "outDir": "dist"
   },
   "include": ["src"],
   "exclude": ["node_modules"]

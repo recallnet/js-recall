@@ -1,7 +1,6 @@
 import { ORPCError } from "@orpc/server";
-import { z } from "zod/v4";
 
-import { ApiError } from "@recallnet/services/types";
+import { AdminEndCompetitionSchema, ApiError } from "@recallnet/services/types";
 
 import { base } from "@/rpc/context/base";
 import { adminMiddleware } from "@/rpc/middleware/admin";
@@ -11,12 +10,9 @@ import { adminMiddleware } from "@/rpc/middleware/admin";
  */
 export const endCompetition = base
   .use(adminMiddleware)
-  .input(
-    z.object({
-      competitionId: z.string().uuid(),
-    }),
-  )
-  .handler(async ({ input, context, errors }) => {
+  .handler(async ({ context, errors }) => {
+    const input = AdminEndCompetitionSchema.parse(context.params);
+
     try {
       const { competition, leaderboard } =
         await context.competitionService.endCompetition(input.competitionId);

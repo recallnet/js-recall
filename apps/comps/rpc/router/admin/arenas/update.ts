@@ -1,6 +1,9 @@
 import { ORPCError } from "@orpc/server";
-import { z } from "zod/v4";
 
+import {
+  AdminArenaParamsSchema,
+  AdminUpdateArenaSchema,
+} from "@recallnet/services/types";
 import { ApiError } from "@recallnet/services/types";
 
 import { base } from "@/rpc/context/base";
@@ -11,19 +14,13 @@ import { adminMiddleware } from "@/rpc/middleware/admin";
  */
 export const updateArena = base
   .use(adminMiddleware)
-  .input(
-    z.object({
-      id: z.string(),
-      name: z.string().optional(),
-      category: z.string().optional(),
-      skill: z.string().optional(),
-      venues: z.array(z.string()).optional(),
-      chains: z.array(z.string()).optional(),
-    }),
-  )
+  .input(AdminUpdateArenaSchema)
   .handler(async ({ input, context, errors }) => {
+    const params = AdminArenaParamsSchema.parse(context.params);
+
     try {
-      const { id, ...updateData } = input;
+      const { id } = params;
+      const updateData = input;
       const arena = await context.arenaService.update(id, updateData);
       return { success: true, arena };
     } catch (error) {

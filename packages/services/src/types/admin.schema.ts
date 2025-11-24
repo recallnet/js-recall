@@ -14,7 +14,7 @@ import {
   EvaluationMetricSchema,
   TradingConstraintsSchema,
   UuidSchema,
-} from "@/types/index.js";
+} from "./index.js";
 
 /**
  * Admin setup schema for initial admin account creation

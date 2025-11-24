@@ -1,7 +1,9 @@
 import { ORPCError } from "@orpc/server";
-import { z } from "zod/v4";
 
-import { ApiError } from "@recallnet/services/types";
+import {
+  AdminAddAgentToCompetitionParamsSchema,
+  ApiError,
+} from "@recallnet/services/types";
 
 import { base } from "@/rpc/context/base";
 import { adminMiddleware } from "@/rpc/middleware/admin";
@@ -11,13 +13,9 @@ import { adminMiddleware } from "@/rpc/middleware/admin";
  */
 export const addAgentToCompetition = base
   .use(adminMiddleware)
-  .input(
-    z.object({
-      competitionId: z.string().uuid(),
-      agentId: z.string().uuid(),
-    }),
-  )
-  .handler(async ({ input, context, errors }) => {
+  .handler(async ({ context, errors }) => {
+    const input = AdminAddAgentToCompetitionParamsSchema.parse(context.params);
+
     try {
       // Check if competition exists
       const competition = await context.competitionService.getCompetition(
@@ -70,7 +68,7 @@ export const addAgentToCompetition = base
       }
 
       // Add agent to competition
-      await context.competitionService.addAgentToCompetition(
+      await context.competitionRepository.addAgentToCompetition(
         input.competitionId,
         input.agentId,
       );

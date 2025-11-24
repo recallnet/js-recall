@@ -1,7 +1,7 @@
 import { ORPCError } from "@orpc/server";
-import { z } from "zod/v4";
 
-import { ApiError, PagingParamsSchema } from "@recallnet/services/types";
+import { AdminListArenasQuerySchema } from "@recallnet/services/types";
+import { ApiError } from "@recallnet/services/types";
 
 import { base } from "@/rpc/context/base";
 import { adminMiddleware } from "@/rpc/middleware/admin";
@@ -11,11 +11,7 @@ import { adminMiddleware } from "@/rpc/middleware/admin";
  */
 export const listArenas = base
   .use(adminMiddleware)
-  .input(
-    PagingParamsSchema.extend({
-      nameFilter: z.string().optional(),
-    }),
-  )
+  .input(AdminListArenasQuerySchema)
   .handler(async ({ input, context, errors }) => {
     try {
       const { nameFilter, ...pagingParams } = input;

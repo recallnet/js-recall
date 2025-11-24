@@ -1,6 +1,6 @@
 import { ORPCError } from "@orpc/server";
-import { z } from "zod/v4";
 
+import { AdminDeleteAgentParamsSchema } from "@recallnet/services/types";
 import { ApiError } from "@recallnet/services/types";
 
 import { base } from "@/rpc/context/base";
@@ -11,12 +11,9 @@ import { adminMiddleware } from "@/rpc/middleware/admin";
  */
 export const deleteAgent = base
   .use(adminMiddleware)
-  .input(
-    z.object({
-      agentId: z.string().uuid(),
-    }),
-  )
-  .handler(async ({ input, context, errors }) => {
+  .handler(async ({ context, errors }) => {
+    const input = AdminDeleteAgentParamsSchema.parse(context.params);
+
     try {
       // Get the agent first to check if it exists
       const agent = await context.agentService.getAgent(input.agentId);

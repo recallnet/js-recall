@@ -1,4 +1,3 @@
-export * from "./admin.schema.js";
 export * from "./api-key-utils.js";
 export * from "./arena-validation.js";
 export * from "./circuit-breaker.js";

@@ -1,6 +1,6 @@
 import { ORPCError } from "@orpc/server";
-import { z } from "zod/v4";
 
+import { AdminCompetitionPartnerParamsSchema } from "@recallnet/services/types";
 import { ApiError } from "@recallnet/services/types";
 
 import { base } from "@/rpc/context/base";
@@ -11,13 +11,9 @@ import { adminMiddleware } from "@/rpc/middleware/admin";
  */
 export const removePartnerFromCompetition = base
   .use(adminMiddleware)
-  .input(
-    z.object({
-      competitionId: z.string().uuid(),
-      partnerId: z.string().uuid(),
-    }),
-  )
-  .handler(async ({ input, context, errors }) => {
+  .handler(async ({ context, errors }) => {
+    const input = AdminCompetitionPartnerParamsSchema.parse(context.params);
+
     try {
       await context.partnerService.removeFromCompetition(
         input.competitionId,

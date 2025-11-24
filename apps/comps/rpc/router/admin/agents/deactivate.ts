@@ -1,6 +1,9 @@
 import { ORPCError } from "@orpc/server";
-import { z } from "zod/v4";
 
+import {
+  AdminDeactivateAgentBodySchema,
+  AdminDeactivateAgentParamsSchema,
+} from "@recallnet/services/types";
 import { ApiError } from "@recallnet/services/types";
 
 import { base } from "@/rpc/context/base";
@@ -11,16 +14,13 @@ import { adminMiddleware } from "@/rpc/middleware/admin";
  */
 export const deactivateAgent = base
   .use(adminMiddleware)
-  .input(
-    z.object({
-      agentId: z.string().uuid(),
-      reason: z.string().optional(),
-    }),
-  )
+  .input(AdminDeactivateAgentBodySchema)
   .handler(async ({ input, context, errors }) => {
+    const params = AdminDeactivateAgentParamsSchema.parse(context.params);
+
     try {
       // Get the agent first to check if it exists
-      const agent = await context.agentService.getAgent(input.agentId);
+      const agent = await context.agentService.getAgent(params.agentId);
 
       if (!agent) {
         throw errors.NOT_FOUND({ message: "Agent not found" });
@@ -35,7 +35,7 @@ export const deactivateAgent = base
 
       // Deactivate the agent
       const deactivatedAgent = await context.agentService.deactivateAgent(
-        input.agentId,
+        params.agentId,
         input.reason,
       );
 
