@@ -44,11 +44,15 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
       balances: new Map(),
     });
 
-    // Pre-configured test wallet #1: Aerodrome USDC → AERO swap
-    // Simulates a typical Aerodrome swap with proper event signatures
+    // Pre-configured test wallet #1: Multiple Aerodrome swaps showing positive ROI progression
+    // Simulates successful trading with portfolio growth across multiple syncs
+    // Initial: 5000 USDC
+    // After Swap 1 (block 2000000): 4900 USDC + 50 AERO (net: ~$5000)
+    // After Swap 2 (block 2000010): 4900 USDC + 40 AERO + 0.005 ETH (net: ~$5015 if AERO/ETH price up)
+    // After Swap 3 (block 2000020): 4900 USDC + 35 AERO + 0.005 ETH + small gain (net: ~$5025)
     this.setWalletData("0x1111111111111111111111111111111111111111", {
       transfers: [
-        // Swap: USDC out
+        // Swap 1: USDC → AERO (Block 2000000)
         {
           from: "0x1111111111111111111111111111111111111111",
           to: "0xd35fcf71834c4a4ae98ff22f68c05e13e5fdee01", // Aerodrome pool
@@ -65,13 +69,12 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
             value: null,
           },
         },
-        // Swap: AERO in
         {
-          from: "0xd35fcf71834c4a4ae98ff22f68c05e13e5fdee01", // Aerodrome pool
+          from: "0xd35fcf71834c4a4ae98ff22f68c05e13e5fdee01",
           to: "0x1111111111111111111111111111111111111111",
           value: 50,
           asset: "AERO",
-          hash: "0xmock_swap_1", // Same transaction
+          hash: "0xmock_swap_1",
           blockNum: "0x1e8480",
           metadata: {
             blockTimestamp: "2024-01-15T12:00:00Z",
@@ -79,6 +82,72 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
           rawContract: {
             address: "0x940181a94a35a4569e4529a3cdfb74e38fd98631", // AERO
             decimal: "18",
+            value: null,
+          },
+        },
+        // Swap 2: AERO → ETH (Block 2000010) - Second sync will catch this
+        {
+          from: "0x1111111111111111111111111111111111111111",
+          to: "0xaeropool2222222222222222222222222222222",
+          value: 10,
+          asset: "AERO",
+          hash: "0xmock_swap_2",
+          blockNum: "0x1e848a", // Block 2000010 in hex
+          metadata: {
+            blockTimestamp: "2024-01-15T12:05:00Z",
+          },
+          rawContract: {
+            address: "0x940181a94a35a4569e4529a3cdfb74e38fd98631", // AERO
+            decimal: "18",
+            value: null,
+          },
+        },
+        {
+          from: "0xaeropool2222222222222222222222222222222",
+          to: "0x1111111111111111111111111111111111111111",
+          value: 0.005,
+          asset: "ETH",
+          hash: "0xmock_swap_2",
+          blockNum: "0x1e848a",
+          metadata: {
+            blockTimestamp: "2024-01-15T12:05:00Z",
+          },
+          rawContract: {
+            address: "0x4200000000000000000000000000000000000006", // WETH on Base
+            decimal: "18",
+            value: null,
+          },
+        },
+        // Swap 3: AERO → USDC (Block 2000020) - Third sync will catch this
+        {
+          from: "0x1111111111111111111111111111111111111111",
+          to: "0xaeropool3333333333333333333333333333333",
+          value: 5,
+          asset: "AERO",
+          hash: "0xmock_swap_3",
+          blockNum: "0x1e8494", // Block 2000020 in hex
+          metadata: {
+            blockTimestamp: "2024-01-15T12:10:00Z",
+          },
+          rawContract: {
+            address: "0x940181a94a35a4569e4529a3cdfb74e38fd98631", // AERO
+            decimal: "18",
+            value: null,
+          },
+        },
+        {
+          from: "0xaeropool3333333333333333333333333333333",
+          to: "0x1111111111111111111111111111111111111111",
+          value: 6,
+          asset: "USDC",
+          hash: "0xmock_swap_3",
+          blockNum: "0x1e8494",
+          metadata: {
+            blockTimestamp: "2024-01-15T12:10:00Z",
+          },
+          rawContract: {
+            address: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913", // USDC
+            decimal: "6",
             value: null,
           },
         },
@@ -91,6 +160,24 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
             from: "0x1111111111111111111111111111111111111111",
             to: "0xcf77a3ba9a5ca399b7c97c74d54e5b1beb874e43", // Aerodrome router
             blockNumber: 2000000,
+          },
+        ],
+        [
+          "0xmock_swap_2",
+          {
+            hash: "0xmock_swap_2",
+            from: "0x1111111111111111111111111111111111111111",
+            to: "0xcf77a3ba9a5ca399b7c97c74d54e5b1beb874e43", // Aerodrome router
+            blockNumber: 2000010,
+          },
+        ],
+        [
+          "0xmock_swap_3",
+          {
+            hash: "0xmock_swap_3",
+            from: "0x1111111111111111111111111111111111111111",
+            to: "0xcf77a3ba9a5ca399b7c97c74d54e5b1beb874e43", // Aerodrome router
+            blockNumber: 2000020,
           },
         ],
       ]),
@@ -106,47 +193,72 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
             from: "0x1111111111111111111111111111111111111111",
             to: "0xcf77a3ba9a5ca399b7c97c74d54e5b1beb874e43",
             logs: [
-              // Transfer event for USDC out
               {
-                address: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+                address: "0xd35fcf71834c4a4ae98ff22f68c05e13e5fdee01",
                 blockNumber: 2000000,
-                blockHash: "0xmockblockhash",
+                blockHash: "0xmockblockhash1",
                 transactionIndex: 0,
                 removed: false,
                 logIndex: 0,
                 transactionHash: "0xmock_swap_1",
                 topics: [
-                  "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef", // Transfer
+                  "0xb3e2773606abfd36b5bd91394b3a54d1398336c65005baf7bf7a05efeffaf75b", // Aerodrome Swap
+                  "0x000000000000000000000000cf77a3ba9a5ca399b7c97c74d54e5b1beb874e43",
+                  "0x0000000000000000000000001111111111111111111111111111111111111111",
                 ],
                 data: "0x",
               },
-              // Aerodrome Swap event (correct signature from BaseScan)
+            ],
+          },
+        ],
+        [
+          "0xmock_swap_2",
+          {
+            transactionHash: "0xmock_swap_2",
+            blockNumber: 2000010,
+            gasUsed: "160000",
+            effectiveGasPrice: "51000000000",
+            status: true,
+            from: "0x1111111111111111111111111111111111111111",
+            to: "0xcf77a3ba9a5ca399b7c97c74d54e5b1beb874e43",
+            logs: [
               {
-                address: "0xd35fcf71834c4a4ae98ff22f68c05e13e5fdee01",
-                blockNumber: 2000000,
-                blockHash: "0xmockblockhash",
+                address: "0xaeropool2222222222222222222222222222222",
+                blockNumber: 2000010,
+                blockHash: "0xmockblockhash2",
                 transactionIndex: 0,
                 removed: false,
-                logIndex: 1,
-                transactionHash: "0xmock_swap_1",
+                logIndex: 0,
+                transactionHash: "0xmock_swap_2",
                 topics: [
                   "0xb3e2773606abfd36b5bd91394b3a54d1398336c65005baf7bf7a05efeffaf75b", // Aerodrome Swap
-                  "0x000000000000000000000000cf77a3ba9a5ca399b7c97c74d54e5b1beb874e43", // sender (router)
-                  "0x0000000000000000000000001111111111111111111111111111111111111111", // to (wallet)
                 ],
                 data: "0x",
               },
-              // Transfer event for AERO in
+            ],
+          },
+        ],
+        [
+          "0xmock_swap_3",
+          {
+            transactionHash: "0xmock_swap_3",
+            blockNumber: 2000020,
+            gasUsed: "155000",
+            effectiveGasPrice: "49000000000",
+            status: true,
+            from: "0x1111111111111111111111111111111111111111",
+            to: "0xcf77a3ba9a5ca399b7c97c74d54e5b1beb874e43",
+            logs: [
               {
-                address: "0x940181a94a35a4569e4529a3cdfb74e38fd98631",
-                blockNumber: 2000000,
-                blockHash: "0xmockblockhash",
+                address: "0xaeropool3333333333333333333333333333333",
+                blockNumber: 2000020,
+                blockHash: "0xmockblockhash3",
                 transactionIndex: 0,
                 removed: false,
-                logIndex: 2,
-                transactionHash: "0xmock_swap_1",
+                logIndex: 0,
+                transactionHash: "0xmock_swap_3",
                 topics: [
-                  "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef", // Transfer
+                  "0xb3e2773606abfd36b5bd91394b3a54d1398336c65005baf7bf7a05efeffaf75b", // Aerodrome Swap
                 ],
                 data: "0x",
               },
@@ -155,8 +267,9 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
         ],
       ]),
       balances: new Map([
-        ["0x833589fcd6edb6e08f4c7c32d4f71b54bda02913", 5000], // USDC
-        ["0x940181a94a35a4569e4529a3cdfb74e38fd98631", 0], // AERO (will increase after swap)
+        ["0x833589fcd6edb6e08f4c7c32d4f71b54bda02913", 5000], // USDC - initial balance
+        ["0x940181a94a35a4569e4529a3cdfb74e38fd98631", 0], // AERO - will accumulate
+        ["0x4200000000000000000000000000000000000006", 0], // WETH - will accumulate
       ]),
     });
 
@@ -212,17 +325,19 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
       balances: new Map([["0x833589fcd6edb6e08f4c7c32d4f71b54bda02913", 4500]]),
     });
 
-    // Pre-configured test wallet #4: Multiple swaps (different protocols)
+    // Pre-configured test wallet #4: Multiple swaps at different blocks (protocol filtering test)
+    // Aerodrome swap at block 2000030 (should pass filter)
+    // Uniswap swap at block 2000031 (should be filtered out)
     this.setWalletData("0x4444444444444444444444444444444444444444", {
       transfers: [
-        // Swap 1: Aerodrome USDC → AERO
+        // Swap 1: Aerodrome USDC → AERO (Block 2000030)
         {
           from: "0x4444444444444444444444444444444444444444",
           to: "0xaeropool1111111111111111111111111111111",
           value: 50,
           asset: "USDC",
           hash: "0xmock_aerodrome_swap",
-          blockNum: "0x1e8483",
+          blockNum: "0x1e849e", // Block 2000030 in hex
           metadata: {
             blockTimestamp: "2024-01-15T13:00:00Z",
           },
@@ -238,7 +353,7 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
           value: 25,
           asset: "AERO",
           hash: "0xmock_aerodrome_swap",
-          blockNum: "0x1e8483",
+          blockNum: "0x1e849e", // Block 2000030
           metadata: {
             blockTimestamp: "2024-01-15T13:00:00Z",
           },
@@ -248,16 +363,16 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
             value: null,
           },
         },
-        // Swap 2: Uniswap AERO → ETH (different protocol)
+        // Swap 2: Uniswap AERO → ETH (Block 2000031) - different protocol
         {
           from: "0x4444444444444444444444444444444444444444",
           to: "0xunipool2222222222222222222222222222222",
           value: 10,
           asset: "AERO",
           hash: "0xmock_uniswap_swap",
-          blockNum: "0x1e8484",
+          blockNum: "0x1e849f", // Block 2000031 in hex
           metadata: {
-            blockTimestamp: "2024-01-15T14:00:00Z",
+            blockTimestamp: "2024-01-15T13:01:00Z",
           },
           rawContract: {
             address: "0x940181a94a35a4569e4529a3cdfb74e38fd98631",
@@ -271,9 +386,9 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
           value: 0.05,
           asset: "ETH",
           hash: "0xmock_uniswap_swap",
-          blockNum: "0x1e8484",
+          blockNum: "0x1e849f", // Block 2000031
           metadata: {
-            blockTimestamp: "2024-01-15T14:00:00Z",
+            blockTimestamp: "2024-01-15T13:01:00Z",
           },
           rawContract: {
             address: "0x4200000000000000000000000000000000000006", // WETH
@@ -286,15 +401,19 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
         [
           "0xmock_aerodrome_swap",
           {
+            hash: "0xmock_aerodrome_swap",
             from: "0x4444444444444444444444444444444444444444",
             to: "0xcf77a3ba9a5ca399b7c97c74d54e5b1beb874e43", // Aerodrome router
+            blockNumber: 2000030,
           },
         ],
         [
           "0xmock_uniswap_swap",
           {
+            hash: "0xmock_uniswap_swap",
             from: "0x4444444444444444444444444444444444444444",
             to: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D", // Uniswap router (different)
+            blockNumber: 2000031,
           },
         ],
       ]),
@@ -303,7 +422,7 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
           "0xmock_aerodrome_swap",
           {
             transactionHash: "0xmock_aerodrome_swap",
-            blockNumber: 2000003,
+            blockNumber: 2000030,
             gasUsed: "150000",
             effectiveGasPrice: "50000000000",
             status: true,
@@ -311,9 +430,9 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
             to: "0xcf77a3ba9a5ca399b7c97c74d54e5b1beb874e43",
             logs: [
               {
-                address: "0xd35fcf71834c4a4ae98ff22f68c05e13e5fdee01",
-                blockNumber: 2000003,
-                blockHash: "0xmockblockhash2",
+                address: "0xaeropool1111111111111111111111111111111",
+                blockNumber: 2000030,
+                blockHash: "0xmockblockhash_aero",
                 transactionIndex: 0,
                 removed: false,
                 logIndex: 0,
@@ -330,7 +449,7 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
           "0xmock_uniswap_swap",
           {
             transactionHash: "0xmock_uniswap_swap",
-            blockNumber: 2000004,
+            blockNumber: 2000031,
             gasUsed: "180000",
             effectiveGasPrice: "50000000000",
             status: true,
@@ -339,8 +458,8 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
             logs: [
               {
                 address: "0xunipool2222222222222222222222222222222",
-                blockNumber: 2000004,
-                blockHash: "0xmockblockhash3",
+                blockNumber: 2000031,
+                blockHash: "0xmockblockhash_uni",
                 transactionIndex: 0,
                 removed: false,
                 logIndex: 0,
@@ -355,9 +474,9 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
         ],
       ]),
       balances: new Map([
-        ["0x833589fcd6edb6e08f4c7c32d4f71b54bda02913", 4900], // USDC (after swaps)
-        ["0x940181a94a35a4569e4529a3cdfb74e38fd98631", 15], // AERO (25 - 10 = 15)
-        ["0x4200000000000000000000000000000000000006", 0.05], // WETH
+        ["0x833589fcd6edb6e08f4c7c32d4f71b54bda02913", 5000], // USDC - initial
+        ["0x940181a94a35a4569e4529a3cdfb74e38fd98631", 0], // AERO - will accumulate
+        ["0x4200000000000000000000000000000000000006", 0], // WETH - will accumulate
       ]),
     });
 

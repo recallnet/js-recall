@@ -836,6 +836,28 @@ export class SpotLiveRepository {
   }
 
   /**
+   * Get a single self-funding alert by ID
+   * @param alertId Alert ID
+   * @returns Alert or null if not found
+   */
+  async getSpotLiveAlertById(
+    alertId: string,
+  ): Promise<SelectSpotLiveSelfFundingAlert | null> {
+    try {
+      const [alert] = await this.#dbRead
+        .select()
+        .from(spotLiveSelfFundingAlerts)
+        .where(eq(spotLiveSelfFundingAlerts.id, alertId))
+        .limit(1);
+
+      return alert || null;
+    } catch (error) {
+      this.#logger.error({ error }, "Error in getSpotLiveAlertById");
+      throw error;
+    }
+  }
+
+  /**
    * Review a self-funding alert
    * @param alertId Alert ID
    * @param reviewData Review information

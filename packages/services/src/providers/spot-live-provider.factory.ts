@@ -1,5 +1,6 @@
 import { Logger } from "pino";
 
+import { MockAlchemyRpcProvider } from "../lib/mock-alchemy-rpc-provider.js";
 import {
   ISpotLiveDataProvider,
   ProtocolFilter,
@@ -108,6 +109,19 @@ export class SpotLiveProviderFactory {
     apiKey: string,
     logger: Logger,
   ) {
+    // In test mode, use mock RPC provider (matches MockPrivyClient pattern)
+    // This allows E2E tests to use deterministic blockchain data
+    // Integration tests bypass this by directly instantiating AlchemyRpcProvider
+    if (
+      process.env.NODE_ENV === "test" &&
+      provider.toLowerCase() === "alchemy"
+    ) {
+      logger.info(
+        `[SpotLiveProviderFactory] Test mode detected - using MockAlchemyRpcProvider`,
+      );
+      return new MockAlchemyRpcProvider(logger);
+    }
+
     switch (provider.toLowerCase()) {
       case "alchemy":
         return new AlchemyRpcProvider(apiKey, 3, 1000, logger);

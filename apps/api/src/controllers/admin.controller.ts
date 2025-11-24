@@ -950,6 +950,12 @@ export function makeAdminController(services: ServiceRegistry) {
           agentHandle: agentMap.get(entry.agentId)?.handle || "unknown_agent",
           ownerName: agentMap.get(entry.agentId)?.ownerName || "Unknown Owner",
           portfolioValue: entry.value,
+          pnl: entry.pnl,
+          // Spot live metrics (only present for spot_live_trading competitions)
+          simpleReturn: entry.simpleReturn ?? null,
+          startingValue: entry.startingValue ?? null,
+          currentValue: entry.currentValue ?? null,
+          totalTrades: entry.totalTrades ?? null,
         }));
 
         // Return performance report
@@ -1921,7 +1927,7 @@ export function makeAdminController(services: ServiceRegistry) {
       next: NextFunction,
     ) {
       try {
-        const { alertId } = flatParse(
+        const { competitionId, alertId } = flatParse(
           AdminReviewSpotLiveAlertParamsSchema,
           req.params,
         );
@@ -1930,10 +1936,11 @@ export function makeAdminController(services: ServiceRegistry) {
           req.body,
         );
 
-        // Update alert
+        // Update alert (service validates alert belongs to competition)
         const adminId = req.adminId as string;
         const updatedAlert =
           await services.competitionService.reviewSpotLiveSelfFundingAlert(
+            competitionId,
             alertId,
             {
               reviewed: true,

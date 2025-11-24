@@ -190,6 +190,10 @@ interface LeaderboardEntry {
   maxDrawdown?: number | null;
   downsideDeviation?: number | null;
   hasRiskMetrics?: boolean; // Indicates if agent has risk metrics calculated
+  // Spot live specific metrics
+  startingValue?: number;
+  currentValue?: number;
+  totalTrades?: number;
 }
 
 /**
@@ -4097,11 +4101,14 @@ export class CompetitionService {
 
   /**
    * Review a spot live self-funding alert
+   * @param competitionId Competition ID (for validation)
    * @param alertId Alert ID
    * @param reviewData Review information
    * @returns Updated alert or null if not found
+   * @throws Error if alert doesn't belong to specified competition
    */
   async reviewSpotLiveSelfFundingAlert(
+    competitionId: string,
     alertId: string,
     reviewData: {
       reviewed: boolean;
@@ -4111,6 +4118,20 @@ export class CompetitionService {
       reviewedAt: Date;
     },
   ): Promise<SelectSpotLiveSelfFundingAlert | null> {
+    // First, fetch the alert to verify it belongs to this competition
+    const existingAlert = await this.spotLiveRepo.getSpotLiveAlertById(alertId);
+
+    if (!existingAlert) {
+      return null;
+    }
+
+    // Security check: Verify alert belongs to the specified competition
+    if (existingAlert.competitionId !== competitionId) {
+      throw new Error(
+        `Alert ${alertId} does not belong to competition ${competitionId}`,
+      );
+    }
+
     return this.spotLiveRepo.reviewSpotLiveSelfFundingAlert(
       alertId,
       reviewData,

@@ -452,6 +452,14 @@ export interface TradeTransaction {
   toSpecificChain: string | null;
   toTokenSymbol: string;
   fromTokenSymbol: string;
+  // Spot live specific fields (optional)
+  tradeType?: "simulated" | "spot_live";
+  txHash?: string | null;
+  blockNumber?: number | null;
+  protocol?: string | null;
+  gasUsed?: string | null;
+  gasPrice?: string | null;
+  gasCostUsd?: string | null;
 }
 
 // Trade history response

@@ -869,7 +869,7 @@ export async function startSpotLiveTestCompetition({
     tradingConstraints,
     rewards,
     spotLiveConfig,
-    arenaId: "default-paper-arena",
+    arenaId: "default-spot-live-arena",
   });
 
   if (!result.success) {
