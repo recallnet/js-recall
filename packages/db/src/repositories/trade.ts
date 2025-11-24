@@ -546,4 +546,36 @@ export class TradeRepository {
 
     return { successful, failed };
   }
+
+  /**
+   * Count spot live trades for an agent in a competition
+   * @param agentId Agent ID
+   * @param competitionId Competition ID
+   * @returns Number of spot_live trades
+   */
+  async countSpotLiveTradesForAgent(
+    agentId: string,
+    competitionId: string,
+  ): Promise<number> {
+    try {
+      const result = await this.#db
+        .select({ count: drizzleCount() })
+        .from(trades)
+        .where(
+          and(
+            eq(trades.agentId, agentId),
+            eq(trades.competitionId, competitionId),
+            eq(trades.tradeType, "spot_live"),
+          ),
+        );
+
+      return result[0]?.count ?? 0;
+    } catch (error) {
+      this.#logger.error(
+        { error, agentId, competitionId },
+        "[TradeRepository] Error counting spot live trades",
+      );
+      throw error;
+    }
+  }
 }

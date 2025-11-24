@@ -1,5 +1,5 @@
 {
-  "id": "f24bbd54-1a2c-4f4a-b175-b21a08303b2a",
+  "id": "ecb4ff57-3b03-4ba8-a2c5-3fde79b230f5",
   "prevId": "2bbf21af-ca68-4023-80e7-ae4f2fd9cfc5",
   "version": "7",
   "dialect": "postgresql",
@@ -6294,6 +6294,82 @@
           "tableFrom": "spot_live_competition_config",
           "tableTo": "competitions",
           "columnsFrom": ["competition_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "trading_comps.spot_live_competitions_leaderboard": {
+      "name": "spot_live_competitions_leaderboard",
+      "schema": "trading_comps",
+      "columns": {
+        "competitions_leaderboard_id": {
+          "name": "competitions_leaderboard_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "simple_return": {
+          "name": "simple_return",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "pnl": {
+          "name": "pnl",
+          "type": "numeric(30, 15)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "starting_value": {
+          "name": "starting_value",
+          "type": "numeric(30, 15)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "current_value": {
+          "name": "current_value",
+          "type": "numeric(30, 15)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "total_trades": {
+          "name": "total_trades",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        }
+      },
+      "indexes": {
+        "idx_spot_live_competitions_leaderboard_return": {
+          "name": "idx_spot_live_competitions_leaderboard_return",
+          "columns": [
+            {
+              "expression": "simple_return",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "spot_live_competitions_leaderboard_competitions_leaderboard_id_competitions_leaderboard_id_fk": {
+          "name": "spot_live_competitions_leaderboard_competitions_leaderboard_id_competitions_leaderboard_id_fk",
+          "tableFrom": "spot_live_competitions_leaderboard",
+          "tableTo": "competitions_leaderboard",
+          "columnsFrom": ["competitions_leaderboard_id"],
           "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "cascade"

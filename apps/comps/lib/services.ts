@@ -245,6 +245,7 @@ export const competitionService = new CompetitionService(
   spotLiveRepository,
   competitionRepository,
   stakesRepository,
+  tradeRepository,
   userRepository,
   db,
   config,

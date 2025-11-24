@@ -384,6 +384,7 @@ class ServiceRegistry {
       this._spotLiveRepository,
       this._competitionRepository,
       this._stakesRepository,
+      tradeRepository,
       this._userRepository,
       db,
       config,

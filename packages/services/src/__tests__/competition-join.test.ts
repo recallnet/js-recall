@@ -10,6 +10,7 @@ import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { PerpsRepository } from "@recallnet/db/repositories/perps";
 import { SpotLiveRepository } from "@recallnet/db/repositories/spot-live";
 import { StakesRepository } from "@recallnet/db/repositories/stakes";
+import { TradeRepository } from "@recallnet/db/repositories/trade";
 import { UserRepository } from "@recallnet/db/repositories/user";
 import type { SelectAgent } from "@recallnet/db/schema/core/types";
 import { SelectCompetition } from "@recallnet/db/schema/core/types";
@@ -53,6 +54,7 @@ describe("CompetitionService - joinCompetition", () => {
   let spotLiveRepo: MockProxy<SpotLiveRepository>;
   let competitionRepo: MockProxy<CompetitionRepository>;
   let stakesRepo: MockProxy<StakesRepository>;
+  let tradeRepo: MockProxy<TradeRepository>;
   let userRepo: MockProxy<UserRepository>;
   let mockDb: MockProxy<Database>;
   let logger: MockProxy<Logger>;
@@ -142,6 +144,7 @@ describe("CompetitionService - joinCompetition", () => {
     spotLiveRepo = mock<SpotLiveRepository>();
     competitionRepo = mock<CompetitionRepository>();
     stakesRepo = mock<StakesRepository>();
+    tradeRepo = mock<TradeRepository>();
     userRepo = mock<UserRepository>();
     mockDb = mock<Database>();
     logger = mock<Logger>();
@@ -186,6 +189,7 @@ describe("CompetitionService - joinCompetition", () => {
       spotLiveRepo,
       competitionRepo,
       stakesRepo,
+      tradeRepo,
       userRepo,
       mockDb,
       mockConfig,

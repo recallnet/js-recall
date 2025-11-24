@@ -9,6 +9,7 @@ import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { PerpsRepository } from "@recallnet/db/repositories/perps";
 import { SpotLiveRepository } from "@recallnet/db/repositories/spot-live";
 import { StakesRepository } from "@recallnet/db/repositories/stakes";
+import { TradeRepository } from "@recallnet/db/repositories/trade";
 import { UserRepository } from "@recallnet/db/repositories/user";
 import {
   SelectAgent,
@@ -400,6 +401,7 @@ export class CompetitionService {
   private spotLiveRepo: SpotLiveRepository;
   private competitionRepo: CompetitionRepository;
   private stakesRepo: StakesRepository;
+  private tradeRepo: TradeRepository;
   private userRepo: UserRepository;
   private db: Database;
   private config: CompetitionServiceConfig;
@@ -424,6 +426,7 @@ export class CompetitionService {
     spotLiveRepo: SpotLiveRepository,
     competitionRepo: CompetitionRepository,
     stakesRepo: StakesRepository,
+    tradeRepo: TradeRepository,
     userRepo: UserRepository,
     db: Database,
     config: CompetitionServiceConfig,
@@ -447,6 +450,7 @@ export class CompetitionService {
     this.spotLiveRepo = spotLiveRepo;
     this.competitionRepo = competitionRepo;
     this.stakesRepo = stakesRepo;
+    this.tradeRepo = tradeRepo;
     this.userRepo = userRepo;
     this.db = db;
     this.config = config;
@@ -1390,6 +1394,56 @@ export class CompetitionService {
           competitionId,
         );
 
+      // Calculate spot live specific metrics (simpleReturn, currentValue, totalTrades)
+      let spotLiveMetrics:
+        | {
+            simpleReturn: number;
+            currentValue: number;
+            totalTrades: number;
+          }
+        | undefined;
+
+      if (competition?.type === "spot_live_trading") {
+        // Get bounded snapshots for this agent
+        const snapshots = await this.competitionRepo.getBoundedSnapshots(
+          competitionId,
+          entry.agentId,
+        );
+
+        if (snapshots) {
+          const firstValue = Number(snapshots.oldest?.totalValue ?? 0);
+          const lastValue = Number(snapshots.newest?.totalValue ?? 0);
+          const calculatedPnl = lastValue - firstValue;
+
+          // Calculate simple return (ROI%)
+          const simpleReturn = firstValue > 0 ? calculatedPnl / firstValue : 0;
+
+          // Get total trades for this agent
+          const totalTrades = await this.tradeRepo.countSpotLiveTradesForAgent(
+            entry.agentId,
+            competitionId,
+          );
+
+          spotLiveMetrics = {
+            simpleReturn,
+            currentValue: lastValue,
+            totalTrades,
+          };
+
+          this.logger.debug(
+            {
+              agentId: entry.agentId,
+              startingValue: firstValue,
+              currentValue: lastValue,
+              pnl: calculatedPnl,
+              simpleReturn: (simpleReturn * 100).toFixed(2) + "%",
+              totalTrades,
+            },
+            "[CompetitionService] Calculated spot live metrics",
+          );
+        }
+      }
+
       // Determine the score based on competition type and evaluation metric
       let score: number;
       if (competition?.type === "perpetual_futures" && entry.hasRiskMetrics) {
@@ -1431,8 +1485,11 @@ export class CompetitionService {
             }
             break;
         }
+      } else if (competition?.type === "spot_live_trading" && spotLiveMetrics) {
+        // Spot live ranked by ROI% for fair comparison regardless of starting capital
+        score = spotLiveMetrics.simpleReturn;
       } else {
-        score = entry.value; // Portfolio value for spot trading or perps without metrics
+        score = entry.value; // Portfolio value for paper trading or perps without metrics
       }
 
       // Add perps-specific fields if this is a perps competition with risk metrics
@@ -1455,6 +1512,26 @@ export class CompetitionService {
           hasRiskMetrics: true,
         };
         enrichedEntries.push(perpsEntry);
+      } else if (competition?.type === "spot_live_trading" && spotLiveMetrics) {
+        // Add spot live specific fields with ROI-based ranking
+        const spotLiveEntry: BaseEnrichedLeaderboardEntry & {
+          simpleReturn: number;
+          currentValue: number;
+          totalTrades: number;
+        } = {
+          agentId: entry.agentId,
+          competitionId,
+          rank: i + 1, // 1-based ranking
+          pnl,
+          startingValue,
+          totalAgents,
+          score, // score = simpleReturn (ROI%) for ranking
+          hasRiskMetrics: false,
+          simpleReturn: spotLiveMetrics.simpleReturn,
+          currentValue: spotLiveMetrics.currentValue,
+          totalTrades: spotLiveMetrics.totalTrades,
+        };
+        enrichedEntries.push(spotLiveEntry);
       } else {
         const baseEntry: BaseEnrichedLeaderboardEntry = {
           agentId: entry.agentId,
@@ -2029,6 +2106,11 @@ export class CompetitionService {
           if (competition.type === "perpetual_futures") {
             savedLeaderboard =
               await this.competitionRepo.findLeaderboardByPerpsComp(
+                competitionId,
+              );
+          } else if (competition.type === "spot_live_trading") {
+            savedLeaderboard =
+              await this.competitionRepo.findLeaderboardBySpotLiveComp(
                 competitionId,
               );
           } else {

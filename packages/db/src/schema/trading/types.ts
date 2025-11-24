@@ -86,6 +86,11 @@ export type SelectSpotLiveCompetitionConfig =
 export type InsertSpotLiveCompetitionConfig =
   typeof defs.spotLiveCompetitionConfig.$inferInsert;
 
+export type SelectSpotLiveCompetitionsLeaderboard =
+  typeof defs.spotLiveCompetitionsLeaderboard.$inferSelect;
+export type InsertSpotLiveCompetitionsLeaderboard =
+  typeof defs.spotLiveCompetitionsLeaderboard.$inferInsert;
+
 export type SelectSpotLiveAllowedProtocol =
   typeof defs.spotLiveAllowedProtocols.$inferSelect;
 export type InsertSpotLiveAllowedProtocol =
