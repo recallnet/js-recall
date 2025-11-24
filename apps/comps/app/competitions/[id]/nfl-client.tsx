@@ -16,6 +16,7 @@ import {
   NflCompetitionKey,
   NflCompetitionKeyTab,
 } from "@/components/nfl/nfl-competition-key";
+import { NflStandingsTable } from "@/components/nfl/nfl-standings-table";
 import { useNflGames } from "@/hooks/useNflGames";
 import { useNflRules } from "@/hooks/useNflRules";
 import { openForBoosting } from "@/lib/open-for-boosting";
@@ -185,6 +186,15 @@ export default function NflCompetitionPage({
               <BoostAgentsBtn className="w-full uppercase" />
             </div>
           </div>
+        </div>
+
+        {/* Standings Table */}
+        <div className="mb-10">
+          <NflStandingsTable
+            competitionId={competitionId}
+            competition={competition}
+            games={games}
+          />
         </div>
       </div>
     </div>
