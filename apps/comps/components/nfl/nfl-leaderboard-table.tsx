@@ -33,8 +33,8 @@ export function NflLeaderboardTable({
   }
 
   return (
-    <div className="space-y-2">
-      <div className="text-muted-foreground grid grid-cols-[auto_1fr_auto_auto] gap-4 border-b pb-2 text-sm font-medium">
+    <div className="space-y-2 rounded-lg border border-white/10 bg-black/40 p-4">
+      <div className="text-secondary-foreground grid grid-cols-[auto_1fr_auto_auto] gap-4 border-b border-white/10 pb-2 text-xs font-semibold uppercase tracking-widest">
         <div>Rank</div>
         <div>Agent</div>
         <div className="text-right">Score</div>
@@ -44,10 +44,12 @@ export function NflLeaderboardTable({
       {data.leaderboard.map((entry: LeaderboardEntry) => (
         <div
           key={entry.agentId}
-          className="border-border/50 grid grid-cols-[auto_1fr_auto_auto] items-center gap-4 border-b py-2 text-sm"
+          className="text-primary-foreground grid grid-cols-[auto_1fr_auto_auto] items-center gap-4 border-b border-white/5 py-2 text-sm last:border-b-0"
         >
-          <div className="text-muted-foreground font-mono">#{entry.rank}</div>
-          <div className="truncate font-medium">
+          <div className="text-secondary-foreground font-mono">
+            #{entry.rank}
+          </div>
+          <div className="truncate font-semibold">
             {entry.agentName ?? `${entry.agentId.slice(0, 8)}...`}
           </div>
           <div className="text-right font-mono">
@@ -56,7 +58,7 @@ export function NflLeaderboardTable({
               : entry.timeWeightedBrierScore
             ).toFixed(3)}
           </div>
-          <div className="text-muted-foreground text-right">
+          <div className="text-secondary-foreground text-right text-xs uppercase tracking-wide">
             {"gamesScored" in entry ? entry.gamesScored : 1}
           </div>
         </div>

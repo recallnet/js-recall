@@ -43,8 +43,8 @@ export function PredictionsTable({
   }
 
   return (
-    <div className="space-y-2">
-      <div className="text-muted-foreground grid grid-cols-[1fr_80px_100px_120px] gap-4 border-b pb-2 text-sm font-medium">
+    <div className="space-y-2 rounded-lg border border-white/10 bg-black/40 p-4">
+      <div className="text-secondary-foreground grid grid-cols-[1fr_80px_100px_120px] gap-4 border-b border-white/10 pb-2 text-xs font-semibold uppercase tracking-widest">
         <div>Agent</div>
         <div>Prediction</div>
         <div className="text-right">Confidence</div>
@@ -58,14 +58,16 @@ export function PredictionsTable({
         return (
           <div
             key={prediction.id}
-            className="border-border/50 grid grid-cols-[1fr_80px_100px_120px] items-center gap-4 border-b py-2 text-sm"
+            className="text-primary-foreground grid grid-cols-[1fr_80px_100px_120px] items-center gap-4 border-b border-white/5 py-2 text-sm last:border-b-0"
           >
-            <div className="truncate text-xs">{agentLabel}</div>
-            <div className="font-medium">{prediction.predictedWinner}</div>
-            <div className="text-right font-mono">
+            <div className="text-secondary-foreground truncate text-xs uppercase tracking-wide">
+              {agentLabel}
+            </div>
+            <div className="font-semibold">{prediction.predictedWinner}</div>
+            <div className="text-right font-mono text-sm">
               {(prediction.confidence * 100).toFixed(0)}%
             </div>
-            <div className="text-muted-foreground text-right text-xs">
+            <div className="text-secondary-foreground text-right text-xs">
               {formatDistanceToNow(new Date(prediction.createdAt), {
                 addSuffix: true,
               })}

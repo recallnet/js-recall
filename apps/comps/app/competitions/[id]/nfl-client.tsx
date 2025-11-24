@@ -1,18 +1,24 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { ChevronRight, Plus } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 
+import { Button } from "@recallnet/ui2/components/button";
 import { Skeleton } from "@recallnet/ui2/components/skeleton";
+import { cn } from "@recallnet/ui2/lib/utils";
 
 import { BreadcrumbNav } from "@/components/breadcrumb-nav";
 import CompetitionSkeleton from "@/components/competition-skeleton";
+import { JoinCompetitionButton } from "@/components/join-competition-button";
 import { BrierScoreChart } from "@/components/nfl/brier-score-chart";
 import { GameTabs } from "@/components/nfl/game-tabs";
-import { GamesAccordion } from "@/components/nfl/games-accordion";
-import { NflLeaderboardTable } from "@/components/nfl/nfl-leaderboard-table";
-import { PredictionsTable } from "@/components/nfl/predictions-table";
+import {
+  NflCompetitionKey,
+  NflCompetitionKeyTab,
+} from "@/components/nfl/nfl-competition-key";
 import { useNflGames } from "@/hooks/useNflGames";
 import { useNflRules } from "@/hooks/useNflRules";
+import { openForBoosting } from "@/lib/open-for-boosting";
 import type { RouterOutputs } from "@/rpc/router";
 import { NflGame } from "@/types/nfl";
 
@@ -23,41 +29,40 @@ interface NflCompetitionPageProps {
   competition: CompetitionDetails;
 }
 
-type Tab = "ALL" | "PREDICTIONS" | "GAMES" | "INFO" | "RULES";
-
 export default function NflCompetitionPage({
   competitionId,
   competition,
 }: NflCompetitionPageProps) {
-  const [activeTab, setActiveTab] = useState<Tab>("ALL");
   const [selectedGameId, setSelectedGameId] = useState<string | undefined>();
+  const [activeKeyTab, setActiveKeyTab] =
+    useState<NflCompetitionKeyTab>("leaderboard");
 
   const {
     data: gamesData,
     isLoading: gamesLoading,
     error: gamesError,
   } = useNflGames(competitionId);
-  const { data: rulesData } = useNflRules(competitionId);
+  const { data: rulesData, isLoading: rulesLoading } =
+    useNflRules(competitionId);
 
-  const gameList = gamesData?.games;
-  const games = gameList ?? [];
+  const games = useMemo(() => gamesData?.games ?? [], [gamesData]);
 
   useEffect(() => {
-    if (!gameList?.length) {
+    if (!games.length) {
       return;
     }
 
-    const alreadySelected = gameList.some((game) => game.id === selectedGameId);
+    const alreadySelected = games.some((game) => game.id === selectedGameId);
     if (!alreadySelected) {
-      setSelectedGameId(gameList[0]?.id);
+      setSelectedGameId(games[0]?.id);
     }
-  }, [gameList, selectedGameId]);
+  }, [games, selectedGameId]);
 
-  const selectedGame: NflGame | undefined = games.find(
-    (game) => game.id === selectedGameId,
+  const selectedGame: NflGame | undefined = useMemo(
+    () => games.find((game) => game.id === selectedGameId),
+    [games, selectedGameId],
   );
 
-  const totalGames = games.length;
   const completedGames = games.filter((game) => game.status === "final").length;
 
   const handleSelectGame = (
@@ -66,16 +71,81 @@ export default function NflCompetitionPage({
   ): void => {
     setSelectedGameId(gameId);
     if (goToPredictions) {
-      setActiveTab("PREDICTIONS");
+      setActiveKeyTab("predictions");
     }
   };
 
-  if (gamesLoading) {
+  if (gamesLoading && !gamesData) {
     return <CompetitionSkeleton />;
   }
 
+  const BoostAgentsBtn = ({
+    className,
+    disabled,
+  }: {
+    className: string;
+    disabled?: boolean;
+  }) => (
+    <Button
+      disabled={!openForBoosting(competition) || disabled}
+      variant="default"
+      className={cn(
+        "border border-yellow-500 bg-black text-white hover:bg-yellow-500 hover:text-black disabled:hover:bg-black disabled:hover:text-white",
+        className,
+      )}
+      size="lg"
+    >
+      <span className="font-semibold">BOOST AGENTS</span>{" "}
+      <ChevronRight className="ml-2" size={18} />
+    </Button>
+  );
+
+  const chartCard = (
+    <div className="w-full">
+      <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="text-xl font-semibold">Prediction Progression</h2>
+        </div>
+      </div>
+
+      {gamesLoading && (
+        <div className="h-150">
+          <Skeleton className="h-full w-full rounded-lg" />
+        </div>
+      )}
+
+      {gamesError && (
+        <div className="text-destructive text-sm">
+          Failed to load games for this competition.
+        </div>
+      )}
+
+      {!gamesLoading && !gamesError && games.length > 0 && (
+        <>
+          <GameTabs
+            games={games}
+            selectedGameId={selectedGameId}
+            onSelect={(gameId) => handleSelectGame(gameId)}
+          />
+          <div className="mt-4">
+            <BrierScoreChart
+              competitionId={competitionId}
+              game={selectedGame}
+            />
+          </div>
+        </>
+      )}
+
+      {!gamesLoading && !gamesError && games.length === 0 && (
+        <div className="text-muted-foreground text-sm">
+          This competition does not have any games configured yet.
+        </div>
+      )}
+    </div>
+  );
+
   return (
-    <div className="">
+    <div>
       <BreadcrumbNav
         items={[
           { label: "Home", href: "/" },
@@ -83,204 +153,36 @@ export default function NflCompetitionPage({
           { label: competition.name },
         ]}
       />
+
       <div className="container mx-auto">
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          <div className="space-y-4 lg:col-span-2">
-            <div className="border-border bg-card rounded-lg border p-6">
-              <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <h2 className="text-xl font-semibold">
-                    Prediction Progression
-                  </h2>
-                  {selectedGame && (
-                    <p className="text-muted-foreground text-sm">
-                      Tracking {selectedGame.awayTeam} @ {selectedGame.homeTeam}
-                    </p>
-                  )}
-                </div>
-              </div>
-              {gamesLoading && (
-                <div className="h-[360px]">
-                  <Skeleton className="h-full w-full rounded-lg" />
-                </div>
-              )}
-              {gamesError && (
-                <div className="text-destructive text-sm">
-                  Failed to load games for this competition.
-                </div>
-              )}
-              {!gamesLoading && !gamesError && games.length > 0 && (
-                <>
-                  <GameTabs
-                    games={games}
-                    selectedGameId={selectedGameId}
-                    onSelect={(gameId) => handleSelectGame(gameId)}
-                  />
-                  <div className="mt-4">
-                    <BrierScoreChart
-                      competitionId={competitionId}
-                      game={selectedGame}
-                    />
-                  </div>
-                </>
-              )}
-              {!gamesLoading && !gamesError && games.length === 0 && (
-                <div className="text-muted-foreground text-sm">
-                  This competition does not have any games configured yet.
-                </div>
-              )}
-            </div>
-          </div>
+        <div className="mb-10 grid grid-cols-1 gap-6 md:grid-cols-3">
+          <div className="space-y-4 md:col-span-2">{chartCard}</div>
 
-          <div className="space-y-4">
-            <div className="flex gap-2 overflow-x-auto">
-              {(["ALL", "PREDICTIONS", "GAMES", "INFO", "RULES"] as Tab[]).map(
-                (tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab)}
-                    className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-                      activeTab === tab
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted text-muted-foreground hover:bg-muted/80"
-                    }`}
-                  >
-                    {tab}
-                  </button>
-                ),
-              )}
-            </div>
+          <div className="space-y-4 md:col-span-1">
+            <NflCompetitionKey
+              competitionId={competitionId}
+              competition={competition}
+              games={games}
+              selectedGameId={selectedGameId}
+              onSelectGame={handleSelectGame}
+              rules={rulesData}
+              rulesLoading={rulesLoading}
+              completedGames={completedGames}
+              activeTab={activeKeyTab}
+              onTabChange={setActiveKeyTab}
+            />
 
-            <div className="border-border bg-card rounded-lg border p-6">
-              {activeTab === "ALL" && (
-                <div className="space-y-3">
-                  <div className="text-muted-foreground text-xs">
-                    Games scored: {completedGames}/{totalGames}
-                    {completedGames < totalGames &&
-                      totalGames > 0 &&
-                      " • standings update as games finalize"}
-                  </div>
-                  <NflLeaderboardTable competitionId={competitionId} />
-                </div>
-              )}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <JoinCompetitionButton
+                competitionId={competitionId}
+                className="w-full border border-white bg-white text-blue-500 hover:border-blue-500 hover:bg-blue-500 hover:text-white disabled:hover:border-white disabled:hover:bg-white disabled:hover:text-blue-500"
+                disabled={competition.status !== "pending"}
+                size="lg"
+              >
+                <span>COMPETE</span> <Plus className="ml-2" size={18} />
+              </JoinCompetitionButton>
 
-              {activeTab === "PREDICTIONS" && (
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="text-lg font-semibold">
-                      Recent Predictions
-                    </h3>
-                    {selectedGame && (
-                      <p className="text-muted-foreground text-xs">
-                        Showing history for {selectedGame.awayTeam} @{" "}
-                        {selectedGame.homeTeam}
-                      </p>
-                    )}
-                  </div>
-                  {games.length > 0 ? (
-                    <>
-                      <GameTabs
-                        games={games}
-                        selectedGameId={selectedGameId}
-                        onSelect={(gameId) => handleSelectGame(gameId)}
-                        variant="compact"
-                      />
-                      {selectedGameId ? (
-                        <PredictionsTable
-                          competitionId={competitionId}
-                          gameId={selectedGameId}
-                        />
-                      ) : (
-                        <div className="text-muted-foreground text-sm">
-                          Select a game to view predictions.
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <div className="text-muted-foreground text-sm">
-                      No games yet.
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {activeTab === "GAMES" && (
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Games</h3>
-                  {games.length > 0 ? (
-                    <GamesAccordion
-                      games={games}
-                      selectedGameId={selectedGameId}
-                      onSelectGame={handleSelectGame}
-                    />
-                  ) : (
-                    <div className="text-muted-foreground text-sm">
-                      No games yet.
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {activeTab === "INFO" && (
-                <div>
-                  <h3 className="mb-4 text-lg font-semibold">
-                    Competition Info
-                  </h3>
-                  <div className="space-y-2 text-sm">
-                    <div>
-                      <span className="text-muted-foreground">Type: </span>
-                      <span className="font-medium">NFL Game Predictions</span>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Games: </span>
-                      <span className="font-medium">{totalGames}</span>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Status: </span>
-                      <span className="font-medium">{competition.status}</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {activeTab === "RULES" && (
-                <div>
-                  <h3 className="mb-4 text-lg font-semibold">Rules</h3>
-                  {rulesData ? (
-                    <div className="space-y-4 text-sm">
-                      <div>
-                        <div className="mb-1 font-medium">Prediction Type</div>
-                        <div className="text-muted-foreground">
-                          {rulesData.predictionType}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="mb-1 font-medium">Scoring Method</div>
-                        <div className="text-muted-foreground">
-                          {rulesData.scoringMethod}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="mb-1 font-medium">Confidence Range</div>
-                        <div className="text-muted-foreground">
-                          {rulesData.confidenceRange.min} -{" "}
-                          {rulesData.confidenceRange.max}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="mb-1 font-medium">Can Update?</div>
-                        <div className="text-muted-foreground">
-                          {rulesData.predictionRules.canUpdate ? "Yes" : "No"}
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="h-[360px]">
-                      <Skeleton className="h-full w-full rounded-lg" />
-                    </div>
-                  )}
-                </div>
-              )}
+              <BoostAgentsBtn className="w-full uppercase" />
             </div>
           </div>
         </div>

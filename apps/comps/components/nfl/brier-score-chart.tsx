@@ -14,7 +14,9 @@ import {
 } from "recharts";
 
 import { Skeleton } from "@recallnet/ui2/components/skeleton";
+import { cn } from "@recallnet/ui2/lib/utils";
 
+import { CHART_COLORS } from "@/components/timeline-chart/constants";
 import { useNflPredictions } from "@/hooks/useNflPredictions";
 import { NflGame, NflPrediction } from "@/types/nfl";
 
@@ -84,13 +86,35 @@ export function BrierScoreChart({ competitionId, game }: BrierScoreChartProps) {
 
     const sortedTimestamps = Array.from(uniqueTimestamps).sort((a, b) => a - b);
 
+    // Add intermediate timestamps for smoother visualization
+    const enhancedTimestamps: number[] = [];
+    for (let i = 0; i < sortedTimestamps.length - 1; i++) {
+      const current = sortedTimestamps[i];
+      const next = sortedTimestamps[i + 1];
+      if (current === undefined || next === undefined) continue;
+
+      enhancedTimestamps.push(current);
+      const gap = next - current;
+      // Add intermediate points if gap is large (> 30 minutes)
+      if (gap > 30 * 60 * 1000) {
+        const numIntermediate = Math.min(Math.floor(gap / (30 * 60 * 1000)), 3);
+        for (let j = 1; j <= numIntermediate; j++) {
+          enhancedTimestamps.push(current + (gap * j) / (numIntermediate + 1));
+        }
+      }
+    }
+    const lastTimestamp = sortedTimestamps[sortedTimestamps.length - 1];
+    if (lastTimestamp !== undefined) {
+      enhancedTimestamps.push(lastTimestamp);
+    }
+
     const agentStates = new Map<string, { index: number; latest?: number }>();
     predictionsByAgent.forEach((_, agentId) => {
       agentStates.set(agentId, { index: -1, latest: undefined });
     });
 
     const result: TimelinePoint[] = [];
-    sortedTimestamps.forEach((timestamp: number) => {
+    enhancedTimestamps.forEach((timestamp: number) => {
       const point: TimelinePoint = {
         timestamp,
         label: format(new Date(timestamp), "MMM d HH:mm"),
@@ -133,95 +157,98 @@ export function BrierScoreChart({ competitionId, game }: BrierScoreChartProps) {
     };
   }, [game, predictionsData]);
 
+  const renderEmptyState = (message: string, isError?: boolean) => (
+    <div
+      className={cn(
+        "h-120 flex items-center justify-center text-sm",
+        isError ? "text-destructive" : "text-muted-foreground",
+      )}
+    >
+      {message}
+    </div>
+  );
+
   if (!game) {
-    return (
-      <div className="text-muted-foreground flex h-[360px] items-center justify-center text-sm">
-        Select a game to view prediction trends.
-      </div>
-    );
+    return renderEmptyState("Select a game to view prediction trends.");
   }
 
   if (isLoading) {
     return (
-      <div className="h-[360px]">
+      <div className="h-120">
         <Skeleton className="h-full w-full rounded-lg" />
       </div>
     );
   }
 
   if (error) {
-    return (
-      <div className="text-destructive flex h-[360px] items-center justify-center text-sm">
-        Failed to load predictions for this game.
-      </div>
-    );
+    return renderEmptyState("Failed to load predictions for this game.", true);
   }
 
   if (!chartData.length || agentIds.length === 0) {
-    return (
-      <div className="text-muted-foreground flex h-[360px] items-center justify-center text-sm">
-        No predictions yet for this game.
-      </div>
-    );
+    return renderEmptyState("No predictions yet for this game.");
   }
 
-  const colors = [
-    "#8b5cf6",
-    "#ec4899",
-    "#f59e0b",
-    "#10b981",
-    "#3b82f6",
-    "#ef4444",
-  ];
-
   return (
-    <ResponsiveContainer width="100%" height={360}>
-      <LineChart data={chartData}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-        <XAxis
-          dataKey="label"
-          stroke="#888"
-          style={{ fontSize: "12px" }}
-          tick={{ fill: "#888" }}
-        />
-        <YAxis
-          stroke="#888"
-          style={{ fontSize: "12px" }}
-          tick={{ fill: "#888" }}
-          domain={[0, 1]}
-          tickFormatter={(value) => `${Math.round(value * 100)}%`}
-          label={{
-            value: `${game.homeTeam} win probability`,
-            angle: -90,
-            position: "insideLeft",
-            style: { fill: "#888" },
-          }}
-        />
-        <Tooltip
-          formatter={(value: number) => `${(value * 100).toFixed(0)}%`}
-          contentStyle={{
-            backgroundColor: "#1a1a1a",
-            border: "1px solid #333",
-            borderRadius: "8px",
-          }}
-          labelStyle={{ color: "#888" }}
-        />
-        <Legend wrapperStyle={{ paddingTop: "12px" }} />
-
-        {agentIds.map((agentId, index) => (
-          <Line
-            key={agentId}
-            type="stepAfter"
-            dataKey={agentId}
-            name={agentLabels.get(agentId) ?? agentId.slice(0, 8)}
-            stroke={colors[index % colors.length]}
-            strokeWidth={2}
-            dot={{ r: 3 }}
-            activeDot={{ r: 5 }}
-            isAnimationActive={false}
+    <div className="h-120 relative overflow-hidden [&_svg:focus]:outline-none">
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart
+          data={chartData}
+          margin={{ right: 30, bottom: 5, top: 20, left: 0 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+          <XAxis
+            dataKey="label"
+            stroke="var(--secondary-foreground)"
+            fontSize={12}
+            tick={{ fill: "var(--secondary-foreground)" }}
+            tickMargin={10}
+            minTickGap={20}
           />
-        ))}
-      </LineChart>
-    </ResponsiveContainer>
+          <YAxis
+            stroke="var(--secondary-foreground)"
+            fontSize={12}
+            tick={{ fill: "var(--secondary-foreground)" }}
+            domain={[0, 1]}
+            tickFormatter={(value) => `${Math.round(value * 100)}%`}
+            label={{
+              value: `${game.homeTeam} win probability`,
+              angle: -90,
+              position: "insideLeft",
+              style: { fill: "var(--secondary-foreground)" },
+            }}
+          />
+          <Tooltip
+            formatter={(value: number) => `${(value * 100).toFixed(0)}%`}
+            contentStyle={{
+              backgroundColor: "var(--card)",
+              border: "1px solid var(--border)",
+              borderRadius: "8px",
+            }}
+            labelStyle={{ color: "var(--secondary-foreground)" }}
+          />
+          <Legend
+            wrapperStyle={{ paddingTop: 12 }}
+            iconType="circle"
+            formatter={(value: string) =>
+              agentLabels.get(value) ?? value.slice(0, 8)
+            }
+          />
+
+          {agentIds.map((agentId, index) => (
+            <Line
+              key={agentId}
+              type="stepAfter"
+              dataKey={agentId}
+              name={agentLabels.get(agentId) ?? agentId.slice(0, 8)}
+              stroke={CHART_COLORS[index % CHART_COLORS.length]}
+              strokeWidth={2}
+              dot={{ r: 2 }}
+              activeDot={{ r: 4 }}
+              isAnimationActive={false}
+            />
+          ))}
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
   );
 }

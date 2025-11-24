@@ -72,9 +72,6 @@ export function GamesAccordion({
                     Winner: {game.winner}
                   </span>
                 )}
-                {isSelected && (
-                  <span className="text-primary font-medium">Active</span>
-                )}
                 <span
                   className={`rounded-full px-2 py-1 text-[11px] font-medium ${
                     game.status === "in_progress"
@@ -122,14 +119,14 @@ export function GamesAccordion({
                 <div className="mt-4 flex flex-wrap gap-2">
                   <button
                     type="button"
-                    className="border-border hover:bg-muted/50 rounded-md border px-3 py-1 text-xs font-medium"
+                    className="border-border hover:bg-muted/50 rounded-md border px-3 py-1 text-xs font-medium uppercase"
                     onClick={() => onSelectGame?.(game.id)}
                   >
                     Focus chart
                   </button>
                   <button
                     type="button"
-                    className="bg-primary text-primary-foreground rounded-md px-3 py-1 text-xs font-medium"
+                    className="bg-primary rounded-md px-3 py-1 text-xs font-medium uppercase text-black"
                     onClick={() => onSelectGame?.(game.id, true)}
                   >
                     View predictions
