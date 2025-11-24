@@ -65,7 +65,7 @@ export class GameScoringService {
    * Formula: Score = 1 - Σ(w_t * (p_t - y)²) / Σ(w_t)
    * where:
    * - t = (timestamp - game_start) / (game_end - game_start) ∈ [0, 1]
-   * - w_t = 0.5 + 0.5 * t (weight increases over time)
+   * - w_t = 1 - 0.5 * t (weight tapers as the game progresses)
    * - p_t = confidence if predicted winner matches actual, else 1-confidence
    * - y = 1 (actual winner)
    *
@@ -105,8 +105,8 @@ export class GameScoringService {
       // Clamp t to [0, 1] (predictions before game start get t=0)
       t = Math.max(0, Math.min(1, t));
 
-      // Calculate weight w_t = 0.5 + 0.5 * t
-      const weight = 0.5 + 0.5 * t;
+      // Calculate weight w_t = 1 - 0.5 * t
+      const weight = 1 - 0.5 * t;
 
       // Calculate probability p_t
       const confidence = prediction.confidence;
