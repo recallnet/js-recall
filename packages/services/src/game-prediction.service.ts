@@ -6,6 +6,8 @@ import { GamesRepository } from "@recallnet/db/repositories/games";
 import { SelectGamePrediction } from "@recallnet/db/schema/sports/types";
 import { Database, Transaction } from "@recallnet/db/types";
 
+import { ApiError } from "./types/index.js";
+
 /**
  * Game Prediction Service
  * Handles business logic for game winner predictions
@@ -49,54 +51,47 @@ export class GamePredictionService {
     confidence: number,
     reason: string,
   ): Promise<SelectGamePrediction> {
-    // Validate competition is active (outside transaction - read-only check)
     const competition = await this.#competitionRepo.findById(competitionId);
     if (!competition) {
-      throw new Error(`Competition ${competitionId} not found`);
+      throw new ApiError(404, `Competition ${competitionId} not found`);
     }
     if (competition.status !== "active") {
-      throw new Error(
+      throw new ApiError(
+        409,
         `Competition ${competitionId} is not active (status: ${competition.status})`,
       );
     }
     if (competition.type !== "sports_prediction") {
-      throw new Error(
+      throw new ApiError(
+        400,
         `Competition ${competitionId} is not an NFL competition (type: ${competition.type})`,
       );
     }
-
-    // Validate confidence range early (no DB needed)
     if (confidence < 0 || confidence > 1) {
-      throw new Error(
+      throw new ApiError(
+        400,
         `Invalid confidence ${confidence}. Must be between 0.0 and 1.0`,
       );
     }
 
-    // Use transaction with row lock to prevent race condition
-    // Lock game row → validate → create prediction (atomic)
     const prediction = await this.#db.transaction(async (tx: Transaction) => {
-      // Lock the game row to prevent concurrent modifications
       const game = await this.#gamesRepo.findByIdForUpdate(gameId, tx);
       if (!game) {
-        throw new Error(`Game ${gameId} not found`);
+        throw new ApiError(404, `Game ${gameId} not found`);
       }
-
-      // Check game status while holding lock - prevents TOCTOU race condition
       if (game.status === "final") {
-        throw new Error(`Game ${gameId} has already ended`);
+        throw new ApiError(409, `Game ${gameId} has already ended`);
       }
-
-      // Validate predicted winner is one of the teams
       if (
         predictedWinner !== game.homeTeam &&
         predictedWinner !== game.awayTeam
       ) {
-        throw new Error(
+        throw new ApiError(
+          400,
           `Invalid predicted winner "${predictedWinner}". Must be "${game.homeTeam}" or "${game.awayTeam}"`,
         );
       }
 
-      // Create prediction within same transaction
       return await this.#gamePredictionsRepo.create(
         {
           competitionId,
