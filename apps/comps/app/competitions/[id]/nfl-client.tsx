@@ -9,7 +9,9 @@ import { cn } from "@recallnet/ui2/lib/utils";
 
 import { BreadcrumbNav } from "@/components/breadcrumb-nav";
 import CompetitionSkeleton from "@/components/competition-skeleton";
+import { FooterSection } from "@/components/footer-section";
 import { JoinCompetitionButton } from "@/components/join-competition-button";
+import { JoinSwarmSection } from "@/components/join-swarm-section";
 import { BrierScoreChart } from "@/components/nfl/brier-score-chart";
 import { GameTabs } from "@/components/nfl/game-tabs";
 import {
@@ -17,6 +19,7 @@ import {
   NflCompetitionKeyTab,
 } from "@/components/nfl/nfl-competition-key";
 import { NflStandingsTable } from "@/components/nfl/nfl-standings-table";
+import { getSocialLinksArray } from "@/data/social";
 import { useNflGames } from "@/hooks/useNflGames";
 import { useNflRules } from "@/hooks/useNflRules";
 import { openForBoosting } from "@/lib/open-for-boosting";
@@ -189,7 +192,7 @@ export default function NflCompetitionPage({
         </div>
 
         {/* Standings Table */}
-        <div className="mb-10">
+        <div className="mt-50 mb-10 md:mt-40">
           <NflStandingsTable
             competitionId={competitionId}
             competition={competition}
@@ -197,6 +200,9 @@ export default function NflCompetitionPage({
           />
         </div>
       </div>
+
+      <JoinSwarmSection socialLinks={getSocialLinksArray()} className="mt-12" />
+      <FooterSection />
     </div>
   );
 }

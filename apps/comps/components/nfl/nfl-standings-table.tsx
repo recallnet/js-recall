@@ -13,7 +13,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { useRouter } from "next/navigation";
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 
 import { attoValueToNumberValue } from "@recallnet/conversions/atto-conversions";
 import { Button } from "@recallnet/ui2/components/button";
@@ -54,6 +54,7 @@ interface NflStandingsTableProps {
 }
 
 const numberFormatter = new Intl.NumberFormat();
+const MOBILE_BREAKPOINT = 768;
 
 export function NflStandingsTable({
   competitionId,
@@ -67,6 +68,16 @@ export function NflStandingsTable({
     (typeof agentRows)[number] | null
   >(null);
   const [isBoostModalOpen, setIsBoostModalOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
+    };
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   const isBoostEnabled = useMemo(() => {
     return (
@@ -463,6 +474,19 @@ export function NflStandingsTable({
     data: agentRows,
     columns,
     getCoreRowModel: getCoreRowModel(),
+    state: {
+      columnVisibility: {
+        boostPool: !isMobile,
+        yourShare: session.isAuthenticated && !isMobile,
+        ...games.reduce(
+          (acc, game) => ({
+            ...acc,
+            [`game-${game.id}`]: !isMobile,
+          }),
+          {},
+        ),
+      },
+    },
   });
 
   const competitionTitles = {
@@ -517,13 +541,14 @@ export function NflStandingsTable({
 
       {/* Table */}
       <div className="overflow-x-auto rounded-lg border border-white/10">
-        <Table>
-          <TableHeader>
+        <Table className="w-full min-w-max table-auto !border-collapse">
+          <TableHeader className="sticky top-0 z-10 bg-black">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
                   <TableHead
                     key={header.id}
+                    colSpan={header.colSpan}
                     style={{ width: header.getSize() }}
                     className={cn(
                       "table-cell",
@@ -544,7 +569,7 @@ export function NflStandingsTable({
           <TableBody>
             {table.getRowModel().rows.length ? (
               table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id}>
+                <TableRow key={row.id} className="border-t border-white/10">
                   {row.getVisibleCells().map((cell) => (
                     <TableCell
                       key={cell.id}

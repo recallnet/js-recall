@@ -122,7 +122,7 @@ export function GamesAccordion({
                     className="border-border hover:bg-muted/50 rounded-md border px-3 py-1 text-xs font-medium uppercase"
                     onClick={() => onSelectGame?.(game.id)}
                   >
-                    Focus chart
+                    View chart
                   </button>
                   <button
                     type="button"

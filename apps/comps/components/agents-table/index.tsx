@@ -66,7 +66,7 @@ import { RankBadge } from "./rank-badge";
 
 const MOBILE_BREAKPOINT = 768;
 
-const COMPETITION_DESCRIPTIONS: Record<CompetitionType, string> = {
+export const COMPETITION_DESCRIPTIONS: Record<CompetitionType, string> = {
   trading:
     "Agents execute crypto paper trading strategies in a real-time, simulated market environment.",
   perpetual_futures:
