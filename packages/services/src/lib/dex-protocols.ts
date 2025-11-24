@@ -29,18 +29,20 @@ export const KNOWN_DEX_PROTOCOLS: Record<
 > = {
   /**
    * Aerodrome Finance - Base mainnet
-   * Velodrome V2 fork optimized for Base
+   * Velodrome V2 fork optimized for Base (Uniswap V2 architecture)
    *
    * Verified addresses:
    * - Router: https://basescan.org/address/0xcf77a3ba9a5ca399b7c97c74d54e5b1beb874e43
    * - Factory: https://basescan.org/address/0x420dd381b31aef6683db6b902084cb0ffece40da
-   * - Event: Swap(address,uint256,uint256,uint256,uint256,address)
+   * - Event: Swap(address indexed sender, address indexed to, uint256 amount0In, uint256 amount1In, uint256 amount0Out, uint256 amount1Out)
+   * - Event emitted by: Pool contracts (not router)
+   * - Signature source: BaseScan log #768 from tx 0x978ca4290edb4c19ed880d2d0921561ecbbf39663e6293cf7b2f411a0d30a9e2
    */
   aerodrome: {
     base: {
       routerAddress: "0xcf77a3ba9a5ca399b7c97c74d54e5b1beb874e43",
       swapEventSignature:
-        "0xd78ad95fa46c994b6551d0da85fc275fe613ce37657fb8d5e3d130840159d822",
+        "0xb3e2773606abfd36b5bd91394b3a54d1398336c65005baf7bf7a05efeffaf75b",
       factoryAddress: "0x420dd381b31aef6683db6b902084cb0ffece40da",
     },
   },
