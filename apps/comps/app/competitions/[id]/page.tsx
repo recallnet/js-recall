@@ -1,7 +1,5 @@
 import { Metadata } from "next";
 
-import type { Competition } from "@recallnet/services/types";
-
 import { createMetadata } from "@/lib/metadata";
 import { createSafeClient } from "@/rpc/clients/server-side";
 
@@ -48,10 +46,7 @@ export default async function CompetitionPage({
     // Route to appropriate client based on competition type
     if (competition?.type === "sports_prediction") {
       return (
-        <NflCompetitionPage
-          competitionId={id}
-          competition={competition as Competition}
-        />
+        <NflCompetitionPage competitionId={id} competition={competition} />
       );
     }
 

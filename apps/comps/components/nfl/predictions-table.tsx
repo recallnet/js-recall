@@ -2,6 +2,8 @@
 
 import { formatDistanceToNow } from "date-fns";
 
+import { Skeleton } from "@recallnet/ui2/components/skeleton";
+
 import { useNflPredictions } from "@/hooks/useNflPredictions";
 import { NflPrediction } from "@/types/nfl";
 
@@ -23,7 +25,11 @@ export function PredictionsTable({
   );
 
   if (isLoading) {
-    return <div className="text-muted-foreground">Loading predictions...</div>;
+    return (
+      <div className="h-[360px]">
+        <Skeleton className="h-full w-full rounded-lg" />
+      </div>
+    );
   }
 
   if (error) {

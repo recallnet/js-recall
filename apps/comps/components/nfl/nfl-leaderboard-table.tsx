@@ -1,5 +1,7 @@
 "use client";
 
+import { Skeleton } from "@recallnet/ui2/components/skeleton";
+
 import { useNflLeaderboard } from "@/hooks/useNflLeaderboard";
 import { LeaderboardEntry } from "@/types/nfl";
 
@@ -15,7 +17,11 @@ export function NflLeaderboardTable({
   const { data, isLoading, error } = useNflLeaderboard(competitionId, gameId);
 
   if (isLoading) {
-    return <div className="text-muted-foreground">Loading leaderboard...</div>;
+    return (
+      <div className="h-[360px]">
+        <Skeleton className="h-full w-full rounded-lg" />
+      </div>
+    );
   }
 
   if (error) {

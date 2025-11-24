@@ -1,44 +1,56 @@
 /**
  * NFL-specific types for the frontend
  */
+import type {
+  SelectCompetitionAggregateScore,
+  SelectGame,
+  SelectGamePrediction,
+  SelectGamePredictionScore,
+} from "@recallnet/db/schema/sports/types";
 
-export interface NflGame {
-  id: string;
-  globalGameId: number;
-  gameKey: string;
-  startTime: string;
-  endTime: string | null;
-  homeTeam: string;
-  awayTeam: string;
-  venue: string | null;
-  status: "scheduled" | "in_progress" | "final";
-  winner: string | null;
-  spread: number | null;
-  overUnder: number | null;
-}
+export type NflGame = Pick<
+  SelectGame,
+  | "id"
+  | "providerGameId"
+  | "season"
+  | "week"
+  | "startTime"
+  | "endTime"
+  | "homeTeam"
+  | "awayTeam"
+  | "venue"
+  | "status"
+  | "winner"
+  | "spread"
+  | "overUnder"
+>;
 
-export interface NflPrediction {
-  id: string;
-  agentId: string;
-  predictedWinner: string;
-  confidence: number;
+export interface NflPrediction
+  extends Pick<
+    SelectGamePrediction,
+    "id" | "agentId" | "predictedWinner" | "confidence"
+  > {
   createdAt: string;
 }
 
-export interface GameLeaderboardEntry {
-  agentId: string;
+export interface GameLeaderboardEntry
+  extends Pick<
+    SelectGamePredictionScore,
+    | "agentId"
+    | "timeWeightedBrierScore"
+    | "finalPrediction"
+    | "finalConfidence"
+    | "predictionCount"
+  > {
   rank: number;
-  timeWeightedBrierScore: number;
-  finalPrediction: string | null;
-  finalConfidence: number | null;
-  predictionCount: number;
 }
 
-export interface CompetitionLeaderboardEntry {
-  agentId: string;
+export interface CompetitionLeaderboardEntry
+  extends Pick<
+    SelectCompetitionAggregateScore,
+    "agentId" | "averageBrierScore" | "gamesScored"
+  > {
   rank: number;
-  averageBrierScore: number;
-  gamesScored: number;
 }
 
 export type LeaderboardEntry =
