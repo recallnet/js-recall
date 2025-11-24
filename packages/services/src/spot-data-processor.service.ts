@@ -13,6 +13,7 @@ import type {
 import { PortfolioSnapshotterService } from "./portfolio-snapshotter.service.js";
 import { PriceTrackerService } from "./price-tracker.service.js";
 import { SpotLiveProviderFactory } from "./providers/spot-live-provider.factory.js";
+import { SpotLiveMonitoringService } from "./spot-live-monitoring.service.js";
 import {
   PriceReport,
   SpecificChain,
@@ -924,10 +925,6 @@ export class SpotDataProcessor {
       ) {
         this.logger.info(
           `[SpotDataProcessor] Running self-funding monitoring for competition ${competitionId}`,
-        );
-
-        const { SpotLiveMonitoringService } = await import(
-          "./spot-live-monitoring.service.js"
         );
 
         const monitoring = new SpotLiveMonitoringService(
