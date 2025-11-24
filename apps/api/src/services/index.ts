@@ -39,7 +39,7 @@ import {
   RiskMetricsService,
   SimulatedTradeExecutionService,
   SortinoRatioService,
-  SportsIngestionService,
+  SportsIngesterService,
   SportsService,
   TradeSimulatorService,
   TradingConstraintsService,
@@ -123,7 +123,7 @@ class ServiceRegistry {
   private readonly _rewardsRepository: RewardsRepository;
   private readonly _rewardsAllocator: RewardsAllocator;
   private readonly _sportsService: SportsService;
-  private readonly _sportsIngestionService: SportsIngestionService;
+  private readonly _sportsIngesterService: SportsIngesterService;
 
   constructor() {
     // Initialize Privy client (use MockPrivyClient in test mode to avoid real API calls)
@@ -193,7 +193,7 @@ class ServiceRegistry {
       this._competitionRepository,
       serviceLogger,
     );
-    this._sportsIngestionService = new SportsIngestionService(
+    this._sportsIngesterService = new SportsIngesterService(
       this._sportsService,
       serviceLogger,
       config,
@@ -574,8 +574,8 @@ class ServiceRegistry {
     return this._sportsService;
   }
 
-  get sportsIngestionService(): SportsIngestionService {
-    return this._sportsIngestionService;
+  get sportsIngesterService(): SportsIngesterService {
+    return this._sportsIngesterService;
   }
 
   private getRewardsAllocator(): RewardsAllocator {

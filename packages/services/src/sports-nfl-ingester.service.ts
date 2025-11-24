@@ -263,7 +263,7 @@ export class NflIngesterService {
       // Fetch play-by-play data
       const data = await this.#provider.getPlayByPlay(providerGameId);
 
-      // Execute game + play ingestion atomically
+      // Execute ingester for game + plays atomically
       const { game, finalizeContext } = await this.#db.transaction(
         async (tx: Transaction) => {
           const gameResult = await this.#ingestGame(data, tx);
