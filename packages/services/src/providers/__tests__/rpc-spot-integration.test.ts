@@ -109,6 +109,7 @@ describe("RpcSpotProvider - Integration Tests (Real Blockchain)", () => {
       TEST_WALLETS.aerodromeSwapper, // Use known active wallet
       fromBlock,
       ["base"],
+      toBlock, // Specify toBlock for faster, deterministic tests
     );
 
     console.log(`Found ${trades.length} trades from real blockchain`);
@@ -200,6 +201,7 @@ describe("RpcSpotProvider - Integration Tests (Real Blockchain)", () => {
       KNOWN_AERODROME_SWAP.wallet,
       fromBlock,
       ["base"],
+      toBlock, // Specify toBlock for faster, deterministic test
     );
 
     console.log(
@@ -296,6 +298,7 @@ describe("RpcSpotProvider - Integration Tests (Real Blockchain)", () => {
       KNOWN_AERODROME_SWAP.wallet,
       fromBlock,
       ["base"],
+      toBlock, // Specify toBlock for faster, deterministic tests
     );
 
     console.log(
@@ -372,6 +375,7 @@ describe("RpcSpotProvider - Integration Tests (Real Blockchain)", () => {
       TEST_WALLETS.aerodromeSwapper, // Use known active wallet
       searchStartDate,
       ["base"],
+      KNOWN_AERODROME_SWAP.blockNumber + 10, // Narrow range for fast test
     );
 
     console.log(`Found ${trades.length} trades`);
@@ -462,6 +466,7 @@ describe("RpcSpotProvider - Integration Tests (Real Blockchain)", () => {
       KNOWN_AERODROME_SWAP.wallet,
       fromBlock,
       ["base"],
+      KNOWN_AERODROME_SWAP.blockNumber + 10, // Narrow range for fast test
     );
 
     expect(trades.length).toBeGreaterThan(0);

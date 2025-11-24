@@ -220,6 +220,7 @@ export class AlchemyRpcProvider implements IRpcProvider {
     chain: SpecificChain,
     fromBlock: number | string,
     toBlock: number | string = "latest",
+    pageKey?: string,
   ): Promise<AssetTransfersWithMetadataResponse> {
     const startTime = Date.now();
     const maskedAddress = this.maskWalletAddress(walletAddress);
@@ -258,6 +259,8 @@ export class AlchemyRpcProvider implements IRpcProvider {
                 : toBlock;
 
             // Get all transfers where the wallet is involved
+            // Note: pageKey applies to both fromAddress and toAddress queries combined
+            // We need to handle pagination differently for combined results
             const [fromTransfers, toTransfers] = await Promise.all([
               // Outgoing transfers (wallet is sender)
               provider.core.getAssetTransfers({
@@ -271,6 +274,7 @@ export class AlchemyRpcProvider implements IRpcProvider {
                 withMetadata: true,
                 excludeZeroValue: false, // Include zero-value transfers for completeness
                 maxCount: 1000, // Alchemy's max per request
+                pageKey: pageKey, // Pass pagination cursor
               }),
               // Incoming transfers (wallet is receiver)
               provider.core.getAssetTransfers({
@@ -284,6 +288,7 @@ export class AlchemyRpcProvider implements IRpcProvider {
                 withMetadata: true,
                 excludeZeroValue: false,
                 maxCount: 1000,
+                pageKey: pageKey, // Pass pagination cursor
               }),
             ]);
 

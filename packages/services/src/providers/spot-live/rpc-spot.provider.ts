@@ -133,6 +133,7 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
     walletAddress: string,
     since: Date | number,
     chains: SpecificChain[],
+    toBlock?: number | string,
   ): Promise<OnChainTrade[]> {
     const startTime = Date.now();
     const maskedAddress = this.maskAddress(walletAddress);
@@ -191,7 +192,8 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
             walletAddress,
             chain,
             sinceBlock,
-            pageKey || "latest",
+            toBlock || "latest", // Use specified toBlock for tests, "latest" for production
+            pageKey, // Pass pagination cursor (undefined on first call)
           );
 
           allTransfers.push(...transfersResponse.transfers);
@@ -374,7 +376,8 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
             walletAddress,
             chain,
             sinceBlock,
-            pageKey || "latest",
+            "latest", // Always scan to latest block
+            pageKey, // Pass pagination cursor (undefined on first call)
           );
 
           chainTransfers.push(...transfersResponse.transfers);
@@ -493,22 +496,25 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
     const byTx = new Map<string, Transfer[]>();
 
     for (const transfer of transfers) {
+      // Normalize hash to lowercase for consistent grouping
+      const normalizedHash = transfer.hash.toLowerCase();
+
       const normalizedTransfer: Transfer = {
         from: transfer.from.toLowerCase(),
         to: transfer.to ? transfer.to.toLowerCase() : "",
         value: Number(transfer.value) || 0,
         asset: transfer.asset || "ETH",
-        hash: transfer.hash,
+        hash: normalizedHash,
         blockNum: transfer.blockNum,
         metadata: transfer.metadata,
         rawContract: transfer.rawContract,
       };
 
-      const existing = byTx.get(transfer.hash);
+      const existing = byTx.get(normalizedHash);
       if (existing) {
         existing.push(normalizedTransfer);
       } else {
-        byTx.set(transfer.hash, [normalizedTransfer]);
+        byTx.set(normalizedHash, [normalizedTransfer]);
       }
     }
 

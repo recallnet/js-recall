@@ -50,13 +50,15 @@ export interface IRpcProvider {
    * @param chain Chain to query
    * @param fromBlock Starting block number or tag
    * @param toBlock Ending block number or tag
-   * @returns Asset transfers with metadata
+   * @param pageKey Optional pagination cursor from previous request
+   * @returns Asset transfers with metadata and optional pageKey for next page
    */
   getAssetTransfers(
     walletAddress: string,
     chain: SpecificChain,
     fromBlock: number | string,
     toBlock: number | string,
+    pageKey?: string,
   ): Promise<AssetTransfersWithMetadataResponse>;
 
   /**
