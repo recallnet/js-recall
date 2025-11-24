@@ -183,7 +183,7 @@ export const ConvictionStakeModal: React.FC<ConvictionStakeModalProps> = ({
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="bg-gray-2 border-gray-4 min-w-[500px] max-w-md gap-0 overflow-hidden rounded-xl p-0 text-white">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 pb-2">
+        <div className="border-gray-4 flex items-center justify-between border-b px-6 py-4">
           <DialogTitle className="flex items-center gap-2 text-xl font-semibold">
             Stake Duration{" "}
             <span className="text-secondary-foreground flex items-center gap-1 text-xs font-normal">
@@ -202,7 +202,6 @@ export const ConvictionStakeModal: React.FC<ConvictionStakeModalProps> = ({
 
         {step === "select" && (
           <>
-            <div className="border-gray-4 border-t" />
             <div className="space-y-6 px-6 py-3">
               {/* Duration Selection */}
               <RadioGroup
