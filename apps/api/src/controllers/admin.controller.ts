@@ -1672,12 +1672,16 @@ export function makeAdminController(services: ServiceRegistry) {
           });
         }
 
-        // Validate wallet address for perps competitions
-        if (competition.type === "perpetual_futures" && !agent.walletAddress) {
+        // Validate wallet address for competitions requiring on-chain wallets
+        if (
+          (competition.type === "perpetual_futures" ||
+            competition.type === "spot_live_trading") &&
+          !agent.walletAddress
+        ) {
           return res.status(400).json({
             success: false,
             error:
-              "Agent must have a wallet address to participate in perpetual futures competitions",
+              "Agent must have a wallet address to participate in this competition",
           });
         }
 

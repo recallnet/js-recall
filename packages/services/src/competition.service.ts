@@ -2647,11 +2647,15 @@ export class CompetitionService {
       throw new ApiError(403, "Agent is not eligible to join competitions");
     }
 
-    // Validate wallet address for perps competitions
-    if (competition.type === "perpetual_futures" && !agent.walletAddress) {
+    // Validate wallet address for competitions requiring on-chain wallets
+    if (
+      (competition.type === "perpetual_futures" ||
+        competition.type === "spot_live_trading") &&
+      !agent.walletAddress
+    ) {
       throw new ApiError(
         400,
-        "Agent must have a wallet address to participate in perpetual futures competitions",
+        "Agent must have a wallet address to participate in this competition",
       );
     }
 

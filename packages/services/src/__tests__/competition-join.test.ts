@@ -751,6 +751,27 @@ describe("CompetitionService - joinCompetition", () => {
         mockAgent.id,
       );
     });
+
+    it("should reject agent without wallet for spot_live_trading competitions", async () => {
+      const agentNoWallet = { ...mockAgent, walletAddress: null };
+      const spotLiveCompetition = {
+        ...mockCompetition,
+        type: "spot_live_trading" as const,
+      };
+
+      agentService.getAgent.mockResolvedValue(agentNoWallet);
+      competitionRepo.findById.mockResolvedValue(spotLiveCompetition);
+      competitionRepo.isAgentActiveInCompetition.mockResolvedValue(false);
+
+      await expect(
+        competitionService.joinCompetition(
+          mockCompetition.id,
+          mockAgent.id,
+          mockUserId,
+          undefined,
+        ),
+      ).rejects.toThrow("Agent must have a wallet address");
+    });
   });
 
   describe("participation rules validation", () => {
