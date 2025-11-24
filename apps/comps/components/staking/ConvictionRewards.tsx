@@ -19,8 +19,7 @@ export const ConvictionRewards: React.FunctionComponent = () => {
   const [selectedClaim, setSelectedClaim] =
     useState<FormattedConvictionClaim | null>(null);
 
-  const { claims, totalFormatted, availableClaims, isLoading, error } =
-    useConvictionClaims();
+  const { claims, totalFormatted, isLoading, error } = useConvictionClaims();
 
   const sortedClaims = useMemo(() => {
     return [...claims].sort((a, b) => a.season - b.season);
