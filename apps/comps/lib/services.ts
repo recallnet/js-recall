@@ -1,6 +1,7 @@
 import { Hex } from "viem";
 
 import {
+  AdminService,
   AgentRankService,
   AgentService,
   AirdropService,
@@ -13,6 +14,7 @@ import {
   CompetitionService,
   EmailService,
   LeaderboardService,
+  PartnerService,
   PerpsDataProcessor,
   PortfolioSnapshotterService,
   PriceTrackerService,
@@ -35,6 +37,7 @@ import {
 
 import { config } from "@/config/private";
 import {
+  adminRepository,
   agentNonceRepository,
   agentRepository,
   agentScoreRepository,
@@ -46,6 +49,7 @@ import {
   competitionRewardsRepository,
   convictionClaimsRepository,
   leaderboardRepository,
+  partnerRepository,
   perpsRepository,
   rewardsRepository,
   stakesRepository,
@@ -195,6 +199,16 @@ export const arenaService = new ArenaService(
   arenaRepository,
   competitionRepository,
   createLogger("ArenaService"),
+);
+
+export const partnerService = new PartnerService(
+  partnerRepository,
+  createLogger("PartnerService"),
+);
+
+export const adminService = new AdminService(
+  adminRepository,
+  createLogger("AdminService"),
 );
 
 export const leaderboardService = new LeaderboardService(

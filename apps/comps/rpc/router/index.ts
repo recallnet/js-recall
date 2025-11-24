@@ -1,5 +1,6 @@
 import type { InferRouterOutputs } from "@orpc/server";
 
+import { router as admin } from "./admin";
 import { router as agent } from "./agent";
 import { router as airdrop } from "./airdrop";
 import { router as arena } from "./arena";
@@ -10,6 +11,7 @@ import { router as rewards } from "./rewards";
 import { router as user } from "./user";
 
 export const router = {
+  admin,
   agent,
   arena,
   airdrop,

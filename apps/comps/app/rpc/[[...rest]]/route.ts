@@ -1,17 +1,21 @@
 import { RPCHandler } from "@orpc/server/fetch";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 
 import { createLogger } from "@/lib/logger";
 import { privyClient } from "@/lib/privy-client";
 import {
+  adminService,
   agentService,
   airdropService,
   arenaService,
+  balanceService,
   boostAwardService,
   boostService,
   competitionService,
   emailService,
   leaderboardService,
+  partnerService,
+  portfolioSnapshotterService,
   rewardsService,
   userService,
 } from "@/lib/services";
@@ -24,7 +28,9 @@ async function handleRequest(request: Request) {
     prefix: "/rpc",
     context: {
       cookies: await cookies(),
+      headers: await headers(),
       privyClient,
+      adminService,
       airdropService,
       boostService,
       boostAwardService,
@@ -32,6 +38,9 @@ async function handleRequest(request: Request) {
       competitionService,
       agentService,
       arenaService,
+      partnerService,
+      balanceService,
+      portfolioSnapshotterService,
       emailService,
       leaderboardService,
       rewardsService,

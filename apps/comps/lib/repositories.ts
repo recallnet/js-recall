@@ -1,3 +1,4 @@
+import { AdminRepository } from "@recallnet/db/repositories/admin";
 import { AgentRepository } from "@recallnet/db/repositories/agent";
 import { AgentNonceRepository } from "@recallnet/db/repositories/agent-nonce";
 import { AgentScoreRepository } from "@recallnet/db/repositories/agent-score";
@@ -9,6 +10,7 @@ import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { CompetitionRewardsRepository } from "@recallnet/db/repositories/competition-rewards";
 import { ConvictionClaimsRepository } from "@recallnet/db/repositories/conviction-claims";
 import { LeaderboardRepository } from "@recallnet/db/repositories/leaderboard";
+import { PartnerRepository } from "@recallnet/db/repositories/partner";
 import { PerpsRepository } from "@recallnet/db/repositories/perps";
 import { RewardsRepository } from "@recallnet/db/repositories/rewards";
 import { StakesRepository } from "@recallnet/db/repositories/stakes";
@@ -100,4 +102,14 @@ export const userRepository = new UserRepository(
 export const rewardsRepository = new RewardsRepository(
   db,
   createLogger("RewardsRepository"),
+);
+
+export const adminRepository = new AdminRepository(
+  db,
+  createLogger("AdminRepository"),
+);
+
+export const partnerRepository = new PartnerRepository(
+  db,
+  createLogger("PartnerRepository"),
 );
