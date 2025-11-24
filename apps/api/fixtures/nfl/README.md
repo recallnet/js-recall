@@ -109,7 +109,7 @@ SPORTSDATAIO_BASE_URL=http://localhost:4569
 
 ```bash
 # Use the play-by-play ingestion script to ingest the play-by-play
-pnpm tsx scripts/nfl-plays-ingestor.ts --gameId 19068
+pnpm tsx scripts/nfl-plays-ingester.ts --gameId 19068
 ```
 
 Then, call the `/pbp/json/playbyplay/:providerGameId` endpoint to get the play-by-play.
@@ -118,7 +118,7 @@ Then, call the `/pbp/json/playbyplay/:providerGameId` endpoint to get the play-b
 
 ```bash
 # Use the schedule ingestion script to ingest the schedule
-pnpm tsx scripts/nfl-schedule-ingestor.ts --season 2025
+pnpm tsx scripts/nfl-schedule-ingester.ts --season 2025
 ```
 
 Then, call the `/stats/json/schedules/:season` endpoint to get the schedule.
@@ -132,4 +132,4 @@ Visit the [SportsDataIO API developer portal](https://sportsdata.io/developers/r
 - Set up the replay for game `19068` in the 2025 season (at time Sept 8th around 8:15pm ET)
 - Configure the `SPORTSDATAIO_API_KEY` environment variable to your SportsDataIO API key
 - Also set the `SPORTSDATAIO_BASE_URL` environment variable to include the `replay` subdomain: `https://replay.sportsdata.io/v3/nfl`
-- Then, when you run the ingestion scripts, they will pull from the live replay API instead of the mock server. Note the schedule ingestor requires you pass the `--season` argument with `2025reg`.
+- Then, when you run the ingestion scripts, they will pull from the live replay API instead of the mock server. Note the schedule ingester requires you pass the `--season` argument with `2025reg`.

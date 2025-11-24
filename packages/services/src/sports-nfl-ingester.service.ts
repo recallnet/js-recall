@@ -21,10 +21,10 @@ import type {
 } from "./types/sports.js";
 
 /**
- * NFL Live Ingestor Service
+ * NFL Game and Play Ingester Service
  * Fetches live data from SportsDataIO and ingests into database
  */
-export class NflIngestorService {
+export class NflIngesterService {
   readonly #db: Database;
   readonly #gamesRepo: GamesRepository;
   readonly #gamePlaysRepo: GamePlaysRepository;

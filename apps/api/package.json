@@ -75,8 +75,8 @@
     "cron:auto-start-competitions:run-once": "tsx scripts/auto-start-competitions.ts --run-once",
     "cron:auto-calculate-rewards": "tsx scripts/auto-calculate-rewards.ts",
     "cron:auto-calculate-rewards:run-once": "tsx scripts/auto-calculate-rewards.ts --run-once",
-    "cron:nfl-plays-ingestor": "tsx scripts/nfl-plays-ingestor.ts",
-    "cron:nfl-schedule-ingestor": "tsx scripts/nfl-schedule-ingestor.ts"
+    "cron:nfl-plays-ingester": "tsx scripts/nfl-plays-ingester.ts",
+    "cron:nfl-schedule-ingester": "tsx scripts/nfl-schedule-ingester.ts"
   },
   "keywords": [
     "solana",

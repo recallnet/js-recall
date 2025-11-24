@@ -14,8 +14,8 @@ import { GameScoringService } from "./game-scoring.service.js";
 
 /**
  * Sports Service
- * Provides read-only accessors for sports data and related scoring utilities
- * Used by consumer surfaces that should not depend on external provider config
+ * Provides database accessors for sports data and related scoring utilities
+ * Used by consumer surfaces that should not depend on external provider API calls
  */
 export class SportsService {
   // Repositories

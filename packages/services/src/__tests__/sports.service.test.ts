@@ -5,7 +5,7 @@ import { MockProxy, mock } from "vitest-mock-extended";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { Database } from "@recallnet/db/types";
 
-import { SportsIngestionService } from "../sports-ingestion.service.js";
+import { SportsIngesterService } from "../sports-ingester.service.js";
 import { SportsService } from "../sports.service.js";
 
 describe("SportsService", () => {
@@ -89,9 +89,9 @@ describe("SportsService", () => {
   });
 });
 
-describe("SportsIngestionService", () => {
+describe("SportsIngesterService", () => {
   let sportsService: SportsService;
-  let ingestionService: SportsIngestionService;
+  let ingesterService: SportsIngesterService;
   let mockDb: MockProxy<Database>;
   let mockCompetitionRepo: MockProxy<CompetitionRepository>;
   let mockLogger: MockProxy<Logger>;
@@ -108,7 +108,7 @@ describe("SportsIngestionService", () => {
     mockCompetitionRepo = mock<CompetitionRepository>();
     mockLogger = mock<Logger>();
     sportsService = new SportsService(mockDb, mockCompetitionRepo, mockLogger);
-    ingestionService = new SportsIngestionService(
+    ingesterService = new SportsIngesterService(
       sportsService,
       mockLogger,
       mockConfig,
@@ -116,14 +116,14 @@ describe("SportsIngestionService", () => {
   });
 
   it("should initialize SportsDataIO provider", () => {
-    expect(ingestionService.sportsDataIOProvider.constructor.name).toBe(
+    expect(ingesterService.sportsDataIOProvider.constructor.name).toBe(
       "SportsDataIONflProvider",
     );
   });
 
-  it("should initialize nflIngestorService", () => {
-    expect(ingestionService.nflIngestorService.constructor.name).toBe(
-      "NflIngestorService",
+  it("should initialize nflIngesterService", () => {
+    expect(ingesterService.nflIngesterService.constructor.name).toBe(
+      "NflIngesterService",
     );
   });
 });

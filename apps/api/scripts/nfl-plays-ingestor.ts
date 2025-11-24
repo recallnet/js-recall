@@ -8,10 +8,10 @@ import { ServiceRegistry } from "@/services/index.js";
 // Load environment variables
 dotenv.config({ path: path.resolve(process.cwd(), ".env") });
 
-const logger = createLogger("NFLPlaysIngestor");
+const logger = createLogger("NFLPlaysIngester");
 
 /**
- * Main ingestor function
+ * Main ingestion function for NFL plays
  */
 async function ingestPlays(): Promise<void> {
   const services = new ServiceRegistry();
@@ -27,7 +27,7 @@ async function ingestPlays(): Promise<void> {
 
   try {
     const ingestedCount =
-      await services.sportsIngestionService.nflIngestorService.ingestActiveGames();
+      await services.sportsIngestionService.nflIngesterService.ingestActiveGames();
 
     if (ingestedCount === 0) {
       logger.debug("No active games found");

@@ -16,14 +16,14 @@ import type { Database, Transaction } from "@recallnet/db/types";
 
 import { GameScoringService } from "../game-scoring.service.js";
 import type { SportsDataIONflProvider } from "../providers/sportsdataio.provider.js";
-import { NflIngestorService } from "../sports-nfl-ingestor.service.js";
+import { NflIngesterService } from "../sports-nfl-ingester.service.js";
 import type {
   SportsDataIOPlayByPlay,
   SportsDataIOScheduleGame,
 } from "../types/sports.js";
 
-describe("SportsNflIngestorService", () => {
-  let service: NflIngestorService;
+describe("SportsNflIngesterService", () => {
+  let service: NflIngesterService;
   let mockGamesRepo: MockProxy<GamesRepository>;
   let mockGamePlaysRepo: MockProxy<GamePlaysRepository>;
   let mockGamePredictionsRepo: MockProxy<GamePredictionsRepository>;
@@ -109,7 +109,7 @@ describe("SportsNflIngestorService", () => {
       },
     );
 
-    service = new NflIngestorService(
+    service = new NflIngesterService(
       mockDb,
       mockGamesRepo,
       mockGamePlaysRepo,

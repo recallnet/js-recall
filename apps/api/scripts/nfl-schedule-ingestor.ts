@@ -9,7 +9,7 @@ import { ServiceRegistry } from "@/services/index.js";
 // Load environment variables
 dotenv.config({ path: path.resolve(process.cwd(), ".env") });
 
-const logger = createLogger("NFLScheduleIngestor");
+const logger = createLogger("NFLScheduleIngester");
 
 /**
  * Parse command line arguments
@@ -49,7 +49,7 @@ async function syncSchedule(): Promise<void> {
   logger.info(`Starting NFL schedule sync for ${args.season} season...`);
 
   try {
-    await services.sportsIngestionService.nflIngestorService.syncSchedule(
+    await services.sportsIngestionService.nflIngesterService.syncSchedule(
       args.season,
     );
   } catch (error) {

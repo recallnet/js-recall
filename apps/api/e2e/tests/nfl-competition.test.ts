@@ -31,7 +31,7 @@ describe("Sports Prediction Competitions", () => {
     await tempClient.resetMockServer(providerGameId);
 
     const dbGameId =
-      await services.sportsIngestionService.nflIngestorService.ingestGamePlayByPlay(
+      await services.sportsIngestionService.nflIngesterService.ingestGamePlayByPlay(
         providerGameId,
       );
 
@@ -122,7 +122,7 @@ describe("Sports Prediction Competitions", () => {
     await tempClient.resetMockServer(providerGameId);
 
     const dbGameId =
-      await services.sportsIngestionService.nflIngestorService.ingestGamePlayByPlay(
+      await services.sportsIngestionService.nflIngesterService.ingestGamePlayByPlay(
         providerGameId,
       );
 
@@ -156,7 +156,7 @@ describe("Sports Prediction Competitions", () => {
     await tempClient.resetMockServer(providerGameId);
 
     const dbGameId =
-      await services.sportsIngestionService.nflIngestorService.ingestGamePlayByPlay(
+      await services.sportsIngestionService.nflIngesterService.ingestGamePlayByPlay(
         providerGameId,
       );
 
@@ -195,13 +195,13 @@ describe("Sports Prediction Competitions", () => {
     await tempClient.resetMockServer(providerGameId1);
 
     const dbGameId1 =
-      await services.sportsIngestionService.nflIngestorService.ingestGamePlayByPlay(
+      await services.sportsIngestionService.nflIngesterService.ingestGamePlayByPlay(
         providerGameId1,
       );
 
     await tempClient.resetMockServer(providerGameId1);
     const dbGameId2 =
-      await services.sportsIngestionService.nflIngestorService.ingestGamePlayByPlay(
+      await services.sportsIngestionService.nflIngesterService.ingestGamePlayByPlay(
         providerGameId1,
       );
 
@@ -260,7 +260,7 @@ describe("Sports Prediction Competitions", () => {
     await tempClient.resetMockServer(providerGameId);
 
     const dbGameId =
-      await services.sportsIngestionService.nflIngestorService.ingestGamePlayByPlay(
+      await services.sportsIngestionService.nflIngesterService.ingestGamePlayByPlay(
         providerGameId,
       );
 
@@ -330,7 +330,7 @@ describe("Sports Prediction Competitions", () => {
     await tempClient.resetMockServer(providerGameId);
 
     const dbGameId =
-      await services.sportsIngestionService.nflIngestorService.ingestGamePlayByPlay(
+      await services.sportsIngestionService.nflIngesterService.ingestGamePlayByPlay(
         providerGameId,
       );
 
@@ -404,7 +404,7 @@ describe("Sports Prediction Competitions", () => {
     await tempClient.resetMockServer(providerGameId);
 
     const dbGameId =
-      await services.sportsIngestionService.nflIngestorService.ingestGamePlayByPlay(
+      await services.sportsIngestionService.nflIngesterService.ingestGamePlayByPlay(
         providerGameId,
       );
 
@@ -412,7 +412,7 @@ describe("Sports Prediction Competitions", () => {
     for (let i = 0; i < 5; i++) {
       await tempClient.advanceMockServer(providerGameId);
     }
-    await services.sportsIngestionService.nflIngestorService.ingestGamePlayByPlay(
+    await services.sportsIngestionService.nflIngesterService.ingestGamePlayByPlay(
       providerGameId,
     );
 
@@ -480,7 +480,7 @@ describe("Sports Prediction Competitions", () => {
     await tempClient.resetMockServer(providerGameId);
 
     const dbGameId =
-      await services.sportsIngestionService.nflIngestorService.ingestGamePlayByPlay(
+      await services.sportsIngestionService.nflIngesterService.ingestGamePlayByPlay(
         providerGameId,
       );
 
@@ -576,7 +576,7 @@ describe("Sports Prediction Competitions", () => {
 
     // Step 7: Advance mock server to start the game (snapshot 1)
     await nflClient1.advanceMockServer(providerGameId);
-    await services.sportsIngestionService.nflIngestorService.ingestGamePlayByPlay(
+    await services.sportsIngestionService.nflIngesterService.ingestGamePlayByPlay(
       providerGameId,
     );
 
@@ -606,19 +606,19 @@ describe("Sports Prediction Competitions", () => {
 
     // Step 10: Advance mock server multiple times to progress through game
     await nflClient1.advanceMockServer(providerGameId);
-    await services.sportsIngestionService.nflIngestorService.ingestGamePlayByPlay(
+    await services.sportsIngestionService.nflIngesterService.ingestGamePlayByPlay(
       providerGameId,
     );
 
     await nflClient1.advanceMockServer(providerGameId);
-    await services.sportsIngestionService.nflIngestorService.ingestGamePlayByPlay(
+    await services.sportsIngestionService.nflIngesterService.ingestGamePlayByPlay(
       providerGameId,
     );
 
     // Step 11: Advance to final snapshot (game progresses)
     await nflClient1.advanceMockServer(providerGameId);
     await nflClient1.advanceMockServer(providerGameId);
-    await services.sportsIngestionService.nflIngestorService.ingestGamePlayByPlay(
+    await services.sportsIngestionService.nflIngesterService.ingestGamePlayByPlay(
       providerGameId,
     );
 
@@ -694,11 +694,11 @@ describe("Sports Prediction Competitions", () => {
     await tempClient.resetMockServer(providerGameId);
 
     const dbGameId =
-      await services.sportsIngestionService.nflIngestorService.ingestGamePlayByPlay(
+      await services.sportsIngestionService.nflIngesterService.ingestGamePlayByPlay(
         providerGameId,
       );
     await tempClient.advanceMockServer(providerGameId);
-    await services.sportsIngestionService.nflIngestorService.ingestGamePlayByPlay(
+    await services.sportsIngestionService.nflIngesterService.ingestGamePlayByPlay(
       providerGameId,
     );
 
@@ -811,7 +811,7 @@ describe("Sports Prediction Competitions", () => {
     await tempClient.advanceMockServer(providerGameId);
     await tempClient.advanceMockServer(providerGameId);
 
-    await services.sportsIngestionService.nflIngestorService.ingestGamePlayByPlay(
+    await services.sportsIngestionService.nflIngesterService.ingestGamePlayByPlay(
       providerGameId,
     );
 
@@ -846,7 +846,7 @@ describe("Sports Prediction Competitions", () => {
     await tempClient.resetMockServer(providerGameId);
 
     const dbGameId1 =
-      await services.sportsIngestionService.nflIngestorService.ingestGamePlayByPlay(
+      await services.sportsIngestionService.nflIngesterService.ingestGamePlayByPlay(
         providerGameId,
       );
     const game2 = await services.sportsService.gamesRepository.upsert({
@@ -906,7 +906,7 @@ describe("Sports Prediction Competitions", () => {
     await tempClient.resetMockServer(providerGameId);
 
     const dbGameId1 =
-      await services.sportsIngestionService.nflIngestorService.ingestGamePlayByPlay(
+      await services.sportsIngestionService.nflIngesterService.ingestGamePlayByPlay(
         providerGameId,
       );
     const game2 = await services.sportsService.gamesRepository.upsert({
