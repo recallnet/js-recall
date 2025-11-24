@@ -68,14 +68,15 @@ export class AirdropService {
 
   /**
    * Calculate unlock date for staked tokens
+   * Uses UTC-safe arithmetic to avoid DST issues
    */
   private calculateUnlockDate(
     claimTimestamp: Date,
     durationInSeconds: bigint,
   ): Date {
-    const unlockTime = new Date(claimTimestamp);
-    unlockTime.setSeconds(unlockTime.getSeconds() + Number(durationInSeconds));
-    return unlockTime;
+    return new Date(
+      claimTimestamp.getTime() + Number(durationInSeconds) * 1000,
+    );
   }
 
   /**
@@ -135,10 +136,10 @@ export class AirdropService {
           };
         } else if (!convictionClaim) {
           // Determine if the claim has expired
+          // Use UTC-safe date arithmetic to avoid DST issues
           const daysToAdd = season.number > 0 ? 30 : 90;
-          const expirationTimestamp = new Date(season.startDate);
-          expirationTimestamp.setDate(
-            expirationTimestamp.getDate() + daysToAdd,
+          const expirationTimestamp = new Date(
+            season.startDate.getTime() + daysToAdd * 24 * 60 * 60 * 1000,
           );
 
           const now = new Date();

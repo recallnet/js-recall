@@ -6,8 +6,8 @@ import type { SelectBalance } from "@recallnet/db/schema/trading/types";
 import { assertUnreachable } from "./lib/typescript-utils.js";
 import {
   CompetitionType,
-  SpecificChain,
   SpecificChainBalances,
+  SpecificChainSchema,
   SpecificChainTokens,
 } from "./types/index.js";
 
@@ -73,7 +73,7 @@ export class BalanceService {
     // Process each specific chain that we have balances for
     Object.entries(this.specificChainBalances).forEach(
       ([chain, tokenBalances]) => {
-        const specificChain = chain as SpecificChain;
+        const specificChain = SpecificChainSchema.parse(chain);
 
         // Only process chains that we have token configurations for
         if (

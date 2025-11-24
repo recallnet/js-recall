@@ -190,15 +190,16 @@ export class MultiChainProvider implements PriceSource {
 
   /**
    * Get prices for multiple tokens in a single batch request
+   * Caller must specify the exact chain for each token
    * @param tokenAddresses Array of token addresses to fetch prices for
-   * @param blockchainType Blockchain type
-   * @param specificChain Optional specific chain identifier
+   * @param blockchainType Blockchain type (SVM or EVM)
+   * @param specificChain Specific chain identifier (required)
    * @returns Map of token addresses to their price information
    */
   async getBatchPrices(
     tokenAddresses: string[],
-    blockchainType?: BlockchainType,
-    specificChain?: SpecificChain,
+    blockchainType: BlockchainType,
+    specificChain: SpecificChain,
   ): Promise<Map<string, PriceReport | null>> {
     const results = new Map<string, PriceReport | null>();
 
@@ -206,152 +207,47 @@ export class MultiChainProvider implements PriceSource {
       return results;
     }
 
-    const firstAddress = tokenAddresses[0];
-    if (!firstAddress) {
-      return results;
-    }
-
-    const detectedChainType =
-      blockchainType || this.determineChain(firstAddress);
-
-    // For Solana tokens, delegate to the configured provider
-    if (detectedChainType === BlockchainType.SVM) {
-      this.logger.debug(
-        `[MultiChainProvider] Getting batch prices for ${tokenAddresses.length} Solana tokens`,
-      );
-      try {
-        const batchResults = await this.priceProvider.getBatchPrices(
-          tokenAddresses,
-          BlockchainType.SVM,
-          "svm",
-        );
-
-        batchResults.forEach((result, tokenAddress) => {
-          if (result) {
-            results.set(tokenAddress, {
-              ...result,
-              token: tokenAddress,
-              timestamp: new Date(),
-              chain: BlockchainType.SVM,
-              specificChain: "svm",
-            });
-          } else {
-            results.set(tokenAddress, null);
-          }
-        });
-      } catch (error) {
-        this.logger.debug(
-          {
-            error,
-          },
-          `[MultiChainProvider] Error fetching batch prices for Solana tokens:`,
-        );
-        // Set all tokens to null on error
-        tokenAddresses.forEach((addr) => {
-          results.set(addr, null);
-        });
-      }
-      return results;
-    }
-
-    // For EVM tokens, handle batch processing
     this.logger.debug(
-      `[MultiChainProvider] Getting batch prices for ${tokenAddresses.length} EVM tokens`,
+      `[MultiChainProvider] Getting batch prices for ${tokenAddresses.length} tokens on ${specificChain}`,
     );
 
-    // If a specific chain was provided, use it directly
-    if (specificChain) {
-      this.logger.debug(
-        `[MultiChainProvider] Using provided specific chain: ${specificChain}`,
+    try {
+      const batchResults = await this.priceProvider.getBatchPrices(
+        tokenAddresses,
+        blockchainType,
+        specificChain,
       );
 
-      try {
-        const batchResults = await this.priceProvider.getBatchPrices(
-          tokenAddresses,
-          BlockchainType.EVM,
-          specificChain,
-        );
+      // Process results and enrich with chain information
+      let successCount = 0;
+      batchResults.forEach((result, tokenAddress) => {
+        if (result) {
+          results.set(tokenAddress, {
+            ...result,
+            token: tokenAddress,
+            timestamp: new Date(),
+            chain: blockchainType,
+            specificChain,
+          });
+          successCount++;
+        } else {
+          results.set(tokenAddress, null);
+        }
+      });
 
-        batchResults.forEach((result, tokenAddress) => {
-          if (result) {
-            results.set(tokenAddress, {
-              ...result,
-              token: tokenAddress,
-              timestamp: new Date(),
-              chain: BlockchainType.EVM,
-              specificChain,
-            });
-          } else {
-            results.set(tokenAddress, null);
-          }
-        });
-      } catch (error) {
-        this.logger.error(
-          { error },
-          `[MultiChainProvider] Error fetching batch prices for EVM tokens on ${specificChain}`,
-        );
-        // Set all tokens to null on error
-        tokenAddresses.forEach((addr) => {
-          results.set(addr, null);
-        });
-      }
-      return results;
+      this.logger.debug(
+        `[MultiChainProvider] Batch processing complete: ${successCount}/${tokenAddresses.length} tokens found on ${specificChain}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        { error, chain: specificChain },
+        `[MultiChainProvider] Error fetching batch prices:`,
+      );
+      // Set all tokens to null on error
+      tokenAddresses.forEach((addr) => {
+        results.set(addr, null);
+      });
     }
-
-    // No specific chain provided, try each chain in order
-    const chainsToTry = [...this.defaultChains];
-
-    // Try each chain until we get prices for all tokens
-    const remainingTokens = new Set(tokenAddresses);
-
-    for (const chain of chainsToTry) {
-      if (remainingTokens.size === 0) break;
-
-      try {
-        this.logger.debug(
-          `[MultiChainProvider] Attempting to fetch batch prices for ${remainingTokens.size} tokens on ${chain} chain`,
-        );
-
-        const batchResults = await this.priceProvider.getBatchPrices(
-          Array.from(remainingTokens),
-          BlockchainType.EVM,
-          chain,
-        );
-
-        batchResults.forEach((result, tokenAddress) => {
-          if (result) {
-            results.set(tokenAddress, {
-              ...result,
-              token: tokenAddress,
-              timestamp: new Date(),
-              chain: BlockchainType.EVM,
-              specificChain: chain,
-            });
-
-            // Remove from remaining tokens
-            remainingTokens.delete(tokenAddress);
-          }
-        });
-      } catch (error) {
-        this.logger.debug(
-          {
-            error,
-          },
-          `[MultiChainProvider] Error fetching batch prices on ${chain} chain:`,
-        );
-        // Continue to next chain
-        continue;
-      }
-    }
-
-    // Set any remaining tokens to null
-    remainingTokens.forEach((addr) => {
-      results.set(addr, null);
-    });
-
-    this.logger.debug(
-      `[MultiChainProvider] Batch processing complete. Found prices for ${results.size - remainingTokens.size} out of ${tokenAddresses.length} tokens`,
-    );
 
     return results;
   }
