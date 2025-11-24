@@ -7,6 +7,7 @@ import {
   Legend,
   Line,
   LineChart,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -130,10 +131,11 @@ export function BrierScoreChart({ competitionId, game }: BrierScoreChartProps) {
             break;
           }
           state.index += 1;
-          state.latest =
-            nextPrediction.predictedWinner === game.homeTeam
-              ? nextPrediction.confidence
-              : 1 - nextPrediction.confidence;
+          // Map to -100 to +100 scale: home team positive, away team negative
+          const isHomeTeam = nextPrediction.predictedWinner === game.homeTeam;
+          state.latest = isHomeTeam
+            ? nextPrediction.confidence * 100
+            : -nextPrediction.confidence * 100;
         }
 
         if (state.latest !== undefined) {
@@ -190,12 +192,34 @@ export function BrierScoreChart({ competitionId, game }: BrierScoreChartProps) {
 
   return (
     <div className="h-120 relative overflow-hidden [&_svg:focus]:outline-none">
+      {/* Team y-axis labels */}
+      <div className="pointer-events-none absolute left-0 top-0 z-10 flex h-full flex-col justify-between py-4 pl-2">
+        <div className="text-secondary-foreground text-xs font-semibold uppercase leading-tight">
+          <div className="flex flex-col">
+            <span>{game.homeTeam}</span>
+            <span>win %</span>
+          </div>
+        </div>
+        <div className="text-secondary-foreground mb-10 text-xs font-semibold uppercase leading-tight">
+          <div className="flex flex-col">
+            <span>{game.awayTeam}</span>
+            <span>win %</span>
+          </div>
+        </div>
+      </div>
+
       <ResponsiveContainer width="100%" height="100%">
         <LineChart
           data={chartData}
-          margin={{ right: 30, bottom: 5, top: 20, left: 0 }}
+          margin={{ right: 30, bottom: 5, top: 20, left: 45 }}
         >
           <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+          <ReferenceLine
+            y={0}
+            stroke="var(--muted-foreground)"
+            strokeDasharray="3 3"
+            strokeOpacity={0.5}
+          />
           <XAxis
             dataKey="label"
             stroke="var(--secondary-foreground)"
@@ -208,17 +232,15 @@ export function BrierScoreChart({ competitionId, game }: BrierScoreChartProps) {
             stroke="var(--secondary-foreground)"
             fontSize={12}
             tick={{ fill: "var(--secondary-foreground)" }}
-            domain={[0, 1]}
-            tickFormatter={(value) => `${Math.round(value * 100)}%`}
-            label={{
-              value: `${game.homeTeam} win probability`,
-              angle: -90,
-              position: "insideLeft",
-              style: { fill: "var(--secondary-foreground)" },
-            }}
+            domain={[-100, 100]}
+            ticks={[-100, -75, -50, -25, 0, 25, 50, 75, 100]}
+            tickFormatter={(value) => `${Math.abs(value)}%`}
           />
           <Tooltip
-            formatter={(value: number) => `${(value * 100).toFixed(0)}%`}
+            formatter={(value: number) => {
+              const team = value > 0 ? game.homeTeam : game.awayTeam;
+              return `${team}: ${Math.abs(value).toFixed(0)}%`;
+            }}
             contentStyle={{
               backgroundColor: "var(--card)",
               border: "1px solid var(--border)",
