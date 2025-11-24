@@ -264,7 +264,7 @@ describe("SportsNflIngesterService", () => {
       };
 
       mockProvider.getPlayByPlay.mockResolvedValue(mockData);
-      mockGamesRepo.findByProviderGameId.mockResolvedValue(undefined);
+      mockGamesRepo.findByProviderGameIdForUpdate.mockResolvedValue(undefined);
       mockGamesRepo.upsert.mockResolvedValue(mockGame);
 
       const result = await service.ingestGamePlayByPlay(19068);
@@ -481,7 +481,7 @@ describe("SportsNflIngesterService", () => {
       };
 
       mockProvider.getPlayByPlay.mockResolvedValue(mockPlayByPlayData);
-      mockGamesRepo.findByProviderGameId.mockResolvedValue(game);
+      mockGamesRepo.findByProviderGameIdForUpdate.mockResolvedValue(game);
       mockGamesRepo.upsert.mockResolvedValue(game);
 
       const result = await service.ingestActiveGames();
@@ -589,7 +589,7 @@ describe("SportsNflIngesterService", () => {
           Plays: [],
         });
 
-      mockGamesRepo.findByProviderGameId.mockResolvedValue(undefined);
+      mockGamesRepo.findByProviderGameIdForUpdate.mockResolvedValue(undefined);
       mockGamesRepo.upsert.mockResolvedValue(game2);
 
       const result = await service.ingestActiveGames();
@@ -659,7 +659,9 @@ describe("SportsNflIngesterService", () => {
         },
       ];
 
-      mockGamesRepo.findByProviderGameId.mockResolvedValue(existingGame);
+      mockGamesRepo.findByProviderGameIdForUpdate.mockResolvedValue(
+        existingGame,
+      );
       mockGamePredictionsRepo.findPregamePredictions.mockResolvedValue(
         preGamePredictions,
       );
@@ -767,7 +769,9 @@ describe("SportsNflIngesterService", () => {
         updatedAt: new Date(),
       };
 
-      mockGamesRepo.findByProviderGameId.mockResolvedValue(existingGame);
+      mockGamesRepo.findByProviderGameIdForUpdate.mockResolvedValue(
+        existingGame,
+      );
       mockGamePredictionsRepo.findPregamePredictions.mockResolvedValue([]);
 
       const updatedGame: SelectGame = {
@@ -842,7 +846,9 @@ describe("SportsNflIngesterService", () => {
         updatedAt: new Date(),
       };
 
-      mockGamesRepo.findByProviderGameId.mockResolvedValue(existingGame);
+      mockGamesRepo.findByProviderGameIdForUpdate.mockResolvedValue(
+        existingGame,
+      );
 
       const updatedGame: SelectGame = {
         ...existingGame,
@@ -955,7 +961,9 @@ describe("SportsNflIngesterService", () => {
         },
       ];
 
-      mockGamesRepo.findByProviderGameId.mockResolvedValue(existingGame);
+      mockGamesRepo.findByProviderGameIdForUpdate.mockResolvedValue(
+        existingGame,
+      );
       mockGamePredictionsRepo.findPregamePredictions.mockResolvedValue(
         preGamePredictions,
       );

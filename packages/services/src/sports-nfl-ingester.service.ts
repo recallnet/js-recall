@@ -418,8 +418,8 @@ export class NflIngesterService {
       status = "scheduled";
     }
 
-    // Check if game was already final
-    const existingGame = await this.#gamesRepo.findByProviderGameId(
+    // Check if game was already final (note: row-locked)
+    const existingGame = await this.#gamesRepo.findByProviderGameIdForUpdate(
       score.GlobalGameID,
       tx,
     );
