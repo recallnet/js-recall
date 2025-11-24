@@ -186,13 +186,13 @@ export const ConvictionStakeModal: React.FC<ConvictionStakeModalProps> = ({
         <div className="flex items-center justify-between p-6 pb-2">
           <DialogTitle className="flex items-center gap-2 text-xl font-semibold">
             Stake Duration{" "}
-            <span className="flex items-center gap-1 text-xs font-normal text-gray-500">
+            <span className="text-secondary-foreground flex items-center gap-1 text-xs font-normal">
               <LinkIcon size={12} />
               <a
                 href="https://blog.recall.network/conviction-staking"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="cursor-pointer underline hover:text-gray-300"
+                className="hover:text-primary-foreground cursor-pointer underline"
               >
                 Conviction Staking
               </a>
@@ -225,11 +225,11 @@ export const ConvictionStakeModal: React.FC<ConvictionStakeModalProps> = ({
                     >
                       {" "}
                       <span
-                        className={`text-base ${selectedDurationIndex === index ? "gray-6 font-bold" : "gray-5 font-normal"}`}
+                        className={`text-base ${selectedDurationIndex === index ? "text-gray-6 font-bold" : "text-gray-5 font-normal"}`}
                       >
                         {option.label}
                       </span>
-                      <span className="gray-5 text-sm font-normal">
+                      <span className="text-gray-5 text-sm font-normal">
                         {option.subLabel}
                       </span>{" "}
                     </Label>
@@ -241,27 +241,27 @@ export const ConvictionStakeModal: React.FC<ConvictionStakeModalProps> = ({
             {/* Summary Footer */}
             <div className="border-gray-4 flex items-center justify-between border-t px-5 py-4">
               <div className="border-gray-4 border-l pl-3">
-                <div className="gray-6 mb-1 flex items-center gap-1 text-xs font-semibold">
+                <div className="text-gray-6 mb-1 flex items-center gap-1 text-xs font-semibold">
                   <Calendar size={12} />{" "}
                   <Tooltip content={unlockDate.toUTCString()}>
                     {formattedUnlockDate}
                   </Tooltip>
                 </div>
-                <div className="gray-5 text-xs">Unlock Date</div>
+                <div className="text-gray-5 text-xs">Unlock Date</div>
               </div>
               <div className="border-gray-4 border-l pl-3">
-                <div className="gray-6 mb-1 flex items-center gap-1 text-sm font-semibold">
+                <div className="text-gray-6 mb-1 flex items-center gap-1 text-sm font-semibold">
                   <Recall size="sm" backgroundClass="bg-white" />{" "}
                   {formattedUnlockAmount}
                 </div>
-                <div className="gray-5 text-xs">Unlock Amount</div>
+                <div className="text-gray-5 text-xs">Unlock Amount</div>
               </div>
               <div className="border-gray-4 border-l pl-3">
-                <div className="gray-6 mb-1 flex items-center gap-1 text-sm font-semibold">
+                <div className="text-gray-6 mb-1 flex items-center gap-1 text-sm font-semibold">
                   <BoostIcon className="h-4 w-4 text-yellow-500" />{" "}
                   {formattedBoostGain}
                 </div>
-                <div className="gray-5 text-xs">Boost Gain</div>
+                <div className="text-gray-5 text-xs">Boost Gain</div>
               </div>
               <Button
                 onClick={handleStake}
