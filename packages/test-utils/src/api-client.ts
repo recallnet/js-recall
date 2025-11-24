@@ -76,9 +76,12 @@ import {
   RemovePartnerFromCompetitionResponse,
   ReplaceCompetitionPartnersResponse,
   ResetApiKeyResponse,
+  ReviewSpotLiveAlertResponse,
   RewardsProofsResponse,
   RewardsTotalResponse,
   SpecificChain,
+  SpotLiveAlertsResponse,
+  SpotLiveConfig,
   StartCompetitionResponse,
   TradeExecutionParams,
   TradeHistoryResponse,
@@ -479,6 +482,7 @@ export class ApiClient {
             minFundingThreshold?: number;
             apiUrl?: string;
           };
+          spotLiveConfig?: SpotLiveConfig;
           prizePools?: {
             agent: number;
             users: number;
@@ -564,6 +568,7 @@ export class ApiClient {
     rewards,
     evaluationMetric,
     perpsProvider,
+    spotLiveConfig,
     prizePools,
     rewardsIneligible,
     arenaId,
@@ -607,6 +612,7 @@ export class ApiClient {
       minFundingThreshold?: number;
       apiUrl?: string;
     };
+    spotLiveConfig?: SpotLiveConfig;
     prizePools?: {
       agent: number;
       users: number;
@@ -657,6 +663,7 @@ export class ApiClient {
           rewards,
           evaluationMetric,
           perpsProvider,
+          spotLiveConfig,
           prizePools,
           rewardsIneligible,
           arenaId: arenaId || defaultArenaId,
@@ -2542,6 +2549,60 @@ export class ApiClient {
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "get rewards with proofs");
+    }
+  }
+
+  /**
+   * Get spot live self-funding alerts for a competition (admin only)
+   * @param competitionId Competition ID
+   * @param params Optional filters for reviewed status and violation type
+   * @returns Spot live alerts response
+   */
+  async getSpotLiveSelfFundingAlerts(
+    competitionId: string,
+    params?: {
+      reviewed?: string;
+      violationType?: string;
+    },
+  ): Promise<SpotLiveAlertsResponse | ErrorResponse> {
+    try {
+      const queryParams = new URLSearchParams();
+      if (params?.reviewed) queryParams.append("reviewed", params.reviewed);
+      if (params?.violationType)
+        queryParams.append("violationType", params.violationType);
+
+      const response = await this.axiosInstance.get(
+        `/api/admin/competition/${competitionId}/spot-live/alerts?${queryParams.toString()}`,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get spot live self-funding alerts");
+    }
+  }
+
+  /**
+   * Review a spot live self-funding alert (admin only)
+   * @param competitionId Competition ID
+   * @param alertId Alert ID
+   * @param reviewData Review note and action taken
+   * @returns Updated alert
+   */
+  async reviewSpotLiveSelfFundingAlert(
+    competitionId: string,
+    alertId: string,
+    reviewData: {
+      reviewNote: string;
+      actionTaken: string;
+    },
+  ): Promise<ReviewSpotLiveAlertResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.put(
+        `/api/admin/competition/${competitionId}/spot-live/alerts/${alertId}/review`,
+        reviewData,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "review spot live self-funding alert");
     }
   }
 }

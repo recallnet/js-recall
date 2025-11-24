@@ -44,6 +44,7 @@ import { rewardsRoots } from "../schema/rewards/defs.js";
 import {
   perpsCompetitionsLeaderboard,
   portfolioSnapshots,
+  spotLiveCompetitionsLeaderboard,
   tradingCompetitions,
   tradingCompetitionsLeaderboard,
 } from "../schema/trading/defs.js";
@@ -99,7 +100,7 @@ interface Snapshot24hResult {
 }
 
 // Type for leaderboard entries. Contains the fields stored in the database, enhanced with optional
-// PnL data (for trading competitions) or perps metrics (for perpetual futures competitions)
+// PnL data (for trading competitions), perps metrics (for perpetual futures), or spot live metrics
 type LeaderboardEntry = InsertCompetitionsLeaderboard & {
   // For spot trading competitions
   pnl?: number;
@@ -113,6 +114,9 @@ type LeaderboardEntry = InsertCompetitionsLeaderboard & {
   totalEquity?: number;
   totalPnl?: number | null;
   hasRiskMetrics?: boolean | null;
+  // For spot live trading competitions
+  currentValue?: number;
+  totalTrades?: number;
 };
 
 const MAX_CACHE_AGE = 1000 * 60 * 5; // 5 minutes
@@ -2537,6 +2541,49 @@ export class CompetitionRepository {
         });
       }
 
+      // Handle spot live data
+      const spotLiveToInsert = valuesToInsert.filter(
+        (e) =>
+          e.simpleReturn !== undefined &&
+          e.currentValue !== undefined &&
+          !e.hasRiskMetrics,
+      );
+      if (spotLiveToInsert.length) {
+        const spotLiveResults = await executor
+          .insert(spotLiveCompetitionsLeaderboard)
+          .values(
+            spotLiveToInsert.map((entry) => {
+              return {
+                competitionsLeaderboardId: entry.id,
+                simpleReturn: entry.simpleReturn ?? DEFAULT_ZERO_VALUE,
+                pnl: entry.pnl ?? DEFAULT_ZERO_VALUE,
+                startingValue: entry.startingValue ?? DEFAULT_ZERO_VALUE,
+                currentValue: entry.currentValue ?? DEFAULT_ZERO_VALUE,
+                totalTrades: entry.totalTrades ?? 0,
+              };
+            }),
+          )
+          .returning();
+
+        results = results.map((r) => {
+          const spotLive = spotLiveResults.find(
+            (s: { competitionsLeaderboardId: string }) =>
+              s.competitionsLeaderboardId === r.id,
+          );
+          if (spotLive) {
+            return {
+              ...r,
+              simpleReturn: spotLive.simpleReturn,
+              pnl: spotLive.pnl,
+              startingValue: spotLive.startingValue,
+              currentValue: spotLive.currentValue,
+              totalTrades: spotLive.totalTrades,
+            };
+          }
+          return r;
+        });
+      }
+
       return results;
     } catch (error) {
       this.#logger.error(
@@ -2647,6 +2694,44 @@ export class CompetitionRepository {
       this.#logger.error(
         { error },
         `[CompetitionRepository] Error finding perps leaderboard for competition ${competitionId}`,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Find leaderboard entries for a specific spot live competition
+   * @param competitionId The competition ID
+   * @returns Array of leaderboard entries with spot live metrics sorted by rank
+   */
+  async findLeaderboardBySpotLiveComp(competitionId: string) {
+    try {
+      const rows = await this.#db
+        .select({
+          agentId: competitionsLeaderboard.agentId,
+          value: spotLiveCompetitionsLeaderboard.currentValue, // Alias currentValue as value for API compatibility
+          simpleReturn: spotLiveCompetitionsLeaderboard.simpleReturn,
+          pnl: spotLiveCompetitionsLeaderboard.pnl,
+          startingValue: spotLiveCompetitionsLeaderboard.startingValue,
+          currentValue: spotLiveCompetitionsLeaderboard.currentValue,
+          totalTrades: spotLiveCompetitionsLeaderboard.totalTrades,
+        })
+        .from(competitionsLeaderboard)
+        .innerJoin(
+          spotLiveCompetitionsLeaderboard,
+          eq(
+            competitionsLeaderboard.id,
+            spotLiveCompetitionsLeaderboard.competitionsLeaderboardId,
+          ),
+        )
+        .where(eq(competitionsLeaderboard.competitionId, competitionId))
+        .orderBy(competitionsLeaderboard.rank);
+
+      return rows;
+    } catch (error) {
+      this.#logger.error(
+        { error },
+        `[CompetitionRepository] Error finding spot live leaderboard for competition ${competitionId}`,
       );
       throw error;
     }

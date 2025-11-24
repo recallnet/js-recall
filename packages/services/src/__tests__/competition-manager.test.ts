@@ -10,6 +10,7 @@ import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { PerpsRepository } from "@recallnet/db/repositories/perps";
 import { SpotLiveRepository } from "@recallnet/db/repositories/spot-live";
 import { StakesRepository } from "@recallnet/db/repositories/stakes";
+import { TradeRepository } from "@recallnet/db/repositories/trade";
 import { CompetitionAgentStatus } from "@recallnet/db/repositories/types";
 import { UserRepository } from "@recallnet/db/repositories/user";
 import {
@@ -104,6 +105,7 @@ describe("CompetitionService", () => {
   let perpsRepo: MockProxy<PerpsRepository>;
   let competitionRepo: MockProxy<CompetitionRepository>;
   let stakesRepo: MockProxy<StakesRepository>;
+  let tradeRepo: MockProxy<TradeRepository>;
   let userRepo: MockProxy<UserRepository>;
   let mockDb: MockProxy<Database>;
   let logger: MockProxy<Logger>;
@@ -198,8 +200,13 @@ describe("CompetitionService", () => {
     perpsRepo = mock<PerpsRepository>();
     competitionRepo = mock<CompetitionRepository>();
     stakesRepo = mock<StakesRepository>();
+    tradeRepo = mock<TradeRepository>();
     userRepo = mock<UserRepository>();
     mockDb = mock<Database>();
+    // Mock database transaction method
+    mockDb.transaction.mockImplementation(async (callback) => {
+      return await callback(mockTx);
+    });
     logger = mock<Logger>();
 
     // Setup default mock return values
@@ -230,6 +237,7 @@ describe("CompetitionService", () => {
       spotLiveRepo,
       competitionRepo,
       stakesRepo,
+      tradeRepo,
       userRepo,
       mockDb,
       {

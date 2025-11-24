@@ -10,6 +10,7 @@ import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { PerpsRepository } from "@recallnet/db/repositories/perps";
 import { SpotLiveRepository } from "@recallnet/db/repositories/spot-live";
 import { StakesRepository } from "@recallnet/db/repositories/stakes";
+import { TradeRepository } from "@recallnet/db/repositories/trade";
 import { UserRepository } from "@recallnet/db/repositories/user";
 import { Database, Transaction } from "@recallnet/db/types";
 
@@ -46,9 +47,12 @@ describe("CompetitionService - createCompetition", () => {
   let perpsRepo: MockProxy<PerpsRepository>;
   let competitionRepo: MockProxy<CompetitionRepository>;
   let stakesRepo: MockProxy<StakesRepository>;
+  let tradeRepo: MockProxy<TradeRepository>;
   let userRepo: MockProxy<UserRepository>;
   let mockDb: MockProxy<Database>;
   let logger: MockProxy<Logger>;
+
+  const mockTx = mock<Transaction>();
 
   let competitionService: CompetitionService;
 
@@ -71,8 +75,13 @@ describe("CompetitionService - createCompetition", () => {
     perpsRepo = mock<PerpsRepository>();
     competitionRepo = mock<CompetitionRepository>();
     stakesRepo = mock<StakesRepository>();
+    tradeRepo = mock<TradeRepository>();
     userRepo = mock<UserRepository>();
     mockDb = mock<Database>();
+    // Mock database transaction method
+    mockDb.transaction.mockImplementation(async (callback) => {
+      return await callback(mockTx);
+    });
     logger = mock<Logger>();
 
     // Setup default mock return values
@@ -163,6 +172,7 @@ describe("CompetitionService - createCompetition", () => {
       spotLiveRepo,
       competitionRepo,
       stakesRepo,
+      tradeRepo,
       userRepo,
       mockDb,
       {
@@ -711,10 +721,12 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
   let perpsRepo: MockProxy<PerpsRepository>;
   let competitionRepo: MockProxy<CompetitionRepository>;
   let stakesRepo: MockProxy<StakesRepository>;
+  let tradeRepo: MockProxy<TradeRepository>;
   let userRepo: MockProxy<UserRepository>;
   let mockDb: MockProxy<Database>;
   let logger: MockProxy<Logger>;
 
+  const mockTx = mock<Transaction>();
   const mockCompetitionId = randomUUID();
 
   beforeEach(() => {
@@ -737,8 +749,13 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
     perpsRepo = mock<PerpsRepository>();
     competitionRepo = mock<CompetitionRepository>();
     stakesRepo = mock<StakesRepository>();
+    tradeRepo = mock<TradeRepository>();
     userRepo = mock<UserRepository>();
     mockDb = mock<Database>();
+    // Mock database transaction method
+    mockDb.transaction.mockImplementation(async (callback) => {
+      return await callback(mockTx);
+    });
     logger = mock<Logger>();
 
     // Create service instance
@@ -761,6 +778,7 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
       spotLiveRepo,
       competitionRepo,
       stakesRepo,
+      tradeRepo,
       userRepo,
       mockDb,
       {
