@@ -22,6 +22,15 @@ export const ConvictionRewards: React.FunctionComponent = () => {
   const { claims, totalFormatted, availableClaims, isLoading, error } =
     useConvictionClaims();
 
+  const sortedClaims = useMemo(() => {
+    return [...claims].sort((a, b) => a.season - b.season);
+  }, [claims]);
+
+  const activeClaim = useMemo(
+    () => sortedClaims.find((claim) => claim.type === "available"),
+    [sortedClaims],
+  );
+
   const handleClaim = (claimToClaim: FormattedConvictionClaim) => {
     if (claimToClaim.type !== "available") return;
 
@@ -41,7 +50,7 @@ export const ConvictionRewards: React.FunctionComponent = () => {
     return (
       <div className="mb-8">
         <Heading text1="Conviction" text2="Rewards" className="mb-2" />
-        <p className="mb-4 text-sm text-gray-400">Loading rewards...</p>
+        <p className="text-gray-5 mb-4 text-sm">Loading rewards...</p>
       </div>
     );
   }
@@ -62,7 +71,7 @@ export const ConvictionRewards: React.FunctionComponent = () => {
       <div className="mb-8">
         <Heading text1="Conviction" text2="Rewards" className="mb-4" />
         <div className="border-gray-4 bg-gray-2 px-auto flex flex-col gap-2 rounded-lg border px-6 py-8">
-          <p className="text-sm text-gray-400">No pending rewards.</p>
+          <p className="text-gray-5 text-sm">No pending rewards.</p>
         </div>
       </div>
     );
@@ -94,7 +103,7 @@ export const ConvictionRewards: React.FunctionComponent = () => {
                 </tr>
               </thead>
               <tbody>
-                {claims.map((claim, index) => (
+                {sortedClaims.map((claim, index) => (
                   <ConvictionRewardRow
                     key={`${claim.season}-${index}`}
                     claim={claim}
@@ -109,20 +118,36 @@ export const ConvictionRewards: React.FunctionComponent = () => {
 
         {/* Bottom Summary Bar */}
         <div className="bg-gray-4 mt-4 flex items-center justify-between rounded-xl p-6">
-          <span className="text-gray-5 text-xl">Total Rewards</span>
+          {activeClaim ? (
+            <div className="flex items-center gap-2">
+              <span className="text-gray-5 text-xl">
+                {activeClaim.seasonName}
+              </span>
+              <span
+                className={`text-xl ${
+                  activeClaim.type === "available"
+                    ? "text-[#FCD569]"
+                    : "text-gray-5"
+                }`}
+              >
+                {activeClaim.statusText}
+              </span>
+            </div>
+          ) : (
+            <span className="text-gray-5 text-xl">Total Rewards</span>
+          )}
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 px-3">
-              <Recall size="sm" backgroundClass="bg-white" />
-              <span className="text-gray-6 font-mono text-lg font-semibold">
+              <Recall size="md" backgroundClass="bg-white" />
+              <span className="text-gray-6 font-mono text-2xl font-bold">
                 {totalFormatted}
               </span>
             </div>
             <Button
               onClick={() => {
-                const claim = availableClaims[0];
-                if (claim) handleClaim(claim);
+                if (activeClaim) handleClaim(activeClaim);
               }}
-              disabled={availableClaims.length === 0}
+              disabled={!activeClaim}
               className="group relative flex items-center justify-center overflow-hidden transition-all"
             >
               <span className="flex items-center">
@@ -156,22 +181,17 @@ const ConvictionRewardRow: React.FunctionComponent<
 > = ({ claim }) => {
   const actionTextColor = useMemo(() => {
     if (claim.type === "available") {
-      return "text-yellow-500";
+      return "text-[#FCD569]";
     }
-    if (
-      claim.type === "claimed-and-staked" ||
-      claim.type === "claimed-and-not-staked"
-    ) {
-      return "text-gray-400";
-    }
-    return "text-gray-500";
+
+    return "text-gray-5";
   }, [claim.type]);
 
   const statusTextColor = useMemo(() => {
     if (claim.type === "available") {
-      return "text-yellow-500";
+      return "text-[#FCD569]";
     }
-    return "text-gray-400";
+    return "text-gray-5";
   }, [claim.type]);
 
   return (
