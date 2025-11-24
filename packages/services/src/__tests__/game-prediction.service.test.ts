@@ -294,15 +294,16 @@ describe("GamePredictionService", () => {
 
   describe("getLatestPrediction", () => {
     it("should return latest prediction for agent", async () => {
-      const mockPrediction: SelectGamePrediction = {
+      const mockPrediction = {
         id: randomUUID(),
         competitionId,
         gameId,
         agentId,
-        predictedWinner: "MIN",
+        predictedWinner: "MIN" as const,
         confidence: 0.85,
         reason: "Test",
         createdAt: new Date(),
+        agentName: null,
       };
 
       mockGamePredictionsRepo.findLatestByGameAndAgent.mockResolvedValue(
@@ -324,26 +325,28 @@ describe("GamePredictionService", () => {
 
   describe("getPredictionHistory", () => {
     it("should return all predictions for agent sorted by time", async () => {
-      const mockPredictions: SelectGamePrediction[] = [
+      const mockPredictions = [
         {
           id: randomUUID(),
           competitionId,
           gameId,
           agentId,
-          predictedWinner: "MIN",
+          predictedWinner: "MIN" as const,
           confidence: 0.9,
           reason: "Updated",
           createdAt: new Date("2025-09-08T21:00:00Z"),
+          agentName: null,
         },
         {
           id: randomUUID(),
           competitionId,
           gameId,
           agentId,
-          predictedWinner: "CHI",
+          predictedWinner: "CHI" as const,
           confidence: 0.7,
           reason: "Initial",
           createdAt: new Date("2025-09-08T20:00:00Z"),
+          agentName: null,
         },
       ];
 
@@ -368,26 +371,28 @@ describe("GamePredictionService", () => {
 
   describe("getGamePredictions", () => {
     it("should return all predictions for game", async () => {
-      const mockPredictions: SelectGamePrediction[] = [
+      const mockPredictions = [
         {
           id: randomUUID(),
           competitionId,
           gameId,
           agentId: randomUUID(),
-          predictedWinner: "MIN",
+          predictedWinner: "MIN" as const,
           confidence: 0.9,
           reason: "Test 1",
           createdAt: new Date(),
+          agentName: null,
         },
         {
           id: randomUUID(),
           competitionId,
           gameId,
           agentId: randomUUID(),
-          predictedWinner: "CHI",
+          predictedWinner: "CHI" as const,
           confidence: 0.8,
           reason: "Test 2",
           createdAt: new Date(),
+          agentName: null,
         },
       ];
 

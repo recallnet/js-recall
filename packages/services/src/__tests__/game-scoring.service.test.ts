@@ -11,7 +11,6 @@ import { GamesRepository } from "@recallnet/db/repositories/games";
 import type {
   SelectCompetitionAggregateScore,
   SelectGame,
-  SelectGamePrediction,
   SelectGamePredictionScore,
 } from "@recallnet/db/schema/sports/types";
 import type { Database, Transaction } from "@recallnet/db/types";
@@ -68,12 +67,12 @@ describe("GameScoringService", () => {
       startTime: new Date("2025-09-08T19:15:00Z"),
       endTime: new Date("2025-09-08T23:15:00Z"),
       homeTeam: "CHI",
-      awayTeam: "MIN",
+      awayTeam: "MIN" as const,
       spread: null,
       overUnder: null,
       venue: "Soldier Field",
       status: "final",
-      winner: "MIN",
+      winner: "MIN" as const,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -131,26 +130,28 @@ describe("GameScoringService", () => {
     });
 
     it("should calculate time-weighted Brier scores correctly", async () => {
-      const predictions: SelectGamePrediction[] = [
+      const predictions = [
         {
           id: randomUUID(),
           competitionId,
           gameId,
           agentId: agent1Id,
-          predictedWinner: "MIN",
+          predictedWinner: "MIN" as const,
           confidence: 0.9,
           reason: "Test",
           createdAt: new Date("2025-09-08T20:00:00Z"), // t ≈ 0.1875
+          agentName: null,
         },
         {
           id: randomUUID(),
           competitionId,
           gameId,
           agentId: agent2Id,
-          predictedWinner: "CHI",
+          predictedWinner: "CHI" as const,
           confidence: 0.7,
           reason: "Test",
           createdAt: new Date("2025-09-08T21:00:00Z"), // t ≈ 0.4375
+          agentName: null,
         },
       ];
 
@@ -166,7 +167,7 @@ describe("GameScoringService", () => {
         gameId,
         agentId: agent1Id,
         timeWeightedBrierScore: 0.85,
-        finalPrediction: "MIN",
+        finalPrediction: "MIN" as const,
         finalConfidence: 0.9,
         predictionCount: 1,
         updatedAt: new Date(),
@@ -199,16 +200,17 @@ describe("GameScoringService", () => {
     });
 
     it("should handle predictions at exactly game start time (t=0)", async () => {
-      const predictions: SelectGamePrediction[] = [
+      const predictions = [
         {
           id: randomUUID(),
           competitionId,
           gameId,
           agentId: agent1Id,
-          predictedWinner: "MIN",
+          predictedWinner: "MIN" as const,
           confidence: 1,
           reason: "Test",
           createdAt: new Date("2025-09-08T19:15:00Z"), // Exactly at game start
+          agentName: null,
         },
       ];
 
@@ -224,7 +226,7 @@ describe("GameScoringService", () => {
         gameId,
         agentId: agent1Id,
         timeWeightedBrierScore: 1,
-        finalPrediction: "MIN",
+        finalPrediction: "MIN" as const,
         finalConfidence: 1,
         predictionCount: 1,
         updatedAt: new Date(),
@@ -254,16 +256,17 @@ describe("GameScoringService", () => {
     });
 
     it("should handle predictions after game ends (t=1)", async () => {
-      const predictions: SelectGamePrediction[] = [
+      const predictions = [
         {
           id: randomUUID(),
           competitionId,
           gameId,
           agentId: agent1Id,
-          predictedWinner: "MIN",
+          predictedWinner: "MIN" as const,
           confidence: 1,
           reason: "Test",
           createdAt: new Date("2025-09-09T00:00:00Z"), // After game end
+          agentName: null,
         },
       ];
 
@@ -279,7 +282,7 @@ describe("GameScoringService", () => {
         gameId,
         agentId: agent1Id,
         timeWeightedBrierScore: 1,
-        finalPrediction: "MIN",
+        finalPrediction: "MIN" as const,
         finalConfidence: 1,
         predictionCount: 1,
         updatedAt: new Date(),
@@ -309,26 +312,28 @@ describe("GameScoringService", () => {
     });
 
     it("should continue scoring other agents if one fails", async () => {
-      const predictions: SelectGamePrediction[] = [
+      const predictions = [
         {
           id: randomUUID(),
           competitionId,
           gameId,
           agentId: agent1Id,
-          predictedWinner: "MIN",
+          predictedWinner: "MIN" as const,
           confidence: 0.9,
           reason: "Test",
           createdAt: new Date("2025-09-08T20:00:00Z"),
+          agentName: null,
         },
         {
           id: randomUUID(),
           competitionId,
           gameId,
           agentId: agent2Id,
-          predictedWinner: "CHI",
+          predictedWinner: "CHI" as const,
           confidence: 0.7,
           reason: "Test",
           createdAt: new Date("2025-09-08T21:00:00Z"),
+          agentName: null,
         },
       ];
 
@@ -401,6 +406,7 @@ describe("GameScoringService", () => {
           finalConfidence: 0.95,
           predictionCount: 2,
           updatedAt: new Date(),
+          agentName: null,
         },
         {
           id: randomUUID(),
@@ -412,6 +418,7 @@ describe("GameScoringService", () => {
           finalConfidence: 0.8,
           predictionCount: 1,
           updatedAt: new Date(),
+          agentName: null,
         },
       ];
 
@@ -441,6 +448,7 @@ describe("GameScoringService", () => {
           averageBrierScore: 0.92,
           gamesScored: 5,
           updatedAt: new Date(),
+          agentName: null,
         },
         {
           id: randomUUID(),
@@ -449,6 +457,7 @@ describe("GameScoringService", () => {
           averageBrierScore: 0.85,
           gamesScored: 5,
           updatedAt: new Date(),
+          agentName: null,
         },
       ];
 
@@ -482,48 +491,51 @@ describe("GameScoringService", () => {
         startTime: gameStartTime,
         endTime: gameEndTime,
         homeTeam: "CHI",
-        awayTeam: "MIN",
+        awayTeam: "MIN" as const,
         spread: null,
         overUnder: null,
         venue: "Soldier Field",
         status: "final",
-        winner: "MIN",
+        winner: "MIN" as const,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
 
       // Agent made multiple pregame predictions, then the system snapshotted the latest at game start
-      const allPredictions: SelectGamePrediction[] = [
+      const allPredictions = [
         // Original pregame predictions (should NOT be used directly in scoring)
         {
           id: randomUUID(),
           competitionId,
           gameId,
           agentId,
-          predictedWinner: "CHI",
+          predictedWinner: "CHI" as const,
           confidence: 0.6,
           reason: "Opening prediction",
           createdAt: new Date("2025-09-08T17:30:00Z"), // T-1h45m
+          agentName: null,
         },
         {
           id: randomUUID(),
           competitionId,
           gameId,
           agentId,
-          predictedWinner: "MIN",
+          predictedWinner: "MIN" as const,
           confidence: 0.7,
           reason: "Updated prediction",
           createdAt: new Date("2025-09-08T18:45:00Z"), // T-30m
+          agentName: null,
         },
         {
           id: randomUUID(),
           competitionId,
           gameId,
           agentId,
-          predictedWinner: "CHI",
+          predictedWinner: "CHI" as const,
           confidence: 0.8,
           reason: "Final pregame edit",
           createdAt: new Date("2025-09-08T19:10:00Z"), // T-5m
+          agentName: null,
         },
         // Snapshot at game start (SHOULD be used in scoring)
         {
@@ -531,10 +543,11 @@ describe("GameScoringService", () => {
           competitionId,
           gameId,
           agentId,
-          predictedWinner: "MIN",
+          predictedWinner: "MIN" as const,
           confidence: 0.8,
           reason: "Final pregame prediction",
           createdAt: gameStartTime, // Exactly at game start
+          agentName: null,
         },
       ];
 
@@ -557,7 +570,7 @@ describe("GameScoringService", () => {
         gameId,
         agentId,
         timeWeightedBrierScore: 0.85,
-        finalPrediction: "MIN",
+        finalPrediction: "MIN" as const,
         finalConfidence: 0.8,
         // Should be 1, not 4 because only the final pregame prediction is counted (snapshot within game window)
         predictionCount: 1,
@@ -587,7 +600,7 @@ describe("GameScoringService", () => {
       expect(mockGamePredictionScoresRepo.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
           predictionCount: 1,
-          finalPrediction: "MIN",
+          finalPrediction: "MIN" as const,
           finalConfidence: 0.8,
         }),
         mockTransaction,
