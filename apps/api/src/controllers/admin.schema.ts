@@ -11,6 +11,7 @@ import {
   CompetitionTypeSchema,
   CrossChainTradingTypeSchema,
   EvaluationMetricSchema,
+  SpecificChainSchema,
   TradingConstraintsSchema,
   UuidSchema,
 } from "@recallnet/services/types";
@@ -76,6 +77,52 @@ export const PerpsProviderSchema = z.object({
 });
 
 /**
+ * Paper trading config schema
+ */
+export const PaperTradingConfigSchema = z
+  .object({
+    maxTradePercentage: z.number().int().min(1).max(100).optional(),
+  })
+  .optional();
+
+/**
+ * Paper trading initial balance schema
+ */
+export const PaperTradingInitialBalanceSchema = z.object({
+  specificChain: SpecificChainSchema,
+  tokenSymbol: z.string().min(1).max(20),
+  amount: z.number().gt(0),
+});
+
+/**
+ * Paper trading initial balances schema (array of balances)
+ */
+export const PaperTradingInitialBalancesSchema = z
+  .array(PaperTradingInitialBalanceSchema)
+  .min(1, "At least one initial balance is required")
+  .optional()
+  .refine(
+    (balances) => {
+      if (!balances || balances.length === 0) return true;
+
+      // Check for duplicates using Set
+      const seen = new Set<string>();
+      for (const balance of balances) {
+        const key = `${balance.specificChain}:${balance.tokenSymbol}`;
+        if (seen.has(key)) {
+          return false; // Duplicate found
+        }
+        seen.add(key);
+      }
+      return true;
+    },
+    {
+      message:
+        "Duplicate entries detected: each (specificChain, tokenSymbol) pair must be unique",
+    },
+  );
+
+/**
  * Admin create or update competition schema
  */
 export const AdminCreateCompetitionSchema = z
@@ -128,12 +175,24 @@ export const AdminCreateCompetitionSchema = z
     boosterAllocationUnit: z.enum(allocationUnit.enumValues).optional(),
     rewardRules: z.string().optional(),
     rewardDetails: z.string().optional(),
+    boostTimeDecayRate: z
+      .number()
+      .min(0.1)
+      .max(0.9)
+      .optional()
+      .describe(
+        "Decay rate for boost time calculations. Must be between 0.1 and 0.9.",
+      ),
 
     // Display
     displayState: z.enum(displayState.enumValues).optional(),
 
     // NFL schedule
     gameIds: z.array(UuidSchema).optional(),
+
+    // Paper trading configuration
+    paperTradingConfig: PaperTradingConfigSchema,
+    paperTradingInitialBalances: PaperTradingInitialBalancesSchema,
   })
   .refine(
     (data) => {
@@ -156,9 +215,11 @@ export const AdminCreateCompetitionSchema = z
 export const AdminUpdateCompetitionSchema = AdminCreateCompetitionSchema.omit({
   name: true,
   arenaId: true,
+  paperTradingInitialBalances: true,
 }).extend({
   name: z.string().optional(),
   arenaId: z.string().min(1, "Arena ID is required").optional(),
+  paperTradingInitialBalances: PaperTradingInitialBalancesSchema.optional(),
 });
 
 /**
@@ -215,9 +276,21 @@ export const AdminStartCompetitionSchema = z
     boosterAllocationUnit: z.enum(allocationUnit.enumValues).optional(),
     rewardRules: z.string().optional(),
     rewardDetails: z.string().optional(),
+    boostTimeDecayRate: z
+      .number()
+      .min(0.1)
+      .max(0.9)
+      .optional()
+      .describe(
+        "Decay rate for boost time calculations. Must be between 0.1 and 0.9.",
+      ),
 
     // Display
     displayState: z.enum(displayState.enumValues).optional(),
+
+    // Paper trading configuration
+    paperTradingConfig: PaperTradingConfigSchema,
+    paperTradingInitialBalances: PaperTradingInitialBalancesSchema,
   })
   .refine((data) => data.competitionId || data.name, {
     message: "Either competitionId or name must be provided",

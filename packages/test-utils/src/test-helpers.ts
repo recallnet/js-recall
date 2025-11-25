@@ -226,6 +226,63 @@ export async function registerUserAndAgentAndGetClient({
 }
 
 /**
+ * Default paper trading initial balances for test competitions
+ * Matches all initial balances from .env.test to ensure test consistency
+ */
+export const DEFAULT_PAPER_TRADING_INITIAL_BALANCES: Array<{
+  specificChain: string;
+  tokenSymbol: string;
+  amount: number;
+}> = [
+  // Solana (SVM) balances
+  {
+    specificChain: "svm",
+    tokenSymbol: "sol",
+    amount: 10, // INITIAL_SVM_SOL_BALANCE
+  },
+  {
+    specificChain: "svm",
+    tokenSymbol: "usdc",
+    amount: 5000, // INITIAL_SVM_USDC_BALANCE
+  },
+  {
+    specificChain: "svm",
+    tokenSymbol: "usdt",
+    amount: 1000, // INITIAL_SVM_USDT_BALANCE
+  },
+  // Ethereum balances
+  {
+    specificChain: "eth",
+    tokenSymbol: "eth",
+    amount: 1, // INITIAL_ETH_ETH_BALANCE
+  },
+  {
+    specificChain: "eth",
+    tokenSymbol: "usdc",
+    amount: 5000, // INITIAL_ETH_USDC_BALANCE
+  },
+  // Note: INITIAL_ETH_USDT_BALANCE=0, so we skip it (zero amounts don't add value)
+  // Optimism balances
+  {
+    specificChain: "optimism",
+    tokenSymbol: "usdc",
+    amount: 200, // INITIAL_OPTIMISM_USDC_BALANCE
+  },
+  // Polygon balances
+  {
+    specificChain: "polygon",
+    tokenSymbol: "usdc",
+    amount: 200, // INITIAL_POLYGON_USDC_BALANCE
+  },
+  // Arbitrum balances
+  {
+    specificChain: "arbitrum",
+    tokenSymbol: "usdc",
+    amount: 200, // INITIAL_ARBITRUM_USDC_BALANCE
+  },
+];
+
+/**
  * Start a competition with given agents
  */
 export async function startTestCompetition({
@@ -237,6 +294,7 @@ export async function startTestCompetition({
   imageUrl,
   tradingConstraints,
   rewardsIneligible,
+  paperTradingInitialBalances,
 }: {
   adminClient: ApiClient;
   name?: string;
@@ -246,6 +304,11 @@ export async function startTestCompetition({
   imageUrl?: string;
   tradingConstraints?: TradingConstraints;
   rewardsIneligible?: string[];
+  paperTradingInitialBalances?: Array<{
+    specificChain: string;
+    tokenSymbol: string;
+    amount: number;
+  }>;
 }): Promise<StartCompetitionResponse> {
   const competitionName = name || `Test competition ${Date.now()}`;
   const result = await adminClient.startCompetition({
@@ -257,6 +320,8 @@ export async function startTestCompetition({
     imageUrl,
     tradingConstraints,
     arenaId: "default-paper-arena",
+    paperTradingInitialBalances:
+      paperTradingInitialBalances || DEFAULT_PAPER_TRADING_INITIAL_BALANCES,
   });
 
   if (!result.success) {
@@ -287,6 +352,7 @@ export async function createTestCompetition({
   maxParticipants,
   tradingConstraints,
   rewardsIneligible,
+  paperTradingInitialBalances,
 }: {
   adminClient: ApiClient;
   name?: string;
@@ -305,6 +371,11 @@ export async function createTestCompetition({
   maxParticipants?: number;
   tradingConstraints?: TradingConstraints;
   rewardsIneligible?: string[];
+  paperTradingInitialBalances?: Array<{
+    specificChain: string;
+    tokenSymbol: string;
+    amount: number;
+  }>;
 }): Promise<CreateCompetitionResponse> {
   const competitionName = name || `Test competition ${Date.now()}`;
   const result = await adminClient.createCompetition({
@@ -326,6 +397,8 @@ export async function createTestCompetition({
     tradingConstraints,
     rewardsIneligible,
     arenaId: "default-paper-arena",
+    paperTradingInitialBalances:
+      paperTradingInitialBalances || DEFAULT_PAPER_TRADING_INITIAL_BALANCES,
   });
 
   if (!result.success) {

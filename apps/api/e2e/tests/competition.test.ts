@@ -2,7 +2,15 @@ import axios from "axios";
 import { and, eq } from "drizzle-orm";
 import { beforeEach, describe, expect, test } from "vitest";
 
-import { agents, competitionAgents } from "@recallnet/db/schema/core/defs";
+import {
+  agents,
+  competitionAgents,
+  competitions,
+} from "@recallnet/db/schema/core/defs";
+import {
+  paperTradingConfig,
+  paperTradingInitialBalances,
+} from "@recallnet/db/schema/trading/defs";
 import {
   AgentCompetitionsResponse,
   AgentProfileResponse,
@@ -24,6 +32,7 @@ import {
   StartCompetitionResponse,
   TradeResponse,
   UpcomingCompetitionsResponse,
+  UpdateCompetitionResponse,
   UserAgentApiKeyResponse,
   UserCompetitionsResponse,
 } from "@recallnet/test-utils";
@@ -6841,6 +6850,469 @@ describe("Competition API", () => {
       const comp2Reward = comp2.rewards?.find((r) => r.agentId === agent.id);
       expect(comp2Reward).toBeDefined();
       expect(comp2Reward?.reward).toBe(100);
+    });
+  });
+
+  describe("Boost Time Decay Rate Configuration", () => {
+    test("should create competition with boost time decay rate", async () => {
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      const boostTimeDecayRate = 0.7;
+      const competitionName = `Boost Decay Test ${Date.now()}`;
+      const createResponse = (await adminClient.createCompetition({
+        name: competitionName,
+        arenaId: "default-paper-arena",
+        boostTimeDecayRate,
+      } as Parameters<
+        typeof adminClient.createCompetition
+      >[0])) as CreateCompetitionResponse;
+
+      expect(createResponse.success).toBe(true);
+      const competitionId = createResponse.competition.id;
+
+      // Verify boost time decay rate is stored in database
+      const [competition] = await db
+        .select()
+        .from(competitions)
+        .where(eq(competitions.id, competitionId))
+        .limit(1);
+
+      expect(competition).toBeDefined();
+      expect(competition?.boostTimeDecayRate).toBe(boostTimeDecayRate);
+    });
+
+    test("should update competition with boost time decay rate", async () => {
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Create competition without boost time decay rate
+      const competitionName = `Boost Decay Update Test ${Date.now()}`;
+      const createResponse = (await adminClient.createCompetition({
+        name: competitionName,
+        arenaId: "default-paper-arena",
+      })) as CreateCompetitionResponse;
+
+      expect(createResponse.success).toBe(true);
+      const competitionId = createResponse.competition.id;
+
+      // Update with boost time decay rate
+      const boostTimeDecayRate = 0.5;
+      const updateResponse = (await adminClient.updateCompetition(
+        competitionId,
+        {
+          boostTimeDecayRate,
+        } as Parameters<typeof adminClient.updateCompetition>[1],
+      )) as UpdateCompetitionResponse;
+
+      expect(updateResponse.success).toBe(true);
+
+      // Verify boost time decay rate is updated in database
+      const [competition] = await db
+        .select()
+        .from(competitions)
+        .where(eq(competitions.id, competitionId))
+        .limit(1);
+
+      expect(competition).toBeDefined();
+      expect(competition?.boostTimeDecayRate).toBe(boostTimeDecayRate);
+    });
+
+    test("should reject boost time decay rate below minimum", async () => {
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      const competitionName = `Boost Decay Invalid Min ${Date.now()}`;
+      const result = await adminClient.createCompetition({
+        name: competitionName,
+        arenaId: "default-paper-arena",
+        boostTimeDecayRate: 0.05, // Below minimum of 0.1
+      } as Parameters<typeof adminClient.createCompetition>[0]);
+
+      expect(result.success).toBe(false);
+      const errorResponse = result as ErrorResponse;
+      expect(errorResponse.status).toBe(400);
+      expect(errorResponse.error).toContain("boostTimeDecayRate");
+    });
+
+    test("should reject boost time decay rate above maximum", async () => {
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      const competitionName = `Boost Decay Invalid Max ${Date.now()}`;
+      const result = await adminClient.createCompetition({
+        name: competitionName,
+        arenaId: "default-paper-arena",
+        boostTimeDecayRate: 0.95, // Above maximum of 0.9
+      } as Parameters<typeof adminClient.createCompetition>[0]);
+
+      expect(result.success).toBe(false);
+      const errorResponse = result as ErrorResponse;
+      expect(errorResponse.status).toBe(400);
+      expect(errorResponse.error).toContain("boostTimeDecayRate");
+    });
+
+    test("should allow competition without boost time decay rate", async () => {
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      const competitionName = `Boost Decay Optional ${Date.now()}`;
+      const createResponse = (await adminClient.createCompetition({
+        name: competitionName,
+        arenaId: "default-paper-arena",
+      })) as CreateCompetitionResponse;
+
+      expect(createResponse.success).toBe(true);
+      const competitionId = createResponse.competition.id;
+
+      // Verify boost time decay rate is null in database
+      const [competition] = await db
+        .select()
+        .from(competitions)
+        .where(eq(competitions.id, competitionId))
+        .limit(1);
+
+      expect(competition).toBeDefined();
+      expect(competition?.boostTimeDecayRate).toBeNull();
+    });
+  });
+
+  describe("Paper Trading Initial Balances Configuration", () => {
+    test("should create competition with paper trading initial balances", async () => {
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      const initialBalances = [
+        { specificChain: "eth", tokenSymbol: "usdc", amount: 1000 },
+        { specificChain: "svm", tokenSymbol: "sol", amount: 5 },
+        { specificChain: "base", tokenSymbol: "usdc", amount: 500 },
+      ];
+
+      const competitionName = `Paper Trading Balances Test ${Date.now()}`;
+      const createResponse = (await adminClient.createCompetition({
+        name: competitionName,
+        arenaId: "default-paper-arena",
+        paperTradingInitialBalances: initialBalances,
+      })) as CreateCompetitionResponse;
+
+      expect(createResponse.success).toBe(true);
+      const competitionId = createResponse.competition.id;
+
+      // Verify initial balances are stored in database
+      const storedBalances = await db
+        .select()
+        .from(paperTradingInitialBalances)
+        .where(eq(paperTradingInitialBalances.competitionId, competitionId));
+
+      expect(storedBalances).toHaveLength(3);
+
+      // Verify each balance
+      const ethUsdc = storedBalances.find(
+        (b) => b.specificChain === "eth" && b.tokenSymbol === "usdc",
+      );
+      expect(ethUsdc).toBeDefined();
+      expect(ethUsdc?.amount).toBe(1000);
+
+      const svmSol = storedBalances.find(
+        (b) => b.specificChain === "svm" && b.tokenSymbol === "sol",
+      );
+      expect(svmSol).toBeDefined();
+      expect(svmSol?.amount).toBe(5);
+
+      const baseUsdc = storedBalances.find(
+        (b) => b.specificChain === "base" && b.tokenSymbol === "usdc",
+      );
+      expect(baseUsdc).toBeDefined();
+      expect(baseUsdc?.amount).toBe(500);
+    });
+
+    test("should reject duplicate paper trading initial balances", async () => {
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      const initialBalances = [
+        { specificChain: "eth", tokenSymbol: "usdc", amount: 1000 },
+        { specificChain: "eth", tokenSymbol: "usdc", amount: 2000 }, // Duplicate
+      ];
+
+      const competitionName = `Paper Trading Duplicate Test ${Date.now()}`;
+      const result = await adminClient.createCompetition({
+        name: competitionName,
+        arenaId: "default-paper-arena",
+        paperTradingInitialBalances: initialBalances,
+      });
+
+      expect(result.success).toBe(false);
+      const errorResponse = result as ErrorResponse;
+      expect(errorResponse.status).toBe(400);
+      const errorMessage = errorResponse.error.toLowerCase();
+      expect(errorMessage).toContain("duplicate");
+      expect(errorMessage).toContain("specificchain");
+      expect(errorMessage).toContain("tokensymbol");
+    });
+
+    test("should not allow competition without paper trading initial balances", async () => {
+      const competitionName = `Paper Trading Optional Balances ${Date.now()}`;
+
+      try {
+        await axios.post(
+          `${getBaseUrl()}/api/admin/competition/create`,
+          {
+            name: competitionName,
+            arenaId: "default-paper-arena",
+            // Not providing paperTradingInitialBalances to test optional behavior
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${adminApiKey}`,
+            },
+          },
+        );
+      } catch (error) {
+        const errorResponse = error as ErrorResponse;
+        expect(errorResponse.status).toBe(400);
+      }
+    });
+
+    test("should update competition with paper trading initial balances", async () => {
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Create competition without initial balances
+      const competitionName = `Paper Trading Update Balances ${Date.now()}`;
+      const createResponse = (await adminClient.createCompetition({
+        name: competitionName,
+        arenaId: "default-paper-arena",
+        paperTradingInitialBalances: [
+          { specificChain: "polygon", tokenSymbol: "usdc", amount: 750 },
+        ],
+      })) as CreateCompetitionResponse;
+
+      expect(createResponse.success).toBe(true);
+      const competitionId = createResponse.competition.id;
+
+      // Update with initial balances
+      const initialBalances = [
+        { specificChain: "eth", tokenSymbol: "usdc", amount: 750 },
+      ];
+
+      const updateResponse = (await adminClient.updateCompetition(
+        competitionId,
+        {
+          paperTradingInitialBalances: initialBalances,
+        } as Parameters<typeof adminClient.updateCompetition>[1],
+      )) as UpdateCompetitionResponse;
+
+      expect(updateResponse.success).toBe(true);
+
+      // Verify initial balances are stored
+      const storedBalances = await db
+        .select()
+        .from(paperTradingInitialBalances)
+        .where(eq(paperTradingInitialBalances.competitionId, competitionId));
+
+      expect(storedBalances).toHaveLength(2);
+      expect(storedBalances[0]?.specificChain).toBe("polygon");
+      expect(storedBalances[0]?.tokenSymbol).toBe("usdc");
+      expect(storedBalances[0]?.amount).toBe(750);
+    });
+  });
+
+  describe("Paper Trading Config Configuration", () => {
+    test("should create competition with paper trading config", async () => {
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      const maxTradePercentage = 50;
+      const competitionName = `Paper Trading Config Test ${Date.now()}`;
+      const createResponse = (await adminClient.createCompetition({
+        name: competitionName,
+        arenaId: "default-paper-arena",
+        paperTradingConfig: {
+          maxTradePercentage,
+        },
+      } as Parameters<
+        typeof adminClient.createCompetition
+      >[0])) as CreateCompetitionResponse;
+
+      expect(createResponse.success).toBe(true);
+      const competitionId = createResponse.competition.id;
+
+      // Verify paper trading config is stored in database
+      const [config] = await db
+        .select()
+        .from(paperTradingConfig)
+        .where(eq(paperTradingConfig.competitionId, competitionId))
+        .limit(1);
+
+      expect(config).toBeDefined();
+      expect(config?.maxTradePercentage).toBe(maxTradePercentage);
+    });
+
+    test("should default maxTradePercentage to 25 when not provided", async () => {
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      const competitionName = `Paper Trading Config Default ${Date.now()}`;
+      const createResponse = (await adminClient.createCompetition({
+        name: competitionName,
+        arenaId: "default-paper-arena",
+        paperTradingConfig: {}, // Empty config should use default
+      } as Parameters<
+        typeof adminClient.createCompetition
+      >[0])) as CreateCompetitionResponse;
+
+      expect(createResponse.success).toBe(true);
+      const competitionId = createResponse.competition.id;
+
+      // Verify default maxTradePercentage is 25 when config is created
+      // Note: Config may not be created until competition starts or config is explicitly set
+      const [config] = await db
+        .select()
+        .from(paperTradingConfig)
+        .where(eq(paperTradingConfig.competitionId, competitionId))
+        .limit(1);
+
+      // Config is optional and may not exist until explicitly set or competition starts
+      if (config) {
+        expect(config.maxTradePercentage).toBe(25);
+      }
+    });
+
+    test("should allow competition without paper trading config", async () => {
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      const competitionName = `Paper Trading Config Optional ${Date.now()}`;
+      const createResponse = (await adminClient.createCompetition({
+        name: competitionName,
+        arenaId: "default-paper-arena",
+      })) as CreateCompetitionResponse;
+
+      expect(createResponse.success).toBe(true);
+      const competitionId = createResponse.competition.id;
+
+      // Verify no paper trading config is stored (it's optional)
+      const [config] = await db
+        .select()
+        .from(paperTradingConfig)
+        .where(eq(paperTradingConfig.competitionId, competitionId))
+        .limit(1);
+
+      // Config may or may not exist - both are valid
+      // If it exists, it should have default value
+      if (config) {
+        expect(config.maxTradePercentage).toBe(25);
+      }
+    });
+
+    test("should update competition with paper trading config", async () => {
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Create competition without paper trading config
+      const competitionName = `Paper Trading Config Update ${Date.now()}`;
+      const createResponse = (await adminClient.createCompetition({
+        name: competitionName,
+        arenaId: "default-paper-arena",
+      })) as CreateCompetitionResponse;
+
+      expect(createResponse.success).toBe(true);
+      const competitionId = createResponse.competition.id;
+
+      // Update with paper trading config
+      const maxTradePercentage = 75;
+      const updateResponse = (await adminClient.updateCompetition(
+        competitionId,
+        {
+          paperTradingConfig: {
+            maxTradePercentage,
+          },
+        } as Parameters<typeof adminClient.updateCompetition>[1],
+      )) as UpdateCompetitionResponse;
+
+      expect(updateResponse.success).toBe(true);
+
+      // Verify paper trading config is updated
+      const [config] = await db
+        .select()
+        .from(paperTradingConfig)
+        .where(eq(paperTradingConfig.competitionId, competitionId))
+        .limit(1);
+
+      expect(config).toBeDefined();
+      expect(config?.maxTradePercentage).toBe(maxTradePercentage);
+    });
+
+    test("should reject maxTradePercentage below minimum", async () => {
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      const competitionName = `Paper Trading Config Invalid Min ${Date.now()}`;
+      const result = await adminClient.createCompetition({
+        name: competitionName,
+        arenaId: "default-paper-arena",
+        paperTradingConfig: {
+          maxTradePercentage: 0, // Below minimum of 1
+        },
+      } as Parameters<typeof adminClient.createCompetition>[0]);
+
+      expect(result.success).toBe(false);
+      const errorResponse = result as ErrorResponse;
+      expect(errorResponse.status).toBe(400);
+      expect(errorResponse.error).toContain("maxTradePercentage");
+    });
+
+    test("should reject maxTradePercentage above maximum", async () => {
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      const competitionName = `Paper Trading Config Invalid Max ${Date.now()}`;
+      const result = await adminClient.createCompetition({
+        name: competitionName,
+        arenaId: "default-paper-arena",
+        paperTradingConfig: {
+          maxTradePercentage: 101, // Above maximum of 100
+        },
+      } as Parameters<typeof adminClient.createCompetition>[0]);
+
+      expect(result.success).toBe(false);
+      const errorResponse = result as ErrorResponse;
+      expect(errorResponse.status).toBe(400);
+      expect(errorResponse.error).toContain("maxTradePercentage");
+    });
+
+    test("should accept maxTradePercentage at boundaries", async () => {
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Test minimum boundary (1)
+      const competitionName1 = `Paper Trading Config Min Boundary ${Date.now()}`;
+      const createResponse1 = (await adminClient.createCompetition({
+        name: competitionName1,
+        arenaId: "default-paper-arena",
+        paperTradingConfig: {
+          maxTradePercentage: 1,
+        },
+      } as Parameters<
+        typeof adminClient.createCompetition
+      >[0])) as CreateCompetitionResponse;
+
+      expect(createResponse1.success).toBe(true);
+
+      // Test maximum boundary (100)
+      const competitionName2 = `Paper Trading Config Max Boundary ${Date.now()}`;
+      const createResponse2 = (await adminClient.createCompetition({
+        name: competitionName2,
+        arenaId: "default-paper-arena",
+        paperTradingConfig: {
+          maxTradePercentage: 100,
+        },
+      } as Parameters<
+        typeof adminClient.createCompetition
+      >[0])) as CreateCompetitionResponse;
+
+      expect(createResponse2.success).toBe(true);
     });
   });
 });

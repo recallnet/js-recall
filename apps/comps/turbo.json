@@ -59,7 +59,6 @@
         "RPC_PROVIDER",
         "REWARDS_NETWORK",
         "REWARDS_SLACK_WEBHOOK_URL",
-        "REWARDS_BOOST_TIME_DECAY_RATE",
         "COINGECKO_API_KEY",
         "COINGECKO_MODE",
         "TEST_MODE",

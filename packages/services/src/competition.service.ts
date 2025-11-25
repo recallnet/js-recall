@@ -6,6 +6,8 @@ import { AgentRepository } from "@recallnet/db/repositories/agent";
 import { AgentScoreRepository } from "@recallnet/db/repositories/agent-score";
 import { ArenaRepository } from "@recallnet/db/repositories/arena";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
+import { PaperTradingConfigRepository } from "@recallnet/db/repositories/paper-trading-config";
+import { PaperTradingInitialBalancesRepository } from "@recallnet/db/repositories/paper-trading-initial-balances";
 import { PerpsRepository } from "@recallnet/db/repositories/perps";
 import { StakesRepository } from "@recallnet/db/repositories/stakes";
 import { UserRepository } from "@recallnet/db/repositories/user";
@@ -57,7 +59,11 @@ import {
   PerpsEnrichedLeaderboardEntry,
   SpecificChain,
   SpecificChainBalances,
+<<<<<<< HEAD
   TradingConstraints,
+=======
+  SpecificChainTokens,
+>>>>>>> main
   isPerpsEnrichedEntry,
 } from "./types/index.js";
 import { ApiError } from "./types/index.js";
@@ -121,12 +127,25 @@ export interface CreateCompetitionParams {
   boosterAllocationUnit?: AllocationUnit;
   rewardRules?: string;
   rewardDetails?: string;
+  boostTimeDecayRate?: number;
 
   // Display
   displayState?: DisplayState;
 
+<<<<<<< HEAD
   // NFL-specific fields
   gameIds?: string[]; // Array of game UUIDs from games table to link to competition
+=======
+  // Paper trading configuration
+  paperTradingConfig?: {
+    maxTradePercentage?: number;
+  };
+  paperTradingInitialBalances?: Array<{
+    specificChain: string;
+    tokenSymbol: string;
+    amount: number;
+  }>;
+>>>>>>> main
 }
 
 /**
@@ -342,6 +361,7 @@ interface LeaderboardWithInactiveAgents {
 export interface CompetitionServiceConfig {
   evmChains: SpecificChain[];
   specificChainBalances: SpecificChainBalances;
+  specificChainTokens: SpecificChainTokens;
   maxTradePercentage: number;
   rateLimiting: {
     maxRequests: number;
@@ -372,6 +392,8 @@ export class CompetitionService {
   private sportsService: SportsService;
   private perpsRepo: PerpsRepository;
   private competitionRepo: CompetitionRepository;
+  private paperTradingConfigRepo: PaperTradingConfigRepository;
+  private paperTradingInitialBalancesRepo: PaperTradingInitialBalancesRepository;
   private stakesRepo: StakesRepository;
   private userRepo: UserRepository;
   private db: Database;
@@ -394,6 +416,8 @@ export class CompetitionService {
     sportsService: SportsService,
     perpsRepo: PerpsRepository,
     competitionRepo: CompetitionRepository,
+    paperTradingConfigRepo: PaperTradingConfigRepository,
+    paperTradingInitialBalancesRepo: PaperTradingInitialBalancesRepository,
     stakesRepo: StakesRepository,
     userRepo: UserRepository,
     db: Database,
@@ -415,11 +439,72 @@ export class CompetitionService {
     this.sportsService = sportsService;
     this.perpsRepo = perpsRepo;
     this.competitionRepo = competitionRepo;
+    this.paperTradingConfigRepo = paperTradingConfigRepo;
+    this.paperTradingInitialBalancesRepo = paperTradingInitialBalancesRepo;
     this.stakesRepo = stakesRepo;
     this.userRepo = userRepo;
     this.db = db;
     this.config = config;
     this.logger = logger;
+  }
+
+  /**
+   * Upserts paper trading initial balances for a competition
+   * Derives tokenAddress from specificChainTokens based on specificChain and tokenSymbol
+   * @param competitionId The competition ID
+   * @param paperTradingInitialBalances Array of initial balances (specificChain, tokenSymbol, amount)
+   * @param tx Database transaction
+   * @param operationType Type of operation for logging (e.g., "Created", "Updated")
+   * @private
+   */
+  private async upsertPaperTradingInitialBalances(
+    competitionId: string,
+    paperTradingInitialBalances: Array<{
+      specificChain: string;
+      tokenSymbol: string;
+      amount: number;
+    }>,
+    tx: DatabaseTransaction,
+  ): Promise<void> {
+    // Derive tokenAddress from specificChainTokens for provided balances
+    const specificChainTokens = this.config.specificChainTokens;
+    if (!specificChainTokens) {
+      throw new Error(
+        `[CompetitionService] specificChainTokens configuration is required to process paperTradingInitialBalances`,
+      );
+    }
+
+    for (const balance of paperTradingInitialBalances) {
+      const chainTokens =
+        specificChainTokens[balance.specificChain as SpecificChain];
+      if (!chainTokens) {
+        throw new Error(
+          `[CompetitionService] No token configuration found for chain: ${balance.specificChain}`,
+        );
+      }
+
+      const tokenAddress =
+        chainTokens[
+          balance.tokenSymbol.toLowerCase() as keyof typeof chainTokens
+        ];
+      if (!tokenAddress) {
+        throw new Error(
+          `[CompetitionService] No token address found for ${balance.specificChain} ${balance.tokenSymbol}. Available tokens: ${Object.keys(chainTokens).join(", ")}`,
+        );
+      }
+
+      await this.paperTradingInitialBalancesRepo.upsert(
+        {
+          id: randomUUID(),
+          competitionId,
+          specificChain: balance.specificChain,
+          tokenSymbol: balance.tokenSymbol,
+          tokenAddress: tokenAddress as string,
+          amount: balance.amount,
+        },
+        tx,
+      );
+    }
   }
 
   /**
@@ -480,12 +565,31 @@ export class CompetitionService {
     boosterAllocationUnit,
     rewardRules,
     rewardDetails,
+    boostTimeDecayRate,
     displayState,
+<<<<<<< HEAD
     gameIds,
+=======
+    paperTradingConfig,
+    paperTradingInitialBalances,
+>>>>>>> main
   }: CreateCompetitionParams) {
     const id = randomUUID();
 
     const competitionType = type ?? "trading";
+
+    // Validate paperTradingInitialBalances is provided for paper trading competitions
+    if (competitionType === "trading") {
+      if (
+        !paperTradingInitialBalances ||
+        paperTradingInitialBalances.length === 0
+      ) {
+        throw new ApiError(
+          400,
+          "paperTradingInitialBalances is required for paper trading competitions",
+        );
+      }
+    }
 
     // Validate arena compatibility if arenaId provided
     if (arenaId) {
@@ -543,6 +647,7 @@ export class CompetitionService {
       boosterAllocationUnit: boosterAllocationUnit ?? null,
       rewardRules: rewardRules ?? null,
       rewardDetails: rewardDetails ?? null,
+      boostTimeDecayRate: boostTimeDecayRate ?? null,
 
       // Display
       displayState: displayState ?? null,
@@ -654,6 +759,28 @@ export class CompetitionService {
           users: valueToAttoBigInt(prizePools.users),
         };
         await this.competitionRepo.updatePrizePools(id, attoPrizePools, tx);
+      }
+
+      if (paperTradingConfig) {
+        await this.paperTradingConfigRepo.upsert(
+          {
+            competitionId: id,
+            maxTradePercentage: paperTradingConfig.maxTradePercentage,
+          },
+          tx,
+        );
+      }
+
+      // Upsert paper trading initial balances if provided
+      if (
+        paperTradingInitialBalances &&
+        paperTradingInitialBalances.length > 0
+      ) {
+        await this.upsertPaperTradingInitialBalances(
+          id,
+          paperTradingInitialBalances,
+          tx,
+        );
       }
 
       return {
@@ -2335,7 +2462,18 @@ export class CompetitionService {
       agent: number;
       users: number;
     },
+<<<<<<< HEAD
     gameIds?: string[],
+=======
+    paperTradingConfig?: {
+      maxTradePercentage?: number;
+    },
+    paperTradingInitialBalances?: Array<{
+      specificChain: string;
+      tokenSymbol: string;
+      amount: number;
+    }>,
+>>>>>>> main
   ): Promise<{
     competition: SelectCompetition;
     updatedRewards: SelectCompetitionReward[];
@@ -2408,6 +2546,9 @@ export class CompetitionService {
 
     // Execute all updates in a single transaction
     const result = await this.db.transaction(async (tx) => {
+      // FIX ME: there is a race condition where another call to updateCompetition could have updated existingCompetition first.
+      // A possible fix is to add a lock to the service level.
+
       // Handle type conversion if needed
       if (isTypeChanging && updates.type) {
         const oldType = existingCompetition.type;
@@ -2598,6 +2739,44 @@ export class CompetitionService {
         await this.competitionRepo.updatePrizePools(
           competitionId,
           attoPrizePools,
+          tx,
+        );
+      }
+
+      // Upsert paper trading config if provided
+      if (paperTradingConfig) {
+        if (existingCompetition.status !== "pending") {
+          throw new ApiError(
+            400,
+            "Cannot update paper trading config for competition that has started",
+          );
+        }
+        await this.paperTradingConfigRepo.upsert(
+          {
+            competitionId,
+            maxTradePercentage: paperTradingConfig.maxTradePercentage,
+          },
+          tx,
+        );
+        this.logger.debug(
+          `[CompetitionService] Updated paper trading config for competition ${competitionId}`,
+        );
+      }
+
+      // Upsert paper trading initial balances if provided
+      if (
+        paperTradingInitialBalances &&
+        paperTradingInitialBalances.length > 0
+      ) {
+        if (existingCompetition.status !== "pending") {
+          throw new ApiError(
+            400,
+            "Cannot update paper trading initial balances for competition that has started",
+          );
+        }
+        await this.upsertPaperTradingInitialBalances(
+          competitionId,
+          paperTradingInitialBalances,
           tx,
         );
       }

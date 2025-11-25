@@ -47,6 +47,8 @@ import {
   competitionRewardsRepository,
   convictionClaimsRepository,
   leaderboardRepository,
+  paperTradingConfigRepository,
+  paperTradingInitialBalancesRepository,
   perpsRepository,
   rewardsRepository,
   stakesRepository,
@@ -76,7 +78,7 @@ export const airdropService = new AirdropService(
 
 export const balanceService = new BalanceService(
   balanceRepository,
-  config,
+  paperTradingInitialBalancesRepository,
   createLogger("BalanceService"),
 );
 
@@ -212,7 +214,6 @@ export const rewardsService = new RewardsService(
   getRewardsAllocator(),
   db,
   createLogger("RewardsService"),
-  config.rewards.boostTimeDecayRate,
 );
 
 export const sportsService = new SportsService(
@@ -237,6 +238,8 @@ export const competitionService = new CompetitionService(
   sportsService,
   perpsRepository,
   competitionRepository,
+  paperTradingConfigRepository,
+  paperTradingInitialBalancesRepository,
   stakesRepository,
   userRepository,
   db,

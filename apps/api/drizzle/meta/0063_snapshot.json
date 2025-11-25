@@ -1,5 +1,5 @@
 {
-  "id": "627840da-9a63-49aa-a686-34dd2f5b9a24",
+  "id": "c8e4779e-5692-4893-84c0-c93fcb9e578e",
   "prevId": "2bbf21af-ca68-4023-80e7-ae4f2fd9cfc5",
   "version": "7",
   "dialect": "postgresql",
@@ -2395,6 +2395,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "boost_time_decay_rate": {
+          "name": "boost_time_decay_rate",
+          "type": "numeric(5, 4)",
+          "primaryKey": false,
+          "notNull": false
+        },
         "engine_id": {
           "name": "engine_id",
           "type": "engine_type",
@@ -4223,910 +4229,6 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "sports.competition_aggregate_scores": {
-      "name": "competition_aggregate_scores",
-      "schema": "sports",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "competition_id": {
-          "name": "competition_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "agent_id": {
-          "name": "agent_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "average_brier_score": {
-          "name": "average_brier_score",
-          "type": "numeric(10, 6)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "games_scored": {
-          "name": "games_scored",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 0
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "idx_competition_aggregate_scores_competition_id": {
-          "name": "idx_competition_aggregate_scores_competition_id",
-          "columns": [
-            {
-              "expression": "competition_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_competition_aggregate_scores_agent_id": {
-          "name": "idx_competition_aggregate_scores_agent_id",
-          "columns": [
-            {
-              "expression": "agent_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "competition_aggregate_scores_competition_id_competitions_id_fk": {
-          "name": "competition_aggregate_scores_competition_id_competitions_id_fk",
-          "tableFrom": "competition_aggregate_scores",
-          "tableTo": "competitions",
-          "columnsFrom": ["competition_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "competition_aggregate_scores_agent_id_agents_id_fk": {
-          "name": "competition_aggregate_scores_agent_id_agents_id_fk",
-          "tableFrom": "competition_aggregate_scores",
-          "tableTo": "agents",
-          "columnsFrom": ["agent_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "competition_aggregate_scores_competition_id_agent_id_key": {
-          "name": "competition_aggregate_scores_competition_id_agent_id_key",
-          "nullsNotDistinct": false,
-          "columns": ["competition_id", "agent_id"]
-        }
-      },
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "sports.competition_games": {
-      "name": "competition_games",
-      "schema": "sports",
-      "columns": {
-        "competition_id": {
-          "name": "competition_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "game_id": {
-          "name": "game_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "idx_competition_games_competition_id": {
-          "name": "idx_competition_games_competition_id",
-          "columns": [
-            {
-              "expression": "competition_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_competition_games_game_id": {
-          "name": "idx_competition_games_game_id",
-          "columns": [
-            {
-              "expression": "game_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "competition_games_competition_id_competitions_id_fk": {
-          "name": "competition_games_competition_id_competitions_id_fk",
-          "tableFrom": "competition_games",
-          "tableTo": "competitions",
-          "columnsFrom": ["competition_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "competition_games_game_id_nfl_games_id_fk": {
-          "name": "competition_games_game_id_nfl_games_id_fk",
-          "tableFrom": "competition_games",
-          "tableTo": "nfl_games",
-          "schemaTo": "sports",
-          "columnsFrom": ["game_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {
-        "competition_games_competition_id_game_id_pk": {
-          "name": "competition_games_competition_id_game_id_pk",
-          "columns": ["competition_id", "game_id"]
-        }
-      },
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "sports.nfl_game_plays": {
-      "name": "nfl_game_plays",
-      "schema": "sports",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "game_id": {
-          "name": "game_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "provider_play_id": {
-          "name": "provider_play_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "sequence": {
-          "name": "sequence",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "quarter_name": {
-          "name": "quarter_name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "time_remaining_minutes": {
-          "name": "time_remaining_minutes",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "time_remaining_seconds": {
-          "name": "time_remaining_seconds",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "play_time": {
-          "name": "play_time",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "down": {
-          "name": "down",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "distance": {
-          "name": "distance",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "yard_line": {
-          "name": "yard_line",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "yard_line_territory": {
-          "name": "yard_line_territory",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "yards_to_end_zone": {
-          "name": "yards_to_end_zone",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "play_type": {
-          "name": "play_type",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "team": {
-          "name": "team",
-          "type": "nfl_team",
-          "typeSchema": "sports",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "opponent": {
-          "name": "opponent",
-          "type": "nfl_team",
-          "typeSchema": "sports",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "description": {
-          "name": "description",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "idx_game_plays_game_id": {
-          "name": "idx_game_plays_game_id",
-          "columns": [
-            {
-              "expression": "game_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_game_plays_provider_play_id": {
-          "name": "idx_game_plays_provider_play_id",
-          "columns": [
-            {
-              "expression": "provider_play_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_game_plays_play_type": {
-          "name": "idx_game_plays_play_type",
-          "columns": [
-            {
-              "expression": "play_type",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "nfl_game_plays_game_id_nfl_games_id_fk": {
-          "name": "nfl_game_plays_game_id_nfl_games_id_fk",
-          "tableFrom": "nfl_game_plays",
-          "tableTo": "nfl_games",
-          "schemaTo": "sports",
-          "columnsFrom": ["game_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "game_plays_game_id_sequence_key": {
-          "name": "game_plays_game_id_sequence_key",
-          "nullsNotDistinct": false,
-          "columns": ["game_id", "sequence"]
-        }
-      },
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "sports.game_prediction_scores": {
-      "name": "game_prediction_scores",
-      "schema": "sports",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "competition_id": {
-          "name": "competition_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "game_id": {
-          "name": "game_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "agent_id": {
-          "name": "agent_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "time_weighted_brier_score": {
-          "name": "time_weighted_brier_score",
-          "type": "numeric(10, 6)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "final_prediction": {
-          "name": "final_prediction",
-          "type": "nfl_team",
-          "typeSchema": "sports",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "final_confidence": {
-          "name": "final_confidence",
-          "type": "numeric(4, 3)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "prediction_count": {
-          "name": "prediction_count",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 0
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "idx_game_prediction_scores_competition_id": {
-          "name": "idx_game_prediction_scores_competition_id",
-          "columns": [
-            {
-              "expression": "competition_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_game_prediction_scores_game_id": {
-          "name": "idx_game_prediction_scores_game_id",
-          "columns": [
-            {
-              "expression": "game_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_game_prediction_scores_agent_id": {
-          "name": "idx_game_prediction_scores_agent_id",
-          "columns": [
-            {
-              "expression": "agent_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "game_prediction_scores_competition_id_competitions_id_fk": {
-          "name": "game_prediction_scores_competition_id_competitions_id_fk",
-          "tableFrom": "game_prediction_scores",
-          "tableTo": "competitions",
-          "columnsFrom": ["competition_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "game_prediction_scores_game_id_nfl_games_id_fk": {
-          "name": "game_prediction_scores_game_id_nfl_games_id_fk",
-          "tableFrom": "game_prediction_scores",
-          "tableTo": "nfl_games",
-          "schemaTo": "sports",
-          "columnsFrom": ["game_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "game_prediction_scores_agent_id_agents_id_fk": {
-          "name": "game_prediction_scores_agent_id_agents_id_fk",
-          "tableFrom": "game_prediction_scores",
-          "tableTo": "agents",
-          "columnsFrom": ["agent_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "game_prediction_scores_competition_id_game_id_agent_id_key": {
-          "name": "game_prediction_scores_competition_id_game_id_agent_id_key",
-          "nullsNotDistinct": false,
-          "columns": ["competition_id", "game_id", "agent_id"]
-        }
-      },
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "sports.game_predictions": {
-      "name": "game_predictions",
-      "schema": "sports",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "competition_id": {
-          "name": "competition_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "game_id": {
-          "name": "game_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "agent_id": {
-          "name": "agent_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "predicted_winner": {
-          "name": "predicted_winner",
-          "type": "nfl_team",
-          "typeSchema": "sports",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "confidence": {
-          "name": "confidence",
-          "type": "numeric(4, 3)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "reason": {
-          "name": "reason",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "idx_game_predictions_competition_id_game_id_agent_id_created_at": {
-          "name": "idx_game_predictions_competition_id_game_id_agent_id_created_at",
-          "columns": [
-            {
-              "expression": "competition_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "game_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "agent_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "created_at",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_game_predictions_game_id_agent_id": {
-          "name": "idx_game_predictions_game_id_agent_id",
-          "columns": [
-            {
-              "expression": "game_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "agent_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_game_predictions_competition_id": {
-          "name": "idx_game_predictions_competition_id",
-          "columns": [
-            {
-              "expression": "competition_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_game_predictions_game_id": {
-          "name": "idx_game_predictions_game_id",
-          "columns": [
-            {
-              "expression": "game_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_game_predictions_agent_id": {
-          "name": "idx_game_predictions_agent_id",
-          "columns": [
-            {
-              "expression": "agent_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "game_predictions_competition_id_competitions_id_fk": {
-          "name": "game_predictions_competition_id_competitions_id_fk",
-          "tableFrom": "game_predictions",
-          "tableTo": "competitions",
-          "columnsFrom": ["competition_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "game_predictions_game_id_nfl_games_id_fk": {
-          "name": "game_predictions_game_id_nfl_games_id_fk",
-          "tableFrom": "game_predictions",
-          "tableTo": "nfl_games",
-          "schemaTo": "sports",
-          "columnsFrom": ["game_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "game_predictions_agent_id_agents_id_fk": {
-          "name": "game_predictions_agent_id_agents_id_fk",
-          "tableFrom": "game_predictions",
-          "tableTo": "agents",
-          "columnsFrom": ["agent_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "sports.nfl_games": {
-      "name": "nfl_games",
-      "schema": "sports",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "provider_game_id": {
-          "name": "provider_game_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "season": {
-          "name": "season",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "week": {
-          "name": "week",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "start_time": {
-          "name": "start_time",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "end_time": {
-          "name": "end_time",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "home_team": {
-          "name": "home_team",
-          "type": "nfl_team",
-          "typeSchema": "sports",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "away_team": {
-          "name": "away_team",
-          "type": "nfl_team",
-          "typeSchema": "sports",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "spread": {
-          "name": "spread",
-          "type": "numeric(10, 2)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "over_under": {
-          "name": "over_under",
-          "type": "numeric(10, 2)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "venue": {
-          "name": "venue",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "status": {
-          "name": "status",
-          "type": "game_status",
-          "typeSchema": "sports",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'scheduled'"
-        },
-        "winner": {
-          "name": "winner",
-          "type": "nfl_team",
-          "typeSchema": "sports",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "idx_games_provider_game_id": {
-          "name": "idx_games_provider_game_id",
-          "columns": [
-            {
-              "expression": "provider_game_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_games_status": {
-          "name": "idx_games_status",
-          "columns": [
-            {
-              "expression": "status",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_games_start_time": {
-          "name": "idx_games_start_time",
-          "columns": [
-            {
-              "expression": "start_time",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "nfl_games_provider_game_id_unique": {
-          "name": "nfl_games_provider_game_id_unique",
-          "nullsNotDistinct": false,
-          "columns": ["provider_game_id"]
-        },
-        "games_provider_game_id_key": {
-          "name": "games_provider_game_id_key",
-          "nullsNotDistinct": false,
-          "columns": ["provider_game_id"]
-        }
-      },
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
     "trading_comps.balances": {
       "name": "balances",
       "schema": "trading_comps",
@@ -5282,6 +4384,167 @@
           "name": "balances_agent_id_token_address_competition_id_key",
           "nullsNotDistinct": false,
           "columns": ["agent_id", "token_address", "competition_id"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "trading_comps.paper_trading_config": {
+      "name": "paper_trading_config",
+      "schema": "trading_comps",
+      "columns": {
+        "competition_id": {
+          "name": "competition_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "max_trade_percentage": {
+          "name": "max_trade_percentage",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 25
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "idx_paper_trading_config_competition_id": {
+          "name": "idx_paper_trading_config_competition_id",
+          "columns": [
+            {
+              "expression": "competition_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "paper_trading_config_competition_id_competitions_id_fk": {
+          "name": "paper_trading_config_competition_id_competitions_id_fk",
+          "tableFrom": "paper_trading_config",
+          "tableTo": "competitions",
+          "columnsFrom": ["competition_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "trading_comps.paper_trading_initial_balances": {
+      "name": "paper_trading_initial_balances",
+      "schema": "trading_comps",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "competition_id": {
+          "name": "competition_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "specific_chain": {
+          "name": "specific_chain",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "token_symbol": {
+          "name": "token_symbol",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "token_address": {
+          "name": "token_address",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "amount": {
+          "name": "amount",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "idx_paper_trading_initial_balances_competition_id": {
+          "name": "idx_paper_trading_initial_balances_competition_id",
+          "columns": [
+            {
+              "expression": "competition_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "paper_trading_initial_balances_competition_id_competitions_id_fk": {
+          "name": "paper_trading_initial_balances_competition_id_competitions_id_fk",
+          "tableFrom": "paper_trading_initial_balances",
+          "tableTo": "competitions",
+          "columnsFrom": ["competition_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "paper_trading_initial_balances_unique": {
+          "name": "paper_trading_initial_balances_unique",
+          "nullsNotDistinct": false,
+          "columns": ["competition_id", "specific_chain", "token_symbol"]
         }
       },
       "policies": {},
@@ -7248,7 +6511,7 @@
     "public.competition_type": {
       "name": "competition_type",
       "schema": "public",
-      "values": ["trading", "perpetual_futures", "sports_prediction"]
+      "values": ["trading", "perpetual_futures"]
     },
     "public.display_state": {
       "name": "display_state",
@@ -7259,50 +6522,6 @@
       "name": "engine_type",
       "schema": "public",
       "values": ["spot_paper_trading", "perpetual_futures", "spot_live_trading"]
-    },
-    "sports.game_status": {
-      "name": "game_status",
-      "schema": "sports",
-      "values": ["scheduled", "in_progress", "final"]
-    },
-    "sports.nfl_team": {
-      "name": "nfl_team",
-      "schema": "sports",
-      "values": [
-        "ARI",
-        "ATL",
-        "BAL",
-        "BUF",
-        "BYE",
-        "CAR",
-        "CHI",
-        "CIN",
-        "CLE",
-        "DAL",
-        "DEN",
-        "DET",
-        "GB",
-        "HOU",
-        "IND",
-        "JAX",
-        "KC",
-        "LAC",
-        "LAR",
-        "LV",
-        "MIA",
-        "MIN",
-        "NE",
-        "NO",
-        "NYG",
-        "NYJ",
-        "PHI",
-        "PIT",
-        "SEA",
-        "SF",
-        "TB",
-        "TEN",
-        "WAS"
-      ]
     },
     "trading_comps.cross_chain_trading_type": {
       "name": "cross_chain_trading_type",
@@ -7321,7 +6540,6 @@
     }
   },
   "schemas": {
-    "sports": "sports",
     "trading_comps": "trading_comps"
   },
   "sequences": {},
