@@ -3,6 +3,7 @@
 import {
   skipToken,
   useMutation,
+  useQueries,
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
@@ -36,7 +37,6 @@ import BoostAgentModal from "@/components/modals/boost-agent";
 import { config } from "@/config/public";
 import { useTotalUserStaked } from "@/hooks/staking";
 import { useNflLeaderboard } from "@/hooks/useNflLeaderboard";
-import { useNflPredictions } from "@/hooks/useNflPredictions";
 import { useSession } from "@/hooks/useSession";
 import { openForBoosting } from "@/lib/open-for-boosting";
 import { tanstackClient } from "@/rpc/clients/tanstack-query";
@@ -93,6 +93,47 @@ export function NflStandingsTable({
 
   // Fetch leaderboard data
   const { data: leaderboardData } = useNflLeaderboard(competitionId);
+
+  // Fetch predictions for every game once at the component level
+  const predictionQueries = useQueries({
+    queries: games.map((game) => ({
+      ...tanstackClient.nfl.getPredictions.queryOptions({
+        input: {
+          competitionId,
+          gameId: game.id,
+        },
+      }),
+      enabled: Boolean(competitionId && game.id),
+    })),
+  });
+
+  // Build a lookup map: gameId -> agentId -> latest prediction
+  const predictionsByGame = useMemo(() => {
+    const map = new Map<
+      string,
+      Map<string, { predictedWinner: string; confidence: number }>
+    >();
+
+    games.forEach((game, index) => {
+      const predictionResult = predictionQueries[index];
+      const predictions = predictionResult?.data?.predictions ?? [];
+      const agentPredictionMap = new Map<
+        string,
+        { predictedWinner: string; confidence: number }
+      >();
+
+      predictions.forEach((prediction) => {
+        agentPredictionMap.set(prediction.agentId, {
+          predictedWinner: prediction.predictedWinner,
+          confidence: prediction.confidence,
+        });
+      });
+
+      map.set(game.id, agentPredictionMap);
+    });
+
+    return map;
+  }, [games, predictionQueries]);
 
   // Fetch boost data
   const { data: userBoostBalance, isLoading: isLoadingUserBoostBalance } =
@@ -304,16 +345,9 @@ export function NflStandingsTable({
           </div>
         ),
         cell: ({ row }: { row: { original: (typeof agentRows)[number] } }) => {
-          // eslint-disable-next-line react-hooks/rules-of-hooks
-          const { data: predictionsData } = useNflPredictions(
-            competitionId,
-            game.id,
-          );
-
-          const agentPredictions = predictionsData?.predictions?.filter(
-            (p) => p.agentId === row.original.id,
-          );
-          const latestPrediction = agentPredictions?.[0];
+          const latestPrediction = predictionsByGame
+            .get(game.id)
+            ?.get(row.original.id);
 
           if (!latestPrediction) {
             return (
@@ -457,7 +491,7 @@ export function NflStandingsTable({
     ],
     [
       games,
-      competitionId,
+      predictionsByGame,
       isSuccessAgentBoostTotals,
       agentBoostTotals,
       totalBoost,
@@ -605,26 +639,28 @@ export function NflStandingsTable({
             setIsBoostModalOpen(open);
             if (!open) setSelectedAgent(null);
           }}
+          // Note: this is a hack to get the NFL agent to align with trading agent data
           agent={
             {
               id: selectedAgent.id,
               name: selectedAgent.name,
               rank: selectedAgent.rank,
               handle: selectedAgent.name,
+              score: selectedAgent.score ?? null,
               description: null,
               imageUrl: null,
               portfolioValue: 0,
               active: true,
               deactivationReason: null,
               pnl: 0,
-              pnlPercentage: 0,
-              simpleReturn: 0,
-              calmarRatio: 0,
-              maxDrawdown: 0,
-              sortinoRatio: 0,
+              pnlPercent: 0,
               change24h: 0,
+              change24hPercent: 0,
+              simpleReturn: null,
+              calmarRatio: null,
+              maxDrawdown: null,
               hasRiskMetrics: false,
-            } as unknown as RouterOutputs["competitions"]["getAgents"]["agents"][number]
+            } satisfies RouterOutputs["competitions"]["getAgents"]["agents"][number]
           }
           availableBoost={userBoostBalance || 0}
           currentAgentBoostTotal={
