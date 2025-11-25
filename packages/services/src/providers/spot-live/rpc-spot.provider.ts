@@ -840,6 +840,10 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
       polygon: 2, // ~2 seconds per block
       avalanche: 2, // ~2 seconds per block
       bsc: 3, // ~3 seconds per block
+      linea: 3, // ~3 seconds per block
+      zksync: 1, // ~1 second per block
+      scroll: 3, // ~3 seconds per block
+      mantle: 3, // ~3 seconds per block
     };
 
     const blockTime = blockTimes[chain] || 12; // Default to Ethereum timing
