@@ -6,6 +6,7 @@ import { BalanceRepository } from "@recallnet/db/repositories/balance";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { SpotLiveRepository } from "@recallnet/db/repositories/spot-live";
 import { TradeRepository } from "@recallnet/db/repositories/trade";
+import { SpecificChainSchema } from "@recallnet/db/repositories/types";
 import type {
   InsertSpotLiveTransferHistory,
   InsertTrade,
@@ -99,6 +100,14 @@ export class SpotDataProcessor {
 
     if (!("chains" in config) || !Array.isArray(config.chains)) {
       return false;
+    }
+
+    // Validate each chain value using database SpecificChainSchema
+    for (const chain of config.chains) {
+      const result = SpecificChainSchema.safeParse(chain);
+      if (!result.success) {
+        return false;
+      }
     }
 
     return true;
