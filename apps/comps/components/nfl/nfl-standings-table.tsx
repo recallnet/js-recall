@@ -55,6 +55,7 @@ interface NflStandingsTableProps {
 
 const numberFormatter = new Intl.NumberFormat();
 const MOBILE_BREAKPOINT = 768;
+const MAX_STANDINGS_AGENTS = 100;
 
 export function NflStandingsTable({
   competitionId,
@@ -93,6 +94,26 @@ export function NflStandingsTable({
 
   // Fetch leaderboard data
   const { data: leaderboardData } = useNflLeaderboard(competitionId);
+
+  // Always fetch agents to ensure we show the full roster even if leaderboard is empty
+  const {
+    data: competitionAgentsData,
+    isLoading: isLoadingCompetitionAgents,
+    error: agentsError,
+  } = useQuery(
+    tanstackClient.competitions.getAgents.queryOptions({
+      input: {
+        competitionId,
+        includeInactive: true,
+        paging: {
+          sort: "rank",
+          offset: 0,
+          limit: MAX_STANDINGS_AGENTS,
+        },
+      },
+      staleTime: 60 * 1000,
+    }),
+  );
 
   // Fetch predictions for every game once at the component level
   const predictionQueries = useQueries({
@@ -263,18 +284,47 @@ export function NflStandingsTable({
     return userBoostBalance !== undefined && isOpenForBoosting;
   }, [userBoostBalance, isOpenForBoosting]);
 
+  const leaderboardByAgentId = useMemo(() => {
+    const map = new Map<
+      string,
+      RouterOutputs["nfl"]["getLeaderboard"]["leaderboard"][number]
+    >();
+    leaderboardData?.leaderboard.forEach((entry) => {
+      map.set(entry.agentId, entry);
+    });
+    return map;
+  }, [leaderboardData]);
+
   // Build agent rows with predictions
   const agentRows = useMemo(() => {
-    if (!leaderboardData?.leaderboard) return [];
+    const competitionAgents = competitionAgentsData?.agents ?? [];
 
-    return leaderboardData.leaderboard.map((entry) => ({
-      id: entry.agentId,
-      name: entry.agentName ?? `${entry.agentId.slice(0, 8)}...`,
-      rank: entry.rank,
-      score: "averageBrierScore" in entry ? entry.averageBrierScore : undefined,
-      gamesScored: "gamesScored" in entry ? entry.gamesScored : 0,
-    }));
-  }, [leaderboardData]);
+    if (competitionAgents.length) {
+      return competitionAgents.map((agent, index) => {
+        const leaderboardEntry = leaderboardByAgentId.get(agent.id);
+        const score =
+          leaderboardEntry &&
+          "averageBrierScore" in leaderboardEntry &&
+          typeof leaderboardEntry.averageBrierScore === "number"
+            ? leaderboardEntry.averageBrierScore
+            : undefined;
+        const gamesScored =
+          leaderboardEntry && "gamesScored" in leaderboardEntry
+            ? leaderboardEntry.gamesScored
+            : 0;
+
+        return {
+          id: agent.id,
+          name: agent.name ?? agent.handle ?? agent.id.slice(0, 8),
+          rank: leaderboardEntry?.rank ?? agent.rank ?? Math.max(index + 1, 1),
+          score,
+          gamesScored,
+        };
+      });
+    }
+
+    return [];
+  }, [competitionAgentsData, leaderboardByAgentId]);
 
   const columns: ColumnDef<(typeof agentRows)[number]>[] = useMemo(
     () => [
@@ -530,6 +580,8 @@ export function NflStandingsTable({
     ended: "Results",
   };
 
+  const isTableLoading = isLoadingCompetitionAgents && agentRows.length === 0;
+
   return (
     <div className="w-full">
       {/* Header section */}
@@ -623,7 +675,15 @@ export function NflStandingsTable({
                   colSpan={columns.length}
                   className="h-24 text-center"
                 >
-                  No agents in this competition yet.
+                  {agentsError ? (
+                    <span className="text-red-500">
+                      Failed to load agents. Please try again.
+                    </span>
+                  ) : isTableLoading ? (
+                    "Loading agents..."
+                  ) : (
+                    "No agents found for this competition."
+                  )}
                 </TableCell>
               </TableRow>
             )}
