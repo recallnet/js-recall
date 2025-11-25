@@ -38,23 +38,35 @@ export class GamesRepository {
       };
 
       const executor = tx || this.#db;
+      const conflictUpdate: Partial<InsertGame> = {
+        season: data.season,
+        week: data.week,
+        startTime: data.startTime,
+        homeTeam: data.homeTeam,
+        awayTeam: data.awayTeam,
+        spread: data.spread,
+        overUnder: data.overUnder,
+        venue: data.venue,
+        status: data.status,
+        endTime: data.endTime,
+        winner: data.winner,
+        updatedAt: now,
+      };
+
+      // Drizzle ignores undefined fields, but explicitly remove to avoid overriding with undefined
+      if (conflictUpdate.endTime === undefined) {
+        delete conflictUpdate.endTime;
+      }
+      if (conflictUpdate.winner === undefined) {
+        delete conflictUpdate.winner;
+      }
+
       const [result] = await executor
         .insert(games)
         .values(data)
         .onConflictDoUpdate({
           target: games.providerGameId,
-          set: {
-            season: data.season,
-            week: data.week,
-            startTime: data.startTime,
-            homeTeam: data.homeTeam,
-            awayTeam: data.awayTeam,
-            spread: data.spread,
-            overUnder: data.overUnder,
-            venue: data.venue,
-            status: data.status,
-            updatedAt: now,
-          },
+          set: conflictUpdate,
         })
         .returning();
 

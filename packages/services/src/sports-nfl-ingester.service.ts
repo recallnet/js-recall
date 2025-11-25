@@ -350,18 +350,22 @@ export class NflIngesterService {
         return 0;
       }
 
-      // Group by agent and get most recent prediction for each
-      const latestByAgent = new Map<string, SelectGamePrediction>();
+      // Group by agent and competition to capture distinct participation per competition
+      const latestByAgentAndCompetition = new Map<
+        string,
+        SelectGamePrediction
+      >();
       for (const pred of preGamePredictions) {
-        const existing = latestByAgent.get(pred.agentId);
+        const key = `${pred.agentId}:${pred.competitionId}`;
+        const existing = latestByAgentAndCompetition.get(key);
         if (!existing || pred.createdAt > existing.createdAt) {
-          latestByAgent.set(pred.agentId, pred);
+          latestByAgentAndCompetition.set(key, pred);
         }
       }
 
-      // Create snapshot at game start time for each agent
+      // Create snapshot at game start time for each agent+competition pair
       let snapshotCount = 0;
-      for (const latestPred of latestByAgent.values()) {
+      for (const latestPred of latestByAgentAndCompetition.values()) {
         await this.#gamePredictionsRepo.create(
           {
             competitionId: latestPred.competitionId,
@@ -429,7 +433,53 @@ export class NflIngesterService {
       return { game: existingGame };
     }
 
-    // Upsert game
+    // Determine end time with fallback chain:
+    // 1. GameEndDateTime from API (most accurate)
+    // 2. Last play time from play-by-play data
+    // 3. Current time (fallback)
+    let finalizeContext: { winner: NflTeam; endTime: Date } | undefined;
+    if (status === "final") {
+      if (score.AwayScore === null || score.HomeScore === null) {
+        this.#logger.warn(
+          { providerGameId: score.GlobalGameID },
+          "Game is final but scores are missing, skipping finalization",
+        );
+      } else {
+        const winner: NflTeam =
+          score.AwayScore > score.HomeScore ? score.AwayTeam : score.HomeTeam;
+
+        let endTime: Date;
+        if (score.GameEndDateTime) {
+          endTime = new Date(score.GameEndDateTime);
+          this.#logger.debug(
+            { gameEndDateTime: score.GameEndDateTime },
+            "Using GameEndDateTime from API as game end time",
+          );
+        } else if (data.Plays && data.Plays.length > 0) {
+          const lastPlay = data.Plays.reduce((latest, play) =>
+            play.Sequence > latest.Sequence ? play : latest,
+          );
+          endTime = new Date(lastPlay.PlayTime);
+          this.#logger.debug(
+            {
+              lastPlayTime: lastPlay.PlayTime,
+              sequence: lastPlay.Sequence,
+            },
+            "GameEndDateTime not available, using last play time as game end time",
+          );
+        } else {
+          endTime = new Date();
+          this.#logger.warn(
+            { providerGameId: score.GlobalGameID },
+            "No GameEndDateTime or plays available, using current time as game end time",
+          );
+        }
+
+        finalizeContext = { winner, endTime };
+      }
+    }
+
+    // Upsert game with any final state data
     const game = await this.#gamesRepo.upsert(
       {
         providerGameId: score.GlobalGameID,
@@ -440,6 +490,8 @@ export class NflIngesterService {
         awayTeam: score.AwayTeam,
         venue: score.StadiumDetails?.Name || null,
         status,
+        winner: finalizeContext?.winner,
+        endTime: finalizeContext?.endTime,
       },
       tx,
     );
@@ -455,68 +507,29 @@ export class NflIngesterService {
 
     // If game just became final (wasn't final before), finalize and score it
     if (status === "final") {
-      this.#logger.info(
-        { status, wasAlreadyFinal },
-        "Game is final, checking scores",
-      );
-      if (score.AwayScore === null || score.HomeScore === null) {
+      if (!finalizeContext) {
         this.#logger.warn(
           { gameId: game.id, providerGameId: score.GlobalGameID },
-          "Game is final but scores are missing, skipping finalization",
+          "Game is final but missing scoring context, skipping finalization",
         );
         return { game };
-      }
-
-      // Determine winner
-      const winner: NflTeam =
-        score.AwayScore > score.HomeScore ? score.AwayTeam : score.HomeTeam;
-
-      // Determine end time with fallback chain:
-      // 1. GameEndDateTime from API (most accurate)
-      // 2. Last play time from play-by-play data
-      // 3. Current time (fallback)
-      let endTime: Date;
-      if (score.GameEndDateTime) {
-        endTime = new Date(score.GameEndDateTime);
-        this.#logger.debug(
-          { gameEndDateTime: score.GameEndDateTime },
-          "Using GameEndDateTime from API as game end time",
-        );
-      } else if (data.Plays && data.Plays.length > 0) {
-        // Find the most recent play (highest sequence number)
-        const lastPlay = data.Plays.reduce((latest, play) =>
-          play.Sequence > latest.Sequence ? play : latest,
-        );
-        endTime = new Date(lastPlay.PlayTime);
-        this.#logger.debug(
-          { lastPlayTime: lastPlay.PlayTime, sequence: lastPlay.Sequence },
-          "GameEndDateTime not available, using last play time as game end time",
-        );
-      } else {
-        // Fallback to current time if no plays available
-        endTime = new Date();
-        this.#logger.warn(
-          { gameId: game.id, providerGameId: score.GlobalGameID },
-          "No GameEndDateTime or plays available, using current time as game end time",
-        );
       }
 
       this.#logger.info(
         {
           gameId: game.id,
           providerGameId: score.GlobalGameID,
-          winner,
+          winner: finalizeContext.winner,
           awayScore: score.AwayScore,
           homeScore: score.HomeScore,
-          endTime,
+          endTime: finalizeContext.endTime,
         },
         "Game ended, finalizing and scoring",
       );
 
-      // Finalize game after transaction completes
       return {
         game,
-        finalizeContext: { winner, endTime },
+        finalizeContext,
       };
     }
 

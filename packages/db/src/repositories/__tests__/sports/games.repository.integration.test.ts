@@ -115,6 +115,33 @@ describe("GamesRepository Integration Tests", () => {
       const result = await repository.upsert(gameData);
       expect(result).toBeDefined();
     });
+
+    test("should persist winner and endTime when provided", async () => {
+      const baseData = {
+        providerGameId: 19068,
+        season: 2025,
+        week: 1,
+        startTime: new Date("2025-09-08T19:15:00Z"),
+        homeTeam: "CHI" as const,
+        awayTeam: "MIN" as const,
+        status: "in_progress" as const,
+      };
+
+      await repository.upsert(baseData);
+
+      const endTime = new Date("2025-09-08T22:30:00Z");
+      const result = await repository.upsert({
+        ...baseData,
+        status: "final" as const,
+        winner: "MIN" as const,
+        endTime,
+      });
+
+      expect(result.status).toBe("final");
+      expect(result.winner).toBe("MIN");
+      expect(result.endTime).not.toBeNull();
+      expect(result.endTime?.getTime()).toBe(endTime.getTime());
+    });
   });
 
   describe("findById", () => {

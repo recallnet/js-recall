@@ -748,6 +748,133 @@ describe("SportsNflIngesterService", () => {
       );
     });
 
+    it("should snapshot per competition when same agent participates in multiple competitions", async () => {
+      const gameId = randomUUID();
+      const competitionA = randomUUID();
+      const competitionB = randomUUID();
+      const agentId = randomUUID();
+      const gameStartTime = new Date("2025-09-08T19:15:00Z");
+
+      const existingGame: SelectGame = {
+        id: gameId,
+        providerGameId: 19068,
+        season: 2025,
+        week: 1,
+        startTime: gameStartTime,
+        endTime: null,
+        homeTeam: "CHI",
+        awayTeam: "MIN",
+        spread: null,
+        overUnder: null,
+        venue: "Soldier Field",
+        status: "scheduled",
+        winner: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      const preGamePredictions: SelectGamePrediction[] = [
+        {
+          id: randomUUID(),
+          competitionId: competitionA,
+          gameId,
+          agentId,
+          predictedWinner: "CHI",
+          confidence: 0.6,
+          reason: "Competition A prediction",
+          createdAt: new Date("2025-09-08T18:00:00Z"),
+        },
+        {
+          id: randomUUID(),
+          competitionId: competitionB,
+          gameId,
+          agentId,
+          predictedWinner: "MIN",
+          confidence: 0.7,
+          reason: "Competition B prediction",
+          createdAt: new Date("2025-09-08T18:30:00Z"),
+        },
+      ];
+
+      mockGamesRepo.findByProviderGameIdForUpdate.mockResolvedValue(
+        existingGame,
+      );
+      mockGamePredictionsRepo.findPregamePredictions.mockResolvedValue(
+        preGamePredictions,
+      );
+      mockGamePredictionsRepo.create.mockResolvedValue(
+        {} as SelectGamePrediction,
+      );
+      mockGamesRepo.upsert.mockResolvedValue({
+        ...existingGame,
+        status: "in_progress",
+      });
+
+      mockProvider.getPlayByPlay.mockResolvedValue({
+        Score: {
+          SeasonType: 1,
+          Season: 2025,
+          Week: 1,
+          GlobalGameID: 19068,
+          GameKey: "202510106",
+          Date: "2025-09-08T19:15:00",
+          GameEndDateTime: null,
+          HomeTeam: "CHI",
+          AwayTeam: "MIN",
+          AwayScore: 0,
+          HomeScore: 0,
+          HasStarted: true,
+          IsInProgress: true,
+          IsOver: false,
+          Status: "InProgress",
+          StadiumDetails: {
+            StadiumID: 1,
+            Name: "Soldier Field",
+            City: "Chicago",
+            State: "IL",
+          },
+          Quarter: "1",
+          TimeRemaining: "15:00",
+          Possession: null,
+          Down: null,
+          Distance: null,
+          YardLine: null,
+          YardLineTerritory: null,
+          DownAndDistance: null,
+        },
+        Quarters: [],
+        Plays: [],
+      });
+
+      await service.ingestGamePlayByPlay(19068);
+
+      expect(mockGamePredictionsRepo.create).toHaveBeenCalledTimes(2);
+      expect(mockGamePredictionsRepo.create).toHaveBeenCalledWith(
+        {
+          competitionId: competitionA,
+          gameId,
+          agentId,
+          predictedWinner: "CHI",
+          confidence: 0.6,
+          reason: "Competition A prediction",
+          createdAt: gameStartTime,
+        },
+        mockTransaction,
+      );
+      expect(mockGamePredictionsRepo.create).toHaveBeenCalledWith(
+        {
+          competitionId: competitionB,
+          gameId,
+          agentId,
+          predictedWinner: "MIN",
+          confidence: 0.7,
+          reason: "Competition B prediction",
+          createdAt: gameStartTime,
+        },
+        mockTransaction,
+      );
+    });
+
     it("should not snapshot if no pregame predictions exist", async () => {
       const gameId = randomUUID();
       const gameStartTime = new Date("2025-09-08T19:15:00Z");
