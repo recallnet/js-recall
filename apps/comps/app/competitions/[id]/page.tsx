@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { cache } from "react";
 
 import { createMetadata } from "@/lib/metadata";
 import { createSafeClient } from "@/rpc/clients/server-side";
@@ -6,15 +7,17 @@ import { createSafeClient } from "@/rpc/clients/server-side";
 import CompetitionPageClient, { CompetitionPageClientProps } from "./client";
 import NflCompetitionPage from "./nfl-client";
 
+const getCompetition = cache(async (id: string) => {
+  const client = await createSafeClient();
+  return client.competitions.getById({ id });
+});
+
 export async function generateMetadata({
   params,
 }: CompetitionPageClientProps): Promise<Metadata> {
   const { id } = await params;
   try {
-    const client = await createSafeClient();
-    const { data: competition } = await client.competitions.getById({
-      id,
-    });
+    const { data: competition } = await getCompetition(id);
     if (competition) {
       const title = `Recall | ${competition.name}`;
       const description =
@@ -36,12 +39,8 @@ export default async function CompetitionPage({
 }: CompetitionPageClientProps) {
   const { id } = await params;
 
-  // Fetch competition to determine type
   try {
-    const client = await createSafeClient();
-    const { data: competition } = await client.competitions.getById({
-      id,
-    });
+    const { data: competition } = await getCompetition(id);
 
     // Route to appropriate client based on competition type
     if (competition?.type === "sports_prediction") {
@@ -49,8 +48,6 @@ export default async function CompetitionPage({
         <NflCompetitionPage competitionId={id} competition={competition} />
       );
     }
-
-    // Default to trading/perps client
     return <CompetitionPageClient params={params} />;
   } catch (error) {
     console.error("Failed to fetch competition:", error);
