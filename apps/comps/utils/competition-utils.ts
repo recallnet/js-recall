@@ -7,6 +7,17 @@ import { EvaluationMetric, UserCompetition } from "@/types";
 
 import { formatDateShort } from "./format";
 
+/**
+ * Descriptions for competition types
+ */
+export const COMPETITION_DESCRIPTIONS: Record<CompetitionType, string> = {
+  trading:
+    "Agents execute crypto paper trading strategies in a real-time, simulated market environment.",
+  perpetual_futures:
+    "Agents execute perpetual futures trading strategies in a live environment with real assets.",
+  sports_prediction: "Agents predict the winner of live NFL games.",
+};
+
 export function iconForStatus(
   status: RouterOutputs["competitions"]["getById"]["status"],
 ) {
@@ -203,6 +214,7 @@ export function formatCompetitionType(type: string): string {
   const typeMap: Record<string, string> = {
     trading: "Crypto Trading",
     perpetual_futures: "Perpetual Futures",
+    sports_prediction: "Sports Prediction",
   };
 
   return typeMap[type] || type;
@@ -244,10 +256,54 @@ export function checkIsAgentSkill(skill: string): boolean {
   return skill === "trading" || skill === "perpetual_futures";
 }
 
+/**
+ * Checks if a competition type is perpetual futures
+ * @param type - The competition type to check
+ * @returns True if the competition type is perpetual futures, false otherwise
+ */
 export function checkIsPerpsCompetition(
   type: RouterOutputs["competitions"]["getById"]["type"],
 ): boolean {
   return type === "perpetual_futures";
+}
+
+/**
+ * Default metric for perps competitions
+ */
+export const PERPS_DEFAULT_METRIC: EvaluationMetric = "calmar_ratio";
+
+/**
+ * Format status for display
+ */
+export function formatStatus(status: string): string {
+  return status.charAt(0).toUpperCase() + status.slice(1);
+}
+
+/**
+ * Get status color class
+ */
+export function getStatusColor(status: string): string {
+  switch (status) {
+    case "active":
+      return "text-green-500";
+    case "pending":
+      return "text-yellow-500";
+    case "ended":
+      return "text-gray-500";
+    default:
+      return "text-gray-500";
+  }
+}
+
+/**
+ * Check if user has joined a competition
+ */
+export function hasJoinedCompetition(
+  competitionId: string,
+  userCompetitions: UserCompetition[] | undefined,
+): boolean {
+  if (!userCompetitions) return false;
+  return userCompetitions.some((c) => c.id === competitionId);
 }
 
 /**

@@ -33,6 +33,7 @@ import { cn } from "@recallnet/ui2/lib/utils";
 
 import { BoostIcon } from "@/components/BoostIcon";
 import { AgentAvatar } from "@/components/agent-avatar";
+import { CompetitionStandingsDetails } from "@/components/competition-standings-details";
 import BoostAgentModal from "@/components/modals/boost-agent";
 import { config } from "@/config/public";
 import { useNflLeaderboard } from "@/hooks/sports/useNflLeaderboard";
@@ -45,7 +46,6 @@ import type { NflGame } from "@/types/nfl";
 import { formatCompactNumber, formatPercentage } from "@/utils/format";
 
 import { RankBadge } from "../agents-table/rank-badge";
-import { boostedCompetitionsStartDate } from "../timeline-chart/constants";
 
 interface NflStandingsTableProps {
   competitionId: string;
@@ -79,13 +79,6 @@ export function NflStandingsTable({
     window.addEventListener("resize", checkMobile);
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
-
-  const isBoostEnabled = useMemo(() => {
-    return (
-      !!competition.startDate &&
-      competition.startDate > boostedCompetitionsStartDate
-    );
-  }, [competition.startDate]);
 
   const isOpenForBoosting = useMemo(
     () => openForBoosting(competition),
@@ -174,7 +167,7 @@ export function NflStandingsTable({
   const {
     data: userBoosts,
     isLoading: isLoadingUserBoosts,
-    isSuccess: isSuccessUserBoosts,
+    isSuccess: isSuccessUserBoostsBalance,
   } = useQuery(
     tanstackClient.boost.userBoosts.queryOptions({
       input: session.isAuthenticated ? { competitionId } : skipToken,
@@ -247,6 +240,18 @@ export function NflStandingsTable({
     );
   }, [agentBoostTotals, isSuccessAgentBoostTotals]);
 
+  // Calculate user's total spent boost for progress bar
+  const userSpentBoost = useMemo(() => {
+    if (!isSuccessUserBoostsBalance || !userBoosts) return 0;
+    return Object.values(userBoosts).reduce((sum, amount) => sum + amount, 0);
+  }, [userBoosts, isSuccessUserBoostsBalance]);
+
+  // Calculate total boost value (available + user spent) for progress bar
+  const totalBoostValue = useMemo(() => {
+    const availableBalance = isSuccessUserBoostsBalance ? userBoostBalance : 0;
+    return (availableBalance || 0) + userSpentBoost;
+  }, [userBoostBalance, userSpentBoost, isSuccessUserBoostsBalance]);
+
   const isBoostDataLoading =
     isLoadingUserBoostBalance ||
     isLoadingUserBoosts ||
@@ -316,6 +321,7 @@ export function NflStandingsTable({
         return {
           id: agent.id,
           name: agent.name ?? agent.handle ?? agent.id.slice(0, 8),
+          imageUrl: agent.imageUrl,
           rank: leaderboardEntry?.rank ?? agent.rank ?? Math.max(index + 1, 1),
           score,
           gamesScored,
@@ -333,9 +339,17 @@ export function NflStandingsTable({
         accessorKey: "rank",
         header: () => <span>Rank</span>,
         cell: ({ row }) => (
-          <RankBadge
-            rank={row.original.gamesScored > 0 ? row.original.rank : 0}
-          />
+          <div className="flex w-full items-center justify-center">
+            {row.original.gamesScored > 0 ? (
+              <RankBadge
+                rank={row.original.rank}
+                showIcon={!isMobile}
+                className={isMobile ? "min-w-8" : ""}
+              />
+            ) : (
+              <span className="text-muted-foreground">-</span>
+            )}
+          </div>
         ),
         size: 80,
       },
@@ -349,8 +363,9 @@ export function NflStandingsTable({
               agent={{
                 id: row.original.id,
                 name: row.original.name,
+                imageUrl: row.original.imageUrl,
               }}
-              size={16}
+              size={32}
             />
             <span className="font-semibold">{row.original.name}</span>
           </div>
@@ -476,7 +491,7 @@ export function NflStandingsTable({
         ),
         cell: ({ row }) => {
           const userBoostAmount =
-            isSuccessUserBoosts && userBoosts
+            isSuccessUserBoostsBalance && userBoosts
               ? userBoosts[row.original.id] || 0
               : 0;
           const hasBoosted = userBoostAmount > 0;
@@ -546,11 +561,12 @@ export function NflStandingsTable({
       agentBoostTotals,
       totalBoost,
       isBoostDataLoading,
-      isSuccessUserBoosts,
+      isSuccessUserBoostsBalance,
       userBoosts,
       isOpenForBoosting,
       userBoostBalance,
       handleBoost,
+      isMobile,
     ],
   );
 
@@ -591,42 +607,23 @@ export function NflStandingsTable({
         </h2>
       </div>
 
-      {/* Boost actions */}
-      {isBoostEnabled && (
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex flex-wrap items-center gap-4">
-            {showActivateBoost && (
-              <Button
-                onClick={handleClaimBoost}
-                variant="outline"
-                className="border-yellow-500 bg-black text-yellow-500 hover:bg-yellow-500 hover:text-black"
-              >
-                Activate Boost <BoostIcon className="ml-2 size-4" />
-              </Button>
-            )}
-            {showStakeToBoost && (
-              <Button
-                onClick={handleStakeToBoost}
-                variant="outline"
-                className="border-yellow-500 bg-black text-yellow-500 hover:bg-yellow-500 hover:text-black"
-              >
-                Stake to Boost <BoostIcon className="ml-2 size-4" />
-              </Button>
-            )}
-          </div>
-          {showBoostBalance && userBoostBalance !== undefined && (
-            <div className="text-sm">
-              <span className="text-muted-foreground">Boost Balance: </span>
-              <span className="font-bold text-yellow-500">
-                {numberFormatter.format(userBoostBalance)}
-              </span>
-            </div>
-          )}
-        </div>
-      )}
+      <CompetitionStandingsDetails
+        competition={competition}
+        showBoostBalance={showBoostBalance}
+        isBoostDataLoading={isBoostDataLoading}
+        isOpenForBoosting={isOpenForBoosting}
+        userBoostBalance={userBoostBalance}
+        isSuccessUserBoostBalance={isSuccessUserBoostsBalance}
+        totalBoostValue={totalBoostValue}
+        showActivateBoost={showActivateBoost}
+        showStakeToBoost={showStakeToBoost}
+        onClaimBoost={handleClaimBoost}
+        onStakeToBoost={handleStakeToBoost}
+        className="mb-8"
+      />
 
       {/* Table */}
-      <div className="overflow-x-auto rounded-lg border border-white/10">
+      <div className="border-border overflow-x-auto rounded-xl border">
         <Table className="w-full min-w-max table-auto !border-collapse">
           <TableHeader className="sticky top-0 z-10 bg-black">
             {table.getHeaderGroups().map((headerGroup) => (
@@ -655,7 +652,11 @@ export function NflStandingsTable({
           <TableBody>
             {table.getRowModel().rows.length ? (
               table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id} className="border-t border-white/10">
+                <TableRow
+                  key={row.id}
+                  className="border-border cursor-pointer border-t transition-colors hover:bg-white/5"
+                  onClick={() => router.push(`/agents/${row.original.id}`)}
+                >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell
                       key={cell.id}
@@ -729,7 +730,7 @@ export function NflStandingsTable({
               : 0
           }
           currentUserBoostAmount={
-            isSuccessUserBoosts && userBoosts
+            isSuccessUserBoostsBalance && userBoosts
               ? userBoosts[selectedAgent.id] || 0
               : 0
           }
