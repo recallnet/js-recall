@@ -59,11 +59,8 @@ import {
   PerpsEnrichedLeaderboardEntry,
   SpecificChain,
   SpecificChainBalances,
-<<<<<<< HEAD
-  TradingConstraints,
-=======
   SpecificChainTokens,
->>>>>>> main
+  TradingConstraints,
   isPerpsEnrichedEntry,
 } from "./types/index.js";
 import { ApiError } from "./types/index.js";
@@ -132,10 +129,9 @@ export interface CreateCompetitionParams {
   // Display
   displayState?: DisplayState;
 
-<<<<<<< HEAD
   // NFL-specific fields
   gameIds?: string[]; // Array of game UUIDs from games table to link to competition
-=======
+
   // Paper trading configuration
   paperTradingConfig?: {
     maxTradePercentage?: number;
@@ -145,7 +141,6 @@ export interface CreateCompetitionParams {
     tokenSymbol: string;
     amount: number;
   }>;
->>>>>>> main
 }
 
 /**
@@ -567,12 +562,9 @@ export class CompetitionService {
     rewardDetails,
     boostTimeDecayRate,
     displayState,
-<<<<<<< HEAD
     gameIds,
-=======
     paperTradingConfig,
     paperTradingInitialBalances,
->>>>>>> main
   }: CreateCompetitionParams) {
     const id = randomUUID();
 
@@ -2462,9 +2454,7 @@ export class CompetitionService {
       agent: number;
       users: number;
     },
-<<<<<<< HEAD
     gameIds?: string[],
-=======
     paperTradingConfig?: {
       maxTradePercentage?: number;
     },
@@ -2473,7 +2463,6 @@ export class CompetitionService {
       tokenSymbol: string;
       amount: number;
     }>,
->>>>>>> main
   ): Promise<{
     competition: SelectCompetition;
     updatedRewards: SelectCompetitionReward[];
@@ -2673,10 +2662,10 @@ export class CompetitionService {
           );
         }
       }
-      // Update NFL games if provided
-      else if (
-        (existingCompetition.type === "sports_prediction" ||
-          updates.type === "sports_prediction") &&
+      // Update sports prediction competitions with game IDs, if provided
+      const finalCompetitionType = updates.type ?? existingCompetition.type;
+      if (
+        finalCompetitionType === "sports_prediction" &&
         gameIds &&
         gameIds.length > 0
       ) {
