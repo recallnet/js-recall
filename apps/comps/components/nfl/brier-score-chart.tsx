@@ -4,7 +4,6 @@ import { format } from "date-fns";
 import { useMemo, useState } from "react";
 import {
   CartesianGrid,
-  Legend,
   Line,
   LineChart,
   ReferenceLine,
@@ -363,13 +362,6 @@ export function BrierScoreChart({
               borderRadius: "8px",
             }}
             labelStyle={{ color: "var(--secondary-foreground)" }}
-          />
-          <Legend
-            wrapperStyle={{ paddingTop: 12 }}
-            iconType="circle"
-            formatter={(value: string) =>
-              agentLabels.get(value) ?? value.slice(0, 8)
-            }
           />
 
           {sortedAgentIds.map((agentId) => {
