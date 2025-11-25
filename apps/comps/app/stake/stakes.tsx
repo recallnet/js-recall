@@ -15,6 +15,7 @@ import { config } from "@/config/public";
 import { useUserStakes } from "@/hooks/staking";
 import { useRecall } from "@/hooks/useRecall";
 import { useSession } from "@/hooks/useSession";
+import { useConviction } from "@/providers/conviction-provider";
 
 import Landing from "./landing";
 
@@ -27,6 +28,7 @@ export default function Stakes() {
     user,
     backendUser,
   } = useSession();
+  const { isConvictionEligible } = useConviction();
   const recall = useRecall();
   const { data: stakes, isLoading: stakesLoading } = useUserStakes();
   const [isStakeModalOpen, setIsStakeModalOpen] = useState(false);
@@ -80,9 +82,11 @@ export default function Stakes() {
             <div className="flex-1">
               <Rewards />
             </div>
-            <div className="flex-1">
-              <ConvictionRewards />
-            </div>
+            {isConvictionEligible && (
+              <div className="flex-1">
+                <ConvictionRewards />
+              </div>
+            )}
           </div>
 
           <ActiveStakes />

@@ -6,6 +6,7 @@ import { NavigationGuardProvider } from "next-navigation-guard";
 import { ReactNode, useEffect } from "react";
 
 import { chainWithRpcUrl } from "@/config/chain";
+import { ConvictionProvider } from "@/providers/conviction-provider";
 import { SessionProvider } from "@/providers/session-provider";
 import { clientConfig } from "@/wagmi-config";
 
@@ -93,7 +94,9 @@ export function PrivyProviderWrapper({ children }: { children: ReactNode }) {
     <PrivyProvider appId={privyAppId} config={privyConfig}>
       <WagmiProvider config={clientConfig}>
         <SessionProvider>
-          <NavigationGuardProvider>{children}</NavigationGuardProvider>
+          <ConvictionProvider>
+            <NavigationGuardProvider>{children}</NavigationGuardProvider>
+          </ConvictionProvider>
         </SessionProvider>
       </WagmiProvider>
     </PrivyProvider>
