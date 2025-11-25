@@ -1124,6 +1124,15 @@ export class CompetitionService {
   ): void {
     const enabledChains = new Set(spotLiveConfig.chains);
 
+    // Block Solana - requires different swap detection logic (programs, no tx.to field)
+    // Agents don't support Solana wallets yet
+    if (enabledChains.has("svm")) {
+      throw new ApiError(
+        400,
+        "Solana (svm) is not supported for spot live trading competitions. Solana uses a different transaction model that requires separate implementation.",
+      );
+    }
+
     // Validate protocol chains
     if (spotLiveConfig.allowedProtocols) {
       for (const p of spotLiveConfig.allowedProtocols) {

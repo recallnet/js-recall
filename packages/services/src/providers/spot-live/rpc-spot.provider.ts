@@ -146,6 +146,13 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
     walletAddress: string,
     chain: SpecificChain,
   ): Promise<Array<{ contractAddress: string; balance: string }>> {
+    // Block Solana - requires different balance fetching logic
+    if (chain === "svm") {
+      throw new Error(
+        "Solana (svm) is not supported for RPC-based spot live trading. Solana uses SPL tokens and requires separate implementation.",
+      );
+    }
+
     return await this.rpcProvider.getTokenBalances(walletAddress, chain);
   }
 
@@ -370,6 +377,13 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
         `[RpcSpotProvider] No chains provided for transfer history`,
       );
       return [];
+    }
+
+    // Block Solana - requires different transfer detection logic
+    if (chains.includes("svm")) {
+      throw new Error(
+        "Solana (svm) is not supported for RPC-based spot live trading. Solana uses programs model and requires separate implementation.",
+      );
     }
 
     const firstChain = chains[0];
