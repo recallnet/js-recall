@@ -320,14 +320,21 @@ export class AlchemyRpcProvider implements IRpcProvider {
       const shouldSample = Math.random() < this.SAMPLING_RATE;
 
       if (shouldSample) {
-        // Send to Sentry for monitoring
+        // Send to Sentry for monitoring (with masked addresses for privacy)
         Sentry.captureMessage("Alchemy RPC Response Sample", {
           level: "debug",
           extra: {
             response: {
               transferCount: result.transfers.length,
               hasPageKey: !!result.pageKey,
-              sampleTransfers: result.transfers.slice(0, 3), // First 3 transfers as sample
+              sampleTransfers: result.transfers.slice(0, 3).map((t) => ({
+                from: t.from ? this.maskWalletAddress(t.from) : null,
+                to: t.to ? this.maskWalletAddress(t.to) : null,
+                asset: t.asset,
+                value: t.value,
+                hash: t.hash,
+                blockNum: t.blockNum,
+              })),
             },
             walletAddress: maskedAddress,
             chain,
