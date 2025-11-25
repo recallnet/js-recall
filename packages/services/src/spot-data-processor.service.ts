@@ -151,7 +151,7 @@ export class SpotDataProcessor {
       protocol: trade.protocol,
       gasUsed: trade.gasUsed.toString(),
       gasPrice: trade.gasPrice.toString(),
-      gasCostUsd: trade.gasCostUsd?.toString() || null,
+      gasCostUsd: trade.gasCostUsd?.toString() ?? null,
     };
   }
 
