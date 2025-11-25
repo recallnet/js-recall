@@ -253,9 +253,7 @@ export class SpotDataProcessor {
           b.tokenAddress,
           b.chain,
         );
-        const decimalsPower = decimals
-          ? Math.pow(10, decimals)
-          : Math.pow(10, 18);
+        const decimalsPower = Math.pow(10, decimals ?? 18);
 
         // Parse balance from hex string to number
         const balanceNum = parseInt(b.balance, 16) / decimalsPower;
