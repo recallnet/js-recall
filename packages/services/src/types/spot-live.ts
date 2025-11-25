@@ -88,6 +88,29 @@ export interface ISpotLiveDataProvider {
   ): Promise<SpotTransfer[]>;
 
   /**
+   * Get current token balances for a wallet on a chain
+   * Used during initial sync to establish starting balances
+   * @param walletAddress Wallet address to query
+   * @param chain Chain to query
+   * @returns Array of token balances with contract address and amount
+   */
+  getTokenBalances?(
+    walletAddress: string,
+    chain: SpecificChain,
+  ): Promise<Array<{ contractAddress: string; balance: string }>>;
+
+  /**
+   * Get token decimals for proper balance parsing
+   * @param tokenAddress Token contract address
+   * @param chain Chain where token exists
+   * @returns Number of decimals for the token
+   */
+  getTokenDecimals?(
+    tokenAddress: string,
+    chain: SpecificChain,
+  ): Promise<number>;
+
+  /**
    * Get current block number for a chain
    * Used for sync state tracking when no trades found
    * @param chain Specific chain

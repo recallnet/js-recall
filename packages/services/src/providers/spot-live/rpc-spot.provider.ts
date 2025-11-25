@@ -63,6 +63,12 @@ interface DetectedSwap {
 export class RpcSpotProvider implements ISpotLiveDataProvider {
   private readonly protocolFiltersByChain: Map<string, ProtocolFilter[]>;
 
+  // Cache transfers within a single agent's sync to avoid duplicate API calls
+  // Key format: "wallet:chain:fromBlock"
+  // Cleared before processing each agent
+  private transferCache: Map<string, AssetTransfersWithMetadataResult[]> =
+    new Map();
+
   constructor(
     private readonly rpcProvider: IRpcProvider,
     protocolFilters: ProtocolFilter[],
@@ -119,6 +125,41 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
    */
   async isHealthy(): Promise<boolean> {
     return await this.rpcProvider.isHealthy();
+  }
+
+  /**
+   * Clear transfer cache (call before processing each agent)
+   * Prevents data mixing between agents
+   */
+  clearTransferCache(): void {
+    this.transferCache.clear();
+  }
+
+  /**
+   * Get current token balances for a wallet on a chain
+   * Used during initial sync to establish starting balances
+   * @param walletAddress Wallet address to query
+   * @param chain Chain to query
+   * @returns Array of token balances
+   */
+  async getTokenBalances(
+    walletAddress: string,
+    chain: SpecificChain,
+  ): Promise<Array<{ contractAddress: string; balance: string }>> {
+    return await this.rpcProvider.getTokenBalances(walletAddress, chain);
+  }
+
+  /**
+   * Get token decimals for proper balance parsing
+   * @param tokenAddress Token contract address
+   * @param chain Chain where token exists
+   * @returns Number of decimals for the token
+   */
+  async getTokenDecimals(
+    tokenAddress: string,
+    chain: SpecificChain,
+  ): Promise<number> {
+    return await this.rpcProvider.getTokenDecimals(tokenAddress, chain);
   }
 
   /**
@@ -182,41 +223,58 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
 
     for (const chain of chains) {
       try {
-        // Fetch all transfers with pagination support
-        // Alchemy limits responses to 1000 results per request
-        const allTransfers: AssetTransfersWithMetadataResult[] = [];
-        let pageKey: string | undefined;
+        // Check cache first (unified sync state means getTransferHistory will reuse this)
+        const cacheKey = `${walletAddress}:${chain}:${sinceBlock}`;
+        let allTransfers = this.transferCache.get(cacheKey);
 
-        do {
-          const transfersResponse = await this.rpcProvider.getAssetTransfers(
-            walletAddress,
-            chain,
-            sinceBlock,
-            toBlock || "latest", // Use specified toBlock for tests, "latest" for production
-            pageKey, // Pass pagination cursor (undefined on first call)
-          );
+        if (!allTransfers) {
+          // Cache miss - fetch from API
+          // Alchemy limits responses to 1000 results per request
+          allTransfers = [];
+          let pageKey: string | undefined;
 
-          allTransfers.push(...transfersResponse.transfers);
-          pageKey = transfersResponse.pageKey;
-
-          if (pageKey) {
-            this.logger.debug(
-              {
-                chain,
-                currentCount: allTransfers.length,
-              },
-              `[RpcSpotProvider] Fetching next page of transfers`,
+          do {
+            const transfersResponse = await this.rpcProvider.getAssetTransfers(
+              walletAddress,
+              chain,
+              sinceBlock,
+              toBlock || "latest", // Use specified toBlock for tests, "latest" for production
+              pageKey, // Pass pagination cursor (undefined on first call)
             );
-          }
-        } while (pageKey);
 
-        this.logger.debug(
-          {
-            chain,
-            totalTransfers: allTransfers.length,
-          },
-          `[RpcSpotProvider] Fetched all transfers`,
-        );
+            allTransfers.push(...transfersResponse.transfers);
+            pageKey = transfersResponse.pageKey;
+
+            if (pageKey) {
+              this.logger.debug(
+                {
+                  chain,
+                  currentCount: allTransfers.length,
+                },
+                `[RpcSpotProvider] Fetching next page of transfers`,
+              );
+            }
+          } while (pageKey);
+
+          // Cache for reuse by getTransferHistory
+          this.transferCache.set(cacheKey, allTransfers);
+
+          this.logger.debug(
+            {
+              chain,
+              totalTransfers: allTransfers.length,
+            },
+            `[RpcSpotProvider] Fetched and cached transfers`,
+          );
+        } else {
+          this.logger.debug(
+            {
+              chain,
+              cachedTransfers: allTransfers.length,
+            },
+            `[RpcSpotProvider] Using cached transfers`,
+          );
+        }
 
         // Group transfers by transaction
         const transfersByTx = this.groupTransfersByTransaction(allTransfers);
@@ -366,41 +424,58 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
 
     for (const chain of chains) {
       try {
-        // Fetch all transfers with pagination support
-        // Alchemy limits responses to 1000 results per request
-        const chainTransfers: AssetTransfersWithMetadataResult[] = [];
-        let pageKey: string | undefined;
+        // Check cache first (should be populated by getTradesSince with unified sync state)
+        const cacheKey = `${walletAddress}:${chain}:${sinceBlock}`;
+        let chainTransfers = this.transferCache.get(cacheKey);
 
-        do {
-          const transfersResponse = await this.rpcProvider.getAssetTransfers(
-            walletAddress,
-            chain,
-            sinceBlock,
-            "latest", // Always scan to latest block
-            pageKey, // Pass pagination cursor (undefined on first call)
-          );
+        if (!chainTransfers) {
+          // Cache miss - fetch from API
+          // Alchemy limits responses to 1000 results per request
+          chainTransfers = [];
+          let pageKey: string | undefined;
 
-          chainTransfers.push(...transfersResponse.transfers);
-          pageKey = transfersResponse.pageKey;
-
-          if (pageKey) {
-            this.logger.debug(
-              {
-                chain,
-                currentCount: chainTransfers.length,
-              },
-              `[RpcSpotProvider] Fetching next page of transfers`,
+          do {
+            const transfersResponse = await this.rpcProvider.getAssetTransfers(
+              walletAddress,
+              chain,
+              sinceBlock,
+              "latest", // Always scan to latest block
+              pageKey, // Pass pagination cursor (undefined on first call)
             );
-          }
-        } while (pageKey);
 
-        this.logger.debug(
-          {
-            chain,
-            totalTransfers: chainTransfers.length,
-          },
-          `[RpcSpotProvider] Fetched all transfers for transfer history`,
-        );
+            chainTransfers.push(...transfersResponse.transfers);
+            pageKey = transfersResponse.pageKey;
+
+            if (pageKey) {
+              this.logger.debug(
+                {
+                  chain,
+                  currentCount: chainTransfers.length,
+                },
+                `[RpcSpotProvider] Fetching next page of transfers`,
+              );
+            }
+          } while (pageKey);
+
+          // Cache for consistency (though getTradesSince usually caches first)
+          this.transferCache.set(cacheKey, chainTransfers);
+
+          this.logger.debug(
+            {
+              chain,
+              totalTransfers: chainTransfers.length,
+            },
+            `[RpcSpotProvider] Fetched transfers for transfer history`,
+          );
+        } else {
+          this.logger.debug(
+            {
+              chain,
+              cachedTransfers: chainTransfers.length,
+            },
+            `[RpcSpotProvider] Using cached transfers for transfer history`,
+          );
+        }
 
         // Group by transaction to identify swaps (which we want to exclude)
         const transfersByTx = this.groupTransfersByTransaction(chainTransfers);

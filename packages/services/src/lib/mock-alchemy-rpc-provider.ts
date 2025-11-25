@@ -68,6 +68,9 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
   private mockData: Map<string, MockWalletData> = new Map();
   private logger: Logger;
 
+  // Track API calls for testing progression (matches MockHyperliquidServer pattern)
+  private callIndex: Map<string, number> = new Map();
+
   constructor(logger: Logger) {
     this.logger = logger;
     this.initializeDefaultMockData();
@@ -293,10 +296,12 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
     });
 
     // Pre-configured test wallet #2: Agent with deposit (transfer violation)
-    const depositTime = new Date(Date.now() - 5 * 60 * 1000).toISOString(); // 5 minutes ago
+    // Note: Timestamp generated at QUERY time (in getAssetTransfers), not at init time
+    // This ensures deposit happens AFTER competition starts
     this.setWalletData("0x2222222222222222222222222222222222222222", {
       transfers: [
         // Deposit: External wallet → Agent
+        // Timestamp set dynamically in getAssetTransfers
         createMockTransfer({
           from: "0xexternal1111111111111111111111111111111111",
           to: "0x2222222222222222222222222222222222222222",
@@ -304,7 +309,7 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
           asset: "USDC",
           hash: "0xmock_deposit_1",
           blockNum: "0x1e8481",
-          blockTimestamp: depositTime,
+          blockTimestamp: "DYNAMIC", // Will be replaced at query time
           tokenAddress: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
           decimal: "6",
         }),
@@ -315,7 +320,7 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
     });
 
     // Pre-configured test wallet #3: Agent with withdrawal (transfer violation)
-    const withdrawalTime = new Date(Date.now() - 7 * 60 * 1000).toISOString(); // 7 minutes ago
+    // Timestamp set dynamically in getAssetTransfers
     this.setWalletData("0x3333333333333333333333333333333333333333", {
       transfers: [
         // Withdrawal: Agent → External wallet
@@ -326,7 +331,7 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
           asset: "USDC",
           hash: "0xmock_withdraw_1",
           blockNum: "0x1e8482",
-          blockTimestamp: withdrawalTime,
+          blockTimestamp: "DYNAMIC", // Will be replaced at query time
           tokenAddress: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
           decimal: "6",
         }),
@@ -482,6 +487,152 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
       receipts: new Map(),
       balances: new Map(),
     });
+
+    // Test wallet for initial balance verification - 2000 USDC on Base
+    // After one sync: trades 100 USDC → 50 AERO, ending with 1900 USDC + 50 AERO
+    const simpleSwap1Time = new Date(Date.now() - 5 * 60 * 1000).toISOString(); // 5 min ago
+    this.setWalletData("0xaaaa000000000000000000000000000000000001", {
+      transfers: [
+        createMockTransfer({
+          from: "0xaaaa000000000000000000000000000000000001",
+          to: "0xaeropool_simple1",
+          value: 100,
+          asset: "USDC",
+          hash: "0xsimple_swap_1",
+          blockNum: "0x1e8500", // Block 2001152
+          blockTimestamp: simpleSwap1Time,
+          tokenAddress: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+          decimal: "6",
+        }),
+        createMockTransfer({
+          from: "0xaeropool_simple1",
+          to: "0xaaaa000000000000000000000000000000000001",
+          value: 50,
+          asset: "AERO",
+          hash: "0xsimple_swap_1",
+          blockNum: "0x1e8500",
+          blockTimestamp: simpleSwap1Time,
+          tokenAddress: "0x940181a94a35a4569e4529a3cdfb74e38fd98631",
+          decimal: "18",
+        }),
+      ],
+      transactions: new Map([
+        [
+          "0xsimple_swap_1",
+          {
+            hash: "0xsimple_swap_1",
+            from: "0xaaaa000000000000000000000000000000000001",
+            to: "0xcf77a3ba9a5ca399b7c97c74d54e5b1beb874e43", // Aerodrome router
+            blockNumber: 2001152,
+          },
+        ],
+      ]),
+      receipts: new Map([
+        [
+          "0xsimple_swap_1",
+          {
+            transactionHash: "0xsimple_swap_1",
+            blockNumber: 2001152,
+            gasUsed: "150000",
+            effectiveGasPrice: "50000000000",
+            status: true,
+            from: "0xaaaa000000000000000000000000000000000001",
+            to: "0xcf77a3ba9a5ca399b7c97c74d54e5b1beb874e43",
+            logs: [
+              {
+                address: "0xaeropool_simple1",
+                blockNumber: 2001152,
+                blockHash: "0xsimplehash1",
+                transactionIndex: 0,
+                removed: false,
+                logIndex: 0,
+                transactionHash: "0xsimple_swap_1",
+                topics: [
+                  "0xb3e2773606abfd36b5bd91394b3a54d1398336c65005baf7bf7a05efeffaf75b", // Aerodrome Swap
+                ],
+                data: "0x",
+              },
+            ],
+          },
+        ],
+      ]),
+      balances: new Map([
+        ["0x833589fcd6edb6e08f4c7c32d4f71b54bda02913", 2000], // Initial: 2000 USDC
+      ]),
+    });
+
+    // Test wallet for initial balance verification - 3000 USDC on Ethereum
+    // After one sync: trades 200 USDC → 100 AERO, ending with 2800 USDC + 100 AERO
+    const simpleSwap2Time = new Date(Date.now() - 6 * 60 * 1000).toISOString(); // 6 min ago
+    this.setWalletData("0xbbbb000000000000000000000000000000000002", {
+      transfers: [
+        createMockTransfer({
+          from: "0xbbbb000000000000000000000000000000000002",
+          to: "0xaeropool_simple2",
+          value: 200,
+          asset: "USDC",
+          hash: "0xsimple_swap_2",
+          blockNum: "0x1e8501", // Block 2001153
+          blockTimestamp: simpleSwap2Time,
+          tokenAddress: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+          decimal: "6",
+        }),
+        createMockTransfer({
+          from: "0xaeropool_simple2",
+          to: "0xbbbb000000000000000000000000000000000002",
+          value: 100,
+          asset: "AERO",
+          hash: "0xsimple_swap_2",
+          blockNum: "0x1e8501",
+          blockTimestamp: simpleSwap2Time,
+          tokenAddress: "0x940181a94a35a4569e4529a3cdfb74e38fd98631",
+          decimal: "18",
+        }),
+      ],
+      transactions: new Map([
+        [
+          "0xsimple_swap_2",
+          {
+            hash: "0xsimple_swap_2",
+            from: "0xbbbb000000000000000000000000000000000002",
+            to: "0xcf77a3ba9a5ca399b7c97c74d54e5b1beb874e43", // Aerodrome router
+            blockNumber: 2001153,
+          },
+        ],
+      ]),
+      receipts: new Map([
+        [
+          "0xsimple_swap_2",
+          {
+            transactionHash: "0xsimple_swap_2",
+            blockNumber: 2001153,
+            gasUsed: "155000",
+            effectiveGasPrice: "51000000000",
+            status: true,
+            from: "0xbbbb000000000000000000000000000000000002",
+            to: "0xcf77a3ba9a5ca399b7c97c74d54e5b1beb874e43",
+            logs: [
+              {
+                address: "0xaeropool_simple2",
+                blockNumber: 2001153,
+                blockHash: "0xsimplehash2",
+                transactionIndex: 0,
+                removed: false,
+                logIndex: 0,
+                transactionHash: "0xsimple_swap_2",
+                topics: [
+                  "0xb3e2773606abfd36b5bd91394b3a54d1398336c65005baf7bf7a05efeffaf75b", // Aerodrome Swap
+                ],
+                data: "0x",
+              },
+            ],
+          },
+        ],
+      ]),
+      balances: new Map([
+        ["0x833589fcd6edb6e08f4c7c32d4f71b54bda02913", 3000], // Initial: 3000 USDC
+      ]),
+    });
   }
 
   /**
@@ -528,6 +679,7 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
   /**
    * Get asset transfers for a wallet
    * Mimics Alchemy's getAssetTransfers API
+   * Uses callIndex pattern (like MockHyperliquidServer) to simulate swaps happening between syncs
    */
   async getAssetTransfers(
     walletAddress: string,
@@ -536,9 +688,22 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
     toBlock: number | string,
     pageKey?: string,
   ): Promise<AssetTransfersWithMetadataResponse> {
-    void toBlock; // Not used in mock - all transfers returned
+    void toBlock; // Not used in mock
     void pageKey; // Not used in mock - no pagination
     const data = this.getWalletData(walletAddress);
+    const lowerAddress = walletAddress.toLowerCase();
+
+    // Track call index and derive sync number
+    // NOTE: getAssetTransfers is called TWICE per sync even with unified sync state:
+    // 1. From getTradesSince (to detect swaps)
+    // 2. From getTransferHistory (to detect deposits/withdrawals)
+    // Divide by 2 to get actual sync number
+    const currentCallIdx = this.callIndex.get(lowerAddress) || 0;
+    this.callIndex.set(lowerAddress, currentCallIdx + 1);
+    const actualCallIdx = currentCallIdx + 1;
+
+    // Sync number: calls 1-2 = sync 1, calls 3-4 = sync 2, etc.
+    const syncNumber = Math.ceil(actualCallIdx / 2);
 
     // Convert fromBlock to number if it's hex
     const fromBlockNum =
@@ -548,27 +713,92 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
           ? 0
           : Number(fromBlock);
 
-    // Filter transfers by block range
-    const filteredTransfers = data.transfers.filter((t) => {
-      const transferBlock = parseInt(t.blockNum ?? "0x0", 16);
-      return transferBlock >= fromBlockNum;
+    // Progressive swap revelation based on call index (simulates swaps happening between syncs)
+    // This matches the Hyperliquid pattern where each sync picks up NEW activity
+    let transfersToReturn: AssetTransfersWithMetadataResult[] = [];
+
+    if (lowerAddress === "0x1111111111111111111111111111111111111111") {
+      // Wallet with 3 swaps - reveal progressively AND respect fromBlock filtering
+      // Progressive revelation simulates swaps happening between syncs
+      // Block filtering ensures we respect the processor's sync state tracking
+
+      // Determine which swaps are "available" based on call index
+      let availableTransfers: AssetTransfersWithMetadataResult[] = [];
+
+      // Additive reveal pattern (like blockchain - past swaps stay visible)
+      // Sync 1 (calls 1-2): Swap 1 only (block 2000000)
+      // Sync 2 (calls 3-4): Swaps 1 + 2 (blocks 2000000, 2000010)
+      // Sync 3+ (calls 5+): All swaps (blocks 2000000, 2000010, 2000020)
+      if (syncNumber === 1) {
+        availableTransfers = data.transfers.filter(
+          (t) => t.blockNum === "0x1e8480",
+        ); // Swap 1 only
+      } else if (syncNumber === 2) {
+        availableTransfers = data.transfers.filter(
+          (t) => t.blockNum === "0x1e8480" || t.blockNum === "0x1e848a",
+        ); // Swaps 1+2
+      } else if (syncNumber >= 3) {
+        availableTransfers = data.transfers; // All swaps
+      }
+
+      // Apply block range filtering on top of progressive revelation
+      transfersToReturn = availableTransfers.filter((t) => {
+        const transferBlock = parseInt(t.blockNum ?? "0x0", 16);
+        return transferBlock >= fromBlockNum;
+      });
+
+      this.logger.info(
+        `[MockAlchemyRpcProvider] Wallet 0x1111 sync #${syncNumber}: ${availableTransfers.length} available, ${transfersToReturn.length} after fromBlock filter`,
+      );
+    } else if (
+      lowerAddress === "0xaaaa000000000000000000000000000000000001" ||
+      lowerAddress === "0xbbbb000000000000000000000000000000000002" ||
+      lowerAddress === "0x2222222222222222222222222222222222222222" || // Deposit violations
+      lowerAddress === "0x3333333333333333333333333333333333333333" || // Withdrawal violations
+      lowerAddress === "0x4444444444444444444444444444444444444444" // Protocol filtering test
+    ) {
+      // Test wallets with swaps/transfers - reveal on first manual sync (sync 1+)
+      // This simulates the swap/transfer happening AFTER competition starts
+      if (syncNumber >= 1) {
+        transfersToReturn = data.transfers.filter((t) => {
+          const transferBlock = parseInt(t.blockNum ?? "0x0", 16);
+          return transferBlock >= fromBlockNum;
+        });
+      } else {
+        transfersToReturn = [];
+      }
+
+      this.logger.info(
+        `[MockAlchemyRpcProvider] Wallet ${walletAddress.slice(0, 10)} sync #${syncNumber}, returning ${transfersToReturn.length} transfers`,
+      );
+    } else {
+      // For other wallets (like 0x5555 - empty wallet), use standard block filtering
+      transfersToReturn = data.transfers.filter((t) => {
+        const transferBlock = parseInt(t.blockNum ?? "0x0", 16);
+        return transferBlock >= fromBlockNum;
+      });
+    }
+
+    // Replace DYNAMIC timestamps with actual recent times (ensures violations happen AFTER competition starts)
+    const transfersWithDynamicTimestamps = transfersToReturn.map((t) => {
+      if (t.metadata.blockTimestamp === "DYNAMIC") {
+        // Generate timestamp at query time (always "now" = after competition started)
+        // Subtract small amount to avoid edge case where transfer timestamp === query timestamp
+        const recentTime = new Date(Date.now() - 500).toISOString(); // Half second ago
+        return {
+          ...t,
+          metadata: {
+            ...t.metadata,
+            blockTimestamp: recentTime,
+          },
+        };
+      }
+      return t;
     });
 
-    this.logger.info(
-      {
-        wallet: walletAddress,
-        chain,
-        fromBlock: fromBlockNum,
-        rawTransfers: data.transfers.length,
-        filteredTransfers: filteredTransfers.length,
-        hasWalletData: this.mockData.has(walletAddress.toLowerCase()),
-      },
-      `[MockAlchemyRpcProvider] getAssetTransfers called`,
-    );
-
     return {
-      transfers: filteredTransfers as AssetTransfersWithMetadataResult[],
-      pageKey: undefined, // No pagination in mock
+      transfers: transfersWithDynamicTimestamps,
+      pageKey: undefined,
     };
   }
 
@@ -622,12 +852,38 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
 
   /**
    * Get current block number for a chain
+   * Uses callIndex to simulate block progression (like Hyperliquid's equity progression)
    */
   async getBlockNumber(chain: SpecificChain): Promise<number> {
-    void chain; // Not used in mock - returns static block number
-    // Return block number BEFORE test data so sync will pick up all mock swaps
-    // Test data is at blocks 2000000, 2000010, 2000020, 2000030, 2000031
-    return 1999990; // Just before first swap to ensure all test data is captured
+    void chain; // Not used in mock
+
+    // Return a progressive "current block" based on global call state
+    // This simulates blockchain progressing over time
+    // Sync 1: Current block 2000005 (only swap 1 at 2000000 is "mined")
+    // Sync 2: Current block 2000015 (swaps 1-2 are "mined")
+    // Sync 3: Current block 2000025 (all swaps are "mined")
+
+    // Use highest callIndex across all wallets, divided by 2 for sync number
+    const allCallIndices = Array.from(this.callIndex.values());
+    const maxCallIdx =
+      allCallIndices.length > 0 ? Math.max(...allCallIndices) : 0;
+    const maxSyncNumber = Math.ceil(maxCallIdx / 2);
+
+    let currentBlock;
+    if (maxSyncNumber === 0) {
+      currentBlock = 1999990; // Initial state
+    } else if (maxSyncNumber === 1) {
+      currentBlock = 2000005; // After first sync - swap 1 visible
+    } else if (maxSyncNumber === 2) {
+      currentBlock = 2000015; // After second sync - swaps 1-2 visible
+    } else {
+      currentBlock = 2000025; // After third+ sync - all swaps visible
+    }
+
+    this.logger.info(
+      `[MockAlchemyRpcProvider] getBlockNumber: maxCallIdx=${maxCallIdx}, syncNumber=${maxSyncNumber}, block=${currentBlock}`,
+    );
+    return currentBlock;
   }
 
   /**
@@ -645,6 +901,8 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
 
   /**
    * Get token balances for a wallet
+   * Uses callIndex to simulate balance changes from swaps between syncs
+   * Does NOT increment callIndex - just reads current state set by getAssetTransfers
    */
   async getTokenBalances(
     walletAddress: string,
@@ -652,12 +910,171 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
   ): Promise<TokenBalance[]> {
     void chain; // Not used in mock
     const data = this.getWalletData(walletAddress);
+    const lowerAddress = walletAddress.toLowerCase();
 
-    return Array.from(data.balances.entries()).map(
-      ([tokenAddress, balance]) => ({
-        contractAddress: tokenAddress,
-        balance: `0x${balance.toString(16)}`, // Hex string
-      }),
+    // Read call index (do NOT increment - getAssetTransfers owns the counter)
+    const callIdx = this.callIndex.get(lowerAddress) || 0;
+
+    // Convert to sync number (getAssetTransfers called twice per sync)
+    const syncNumber = Math.ceil(callIdx / 2);
+
+    // Progressive balance updates to match swap progression
+    let balancesToReturn = data.balances;
+
+    if (lowerAddress === "0x1111111111111111111111111111111111111111") {
+      // Simulate balance progression as swaps execute
+      // Sync 0: Initial state during startCompetition (5000 USDC, 0 AERO, 0 WETH)
+      // Sync 1: After swap 1 processed (4900 USDC, 50 AERO, 0 WETH)
+      // Sync 2: After swap 2 processed (4900 USDC, 40 AERO, 0.005 WETH)
+      // Sync 3+: After swap 3 processed (4906 USDC, 35 AERO, 0.005 WETH)
+      balancesToReturn = new Map();
+
+      if (syncNumber === 0) {
+        // Initial state before any swaps (called during startCompetition)
+        balancesToReturn.set(
+          "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+          5000,
+        ); // USDC
+        balancesToReturn.set("0x940181a94a35a4569e4529a3cdfb74e38fd98631", 0); // AERO
+        balancesToReturn.set("0x4200000000000000000000000000000000000006", 0); // WETH
+      } else if (syncNumber === 1) {
+        // After swap 1: USDC → AERO (100 USDC out, 50 AERO in)
+        balancesToReturn.set(
+          "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+          4900,
+        );
+        balancesToReturn.set("0x940181a94a35a4569e4529a3cdfb74e38fd98631", 50);
+        balancesToReturn.set("0x4200000000000000000000000000000000000006", 0);
+      } else if (syncNumber === 2) {
+        // After swap 2: AERO → ETH (10 AERO out, 0.005 ETH in)
+        balancesToReturn.set(
+          "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+          4900,
+        );
+        balancesToReturn.set("0x940181a94a35a4569e4529a3cdfb74e38fd98631", 40);
+        balancesToReturn.set(
+          "0x4200000000000000000000000000000000000006",
+          0.005,
+        );
+      } else {
+        // After swap 3: AERO → USDC (5 AERO out, 6 USDC in)
+        balancesToReturn.set(
+          "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+          4906,
+        );
+        balancesToReturn.set("0x940181a94a35a4569e4529a3cdfb74e38fd98631", 35);
+        balancesToReturn.set(
+          "0x4200000000000000000000000000000000000006",
+          0.005,
+        );
+      }
+
+      this.logger.info(
+        `[MockAlchemyRpcProvider] Wallet 0x1111 getTokenBalances at sync #${syncNumber}: USDC=${balancesToReturn.get("0x833589fcd6edb6e08f4c7c32d4f71b54bda02913")}, AERO=${balancesToReturn.get("0x940181a94a35a4569e4529a3cdfb74e38fd98631")}`,
+      );
+    } else if (lowerAddress === "0xaaaa000000000000000000000000000000000001") {
+      // Simple test wallet - 2000 USDC initially, after swap: 1900 USDC + 50 AERO
+      balancesToReturn = new Map();
+
+      if (syncNumber === 0) {
+        balancesToReturn.set(
+          "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+          2000,
+        ); // Initial USDC
+      } else {
+        // After swap: 100 USDC → 50 AERO
+        balancesToReturn.set(
+          "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+          1900,
+        ); // USDC after swap
+        balancesToReturn.set("0x940181a94a35a4569e4529a3cdfb74e38fd98631", 50); // AERO received
+      }
+    } else if (lowerAddress === "0xbbbb000000000000000000000000000000000002") {
+      // Simple test wallet - 3000 USDC initially, after swap: 2800 USDC + 100 AERO
+      balancesToReturn = new Map();
+
+      if (syncNumber === 0) {
+        balancesToReturn.set(
+          "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+          3000,
+        ); // Initial USDC
+      } else {
+        // After swap: 200 USDC → 100 AERO
+        balancesToReturn.set(
+          "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+          2800,
+        ); // USDC after swap
+        balancesToReturn.set("0x940181a94a35a4569e4529a3cdfb74e38fd98631", 100); // AERO received
+      }
+    } else if (lowerAddress === "0x2222222222222222222222222222222222222222") {
+      // Agent with deposit - balance increases due to external deposit
+      balancesToReturn = new Map();
+
+      if (syncNumber === 0) {
+        balancesToReturn.set(
+          "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+          5000,
+        ); // Initial USDC
+      } else {
+        // After deposit: 5000 + 1000 = 6000 USDC
+        balancesToReturn.set(
+          "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+          6000,
+        );
+      }
+    } else if (lowerAddress === "0x3333333333333333333333333333333333333333") {
+      // Agent with withdrawal - balance decreases due to external withdrawal
+      balancesToReturn = new Map();
+
+      if (syncNumber === 0) {
+        balancesToReturn.set(
+          "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+          5000,
+        ); // Initial USDC
+      } else {
+        // After withdrawal: 5000 - 500 = 4500 USDC
+        balancesToReturn.set(
+          "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+          4500,
+        );
+      }
+    } else if (lowerAddress === "0x4444444444444444444444444444444444444444") {
+      // Multi-protocol agent - has both Aerodrome and Uniswap swaps
+      balancesToReturn = new Map();
+
+      if (syncNumber === 0) {
+        balancesToReturn.set(
+          "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+          5000,
+        ); // Initial USDC
+        balancesToReturn.set("0x940181a94a35a4569e4529a3cdfb74e38fd98631", 0); // AERO
+        balancesToReturn.set("0x4200000000000000000000000000000000000006", 0); // WETH
+      } else {
+        // After swaps (Aerodrome: 50 USDC → 25 AERO, Uniswap: 10 AERO → 0.05 ETH)
+        // Note: If Aerodrome filter enabled, only first swap processed
+        balancesToReturn.set(
+          "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+          4950,
+        ); // 50 USDC spent
+        balancesToReturn.set("0x940181a94a35a4569e4529a3cdfb74e38fd98631", 25); // 25 AERO (or 15 if both swaps)
+        balancesToReturn.set("0x4200000000000000000000000000000000000006", 0); // ETH (0.05 if Uniswap processed)
+      }
+    }
+
+    return Array.from(balancesToReturn.entries()).map(
+      ([tokenAddress, balance]) => {
+        // Use proper decimals for each token
+        const decimals =
+          tokenAddress.toLowerCase() ===
+          "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913"
+            ? 6
+            : 18;
+        const rawBalance = Math.floor(balance * Math.pow(10, decimals));
+        return {
+          contractAddress: tokenAddress,
+          balance: `0x${rawBalance.toString(16)}`,
+        };
+      },
     );
   }
 
@@ -684,6 +1101,7 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
    */
   public reset(): void {
     this.mockData.clear();
+    this.callIndex.clear();
     this.initializeDefaultMockData();
     this.logger.info("[MockAlchemyRpcProvider] Reset mock data");
   }

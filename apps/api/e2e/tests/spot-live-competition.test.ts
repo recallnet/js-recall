@@ -32,40 +32,144 @@ describe("Spot Live Competition", () => {
     adminApiKey = await getAdminApiKey();
   });
 
-  test("should start a spot live competition with Aerodrome protocol filter", async () => {
+  test("should initialize agent portfolio balances from blockchain on competition start", async () => {
     // Setup admin client
     const adminClient = createTestClient(getBaseUrl());
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register agents with pre-configured wallet addresses
-    const { agent: agent1 } = await registerUserAndAgentAndGetClient({
-      adminApiKey,
-      agentName: "Spot Live Test Agent 1",
-      agentWalletAddress: "0x1111111111111111111111111111111111111111",
-    });
+    // Register two agents with different wallet addresses
+    // Mock will return different balances for each
+    const { agent: agent1, client: client1 } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Agent With 2K USDC",
+        agentWalletAddress: "0xaaaa000000000000000000000000000000000001", // 2000 USDC on Base
+      });
 
-    const { agent: agent2 } = await registerUserAndAgentAndGetClient({
-      adminApiKey,
-      agentName: "Spot Live Test Agent 2",
-      agentWalletAddress: "0x5555555555555555555555555555555555555555",
-    });
+    const { agent: agent2, client: client2 } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Agent With 3K USDC",
+        agentWalletAddress: "0xbbbb000000000000000000000000000000000002", // 3000 USDC on Eth
+      });
 
-    // Start a spot live competition
-    const competitionName = `Spot Live Test ${Date.now()}`;
+    // Start competition
     const response = await startSpotLiveTestCompetition({
       adminClient,
-      name: competitionName,
+      name: `Initial Balance Test ${Date.now()}`,
       agentIds: [agent1.id, agent2.id],
     });
 
-    // Verify competition was started
     expect(response.success).toBe(true);
-    expect(response.competition).toBeDefined();
-    expect(response.competition.type).toBe("spot_live_trading");
-    expect(response.competition.status).toBe("active");
-    expect(response.competition.name).toBe(competitionName);
-    expect(response.competition.agentIds).toContain(agent1.id);
-    expect(response.competition.agentIds).toContain(agent2.id);
+    const competition = response.competition;
+
+    // Wait for initial sync to complete
+    await wait(2000);
+
+    // Agent 1 checks their token balances
+    const balance1Response = await client1.getBalance(competition.id);
+    expect(balance1Response.success).toBe(true);
+
+    const balances1 = (balance1Response as BalancesResponse).balances;
+    const usdcBalance1 = balances1.find(
+      (b) =>
+        b.tokenAddress.toLowerCase() ===
+        "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+    );
+    expect(usdcBalance1).toBeDefined();
+    expect(usdcBalance1?.amount).toBeCloseTo(2000, 1);
+
+    // Agent 1 checks their portfolio balance (calculated USD value)
+    const leaderboard1 = await adminClient.getCompetitionAgents(competition.id);
+    expect(leaderboard1.success).toBe(true);
+    const agent1Entry = (leaderboard1 as CompetitionAgentsResponse).agents.find(
+      (a) => a.id === agent1.id,
+    );
+    expect(agent1Entry).toBeDefined();
+    expect(agent1Entry?.portfolioValue).toBeCloseTo(2000, 0); // ~$2000 (USDC at $1, 0 decimals = ±1)
+
+    // Agent 2 checks their token balances
+    const balance2Response = await client2.getBalance(competition.id);
+    expect(balance2Response.success).toBe(true);
+
+    const balances2 = (balance2Response as BalancesResponse).balances;
+    const usdcBalance2 = balances2.find(
+      (b) =>
+        b.tokenAddress.toLowerCase() ===
+        "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+    );
+    expect(usdcBalance2).toBeDefined();
+    expect(usdcBalance2?.amount).toBeCloseTo(3000, 1);
+
+    // Agent 2 checks their portfolio balance (calculated USD value)
+    const agent2Entry = (leaderboard1 as CompetitionAgentsResponse).agents.find(
+      (a) => a.id === agent2.id,
+    );
+    expect(agent2Entry).toBeDefined();
+    expect(agent2Entry?.portfolioValue).toBeCloseTo(3000, 0); // ~$3000 (USDC at $1, 0 decimals = ±1)
+
+    // Now force a sync to process swaps that happened since competition start
+    const services = new ServiceRegistry();
+    await services.spotDataProcessor.processSpotLiveCompetition(competition.id);
+    await wait(500);
+
+    // Agent 1 checks updated balances after swap (100 USDC → 50 AERO)
+    const updatedBalance1Response = await client1.getBalance(competition.id);
+    expect(updatedBalance1Response.success).toBe(true);
+
+    const updatedBalances1 = (updatedBalance1Response as BalancesResponse)
+      .balances;
+    const updatedUsdc1 = updatedBalances1.find(
+      (b) =>
+        b.tokenAddress.toLowerCase() ===
+        "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+    );
+    const aero1 = updatedBalances1.find(
+      (b) =>
+        b.tokenAddress.toLowerCase() ===
+        "0x940181a94a35a4569e4529a3cdfb74e38fd98631",
+    );
+    expect(updatedUsdc1?.amount).toBeCloseTo(1900, 1); // 100 USDC spent
+    expect(aero1?.amount).toBeCloseTo(50, 1); // 50 AERO received
+
+    // Agent 2 checks updated balances after swap (200 USDC → 100 AERO)
+    const updatedBalance2Response = await client2.getBalance(competition.id);
+    expect(updatedBalance2Response.success).toBe(true);
+
+    const updatedBalances2 = (updatedBalance2Response as BalancesResponse)
+      .balances;
+    const updatedUsdc2 = updatedBalances2.find(
+      (b) =>
+        b.tokenAddress.toLowerCase() ===
+        "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+    );
+    const aero2 = updatedBalances2.find(
+      (b) =>
+        b.tokenAddress.toLowerCase() ===
+        "0x940181a94a35a4569e4529a3cdfb74e38fd98631",
+    );
+    expect(updatedUsdc2?.amount).toBeCloseTo(2800, 1); // 200 USDC spent
+    expect(aero2?.amount).toBeCloseTo(100, 1); // 100 AERO received
+
+    // Verify portfolio values updated (should reflect swap value with AERO price)
+    const leaderboard2 = await adminClient.getCompetitionAgents(competition.id);
+    expect(leaderboard2.success).toBe(true);
+
+    const updatedAgent1 = (
+      leaderboard2 as CompetitionAgentsResponse
+    ).agents.find((a) => a.id === agent1.id);
+    const updatedAgent2 = (
+      leaderboard2 as CompetitionAgentsResponse
+    ).agents.find((a) => a.id === agent2.id);
+
+    expect(updatedAgent1).toBeDefined();
+    expect(updatedAgent2).toBeDefined();
+
+    // Portfolio values should be close to original (assuming AERO has some value)
+    // 1900 USDC + 50 AERO ≈ $1900 + (50 * AERO_price)
+    // 2800 USDC + 100 AERO ≈ $2800 + (100 * AERO_price)
+    expect(updatedAgent1?.portfolioValue).toBeGreaterThan(1900); // At least USDC value
+    expect(updatedAgent2?.portfolioValue).toBeGreaterThan(2800); // At least USDC value
   });
 
   test("should retrieve competition details with spot live specific fields", async () => {
@@ -131,14 +235,13 @@ describe("Spot Live Competition", () => {
     // Wait for competition to fully start
     await wait(1000);
 
-    // Trigger manual sync (simulates cron job)
     const services = new ServiceRegistry();
-    await services.spotDataProcessor.processSpotLiveCompetition(competition.id);
 
-    // Wait for sync to complete
+    // First manual sync (simulates first cron job) - processes swap 1
+    await services.spotDataProcessor.processSpotLiveCompetition(competition.id);
     await wait(500);
 
-    // Agent checks THEIR trade history
+    // Agent checks THEIR trade history after first sync
     const tradesResponse = await agentClient.getTradeHistory(competition.id);
     expect(tradesResponse.success).toBe(true);
 
@@ -223,6 +326,9 @@ describe("Spot Live Competition", () => {
     const trades2Response = await agentClient.getTradeHistory(competition.id);
     expect(trades2Response.success).toBe(true);
     const trades2 = (trades2Response as TradeHistoryResponse).trades;
+    console.log(
+      `[TEST] trades2 length: ${trades2.length}, hashes: ${trades2.map((t) => t.txHash).join(", ")}`,
+    );
     expect(trades2.length).toBe(2);
     const secondSwap = trades2.find((t) => t.txHash === "0xmock_swap_2");
     expect(secondSwap).toBeDefined();

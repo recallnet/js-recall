@@ -317,6 +317,7 @@ class ServiceRegistry {
       this._competitionRepository,
       this._spotLiveRepository,
       tradeRepository,
+      balanceRepository,
       this._portfolioSnapshotterService,
       this._priceTrackerService,
       serviceLogger,
