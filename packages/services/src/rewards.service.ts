@@ -20,11 +20,6 @@ import {
 import { RewardsAllocator } from "@recallnet/staking-contracts";
 
 /**
- * Default boost time decay rate used when competition does not specify one
- */
-const DEFAULT_BOOST_TIME_DECAY_RATE = 0.5;
-
-/**
  * Service for handling reward-related operations
  */
 export class RewardsService {
@@ -197,7 +192,7 @@ export class RewardsService {
         leaderBoard,
         boostAllocationWindow,
         allExcludedAgents.length > 0 ? allExcludedAgents : undefined,
-        competition.boostTimeDecayRate ?? DEFAULT_BOOST_TIME_DECAY_RATE,
+        competition.boostTimeDecayRate ?? undefined,
       );
 
       const rewardsToInsert = rewards.map((reward) => ({
