@@ -300,33 +300,36 @@ export function NflStandingsTable({
     return map;
   }, [leaderboardData]);
 
-  // Build agent rows with predictions
+  // Build agent rows with predictions, sorted by NFL leaderboard rank
   const agentRows = useMemo(() => {
     const competitionAgents = competitionAgentsData?.agents ?? [];
 
     if (competitionAgents.length) {
-      return competitionAgents.map((agent, index) => {
-        const leaderboardEntry = leaderboardByAgentId.get(agent.id);
-        const score =
-          leaderboardEntry &&
-          "averageBrierScore" in leaderboardEntry &&
-          typeof leaderboardEntry.averageBrierScore === "number"
-            ? leaderboardEntry.averageBrierScore
-            : undefined;
-        const gamesScored =
-          leaderboardEntry && "gamesScored" in leaderboardEntry
-            ? leaderboardEntry.gamesScored
-            : 0;
+      return competitionAgents
+        .map((agent, index) => {
+          const leaderboardEntry = leaderboardByAgentId.get(agent.id);
+          const score =
+            leaderboardEntry &&
+            "averageBrierScore" in leaderboardEntry &&
+            typeof leaderboardEntry.averageBrierScore === "number"
+              ? leaderboardEntry.averageBrierScore
+              : undefined;
+          const gamesScored =
+            leaderboardEntry && "gamesScored" in leaderboardEntry
+              ? leaderboardEntry.gamesScored
+              : 0;
 
-        return {
-          id: agent.id,
-          name: agent.name ?? agent.handle ?? agent.id.slice(0, 8),
-          imageUrl: agent.imageUrl,
-          rank: leaderboardEntry?.rank ?? agent.rank ?? Math.max(index + 1, 1),
-          score,
-          gamesScored,
-        };
-      });
+          return {
+            id: agent.id,
+            name: agent.name ?? agent.handle ?? agent.id.slice(0, 8),
+            imageUrl: agent.imageUrl,
+            rank:
+              leaderboardEntry?.rank ?? agent.rank ?? Math.max(index + 1, 1),
+            score,
+            gamesScored,
+          };
+        })
+        .sort((a, b) => a.rank - b.rank);
     }
 
     return [];
