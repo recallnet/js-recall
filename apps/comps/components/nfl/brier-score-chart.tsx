@@ -1,7 +1,7 @@
 "use client";
 
 import { format } from "date-fns";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   CartesianGrid,
   Legend,
@@ -17,13 +17,16 @@ import {
 import { Skeleton } from "@recallnet/ui2/components/skeleton";
 import { cn } from "@recallnet/ui2/lib/utils";
 
+import { AgentAvatar } from "@/components/agent-avatar";
 import { CHART_COLORS } from "@/components/timeline-chart/constants";
 import { useNflPredictions } from "@/hooks/sports/useNflPredictions";
+import type { RouterOutputs } from "@/rpc/router";
 import { NflGame, NflPrediction } from "@/types/nfl";
 
 interface BrierScoreChartProps {
   competitionId: string;
   game?: NflGame;
+  agents?: RouterOutputs["competitions"]["getAgents"]["agents"];
 }
 
 type TimelinePoint = {
@@ -31,7 +34,66 @@ type TimelinePoint = {
   label: string;
 } & Record<string, number | string>;
 
-export function BrierScoreChart({ competitionId, game }: BrierScoreChartProps) {
+type ChartAgent = RouterOutputs["competitions"]["getAgents"]["agents"][number];
+
+interface AgentAvatarDotProps {
+  cx?: number;
+  cy?: number;
+  agent: ChartAgent;
+  isHovered: boolean;
+  onMouseEnter: () => void;
+  onMouseLeave: () => void;
+}
+
+const AgentAvatarDot = ({
+  cx,
+  cy,
+  agent,
+  isHovered,
+  onMouseEnter,
+  onMouseLeave,
+}: AgentAvatarDotProps) => {
+  if (cx === undefined || cy === undefined) {
+    return null;
+  }
+
+  const containerSize = 44;
+  const avatarSize = 32;
+  const offset = containerSize / 2;
+
+  return (
+    <g>
+      <foreignObject
+        x={cx - offset}
+        y={cy - offset}
+        width={containerSize}
+        height={containerSize}
+      >
+        <div
+          className="flex h-full w-full cursor-pointer items-center justify-center"
+          onMouseEnter={onMouseEnter}
+          onMouseLeave={onMouseLeave}
+        >
+          <div
+            className={cn(
+              "transition-transform duration-200 ease-out",
+              isHovered && "scale-130",
+            )}
+          >
+            <AgentAvatar agent={agent} size={avatarSize} showHover={false} />
+          </div>
+        </div>
+      </foreignObject>
+    </g>
+  );
+};
+
+export function BrierScoreChart({
+  competitionId,
+  game,
+  agents,
+}: BrierScoreChartProps) {
+  const [hoveredAgentId, setHoveredAgentId] = useState<string | null>(null);
   const gameId = game?.id;
   const {
     data: predictionsData,
@@ -159,6 +221,26 @@ export function BrierScoreChart({ competitionId, game }: BrierScoreChartProps) {
     };
   }, [game, predictionsData]);
 
+  const agentMetaMap = useMemo(() => {
+    const map = new Map<string, ChartAgent>();
+    agents?.forEach((agent) => {
+      map.set(agent.id, agent);
+    });
+    return map;
+  }, [agents]);
+
+  const lastPointIndex = useMemo(() => {
+    const indices = new Map<string, number>();
+    chartData.forEach((point, index) => {
+      agentIds.forEach((agentId) => {
+        if (typeof point[agentId] === "number") {
+          indices.set(agentId, index);
+        }
+      });
+    });
+    return indices;
+  }, [chartData, agentIds]);
+
   const renderEmptyState = (message: string, isError?: boolean) => (
     <div
       className={cn(
@@ -169,6 +251,22 @@ export function BrierScoreChart({ competitionId, game }: BrierScoreChartProps) {
       {message}
     </div>
   );
+
+  const sortedAgentIds = useMemo(() => {
+    if (!hoveredAgentId) {
+      return agentIds;
+    }
+    const remaining = agentIds.filter((id) => id !== hoveredAgentId);
+    return [...remaining, hoveredAgentId];
+  }, [agentIds, hoveredAgentId]);
+
+  const agentColorMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    agentIds.forEach((agentId, index) => {
+      map[agentId] = CHART_COLORS[index % CHART_COLORS.length]!;
+    });
+    return map;
+  }, [agentIds]);
 
   if (!game) {
     return renderEmptyState("Select a game to view prediction trends.");
@@ -189,6 +287,8 @@ export function BrierScoreChart({ competitionId, game }: BrierScoreChartProps) {
   if (!chartData.length || agentIds.length === 0) {
     return renderEmptyState("No predictions yet for this game.");
   }
+
+  const isAnyHovered = hoveredAgentId !== null;
 
   return (
     <div className="h-120 relative overflow-hidden [&_svg:focus]:outline-none">
@@ -256,19 +356,79 @@ export function BrierScoreChart({ competitionId, game }: BrierScoreChartProps) {
             }
           />
 
-          {agentIds.map((agentId, index) => (
-            <Line
-              key={agentId}
-              type="monotone"
-              dataKey={agentId}
-              name={agentLabels.get(agentId) ?? agentId.slice(0, 8)}
-              stroke={CHART_COLORS[index % CHART_COLORS.length]}
-              strokeWidth={2}
-              dot={{ r: 2 }}
-              activeDot={{ r: 4 }}
-              isAnimationActive={false}
-            />
-          ))}
+          {sortedAgentIds.map((agentId) => {
+            const isActive = hoveredAgentId === agentId;
+            return (
+              <Line
+                key={agentId}
+                className="cursor-pointer"
+                type="monotone"
+                dataKey={agentId}
+                name={agentLabels.get(agentId) ?? agentId.slice(0, 8)}
+                stroke={agentColorMap[agentId] ?? CHART_COLORS[0]}
+                strokeWidth={isActive ? 3 : 2}
+                isAnimationActive={false}
+                activeDot={false}
+                connectNulls
+                strokeLinejoin="round"
+                strokeLinecap="round"
+                opacity={!isAnyHovered || isActive ? 1 : 0.3}
+                onMouseOver={() => setHoveredAgentId(agentId)}
+                onMouseOut={() => setHoveredAgentId(null)}
+                dot={(dotProps) => {
+                  if (
+                    typeof dotProps.index !== "number" ||
+                    dotProps.index !== lastPointIndex.get(agentId)
+                  ) {
+                    return (
+                      <g
+                        key={`${agentId}-${dotProps.index ?? "placeholder"}`}
+                      />
+                    );
+                  }
+
+                  const fallbackName =
+                    agentLabels.get(agentId) ?? `${agentId.slice(0, 8)}...`;
+                  const agent =
+                    agentMetaMap.get(agentId) ??
+                    ({
+                      id: agentId,
+                      name: fallbackName,
+                      handle: fallbackName,
+                      description: null,
+                      imageUrl: null,
+                      score: 0,
+                      active: true,
+                      deactivationReason: null,
+                      rank: 0,
+                      portfolioValue: 0,
+                      pnl: 0,
+                      pnlPercent: 0,
+                      change24h: 0,
+                      change24hPercent: 0,
+                      calmarRatio: null,
+                      sortinoRatio: null,
+                      simpleReturn: null,
+                      maxDrawdown: null,
+                      downsideDeviation: null,
+                      hasRiskMetrics: false,
+                    } as ChartAgent);
+
+                  return (
+                    <AgentAvatarDot
+                      key={`${agentId}-${dotProps.index}`}
+                      cx={dotProps.cx}
+                      cy={dotProps.cy}
+                      agent={agent}
+                      isHovered={isActive}
+                      onMouseEnter={() => setHoveredAgentId(agentId)}
+                      onMouseLeave={() => setHoveredAgentId(null)}
+                    />
+                  );
+                }}
+              />
+            );
+          })}
         </LineChart>
       </ResponsiveContainer>
     </div>

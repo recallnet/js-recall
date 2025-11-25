@@ -1,5 +1,6 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import { ChevronRight, Plus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
@@ -19,12 +20,15 @@ import {
   NflCompetitionKeyTab,
 } from "@/components/nfl/nfl-competition-key";
 import { NflStandingsTable } from "@/components/nfl/nfl-standings-table";
+import { LIMIT_AGENTS_PER_CHART } from "@/components/timeline-chart/constants";
 import { getSocialLinksArray } from "@/data/social";
 import { useNflGames } from "@/hooks/sports/useNflGames";
 import { useNflRules } from "@/hooks/sports/useNflRules";
 import { openForBoosting } from "@/lib/open-for-boosting";
+import { tanstackClient } from "@/rpc/clients/tanstack-query";
 import type { RouterOutputs } from "@/rpc/router";
 import { NflGame } from "@/types/nfl";
+import { getCompetitionPollingInterval } from "@/utils/competition-utils";
 
 type CompetitionDetails = RouterOutputs["competitions"]["getById"];
 
@@ -48,6 +52,21 @@ export default function NflCompetitionPage({
   } = useNflGames(competitionId);
   const { data: rulesData, isLoading: rulesLoading } =
     useNflRules(competitionId);
+
+  const { data: chartAgentsData } = useQuery(
+    tanstackClient.competitions.getAgents.queryOptions({
+      input: {
+        competitionId,
+        paging: {
+          sort: "rank",
+          offset: 0,
+          limit: LIMIT_AGENTS_PER_CHART,
+        },
+      },
+      staleTime: 60 * 1000,
+      refetchInterval: () => getCompetitionPollingInterval(competition.status),
+    }),
+  );
 
   const games = useMemo(() => gamesData?.games ?? [], [gamesData]);
 
@@ -133,8 +152,10 @@ export default function NflCompetitionPage({
           />
           <div className="mt-4">
             <BrierScoreChart
+              key={competitionId}
               competitionId={competitionId}
               game={selectedGame}
+              agents={chartAgentsData?.agents}
             />
           </div>
         </>

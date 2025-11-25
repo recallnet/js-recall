@@ -22,9 +22,11 @@ export const getRules = base
       ],
     }),
   )
-  .handler(async ({ context, errors }) => {
+  .handler(async ({ context, input, errors }) => {
     try {
-      const rules = context.sportsService.gamePredictionService.getRules();
+      const rules = await context.sportsService.gamePredictionService.getRules(
+        input.competitionId,
+      );
       return rules;
     } catch (error) {
       if (error instanceof ORPCError) {
