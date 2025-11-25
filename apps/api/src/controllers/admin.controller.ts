@@ -631,7 +631,10 @@ export function makeAdminController(services: ServiceRegistry) {
           boosterAllocationUnit,
           rewardRules,
           rewardDetails,
+          boostTimeDecayRate,
           displayState,
+          paperTradingConfig,
+          paperTradingInitialBalances,
         } = flatParse(AdminCreateCompetitionSchema, req.body);
 
         // Create a new competition
@@ -674,7 +677,10 @@ export function makeAdminController(services: ServiceRegistry) {
             boosterAllocationUnit,
             rewardRules,
             rewardDetails,
+            boostTimeDecayRate,
             displayState,
+            paperTradingConfig,
+            paperTradingInitialBalances,
           },
         );
 
@@ -734,6 +740,8 @@ export function makeAdminController(services: ServiceRegistry) {
           rewardRules,
           rewardDetails,
           displayState,
+          paperTradingConfig,
+          paperTradingInitialBalances,
         } = flatParse(AdminStartCompetitionSchema, req.body);
 
         // Call service method with creation params only if no competitionId
@@ -778,6 +786,8 @@ export function makeAdminController(services: ServiceRegistry) {
                   rewardRules,
                   rewardDetails,
                   displayState,
+                  paperTradingConfig,
+                  paperTradingInitialBalances,
                 },
           });
 
@@ -840,9 +850,11 @@ export function makeAdminController(services: ServiceRegistry) {
           evaluationMetric,
           perpsProvider,
           prizePools,
+          paperTradingConfig,
+          paperTradingInitialBalances,
           ...competitionUpdates
         } = flatParse(AdminUpdateCompetitionSchema, req.body);
-        // Extract rewards, tradingConstraints, evaluationMetric, and perpsProvider from the validated data
+        // Extract rewards, tradingConstraints, evaluationMetric, perpsProvider, paperTradingConfig, and paperTradingInitialBalances from the validated data
         const updates = competitionUpdates;
 
         // Check if there are any updates to apply
@@ -852,7 +864,9 @@ export function makeAdminController(services: ServiceRegistry) {
           !tradingConstraints &&
           !evaluationMetric &&
           !perpsProvider &&
-          !prizePools
+          !prizePools &&
+          !paperTradingConfig &&
+          !paperTradingInitialBalances
         ) {
           throw new ApiError(400, "No valid fields provided for update");
         }
@@ -867,6 +881,8 @@ export function makeAdminController(services: ServiceRegistry) {
             evaluationMetric,
             perpsProvider,
             prizePools,
+            paperTradingConfig,
+            paperTradingInitialBalances,
           );
 
         // Return the updated competition

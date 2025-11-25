@@ -1654,6 +1654,14 @@
                     "nullable": true,
                     "description": "Additional reward details"
                   },
+                  "boostTimeDecayRate": {
+                    "type": "number",
+                    "nullable": true,
+                    "minimum": 0.1,
+                    "maximum": 0.9,
+                    "description": "Decay rate for boost time calculations. Must be between 0.1 and 0.9.",
+                    "example": 0.5
+                  },
                   "displayState": {
                     "type": "string",
                     "nullable": true,
@@ -1673,6 +1681,49 @@
                     },
                     "description": "Agent IDs ineligible to receive rewards from this competition",
                     "example": ["agent-id-1", "agent-id-2"]
+                  },
+                  "paperTradingConfig": {
+                    "type": "object",
+                    "nullable": true,
+                    "description": "Paper trading configuration for the competition",
+                    "properties": {
+                      "maxTradePercentage": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 100,
+                        "description": "Maximum percentage of portfolio that can be traded in a single trade (default: 25)",
+                        "example": 25
+                      }
+                    }
+                  },
+                  "paperTradingInitialBalances": {
+                    "type": "array",
+                    "nullable": true,
+                    "description": "Initial token balances for the competition",
+                    "items": {
+                      "type": "object",
+                      "required": ["specificChain", "tokenSymbol", "amount"],
+                      "properties": {
+                        "specificChain": {
+                          "type": "string",
+                          "maxLength": 20,
+                          "description": "Specific chain identifier",
+                          "example": "base"
+                        },
+                        "tokenSymbol": {
+                          "type": "string",
+                          "maxLength": 20,
+                          "description": "Token symbol",
+                          "example": "USDC"
+                        },
+                        "amount": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "description": "Initial balance amount",
+                          "example": 10000
+                        }
+                      }
+                    }
                   }
                 }
               }
@@ -2176,6 +2227,14 @@
                     "type": "string",
                     "nullable": true,
                     "description": "Additional reward details"
+                  },
+                  "boostTimeDecayRate": {
+                    "type": "number",
+                    "nullable": true,
+                    "minimum": 0.1,
+                    "maximum": 0.9,
+                    "description": "Decay rate for boost time calculations. Must be between 0.1 and 0.9.",
+                    "example": 0.5
                   },
                   "displayState": {
                     "type": "string",
@@ -2825,6 +2884,14 @@
                     "nullable": true,
                     "description": "Additional reward details"
                   },
+                  "boostTimeDecayRate": {
+                    "type": "number",
+                    "nullable": true,
+                    "minimum": 0.1,
+                    "maximum": 0.9,
+                    "description": "Decay rate for boost time calculations. Must be between 0.1 and 0.9.",
+                    "example": 0.5
+                  },
                   "displayState": {
                     "type": "string",
                     "nullable": true,
@@ -2844,6 +2911,49 @@
                     },
                     "description": "Agent IDs ineligible to receive rewards from this competition",
                     "example": ["agent-id-1", "agent-id-2"]
+                  },
+                  "paperTradingConfig": {
+                    "type": "object",
+                    "nullable": true,
+                    "description": "Paper trading configuration for the competition",
+                    "properties": {
+                      "maxTradePercentage": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 100,
+                        "description": "Maximum percentage of portfolio that can be traded in a single trade (default: 25)",
+                        "example": 25
+                      }
+                    }
+                  },
+                  "paperTradingInitialBalances": {
+                    "type": "array",
+                    "nullable": true,
+                    "description": "Initial token balances for the competition",
+                    "items": {
+                      "type": "object",
+                      "required": ["specificChain", "tokenSymbol", "amount"],
+                      "properties": {
+                        "specificChain": {
+                          "type": "string",
+                          "maxLength": 20,
+                          "description": "Specific chain identifier",
+                          "example": "base"
+                        },
+                        "tokenSymbol": {
+                          "type": "string",
+                          "maxLength": 20,
+                          "description": "Token symbol",
+                          "example": "USDC"
+                        },
+                        "amount": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "description": "Initial balance amount",
+                          "example": 10000
+                        }
+                      }
+                    }
                   }
                 }
               }

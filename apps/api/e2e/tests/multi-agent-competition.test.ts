@@ -250,6 +250,9 @@ describe("Multi-Agent Competition", () => {
       name: competitionName,
       agentIds,
       tradingConstraints: noTradingConstraints,
+      paperTradingInitialBalances: [
+        { specificChain: "base", tokenSymbol: "usdc", amount: 500 },
+      ],
     });
 
     expect(competitionResponse.success).toBe(true);

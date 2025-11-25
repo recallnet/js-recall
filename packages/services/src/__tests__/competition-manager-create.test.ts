@@ -7,6 +7,8 @@ import { AgentRepository } from "@recallnet/db/repositories/agent";
 import { AgentScoreRepository } from "@recallnet/db/repositories/agent-score";
 import { ArenaRepository } from "@recallnet/db/repositories/arena";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
+import { PaperTradingConfigRepository } from "@recallnet/db/repositories/paper-trading-config";
+import { PaperTradingInitialBalancesRepository } from "@recallnet/db/repositories/paper-trading-initial-balances";
 import { PerpsRepository } from "@recallnet/db/repositories/perps";
 import { StakesRepository } from "@recallnet/db/repositories/stakes";
 import { UserRepository } from "@recallnet/db/repositories/user";
@@ -17,6 +19,7 @@ import type { AgentRankService } from "../agentrank.service.js";
 import type { BalanceService } from "../balance.service.js";
 import type { CompetitionRewardService } from "../competition-reward.service.js";
 import { CompetitionService } from "../competition.service.js";
+import { specificChainTokens } from "../lib/config-utils.js";
 import type { PerpsDataProcessor } from "../perps-data-processor.service.js";
 import type { PortfolioSnapshotterService } from "../portfolio-snapshotter.service.js";
 import { RewardsService } from "../rewards.service.js";
@@ -38,6 +41,8 @@ describe("CompetitionService - createCompetition", () => {
   let arenaRepo: MockProxy<ArenaRepository>;
   let perpsRepo: MockProxy<PerpsRepository>;
   let competitionRepo: MockProxy<CompetitionRepository>;
+  let paperTradingConfigRepo: MockProxy<PaperTradingConfigRepository>;
+  let paperTradingInitialBalancesRepo: MockProxy<PaperTradingInitialBalancesRepository>;
   let stakesRepo: MockProxy<StakesRepository>;
   let userRepo: MockProxy<UserRepository>;
   let mockDb: MockProxy<Database>;
@@ -60,6 +65,9 @@ describe("CompetitionService - createCompetition", () => {
     arenaRepo = mock<ArenaRepository>();
     perpsRepo = mock<PerpsRepository>();
     competitionRepo = mock<CompetitionRepository>();
+    paperTradingConfigRepo = mock<PaperTradingConfigRepository>();
+    paperTradingInitialBalancesRepo =
+      mock<PaperTradingInitialBalancesRepository>();
     stakesRepo = mock<StakesRepository>();
     userRepo = mock<UserRepository>();
     mockDb = mock<Database>();
@@ -133,6 +141,11 @@ describe("CompetitionService - createCompetition", () => {
       minTradesPerDay: null,
     });
 
+    // Mock paperTradingInitialBalancesRepo.findByCompetitionId to return empty array by default
+    vi.mocked(
+      paperTradingInitialBalancesRepo.findByCompetitionId,
+    ).mockResolvedValue([]);
+
     // Create competition manager instance with all mocked dependencies
     competitionService = new CompetitionService(
       balanceService,
@@ -149,6 +162,8 @@ describe("CompetitionService - createCompetition", () => {
       arenaRepo,
       perpsRepo,
       competitionRepo,
+      paperTradingConfigRepo,
+      paperTradingInitialBalancesRepo,
       stakesRepo,
       userRepo,
       mockDb,
@@ -173,6 +188,7 @@ describe("CompetitionService - createCompetition", () => {
             eth: 1,
           },
         },
+        specificChainTokens,
       },
       logger,
     );
@@ -216,6 +232,7 @@ describe("CompetitionService - createCompetition", () => {
       engineId: "spot_paper_trading" as const,
       engineVersion: "1.0.0",
       rewardsIneligible: null,
+      boostTimeDecayRate: null,
     }));
   });
 
@@ -248,6 +265,13 @@ describe("CompetitionService - createCompetition", () => {
         2: 2500,
         3: 1000,
       },
+      paperTradingInitialBalances: [
+        {
+          specificChain: "eth",
+          tokenSymbol: "usdc",
+          amount: 10000,
+        },
+      ],
     });
 
     // Verify transaction was called
@@ -308,6 +332,13 @@ describe("CompetitionService - createCompetition", () => {
       description: "Test without rewards",
       arenaId: "default-paper-arena",
       tradingType: "disallowAll",
+      paperTradingInitialBalances: [
+        {
+          specificChain: "eth",
+          tokenSymbol: "usdc",
+          amount: 10000,
+        },
+      ],
     });
 
     expect(mockDb.transaction).toHaveBeenCalledTimes(1);
@@ -344,6 +375,13 @@ describe("CompetitionService - createCompetition", () => {
       rewardRules: "Top 10 get rewards",
       rewardDetails: "Distributed weekly",
       displayState: "active",
+      paperTradingInitialBalances: [
+        {
+          specificChain: "eth",
+          tokenSymbol: "usdc",
+          amount: 10000,
+        },
+      ],
     });
 
     // Verify transaction was called
@@ -394,6 +432,13 @@ describe("CompetitionService - createCompetition", () => {
         name: "Failing Competition",
         description: "This should fail",
         arenaId: "default-paper-arena",
+        paperTradingInitialBalances: [
+          {
+            specificChain: "eth",
+            tokenSymbol: "usdc",
+            amount: 10000,
+          },
+        ],
       }),
     ).rejects.toThrow("Database error");
 
@@ -425,6 +470,13 @@ describe("CompetitionService - createCompetition", () => {
           1: 1000,
           "-1": 500, // Invalid rank
         },
+        paperTradingInitialBalances: [
+          {
+            specificChain: "eth",
+            tokenSymbol: "usdc",
+            amount: 10000,
+          },
+        ],
       }),
     ).rejects.toThrow("Invalid reward rank");
 
@@ -455,6 +507,13 @@ describe("CompetitionService - createCompetition", () => {
         tradingConstraints: {
           minimumPairAgeHours: -1, // Invalid value
         },
+        paperTradingInitialBalances: [
+          {
+            specificChain: "eth",
+            tokenSymbol: "usdc",
+            amount: 10000,
+          },
+        ],
       }),
     ).rejects.toThrow("Invalid constraints");
 
@@ -480,6 +539,13 @@ describe("CompetitionService - createCompetition", () => {
       tradingType: "disallowAll",
       sandboxMode: false,
       type: "trading",
+      paperTradingInitialBalances: [
+        {
+          specificChain: "eth",
+          tokenSymbol: "usdc",
+          amount: 10000,
+        },
+      ],
     });
 
     // Verify transaction was called
@@ -519,6 +585,13 @@ describe("CompetitionService - createCompetition", () => {
       description: "Competition without minimum stake",
       arenaId: "default-paper-arena",
       tradingType: "disallowAll",
+      paperTradingInitialBalances: [
+        {
+          specificChain: "eth",
+          tokenSymbol: "usdc",
+          amount: 10000,
+        },
+      ],
     });
 
     // Verify competition was created with null minimum stake
@@ -624,6 +697,13 @@ describe("CompetitionService - createCompetition", () => {
         description: "Arena does not exist",
         arenaId: "nonexistent-arena",
         tradingType: "disallowAll",
+        paperTradingInitialBalances: [
+          {
+            specificChain: "eth",
+            tokenSymbol: "usdc",
+            amount: 10000,
+          },
+        ],
       }),
     ).rejects.toThrow("Arena with ID nonexistent-arena not found");
 
@@ -671,6 +751,13 @@ describe("CompetitionService - createCompetition", () => {
       arenaId: "default-paper-arena",
       type: "trading", // compatible with spot_paper_trading
       tradingType: "disallowAll",
+      paperTradingInitialBalances: [
+        {
+          specificChain: "eth",
+          tokenSymbol: "usdc",
+          amount: 10000,
+        },
+      ],
     });
 
     expect(result.name).toBe("Correct Trading Competition");
@@ -694,6 +781,8 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
   let arenaRepo: MockProxy<ArenaRepository>;
   let perpsRepo: MockProxy<PerpsRepository>;
   let competitionRepo: MockProxy<CompetitionRepository>;
+  let paperTradingConfigRepo: MockProxy<PaperTradingConfigRepository>;
+  let paperTradingInitialBalancesRepo: MockProxy<PaperTradingInitialBalancesRepository>;
   let stakesRepo: MockProxy<StakesRepository>;
   let userRepo: MockProxy<UserRepository>;
   let mockDb: MockProxy<Database>;
@@ -717,10 +806,18 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
     arenaRepo = mock<ArenaRepository>();
     perpsRepo = mock<PerpsRepository>();
     competitionRepo = mock<CompetitionRepository>();
+    paperTradingConfigRepo = mock<PaperTradingConfigRepository>();
+    paperTradingInitialBalancesRepo =
+      mock<PaperTradingInitialBalancesRepository>();
     stakesRepo = mock<StakesRepository>();
     userRepo = mock<UserRepository>();
     mockDb = mock<Database>();
     logger = mock<Logger>();
+
+    // Mock paperTradingInitialBalancesRepo.findByCompetitionId to return empty array by default
+    vi.mocked(
+      paperTradingInitialBalancesRepo.findByCompetitionId,
+    ).mockResolvedValue([]);
 
     // Create service instance
     competitionService = new CompetitionService(
@@ -738,6 +835,8 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
       arenaRepo,
       perpsRepo,
       competitionRepo,
+      paperTradingConfigRepo,
+      paperTradingInitialBalancesRepo,
       stakesRepo,
       userRepo,
       mockDb,
@@ -749,6 +848,7 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
           maxRequests: 100,
         },
         specificChainBalances: {},
+        specificChainTokens,
       },
       logger,
     );
@@ -800,6 +900,7 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
       arenaId: "default-perps-arena",
       engineId: "perpetual_futures" as const,
       engineVersion: "1.0.0",
+      boostTimeDecayRate: null,
     };
 
     // Mock perps config with minFundingThreshold
@@ -1079,6 +1180,7 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
       arenaId: "default-perps-arena",
       engineId: "perpetual_futures" as const,
       engineVersion: "1.0.0",
+      boostTimeDecayRate: null,
     };
 
     // Mock perps config WITHOUT minFundingThreshold
@@ -1287,6 +1389,7 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
       arenaId: "default-perps-arena",
       engineId: "perpetual_futures" as const,
       engineVersion: "1.0.0",
+      boostTimeDecayRate: null,
     };
 
     // Mock perps config with minFundingThreshold
