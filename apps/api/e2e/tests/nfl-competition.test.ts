@@ -6,6 +6,7 @@ import {
   CreateCompetitionResponse,
   ErrorResponse,
   NflTestClient,
+  UpdateCompetitionResponse,
   createSportsPredictionTestCompetition,
   createTestClient,
   getAdminApiKey,
@@ -66,6 +67,49 @@ describe("Sports Prediction Competitions", () => {
     expect(startResponse.success).toBe(true);
     if (!startResponse.success) throw new Error("Start failed");
     expect(startResponse.competition.status).toBe("active");
+
+    const gameIds =
+      await services.sportsService.competitionGamesRepository.findGameIdsByCompetitionId(
+        competition.id,
+      );
+    expect(gameIds).toHaveLength(1);
+    expect(gameIds[0]).toBe(dbGameId);
+  });
+
+  test("should map game IDs when updating competition type to sports prediction", async () => {
+    const providerGameId = 19068;
+    const tempClient = new NflTestClient("temp-key");
+    await tempClient.resetMockServer(providerGameId);
+
+    const dbGameId =
+      await services.sportsIngesterService.nflIngesterService.ingestGamePlayByPlay(
+        providerGameId,
+      );
+
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    const competitionName = `Trading Competition ${Date.now()}`;
+    const createResponse = await adminClient.createCompetition({
+      name: competitionName,
+      description: "Trading competition for conversion",
+      type: "trading",
+      arenaId: "default-paper-arena",
+    });
+
+    expect(createResponse.success).toBe(true);
+    const competition = (createResponse as CreateCompetitionResponse)
+      .competition;
+
+    const updateResponse = await adminClient.updateCompetition(competition.id, {
+      type: "sports_prediction",
+      arenaId: "default-nfl-game-prediction-arena",
+      gameIds: [dbGameId],
+    });
+
+    expect(updateResponse.success).toBe(true);
+    const updatedCompetition = updateResponse as UpdateCompetitionResponse;
+    expect(updatedCompetition.competition.type).toBe("sports_prediction");
 
     const gameIds =
       await services.sportsService.competitionGamesRepository.findGameIdsByCompetitionId(
