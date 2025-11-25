@@ -176,7 +176,7 @@ export default function NflCompetitionPage({
         ]}
       />
 
-      <div className="container mx-auto">
+      <div>
         <div className="mb-10 grid grid-cols-1 gap-6 md:grid-cols-3">
           <div className="space-y-4 md:col-span-2">{chartCard}</div>
 
