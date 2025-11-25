@@ -313,9 +313,11 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
             }
           }
 
-          // Transform to OnChainTrade format
+          // Transform to OnChainTrade format (returns null for failed/reverted txs)
           const trade = await this.enrichSwapWithGasData(swap, chain);
-          allTrades.push(trade);
+          if (trade) {
+            allTrades.push(trade);
+          }
         }
       } catch (error) {
         // Capture exception with context
@@ -717,12 +719,12 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
    * Enrich detected swap with gas cost data from transaction receipt
    * @param swap Detected swap from transfer pattern
    * @param chain Chain where swap occurred
-   * @returns Complete OnChainTrade with gas data
+   * @returns Complete OnChainTrade with gas data, or null if transaction failed/reverted
    */
   private async enrichSwapWithGasData(
     swap: DetectedSwap,
     chain: SpecificChain,
-  ): Promise<OnChainTrade> {
+  ): Promise<OnChainTrade | null> {
     let gasUsed = 0;
     let gasPrice = 0;
     let gasCostUsd: number | undefined;
@@ -734,6 +736,20 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
       );
 
       if (receipt) {
+        // Check transaction status - true = success, false = failure/reverted
+        // While getAssetTransfers typically only returns successful transfers,
+        // this is a defensive check to ensure we don't include reverted swaps
+        if (!receipt.status) {
+          this.logger.debug(
+            {
+              txHash: swap.txHash,
+              chain,
+            },
+            `[RpcSpotProvider] Skipping reverted/failed transaction`,
+          );
+          return null;
+        }
+
         gasUsed = Number(receipt.gasUsed);
         gasPrice = Number(receipt.effectiveGasPrice);
 
