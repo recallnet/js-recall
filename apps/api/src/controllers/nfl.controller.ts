@@ -92,7 +92,9 @@ export function makeNflController(services: ServiceRegistry) {
         }
 
         const rules =
-          await services.sportsService.gamePredictionService.getRules();
+          await services.sportsService.gamePredictionService.getRules(
+            competitionId,
+          );
 
         res.status(200).json({
           success: true,

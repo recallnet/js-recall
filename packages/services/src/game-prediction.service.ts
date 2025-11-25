@@ -180,7 +180,7 @@ export class GamePredictionService {
    * Returns the scoring methodology and prediction rules
    * @returns Rules object
    */
-  getRules(): {
+  async getRules(competitionId: string): Promise<{
     predictionType: string;
     scoringMethod: string;
     scoringFormula: {
@@ -201,7 +201,12 @@ export class GamePredictionService {
       scoringWindow: string;
       preGamePredictions: string;
     };
-  } {
+  }> {
+    const competition = await this.#competitionRepo.findById(competitionId);
+    if (!competition) {
+      throw new ApiError(404, "Competition not found");
+    }
+
     return {
       predictionType: "game_winner",
       scoringMethod: "time_weighted_brier",
