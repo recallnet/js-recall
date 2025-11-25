@@ -1,7 +1,10 @@
 import { Logger } from "pino";
 
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
-import { GamePredictionsRepository } from "@recallnet/db/repositories/game-predictions";
+import {
+  type GamePredictionWithAgent,
+  GamePredictionsRepository,
+} from "@recallnet/db/repositories/game-predictions";
 import { GamesRepository } from "@recallnet/db/repositories/games";
 import { SelectGamePrediction } from "@recallnet/db/schema/sports/types";
 import { Database, Transaction } from "@recallnet/db/types";
@@ -129,8 +132,13 @@ export class GamePredictionService {
   async getLatestPrediction(
     gameId: string,
     agentId: string,
-  ): Promise<SelectGamePrediction | undefined> {
-    return this.#gamePredictionsRepo.findLatestByGameAndAgent(gameId, agentId);
+    competitionId: string,
+  ): Promise<GamePredictionWithAgent | undefined> {
+    return this.#gamePredictionsRepo.findLatestByGameAndAgent(
+      gameId,
+      agentId,
+      competitionId,
+    );
   }
 
   /**
@@ -142,8 +150,13 @@ export class GamePredictionService {
   async getPredictionHistory(
     gameId: string,
     agentId: string,
-  ): Promise<SelectGamePrediction[]> {
-    return this.#gamePredictionsRepo.findByGameAndAgent(gameId, agentId);
+    competitionId: string,
+  ): Promise<GamePredictionWithAgent[]> {
+    return this.#gamePredictionsRepo.findByGameAndAgent(
+      gameId,
+      agentId,
+      competitionId,
+    );
   }
 
   /**
@@ -154,8 +167,71 @@ export class GamePredictionService {
    */
   async getGamePredictions(
     gameId: string,
+    competitionId: string,
     options?: { startTime?: Date; endTime?: Date; tx?: Transaction },
-  ): Promise<SelectGamePrediction[]> {
-    return this.#gamePredictionsRepo.findByGame(gameId, options);
+  ): Promise<GamePredictionWithAgent[]> {
+    return this.#gamePredictionsRepo.findByGame(gameId, competitionId, {
+      ...options,
+    });
+  }
+
+  /**
+   * Get competition rules for NFL predictions
+   * Returns the scoring methodology and prediction rules
+   * @returns Rules object
+   */
+  async getRules(competitionId: string): Promise<{
+    predictionType: string;
+    scoringMethod: string;
+    scoringFormula: {
+      description: string;
+      timeNormalization: string;
+      weight: string;
+      probability: string;
+      actual: string;
+    };
+    confidenceRange: {
+      min: number;
+      max: number;
+      description: string;
+    };
+    predictionRules: {
+      canUpdate: boolean;
+      updateWindow: string;
+      scoringWindow: string;
+      preGamePredictions: string;
+    };
+  }> {
+    const competition = await this.#competitionRepo.findById(competitionId);
+    if (!competition) {
+      throw new ApiError(404, "Competition not found");
+    }
+
+    return {
+      predictionType: "game_winner",
+      scoringMethod: "time_weighted_brier",
+      scoringFormula: {
+        description:
+          "Probability scores are normalized so that earlier predictions are weighted more heavily than later predictions. Score = 1 - Σ(w_t * (p_t - y)²) / Σ(w_t), where higher is better",
+        timeNormalization:
+          "t = (timestamp - game_start) / (game_end - game_start) ∈ [0, 1]",
+        weight: "w_t = 1 - 0.75 * t (earlier predictions weighted more)",
+        probability:
+          "p_t = confidence if predicted winner matches actual, else 1-confidence",
+        actual: "y = 1 (actual winner)",
+      },
+      confidenceRange: {
+        min: 0.0,
+        max: 1.0,
+        description:
+          "Confidence in predicted winner (0.0 = no confidence, 1.0 = certain)",
+      },
+      predictionRules: {
+        canUpdate: true,
+        updateWindow: "Anytime before game ends",
+        scoringWindow: "From game start to game end",
+        preGamePredictions: "Allowed (treated as t=0 for time weighting)",
+      },
+    };
   }
 }

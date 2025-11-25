@@ -4,13 +4,13 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { MockProxy, mock } from "vitest-mock-extended";
 
 import { CompetitionAggregateScoresRepository } from "@recallnet/db/repositories/competition-aggregate-scores";
+import { CompetitionGamesRepository } from "@recallnet/db/repositories/competition-games";
 import { GamePredictionScoresRepository } from "@recallnet/db/repositories/game-prediction-scores";
 import { GamePredictionsRepository } from "@recallnet/db/repositories/game-predictions";
 import { GamesRepository } from "@recallnet/db/repositories/games";
 import type {
   SelectCompetitionAggregateScore,
   SelectGame,
-  SelectGamePrediction,
   SelectGamePredictionScore,
 } from "@recallnet/db/schema/sports/types";
 import type { Database, Transaction } from "@recallnet/db/types";
@@ -23,6 +23,7 @@ describe("GameScoringService", () => {
   let mockGamePredictionScoresRepo: MockProxy<GamePredictionScoresRepository>;
   let mockCompetitionAggregateScoresRepo: MockProxy<CompetitionAggregateScoresRepository>;
   let mockGamesRepo: MockProxy<GamesRepository>;
+  let mockCompetitionGamesRepo: MockProxy<CompetitionGamesRepository>;
   let mockDb: MockProxy<Database>;
   let mockTransaction: Transaction;
   let mockLogger: MockProxy<Logger>;
@@ -33,6 +34,7 @@ describe("GameScoringService", () => {
     mockCompetitionAggregateScoresRepo =
       mock<CompetitionAggregateScoresRepository>();
     mockGamesRepo = mock<GamesRepository>();
+    mockCompetitionGamesRepo = mock<CompetitionGamesRepository>();
     mockDb = mock<Database>();
     mockTransaction = {} as Transaction;
     mockDb.transaction.mockImplementation(async (callback) =>
@@ -45,6 +47,7 @@ describe("GameScoringService", () => {
       mockGamePredictionScoresRepo,
       mockCompetitionAggregateScoresRepo,
       mockGamesRepo,
+      mockCompetitionGamesRepo,
       mockDb,
       mockLogger,
     );
@@ -64,12 +67,12 @@ describe("GameScoringService", () => {
       startTime: new Date("2025-09-08T19:15:00Z"),
       endTime: new Date("2025-09-08T23:15:00Z"),
       homeTeam: "CHI",
-      awayTeam: "MIN",
+      awayTeam: "MIN" as const,
       spread: null,
       overUnder: null,
       venue: "Soldier Field",
       status: "final",
-      winner: "MIN",
+      winner: "MIN" as const,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -113,6 +116,12 @@ describe("GameScoringService", () => {
 
     it("should return 0 for game with no predictions", async () => {
       mockGamesRepo.findById.mockResolvedValue(mockGame);
+      mockCompetitionGamesRepo.findCompetitionIdsByGameId.mockResolvedValue([
+        competitionId,
+      ]);
+      mockGamePredictionScoresRepo.findByCompetitionAndAgent.mockResolvedValue(
+        [],
+      );
       mockGamePredictionsRepo.findByGame.mockResolvedValue([]);
 
       const result = await service.scoreGame(gameId);
@@ -121,30 +130,35 @@ describe("GameScoringService", () => {
     });
 
     it("should calculate time-weighted Brier scores correctly", async () => {
-      const predictions: SelectGamePrediction[] = [
+      const predictions = [
         {
           id: randomUUID(),
           competitionId,
           gameId,
           agentId: agent1Id,
-          predictedWinner: "MIN",
+          predictedWinner: "MIN" as const,
           confidence: 0.9,
           reason: "Test",
           createdAt: new Date("2025-09-08T20:00:00Z"), // t ≈ 0.1875
+          agentName: null,
         },
         {
           id: randomUUID(),
           competitionId,
           gameId,
           agentId: agent2Id,
-          predictedWinner: "CHI",
+          predictedWinner: "CHI" as const,
           confidence: 0.7,
           reason: "Test",
           createdAt: new Date("2025-09-08T21:00:00Z"), // t ≈ 0.4375
+          agentName: null,
         },
       ];
 
       mockGamesRepo.findById.mockResolvedValue(mockGame);
+      mockCompetitionGamesRepo.findCompetitionIdsByGameId.mockResolvedValue([
+        competitionId,
+      ]);
       mockGamePredictionsRepo.findByGame.mockResolvedValue(predictions);
 
       const mockPredictionScore: SelectGamePredictionScore = {
@@ -153,7 +167,7 @@ describe("GameScoringService", () => {
         gameId,
         agentId: agent1Id,
         timeWeightedBrierScore: 0.85,
-        finalPrediction: "MIN",
+        finalPrediction: "MIN" as const,
         finalConfidence: 0.9,
         predictionCount: 1,
         updatedAt: new Date(),
@@ -186,20 +200,24 @@ describe("GameScoringService", () => {
     });
 
     it("should handle predictions at exactly game start time (t=0)", async () => {
-      const predictions: SelectGamePrediction[] = [
+      const predictions = [
         {
           id: randomUUID(),
           competitionId,
           gameId,
           agentId: agent1Id,
-          predictedWinner: "MIN",
+          predictedWinner: "MIN" as const,
           confidence: 1,
           reason: "Test",
           createdAt: new Date("2025-09-08T19:15:00Z"), // Exactly at game start
+          agentName: null,
         },
       ];
 
       mockGamesRepo.findById.mockResolvedValue(mockGame);
+      mockCompetitionGamesRepo.findCompetitionIdsByGameId.mockResolvedValue([
+        competitionId,
+      ]);
       mockGamePredictionsRepo.findByGame.mockResolvedValue(predictions);
 
       const mockScore1: SelectGamePredictionScore = {
@@ -208,7 +226,7 @@ describe("GameScoringService", () => {
         gameId,
         agentId: agent1Id,
         timeWeightedBrierScore: 1,
-        finalPrediction: "MIN",
+        finalPrediction: "MIN" as const,
         finalConfidence: 1,
         predictionCount: 1,
         updatedAt: new Date(),
@@ -238,20 +256,24 @@ describe("GameScoringService", () => {
     });
 
     it("should handle predictions after game ends (t=1)", async () => {
-      const predictions: SelectGamePrediction[] = [
+      const predictions = [
         {
           id: randomUUID(),
           competitionId,
           gameId,
           agentId: agent1Id,
-          predictedWinner: "MIN",
+          predictedWinner: "MIN" as const,
           confidence: 1,
           reason: "Test",
           createdAt: new Date("2025-09-09T00:00:00Z"), // After game end
+          agentName: null,
         },
       ];
 
       mockGamesRepo.findById.mockResolvedValue(mockGame);
+      mockCompetitionGamesRepo.findCompetitionIdsByGameId.mockResolvedValue([
+        competitionId,
+      ]);
       mockGamePredictionsRepo.findByGame.mockResolvedValue(predictions);
 
       const mockScore2: SelectGamePredictionScore = {
@@ -260,7 +282,7 @@ describe("GameScoringService", () => {
         gameId,
         agentId: agent1Id,
         timeWeightedBrierScore: 1,
-        finalPrediction: "MIN",
+        finalPrediction: "MIN" as const,
         finalConfidence: 1,
         predictionCount: 1,
         updatedAt: new Date(),
@@ -290,30 +312,35 @@ describe("GameScoringService", () => {
     });
 
     it("should continue scoring other agents if one fails", async () => {
-      const predictions: SelectGamePrediction[] = [
+      const predictions = [
         {
           id: randomUUID(),
           competitionId,
           gameId,
           agentId: agent1Id,
-          predictedWinner: "MIN",
+          predictedWinner: "MIN" as const,
           confidence: 0.9,
           reason: "Test",
           createdAt: new Date("2025-09-08T20:00:00Z"),
+          agentName: null,
         },
         {
           id: randomUUID(),
           competitionId,
           gameId,
           agentId: agent2Id,
-          predictedWinner: "CHI",
+          predictedWinner: "CHI" as const,
           confidence: 0.7,
           reason: "Test",
           createdAt: new Date("2025-09-08T21:00:00Z"),
+          agentName: null,
         },
       ];
 
       mockGamesRepo.findById.mockResolvedValue(mockGame);
+      mockCompetitionGamesRepo.findCompetitionIdsByGameId.mockResolvedValue([
+        competitionId,
+      ]);
       mockGamePredictionsRepo.findByGame.mockResolvedValue(predictions);
 
       const mockScore3: SelectGamePredictionScore = {
@@ -351,6 +378,16 @@ describe("GameScoringService", () => {
       // Should score 1 agent (second one after first fails)
       expect(result).toBe(1);
     });
+
+    it("should return 0 when game is not linked to any competition", async () => {
+      mockGamesRepo.findById.mockResolvedValue(mockGame);
+      mockCompetitionGamesRepo.findCompetitionIdsByGameId.mockResolvedValue([]);
+
+      const result = await service.scoreGame(gameId);
+
+      expect(result).toBe(0);
+      expect(mockGamePredictionsRepo.findByGame).not.toHaveBeenCalled();
+    });
   });
 
   describe("getGameLeaderboard", () => {
@@ -369,6 +406,7 @@ describe("GameScoringService", () => {
           finalConfidence: 0.95,
           predictionCount: 2,
           updatedAt: new Date(),
+          agentName: null,
         },
         {
           id: randomUUID(),
@@ -380,6 +418,7 @@ describe("GameScoringService", () => {
           finalConfidence: 0.8,
           predictionCount: 1,
           updatedAt: new Date(),
+          agentName: null,
         },
       ];
 
@@ -409,6 +448,7 @@ describe("GameScoringService", () => {
           averageBrierScore: 0.92,
           gamesScored: 5,
           updatedAt: new Date(),
+          agentName: null,
         },
         {
           id: randomUUID(),
@@ -417,6 +457,7 @@ describe("GameScoringService", () => {
           averageBrierScore: 0.85,
           gamesScored: 5,
           updatedAt: new Date(),
+          agentName: null,
         },
       ];
 
@@ -450,48 +491,51 @@ describe("GameScoringService", () => {
         startTime: gameStartTime,
         endTime: gameEndTime,
         homeTeam: "CHI",
-        awayTeam: "MIN",
+        awayTeam: "MIN" as const,
         spread: null,
         overUnder: null,
         venue: "Soldier Field",
         status: "final",
-        winner: "MIN",
+        winner: "MIN" as const,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
 
       // Agent made multiple pregame predictions, then the system snapshotted the latest at game start
-      const allPredictions: SelectGamePrediction[] = [
+      const allPredictions = [
         // Original pregame predictions (should NOT be used directly in scoring)
         {
           id: randomUUID(),
           competitionId,
           gameId,
           agentId,
-          predictedWinner: "CHI",
+          predictedWinner: "CHI" as const,
           confidence: 0.6,
           reason: "Opening prediction",
           createdAt: new Date("2025-09-08T17:30:00Z"), // T-1h45m
+          agentName: null,
         },
         {
           id: randomUUID(),
           competitionId,
           gameId,
           agentId,
-          predictedWinner: "MIN",
+          predictedWinner: "MIN" as const,
           confidence: 0.7,
           reason: "Updated prediction",
           createdAt: new Date("2025-09-08T18:45:00Z"), // T-30m
+          agentName: null,
         },
         {
           id: randomUUID(),
           competitionId,
           gameId,
           agentId,
-          predictedWinner: "CHI",
+          predictedWinner: "CHI" as const,
           confidence: 0.8,
           reason: "Final pregame edit",
           createdAt: new Date("2025-09-08T19:10:00Z"), // T-5m
+          agentName: null,
         },
         // Snapshot at game start (SHOULD be used in scoring)
         {
@@ -499,16 +543,17 @@ describe("GameScoringService", () => {
           competitionId,
           gameId,
           agentId,
-          predictedWinner: "MIN",
+          predictedWinner: "MIN" as const,
           confidence: 0.8,
           reason: "Final pregame prediction",
           createdAt: gameStartTime, // Exactly at game start
+          agentName: null,
         },
       ];
 
       mockGamesRepo.findById.mockResolvedValue(mockGame);
       mockGamePredictionsRepo.findByGame.mockImplementation(
-        async (_gameId, options) => {
+        async (_gameId, _competitionId, options) => {
           expect(options?.startTime).toEqual(gameStartTime);
           expect(options?.endTime).toEqual(gameEndTime);
           return allPredictions.filter(
@@ -525,7 +570,7 @@ describe("GameScoringService", () => {
         gameId,
         agentId,
         timeWeightedBrierScore: 0.85,
-        finalPrediction: "MIN",
+        finalPrediction: "MIN" as const,
         finalConfidence: 0.8,
         // Should be 1, not 4 because only the final pregame prediction is counted (snapshot within game window)
         predictionCount: 1,
@@ -545,6 +590,9 @@ describe("GameScoringService", () => {
         gamesScored: 1,
         updatedAt: new Date(),
       });
+      mockCompetitionGamesRepo.findCompetitionIdsByGameId.mockResolvedValue([
+        competitionId,
+      ]);
 
       await service.scoreGame(gameId);
 
@@ -552,16 +600,20 @@ describe("GameScoringService", () => {
       expect(mockGamePredictionScoresRepo.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
           predictionCount: 1,
-          finalPrediction: "MIN",
+          finalPrediction: "MIN" as const,
           finalConfidence: 0.8,
         }),
         mockTransaction,
       );
 
-      expect(mockGamePredictionsRepo.findByGame).toHaveBeenCalledWith(gameId, {
-        startTime: gameStartTime,
-        endTime: gameEndTime,
-      });
+      expect(mockGamePredictionsRepo.findByGame).toHaveBeenCalledWith(
+        gameId,
+        competitionId,
+        {
+          startTime: gameStartTime,
+          endTime: gameEndTime,
+        },
+      );
     });
   });
 });

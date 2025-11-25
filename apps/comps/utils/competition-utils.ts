@@ -1,9 +1,23 @@
 import { CheckIcon, ClockIcon, Play } from "lucide-react";
 
+import { CompetitionType } from "@recallnet/db/repositories/types";
+
 import { RouterOutputs } from "@/rpc/router";
 import { EvaluationMetric, UserCompetition } from "@/types";
 
 import { formatDateShort } from "./format";
+
+/**
+ * Descriptions for competition types
+ */
+export const COMPETITION_DESCRIPTIONS: Record<CompetitionType, string> = {
+  trading:
+    "Agents execute crypto paper trading strategies in a real-time, simulated market environment.",
+  perpetual_futures:
+    "Agents execute perpetual futures trading strategies in a live environment with real assets.",
+  sports_prediction:
+    "Agents predict the winner of live NFL games with confidence (% likelihood) and reasoning.",
+};
 
 export function iconForStatus(
   status: RouterOutputs["competitions"]["getById"]["status"],
@@ -201,6 +215,7 @@ export function formatCompetitionType(type: string): string {
   const typeMap: Record<string, string> = {
     trading: "Crypto Trading",
     perpetual_futures: "Perpetual Futures",
+    sports_prediction: "Sports Prediction",
   };
 
   return typeMap[type] || type;
@@ -220,11 +235,14 @@ export function formatCompetitionType(type: string): string {
  * getCompetitionSkills("perpetual_futures"); // ["Crypto Trading", "Perpetual Futures", "Live Trading"]
  * ```
  */
-export function getCompetitionSkills(type: string): string[] {
+export function getCompetitionSkills(type: CompetitionType): string[] {
   const baseSkills = ["Crypto Trading"];
 
   if (type === "perpetual_futures") {
     return [...baseSkills, "Perpetual Futures", "Live Trading"];
+  }
+  if (type === "sports_prediction") {
+    return ["Sports", " Game Prediction", "NFL"];
   }
 
   return baseSkills;
@@ -239,8 +257,76 @@ export function checkIsAgentSkill(skill: string): boolean {
   return skill === "trading" || skill === "perpetual_futures";
 }
 
+/**
+ * Checks if a competition type is perpetual futures
+ * @param type - The competition type to check
+ * @returns True if the competition type is perpetual futures, false otherwise
+ */
 export function checkIsPerpsCompetition(
   type: RouterOutputs["competitions"]["getById"]["type"],
 ): boolean {
   return type === "perpetual_futures";
 }
+
+/**
+ * Default metric for perps competitions
+ */
+export const PERPS_DEFAULT_METRIC: EvaluationMetric = "calmar_ratio";
+
+/**
+ * Format status for display
+ */
+export function formatStatus(status: string): string {
+  return status.charAt(0).toUpperCase() + status.slice(1);
+}
+
+/**
+ * Get status color class
+ */
+export function getStatusColor(status: string): string {
+  switch (status) {
+    case "active":
+      return "text-green-500";
+    case "pending":
+      return "text-yellow-500";
+    case "ended":
+      return "text-gray-500";
+    default:
+      return "text-gray-500";
+  }
+}
+
+/**
+ * Check if user has joined a competition
+ */
+export function hasJoinedCompetition(
+  competitionId: string,
+  userCompetitions: UserCompetition[] | undefined,
+): boolean {
+  if (!userCompetitions) return false;
+  return userCompetitions.some((c) => c.id === competitionId);
+}
+
+/**
+ * Limit of agent log items (e.g., trades, predictions, etc.) per page
+ */
+export const LIMIT_ITEMS_PER_PAGE = 50;
+
+/**
+ * Hours in milliseconds
+ */
+export const HOURS_IN_MS = 60 * 60 * 1000;
+
+/**
+ * Trade log relative timestamp in milliseconds
+ */
+export const TRADE_LOG_RELATIVE_TIMESTAMP = 24 * HOURS_IN_MS;
+
+/**
+ * Checks if a timestamp should be displayed as a relative timestamp
+ * @param timestamp - The timestamp to check
+ * @returns True if the timestamp should be displayed as a relative timestamp, false otherwise
+ */
+export const shouldShowRelativeTimestamp = (timestamp: Date) => {
+  return timestamp > new Date(Date.now() - TRADE_LOG_RELATIVE_TIMESTAMP);
+};

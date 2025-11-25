@@ -59,6 +59,7 @@ export class SportsService {
       this.gamePredictionScoresRepository,
       this.competitionAggregateScoresRepository,
       this.gamesRepository,
+      this.competitionGamesRepository,
       db,
       logger,
     );

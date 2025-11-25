@@ -10,6 +10,9 @@ import { AuthenticatedRequest } from "@/types/index.js";
 
 import { ensureAgentId, ensurePaging, ensureUuid } from "./request-helpers.js";
 
+/**
+ * Schema for predicting a game winner
+ */
 const PredictGameWinnerSchema = z.object({
   predictedWinner: z.enum(NFL_TEAMS),
   confidence: z.number().min(0).max(1),
@@ -88,35 +91,15 @@ export function makeNflController(services: ServiceRegistry) {
           throw new ApiError(400, "Competition ID is required");
         }
 
-        // Return static rules for now
+        const rules =
+          await services.sportsService.gamePredictionService.getRules(
+            competitionId,
+          );
+
         res.status(200).json({
           success: true,
           data: {
-            predictionType: "game_winner",
-            scoringMethod: "time_weighted_brier",
-            scoringFormula: {
-              description:
-                "Score = 1 - Σ(w_t * (p_t - y)²) / Σ(w_t), where higher is better",
-              timeNormalization:
-                "t = (timestamp - game_start) / (game_end - game_start) ∈ [0, 1]",
-              weight:
-                "w_t = 1 - 0.75 * t (earlier predictions have higher weight)",
-              probability:
-                "p_t = confidence if predicted winner matches actual, else 1-confidence",
-              actual: "y = 1 (actual winner)",
-            },
-            confidenceRange: {
-              min: 0.0,
-              max: 1.0,
-              description:
-                "Confidence in predicted winner (0.0 = no confidence, 1.0 = certain)",
-            },
-            predictionRules: {
-              canUpdate: true,
-              updateWindow: "Anytime before game ends",
-              scoringWindow: "From game start to game end",
-              preGamePredictions: "Allowed (treated as t=0 for time weighting)",
-            },
+            ...rules,
           },
         });
       } catch (error) {
@@ -135,8 +118,7 @@ export function makeNflController(services: ServiceRegistry) {
       next: NextFunction,
     ) {
       try {
-        // Note: require competition ID to be present in the URL, but it's not actually used in the request
-        ensureUuid(req.params.competitionId);
+        const competitionId = ensureUuid(req.params.competitionId);
         const gameId = ensureUuid(req.params.gameId);
         const game =
           await services.sportsService.gamesRepository.findById(gameId);
@@ -152,6 +134,7 @@ export function makeNflController(services: ServiceRegistry) {
             await services.sportsService.gamePredictionService.getLatestPrediction(
               gameId,
               agentId,
+              competitionId,
             );
           if (prediction) {
             latestPrediction = {
@@ -342,7 +325,7 @@ export function makeNflController(services: ServiceRegistry) {
       next: NextFunction,
     ) {
       try {
-        ensureUuid(req.params.competitionId);
+        const competitionId = ensureUuid(req.params.competitionId);
         const gameId = ensureUuid(req.params.gameId);
 
         let predictions;
@@ -353,12 +336,14 @@ export function makeNflController(services: ServiceRegistry) {
             await services.sportsService.gamePredictionService.getPredictionHistory(
               gameId,
               agentId,
+              competitionId,
             );
         } else {
           // Get all predictions for game
           predictions =
             await services.sportsService.gamePredictionService.getGamePredictions(
               gameId,
+              competitionId,
             );
         }
 
@@ -368,6 +353,7 @@ export function makeNflController(services: ServiceRegistry) {
             predictions: predictions.map((p) => ({
               id: p.id,
               agentId: p.agentId,
+              agentName: p.agentName ?? null,
               predictedWinner: p.predictedWinner,
               confidence: p.confidence,
               reason: p.reason,
@@ -409,6 +395,7 @@ export function makeNflController(services: ServiceRegistry) {
               leaderboard: leaderboard.map((entry) => ({
                 agentId: entry.agentId,
                 rank: entry.rank,
+                agentName: entry.agentName ?? null,
                 timeWeightedBrierScore: entry.timeWeightedBrierScore,
                 finalPrediction: entry.finalPrediction,
                 finalConfidence: entry.finalConfidence,
@@ -430,6 +417,7 @@ export function makeNflController(services: ServiceRegistry) {
               leaderboard: leaderboard.map((entry) => ({
                 agentId: entry.agentId,
                 rank: entry.rank,
+                agentName: entry.agentName ?? null,
                 averageBrierScore: entry.averageBrierScore,
                 gamesScored: entry.gamesScored,
               })),

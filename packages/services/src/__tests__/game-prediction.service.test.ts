@@ -294,49 +294,59 @@ describe("GamePredictionService", () => {
 
   describe("getLatestPrediction", () => {
     it("should return latest prediction for agent", async () => {
-      const mockPrediction: SelectGamePrediction = {
+      const mockPrediction = {
         id: randomUUID(),
         competitionId,
         gameId,
         agentId,
-        predictedWinner: "MIN",
+        predictedWinner: "MIN" as const,
         confidence: 0.85,
         reason: "Test",
         createdAt: new Date(),
+        agentName: null,
       };
 
       mockGamePredictionsRepo.findLatestByGameAndAgent.mockResolvedValue(
         mockPrediction,
       );
 
-      const result = await service.getLatestPrediction(gameId, agentId);
+      const result = await service.getLatestPrediction(
+        gameId,
+        agentId,
+        competitionId,
+      );
 
       expect(result).toBe(mockPrediction);
+      expect(
+        mockGamePredictionsRepo.findLatestByGameAndAgent,
+      ).toHaveBeenCalledWith(gameId, agentId, competitionId);
     });
   });
 
   describe("getPredictionHistory", () => {
     it("should return all predictions for agent sorted by time", async () => {
-      const mockPredictions: SelectGamePrediction[] = [
+      const mockPredictions = [
         {
           id: randomUUID(),
           competitionId,
           gameId,
           agentId,
-          predictedWinner: "MIN",
+          predictedWinner: "MIN" as const,
           confidence: 0.9,
           reason: "Updated",
           createdAt: new Date("2025-09-08T21:00:00Z"),
+          agentName: null,
         },
         {
           id: randomUUID(),
           competitionId,
           gameId,
           agentId,
-          predictedWinner: "CHI",
+          predictedWinner: "CHI" as const,
           confidence: 0.7,
           reason: "Initial",
           createdAt: new Date("2025-09-08T20:00:00Z"),
+          agentName: null,
         },
       ];
 
@@ -344,42 +354,58 @@ describe("GamePredictionService", () => {
         mockPredictions,
       );
 
-      const result = await service.getPredictionHistory(gameId, agentId);
+      const result = await service.getPredictionHistory(
+        gameId,
+        agentId,
+        competitionId,
+      );
 
       expect(result).toBe(mockPredictions);
+      expect(mockGamePredictionsRepo.findByGameAndAgent).toHaveBeenCalledWith(
+        gameId,
+        agentId,
+        competitionId,
+      );
     });
   });
 
   describe("getGamePredictions", () => {
     it("should return all predictions for game", async () => {
-      const mockPredictions: SelectGamePrediction[] = [
+      const mockPredictions = [
         {
           id: randomUUID(),
           competitionId,
           gameId,
           agentId: randomUUID(),
-          predictedWinner: "MIN",
+          predictedWinner: "MIN" as const,
           confidence: 0.9,
           reason: "Test 1",
           createdAt: new Date(),
+          agentName: null,
         },
         {
           id: randomUUID(),
           competitionId,
           gameId,
           agentId: randomUUID(),
-          predictedWinner: "CHI",
+          predictedWinner: "CHI" as const,
           confidence: 0.8,
           reason: "Test 2",
           createdAt: new Date(),
+          agentName: null,
         },
       ];
 
       mockGamePredictionsRepo.findByGame.mockResolvedValue(mockPredictions);
 
-      const result = await service.getGamePredictions(gameId);
+      const result = await service.getGamePredictions(gameId, competitionId);
 
       expect(result).toBe(mockPredictions);
+      expect(mockGamePredictionsRepo.findByGame).toHaveBeenCalledWith(
+        gameId,
+        competitionId,
+        {},
+      );
     });
   });
 });

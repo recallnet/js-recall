@@ -133,6 +133,7 @@ describe("GamePredictionsRepository Integration Tests", () => {
       const history = await repository.findByGameAndAgent(
         testGameId,
         testAgentId,
+        testCompetitionId,
       );
 
       expect(history).toHaveLength(2);
@@ -171,7 +172,10 @@ describe("GamePredictionsRepository Integration Tests", () => {
         reason: "Test 2",
       });
 
-      const predictions = await repository.findByGame(testGameId);
+      const predictions = await repository.findByGame(
+        testGameId,
+        testCompetitionId,
+      );
 
       expect(predictions).toHaveLength(2);
       expect(predictions.map((p) => p.agentId)).toContain(testAgentId);
@@ -179,7 +183,10 @@ describe("GamePredictionsRepository Integration Tests", () => {
     });
 
     test("should return empty array for game with no predictions", async () => {
-      const predictions = await repository.findByGame(testGameId);
+      const predictions = await repository.findByGame(
+        testGameId,
+        testCompetitionId,
+      );
 
       expect(predictions).toEqual([]);
     });
@@ -211,6 +218,7 @@ describe("GamePredictionsRepository Integration Tests", () => {
       const history = await repository.findByGameAndAgent(
         testGameId,
         testAgentId,
+        testCompetitionId,
       );
 
       expect(history).toHaveLength(2);
@@ -245,6 +253,7 @@ describe("GamePredictionsRepository Integration Tests", () => {
       const found = await repository.findLatestByGameAndAgent(
         testGameId,
         testAgentId,
+        testCompetitionId,
       );
 
       expect(found).toBeDefined();
@@ -257,6 +266,7 @@ describe("GamePredictionsRepository Integration Tests", () => {
       const found = await repository.findLatestByGameAndAgent(
         testGameId,
         testAgentId,
+        testCompetitionId,
       );
 
       expect(found).toBeUndefined();
@@ -298,6 +308,7 @@ describe("GamePredictionsRepository Integration Tests", () => {
       const predictions = await repository.findByGameAndAgent(
         testGameId,
         testAgentId,
+        testCompetitionId,
       );
 
       expect(predictions).toHaveLength(1);

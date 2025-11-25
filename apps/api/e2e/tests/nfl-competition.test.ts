@@ -6,6 +6,7 @@ import {
   CreateCompetitionResponse,
   ErrorResponse,
   NflTestClient,
+  UpdateCompetitionResponse,
   createSportsPredictionTestCompetition,
   createTestClient,
   getAdminApiKey,
@@ -66,6 +67,49 @@ describe("Sports Prediction Competitions", () => {
     expect(startResponse.success).toBe(true);
     if (!startResponse.success) throw new Error("Start failed");
     expect(startResponse.competition.status).toBe("active");
+
+    const gameIds =
+      await services.sportsService.competitionGamesRepository.findGameIdsByCompetitionId(
+        competition.id,
+      );
+    expect(gameIds).toHaveLength(1);
+    expect(gameIds[0]).toBe(dbGameId);
+  });
+
+  test("should map game IDs when updating competition type to sports prediction", async () => {
+    const providerGameId = 19068;
+    const tempClient = new NflTestClient("temp-key");
+    await tempClient.resetMockServer(providerGameId);
+
+    const dbGameId =
+      await services.sportsIngesterService.nflIngesterService.ingestGamePlayByPlay(
+        providerGameId,
+      );
+
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    const competitionName = `Trading Competition ${Date.now()}`;
+    const createResponse = await adminClient.createCompetition({
+      name: competitionName,
+      description: "Trading competition for conversion",
+      type: "trading",
+      arenaId: "default-paper-arena",
+    });
+
+    expect(createResponse.success).toBe(true);
+    const competition = (createResponse as CreateCompetitionResponse)
+      .competition;
+
+    const updateResponse = await adminClient.updateCompetition(competition.id, {
+      type: "sports_prediction",
+      arenaId: "default-nfl-game-prediction-arena",
+      gameIds: [dbGameId],
+    });
+
+    expect(updateResponse.success).toBe(true);
+    const updatedCompetition = updateResponse as UpdateCompetitionResponse;
+    expect(updatedCompetition.competition.type).toBe("sports_prediction");
 
     const gameIds =
       await services.sportsService.competitionGamesRepository.findGameIdsByCompetitionId(
@@ -603,6 +647,12 @@ describe("Sports Prediction Competitions", () => {
       agent1.id,
     );
     expect(predictionsResponse.data.predictions).toHaveLength(2);
+    const predictionHistory = predictionsResponse.data.predictions as Array<{
+      agentName: string;
+    }>;
+    predictionHistory.forEach((prediction) => {
+      expect(prediction.agentName).toBe(agent1.name);
+    });
 
     // Step 10: Advance mock server multiple times to progress through game
     await nflClient1.advanceMockServer(providerGameId);
@@ -646,15 +696,26 @@ describe("Sports Prediction Competitions", () => {
     expect(leaderboardResponse.success).toBe(true);
     expect(leaderboardResponse.data.leaderboard).toHaveLength(2);
 
-    const agent1Entry = leaderboardResponse.data.leaderboard.find(
-      (e: { agentId: string }) => e.agentId === agent1.id,
+    const leaderboardEntries = leaderboardResponse.data.leaderboard as Array<{
+      agentId: string;
+      agentName: string;
+      averageBrierScore: number;
+      rank: number;
+    }>;
+    const agent1Entry = leaderboardEntries.find(
+      (entry) => entry.agentId === agent1.id,
     );
-    const agent2Entry = leaderboardResponse.data.leaderboard.find(
-      (e: { agentId: string }) => e.agentId === agent2.id,
+    const agent2Entry = leaderboardEntries.find(
+      (entry) => entry.agentId === agent2.id,
     );
 
     expect(agent1Entry).toBeDefined();
     expect(agent2Entry).toBeDefined();
+    if (!agent1Entry || !agent2Entry) {
+      throw new Error("Leaderboard entries missing expected agents");
+    }
+    expect(agent1Entry?.agentName).toBe(agent1.name);
+    expect(agent2Entry?.agentName).toBe(agent2.name);
 
     // Agent 2 should have better score (predicted MIN from start, which won)
     // Agent 1 first predicted CHI (wrong), then updated to MIN (correct)
@@ -672,6 +733,16 @@ describe("Sports Prediction Competitions", () => {
     );
     expect(gameLeaderboardResponse.success).toBe(true);
     expect(gameLeaderboardResponse.data.leaderboard).toHaveLength(2);
+    const gameLeaderboardEntries = gameLeaderboardResponse.data
+      .leaderboard as Array<{
+      agentId: string;
+      agentName: string;
+    }>;
+    gameLeaderboardEntries.forEach((entry) => {
+      const expectedName =
+        entry.agentId === agent1.id ? agent1.name : agent2.name;
+      expect(entry.agentName).toBe(expectedName);
+    });
 
     // Step 16: Verify cannot predict after game ends
     try {
@@ -792,6 +863,12 @@ describe("Sports Prediction Competitions", () => {
     );
     expect(allPredictionsResponse.success).toBe(true);
     expect(allPredictionsResponse.data.predictions.length).toBeGreaterThan(0);
+    const allPredictions = allPredictionsResponse.data.predictions as Array<{
+      agentName: string;
+    }>;
+    allPredictions.forEach((prediction) => {
+      expect(typeof prediction.agentName === "string").toBe(true);
+    });
 
     // 8. Get predictions (specific agent)
     const agentPredictionsResponse = await nflClient.getGamePredictions(
@@ -801,6 +878,13 @@ describe("Sports Prediction Competitions", () => {
     );
     expect(agentPredictionsResponse.success).toBe(true);
     expect(agentPredictionsResponse.data.predictions).toHaveLength(1);
+    const [singlePrediction] = agentPredictionsResponse.data
+      .predictions as Array<{ agentName: string }>;
+    expect(singlePrediction).toBeDefined();
+    if (!singlePrediction) {
+      throw new Error("Agent prediction not found");
+    }
+    expect(singlePrediction.agentName).toBe(agent.name);
 
     // 9. Get competition leaderboard (before game ends - should be empty or in-progress)
     const leaderboardResponse = await nflClient.getLeaderboard(competition.id);
@@ -831,6 +915,15 @@ describe("Sports Prediction Competitions", () => {
     expect(gameLeaderboardResponse.success).toBe(true);
     expect(gameLeaderboardResponse.data.leaderboard).toHaveLength(1);
     expect(gameLeaderboardResponse.data.gameId).toBe(dbGameId);
+    const [gameLeaderboardEntry] = gameLeaderboardResponse.data
+      .leaderboard as Array<{
+      agentName: string;
+    }>;
+    expect(gameLeaderboardEntry).toBeDefined();
+    if (!gameLeaderboardEntry) {
+      throw new Error("Game leaderboard entry missing");
+    }
+    expect(gameLeaderboardEntry.agentName).toBe(agent.name);
 
     // 12. Get competition leaderboard (after scoring)
     const finalLeaderboardResponse = await nflClient.getLeaderboard(
@@ -838,6 +931,15 @@ describe("Sports Prediction Competitions", () => {
     );
     expect(finalLeaderboardResponse.success).toBe(true);
     expect(finalLeaderboardResponse.data.leaderboard).toHaveLength(1);
+    const [finalLeaderboardEntry] = finalLeaderboardResponse.data
+      .leaderboard as Array<{
+      agentName: string;
+    }>;
+    expect(finalLeaderboardEntry).toBeDefined();
+    if (!finalLeaderboardEntry) {
+      throw new Error("Final leaderboard entry missing");
+    }
+    expect(finalLeaderboardEntry.agentName).toBe(agent.name);
   });
 
   test("should prevent ending competition when not all games are final", async () => {

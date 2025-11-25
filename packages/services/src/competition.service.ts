@@ -2539,6 +2539,9 @@ export class CompetitionService {
         gameIds &&
         gameIds.length > 0
       ) {
+        this.logger.info(
+          `[CompetitionService] Linking ${gameIds.length} games to competition ${competitionId}`,
+        );
         // Validate all games exist
         const games =
           await this.sportsService.gamesRepository.findByIds(gameIds);

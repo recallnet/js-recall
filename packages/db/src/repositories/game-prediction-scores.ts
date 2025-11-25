@@ -1,12 +1,17 @@
 import { and, desc, eq } from "drizzle-orm";
 import { Logger } from "pino";
 
+import { agents } from "../schema/core/defs.js";
 import { gamePredictionScores } from "../schema/sports/defs.js";
 import {
   InsertGamePredictionScore,
   SelectGamePredictionScore,
 } from "../schema/sports/types.js";
 import { Database, Transaction } from "../types.js";
+
+export type GamePredictionScoreWithAgent = SelectGamePredictionScore & {
+  agentName: string | null;
+};
 
 /**
  * Game Prediction Scores Repository
@@ -80,11 +85,15 @@ export class GamePredictionScoresRepository {
   async findByCompetitionAndGame(
     competitionId: string,
     gameId: string,
-  ): Promise<SelectGamePredictionScore[]> {
+  ): Promise<GamePredictionScoreWithAgent[]> {
     try {
       const results = await this.#db
-        .select()
+        .select({
+          score: gamePredictionScores,
+          agentName: agents.name,
+        })
         .from(gamePredictionScores)
+        .leftJoin(agents, eq(gamePredictionScores.agentId, agents.id))
         .where(
           and(
             eq(gamePredictionScores.competitionId, competitionId),
@@ -93,7 +102,10 @@ export class GamePredictionScoresRepository {
         )
         .orderBy(desc(gamePredictionScores.timeWeightedBrierScore));
 
-      return results;
+      return results.map(({ score, agentName }) => ({
+        ...score,
+        agentName: agentName ?? null,
+      }));
     } catch (error) {
       this.#logger.error({ error }, "Error in findByCompetitionAndGame");
       throw error;

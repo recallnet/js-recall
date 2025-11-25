@@ -1,12 +1,17 @@
 import { and, desc, eq, gte, inArray, lt, lte } from "drizzle-orm";
 import { Logger } from "pino";
 
+import { agents } from "../schema/core/defs.js";
 import { gamePredictions } from "../schema/sports/defs.js";
 import {
   InsertGamePrediction,
   SelectGamePrediction,
 } from "../schema/sports/types.js";
 import { Database, Transaction } from "../types.js";
+
+export type GamePredictionWithAgent = SelectGamePrediction & {
+  agentName: string | null;
+};
 
 /**
  * Game Predictions Repository
@@ -53,25 +58,35 @@ export class GamePredictionsRepository {
    * Find all predictions for a game and agent (history)
    * @param gameId Game ID
    * @param agentId Agent ID
+   * @param competitionId Competition ID
    * @returns Array of predictions ordered by creation time (newest first)
    */
   async findByGameAndAgent(
     gameId: string,
     agentId: string,
-  ): Promise<SelectGamePrediction[]> {
+    competitionId: string,
+  ): Promise<GamePredictionWithAgent[]> {
     try {
       const results = await this.#db
-        .select()
+        .select({
+          prediction: gamePredictions,
+          agentName: agents.name,
+        })
         .from(gamePredictions)
+        .leftJoin(agents, eq(gamePredictions.agentId, agents.id))
         .where(
           and(
             eq(gamePredictions.gameId, gameId),
             eq(gamePredictions.agentId, agentId),
+            eq(gamePredictions.competitionId, competitionId),
           ),
         )
         .orderBy(desc(gamePredictions.createdAt));
 
-      return results;
+      return results.map(({ prediction, agentName }) => ({
+        ...prediction,
+        agentName: agentName ?? null,
+      }));
     } catch (error) {
       this.#logger.error({ error }, "Error in findByGameAndAgent");
       throw error;
@@ -87,21 +102,33 @@ export class GamePredictionsRepository {
   async findLatestByGameAndAgent(
     gameId: string,
     agentId: string,
-  ): Promise<SelectGamePrediction | undefined> {
+    competitionId: string,
+  ): Promise<GamePredictionWithAgent | undefined> {
     try {
       const [result] = await this.#db
-        .select()
+        .select({
+          prediction: gamePredictions,
+          agentName: agents.name,
+        })
         .from(gamePredictions)
+        .leftJoin(agents, eq(gamePredictions.agentId, agents.id))
         .where(
           and(
             eq(gamePredictions.gameId, gameId),
             eq(gamePredictions.agentId, agentId),
+            eq(gamePredictions.competitionId, competitionId),
           ),
         )
         .orderBy(desc(gamePredictions.createdAt))
         .limit(1);
 
-      return result;
+      if (!result) {
+        return undefined;
+      }
+      return {
+        ...result.prediction,
+        agentName: result.agentName ?? null,
+      };
     } catch (error) {
       this.#logger.error({ error }, "Error in findLatestByGameAndAgent");
       throw error;
@@ -115,11 +142,19 @@ export class GamePredictionsRepository {
    */
   async findByGame(
     gameId: string,
-    options?: { startTime?: Date; endTime?: Date; tx?: Transaction },
-  ): Promise<SelectGamePrediction[]> {
+    competitionId: string,
+    options?: {
+      startTime?: Date;
+      endTime?: Date;
+      tx?: Transaction;
+    },
+  ): Promise<GamePredictionWithAgent[]> {
     try {
       const executor = options?.tx || this.#db;
-      const conditions = [eq(gamePredictions.gameId, gameId)];
+      const conditions = [
+        eq(gamePredictions.gameId, gameId),
+        eq(gamePredictions.competitionId, competitionId),
+      ];
       if (options?.startTime) {
         conditions.push(gte(gamePredictions.createdAt, options.startTime));
       }
@@ -128,12 +163,21 @@ export class GamePredictionsRepository {
       }
 
       const query = executor
-        .select()
+        .select({
+          prediction: gamePredictions,
+          agentName: agents.name,
+        })
         .from(gamePredictions)
+        .leftJoin(agents, eq(gamePredictions.agentId, agents.id))
         .where(and(...conditions))
         .orderBy(desc(gamePredictions.createdAt));
 
-      return await query;
+      const rows = await query;
+
+      return rows.map(({ prediction, agentName }) => ({
+        ...prediction,
+        agentName: agentName ?? null,
+      }));
     } catch (error) {
       this.#logger.error({ error }, "Error in findByGame");
       throw error;
@@ -147,15 +191,22 @@ export class GamePredictionsRepository {
    */
   async findByCompetition(
     competitionId: string,
-  ): Promise<SelectGamePrediction[]> {
+  ): Promise<GamePredictionWithAgent[]> {
     try {
       const results = await this.#db
-        .select()
+        .select({
+          prediction: gamePredictions,
+          agentName: agents.name,
+        })
         .from(gamePredictions)
+        .leftJoin(agents, eq(gamePredictions.agentId, agents.id))
         .where(eq(gamePredictions.competitionId, competitionId))
         .orderBy(desc(gamePredictions.createdAt));
 
-      return results;
+      return results.map(({ prediction, agentName }) => ({
+        ...prediction,
+        agentName: agentName ?? null,
+      }));
     } catch (error) {
       this.#logger.error({ error }, "Error in findByCompetition");
       throw error;
