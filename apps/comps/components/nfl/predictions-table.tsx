@@ -1,7 +1,7 @@
 "use client";
 
 import { formatDistanceToNow } from "date-fns";
-import { Plus } from "lucide-react";
+import { Info } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@recallnet/ui2/components/button";
@@ -46,20 +46,24 @@ export function PredictionsTable({
   if (error) {
     return <div className="text-destructive">Failed to load predictions</div>;
   }
-
   if (!data?.predictions || data.predictions.length === 0) {
     return (
-      <div className="text-muted-foreground">No predictions for this game</div>
+      <div className="flex h-[360px] items-center justify-center">
+        <p className="text-sm text-gray-400">
+          No predictions yet for this game
+        </p>
+      </div>
     );
   }
 
   return (
     <>
-      <div className="space-y-2 rounded-lg border border-white/10 bg-black/40 p-4">
-        <div className="text-secondary-foreground grid grid-cols-4 gap-4 border-b border-white/10 pb-2 text-xs font-semibold uppercase tracking-widest">
+      <div>
+        <div className="text-secondary-foreground border-border grid grid-cols-5 gap-4 border-b pb-2 text-xs font-semibold uppercase tracking-widest">
           <div className="col-span-1">Agent</div>
-          <div className="col-span-1">Prediction</div>
+          <div className="col-span-1">Winner</div>
           <div className="col-span-1 text-right">Confidence</div>
+          <div className="col-span-1 text-right">Reason</div>
           <div className="col-span-1 text-right">Time</div>
         </div>
 
@@ -70,7 +74,7 @@ export function PredictionsTable({
           return (
             <div
               key={prediction.id}
-              className="text-primary-foreground grid min-h-12 grid-cols-4 items-center gap-4 border-b border-white/5 py-2 text-sm last:border-b-0"
+              className="text-primary-foreground grid min-h-12 grid-cols-5 items-center gap-4 border-b border-white/5 py-2 text-sm last:border-b-0"
             >
               <div className="text-secondary-foreground col-span-1 overflow-hidden text-ellipsis whitespace-nowrap text-xs uppercase tracking-wide">
                 {agentLabel}
@@ -79,19 +83,21 @@ export function PredictionsTable({
                 <span className="font-semibold">
                   {prediction.predictedWinner}
                 </span>
-                {prediction.reason && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-5 w-5 shrink-0 p-0 hover:bg-white/10"
-                    onClick={() => setSelectedPrediction(prediction)}
-                  >
-                    <Plus className="h-3 w-3" />
-                  </Button>
-                )}
               </div>
               <div className="col-span-1 text-right font-mono text-sm">
                 {(prediction.confidence * 100).toFixed(0)}%
+              </div>
+              <div className="col-span-1 text-center">
+                {prediction.reason && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="hover:bg-border ml-4 h-5 w-5 shrink-0 border-none p-0 transition-colors duration-200"
+                    onClick={() => setSelectedPrediction(prediction)}
+                  >
+                    <Info className="h-5 w-5" />
+                  </Button>
+                )}
               </div>
               <div className="text-secondary-foreground col-span-1 text-right text-xs leading-tight">
                 {formatDistanceToNow(new Date(prediction.createdAt), {

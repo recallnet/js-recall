@@ -139,7 +139,7 @@ export function NflCompetitionKey({
 
       <TabsContent
         value="games"
-        className="m-0 flex-1 overflow-hidden rounded-lg border border-white/10"
+        className="border-border m-0 flex-1 overflow-hidden rounded-xl border"
       >
         <div className="h-full overflow-y-auto p-4">
           {games.length === 0 ? (
@@ -160,7 +160,7 @@ export function NflCompetitionKey({
 
       <TabsContent
         value="predictions"
-        className="m-0 flex-1 overflow-hidden rounded-lg border border-white/10"
+        className="border-border m-0 flex-1 overflow-hidden rounded-lg border"
       >
         <div className="h-full overflow-y-auto p-4">
           {games.length === 0 ? (
@@ -196,14 +196,14 @@ export function NflCompetitionKey({
 
       <TabsContent
         value="info"
-        className="m-0 flex-1 overflow-hidden rounded-lg border border-white/10"
+        className="border-border m-0 flex-1 overflow-hidden rounded-lg border"
       >
         <CompetitionInfoSections competition={competition} />
       </TabsContent>
 
       <TabsContent
         value="rules"
-        className="m-0 flex-1 overflow-hidden rounded-lg border border-white/10"
+        className="border-border m-0 flex-1 overflow-hidden rounded-lg border"
       >
         <div className="h-full overflow-y-auto p-4">{renderRules()}</div>
       </TabsContent>
