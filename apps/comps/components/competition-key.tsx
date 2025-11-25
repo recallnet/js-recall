@@ -236,10 +236,10 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
             </>
           )}
           <TabsTrigger
-            value="predictions"
+            value="boosts"
             className="border border-white bg-black px-4 py-2 text-xs font-semibold uppercase text-white transition-colors duration-200 hover:bg-white hover:text-black data-[state=active]:bg-white data-[state=active]:text-black"
           >
-            Predictions
+            Boosts
           </TabsTrigger>
           <TabsTrigger
             value="info"
@@ -496,12 +496,12 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
           </TabsContent>
         )}
 
-        {/* Predictions Tab */}
+        {/* Boosts Tab */}
         <TabsContent
-          value="predictions"
+          value="boosts"
           className="m-0 flex-1 overflow-hidden border"
         >
-          <PredictionsTabContent competition={competition} />
+          <BoostsTabContent competition={competition} />
         </TabsContent>
 
         {/* Info Tab */}
@@ -1034,9 +1034,9 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
 };
 
 /**
- * PredictionsTabContent component displays boost allocations for a competition
+ * BoostsTabContent component displays boost allocations for a competition
  */
-const PredictionsTabContent: React.FC<{
+const BoostsTabContent: React.FC<{
   competition: RouterOutputs["competitions"]["getById"];
 }> = ({ competition }) => {
   // If the competition is pending, only query boosts if boosting has started; else, always fetch
