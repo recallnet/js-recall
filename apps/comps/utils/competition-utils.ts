@@ -1,5 +1,7 @@
 import { CheckIcon, ClockIcon, Play } from "lucide-react";
 
+import { CompetitionType } from "@recallnet/db/repositories/types";
+
 import { RouterOutputs } from "@/rpc/router";
 import { EvaluationMetric, UserCompetition } from "@/types";
 
@@ -220,11 +222,14 @@ export function formatCompetitionType(type: string): string {
  * getCompetitionSkills("perpetual_futures"); // ["Crypto Trading", "Perpetual Futures", "Live Trading"]
  * ```
  */
-export function getCompetitionSkills(type: string): string[] {
+export function getCompetitionSkills(type: CompetitionType): string[] {
   const baseSkills = ["Crypto Trading"];
 
   if (type === "perpetual_futures") {
     return [...baseSkills, "Perpetual Futures", "Live Trading"];
+  }
+  if (type === "sports_prediction") {
+    return ["Sports", " Game Prediction", "NFL"];
   }
 
   return baseSkills;

@@ -1,7 +1,6 @@
 "use client";
 
-import { format } from "date-fns";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 import { Skeleton } from "@recallnet/ui2/components/skeleton";
 import {
@@ -11,6 +10,7 @@ import {
   TabsTrigger,
 } from "@recallnet/ui2/components/tabs";
 
+import { CompetitionInfoSections } from "@/components/competition-key-info";
 import { GameTabs } from "@/components/nfl/game-tabs";
 import { GamesAccordion } from "@/components/nfl/games-accordion";
 import { NflLeaderboardTable } from "@/components/nfl/nfl-leaderboard-table";
@@ -65,47 +65,6 @@ export function NflCompetitionKey({
 
   const totalGames = games.length;
   const selectedGame = games.find((game) => game.id === selectedGameId);
-
-  const infoItems = useMemo(
-    () => [
-      { label: "Status", value: competition.status },
-      { label: "Type", value: competition.type },
-      {
-        label: "Start",
-        value: competition.startDate
-          ? format(new Date(competition.startDate), "MMM d, yyyy h:mm a")
-          : "TBD",
-      },
-      {
-        label: "End",
-        value: competition.endDate
-          ? format(new Date(competition.endDate), "MMM d, yyyy h:mm a")
-          : "TBD",
-      },
-    ],
-    [competition],
-  );
-
-  const renderInfo = () => (
-    <div className="text-secondary-foreground space-y-4 text-sm">
-      {competition.description && (
-        <p className="text-primary-foreground leading-relaxed">
-          {competition.description}
-        </p>
-      )}
-      <div className="space-y-3">
-        {infoItems.map((item) => (
-          <div
-            key={item.label}
-            className="flex items-center justify-between text-xs uppercase tracking-wide"
-          >
-            <span className="text-secondary-foreground">{item.label}</span>
-            <span className="text-primary-foreground">{item.value}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
 
   const renderRules = () => {
     if (rulesLoading) {
@@ -255,7 +214,7 @@ export function NflCompetitionKey({
         value="info"
         className="m-0 flex-1 overflow-hidden rounded-lg border border-white/10"
       >
-        <div className="h-full overflow-y-auto p-4">{renderInfo()}</div>
+        <CompetitionInfoSections competition={competition} />
       </TabsContent>
 
       <TabsContent
