@@ -249,3 +249,27 @@ export function checkIsPerpsCompetition(
 ): boolean {
   return type === "perpetual_futures";
 }
+
+/**
+ * Limit of agent log items (e.g., trades, predictions, etc.) per page
+ */
+export const LIMIT_ITEMS_PER_PAGE = 50;
+
+/**
+ * Hours in milliseconds
+ */
+export const HOURS_IN_MS = 60 * 60 * 1000;
+
+/**
+ * Trade log relative timestamp in milliseconds
+ */
+export const TRADE_LOG_RELATIVE_TIMESTAMP = 24 * HOURS_IN_MS;
+
+/**
+ * Checks if a timestamp should be displayed as a relative timestamp
+ * @param timestamp - The timestamp to check
+ * @returns True if the timestamp should be displayed as a relative timestamp, false otherwise
+ */
+export const shouldShowRelativeTimestamp = (timestamp: Date) => {
+  return timestamp > new Date(Date.now() - TRADE_LOG_RELATIVE_TIMESTAMP);
+};

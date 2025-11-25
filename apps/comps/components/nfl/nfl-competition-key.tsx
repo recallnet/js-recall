@@ -10,17 +10,17 @@ import {
   TabsTrigger,
 } from "@recallnet/ui2/components/tabs";
 
+import { BoostsTabContent } from "@/components/competition-key-boost";
 import { CompetitionInfoSections } from "@/components/competition-key-info";
 import { GameTabs } from "@/components/nfl/game-tabs";
 import { GamesAccordion } from "@/components/nfl/games-accordion";
-import { NflLeaderboardTable } from "@/components/nfl/nfl-leaderboard-table";
 import { PredictionsTable } from "@/components/nfl/predictions-table";
 import type { RouterOutputs } from "@/rpc/router";
 import type { NflGame } from "@/types/nfl";
 
 type CompetitionDetails = RouterOutputs["competitions"]["getById"];
 type RulesResponse = RouterOutputs["nfl"]["getRules"];
-const tabs = ["leaderboard", "predictions", "games", "info", "rules"] as const;
+const tabs = ["games", "predictions", "boosts", "info", "rules"] as const;
 type TabKey = (typeof tabs)[number];
 
 interface NflCompetitionKeyProps {
@@ -31,7 +31,6 @@ interface NflCompetitionKeyProps {
   onSelectGame?: (gameId: string, goToPredictions?: boolean) => void;
   rules?: RulesResponse;
   rulesLoading?: boolean;
-  completedGames: number;
   activeTab?: TabKey;
   onTabChange?: (tab: TabKey) => void;
 }
@@ -48,11 +47,10 @@ export function NflCompetitionKey({
   onSelectGame,
   rules,
   rulesLoading,
-  completedGames,
   activeTab,
   onTabChange,
 }: NflCompetitionKeyProps) {
-  const [internalTab, setInternalTab] = useState<TabKey>("leaderboard");
+  const [internalTab, setInternalTab] = useState<TabKey>("games");
   const currentTab = activeTab ?? internalTab;
 
   const handleTabChange = (value: string) => {
@@ -63,7 +61,6 @@ export function NflCompetitionKey({
     onTabChange?.(value as TabKey);
   };
 
-  const totalGames = games.length;
   const selectedGame = games.find((game) => game.id === selectedGameId);
 
   const renderRules = () => {
@@ -122,14 +119,14 @@ export function NflCompetitionKey({
     >
       <div className="mb-6 overflow-x-auto">
         <TabsList className="flex w-max gap-2">
-          <TabsTrigger value="leaderboard" className={tabClass}>
-            Leaderboard
+          <TabsTrigger value="games" className={tabClass}>
+            Games
           </TabsTrigger>
           <TabsTrigger value="predictions" className={tabClass}>
             Predictions
           </TabsTrigger>
-          <TabsTrigger value="games" className={tabClass}>
-            Games
+          <TabsTrigger value="boosts" className={tabClass}>
+            Boosts
           </TabsTrigger>
           <TabsTrigger value="info" className={tabClass}>
             Info
@@ -141,19 +138,23 @@ export function NflCompetitionKey({
       </div>
 
       <TabsContent
-        value="leaderboard"
+        value="games"
         className="m-0 flex-1 overflow-hidden rounded-lg border border-white/10"
       >
         <div className="h-full overflow-y-auto p-4">
-          <div className="text-secondary-foreground text-xs uppercase">
-            Games scored: {completedGames}/{totalGames}
-            {completedGames < totalGames &&
-              totalGames > 0 &&
-              " • Standings update as games finalize"}
-          </div>
-          <div className="mt-3">
-            <NflLeaderboardTable competitionId={competitionId} />
-          </div>
+          {games.length === 0 ? (
+            <p className="text-secondary-foreground text-sm">
+              This competition does not have any games configured yet.
+            </p>
+          ) : (
+            <GamesAccordion
+              games={games}
+              selectedGameId={selectedGameId}
+              onSelectGame={(gameId, goToPredictions) =>
+                onSelectGame?.(gameId, goToPredictions)
+              }
+            />
+          )}
         </div>
       </TabsContent>
 
@@ -189,25 +190,8 @@ export function NflCompetitionKey({
         </div>
       </TabsContent>
 
-      <TabsContent
-        value="games"
-        className="m-0 flex-1 overflow-hidden rounded-lg border border-white/10"
-      >
-        <div className="h-full overflow-y-auto p-4">
-          {games.length === 0 ? (
-            <p className="text-secondary-foreground text-sm">
-              This competition does not have any games configured yet.
-            </p>
-          ) : (
-            <GamesAccordion
-              games={games}
-              selectedGameId={selectedGameId}
-              onSelectGame={(gameId, goToPredictions) =>
-                onSelectGame?.(gameId, goToPredictions)
-              }
-            />
-          )}
-        </div>
+      <TabsContent value="boosts" className="m-0 flex-1 overflow-hidden border">
+        <BoostsTabContent competition={competition} />
       </TabsContent>
 
       <TabsContent

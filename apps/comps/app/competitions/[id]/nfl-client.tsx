@@ -43,7 +43,7 @@ export default function NflCompetitionPage({
 }: NflCompetitionPageProps) {
   const [selectedGameId, setSelectedGameId] = useState<string | undefined>();
   const [activeKeyTab, setActiveKeyTab] =
-    useState<NflCompetitionKeyTab>("leaderboard");
+    useState<NflCompetitionKeyTab>("games");
 
   const {
     data: gamesData,
@@ -85,8 +85,6 @@ export default function NflCompetitionPage({
     () => games.find((game) => game.id === selectedGameId),
     [games, selectedGameId],
   );
-
-  const completedGames = games.filter((game) => game.status === "final").length;
 
   const handleSelectGame = (
     gameId: string,
@@ -192,7 +190,6 @@ export default function NflCompetitionPage({
               onSelectGame={handleSelectGame}
               rules={rulesData}
               rulesLoading={rulesLoading}
-              completedGames={completedGames}
               activeTab={activeKeyTab}
               onTabChange={setActiveKeyTab}
             />
