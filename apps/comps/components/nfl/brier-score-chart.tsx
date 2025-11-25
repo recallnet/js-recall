@@ -259,7 +259,7 @@ export function BrierScoreChart({ competitionId, game }: BrierScoreChartProps) {
           {agentIds.map((agentId, index) => (
             <Line
               key={agentId}
-              type="stepAfter"
+              type="monotone"
               dataKey={agentId}
               name={agentLabels.get(agentId) ?? agentId.slice(0, 8)}
               stroke={CHART_COLORS[index % CHART_COLORS.length]}
