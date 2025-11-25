@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  keepPreviousData,
   skipToken,
   useMutation,
   useQueries,
@@ -9,6 +10,7 @@ import {
 } from "@tanstack/react-query";
 import {
   ColumnDef,
+  SortingState,
   flexRender,
   getCoreRowModel,
   useReactTable,
@@ -20,6 +22,7 @@ import { attoValueToNumberValue } from "@recallnet/conversions/atto-conversions"
 import { Button } from "@recallnet/ui2/components/button";
 import { Skeleton } from "@recallnet/ui2/components/skeleton";
 import {
+  SortableTableHeader,
   Table,
   TableBody,
   TableCell,
@@ -44,6 +47,7 @@ import { tanstackClient } from "@/rpc/clients/tanstack-query";
 import type { RouterOutputs } from "@/rpc/router";
 import type { NflGame } from "@/types/nfl";
 import { formatCompactNumber, formatPercentage } from "@/utils/format";
+import { getSortState } from "@/utils/table";
 
 import { RankBadge } from "../agents-table/rank-badge";
 
@@ -70,6 +74,10 @@ export function NflStandingsTable({
   >(null);
   const [isBoostModalOpen, setIsBoostModalOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [sorting, setSorting] = useState<SortingState>([
+    { id: "rank", desc: false },
+  ]);
+  const [apiSort, setApiSort] = useState<string>("rank");
 
   useEffect(() => {
     const checkMobile = () => {
@@ -95,11 +103,12 @@ export function NflStandingsTable({
     error: agentsError,
   } = useQuery(
     tanstackClient.competitions.getAgents.queryOptions({
+      placeholderData: keepPreviousData,
       input: {
         competitionId,
         includeInactive: true,
         paging: {
-          sort: "rank",
+          sort: apiSort,
           offset: 0,
           limit: MAX_STANDINGS_AGENTS,
         },
@@ -300,36 +309,33 @@ export function NflStandingsTable({
     return map;
   }, [leaderboardData]);
 
-  // Build agent rows with predictions, sorted by NFL leaderboard rank
+  // Build agent rows with predictions (API handles sorting)
   const agentRows = useMemo(() => {
     const competitionAgents = competitionAgentsData?.agents ?? [];
 
     if (competitionAgents.length) {
-      return competitionAgents
-        .map((agent, index) => {
-          const leaderboardEntry = leaderboardByAgentId.get(agent.id);
-          const score =
-            leaderboardEntry &&
-            "averageBrierScore" in leaderboardEntry &&
-            typeof leaderboardEntry.averageBrierScore === "number"
-              ? leaderboardEntry.averageBrierScore
-              : undefined;
-          const gamesScored =
-            leaderboardEntry && "gamesScored" in leaderboardEntry
-              ? leaderboardEntry.gamesScored
-              : 0;
+      return competitionAgents.map((agent, index) => {
+        const leaderboardEntry = leaderboardByAgentId.get(agent.id);
+        const score =
+          leaderboardEntry &&
+          "averageBrierScore" in leaderboardEntry &&
+          typeof leaderboardEntry.averageBrierScore === "number"
+            ? leaderboardEntry.averageBrierScore
+            : undefined;
+        const gamesScored =
+          leaderboardEntry && "gamesScored" in leaderboardEntry
+            ? leaderboardEntry.gamesScored
+            : 0;
 
-          return {
-            id: agent.id,
-            name: agent.name ?? agent.handle ?? agent.id.slice(0, 8),
-            imageUrl: agent.imageUrl,
-            rank:
-              leaderboardEntry?.rank ?? agent.rank ?? Math.max(index + 1, 1),
-            score,
-            gamesScored,
-          };
-        })
-        .sort((a, b) => a.rank - b.rank);
+        return {
+          id: agent.id,
+          name: agent.name ?? agent.handle ?? agent.id.slice(0, 8),
+          imageUrl: agent.imageUrl,
+          rank: leaderboardEntry?.rank ?? agent.rank ?? Math.max(index + 1, 1),
+          score,
+          gamesScored,
+        };
+      });
     }
 
     return [];
@@ -354,13 +360,15 @@ export function NflStandingsTable({
             )}
           </div>
         ),
-        size: 80,
+        enableSorting: true,
+        sortDescFirst: false,
+        size: isMobile ? 60 : 80,
       },
       {
-        id: "agent",
+        id: "name",
         accessorKey: "name",
         header: () => <span className="text-left">Agent</span>,
-        cell: ({ row }) => (
+        cell: ({ row }: { row: { original: (typeof agentRows)[number] } }) => (
           <div className="flex items-center gap-3">
             <AgentAvatar
               agent={{
@@ -373,6 +381,8 @@ export function NflStandingsTable({
             <span className="font-semibold">{row.original.name}</span>
           </div>
         ),
+        enableSorting: true,
+        sortDescFirst: false,
         size: 200,
         meta: {
           className: "justify-start text-left",
@@ -383,7 +393,7 @@ export function NflStandingsTable({
         accessorKey: "score",
         header: () => (
           <span className="cursor-help text-right">
-            <Tooltip content="Average Brier score across all completed games. Higher is better.">
+            <Tooltip content="Average time weighted confidence score across all completed games. Higher is better, and earlier in-game predictions are weighted more heavily.">
               Overall Score
             </Tooltip>
           </span>
@@ -395,6 +405,7 @@ export function NflStandingsTable({
               : "N/A"}
           </div>
         ),
+        enableSorting: true,
         size: 120,
         meta: {
           className: "justify-end text-right",
@@ -404,12 +415,15 @@ export function NflStandingsTable({
         id: `game-${game.id}`,
         header: () => (
           <div className="text-center text-xs">
-            <div className="font-semibold">
-              {game.awayTeam} @ {game.homeTeam}
-            </div>
-            <div className="text-muted-foreground">
-              {game.status === "final" ? "Final" : "In Progress"}
-            </div>
+            <Tooltip
+              content="The initial predicted winner for this game with percentage confidence."
+              className="cursor-help"
+            >
+              <div className="font-semibold">
+                {game.awayTeam} @ {game.homeTeam}
+              </div>
+              <div className="text-muted-foreground">Prediction</div>
+            </Tooltip>
           </div>
         ),
         cell: ({ row }: { row: { original: (typeof agentRows)[number] } }) => {
@@ -477,6 +491,7 @@ export function NflStandingsTable({
             </div>
           );
         },
+        enableSorting: false,
         size: 100,
         meta: {
           className: "justify-end text-right",
@@ -492,7 +507,7 @@ export function NflStandingsTable({
             </Tooltip>
           </span>
         ),
-        cell: ({ row }) => {
+        cell: ({ row }: { row: { original: (typeof agentRows)[number] } }) => {
           const userBoostAmount =
             isSuccessUserBoostsBalance && userBoosts
               ? userBoosts[row.original.id] || 0
@@ -577,7 +592,25 @@ export function NflStandingsTable({
     data: agentRows,
     columns,
     getCoreRowModel: getCoreRowModel(),
+    manualSorting: true,
+    enableSorting: true,
+    onSortingChange: (updater) => {
+      const newSorting =
+        typeof updater === "function" ? updater(sorting) : updater;
+      setSorting(newSorting);
+
+      // Convert sorting state to server-side sort format
+      const sortString =
+        newSorting.length > 0
+          ? newSorting
+              .map((sort) => `${sort.desc ? "-" : ""}${sort.id}`)
+              .join(",")
+          : "rank";
+
+      setApiSort(sortString);
+    },
     state: {
+      sorting,
       columnVisibility: {
         boostPool: !isMobile,
         yourShare: session.isAuthenticated && !isMobile,
@@ -631,24 +664,45 @@ export function NflStandingsTable({
           <TableHeader className="sticky top-0 z-10 bg-black">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <TableHead
-                    key={header.id}
-                    colSpan={header.colSpan}
-                    style={{ width: header.getSize() }}
-                    className={cn(
-                      "table-cell",
-                      header.column.columnDef.meta?.className,
-                    )}
-                  >
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext(),
-                        )}
-                  </TableHead>
-                ))}
+                {headerGroup.headers.map((header) =>
+                  header.column.getCanSort() ? (
+                    <SortableTableHeader
+                      key={header.id}
+                      colSpan={header.colSpan}
+                      sortState={getSortState(header.column.getIsSorted())}
+                      style={{ width: header.getSize() }}
+                      className={cn(
+                        "table-cell",
+                        header.column.columnDef.meta?.className,
+                      )}
+                      onClick={header.column.getToggleSortingHandler()}
+                    >
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext(),
+                          )}
+                    </SortableTableHeader>
+                  ) : (
+                    <TableHead
+                      key={header.id}
+                      colSpan={header.colSpan}
+                      style={{ width: header.getSize() }}
+                      className={cn(
+                        "table-cell",
+                        header.column.columnDef.meta?.className,
+                      )}
+                    >
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext(),
+                          )}
+                    </TableHead>
+                  ),
+                )}
               </TableRow>
             ))}
           </TableHeader>
@@ -673,6 +727,39 @@ export function NflStandingsTable({
                   ))}
                 </TableRow>
               ))
+            ) : isTableLoading ? (
+              // Show skeleton rows while loading
+              Array.from({ length: 3 }).map((_, i) => (
+                <TableRow
+                  key={`skeleton-${i}`}
+                  className="border-border border-t"
+                >
+                  <TableCell className="justify-center text-center">
+                    <Skeleton className="mx-auto h-8 w-16 rounded-xl" />
+                  </TableCell>
+                  <TableCell className="justify-start text-left">
+                    <div className="flex items-center gap-3">
+                      <Skeleton className="h-8 w-8 rounded-full" />
+                      <Skeleton className="h-4 w-32 rounded-xl" />
+                    </div>
+                  </TableCell>
+                  <TableCell className="justify-end text-right">
+                    <Skeleton className="ml-auto h-4 w-16 rounded-xl" />
+                  </TableCell>
+                  {!isMobile && (
+                    <>
+                      <TableCell className="justify-end text-right">
+                        <Skeleton className="ml-auto h-4 w-16 rounded-xl" />
+                      </TableCell>
+                      {session.isAuthenticated && (
+                        <TableCell className="justify-end">
+                          <Skeleton className="ml-auto h-8 w-20 rounded-xl" />
+                        </TableCell>
+                      )}
+                    </>
+                  )}
+                </TableRow>
+              ))
             ) : (
               <TableRow>
                 <TableCell
@@ -683,8 +770,6 @@ export function NflStandingsTable({
                     <span className="text-red-500">
                       Failed to load agents. Please try again.
                     </span>
-                  ) : isTableLoading ? (
-                    "Loading agents..."
                   ) : (
                     "No agents found for this competition."
                   )}
