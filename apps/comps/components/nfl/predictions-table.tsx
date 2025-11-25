@@ -59,12 +59,11 @@ export function PredictionsTable({
   return (
     <>
       <div>
-        <div className="text-secondary-foreground border-border grid grid-cols-5 gap-4 border-b pb-2 text-xs font-semibold uppercase tracking-widest">
+        <div className="text-secondary-foreground border-border grid grid-cols-4 gap-3 border-b pb-2 text-xs font-semibold uppercase tracking-widest">
           <div className="col-span-1">Agent</div>
           <div className="col-span-1">Winner</div>
-          <div className="col-span-1 text-right">Confidence</div>
+          <div className="col-span-1 text-left">Confidence</div>
           <div className="col-span-1 text-right">Reason</div>
-          <div className="col-span-1 text-right">Time</div>
         </div>
 
         {data.predictions.map((prediction: NflPrediction) => {
@@ -74,35 +73,42 @@ export function PredictionsTable({
           return (
             <div
               key={prediction.id}
-              className="text-primary-foreground grid min-h-12 grid-cols-5 items-center gap-4 border-b border-white/5 py-2 text-sm last:border-b-0"
+              className="text-primary-foreground border-b border-white/10 py-2 last:border-b-0"
             >
-              <div className="text-secondary-foreground col-span-1 overflow-hidden text-ellipsis whitespace-nowrap text-xs uppercase tracking-wide">
-                {agentLabel}
+              {/* Top row: Agent, Winner, Confidence, Reason */}
+              <div className="grid grid-cols-4 items-center gap-3 text-sm">
+                <div className="text-secondary-foreground col-span-1 overflow-hidden text-ellipsis whitespace-nowrap text-xs uppercase tracking-wide">
+                  {agentLabel}
+                </div>
+                <div className="col-span-1 flex items-center gap-2">
+                  <span className="font-semibold">
+                    {prediction.predictedWinner}
+                  </span>
+                </div>
+                <div className="col-span-1 text-left font-mono text-sm">
+                  {(prediction.confidence * 100).toFixed(0)}%
+                </div>
+                <div className="col-span-1 flex items-center justify-end">
+                  {prediction.reason && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="hover:bg-border h-5 w-5 shrink-0 border-none p-0 transition-colors duration-200"
+                      onClick={() => setSelectedPrediction(prediction)}
+                    >
+                      <Info className="h-5 w-5" />
+                    </Button>
+                  )}
+                </div>
               </div>
-              <div className="col-span-1 flex items-center gap-2">
-                <span className="font-semibold">
-                  {prediction.predictedWinner}
-                </span>
-              </div>
-              <div className="col-span-1 text-right font-mono text-sm">
-                {(prediction.confidence * 100).toFixed(0)}%
-              </div>
-              <div className="col-span-1 text-center">
-                {prediction.reason && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="hover:bg-border ml-4 h-5 w-5 shrink-0 border-none p-0 transition-colors duration-200"
-                    onClick={() => setSelectedPrediction(prediction)}
-                  >
-                    <Info className="h-5 w-5" />
-                  </Button>
-                )}
-              </div>
-              <div className="text-secondary-foreground col-span-1 text-right text-xs leading-tight">
-                {formatDistanceToNow(new Date(prediction.createdAt), {
-                  addSuffix: true,
-                })}
+
+              {/* Bottom row: Timestamp */}
+              <div className="mt-4 text-right">
+                <div className="whitespace-nowrap text-xs text-gray-500">
+                  {formatDistanceToNow(new Date(prediction.createdAt), {
+                    addSuffix: true,
+                  })}
+                </div>
               </div>
             </div>
           );

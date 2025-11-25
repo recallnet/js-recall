@@ -181,8 +181,8 @@ export default function NflCompetitionPage({
           <div className="space-y-4 md:col-span-2">{chartCard}</div>
 
           <div className="space-y-4 md:col-span-1">
+            {/* Key component handles desktop/mobile views internally */}
             <NflCompetitionKey
-              competitionId={competitionId}
               competition={competition}
               games={games}
               selectedGameId={selectedGameId}
@@ -193,7 +193,8 @@ export default function NflCompetitionPage({
               onTabChange={setActiveKeyTab}
             />
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {/* Desktop-only action buttons */}
+            <div className="hidden grid-cols-1 gap-4 sm:grid-cols-2 md:grid">
               <JoinCompetitionButton
                 competitionId={competitionId}
                 className="w-full border border-white bg-white text-blue-500 hover:border-blue-500 hover:bg-blue-500 hover:text-white disabled:hover:border-white disabled:hover:bg-white disabled:hover:text-blue-500"
