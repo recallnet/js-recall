@@ -1,4 +1,8 @@
-import { AssetTransfersWithMetadataResult } from "alchemy-sdk";
+import {
+  AssetTransfersCategory,
+  AssetTransfersWithMetadataResponse,
+  AssetTransfersWithMetadataResult,
+} from "alchemy-sdk";
 import { Logger } from "pino";
 
 import { SpecificChain } from "../types/index.js";
@@ -8,6 +12,44 @@ import {
   TransactionData,
   TransactionReceipt,
 } from "../types/rpc.js";
+
+/**
+ * Helper to create properly formatted transfer objects
+ * Ensures all required Alchemy SDK fields are populated
+ */
+function createMockTransfer(params: {
+  from: string;
+  to: string;
+  value: number;
+  asset: string;
+  hash: string;
+  blockNum: string;
+  blockTimestamp: string;
+  tokenAddress: string;
+  decimal: string;
+}): AssetTransfersWithMetadataResult {
+  return {
+    uniqueId: `${params.hash}-${params.from}-${params.to}`.toLowerCase(),
+    category: AssetTransfersCategory.ERC20,
+    blockNum: params.blockNum,
+    from: params.from,
+    to: params.to,
+    value: params.value,
+    erc721TokenId: null,
+    erc1155Metadata: null,
+    tokenId: null,
+    asset: params.asset,
+    hash: params.hash,
+    rawContract: {
+      address: params.tokenAddress,
+      decimal: params.decimal,
+      value: null,
+    },
+    metadata: {
+      blockTimestamp: params.blockTimestamp,
+    },
+  };
+}
 
 /**
  * Mock Alchemy RPC Provider for E2E Testing
@@ -34,6 +76,7 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
   /**
    * Initialize default mock data for test wallets
    * Pre-configured wallets with known swaps and transfers
+   * Uses relative timestamps (like MockHyperliquidServer) to ensure data is "recent"
    */
   private initializeDefaultMockData(): void {
     // Default data for new wallets - no activity
@@ -44,6 +87,12 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
       balances: new Map(),
     });
 
+    // Generate timestamps relative to NOW (like Hyperliquid mock)
+    // Swaps happened 10min, 20min, 30min ago - ensures they're captured in competition sync
+    const swap1Time = new Date(Date.now() - 10 * 60 * 1000).toISOString(); // 10 minutes ago
+    const swap2Time = new Date(Date.now() - 20 * 60 * 1000).toISOString(); // 20 minutes ago
+    const swap3Time = new Date(Date.now() - 30 * 60 * 1000).toISOString(); // 30 minutes ago
+
     // Pre-configured test wallet #1: Multiple Aerodrome swaps showing positive ROI progression
     // Simulates successful trading with portfolio growth across multiple syncs
     // Initial: 5000 USDC
@@ -52,105 +101,75 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
     // After Swap 3 (block 2000020): 4900 USDC + 35 AERO + 0.005 ETH + small gain (net: ~$5025)
     this.setWalletData("0x1111111111111111111111111111111111111111", {
       transfers: [
-        // Swap 1: USDC → AERO (Block 2000000)
-        {
+        // Swap 1: USDC → AERO (Block 2000000) - 30 minutes ago
+        createMockTransfer({
           from: "0x1111111111111111111111111111111111111111",
-          to: "0xd35fcf71834c4a4ae98ff22f68c05e13e5fdee01", // Aerodrome pool
+          to: "0xd35fcf71834c4a4ae98ff22f68c05e13e5fdee01",
           value: 100,
           asset: "USDC",
           hash: "0xmock_swap_1",
-          blockNum: "0x1e8480", // Block 2000000 in hex
-          metadata: {
-            blockTimestamp: "2024-01-15T12:00:00Z",
-          },
-          rawContract: {
-            address: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913", // USDC
-            decimal: "6",
-            value: null,
-          },
-        },
-        {
+          blockNum: "0x1e8480",
+          blockTimestamp: swap3Time,
+          tokenAddress: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+          decimal: "6",
+        }),
+        createMockTransfer({
           from: "0xd35fcf71834c4a4ae98ff22f68c05e13e5fdee01",
           to: "0x1111111111111111111111111111111111111111",
           value: 50,
           asset: "AERO",
           hash: "0xmock_swap_1",
           blockNum: "0x1e8480",
-          metadata: {
-            blockTimestamp: "2024-01-15T12:00:00Z",
-          },
-          rawContract: {
-            address: "0x940181a94a35a4569e4529a3cdfb74e38fd98631", // AERO
-            decimal: "18",
-            value: null,
-          },
-        },
-        // Swap 2: AERO → ETH (Block 2000010) - Second sync will catch this
-        {
+          blockTimestamp: swap3Time,
+          tokenAddress: "0x940181a94a35a4569e4529a3cdfb74e38fd98631",
+          decimal: "18",
+        }),
+        // Swap 2: AERO → ETH (Block 2000010) - 20 minutes ago
+        createMockTransfer({
           from: "0x1111111111111111111111111111111111111111",
           to: "0xaeropool2222222222222222222222222222222",
           value: 10,
           asset: "AERO",
           hash: "0xmock_swap_2",
-          blockNum: "0x1e848a", // Block 2000010 in hex
-          metadata: {
-            blockTimestamp: "2024-01-15T12:05:00Z",
-          },
-          rawContract: {
-            address: "0x940181a94a35a4569e4529a3cdfb74e38fd98631", // AERO
-            decimal: "18",
-            value: null,
-          },
-        },
-        {
+          blockNum: "0x1e848a",
+          blockTimestamp: swap2Time,
+          tokenAddress: "0x940181a94a35a4569e4529a3cdfb74e38fd98631",
+          decimal: "18",
+        }),
+        createMockTransfer({
           from: "0xaeropool2222222222222222222222222222222",
           to: "0x1111111111111111111111111111111111111111",
           value: 0.005,
           asset: "ETH",
           hash: "0xmock_swap_2",
           blockNum: "0x1e848a",
-          metadata: {
-            blockTimestamp: "2024-01-15T12:05:00Z",
-          },
-          rawContract: {
-            address: "0x4200000000000000000000000000000000000006", // WETH on Base
-            decimal: "18",
-            value: null,
-          },
-        },
-        // Swap 3: AERO → USDC (Block 2000020) - Third sync will catch this
-        {
+          blockTimestamp: swap2Time,
+          tokenAddress: "0x4200000000000000000000000000000000000006",
+          decimal: "18",
+        }),
+        // Swap 3: AERO → USDC (Block 2000020) - 10 minutes ago
+        createMockTransfer({
           from: "0x1111111111111111111111111111111111111111",
           to: "0xaeropool3333333333333333333333333333333",
           value: 5,
           asset: "AERO",
           hash: "0xmock_swap_3",
-          blockNum: "0x1e8494", // Block 2000020 in hex
-          metadata: {
-            blockTimestamp: "2024-01-15T12:10:00Z",
-          },
-          rawContract: {
-            address: "0x940181a94a35a4569e4529a3cdfb74e38fd98631", // AERO
-            decimal: "18",
-            value: null,
-          },
-        },
-        {
+          blockNum: "0x1e8494",
+          blockTimestamp: swap1Time,
+          tokenAddress: "0x940181a94a35a4569e4529a3cdfb74e38fd98631",
+          decimal: "18",
+        }),
+        createMockTransfer({
           from: "0xaeropool3333333333333333333333333333333",
           to: "0x1111111111111111111111111111111111111111",
           value: 6,
           asset: "USDC",
           hash: "0xmock_swap_3",
           blockNum: "0x1e8494",
-          metadata: {
-            blockTimestamp: "2024-01-15T12:10:00Z",
-          },
-          rawContract: {
-            address: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913", // USDC
-            decimal: "6",
-            value: null,
-          },
-        },
+          blockTimestamp: swap1Time,
+          tokenAddress: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+          decimal: "6",
+        }),
       ],
       transactions: new Map([
         [
@@ -274,25 +293,21 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
     });
 
     // Pre-configured test wallet #2: Agent with deposit (transfer violation)
+    const depositTime = new Date(Date.now() - 5 * 60 * 1000).toISOString(); // 5 minutes ago
     this.setWalletData("0x2222222222222222222222222222222222222222", {
       transfers: [
         // Deposit: External wallet → Agent
-        {
+        createMockTransfer({
           from: "0xexternal1111111111111111111111111111111111",
           to: "0x2222222222222222222222222222222222222222",
           value: 1000,
           asset: "USDC",
           hash: "0xmock_deposit_1",
           blockNum: "0x1e8481",
-          metadata: {
-            blockTimestamp: "2024-01-16T10:00:00Z",
-          },
-          rawContract: {
-            address: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
-            decimal: "6",
-            value: null,
-          },
-        },
+          blockTimestamp: depositTime,
+          tokenAddress: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+          decimal: "6",
+        }),
       ],
       transactions: new Map(),
       receipts: new Map(),
@@ -300,25 +315,21 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
     });
 
     // Pre-configured test wallet #3: Agent with withdrawal (transfer violation)
+    const withdrawalTime = new Date(Date.now() - 7 * 60 * 1000).toISOString(); // 7 minutes ago
     this.setWalletData("0x3333333333333333333333333333333333333333", {
       transfers: [
         // Withdrawal: Agent → External wallet
-        {
+        createMockTransfer({
           from: "0x3333333333333333333333333333333333333333",
           to: "0xexternal2222222222222222222222222222222222",
           value: 500,
           asset: "USDC",
           hash: "0xmock_withdraw_1",
           blockNum: "0x1e8482",
-          metadata: {
-            blockTimestamp: "2024-01-16T11:00:00Z",
-          },
-          rawContract: {
-            address: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
-            decimal: "6",
-            value: null,
-          },
-        },
+          blockTimestamp: withdrawalTime,
+          tokenAddress: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+          decimal: "6",
+        }),
       ],
       transactions: new Map(),
       receipts: new Map(),
@@ -328,74 +339,58 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
     // Pre-configured test wallet #4: Multiple swaps at different blocks (protocol filtering test)
     // Aerodrome swap at block 2000030 (should pass filter)
     // Uniswap swap at block 2000031 (should be filtered out)
+    const aerodromeSwapTime = new Date(
+      Date.now() - 15 * 60 * 1000,
+    ).toISOString(); // 15 minutes ago
+    const uniswapSwapTime = new Date(Date.now() - 14 * 60 * 1000).toISOString(); // 14 minutes ago
     this.setWalletData("0x4444444444444444444444444444444444444444", {
       transfers: [
         // Swap 1: Aerodrome USDC → AERO (Block 2000030)
-        {
+        createMockTransfer({
           from: "0x4444444444444444444444444444444444444444",
           to: "0xaeropool1111111111111111111111111111111",
           value: 50,
           asset: "USDC",
           hash: "0xmock_aerodrome_swap",
-          blockNum: "0x1e849e", // Block 2000030 in hex
-          metadata: {
-            blockTimestamp: "2024-01-15T13:00:00Z",
-          },
-          rawContract: {
-            address: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
-            decimal: "6",
-            value: null,
-          },
-        },
-        {
+          blockNum: "0x1e849e",
+          blockTimestamp: aerodromeSwapTime,
+          tokenAddress: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+          decimal: "6",
+        }),
+        createMockTransfer({
           from: "0xaeropool1111111111111111111111111111111",
           to: "0x4444444444444444444444444444444444444444",
           value: 25,
           asset: "AERO",
           hash: "0xmock_aerodrome_swap",
-          blockNum: "0x1e849e", // Block 2000030
-          metadata: {
-            blockTimestamp: "2024-01-15T13:00:00Z",
-          },
-          rawContract: {
-            address: "0x940181a94a35a4569e4529a3cdfb74e38fd98631",
-            decimal: "18",
-            value: null,
-          },
-        },
+          blockNum: "0x1e849e",
+          blockTimestamp: aerodromeSwapTime,
+          tokenAddress: "0x940181a94a35a4569e4529a3cdfb74e38fd98631",
+          decimal: "18",
+        }),
         // Swap 2: Uniswap AERO → ETH (Block 2000031) - different protocol
-        {
+        createMockTransfer({
           from: "0x4444444444444444444444444444444444444444",
           to: "0xunipool2222222222222222222222222222222",
           value: 10,
           asset: "AERO",
           hash: "0xmock_uniswap_swap",
-          blockNum: "0x1e849f", // Block 2000031 in hex
-          metadata: {
-            blockTimestamp: "2024-01-15T13:01:00Z",
-          },
-          rawContract: {
-            address: "0x940181a94a35a4569e4529a3cdfb74e38fd98631",
-            decimal: "18",
-            value: null,
-          },
-        },
-        {
+          blockNum: "0x1e849f",
+          blockTimestamp: uniswapSwapTime,
+          tokenAddress: "0x940181a94a35a4569e4529a3cdfb74e38fd98631",
+          decimal: "18",
+        }),
+        createMockTransfer({
           from: "0xunipool2222222222222222222222222222222",
           to: "0x4444444444444444444444444444444444444444",
           value: 0.05,
           asset: "ETH",
           hash: "0xmock_uniswap_swap",
-          blockNum: "0x1e849f", // Block 2000031
-          metadata: {
-            blockTimestamp: "2024-01-15T13:01:00Z",
-          },
-          rawContract: {
-            address: "0x4200000000000000000000000000000000000006", // WETH
-            decimal: "18",
-            value: null,
-          },
-        },
+          blockNum: "0x1e849f",
+          blockTimestamp: uniswapSwapTime,
+          tokenAddress: "0x4200000000000000000000000000000000000006",
+          decimal: "18",
+        }),
       ],
       transactions: new Map([
         [
@@ -539,11 +534,10 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
     chain: SpecificChain,
     fromBlock: number | string,
     toBlock: number | string,
-  ): Promise<{
-    transfers: AssetTransfersWithMetadataResult[];
-    pageKey?: string;
-  }> {
+    pageKey?: string,
+  ): Promise<AssetTransfersWithMetadataResponse> {
     void toBlock; // Not used in mock - all transfers returned
+    void pageKey; // Not used in mock - no pagination
     const data = this.getWalletData(walletAddress);
 
     // Convert fromBlock to number if it's hex
@@ -560,14 +554,16 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
       return transferBlock >= fromBlockNum;
     });
 
-    this.logger.debug(
+    this.logger.info(
       {
-        wallet: walletAddress.slice(0, 10),
+        wallet: walletAddress,
         chain,
         fromBlock: fromBlockNum,
-        totalTransfers: filteredTransfers.length,
+        rawTransfers: data.transfers.length,
+        filteredTransfers: filteredTransfers.length,
+        hasWalletData: this.mockData.has(walletAddress.toLowerCase()),
       },
-      `[MockAlchemyRpcProvider] Returning ${filteredTransfers.length} transfers`,
+      `[MockAlchemyRpcProvider] getAssetTransfers called`,
     );
 
     return {
@@ -629,8 +625,9 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
    */
   async getBlockNumber(chain: SpecificChain): Promise<number> {
     void chain; // Not used in mock - returns static block number
-    // Return a reasonable mock block number
-    return 2000100; // Slightly ahead of our test data
+    // Return block number BEFORE test data so sync will pick up all mock swaps
+    // Test data is at blocks 2000000, 2000010, 2000020, 2000030, 2000031
+    return 1999990; // Just before first swap to ensure all test data is captured
   }
 
   /**
@@ -693,9 +690,8 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
 }
 
 // Type definitions for mock data
-// Using Partial for Alchemy SDK types since mock doesn't need all fields
 interface MockWalletData {
-  transfers: Partial<AssetTransfersWithMetadataResult>[];
+  transfers: AssetTransfersWithMetadataResult[];
   transactions: Map<string, TransactionData>;
   receipts: Map<string, TransactionReceipt>;
   balances: Map<string, number>;

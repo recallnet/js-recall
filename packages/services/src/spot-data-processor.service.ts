@@ -19,6 +19,7 @@ import {
   SpecificChain,
   getBlockchainType,
 } from "./types/index.js";
+import type { IRpcProvider } from "./types/rpc.js";
 import type {
   AgentSpotSyncResult,
   BatchSpotSyncResult,
@@ -51,6 +52,8 @@ export class SpotDataProcessor {
   private priceTracker: PriceTrackerService;
   private logger: Logger;
 
+  private mockRpcProvider?: IRpcProvider;
+
   constructor(
     agentRepo: AgentRepository,
     competitionRepo: CompetitionRepository,
@@ -59,6 +62,7 @@ export class SpotDataProcessor {
     portfolioSnapshotter: PortfolioSnapshotterService,
     priceTracker: PriceTrackerService,
     logger: Logger,
+    mockRpcProvider?: IRpcProvider,
   ) {
     this.agentRepo = agentRepo;
     this.competitionRepo = competitionRepo;
@@ -67,6 +71,7 @@ export class SpotDataProcessor {
     this.portfolioSnapshotter = portfolioSnapshotter;
     this.priceTracker = priceTracker;
     this.logger = logger;
+    this.mockRpcProvider = mockRpcProvider;
   }
 
   /**
@@ -881,6 +886,7 @@ export class SpotDataProcessor {
         spotLiveConfig.dataSourceConfig,
         protocols,
         this.logger,
+        this.mockRpcProvider,
       );
 
       this.logger.info(

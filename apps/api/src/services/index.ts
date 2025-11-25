@@ -45,7 +45,10 @@ import {
   TradingConstraintsService,
   UserService,
 } from "@recallnet/services";
-import { MockPrivyClient } from "@recallnet/services/lib";
+import {
+  MockAlchemyRpcProvider,
+  MockPrivyClient,
+} from "@recallnet/services/lib";
 import { WalletWatchlist } from "@recallnet/services/lib";
 import {
   DexScreenerProvider,
@@ -303,6 +306,12 @@ class ServiceRegistry {
     );
 
     // Initialize SpotDataProcessor before CompetitionManager (as it's a dependency)
+    // In test mode, inject MockAlchemyRpcProvider for deterministic blockchain data
+    const mockRpcProvider =
+      config.server.nodeEnv === "test"
+        ? new MockAlchemyRpcProvider(serviceLogger)
+        : undefined;
+
     this._spotDataProcessor = new SpotDataProcessor(
       this._agentRepository,
       this._competitionRepository,
@@ -311,6 +320,7 @@ class ServiceRegistry {
       this._portfolioSnapshotterService,
       this._priceTrackerService,
       serviceLogger,
+      mockRpcProvider,
     );
 
     // Initialize LeaderboardService with required dependencies

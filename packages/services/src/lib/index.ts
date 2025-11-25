@@ -6,6 +6,7 @@ export * from "./dex-protocols.js";
 export * from "./error-to-message.js";
 export * from "./error-utils.js";
 export * from "./handle-utils.js";
+export * from "./mock-alchemy-rpc-provider.js";
 export * from "./pagination-utils.js";
 export * from "./price-map-key.js";
 export * from "./privy-mock.js";
