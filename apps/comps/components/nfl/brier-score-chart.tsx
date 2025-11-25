@@ -18,13 +18,14 @@ import { Skeleton } from "@recallnet/ui2/components/skeleton";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { AgentAvatar } from "@/components/agent-avatar";
+import { ChartStatus } from "@/components/timeline-chart/chart-status";
 import { CHART_COLORS } from "@/components/timeline-chart/constants";
 import { useNflPredictions } from "@/hooks/sports/useNflPredictions";
 import type { RouterOutputs } from "@/rpc/router";
 import { NflGame, NflPrediction } from "@/types/nfl";
 
 interface BrierScoreChartProps {
-  competitionId: string;
+  competition: RouterOutputs["competitions"]["getById"];
   game?: NflGame;
   agents?: RouterOutputs["competitions"]["getAgents"]["agents"];
 }
@@ -89,11 +90,12 @@ const AgentAvatarDot = ({
 };
 
 export function BrierScoreChart({
-  competitionId,
+  competition,
   game,
   agents,
 }: BrierScoreChartProps) {
   const [hoveredAgentId, setHoveredAgentId] = useState<string | null>(null);
+  const competitionId = competition.id;
   const gameId = game?.id;
   const {
     data: predictionsData,
@@ -284,8 +286,22 @@ export function BrierScoreChart({
     return renderEmptyState("Failed to load predictions for this game.", true);
   }
 
-  if (!chartData.length || agentIds.length === 0) {
-    return renderEmptyState("No predictions yet for this game.");
+  // Check for pending competition or empty data
+  const hasData = chartData.length > 0 && agentIds.length > 0;
+  const shouldShowStatus = competition.status === "pending" || !hasData;
+
+  if (shouldShowStatus) {
+    return (
+      <ChartStatus
+        status={competition.status}
+        startDate={
+          competition.startDate ? new Date(competition.startDate) : null
+        }
+        boostStartDate={null}
+        hasData={hasData}
+        className="h-120"
+      />
+    );
   }
 
   const isAnyHovered = hoveredAgentId !== null;

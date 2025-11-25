@@ -33,18 +33,17 @@ import { getCompetitionPollingInterval } from "@/utils/competition-utils";
 type CompetitionDetails = RouterOutputs["competitions"]["getById"];
 
 interface NflCompetitionPageProps {
-  competitionId: string;
   competition: CompetitionDetails;
 }
 
 export default function NflCompetitionPage({
-  competitionId,
   competition,
 }: NflCompetitionPageProps) {
   const [selectedGameId, setSelectedGameId] = useState<string | undefined>();
   const [activeKeyTab, setActiveKeyTab] =
     useState<NflCompetitionKeyTab>("games");
 
+  const competitionId = competition.id;
   const {
     data: gamesData,
     isLoading: gamesLoading,
@@ -151,7 +150,7 @@ export default function NflCompetitionPage({
           <div className="mt-4">
             <BrierScoreChart
               key={competitionId}
-              competitionId={competitionId}
+              competition={competition}
               game={selectedGame}
               agents={chartAgentsData?.agents}
             />
