@@ -44,9 +44,7 @@ export default async function CompetitionPage({
 
     // Route to appropriate client based on competition type
     if (competition?.type === "sports_prediction") {
-      return (
-        <NflCompetitionPage competitionId={id} competition={competition} />
-      );
+      return <NflCompetitionPage competition={competition} />;
     }
     return <CompetitionPageClient params={params} />;
   } catch (error) {
