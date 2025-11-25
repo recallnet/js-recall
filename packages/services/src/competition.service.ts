@@ -4096,6 +4096,20 @@ export class CompetitionService {
       violationType?: string;
     },
   ): Promise<SelectSpotLiveSelfFundingAlert[]> {
+    // Validate competition type
+    const competition = await this.competitionRepo.findById(competitionId);
+
+    if (!competition) {
+      throw new ApiError(404, "Competition not found");
+    }
+
+    if (competition.type !== "spot_live_trading") {
+      throw new ApiError(
+        400,
+        "This endpoint is only available for spot live trading competitions",
+      );
+    }
+
     return this.spotLiveRepo.getSpotLiveAlerts(competitionId, filters);
   }
 

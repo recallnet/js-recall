@@ -469,7 +469,7 @@ export const AdminGetCompetitionTransferViolationsParamsSchema = z.object({
 export const AdminGetSpotLiveAlertsQuerySchema = z.object({
   reviewed: z.enum(["true", "false", "all"]).optional().default("false"),
   violationType: z
-    .enum(["transfer", "balance_reconciliation", "all"])
+    .enum(["deposit", "withdrawal_exceeds_limit", "all"])
     .optional(),
 });
 
