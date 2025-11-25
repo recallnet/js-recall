@@ -511,7 +511,7 @@ export interface Competition {
   startDate: string | null;
   endDate: string | null;
   status: CompetitionStatus;
-  type?: CompetitionType; // Competition type (trading or perpetual_futures)
+  type?: CompetitionType; // Competition type (trading, perpetual_futures or spot_live_trading)
   crossChainTradingType: CrossChainTradingType;
   sandboxMode: boolean; // Controls automatic joining of newly registered agents
   createdAt: string;

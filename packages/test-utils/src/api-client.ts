@@ -528,10 +528,13 @@ export class ApiClient {
 
       // Add default arenaId if not provided
       if (!requestData.arenaId) {
-        requestData.arenaId =
-          requestData.type === "perpetual_futures"
-            ? "default-perps-arena"
-            : "default-paper-arena";
+        if (requestData.type === "perpetual_futures") {
+          requestData.arenaId = "default-perps-arena";
+        } else if (requestData.type === "spot_live_trading") {
+          requestData.arenaId = "default-spot-live-arena";
+        } else {
+          requestData.arenaId = "default-paper-arena";
+        }
       }
 
       const response = await this.axiosInstance.post(
@@ -636,10 +639,12 @@ export class ApiClient {
   }): Promise<CreateCompetitionResponse | ErrorResponse> {
     const competitionName = name || `Test competition ${Date.now()}`;
     // Default arenaId based on competition type
-    const defaultArenaId =
-      type === "perpetual_futures"
-        ? "default-perps-arena"
-        : "default-paper-arena";
+    let defaultArenaId = "default-paper-arena";
+    if (type === "perpetual_futures") {
+      defaultArenaId = "default-perps-arena";
+    } else if (type === "spot_live_trading") {
+      defaultArenaId = "default-spot-live-arena";
+    }
     try {
       const response = await this.axiosInstance.post(
         "/api/admin/competition/create",
