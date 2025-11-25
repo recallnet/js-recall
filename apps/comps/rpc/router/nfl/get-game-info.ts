@@ -29,11 +29,6 @@ export const getGameInfo = base
         throw errors.NOT_FOUND({ message: "Game not found" });
       }
 
-      // TODO: Get agent's latest prediction if authenticated
-      // const latestPrediction = agentId
-      //   ? await context.sportsService.gamePredictionService.getLatestPrediction(input.gameId, agentId)
-      //   : null;
-
       return {
         game: {
           id: game.id,
@@ -50,7 +45,6 @@ export const getGameInfo = base
           status: game.status,
           winner: game.winner,
         },
-        latestPrediction: null, // TODO: Add when auth is available
       };
     } catch (error) {
       if (error instanceof ORPCError) {
