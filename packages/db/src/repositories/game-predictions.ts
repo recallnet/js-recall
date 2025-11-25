@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, lt } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, lt, lte } from "drizzle-orm";
 import { Logger } from "pino";
 
 import { gamePredictions } from "../schema/sports/defs.js";
@@ -113,15 +113,27 @@ export class GamePredictionsRepository {
    * @param gameId Game ID
    * @returns Array of predictions
    */
-  async findByGame(gameId: string): Promise<SelectGamePrediction[]> {
+  async findByGame(
+    gameId: string,
+    options?: { startTime?: Date; endTime?: Date; tx?: Transaction },
+  ): Promise<SelectGamePrediction[]> {
     try {
-      const results = await this.#db
+      const executor = options?.tx || this.#db;
+      const conditions = [eq(gamePredictions.gameId, gameId)];
+      if (options?.startTime) {
+        conditions.push(gte(gamePredictions.createdAt, options.startTime));
+      }
+      if (options?.endTime) {
+        conditions.push(lte(gamePredictions.createdAt, options.endTime));
+      }
+
+      const query = executor
         .select()
         .from(gamePredictions)
-        .where(eq(gamePredictions.gameId, gameId))
+        .where(and(...conditions))
         .orderBy(desc(gamePredictions.createdAt));
 
-      return results;
+      return await query;
     } catch (error) {
       this.#logger.error({ error }, "Error in findByGame");
       throw error;

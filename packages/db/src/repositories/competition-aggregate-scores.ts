@@ -6,7 +6,7 @@ import {
   InsertCompetitionAggregateScore,
   SelectCompetitionAggregateScore,
 } from "../schema/sports/types.js";
-import { Database } from "../types.js";
+import { Database, Transaction } from "../types.js";
 
 /**
  * Competition Aggregate Scores Repository
@@ -24,10 +24,12 @@ export class CompetitionAggregateScoresRepository {
   /**
    * Upsert competition aggregate score
    * @param score Score data to insert or update
+   * @param tx Optional transaction
    * @returns The upserted score
    */
   async upsert(
     score: InsertCompetitionAggregateScore,
+    tx?: Transaction,
   ): Promise<SelectCompetitionAggregateScore> {
     try {
       const now = new Date();
@@ -36,7 +38,8 @@ export class CompetitionAggregateScoresRepository {
         updatedAt: now,
       };
 
-      const [result] = await this.#db
+      const executor = tx || this.#db;
+      const [result] = await executor
         .insert(competitionAggregateScores)
         .values(data)
         .onConflictDoUpdate({

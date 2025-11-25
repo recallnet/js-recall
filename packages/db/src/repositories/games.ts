@@ -140,6 +140,32 @@ export class GamesRepository {
   }
 
   /**
+   * Find game by provider game ID with row lock (SELECT FOR UPDATE)
+   * Use this within a transaction to prevent race conditions
+   * @param providerGameId SportsDataIO provider game ID
+   * @param tx Transaction instance
+   * @returns Game or undefined
+   */
+  async findByProviderGameIdForUpdate(
+    providerGameId: number,
+    tx: Transaction,
+  ): Promise<SelectGame | undefined> {
+    try {
+      const [result] = await tx
+        .select()
+        .from(games)
+        .where(eq(games.providerGameId, providerGameId))
+        .for("update")
+        .limit(1);
+
+      return result;
+    } catch (error) {
+      this.#logger.error({ error }, "Error in findByProviderGameIdForUpdate");
+      throw error;
+    }
+  }
+
+  /**
    * Find games by IDs
    * @param ids Array of game IDs
    * @returns Array of games

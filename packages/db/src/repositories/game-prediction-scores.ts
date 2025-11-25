@@ -6,7 +6,7 @@ import {
   InsertGamePredictionScore,
   SelectGamePredictionScore,
 } from "../schema/sports/types.js";
-import { Database } from "../types.js";
+import { Database, Transaction } from "../types.js";
 
 /**
  * Game Prediction Scores Repository
@@ -28,6 +28,7 @@ export class GamePredictionScoresRepository {
    */
   async upsert(
     score: InsertGamePredictionScore,
+    tx?: Transaction,
   ): Promise<SelectGamePredictionScore> {
     try {
       const now = new Date();
@@ -36,7 +37,9 @@ export class GamePredictionScoresRepository {
         updatedAt: now,
       };
 
-      const [result] = await this.#db
+      const executor = tx || this.#db;
+
+      const [result] = await executor
         .insert(gamePredictionScores)
         .values(data)
         .onConflictDoUpdate({
@@ -106,9 +109,11 @@ export class GamePredictionScoresRepository {
   async findByCompetitionAndAgent(
     competitionId: string,
     agentId: string,
+    tx?: Transaction,
   ): Promise<SelectGamePredictionScore[]> {
     try {
-      const results = await this.#db
+      const executor = tx || this.#db;
+      const results = await executor
         .select()
         .from(gamePredictionScores)
         .where(

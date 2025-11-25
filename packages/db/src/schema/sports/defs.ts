@@ -35,7 +35,7 @@ export const nflTeam = sportsSchema.enum("nfl_team", [
   "ATL",
   "BAL",
   "BUF",
-  "BYE", // Note: bye week; not a real team and ignored during game/schedule ingestion
+  "BYE", // Note: bye week; not a real team and ignored during game/schedule syncing
   "CAR",
   "CHI",
   "CIN",

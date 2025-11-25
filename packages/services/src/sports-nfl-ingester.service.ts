@@ -5,7 +5,7 @@ import { CompetitionGamesRepository } from "@recallnet/db/repositories/competiti
 import { GamePlaysRepository } from "@recallnet/db/repositories/game-plays";
 import { GamePredictionsRepository } from "@recallnet/db/repositories/game-predictions";
 import { GamesRepository } from "@recallnet/db/repositories/games";
-import {
+import type {
   NflGameStatus,
   NflTeam,
   SelectGame,
@@ -14,17 +14,17 @@ import {
 import type { Database, Transaction } from "@recallnet/db/types";
 
 import { GameScoringService } from "./game-scoring.service.js";
-import {
+import { SportsDataIONflProvider } from "./providers/sportsdataio.provider.js";
+import type {
   SportsDataIOGameStatus,
-  SportsDataIONflProvider,
   SportsDataIOPlayByPlay,
-} from "./providers/sportsdataio.provider.js";
+} from "./types/sports.js";
 
 /**
- * NFL Live Ingestor Service
+ * NFL Game and Play Ingester Service
  * Fetches live data from SportsDataIO and ingests into database
  */
-export class NflIngestorService {
+export class NflIngesterService {
   readonly #db: Database;
   readonly #gamesRepo: GamesRepository;
   readonly #gamePlaysRepo: GamePlaysRepository;
@@ -263,7 +263,7 @@ export class NflIngestorService {
       // Fetch play-by-play data
       const data = await this.#provider.getPlayByPlay(providerGameId);
 
-      // Execute game + play ingestion atomically
+      // Execute ingester for game + plays atomically
       const { game, finalizeContext } = await this.#db.transaction(
         async (tx: Transaction) => {
           const gameResult = await this.#ingestGame(data, tx);
@@ -418,8 +418,8 @@ export class NflIngestorService {
       status = "scheduled";
     }
 
-    // Check if game was already final
-    const existingGame = await this.#gamesRepo.findByProviderGameId(
+    // Check if game was already final (note: row-locked)
+    const existingGame = await this.#gamesRepo.findByProviderGameIdForUpdate(
       score.GlobalGameID,
       tx,
     );

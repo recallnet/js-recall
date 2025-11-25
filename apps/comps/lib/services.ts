@@ -219,7 +219,6 @@ export const sportsService = new SportsService(
   db,
   competitionRepository,
   createLogger("SportsService"),
-  config,
 );
 
 export const competitionService = new CompetitionService(

@@ -15,15 +15,15 @@ import type {
 import type { Database, Transaction } from "@recallnet/db/types";
 
 import { GameScoringService } from "../game-scoring.service.js";
+import type { SportsDataIONflProvider } from "../providers/sportsdataio.provider.js";
+import { NflIngesterService } from "../sports-nfl-ingester.service.js";
 import type {
-  SportsDataIONflProvider,
   SportsDataIOPlayByPlay,
   SportsDataIOScheduleGame,
-} from "../providers/sportsdataio.provider.js";
-import { NflIngestorService } from "../sports-nfl-ingestor.service.js";
+} from "../types/sports.js";
 
-describe("NflIngestorService", () => {
-  let service: NflIngestorService;
+describe("SportsNflIngesterService", () => {
+  let service: NflIngesterService;
   let mockGamesRepo: MockProxy<GamesRepository>;
   let mockGamePlaysRepo: MockProxy<GamePlaysRepository>;
   let mockGamePredictionsRepo: MockProxy<GamePredictionsRepository>;
@@ -109,7 +109,7 @@ describe("NflIngestorService", () => {
       },
     );
 
-    service = new NflIngestorService(
+    service = new NflIngesterService(
       mockDb,
       mockGamesRepo,
       mockGamePlaysRepo,
@@ -264,7 +264,7 @@ describe("NflIngestorService", () => {
       };
 
       mockProvider.getPlayByPlay.mockResolvedValue(mockData);
-      mockGamesRepo.findByProviderGameId.mockResolvedValue(undefined);
+      mockGamesRepo.findByProviderGameIdForUpdate.mockResolvedValue(undefined);
       mockGamesRepo.upsert.mockResolvedValue(mockGame);
 
       const result = await service.ingestGamePlayByPlay(19068);
@@ -481,7 +481,7 @@ describe("NflIngestorService", () => {
       };
 
       mockProvider.getPlayByPlay.mockResolvedValue(mockPlayByPlayData);
-      mockGamesRepo.findByProviderGameId.mockResolvedValue(game);
+      mockGamesRepo.findByProviderGameIdForUpdate.mockResolvedValue(game);
       mockGamesRepo.upsert.mockResolvedValue(game);
 
       const result = await service.ingestActiveGames();
@@ -589,7 +589,7 @@ describe("NflIngestorService", () => {
           Plays: [],
         });
 
-      mockGamesRepo.findByProviderGameId.mockResolvedValue(undefined);
+      mockGamesRepo.findByProviderGameIdForUpdate.mockResolvedValue(undefined);
       mockGamesRepo.upsert.mockResolvedValue(game2);
 
       const result = await service.ingestActiveGames();
@@ -659,7 +659,9 @@ describe("NflIngestorService", () => {
         },
       ];
 
-      mockGamesRepo.findByProviderGameId.mockResolvedValue(existingGame);
+      mockGamesRepo.findByProviderGameIdForUpdate.mockResolvedValue(
+        existingGame,
+      );
       mockGamePredictionsRepo.findPregamePredictions.mockResolvedValue(
         preGamePredictions,
       );
@@ -767,7 +769,9 @@ describe("NflIngestorService", () => {
         updatedAt: new Date(),
       };
 
-      mockGamesRepo.findByProviderGameId.mockResolvedValue(existingGame);
+      mockGamesRepo.findByProviderGameIdForUpdate.mockResolvedValue(
+        existingGame,
+      );
       mockGamePredictionsRepo.findPregamePredictions.mockResolvedValue([]);
 
       const updatedGame: SelectGame = {
@@ -842,7 +846,9 @@ describe("NflIngestorService", () => {
         updatedAt: new Date(),
       };
 
-      mockGamesRepo.findByProviderGameId.mockResolvedValue(existingGame);
+      mockGamesRepo.findByProviderGameIdForUpdate.mockResolvedValue(
+        existingGame,
+      );
 
       const updatedGame: SelectGame = {
         ...existingGame,
@@ -955,7 +961,9 @@ describe("NflIngestorService", () => {
         },
       ];
 
-      mockGamesRepo.findByProviderGameId.mockResolvedValue(existingGame);
+      mockGamesRepo.findByProviderGameIdForUpdate.mockResolvedValue(
+        existingGame,
+      );
       mockGamePredictionsRepo.findPregamePredictions.mockResolvedValue(
         preGamePredictions,
       );
