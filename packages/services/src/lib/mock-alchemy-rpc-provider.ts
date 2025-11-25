@@ -633,6 +633,103 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
         ["0x833589fcd6edb6e08f4c7c32d4f71b54bda02913", 3000], // Initial: 3000 USDC
       ]),
     });
+
+    // Test wallet for token whitelist filtering - has swap to non-whitelisted token
+    // Swap: USDC → AERO, but AERO is NOT whitelisted
+    const nonWhitelistedSwapTime = new Date(
+      Date.now() - 5 * 60 * 1000,
+    ).toISOString();
+    this.setWalletData("0x6666666666666666666666666666666666666666", {
+      transfers: [
+        createMockTransfer({
+          from: "0x6666666666666666666666666666666666666666",
+          to: "0xaeropool_reject",
+          value: 100,
+          asset: "USDC",
+          hash: "0xmock_nonwhitelisted_swap",
+          blockNum: "0x1e8550", // Block 2001232
+          blockTimestamp: nonWhitelistedSwapTime,
+          tokenAddress: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+          decimal: "6",
+        }),
+        createMockTransfer({
+          from: "0xaeropool_reject",
+          to: "0x6666666666666666666666666666666666666666",
+          value: 50,
+          asset: "AERO",
+          hash: "0xmock_nonwhitelisted_swap",
+          blockNum: "0x1e8550",
+          blockTimestamp: nonWhitelistedSwapTime,
+          tokenAddress: "0x940181a94a35a4569e4529a3cdfb74e38fd98631", // AERO - not whitelisted
+          decimal: "18",
+        }),
+      ],
+      transactions: new Map([
+        [
+          "0xmock_nonwhitelisted_swap",
+          {
+            hash: "0xmock_nonwhitelisted_swap",
+            from: "0x6666666666666666666666666666666666666666",
+            to: "0xcf77a3ba9a5ca399b7c97c74d54e5b1beb874e43", // Aerodrome router
+            blockNumber: 2001232,
+          },
+        ],
+      ]),
+      receipts: new Map([
+        [
+          "0xmock_nonwhitelisted_swap",
+          {
+            transactionHash: "0xmock_nonwhitelisted_swap",
+            blockNumber: 2001232,
+            gasUsed: "150000",
+            effectiveGasPrice: "50000000000",
+            status: true,
+            from: "0x6666666666666666666666666666666666666666",
+            to: "0xcf77a3ba9a5ca399b7c97c74d54e5b1beb874e43",
+            logs: [
+              {
+                address: "0xaeropool_reject",
+                blockNumber: 2001232,
+                blockHash: "0xrejecthash",
+                transactionIndex: 0,
+                removed: false,
+                logIndex: 0,
+                transactionHash: "0xmock_nonwhitelisted_swap",
+                topics: [
+                  "0xb3e2773606abfd36b5bd91394b3a54d1398336c65005baf7bf7a05efeffaf75b", // Aerodrome Swap
+                ],
+                data: "0x",
+              },
+            ],
+          },
+        ],
+      ]),
+      balances: new Map([
+        ["0x833589fcd6edb6e08f4c7c32d4f71b54bda02913", 5000], // Initial: 5000 USDC
+      ]),
+    });
+
+    // Test wallet for min funding threshold - below threshold
+    this.setWalletData("0x7777777777777777777777777777777777777777", {
+      transfers: [],
+      transactions: new Map(),
+      receipts: new Map(),
+      balances: new Map([
+        ["0x833589fcd6edb6e08f4c7c32d4f71b54bda02913", 50], // Only $50 USDC - below threshold
+      ]),
+    });
+
+    // Test wallet for portfolio filtering - has multiple tokens but only USDC whitelisted
+    this.setWalletData("0x8888888888888888888888888888888888888888", {
+      transfers: [],
+      transactions: new Map(),
+      receipts: new Map(),
+      balances: new Map([
+        ["0x833589fcd6edb6e08f4c7c32d4f71b54bda02913", 1000], // USDC - whitelisted
+        ["0x940181a94a35a4569e4529a3cdfb74e38fd98631", 500], // AERO - NOT whitelisted
+        ["0x4200000000000000000000000000000000000006", 0.5], // ETH - NOT whitelisted (in this specific test)
+      ]),
+    });
   }
 
   /**
@@ -755,7 +852,10 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
       lowerAddress === "0xbbbb000000000000000000000000000000000002" ||
       lowerAddress === "0x2222222222222222222222222222222222222222" || // Deposit violations
       lowerAddress === "0x3333333333333333333333333333333333333333" || // Withdrawal violations
-      lowerAddress === "0x4444444444444444444444444444444444444444" // Protocol filtering test
+      lowerAddress === "0x4444444444444444444444444444444444444444" || // Protocol filtering test
+      lowerAddress === "0x6666666666666666666666666666666666666666" || // Token whitelist test
+      lowerAddress === "0x7777777777777777777777777777777777777777" || // Min funding threshold test
+      lowerAddress === "0x8888888888888888888888888888888888888888" // Portfolio filter test
     ) {
       // Test wallets with swaps/transfers - reveal on first manual sync (sync 1+)
       // This simulates the swap/transfer happening AFTER competition starts
@@ -1058,6 +1158,48 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
         ); // 50 USDC spent
         balancesToReturn.set("0x940181a94a35a4569e4529a3cdfb74e38fd98631", 25); // 25 AERO (or 15 if both swaps)
         balancesToReturn.set("0x4200000000000000000000000000000000000006", 0); // ETH (0.05 if Uniswap processed)
+      }
+    } else if (lowerAddress === "0x6666666666666666666666666666666666666666") {
+      // Token whitelist test - has swap to non-whitelisted AERO
+      balancesToReturn = new Map();
+
+      if (syncNumber === 0) {
+        balancesToReturn.set(
+          "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+          5000,
+        ); // Initial USDC
+      } else {
+        // Balance unchanged because swap to non-whitelisted token was rejected
+        balancesToReturn.set(
+          "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+          5000,
+        ); // Still 5000 USDC (swap rejected)
+        // Note: AERO balance not included since swap was rejected
+      }
+    } else if (lowerAddress === "0x7777777777777777777777777777777777777777") {
+      // Min funding threshold test - below threshold
+      balancesToReturn = new Map();
+      balancesToReturn.set("0x833589fcd6edb6e08f4c7c32d4f71b54bda02913", 50); // Only $50 - below $100 threshold
+    } else if (lowerAddress === "0x8888888888888888888888888888888888888888") {
+      // Portfolio filter test - multiple tokens but only USDC should be tracked
+      balancesToReturn = new Map();
+
+      if (syncNumber === 0) {
+        // Initial state - has multiple tokens
+        balancesToReturn.set(
+          "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+          1000,
+        ); // USDC
+        balancesToReturn.set("0x940181a94a35a4569e4529a3cdfb74e38fd98631", 500); // AERO
+        balancesToReturn.set("0x4200000000000000000000000000000000000006", 0.5); // ETH
+      } else {
+        // Same balances (no swaps)
+        balancesToReturn.set(
+          "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+          1000,
+        );
+        balancesToReturn.set("0x940181a94a35a4569e4529a3cdfb74e38fd98631", 500);
+        balancesToReturn.set("0x4200000000000000000000000000000000000006", 0.5);
       }
     }
 

@@ -1453,4 +1453,245 @@ describe("Spot Live Competition", () => {
     // Should have alerts for agents with deposit/withdrawal
     expect(typedAlertsResponse.alerts.length).toBeGreaterThan(0);
   });
+
+  test("should filter swaps by token whitelist", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agent with wallet that will swap to non-whitelisted token
+    const { agent, client: agentClient } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Token Whitelist Agent",
+        agentWalletAddress: "0x6666666666666666666666666666666666666666",
+      });
+
+    // Start competition with token whitelist (ETH and USDC only - NO AERO)
+    const response = await startSpotLiveTestCompetition({
+      adminClient,
+      name: `Token Whitelist Test ${Date.now()}`,
+      agentIds: [agent.id],
+      spotLiveConfig: {
+        dataSource: "rpc_direct" as const,
+        dataSourceConfig: {
+          type: "rpc_direct" as const,
+          provider: "alchemy" as const,
+          chains: ["base"],
+        },
+        chains: ["base"],
+        allowedTokens: [
+          {
+            address: "0x4200000000000000000000000000000000000006",
+            specificChain: "base",
+          }, // ETH
+          {
+            address: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+            specificChain: "base",
+          }, // USDC
+          // Note: AERO (0x9401...) is NOT whitelisted
+        ],
+        selfFundingThresholdUsd: 10,
+        syncIntervalMinutes: 2,
+      },
+    });
+
+    expect(response.success).toBe(true);
+    const competition = response.competition;
+
+    await wait(1000);
+
+    // Trigger sync - will process swap USDC → AERO
+    const services = new ServiceRegistry();
+    await services.spotDataProcessor.processSpotLiveCompetition(competition.id);
+    await wait(500);
+
+    // Agent checks trades - AERO swap should be rejected
+    const tradesResponse = await agentClient.getTradeHistory(competition.id);
+    expect(tradesResponse.success).toBe(true);
+
+    const typedTradesResponse = tradesResponse as TradeHistoryResponse;
+    const trades = typedTradesResponse.trades;
+
+    // Should have NO trades (AERO not whitelisted, swap rejected)
+    expect(trades.length).toBe(0);
+
+    // Agent checks balances - should still have initial USDC (swap rejected)
+    const balancesResponse = await agentClient.getBalance(competition.id);
+    expect(balancesResponse.success).toBe(true);
+
+    const typedBalances = balancesResponse as BalancesResponse;
+    const usdcBalance = typedBalances.balances.find(
+      (b) =>
+        b.tokenAddress.toLowerCase() ===
+        "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+    );
+    const aeroBalance = typedBalances.balances.find(
+      (b) =>
+        b.tokenAddress.toLowerCase() ===
+        "0x940181a94a35a4569e4529a3cdfb74e38fd98631",
+    );
+
+    // USDC should remain at starting balance (swap rejected)
+    expect(usdcBalance?.amount).toBeCloseTo(5000, 1);
+    // AERO should NOT appear in balances (non-whitelisted)
+    expect(aeroBalance).toBeUndefined();
+  });
+
+  test("should enforce minimum funding threshold at competition start", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agents with different starting portfolio values
+    const { agent: agentSufficientlyFunded } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Sufficiently Funded Agent",
+        agentWalletAddress: "0xaaaa000000000000000000000000000000000001", // 2000 USDC
+      });
+
+    const { agent: agentUnderfunded } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Underfunded Agent",
+      agentWalletAddress: "0x7777777777777777777777777777777777777777", // 50 USDC
+    });
+
+    // Start competition with minFundingThreshold = 100
+    const response = await startSpotLiveTestCompetition({
+      adminClient,
+      name: `Min Funding Test ${Date.now()}`,
+      agentIds: [agentSufficientlyFunded.id, agentUnderfunded.id],
+      spotLiveConfig: {
+        dataSource: "rpc_direct" as const,
+        dataSourceConfig: {
+          type: "rpc_direct" as const,
+          provider: "alchemy" as const,
+          chains: ["base"],
+        },
+        chains: ["base"],
+        minFundingThreshold: 100, // Agents below $100 removed
+        selfFundingThresholdUsd: 10,
+        syncIntervalMinutes: 2,
+      },
+    });
+
+    expect(response.success).toBe(true);
+    const competition = response.competition;
+
+    // Wait for competition start to complete (including threshold enforcement)
+    await wait(2000);
+
+    // Check competition agents - underfunded agent should be removed
+    const agentsResponse = await adminClient.getCompetitionAgents(
+      competition.id,
+    );
+    expect(agentsResponse.success).toBe(true);
+
+    const typedAgents = agentsResponse as CompetitionAgentsResponse;
+
+    // Sufficiently funded agent should remain in competition
+    const sufficientlyFundedEntry = typedAgents.agents.find(
+      (a) => a.id === agentSufficientlyFunded.id,
+    );
+    expect(sufficientlyFundedEntry).toBeDefined();
+    expect(sufficientlyFundedEntry?.active).toBe(true);
+
+    // Underfunded agent should be completely removed from competition
+    const underfundedEntry = typedAgents.agents.find(
+      (a) => a.id === agentUnderfunded.id,
+    );
+    expect(underfundedEntry).toBeUndefined();
+
+    // Verify only 1 agent remains (sufficiently funded)
+    expect(typedAgents.agents.length).toBe(1);
+  });
+
+  test("should filter balances and portfolio by token whitelist", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agent with multiple tokens
+    const { agent, client: agentClient } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Multi-Token Portfolio Agent",
+        agentWalletAddress: "0x8888888888888888888888888888888888888888",
+      });
+
+    // Start competition with USDC and ETH whitelist (need 2+ tokens for trading)
+    const response = await startSpotLiveTestCompetition({
+      adminClient,
+      name: `Portfolio Filter Test ${Date.now()}`,
+      agentIds: [agent.id],
+      spotLiveConfig: {
+        dataSource: "rpc_direct" as const,
+        dataSourceConfig: {
+          type: "rpc_direct" as const,
+          provider: "alchemy" as const,
+          chains: ["base"],
+        },
+        chains: ["base"],
+        allowedTokens: [
+          {
+            address: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+            specificChain: "base",
+          }, // USDC
+          {
+            address: "0x4200000000000000000000000000000000000006",
+            specificChain: "base",
+          }, // ETH
+          // Note: AERO (0x9401...) is NOT whitelisted
+        ],
+        selfFundingThresholdUsd: 10,
+        syncIntervalMinutes: 2,
+      },
+    });
+
+    expect(response.success).toBe(true);
+    const competition = response.competition;
+
+    await wait(1000);
+
+    // Agent checks balances - should only see USDC and ETH (whitelisted), not AERO
+    const balancesResponse = await agentClient.getBalance(competition.id);
+    expect(balancesResponse.success).toBe(true);
+
+    const typedBalances = balancesResponse as BalancesResponse;
+
+    // Should have USDC balance (whitelisted)
+    const usdcBalance = typedBalances.balances.find(
+      (b) =>
+        b.tokenAddress.toLowerCase() ===
+        "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+    );
+    expect(usdcBalance).toBeDefined();
+
+    // Should have ETH balance (whitelisted)
+    const ethBalance = typedBalances.balances.find(
+      (b) =>
+        b.tokenAddress.toLowerCase() ===
+        "0x4200000000000000000000000000000000000006",
+    );
+    expect(ethBalance).toBeDefined();
+
+    // Should NOT have AERO balance (not whitelisted)
+    const aeroBalance = typedBalances.balances.find(
+      (b) =>
+        b.tokenAddress.toLowerCase() ===
+        "0x940181a94a35a4569e4529a3cdfb74e38fd98631",
+    );
+    expect(aeroBalance).toBeUndefined();
+
+    // Portfolio value should only reflect whitelisted tokens (USDC + ETH)
+    const leaderboardResponse = await adminClient.getCompetitionAgents(
+      competition.id,
+    );
+    expect(leaderboardResponse.success).toBe(true);
+
+    const typedLeaderboard = leaderboardResponse as CompetitionAgentsResponse;
+    const agentEntry = typedLeaderboard.agents.find((a) => a.id === agent.id);
+
+    expect(agentEntry).toBeDefined();
+    // Portfolio should only reflect whitelisted tokens (USDC + ETH), AERO excluded from calculation
+    expect(agentEntry?.portfolioValue).toBeGreaterThan(1000); // At least USDC value
+  });
 });
