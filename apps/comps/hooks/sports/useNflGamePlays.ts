@@ -1,6 +1,7 @@
-import { useQuery } from "@tanstack/react-query";
+import { UseQueryResult, skipToken, useQuery } from "@tanstack/react-query";
 
-import { client } from "@/rpc/clients/client-side";
+import { tanstackClient } from "@/rpc/clients/tanstack-query";
+import type { RouterOutputs } from "@/rpc/router";
 
 /**
  * Fetch play-by-play data for a game
@@ -17,26 +18,20 @@ export function useNflGamePlays(
     offset?: number;
     latest?: boolean;
   },
-) {
-  return useQuery({
-    queryKey: [
-      "nfl",
-      "game-plays",
-      competitionId,
-      gameId,
-      options?.limit,
-      options?.offset,
-      options?.latest,
-    ],
-    queryFn: () =>
-      client.nfl.getGamePlays({
-        competitionId: competitionId!,
-        gameId: gameId!,
-        limit: options?.limit ?? 50,
-        offset: options?.offset ?? 0,
-        latest: options?.latest ?? false,
-      }),
-    enabled: !!competitionId && !!gameId,
-    staleTime: 3 * 1000, // 3 seconds - very fresh for live play-by-play
-  });
+): UseQueryResult<RouterOutputs["nfl"]["getGamePlays"], Error> {
+  return useQuery(
+    tanstackClient.nfl.getGamePlays.queryOptions({
+      input:
+        competitionId && gameId
+          ? {
+              competitionId,
+              gameId,
+              limit: options?.limit ?? 50,
+              offset: options?.offset ?? 0,
+              latest: options?.latest ?? false,
+            }
+          : skipToken,
+      staleTime: 3 * 1000,
+    }),
+  );
 }

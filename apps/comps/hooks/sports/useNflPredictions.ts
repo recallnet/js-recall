@@ -1,6 +1,7 @@
-import { useQuery } from "@tanstack/react-query";
+import { UseQueryResult, skipToken, useQuery } from "@tanstack/react-query";
 
-import { client } from "@/rpc/clients/client-side";
+import { tanstackClient } from "@/rpc/clients/tanstack-query";
+import type { RouterOutputs } from "@/rpc/router";
 
 /**
  * Fetch predictions for a game
@@ -13,16 +14,14 @@ export function useNflPredictions(
   competitionId: string | undefined,
   gameId: string | undefined,
   agentId?: string,
-) {
-  return useQuery({
-    queryKey: ["nfl", "predictions", competitionId, gameId, agentId],
-    queryFn: () =>
-      client.nfl.getPredictions({
-        competitionId: competitionId!,
-        gameId: gameId!,
-        agentId,
-      }),
-    enabled: !!competitionId && !!gameId,
-    staleTime: 5 * 1000, // 5 seconds
-  });
+): UseQueryResult<RouterOutputs["nfl"]["getPredictions"], Error> {
+  return useQuery(
+    tanstackClient.nfl.getPredictions.queryOptions({
+      input:
+        competitionId && gameId
+          ? { competitionId, gameId, agentId }
+          : skipToken,
+      staleTime: 5 * 1000,
+    }),
+  );
 }

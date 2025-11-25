@@ -1,6 +1,7 @@
-import { useQuery } from "@tanstack/react-query";
+import { UseQueryResult, useQuery } from "@tanstack/react-query";
 
-import { client } from "@/rpc/clients/client-side";
+import { tanstackClient } from "@/rpc/clients/tanstack-query";
+import type { RouterOutputs } from "@/rpc/router";
 
 /**
  * Fetch leaderboard for NFL competition (overall or per-game)
@@ -8,14 +9,14 @@ import { client } from "@/rpc/clients/client-side";
  * @param gameId Optional game ID for game-specific leaderboard
  * @returns Query result with leaderboard data
  */
-export function useNflLeaderboard(competitionId: string, gameId?: string) {
-  return useQuery({
-    queryKey: ["nfl", "leaderboard", competitionId, gameId],
-    queryFn: () =>
-      client.nfl.getLeaderboard({
-        competitionId,
-        gameId,
-      }),
-    staleTime: 10 * 1000, // 10 seconds
-  });
+export function useNflLeaderboard(
+  competitionId: string,
+  gameId?: string,
+): UseQueryResult<RouterOutputs["nfl"]["getLeaderboard"], Error> {
+  return useQuery(
+    tanstackClient.nfl.getLeaderboard.queryOptions({
+      input: { competitionId, gameId },
+      staleTime: 10 * 1000,
+    }),
+  );
 }
