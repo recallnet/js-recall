@@ -541,14 +541,17 @@ export class SpotDataProcessor {
 
       // Update sync state BEFORE continuing
       // This ensures we move forward even if all trades are filtered/rejected
-      for (const { chain, highestBlock } of syncStateUpdates) {
-        await this.spotLiveRepo.upsertAgentSyncState(
-          agentId,
-          competitionId,
-          chain,
-          highestBlock,
-        );
-      }
+      // Parallel updates are safe with GREATEST() - database handles conflicts
+      await Promise.all(
+        syncStateUpdates.map(({ chain, highestBlock }) =>
+          this.spotLiveRepo.upsertAgentSyncState(
+            agentId,
+            competitionId,
+            chain,
+            highestBlock,
+          ),
+        ),
+      );
 
       // Don't return early if no trades - we still need to check for transfer violations!
 

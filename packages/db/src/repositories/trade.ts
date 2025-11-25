@@ -435,14 +435,6 @@ export class TradeRepository {
   /**
    * Get the latest on-chain trade block number for an agent in a competition on a specific chain
    * Used to determine incremental sync starting point for spot live competitions
-   * @param agentId Agent ID
-   * @param competitionId Competition ID
-   * @param specificChain Specific chain to query
-   * @returns Latest block number or null if no trades exist
-   */
-  /**
-   * Get the latest on-chain trade block number for an agent in a competition on a specific chain
-   * Used to determine incremental sync starting point for spot live competitions
    *
    * IMPORTANT: The returned block number should be used WITH OVERLAP (not +1) to prevent gaps.
    * Example: If latestBlock=1000, next sync should start from block 1000 (not 1001).
