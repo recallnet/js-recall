@@ -24,19 +24,27 @@ export const getGamePlays = base
   )
   .handler(async ({ context, input, errors }) => {
     try {
+      const pagingParams = input.latest
+        ? {
+            limit: 1,
+            offset: 0,
+            sort: "-createdAt" as const,
+          }
+        : {
+            limit: input.limit,
+            offset: input.offset,
+            sort: "-createdAt" as const,
+          };
+
       const plays =
         await context.sportsService.gamePlaysRepository.findByGameId(
           input.gameId,
-          {
-            limit: input.limit,
-            offset: input.offset,
-            sort: "-createdAt",
-          },
+          pagingParams,
         );
 
       if (input.latest) {
         // Return only the latest play
-        const latestPlay = plays[plays.length - 1];
+        const latestPlay = plays[0];
         return {
           play: latestPlay || null,
         };
