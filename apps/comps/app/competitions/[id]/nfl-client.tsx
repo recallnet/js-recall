@@ -20,8 +20,8 @@ import {
 } from "@/components/nfl/nfl-competition-key";
 import { NflStandingsTable } from "@/components/nfl/nfl-standings-table";
 import { getSocialLinksArray } from "@/data/social";
-import { useNflGames } from "@/hooks/useNflGames";
-import { useNflRules } from "@/hooks/useNflRules";
+import { useNflGames } from "@/hooks/sports/useNflGames";
+import { useNflRules } from "@/hooks/sports/useNflRules";
 import { openForBoosting } from "@/lib/open-for-boosting";
 import type { RouterOutputs } from "@/rpc/router";
 import { NflGame } from "@/types/nfl";

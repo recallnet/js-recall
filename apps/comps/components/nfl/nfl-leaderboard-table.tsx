@@ -2,7 +2,7 @@
 
 import { Skeleton } from "@recallnet/ui2/components/skeleton";
 
-import { useNflLeaderboard } from "@/hooks/useNflLeaderboard";
+import { useNflLeaderboard } from "@/hooks/sports/useNflLeaderboard";
 import { LeaderboardEntry } from "@/types/nfl";
 
 interface NflLeaderboardTableProps {

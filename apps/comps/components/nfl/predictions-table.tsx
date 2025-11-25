@@ -13,7 +13,7 @@ import {
 } from "@recallnet/ui2/components/dialog";
 import { Skeleton } from "@recallnet/ui2/components/skeleton";
 
-import { useNflPredictions } from "@/hooks/useNflPredictions";
+import { useNflPredictions } from "@/hooks/sports/useNflPredictions";
 import { NflPrediction } from "@/types/nfl";
 
 interface PredictionsTableProps {

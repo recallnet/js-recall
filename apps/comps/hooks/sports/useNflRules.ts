@@ -7,11 +7,11 @@ import { client } from "@/rpc/clients/client-side";
  * @param competitionId Competition ID
  * @returns Query result with rules data
  */
-export function useNflRules(competitionId: string | undefined) {
+export function useNflRules(competitionId: string) {
   return useQuery({
     queryKey: ["nfl", "rules", competitionId],
-    queryFn: () => client.nfl.getRules({ competitionId: competitionId! }),
-    enabled: !!competitionId,
-    staleTime: 5 * 60 * 1000, // 5 minutes - rules don't change
+    queryFn: () => client.nfl.getRules({ competitionId }),
+    staleTime: 24 * 60 * 60 * 1000, // Note: the rules don't change
+    gcTime: 24 * 60 * 60 * 1000,
   });
 }

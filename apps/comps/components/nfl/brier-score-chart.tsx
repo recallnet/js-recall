@@ -18,7 +18,7 @@ import { Skeleton } from "@recallnet/ui2/components/skeleton";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { CHART_COLORS } from "@/components/timeline-chart/constants";
-import { useNflPredictions } from "@/hooks/useNflPredictions";
+import { useNflPredictions } from "@/hooks/sports/useNflPredictions";
 import { NflGame, NflPrediction } from "@/types/nfl";
 
 interface BrierScoreChartProps {

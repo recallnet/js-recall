@@ -24,7 +24,6 @@ export const getRules = base
   )
   .handler(async ({ context, errors }) => {
     try {
-      // Get rules from service (single source of truth)
       const rules = context.sportsService.gamePredictionService.getRules();
       return rules;
     } catch (error) {
