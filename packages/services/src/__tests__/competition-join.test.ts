@@ -25,6 +25,7 @@ import { specificChainTokens } from "../lib/config-utils.js";
 import type { PerpsDataProcessor } from "../perps-data-processor.service.js";
 import type { PortfolioSnapshotterService } from "../portfolio-snapshotter.service.js";
 import { RewardsService } from "../rewards.service.js";
+import type { SportsService } from "../sports.service.js";
 import type { TradeSimulatorService } from "../trade-simulator.service.js";
 import type { TradingConstraintsService } from "../trading-constraints.service.js";
 import {
@@ -47,6 +48,7 @@ describe("CompetitionService - joinCompetition", () => {
   let agentRepo: MockProxy<AgentRepository>;
   let agentScoreRepo: MockProxy<AgentScoreRepository>;
   let arenaRepo: MockProxy<ArenaRepository>;
+  let sportsService: MockProxy<SportsService>;
   let perpsRepo: MockProxy<PerpsRepository>;
   let competitionRepo: MockProxy<CompetitionRepository>;
   let paperTradingConfigRepo: MockProxy<PaperTradingConfigRepository>;
@@ -136,6 +138,7 @@ describe("CompetitionService - joinCompetition", () => {
     agentRepo = mock<AgentRepository>();
     agentScoreRepo = mock<AgentScoreRepository>();
     arenaRepo = mock<ArenaRepository>();
+    sportsService = mock<SportsService>();
     perpsRepo = mock<PerpsRepository>();
     competitionRepo = mock<CompetitionRepository>();
     paperTradingConfigRepo = mock<PaperTradingConfigRepository>();
@@ -181,6 +184,7 @@ describe("CompetitionService - joinCompetition", () => {
       agentRepo,
       agentScoreRepo,
       arenaRepo,
+      sportsService,
       perpsRepo,
       competitionRepo,
       paperTradingConfigRepo,

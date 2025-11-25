@@ -610,6 +610,7 @@ export class ApiClient {
     rewardRules,
     rewardDetails,
     displayState,
+    gameIds,
     paperTradingInitialBalances,
     boostTimeDecayRate,
     paperTradingConfig,
@@ -659,6 +660,7 @@ export class ApiClient {
     rewardRules?: string;
     rewardDetails?: string;
     displayState?: DisplayState;
+    gameIds?: string[];
     paperTradingInitialBalances?: Array<{
       specificChain: string;
       tokenSymbol: string;
@@ -745,6 +747,7 @@ export class ApiClient {
           rewardRules,
           rewardDetails,
           displayState,
+          gameIds,
           boostTimeDecayRate,
           paperTradingConfig,
           ...(finalPaperTradingInitialBalances
@@ -794,6 +797,7 @@ export class ApiClient {
       rewardRules,
       rewardDetails,
       displayState,
+      gameIds,
       boostTimeDecayRate,
       paperTradingConfig,
       paperTradingInitialBalances,
@@ -836,6 +840,7 @@ export class ApiClient {
       rewardRules?: string;
       rewardDetails?: string;
       displayState?: DisplayState;
+      gameIds?: string[];
       boostTimeDecayRate?: number;
       paperTradingConfig?: {
         maxTradePercentage?: number;
@@ -880,6 +885,7 @@ export class ApiClient {
           rewardRules,
           rewardDetails,
           displayState,
+          gameIds,
           boostTimeDecayRate,
           paperTradingConfig,
           paperTradingInitialBalances,
@@ -2633,6 +2639,166 @@ export class ApiClient {
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "get rewards with proofs");
+    }
+  }
+
+  /**
+   * NFL API Methods
+   */
+
+  /**
+   * Get open plays for an NFL competition
+   */
+  async getNflOpenPlays(
+    competitionId: string,
+    limit: number = 50,
+    offset: number = 0,
+  ) {
+    try {
+      const response = await this.axiosInstance.get(
+        `/api/nfl/competitions/${competitionId}/plays?state=open&limit=${limit}&offset=${offset}`,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get NFL open plays");
+    }
+  }
+
+  /**
+   * Submit a prediction for the next play in a game
+   */
+  async submitNflPrediction(
+    competitionId: string,
+    providerGameId: number,
+    prediction: "run" | "pass",
+    confidence: number,
+  ) {
+    try {
+      const response = await this.axiosInstance.post(
+        `/api/nfl/competitions/${competitionId}/games/${providerGameId}/predictions`,
+        { prediction, confidence },
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "submit NFL prediction");
+    }
+  }
+
+  /**
+   * Get leaderboard for an NFL competition
+   */
+  async getNflLeaderboard(competitionId: string, gameId?: string) {
+    try {
+      const url = gameId
+        ? `/api/nfl/competitions/${competitionId}/leaderboard?gameId=${gameId}`
+        : `/api/nfl/competitions/${competitionId}/leaderboard`;
+      const response = await this.axiosInstance.get(url);
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get NFL leaderboard");
+    }
+  }
+
+  /**
+   * Get all games for an NFL competition
+   */
+  async getNflGames(competitionId: string) {
+    try {
+      const response = await this.axiosInstance.get(
+        `/api/nfl/competitions/${competitionId}/games`,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get NFL games");
+    }
+  }
+
+  /**
+   * Get NFL competition rules
+   */
+  async getNflRules(competitionId: string) {
+    try {
+      const response = await this.axiosInstance.get(
+        `/api/nfl/competitions/${competitionId}/rules`,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get NFL rules");
+    }
+  }
+
+  /**
+   * Get specific game info
+   */
+  async getNflGameInfo(competitionId: string, gameId: string) {
+    try {
+      const response = await this.axiosInstance.get(
+        `/api/nfl/competitions/${competitionId}/games/${gameId}`,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get NFL game info");
+    }
+  }
+
+  /**
+   * Get game plays
+   */
+  async getNflGamePlays(
+    competitionId: string,
+    gameId: string,
+    limit: number = 50,
+    offset: number = 0,
+    latest: boolean = false,
+  ) {
+    try {
+      const url = latest
+        ? `/api/nfl/competitions/${competitionId}/games/${gameId}/plays?latest=true`
+        : `/api/nfl/competitions/${competitionId}/games/${gameId}/plays?limit=${limit}&offset=${offset}`;
+      const response = await this.axiosInstance.get(url);
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get NFL game plays");
+    }
+  }
+
+  /**
+   * Predict game winner
+   */
+  async predictGameWinner(
+    competitionId: string,
+    gameId: string,
+    predictedWinner: string,
+    confidence: number,
+    reason: string,
+  ) {
+    try {
+      const response = await this.axiosInstance.post(
+        `/api/nfl/competitions/${competitionId}/games/${gameId}/predictions`,
+        { predictedWinner, confidence, reason },
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "predict game winner");
+    }
+  }
+
+  /**
+   * Get game predictions
+   */
+  async getGamePredictions(
+    competitionId: string,
+    gameId: string,
+    agentId?: string,
+  ) {
+    try {
+      const url = agentId
+        ? `/api/nfl/competitions/${competitionId}/games/${gameId}/predictions?agentId=${agentId}`
+        : `/api/nfl/competitions/${competitionId}/games/${gameId}/predictions`;
+      const response = await this.axiosInstance.get(url);
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get game predictions");
     }
   }
 }

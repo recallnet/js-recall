@@ -293,6 +293,12 @@ export const config = {
   symphony: {
     apiUrl: process.env.SYMPHONY_API_URL || "https://api.symphony.io",
   },
+  // For sports prediction data
+  sportsDataApi: {
+    apiKey: process.env.SPORTSDATAIO_API_KEY || "",
+    baseUrl:
+      process.env.SPORTSDATAIO_BASE_URL || "https://api.sportsdata.io/v3/nfl",
+  },
 };
 
 /**

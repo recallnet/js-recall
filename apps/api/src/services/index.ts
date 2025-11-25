@@ -41,6 +41,8 @@ import {
   RiskMetricsService,
   SimulatedTradeExecutionService,
   SortinoRatioService,
+  SportsIngesterService,
+  SportsService,
   TradeSimulatorService,
   TradingConstraintsService,
   UserService,
@@ -124,6 +126,8 @@ class ServiceRegistry {
   private _rewardsService: RewardsService;
   private readonly _rewardsRepository: RewardsRepository;
   private readonly _rewardsAllocator: RewardsAllocator;
+  private readonly _sportsService: SportsService;
+  private readonly _sportsIngesterService: SportsIngesterService;
 
   constructor() {
     // Initialize Privy client (use MockPrivyClient in test mode to avoid real API calls)
@@ -188,6 +192,18 @@ class ServiceRegistry {
       db,
       dbRead,
       repositoryLogger,
+    );
+
+    // Initialize Sports Service (encapsulates all NFL sports prediction functionality)
+    this._sportsService = new SportsService(
+      db,
+      this._competitionRepository,
+      serviceLogger,
+    );
+    this._sportsIngesterService = new SportsIngesterService(
+      this._sportsService,
+      serviceLogger,
+      config,
     );
 
     const walletWatchlist = new WalletWatchlist(config, serviceLogger);
@@ -364,6 +380,7 @@ class ServiceRegistry {
       this._agentRepository,
       agentScoreRepository,
       this._arenaRepository,
+      this._sportsService,
       this._perpsRepository,
       this._competitionRepository,
       this._paperTradingConfigRepository,
@@ -562,6 +579,14 @@ class ServiceRegistry {
     return this._partnerService;
   }
 
+  get sportsService(): SportsService {
+    return this._sportsService;
+  }
+
+  get sportsIngesterService(): SportsIngesterService {
+    return this._sportsIngesterService;
+  }
+
   get paperTradingConfigRepository(): PaperTradingConfigRepository {
     return this._paperTradingConfigRepository;
   }
@@ -634,6 +659,7 @@ export {
   PortfolioSnapshotterService,
   PriceTrackerService,
   ServiceRegistry,
+  SportsService,
   SimulatedTradeExecutionService,
   TradeSimulatorService,
   TradingConstraintsService,

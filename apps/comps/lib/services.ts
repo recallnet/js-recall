@@ -19,6 +19,7 @@ import {
   RewardsService,
   RiskMetricsService,
   SortinoRatioService,
+  SportsService,
   TradeSimulatorService,
   TradingConstraintsService,
   UserService,
@@ -215,6 +216,12 @@ export const rewardsService = new RewardsService(
   createLogger("RewardsService"),
 );
 
+export const sportsService = new SportsService(
+  db,
+  competitionRepository,
+  createLogger("SportsService"),
+);
+
 export const competitionService = new CompetitionService(
   balanceService,
   tradeSimulatorService,
@@ -228,6 +235,7 @@ export const competitionService = new CompetitionService(
   agentRepository,
   agentScoreRepository,
   arenaRepository,
+  sportsService,
   perpsRepository,
   competitionRepository,
   paperTradingConfigRepository,

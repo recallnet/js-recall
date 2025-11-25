@@ -31,7 +31,7 @@ export type RawLog = {
  * - transactionHash / logIndex: unique identifier within the block.
  * - raw: untouched payload (topics + data + address) for re-decoding or audits.
  * - type: internal event type (`stake` / `unstake` / …).
- * - createdAt: indexer ingestion timestamp (when _we_ created the entry).
+ * - createdAt: indexer ingested timestamp (when _we_ created the entry).
  */
 export type EventData = {
   // Blockchain metadata (stored immediately during indexing)

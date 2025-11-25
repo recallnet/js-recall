@@ -59,6 +59,10 @@ const configSchema = z.strictObject({
       .min(1)
       .default("default_encryption_key_do_not_use_in_production"),
   }),
+  sportsDataApi: z.object({
+    apiKey: z.string().default(""),
+    baseUrl: z.url().default("https://api.sportsdata.io/v3/nfl"),
+  }),
   tradingConstraints: z.object({
     defaultMinimum24hVolumeUsd: z.coerce.number().default(100000),
     defaultMinimumFdvUsd: z.coerce.number().default(1000000),
@@ -149,6 +153,10 @@ export const rawConfig = {
     baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL,
     sandboxApiUrl: process.env.NEXT_PUBLIC_SANDBOX_API_URL,
     sandboxAdminApiKey: process.env.SANDBOX_ADMIN_API_KEY,
+  },
+  sportsDataApi: {
+    apiKey: process.env.SPORTSDATAIO_API_KEY,
+    baseUrl: process.env.SPORTSDATAIO_BASE_URL,
   },
   healthCheck: {
     apiKey: process.env.HEALTH_CHECK_API_KEY,

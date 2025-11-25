@@ -23,6 +23,7 @@ import { specificChainTokens } from "../lib/config-utils.js";
 import type { PerpsDataProcessor } from "../perps-data-processor.service.js";
 import type { PortfolioSnapshotterService } from "../portfolio-snapshotter.service.js";
 import { RewardsService } from "../rewards.service.js";
+import type { SportsService } from "../sports.service.js";
 import type { TradeSimulatorService } from "../trade-simulator.service.js";
 import type { TradingConstraintsService } from "../trading-constraints.service.js";
 
@@ -39,6 +40,7 @@ describe("CompetitionService - createCompetition", () => {
   let agentRepo: MockProxy<AgentRepository>;
   let agentScoreRepo: MockProxy<AgentScoreRepository>;
   let arenaRepo: MockProxy<ArenaRepository>;
+  let sportsService: MockProxy<SportsService>;
   let perpsRepo: MockProxy<PerpsRepository>;
   let competitionRepo: MockProxy<CompetitionRepository>;
   let paperTradingConfigRepo: MockProxy<PaperTradingConfigRepository>;
@@ -63,6 +65,7 @@ describe("CompetitionService - createCompetition", () => {
     agentRepo = mock<AgentRepository>();
     agentScoreRepo = mock<AgentScoreRepository>();
     arenaRepo = mock<ArenaRepository>();
+    sportsService = mock<SportsService>();
     perpsRepo = mock<PerpsRepository>();
     competitionRepo = mock<CompetitionRepository>();
     paperTradingConfigRepo = mock<PaperTradingConfigRepository>();
@@ -160,6 +163,7 @@ describe("CompetitionService - createCompetition", () => {
       agentRepo,
       agentScoreRepo,
       arenaRepo,
+      sportsService,
       perpsRepo,
       competitionRepo,
       paperTradingConfigRepo,
@@ -779,6 +783,7 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
   let agentRepo: MockProxy<AgentRepository>;
   let agentScoreRepo: MockProxy<AgentScoreRepository>;
   let arenaRepo: MockProxy<ArenaRepository>;
+  let sportsService: MockProxy<SportsService>;
   let perpsRepo: MockProxy<PerpsRepository>;
   let competitionRepo: MockProxy<CompetitionRepository>;
   let paperTradingConfigRepo: MockProxy<PaperTradingConfigRepository>;
@@ -804,6 +809,7 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
     agentRepo = mock<AgentRepository>();
     agentScoreRepo = mock<AgentScoreRepository>();
     arenaRepo = mock<ArenaRepository>();
+    sportsService = mock<SportsService>();
     perpsRepo = mock<PerpsRepository>();
     competitionRepo = mock<CompetitionRepository>();
     paperTradingConfigRepo = mock<PaperTradingConfigRepository>();
@@ -833,6 +839,7 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
       agentRepo,
       agentScoreRepo,
       arenaRepo,
+      sportsService,
       perpsRepo,
       competitionRepo,
       paperTradingConfigRepo,
