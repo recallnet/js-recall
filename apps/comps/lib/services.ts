@@ -198,6 +198,7 @@ export const spotDataProcessor = new SpotDataProcessor(
   competitionRepository,
   spotLiveRepository,
   tradeRepository,
+  balanceRepository,
   portfolioSnapshotterService,
   priceTrackerService,
   createLogger("SpotDataProcessor"),
