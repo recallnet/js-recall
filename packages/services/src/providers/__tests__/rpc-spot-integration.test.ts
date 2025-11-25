@@ -496,6 +496,7 @@ describe("RpcSpotProvider - Integration Tests (Real Blockchain)", () => {
 
     // Use static date range around our known swap
     const searchStartDate = new Date("2025-11-24T16:00:00Z");
+    const toBlock = KNOWN_AERODROME_SWAP.blockNumber + 200; // Fixed end block for deterministic test
 
     console.log(
       `Fetching transfer history since ${searchStartDate.toISOString()}...`,
@@ -505,6 +506,7 @@ describe("RpcSpotProvider - Integration Tests (Real Blockchain)", () => {
       KNOWN_AERODROME_SWAP.wallet,
       searchStartDate,
       ["base"],
+      toBlock, // Use fixed block range like other tests
     );
 
     console.log(

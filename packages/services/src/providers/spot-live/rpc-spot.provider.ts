@@ -367,14 +367,16 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
    * Get transfer history for self-funding detection
    * Returns deposits/withdrawals (not swaps)
    * @param walletAddress Wallet address to monitor
-   * @param since Start date for transfer scanning
+   * @param since Start date or block number for transfer scanning
    * @param chains Array of chains to scan
+   * @param toBlock Optional end block number for scanning (defaults to "latest")
    * @returns Array of deposits/withdrawals
    */
   async getTransferHistory(
     walletAddress: string,
     since: Date | number,
     chains: SpecificChain[],
+    toBlock?: number,
   ): Promise<SpotTransfer[]> {
     const startTime = Date.now();
     const maskedAddress = this.maskAddress(walletAddress);
@@ -439,7 +441,7 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
               walletAddress,
               chain,
               sinceBlock,
-              "latest", // Always scan to latest block
+              toBlock || "latest", // Use specified toBlock for tests, "latest" for production
               pageKey, // Pass pagination cursor (undefined on first call)
             );
 
@@ -487,6 +489,11 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
           if (!isSwap) {
             // Not a swap - these are deposits/withdrawals
             for (const transfer of txTransfers) {
+              // Skip 0-value transfers (approvals, contract interactions, etc.)
+              if (transfer.value === 0) {
+                continue;
+              }
+
               const type = this.classifyTransfer(transfer, walletAddress);
               const tokenAddress = this.getTokenAddress(transfer);
 

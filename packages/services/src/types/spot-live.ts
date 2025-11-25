@@ -77,14 +77,16 @@ export interface ISpotLiveDataProvider {
    * Get transfer history for self-funding detection
    * Optional - not all providers may support this
    * @param walletAddress Wallet address to monitor
-   * @param since Start date or block number for transfer scanning
+   * @param since Start time or block number for scanning
    * @param chains Array of chains to scan
+   * @param toBlock Optional end block number for scanning (defaults to "latest")
    * @returns Array of deposits/withdrawals
    */
   getTransferHistory?(
     walletAddress: string,
     since: Date | number,
     chains: SpecificChain[],
+    toBlock?: number,
   ): Promise<SpotTransfer[]>;
 
   /**

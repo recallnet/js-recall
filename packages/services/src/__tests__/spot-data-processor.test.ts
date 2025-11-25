@@ -2,6 +2,7 @@ import type { Logger } from "pino";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AgentRepository } from "@recallnet/db/repositories/agent";
+import { BalanceRepository } from "@recallnet/db/repositories/balance";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { SpotLiveRepository } from "@recallnet/db/repositories/spot-live";
 import { TradeRepository } from "@recallnet/db/repositories/trade";
@@ -51,6 +52,11 @@ class MockTradeRepository {
   getLatestSpotLiveTradeBlock = vi.fn();
 }
 
+class MockBalanceRepository {
+  getAgentBalances = vi.fn();
+  createInitialSpotLiveBalances = vi.fn();
+}
+
 class MockPortfolioSnapshotterService {
   takePortfolioSnapshots = vi.fn();
 }
@@ -83,6 +89,7 @@ describe("SpotDataProcessor", () => {
   let mockCompetitionRepo: MockCompetitionRepository;
   let mockSpotLiveRepo: MockSpotLiveRepository;
   let mockTradeRepo: MockTradeRepository;
+  let mockBalanceRepo: MockBalanceRepository;
   let mockPortfolioSnapshotter: MockPortfolioSnapshotterService;
   let mockPriceTracker: MockPriceTrackerService;
   let mockLogger: MockLogger;
@@ -157,9 +164,15 @@ describe("SpotDataProcessor", () => {
     mockCompetitionRepo = new MockCompetitionRepository();
     mockSpotLiveRepo = new MockSpotLiveRepository();
     mockTradeRepo = new MockTradeRepository();
+    mockBalanceRepo = new MockBalanceRepository();
     mockPortfolioSnapshotter = new MockPortfolioSnapshotterService();
     mockPriceTracker = new MockPriceTrackerService();
     mockLogger = new MockLogger();
+
+    // Default: Return empty balances (not first sync)
+    mockBalanceRepo.getAgentBalances.mockResolvedValue([
+      { id: "1", agentId: "agent1", tokenAddress: "0xusdc", amount: 1000 },
+    ]);
 
     // Default mock provider
     mockProvider = {
@@ -225,6 +238,7 @@ describe("SpotDataProcessor", () => {
       mockCompetitionRepo as unknown as CompetitionRepository,
       mockSpotLiveRepo as unknown as SpotLiveRepository,
       mockTradeRepo as unknown as TradeRepository,
+      mockBalanceRepo as unknown as BalanceRepository,
       mockPortfolioSnapshotter as unknown as PortfolioSnapshotterService,
       mockPriceTracker as unknown as PriceTrackerService,
       mockLogger as unknown as Logger,
@@ -489,8 +503,9 @@ describe("SpotDataProcessor", () => {
         new Date("2024-01-01"),
       );
 
-      // Should query sync state for each chain
-      expect(mockSpotLiveRepo.getAgentSyncState).toHaveBeenCalledTimes(2);
+      // Should query sync state for each chain (once for trades, once for transfers per chain)
+      // With unified sync state: 2 chains × 2 (trades + transfers) = 4 calls
+      expect(mockSpotLiveRepo.getAgentSyncState).toHaveBeenCalledTimes(4);
 
       // Should call getTradesSince separately for each chain with 10-block overlap
       expect(mockProvider.getTradesSince).toHaveBeenCalledTimes(2);
@@ -633,6 +648,7 @@ describe("SpotDataProcessor", () => {
           }),
         ]),
         expect.anything(),
+        undefined, // mockRpcProvider (only used in test mode via ServiceRegistry)
       );
     });
 
