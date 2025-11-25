@@ -212,10 +212,10 @@ export class GamePredictionService {
       scoringMethod: "time_weighted_brier",
       scoringFormula: {
         description:
-          "Score = 1 - Σ(w_t * (p_t - y)²) / Σ(w_t), where higher is better",
+          "Probability scores are normalized so that earlier predictions are weighted more heavily than later predictions. Score = 1 - Σ(w_t * (p_t - y)²) / Σ(w_t), where higher is better",
         timeNormalization:
           "t = (timestamp - game_start) / (game_end - game_start) ∈ [0, 1]",
-        weight: "w_t = 1 - 0.5 * t (earlier predictions weighted more)",
+        weight: "w_t = 1 - 0.75 * t (earlier predictions weighted more)",
         probability:
           "p_t = confidence if predicted winner matches actual, else 1-confidence",
         actual: "y = 1 (actual winner)",
