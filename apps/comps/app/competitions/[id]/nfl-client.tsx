@@ -159,8 +159,10 @@ export default function NflCompetitionPage({
       )}
 
       {!gamesLoading && !gamesError && games.length === 0 && (
-        <div className="text-muted-foreground text-sm">
-          This competition does not have any games configured yet.
+        <div className="h-120 flex w-full items-center justify-center">
+          <div className="text-secondary-foreground text-center text-xl">
+            This competition does not have any games configured yet.
+          </div>
         </div>
       )}
     </div>

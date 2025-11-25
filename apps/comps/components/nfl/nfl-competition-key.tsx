@@ -154,9 +154,11 @@ export function NflCompetitionKey({
       >
         <div className="h-full overflow-y-auto p-4">
           {games.length === 0 ? (
-            <p className="text-secondary-foreground text-sm">
-              This competition does not have any games configured yet.
-            </p>
+            <div className="flex h-full items-center justify-center">
+              <p className="text-secondary-foreground text-sm">
+                This competition does not have any games configured yet.
+              </p>
+            </div>
           ) : (
             <GamesAccordion
               games={games}
@@ -175,9 +177,11 @@ export function NflCompetitionKey({
       >
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4">
           {games.length === 0 ? (
-            <p className="text-secondary-foreground text-sm">
-              No games available for predictions yet.
-            </p>
+            <div className="flex h-full items-center justify-center">
+              <p className="text-secondary-foreground text-sm">
+                No games available for predictions yet.
+              </p>
+            </div>
           ) : (
             <div className="flex min-h-0 flex-col gap-4">
               <div className="shrink-0">
