@@ -1,4 +1,11 @@
-import { and, desc, count as drizzleCount, eq, sql } from "drizzle-orm";
+import {
+  and,
+  desc,
+  count as drizzleCount,
+  eq,
+  isNotNull,
+  sql,
+} from "drizzle-orm";
 import { Logger } from "pino";
 
 import { agents } from "../schema/core/defs.js";
@@ -55,6 +62,31 @@ export class TradeRepository {
     trade: InsertTrade,
   ): Promise<TradeCreationResult> {
     return await this.#db.transaction(async (tx) => {
+      // For spot_live trades with txHash, check if already exists BEFORE touching balances
+      // This optimization avoids wasted balance operations for duplicates during re-sync
+      if (trade.tradeType === "spot_live" && trade.txHash) {
+        const existing = await tx
+          .select({ id: trades.id })
+          .from(trades)
+          .where(
+            and(
+              eq(trades.txHash, trade.txHash),
+              eq(trades.competitionId, trade.competitionId),
+              eq(trades.agentId, trade.agentId),
+            ),
+          )
+          .limit(1);
+
+        if (existing.length > 0) {
+          this.#logger.debug(
+            `[TradeRepository] Trade already exists (txHash=${trade.txHash}), skipping duplicate`,
+          );
+          throw new Error(
+            `Duplicate trade: txHash=${trade.txHash} already exists for agent ${trade.agentId}`,
+          );
+        }
+      }
+
       // Validate and parse the fromSpecificChain
       const fromSpecificChain = SpecificChainSchema.parse(
         trade.fromSpecificChain,
@@ -106,7 +138,9 @@ export class TradeRepository {
       }
 
       // Create the trade record
-      const [result] = await tx
+      // Note: We already checked for duplicates above for spot_live trades
+      // The unique constraint serves as a safety net if the check is bypassed
+      const [insertedTrade] = await tx
         .insert(trades)
         .values({
           ...trade,
@@ -114,16 +148,16 @@ export class TradeRepository {
         })
         .returning();
 
-      if (!result) {
+      if (!insertedTrade) {
         throw new Error("Failed to create trade - no result returned");
       }
 
       this.#logger.debug(
-        `[TradeRepository] Trade created successfully: agent=${trade.agentId}, tradeId=${result.id}, fromBalance=${fromTokenBalance}, toBalance=${toTokenBalance ?? "N/A (burn)"}`,
+        `[TradeRepository] Trade created successfully: agent=${trade.agentId}, tradeId=${insertedTrade.id}, fromBalance=${fromTokenBalance}, toBalance=${toTokenBalance ?? "N/A (burn)"}`,
       );
 
       return {
-        trade: result,
+        trade: insertedTrade,
         updatedBalances: {
           fromTokenBalance,
           toTokenBalance,
@@ -394,6 +428,61 @@ export class TradeRepository {
       return result?.count ?? 0;
     } catch (error) {
       this.#logger.error({ error }, "Error in count");
+      throw error;
+    }
+  }
+
+  /**
+   * Get the latest on-chain trade block number for an agent in a competition on a specific chain
+   * Used to determine incremental sync starting point for spot live competitions
+   * @param agentId Agent ID
+   * @param competitionId Competition ID
+   * @param specificChain Specific chain to query
+   * @returns Latest block number or null if no trades exist
+   */
+  /**
+   * Get the latest on-chain trade block number for an agent in a competition on a specific chain
+   * Used to determine incremental sync starting point for spot live competitions
+   *
+   * IMPORTANT: The returned block number should be used WITH OVERLAP (not +1) to prevent gaps.
+   * Example: If latestBlock=1000, next sync should start from block 1000 (not 1001).
+   *
+   * Why overlap is necessary:
+   * - Block 1000 might have 3 trades: A (success), B (failed), C (success)
+   * - MAX(block_number) returns 1000 (from A or C)
+   * - If next sync starts from 1001, trade B is permanently lost
+   * - Starting from 1000 allows B to be retried
+   * - Unique constraint (txHash, competitionId, agentId) prevents duplicates from A and C
+   *
+   * @param agentId Agent ID
+   * @param competitionId Competition ID
+   * @param specificChain Specific chain to query
+   * @returns Latest block number or null if no trades exist
+   */
+  async getLatestSpotLiveTradeBlock(
+    agentId: string,
+    competitionId: string,
+    specificChain: string,
+  ): Promise<number | null> {
+    try {
+      const [result] = await this.#db
+        .select({ blockNumber: trades.blockNumber })
+        .from(trades)
+        .where(
+          and(
+            eq(trades.agentId, agentId),
+            eq(trades.competitionId, competitionId),
+            eq(trades.tradeType, "spot_live"),
+            eq(trades.fromSpecificChain, specificChain),
+            isNotNull(trades.blockNumber),
+          ),
+        )
+        .orderBy(desc(trades.blockNumber))
+        .limit(1);
+
+      return result?.blockNumber ?? null;
+    } catch (error) {
+      this.#logger.error({ error }, "Error in getLatestSpotLiveTradeBlock");
       throw error;
     }
   }

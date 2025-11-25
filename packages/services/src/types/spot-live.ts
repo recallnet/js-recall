@@ -1,3 +1,5 @@
+import { SpecificChain } from "./index.js";
+
 /**
  * Types and interfaces for spot live trading competitions
  * Mirrors perps.ts structure for consistency
@@ -10,7 +12,7 @@ export interface OnChainTrade {
   txHash: string;
   blockNumber: number;
   timestamp: Date;
-  chain: string;
+  chain: SpecificChain;
   fromToken: string;
   toToken: string;
   fromAmount: number;
@@ -33,7 +35,8 @@ export interface SpotTransfer {
   to: string;
   timestamp: Date;
   txHash: string;
-  chain: string;
+  blockNumber: number;
+  chain: SpecificChain;
 }
 
 /**
@@ -42,7 +45,7 @@ export interface SpotTransfer {
  */
 export interface ProtocolFilter {
   protocol: string;
-  chain: string;
+  chain: SpecificChain;
   routerAddress: string;
   swapEventSignature: string;
   factoryAddress: string | null;
@@ -67,22 +70,30 @@ export interface ISpotLiveDataProvider {
   getTradesSince(
     walletAddress: string,
     since: Date | number,
-    chains: string[],
+    chains: SpecificChain[],
   ): Promise<OnChainTrade[]>;
 
   /**
    * Get transfer history for self-funding detection
    * Optional - not all providers may support this
    * @param walletAddress Wallet address to monitor
-   * @param since Start date for transfer scanning
+   * @param since Start date or block number for transfer scanning
    * @param chains Array of chains to scan
    * @returns Array of deposits/withdrawals
    */
   getTransferHistory?(
     walletAddress: string,
-    since: Date,
-    chains: string[],
+    since: Date | number,
+    chains: SpecificChain[],
   ): Promise<SpotTransfer[]>;
+
+  /**
+   * Get current block number for a chain
+   * Used for sync state tracking when no trades found
+   * @param chain Specific chain
+   * @returns Current block number
+   */
+  getCurrentBlock(chain: SpecificChain): Promise<number>;
 
   /**
    * Get provider name for logging and debugging
