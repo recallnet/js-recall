@@ -9,16 +9,22 @@ import { RequestCookie } from "next/dist/compiled/@edge-runtime/cookies";
 
 import { MockPrivyClient } from "@recallnet/services/lib";
 
+import { competitionRepository } from "@/lib/repositories";
+
 import { createLogger } from "../../lib/logger.js";
 import {
+  adminService,
   agentService,
   airdropService,
   arenaService,
+  balanceService,
   boostAwardService,
   boostService,
   competitionService,
   emailService,
   leaderboardService,
+  partnerService,
+  portfolioSnapshotterService,
   rewardsService,
   userService,
 } from "../../lib/services.js";
@@ -47,6 +53,13 @@ function createMockCookies(privyToken?: string) {
 }
 
 /**
+ * Create a mock headers object for testing
+ */
+function createMockHeaders() {
+  return new Headers();
+}
+
+/**
  * Create a server-side RPC client with test context
  */
 export async function createTestRpcClient(
@@ -61,14 +74,21 @@ export async function createTestRpcClient(
   return createRouterClient(router, {
     context: {
       cookies: createMockCookies(privyToken),
+      headers: createMockHeaders(),
+      params: {},
       privyClient: mockPrivyClient as unknown as PrivyClient, // MockPrivyClient implements subset of PrivyClient interface
+      adminService,
       airdropService,
       boostService,
       boostAwardService,
       userService,
       competitionService,
+      competitionRepository,
       agentService,
       arenaService,
+      partnerService,
+      balanceService,
+      portfolioSnapshotterService,
       emailService,
       leaderboardService,
       rewardsService,

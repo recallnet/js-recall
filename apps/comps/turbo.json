@@ -21,6 +21,7 @@
         "SENTRY_PROJECT",
         "NEXT_RUNTIME",
         "POSTGRES_URL",
+        "DATABASE_READ_REPLICA_URL",
         "DATABASE_CA_CERT",
         "PRIVY_APP_SECRET",
         "PRIVY_APP_ID",

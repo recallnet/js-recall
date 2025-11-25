@@ -23,3 +23,10 @@ const pool = new Pool({
 });
 
 export const db = drizzle(pool, { schema });
+
+const poolReadReplica = new Pool({
+  connectionString: process.env.DATABASE_READ_REPLICA_URL,
+  ssl: sslConfig(),
+});
+
+export const dbReadReplica = drizzle(poolReadReplica, { schema });

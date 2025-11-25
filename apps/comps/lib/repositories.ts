@@ -20,7 +20,7 @@ import { UserRepository } from "@recallnet/db/repositories/user";
 
 import { config } from "@/config/private";
 
-import { db } from "./db";
+import { db, dbReadReplica } from "./db";
 import { createLogger } from "./logger";
 
 export const competitionRewardsRepository = new CompetitionRewardsRepository(
@@ -111,5 +111,6 @@ export const adminRepository = new AdminRepository(
 
 export const partnerRepository = new PartnerRepository(
   db,
+  dbReadReplica,
   createLogger("PartnerRepository"),
 );

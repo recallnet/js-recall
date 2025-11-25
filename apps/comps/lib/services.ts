@@ -208,6 +208,9 @@ export const partnerService = new PartnerService(
 
 export const adminService = new AdminService(
   adminRepository,
+  userService,
+  agentService,
+  config,
   createLogger("AdminService"),
 );
 

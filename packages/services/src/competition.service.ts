@@ -146,7 +146,7 @@ interface TradingConstraintsInput {
 /**
  * Represents an entry in a competition leaderboard
  */
-interface LeaderboardEntry {
+export interface LeaderboardEntry {
   agentId: string;
   value: number; // Portfolio value in USD
   pnl: number; // Profit/Loss amount (0 if not calculated)

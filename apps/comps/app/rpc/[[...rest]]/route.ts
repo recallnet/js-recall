@@ -3,6 +3,7 @@ import { cookies, headers } from "next/headers";
 
 import { createLogger } from "@/lib/logger";
 import { privyClient } from "@/lib/privy-client";
+import { competitionRepository } from "@/lib/repositories";
 import {
   adminService,
   agentService,
@@ -40,6 +41,7 @@ async function handleRequest(
       boostAwardService,
       userService,
       competitionService,
+      competitionRepository,
       agentService,
       arenaService,
       partnerService,
