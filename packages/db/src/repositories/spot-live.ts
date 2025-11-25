@@ -11,6 +11,7 @@ import { Logger } from "pino";
 
 import { agents } from "../schema/core/defs.js";
 import {
+  spotLiveAgentSyncState,
   spotLiveAllowedProtocols,
   spotLiveAllowedTokens,
   spotLiveCompetitionChains,
@@ -32,6 +33,7 @@ import type {
   SelectSpotLiveTransferHistory,
 } from "../schema/trading/types.js";
 import { Database, Transaction } from "../types.js";
+import type { SpecificChain } from "./types/index.js";
 
 /**
  * Review data for self-funding alerts
@@ -199,7 +201,7 @@ export class SpotLiveRepository {
    */
   async batchCreateCompetitionChains(
     competitionId: string,
-    chains: Array<{ specificChain: string; enabled: boolean }>,
+    chains: Array<{ specificChain: SpecificChain; enabled: boolean }>,
     tx?: Transaction,
   ): Promise<SelectSpotLiveCompetitionChain[]> {
     if (chains.length === 0) {
@@ -235,7 +237,7 @@ export class SpotLiveRepository {
    * @param competitionId Competition ID
    * @returns Array of enabled chain names
    */
-  async getEnabledChains(competitionId: string): Promise<string[]> {
+  async getEnabledChains(competitionId: string): Promise<SpecificChain[]> {
     try {
       const results = await this.#dbRead
         .select({ specificChain: spotLiveCompetitionChains.specificChain })
@@ -264,7 +266,7 @@ export class SpotLiveRepository {
    */
   async updateChainStatus(
     competitionId: string,
-    specificChain: string,
+    specificChain: SpecificChain,
     enabled: boolean,
     tx?: Transaction,
   ): Promise<SelectSpotLiveCompetitionChain | null> {
@@ -623,13 +625,15 @@ export class SpotLiveRepository {
    *
    * @param agentId Agent ID
    * @param competitionId Competition ID
-   * @param since Optional timestamp to get transfers after
+   * @param since Optional timestamp to get transfers after (inclusive)
+   * @param until Optional timestamp to get transfers before (exclusive)
    * @returns Array of transfer records
    */
   async getAgentSpotLiveTransfers(
     agentId: string,
     competitionId: string,
     since?: Date,
+    until?: Date,
   ): Promise<SelectSpotLiveTransferHistory[]> {
     try {
       const conditions = [
@@ -639,7 +643,13 @@ export class SpotLiveRepository {
 
       if (since) {
         conditions.push(
-          sql`${spotLiveTransferHistory.transferTimestamp} > ${since}`,
+          sql`${spotLiveTransferHistory.transferTimestamp} >= ${since}`,
+        );
+      }
+
+      if (until) {
+        conditions.push(
+          sql`${spotLiveTransferHistory.transferTimestamp} < ${until}`,
         );
       }
 
@@ -874,6 +884,45 @@ export class SpotLiveRepository {
   }
 
   /**
+   * Get the latest transfer block number for an agent in a competition on a specific chain
+   * Used to determine incremental sync starting point for transfer history
+   *
+   * IMPORTANT: The returned block number should be used WITH OVERLAP (not +1) to prevent gaps.
+   * Same reasoning as trades - allows retry of failed transfers in the same block.
+   * The unique constraint on txHash prevents duplicates during overlapping scans.
+   *
+   * @param agentId Agent ID
+   * @param competitionId Competition ID
+   * @param specificChain Specific chain to query
+   * @returns Latest block number or null if no transfers exist
+   */
+  async getLatestSpotLiveTransferBlock(
+    agentId: string,
+    competitionId: string,
+    specificChain: SpecificChain,
+  ): Promise<number | null> {
+    try {
+      const [result] = await this.#dbRead
+        .select({ blockNumber: spotLiveTransferHistory.blockNumber })
+        .from(spotLiveTransferHistory)
+        .where(
+          and(
+            eq(spotLiveTransferHistory.agentId, agentId),
+            eq(spotLiveTransferHistory.competitionId, competitionId),
+            eq(spotLiveTransferHistory.specificChain, specificChain),
+          ),
+        )
+        .orderBy(desc(spotLiveTransferHistory.blockNumber))
+        .limit(1);
+
+      return result?.blockNumber ?? null;
+    } catch (error) {
+      this.#logger.error({ error }, "Error in getLatestSpotLiveTransferBlock");
+      throw error;
+    }
+  }
+
+  /**
    * Batch get self-funding alerts for multiple agents
    * @param agentIds Array of agent IDs
    * @param competitionId Competition ID
@@ -931,6 +980,90 @@ export class SpotLiveRepository {
         "Error in batchGetAgentsSpotLiveSelfFundingAlerts",
       );
       throw error;
+    }
+  }
+
+  // =============================================================================
+  // AGENT SYNC STATE (Block Tracking for Gap-Free Syncing)
+  // =============================================================================
+
+  /**
+   * Get the last scanned block for an agent in a competition on a specific chain
+   * Used for gap-free incremental syncing - tracks highest block SCANNED (not highest SAVED)
+   * @param agentId Agent ID
+   * @param competitionId Competition ID
+   * @param specificChain Specific chain
+   * @returns Last scanned block number or null if never synced
+   */
+  async getAgentSyncState(
+    agentId: string,
+    competitionId: string,
+    specificChain: SpecificChain,
+  ): Promise<number | null> {
+    try {
+      const [result] = await this.#dbRead
+        .select({ lastScannedBlock: spotLiveAgentSyncState.lastScannedBlock })
+        .from(spotLiveAgentSyncState)
+        .where(
+          and(
+            eq(spotLiveAgentSyncState.agentId, agentId),
+            eq(spotLiveAgentSyncState.competitionId, competitionId),
+            eq(spotLiveAgentSyncState.specificChain, specificChain),
+          ),
+        )
+        .limit(1);
+
+      return result?.lastScannedBlock ?? null;
+    } catch (error) {
+      this.#logger.error({ error }, "Error in getAgentSyncState");
+      throw error;
+    }
+  }
+
+  /**
+   * Update the last scanned block for an agent (upsert)
+   * Creates record if doesn't exist, updates if it does
+   * Updates after EVERY sync attempt (success or failure) to track scan progress
+   * @param agentId Agent ID
+   * @param competitionId Competition ID
+   * @param specificChain Specific chain
+   * @param blockNumber Last scanned block number
+   */
+  async upsertAgentSyncState(
+    agentId: string,
+    competitionId: string,
+    specificChain: SpecificChain,
+    blockNumber: number,
+  ): Promise<void> {
+    try {
+      await this.#db
+        .insert(spotLiveAgentSyncState)
+        .values({
+          agentId,
+          competitionId,
+          specificChain,
+          lastScannedBlock: blockNumber,
+          lastScannedAt: new Date(),
+        })
+        .onConflictDoUpdate({
+          target: [
+            spotLiveAgentSyncState.agentId,
+            spotLiveAgentSyncState.competitionId,
+            spotLiveAgentSyncState.specificChain,
+          ],
+          set: {
+            lastScannedBlock: blockNumber,
+            lastScannedAt: new Date(),
+          },
+        });
+
+      this.#logger.debug(
+        `[SpotLiveRepository] Updated sync state for agent ${agentId} on ${specificChain}: block ${blockNumber}`,
+      );
+    } catch (error) {
+      this.#logger.error({ error }, "Error in upsertAgentSyncState");
+      // Don't throw - sync state update failure shouldn't fail the entire sync
+      // State is an optimization; worst case we fall back to MAX(block_number) query
     }
   }
 }

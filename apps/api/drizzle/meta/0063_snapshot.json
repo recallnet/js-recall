@@ -1,5 +1,5 @@
 {
-  "id": "fe811757-2bc6-416f-a95a-b7bc71715801",
+  "id": "ec406359-f350-41cd-b718-8177750167e5",
   "prevId": "2bbf21af-ca68-4023-80e7-ae4f2fd9cfc5",
   "version": "7",
   "dialect": "postgresql",
@@ -5811,6 +5811,103 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "trading_comps.spot_live_agent_sync_state": {
+      "name": "spot_live_agent_sync_state",
+      "schema": "trading_comps",
+      "columns": {
+        "agent_id": {
+          "name": "agent_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "competition_id": {
+          "name": "competition_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "specific_chain": {
+          "name": "specific_chain",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "last_scanned_block": {
+          "name": "last_scanned_block",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "last_scanned_at": {
+          "name": "last_scanned_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "idx_sync_state_agent_comp_chain": {
+          "name": "idx_sync_state_agent_comp_chain",
+          "columns": [
+            {
+              "expression": "agent_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "competition_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "specific_chain",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "spot_live_agent_sync_state_agent_id_agents_id_fk": {
+          "name": "spot_live_agent_sync_state_agent_id_agents_id_fk",
+          "tableFrom": "spot_live_agent_sync_state",
+          "tableTo": "agents",
+          "columnsFrom": ["agent_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        },
+        "spot_live_agent_sync_state_competition_id_competitions_id_fk": {
+          "name": "spot_live_agent_sync_state_competition_id_competitions_id_fk",
+          "tableFrom": "spot_live_agent_sync_state",
+          "tableTo": "competitions",
+          "columnsFrom": ["competition_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "sync_state_unique": {
+          "name": "sync_state_unique",
+          "nullsNotDistinct": false,
+          "columns": ["agent_id", "competition_id", "specific_chain"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "trading_comps.spot_live_allowed_protocols": {
       "name": "spot_live_allowed_protocols",
       "schema": "trading_comps",
@@ -7048,7 +7145,13 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "trades_tx_hash_competition_agent_unique": {
+          "name": "trades_tx_hash_competition_agent_unique",
+          "nullsNotDistinct": false,
+          "columns": ["tx_hash", "competition_id", "agent_id"]
+        }
+      },
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
