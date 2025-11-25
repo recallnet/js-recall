@@ -1090,7 +1090,7 @@ export class SpotLiveRepository {
             spotLiveAgentSyncState.specificChain,
           ],
           set: {
-            lastScannedBlock: blockNumber,
+            lastScannedBlock: sql`GREATEST(${spotLiveAgentSyncState.lastScannedBlock}, ${blockNumber})`,
             lastScannedAt: new Date(),
           },
         });
