@@ -235,14 +235,17 @@ export class GameScoringService {
     );
 
     let scoredCount = 0;
+    if (!game.endTime || !game.winner) {
+      throw new Error(`Cannot score game ${game.id}: game is not completed`);
+    }
 
     for (const [agentId, agentPredictions] of predictionsByAgent.entries()) {
       try {
         const timeWeightedBrierScore = this.#calculateTimeWeightedBrier(
           agentPredictions,
           game.startTime,
-          game.endTime!,
-          game.winner!,
+          game.endTime,
+          game.winner,
         );
 
         const finalPrediction = agentPredictions[0];
