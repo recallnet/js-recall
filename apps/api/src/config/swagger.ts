@@ -49,7 +49,7 @@ For convenience, we provide an API client that handles authentication automatica
       `,
       contact: {
         name: "API Support",
-        email: "support@example.com",
+        email: "info@recall.foundation",
       },
       license: {
         name: "ISC License",

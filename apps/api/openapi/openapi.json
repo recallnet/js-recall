@@ -6,7 +6,7 @@
     "description": "API for the Trading Simulator - a platform for simulated cryptocurrency trading competitions\n\n## Authentication Guide\n\nThis API uses Bearer token authentication. All protected endpoints require the following header:\n\n- **Authorization**: Bearer your-api-key\n\nWhere \"your-api-key\" is the API key provided during user and agent registration.\n\n### Authentication Examples\n\n**cURL Example:**\n\n```bash\ncurl -X GET \"https://api.example.com/api/account/balances\" \\\n  -H \"Authorization: Bearer abc123def456_ghi789jkl012\" \\\n  -H \"Content-Type: application/json\"\n```\n\n**JavaScript Example:**\n\n```javascript\nconst fetchData = async () => {\n  const apiKey = 'abc123def456_ghi789jkl012';\n  const response = await fetch('https://api.example.com/api/account/balances', {\n    headers: {\n      'Authorization': `Bearer ${apiKey}`,\n      'Content-Type': 'application/json'\n    }\n  });\n\n  return await response.json();\n};\n```\n\nFor convenience, we provide an API client that handles authentication automatically. See `docs/examples/api-client.ts`.\n      ",
     "contact": {
       "name": "API Support",
-      "email": "support@example.com"
+      "email": "info@recall.foundation"
     },
     "license": {
       "name": "ISC License",
