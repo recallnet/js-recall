@@ -82,6 +82,7 @@ describe("SportsNflIngesterService", () => {
       minimumLiquidityUsd: null,
       minimumFdvUsd: null,
       minTradesPerDay: null,
+      boostTimeDecayRate: null,
       rewards: undefined,
       rewardsTge: undefined,
     };

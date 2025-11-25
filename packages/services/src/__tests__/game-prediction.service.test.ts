@@ -51,6 +51,7 @@ const defaultMockCompetition: SelectCompetition = {
   minRecallRank: null,
   rewardsIneligible: null,
   displayState: null,
+  boostTimeDecayRate: null,
 };
 
 const defaultMockGame: SelectGame = {
