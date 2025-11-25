@@ -220,7 +220,6 @@ export class AlchemyRpcProvider implements IRpcProvider {
     chain: SpecificChain,
     fromBlock: number | string,
     toBlock: number | string = "latest",
-    pageKey?: string,
   ): Promise<AssetTransfersWithMetadataResponse> {
     const startTime = Date.now();
     const maskedAddress = this.maskWalletAddress(walletAddress);
@@ -259,25 +258,43 @@ export class AlchemyRpcProvider implements IRpcProvider {
                 : toBlock;
 
             // Get all transfers where the wallet is involved
-            // Note: pageKey applies to both fromAddress and toAddress queries combined
-            // We need to handle pagination differently for combined results
-            const [fromTransfers, toTransfers] = await Promise.all([
-              // Outgoing transfers (wallet is sender)
-              provider.core.getAssetTransfers({
+            // Pagination handled internally - exhaust both queries completely
+            // Since we're combining two independent queries (fromAddress and toAddress),
+            // we cannot use a single pageKey. Instead, fetch all pages for each query.
+            // Input pageKey parameter is ignored - we always fetch complete results.
+
+            const allFromTransfers: AssetTransfersWithMetadataResponse["transfers"] =
+              [];
+            const allToTransfers: AssetTransfersWithMetadataResponse["transfers"] =
+              [];
+
+            // Fetch all outgoing transfers (wallet is sender)
+            // Always start from beginning (pageKey=undefined) to get complete results
+            let fromPageKey: string | undefined;
+            do {
+              const fromResult = await provider.core.getAssetTransfers({
                 fromBlock: fromBlockHex,
                 toBlock: toBlockHex,
                 fromAddress: walletAddress,
                 category: [
-                  AssetTransfersCategory.EXTERNAL, // ETH transfers
-                  AssetTransfersCategory.ERC20, // Token transfers
+                  AssetTransfersCategory.EXTERNAL,
+                  AssetTransfersCategory.ERC20,
                 ],
                 withMetadata: true,
-                excludeZeroValue: false, // Include zero-value transfers for completeness
-                maxCount: 1000, // Alchemy's max per request
-                pageKey: pageKey, // Pass pagination cursor
-              }),
-              // Incoming transfers (wallet is receiver)
-              provider.core.getAssetTransfers({
+                excludeZeroValue: false,
+                maxCount: 1000,
+                pageKey: fromPageKey,
+              });
+
+              allFromTransfers.push(...fromResult.transfers);
+              fromPageKey = fromResult.pageKey;
+            } while (fromPageKey);
+
+            // Fetch all incoming transfers (wallet is receiver)
+            // Always start from beginning (pageKey=undefined) to get complete results
+            let toPageKey: string | undefined;
+            do {
+              const toResult = await provider.core.getAssetTransfers({
                 fromBlock: fromBlockHex,
                 toBlock: toBlockHex,
                 toAddress: walletAddress,
@@ -288,13 +305,16 @@ export class AlchemyRpcProvider implements IRpcProvider {
                 withMetadata: true,
                 excludeZeroValue: false,
                 maxCount: 1000,
-                pageKey: pageKey, // Pass pagination cursor
-              }),
-            ]);
+                pageKey: toPageKey,
+              });
+
+              allToTransfers.push(...toResult.transfers);
+              toPageKey = toResult.pageKey;
+            } while (toPageKey);
 
             return {
-              transfers: [...fromTransfers.transfers, ...toTransfers.transfers],
-              pageKey: fromTransfers.pageKey || toTransfers.pageKey,
+              transfers: [...allFromTransfers, ...allToTransfers],
+              pageKey: undefined, // All pages fetched
             };
           },
           {

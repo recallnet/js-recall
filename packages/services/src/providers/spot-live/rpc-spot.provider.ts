@@ -229,32 +229,15 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
 
         if (!allTransfers) {
           // Cache miss - fetch from API
-          // Alchemy limits responses to 1000 results per request
-          allTransfers = [];
-          let pageKey: string | undefined;
+          // AlchemyRpcProvider handles all pagination internally and returns complete results
+          const transfersResponse = await this.rpcProvider.getAssetTransfers(
+            walletAddress,
+            chain,
+            sinceBlock,
+            toBlock || "latest",
+          );
 
-          do {
-            const transfersResponse = await this.rpcProvider.getAssetTransfers(
-              walletAddress,
-              chain,
-              sinceBlock,
-              toBlock || "latest", // Use specified toBlock for tests, "latest" for production
-              pageKey, // Pass pagination cursor (undefined on first call)
-            );
-
-            allTransfers.push(...transfersResponse.transfers);
-            pageKey = transfersResponse.pageKey;
-
-            if (pageKey) {
-              this.logger.debug(
-                {
-                  chain,
-                  currentCount: allTransfers.length,
-                },
-                `[RpcSpotProvider] Fetching next page of transfers`,
-              );
-            }
-          } while (pageKey);
+          allTransfers = transfersResponse.transfers;
 
           // Cache for reuse by getTransferHistory
           this.transferCache.set(cacheKey, allTransfers);
@@ -432,32 +415,15 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
 
         if (!chainTransfers) {
           // Cache miss - fetch from API
-          // Alchemy limits responses to 1000 results per request
-          chainTransfers = [];
-          let pageKey: string | undefined;
+          // AlchemyRpcProvider handles all pagination internally and returns complete results
+          const transfersResponse = await this.rpcProvider.getAssetTransfers(
+            walletAddress,
+            chain,
+            sinceBlock,
+            toBlock || "latest",
+          );
 
-          do {
-            const transfersResponse = await this.rpcProvider.getAssetTransfers(
-              walletAddress,
-              chain,
-              sinceBlock,
-              toBlock || "latest", // Use specified toBlock for tests, "latest" for production
-              pageKey, // Pass pagination cursor (undefined on first call)
-            );
-
-            chainTransfers.push(...transfersResponse.transfers);
-            pageKey = transfersResponse.pageKey;
-
-            if (pageKey) {
-              this.logger.debug(
-                {
-                  chain,
-                  currentCount: chainTransfers.length,
-                },
-                `[RpcSpotProvider] Fetching next page of transfers`,
-              );
-            }
-          } while (pageKey);
+          chainTransfers = transfersResponse.transfers;
 
           // Cache for consistency (though getTradesSince usually caches first)
           this.transferCache.set(cacheKey, chainTransfers);

@@ -46,19 +46,18 @@ export interface TokenBalance {
 export interface IRpcProvider {
   /**
    * Get all asset transfers (ETH and token transfers) for a wallet
+   * Automatically handles pagination internally to return complete results
    * @param walletAddress Wallet address to monitor
    * @param chain Chain to query
    * @param fromBlock Starting block number or tag
    * @param toBlock Ending block number or tag
-   * @param pageKey Optional pagination cursor from previous request
-   * @returns Asset transfers with metadata and optional pageKey for next page
+   * @returns All asset transfers with metadata (pageKey always undefined - all pages fetched)
    */
   getAssetTransfers(
     walletAddress: string,
     chain: SpecificChain,
     fromBlock: number | string,
     toBlock: number | string,
-    pageKey?: string,
   ): Promise<AssetTransfersWithMetadataResponse>;
 
   /**

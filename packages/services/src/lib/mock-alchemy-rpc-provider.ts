@@ -783,10 +783,8 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
     chain: SpecificChain,
     fromBlock: number | string,
     toBlock: number | string,
-    pageKey?: string,
   ): Promise<AssetTransfersWithMetadataResponse> {
     void toBlock; // Not used in mock
-    void pageKey; // Not used in mock - no pagination
     const data = this.getWalletData(walletAddress);
     const lowerAddress = walletAddress.toLowerCase();
 
