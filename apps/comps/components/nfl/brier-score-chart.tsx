@@ -315,7 +315,7 @@ export function BrierScoreChart({
             <span>win %</span>
           </div>
         </div>
-        <div className="text-secondary-foreground mb-10 text-xs font-semibold uppercase leading-tight">
+        <div className="text-secondary-foreground mb-4 text-xs font-semibold uppercase leading-tight">
           <div className="flex flex-col">
             <span>{game.awayTeam}</span>
             <span>win %</span>
