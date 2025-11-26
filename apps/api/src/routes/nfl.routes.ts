@@ -479,7 +479,7 @@ export function configureNflRoutes(
    *     tags:
    *       - NFL
    *     security:
-   *       - bearerAuth: []
+   *       - BearerAuth: []
    *     parameters:
    *       - in: path
    *         name: competitionId
