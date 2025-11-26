@@ -1790,6 +1790,15 @@ describe("Spot Live Competition", () => {
     expect(activeMediumROI?.rank).toBe(2); // 20% ROI - MEDIUM ROI = rank 2
     expect(activeLowROI?.rank).toBe(3); // 10% ROI - LOWEST ROI = rank 3
 
+    // Verify actual simpleReturn VALUES are correct (decimal format, not percentage)
+    // This catches bugs where simpleReturn is incorrectly multiplied by 100
+    // $100 → $150 = ($150 - $100) / $100 = 0.5 (50% as decimal)
+    // $1000 → $1200 = ($1200 - $1000) / $1000 = 0.2 (20% as decimal)
+    // $500 → $550 = ($550 - $500) / $500 = 0.1 (10% as decimal)
+    expect(activeHighROI?.simpleReturn).toBeCloseTo(0.5, 1); // 50% ROI as decimal
+    expect(activeMediumROI?.simpleReturn).toBeCloseTo(0.2, 1); // 20% ROI as decimal
+    expect(activeLowROI?.simpleReturn).toBeCloseTo(0.1, 1); // 10% ROI as decimal
+
     // Double-check that portfolio value is genuinely inverse of rank
     // (This proves the test is meaningful - if they were correlated, the test would be ambiguous)
     expect(activeHighROI?.portfolioValue).toBeLessThan(
@@ -1832,6 +1841,12 @@ describe("Spot Live Competition", () => {
     expect(endedHighROI!.portfolioValue).toBeCloseTo(150, 0);
     expect(endedMediumROI!.portfolioValue).toBeCloseTo(1200, 0);
     expect(endedLowROI!.portfolioValue).toBeCloseTo(550, 0);
+
+    // simpleReturn values should also be preserved in decimal format
+    // This verifies active and ended competitions use consistent format
+    expect(endedHighROI!.simpleReturn).toBeCloseTo(0.5, 1); // 50% ROI as decimal
+    expect(endedMediumROI!.simpleReturn).toBeCloseTo(0.2, 1); // 20% ROI as decimal
+    expect(endedLowROI!.simpleReturn).toBeCloseTo(0.1, 1); // 10% ROI as decimal
   });
 
   test("should return totalTrades and simpleReturn in getAgentCompetitions for spot live", async () => {

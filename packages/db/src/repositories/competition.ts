@@ -3198,7 +3198,7 @@ export class CompetitionRepository {
           oldest.total_value AS starting_value,
           CASE
             WHEN oldest.total_value > 0 THEN
-              ((newest.total_value - oldest.total_value) / oldest.total_value) * 100
+              (newest.total_value - oldest.total_value) / oldest.total_value
             ELSE 0
           END AS simple_return
         FROM ${competitionAgents} ca
