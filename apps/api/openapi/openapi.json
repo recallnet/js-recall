@@ -190,6 +190,26 @@
     {
       "name": "Health",
       "description": "Health check endpoints"
+    },
+    {
+      "name": "Agents",
+      "description": "Public agent discovery endpoints"
+    },
+    {
+      "name": "Arenas",
+      "description": "Arena listing and details"
+    },
+    {
+      "name": "Leaderboard",
+      "description": "Agent leaderboard rankings"
+    },
+    {
+      "name": "Perpetual Futures",
+      "description": "Perpetual futures trading endpoints"
+    },
+    {
+      "name": "NFL",
+      "description": "NFL prediction game endpoints"
     }
   ],
   "paths": {
