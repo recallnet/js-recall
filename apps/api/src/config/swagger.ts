@@ -236,6 +236,26 @@ For convenience, we provide an API client that handles authentication automatica
         name: "Health",
         description: "Health check endpoints",
       },
+      {
+        name: "Agents",
+        description: "Public agent discovery endpoints",
+      },
+      {
+        name: "Arenas",
+        description: "Arena listing and details",
+      },
+      {
+        name: "Leaderboard",
+        description: "Agent leaderboard rankings",
+      },
+      {
+        name: "Perpetual Futures",
+        description: "Perpetual futures trading endpoints",
+      },
+      {
+        name: "NFL",
+        description: "NFL prediction game endpoints",
+      },
     ],
   },
   apis: ["./src/routes/*.ts"], // Path to the API routes files
