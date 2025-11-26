@@ -23,6 +23,8 @@ export type NflGame = Pick<
   | "winner"
   | "spread"
   | "overUnder"
+  | "awayTeamMoneyLine"
+  | "homeTeamMoneyLine"
 >;
 
 export interface NflPrediction

@@ -1,9 +1,19 @@
 "use client";
 
 import { format } from "date-fns";
-import { useEffect, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 
 import { NflGame } from "@/types/nfl";
+
+/**
+ * Formats a betting value as a string with a plus sign or negative sign. Note: assumes database
+ * value is already negative, if applicable, since it's stored as a negative in the database.
+ * @param value - The value to format.
+ * @returns A formatted string.
+ */
+const formatBettingValue = (value: number): string => {
+  return value > 0 ? `+${value}` : `${value}`;
+};
 
 interface GamesAccordionProps {
   games: NflGame[];
@@ -37,6 +47,53 @@ export function GamesAccordion({
       {games.map((game) => {
         const isOpen = openGameId === game.id;
         const isSelected = selectedGameId === game.id;
+        const oddsMetrics: Array<{
+          key: string;
+          label: string;
+          value: ReactNode;
+        }> = [];
+
+        if (game.spread !== null) {
+          oddsMetrics.push({
+            key: "spread",
+            label: "Spread",
+            value: (
+              <div className="font-mono text-sm">
+                {formatBettingValue(game.spread)}
+              </div>
+            ),
+          });
+        }
+
+        if (game.overUnder !== null) {
+          oddsMetrics.push({
+            key: "overUnder",
+            label: "Over/Under",
+            value: <div className="font-mono text-xs">{game.overUnder}</div>,
+          });
+        }
+
+        if (
+          game.awayTeamMoneyLine !== null &&
+          game.homeTeamMoneyLine !== null
+        ) {
+          oddsMetrics.push({
+            key: "moneyLine",
+            label: "Money Line",
+            value: (
+              <div className="font-mono text-xs">
+                <div>
+                  <span>{game.awayTeam}</span>
+                  {formatBettingValue(game.awayTeamMoneyLine)}
+                </div>
+                <div>
+                  <span>{game.homeTeam}</span>
+                  {formatBettingValue(game.homeTeamMoneyLine)}
+                </div>
+              </div>
+            ),
+          });
+        }
 
         return (
           <div
@@ -89,23 +146,19 @@ export function GamesAccordion({
             {isOpen && (
               <div className="border-t px-4 py-4 text-sm">
                 <div className="space-y-2">
-                  {(game.spread !== null || game.overUnder !== null) && (
-                    <div className="flex flex-wrap gap-4 text-xs">
-                      {game.spread !== null && (
-                        <div>
-                          <span className="text-muted-foreground">Spread:</span>{" "}
-                          <span className="font-mono">
-                            {game.spread > 0 ? "+" : ""}
-                            {game.spread}
-                          </span>
+                  {oddsMetrics.length > 0 && (
+                    <div className="grid grid-cols-3 gap-x-3 gap-y-2 text-xs">
+                      {oddsMetrics.map((metric) => (
+                        <div
+                          key={`${game.id}-${metric.key}`}
+                          className="space-y-1"
+                        >
+                          <div className="text-muted-foreground text-[10px] uppercase tracking-wide">
+                            {metric.label}
+                          </div>
+                          {metric.value}
                         </div>
-                      )}
-                      {game.overUnder !== null && (
-                        <div>
-                          <span className="text-muted-foreground">O/U:</span>{" "}
-                          <span className="font-mono">{game.overUnder}</span>
-                        </div>
-                      )}
+                      ))}
                     </div>
                   )}
 
