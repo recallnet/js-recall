@@ -1,4 +1,4 @@
-import { Link } from "lucide-react";
+import Link from "next/link";
 import { useMemo } from "react";
 
 import { Button } from "@recallnet/ui2/components/button";
