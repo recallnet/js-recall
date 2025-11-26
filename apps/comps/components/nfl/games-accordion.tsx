@@ -83,11 +83,11 @@ export function GamesAccordion({
             value: (
               <div className="font-mono text-xs">
                 <div>
-                  <span>{game.awayTeam}</span>
+                  <span>{game.awayTeam}</span>{" "}
                   {formatBettingValue(game.awayTeamMoneyLine)}
                 </div>
                 <div>
-                  <span>{game.homeTeam}</span>
+                  <span>{game.homeTeam}</span>{" "}
                   {formatBettingValue(game.homeTeamMoneyLine)}
                 </div>
               </div>
