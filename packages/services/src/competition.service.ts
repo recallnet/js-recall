@@ -1954,7 +1954,23 @@ export class CompetitionService {
       return orderedResults;
     }
 
-    // For paper trading: Return without risk metrics
+    if (competition?.type === "spot_live_trading") {
+      // For spot live: Get ROI-based leaderboard from repository (sorted by simpleReturn DESC)
+      const roiLeaderboard =
+        await this.competitionRepo.getSpotLiveROILeaderboard(competitionId);
+
+      return roiLeaderboard.map((entry) => ({
+        agentId: entry.agentId,
+        value: entry.currentValue,
+        pnl: entry.currentValue - entry.startingValue,
+        calmarRatio: null,
+        simpleReturn: entry.simpleReturn,
+        maxDrawdown: null,
+        hasRiskMetrics: false,
+      }));
+    }
+
+    // For paper trading: Return without risk metrics, sorted by portfolio value
     return snapshots
       .map((snapshot) => ({
         agentId: snapshot.agentId,

@@ -3167,4 +3167,74 @@ export class CompetitionRepository {
       throw error;
     }
   }
+
+  /**
+   * Get ROI-based leaderboard for spot live trading competitions
+   * Calculates simpleReturn from bounded portfolio snapshots and sorts by ROI descending
+   * Uses lateral joins to get oldest and newest snapshots per agent in a single query
+   * @param competitionId The competition ID
+   * @returns Array of leaderboard entries sorted by simpleReturn (ROI) descending
+   */
+  async getSpotLiveROILeaderboard(competitionId: string): Promise<
+    Array<{
+      agentId: string;
+      currentValue: number;
+      startingValue: number;
+      simpleReturn: number;
+    }>
+  > {
+    try {
+      // Uses CROSS JOIN LATERAL pattern consistent with getLatestPortfolioSnapshots
+      // Gets oldest and newest snapshots per agent, calculates ROI, sorts by ROI DESC
+      const result = await this.#dbRead.execute<{
+        agent_id: string;
+        current_value: string;
+        starting_value: string;
+        simple_return: string;
+      }>(sql`
+        SELECT
+          ca.agent_id,
+          newest.total_value AS current_value,
+          oldest.total_value AS starting_value,
+          CASE
+            WHEN oldest.total_value > 0 THEN
+              ((newest.total_value - oldest.total_value) / oldest.total_value) * 100
+            ELSE 0
+          END AS simple_return
+        FROM ${competitionAgents} ca
+        CROSS JOIN LATERAL (
+          SELECT ps.total_value
+          FROM ${portfolioSnapshots} ps
+          WHERE ps.agent_id = ca.agent_id
+            AND ps.competition_id = ca.competition_id
+          ORDER BY ps.timestamp ASC
+          LIMIT 1
+        ) oldest
+        CROSS JOIN LATERAL (
+          SELECT ps.total_value
+          FROM ${portfolioSnapshots} ps
+          WHERE ps.agent_id = ca.agent_id
+            AND ps.competition_id = ca.competition_id
+          ORDER BY ps.timestamp DESC
+          LIMIT 1
+        ) newest
+        WHERE ca.competition_id = ${competitionId}
+          AND ca.status = ${"active"}
+        ORDER BY simple_return DESC
+      `);
+
+      return result.rows.map((row) => ({
+        agentId: row.agent_id,
+        currentValue: Number(row.current_value),
+        startingValue: Number(row.starting_value),
+        simpleReturn: Number(row.simple_return),
+      }));
+    } catch (error) {
+      this.#logger.error(
+        { error },
+        `[CompetitionRepository] Error getting spot live ROI leaderboard for competition ${competitionId}`,
+      );
+      throw error;
+    }
+  }
 }

@@ -730,6 +730,238 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
         ["0x4200000000000000000000000000000000000006", 0.5], // ETH - NOT whitelisted (in this specific test)
       ]),
     });
+
+    // =============================================================================
+    // ROI-BASED RANKING TEST WALLETS
+    // These wallets are designed to DEFINITIVELY prove ROI-based ranking works.
+    // Portfolio values are INVERSE of ROI to catch any bugs ranking by portfolio value.
+    // =============================================================================
+
+    // ROI Test Wallet 1: HIGHEST ROI (50%), LOWEST portfolio value ($150)
+    // Starting: $100 USDC → Ending: $150 USDC
+    // If ranking by portfolio value (incorrectly), this would be rank 3
+    // If ranking by ROI (correctly), this should be rank 1
+    const roiSwap1Time = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    this.setWalletData("0x0001000000000000000000000000000000000001", {
+      transfers: [
+        // Swap: 100 USDC → 150 USDC worth of tokens (simulated profitable trade)
+        createMockTransfer({
+          from: "0x0001000000000000000000000000000000000001",
+          to: "0xaeropool_roi1",
+          value: 50,
+          asset: "USDC",
+          hash: "0xroi_swap_1",
+          blockNum: "0x1e8600",
+          blockTimestamp: roiSwap1Time,
+          tokenAddress: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+          decimal: "6",
+        }),
+        createMockTransfer({
+          from: "0xaeropool_roi1",
+          to: "0x0001000000000000000000000000000000000001",
+          value: 100, // Profitable trade - got 100 USDC worth back
+          asset: "USDC",
+          hash: "0xroi_swap_1",
+          blockNum: "0x1e8600",
+          blockTimestamp: roiSwap1Time,
+          tokenAddress: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+          decimal: "6",
+        }),
+      ],
+      transactions: new Map([
+        [
+          "0xroi_swap_1",
+          {
+            hash: "0xroi_swap_1",
+            from: "0x0001000000000000000000000000000000000001",
+            to: "0xcf77a3ba9a5ca399b7c97c74d54e5b1beb874e43",
+            blockNumber: 2002432,
+          },
+        ],
+      ]),
+      receipts: new Map([
+        [
+          "0xroi_swap_1",
+          {
+            transactionHash: "0xroi_swap_1",
+            blockNumber: 2002432,
+            gasUsed: "150000",
+            effectiveGasPrice: "50000000000",
+            status: true,
+            from: "0x0001000000000000000000000000000000000001",
+            to: "0xcf77a3ba9a5ca399b7c97c74d54e5b1beb874e43",
+            logs: [
+              {
+                address: "0xaeropool_roi1",
+                blockNumber: 2002432,
+                blockHash: "0xroihash1",
+                transactionIndex: 0,
+                removed: false,
+                logIndex: 0,
+                transactionHash: "0xroi_swap_1",
+                topics: [
+                  "0xb3e2773606abfd36b5bd91394b3a54d1398336c65005baf7bf7a05efeffaf75b",
+                ],
+                data: "0x",
+              },
+            ],
+          },
+        ],
+      ]),
+      balances: new Map([
+        ["0x833589fcd6edb6e08f4c7c32d4f71b54bda02913", 100], // Initial: $100 USDC
+      ]),
+    });
+
+    // ROI Test Wallet 2: MEDIUM ROI (20%), HIGHEST portfolio value ($1200)
+    // Starting: $1000 USDC → Ending: $1200 USDC
+    // If ranking by portfolio value (incorrectly), this would be rank 1
+    // If ranking by ROI (correctly), this should be rank 2
+    const roiSwap2Time = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    this.setWalletData("0x0002000000000000000000000000000000000002", {
+      transfers: [
+        createMockTransfer({
+          from: "0x0002000000000000000000000000000000000002",
+          to: "0xaeropool_roi2",
+          value: 500,
+          asset: "USDC",
+          hash: "0xroi_swap_2",
+          blockNum: "0x1e8601",
+          blockTimestamp: roiSwap2Time,
+          tokenAddress: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+          decimal: "6",
+        }),
+        createMockTransfer({
+          from: "0xaeropool_roi2",
+          to: "0x0002000000000000000000000000000000000002",
+          value: 700, // Profitable trade - 20% gain on the traded portion
+          asset: "USDC",
+          hash: "0xroi_swap_2",
+          blockNum: "0x1e8601",
+          blockTimestamp: roiSwap2Time,
+          tokenAddress: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+          decimal: "6",
+        }),
+      ],
+      transactions: new Map([
+        [
+          "0xroi_swap_2",
+          {
+            hash: "0xroi_swap_2",
+            from: "0x0002000000000000000000000000000000000002",
+            to: "0xcf77a3ba9a5ca399b7c97c74d54e5b1beb874e43",
+            blockNumber: 2002433,
+          },
+        ],
+      ]),
+      receipts: new Map([
+        [
+          "0xroi_swap_2",
+          {
+            transactionHash: "0xroi_swap_2",
+            blockNumber: 2002433,
+            gasUsed: "150000",
+            effectiveGasPrice: "50000000000",
+            status: true,
+            from: "0x0002000000000000000000000000000000000002",
+            to: "0xcf77a3ba9a5ca399b7c97c74d54e5b1beb874e43",
+            logs: [
+              {
+                address: "0xaeropool_roi2",
+                blockNumber: 2002433,
+                blockHash: "0xroihash2",
+                transactionIndex: 0,
+                removed: false,
+                logIndex: 0,
+                transactionHash: "0xroi_swap_2",
+                topics: [
+                  "0xb3e2773606abfd36b5bd91394b3a54d1398336c65005baf7bf7a05efeffaf75b",
+                ],
+                data: "0x",
+              },
+            ],
+          },
+        ],
+      ]),
+      balances: new Map([
+        ["0x833589fcd6edb6e08f4c7c32d4f71b54bda02913", 1000], // Initial: $1000 USDC
+      ]),
+    });
+
+    // ROI Test Wallet 3: LOWEST ROI (10%), MEDIUM portfolio value ($550)
+    // Starting: $500 USDC → Ending: $550 USDC
+    // If ranking by portfolio value (incorrectly), this would be rank 2
+    // If ranking by ROI (correctly), this should be rank 3
+    const roiSwap3Time = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    this.setWalletData("0x0003000000000000000000000000000000000003", {
+      transfers: [
+        createMockTransfer({
+          from: "0x0003000000000000000000000000000000000003",
+          to: "0xaeropool_roi3",
+          value: 200,
+          asset: "USDC",
+          hash: "0xroi_swap_3",
+          blockNum: "0x1e8602",
+          blockTimestamp: roiSwap3Time,
+          tokenAddress: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+          decimal: "6",
+        }),
+        createMockTransfer({
+          from: "0xaeropool_roi3",
+          to: "0x0003000000000000000000000000000000000003",
+          value: 250, // Small gain - 10% ROI overall
+          asset: "USDC",
+          hash: "0xroi_swap_3",
+          blockNum: "0x1e8602",
+          blockTimestamp: roiSwap3Time,
+          tokenAddress: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+          decimal: "6",
+        }),
+      ],
+      transactions: new Map([
+        [
+          "0xroi_swap_3",
+          {
+            hash: "0xroi_swap_3",
+            from: "0x0003000000000000000000000000000000000003",
+            to: "0xcf77a3ba9a5ca399b7c97c74d54e5b1beb874e43",
+            blockNumber: 2002434,
+          },
+        ],
+      ]),
+      receipts: new Map([
+        [
+          "0xroi_swap_3",
+          {
+            transactionHash: "0xroi_swap_3",
+            blockNumber: 2002434,
+            gasUsed: "150000",
+            effectiveGasPrice: "50000000000",
+            status: true,
+            from: "0x0003000000000000000000000000000000000003",
+            to: "0xcf77a3ba9a5ca399b7c97c74d54e5b1beb874e43",
+            logs: [
+              {
+                address: "0xaeropool_roi3",
+                blockNumber: 2002434,
+                blockHash: "0xroihash3",
+                transactionIndex: 0,
+                removed: false,
+                logIndex: 0,
+                transactionHash: "0xroi_swap_3",
+                topics: [
+                  "0xb3e2773606abfd36b5bd91394b3a54d1398336c65005baf7bf7a05efeffaf75b",
+                ],
+                data: "0x",
+              },
+            ],
+          },
+        ],
+      ]),
+      balances: new Map([
+        ["0x833589fcd6edb6e08f4c7c32d4f71b54bda02913", 500], // Initial: $500 USDC
+      ]),
+    });
   }
 
   /**
@@ -853,7 +1085,10 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
       lowerAddress === "0x4444444444444444444444444444444444444444" || // Protocol filtering test
       lowerAddress === "0x6666666666666666666666666666666666666666" || // Token whitelist test
       lowerAddress === "0x7777777777777777777777777777777777777777" || // Min funding threshold test
-      lowerAddress === "0x8888888888888888888888888888888888888888" // Portfolio filter test
+      lowerAddress === "0x8888888888888888888888888888888888888888" || // Portfolio filter test
+      lowerAddress === "0x0001000000000000000000000000000000000001" || // ROI ranking test - highest ROI
+      lowerAddress === "0x0002000000000000000000000000000000000002" || // ROI ranking test - medium ROI
+      lowerAddress === "0x0003000000000000000000000000000000000003" // ROI ranking test - lowest ROI
     ) {
       // Test wallets with swaps/transfers - reveal on first manual sync (sync 1+)
       // This simulates the swap/transfer happening AFTER competition starts
@@ -1198,6 +1433,45 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
         );
         balancesToReturn.set("0x940181a94a35a4569e4529a3cdfb74e38fd98631", 500);
         balancesToReturn.set("0x4200000000000000000000000000000000000006", 0.5);
+      }
+    } else if (lowerAddress === "0x0001000000000000000000000000000000000001") {
+      // ROI Test Wallet 1: HIGHEST ROI (50%), LOWEST portfolio value ($150)
+      // Starting: $100 USDC → Ending: $150 USDC
+      balancesToReturn = new Map();
+
+      if (syncNumber === 0) {
+        balancesToReturn.set("0x833589fcd6edb6e08f4c7c32d4f71b54bda02913", 100); // Initial: $100 USDC
+      } else {
+        // After profitable trade: $100 → $150 (50% ROI)
+        balancesToReturn.set("0x833589fcd6edb6e08f4c7c32d4f71b54bda02913", 150);
+      }
+    } else if (lowerAddress === "0x0002000000000000000000000000000000000002") {
+      // ROI Test Wallet 2: MEDIUM ROI (20%), HIGHEST portfolio value ($1200)
+      // Starting: $1000 USDC → Ending: $1200 USDC
+      balancesToReturn = new Map();
+
+      if (syncNumber === 0) {
+        balancesToReturn.set(
+          "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+          1000,
+        ); // Initial: $1000 USDC
+      } else {
+        // After trade: $1000 → $1200 (20% ROI)
+        balancesToReturn.set(
+          "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+          1200,
+        );
+      }
+    } else if (lowerAddress === "0x0003000000000000000000000000000000000003") {
+      // ROI Test Wallet 3: LOWEST ROI (10%), MEDIUM portfolio value ($550)
+      // Starting: $500 USDC → Ending: $550 USDC
+      balancesToReturn = new Map();
+
+      if (syncNumber === 0) {
+        balancesToReturn.set("0x833589fcd6edb6e08f4c7c32d4f71b54bda02913", 500); // Initial: $500 USDC
+      } else {
+        // After trade: $500 → $550 (10% ROI)
+        balancesToReturn.set("0x833589fcd6edb6e08f4c7c32d4f71b54bda02913", 550);
       }
     }
 

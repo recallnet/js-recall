@@ -1694,4 +1694,143 @@ describe("Spot Live Competition", () => {
     // Portfolio should only reflect whitelisted tokens (USDC + ETH), AERO excluded from calculation
     expect(agentEntry?.portfolioValue).toBeGreaterThan(1000); // At least USDC value
   });
+
+  test("should rank agents by ROI percentage, NOT portfolio value", async () => {
+    // This test DEFINITIVELY proves ROI-based ranking works correctly.
+    // Portfolio values are INVERSE of ROI to catch any bugs ranking by portfolio value:
+    //
+    // Agent 1: $100 → $150 = 50% ROI, portfolio $150 (LOWEST) → should be rank 1
+    // Agent 2: $1000 → $1200 = 20% ROI, portfolio $1200 (HIGHEST) → should be rank 2
+    // Agent 3: $500 → $550 = 10% ROI, portfolio $550 (MEDIUM) → should be rank 3
+    //
+    // If incorrectly ranking by portfolio value:
+    //   Agent 2 ($1200) > Agent 3 ($550) > Agent 1 ($150) - WRONG!
+    //
+    // If correctly ranking by ROI:
+    //   Agent 1 (50%) > Agent 2 (20%) > Agent 3 (10%) - CORRECT!
+
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agents with specific ROI test wallets
+    // These addresses are configured in MockAlchemyRpcProvider to return specific balances
+    // that result in inverse correlation between portfolio value and ROI
+    const { agent: agentHighROI } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "High ROI Low Portfolio Agent",
+      agentWalletAddress: "0x0001000000000000000000000000000000000001", // $100 → $150 = 50% ROI
+    });
+
+    const { agent: agentMediumROI } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Medium ROI High Portfolio Agent",
+      agentWalletAddress: "0x0002000000000000000000000000000000000002", // $1000 → $1200 = 20% ROI
+    });
+
+    const { agent: agentLowROI } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Low ROI Medium Portfolio Agent",
+      agentWalletAddress: "0x0003000000000000000000000000000000000003", // $500 → $550 = 10% ROI
+    });
+
+    // Start spot live competition
+    const response = await startSpotLiveTestCompetition({
+      adminClient,
+      name: `ROI Ranking Definitive Test ${Date.now()}`,
+      agentIds: [agentHighROI.id, agentMediumROI.id, agentLowROI.id],
+    });
+
+    expect(response.success).toBe(true);
+    const competition = response.competition;
+
+    await wait(2000);
+
+    // Trigger sync to process trades and update portfolio snapshots
+    const services = new ServiceRegistry();
+    await services.spotDataProcessor.processSpotLiveCompetition(competition.id);
+    await wait(500);
+
+    // =====================================================================
+    // TEST 1: ACTIVE Competition - Verify ROI-based ranking
+    // =====================================================================
+
+    const activeLeaderboard = await adminClient.getCompetitionAgents(
+      competition.id,
+      { sort: "rank" },
+    );
+    expect(activeLeaderboard.success).toBe(true);
+
+    const activeAgents = (activeLeaderboard as CompetitionAgentsResponse)
+      .agents;
+    expect(activeAgents.length).toBe(3);
+
+    // Find each agent
+    const activeHighROI = activeAgents.find((a) => a.id === agentHighROI.id);
+    const activeMediumROI = activeAgents.find(
+      (a) => a.id === agentMediumROI.id,
+    );
+    const activeLowROI = activeAgents.find((a) => a.id === agentLowROI.id);
+
+    expect(activeHighROI).toBeDefined();
+    expect(activeMediumROI).toBeDefined();
+    expect(activeLowROI).toBeDefined();
+
+    // Verify portfolio values are as expected (to prove this test is testing the right scenario)
+    // High ROI agent has LOWEST portfolio value
+    expect(activeHighROI?.portfolioValue).toBeCloseTo(150, 0);
+    // Medium ROI agent has HIGHEST portfolio value
+    expect(activeMediumROI?.portfolioValue).toBeCloseTo(1200, 0);
+    // Low ROI agent has MEDIUM portfolio value
+    expect(activeLowROI?.portfolioValue).toBeCloseTo(550, 0);
+
+    // CRITICAL ASSERTIONS: Verify ROI-based ranking (NOT portfolio-based)
+    // If ranking were by portfolio value, Medium ROI ($1200) would be rank 1 - WRONG!
+    // If ranking is correctly by ROI, High ROI (50%) should be rank 1 - CORRECT!
+    expect(activeHighROI?.rank).toBe(1); // 50% ROI - HIGHEST ROI = rank 1
+    expect(activeMediumROI?.rank).toBe(2); // 20% ROI - MEDIUM ROI = rank 2
+    expect(activeLowROI?.rank).toBe(3); // 10% ROI - LOWEST ROI = rank 3
+
+    // Double-check that portfolio value is genuinely inverse of rank
+    // (This proves the test is meaningful - if they were correlated, the test would be ambiguous)
+    expect(activeHighROI?.portfolioValue).toBeLessThan(
+      activeLowROI!.portfolioValue,
+    );
+    expect(activeLowROI?.portfolioValue).toBeLessThan(
+      activeMediumROI!.portfolioValue,
+    );
+
+    // =====================================================================
+    // TEST 2: ENDED Competition - Verify ranking persists correctly
+    // =====================================================================
+
+    // End competition
+    await adminClient.endCompetition(competition.id);
+    await wait(2000);
+
+    // Get final leaderboard
+    const endedLeaderboard = await adminClient.getCompetitionAgents(
+      competition.id,
+    );
+    expect(endedLeaderboard.success).toBe(true);
+
+    const endedAgents = (endedLeaderboard as CompetitionAgentsResponse).agents;
+
+    const endedHighROI = endedAgents.find((a) => a.id === agentHighROI.id);
+    const endedMediumROI = endedAgents.find((a) => a.id === agentMediumROI.id);
+    const endedLowROI = endedAgents.find((a) => a.id === agentLowROI.id);
+
+    expect(endedHighROI).toBeDefined();
+    expect(endedMediumROI).toBeDefined();
+    expect(endedLowROI).toBeDefined();
+
+    // Rankings should be preserved after competition ends
+    expect(endedHighROI!.rank).toBe(1); // Still rank 1
+    expect(endedMediumROI!.rank).toBe(2); // Still rank 2
+    expect(endedLowROI!.rank).toBe(3); // Still rank 3
+
+    // Portfolio values should also be preserved
+    expect(endedHighROI!.portfolioValue).toBeCloseTo(150, 0);
+    expect(endedMediumROI!.portfolioValue).toBeCloseTo(1200, 0);
+    expect(endedLowROI!.portfolioValue).toBeCloseTo(550, 0);
+  });
 });
