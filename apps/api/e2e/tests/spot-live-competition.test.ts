@@ -1783,7 +1783,7 @@ describe("Spot Live Competition", () => {
     // Low ROI agent has MEDIUM portfolio value
     expect(activeLowROI?.portfolioValue).toBeCloseTo(550, 0);
 
-    // CRITICAL ASSERTIONS: Verify ROI-based ranking (NOT portfolio-based)
+    // Verify ROI-based ranking (NOT portfolio-based)
     // If ranking were by portfolio value, Medium ROI ($1200) would be rank 1 - WRONG!
     // If ranking is correctly by ROI, High ROI (50%) should be rank 1 - CORRECT!
     expect(activeHighROI?.rank).toBe(1); // 50% ROI - HIGHEST ROI = rank 1
@@ -1832,5 +1832,63 @@ describe("Spot Live Competition", () => {
     expect(endedHighROI!.portfolioValue).toBeCloseTo(150, 0);
     expect(endedMediumROI!.portfolioValue).toBeCloseTo(1200, 0);
     expect(endedLowROI!.portfolioValue).toBeCloseTo(550, 0);
+  });
+
+  test("should return totalTrades and simpleReturn in getAgentCompetitions for spot live", async () => {
+    // This test verifies that the agent.service.ts attachBulkCompetitionMetrics
+    // correctly returns trade counts and ROI for spot_live_trading competitions
+    // (previously spot_live was excluded from trade count query and returned simpleReturn: null)
+
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agent with wallet that has trades
+    const { agent, client: agentClient } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Agent Competitions Metrics Agent",
+        agentWalletAddress: "0x1111111111111111111111111111111111111111", // Has mock trades
+      });
+
+    // Start spot live competition
+    const response = await startSpotLiveTestCompetition({
+      adminClient,
+      name: `Agent Competitions Test ${Date.now()}`,
+      agentIds: [agent.id],
+    });
+
+    expect(response.success).toBe(true);
+    const competition = response.competition;
+
+    await wait(1000);
+
+    // Trigger sync to process trades
+    const services = new ServiceRegistry();
+    await services.spotDataProcessor.processSpotLiveCompetition(competition.id);
+    await wait(500);
+
+    // Call getAgentCompetitions - this uses attachBulkCompetitionMetrics
+    const competitionsResponse = await agentClient.getAgentCompetitions(
+      agent.id,
+    );
+    expect(competitionsResponse.success).toBe(true);
+
+    const typedResponse = competitionsResponse as AgentCompetitionsResponse;
+    const spotLiveComp = typedResponse.competitions.find(
+      (c: EnhancedCompetition) => c.id === competition.id,
+    );
+
+    expect(spotLiveComp).toBeDefined();
+    expect(spotLiveComp?.type).toBe("spot_live_trading");
+
+    // Verify totalTrades is populated (not 0)
+    // This confirms spot_live competition IDs are included in the trade count query
+    expect(spotLiveComp?.totalTrades).toBeGreaterThan(0);
+
+    // Verify simpleReturn is populated (not null)
+    // This confirms spot_live_trading branch returns pnlPercent as simpleReturn
+    expect(spotLiveComp?.simpleReturn).toBeDefined();
+    expect(spotLiveComp?.simpleReturn).not.toBeNull();
+    expect(typeof spotLiveComp?.simpleReturn).toBe("number");
   });
 });
