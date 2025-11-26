@@ -89,6 +89,8 @@ export class GamePlaysRepository {
             yardLine: data.yardLine,
             yardLineTerritory: data.yardLineTerritory,
             yardsToEndZone: data.yardsToEndZone,
+            awayScore: data.awayScore,
+            homeScore: data.homeScore,
             playType: data.playType,
             team: data.team,
             opponent: data.opponent,

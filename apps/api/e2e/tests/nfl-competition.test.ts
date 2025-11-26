@@ -831,6 +831,7 @@ describe("Sports Prediction Competitions", () => {
     expect(playsResponse.success).toBe(true);
     expect(playsResponse.data.plays).toBeDefined();
     expect(playsResponse.data.pagination).toBeDefined();
+    expect(playsResponse.data.metadata).toBeDefined();
 
     // 5. Get latest play (using latest=true query param)
     const latestPlayResponse = await nflClient.getGamePlays(
@@ -843,6 +844,7 @@ describe("Sports Prediction Competitions", () => {
     expect(latestPlayResponse.success).toBe(true);
     // Note: latest=true returns single play, not array
     expect(latestPlayResponse.data).toBeDefined();
+    expect(latestPlayResponse.data.metadata).toBeDefined();
 
     // 6. Create prediction
     const predictionResponse = await nflClient.predictGameWinner(

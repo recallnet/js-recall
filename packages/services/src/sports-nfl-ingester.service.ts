@@ -195,6 +195,8 @@ export class NflIngesterService {
           awayTeam: game.AwayTeam,
           spread: game.PointSpread,
           overUnder: game.OverUnder,
+          awayTeamMoneyLine: game.AwayTeamMoneyLine,
+          homeTeamMoneyLine: game.HomeTeamMoneyLine,
           venue: game.StadiumDetails?.Name || null,
           status: this.#mapResponseToNflGameStatus(game.Status),
         });
@@ -488,6 +490,8 @@ export class NflIngesterService {
         startTime: new Date(score.Date),
         homeTeam: score.HomeTeam,
         awayTeam: score.AwayTeam,
+        awayTeamMoneyLine: score.AwayTeamMoneyLine,
+        homeTeamMoneyLine: score.HomeTeamMoneyLine,
         venue: score.StadiumDetails?.Name || null,
         status,
         winner: finalizeContext?.winner,
@@ -548,6 +552,7 @@ export class NflIngesterService {
     tx: Transaction,
   ): Promise<void> {
     let ingestedCount = 0;
+    const scoreboard = data.Score;
 
     // First, ingest all completed plays from the Plays array
     for (const play of data.Plays) {
@@ -566,6 +571,8 @@ export class NflIngesterService {
             yardLine: play.YardLine,
             yardLineTerritory: play.YardLineTerritory,
             yardsToEndZone: play.YardsToEndZone,
+            awayScore: scoreboard?.AwayScore ?? null,
+            homeScore: scoreboard?.HomeScore ?? null,
             playType: play.Type,
             team: play.Team,
             opponent: play.Opponent,

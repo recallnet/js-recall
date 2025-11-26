@@ -65,6 +65,8 @@ const defaultMockGame: SelectGame = {
   awayTeam: "MIN",
   spread: null,
   overUnder: null,
+  homeTeamMoneyLine: null,
+  awayTeamMoneyLine: null,
   venue: "Soldier Field",
   status: "scheduled",
   winner: null,
