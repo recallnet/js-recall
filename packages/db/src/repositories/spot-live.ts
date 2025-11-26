@@ -793,28 +793,66 @@ export class SpotLiveRepository {
   }
 
   /**
-   * Get unreviewed self-funding alerts for a competition
+   * Get spot live self-funding alerts for a competition with optional filters
    * @param competitionId Competition ID
-   * @returns Array of unreviewed alerts
+   * @param filters Optional filters for reviewed status and violation type
+   * @returns Array of alerts matching filters
    */
-  async getUnreviewedSpotLiveAlerts(
+  async getSpotLiveAlerts(
     competitionId: string,
+    filters?: {
+      reviewed?: boolean;
+      violationType?: string;
+    },
   ): Promise<SelectSpotLiveSelfFundingAlert[]> {
     try {
+      const conditions = [
+        eq(spotLiveSelfFundingAlerts.competitionId, competitionId),
+      ];
+
+      if (filters?.reviewed !== undefined) {
+        conditions.push(
+          eq(spotLiveSelfFundingAlerts.reviewed, filters.reviewed),
+        );
+      }
+
+      if (filters?.violationType) {
+        conditions.push(
+          eq(spotLiveSelfFundingAlerts.violationType, filters.violationType),
+        );
+      }
+
       const alerts = await this.#dbRead
         .select()
         .from(spotLiveSelfFundingAlerts)
-        .where(
-          and(
-            eq(spotLiveSelfFundingAlerts.competitionId, competitionId),
-            eq(spotLiveSelfFundingAlerts.reviewed, false),
-          ),
-        )
+        .where(and(...conditions))
         .orderBy(desc(spotLiveSelfFundingAlerts.detectedAt));
 
       return alerts;
     } catch (error) {
-      this.#logger.error({ error }, "Error in getUnreviewedSpotLiveAlerts");
+      this.#logger.error({ error }, "Error in getSpotLiveAlerts");
+      throw error;
+    }
+  }
+
+  /**
+   * Get a single self-funding alert by ID
+   * @param alertId Alert ID
+   * @returns Alert or null if not found
+   */
+  async getSpotLiveAlertById(
+    alertId: string,
+  ): Promise<SelectSpotLiveSelfFundingAlert | null> {
+    try {
+      const [alert] = await this.#dbRead
+        .select()
+        .from(spotLiveSelfFundingAlerts)
+        .where(eq(spotLiveSelfFundingAlerts.id, alertId))
+        .limit(1);
+
+      return alert || null;
+    } catch (error) {
+      this.#logger.error({ error }, "Error in getSpotLiveAlertById");
       throw error;
     }
   }
@@ -1052,7 +1090,7 @@ export class SpotLiveRepository {
             spotLiveAgentSyncState.specificChain,
           ],
           set: {
-            lastScannedBlock: blockNumber,
+            lastScannedBlock: sql`GREATEST(${spotLiveAgentSyncState.lastScannedBlock}, ${blockNumber})`,
             lastScannedAt: new Date(),
           },
         });

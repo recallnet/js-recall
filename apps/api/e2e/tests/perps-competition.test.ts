@@ -1603,7 +1603,7 @@ describe("Perps Competition", () => {
     const errorResponse = violationsResponse as ErrorResponse;
     expect(errorResponse.status).toBe(400);
     expect(errorResponse.error).toContain(
-      "not a perpetual futures competition",
+      "perpetual futures and spot live trading",
     );
   });
 
@@ -3521,7 +3521,9 @@ describe("Perps Competition", () => {
     const joinErrorResponse = joinNoWalletResponse as ErrorResponse;
     expect(joinErrorResponse.status).toBe(400);
     expect(joinErrorResponse.error).toContain("wallet address");
-    expect(joinErrorResponse.error).toContain("perpetual futures");
+    expect(joinErrorResponse.error).toContain(
+      "participate in this competition",
+    );
 
     // Test 2: Agent WITH wallet should SUCCEED to join
     const joinWithWalletResponse = await agentWithWalletClient.joinCompetition(
@@ -3608,7 +3610,7 @@ describe("Perps Competition", () => {
     expect(addAgentResponse.success).toBe(false);
     const addErrorResponse = addAgentResponse as ErrorResponse;
     expect(addErrorResponse.error).toContain("wallet address");
-    expect(addErrorResponse.error).toContain("perpetual futures");
+    expect(addErrorResponse.error).toContain("participate in this competition");
 
     // Verify agent with wallet CAN be added by admin
     const { agent: agentWithWallet } = await registerUserAndAgentAndGetClient({

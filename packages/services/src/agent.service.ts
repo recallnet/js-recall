@@ -1515,15 +1515,18 @@ export class AgentService {
       const competitionIds = competitions.map((comp) => comp.id);
 
       // Separate competitions by type for optimized queries
-      const paperTradingCompetitions = competitions.filter(
-        (comp) => comp.type === "trading",
-      );
-      const perpsCompetitions = competitions.filter(
-        (comp) => comp.type === "perpetual_futures",
-      );
+      const paperTradingIds = competitions
+        .filter((comp) => comp.type === "trading")
+        .map((comp) => comp.id);
+      const spotLiveIds = competitions
+        .filter((comp) => comp.type === "spot_live_trading")
+        .map((comp) => comp.id);
+      const perpsIds = competitions
+        .filter((comp) => comp.type === "perpetual_futures")
+        .map((comp) => comp.id);
 
-      const paperTradingIds = paperTradingCompetitions.map((comp) => comp.id);
-      const perpsIds = perpsCompetitions.map((comp) => comp.id);
+      // Both paper trading and spot_live store trades in the same table
+      const tradeCountIds = [...paperTradingIds, ...spotLiveIds];
 
       // Fetch data in parallel - only fetch what's needed for each type
       const [
@@ -1537,10 +1540,10 @@ export class AgentService {
           agentId,
           competitionIds,
         ),
-        paperTradingIds.length > 0
+        tradeCountIds.length > 0
           ? this.tradeRepository.countBulkAgentTradesInCompetitions(
               agentId,
-              paperTradingIds,
+              tradeCountIds,
             )
           : Promise.resolve(new Map<string, number>()),
         perpsIds.length > 0
@@ -1598,11 +1601,23 @@ export class AgentService {
             maxDrawdown: riskMetrics ? Number(riskMetrics.maxDrawdown) : null,
             hasRiskMetrics: !!riskMetrics,
           };
-        } else {
+        } else if (competition.type === "spot_live_trading") {
+          // Spot live uses ROI (pnlPercent) as the ranking metric
           return {
             ...baseMetrics,
             totalTrades: tradeCountsMap.get(competition.id) || 0,
-            totalPositions: 0, // Not applicable for paper trading, but include for consistency
+            totalPositions: 0, // Not applicable for spot trading
+            calmarRatio: null,
+            simpleReturn: pnlPercent, // ROI calculated from (current - starting) / starting * 100
+            maxDrawdown: null,
+            hasRiskMetrics: false,
+          };
+        } else {
+          // Paper trading
+          return {
+            ...baseMetrics,
+            totalTrades: tradeCountsMap.get(competition.id) || 0,
+            totalPositions: 0, // Not applicable for paper trading
             // Risk metrics not applicable for paper trading
             calmarRatio: null,
             simpleReturn: null,

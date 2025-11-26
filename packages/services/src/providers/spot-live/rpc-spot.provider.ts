@@ -63,6 +63,12 @@ interface DetectedSwap {
 export class RpcSpotProvider implements ISpotLiveDataProvider {
   private readonly protocolFiltersByChain: Map<string, ProtocolFilter[]>;
 
+  // Cache transfers within a single agent's sync to avoid duplicate API calls
+  // Key format: "wallet:chain:fromBlock"
+  // Cleared before processing each agent
+  private transferCache: Map<string, AssetTransfersWithMetadataResult[]> =
+    new Map();
+
   constructor(
     private readonly rpcProvider: IRpcProvider,
     protocolFilters: ProtocolFilter[],
@@ -122,6 +128,48 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
   }
 
   /**
+   * Clear transfer cache (call before processing each agent)
+   * Prevents data mixing between agents
+   */
+  clearTransferCache(): void {
+    this.transferCache.clear();
+  }
+
+  /**
+   * Get current token balances for a wallet on a chain
+   * Used during initial sync to establish starting balances
+   * @param walletAddress Wallet address to query
+   * @param chain Chain to query
+   * @returns Array of token balances
+   */
+  async getTokenBalances(
+    walletAddress: string,
+    chain: SpecificChain,
+  ): Promise<Array<{ contractAddress: string; balance: string }>> {
+    // Block Solana - requires different balance fetching logic
+    if (chain === "svm") {
+      throw new Error(
+        "Solana (svm) is not supported for RPC-based spot live trading. Solana uses SPL tokens and requires separate implementation.",
+      );
+    }
+
+    return await this.rpcProvider.getTokenBalances(walletAddress, chain);
+  }
+
+  /**
+   * Get token decimals for proper balance parsing
+   * @param tokenAddress Token contract address
+   * @param chain Chain where token exists
+   * @returns Number of decimals for the token
+   */
+  async getTokenDecimals(
+    tokenAddress: string,
+    chain: SpecificChain,
+  ): Promise<number> {
+    return await this.rpcProvider.getTokenDecimals(tokenAddress, chain);
+  }
+
+  /**
    * Get all trades for a wallet since a given time
    * Detects swaps from transfer patterns and applies protocol filtering if configured
    * @param walletAddress Wallet address to monitor
@@ -133,6 +181,7 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
     walletAddress: string,
     since: Date | number,
     chains: SpecificChain[],
+    toBlock?: number | string,
   ): Promise<OnChainTrade[]> {
     const startTime = Date.now();
     const maskedAddress = this.maskAddress(walletAddress);
@@ -181,40 +230,41 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
 
     for (const chain of chains) {
       try {
-        // Fetch all transfers with pagination support
-        // Alchemy limits responses to 1000 results per request
-        const allTransfers: AssetTransfersWithMetadataResult[] = [];
-        let pageKey: string | undefined;
+        // Check cache first (unified sync state means getTransferHistory will reuse this)
+        const cacheKey = `${walletAddress}:${chain}:${sinceBlock}`;
+        let allTransfers = this.transferCache.get(cacheKey);
 
-        do {
+        if (!allTransfers) {
+          // Cache miss - fetch from API
+          // AlchemyRpcProvider handles all pagination internally and returns complete results
           const transfersResponse = await this.rpcProvider.getAssetTransfers(
             walletAddress,
             chain,
             sinceBlock,
-            pageKey || "latest",
+            toBlock || "latest",
           );
 
-          allTransfers.push(...transfersResponse.transfers);
-          pageKey = transfersResponse.pageKey;
+          allTransfers = transfersResponse.transfers;
 
-          if (pageKey) {
-            this.logger.debug(
-              {
-                chain,
-                currentCount: allTransfers.length,
-              },
-              `[RpcSpotProvider] Fetching next page of transfers`,
-            );
-          }
-        } while (pageKey);
+          // Cache for reuse by getTransferHistory
+          this.transferCache.set(cacheKey, allTransfers);
 
-        this.logger.debug(
-          {
-            chain,
-            totalTransfers: allTransfers.length,
-          },
-          `[RpcSpotProvider] Fetched all transfers`,
-        );
+          this.logger.debug(
+            {
+              chain,
+              totalTransfers: allTransfers.length,
+            },
+            `[RpcSpotProvider] Fetched and cached transfers`,
+          );
+        } else {
+          this.logger.debug(
+            {
+              chain,
+              cachedTransfers: allTransfers.length,
+            },
+            `[RpcSpotProvider] Using cached transfers`,
+          );
+        }
 
         // Group transfers by transaction
         const transfersByTx = this.groupTransfersByTransaction(allTransfers);
@@ -263,9 +313,11 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
             }
           }
 
-          // Transform to OnChainTrade format
+          // Transform to OnChainTrade format (returns null for failed/reverted txs)
           const trade = await this.enrichSwapWithGasData(swap, chain);
-          allTrades.push(trade);
+          if (trade) {
+            allTrades.push(trade);
+          }
         }
       } catch (error) {
         // Capture exception with context
@@ -307,14 +359,16 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
    * Get transfer history for self-funding detection
    * Returns deposits/withdrawals (not swaps)
    * @param walletAddress Wallet address to monitor
-   * @param since Start date for transfer scanning
+   * @param since Start date or block number for transfer scanning
    * @param chains Array of chains to scan
+   * @param toBlock Optional end block number for scanning (defaults to "latest")
    * @returns Array of deposits/withdrawals
    */
   async getTransferHistory(
     walletAddress: string,
     since: Date | number,
     chains: SpecificChain[],
+    toBlock?: number,
   ): Promise<SpotTransfer[]> {
     const startTime = Date.now();
     const maskedAddress = this.maskAddress(walletAddress);
@@ -325,6 +379,13 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
         `[RpcSpotProvider] No chains provided for transfer history`,
       );
       return [];
+    }
+
+    // Block Solana - requires different transfer detection logic
+    if (chains.includes("svm")) {
+      throw new Error(
+        "Solana (svm) is not supported for RPC-based spot live trading. Solana uses programs model and requires separate implementation.",
+      );
     }
 
     const firstChain = chains[0];
@@ -364,40 +425,41 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
 
     for (const chain of chains) {
       try {
-        // Fetch all transfers with pagination support
-        // Alchemy limits responses to 1000 results per request
-        const chainTransfers: AssetTransfersWithMetadataResult[] = [];
-        let pageKey: string | undefined;
+        // Check cache first (should be populated by getTradesSince with unified sync state)
+        const cacheKey = `${walletAddress}:${chain}:${sinceBlock}`;
+        let chainTransfers = this.transferCache.get(cacheKey);
 
-        do {
+        if (!chainTransfers) {
+          // Cache miss - fetch from API
+          // AlchemyRpcProvider handles all pagination internally and returns complete results
           const transfersResponse = await this.rpcProvider.getAssetTransfers(
             walletAddress,
             chain,
             sinceBlock,
-            pageKey || "latest",
+            toBlock || "latest",
           );
 
-          chainTransfers.push(...transfersResponse.transfers);
-          pageKey = transfersResponse.pageKey;
+          chainTransfers = transfersResponse.transfers;
 
-          if (pageKey) {
-            this.logger.debug(
-              {
-                chain,
-                currentCount: chainTransfers.length,
-              },
-              `[RpcSpotProvider] Fetching next page of transfers`,
-            );
-          }
-        } while (pageKey);
+          // Cache for consistency (though getTradesSince usually caches first)
+          this.transferCache.set(cacheKey, chainTransfers);
 
-        this.logger.debug(
-          {
-            chain,
-            totalTransfers: chainTransfers.length,
-          },
-          `[RpcSpotProvider] Fetched all transfers for transfer history`,
-        );
+          this.logger.debug(
+            {
+              chain,
+              totalTransfers: chainTransfers.length,
+            },
+            `[RpcSpotProvider] Fetched transfers for transfer history`,
+          );
+        } else {
+          this.logger.debug(
+            {
+              chain,
+              cachedTransfers: chainTransfers.length,
+            },
+            `[RpcSpotProvider] Using cached transfers for transfer history`,
+          );
+        }
 
         // Group by transaction to identify swaps (which we want to exclude)
         const transfersByTx = this.groupTransfersByTransaction(chainTransfers);
@@ -409,6 +471,11 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
           if (!isSwap) {
             // Not a swap - these are deposits/withdrawals
             for (const transfer of txTransfers) {
+              // Skip 0-value transfers (approvals, contract interactions, etc.)
+              if (transfer.value === 0) {
+                continue;
+              }
+
               const type = this.classifyTransfer(transfer, walletAddress);
               const tokenAddress = this.getTokenAddress(transfer);
 
@@ -493,22 +560,25 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
     const byTx = new Map<string, Transfer[]>();
 
     for (const transfer of transfers) {
+      // Normalize hash to lowercase for consistent grouping
+      const normalizedHash = transfer.hash.toLowerCase();
+
       const normalizedTransfer: Transfer = {
         from: transfer.from.toLowerCase(),
         to: transfer.to ? transfer.to.toLowerCase() : "",
         value: Number(transfer.value) || 0,
         asset: transfer.asset || "ETH",
-        hash: transfer.hash,
+        hash: normalizedHash,
         blockNum: transfer.blockNum,
         metadata: transfer.metadata,
         rawContract: transfer.rawContract,
       };
 
-      const existing = byTx.get(transfer.hash);
+      const existing = byTx.get(normalizedHash);
       if (existing) {
         existing.push(normalizedTransfer);
       } else {
-        byTx.set(transfer.hash, [normalizedTransfer]);
+        byTx.set(normalizedHash, [normalizedTransfer]);
       }
     }
 
@@ -649,12 +719,12 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
    * Enrich detected swap with gas cost data from transaction receipt
    * @param swap Detected swap from transfer pattern
    * @param chain Chain where swap occurred
-   * @returns Complete OnChainTrade with gas data
+   * @returns Complete OnChainTrade with gas data, or null if transaction failed/reverted
    */
   private async enrichSwapWithGasData(
     swap: DetectedSwap,
     chain: SpecificChain,
-  ): Promise<OnChainTrade> {
+  ): Promise<OnChainTrade | null> {
     let gasUsed = 0;
     let gasPrice = 0;
     let gasCostUsd: number | undefined;
@@ -666,6 +736,20 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
       );
 
       if (receipt) {
+        // Check transaction status - true = success, false = failure/reverted
+        // While getAssetTransfers typically only returns successful transfers,
+        // this is a defensive check to ensure we don't include reverted swaps
+        if (!receipt.status) {
+          this.logger.debug(
+            {
+              txHash: swap.txHash,
+              chain,
+            },
+            `[RpcSpotProvider] Skipping reverted/failed transaction`,
+          );
+          return null;
+        }
+
         gasUsed = Number(receipt.gasUsed);
         gasPrice = Number(receipt.effectiveGasPrice);
 
@@ -772,6 +856,10 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
       polygon: 2, // ~2 seconds per block
       avalanche: 2, // ~2 seconds per block
       bsc: 3, // ~3 seconds per block
+      linea: 3, // ~3 seconds per block
+      zksync: 1, // ~1 second per block
+      scroll: 3, // ~3 seconds per block
+      mantle: 3, // ~3 seconds per block
     };
 
     const blockTime = blockTimes[chain] || 12; // Default to Ethereum timing

@@ -2,9 +2,11 @@ import { randomUUID } from "crypto";
 import { Logger } from "pino";
 
 import { AgentRepository } from "@recallnet/db/repositories/agent";
+import { BalanceRepository } from "@recallnet/db/repositories/balance";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { SpotLiveRepository } from "@recallnet/db/repositories/spot-live";
 import { TradeRepository } from "@recallnet/db/repositories/trade";
+import { SpecificChainSchema } from "@recallnet/db/repositories/types";
 import type {
   InsertSpotLiveTransferHistory,
   InsertTrade,
@@ -13,11 +15,14 @@ import type {
 import { PortfolioSnapshotterService } from "./portfolio-snapshotter.service.js";
 import { PriceTrackerService } from "./price-tracker.service.js";
 import { SpotLiveProviderFactory } from "./providers/spot-live-provider.factory.js";
+import { RpcSpotProvider } from "./providers/spot-live/rpc-spot.provider.js";
+import { SpotLiveMonitoringService } from "./spot-live-monitoring.service.js";
 import {
   PriceReport,
   SpecificChain,
   getBlockchainType,
 } from "./types/index.js";
+import type { IRpcProvider } from "./types/rpc.js";
 import type {
   AgentSpotSyncResult,
   BatchSpotSyncResult,
@@ -46,26 +51,33 @@ export class SpotDataProcessor {
   private competitionRepo: CompetitionRepository;
   private spotLiveRepo: SpotLiveRepository;
   private tradeRepo: TradeRepository;
+  private balanceRepo: BalanceRepository;
   private portfolioSnapshotter: PortfolioSnapshotterService;
   private priceTracker: PriceTrackerService;
   private logger: Logger;
+
+  private mockRpcProvider?: IRpcProvider;
 
   constructor(
     agentRepo: AgentRepository,
     competitionRepo: CompetitionRepository,
     spotLiveRepo: SpotLiveRepository,
     tradeRepo: TradeRepository,
+    balanceRepo: BalanceRepository,
     portfolioSnapshotter: PortfolioSnapshotterService,
     priceTracker: PriceTrackerService,
     logger: Logger,
+    mockRpcProvider?: IRpcProvider,
   ) {
     this.agentRepo = agentRepo;
     this.competitionRepo = competitionRepo;
     this.spotLiveRepo = spotLiveRepo;
     this.tradeRepo = tradeRepo;
+    this.balanceRepo = balanceRepo;
     this.portfolioSnapshotter = portfolioSnapshotter;
     this.priceTracker = priceTracker;
     this.logger = logger;
+    this.mockRpcProvider = mockRpcProvider;
   }
 
   /**
@@ -88,6 +100,14 @@ export class SpotDataProcessor {
 
     if (!("chains" in config) || !Array.isArray(config.chains)) {
       return false;
+    }
+
+    // Validate each chain value using database SpecificChainSchema
+    for (const chain of config.chains) {
+      const result = SpecificChainSchema.safeParse(chain);
+      if (!result.success) {
+        return false;
+      }
     }
 
     return true;
@@ -131,8 +151,143 @@ export class SpotDataProcessor {
       protocol: trade.protocol,
       gasUsed: trade.gasUsed.toString(),
       gasPrice: trade.gasPrice.toString(),
-      gasCostUsd: trade.gasCostUsd?.toString() || null,
+      gasCostUsd: trade.gasCostUsd?.toString() ?? null,
     };
+  }
+
+  /**
+   * Initialize agent balances from blockchain during first sync
+   * Applies same constraints as trade processing: chain filter, token whitelist, price availability
+   */
+  private async initializeAgentBalancesFromBlockchain(
+    agentId: string,
+    competitionId: string,
+    walletAddress: string,
+    provider: ISpotLiveDataProvider,
+    chains: SpecificChain[],
+    allowedTokens: Map<string, Set<string>>,
+    tokenWhitelistEnabled: boolean,
+  ): Promise<void> {
+    try {
+      // 1. Fetch token balances from all enabled chains
+      const allTokenBalances: Array<{
+        chain: SpecificChain;
+        tokenAddress: string;
+        balance: string;
+      }> = [];
+
+      for (const chain of chains) {
+        const balances = await provider.getTokenBalances?.(
+          walletAddress,
+          chain,
+        );
+        if (balances) {
+          for (const b of balances) {
+            allTokenBalances.push({
+              chain,
+              tokenAddress: b.contractAddress.toLowerCase(),
+              balance: b.balance,
+            });
+          }
+        }
+      }
+
+      this.logger.debug(
+        `[SpotDataProcessor] Fetched ${allTokenBalances.length} token balances from blockchain`,
+      );
+
+      // 2. Filter by token whitelist if enabled
+      const filteredBalances = tokenWhitelistEnabled
+        ? allTokenBalances.filter((b) => {
+            const chainTokens = allowedTokens.get(b.chain);
+            return chainTokens?.has(b.tokenAddress);
+          })
+        : allTokenBalances;
+
+      if (
+        tokenWhitelistEnabled &&
+        filteredBalances.length < allTokenBalances.length
+      ) {
+        this.logger.debug(
+          `[SpotDataProcessor] Token whitelist filtered ${allTokenBalances.length} → ${filteredBalances.length} balances`,
+        );
+      }
+
+      if (filteredBalances.length === 0) {
+        this.logger.info(
+          `[SpotDataProcessor] No token balances to initialize for agent ${agentId}`,
+        );
+        return;
+      }
+
+      // 3. Fetch prices for all tokens
+      const tokenPriceRequests = filteredBalances.map((b) => ({
+        tokenAddress: b.tokenAddress,
+        specificChain: b.chain,
+      }));
+
+      const priceMap =
+        await this.priceTracker.getBulkPrices(tokenPriceRequests);
+
+      // 4. Only create balances for tokens that can be priced
+      const balanceRecordsToInsert: Array<{
+        tokenAddress: string;
+        chain: SpecificChain;
+        amount: number;
+        symbol: string;
+      }> = [];
+
+      for (const b of filteredBalances) {
+        const priceKey = `${b.tokenAddress}:${b.chain}`;
+        const price = priceMap.get(priceKey);
+
+        if (!price) {
+          this.logger.debug(
+            `[SpotDataProcessor] Skipping balance for unpriceable token ${b.tokenAddress} on ${b.chain}`,
+          );
+          continue;
+        }
+
+        // Get token decimals for proper parsing
+        const decimals = await provider.getTokenDecimals?.(
+          b.tokenAddress,
+          b.chain,
+        );
+        const decimalsPower = Math.pow(10, decimals ?? 18);
+
+        // Parse balance from hex string to number
+        const balanceNum = parseInt(b.balance, 16) / decimalsPower;
+
+        balanceRecordsToInsert.push({
+          tokenAddress: b.tokenAddress,
+          chain: b.chain,
+          amount: balanceNum,
+          symbol: price.symbol,
+        });
+      }
+
+      this.logger.info(
+        `[SpotDataProcessor] Creating ${balanceRecordsToInsert.length} initial balance records for agent ${agentId}`,
+      );
+
+      // 5. Create balance records in database with proper chain info
+      if (balanceRecordsToInsert.length > 0) {
+        await this.balanceRepo.createInitialSpotLiveBalances(
+          agentId,
+          competitionId,
+          balanceRecordsToInsert,
+        );
+      }
+    } catch (error) {
+      this.logger.error(
+        {
+          error: error instanceof Error ? error.message : String(error),
+          agentId,
+        },
+        `[SpotDataProcessor] Error initializing balances from blockchain`,
+      );
+      // Don't throw - allow competition to start even if balance init fails
+    }
   }
 
   /**
@@ -251,9 +406,52 @@ export class SpotDataProcessor {
     const startTime = Date.now();
 
     try {
+      // Clear provider's transfer cache before processing this agent
+      // With unified sync state, this enables caching between getTradesSince and getTransferHistory
+      if ("clearTransferCache" in provider) {
+        (provider as RpcSpotProvider).clearTransferCache();
+      }
+
       this.logger.info(
         `[SpotDataProcessor] Processing agent ${agentId} for competition ${competitionId}`,
       );
+
+      // 0. Initialize token balances if this is the first sync
+      // Check if agent has any existing balances for this competition
+      const existingBalances = await this.balanceRepo.getAgentBalances(
+        agentId,
+        competitionId,
+      );
+
+      if (existingBalances.length === 0 && provider.getTokenBalances) {
+        this.logger.info(
+          `[SpotDataProcessor] First sync for agent ${agentId} - initializing token balances from blockchain`,
+        );
+
+        await this.initializeAgentBalancesFromBlockchain(
+          agentId,
+          competitionId,
+          walletAddress,
+          provider,
+          chains,
+          allowedTokens,
+          tokenWhitelistEnabled,
+        );
+
+        // Return early after balance initialization
+        // Current blockchain balances already reflect all past trading activity
+        // Subsequent syncs will process NEW swaps incrementally
+        this.logger.info(
+          `[SpotDataProcessor] Completed initial balance setup for agent ${agentId} - skipping historical trade processing`,
+        );
+
+        return {
+          agentId,
+          tradesProcessed: 0,
+          balancesUpdated: 0,
+          violationsDetected: 0,
+        };
+      }
 
       // 1. Determine sync start point per chain for incremental processing
       // Uses sync state + bounded overlap for gap-free syncing with retry capability
@@ -339,132 +537,131 @@ export class SpotDataProcessor {
         `[SpotDataProcessor] Fetched ${allTrades.length} total on-chain trades for agent ${agentId} across ${chains.length} chains`,
       );
 
-      // Update sync state BEFORE any early returns
+      // Update sync state BEFORE continuing
       // This ensures we move forward even if all trades are filtered/rejected
-      for (const { chain, highestBlock } of syncStateUpdates) {
-        await this.spotLiveRepo.upsertAgentSyncState(
-          agentId,
-          competitionId,
-          chain,
-          highestBlock,
-        );
-      }
-
-      if (allTrades.length === 0) {
-        this.logger.debug(
-          `[SpotDataProcessor] No trades found for agent ${agentId}, sync state updated`,
-        );
-        return {
-          agentId,
-          tradesProcessed: 0,
-          balancesUpdated: 0,
-          violationsDetected: 0,
-        };
-      }
-
-      // 2. Filter by token whitelist (service layer responsibility)
-      const whitelistedTrades: OnChainTrade[] = [];
-      const rejectedTrades: RejectedTrade[] = [];
-
-      for (const trade of allTrades) {
-        // Continue with whitelist filtering
-        if (tokenWhitelistEnabled) {
-          const chainTokens = allowedTokens.get(trade.chain);
-
-          if (
-            !chainTokens?.has(trade.fromToken.toLowerCase()) ||
-            !chainTokens?.has(trade.toToken.toLowerCase())
-          ) {
-            rejectedTrades.push({
-              trade,
-              reason: "Token not whitelisted",
-            });
-            continue;
-          }
-        }
-
-        whitelistedTrades.push(trade);
-      }
-
-      if (rejectedTrades.length > 0) {
-        this.logger.warn(
-          `[SpotDataProcessor] Rejected ${rejectedTrades.length} trades for agent ${agentId} due to token whitelist`,
-        );
-      }
-
-      if (whitelistedTrades.length === 0) {
-        return {
-          agentId,
-          tradesProcessed: 0,
-          balancesUpdated: 0,
-          violationsDetected: 0,
-        };
-      }
-
-      // 3. Extract unique tokens and fetch prices
-      const uniqueTokens = this.extractUniqueTokens(whitelistedTrades);
-      this.logger.debug(
-        `[SpotDataProcessor] Fetching prices for ${uniqueTokens.length} unique tokens`,
-      );
-
-      const priceMap = await this.fetchPricesForTrades(uniqueTokens);
-
-      // 4. Filter trades by price availability - only insert complete data
-      const priceableTrades: InsertTrade[] = [];
-      const unpriceableTrades: RejectedTrade[] = [];
-
-      for (const trade of whitelistedTrades) {
-        // Key by address:chain for multi-chain support
-        const fromPriceKey = `${trade.fromToken.toLowerCase()}:${trade.chain}`;
-        const toPriceKey = `${trade.toToken.toLowerCase()}:${trade.chain}`;
-        const fromPrice = priceMap.get(fromPriceKey);
-        const toPrice = priceMap.get(toPriceKey);
-
-        if (!fromPrice || !toPrice) {
-          unpriceableTrades.push({
-            trade,
-            reason:
-              `Cannot price tokens: ${!fromPrice ? trade.fromToken : ""} ${!toPrice ? trade.toToken : ""}`.trim(),
-          });
-          continue;
-        }
-
-        priceableTrades.push(
-          this.transformTradeToDb(
-            trade,
+      // Parallel updates are safe with GREATEST() - database handles conflicts
+      await Promise.all(
+        syncStateUpdates.map(({ chain, highestBlock }) =>
+          this.spotLiveRepo.upsertAgentSyncState(
             agentId,
             competitionId,
-            fromPrice,
-            toPrice,
+            chain,
+            highestBlock,
           ),
-        );
-      }
+        ),
+      );
 
-      if (unpriceableTrades.length > 0) {
-        this.logger.error(
-          `[SpotDataProcessor] CRITICAL: ${unpriceableTrades.length} trades cannot be priced for agent ${agentId}. ` +
-            `These trades will be LOST. Tokens: ${unpriceableTrades.map((r) => r.reason).join(", ")}`,
-        );
-      }
+      // Don't return early if no trades - we still need to check for transfer violations!
 
-      // 5. Batch create trades with balance updates (only complete trades)
+      // 2. Process trades if any were found
       let tradesCreated = 0;
       let balancesUpdated = 0;
 
-      if (priceableTrades.length > 0) {
-        const result =
-          await this.tradeRepo.batchCreateTradesWithBalances(priceableTrades);
+      if (allTrades.length > 0) {
+        // Filter by token whitelist (service layer responsibility)
+        const whitelistedTrades: OnChainTrade[] = [];
+        const rejectedTrades: RejectedTrade[] = [];
 
-        tradesCreated = result.successful.length;
-        balancesUpdated = result.successful.reduce(
-          (sum, r) => sum + (r.updatedBalances.toTokenBalance ? 2 : 1),
-          0,
-        );
+        for (const trade of allTrades) {
+          // Continue with whitelist filtering
+          if (tokenWhitelistEnabled) {
+            const chainTokens = allowedTokens.get(trade.chain);
 
-        if (result.failed.length > 0) {
+            if (
+              !chainTokens?.has(trade.fromToken.toLowerCase()) ||
+              !chainTokens?.has(trade.toToken.toLowerCase())
+            ) {
+              rejectedTrades.push({
+                trade,
+                reason: "Token not whitelisted",
+              });
+              continue;
+            }
+          }
+
+          whitelistedTrades.push(trade);
+        }
+
+        if (rejectedTrades.length > 0) {
           this.logger.warn(
-            `[SpotDataProcessor] ${result.failed.length} trades failed to create for agent ${agentId}`,
+            `[SpotDataProcessor] Rejected ${rejectedTrades.length} trades for agent ${agentId} due to token whitelist`,
           );
+        }
+
+        if (whitelistedTrades.length > 0) {
+          // 3. Extract unique tokens and fetch prices
+          const uniqueTokens = this.extractUniqueTokens(whitelistedTrades);
+          this.logger.debug(
+            `[SpotDataProcessor] Fetching prices for ${uniqueTokens.length} unique tokens`,
+          );
+
+          const priceMap = await this.fetchPricesForTrades(uniqueTokens);
+
+          // 4. Filter trades by price availability - only insert complete data
+          const priceableTrades: InsertTrade[] = [];
+          const unpriceableTrades: RejectedTrade[] = [];
+
+          for (const trade of whitelistedTrades) {
+            // Key by address:chain for multi-chain support
+            const fromPriceKey = `${trade.fromToken.toLowerCase()}:${trade.chain}`;
+            const toPriceKey = `${trade.toToken.toLowerCase()}:${trade.chain}`;
+            const fromPrice = priceMap.get(fromPriceKey);
+            const toPrice = priceMap.get(toPriceKey);
+
+            if (!fromPrice || !toPrice) {
+              unpriceableTrades.push({
+                trade,
+                reason:
+                  `Cannot price tokens: ${!fromPrice ? trade.fromToken : ""} ${!toPrice ? trade.toToken : ""}`.trim(),
+              });
+              continue;
+            }
+
+            priceableTrades.push(
+              this.transformTradeToDb(
+                trade,
+                agentId,
+                competitionId,
+                fromPrice,
+                toPrice,
+              ),
+            );
+          }
+
+          if (unpriceableTrades.length > 0) {
+            this.logger.error(
+              `[SpotDataProcessor] CRITICAL: ${unpriceableTrades.length} trades cannot be priced for agent ${agentId}. ` +
+                `These trades will be LOST. Tokens: ${unpriceableTrades.map((r) => r.reason).join(", ")}`,
+            );
+          }
+
+          // 5. Batch create trades with balance updates (only complete trades)
+          if (priceableTrades.length > 0) {
+            const result =
+              await this.tradeRepo.batchCreateTradesWithBalances(
+                priceableTrades,
+              );
+
+            tradesCreated = result.successful.length;
+            balancesUpdated = result.successful.reduce(
+              (sum, r) => sum + (r.updatedBalances.toTokenBalance ? 2 : 1),
+              0,
+            );
+
+            if (result.failed.length > 0) {
+              this.logger.warn(
+                {
+                  agentId,
+                  failedCount: result.failed.length,
+                  errors: result.failed.map((f) => ({
+                    hash: f.trade.txHash,
+                    error: f.error.message,
+                  })),
+                },
+                `[SpotDataProcessor] ${result.failed.length} trades failed to create for agent ${agentId}`,
+              );
+            }
+          }
         }
       }
 
@@ -477,23 +674,31 @@ export class SpotDataProcessor {
           const allTransfers: SpotTransfer[] = [];
 
           for (const chain of chains) {
-            // Query latest synced transfer block for this agent on this chain
-            const latestBlock =
-              await this.spotLiveRepo.getLatestSpotLiveTransferBlock(
-                agentId,
-                competitionId,
-                chain,
-              );
+            // Use SAME sync state as trades (both come from getAssetTransfers)
+            // This enables caching and simplifies state tracking
+            let lastScannedBlock = await this.spotLiveRepo.getAgentSyncState(
+              agentId,
+              competitionId,
+              chain,
+            );
+
+            // Fallback: If sync state unavailable, use highest SAVED block from trades
+            if (lastScannedBlock === null) {
+              lastScannedBlock =
+                await this.tradeRepo.getLatestSpotLiveTradeBlock(
+                  agentId,
+                  competitionId,
+                  chain,
+                );
+            }
 
             let since: Date | number;
 
-            if (latestBlock !== null) {
-              // IMPORTANT: Use latestBlock (not +1) to allow overlap for gap prevention
-              // Same reasoning as trades: if some transfers fail, next sync will retry them
-              // The unique constraint on txHash prevents duplicates
-              since = latestBlock;
+            if (lastScannedBlock !== null) {
+              // Use same overlap logic as trades
+              since = Math.max(lastScannedBlock - (RETRY_WINDOW_BLOCKS - 1), 0);
               this.logger.debug(
-                `[SpotDataProcessor] Agent ${agentId} on ${chain}: incremental transfer sync from block ${latestBlock} (with overlap)`,
+                `[SpotDataProcessor] Agent ${agentId} on ${chain}: transfer sync from block ${since} (shared state with trades)`,
               );
             } else {
               // First sync: from competition start
@@ -822,13 +1027,11 @@ export class SpotDataProcessor {
         );
       }
 
-      if (!competition.startDate) {
-        throw new Error(
-          `Competition ${competitionId} has no start date, cannot process spot live data`,
-        );
-      }
+      // For initial sync during startCompetition, start date may not be set yet
+      // Use current time as fallback since we're about to activate the competition
+      const competitionStartDate = competition.startDate || new Date();
 
-      if (competition.startDate > new Date()) {
+      if (competition.startDate && competition.startDate > new Date()) {
         this.logger.warn(
           `[SpotDataProcessor] Competition ${competitionId} hasn't started yet (starts ${competition.startDate.toISOString()})`,
         );
@@ -880,6 +1083,7 @@ export class SpotDataProcessor {
         spotLiveConfig.dataSourceConfig,
         protocols,
         this.logger,
+        this.mockRpcProvider,
       );
 
       this.logger.info(
@@ -893,7 +1097,7 @@ export class SpotDataProcessor {
         allowedTokens,
         tokenWhitelistEnabled,
         chains,
-        competition.startDate,
+        competitionStartDate,
       );
 
       this.logger.info(
@@ -926,10 +1130,6 @@ export class SpotDataProcessor {
           `[SpotDataProcessor] Running self-funding monitoring for competition ${competitionId}`,
         );
 
-        const { SpotLiveMonitoringService } = await import(
-          "./spot-live-monitoring.service.js"
-        );
-
         const monitoring = new SpotLiveMonitoringService(
           this.spotLiveRepo,
           this.competitionRepo,
@@ -958,7 +1158,7 @@ export class SpotDataProcessor {
         const monitorResult = await monitoring.monitorAgents(
           agentsToMonitor,
           competitionId,
-          competition.startDate,
+          competitionStartDate,
           competition.endDate,
         );
 

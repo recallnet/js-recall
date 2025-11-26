@@ -662,6 +662,18 @@ async function ensureDefaultArenas() {
       kind: "Competition",
     })
     .onConflictDoNothing();
+
+  await db
+    .insert(arenas)
+    .values({
+      id: "default-spot-live-arena",
+      name: "Default Spot Live Trading Arena",
+      createdBy: "system",
+      category: "crypto_trading",
+      skill: "spot_live_trading",
+      kind: "Competition",
+    })
+    .onConflictDoNothing();
 }
 
 /**
@@ -802,6 +814,78 @@ export async function startPerpsTestCompetition({
 
   if (!result.success) {
     throw new Error("Failed to start perps competition");
+  }
+
+  return result as StartCompetitionResponse;
+}
+
+/**
+ * Start a spot live trading competition (create and start in one go)
+ * Mirrors startPerpsTestCompetition pattern
+ */
+export async function startSpotLiveTestCompetition({
+  adminClient,
+  name,
+  agentIds,
+  sandboxMode,
+  externalUrl,
+  imageUrl,
+  tradingConstraints,
+  rewards,
+  spotLiveConfig = {
+    dataSource: "rpc_direct" as const,
+    dataSourceConfig: {
+      type: "rpc_direct",
+      provider: "alchemy",
+      chains: ["base"],
+    },
+    chains: ["base"],
+    allowedProtocols: [
+      {
+        protocol: "aerodrome",
+        chain: "base",
+      },
+    ],
+    selfFundingThresholdUsd: 10,
+    syncIntervalMinutes: 2,
+  },
+}: {
+  adminClient: ApiClient;
+  name?: string;
+  agentIds?: string[];
+  sandboxMode?: boolean;
+  externalUrl?: string;
+  imageUrl?: string;
+  tradingConstraints?: TradingConstraints;
+  rewards?: Record<number, number>;
+  spotLiveConfig?: {
+    dataSource: "rpc_direct" | "envio_indexing" | "hybrid";
+    dataSourceConfig: Record<string, unknown>;
+    chains: string[];
+    allowedProtocols?: Array<{ protocol: string; chain: string }>;
+    allowedTokens?: Array<{ address: string; specificChain: string }>;
+    selfFundingThresholdUsd?: number;
+    minFundingThreshold?: number;
+    syncIntervalMinutes?: number;
+  };
+}): Promise<StartCompetitionResponse> {
+  const competitionName = name || `Spot Live Test Competition ${Date.now()}`;
+  const result = await adminClient.startCompetition({
+    name: competitionName,
+    description: `Spot live trading test competition for ${competitionName}`,
+    type: "spot_live_trading",
+    agentIds: agentIds || [],
+    sandboxMode,
+    externalUrl,
+    imageUrl,
+    tradingConstraints,
+    rewards,
+    spotLiveConfig,
+    arenaId: "default-spot-live-arena",
+  });
+
+  if (!result.success) {
+    throw new Error("Failed to start spot live competition");
   }
 
   return result as StartCompetitionResponse;

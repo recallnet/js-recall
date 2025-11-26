@@ -258,22 +258,43 @@ export class AlchemyRpcProvider implements IRpcProvider {
                 : toBlock;
 
             // Get all transfers where the wallet is involved
-            const [fromTransfers, toTransfers] = await Promise.all([
-              // Outgoing transfers (wallet is sender)
-              provider.core.getAssetTransfers({
+            // Pagination handled internally - exhaust both queries completely
+            // Since we're combining two independent queries (fromAddress and toAddress),
+            // we cannot use a single pageKey. Instead, fetch all pages for each query.
+            // Input pageKey parameter is ignored - we always fetch complete results.
+
+            const allFromTransfers: AssetTransfersWithMetadataResponse["transfers"] =
+              [];
+            const allToTransfers: AssetTransfersWithMetadataResponse["transfers"] =
+              [];
+
+            // Fetch all outgoing transfers (wallet is sender)
+            // Always start from beginning (pageKey=undefined) to get complete results
+            let fromPageKey: string | undefined;
+            do {
+              const fromResult = await provider.core.getAssetTransfers({
                 fromBlock: fromBlockHex,
                 toBlock: toBlockHex,
                 fromAddress: walletAddress,
                 category: [
-                  AssetTransfersCategory.EXTERNAL, // ETH transfers
-                  AssetTransfersCategory.ERC20, // Token transfers
+                  AssetTransfersCategory.EXTERNAL,
+                  AssetTransfersCategory.ERC20,
                 ],
                 withMetadata: true,
-                excludeZeroValue: false, // Include zero-value transfers for completeness
-                maxCount: 1000, // Alchemy's max per request
-              }),
-              // Incoming transfers (wallet is receiver)
-              provider.core.getAssetTransfers({
+                excludeZeroValue: false,
+                maxCount: 1000,
+                pageKey: fromPageKey,
+              });
+
+              allFromTransfers.push(...fromResult.transfers);
+              fromPageKey = fromResult.pageKey;
+            } while (fromPageKey);
+
+            // Fetch all incoming transfers (wallet is receiver)
+            // Always start from beginning (pageKey=undefined) to get complete results
+            let toPageKey: string | undefined;
+            do {
+              const toResult = await provider.core.getAssetTransfers({
                 fromBlock: fromBlockHex,
                 toBlock: toBlockHex,
                 toAddress: walletAddress,
@@ -284,12 +305,16 @@ export class AlchemyRpcProvider implements IRpcProvider {
                 withMetadata: true,
                 excludeZeroValue: false,
                 maxCount: 1000,
-              }),
-            ]);
+                pageKey: toPageKey,
+              });
+
+              allToTransfers.push(...toResult.transfers);
+              toPageKey = toResult.pageKey;
+            } while (toPageKey);
 
             return {
-              transfers: [...fromTransfers.transfers, ...toTransfers.transfers],
-              pageKey: fromTransfers.pageKey || toTransfers.pageKey,
+              transfers: [...allFromTransfers, ...allToTransfers],
+              pageKey: undefined, // All pages fetched
             };
           },
           {
@@ -315,14 +340,21 @@ export class AlchemyRpcProvider implements IRpcProvider {
       const shouldSample = Math.random() < this.SAMPLING_RATE;
 
       if (shouldSample) {
-        // Send to Sentry for monitoring
+        // Send to Sentry for monitoring (with masked addresses for privacy)
         Sentry.captureMessage("Alchemy RPC Response Sample", {
           level: "debug",
           extra: {
             response: {
               transferCount: result.transfers.length,
               hasPageKey: !!result.pageKey,
-              sampleTransfers: result.transfers.slice(0, 3), // First 3 transfers as sample
+              sampleTransfers: result.transfers.slice(0, 3).map((t) => ({
+                from: t.from ? this.maskWalletAddress(t.from) : null,
+                to: t.to ? this.maskWalletAddress(t.to) : null,
+                asset: t.asset,
+                value: t.value,
+                hash: t.hash,
+                blockNum: t.blockNum,
+              })),
             },
             walletAddress: maskedAddress,
             chain,

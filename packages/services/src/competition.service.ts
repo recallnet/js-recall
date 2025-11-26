@@ -7,7 +7,9 @@ import { AgentScoreRepository } from "@recallnet/db/repositories/agent-score";
 import { ArenaRepository } from "@recallnet/db/repositories/arena";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { PerpsRepository } from "@recallnet/db/repositories/perps";
+import { SpotLiveRepository } from "@recallnet/db/repositories/spot-live";
 import { StakesRepository } from "@recallnet/db/repositories/stakes";
+import { TradeRepository } from "@recallnet/db/repositories/trade";
 import { UserRepository } from "@recallnet/db/repositories/user";
 import {
   SelectAgent,
@@ -17,7 +19,7 @@ import {
 } from "@recallnet/db/schema/core/types";
 import {
   PerpetualPositionWithAgent,
-  SelectPerpsCompetitionConfig,
+  SelectSpotLiveSelfFundingAlert,
   SelectTrade,
 } from "@recallnet/db/schema/trading/types";
 import type {
@@ -30,6 +32,7 @@ import { AgentRankService } from "./agentrank.service.js";
 import { BalanceService } from "./balance.service.js";
 import { CompetitionRewardService } from "./competition-reward.service.js";
 import { isCompatibleType } from "./lib/arena-validation.js";
+import { getDexProtocolConfig } from "./lib/dex-protocols.js";
 import {
   PaginationResponse,
   buildPaginationResponse,
@@ -37,7 +40,9 @@ import {
 import { applySortingAndPagination, splitSortField } from "./lib/sort.js";
 import { PerpsDataProcessor } from "./perps-data-processor.service.js";
 import { PortfolioSnapshotterService } from "./portfolio-snapshotter.service.js";
+import { PriceTrackerService } from "./price-tracker.service.js";
 import { RewardsService } from "./rewards.service.js";
+import { SpotDataProcessor } from "./spot-data-processor.service.js";
 import { TradeSimulatorService } from "./trade-simulator.service.js";
 import { TradingConstraintsService } from "./trading-constraints.service.js";
 import {
@@ -94,6 +99,16 @@ export interface CreateCompetitionParams {
     minFundingThreshold?: number; // Optional - minimum portfolio balance
     apiUrl?: string;
   };
+  spotLiveConfig?: {
+    dataSource: "rpc_direct" | "envio_indexing" | "hybrid";
+    dataSourceConfig: Record<string, unknown>;
+    chains: SpecificChain[];
+    allowedProtocols?: Array<{ protocol: string; chain: SpecificChain }>;
+    allowedTokens?: Array<{ address: string; specificChain: SpecificChain }>;
+    selfFundingThresholdUsd?: number;
+    minFundingThreshold?: number;
+    syncIntervalMinutes?: number;
+  };
   prizePools?: {
     agent: number;
     users: number;
@@ -144,6 +159,24 @@ interface TradingConstraintsInput {
 }
 
 /**
+ * Resolved spot live configuration after validation
+ */
+interface ResolvedSpotLiveConfig {
+  resolvedProtocols: Array<{
+    protocol: string;
+    specificChain: SpecificChain;
+    routerAddress: string;
+    swapEventSignature: string;
+    factoryAddress: string | null;
+  }>;
+  resolvedTokens: Array<{
+    specificChain: SpecificChain;
+    tokenAddress: string;
+    tokenSymbol: string;
+  }>;
+}
+
+/**
  * Represents an entry in a competition leaderboard
  */
 interface LeaderboardEntry {
@@ -157,6 +190,10 @@ interface LeaderboardEntry {
   maxDrawdown?: number | null;
   downsideDeviation?: number | null;
   hasRiskMetrics?: boolean; // Indicates if agent has risk metrics calculated
+  // Spot live specific metrics
+  startingValue?: number;
+  currentValue?: number;
+  totalTrades?: number;
 }
 
 /**
@@ -353,18 +390,22 @@ export class CompetitionService {
   private balanceService: BalanceService;
   private tradeSimulatorService: TradeSimulatorService;
   private portfolioSnapshotterService: PortfolioSnapshotterService;
+  private priceTrackerService: PriceTrackerService;
   private agentService: AgentService;
   private agentRankService: AgentRankService;
   private tradingConstraintsService: TradingConstraintsService;
   private competitionRewardService: CompetitionRewardService;
   private rewardsService: RewardsService;
   private perpsDataProcessor: PerpsDataProcessor;
+  private spotDataProcessor: SpotDataProcessor;
   private agentRepo: AgentRepository;
   private agentScoreRepo: AgentScoreRepository;
   private arenaRepo: ArenaRepository;
   private perpsRepo: PerpsRepository;
+  private spotLiveRepo: SpotLiveRepository;
   private competitionRepo: CompetitionRepository;
   private stakesRepo: StakesRepository;
+  private tradeRepo: TradeRepository;
   private userRepo: UserRepository;
   private db: Database;
   private config: CompetitionServiceConfig;
@@ -374,18 +415,22 @@ export class CompetitionService {
     balanceService: BalanceService,
     tradeSimulatorService: TradeSimulatorService,
     portfolioSnapshotterService: PortfolioSnapshotterService,
+    priceTrackerService: PriceTrackerService,
     agentService: AgentService,
     agentRankService: AgentRankService,
     tradingConstraintsService: TradingConstraintsService,
     competitionRewardService: CompetitionRewardService,
     rewardsService: RewardsService,
     perpsDataProcessor: PerpsDataProcessor,
+    spotDataProcessor: SpotDataProcessor,
     agentRepo: AgentRepository,
     agentScoreRepo: AgentScoreRepository,
     arenaRepo: ArenaRepository,
     perpsRepo: PerpsRepository,
+    spotLiveRepo: SpotLiveRepository,
     competitionRepo: CompetitionRepository,
     stakesRepo: StakesRepository,
+    tradeRepo: TradeRepository,
     userRepo: UserRepository,
     db: Database,
     config: CompetitionServiceConfig,
@@ -394,18 +439,22 @@ export class CompetitionService {
     this.balanceService = balanceService;
     this.tradeSimulatorService = tradeSimulatorService;
     this.portfolioSnapshotterService = portfolioSnapshotterService;
+    this.priceTrackerService = priceTrackerService;
     this.agentService = agentService;
     this.agentRankService = agentRankService;
     this.tradingConstraintsService = tradingConstraintsService;
     this.competitionRewardService = competitionRewardService;
     this.rewardsService = rewardsService;
     this.perpsDataProcessor = perpsDataProcessor;
+    this.spotDataProcessor = spotDataProcessor;
     this.agentRepo = agentRepo;
     this.agentScoreRepo = agentScoreRepo;
     this.arenaRepo = arenaRepo;
     this.perpsRepo = perpsRepo;
+    this.spotLiveRepo = spotLiveRepo;
     this.competitionRepo = competitionRepo;
     this.stakesRepo = stakesRepo;
+    this.tradeRepo = tradeRepo;
     this.userRepo = userRepo;
     this.db = db;
     this.config = config;
@@ -453,6 +502,7 @@ export class CompetitionService {
     minimumStake,
     evaluationMetric,
     perpsProvider,
+    spotLiveConfig,
     prizePools,
     rewardsIneligible,
     arenaId,
@@ -488,6 +538,24 @@ export class CompetitionService {
           `Competition type "${competitionType}" incompatible with arena skill "${arena.skill}"`,
         );
       }
+    }
+
+    // Validate spot live config BEFORE transaction (external API calls)
+    let resolvedSpotLiveConfig: ResolvedSpotLiveConfig | null = null;
+    if (competitionType === "spot_live_trading") {
+      if (!spotLiveConfig) {
+        throw new ApiError(
+          400,
+          "Spot live configuration is required for spot_live_trading competitions",
+        );
+      }
+
+      // Validate chain consistency first (fast, no external calls)
+      this.validateSpotLiveChainConsistency(spotLiveConfig);
+
+      // Then validate and resolve (external API calls for price lookups)
+      resolvedSpotLiveConfig =
+        await this.validateAndResolveSpotLiveConfig(spotLiveConfig);
     }
 
     const competition: Parameters<typeof this.competitionRepo.create>[0] = {
@@ -570,6 +638,64 @@ export class CompetitionService {
         await this.perpsRepo.createPerpsCompetitionConfig(perpsConfig, tx);
         this.logger.debug(
           `[CompetitionService] Created perps config for competition ${id}: ${JSON.stringify(perpsConfig)}`,
+        );
+      }
+
+      // Create spot live competition config if it's a spot live competition
+      if (
+        type === "spot_live_trading" &&
+        resolvedSpotLiveConfig &&
+        spotLiveConfig
+      ) {
+        // Create spot live config
+        const spotConfig = {
+          competitionId: id,
+          dataSource: spotLiveConfig.dataSource as
+            | "rpc_direct"
+            | "envio_indexing"
+            | "hybrid",
+          dataSourceConfig: spotLiveConfig.dataSourceConfig,
+          selfFundingThresholdUsd:
+            spotLiveConfig.selfFundingThresholdUsd?.toString() || "10.00",
+          minFundingThreshold:
+            spotLiveConfig.minFundingThreshold?.toString() || null,
+          syncIntervalMinutes: spotLiveConfig.syncIntervalMinutes || 2,
+        };
+
+        await this.spotLiveRepo.createSpotLiveCompetitionConfig(spotConfig, tx);
+
+        // Create enabled chains
+        if (spotLiveConfig.chains.length > 0) {
+          await this.spotLiveRepo.batchCreateCompetitionChains(
+            id,
+            spotLiveConfig.chains.map((chain) => ({
+              specificChain: chain,
+              enabled: true,
+            })),
+            tx,
+          );
+        }
+
+        // Create allowed protocols (if any)
+        if (resolvedSpotLiveConfig.resolvedProtocols.length > 0) {
+          await this.spotLiveRepo.batchCreateAllowedProtocols(
+            id,
+            resolvedSpotLiveConfig.resolvedProtocols,
+            tx,
+          );
+        }
+
+        // Create allowed tokens (if any)
+        if (resolvedSpotLiveConfig.resolvedTokens.length > 0) {
+          await this.spotLiveRepo.batchCreateAllowedTokens(
+            id,
+            resolvedSpotLiveConfig.resolvedTokens,
+            tx,
+          );
+        }
+
+        this.logger.debug(
+          `[CompetitionService] Created spot live config for competition ${id}`,
         );
       }
 
@@ -894,9 +1020,57 @@ export class CompetitionService {
         await this.perpsRepo.getPerpsCompetitionConfig(competitionId);
 
       if (perpsConfig && perpsConfig.minFundingThreshold) {
+        const threshold = Number(perpsConfig.minFundingThreshold);
         const { removedAgents } = await this.enforceMinFundingThreshold(
           competitionId,
-          perpsConfig,
+          threshold,
+        );
+
+        // Remove the disqualified agents from finalAgentIds
+        if (removedAgents.length > 0) {
+          finalAgentIds = finalAgentIds.filter(
+            (id) => !removedAgents.includes(id),
+          );
+        }
+      }
+    } else if (competition.type === "spot_live_trading") {
+      // Spot Live: Sync initial data from blockchain
+      this.logger.debug(
+        `[CompetitionService] Syncing initial spot live data for ${finalAgentIds.length} agents (competition still pending)`,
+      );
+
+      // Pass skipMonitoring=true for initial sync during competition startup
+      const SKIP_MONITORING = true;
+      const result = await this.spotDataProcessor.processSpotLiveCompetition(
+        competitionId,
+        SKIP_MONITORING,
+      );
+
+      const successCount = result.syncResult.successful.length;
+      const failedCount = result.syncResult.failed.length;
+      const totalCount = successCount + failedCount;
+
+      this.logger.debug(
+        `[CompetitionService] Initial spot live sync completed: ${successCount}/${totalCount} agents synced successfully`,
+      );
+
+      if (failedCount > 0) {
+        const failedAgentIds = result.syncResult.failed.map((f) => f.agentId);
+        this.logger.warn(
+          `[CompetitionService] Failed to sync ${failedCount} out of ${totalCount} agents during competition start: ${failedAgentIds.join(", ")}`,
+        );
+      }
+
+      // Enforce minimum funding threshold after initial sync
+      // This must happen BEFORE competition goes active
+      const spotLiveConfig =
+        await this.spotDataProcessor.getCompetitionConfig(competitionId);
+
+      if (spotLiveConfig && spotLiveConfig.minFundingThreshold) {
+        const threshold = Number(spotLiveConfig.minFundingThreshold);
+        const { removedAgents } = await this.enforceMinFundingThreshold(
+          competitionId,
+          threshold,
         );
 
         // Remove the disqualified agents from finalAgentIds
@@ -939,20 +1113,185 @@ export class CompetitionService {
   }
 
   /**
-   * Check and enforce minimum funding threshold for perps competition
-   * Removes agents below the threshold from the competition
+   * Validate spot live configuration chain consistency
+   * Ensures protocols and tokens reference enabled chains
    * @private
+   * @param spotLiveConfig Spot live configuration from admin request
+   * @throws ApiError if configuration is inconsistent
+   */
+  private validateSpotLiveChainConsistency(
+    spotLiveConfig: NonNullable<CreateCompetitionParams["spotLiveConfig"]>,
+  ): void {
+    const enabledChains = new Set(spotLiveConfig.chains);
+
+    // Block Solana - requires different swap detection logic (programs, no tx.to field)
+    // Agents don't support Solana wallets yet
+    if (enabledChains.has("svm")) {
+      throw new ApiError(
+        400,
+        "Solana (svm) is not supported for spot live trading competitions. Solana uses a different transaction model that requires separate implementation.",
+      );
+    }
+
+    // Validate protocol chains
+    if (spotLiveConfig.allowedProtocols) {
+      for (const p of spotLiveConfig.allowedProtocols) {
+        if (!enabledChains.has(p.chain)) {
+          throw new ApiError(
+            400,
+            `Protocol '${p.protocol}' specified for chain '${p.chain}' which is not in enabled chains [${spotLiveConfig.chains.join(", ")}]`,
+          );
+        }
+      }
+    }
+
+    // Validate token chains
+    if (spotLiveConfig.allowedTokens) {
+      for (const t of spotLiveConfig.allowedTokens) {
+        if (!enabledChains.has(t.specificChain)) {
+          throw new ApiError(
+            400,
+            `Token ${t.address} specified for chain '${t.specificChain}' which is not in enabled chains [${spotLiveConfig.chains.join(", ")}]`,
+          );
+        }
+      }
+    }
+
+    // Validate tradeable pairs when both filters exist
+    if (spotLiveConfig.allowedProtocols && spotLiveConfig.allowedTokens) {
+      const protocolChains = new Set(
+        spotLiveConfig.allowedProtocols.map((p) => p.chain),
+      );
+      const tokensByChain = new Map<SpecificChain, number>();
+
+      for (const t of spotLiveConfig.allowedTokens) {
+        tokensByChain.set(
+          t.specificChain,
+          (tokensByChain.get(t.specificChain) || 0) + 1,
+        );
+      }
+
+      // For each chain with protocol filter, verify it has at least 2 tokens
+      for (const chain of protocolChains) {
+        const tokenCount = tokensByChain.get(chain) || 0;
+        if (tokenCount < 2) {
+          throw new ApiError(
+            400,
+            `Chain '${chain}' has protocol filter but only ${tokenCount} whitelisted token(s). At least 2 tokens required for trading.`,
+          );
+        }
+      }
+    }
+  }
+
+  /**
+   * Validate and resolve spot live configuration
+   * Performs all external validations (protocols, token prices) before transaction
+   * @private
+   * @param spotLiveConfig Spot live configuration from admin request
+   * @returns Resolved protocols and tokens ready for database insertion
+   */
+  private async validateAndResolveSpotLiveConfig(
+    spotLiveConfig: NonNullable<CreateCompetitionParams["spotLiveConfig"]>,
+  ): Promise<ResolvedSpotLiveConfig> {
+    // Validate and resolve protocols using KNOWN_DEX_PROTOCOLS
+    const resolvedProtocols: Array<{
+      protocol: string;
+      specificChain: SpecificChain;
+      routerAddress: string;
+      swapEventSignature: string;
+      factoryAddress: string | null;
+    }> = [];
+
+    if (spotLiveConfig.allowedProtocols) {
+      for (const p of spotLiveConfig.allowedProtocols) {
+        const config = getDexProtocolConfig(p.protocol, p.chain);
+
+        if (!config) {
+          throw new ApiError(
+            400,
+            `Unknown protocol '${p.protocol}' on chain '${p.chain}'. Please use a known protocol from KNOWN_DEX_PROTOCOLS.`,
+          );
+        }
+
+        resolvedProtocols.push({
+          protocol: p.protocol,
+          specificChain: p.chain,
+          routerAddress: config.routerAddress,
+          swapEventSignature: config.swapEventSignature,
+          factoryAddress: config.factoryAddress,
+        });
+      }
+    }
+
+    // Validate and resolve token whitelist (if any)
+    const resolvedTokens: Array<{
+      specificChain: SpecificChain;
+      tokenAddress: string;
+      tokenSymbol: string;
+    }> = [];
+
+    if (
+      spotLiveConfig.allowedTokens &&
+      spotLiveConfig.allowedTokens.length > 0
+    ) {
+      // Validate: Each chain must have at least 2 tokens (can't trade with only 1)
+      const tokensByChain = new Map<SpecificChain, number>();
+      for (const t of spotLiveConfig.allowedTokens) {
+        tokensByChain.set(
+          t.specificChain,
+          (tokensByChain.get(t.specificChain) || 0) + 1,
+        );
+      }
+
+      for (const [chain, count] of tokensByChain.entries()) {
+        if (count < 2) {
+          throw new ApiError(
+            400,
+            `Chain '${chain}' has only ${count} token(s). At least 2 tokens required per chain for trading.`,
+          );
+        }
+      }
+
+      // Validate each token and fetch symbol via price API
+      for (const t of spotLiveConfig.allowedTokens) {
+        const priceReport = await this.priceTrackerService.getPrice(
+          t.address,
+          undefined,
+          t.specificChain,
+        );
+
+        if (!priceReport || !priceReport.symbol) {
+          throw new ApiError(
+            400,
+            `Token ${t.address} on ${t.specificChain} is not supported or cannot be priced. Please use a tradeable token.`,
+          );
+        }
+
+        resolvedTokens.push({
+          specificChain: t.specificChain,
+          tokenAddress: t.address,
+          tokenSymbol: priceReport.symbol,
+        });
+      }
+    }
+
+    return { resolvedProtocols, resolvedTokens };
+  }
+
+  /**
+   * Check and enforce minimum funding threshold for a competition
+   * Removes agents whose portfolio value is below the specified threshold
+   * Generic method that works for any competition type (perps, spot live, etc.)
+   * @private
+   * @param competitionId Competition ID
+   * @param threshold Minimum portfolio value in USD
+   * @returns Array of agent IDs that were removed
    */
   private async enforceMinFundingThreshold(
     competitionId: string,
-    perpsConfig: SelectPerpsCompetitionConfig,
+    threshold: number,
   ): Promise<{ removedAgents: string[] }> {
-    // Only proceed if minFundingThreshold is configured
-    if (!perpsConfig.minFundingThreshold) {
-      return { removedAgents: [] };
-    }
-
-    const threshold = Number(perpsConfig.minFundingThreshold);
     const removedAgents: string[] = [];
 
     this.logger.info(
@@ -1068,6 +1407,56 @@ export class CompetitionService {
           competitionId,
         );
 
+      // Calculate spot live specific metrics (simpleReturn, currentValue, totalTrades)
+      let spotLiveMetrics:
+        | {
+            simpleReturn: number;
+            currentValue: number;
+            totalTrades: number;
+          }
+        | undefined;
+
+      if (competition?.type === "spot_live_trading") {
+        // Get bounded snapshots for this agent
+        const snapshots = await this.competitionRepo.getBoundedSnapshots(
+          competitionId,
+          entry.agentId,
+        );
+
+        if (snapshots) {
+          const firstValue = Number(snapshots.oldest?.totalValue ?? 0);
+          const lastValue = Number(snapshots.newest?.totalValue ?? 0);
+          const calculatedPnl = lastValue - firstValue;
+
+          // Calculate simple return (ROI%)
+          const simpleReturn = firstValue > 0 ? calculatedPnl / firstValue : 0;
+
+          // Get total trades for this agent
+          const totalTrades = await this.tradeRepo.countSpotLiveTradesForAgent(
+            entry.agentId,
+            competitionId,
+          );
+
+          spotLiveMetrics = {
+            simpleReturn,
+            currentValue: lastValue,
+            totalTrades,
+          };
+
+          this.logger.debug(
+            {
+              agentId: entry.agentId,
+              startingValue: firstValue,
+              currentValue: lastValue,
+              pnl: calculatedPnl,
+              simpleReturn: (simpleReturn * 100).toFixed(2) + "%",
+              totalTrades,
+            },
+            "[CompetitionService] Calculated spot live metrics",
+          );
+        }
+      }
+
       // Determine the score based on competition type and evaluation metric
       let score: number;
       if (competition?.type === "perpetual_futures" && entry.hasRiskMetrics) {
@@ -1109,8 +1498,11 @@ export class CompetitionService {
             }
             break;
         }
+      } else if (competition?.type === "spot_live_trading" && spotLiveMetrics) {
+        // Spot live ranked by ROI% for fair comparison regardless of starting capital
+        score = spotLiveMetrics.simpleReturn;
       } else {
-        score = entry.value; // Portfolio value for spot trading or perps without metrics
+        score = entry.value; // Portfolio value for paper trading or perps without metrics
       }
 
       // Add perps-specific fields if this is a perps competition with risk metrics
@@ -1133,6 +1525,26 @@ export class CompetitionService {
           hasRiskMetrics: true,
         };
         enrichedEntries.push(perpsEntry);
+      } else if (competition?.type === "spot_live_trading" && spotLiveMetrics) {
+        // Add spot live specific fields with ROI-based ranking
+        const spotLiveEntry: BaseEnrichedLeaderboardEntry & {
+          simpleReturn: number;
+          currentValue: number;
+          totalTrades: number;
+        } = {
+          agentId: entry.agentId,
+          competitionId,
+          rank: i + 1, // 1-based ranking
+          pnl,
+          startingValue,
+          totalAgents,
+          score, // score = simpleReturn (ROI%) for ranking
+          hasRiskMetrics: false,
+          simpleReturn: spotLiveMetrics.simpleReturn,
+          currentValue: spotLiveMetrics.currentValue,
+          totalTrades: spotLiveMetrics.totalTrades,
+        };
+        enrichedEntries.push(spotLiveEntry);
       } else {
         const baseEntry: BaseEnrichedLeaderboardEntry = {
           agentId: entry.agentId,
@@ -1229,6 +1641,24 @@ export class CompetitionService {
       );
       if (failedCount > 0) {
         // Log warning but don't fail the competition ending
+        this.logger.warn(
+          `[CompetitionService] Failed to sync final data for ${failedCount} out of ${totalCount} agents in ending competition`,
+        );
+      }
+    } else if (competition.type === "spot_live_trading") {
+      // Spot Live: Final sync from blockchain
+      const result =
+        await this.spotDataProcessor.processSpotLiveCompetition(competitionId);
+
+      const successCount = result.syncResult.successful.length;
+      const failedCount = result.syncResult.failed.length;
+      const totalCount = successCount + failedCount;
+
+      this.logger.debug(
+        `[CompetitionService] Final spot live sync completed: ${successCount}/${totalCount} agents synced successfully`,
+      );
+
+      if (failedCount > 0) {
         this.logger.warn(
           `[CompetitionService] Failed to sync final data for ${failedCount} out of ${totalCount} agents in ending competition`,
         );
@@ -1524,7 +1954,23 @@ export class CompetitionService {
       return orderedResults;
     }
 
-    // For paper trading: Return without risk metrics
+    if (competition?.type === "spot_live_trading") {
+      // For spot live: Get ROI-based leaderboard from repository (sorted by simpleReturn DESC)
+      const roiLeaderboard =
+        await this.competitionRepo.getSpotLiveROILeaderboard(competitionId);
+
+      return roiLeaderboard.map((entry) => ({
+        agentId: entry.agentId,
+        value: entry.currentValue,
+        pnl: entry.currentValue - entry.startingValue,
+        calmarRatio: null,
+        simpleReturn: entry.simpleReturn,
+        maxDrawdown: null,
+        hasRiskMetrics: false,
+      }));
+    }
+
+    // For paper trading: Return without risk metrics, sorted by portfolio value
     return snapshots
       .map((snapshot) => ({
         agentId: snapshot.agentId,
@@ -1689,6 +2135,11 @@ export class CompetitionService {
           if (competition.type === "perpetual_futures") {
             savedLeaderboard =
               await this.competitionRepo.findLeaderboardByPerpsComp(
+                competitionId,
+              );
+          } else if (competition.type === "spot_live_trading") {
+            savedLeaderboard =
+              await this.competitionRepo.findLeaderboardBySpotLiveComp(
                 competitionId,
               );
           } else {
@@ -2308,11 +2759,15 @@ export class CompetitionService {
       throw new ApiError(403, "Agent is not eligible to join competitions");
     }
 
-    // Validate wallet address for perps competitions
-    if (competition.type === "perpetual_futures" && !agent.walletAddress) {
+    // Validate wallet address for competitions requiring on-chain wallets
+    if (
+      (competition.type === "perpetual_futures" ||
+        competition.type === "spot_live_trading") &&
+      !agent.walletAddress
+    ) {
       throw new ApiError(
         400,
-        "Agent must have a wallet address to participate in perpetual futures competitions",
+        "Agent must have a wallet address to participate in this competition",
       );
     }
 
@@ -3592,16 +4047,19 @@ export class CompetitionService {
     }>
   > {
     try {
-      // 1. Verify competition exists and is perps type
+      // 1. Verify competition exists and is perps or spot live type
       const competition = await this.getCompetition(competitionId);
       if (!competition) {
         throw new ApiError(404, `Competition ${competitionId} not found`);
       }
 
-      if (competition.type !== "perpetual_futures") {
+      if (
+        competition.type !== "perpetual_futures" &&
+        competition.type !== "spot_live_trading"
+      ) {
         throw new ApiError(
           400,
-          `Competition ${competitionId} is not a perpetual futures competition`,
+          `Transfer violations are only applicable to perpetual futures and spot live trading competitions`,
         );
       }
 
@@ -3611,11 +4069,25 @@ export class CompetitionService {
       }
 
       // 2. Get transfer violation counts with agent names from repository
-      const results =
-        await this.perpsRepo.getCompetitionTransferViolationCounts(
+      let results: Array<{
+        agentId: string;
+        agentName: string;
+        transferCount: number;
+      }>;
+
+      if (competition.type === "perpetual_futures") {
+        results = await this.perpsRepo.getCompetitionTransferViolationCounts(
           competitionId,
           competition.startDate,
         );
+      } else {
+        // spot_live_trading
+        results =
+          await this.spotLiveRepo.getCompetitionSpotLiveTransferViolationCounts(
+            competitionId,
+            competition.startDate,
+          );
+      }
 
       // Results already include agentName
       if (results.length === 0) {
@@ -3634,5 +4106,74 @@ export class CompetitionService {
       );
       throw error;
     }
+  }
+
+  /**
+   * Get spot live self-funding alerts with optional filters
+   * @param competitionId Competition ID
+   * @param filters Optional filters for reviewed status and violation type
+   * @returns Array of alerts
+   */
+  async getSpotLiveSelfFundingAlerts(
+    competitionId: string,
+    filters?: {
+      reviewed?: boolean;
+      violationType?: string;
+    },
+  ): Promise<SelectSpotLiveSelfFundingAlert[]> {
+    // Validate competition type
+    const competition = await this.competitionRepo.findById(competitionId);
+
+    if (!competition) {
+      throw new ApiError(404, "Competition not found");
+    }
+
+    if (competition.type !== "spot_live_trading") {
+      throw new ApiError(
+        400,
+        "This endpoint is only available for spot live trading competitions",
+      );
+    }
+
+    return this.spotLiveRepo.getSpotLiveAlerts(competitionId, filters);
+  }
+
+  /**
+   * Review a spot live self-funding alert
+   * @param competitionId Competition ID (for validation)
+   * @param alertId Alert ID
+   * @param reviewData Review information
+   * @returns Updated alert or null if not found
+   * @throws Error if alert doesn't belong to specified competition
+   */
+  async reviewSpotLiveSelfFundingAlert(
+    competitionId: string,
+    alertId: string,
+    reviewData: {
+      reviewed: boolean;
+      reviewedBy: string;
+      reviewNote: string;
+      actionTaken: string;
+      reviewedAt: Date;
+    },
+  ): Promise<SelectSpotLiveSelfFundingAlert | null> {
+    // First, fetch the alert to verify it belongs to this competition
+    const existingAlert = await this.spotLiveRepo.getSpotLiveAlertById(alertId);
+
+    if (!existingAlert) {
+      return null;
+    }
+
+    // Security check: Verify alert belongs to the specified competition
+    if (existingAlert.competitionId !== competitionId) {
+      throw new Error(
+        `Alert ${alertId} does not belong to competition ${competitionId}`,
+      );
+    }
+
+    return this.spotLiveRepo.reviewSpotLiveSelfFundingAlert(
+      alertId,
+      reviewData,
+    );
   }
 }

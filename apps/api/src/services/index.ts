@@ -14,6 +14,7 @@ import { LeaderboardRepository } from "@recallnet/db/repositories/leaderboard";
 import { PartnerRepository } from "@recallnet/db/repositories/partner";
 import { PerpsRepository } from "@recallnet/db/repositories/perps";
 import { RewardsRepository } from "@recallnet/db/repositories/rewards";
+import { SpotLiveRepository } from "@recallnet/db/repositories/spot-live";
 import { StakesRepository } from "@recallnet/db/repositories/stakes";
 import { TradeRepository } from "@recallnet/db/repositories/trade";
 import { TradingConstraintsRepository } from "@recallnet/db/repositories/trading-constraints";
@@ -39,11 +40,15 @@ import {
   RiskMetricsService,
   SimulatedTradeExecutionService,
   SortinoRatioService,
+  SpotDataProcessor,
   TradeSimulatorService,
   TradingConstraintsService,
   UserService,
 } from "@recallnet/services";
-import { MockPrivyClient } from "@recallnet/services/lib";
+import {
+  MockAlchemyRpcProvider,
+  MockPrivyClient,
+} from "@recallnet/services/lib";
 import { WalletWatchlist } from "@recallnet/services/lib";
 import {
   DexScreenerProvider,
@@ -100,10 +105,12 @@ class ServiceRegistry {
   private _tradingConstraintsService: TradingConstraintsService;
   private _competitionRewardService: CompetitionRewardService;
   private _perpsDataProcessor: PerpsDataProcessor;
+  private _spotDataProcessor: SpotDataProcessor;
   private _boostService: BoostService;
   private readonly _competitionRepository: CompetitionRepository;
   private readonly _agentRepository: AgentRepository;
   private readonly _perpsRepository: PerpsRepository;
+  private readonly _spotLiveRepository: SpotLiveRepository;
   private readonly _boostRepository: BoostRepository;
   private readonly _stakesRepository: StakesRepository;
   private readonly _userRepository: UserRepository;
@@ -139,6 +146,11 @@ class ServiceRegistry {
     this._boostRepository = new BoostRepository(db);
     this._userRepository = new UserRepository(db, repositoryLogger);
     this._rewardsRepository = new RewardsRepository(db, repositoryLogger);
+    this._spotLiveRepository = new SpotLiveRepository(
+      db,
+      dbRead,
+      repositoryLogger,
+    );
 
     // Initialize RewardsAllocator (use MockRewardsAllocator in test mode to avoid blockchain interactions)
     this._rewardsAllocator = this.getRewardsAllocator();
@@ -293,6 +305,25 @@ class ServiceRegistry {
       serviceLogger,
     );
 
+    // Initialize SpotDataProcessor before CompetitionManager (as it's a dependency)
+    // In test mode, inject MockAlchemyRpcProvider for deterministic blockchain data
+    const mockRpcProvider =
+      config.server.nodeEnv === "test"
+        ? new MockAlchemyRpcProvider(serviceLogger)
+        : undefined;
+
+    this._spotDataProcessor = new SpotDataProcessor(
+      this._agentRepository,
+      this._competitionRepository,
+      this._spotLiveRepository,
+      tradeRepository,
+      balanceRepository,
+      this._portfolioSnapshotterService,
+      this._priceTrackerService,
+      serviceLogger,
+      mockRpcProvider,
+    );
+
     // Initialize LeaderboardService with required dependencies
     this._leaderboardService = new LeaderboardService(
       leaderboardRepository,
@@ -349,18 +380,22 @@ class ServiceRegistry {
       this._balanceService,
       this._tradeSimulatorService,
       this._portfolioSnapshotterService,
+      this._priceTrackerService,
       this._agentService,
       this._agentRankService,
       this._tradingConstraintsService,
       this._competitionRewardService,
       this._rewardsService,
       this._perpsDataProcessor,
+      this._spotDataProcessor,
       this._agentRepository,
       agentScoreRepository,
       this._arenaRepository,
       this._perpsRepository,
+      this._spotLiveRepository,
       this._competitionRepository,
       this._stakesRepository,
+      tradeRepository,
       this._userRepository,
       db,
       config,
@@ -479,6 +514,14 @@ class ServiceRegistry {
 
   get perpsDataProcessor(): PerpsDataProcessor {
     return this._perpsDataProcessor;
+  }
+
+  get spotDataProcessor(): SpotDataProcessor {
+    return this._spotDataProcessor;
+  }
+
+  get spotLiveRepository(): SpotLiveRepository {
+    return this._spotLiveRepository;
   }
 
   get eventIndexingService(): IndexingService | undefined {

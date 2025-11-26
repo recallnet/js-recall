@@ -3177,8 +3177,8 @@
     "/api/admin/competition/{competitionId}/transfer-violations": {
       "get": {
         "tags": ["Admin"],
-        "summary": "Get transfer violations for a perps competition",
-        "description": "Returns agents who have made transfers during the competition (mid-competition transfers are prohibited)",
+        "summary": "Get transfer violations for a perps or spot live competition",
+        "description": "Returns agents who have made transfers during the competition (mid-competition transfers are prohibited for both perps and spot live)",
         "security": [
           {
             "BearerAuth": []
@@ -3237,7 +3237,7 @@
             }
           },
           "400": {
-            "description": "Competition is not a perps competition",
+            "description": "Competition is not a perps or spot live competition",
             "content": {
               "application/json": {
                 "schema": {
@@ -3249,7 +3249,7 @@
                     },
                     "error": {
                       "type": "string",
-                      "example": "Competition is not a perpetual futures competition"
+                      "example": "Transfer violations are only applicable to perpetual futures and spot live trading competitions"
                     }
                   }
                 }
@@ -3275,6 +3275,152 @@
                 }
               }
             }
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/admin/competition/{competitionId}/spot-live/alerts": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Get self-funding alerts for a spot live competition",
+        "description": "Returns self-funding violation alerts detected via transfer history or balance reconciliation",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "competitionId",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Competition ID"
+          },
+          {
+            "in": "query",
+            "name": "reviewed",
+            "schema": {
+              "type": "string",
+              "enum": [true, false, "all"],
+              "default": false
+            },
+            "description": "Filter by review status"
+          },
+          {
+            "in": "query",
+            "name": "violationType",
+            "schema": {
+              "type": "string",
+              "enum": ["transfer", "balance_reconciliation", "all"]
+            },
+            "description": "Filter by violation type"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Alerts retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "alerts": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Competition not found"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/admin/competition/{competitionId}/spot-live/alerts/{alertId}/review": {
+      "put": {
+        "tags": ["Admin"],
+        "summary": "Review a self-funding alert",
+        "description": "Mark an alert as reviewed with admin decision and notes",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "competitionId",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Competition ID"
+          },
+          {
+            "in": "path",
+            "name": "alertId",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Alert ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["reviewNote", "actionTaken"],
+                "properties": {
+                  "reviewNote": {
+                    "type": "string",
+                    "description": "Admin review notes"
+                  },
+                  "actionTaken": {
+                    "type": "string",
+                    "enum": ["dismissed", "disqualified", "warning"],
+                    "description": "Action taken on this alert"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Alert reviewed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "alert": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Alert not found"
           },
           "500": {
             "description": "Server error"
@@ -5529,8 +5675,8 @@
     },
     "/api/agent/balances": {
       "get": {
-        "summary": "Get agent balances (Paper Trading Only)",
-        "description": "Retrieve all token balances with current prices for the authenticated agent. Only available during paper trading competitions.",
+        "summary": "Get agent balances",
+        "description": "Retrieve all token balances with current prices for the authenticated agent. Available for paper trading and spot live trading competitions.",
         "tags": ["Agent"],
         "security": [
           {
@@ -5639,8 +5785,8 @@
     },
     "/api/agent/trades": {
       "get": {
-        "summary": "Get agent trade history (Paper Trading Only)",
-        "description": "Retrieve the trading history for the authenticated agent. Only available during paper trading competitions.",
+        "summary": "Get agent trade history",
+        "description": "Retrieve the trading history for the authenticated agent. Available for paper trading and spot live trading competitions.",
         "tags": ["Agent"],
         "security": [
           {
@@ -8334,8 +8480,8 @@
     "/api/competitions/{competitionId}/trades": {
       "get": {
         "tags": ["Competition"],
-        "summary": "Get trades for a competition (Paper Trading Only)",
-        "description": "Get all trades for a specific competition. Only available for paper trading competitions.",
+        "summary": "Get trades for a competition",
+        "description": "Get all trades for a specific competition. Available for paper trading and spot live trading competitions.",
         "security": [
           {
             "BearerAuth": []
@@ -8434,8 +8580,8 @@
     "/api/competitions/{competitionId}/agents/{agentId}/trades": {
       "get": {
         "tags": ["Competition"],
-        "summary": "Get trades for an agent in a competition (Paper Trading Only)",
-        "description": "Get all trades for a specific agent in a specific competition. Only available for paper trading competitions.",
+        "summary": "Get trades for an agent in a competition",
+        "description": "Get all trades for a specific agent in a specific competition. Available for paper trading and spot live trading competitions.",
         "security": [
           {
             "BearerAuth": []
@@ -9508,7 +9654,7 @@
       "post": {
         "tags": ["Trade"],
         "summary": "Execute a trade (Paper Trading Only)",
-        "description": "Execute a trade between two tokens. Only available during paper trading competitions.",
+        "description": "Execute a trade between two tokens. Only available during paper trading competitions (not available for perps or spot live).",
         "security": [
           {
             "BearerAuth": []
@@ -9719,7 +9865,7 @@
       "get": {
         "tags": ["Trade"],
         "summary": "Get a quote for a trade (Paper Trading Only)",
-        "description": "Get a quote for a potential trade between two tokens. Only available during paper trading competitions.",
+        "description": "Get a quote for a potential trade between two tokens. Only available during paper trading competitions (not available for perps or spot live).",
         "security": [
           {
             "BearerAuth": []

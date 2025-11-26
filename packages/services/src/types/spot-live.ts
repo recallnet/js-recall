@@ -77,15 +77,40 @@ export interface ISpotLiveDataProvider {
    * Get transfer history for self-funding detection
    * Optional - not all providers may support this
    * @param walletAddress Wallet address to monitor
-   * @param since Start date or block number for transfer scanning
+   * @param since Start time or block number for scanning
    * @param chains Array of chains to scan
+   * @param toBlock Optional end block number for scanning (defaults to "latest")
    * @returns Array of deposits/withdrawals
    */
   getTransferHistory?(
     walletAddress: string,
     since: Date | number,
     chains: SpecificChain[],
+    toBlock?: number,
   ): Promise<SpotTransfer[]>;
+
+  /**
+   * Get current token balances for a wallet on a chain
+   * Used during initial sync to establish starting balances
+   * @param walletAddress Wallet address to query
+   * @param chain Chain to query
+   * @returns Array of token balances with contract address and amount
+   */
+  getTokenBalances?(
+    walletAddress: string,
+    chain: SpecificChain,
+  ): Promise<Array<{ contractAddress: string; balance: string }>>;
+
+  /**
+   * Get token decimals for proper balance parsing
+   * @param tokenAddress Token contract address
+   * @param chain Chain where token exists
+   * @returns Number of decimals for the token
+   */
+  getTokenDecimals?(
+    tokenAddress: string,
+    chain: SpecificChain,
+  ): Promise<number>;
 
   /**
    * Get current block number for a chain

@@ -133,6 +133,45 @@ export const perpsCompetitionsLeaderboard = tradingComps.table(
 );
 
 /**
+ * Table to hold stats on spot live trading competitions
+ * Agents ranked by ROI% (simpleReturn) for fair comparison regardless of starting capital
+ * Stores all three values (starting, current, pnl) for explicit calculation and auditability
+ */
+export const spotLiveCompetitionsLeaderboard = tradingComps.table(
+  "spot_live_competitions_leaderboard",
+  {
+    competitionsLeaderboardId: uuid("competitions_leaderboard_id")
+      .primaryKey()
+      .references(() => competitionsLeaderboard.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    simpleReturn: numeric("simple_return", { mode: "number" }).notNull(), // ROI% - primary ranking metric
+    pnl: numeric("pnl", {
+      precision: 30,
+      scale: 15,
+      mode: "number",
+    }).notNull(), // Absolute profit/loss (current - starting)
+    startingValue: numeric("starting_value", {
+      precision: 30,
+      scale: 15,
+      mode: "number",
+    }).notNull(), // Initial portfolio value from first snapshot
+    currentValue: numeric("current_value", {
+      precision: 30,
+      scale: 15,
+      mode: "number",
+    }).notNull(), // Final portfolio value from last snapshot
+    totalTrades: integer("total_trades").notNull().default(0), // Number of on-chain swaps detected
+  },
+  (table) => [
+    index("idx_spot_live_competitions_leaderboard_return").on(
+      table.simpleReturn,
+    ),
+  ],
+);
+
+/**
  * Table for balances of agents in a competition.
  */
 export const balances = tradingComps.table(
@@ -737,7 +776,7 @@ export const spotLiveCompetitionConfig = tradingComps.table(
     inactivityHours: integer("inactivity_hours").default(24),
 
     // Sync configuration
-    syncIntervalMinutes: integer("sync_interval_minutes").default(5),
+    syncIntervalMinutes: integer("sync_interval_minutes").default(2),
 
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),

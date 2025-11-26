@@ -190,8 +190,8 @@ export function configureAgentRoutes(agentController: AgentController): Router {
    * @openapi
    * /api/agent/balances:
    *   get:
-   *     summary: Get agent balances (Paper Trading Only)
-   *     description: Retrieve all token balances with current prices for the authenticated agent. Only available during paper trading competitions.
+   *     summary: Get agent balances
+   *     description: Retrieve all token balances with current prices for the authenticated agent. Available for paper trading and spot live trading competitions.
    *     tags:
    *       - Agent
    *     security:
@@ -270,8 +270,8 @@ export function configureAgentRoutes(agentController: AgentController): Router {
    * @openapi
    * /api/agent/trades:
    *   get:
-   *     summary: Get agent trade history (Paper Trading Only)
-   *     description: Retrieve the trading history for the authenticated agent. Only available during paper trading competitions.
+   *     summary: Get agent trade history
+   *     description: Retrieve the trading history for the authenticated agent. Available for paper trading and spot live trading competitions.
    *     tags:
    *       - Agent
    *     security:

@@ -2221,8 +2221,8 @@ export function configureAdminRoutes(
    *   get:
    *     tags:
    *       - Admin
-   *     summary: Get transfer violations for a perps competition
-   *     description: Returns agents who have made transfers during the competition (mid-competition transfers are prohibited)
+   *     summary: Get transfer violations for a perps or spot live competition
+   *     description: Returns agents who have made transfers during the competition (mid-competition transfers are prohibited for both perps and spot live)
    *     security:
    *       - BearerAuth: []
    *     parameters:
@@ -2262,7 +2262,7 @@ export function configureAdminRoutes(
    *                         description: Number of transfers made during competition
    *                         minimum: 1
    *       400:
-   *         description: Competition is not a perps competition
+   *         description: Competition is not a perps or spot live competition
    *         content:
    *           application/json:
    *             schema:
@@ -2273,7 +2273,7 @@ export function configureAdminRoutes(
    *                   example: false
    *                 error:
    *                   type: string
-   *                   example: Competition is not a perpetual futures competition
+   *                   example: Transfer violations are only applicable to perpetual futures and spot live trading competitions
    *       404:
    *         description: Competition not found
    *         content:
@@ -2293,6 +2293,123 @@ export function configureAdminRoutes(
   router.get(
     "/competition/:competitionId/transfer-violations",
     controller.getCompetitionTransferViolations,
+  );
+
+  /**
+   * @openapi
+   * /api/admin/competition/{competitionId}/spot-live/alerts:
+   *   get:
+   *     tags:
+   *       - Admin
+   *     summary: Get self-funding alerts for a spot live competition
+   *     description: Returns self-funding violation alerts detected via transfer history or balance reconciliation
+   *     parameters:
+   *       - in: path
+   *         name: competitionId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         description: Competition ID
+   *       - in: query
+   *         name: reviewed
+   *         schema:
+   *           type: string
+   *           enum: [true, false, all]
+   *           default: false
+   *         description: Filter by review status
+   *       - in: query
+   *         name: violationType
+   *         schema:
+   *           type: string
+   *           enum: [transfer, balance_reconciliation, all]
+   *         description: Filter by violation type
+   *     responses:
+   *       200:
+   *         description: Alerts retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *                 alerts:
+   *                   type: array
+   *                   items:
+   *                     type: object
+   *       404:
+   *         description: Competition not found
+   *       500:
+   *         description: Server error
+   */
+  router.get(
+    "/competition/:competitionId/spot-live/alerts",
+    controller.getSpotLiveSelfFundingAlerts,
+  );
+
+  /**
+   * @openapi
+   * /api/admin/competition/{competitionId}/spot-live/alerts/{alertId}/review:
+   *   put:
+   *     tags:
+   *       - Admin
+   *     summary: Review a self-funding alert
+   *     description: Mark an alert as reviewed with admin decision and notes
+   *     parameters:
+   *       - in: path
+   *         name: competitionId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         description: Competition ID
+   *       - in: path
+   *         name: alertId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         description: Alert ID
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - reviewNote
+   *               - actionTaken
+   *             properties:
+   *               reviewNote:
+   *                 type: string
+   *                 description: Admin review notes
+   *               actionTaken:
+   *                 type: string
+   *                 enum: [dismissed, disqualified, warning]
+   *                 description: Action taken on this alert
+   *     responses:
+   *       200:
+   *         description: Alert reviewed successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *                 alert:
+   *                   type: object
+   *       404:
+   *         description: Alert not found
+   *       500:
+   *         description: Server error
+   */
+  router.put(
+    "/competition/:competitionId/spot-live/alerts/:alertId/review",
+    controller.reviewSpotLiveSelfFundingAlert,
   );
 
   /**

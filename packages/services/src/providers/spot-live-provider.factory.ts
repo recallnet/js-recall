@@ -1,5 +1,6 @@
 import { Logger } from "pino";
 
+import type { IRpcProvider } from "../types/rpc.js";
 import {
   ISpotLiveDataProvider,
   ProtocolFilter,
@@ -18,12 +19,14 @@ export class SpotLiveProviderFactory {
    * @param config Provider configuration from database
    * @param protocolFilters Optional protocol filters for partnership competitions
    * @param logger Logger instance
+   * @param mockRpcProvider Optional mock RPC provider for testing (dependency injection)
    * @returns Configured spot live data provider
    */
   static createProvider(
     config: SpotLiveProviderConfig,
     protocolFilters: ProtocolFilter[],
     logger: Logger,
+    mockRpcProvider?: IRpcProvider,
   ): ISpotLiveDataProvider {
     logger.info(
       {
@@ -31,6 +34,7 @@ export class SpotLiveProviderFactory {
         provider: config.provider,
         chains: config.chains,
         protocolFiltersCount: protocolFilters.length,
+        usingMockProvider: !!mockRpcProvider,
       },
       `[SpotLiveProviderFactory] Creating provider`,
     );
@@ -41,6 +45,7 @@ export class SpotLiveProviderFactory {
           config,
           protocolFilters,
           logger,
+          mockRpcProvider,
         );
 
       case "envio_indexing":
@@ -63,14 +68,22 @@ export class SpotLiveProviderFactory {
    * @param config Provider configuration
    * @param protocolFilters Protocol filters
    * @param logger Logger instance
+   * @param mockRpcProvider Optional mock RPC provider for testing
    * @returns RPC-based spot live provider
    */
   private static createRpcDirectProvider(
     config: SpotLiveProviderConfig,
     protocolFilters: ProtocolFilter[],
     logger: Logger,
+    mockRpcProvider?: IRpcProvider,
   ): ISpotLiveDataProvider {
-    // Validate RPC-specific config
+    // If mock provider is injected, use it directly (for testing)
+    if (mockRpcProvider) {
+      logger.info(`[SpotLiveProviderFactory] Using injected mock RPC provider`);
+      return new RpcSpotProvider(mockRpcProvider, protocolFilters, logger);
+    }
+
+    // Validate RPC-specific config for production use
     if (!config.provider) {
       throw new Error(
         "Provider name required for rpc_direct type (e.g., 'alchemy', 'quicknode')",
@@ -107,7 +120,7 @@ export class SpotLiveProviderFactory {
     provider: string,
     apiKey: string,
     logger: Logger,
-  ) {
+  ): IRpcProvider {
     switch (provider.toLowerCase()) {
       case "alchemy":
         return new AlchemyRpcProvider(apiKey, 3, 1000, logger);

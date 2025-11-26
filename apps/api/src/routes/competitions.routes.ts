@@ -1034,8 +1034,8 @@ export function configureCompetitionsRoutes(
    *   get:
    *     tags:
    *       - Competition
-   *     summary: Get trades for a competition (Paper Trading Only)
-   *     description: Get all trades for a specific competition. Only available for paper trading competitions.
+   *     summary: Get trades for a competition
+   *     description: Get all trades for a specific competition. Available for paper trading and spot live trading competitions.
    *     security:
    *       - BearerAuth: []
    *     parameters:
@@ -1110,8 +1110,8 @@ export function configureCompetitionsRoutes(
    *   get:
    *     tags:
    *       - Competition
-   *     summary: Get trades for an agent in a competition (Paper Trading Only)
-   *     description: Get all trades for a specific agent in a specific competition. Only available for paper trading competitions.
+   *     summary: Get trades for an agent in a competition
+   *     description: Get all trades for a specific agent in a specific competition. Available for paper trading and spot live trading competitions.
    *     security:
    *       - BearerAuth: []
    *     parameters:

@@ -214,6 +214,18 @@ export async function setup() {
         kind: "Competition",
       })
       .onConflictDoNothing();
+
+    await db
+      .insert(arenas)
+      .values({
+        id: "default-spot-live-arena",
+        name: "Default Spot Live Trading Arena",
+        createdBy: "system",
+        category: "crypto_trading",
+        skill: "spot_live_trading",
+        kind: "Competition",
+      })
+      .onConflictDoNothing();
     log("✅ Default arenas created");
 
     // Start mock Symphony server for perps testing

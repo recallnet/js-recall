@@ -704,11 +704,11 @@ Get portfolio snapshots for a competition, optionally filtered by agent
 
 ##### Summary:
 
-Get transfer violations for a perps competition
+Get transfer violations for a perps or spot live competition
 
 ##### Description:
 
-Returns agents who have made transfers during the competition (mid-competition transfers are prohibited)
+Returns agents who have made transfers during the competition (mid-competition transfers are prohibited for both perps and spot live)
 
 ##### Parameters
 
@@ -718,18 +718,73 @@ Returns agents who have made transfers during the competition (mid-competition t
 
 ##### Responses
 
-| Code | Description                                |
-| ---- | ------------------------------------------ |
-| 200  | Transfer violations retrieved successfully |
-| 400  | Competition is not a perps competition     |
-| 404  | Competition not found                      |
-| 500  | Server error                               |
+| Code | Description                                         |
+| ---- | --------------------------------------------------- |
+| 200  | Transfer violations retrieved successfully          |
+| 400  | Competition is not a perps or spot live competition |
+| 404  | Competition not found                               |
+| 500  | Server error                                        |
 
 ##### Security
 
 | Security Schema | Scopes |
 | --------------- | ------ |
 | BearerAuth      |        |
+
+### /api/admin/competition/{competitionId}/spot-live/alerts
+
+#### GET
+
+##### Summary:
+
+Get self-funding alerts for a spot live competition
+
+##### Description:
+
+Returns self-funding violation alerts detected via transfer history or balance reconciliation
+
+##### Parameters
+
+| Name          | Located in | Description              | Required | Schema        |
+| ------------- | ---------- | ------------------------ | -------- | ------------- |
+| competitionId | path       | Competition ID           | Yes      | string (uuid) |
+| reviewed      | query      | Filter by review status  | No       | string        |
+| violationType | query      | Filter by violation type | No       | string        |
+
+##### Responses
+
+| Code | Description                   |
+| ---- | ----------------------------- |
+| 200  | Alerts retrieved successfully |
+| 404  | Competition not found         |
+| 500  | Server error                  |
+
+### /api/admin/competition/{competitionId}/spot-live/alerts/{alertId}/review
+
+#### PUT
+
+##### Summary:
+
+Review a self-funding alert
+
+##### Description:
+
+Mark an alert as reviewed with admin decision and notes
+
+##### Parameters
+
+| Name          | Located in | Description    | Required | Schema        |
+| ------------- | ---------- | -------------- | -------- | ------------- |
+| competitionId | path       | Competition ID | Yes      | string (uuid) |
+| alertId       | path       | Alert ID       | Yes      | string (uuid) |
+
+##### Responses
+
+| Code | Description                 |
+| ---- | --------------------------- |
+| 200  | Alert reviewed successfully |
+| 404  | Alert not found             |
+| 500  | Server error                |
 
 ### /api/admin/reports/performance
 
@@ -1307,11 +1362,11 @@ Update the profile information for the currently authenticated agent (limited fi
 
 ##### Summary:
 
-Get agent balances (Paper Trading Only)
+Get agent balances
 
 ##### Description:
 
-Retrieve all token balances with current prices for the authenticated agent. Only available during paper trading competitions.
+Retrieve all token balances with current prices for the authenticated agent. Available for paper trading and spot live trading competitions.
 
 ##### Parameters
 
@@ -1340,11 +1395,11 @@ Retrieve all token balances with current prices for the authenticated agent. Onl
 
 ##### Summary:
 
-Get agent trade history (Paper Trading Only)
+Get agent trade history
 
 ##### Description:
 
-Retrieve the trading history for the authenticated agent. Only available during paper trading competitions.
+Retrieve the trading history for the authenticated agent. Available for paper trading and spot live trading competitions.
 
 ##### Parameters
 
@@ -1927,11 +1982,11 @@ Get the timeline for all agents in a competition
 
 ##### Summary:
 
-Get trades for a competition (Paper Trading Only)
+Get trades for a competition
 
 ##### Description:
 
-Get all trades for a specific competition. Only available for paper trading competitions.
+Get all trades for a specific competition. Available for paper trading and spot live trading competitions.
 
 ##### Parameters
 
@@ -1963,11 +2018,11 @@ Get all trades for a specific competition. Only available for paper trading comp
 
 ##### Summary:
 
-Get trades for an agent in a competition (Paper Trading Only)
+Get trades for an agent in a competition
 
 ##### Description:
 
-Get all trades for a specific agent in a specific competition. Only available for paper trading competitions.
+Get all trades for a specific agent in a specific competition. Available for paper trading and spot live trading competitions.
 
 ##### Parameters
 
@@ -2205,7 +2260,7 @@ Execute a trade (Paper Trading Only)
 
 ##### Description:
 
-Execute a trade between two tokens. Only available during paper trading competitions.
+Execute a trade between two tokens. Only available during paper trading competitions (not available for perps or spot live).
 
 ##### Responses
 
@@ -2233,7 +2288,7 @@ Get a quote for a trade (Paper Trading Only)
 
 ##### Description:
 
-Get a quote for a potential trade between two tokens. Only available during paper trading competitions.
+Get a quote for a potential trade between two tokens. Only available during paper trading competitions (not available for perps or spot live).
 
 ##### Parameters
 
