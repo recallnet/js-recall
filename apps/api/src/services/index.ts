@@ -490,7 +490,7 @@ class ServiceRegistry {
     return this._eventIndexingService;
   }
 
-  get transactionIndexingService(): IndexingService | undefined {
+  get transactionIndexingService(): IndexingService {
     if (!this._transactionIndexingService) {
       this._transactionIndexingService =
         IndexingService.createTransactionsIndexingService(
