@@ -114,11 +114,7 @@ class ServiceRegistry {
   private readonly _partnerRepository: PartnerRepository;
   private readonly _paperTradingConfigRepository: PaperTradingConfigRepository;
   private readonly _paperTradingInitialBalancesRepository: PaperTradingInitialBalancesRepository;
-  private readonly _eventIndexingService: IndexingService | undefined;
-  private readonly _transactionIndexingService: IndexingService | undefined;
   private readonly _eventsRepository: EventsRepository;
-  private readonly _eventProcessor: EventProcessor;
-  private readonly _transactionProcessor: TransactionProcessor;
   private readonly _convictionClaimsRepository: ConvictionClaimsRepository;
   private readonly _boostAwardService: BoostAwardService;
   private readonly _privyClient: PrivyClient;
@@ -127,6 +123,10 @@ class ServiceRegistry {
   private readonly _rewardsAllocator: RewardsAllocator;
   private readonly _sportsService: SportsService;
   private readonly _sportsIngesterService: SportsIngesterService;
+  private _eventIndexingService?: IndexingService;
+  private _transactionIndexingService?: IndexingService;
+  private _eventProcessor?: EventProcessor;
+  private _transactionProcessor?: TransactionProcessor;
 
   constructor() {
     // Initialize Privy client (use MockPrivyClient in test mode to avoid real API calls)
@@ -409,34 +409,6 @@ class ServiceRegistry {
       db,
       createLogger("ConvictionClaimsRepository"),
     );
-
-    this._eventProcessor = new EventProcessor(
-      db,
-      this._rewardsRepository,
-      this._eventsRepository,
-      this._stakesRepository,
-      this._boostAwardService,
-      this._competitionService,
-      indexingLogger,
-    );
-
-    const stakingConfig = config.stakingIndex;
-    this._eventIndexingService = IndexingService.createEventsIndexingService(
-      indexingLogger,
-      this._eventProcessor,
-      stakingConfig,
-    );
-
-    this._transactionProcessor = new TransactionProcessor(
-      this._convictionClaimsRepository,
-      indexingLogger,
-    );
-    this._transactionIndexingService =
-      IndexingService.createTransactionsIndexingService(
-        indexingLogger,
-        this._transactionProcessor,
-        stakingConfig,
-      );
   }
 
   public static getInstance(): ServiceRegistry {
@@ -507,11 +479,26 @@ class ServiceRegistry {
     return this._perpsDataProcessor;
   }
 
-  get eventIndexingService(): IndexingService | undefined {
+  get eventIndexingService(): IndexingService {
+    if (!this._eventIndexingService) {
+      this._eventIndexingService = IndexingService.createEventsIndexingService(
+        indexingLogger,
+        this.eventProcessor,
+        config.stakingIndex.getConfig(),
+      );
+    }
     return this._eventIndexingService;
   }
 
-  get transactionIndexingService(): IndexingService | undefined {
+  get transactionIndexingService(): IndexingService {
+    if (!this._transactionIndexingService) {
+      this._transactionIndexingService =
+        IndexingService.createTransactionsIndexingService(
+          indexingLogger,
+          this.transactionProcessor,
+          config.stakingIndex.getConfig(),
+        );
+    }
     return this._transactionIndexingService;
   }
 
@@ -520,6 +507,12 @@ class ServiceRegistry {
   }
 
   get transactionProcessor(): TransactionProcessor {
+    if (!this._transactionProcessor) {
+      this._transactionProcessor = new TransactionProcessor(
+        this._convictionClaimsRepository,
+        indexingLogger,
+      );
+    }
     return this._transactionProcessor;
   }
 
@@ -544,6 +537,17 @@ class ServiceRegistry {
   }
 
   get eventProcessor(): EventProcessor {
+    if (!this._eventProcessor) {
+      this._eventProcessor = new EventProcessor(
+        db,
+        this._rewardsRepository,
+        this._eventsRepository,
+        this._stakesRepository,
+        this._boostAwardService,
+        this._competitionService,
+        indexingLogger,
+      );
+    }
     return this._eventProcessor;
   }
 
