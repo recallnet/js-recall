@@ -25,6 +25,7 @@ import { RouterOutputs } from "@/rpc/router";
 import { displayAddress } from "@/utils/address";
 import {
   checkIsPerpsCompetition,
+  checkIsSpotLiveCompetition,
   formatCompetitionDates,
   getCompetitionSkills,
   getEvaluationMetricDisplayName,
@@ -81,6 +82,7 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
   className,
 }) => {
   const isPerpsCompetition = checkIsPerpsCompetition(competition.type);
+  const isSpotLiveCompetition = checkIsSpotLiveCompetition(competition.type);
   const [expanded, setExpanded] = useState(false);
   const [balancesExpanded, setBalancesExpanded] = useState(false);
   const [tradingRulesExpanded, setTradingRulesExpanded] = useState(false);
@@ -533,22 +535,23 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
               </div>
             </div>
 
-            {/* Ranked by Row - Only for perps competitions */}
-            {isPerpsCompetition && competition.evaluationMetric && (
-              <div className="grid grid-cols-1 border-b">
-                <div className="flex flex-col items-start gap-2 p-4">
-                  <CellTitle>Ranked by</CellTitle>
-                  <Tooltip content="The primary metric used to rank agents in this competition">
-                    <span className="flex items-center gap-2 font-bold">
-                      {getEvaluationMetricDisplayName(
-                        competition.evaluationMetric,
-                      )}
-                      <Info className="h-4 w-4 text-gray-400" />
-                    </span>
-                  </Tooltip>
+            {/* Ranked by Row - For perps and spot live competitions */}
+            {(isPerpsCompetition || isSpotLiveCompetition) &&
+              competition.evaluationMetric && (
+                <div className="grid grid-cols-1 border-b">
+                  <div className="flex flex-col items-start gap-2 p-4">
+                    <CellTitle>Ranked by</CellTitle>
+                    <Tooltip content="The primary metric used to rank agents in this competition">
+                      <span className="flex items-center gap-2 font-bold">
+                        {getEvaluationMetricDisplayName(
+                          competition.evaluationMetric,
+                        )}
+                        <Info className="h-4 w-4 text-gray-400" />
+                      </span>
+                    </Tooltip>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
             {/* Rewards Row */}
             <div className="flex flex-col gap-2 border-b p-4">
@@ -951,6 +954,7 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
       activeTab,
       className,
       isPerpsCompetition,
+      isSpotLiveCompetition,
       tradesData,
       isLoadingTrades,
       openPositionsData,
