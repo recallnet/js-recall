@@ -25,6 +25,7 @@ import {
   ArenaService,
   BalanceService,
   BoostAwardService,
+  BoostBonusService,
   BoostService,
   CalmarRatioService,
   CompetitionRewardService,
@@ -101,6 +102,7 @@ class ServiceRegistry {
   private _competitionRewardService: CompetitionRewardService;
   private _perpsDataProcessor: PerpsDataProcessor;
   private _boostService: BoostService;
+  private _boostBonusService: BoostBonusService;
   private readonly _competitionRepository: CompetitionRepository;
   private readonly _agentRepository: AgentRepository;
   private readonly _perpsRepository: PerpsRepository;
@@ -333,6 +335,15 @@ class ServiceRegistry {
       serviceLogger,
     );
 
+    // Initialize BoostBonusService with its dependencies
+    this._boostBonusService = new BoostBonusService(
+      db,
+      this._boostRepository,
+      this._competitionRepository,
+      this._userRepository,
+      serviceLogger,
+    );
+
     // Initialize RewardsService with its dependencies
     this._rewardsService = new RewardsService(
       this._rewardsRepository,
@@ -511,6 +522,10 @@ class ServiceRegistry {
 
   get boostService(): BoostService {
     return this._boostService;
+  }
+
+  get boostBonusService(): BoostBonusService {
+    return this._boostBonusService;
   }
 
   get privyClient(): PrivyClient {

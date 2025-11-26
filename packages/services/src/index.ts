@@ -7,6 +7,7 @@ export * from "./arena.service.js";
 export * from "./balance.service.js";
 export * from "./boost.service.js";
 export * from "./boost-award.service.js";
+export * from "./boost-bonus.service.js";
 export * from "./calmar-ratio.service.js";
 export * from "./competition-reward.service.js";
 export * from "./sortino-ratio.service.js";
