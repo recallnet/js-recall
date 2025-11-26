@@ -10,6 +10,8 @@ import { BalanceRepository } from "@recallnet/db/repositories/balance";
 import { BoostRepository } from "@recallnet/db/repositories/boost";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { CompetitionRewardsRepository } from "@recallnet/db/repositories/competition-rewards";
+import { ConvictionClaimsRepository } from "@recallnet/db/repositories/conviction-claims";
+import { EventsRepository } from "@recallnet/db/repositories/indexing-events";
 import { LeaderboardRepository } from "@recallnet/db/repositories/leaderboard";
 import { PaperTradingConfigRepository } from "@recallnet/db/repositories/paper-trading-config";
 import { PaperTradingInitialBalancesRepository } from "@recallnet/db/repositories/paper-trading-initial-balances";
@@ -48,9 +50,7 @@ import {
   UserService,
 } from "@recallnet/services";
 import {
-  ConvictionClaimsRepository,
   EventProcessor,
-  EventsRepository,
   IndexingService,
   TransactionProcessor,
 } from "@recallnet/services/indexing";
@@ -72,6 +72,7 @@ import config from "@/config/index.js";
 import { db, dbRead } from "@/database/db.js";
 import {
   configLogger,
+  createLogger,
   indexingLogger,
   repositoryLogger,
   serviceLogger,
@@ -404,7 +405,10 @@ class ServiceRegistry {
       serviceLogger,
     );
 
-    this._convictionClaimsRepository = new ConvictionClaimsRepository(db);
+    this._convictionClaimsRepository = new ConvictionClaimsRepository(
+      db,
+      createLogger("ConvictionClaimsRepository"),
+    );
 
     this._eventProcessor = new EventProcessor(
       db,

@@ -1,13 +1,13 @@
 import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, test } from "vitest";
 
-import { competitions, users } from "@recallnet/db/schema/core/defs";
-import { rewards, rewardsRoots } from "@recallnet/db/schema/rewards/defs";
 import {
   EventData,
-  EventProcessor,
   EventsRepository,
-} from "@recallnet/services/indexing";
+} from "@recallnet/db/repositories/indexing-events";
+import { competitions, users } from "@recallnet/db/schema/core/defs";
+import { rewards, rewardsRoots } from "@recallnet/db/schema/rewards/defs";
+import { EventProcessor } from "@recallnet/services/indexing";
 
 import { db } from "@/database/db.js";
 import { ServiceRegistry } from "@/services/index.js";

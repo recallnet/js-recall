@@ -202,6 +202,16 @@
         "default": "./dist/repositories/conviction-claims.cjs"
       }
     },
+    "./repositories/indexing-events": {
+      "import": {
+        "types": "./dist/repositories/indexing-events.d.ts",
+        "default": "./dist/repositories/indexing-events.js"
+      },
+      "require": {
+        "types": "./dist/repositories/indexing-events.d.cts",
+        "default": "./dist/repositories/indexing-events.cjs"
+      }
+    },
     "./repositories/leaderboard": {
       "import": {
         "types": "./dist/repositories/leaderboard.d.ts",

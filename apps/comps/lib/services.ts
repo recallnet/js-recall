@@ -1,5 +1,7 @@
 import { Hex } from "viem";
 
+import { ConvictionClaimsRepository } from "@recallnet/db/repositories/conviction-claims";
+import { EventsRepository } from "@recallnet/db/repositories/indexing-events";
 import {
   AgentRankService,
   AgentService,
@@ -25,9 +27,7 @@ import {
   UserService,
 } from "@recallnet/services";
 import {
-  ConvictionClaimsRepository,
   EventProcessor,
-  EventsRepository,
   IndexingService,
   TransactionProcessor,
 } from "@recallnet/services/indexing";
@@ -336,7 +336,7 @@ export function getTransactionsIndexingService(): IndexingService {
     const stakingConfig = config.getStakingIndexConfig();
     const logger = createLogger("TransactionsIndexingService");
     const transactionProcessor = new TransactionProcessor(
-      new ConvictionClaimsRepository(db),
+      new ConvictionClaimsRepository(db, logger),
       logger,
     );
     transactionsIndexingService =
