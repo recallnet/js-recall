@@ -83,7 +83,7 @@ async function findMissingClaims() {
   );
 
   // Contract address and hypersync config
-  const stakingConfig = config.stakingIndex;
+  const stakingConfig = config.stakingIndex.getConfig();
   const convictionClaimsContract = stakingConfig.convictionClaimsContract;
   const hypersyncUrl = stakingConfig.hypersyncUrl;
   if (!convictionClaimsContract || !hypersyncUrl) {
