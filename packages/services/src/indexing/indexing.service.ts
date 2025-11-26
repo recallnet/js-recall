@@ -1,12 +1,15 @@
 import { HypersyncClient } from "@envio-dev/hypersync-client";
 import type { Logger } from "pino";
 
-import config from "@/config/index.js";
-import { HypersyncQuery } from "@/indexing/blockchain-config.js";
-import { EventProcessor } from "@/indexing/event-processor.js";
 import { type Defer, defer } from "@/lib/defer.js";
 import { delay } from "@/lib/delay.js";
 
+import { EventProcessor } from "./event-processor.js";
+import {
+  HypersyncQuery,
+  HypersyncQueryProvider,
+  IndexingConfig,
+} from "./hypersync-query.js";
 import { TransactionProcessor } from "./transaction-processor.js";
 
 /**
@@ -39,27 +42,56 @@ export class IndexingService {
   readonly #logger: Logger;
   // readonly #eventHashNames: Record<string, string>;
   readonly #indexingProcessor: EventProcessor | TransactionProcessor;
+  readonly #eventStartBlock: number;
 
   #deferStop: Defer<void> | undefined;
   #abortController: AbortController | undefined;
+
+  static createEventsIndexingService(
+    logger: Logger,
+    eventProcessor: EventProcessor,
+    config: IndexingConfig,
+  ): IndexingService {
+    return new IndexingService(
+      logger,
+      eventProcessor,
+      HypersyncQueryProvider.getEventsQuery(config),
+      config,
+    );
+  }
+
+  static createTransactionsIndexingService(
+    logger: Logger,
+    eventProcessor: TransactionProcessor,
+    config: IndexingConfig,
+  ): IndexingService {
+    return new IndexingService(
+      logger,
+      eventProcessor,
+      HypersyncQueryProvider.getTransactionsQuery(config),
+      config,
+    );
+  }
 
   constructor(
     logger: Logger,
     indexingProcessor: EventProcessor | TransactionProcessor,
     indexingQuery: HypersyncQuery,
+    config: IndexingConfig,
   ) {
     // Hypersync query is distinct to this instance, the query
     // might be indexing events or blocks or transactions
     this.#indexingQuery = indexingQuery;
     this.#client = HypersyncClient.new({
-      url: config.stakingIndex.hypersyncUrl,
-      bearerToken: config.stakingIndex.hypersyncBearerToken,
+      url: config.hypersyncUrl,
+      bearerToken: config.hypersyncBearerToken,
     });
     this.#delayMs = indexingQuery?.delayMs || 3000;
     this.#logger = logger;
     this.#indexingProcessor = indexingProcessor;
     this.#deferStop = undefined;
     this.#abortController = undefined;
+    this.#eventStartBlock = config.eventStartBlock;
   }
 
   /**
@@ -115,24 +147,56 @@ export class IndexingService {
    * @internal
    */
   async loop(query: HypersyncQuery): Promise<void> {
-    const effectiveQuery = {
-      ...query,
-    };
-    const lastBlockNumber = await this.#indexingProcessor.lastBlockNumber();
-    effectiveQuery.fromBlock = Number(lastBlockNumber);
+    const effectiveQuery = await this.#initQuery(query);
+    while (this.isRunning && !this.#abortController?.signal.aborted) {
+      await this.#runUntilTip(effectiveQuery);
+      this.#logger.info("Waiting for new events");
+      await delay(this.#delayMs, this.#abortController?.signal);
+    }
+    this.#deferStop?.resolve();
+  }
+
+  /**
+   * Run a single indexing pass until reaching the tip of the blockchain.
+   *
+   * - Initializes the query with the last processed block number.
+   * - Processes all available blockchain data until the tip is reached.
+   * - Does not loop or wait for new events (unlike `start()`).
+   * - Useful for one-time indexing tasks or testing.
+   *
+   * Usage:
+   * - Call this method when you want to index once without starting a long-running process.
+   * - The method returns when all available data has been processed.
+   */
+  async runOnce(): Promise<void> {
+    const effectiveQuery = await this.#initQuery(this.#indexingQuery);
+    await this.#runUntilTip(effectiveQuery);
+  }
+
+  /**
+   * Process blockchain data until reaching the tip.
+   *
+   * - Continuously streams and processes batches from Hypersync.
+   * - Updates `effectiveQuery.fromBlock` after each successful batch.
+   * - Returns when the tip of the blockchain is reached (no more data available).
+   * - Returns immediately on AbortError without throwing.
+   * - Re-throws all other errors after logging.
+   *
+   * @param effectiveQuery - The query object (mutated to update fromBlock)
+   *
+   * @internal
+   */
+  async #runUntilTip(effectiveQuery: HypersyncQuery): Promise<void> {
     this.#logger.info(
       `Starting indexing from block ${effectiveQuery.fromBlock}`,
     );
-    while (this.isRunning && !this.#abortController?.signal.aborted) {
+    while (true) {
       try {
         const stream = await this.#client.stream(effectiveQuery, {});
         const res = await stream.recv();
         if (!res) {
-          this.#logger.info(
-            "Reached the tip of the blockchain - waiting for new events",
-          );
-          await delay(this.#delayMs, this.#abortController?.signal);
-          continue;
+          this.#logger.info("Reached the tip of the blockchain");
+          return;
         }
 
         await this.#indexingProcessor.process(res);
@@ -141,7 +205,11 @@ export class IndexingService {
         if (res.nextBlock) {
           effectiveQuery.fromBlock = res.nextBlock;
         }
-        await delay(this.#delayMs, this.#abortController?.signal);
+
+        if ((res.data.blocks?.length ?? 0) == 0) {
+          this.#logger.debug("no more blocks -> done");
+          return;
+        }
       } catch (e) {
         if (
           e &&
@@ -149,15 +217,38 @@ export class IndexingService {
           "name" in e &&
           e.name === "AbortError"
         ) {
-          // Silence when AbortError is thrown, just stop the loop
-          break;
+          // Silence when AbortError is thrown, just return
+          return;
         } else {
-          this.#logger.error({ error: e }, "Error in indexing loop");
+          this.#logger.error({ error: e }, "Error in runUntilTip");
           throw e;
         }
       }
     }
-    this.#deferStop?.resolve();
+  }
+
+  /**
+   * Initialize the query with the starting block number.
+   *
+   * - Creates a copy of the provided query.
+   * - Retrieves the last processed block number from the indexing processor.
+   * - Falls back to the configured event start block if no events exist.
+   * - Sets the fromBlock to resume indexing from the correct position.
+   *
+   * @param query - The base query configuration
+   * @returns The initialized query with fromBlock set
+   *
+   * @internal
+   */
+  async #initQuery(query: HypersyncQuery): Promise<HypersyncQuery> {
+    const effectiveQuery = {
+      ...query,
+    };
+    const lastBlockNumber =
+      (await this.#indexingProcessor.lastBlockNumber()) ??
+      this.#eventStartBlock;
+    effectiveQuery.fromBlock = Number(lastBlockNumber);
+    return effectiveQuery;
   }
 
   /**

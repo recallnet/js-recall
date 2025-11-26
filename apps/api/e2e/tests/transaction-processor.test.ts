@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, test } from "vitest";
 
+import { ConvictionClaimsRepository } from "@recallnet/db/repositories/conviction-claims";
 import { seasons } from "@recallnet/db/schema/airdrop/defs";
 import { convictionClaims } from "@recallnet/db/schema/conviction-claims/defs";
+import { TransactionProcessor } from "@recallnet/services/indexing";
 
 import { db } from "@/database/db.js";
-import { ConvictionClaimsRepository } from "@/indexing/conviction-claims.repository.js";
-import { TransactionProcessor } from "@/indexing/transaction-processor.js";
 import { ServiceRegistry } from "@/services/index.js";
 
 describe("TransactionProcessor", () => {

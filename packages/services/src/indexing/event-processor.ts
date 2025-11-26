@@ -2,15 +2,18 @@ import { QueryResponse } from "@envio-dev/hypersync-client";
 import type { Logger } from "pino";
 import { decodeEventLog, hexToBytes } from "viem";
 
+import type {
+  EventData,
+  EventsRepository,
+} from "@recallnet/db/repositories/indexing-events";
 import { RewardsRepository } from "@recallnet/db/repositories/rewards";
 import type { StakesRepository } from "@recallnet/db/repositories/stakes";
-import type { BoostAwardService } from "@recallnet/services";
+import type { Database } from "@recallnet/db/types";
 
-import { db } from "@/database/db.js";
-import { EVENTS, EVENT_HASH_NAMES } from "@/indexing/blockchain-config.js";
-import type { EventData, RawLog } from "@/indexing/blockchain-types.js";
-import type { EventsRepository } from "@/indexing/events.repository.js";
-import type { CompetitionService } from "@/services/index.js";
+import type { BoostAwardService } from "@/boost-award.service.js";
+import type { CompetitionService } from "@/competition.service.js";
+
+import { EVENTS, EVENT_HASH_NAMES } from "./hypersync-query.js";
 
 export { EventProcessor };
 
@@ -58,10 +61,10 @@ class EventProcessor {
   readonly #competitionService: CompetitionService;
 
   readonly #logger: Logger;
-  readonly #db: typeof db;
+  readonly #db: Database;
 
   constructor(
-    database: typeof db,
+    database: Database,
     rewardsRepository: RewardsRepository,
     eventsRepository: EventsRepository,
     stakesRepository: StakesRepository,
@@ -552,7 +555,29 @@ class EventProcessor {
    * Used by the indexing loop to set `fromBlock = lastBlock`
    * so we resume exactly where we left off after restarts.
    */
-  lastBlockNumber(): Promise<bigint> {
+  lastBlockNumber(): Promise<bigint | undefined> {
     return this.#eventsRepository.lastBlockNumber();
   }
 }
+
+/**
+ * Raw log shape as returned by an RPC / Hypersync client before normalization.
+ *
+ * Notes:
+ * - Values may arrive as hex strings or numbers (`blockNumber`, `blockTimestamp`).
+ * - `topics[0]` is always the event signature (topic0).
+ * - Other fields may be missing depending on provider / subscription mode.
+ *
+ * This type is only used transiently inside the indexer pipeline
+ * before conversion into the normalized `EventData` model.
+ */
+export type RawLog = {
+  address: `0x${string}`;
+  blockNumber?: string | number;
+  blockHash?: string;
+  blockTimestamp?: string | number;
+  transactionHash?: string;
+  logIndex?: number;
+  topics: [signature: `0x${string}`, ...args: `0x${string}`[]];
+  data: `0x${string}`;
+};
