@@ -42,7 +42,7 @@ For convenience, we provide an API client that handles authentication automatica
 
 **Contact information:**  
 API Support  
-support@example.com
+info@recall.foundation
 
 **License:** [ISC License](https://opensource.org/licenses/ISC)
 
