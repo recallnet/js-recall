@@ -209,10 +209,6 @@ For convenience, we provide an API client that handles authentication automatica
         description: "Authentication endpoints",
       },
       {
-        name: "Account",
-        description: "Account management endpoints",
-      },
-      {
         name: "User",
         description: "User management endpoints",
       },
