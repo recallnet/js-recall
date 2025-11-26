@@ -272,7 +272,7 @@ export class GameScoringService {
             )
           : 0;
 
-        const finalPrediction = agentPredictions[0];
+        const finalPrediction = hasPredictions ? agentPredictions[0] : null;
 
         await this.#db.transaction(async (tx) => {
           await this.#gamePredictionScoresRepo.upsert(
@@ -281,7 +281,7 @@ export class GameScoringService {
               gameId: game.id,
               agentId,
               timeWeightedBrierScore,
-              finalPrediction: finalPrediction?.predictedWinner || null,
+              finalPrediction: finalPrediction?.predictedWinner ?? null,
               finalConfidence: finalPrediction?.confidence ?? null,
               predictionCount: agentPredictions.length,
             },
