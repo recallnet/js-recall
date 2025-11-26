@@ -21,7 +21,8 @@ export const GET = withCronAuth(async (_: NextRequest) => {
 
     const duration = Date.now() - startTime;
     logger.info(
-      `NFL plays ingester completed successfully in ${duration}ms (ingested ${ingestedCount} games).`,
+      { duration, ingestedCount },
+      "NFL plays ingester completed successfully",
     );
 
     return {
