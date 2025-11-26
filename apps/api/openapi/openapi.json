@@ -38,6 +38,11 @@
         "scheme": "bearer",
         "description": "API key provided in the Authorization header using Bearer token authentication"
       },
+      "AgentApiKey": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Agent API key provided as Bearer token"
+      },
       "PrivyCookie": {
         "type": "apiKey",
         "in": "cookie",
@@ -157,10 +162,6 @@
     {
       "name": "Auth",
       "description": "Authentication endpoints"
-    },
-    {
-      "name": "Account",
-      "description": "Account management endpoints"
     },
     {
       "name": "User",
@@ -8920,7 +8921,7 @@
         ],
         "security": [
           {
-            "bearerAuth": []
+            "BearerAuth": []
           }
         ],
         "responses": {
@@ -10123,7 +10124,7 @@
         "tags": ["NFL"],
         "security": [
           {
-            "bearerAuth": []
+            "BearerAuth": []
           }
         ],
         "parameters": [

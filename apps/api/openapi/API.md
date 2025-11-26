@@ -2062,7 +2062,7 @@ Includes embedded agent information for each position.
 
 | Security Schema | Scopes |
 | --------------- | ------ |
-| bearerAuth      |        |
+| BearerAuth      |        |
 
 ### /api/competitions/{competitionId}/partners
 
@@ -2297,7 +2297,7 @@ Submit a prediction for the winner of a specific game
 
 | Security Schema | Scopes |
 | --------------- | ------ |
-| bearerAuth      |        |
+| BearerAuth      |        |
 
 #### GET
 
