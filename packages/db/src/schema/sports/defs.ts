@@ -87,6 +87,8 @@ export const games = sportsSchema.table(
       scale: 2,
       mode: "number",
     }),
+    awayTeamMoneyLine: integer("away_team_money_line"),
+    homeTeamMoneyLine: integer("home_team_money_line"),
     venue: text("venue"),
     status: gameStatus("status").notNull().default("scheduled"),
     winner: nflTeam("winner"), // Team ticker of winner, set when game is final
@@ -128,6 +130,8 @@ export const gamePlays = sportsSchema.table(
     yardLine: integer("yard_line"),
     yardLineTerritory: text("yard_line_territory"),
     yardsToEndZone: integer("yards_to_end_zone"),
+    awayScore: integer("away_score"),
+    homeScore: integer("home_score"),
     playType: text("play_type"), // "Pass", "Rush", "Kickoff", "Punt", etc.
     team: nflTeam("team").notNull(), // Team with possession
     opponent: nflTeam("opponent").notNull(), // Opposing team
