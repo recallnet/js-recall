@@ -1,13 +1,13 @@
 import { Logger } from "pino";
 
 import { BalanceRepository } from "@recallnet/db/repositories/balance";
+import { PaperTradingInitialBalancesRepository } from "@recallnet/db/repositories/paper-trading-initial-balances";
 import type { SelectBalance } from "@recallnet/db/schema/trading/types";
 
 import { assertUnreachable } from "./lib/typescript-utils.js";
 import {
   CompetitionType,
   SpecificChainBalances,
-  SpecificChainSchema,
   SpecificChainTokens,
 } from "./types/index.js";
 
@@ -24,19 +24,17 @@ export class BalanceService {
   // Cache structure: agentId → competitionId → (tokenAddress → amount)
   private balanceCache: Map<string, Map<string, Map<string, number>>>;
   private balanceRepo: BalanceRepository;
-  private specificChainBalances: SpecificChainBalances;
-  private specificChainTokens: SpecificChainTokens;
+  private paperTradingInitialBalancesRepo: PaperTradingInitialBalancesRepository;
   private logger: Logger;
 
   constructor(
     balanceRepo: BalanceRepository,
-    config: BalanceServiceConfig,
+    paperTradingInitialBalancesRepo: PaperTradingInitialBalancesRepository,
     logger: Logger,
   ) {
     this.balanceCache = new Map();
     this.balanceRepo = balanceRepo;
-    this.specificChainBalances = config.specificChainBalances;
-    this.specificChainTokens = config.specificChainTokens;
+    this.paperTradingInitialBalancesRepo = paperTradingInitialBalancesRepo;
     this.logger = logger;
   }
 
@@ -64,52 +62,7 @@ export class BalanceService {
   }
 
   /**
-   * Helper method to add token balances for specific chains
-   * @param balances The balances map to update
-   */
-  private addSpecificChainTokensToBalances(
-    balances: Map<string, { amount: number; symbol: string }>,
-  ): void {
-    // Process each specific chain that we have balances for
-    Object.entries(this.specificChainBalances).forEach(
-      ([chain, tokenBalances]) => {
-        const specificChain = SpecificChainSchema.parse(chain);
 
-        // Only process chains that we have token configurations for
-        if (
-          specificChain === "eth" ||
-          specificChain === "polygon" ||
-          specificChain === "base" ||
-          specificChain === "svm" ||
-          specificChain === "optimism" ||
-          specificChain === "arbitrum"
-        ) {
-          // Type-safe access to the chain tokens
-          const chainTokens = this.specificChainTokens[specificChain];
-
-          // Add each configured token for this specific chain
-          Object.entries(tokenBalances).forEach(([symbol, amount]) => {
-            // Type assertion for the symbol access
-            const tokenAddress =
-              chainTokens?.[symbol as keyof typeof chainTokens];
-
-            if (tokenAddress && amount > 0) {
-              this.logger.debug(
-                `[BalanceManager] Setting initial balance for specific chain ${chain} ${symbol}: ${amount}`,
-              );
-              balances.set(tokenAddress, { amount, symbol });
-            }
-          });
-        } else {
-          this.logger.warn(
-            `[BalanceManager] No token configuration found for specific chain: ${chain}`,
-          );
-        }
-      },
-    );
-  }
-
-  /**
    * Get an agent's balance for a specific token
    * @param agentId The agent ID
    * @param tokenAddress The token address
@@ -267,7 +220,7 @@ export class BalanceService {
   /**
    * Reset an agent's balances to initial values, based on the competition type.
    *  Behavior by competition type:
-   * - "trading": Resets to standard paper trading balances (5k USDC per chain)
+   * - "trading": Resets to initial balances from database for the competition
    * - "perpetual_futures": Clears all balances (empty balance map)
    * @param agentId The agent ID
    * @param competitionId The competition ID
@@ -289,8 +242,17 @@ export class BalanceService {
       >();
 
       if (competitionType === "trading") {
-        // Paper trading: Reset to standard balances
-        this.addSpecificChainTokensToBalances(initialBalances);
+        const dbInitialBalances =
+          await this.paperTradingInitialBalancesRepo.findByCompetitionId(
+            competitionId,
+          );
+
+        for (const balance of dbInitialBalances) {
+          initialBalances.set(balance.tokenAddress, {
+            amount: balance.amount,
+            symbol: balance.tokenSymbol,
+          });
+        }
       }
 
       // Reset in database
@@ -320,6 +282,11 @@ export class BalanceService {
         case "perpetual_futures":
           this.logger.debug(
             `[BalanceManager] Successfully cleared balances for perps agent ${agentId}`,
+          );
+          break;
+        case "sports_prediction":
+          this.logger.debug(
+            `[BalanceManager] Successfully cleared balances for sports prediction agent ${agentId}`,
           );
           break;
         default:

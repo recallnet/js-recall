@@ -69,6 +69,7 @@ function createMockCompetition(
       engineId: "spot_paper_trading" as const,
       engineVersion: "1.0.0",
       rewardsIneligible: null,
+      boostTimeDecayRate: null,
     };
   } else if (competitionType === "perpetual_futures") {
     return {
@@ -77,6 +78,7 @@ function createMockCompetition(
       engineId: "perpetual_futures" as const,
       engineVersion: "1.0.0",
       rewardsIneligible: null,
+      boostTimeDecayRate: null,
     };
   }
 
@@ -87,6 +89,7 @@ function createMockCompetition(
     engineId: null,
     engineVersion: null,
     rewardsIneligible: null,
+    boostTimeDecayRate: null,
   };
 }
 

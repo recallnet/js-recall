@@ -19,6 +19,7 @@ import {
   RewardsService,
   RiskMetricsService,
   SortinoRatioService,
+  SportsService,
   TradeSimulatorService,
   TradingConstraintsService,
   UserService,
@@ -53,6 +54,8 @@ import {
   competitionRewardsRepository,
   convictionClaimsRepository,
   leaderboardRepository,
+  paperTradingConfigRepository,
+  paperTradingInitialBalancesRepository,
   perpsRepository,
   rewardsRepository,
   stakesRepository,
@@ -82,7 +85,7 @@ export const airdropService = new AirdropService(
 
 export const balanceService = new BalanceService(
   balanceRepository,
-  config,
+  paperTradingInitialBalancesRepository,
   createLogger("BalanceService"),
 );
 
@@ -218,7 +221,12 @@ export const rewardsService = new RewardsService(
   getRewardsAllocator(),
   db,
   createLogger("RewardsService"),
-  config.rewards.boostTimeDecayRate,
+);
+
+export const sportsService = new SportsService(
+  db,
+  competitionRepository,
+  createLogger("SportsService"),
 );
 
 export const competitionService = new CompetitionService(
@@ -234,8 +242,11 @@ export const competitionService = new CompetitionService(
   agentRepository,
   agentScoreRepository,
   arenaRepository,
+  sportsService,
   perpsRepository,
   competitionRepository,
+  paperTradingConfigRepository,
+  paperTradingInitialBalancesRepository,
   stakesRepository,
   userRepository,
   db,

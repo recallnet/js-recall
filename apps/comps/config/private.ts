@@ -59,6 +59,10 @@ const configSchema = z.strictObject({
       .min(1)
       .default("default_encryption_key_do_not_use_in_production"),
   }),
+  sportsDataApi: z.object({
+    apiKey: z.string().default(""),
+    baseUrl: z.url().default("https://api.sportsdata.io/v3/nfl"),
+  }),
   tradingConstraints: z.object({
     defaultMinimum24hVolumeUsd: z.coerce.number().default(100000),
     defaultMinimumFdvUsd: z.coerce.number().default(1000000),
@@ -106,8 +110,6 @@ const configSchema = z.strictObject({
     network: z.string().default(""),
     // Slack webhook URL for rewards notifications
     slackWebhookUrl: z.string().default(""),
-    // Decay rate for boost time calculations
-    boostTimeDecayRate: z.float64(),
   }),
   stakeIndexingEnabled: z.coerce.boolean().default(false),
 });
@@ -153,6 +155,10 @@ const rawConfig = {
     sandboxApiUrl: process.env.NEXT_PUBLIC_SANDBOX_API_URL,
     sandboxAdminApiKey: process.env.SANDBOX_ADMIN_API_KEY,
   },
+  sportsDataApi: {
+    apiKey: process.env.SPORTSDATAIO_API_KEY,
+    baseUrl: process.env.SPORTSDATAIO_BASE_URL,
+  },
   healthCheck: {
     apiKey: process.env.HEALTH_CHECK_API_KEY,
   },
@@ -181,10 +187,6 @@ const rawConfig = {
     network: process.env.REWARDS_NETWORK || "baseSepolia",
     // Slack webhook URL for rewards notifications
     slackWebhookUrl: process.env.REWARDS_SLACK_WEBHOOK_URL,
-    // Decay rate for boost time calculations
-    boostTimeDecayRate: process.env.REWARDS_BOOST_TIME_DECAY_RATE
-      ? parseFloat(process.env.REWARDS_BOOST_TIME_DECAY_RATE)
-      : 0.5,
   },
   stakeIndexingEnabled: process.env.INDEXING_ENABLED,
 };

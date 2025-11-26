@@ -83,6 +83,7 @@ describe("RewardsService", () => {
     engineId: "spot_paper_trading" as const,
     engineVersion: "1.0.0",
     rewardsIneligible: null,
+    boostTimeDecayRate: null,
   });
 
   // Helper function to create a mock leaderboard entry

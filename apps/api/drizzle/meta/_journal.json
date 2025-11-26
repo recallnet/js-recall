@@ -442,6 +442,20 @@
       "when": 1763556336527,
       "tag": "0062_yummy_paladin",
       "breakpoints": true
+    },
+    {
+      "idx": 63,
+      "version": "7",
+      "when": 1763679621151,
+      "tag": "0063_exotic_nocturne",
+      "breakpoints": true
+    },
+    {
+      "idx": 64,
+      "version": "7",
+      "when": 1764102019612,
+      "tag": "0064_lowly_iron_lad",
+      "breakpoints": true
     }
   ]
 }

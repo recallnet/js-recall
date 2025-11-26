@@ -173,8 +173,8 @@ export function CompetitionTable({
                       {comp.totalPositions ?? 0}
                     </TableCell>
                     <TableCell className="w-30 text-secondary-foreground flex items-center text-center">
-                      {/* If a comp is pending, we show `N/A`; else, an undefined best placement means the agent was DQ'd */}
-                      {comp.status === "pending" ? (
+                      {/* If a comp is pending or active, we show `N/A`; else, an undefined best placement means the agent was DQ'd */}
+                      {comp.status === "pending" || comp.status === "active" ? (
                         "N/A"
                       ) : comp.bestPlacement?.rank &&
                         comp.bestPlacement?.totalAgents ? (
