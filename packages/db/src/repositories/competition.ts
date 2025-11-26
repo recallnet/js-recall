@@ -2809,6 +2809,37 @@ export class CompetitionRepository {
   }
 
   /**
+   * Find active competitions for a specific type
+   * @param type Competition type to filter by
+   * @returns Array of active competitions of the requested type
+   */
+  async findActiveCompetitionsByType(type: CompetitionType) {
+    try {
+      const result = await this.#db
+        .select({
+          crossChainTradingType: tradingCompetitions.crossChainTradingType,
+          ...getTableColumns(competitions),
+        })
+        .from(tradingCompetitions)
+        .innerJoin(
+          competitions,
+          eq(tradingCompetitions.competitionId, competitions.id),
+        )
+        .where(
+          and(eq(competitions.status, "active"), eq(competitions.type, type)),
+        );
+
+      return result;
+    } catch (error) {
+      this.#logger.error(
+        { error, type },
+        "[CompetitionRepository] Error in findActiveCompetitionsByType",
+      );
+      throw error;
+    }
+  }
+
+  /**
    * Find competitions that need starting (pending and start_date reached)
    * Excludes sandbox mode competitions. Results are ordered by earliest start_date first.
    * @returns Array of competitions that should be started

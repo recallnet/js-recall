@@ -900,11 +900,15 @@ export async function createSportsPredictionTestCompetition({
   name,
   description,
   gameIds,
+  startDate,
+  endDate,
 }: {
   adminClient: ApiClient;
   name?: string;
   description?: string;
   gameIds: string[];
+  startDate?: string;
+  endDate?: string;
 }): Promise<CreateCompetitionResponse> {
   const competitionName =
     name || `NFL Prediction Test Competition ${crypto.randomUUID()}`;
@@ -915,6 +919,8 @@ export async function createSportsPredictionTestCompetition({
     type: "sports_prediction",
     arenaId: "default-nfl-game-prediction-arena",
     gameIds,
+    startDate,
+    endDate,
   });
 
   if (!result.success) {

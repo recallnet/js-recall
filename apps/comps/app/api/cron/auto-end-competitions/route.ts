@@ -11,6 +11,9 @@ export const GET = withCronAuth(async (_: NextRequest) => {
   logger.info("Starting auto end competitions task...");
 
   try {
+    logger.info("Checking NFL sports competitions for completed games...");
+    await competitionService.processNflCompetitionAutoEndChecks();
+
     // Process competition end date checks
     logger.info("Checking competition end dates...");
     await competitionService.processCompetitionEndDateChecks();

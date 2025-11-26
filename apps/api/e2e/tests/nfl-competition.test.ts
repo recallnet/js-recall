@@ -233,6 +233,107 @@ describe("Sports Prediction Competitions", () => {
     }
   });
 
+  test("should auto-end NFL competition when all games have final scores", async () => {
+    const providerGameId = 19068;
+    const tempClient = new NflTestClient("temp-key");
+    await tempClient.resetMockServer(providerGameId);
+
+    const dbGameId =
+      await services.sportsIngesterService.nflIngesterService.ingestGamePlayByPlay(
+        providerGameId,
+      );
+
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    const competitionName = `NFL Auto End Competition ${Date.now()}`;
+    const createResponse = await createSportsPredictionTestCompetition({
+      adminClient,
+      name: competitionName,
+      description: "Auto end test",
+      gameIds: [dbGameId],
+      endDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    });
+
+    const competition = (createResponse as CreateCompetitionResponse)
+      .competition;
+
+    const { agent } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      userName: `User ${Date.now()}`,
+      userEmail: `user-${Date.now()}@example.com`,
+      agentName: `Agent ${Date.now()}`,
+    });
+
+    await adminClient.addAgentToCompetition(competition.id, agent.id);
+    await adminClient.startCompetition({ competitionId: competition.id });
+
+    const game =
+      await services.sportsService.gamesRepository.findById(dbGameId);
+    if (!game) {
+      throw new Error("Game not found");
+    }
+    await services.sportsService.gamesRepository.finalizeGame(
+      dbGameId,
+      new Date(),
+      game.homeTeam,
+    );
+
+    await services.competitionService.processNflCompetitionAutoEndChecks();
+
+    const updatedCompetition = await adminClient.getCompetition(competition.id);
+    expect(updatedCompetition.success).toBe(true);
+    expect(
+      (updatedCompetition as CompetitionDetailResponse).competition.status,
+    ).toBe("ended");
+  });
+
+  test("should keep NFL competition active if any games are not final", async () => {
+    const providerGameId = 19068;
+    const tempClient = new NflTestClient("temp-key");
+    await tempClient.resetMockServer(providerGameId);
+
+    const dbGameId =
+      await services.sportsIngesterService.nflIngesterService.ingestGamePlayByPlay(
+        providerGameId,
+      );
+
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    const competitionName = `NFL Auto End Pending ${Date.now()}`;
+    const createResponse = await createSportsPredictionTestCompetition({
+      adminClient,
+      name: competitionName,
+      description: "Auto end pending test",
+      gameIds: [dbGameId],
+      endDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    });
+
+    const competition = (createResponse as CreateCompetitionResponse)
+      .competition;
+
+    const { agent } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      userName: `User ${Date.now()}`,
+      userEmail: `user-${Date.now()}@example.com`,
+      agentName: `Agent ${Date.now()}`,
+    });
+
+    await adminClient.addAgentToCompetition(competition.id, agent.id);
+    await adminClient.startCompetition({ competitionId: competition.id });
+
+    await services.competitionService.processNflCompetitionAutoEndChecks();
+
+    const stillActiveCompetition = await adminClient.getCompetition(
+      competition.id,
+    );
+    expect(stillActiveCompetition.success).toBe(true);
+    expect(
+      (stillActiveCompetition as CompetitionDetailResponse).competition.status,
+    ).toBe("active");
+  });
+
   test("should reject prediction if game is not part of competition", async () => {
     const providerGameId1 = 19068;
     const tempClient = new NflTestClient("temp-key");

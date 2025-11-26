@@ -19,6 +19,9 @@ async function autoEndCompetitions() {
   logger.info("Starting auto end competitions task...");
 
   try {
+    logger.info("Checking NFL sports competitions for completed games...");
+    await services.competitionService.processNflCompetitionAutoEndChecks();
+
     // Process competition end date checks
     logger.info("Checking competition end dates...");
     await services.competitionService.processCompetitionEndDateChecks();
