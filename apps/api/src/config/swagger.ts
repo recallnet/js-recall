@@ -83,6 +83,11 @@ For convenience, we provide an API client that handles authentication automatica
           description:
             "API key provided in the Authorization header using Bearer token authentication",
         },
+        AgentApiKey: {
+          type: "http",
+          scheme: "bearer",
+          description: "Agent API key provided as Bearer token",
+        },
         PrivyCookie: {
           type: "apiKey",
           in: "cookie",
