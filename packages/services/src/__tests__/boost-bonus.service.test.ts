@@ -245,7 +245,7 @@ describe("BoostBonusService", () => {
 
     it("allows expiration exactly 60 seconds in future", async () => {
       const amount = 1000n;
-      const expiresAt = new Date(Date.now() + ONE_MINUTE_MS);
+      const expiresAt = new Date(Date.now() + ONE_MINUTE_MS + 100);
 
       setupBasicBoostMocks(amount, expiresAt);
       setupEmptyCompetitions();
