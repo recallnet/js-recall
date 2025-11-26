@@ -109,6 +109,7 @@ export const config = {
       process.env.DATABASE_READ_REPLICA_URL ||
       process.env.DATABASE_URL ||
       "postgresql://postgres:postgres@localhost:5432/trading_simulator",
+    skipMigrations: process.env.DB_SKIP_MIGRATIONS === "true",
   },
   redis: {
     url: process.env.REDIS_URL || "redis://localhost:6379",

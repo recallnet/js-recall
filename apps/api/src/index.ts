@@ -73,9 +73,13 @@ const apiBasePath = config.server.apiPrefix
 
 // Run migrations with distributed lock coordination
 try {
-  apiLogger.info("Attempting to run database migrations...");
-  await migrateDb();
-  apiLogger.info("Database migrations completed successfully");
+  if (!config.database.skipMigrations) {
+    apiLogger.info("Attempting to run database migrations...");
+    await migrateDb();
+    apiLogger.info("Database migrations completed successfully");
+  } else {
+    apiLogger.info("Skipping database migrations...");
+  }
 } catch (error) {
   apiLogger.error(`Database initialization error: ${error}`);
   apiLogger.error("Exiting...");

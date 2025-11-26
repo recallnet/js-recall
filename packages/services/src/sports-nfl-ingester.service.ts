@@ -117,26 +117,94 @@ export class NflIngesterService {
   }
 
   /**
+   * Discover final games that are missing winner or endTime
+   * These games were marked final by schedule sync but need play-by-play data
+   * @returns Array of final games missing scoring data
+   */
+  async discoverUnscoredFinalGames(): Promise<SelectGame[]> {
+    // Find all active NFL competitions
+    const { competitions } = await this.#competitionRepo.findByStatus({
+      status: "active",
+      params: {
+        sort: "createdAt",
+        limit: 100,
+        offset: 0,
+      },
+    });
+    const activeNflCompetitions = competitions.filter(
+      (c) => c.type === "sports_prediction",
+    );
+    if (activeNflCompetitions.length === 0) {
+      this.#logger.debug("No active NFL competitions found");
+      return [];
+    }
+    const allGameIds: string[] = [];
+    for (const competition of activeNflCompetitions) {
+      const gameIds =
+        await this.#competitionGamesRepo.findGameIdsByCompetitionId(
+          competition.id,
+        );
+      allGameIds.push(...gameIds);
+    }
+
+    // Get games without finalization data
+    const uniqueGameIds = [...new Set(allGameIds)];
+    if (uniqueGameIds.length === 0) {
+      this.#logger.debug("No games found in active competitions");
+      return [];
+    }
+    const games = await this.#gamesRepo.findByIds(uniqueGameIds);
+    const unscoredFinalGames = games.filter(
+      (g) => g.status === "final" && (g.winner === null || g.endTime === null),
+    );
+
+    this.#logger.info(
+      { count: unscoredFinalGames.length, total: games.length },
+      "Found final games missing scoring data",
+    );
+
+    return unscoredFinalGames;
+  }
+
+  /**
    * Ingest play-by-play data for all active games in active competitions
+   * Also processes any final games that are missing scoring data
    * @returns Number of games ingested
    */
-  async ingestActiveGames(): Promise<number> {
+  async ingestGamePlays(): Promise<{ count: number; gameIds: string[] }> {
+    // Get both in-progress games and final games missing scoring data
     const activeGames = await this.discoverActiveGames();
+    const unscoredFinalGames = await this.discoverUnscoredFinalGames();
+    const allGamesToProcess = new Map<string, SelectGame>();
+    for (const game of activeGames) {
+      allGamesToProcess.set(game.id, game);
+    }
+    for (const game of unscoredFinalGames) {
+      allGamesToProcess.set(game.id, game);
+    }
 
-    if (activeGames.length === 0) {
-      this.#logger.warn("No active competitions with in-progress games found");
-      return 0;
+    const gamesToIngest = Array.from(allGamesToProcess.values());
+    if (gamesToIngest.length === 0) {
+      this.#logger.debug(
+        "No games to ingest (no in-progress or unscored final games)",
+      );
+      return { count: 0, gameIds: [] };
     }
 
     this.#logger.info(
-      `Ingesting ${activeGames.length} in-progress games across active competitions`,
+      {
+        count: gamesToIngest.length,
+        active: activeGames.length,
+        unscored: unscoredFinalGames.length,
+      },
+      "Ingesting games",
     );
 
     let ingestedCount = 0;
-    for (const game of activeGames) {
+    for (const game of gamesToIngest) {
       try {
         this.#logger.info(
-          `Ingesting game ${game.id} (${game.awayTeam} @ ${game.homeTeam})...`,
+          `Ingesting game ${game.id} (${game.awayTeam} @ ${game.homeTeam}, status: ${game.status})...`,
         );
         await this.ingestGamePlayByPlay(game.providerGameId);
         ingestedCount++;
@@ -150,10 +218,13 @@ export class NflIngesterService {
     }
 
     this.#logger.info(
-      `Successfully ingested ${ingestedCount}/${activeGames.length} games`,
+      `Successfully ingested ${ingestedCount}/${gamesToIngest.length} games`,
     );
 
-    return ingestedCount;
+    return {
+      count: ingestedCount,
+      gameIds: gamesToIngest.map((g) => g.id),
+    };
   }
 
   /**
@@ -429,7 +500,10 @@ export class NflIngesterService {
       score.GlobalGameID,
       tx,
     );
-    const wasAlreadyFinal = existingGame?.status === "final";
+    const wasAlreadyFinal =
+      existingGame?.status === "final" &&
+      existingGame.winner !== null &&
+      existingGame.endTime !== null;
     // If game was already final, return the existing game
     if (wasAlreadyFinal) {
       return { game: existingGame };

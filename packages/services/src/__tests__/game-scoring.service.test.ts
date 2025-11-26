@@ -3,6 +3,7 @@ import { Logger } from "pino";
 import { beforeEach, describe, expect, it } from "vitest";
 import { MockProxy, mock } from "vitest-mock-extended";
 
+import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { CompetitionAggregateScoresRepository } from "@recallnet/db/repositories/competition-aggregate-scores";
 import { CompetitionGamesRepository } from "@recallnet/db/repositories/competition-games";
 import { GamePredictionScoresRepository } from "@recallnet/db/repositories/game-prediction-scores";
@@ -24,6 +25,7 @@ describe("GameScoringService", () => {
   let mockCompetitionAggregateScoresRepo: MockProxy<CompetitionAggregateScoresRepository>;
   let mockGamesRepo: MockProxy<GamesRepository>;
   let mockCompetitionGamesRepo: MockProxy<CompetitionGamesRepository>;
+  let mockCompetitionRepo: MockProxy<CompetitionRepository>;
   let mockDb: MockProxy<Database>;
   let mockTransaction: Transaction;
   let mockLogger: MockProxy<Logger>;
@@ -35,6 +37,7 @@ describe("GameScoringService", () => {
       mock<CompetitionAggregateScoresRepository>();
     mockGamesRepo = mock<GamesRepository>();
     mockCompetitionGamesRepo = mock<CompetitionGamesRepository>();
+    mockCompetitionRepo = mock<CompetitionRepository>();
     mockDb = mock<Database>();
     mockTransaction = {} as Transaction;
     mockDb.transaction.mockImplementation(async (callback) =>
@@ -48,6 +51,7 @@ describe("GameScoringService", () => {
       mockCompetitionAggregateScoresRepo,
       mockGamesRepo,
       mockCompetitionGamesRepo,
+      mockCompetitionRepo,
       mockDb,
       mockLogger,
     );
@@ -116,11 +120,12 @@ describe("GameScoringService", () => {
       );
     });
 
-    it("should return 0 for game with no predictions", async () => {
+    it("should return 0 for game with no predictions and no registered agents", async () => {
       mockGamesRepo.findById.mockResolvedValue(mockGame);
       mockCompetitionGamesRepo.findCompetitionIdsByGameId.mockResolvedValue([
         competitionId,
       ]);
+      mockCompetitionRepo.getAgents.mockResolvedValue([]); // No registered agents
       mockGamePredictionScoresRepo.findByCompetitionAndAgent.mockResolvedValue(
         [],
       );
@@ -161,6 +166,7 @@ describe("GameScoringService", () => {
       mockCompetitionGamesRepo.findCompetitionIdsByGameId.mockResolvedValue([
         competitionId,
       ]);
+      mockCompetitionRepo.getAgents.mockResolvedValue([agent1Id, agent2Id]);
       mockGamePredictionsRepo.findByGame.mockResolvedValue(predictions);
 
       const mockPredictionScore: SelectGamePredictionScore = {
@@ -220,6 +226,7 @@ describe("GameScoringService", () => {
       mockCompetitionGamesRepo.findCompetitionIdsByGameId.mockResolvedValue([
         competitionId,
       ]);
+      mockCompetitionRepo.getAgents.mockResolvedValue([agent1Id]);
       mockGamePredictionsRepo.findByGame.mockResolvedValue(predictions);
 
       const mockScore1: SelectGamePredictionScore = {
@@ -276,6 +283,7 @@ describe("GameScoringService", () => {
       mockCompetitionGamesRepo.findCompetitionIdsByGameId.mockResolvedValue([
         competitionId,
       ]);
+      mockCompetitionRepo.getAgents.mockResolvedValue([agent1Id]);
       mockGamePredictionsRepo.findByGame.mockResolvedValue(predictions);
 
       const mockScore2: SelectGamePredictionScore = {
@@ -343,6 +351,7 @@ describe("GameScoringService", () => {
       mockCompetitionGamesRepo.findCompetitionIdsByGameId.mockResolvedValue([
         competitionId,
       ]);
+      mockCompetitionRepo.getAgents.mockResolvedValue([agent1Id, agent2Id]);
       mockGamePredictionsRepo.findByGame.mockResolvedValue(predictions);
 
       const mockScore3: SelectGamePredictionScore = {
@@ -556,6 +565,7 @@ describe("GameScoringService", () => {
       ];
 
       mockGamesRepo.findById.mockResolvedValue(mockGame);
+      mockCompetitionRepo.getAgents.mockResolvedValue([agentId]);
       mockGamePredictionsRepo.findByGame.mockImplementation(
         async (_gameId, _competitionId, options) => {
           expect(options?.startTime).toEqual(gameStartTime);
@@ -618,6 +628,270 @@ describe("GameScoringService", () => {
           endTime: gameEndTime,
         },
       );
+    });
+  });
+
+  describe("Zero predictions handling", () => {
+    const gameId = randomUUID();
+    const competitionId = randomUUID();
+    const agent1Id = randomUUID();
+    const agent2Id = randomUUID();
+
+    const mockGame: SelectGame = {
+      id: gameId,
+      providerGameId: 19068,
+      season: 2025,
+      week: 1,
+      startTime: new Date("2025-09-08T19:15:00Z"),
+      endTime: new Date("2025-09-08T23:15:00Z"),
+      homeTeam: "CHI",
+      awayTeam: "MIN" as const,
+      spread: null,
+      overUnder: null,
+      homeTeamMoneyLine: null,
+      awayTeamMoneyLine: null,
+      venue: "Soldier Field",
+      status: "final",
+      winner: "MIN" as const,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    it("should record zero score for registered agents with no predictions", async () => {
+      const predictions = [
+        {
+          id: randomUUID(),
+          competitionId,
+          gameId,
+          agentId: agent1Id,
+          predictedWinner: "MIN" as const,
+          confidence: 0.9,
+          reason: "Test",
+          createdAt: new Date("2025-09-08T20:00:00Z"),
+          agentName: null,
+        },
+      ];
+
+      mockGamesRepo.findById.mockResolvedValue(mockGame);
+      mockCompetitionGamesRepo.findCompetitionIdsByGameId.mockResolvedValue([
+        competitionId,
+      ]);
+      mockCompetitionRepo.getAgents.mockResolvedValue([agent1Id, agent2Id]);
+      mockGamePredictionsRepo.findByGame.mockResolvedValue(predictions);
+
+      const mockPredictionScore: SelectGamePredictionScore = {
+        id: randomUUID(),
+        competitionId,
+        gameId,
+        agentId: agent1Id,
+        timeWeightedBrierScore: 0.85,
+        finalPrediction: "MIN" as const,
+        finalConfidence: 0.9,
+        predictionCount: 1,
+        updatedAt: new Date(),
+      };
+      const mockZeroScore: SelectGamePredictionScore = {
+        id: randomUUID(),
+        competitionId,
+        gameId,
+        agentId: agent2Id,
+        timeWeightedBrierScore: 0,
+        finalPrediction: null,
+        finalConfidence: null,
+        predictionCount: 0,
+        updatedAt: new Date(),
+      };
+      mockGamePredictionScoresRepo.upsert
+        .mockResolvedValueOnce(mockPredictionScore)
+        .mockResolvedValueOnce(mockZeroScore);
+
+      mockGamePredictionScoresRepo.findByCompetitionAndAgent
+        .mockResolvedValueOnce([mockPredictionScore])
+        .mockResolvedValueOnce([mockZeroScore]);
+
+      const mockAggregateScore1: SelectCompetitionAggregateScore = {
+        id: randomUUID(),
+        competitionId,
+        agentId: agent1Id,
+        averageBrierScore: 0.85,
+        gamesScored: 1,
+        updatedAt: new Date(),
+      };
+      const mockAggregateScore2: SelectCompetitionAggregateScore = {
+        id: randomUUID(),
+        competitionId,
+        agentId: agent2Id,
+        averageBrierScore: 0,
+        gamesScored: 1,
+        updatedAt: new Date(),
+      };
+      mockCompetitionAggregateScoresRepo.upsert
+        .mockResolvedValueOnce(mockAggregateScore1)
+        .mockResolvedValueOnce(mockAggregateScore2);
+
+      const result = await service.scoreGame(gameId);
+
+      expect(result).toBe(2);
+      expect(mockGamePredictionScoresRepo.upsert).toHaveBeenCalledTimes(2);
+
+      expect(mockGamePredictionScoresRepo.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          agentId: agent1Id,
+          predictionCount: 1,
+          timeWeightedBrierScore: expect.any(Number),
+        }),
+        mockTransaction,
+      );
+
+      expect(mockGamePredictionScoresRepo.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          agentId: agent2Id,
+          predictionCount: 0,
+          timeWeightedBrierScore: 0,
+          finalPrediction: null,
+          finalConfidence: null,
+        }),
+        mockTransaction,
+      );
+
+      expect(mockCompetitionAggregateScoresRepo.upsert).toHaveBeenCalledTimes(
+        2,
+      );
+      expect(mockCompetitionAggregateScoresRepo.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          competitionId,
+          agentId: agent1Id,
+          averageBrierScore: 0.85,
+          gamesScored: 1,
+        }),
+        mockTransaction,
+      );
+      expect(mockCompetitionAggregateScoresRepo.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          competitionId,
+          agentId: agent2Id,
+          averageBrierScore: 0,
+          gamesScored: 1,
+        }),
+        mockTransaction,
+      );
+    });
+
+    it("should record zero scores for all registered agents when no predictions exist", async () => {
+      mockGamesRepo.findById.mockResolvedValue(mockGame);
+      mockCompetitionGamesRepo.findCompetitionIdsByGameId.mockResolvedValue([
+        competitionId,
+      ]);
+      mockCompetitionRepo.getAgents.mockResolvedValue([agent1Id, agent2Id]);
+      mockGamePredictionsRepo.findByGame.mockResolvedValue([]);
+
+      const mockZeroScore1: SelectGamePredictionScore = {
+        id: randomUUID(),
+        competitionId,
+        gameId,
+        agentId: agent1Id,
+        timeWeightedBrierScore: 0,
+        finalPrediction: null,
+        finalConfidence: null,
+        predictionCount: 0,
+        updatedAt: new Date(),
+      };
+      const mockZeroScore2: SelectGamePredictionScore = {
+        id: randomUUID(),
+        competitionId,
+        gameId,
+        agentId: agent2Id,
+        timeWeightedBrierScore: 0,
+        finalPrediction: null,
+        finalConfidence: null,
+        predictionCount: 0,
+        updatedAt: new Date(),
+      };
+      mockGamePredictionScoresRepo.upsert
+        .mockResolvedValueOnce(mockZeroScore1)
+        .mockResolvedValueOnce(mockZeroScore2);
+
+      mockGamePredictionScoresRepo.findByCompetitionAndAgent
+        .mockResolvedValueOnce([mockZeroScore1])
+        .mockResolvedValueOnce([mockZeroScore2]);
+
+      const mockAggregateScore1: SelectCompetitionAggregateScore = {
+        id: randomUUID(),
+        competitionId,
+        agentId: agent1Id,
+        averageBrierScore: 0,
+        gamesScored: 1,
+        updatedAt: new Date(),
+      };
+      const mockAggregateScore2: SelectCompetitionAggregateScore = {
+        id: randomUUID(),
+        competitionId,
+        agentId: agent2Id,
+        averageBrierScore: 0,
+        gamesScored: 1,
+        updatedAt: new Date(),
+      };
+      mockCompetitionAggregateScoresRepo.upsert
+        .mockResolvedValueOnce(mockAggregateScore1)
+        .mockResolvedValueOnce(mockAggregateScore2);
+
+      const result = await service.scoreGame(gameId);
+
+      expect(result).toBe(2);
+      expect(mockGamePredictionScoresRepo.upsert).toHaveBeenCalledTimes(2);
+
+      expect(mockGamePredictionScoresRepo.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          agentId: agent1Id,
+          predictionCount: 0,
+          timeWeightedBrierScore: 0,
+        }),
+        mockTransaction,
+      );
+      expect(mockGamePredictionScoresRepo.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          agentId: agent2Id,
+          predictionCount: 0,
+          timeWeightedBrierScore: 0,
+        }),
+        mockTransaction,
+      );
+
+      expect(mockCompetitionAggregateScoresRepo.upsert).toHaveBeenCalledTimes(
+        2,
+      );
+      expect(mockCompetitionAggregateScoresRepo.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          competitionId,
+          agentId: agent1Id,
+          averageBrierScore: 0,
+          gamesScored: 1,
+        }),
+        mockTransaction,
+      );
+      expect(mockCompetitionAggregateScoresRepo.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          competitionId,
+          agentId: agent2Id,
+          averageBrierScore: 0,
+          gamesScored: 1,
+        }),
+        mockTransaction,
+      );
+    });
+
+    it("should return 0 when no agents are registered", async () => {
+      mockGamesRepo.findById.mockResolvedValue(mockGame);
+      mockCompetitionGamesRepo.findCompetitionIdsByGameId.mockResolvedValue([
+        competitionId,
+      ]);
+      mockCompetitionRepo.getAgents.mockResolvedValue([]);
+      mockGamePredictionsRepo.findByGame.mockResolvedValue([]);
+
+      const result = await service.scoreGame(gameId);
+
+      expect(result).toBe(0);
+      expect(mockGamePredictionScoresRepo.upsert).not.toHaveBeenCalled();
     });
   });
 });
