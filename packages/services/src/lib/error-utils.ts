@@ -42,3 +42,20 @@ export function checkUserUniqueConstraintViolation(
   }
   return undefined;
 }
+
+/**
+ * Check if the error is a foreign key constraint violation
+ * @param error The error to check
+ * @returns The constraint if it is a foreign key violation, undefined otherwise
+ */
+export function checkForeignKeyViolation(error: unknown): string | undefined {
+  const e = error as {
+    code?: string;
+    constraint?: string;
+    message?: string;
+  };
+  if (e?.code === "23503") {
+    return e.constraint;
+  }
+  return undefined;
+}
