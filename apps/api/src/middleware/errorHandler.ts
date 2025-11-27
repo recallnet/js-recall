@@ -1,4 +1,5 @@
 import { NextFunction, Request, Response } from "express";
+import { ZodError } from "zod";
 
 import { ApiError } from "@recallnet/services/types";
 
@@ -16,6 +17,22 @@ const errorHandler = (
 ) => {
   middlewareLogger.error(`Error: ${err.message}`);
   middlewareLogger.error(err.stack);
+
+  // Handle Zod validation errors
+  if (err instanceof ZodError) {
+    return res.status(400).json({
+      success: false,
+      error: "Validation failed",
+      details: err.errors.map((e) => ({
+        field: e.path.join("."),
+        message: e.message,
+        // Include valid values for enum errors
+        ...(e.code === "invalid_enum_value" && {
+          validValues: e.options,
+        }),
+      })),
+    });
+  }
 
   // Handle specific API errors
   if (err instanceof ApiError) {
