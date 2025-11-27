@@ -95,6 +95,7 @@ export interface SportsDataIOScore {
   Season: number;
   Week: number;
   Date: string;
+  DateTimeUTC: string;
   GameEndDateTime: string | null;
   AwayTeam: NflTeam;
   HomeTeam: NflTeam;

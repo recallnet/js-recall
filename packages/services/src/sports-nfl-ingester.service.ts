@@ -14,6 +14,7 @@ import type {
 import type { Database, Transaction } from "@recallnet/db/types";
 
 import { GameScoringService } from "./game-scoring.service.js";
+import { convertLocalToUtc, parseUtcTimestamp } from "./lib/sports-utils.js";
 import { SportsDataIONflProvider } from "./providers/sportsdataio.provider.js";
 import type {
   SportsDataIOGameStatus,
@@ -261,7 +262,7 @@ export class NflIngesterService {
           providerGameId: game.GlobalGameID,
           season: game.Season,
           week: game.Week,
-          startTime: new Date(game.Date),
+          startTime: parseUtcTimestamp(game.DateTimeUTC),
           homeTeam: game.HomeTeam,
           awayTeam: game.AwayTeam,
           spread: game.PointSpread,
@@ -340,7 +341,13 @@ export class NflIngesterService {
       const { game, finalizeContext } = await this.#db.transaction(
         async (tx: Transaction) => {
           const gameResult = await this.#ingestGame(data, tx);
-          await this.#ingestPlays(data, gameResult.game.id, tx);
+          await this.#ingestPlays(
+            data,
+            gameResult.game.id,
+            data.Score.Date,
+            data.Score.DateTimeUTC,
+            tx,
+          );
           return gameResult;
         },
       );
@@ -526,7 +533,12 @@ export class NflIngesterService {
 
         let endTime: Date;
         if (score.GameEndDateTime) {
-          endTime = new Date(score.GameEndDateTime);
+          // GameEndDateTime is in Eastern Time, convert to UTC using the known offset
+          endTime = convertLocalToUtc(
+            score.GameEndDateTime,
+            score.Date,
+            score.DateTimeUTC,
+          );
           this.#logger.debug(
             { gameEndDateTime: score.GameEndDateTime },
             "Using GameEndDateTime from API as game end time",
@@ -535,7 +547,12 @@ export class NflIngesterService {
           const lastPlay = data.Plays.reduce((latest, play) =>
             play.Sequence > latest.Sequence ? play : latest,
           );
-          endTime = new Date(lastPlay.PlayTime);
+          // PlayTime is in Eastern Time, convert to UTC using the known offset
+          endTime = convertLocalToUtc(
+            lastPlay.PlayTime,
+            score.Date,
+            score.DateTimeUTC,
+          );
           this.#logger.debug(
             {
               lastPlayTime: lastPlay.PlayTime,
@@ -561,7 +578,7 @@ export class NflIngesterService {
         providerGameId: score.GlobalGameID,
         season: score.Season,
         week: score.Week,
-        startTime: new Date(score.Date),
+        startTime: parseUtcTimestamp(score.DateTimeUTC),
         homeTeam: score.HomeTeam,
         awayTeam: score.AwayTeam,
         awayTeamMoneyLine: score.AwayTeamMoneyLine,
@@ -619,10 +636,17 @@ export class NflIngesterService {
    * Ingests all plays (predictable and non-predictable) from Plays array,
    * and creates an open play from current game state in Score object.
    * Non-predictable plays have actualOutcome=null and are excluded from predictions.
+   * @param data Play-by-play response data
+   * @param gameId Database game ID
+   * @param referenceLocal Reference local timestamp for timezone conversion
+   * @param referenceUtc Reference UTC timestamp for timezone conversion
+   * @param tx Database transaction
    */
   async #ingestPlays(
     data: SportsDataIOPlayByPlay,
     gameId: string,
+    referenceLocal: string,
+    referenceUtc: string,
     tx: Transaction,
   ): Promise<void> {
     let ingestedCount = 0;
@@ -631,6 +655,12 @@ export class NflIngesterService {
     // First, ingest all completed plays from the Plays array
     for (const play of data.Plays) {
       try {
+        // PlayTime is in Eastern Time, convert to UTC using the known offset
+        const playTimeUtc = convertLocalToUtc(
+          play.PlayTime,
+          referenceLocal,
+          referenceUtc,
+        );
         await this.#gamePlaysRepo.upsert(
           {
             gameId,
@@ -639,7 +669,7 @@ export class NflIngesterService {
             quarterName: play.QuarterName,
             timeRemainingMinutes: play.TimeRemainingMinutes,
             timeRemainingSeconds: play.TimeRemainingSeconds,
-            playTime: new Date(play.PlayTime),
+            playTime: playTimeUtc,
             down: play.Down,
             distance: play.Distance ? parseInt(play.Distance.toString()) : null,
             yardLine: play.YardLine,
