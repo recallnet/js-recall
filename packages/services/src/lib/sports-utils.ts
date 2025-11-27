@@ -1,34 +1,34 @@
 /**
- * Parses a SportsDataIO UTC timestamp by appending 'Z' suffix
- * @param utcTimestamp ISO timestamp string without timezone (from DateTimeUTC field)
- * @returns Date object representing the UTC time
+ * Parses a SportsDataIO UTC timestamp by appending 'Z' suffix.
+ * SportsDataIO DateTimeUTC fields are in UTC but lack the 'Z' suffix.
+ * @param utcTimestamp ISO timestamp string from DateTimeUTC field
+ * @returns Date object in UTC
  */
 export function parseUtcTimestamp(utcTimestamp: string): Date {
-  // SportsDataIO DateTimeUTC fields don't have 'Z' suffix but are in UTC
   return new Date(`${utcTimestamp}Z`);
 }
 
 /**
- * Converts a SportsDataIO local timestamp to UTC using a known UTC/local pair
- * SportsDataIO returns dates in US Eastern Time (aside from DateTimeUTC).
- * For fields without a UTC variant (like PlayTime, GameEndDateTime), we calculate
- * the offset from the known Date/DateTimeUTC pair and apply it.
- * @param localTimestamp ISO timestamp string in Eastern Time
- * @param referenceLocal Reference local timestamp (Date field)
- * @param referenceUtc Reference UTC timestamp (DateTimeUTC field)
- * @returns Date object representing the UTC time
+ * Converts a SportsDataIO Eastern Time timestamp to UTC.
+ *
+ * SportsDataIO returns most timestamps in US Eastern Time (Date, PlayTime, GameEndDateTime),
+ * but also provides DateTimeUTC for game start times. We use the known Eastern/UTC pair
+ * to calculate the offset (which varies between EDT and EST) and apply it.
+ *
+ * @param easternTimestamp ISO timestamp in Eastern Time (e.g., PlayTime, GameEndDateTime)
+ * @param gameStartEastern Game start time in Eastern Time (e.g. `Score.Date` field)
+ * @param gameStartUtc Game start time in UTC (e.g. `Score.DateTimeUTC` field)
+ * @returns Date object in UTC
  */
-export function convertLocalToUtc(
-  localTimestamp: string,
-  referenceLocal: string,
-  referenceUtc: string,
+export function convertEasternToUtc(
+  easternTimestamp: string,
+  gameStartEastern: string,
+  gameStartUtc: string,
 ): Date {
-  // Calculate offset: UTC - Local (in milliseconds)
-  const localDate = new Date(`${referenceLocal}Z`);
-  const utcDate = new Date(`${referenceUtc}Z`);
-  const offsetMs = utcDate.getTime() - localDate.getTime();
-
-  // Apply offset to the local timestamp
-  const localTime = new Date(`${localTimestamp}Z`);
-  return new Date(localTime.getTime() + offsetMs);
+  // Calculate the Eastern to UTC offset from the known pair (handles EDT vs EST) & apply offset
+  const easternDate = new Date(`${gameStartEastern}Z`);
+  const utcDate = new Date(`${gameStartUtc}Z`);
+  const offsetMs = utcDate.getTime() - easternDate.getTime();
+  const eastern = new Date(`${easternTimestamp}Z`);
+  return new Date(eastern.getTime() + offsetMs);
 }

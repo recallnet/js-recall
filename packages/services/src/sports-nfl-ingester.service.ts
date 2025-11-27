@@ -14,7 +14,7 @@ import type {
 import type { Database, Transaction } from "@recallnet/db/types";
 
 import { GameScoringService } from "./game-scoring.service.js";
-import { convertLocalToUtc, parseUtcTimestamp } from "./lib/sports-utils.js";
+import { convertEasternToUtc, parseUtcTimestamp } from "./lib/sports-utils.js";
 import { SportsDataIONflProvider } from "./providers/sportsdataio.provider.js";
 import type {
   SportsDataIOGameStatus,
@@ -534,7 +534,7 @@ export class NflIngesterService {
         let endTime: Date;
         if (score.GameEndDateTime) {
           // GameEndDateTime is in Eastern Time, convert to UTC using the known offset
-          endTime = convertLocalToUtc(
+          endTime = convertEasternToUtc(
             score.GameEndDateTime,
             score.Date,
             score.DateTimeUTC,
@@ -548,7 +548,7 @@ export class NflIngesterService {
             play.Sequence > latest.Sequence ? play : latest,
           );
           // PlayTime is in Eastern Time, convert to UTC using the known offset
-          endTime = convertLocalToUtc(
+          endTime = convertEasternToUtc(
             lastPlay.PlayTime,
             score.Date,
             score.DateTimeUTC,
@@ -656,7 +656,7 @@ export class NflIngesterService {
     for (const play of data.Plays) {
       try {
         // PlayTime is in Eastern Time, convert to UTC using the known offset
-        const playTimeUtc = convertLocalToUtc(
+        const playTimeUtc = convertEasternToUtc(
           play.PlayTime,
           referenceLocal,
           referenceUtc,

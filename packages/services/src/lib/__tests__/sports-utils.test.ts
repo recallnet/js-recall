@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { convertLocalToUtc, parseUtcTimestamp } from "../sports-utils.js";
+import { convertEasternToUtc, parseUtcTimestamp } from "../sports-utils.js";
 
 describe("Timestamp Conversion Utilities", () => {
   describe("parseUtcTimestamp", () => {
@@ -27,17 +27,17 @@ describe("Timestamp Conversion Utilities", () => {
     });
   });
 
-  describe("convertLocalToUtc", () => {
+  describe("convertEasternToUtc", () => {
     it("should convert Eastern Time to UTC using EDT offset (UTC-4)", () => {
       // September 8, 2025: Game at 8:15 PM Eastern (EDT)
-      // Date: "2025-09-08T20:15:00" (Eastern)
-      // DateTimeUTC: "2025-09-09T00:15:00" (UTC)
+      // Score.Date: "2025-09-08T20:15:00" (Eastern)
+      // Score.DateTimeUTC: "2025-09-09T00:15:00" (UTC)
       // PlayTime: "2025-09-08T20:16:03" (Eastern, 1 min after game start)
 
-      const result = convertLocalToUtc(
-        "2025-09-08T20:16:03",
-        "2025-09-08T20:15:00",
-        "2025-09-09T00:15:00",
+      const result = convertEasternToUtc(
+        "2025-09-08T20:16:03", // Eastern timestamp to convert
+        "2025-09-08T20:15:00", // Game start in Eastern
+        "2025-09-09T00:15:00", // Game start in UTC
       );
 
       // Should be 2025-09-09T00:16:03 UTC (4 hours later)
@@ -46,14 +46,14 @@ describe("Timestamp Conversion Utilities", () => {
 
     it("should convert Eastern Time to UTC using EST offset (UTC-5)", () => {
       // November 27, 2025: Game at 1:00 PM Eastern (EST)
-      // Date: "2025-11-27T13:00:00" (Eastern)
-      // DateTimeUTC: "2025-11-27T18:00:00" (UTC)
+      // Score.Date: "2025-11-27T13:00:00" (Eastern)
+      // Score.DateTimeUTC: "2025-11-27T18:00:00" (UTC)
       // PlayTime: "2025-11-27T13:05:00" (Eastern, 5 min after game start)
 
-      const result = convertLocalToUtc(
-        "2025-11-27T13:05:00",
-        "2025-11-27T13:00:00",
-        "2025-11-27T18:00:00",
+      const result = convertEasternToUtc(
+        "2025-11-27T13:05:00", // Eastern timestamp to convert
+        "2025-11-27T13:00:00", // Game start in Eastern
+        "2025-11-27T18:00:00", // Game start in UTC
       );
 
       // Should be 2025-11-27T18:05:00 UTC (5 hours later)
@@ -62,14 +62,14 @@ describe("Timestamp Conversion Utilities", () => {
 
     it("should convert GameEndDateTime correctly during EDT", () => {
       // September 8, 2025: Game ended at 11:33:59 PM Eastern (EDT)
-      // Date: "2025-09-08T20:15:00" (Eastern)
-      // DateTimeUTC: "2025-09-09T00:15:00" (UTC)
+      // Score.Date: "2025-09-08T20:15:00" (Eastern)
+      // Score.DateTimeUTC: "2025-09-09T00:15:00" (UTC)
       // GameEndDateTime: "2025-09-08T23:33:59" (Eastern)
 
-      const result = convertLocalToUtc(
-        "2025-09-08T23:33:59",
-        "2025-09-08T20:15:00",
-        "2025-09-09T00:15:00",
+      const result = convertEasternToUtc(
+        "2025-09-08T23:33:59", // Eastern timestamp to convert
+        "2025-09-08T20:15:00", // Game start in Eastern
+        "2025-09-09T00:15:00", // Game start in UTC
       );
 
       // Should be 2025-09-09T03:33:59 UTC (4 hours later)
@@ -78,14 +78,14 @@ describe("Timestamp Conversion Utilities", () => {
 
     it("should handle timestamps that cross midnight when converted", () => {
       // Hypothetical late game ending after midnight Eastern
-      // Date: "2025-09-08T20:30:00" (Eastern)
-      // DateTimeUTC: "2025-09-09T00:30:00" (UTC)
+      // Score.Date: "2025-09-08T20:30:00" (Eastern)
+      // Score.DateTimeUTC: "2025-09-09T00:30:00" (UTC)
       // GameEndDateTime: "2025-09-09T00:05:00" (Eastern, after midnight)
 
-      const result = convertLocalToUtc(
-        "2025-09-09T00:05:00",
-        "2025-09-08T20:30:00",
-        "2025-09-09T00:30:00",
+      const result = convertEasternToUtc(
+        "2025-09-09T00:05:00", // Eastern timestamp to convert
+        "2025-09-08T20:30:00", // Game start in Eastern
+        "2025-09-09T00:30:00", // Game start in UTC
       );
 
       // Should be 2025-09-09T04:05:00 UTC
