@@ -28,6 +28,7 @@ import type {
 import { AgentService } from "./agent.service.js";
 import { AgentRankService } from "./agentrank.service.js";
 import { BalanceService } from "./balance.service.js";
+import { BoostBonusService } from "./boost-bonus.service.js";
 import { CompetitionRewardService } from "./competition-reward.service.js";
 import { isCompatibleType } from "./lib/arena-validation.js";
 import {
@@ -359,6 +360,7 @@ export class CompetitionService {
   private competitionRewardService: CompetitionRewardService;
   private rewardsService: RewardsService;
   private perpsDataProcessor: PerpsDataProcessor;
+  private boostBonusService: BoostBonusService;
   private agentRepo: AgentRepository;
   private agentScoreRepo: AgentScoreRepository;
   private arenaRepo: ArenaRepository;
@@ -380,6 +382,7 @@ export class CompetitionService {
     competitionRewardService: CompetitionRewardService,
     rewardsService: RewardsService,
     perpsDataProcessor: PerpsDataProcessor,
+    boostBonusService: BoostBonusService,
     agentRepo: AgentRepository,
     agentScoreRepo: AgentScoreRepository,
     arenaRepo: ArenaRepository,
@@ -400,6 +403,7 @@ export class CompetitionService {
     this.competitionRewardService = competitionRewardService;
     this.rewardsService = rewardsService;
     this.perpsDataProcessor = perpsDataProcessor;
+    this.boostBonusService = boostBonusService;
     this.agentRepo = agentRepo;
     this.agentScoreRepo = agentScoreRepo;
     this.arenaRepo = arenaRepo;
@@ -2212,6 +2216,25 @@ export class CompetitionService {
         await this.competitionRepo.updatePrizePools(
           competitionId,
           attoPrizePools,
+          tx,
+        );
+      }
+
+      // Cleanup invalid bonus boosts if boostStartDate was updated
+      if (
+        this.boostBonusService &&
+        updates.boostStartDate !== undefined &&
+        updates.boostStartDate !== null
+      ) {
+        this.logger.info(
+          { competitionId, newBoostStartDate: updates.boostStartDate },
+          "[CompetitionService] boostStartDate updated - cleaning up invalid bonus boosts",
+        );
+
+        await this.boostBonusService.cleanupInvalidBoostBonusesForCompetition(
+          competitionId,
+          updates.boostStartDate,
+          existingCompetition.boostStartDate,
           tx,
         );
       }

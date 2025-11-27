@@ -366,6 +366,7 @@ class ServiceRegistry {
       this._competitionRewardService,
       this._rewardsService,
       this._perpsDataProcessor,
+      this._boostBonusService,
       this._agentRepository,
       agentScoreRepository,
       this._arenaRepository,
