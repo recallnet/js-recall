@@ -1,5 +1,5 @@
 import { randomUUID } from "crypto";
-import { and, count as drizzleCount, eq, ilike, ne, sql } from "drizzle-orm";
+import { and, count as drizzleCount, eq, ilike, inArray, ne, sql } from "drizzle-orm";
 import { Logger } from "pino";
 
 import { users } from "../schema/core/defs.js";
@@ -308,6 +308,73 @@ export class UserRepository {
       return result?.count ?? 0;
     } catch (error) {
       this.#logger.error({ error }, "[UserRepository] Error in count");
+      throw error;
+    }
+  }
+
+  /**
+   * Find users by a list of wallet addresses.
+   * The comparison is case-insensitive by normalizing inputs to lowercase.
+   *
+   * @param walletAddresses Array of wallet addresses to match
+   * @param tx Optional transaction to execute the query within
+   * @returns Matching user records
+   */
+  async findByWalletAddresses(
+    walletAddresses: string[],
+    tx?: Transaction,
+  ): Promise<SelectUser[]> {
+    try {
+      if (walletAddresses.length === 0) return [];
+      const normalized = walletAddresses.map((w) => w.toLowerCase());
+      const executor = tx || this.#db;
+      return await executor
+        .select()
+        .from(users)
+        .where(inArray(users.walletAddress, normalized));
+    } catch (error) {
+      this.#logger.error(
+        { error },
+        "[UserRepository] Error in findByWalletAddresses",
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Reset email/Privy-related fields to NULL for users identified by wallet addresses.
+   * Fields reset: email, privy_id, embedded_wallet_address, wallet_last_verified_at, last_login_at.
+   *
+   * @param walletAddresses Array of wallet addresses to match
+   * @param tx Optional transaction to execute the update within
+   * @returns Number of affected rows
+   */
+  async resetEmailAndPrivyStateByWalletAddresses(
+    walletAddresses: string[],
+    tx?: Transaction,
+  ): Promise<number> {
+    try {
+      if (walletAddresses.length === 0) return 0;
+      const normalized = walletAddresses.map((w) => w.toLowerCase());
+      const executor = tx || this.#db;
+      const updated = await executor
+        .update(users)
+        .set({
+          email: null,
+          privyId: null,
+          embeddedWalletAddress: null,
+          walletLastVerifiedAt: null,
+          lastLoginAt: null,
+          updatedAt: new Date(),
+        })
+        .where(inArray(users.walletAddress, normalized))
+        .returning({ id: users.id });
+      return updated.length;
+    } catch (error) {
+      this.#logger.error(
+        { error },
+        "[UserRepository] Error in resetEmailAndPrivyStateByWalletAddresses",
+      );
       throw error;
     }
   }

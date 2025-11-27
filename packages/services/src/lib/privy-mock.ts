@@ -54,6 +54,18 @@ export class MockPrivyClient {
   }
 
   /**
+   * Mock deletion of a Privy user. Throws when privyId contains "fail" to simulate API failure.
+   * This allows E2E tests to exercise transaction rollback behavior.
+   * @param privyId The Privy user ID to delete
+   */
+  async deleteUser(privyId: string): Promise<void> {
+    if (privyId.toLowerCase().includes("fail")) {
+      throw new Error(`Mock Privy delete failure for ${privyId}`);
+    }
+    // No-op for success path
+  }
+
+  /**
    * Static method to clear all linked wallets (useful for test cleanup)
    */
   static clearLinkedWallets(): void {

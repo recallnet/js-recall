@@ -44,6 +44,7 @@ import {
   AdminRemoveAgentFromCompetitionBodySchema,
   AdminRemoveAgentFromCompetitionParamsSchema,
   AdminReplaceCompetitionPartnersSchema,
+  AdminResetUsersEmailSchema,
   AdminRewardsAllocationSchema,
   AdminSetupSchema,
   AdminStartCompetitionSchema,
@@ -161,6 +162,45 @@ export function makeAdminController(services: ServiceRegistry) {
         }
 
         return res.status(201).json(response);
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Reset users' email and Privy state by wallet addresses (admin-only)
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async resetUsersEmail(req: Request, res: Response, next: NextFunction) {
+      try {
+        const { walletAddresses } = flatParse(
+          AdminResetUsersEmailSchema,
+          req.body,
+        );
+
+        const { userIds } = await services.userService.resetUsersEmailAndPrivy(
+          walletAddresses,
+          services.privyClient,
+        );
+
+        adminLogger.debug(
+          {
+            count: userIds.length,
+            userIds,
+          },
+          "[AdminController] Reset users' email/privy state",
+        );
+
+        return res.status(200).json({
+          success: true,
+          userIds,
+          message:
+            userIds.length > 0
+              ? "Users reset successfully"
+              : "No matching users found",
+        });
       } catch (error) {
         next(error);
       }
