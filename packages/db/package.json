@@ -112,6 +112,66 @@
         "default": "./dist/repositories/boost.cjs"
       }
     },
+    "./repositories/competition-games": {
+      "import": {
+        "types": "./dist/repositories/competition-games.d.ts",
+        "default": "./dist/repositories/competition-games.js"
+      },
+      "require": {
+        "types": "./dist/repositories/competition-games.d.cts",
+        "default": "./dist/repositories/competition-games.cjs"
+      }
+    },
+    "./repositories/competition-aggregate-scores": {
+      "import": {
+        "types": "./dist/repositories/competition-aggregate-scores.d.ts",
+        "default": "./dist/repositories/competition-aggregate-scores.js"
+      },
+      "require": {
+        "types": "./dist/repositories/competition-aggregate-scores.d.cts",
+        "default": "./dist/repositories/competition-aggregate-scores.cjs"
+      }
+    },
+    "./repositories/game-prediction-scores": {
+      "import": {
+        "types": "./dist/repositories/game-prediction-scores.d.ts",
+        "default": "./dist/repositories/game-prediction-scores.js"
+      },
+      "require": {
+        "types": "./dist/repositories/game-prediction-scores.d.cts",
+        "default": "./dist/repositories/game-prediction-scores.cjs"
+      }
+    },
+    "./repositories/game-predictions": {
+      "import": {
+        "types": "./dist/repositories/game-predictions.d.ts",
+        "default": "./dist/repositories/game-predictions.js"
+      },
+      "require": {
+        "types": "./dist/repositories/game-predictions.d.cts",
+        "default": "./dist/repositories/game-predictions.cjs"
+      }
+    },
+    "./repositories/game-plays": {
+      "import": {
+        "types": "./dist/repositories/game-plays.d.ts",
+        "default": "./dist/repositories/game-plays.js"
+      },
+      "require": {
+        "types": "./dist/repositories/game-plays.d.cts",
+        "default": "./dist/repositories/game-plays.cjs"
+      }
+    },
+    "./repositories/games": {
+      "import": {
+        "types": "./dist/repositories/games.d.ts",
+        "default": "./dist/repositories/games.js"
+      },
+      "require": {
+        "types": "./dist/repositories/games.d.cts",
+        "default": "./dist/repositories/games.cjs"
+      }
+    },
     "./repositories/competition": {
       "import": {
         "types": "./dist/repositories/competition.d.ts",
@@ -142,6 +202,16 @@
         "default": "./dist/repositories/conviction-claims.cjs"
       }
     },
+    "./repositories/indexing-events": {
+      "import": {
+        "types": "./dist/repositories/indexing-events.d.ts",
+        "default": "./dist/repositories/indexing-events.js"
+      },
+      "require": {
+        "types": "./dist/repositories/indexing-events.d.cts",
+        "default": "./dist/repositories/indexing-events.cjs"
+      }
+    },
     "./repositories/leaderboard": {
       "import": {
         "types": "./dist/repositories/leaderboard.d.ts",
@@ -160,6 +230,26 @@
       "require": {
         "types": "./dist/repositories/partner.d.cts",
         "default": "./dist/repositories/partner.cjs"
+      }
+    },
+    "./repositories/paper-trading-config": {
+      "import": {
+        "types": "./dist/repositories/paper-trading-config.d.ts",
+        "default": "./dist/repositories/paper-trading-config.js"
+      },
+      "require": {
+        "types": "./dist/repositories/paper-trading-config.d.cts",
+        "default": "./dist/repositories/paper-trading-config.cjs"
+      }
+    },
+    "./repositories/paper-trading-initial-balances": {
+      "import": {
+        "types": "./dist/repositories/paper-trading-initial-balances.d.ts",
+        "default": "./dist/repositories/paper-trading-initial-balances.js"
+      },
+      "require": {
+        "types": "./dist/repositories/paper-trading-initial-balances.d.cts",
+        "default": "./dist/repositories/paper-trading-initial-balances.cjs"
       }
     },
     "./repositories/perps": {
@@ -450,6 +540,26 @@
       "require": {
         "types": "./dist/utils/index.d.cts",
         "default": "./dist/utils/index.cjs"
+      }
+    },
+    "./schema/sports/defs": {
+      "import": {
+        "types": "./dist/schema/sports/defs.d.ts",
+        "default": "./dist/schema/sports/defs.js"
+      },
+      "require": {
+        "types": "./dist/schema/sports/defs.d.cts",
+        "default": "./dist/schema/sports/defs.cjs"
+      }
+    },
+    "./schema/sports/types": {
+      "import": {
+        "types": "./dist/schema/sports/types.d.ts",
+        "default": "./dist/schema/sports/types.js"
+      },
+      "require": {
+        "types": "./dist/schema/sports/types.d.cts",
+        "default": "./dist/schema/sports/types.cjs"
       }
     }
   },

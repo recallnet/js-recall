@@ -1087,27 +1087,18 @@ describe("Admin API", () => {
     await client.loginAsAdmin(adminApiKey);
 
     // First create a competition
-    const createResponse = await axios.post(
-      `${getBaseUrl()}/api/admin/competition/create`,
-      {
-        name: "Test Competition for Update",
-        description: "Original description",
-        type: "trading",
-        externalUrl: "https://example.com",
-        imageUrl: "https://example.com/image.jpg",
-        arenaId: "default-paper-arena",
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${adminApiKey}`,
-        },
-      },
-    );
+    const createResponse = await createTestCompetition({
+      adminClient: client,
+      name: "Test Competition for Update",
+      description: "Original description",
+      type: "trading",
+      externalUrl: "https://example.com",
+      imageUrl: "https://example.com/image.jpg",
+    });
 
-    expect(createResponse.status).toBe(201);
-    expect(createResponse.data.success).toBe(true);
-    expect(createResponse.data.competition).toBeDefined();
-    const competitionId = createResponse.data.competition.id;
+    expect(createResponse.success).toBe(true);
+    expect(createResponse.competition).toBeDefined();
+    const competitionId = createResponse.competition.id;
 
     // Now update the competition
     const updateResponse = await axios.put(
@@ -1148,22 +1139,14 @@ describe("Admin API", () => {
     await client.loginAsAdmin(adminApiKey);
 
     // Create a competition first
-    const createResponse = await axios.post(
-      `${getBaseUrl()}/api/admin/competition/create`,
-      {
-        name: "Test Competition for Auth Test",
-        description: "Test description",
-        arenaId: "default-paper-arena",
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${adminApiKey}`,
-        },
-      },
-    );
+    const createResponse = await createTestCompetition({
+      adminClient: client,
+      name: "Test Competition for Auth Test",
+      description: "Test description",
+    });
 
-    expect(createResponse.status).toBe(201);
-    const competitionId = createResponse.data.competition.id;
+    expect(createResponse.success).toBe(true);
+    const competitionId = createResponse.competition.id;
 
     // Try to update without auth - should fail
     try {
@@ -1217,22 +1200,14 @@ describe("Admin API", () => {
     await client.loginAsAdmin(adminApiKey);
 
     // Create a competition first
-    const createResponse = await axios.post(
-      `${getBaseUrl()}/api/admin/competition/create`,
-      {
-        name: "Test Competition for Validation",
-        description: "Test description",
-        arenaId: "default-paper-arena",
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${adminApiKey}`,
-        },
-      },
-    );
+    const createResponse = await createTestCompetition({
+      adminClient: client,
+      name: "Test Competition for Validation",
+      description: "Test description",
+    });
 
-    expect(createResponse.status).toBe(201);
-    const competitionId = createResponse.data.competition.id;
+    expect(createResponse.success).toBe(true);
+    const competitionId = createResponse.competition.id;
 
     // Try to update with invalid type
     try {
@@ -1687,24 +1662,15 @@ describe("Admin API", () => {
     await client.loginAsAdmin(adminApiKey);
 
     // First create a competition
-    const createResponse = await axios.post(
-      `${getBaseUrl()}/api/admin/competition/create`,
-      {
-        name: "Test Competition with Rewards",
-        description: "Competition to test rewards update",
-        type: "trading",
-        arenaId: "default-paper-arena",
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${adminApiKey}`,
-        },
-      },
-    );
+    const createResponse = await createTestCompetition({
+      adminClient: client,
+      name: "Test Competition with Rewards",
+      description: "Competition to test rewards update",
+      type: "trading",
+    });
 
-    expect(createResponse.status).toBe(201);
-    expect(createResponse.data.success).toBe(true);
-    const competitionId = createResponse.data.competition.id;
+    expect(createResponse.success).toBe(true);
+    const competitionId = createResponse.competition.id;
 
     // Now update the competition with rewards
     const updateResponse = await axios.put(
@@ -2057,23 +2023,15 @@ describe("Admin API", () => {
     await client.loginAsAdmin(adminApiKey);
 
     // First create a competition with initial rewards
-    const createResponse = await axios.post(
-      `${getBaseUrl()}/api/admin/competition/create`,
-      {
-        name: "Atomic Test Competition",
-        description: "Testing atomic updates",
-        type: "trading",
-        arenaId: "default-paper-arena",
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${adminApiKey}`,
-        },
-      },
-    );
+    const createResponse = await createTestCompetition({
+      adminClient: client,
+      name: "Atomic Test Competition",
+      description: "Testing atomic updates",
+      type: "trading",
+    });
 
-    expect(createResponse.status).toBe(201);
-    const competitionId = createResponse.data.competition.id;
+    expect(createResponse.success).toBe(true);
+    const competitionId = createResponse.competition.id;
 
     // Add initial rewards
     await axios.put(
@@ -2139,22 +2097,15 @@ describe("Admin API", () => {
     await client.loginAsAdmin(adminApiKey);
 
     // Create a competition
-    const createResponse = await axios.post(
-      `${getBaseUrl()}/api/admin/competition/create`,
-      {
-        name: "Trading Constraints Test",
-        description: "Testing constraints update",
-        type: "trading",
-        arenaId: "default-paper-arena",
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${adminApiKey}`,
-        },
-      },
-    );
+    const createResponse = await createTestCompetition({
+      adminClient: client,
+      name: "Trading Constraints Test",
+      description: "Testing constraints update",
+      type: "trading",
+    });
 
-    const competitionId = createResponse.data.competition.id;
+    expect(createResponse.success).toBe(true);
+    const competitionId = createResponse.competition.id;
 
     // Update with all components atomically
     const updateResponse = await axios.put(
@@ -2259,24 +2210,16 @@ describe("Admin API", () => {
     const initialConstraintCount = allConstraints.length;
 
     // Try another creation that should succeed to verify the count
-    const validResponse = await axios.post(
-      `${getBaseUrl()}/api/admin/competition/create`,
-      {
-        name: "Valid Competition After Rollback",
-        description: "This should succeed",
-        tradingType: "disallowAll",
-        sandboxMode: false,
-        type: "trading",
-        arenaId: "default-paper-arena",
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${adminApiKey}`,
-        },
-      },
-    );
+    const validResponse = await createTestCompetition({
+      adminClient: client,
+      name: "Valid Competition After Rollback",
+      description: "This should succeed",
+      tradingType: "disallowAll",
+      sandboxMode: false,
+      type: "trading",
+    });
 
-    expect(validResponse.data.success).toBe(true);
+    expect(validResponse.success).toBe(true);
 
     const newConstraints = await db.select().from(tradingConstraints);
     expect(newConstraints.length).toBe(initialConstraintCount + 1);
@@ -2286,37 +2229,29 @@ describe("Admin API", () => {
     const client = createTestClient(getBaseUrl());
     await client.loginAsAdmin(adminApiKey);
 
-    const createResponse = await axios.post(
-      `${getBaseUrl()}/api/admin/competition/create`,
-      {
-        name: "Atomic Create Test",
-        description: "Testing atomic creation",
-        tradingType: "disallowAll",
-        sandboxMode: false,
-        type: "trading",
-        arenaId: "default-paper-arena",
-        tradingConstraints: {
-          minimumPairAgeHours: 96,
-          minimum24hVolumeUsd: 75000,
-          minimumLiquidityUsd: 150000,
-          minimumFdvUsd: 500000,
-        },
-        rewards: {
-          1: 10000,
-          2: 5000,
-          3: 2000,
-          4: 1000,
-        },
+    const createResponse = (await client.createCompetition({
+      name: "Atomic Create Test",
+      description: "Testing atomic creation",
+      tradingType: "disallowAll",
+      sandboxMode: false,
+      type: "trading",
+      arenaId: "default-paper-arena",
+      tradingConstraints: {
+        minimumPairAgeHours: 96,
+        minimum24hVolumeUsd: 75000,
+        minimumLiquidityUsd: 150000,
+        minimumFdvUsd: 500000,
       },
-      {
-        headers: {
-          Authorization: `Bearer ${adminApiKey}`,
-        },
+      rewards: {
+        1: 10000,
+        2: 5000,
+        3: 2000,
+        4: 1000,
       },
-    );
+    })) as CreateCompetitionResponse;
 
-    expect(createResponse.data.success).toBe(true);
-    const competitionId = createResponse.data.competition.id;
+    expect(createResponse.success).toBe(true);
+    const competitionId = createResponse.competition.id;
 
     // Verify all data was created atomically in the database
     const [competition] = await db
@@ -2349,16 +2284,15 @@ describe("Admin API", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Create a spot trading competition
-    const createResponse = await adminClient.createCompetition({
+    const createResponse = await createTestCompetition({
+      adminClient,
       name: "Competition To Convert to Perps",
       description: "Test converting spot to perps",
       type: "trading",
-      arenaId: "default-paper-arena",
     });
 
     expect(createResponse.success).toBe(true);
-    const competitionId = (createResponse as CreateCompetitionResponse)
-      .competition.id;
+    const competitionId = createResponse.competition.id;
 
     // Verify it's a trading competition
     const detailsBeforeUpdate = await adminClient.getCompetition(competitionId);
@@ -2476,11 +2410,11 @@ describe("Admin API", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Create a spot trading competition
-    const createResponse = await adminClient.createCompetition({
+    const createResponse = await createTestCompetition({
+      adminClient,
       name: "Competition Missing PerpsProvider",
       description: "Test missing perpsProvider validation",
       type: "trading",
-      arenaId: "default-paper-arena",
     });
 
     expect(createResponse.success).toBe(true);
@@ -2515,11 +2449,11 @@ describe("Admin API", () => {
     });
 
     // Create a pending competition
-    const createResponse = await adminClient.createCompetition({
+    const createResponse = await createTestCompetition({
+      adminClient,
       name: "Pending Competition With Agents",
       description: "Test type conversion with registered agents",
       type: "trading",
-      arenaId: "default-paper-arena",
     });
 
     expect(createResponse.success).toBe(true);
@@ -2575,6 +2509,7 @@ describe("Admin API", () => {
       name: "Competition with Prize Pools",
       description: "Testing prize pool creation",
       type: "trading",
+      arenaId: "default-paper-arena",
       prizePools: {
         agent: 1000,
         users: 500,
@@ -2610,11 +2545,12 @@ describe("Admin API", () => {
     await client.loginAsAdmin(adminApiKey);
 
     // First create a competition without prize pools
-    const createResponse = (await client.createCompetition({
+    const createResponse = await createTestCompetition({
+      adminClient: client,
       name: "Competition to Update with Prize Pools",
       description: "Testing prize pool updates",
       type: "trading",
-    })) as CreateCompetitionResponse;
+    });
 
     expect(createResponse.success).toBe(true);
     const competitionId = createResponse.competition.id;
@@ -2740,11 +2676,11 @@ describe("Admin API", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     // First create a competition without minimum stake
-    const createResponse = await adminClient.createCompetition({
+    const createResponse = await createTestCompetition({
+      adminClient,
       name: "Competition to Update with Minimum Stake",
       description: "Test updating competition with minimum stake",
       type: "trading",
-      arenaId: "default-paper-arena",
     });
 
     expect(createResponse.success).toBe(true);
@@ -2850,7 +2786,7 @@ describe("Admin API", () => {
     expect(createResponse1.success).toBe(false);
     expect(createResponse1.status).toEqual(400);
     expect(createResponse1.error).toContain(
-      'type (invalid option: expected one of "trading"|"perpetual_futures")',
+      'type (invalid option: expected one of "trading"|"perpetual_futures"|"sports_prediction")',
     );
 
     const createResponse2 = (await adminClient.createCompetition({
@@ -2869,14 +2805,13 @@ describe("Admin API", () => {
       "minimumStake (expected number, received string)",
     );
 
-    const {
-      competition: { id: competitionId },
-    } = (await adminClient.createCompetition({
+    const createResponse = await createTestCompetition({
+      adminClient,
       name: "Competition to Update with Invalid Fields",
-      arenaId: "default-paper-arena",
       description: "Test updating competition with invalid fields",
       type: "trading",
-    })) as CreateCompetitionResponse;
+    });
+    const competitionId = createResponse.competition.id;
 
     const updateResponse = (await adminClient.updateCompetition(competitionId, {
       name: "Competition to Update with Invalid Fields",
@@ -3207,10 +3142,10 @@ describe("Admin API", () => {
     });
 
     // Create basic competition
-    const createResponse = await adminClient.createCompetition({
+    const createResponse = await createTestCompetition({
+      adminClient,
       name: "Basic Competition",
       type: "trading",
-      arenaId: "default-paper-arena",
     });
     expect(createResponse.success).toBe(true);
     const competitionId = (createResponse as CreateCompetitionResponse)
@@ -3495,7 +3430,8 @@ describe("Admin API", () => {
     const partnerId = (partnerResponse as CreatePartnerResponse).partner.id;
 
     // Create competition
-    const compResponse = await adminClient.createCompetition({
+    const compResponse = await createTestCompetition({
+      adminClient,
       name: "Assoc Competition",
       type: "trading",
     });
@@ -3579,7 +3515,8 @@ describe("Admin API", () => {
     });
     const partnerId = (partnerResponse as CreatePartnerResponse).partner.id;
 
-    const compResponse = await adminClient.createCompetition({
+    const compResponse = await createTestCompetition({
+      adminClient,
       name: "Position Competition",
       type: "trading",
     });

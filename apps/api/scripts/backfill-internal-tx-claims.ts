@@ -83,8 +83,9 @@ async function findMissingClaims() {
   );
 
   // Contract address and hypersync config
-  const convictionClaimsContract = config.stakingIndex.convictionClaimsContract;
-  const hypersyncUrl = config.stakingIndex.hypersyncUrl;
+  const stakingConfig = config.stakingIndex.getConfig();
+  const convictionClaimsContract = stakingConfig.convictionClaimsContract;
+  const hypersyncUrl = stakingConfig.hypersyncUrl;
   if (!convictionClaimsContract || !hypersyncUrl) {
     throw new Error("invalid config, need hypersync and contract");
   }
@@ -372,7 +373,7 @@ async function findMissingClaims() {
         };
 
         const client = HypersyncClient.new({
-          url: config.stakingIndex.hypersyncUrl!,
+          url: stakingConfig.hypersyncUrl,
         });
         const blockRes = await client.get(blockQuery);
 

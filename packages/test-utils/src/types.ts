@@ -562,6 +562,7 @@ export interface Competition {
     reward: number;
     agentId?: string;
   }[];
+  gameIds?: string[] | null;
 }
 
 // Leaderboard entry (per-competition leaderboard)

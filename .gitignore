@@ -54,6 +54,9 @@ apps/api/**/*.log
 apps/api/*.log
 apps/api/baseline/*.sql
 
+# Cursor plans
+.cursor/plans/
+
 # Misc
 .DS_Store
 *.pem

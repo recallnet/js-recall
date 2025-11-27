@@ -226,6 +226,63 @@ export async function registerUserAndAgentAndGetClient({
 }
 
 /**
+ * Default paper trading initial balances for test competitions
+ * Matches all initial balances from .env.test to ensure test consistency
+ */
+export const DEFAULT_PAPER_TRADING_INITIAL_BALANCES: Array<{
+  specificChain: string;
+  tokenSymbol: string;
+  amount: number;
+}> = [
+  // Solana (SVM) balances
+  {
+    specificChain: "svm",
+    tokenSymbol: "sol",
+    amount: 10, // INITIAL_SVM_SOL_BALANCE
+  },
+  {
+    specificChain: "svm",
+    tokenSymbol: "usdc",
+    amount: 5000, // INITIAL_SVM_USDC_BALANCE
+  },
+  {
+    specificChain: "svm",
+    tokenSymbol: "usdt",
+    amount: 1000, // INITIAL_SVM_USDT_BALANCE
+  },
+  // Ethereum balances
+  {
+    specificChain: "eth",
+    tokenSymbol: "eth",
+    amount: 1, // INITIAL_ETH_ETH_BALANCE
+  },
+  {
+    specificChain: "eth",
+    tokenSymbol: "usdc",
+    amount: 5000, // INITIAL_ETH_USDC_BALANCE
+  },
+  // Note: INITIAL_ETH_USDT_BALANCE=0, so we skip it (zero amounts don't add value)
+  // Optimism balances
+  {
+    specificChain: "optimism",
+    tokenSymbol: "usdc",
+    amount: 200, // INITIAL_OPTIMISM_USDC_BALANCE
+  },
+  // Polygon balances
+  {
+    specificChain: "polygon",
+    tokenSymbol: "usdc",
+    amount: 200, // INITIAL_POLYGON_USDC_BALANCE
+  },
+  // Arbitrum balances
+  {
+    specificChain: "arbitrum",
+    tokenSymbol: "usdc",
+    amount: 200, // INITIAL_ARBITRUM_USDC_BALANCE
+  },
+];
+
+/**
  * Start a competition with given agents
  */
 export async function startTestCompetition({
@@ -237,6 +294,7 @@ export async function startTestCompetition({
   imageUrl,
   tradingConstraints,
   rewardsIneligible,
+  paperTradingInitialBalances,
 }: {
   adminClient: ApiClient;
   name?: string;
@@ -246,6 +304,11 @@ export async function startTestCompetition({
   imageUrl?: string;
   tradingConstraints?: TradingConstraints;
   rewardsIneligible?: string[];
+  paperTradingInitialBalances?: Array<{
+    specificChain: string;
+    tokenSymbol: string;
+    amount: number;
+  }>;
 }): Promise<StartCompetitionResponse> {
   const competitionName = name || `Test competition ${Date.now()}`;
   const result = await adminClient.startCompetition({
@@ -257,6 +320,8 @@ export async function startTestCompetition({
     imageUrl,
     tradingConstraints,
     arenaId: "default-paper-arena",
+    paperTradingInitialBalances:
+      paperTradingInitialBalances || DEFAULT_PAPER_TRADING_INITIAL_BALANCES,
   });
 
   if (!result.success) {
@@ -287,6 +352,7 @@ export async function createTestCompetition({
   maxParticipants,
   tradingConstraints,
   rewardsIneligible,
+  paperTradingInitialBalances,
 }: {
   adminClient: ApiClient;
   name?: string;
@@ -305,6 +371,11 @@ export async function createTestCompetition({
   maxParticipants?: number;
   tradingConstraints?: TradingConstraints;
   rewardsIneligible?: string[];
+  paperTradingInitialBalances?: Array<{
+    specificChain: string;
+    tokenSymbol: string;
+    amount: number;
+  }>;
 }): Promise<CreateCompetitionResponse> {
   const competitionName = name || `Test competition ${Date.now()}`;
   const result = await adminClient.createCompetition({
@@ -326,6 +397,8 @@ export async function createTestCompetition({
     tradingConstraints,
     rewardsIneligible,
     arenaId: "default-paper-arena",
+    paperTradingInitialBalances:
+      paperTradingInitialBalances || DEFAULT_PAPER_TRADING_INITIAL_BALANCES,
   });
 
   if (!result.success) {
@@ -662,6 +735,18 @@ async function ensureDefaultArenas() {
       kind: "Competition",
     })
     .onConflictDoNothing();
+
+  await db
+    .insert(arenas)
+    .values({
+      id: "default-nfl-game-prediction-arena",
+      name: "Default NFL Game Prediction Arena",
+      createdBy: "system",
+      category: "sports",
+      skill: "sports_prediction",
+      kind: "Competition",
+    })
+    .onConflictDoNothing();
 }
 
 /**
@@ -805,4 +890,173 @@ export async function startPerpsTestCompetition({
   }
 
   return result as StartCompetitionResponse;
+}
+
+/**
+ * Create a sports (NFL) game prediction competition
+ */
+export async function createSportsPredictionTestCompetition({
+  adminClient,
+  name,
+  description,
+  gameIds,
+}: {
+  adminClient: ApiClient;
+  name?: string;
+  description?: string;
+  gameIds: string[];
+}): Promise<CreateCompetitionResponse> {
+  const competitionName =
+    name || `NFL Prediction Test Competition ${crypto.randomUUID()}`;
+  const result = await adminClient.createCompetition({
+    name: competitionName,
+    description:
+      description || `NFL prediction test competition for ${competitionName}`,
+    type: "sports_prediction",
+    arenaId: "default-nfl-game-prediction-arena",
+    gameIds,
+  });
+
+  if (!result.success) {
+    throw new Error("Failed to create sports game prediction competition");
+  }
+
+  return result as CreateCompetitionResponse;
+}
+
+/**
+ * NFL Test Client
+ * Wrapper around NFL API endpoints and mock server controls
+ */
+export class NflTestClient {
+  private client: ApiClient;
+  private baseUrl: string;
+
+  constructor(apiKey: string, baseUrl: string = "http://localhost:4569") {
+    this.client = new ApiClient(apiKey);
+    this.baseUrl = baseUrl;
+  }
+
+  /**
+   * Get all games for a competition
+   */
+  async getGames(competitionId: string) {
+    return this.client.getNflGames(competitionId);
+  }
+
+  /**
+   * Get competition rules
+   */
+  async getRules(competitionId: string) {
+    return this.client.getNflRules(competitionId);
+  }
+
+  /**
+   * Get specific game info
+   */
+  async getGameInfo(competitionId: string, gameId: string) {
+    return this.client.getNflGameInfo(competitionId, gameId);
+  }
+
+  /**
+   * Get game plays (play-by-play data)
+   */
+  async getGamePlays(
+    competitionId: string,
+    gameId: string,
+    limit: number = 50,
+    offset: number = 0,
+    latest: boolean = false,
+  ) {
+    return this.client.getNflGamePlays(
+      competitionId,
+      gameId,
+      limit,
+      offset,
+      latest,
+    );
+  }
+
+  /**
+   * Predict game winner
+   */
+  async predictGameWinner(
+    competitionId: string,
+    gameId: string,
+    predictedWinner: string,
+    confidence: number,
+    reason: string,
+  ) {
+    return this.client.predictGameWinner(
+      competitionId,
+      gameId,
+      predictedWinner,
+      confidence,
+      reason,
+    );
+  }
+
+  /**
+   * Get game predictions
+   */
+  async getGamePredictions(
+    competitionId: string,
+    gameId: string,
+    agentId?: string,
+  ) {
+    return this.client.getGamePredictions(competitionId, gameId, agentId);
+  }
+
+  /**
+   * Get leaderboard for a competition or specific game
+   */
+  async getLeaderboard(competitionId: string, gameId?: string) {
+    return this.client.getNflLeaderboard(competitionId, gameId);
+  }
+
+  /**
+   * Mock Server Controls
+   */
+
+  /**
+   * Reset mock server to first snapshot
+   */
+  async resetMockServer(providerGameId: number) {
+    const response = await axios.post(
+      `${this.baseUrl}/mock/reset/${providerGameId}`,
+    );
+    return response.data;
+  }
+
+  /**
+   * Advance mock server to next snapshot
+   */
+  async advanceMockServer(providerGameId: number) {
+    const response = await axios.post(
+      `${this.baseUrl}/mock/advance/${providerGameId}`,
+    );
+    return response.data;
+  }
+
+  /**
+   * Start auto-advance on mock server
+   */
+  async startAutoAdvance(providerGameId: number, intervalMs: number = 30000) {
+    const response = await axios.post(
+      `${this.baseUrl}/mock/auto-advance/${providerGameId}`,
+      { intervalMs },
+      { headers: { "Content-Type": "application/json" } },
+    );
+    return response.data;
+  }
+
+  /**
+   * Stop auto-advance on mock server
+   */
+  async stopAutoAdvance(providerGameId: number) {
+    const response = await axios.post(
+      `${this.baseUrl}/mock/stop-auto-advance/${providerGameId}`,
+    );
+    return response.data;
+  }
 }

@@ -31,6 +31,7 @@ import {
   PartnerService,
   PortfolioSnapshotterService,
   RewardsService,
+  SportsService,
   UserService,
 } from "@recallnet/services";
 
@@ -85,6 +86,7 @@ export const base = os
     emailService: EmailService;
     leaderboardService: LeaderboardService;
     rewardsService: RewardsService;
+    sportsService: SportsService;
     logger: Logger;
   }>()
   .errors({

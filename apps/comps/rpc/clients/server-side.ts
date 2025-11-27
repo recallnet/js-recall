@@ -22,6 +22,7 @@ import {
   partnerService,
   portfolioSnapshotterService,
   rewardsService,
+  sportsService,
   userService,
 } from "@/lib/services";
 import { router } from "@/rpc/router/index";
@@ -48,6 +49,7 @@ export async function createClient(): Promise<RouterClient<typeof router>> {
       emailService,
       leaderboardService,
       rewardsService,
+      sportsService,
       logger: createLogger("ServerSideRpcClient"),
     },
   });

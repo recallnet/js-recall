@@ -6,6 +6,8 @@ import { AgentRepository } from "@recallnet/db/repositories/agent";
 import { AgentScoreRepository } from "@recallnet/db/repositories/agent-score";
 import { ArenaRepository } from "@recallnet/db/repositories/arena";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
+import { PaperTradingConfigRepository } from "@recallnet/db/repositories/paper-trading-config";
+import { PaperTradingInitialBalancesRepository } from "@recallnet/db/repositories/paper-trading-initial-balances";
 import { PerpsRepository } from "@recallnet/db/repositories/perps";
 import { StakesRepository } from "@recallnet/db/repositories/stakes";
 import { UserRepository } from "@recallnet/db/repositories/user";
@@ -15,6 +17,7 @@ import {
   SelectCompetitionReward,
   UpdateCompetition,
 } from "@recallnet/db/schema/core/types";
+import { SelectGame } from "@recallnet/db/schema/sports/types";
 import {
   PerpetualPositionWithAgent,
   SelectPerpsCompetitionConfig,
@@ -38,6 +41,7 @@ import { applySortingAndPagination, splitSortField } from "./lib/sort.js";
 import { PerpsDataProcessor } from "./perps-data-processor.service.js";
 import { PortfolioSnapshotterService } from "./portfolio-snapshotter.service.js";
 import { RewardsService } from "./rewards.service.js";
+import { SportsService } from "./sports.service.js";
 import { TradeSimulatorService } from "./trade-simulator.service.js";
 import { TradingConstraintsService } from "./trading-constraints.service.js";
 import {
@@ -55,6 +59,8 @@ import {
   PerpsEnrichedLeaderboardEntry,
   SpecificChain,
   SpecificChainBalances,
+  SpecificChainTokens,
+  TradingConstraints,
   isPerpsEnrichedEntry,
 } from "./types/index.js";
 import { ApiError } from "./types/index.js";
@@ -118,21 +124,36 @@ export interface CreateCompetitionParams {
   boosterAllocationUnit?: AllocationUnit;
   rewardRules?: string;
   rewardDetails?: string;
+  boostTimeDecayRate?: number;
 
   // Display
   displayState?: DisplayState;
+
+  // NFL-specific fields
+  gameIds?: string[]; // Array of game UUIDs from games table to link to competition
+
+  // Paper trading configuration
+  paperTradingConfig?: {
+    maxTradePercentage?: number;
+  };
+  paperTradingInitialBalances?: Array<{
+    specificChain: string;
+    tokenSymbol: string;
+    amount: number;
+  }>;
 }
 
 /**
  * Return type for started competition with trading constraints and agent IDs
  */
 export type StartedCompetitionResult = SelectCompetition & {
-  tradingConstraints: {
+  tradingConstraints?: {
     minimumPairAgeHours?: number;
     minimum24hVolumeUsd?: number;
     minimumLiquidityUsd?: number;
     minimumFdvUsd?: number;
   };
+  gameIds?: string[];
   agentIds: string[];
 };
 
@@ -335,6 +356,7 @@ interface LeaderboardWithInactiveAgents {
 export interface CompetitionServiceConfig {
   evmChains: SpecificChain[];
   specificChainBalances: SpecificChainBalances;
+  specificChainTokens: SpecificChainTokens;
   maxTradePercentage: number;
   rateLimiting: {
     maxRequests: number;
@@ -362,8 +384,11 @@ export class CompetitionService {
   private agentRepo: AgentRepository;
   private agentScoreRepo: AgentScoreRepository;
   private arenaRepo: ArenaRepository;
+  private sportsService: SportsService;
   private perpsRepo: PerpsRepository;
   private competitionRepo: CompetitionRepository;
+  private paperTradingConfigRepo: PaperTradingConfigRepository;
+  private paperTradingInitialBalancesRepo: PaperTradingInitialBalancesRepository;
   private stakesRepo: StakesRepository;
   private userRepo: UserRepository;
   private db: Database;
@@ -383,8 +408,11 @@ export class CompetitionService {
     agentRepo: AgentRepository,
     agentScoreRepo: AgentScoreRepository,
     arenaRepo: ArenaRepository,
+    sportsService: SportsService,
     perpsRepo: PerpsRepository,
     competitionRepo: CompetitionRepository,
+    paperTradingConfigRepo: PaperTradingConfigRepository,
+    paperTradingInitialBalancesRepo: PaperTradingInitialBalancesRepository,
     stakesRepo: StakesRepository,
     userRepo: UserRepository,
     db: Database,
@@ -403,13 +431,75 @@ export class CompetitionService {
     this.agentRepo = agentRepo;
     this.agentScoreRepo = agentScoreRepo;
     this.arenaRepo = arenaRepo;
+    this.sportsService = sportsService;
     this.perpsRepo = perpsRepo;
     this.competitionRepo = competitionRepo;
+    this.paperTradingConfigRepo = paperTradingConfigRepo;
+    this.paperTradingInitialBalancesRepo = paperTradingInitialBalancesRepo;
     this.stakesRepo = stakesRepo;
     this.userRepo = userRepo;
     this.db = db;
     this.config = config;
     this.logger = logger;
+  }
+
+  /**
+   * Upserts paper trading initial balances for a competition
+   * Derives tokenAddress from specificChainTokens based on specificChain and tokenSymbol
+   * @param competitionId The competition ID
+   * @param paperTradingInitialBalances Array of initial balances (specificChain, tokenSymbol, amount)
+   * @param tx Database transaction
+   * @param operationType Type of operation for logging (e.g., "Created", "Updated")
+   * @private
+   */
+  private async upsertPaperTradingInitialBalances(
+    competitionId: string,
+    paperTradingInitialBalances: Array<{
+      specificChain: string;
+      tokenSymbol: string;
+      amount: number;
+    }>,
+    tx: DatabaseTransaction,
+  ): Promise<void> {
+    // Derive tokenAddress from specificChainTokens for provided balances
+    const specificChainTokens = this.config.specificChainTokens;
+    if (!specificChainTokens) {
+      throw new Error(
+        `[CompetitionService] specificChainTokens configuration is required to process paperTradingInitialBalances`,
+      );
+    }
+
+    for (const balance of paperTradingInitialBalances) {
+      const chainTokens =
+        specificChainTokens[balance.specificChain as SpecificChain];
+      if (!chainTokens) {
+        throw new Error(
+          `[CompetitionService] No token configuration found for chain: ${balance.specificChain}`,
+        );
+      }
+
+      const tokenAddress =
+        chainTokens[
+          balance.tokenSymbol.toLowerCase() as keyof typeof chainTokens
+        ];
+      if (!tokenAddress) {
+        throw new Error(
+          `[CompetitionService] No token address found for ${balance.specificChain} ${balance.tokenSymbol}. Available tokens: ${Object.keys(chainTokens).join(", ")}`,
+        );
+      }
+
+      await this.paperTradingInitialBalancesRepo.upsert(
+        {
+          id: randomUUID(),
+          competitionId,
+          specificChain: balance.specificChain,
+          tokenSymbol: balance.tokenSymbol,
+          tokenAddress: tokenAddress as string,
+          amount: balance.amount,
+        },
+        tx,
+      );
+    }
   }
 
   /**
@@ -431,6 +521,7 @@ export class CompetitionService {
    * @param tradingConstraints Optional trading constraints for the competition
    * @param rewards Optional rewards for the competition
    * @param minimumStake Optional minimum stake amount
+   * @param gameIds Optional array of game IDs
    * @returns The created competition
    */
   async createCompetition({
@@ -469,11 +560,28 @@ export class CompetitionService {
     boosterAllocationUnit,
     rewardRules,
     rewardDetails,
+    boostTimeDecayRate,
     displayState,
+    gameIds,
+    paperTradingConfig,
+    paperTradingInitialBalances,
   }: CreateCompetitionParams) {
     const id = randomUUID();
 
     const competitionType = type ?? "trading";
+
+    // Validate paperTradingInitialBalances is provided for paper trading competitions
+    if (competitionType === "trading") {
+      if (
+        !paperTradingInitialBalances ||
+        paperTradingInitialBalances.length === 0
+      ) {
+        throw new ApiError(
+          400,
+          "paperTradingInitialBalances is required for paper trading competitions",
+        );
+      }
+    }
 
     // Validate arena compatibility if arenaId provided
     if (arenaId) {
@@ -531,6 +639,7 @@ export class CompetitionService {
       boosterAllocationUnit: boosterAllocationUnit ?? null,
       rewardRules: rewardRules ?? null,
       rewardDetails: rewardDetails ?? null,
+      boostTimeDecayRate: boostTimeDecayRate ?? null,
 
       // Display
       displayState: displayState ?? null,
@@ -573,6 +682,42 @@ export class CompetitionService {
         );
       }
 
+      // Link games for NFL competitions
+      const gameIdsToLink: string[] = [];
+      if (competitionType === "sports_prediction") {
+        if (!gameIds || gameIds.length === 0) {
+          throw new ApiError(400, "Game IDs are required for NFL competitions");
+        }
+
+        // Validate all games exist
+        const games =
+          await this.sportsService.gamesRepository.findByIds(gameIds);
+        if (games.length !== gameIds.length) {
+          const foundIds = games.map((g) => g.id);
+          const notFoundIds = gameIds.filter((id) => !foundIds.includes(id));
+          throw new ApiError(
+            404,
+            `Games not found: ${notFoundIds.join(", ")}. Run schedule sync first.`,
+          );
+        }
+
+        // Create competition_games entries
+        for (const gameId of gameIds) {
+          gameIdsToLink.push(gameId);
+          await this.sportsService.competitionGamesRepository.create(
+            {
+              competitionId: id,
+              gameId,
+            },
+            tx,
+          );
+        }
+
+        this.logger.info(
+          `Linked ${gameIds.length} games to NFL competition ${id}`,
+        );
+      }
+
       let createdRewards: SelectCompetitionReward[] = [];
       if (rewards) {
         createdRewards = await this.competitionRewardService.createRewards(
@@ -588,18 +733,17 @@ export class CompetitionService {
       }
 
       // Always create trading constraints (with defaults if not provided)
-      const constraints =
-        await this.tradingConstraintsService.createConstraints(
-          {
-            competitionId: id,
-            ...tradingConstraints,
-          },
-          tx,
+      let constraints: TradingConstraints | null = null;
+      if (competitionType === "trading") {
+        constraints =
+          (await this.tradingConstraintsService.createConstraints(
+            { competitionId: id, ...tradingConstraints },
+            tx,
+          )) || null;
+        this.logger.debug(
+          `[CompetitionManager] Created trading constraints for competition ${id}`,
         );
-      this.logger.debug(
-        `[CompetitionManager] Created trading constraints for competition ${id}`,
-      );
-
+      }
       // Create prize pools if provided
       if (prizePools) {
         const attoPrizePools = {
@@ -609,10 +753,33 @@ export class CompetitionService {
         await this.competitionRepo.updatePrizePools(id, attoPrizePools, tx);
       }
 
+      if (paperTradingConfig) {
+        await this.paperTradingConfigRepo.upsert(
+          {
+            competitionId: id,
+            maxTradePercentage: paperTradingConfig.maxTradePercentage,
+          },
+          tx,
+        );
+      }
+
+      // Upsert paper trading initial balances if provided
+      if (
+        paperTradingInitialBalances &&
+        paperTradingInitialBalances.length > 0
+      ) {
+        await this.upsertPaperTradingInitialBalances(
+          id,
+          paperTradingInitialBalances,
+          tx,
+        );
+      }
+
       return {
         competition,
         createdRewards,
         constraints,
+        gameIds: gameIdsToLink.length > 0 ? gameIdsToLink : null,
       };
     });
 
@@ -626,12 +793,15 @@ export class CompetitionService {
         rank: reward.rank,
         reward: reward.reward,
       })),
-      tradingConstraints: {
-        minimumPairAgeHours: result.constraints?.minimumPairAgeHours,
-        minimum24hVolumeUsd: result.constraints?.minimum24hVolumeUsd,
-        minimumLiquidityUsd: result.constraints?.minimumLiquidityUsd,
-        minimumFdvUsd: result.constraints?.minimumFdvUsd,
-      },
+      tradingConstraints: result.constraints
+        ? {
+            minimumPairAgeHours: result.constraints.minimumPairAgeHours,
+            minimum24hVolumeUsd: result.constraints.minimum24hVolumeUsd,
+            minimumLiquidityUsd: result.constraints.minimumLiquidityUsd,
+            minimumFdvUsd: result.constraints.minimumFdvUsd,
+          }
+        : undefined,
+      gameIds: result.gameIds ?? undefined,
     };
   }
 
@@ -779,14 +949,8 @@ export class CompetitionService {
       this.validateAgentsForPerpsCompetition(agents, competition.type);
     }
 
-    // Process all agent additions and activations
+    // Register all agents in the competition (for all competition types)
     for (const agentId of finalAgentIds) {
-      await this.balanceService.resetAgentBalances(
-        agentId,
-        competitionId,
-        competition.type,
-      );
-
       // Note: Agent validation already done above, so we know agent exists and is active
 
       // Register agent in the competition (automatically sets status to 'active')
@@ -818,37 +982,51 @@ export class CompetitionService {
       }
 
       this.logger.debug(
-        `[CompetitionManager] Agent ${agentId} ready for competition`,
+        `[CompetitionManager] Agent ${agentId} registered for competition`,
       );
-    }
-
-    // Set up trading constraints before taking snapshots
-    const existingConstraints =
-      await this.tradingConstraintsService.getConstraints(competitionId);
-    let newConstraints = existingConstraints;
-    if (tradingConstraints && existingConstraints) {
-      // If the caller provided constraints and they already exist, we update
-      newConstraints = await this.tradingConstraintsService.updateConstraints(
-        competitionId,
-        tradingConstraints,
-      );
-      this.logger.debug(
-        `[CompetitionManager] Updating trading constraints for competition ${competitionId}`,
-      );
-    } else if (!existingConstraints) {
-      // if the constraints don't exist, we create them with defaults and
-      // (optionally) caller provided values.
-      newConstraints =
-        (await this.tradingConstraintsService.createConstraints({
-          competitionId,
-          ...tradingConstraints,
-        })) || null;
     }
 
     // Take initial portfolio snapshots BEFORE setting status to active
     // This ensures no trades can happen during snapshot initialization
     // Different approach based on competition type:
+    let competitionTradingConstraints: TradingConstraints | null = null;
     if (competition.type === "trading") {
+      // Clear cached balances after validation, before processing agents
+      this.balanceService.clearCompetitionCache(competitionId);
+
+      // Reset balances for trading competitions
+      for (const agentId of finalAgentIds) {
+        await this.balanceService.resetAgentBalances(
+          agentId,
+          competitionId,
+          competition.type,
+        );
+      }
+
+      // Set up trading constraints before taking snapshots
+      const existingConstraints =
+        await this.tradingConstraintsService.getConstraints(competitionId);
+      competitionTradingConstraints = existingConstraints;
+      if (tradingConstraints && existingConstraints) {
+        // If the caller provided constraints and they already exist, we update
+        competitionTradingConstraints =
+          await this.tradingConstraintsService.updateConstraints(
+            competitionId,
+            tradingConstraints,
+          );
+        this.logger.debug(
+          `[CompetitionManager] Updating trading constraints for competition ${competitionId}`,
+        );
+      } else if (!existingConstraints) {
+        // if the constraints don't exist, we create them with defaults and
+        // (optionally) caller provided values.
+        competitionTradingConstraints =
+          (await this.tradingConstraintsService.createConstraints({
+            competitionId,
+            ...tradingConstraints,
+          })) || null;
+      }
+
       // Paper trading: Use portfolio snapshotter with reset balances
       this.logger.debug(
         `[CompetitionService] Taking initial paper trading portfolio snapshots for ${finalAgentIds.length} agents (competition still pending)`,
@@ -906,8 +1084,12 @@ export class CompetitionService {
           );
         }
       }
-    } else {
-      throw new Error(`Unknown competition type: ${competition.type}`);
+    } else if (competition.type === "sports_prediction") {
+      // NFL competitions don't need initial snapshots
+      // Scoring data comes from game predictions as games are played
+      this.logger.debug(
+        `[CompetitionService] Starting NFL competition with ${finalAgentIds.length} agents (no initial snapshots needed)`,
+      );
     }
 
     // NOW update the competition status to active
@@ -918,6 +1100,13 @@ export class CompetitionService {
       startDate: new Date(),
       updatedAt: new Date(),
     });
+    // Only include game IDs for NFL competitions
+    const gameIds =
+      finalCompetition.type === "sports_prediction"
+        ? await this.sportsService.competitionGamesRepository.findGameIdsByCompetitionId(
+            competitionId,
+          )
+        : null;
 
     this.logger.debug(
       `[CompetitionManager] Started competition: ${competition.name} (${competitionId})`,
@@ -928,12 +1117,8 @@ export class CompetitionService {
 
     return {
       ...finalCompetition,
-      tradingConstraints: {
-        minimumPairAgeHours: newConstraints?.minimumPairAgeHours,
-        minimum24hVolumeUsd: newConstraints?.minimum24hVolumeUsd,
-        minimumLiquidityUsd: newConstraints?.minimumLiquidityUsd,
-        minimumFdvUsd: newConstraints?.minimumFdvUsd,
-      },
+      tradingConstraints: competitionTradingConstraints ?? undefined,
+      gameIds: gameIds ?? undefined,
       agentIds: finalAgentIds,
     } as StartedCompetitionResult;
   }
@@ -1169,7 +1354,7 @@ export class CompetitionService {
   }
 
   /**
-   * End a competition
+   * End a competition for trading or perpetual futures competitions
    * @param competitionId The competition ID
    * @returns The updated competition and final leaderboard
    */
@@ -1300,6 +1485,290 @@ export class CompetitionService {
     // Log success only after transaction has committed
     this.logger.debug(
       `[CompetitionManager] Competition ended successfully: ${competition.name} (${competitionId}) - ` +
+        `${competitionAgents.length} agents, ${leaderboard.length} leaderboard entries`,
+    );
+
+    return { competition: finalCompetition, leaderboard };
+  }
+
+  /**
+   * Validate that all final games in an NFL competition are ready for scoring
+   * Throws an error if any final game is missing required data (end time, winner)
+   * @param competitionId The competition ID
+   * @returns void
+   * @throws Error if any final game is missing required data
+   */
+  async #validateNflGamesReadyForScoring(competitionId: string): Promise<void> {
+    // Get all games for this competition
+    const gameIds =
+      await this.sportsService.competitionGamesRepository.findGameIdsByCompetitionId(
+        competitionId,
+      );
+
+    if (gameIds.length === 0) {
+      throw new Error(
+        `Cannot end NFL competition ${competitionId}: No games found`,
+      );
+    }
+
+    // Get game details to check which are final
+    const games = await this.sportsService.gamesRepository.findByIds(gameIds);
+    const finalGames = games.filter((game) => game.status === "final");
+
+    // Validate ALL games are final before allowing competition to end
+    if (finalGames.length !== games.length) {
+      const nonFinalCount = games.length - finalGames.length;
+      throw new ApiError(
+        400,
+        `Cannot end NFL competition ${competitionId}: ${nonFinalCount} of ${games.length} games are not yet final. All games must be completed before ending the competition.`,
+      );
+    }
+
+    // Validate each final game has required scoring data
+    const invalidGames: Array<{
+      game: SelectGame;
+      reason: string;
+    }> = [];
+
+    for (const game of finalGames) {
+      if (!game.endTime) {
+        invalidGames.push({
+          game,
+          reason: "missing end time",
+        });
+      } else if (!game.winner) {
+        invalidGames.push({
+          game,
+          reason: "missing winner",
+        });
+      }
+    }
+
+    if (invalidGames.length > 0) {
+      const details = invalidGames
+        .map(
+          ({ game, reason }) =>
+            `${game.awayTeam} @ ${game.homeTeam} (${game.id}): ${reason}`,
+        )
+        .join("; ");
+
+      throw new ApiError(
+        400,
+        `Cannot end NFL competition ${competitionId}: ${invalidGames.length} final game(s) are not ready for scoring. ` +
+          `Games must have end times and winners before the competition can end. Details: ${details}`,
+      );
+    }
+
+    this.logger.debug(
+      `[CompetitionService] Validated ${finalGames.length} final games are ready for scoring`,
+    );
+  }
+
+  /**
+   * Ensure all final games in an NFL competition are scored
+   * This validates all games are finalized and scored, else, throws an error.
+   * @param competitionId The competition ID
+   * @returns void
+   * @throws Error if any games are not finalized or scored
+   */
+  async #ensureNflGamesScored(competitionId: string): Promise<void> {
+    // Get all games for this competition
+    const gameIds =
+      await this.sportsService.competitionGamesRepository.findGameIdsByCompetitionId(
+        competitionId,
+      );
+
+    // Get game details to check which are final
+    const games = await this.sportsService.gamesRepository.findByIds(gameIds);
+    const finalGames = games.filter((game) => game.status === "final");
+
+    this.logger.debug(
+      `[CompetitionService] Ensuring ${finalGames.length} final games are scored for competition ${competitionId}`,
+    );
+
+    let scoredCount = 0;
+    let alreadyScoredCount = 0;
+    const errors: Array<{ gameId: string; error: unknown }> = [];
+
+    // Score each final game (note: `scoreGame` is idempotent)
+    for (const game of finalGames) {
+      try {
+        const agentsScoredCount =
+          await this.sportsService.gameScoringService.scoreGame(game.id);
+
+        if (agentsScoredCount > 0) {
+          scoredCount++;
+          this.logger.debug(
+            `[CompetitionService] Scored game ${game.id} (${game.awayTeam} @ ${game.homeTeam}): ${agentsScoredCount} agents`,
+          );
+        } else {
+          alreadyScoredCount++;
+        }
+      } catch (error) {
+        errors.push({ gameId: game.id, error });
+        this.logger.error(
+          { error, gameId: game.id },
+          `[CompetitionService] Error scoring game ${game.id} (${game.awayTeam} @ ${game.homeTeam})`,
+        );
+      }
+    }
+
+    // If any games failed to score after validation, this is a serious error
+    if (errors.length > 0) {
+      throw new Error(
+        `Failed to score ${errors.length} game(s) for competition ${competitionId}. ` +
+          `This should not happen after validation. Game IDs: ${errors.map((e) => e.gameId).join(", ")}`,
+      );
+    }
+
+    this.logger.info(
+      `[CompetitionService] Game scoring complete for competition ${competitionId}: ` +
+        `${scoredCount} newly scored, ${alreadyScoredCount} already scored`,
+    );
+  }
+
+  /**
+   * End a competition for NFL competitions only
+   * @param competitionId The competition ID
+   * @returns The updated competition and final NFL-specific leaderboard
+   */
+  async endNflCompetition(competitionId: string): Promise<{
+    competition: SelectCompetition;
+    leaderboard: Array<{
+      agentId: string;
+      averageBrierScore: number;
+      gamesScored: number;
+      rank: number;
+    }>;
+  }> {
+    // Validate all games are ready prior to marking as ending
+    // This ensures atomicity - if games aren't ready, competition stays in current state
+    await this.#validateNflGamesReadyForScoring(competitionId);
+
+    // Mark as ending (active -> ending)
+    let competition =
+      await this.competitionRepo.markCompetitionAsEnding(competitionId);
+
+    if (!competition) {
+      const current = await this.competitionRepo.findById(competitionId);
+      if (!current) {
+        throw new Error(`Competition not found: ${competitionId}`);
+      }
+      if (current.status === "ended") {
+        // Competition already ended, get the leaderboard and return
+        const leaderboard =
+          await this.sportsService.gameScoringService.getCompetitionLeaderboard(
+            competitionId,
+          );
+        return { competition: current, leaderboard };
+      }
+      if (current.status !== "ending") {
+        throw new Error(
+          `Competition is not active or ending: ${current.status}`,
+        );
+      }
+      // If "ending", continue processing (retry scenario)
+      competition = current;
+    }
+
+    this.logger.debug(
+      `[CompetitionService] Marked NFL competition as ending: ${competitionId}`,
+    );
+
+    // Score all final games
+    await this.#ensureNflGamesScored(competitionId);
+
+    // Get agents in the competition
+    const competitionAgents =
+      await this.competitionRepo.getCompetitionAgents(competitionId);
+
+    // Persist results
+    const { competition: finalCompetition, leaderboard } =
+      await this.db.transaction(async (tx) => {
+        // Mark competition as ended
+        const updated = await this.competitionRepo.markCompetitionAsEnded(
+          competitionId,
+          tx,
+        );
+        if (!updated) {
+          throw new Error(
+            "Competition was already ended or not in ending state",
+          );
+        }
+
+        // Get final leaderboard from NFL scoring service
+        const leaderboard =
+          await this.sportsService.gameScoringService.getCompetitionLeaderboard(
+            competitionId,
+          );
+        this.logger.info(
+          { competitionId, leaderboard },
+          "Final NFL leaderboard",
+        );
+
+        // Persist NFL leaderboard to competitions_leaderboard table
+        // This is required for agent rank updates to work correctly
+        const leaderboardEntries: BaseEnrichedLeaderboardEntry[] =
+          leaderboard.map((entry) => ({
+            agentId: entry.agentId,
+            competitionId,
+            rank: entry.rank,
+            pnl: 0, // Not applicable for NFL competitions
+            startingValue: 0, // Not applicable for NFL competitions
+            totalAgents: competitionAgents.length,
+            score: entry.averageBrierScore, // Use Brier score as the score
+            hasRiskMetrics: false,
+          }));
+
+        if (leaderboardEntries.length > 0) {
+          await this.competitionRepo.batchInsertLeaderboard(
+            leaderboardEntries,
+            tx,
+          );
+        }
+
+        // Update agent ranks based on competition results
+        await this.agentRankService.updateAgentRanksForCompetition(
+          competitionId,
+          tx,
+        );
+
+        // Fetch agents with lock to check for globally ineligible agents
+        const agentIds = leaderboard.map((entry) => entry.agentId);
+        const agents = await this.agentRepo.findByIdsWithLock(agentIds, tx);
+        const globallyIneligibleAgents = agents
+          .filter((agent) => agent.isRewardsIneligible)
+          .map((agent) => agent.id);
+
+        // Combine competition-specific and global exclusions
+        const competitionExclusions = updated.rewardsIneligible ?? [];
+        const allExcludedAgents = Array.from(
+          new Set([...competitionExclusions, ...globallyIneligibleAgents]),
+        );
+
+        // Convert NFL leaderboard to format expected by reward service
+        // For NFL competitions, we use rank directly since higher Brier scores are better
+        const rewardLeaderboard: LeaderboardEntry[] = leaderboard.map(
+          (entry) => ({
+            agentId: entry.agentId,
+            value: entry.averageBrierScore, // Use Brier score as "value"
+            pnl: 0, // Not applicable for NFL competitions
+          }),
+        );
+
+        // Assign winners to rewards
+        await this.competitionRewardService.assignWinnersToRewards(
+          competitionId,
+          rewardLeaderboard,
+          allExcludedAgents.length > 0 ? allExcludedAgents : undefined,
+          tx,
+        );
+
+        return { competition: updated, leaderboard };
+      });
+
+    this.logger.debug(
+      `[CompetitionService] NFL competition ended successfully: ${competition.name} (${competitionId}) - ` +
         `${competitionAgents.length} agents, ${leaderboard.length} leaderboard entries`,
     );
 
@@ -1985,6 +2454,15 @@ export class CompetitionService {
       agent: number;
       users: number;
     },
+    gameIds?: string[],
+    paperTradingConfig?: {
+      maxTradePercentage?: number;
+    },
+    paperTradingInitialBalances?: Array<{
+      specificChain: string;
+      tokenSymbol: string;
+      amount: number;
+    }>,
   ): Promise<{
     competition: SelectCompetition;
     updatedRewards: SelectCompetitionReward[];
@@ -1999,6 +2477,11 @@ export class CompetitionService {
     // If perpsProvider is provided but type is not, auto-set type to perpetual_futures
     if (perpsProvider && !updates.type) {
       updates.type = "perpetual_futures";
+    }
+
+    // If gameIds are provided but type is not, auto-set type to nfl
+    if (gameIds && gameIds.length > 0) {
+      updates.type = "sports_prediction";
     }
 
     // Check if type is being changed
@@ -2052,6 +2535,9 @@ export class CompetitionService {
 
     // Execute all updates in a single transaction
     const result = await this.db.transaction(async (tx) => {
+      // FIX ME: there is a race condition where another call to updateCompetition could have updated existingCompetition first.
+      // A possible fix is to add a lock to the service level.
+
       // Handle type conversion if needed
       if (isTypeChanging && updates.type) {
         const oldType = existingCompetition.type;
@@ -2176,6 +2662,36 @@ export class CompetitionService {
           );
         }
       }
+      // Update sports prediction competitions with game IDs, if provided
+      const finalCompetitionType = updates.type ?? existingCompetition.type;
+      if (
+        finalCompetitionType === "sports_prediction" &&
+        gameIds &&
+        gameIds.length > 0
+      ) {
+        this.logger.info(
+          `[CompetitionService] Linking ${gameIds.length} games to competition ${competitionId}`,
+        );
+        // Validate all games exist
+        const games =
+          await this.sportsService.gamesRepository.findByIds(gameIds);
+        if (games.length !== gameIds.length) {
+          const foundIds = games.map((g) => g.id);
+          const notFoundIds = gameIds.filter((id) => !foundIds.includes(id));
+          throw new ApiError(404, `Games not found: ${notFoundIds.join(", ")}`);
+        }
+
+        // Create competition_games entries
+        for (const gameId of gameIds) {
+          await this.sportsService.competitionGamesRepository.create(
+            {
+              competitionId,
+              gameId,
+            },
+            tx,
+          );
+        }
+      }
 
       // Update the competition
       const updatedCompetition = await this.competitionRepo.updateOne(
@@ -2212,6 +2728,44 @@ export class CompetitionService {
         await this.competitionRepo.updatePrizePools(
           competitionId,
           attoPrizePools,
+          tx,
+        );
+      }
+
+      // Upsert paper trading config if provided
+      if (paperTradingConfig) {
+        if (existingCompetition.status !== "pending") {
+          throw new ApiError(
+            400,
+            "Cannot update paper trading config for competition that has started",
+          );
+        }
+        await this.paperTradingConfigRepo.upsert(
+          {
+            competitionId,
+            maxTradePercentage: paperTradingConfig.maxTradePercentage,
+          },
+          tx,
+        );
+        this.logger.debug(
+          `[CompetitionService] Updated paper trading config for competition ${competitionId}`,
+        );
+      }
+
+      // Upsert paper trading initial balances if provided
+      if (
+        paperTradingInitialBalances &&
+        paperTradingInitialBalances.length > 0
+      ) {
+        if (existingCompetition.status !== "pending") {
+          throw new ApiError(
+            400,
+            "Cannot update paper trading initial balances for competition that has started",
+          );
+        }
+        await this.upsertPaperTradingInitialBalances(
+          competitionId,
+          paperTradingInitialBalances,
           tx,
         );
       }
@@ -2765,7 +3319,11 @@ export class CompetitionService {
             `[CompetitionManager] Auto-ending competition: ${competition.name} (${competition.id}) - scheduled end: ${competition.endDate!.toISOString()} - status: ${competition.status}`,
           );
 
-          await this.endCompetition(competition.id);
+          if (competition.type === "sports_prediction") {
+            await this.endNflCompetition(competition.id);
+          } else {
+            await this.endCompetition(competition.id);
+          }
 
           this.logger.debug(
             `[CompetitionManager] Successfully auto-ended competition: ${competition.name} (${competition.id})`,

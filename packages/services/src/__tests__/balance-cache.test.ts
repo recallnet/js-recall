@@ -5,8 +5,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MockProxy, mock } from "vitest-mock-extended";
 
 import { BalanceRepository } from "@recallnet/db/repositories/balance";
+import { PaperTradingInitialBalancesRepository } from "@recallnet/db/repositories/paper-trading-initial-balances";
 
-import { BalanceService, BalanceServiceConfig } from "../balance.service.js";
+import { BalanceService } from "../balance.service.js";
 
 // Create a mock class that implements BalanceRepository
 class MockBalanceRepository {
@@ -17,40 +18,30 @@ class MockBalanceRepository {
   count = vi.fn();
 }
 
+// Create a mock class that implements PaperTradingInitialBalancesRepository
+class MockPaperTradingInitialBalancesRepository {
+  findByCompetitionId = vi.fn();
+  upsert = vi.fn();
+}
+
 vi.mock("@recallnet/db/repositories/balance", () => ({
   BalanceRepository: vi
     .fn()
     .mockImplementation(() => new MockBalanceRepository()),
 }));
 
-// Mock config
-const mockConfig: BalanceServiceConfig = {
-  specificChainBalances: {
-    eth: {
-      USDC: 5000,
-    },
-    base: {
-      USDC: 5000,
-    },
-  },
-  specificChainTokens: {
-    eth: {
-      USDC: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
-    },
-    base: {
-      USDC: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
-    },
-    polygon: {},
-    svm: {},
-    optimism: {},
-    arbitrum: {},
-  },
-};
+vi.mock("@recallnet/db/repositories/paper-trading-initial-balances", () => ({
+  PaperTradingInitialBalancesRepository: vi
+    .fn()
+    .mockImplementation(() => new MockPaperTradingInitialBalancesRepository()),
+}));
 
 describe("BalanceService - Cache Invalidation", () => {
   let service: BalanceService;
   let mockRepo: BalanceRepository;
   let mockRepoInstance: MockBalanceRepository;
+  let mockPaperTradingInitialBalancesRepo: PaperTradingInitialBalancesRepository;
+  let mockPaperTradingInitialBalancesRepoInstance: MockPaperTradingInitialBalancesRepository;
   let mockLogger: MockProxy<Logger>;
 
   const agent1Id = "agent-1";
@@ -63,8 +54,16 @@ describe("BalanceService - Cache Invalidation", () => {
   beforeEach(() => {
     mockRepoInstance = new MockBalanceRepository();
     mockRepo = mockRepoInstance as unknown as BalanceRepository;
+    mockPaperTradingInitialBalancesRepoInstance =
+      new MockPaperTradingInitialBalancesRepository();
+    mockPaperTradingInitialBalancesRepo =
+      mockPaperTradingInitialBalancesRepoInstance as unknown as PaperTradingInitialBalancesRepository;
     mockLogger = mock<Logger>();
-    service = new BalanceService(mockRepo, mockConfig, mockLogger);
+    service = new BalanceService(
+      mockRepo,
+      mockPaperTradingInitialBalancesRepo,
+      mockLogger,
+    );
     vi.clearAllMocks();
   });
 

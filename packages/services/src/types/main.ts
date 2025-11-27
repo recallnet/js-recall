@@ -11,7 +11,11 @@ import {
   engineType,
 } from "@recallnet/db/schema/core/defs";
 import { MAX_HANDLE_LENGTH } from "@recallnet/db/schema/core/defs";
-import { SelectAgent, SelectUser } from "@recallnet/db/schema/core/types";
+import {
+  SelectAgent,
+  SelectCompetition,
+  SelectUser,
+} from "@recallnet/db/schema/core/types";
 import {
   crossChainTradingType,
   evaluationMetricEnum,
@@ -490,27 +494,9 @@ export const CrossChainTradingTypeSchema = z.enum(
 export type CrossChainTradingType = z.infer<typeof CrossChainTradingTypeSchema>;
 
 /**
- * Competition interface
+ * Competition type
  */
-export interface Competition {
-  id: string;
-  name: string;
-  description?: string;
-  externalUrl?: string;
-  imageUrl?: string;
-  startDate: Date | null;
-  endDate: Date | null;
-  boostStartDate: Date | null;
-  boostEndDate: Date | null;
-  joinStartDate: Date | null;
-  joinEndDate: Date | null;
-  status: CompetitionStatus;
-  crossChainTradingType: CrossChainTradingType; // Controls cross-chain trading behavior
-  sandboxMode: boolean; // Controls automatic agent joining behavior
-  type: CompetitionType;
-  createdAt: Date;
-  updatedAt: Date;
-}
+export type Competition = SelectCompetition;
 
 /**
  * Agent-specific metrics for a competition

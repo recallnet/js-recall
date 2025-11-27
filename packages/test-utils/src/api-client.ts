@@ -485,6 +485,11 @@ export class ApiClient {
           };
           rewardsIneligible?: string[];
           arenaId?: string;
+          paperTradingInitialBalances?: Array<{
+            specificChain: string;
+            tokenSymbol: string;
+            amount: number;
+          }>;
         }
       | string,
     description?: string,
@@ -528,6 +533,30 @@ export class ApiClient {
           requestData.type === "perpetual_futures"
             ? "default-perps-arena"
             : "default-paper-arena";
+      }
+
+      // Default paperTradingInitialBalances for paper trading competitions only
+      // Only apply if creating a new competition (no competitionId) and it's a paper trading competition
+      if (
+        !requestData.competitionId &&
+        requestData.type !== "perpetual_futures" &&
+        !requestData.paperTradingInitialBalances
+      ) {
+        requestData.paperTradingInitialBalances = [
+          // Solana (SVM) balances
+          { specificChain: "svm", tokenSymbol: "sol", amount: 10 },
+          { specificChain: "svm", tokenSymbol: "usdc", amount: 5000 },
+          { specificChain: "svm", tokenSymbol: "usdt", amount: 1000 },
+          // Ethereum balances
+          { specificChain: "eth", tokenSymbol: "eth", amount: 1 },
+          { specificChain: "eth", tokenSymbol: "usdc", amount: 5000 },
+          // Optimism balances
+          { specificChain: "optimism", tokenSymbol: "usdc", amount: 200 },
+          // Polygon balances
+          { specificChain: "polygon", tokenSymbol: "usdc", amount: 200 },
+          // Arbitrum balances
+          { specificChain: "arbitrum", tokenSymbol: "usdc", amount: 200 },
+        ];
       }
 
       const response = await this.axiosInstance.post(
@@ -581,6 +610,10 @@ export class ApiClient {
     rewardRules,
     rewardDetails,
     displayState,
+    gameIds,
+    paperTradingInitialBalances,
+    boostTimeDecayRate,
+    paperTradingConfig,
   }: {
     name?: string;
     description?: string;
@@ -627,6 +660,16 @@ export class ApiClient {
     rewardRules?: string;
     rewardDetails?: string;
     displayState?: DisplayState;
+    gameIds?: string[];
+    paperTradingInitialBalances?: Array<{
+      specificChain: string;
+      tokenSymbol: string;
+      amount: number;
+    }>;
+    boostTimeDecayRate?: number;
+    paperTradingConfig?: {
+      maxTradePercentage?: number;
+    };
   }): Promise<CreateCompetitionResponse | ErrorResponse> {
     const competitionName = name || `Test competition ${Date.now()}`;
     // Default arenaId based on competition type
@@ -634,6 +677,36 @@ export class ApiClient {
       type === "perpetual_futures"
         ? "default-perps-arena"
         : "default-paper-arena";
+
+    // Default paperTradingInitialBalances for paper trading competitions only
+    const competitionType = type ?? "trading";
+    const isPaperTrading = competitionType === "trading";
+
+    // Default balances - only include for paper trading competitions
+    const defaultPaperTradingInitialBalances = isPaperTrading
+      ? [
+          // Solana (SVM) balances
+          { specificChain: "svm", tokenSymbol: "sol", amount: 10 },
+          { specificChain: "svm", tokenSymbol: "usdc", amount: 5000 },
+          { specificChain: "svm", tokenSymbol: "usdt", amount: 1000 },
+          // Ethereum balances
+          { specificChain: "eth", tokenSymbol: "eth", amount: 1 },
+          { specificChain: "eth", tokenSymbol: "usdc", amount: 5000 },
+          // Note: INITIAL_ETH_USDT_BALANCE=0, so we skip it
+          // Optimism balances
+          { specificChain: "optimism", tokenSymbol: "usdc", amount: 200 },
+          // Polygon balances
+          { specificChain: "polygon", tokenSymbol: "usdc", amount: 200 },
+          // Arbitrum balances
+          { specificChain: "arbitrum", tokenSymbol: "usdc", amount: 200 },
+        ]
+      : undefined;
+
+    // Determine final paperTradingInitialBalances to send
+    const finalPaperTradingInitialBalances =
+      paperTradingInitialBalances ||
+      (isPaperTrading ? defaultPaperTradingInitialBalances : undefined);
+
     try {
       const response = await this.axiosInstance.post(
         "/api/admin/competition/create",
@@ -644,7 +717,7 @@ export class ApiClient {
           sandboxMode,
           externalUrl,
           imageUrl,
-          type,
+          type: competitionType,
           startDate,
           endDate,
           boostStartDate,
@@ -674,6 +747,12 @@ export class ApiClient {
           rewardRules,
           rewardDetails,
           displayState,
+          gameIds,
+          boostTimeDecayRate,
+          paperTradingConfig,
+          ...(finalPaperTradingInitialBalances
+            ? { paperTradingInitialBalances: finalPaperTradingInitialBalances }
+            : {}),
         },
       );
 
@@ -718,6 +797,10 @@ export class ApiClient {
       rewardRules,
       rewardDetails,
       displayState,
+      gameIds,
+      boostTimeDecayRate,
+      paperTradingConfig,
+      paperTradingInitialBalances,
     }: {
       name?: string;
       description?: string;
@@ -757,6 +840,16 @@ export class ApiClient {
       rewardRules?: string;
       rewardDetails?: string;
       displayState?: DisplayState;
+      gameIds?: string[];
+      boostTimeDecayRate?: number;
+      paperTradingConfig?: {
+        maxTradePercentage?: number;
+      };
+      paperTradingInitialBalances?: Array<{
+        specificChain: string;
+        tokenSymbol: string;
+        amount: number;
+      }>;
     },
   ): Promise<UpdateCompetitionResponse | ErrorResponse> {
     try {
@@ -792,6 +885,10 @@ export class ApiClient {
           rewardRules,
           rewardDetails,
           displayState,
+          gameIds,
+          boostTimeDecayRate,
+          paperTradingConfig,
+          paperTradingInitialBalances,
         },
       );
 
@@ -2542,6 +2639,166 @@ export class ApiClient {
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "get rewards with proofs");
+    }
+  }
+
+  /**
+   * NFL API Methods
+   */
+
+  /**
+   * Get open plays for an NFL competition
+   */
+  async getNflOpenPlays(
+    competitionId: string,
+    limit: number = 50,
+    offset: number = 0,
+  ) {
+    try {
+      const response = await this.axiosInstance.get(
+        `/api/nfl/competitions/${competitionId}/plays?state=open&limit=${limit}&offset=${offset}`,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get NFL open plays");
+    }
+  }
+
+  /**
+   * Submit a prediction for the next play in a game
+   */
+  async submitNflPrediction(
+    competitionId: string,
+    providerGameId: number,
+    prediction: "run" | "pass",
+    confidence: number,
+  ) {
+    try {
+      const response = await this.axiosInstance.post(
+        `/api/nfl/competitions/${competitionId}/games/${providerGameId}/predictions`,
+        { prediction, confidence },
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "submit NFL prediction");
+    }
+  }
+
+  /**
+   * Get leaderboard for an NFL competition
+   */
+  async getNflLeaderboard(competitionId: string, gameId?: string) {
+    try {
+      const url = gameId
+        ? `/api/nfl/competitions/${competitionId}/leaderboard?gameId=${gameId}`
+        : `/api/nfl/competitions/${competitionId}/leaderboard`;
+      const response = await this.axiosInstance.get(url);
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get NFL leaderboard");
+    }
+  }
+
+  /**
+   * Get all games for an NFL competition
+   */
+  async getNflGames(competitionId: string) {
+    try {
+      const response = await this.axiosInstance.get(
+        `/api/nfl/competitions/${competitionId}/games`,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get NFL games");
+    }
+  }
+
+  /**
+   * Get NFL competition rules
+   */
+  async getNflRules(competitionId: string) {
+    try {
+      const response = await this.axiosInstance.get(
+        `/api/nfl/competitions/${competitionId}/rules`,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get NFL rules");
+    }
+  }
+
+  /**
+   * Get specific game info
+   */
+  async getNflGameInfo(competitionId: string, gameId: string) {
+    try {
+      const response = await this.axiosInstance.get(
+        `/api/nfl/competitions/${competitionId}/games/${gameId}`,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get NFL game info");
+    }
+  }
+
+  /**
+   * Get game plays
+   */
+  async getNflGamePlays(
+    competitionId: string,
+    gameId: string,
+    limit: number = 50,
+    offset: number = 0,
+    latest: boolean = false,
+  ) {
+    try {
+      const url = latest
+        ? `/api/nfl/competitions/${competitionId}/games/${gameId}/plays?latest=true`
+        : `/api/nfl/competitions/${competitionId}/games/${gameId}/plays?limit=${limit}&offset=${offset}`;
+      const response = await this.axiosInstance.get(url);
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get NFL game plays");
+    }
+  }
+
+  /**
+   * Predict game winner
+   */
+  async predictGameWinner(
+    competitionId: string,
+    gameId: string,
+    predictedWinner: string,
+    confidence: number,
+    reason: string,
+  ) {
+    try {
+      const response = await this.axiosInstance.post(
+        `/api/nfl/competitions/${competitionId}/games/${gameId}/predictions`,
+        { predictedWinner, confidence, reason },
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "predict game winner");
+    }
+  }
+
+  /**
+   * Get game predictions
+   */
+  async getGamePredictions(
+    competitionId: string,
+    gameId: string,
+    agentId?: string,
+  ) {
+    try {
+      const url = agentId
+        ? `/api/nfl/competitions/${competitionId}/games/${gameId}/predictions?agentId=${agentId}`
+        : `/api/nfl/competitions/${competitionId}/games/${gameId}/predictions`;
+      const response = await this.axiosInstance.get(url);
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get game predictions");
     }
   }
 }

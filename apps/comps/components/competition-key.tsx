@@ -1,7 +1,6 @@
 "use client";
 
-import { ArrowUpRight, ChevronDown, Info, X } from "lucide-react";
-import Link from "next/link";
+import { ChevronDown, Info, X } from "lucide-react";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 
 import { Button } from "@recallnet/ui2/components/button";
@@ -11,66 +10,36 @@ import {
   TabsList,
   TabsTrigger,
 } from "@recallnet/ui2/components/tabs";
-import { Tooltip } from "@recallnet/ui2/components/tooltip";
 import { cn } from "@recallnet/ui2/lib/utils";
 
-import { Recall } from "@/components/Recall";
-import { CompetitionStateSummary } from "@/components/competition-state-summary";
+import {
+  CellTitle,
+  CompetitionInfoSections,
+} from "@/components/competition-key-info";
 import { Pagination } from "@/components/pagination";
-import { useCompetitionBoosts, useCompetitionRules } from "@/hooks";
+import { useCompetitionRules } from "@/hooks";
 import { useCompetitionPerpsPositions } from "@/hooks/useCompetitionPerpsPositions";
 import { useCompetitionTrades } from "@/hooks/useCompetitionTrades";
-import { openForBoosting } from "@/lib/open-for-boosting";
 import { RouterOutputs } from "@/rpc/router";
-import { displayAddress } from "@/utils/address";
+import { checkIsPerpsCompetition } from "@/utils/competition-utils";
 import {
-  checkIsPerpsCompetition,
-  formatCompetitionDates,
-  getCompetitionSkills,
-  getEvaluationMetricDisplayName,
+  LIMIT_ITEMS_PER_PAGE,
+  shouldShowRelativeTimestamp,
 } from "@/utils/competition-utils";
 import {
   formatAmount,
-  formatBigintAmount,
-  formatCompactNumber,
   formatDateShort,
   formatRelativeTime,
 } from "@/utils/format";
 
-import { BoostIcon } from "./BoostIcon";
 import { AgentAvatar } from "./agent-avatar";
-import { RewardsTGE } from "./rewards-tge";
+import { BoostsTabContent } from "./competition-key-boost";
 import { SkeletonList } from "./skeleton-loaders";
 
 export interface CompetitionKeyProps {
   competition: RouterOutputs["competitions"]["getById"];
   className?: string;
 }
-
-const LIMIT_TRADES_PER_PAGE = 50;
-const LIMIT_POSITIONS_PER_PAGE = 50;
-
-// In the competition trade logs, we display a relative timestamp for the first 24 hours, then, we
-// display the month, day, and time.
-const HOURS_IN_MS = 60 * 60 * 1000;
-const TRADE_LOG_RELATIVE_TIMESTAMP = 24 * HOURS_IN_MS;
-const shouldShowRelativeTimestamp = (timestamp: Date) => {
-  return timestamp > new Date(Date.now() - TRADE_LOG_RELATIVE_TIMESTAMP);
-};
-
-const CellTitle: React.FC<{
-  children: React.ReactNode;
-  className?: string;
-}> = ({ children, className }) => (
-  <span
-    className={cn(
-      "text-secondary-foreground text-xs font-semibold uppercase tracking-widest",
-      className,
-    )}
-  >
-    {children}
-  </span>
-);
 
 /**
  * CompetitionKey component displays tabs with trades, positions, predictions, info, and rules.
@@ -81,7 +50,6 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
   className,
 }) => {
   const isPerpsCompetition = checkIsPerpsCompetition(competition.type);
-  const [expanded, setExpanded] = useState(false);
   const [balancesExpanded, setBalancesExpanded] = useState(false);
   const [tradingRulesExpanded, setTradingRulesExpanded] = useState(false);
   const [chainsExpanded, setChainsExpanded] = useState(false);
@@ -115,7 +83,7 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
     competition.id,
     {
       offset: tradesOffset,
-      limit: LIMIT_TRADES_PER_PAGE,
+      limit: LIMIT_ITEMS_PER_PAGE,
     },
     !isPerpsCompetition,
     competition.status,
@@ -126,7 +94,7 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
       competition.id,
       {
         offset: openPositionsOffset,
-        limit: LIMIT_POSITIONS_PER_PAGE,
+        limit: LIMIT_ITEMS_PER_PAGE,
         status: "Open",
       },
       isPerpsCompetition,
@@ -138,7 +106,7 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
       competition.id,
       {
         offset: closedPositionsOffset,
-        limit: LIMIT_POSITIONS_PER_PAGE,
+        limit: LIMIT_ITEMS_PER_PAGE,
         status: "Closed",
       },
       isPerpsCompetition,
@@ -146,15 +114,15 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
     );
 
   const handleTradesPageChange = useCallback((page: number) => {
-    setTradesOffset(LIMIT_TRADES_PER_PAGE * (page - 1));
+    setTradesOffset(LIMIT_ITEMS_PER_PAGE * (page - 1));
   }, []);
 
   const handleOpenPositionsPageChange = useCallback((page: number) => {
-    setOpenPositionsOffset(LIMIT_POSITIONS_PER_PAGE * (page - 1));
+    setOpenPositionsOffset(LIMIT_ITEMS_PER_PAGE * (page - 1));
   }, []);
 
   const handleClosedPositionsPageChange = useCallback((page: number) => {
-    setClosedPositionsOffset(LIMIT_POSITIONS_PER_PAGE * (page - 1));
+    setClosedPositionsOffset(LIMIT_ITEMS_PER_PAGE * (page - 1));
   }, []);
 
   // Handle escape key and body scroll lock for mobile sidebar
@@ -178,30 +146,6 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
       document.removeEventListener("keydown", handleEscape);
     };
   }, [mobileDialogOpen]);
-
-  const renderNumber = useCallback(
-    (value: number, prefix = "") => (
-      <>
-        <span className="hidden sm:inline">
-          {prefix}
-          {formatAmount(value, 0, true)}
-        </span>
-        <span className="sm:hidden">
-          {prefix}
-          {formatCompactNumber(value)}
-        </span>
-      </>
-    ),
-    [],
-  );
-
-  const SHORT_DESC_LENGTH = 120;
-  const isLong =
-    competition.description?.length &&
-    competition.description.length > SHORT_DESC_LENGTH;
-  const shortDesc = isLong
-    ? competition.description?.slice(0, SHORT_DESC_LENGTH) + "..."
-    : competition.description;
 
   const keyContent = useMemo(
     () => (
@@ -236,10 +180,10 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
             </>
           )}
           <TabsTrigger
-            value="predictions"
+            value="boosts"
             className="border border-white bg-black px-4 py-2 text-xs font-semibold uppercase text-white transition-colors duration-200 hover:bg-white hover:text-black data-[state=active]:bg-white data-[state=active]:text-black"
           >
-            Predictions
+            Boosts
           </TabsTrigger>
           <TabsTrigger
             value="info"
@@ -302,9 +246,9 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
                     <Pagination
                       totalItems={tradesData.pagination.total}
                       currentPage={
-                        Math.floor(tradesOffset / LIMIT_TRADES_PER_PAGE) + 1
+                        Math.floor(tradesOffset / LIMIT_ITEMS_PER_PAGE) + 1
                       }
-                      itemsPerPage={LIMIT_TRADES_PER_PAGE}
+                      itemsPerPage={LIMIT_ITEMS_PER_PAGE}
                       onPageChange={handleTradesPageChange}
                     />
                   </div>
@@ -389,11 +333,10 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
                     <Pagination
                       totalItems={openPositionsData.pagination.total}
                       currentPage={
-                        Math.floor(
-                          openPositionsOffset / LIMIT_POSITIONS_PER_PAGE,
-                        ) + 1
+                        Math.floor(openPositionsOffset / LIMIT_ITEMS_PER_PAGE) +
+                        1
                       }
-                      itemsPerPage={LIMIT_POSITIONS_PER_PAGE}
+                      itemsPerPage={LIMIT_ITEMS_PER_PAGE}
                       onPageChange={handleOpenPositionsPageChange}
                     />
                   </div>
@@ -479,10 +422,10 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
                       totalItems={closedPositionsData.pagination.total}
                       currentPage={
                         Math.floor(
-                          closedPositionsOffset / LIMIT_POSITIONS_PER_PAGE,
+                          closedPositionsOffset / LIMIT_ITEMS_PER_PAGE,
                         ) + 1
                       }
-                      itemsPerPage={LIMIT_POSITIONS_PER_PAGE}
+                      itemsPerPage={LIMIT_ITEMS_PER_PAGE}
                       onPageChange={handleClosedPositionsPageChange}
                     />
                   </div>
@@ -496,12 +439,12 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
           </TabsContent>
         )}
 
-        {/* Predictions Tab */}
+        {/* Boosts Tab */}
         <TabsContent
-          value="predictions"
+          value="boosts"
           className="m-0 flex-1 overflow-hidden border"
         >
-          <PredictionsTabContent competition={competition} />
+          <BoostsTabContent competition={competition} />
         </TabsContent>
 
         {/* Info Tab */}
@@ -509,260 +452,10 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
           value="info"
           className="m-0 flex-1 overflow-hidden md:border"
         >
-          <div className="h-full overflow-y-auto">
-            {competition.status !== "ended" && (
-              <div className="border-b bg-[#0C0D12] px-4 py-2">
-                <CompetitionStateSummary competition={competition} />
-              </div>
-            )}
-
-            {/* Skills Row */}
-            <div className="grid grid-cols-1 border-b">
-              <div className="flex flex-col items-start gap-2 p-4">
-                <CellTitle>Skills</CellTitle>
-                <div className="flex flex-wrap gap-2">
-                  {getCompetitionSkills(competition.type).map((skill) => (
-                    <span
-                      key={skill}
-                      className="rounded-sm border border-gray-600 px-2 py-1 text-sm"
-                    >
-                      {skill}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Ranked by Row - Only for perps competitions */}
-            {isPerpsCompetition && competition.evaluationMetric && (
-              <div className="grid grid-cols-1 border-b">
-                <div className="flex flex-col items-start gap-2 p-4">
-                  <CellTitle>Ranked by</CellTitle>
-                  <Tooltip content="The primary metric used to rank agents in this competition">
-                    <span className="flex items-center gap-2 font-bold">
-                      {getEvaluationMetricDisplayName(
-                        competition.evaluationMetric,
-                      )}
-                      <Info className="h-4 w-4 text-gray-400" />
-                    </span>
-                  </Tooltip>
-                </div>
-              </div>
-            )}
-
-            {/* Rewards Row */}
-            <div className="flex flex-col gap-2 border-b p-4">
-              <CellTitle className="shrink-0 uppercase tracking-wider">
-                Rewards
-              </CellTitle>
-              {competition.rewardsTge ? (
-                <RewardsTGE
-                  rewards={{
-                    agentPrizePool: BigInt(competition.rewardsTge.agentPool),
-                    userPrizePool: BigInt(competition.rewardsTge.userPool),
-                  }}
-                />
-              ) : competition.rewards && competition.rewards.length > 0 ? (
-                <div className="flex min-w-0 flex-1 items-center justify-start gap-4 overflow-hidden">
-                  {competition.rewards
-                    .sort((a, b) => a.rank - b.rank)
-                    .slice(0, 3)
-                    .map((r) => (
-                      <div
-                        key={r.rank}
-                        className="flex min-w-0 items-center gap-1 sm:gap-2"
-                      >
-                        <span
-                          className={cn(
-                            "shrink-0 text-xs sm:text-base",
-                            r.rank === 1
-                              ? "text-[#FBD362]"
-                              : r.rank === 2
-                                ? "text-[#93A5BA]"
-                                : "text-[#C76E29]",
-                          )}
-                        >
-                          {r.rank === 1 ? "1st" : r.rank === 2 ? "2nd" : "3rd"}
-                        </span>
-                        <span className="min-w-0 font-bold text-gray-100">
-                          {renderNumber(r.reward, "$")}
-                        </span>
-                      </div>
-                    ))}
-                </div>
-              ) : (
-                <p className="font-bold">TBA</p>
-              )}
-            </div>
-
-            {/* Duration and Boost Window Row */}
-            <div className="grid grid-cols-2 border-b">
-              <div className="flex flex-col items-start gap-2 border-r p-4">
-                <CellTitle>Duration</CellTitle>
-                <div className="flex flex-wrap gap-2">
-                  <span className="font-bold">
-                    <Tooltip
-                      content={formatCompetitionDates(
-                        competition.startDate,
-                        competition.endDate,
-                        true,
-                      )}
-                    >
-                      {formatCompetitionDates(
-                        competition.startDate,
-                        competition.endDate,
-                      )}
-                    </Tooltip>
-                  </span>
-                </div>
-              </div>
-              <div className="flex flex-col items-start gap-2 p-4">
-                <CellTitle>Boost Window</CellTitle>
-                <div className="flex flex-wrap gap-2">
-                  <span className="font-bold">
-                    <Tooltip
-                      className="cursor-tooltip"
-                      content={formatCompetitionDates(
-                        competition.boostStartDate,
-                        competition.boostEndDate,
-                        true,
-                      )}
-                    >
-                      {formatCompetitionDates(
-                        competition.boostStartDate,
-                        competition.boostEndDate,
-                      )}
-                    </Tooltip>
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Minimum Agent Stake and Registration Limit Row */}
-            <div className="grid grid-cols-2 border-b">
-              <div className="flex flex-col items-start gap-2 border-r p-4">
-                <CellTitle>Minimum Agent Stake</CellTitle>
-                <Tooltip content="Amount of staked RECALL required for an agent to compete in this competition">
-                  <div className="font-bold">
-                    {competition.minimumStake ? (
-                      <span className="flex items-center gap-2">
-                        {formatAmount(competition.minimumStake, 0, true)}{" "}
-                        <Recall />
-                      </span>
-                    ) : (
-                      "N/A"
-                    )}
-                  </div>
-                </Tooltip>
-              </div>
-              <div className="flex flex-col items-start gap-2 p-4">
-                <CellTitle>Registration Limit</CellTitle>
-                <div className="font-bold">
-                  <span className="flex items-center gap-2">
-                    {competition.maxParticipants
-                      ? competition.maxParticipants
-                      : "Unlimited"}{" "}
-                    participants
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* About Row */}
-            <div className="border-b p-4">
-              <CellTitle className="mb-3 uppercase tracking-wider">
-                About
-              </CellTitle>
-              <div
-                className={`relative ${expanded ? "max-h-40 overflow-y-auto" : "max-h-16 overflow-hidden"}`}
-              >
-                <div className="whitespace-pre-line pr-2">
-                  {expanded ? competition.description : shortDesc}
-                </div>
-                {!expanded && isLong && (
-                  <div className="pointer-events-none absolute bottom-0 left-0 h-8 w-full bg-gradient-to-t from-black to-transparent" />
-                )}
-              </div>
-
-              <div className="mt-2 text-sm text-gray-400">
-                {competition.externalUrl &&
-                  (() => {
-                    try {
-                      const host = new URL(competition.externalUrl).host;
-                      if (
-                        host === "example.com" ||
-                        host.endsWith(".example.com")
-                      ) {
-                        return null;
-                      }
-                      return (
-                        <Link
-                          href={competition.externalUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center whitespace-nowrap"
-                        >
-                          Read more about the official competition rules{" "}
-                          <ArrowUpRight size={16} className="ml-1" />
-                        </Link>
-                      );
-                    } catch {
-                      return null;
-                    }
-                  })()}
-              </div>
-              {isLong && (
-                <button
-                  className="mt-2 self-start transition-colors"
-                  onClick={() => setExpanded((v) => !v)}
-                  aria-expanded={expanded}
-                >
-                  {expanded ? "SHOW LESS" : "SHOW MORE"}
-                </button>
-              )}
-            </div>
-
-            {/* Total Positions, Volume, and Average Equity/Tokens Traded Row */}
-            <div className="grid grid-cols-3 border-b">
-              <div className="flex min-w-0 flex-col items-start justify-center gap-2 border-r p-3">
-                <CellTitle>
-                  {isPerpsCompetition ? "Total Positions" : "Total Trades"}
-                </CellTitle>
-                <span className="font-bold">
-                  {renderNumber(
-                    isPerpsCompetition
-                      ? (competition.stats.totalPositions ?? 0)
-                      : (competition.stats.totalTrades ?? 0),
-                  )}
-                </span>
-              </div>
-              <div className="flex min-w-0 flex-col items-start justify-center gap-2 border-r p-3">
-                <CellTitle>Volume</CellTitle>
-                <span className="font-bold">
-                  {renderNumber(competition.stats.totalVolume ?? 0, "$")}
-                </span>
-              </div>
-              <div className="flex min-w-0 flex-col items-start justify-center gap-2 p-3">
-                <CellTitle>
-                  {isPerpsCompetition ? "Average Equity" : "Tokens Traded"}
-                </CellTitle>
-                <span className="font-bold">
-                  {isPerpsCompetition
-                    ? renderNumber(competition.stats.averageEquity ?? 0, "$")
-                    : renderNumber(competition.stats.uniqueTokens ?? 0)}
-                </span>
-              </div>
-            </div>
-
-            {/* Disclaimer Row */}
-            <div className="p-4">
-              <div className="text-secondary-foreground text-xs">
-                Recall reserves the right to modify or cancel rules,
-                eligibility, prize amounts, formats, and schedules at any time
-                before the official start of the competition.
-              </div>
-            </div>
-          </div>
+          <CompetitionInfoSections
+            competition={competition}
+            showEvaluationMetric={isPerpsCompetition}
+          />
         </TabsContent>
 
         {/* Rules Tab */}
@@ -966,15 +659,11 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
 
       rules,
       rulesLoading,
-      expanded,
       balancesExpanded,
       tradingRulesExpanded,
       chainsExpanded,
       rateLimitsExpanded,
       competition,
-      shortDesc,
-      isLong,
-      renderNumber,
     ],
   );
 
@@ -1030,129 +719,6 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
         </div>
       </div>
     </>
-  );
-};
-
-/**
- * PredictionsTabContent component displays boost allocations for a competition
- */
-const PredictionsTabContent: React.FC<{
-  competition: RouterOutputs["competitions"]["getById"];
-}> = ({ competition }) => {
-  // If the competition is pending, only query boosts if boosting has started; else, always fetch
-  const shouldFetchBoosts =
-    competition.status === "pending" ? openForBoosting(competition) : true;
-  const {
-    data,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-    isLoading,
-    isError,
-  } = useCompetitionBoosts(
-    competition.id,
-    25,
-    shouldFetchBoosts,
-    competition.status,
-  );
-
-  const boosts = useMemo(() => {
-    return data?.pages.flatMap((page) => page.items) ?? [];
-  }, [data]);
-
-  if (isLoading) {
-    return (
-      <div className="h-full overflow-y-auto p-4">
-        <SkeletonList count={10} type="trade" />
-      </div>
-    );
-  }
-
-  if (isError) {
-    return (
-      <div className="flex h-full flex-col items-center justify-center p-8">
-        <BoostIcon className="mb-4 size-8" />
-        <p className="text-red-400">Failed to load boost predictions</p>
-      </div>
-    );
-  }
-
-  if (boosts.length === 0) {
-    return (
-      <div className="flex h-full flex-col items-center justify-center p-8">
-        <BoostIcon className="mb-4 size-8" />
-        <p className="text-sm text-gray-400">
-          {competition.status === "ended"
-            ? "No boosts found for this competition"
-            : "No boosts yet for this competition"}
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="h-full overflow-y-auto p-4">
-      <div>
-        <div className="space-y-3">
-          {boosts.map((boost, index) => {
-            const timestamp = new Date(boost.createdAt);
-            const showRelative = shouldShowRelativeTimestamp(timestamp);
-
-            return (
-              <div
-                key={`${boost.userId}-${boost.agentId}-${index}`}
-                className="flex items-start justify-between gap-4 border-b border-gray-800 pb-3 last:border-0"
-              >
-                {/* Left column: User wallet address */}
-                <div className="flex items-center gap-2">
-                  <Tooltip
-                    content={boost.wallet}
-                    tooltipClassName="max-w-md z-999"
-                  >
-                    <span className="font-mono">
-                      {displayAddress(boost.wallet, { numChars: 6 })}
-                    </span>
-                  </Tooltip>
-                </div>
-
-                {/* Right column: Agent name + Boost details */}
-                <div className="flex flex-col items-end gap-1 text-right">
-                  <span className="text-xs text-gray-400">
-                    <Link
-                      href={`/agents/${boost.agentId}`}
-                      className="text-xs font-semibold hover:underline"
-                    >
-                      {boost.agentName}
-                    </Link>
-                    {" • "}
-                    {formatBigintAmount(boost.amount)} BOOST
-                  </span>
-                  <span className="text-xs text-gray-500">
-                    {showRelative
-                      ? formatRelativeTime(timestamp)
-                      : formatDateShort(timestamp, true)}
-                  </span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Load More Button */}
-        {hasNextPage && (
-          <div className="mt-4">
-            <Button
-              onClick={() => fetchNextPage()}
-              disabled={isFetchingNextPage}
-              variant="outline"
-              className="w-full"
-            >
-              {isFetchingNextPage ? "Loading..." : "Load More"}
-            </Button>
-          </div>
-        )}
-      </div>
-    </div>
   );
 };
 
