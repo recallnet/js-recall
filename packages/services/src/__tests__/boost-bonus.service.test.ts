@@ -301,6 +301,51 @@ describe("BoostBonusService", () => {
       ).rejects.toThrow("Meta field must only contain primitives");
     });
 
+    it("validates meta field does not contain BigInt", async () => {
+      setupMockTransaction();
+      const meta = { boostId: 123n };
+
+      await expect(
+        service.addBoostBonus(
+          testWallet,
+          1000n,
+          new Date(Date.now() + ONE_DAY_MS),
+          undefined,
+          meta,
+        ),
+      ).rejects.toThrow("Meta field must only contain primitives");
+    });
+
+    it("validates meta field does not contain Symbol", async () => {
+      setupMockTransaction();
+      const meta = { source: Symbol("internal") };
+
+      await expect(
+        service.addBoostBonus(
+          testWallet,
+          1000n,
+          new Date(Date.now() + ONE_DAY_MS),
+          undefined,
+          meta,
+        ),
+      ).rejects.toThrow("Meta field must only contain primitives");
+    });
+
+    it("validates meta field does not contain undefined", async () => {
+      setupMockTransaction();
+      const meta = { metadata: undefined };
+
+      await expect(
+        service.addBoostBonus(
+          testWallet,
+          1000n,
+          new Date(Date.now() + ONE_DAY_MS),
+          undefined,
+          meta,
+        ),
+      ).rejects.toThrow("Meta field must only contain primitives");
+    });
+
     it("runs within a database transaction", async () => {
       const amount = 1000n;
       const expiresAt = new Date(Date.now() + ONE_DAY_MS);
@@ -754,6 +799,119 @@ describe("BoostBonusService", () => {
 
         mockBoostRepo.decrease
           .mockRejectedValueOnce(competitionFkError)
+          .mockResolvedValueOnce({
+            type: "applied",
+            changeId: "change-rev",
+            balanceAfter: 0n,
+            idemKey: new Uint8Array(32),
+          });
+
+        const result = await service.revokeBoostBonus(testBoostBonusId);
+
+        expect(result.revoked).toBe(true);
+        expect(result.removedFromPending).toEqual(["comp-2"]);
+        expect(mockBoostRepo.decrease).toHaveBeenCalledTimes(2);
+        expect(mockLogger.warn).toHaveBeenCalledWith(
+          { boostBonusId: testBoostBonusId, competitionId: "comp-1" },
+          "Competition was deleted during boost revocation - skipping",
+        );
+      });
+
+      it("addBoostBonus skips competition when balance_id FK violation occurs (cascade delete)", async () => {
+        const now = new Date();
+        const amount = 1000n;
+        const expiresAt = new Date(now.getTime() + ONE_DAY_MS);
+        const balanceFkError = {
+          code: "23503",
+          constraint: "boost_changes_balance_id_boost_balances_id_fk",
+        };
+
+        setupBasicBoostMocks(amount, expiresAt);
+        mockCompetitionRepo.findByStatus
+          .mockResolvedValueOnce({
+            competitions: [
+              setupCompetition(
+                "comp-1",
+                "active",
+                new Date(now.getTime() - 1000),
+                new Date(now.getTime() + ONE_DAY_MS * 2),
+              ),
+              setupCompetition(
+                "comp-2",
+                "active",
+                new Date(now.getTime() - 1000),
+                new Date(now.getTime() + ONE_DAY_MS * 2),
+              ),
+            ],
+            total: 2,
+          })
+          .mockResolvedValueOnce({
+            competitions: [],
+            total: 0,
+          });
+
+        mockBoostRepo.increase
+          .mockRejectedValueOnce(balanceFkError)
+          .mockResolvedValueOnce({
+            type: "applied",
+            changeId: "change-2",
+            balanceAfter: amount,
+            idemKey: new Uint8Array(32),
+          });
+
+        const result = await service.addBoostBonus(
+          testWallet,
+          amount,
+          expiresAt,
+        );
+
+        expect(result.boostBonusId).toBe(testBoostBonusId);
+        expect(result.appliedToCompetitions).toEqual(["comp-2"]);
+        expect(mockBoostRepo.increase).toHaveBeenCalledTimes(2);
+        expect(mockLogger.warn).toHaveBeenCalledWith(
+          { boostBonusId: testBoostBonusId, competitionId: "comp-1" },
+          "Competition was deleted during boost application - skipping",
+        );
+      });
+
+      it("revokeBoostBonus skips competition when balance_id FK violation occurs (cascade delete)", async () => {
+        const now = new Date();
+        const boost = createMockBoostBonus({
+          id: testBoostBonusId,
+          userId: testUserId,
+          amount: 1000n,
+          isActive: true,
+        });
+        const balanceFkError = {
+          code: "23503",
+          constraint: "boost_changes_balance_id_boost_balances_id_fk",
+        };
+
+        setupRevokeBoostMocks(boost, [
+          { id: "change-1", balanceId: "bal-1", competitionId: "comp-1" },
+          { id: "change-2", balanceId: "bal-2", competitionId: "comp-2" },
+        ]);
+        mockBoostRepo.updateBoostBonus.mockResolvedValue(
+          createMockBoostBonus({ ...boost, isActive: false, revokedAt: now }),
+        );
+        mockCompetitionRepo.findById
+          .mockResolvedValueOnce(
+            mock<EnrichedCompetition>({
+              id: "comp-1",
+              boostStartDate: new Date(now.getTime() + 1000),
+              boostEndDate: new Date(now.getTime() + ONE_DAY_MS),
+            }),
+          )
+          .mockResolvedValueOnce(
+            mock<EnrichedCompetition>({
+              id: "comp-2",
+              boostStartDate: new Date(now.getTime() + 1000),
+              boostEndDate: new Date(now.getTime() + ONE_DAY_MS),
+            }),
+          );
+
+        mockBoostRepo.decrease
+          .mockRejectedValueOnce(balanceFkError)
           .mockResolvedValueOnce({
             type: "applied",
             changeId: "change-rev",

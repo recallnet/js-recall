@@ -285,8 +285,14 @@ export class BoostBonusService {
           }
         } catch (error) {
           // Handle case where competition is deleted between query and revocation
+          // FK violations can occur on either:
+          // 1. boost_balances.competition_id (when competition is deleted)
+          // 2. boost_changes.balance_id (when boost_balances row is cascade-deleted due to competition deletion)
           const constraint = checkForeignKeyViolation(error);
-          if (constraint?.includes("competition_id")) {
+          if (
+            constraint?.includes("competition_id") ||
+            constraint?.includes("balance_id")
+          ) {
             this.#logger.warn(
               { boostBonusId, competitionId },
               "Competition was deleted during boost revocation - skipping",
@@ -419,29 +425,25 @@ export class BoostBonusService {
 
       // Validate meta field
       if (meta) {
+        for (const value of Object.values(meta)) {
+          const type = typeof value;
+          if (
+            type !== "string" &&
+            type !== "number" &&
+            type !== "boolean" &&
+            value !== null
+          ) {
+            throw new Error(
+              "Meta field must only contain primitives (string, number, boolean, null)",
+            );
+          }
+        }
+
         const metaJson = JSON.stringify(meta);
         if (metaJson.length > MAX_BONUS_BOOST_META_LENGTH) {
           throw new Error(
             `Meta field exceeds maximum length of ${MAX_BONUS_BOOST_META_LENGTH} characters`,
           );
-        }
-
-        // Check that meta only contains primitives (no nested objects/arrays)
-        for (const value of Object.values(meta)) {
-          if (
-            value !== null &&
-            typeof value === "object" &&
-            !Array.isArray(value)
-          ) {
-            throw new Error(
-              "Meta field must only contain primitives (string, number, boolean)",
-            );
-          }
-          if (Array.isArray(value)) {
-            throw new Error(
-              "Meta field must only contain primitives (string, number, boolean)",
-            );
-          }
         }
       }
 
@@ -654,8 +656,14 @@ export class BoostBonusService {
         }
       } catch (error) {
         // Handle case where competition is deleted between query and application
+        // FK violations can occur on either:
+        // 1. boost_balances.competition_id (when competition is deleted)
+        // 2. boost_changes.balance_id (when boost_balances row is cascade-deleted due to competition deletion)
         const constraint = checkForeignKeyViolation(error);
-        if (constraint?.includes("competition_id")) {
+        if (
+          constraint?.includes("competition_id") ||
+          constraint?.includes("balance_id")
+        ) {
           this.#logger.warn(
             { boostBonusId, competitionId },
             "Competition was deleted during boost application - skipping",
