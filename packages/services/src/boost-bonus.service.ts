@@ -146,7 +146,10 @@ export class BoostBonusService {
       }
 
       // Get user to retrieve wallet address
-      const user = await this.#userRepository.findById(boost.userId);
+      const user = await this.#userRepository.findById(
+        boost.userId,
+        transaction,
+      );
       if (!user) {
         throw new Error(`User with id ${boost.userId} not found`);
       }
@@ -650,7 +653,17 @@ export class BoostBonusService {
         "Retrieved bonus boost entries for cleanup evaluation",
       );
 
-      // Step 4: Process each boost - remove if invalid
+      // Step 4: Batch-fetch all users upfront to avoid N+1 queries
+      const userIds = [...new Set(boosts.map((b) => b.userId))];
+      const users = await this.#userRepository.findByIds(userIds, transaction);
+      const userMap = new Map(users.map((u) => [u.id, u]));
+
+      this.#logger.debug(
+        { competitionId, userCount: users.length, boostCount: boosts.length },
+        "Batch-fetched users for boost cleanup",
+      );
+
+      // Step 5: Process each boost - remove if invalid
       for (const boost of boosts) {
         const boostBonusId = boost.id;
 
@@ -683,8 +696,8 @@ export class BoostBonusService {
           "Boost now invalid (boostStartDate >= expiresAt) - removing from competition",
         );
 
-        // Get user to retrieve wallet address
-        const user = await this.#userRepository.findById(boost.userId);
+        // Get user from the pre-fetched map
+        const user = userMap.get(boost.userId);
         if (!user) {
           this.#logger.warn(
             { boostBonusId, userId: boost.userId },

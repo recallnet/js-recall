@@ -2776,11 +2776,7 @@ export class CompetitionService {
 
 
       // Cleanup invalid bonus boosts if boostStartDate was updated
-      if (
-        this.boostBonusService &&
-        updates.boostStartDate !== undefined &&
-        updates.boostStartDate !== null
-      ) {
+      if (this.boostBonusService && updates.boostStartDate != null) {
         this.logger.info(
           { competitionId, newBoostStartDate: updates.boostStartDate },
           "[CompetitionService] boostStartDate updated - cleaning up invalid bonus boosts",
