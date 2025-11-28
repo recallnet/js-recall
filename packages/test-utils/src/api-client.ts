@@ -17,6 +17,7 @@ import {
 } from "./privy.js";
 import { getBaseUrl } from "./server.js";
 import {
+  AddBonusBoostsResponse,
   AddPartnerToCompetitionResponse,
   AdminAddAgentToCompetitionResponse,
   AdminAgentResponse,
@@ -76,6 +77,7 @@ import {
   RemovePartnerFromCompetitionResponse,
   ReplaceCompetitionPartnersResponse,
   ResetApiKeyResponse,
+  RevokeBonusBoostsResponse,
   RewardsProofsResponse,
   RewardsTotalResponse,
   SpecificChain,
@@ -2813,7 +2815,7 @@ export class ApiClient {
       expiresAt: string;
       meta?: Record<string, string | number | boolean>;
     }>;
-  }): Promise<ApiResponse | ErrorResponse> {
+  }): Promise<AddBonusBoostsResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.post(
         "/api/admin/boost-bonus",
@@ -2831,7 +2833,7 @@ export class ApiClient {
    */
   async revokeBonusBoosts(data: {
     boostIds: string[];
-  }): Promise<ApiResponse | ErrorResponse> {
+  }): Promise<RevokeBonusBoostsResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.post(
         "/api/admin/boost-bonus/revoke",
