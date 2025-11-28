@@ -20,6 +20,18 @@ Vercel Cron Jobs work differently from traditional cron:
 **Schedule:** Every minute (`* * * * *`)
 **Description:** Automatically starts competitions that have reached their start date
 
+### NFL Plays Ingester
+
+**Endpoint:** `/api/cron/nfl/plays`  
+**Schedule:** Every minute (`*/1 * * * *`)  
+**Description:** Discovers active NFL competitions, fetches in-progress games, and ingests live play-by-play data (requires `SPORTSDATAIO_API_KEY`)
+
+### NFL Schedule Ingester
+
+**Endpoint:** `/api/cron/nfl/schedule`  
+**Schedule:** Every 5 minutes (`*/5 * * * *`)  
+**Description:** Syncs the NFL schedule for the requested season (defaults to current year). Supports a `season` query parameter (e.g., `/api/cron/nfl/schedule?season=2025reg`) and requires `SPORTSDATAIO_API_KEY`.
+
 ## Configuration
 
 ### 1. Add CRON_SECRET to Vercel Environment Variables
@@ -49,6 +61,17 @@ The `vercel.json` file configures cron schedules:
   ]
 }
 ```
+
+Also ensure the following environment variables are configured in Vercel:
+
+- `CRON_SECRET` (required for all cron jobs)
+- Sports data API environment variables:
+  - `SPORTSDATAIO_API_KEY`
+  - `SPORTSDATAIO_BASE_URL` (optional override)
+- Rewards auto-calculation:
+  - `REWARDS_SLACK_WEBHOOK_URL`
+  - `REWARDS_TOKEN_CONTRACT_ADDRESS`
+  - `REWARDS_CONTRACT_ADDRESS`
 
 ### 3. Deploy to Vercel
 
