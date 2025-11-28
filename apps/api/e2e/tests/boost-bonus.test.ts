@@ -1657,7 +1657,9 @@ describe("Bonus Boosts E2E", () => {
           },
         ],
       });
-      const boost1Id = (response1 as any).data.results[0].id;
+      if (!response1.success) throw new Error("Should have succeeded");
+
+      const boost1Id = response1.data.results[0]!.id;
 
       await adminClient.addBonusBoosts({
         boosts: [
