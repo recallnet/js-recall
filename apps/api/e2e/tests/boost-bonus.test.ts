@@ -140,22 +140,24 @@ describe("Bonus Boosts E2E", () => {
       const [result1, result2] = response.data.results;
 
       // Verify result structure
-      expect(result1.userId).toBe(user1.id);
-      expect(result1.amount).toBe("500000000000000000");
-      expect(result1.isActive).toBe(true);
+      expect(result1).toBeDefined();
+      expect(result1!.userId).toBe(user1.id);
+      expect(result1!.amount).toBe("500000000000000000");
+      expect(result1!.isActive).toBe(true);
 
       // Verify boosts applied to eligible competitions (A and B)
       // Note: Classification depends on boost window timing at application time
       const appliedCompIds = [
-        ...(result1.appliedToCompetitions.active || []),
-        ...(result1.appliedToCompetitions.pending || []),
+        ...(result1!.appliedToCompetitions.active || []),
+        ...(result1!.appliedToCompetitions.pending || []),
       ];
       expect(appliedCompIds).toContain(compA.competition.id);
       expect(appliedCompIds).toContain(compB.competition.id);
       expect(appliedCompIds).not.toContain(compC.competition.id);
 
-      expect(result2.userId).toBe(user2.id);
-      expect(result2.amount).toBe("750000000000000000");
+      expect(result2).toBeDefined();
+      expect(result2!.userId).toBe(user2.id);
+      expect(result2!.amount).toBe("750000000000000000");
 
       // Verify database: boost_bonus entries created
       const bonusBoosts = await getUserBoosts(user1.id);
@@ -782,9 +784,10 @@ describe("Bonus Boosts E2E", () => {
       expect(balanceBAfter[0]!.balance).toBe(1000000000000000000n); // Kept (0.6 + 0.4 = 1.0)
 
       // Verify revocation details in response
-      expect(results[0].revoked).toBe(true);
-      expect(results[0].removedFromPending).toContain(compA.competition.id);
-      expect(results[0].keptInActive).toContain(compB.competition.id);
+      expect(results[0]).toBeDefined();
+      expect(results[0]!.revoked).toBe(true);
+      expect(results[0]!.removedFromPending).toContain(compA.competition.id);
+      expect(results[0]!.keptInActive).toContain(compB.competition.id);
     });
 
     test("rejects invalid batch revoke data", async () => {
@@ -813,6 +816,8 @@ describe("Bonus Boosts E2E", () => {
         boostIds: [],
       });
       expect(emptyResponse.success).toBe(false);
+      if (emptyResponse.success) throw new Error("Should have failed");
+
       expect(emptyResponse.error).toContain("at least one");
 
       // Test 2: Invalid UUID format
