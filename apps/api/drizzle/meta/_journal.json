@@ -463,6 +463,13 @@
       "when": 1764123119513,
       "tag": "0065_burly_iron_patriot",
       "breakpoints": true
+    },
+    {
+      "idx": 66,
+      "version": "7",
+      "when": 1764232206237,
+      "tag": "0066_right_whiplash",
+      "breakpoints": true
     }
   ]
 }

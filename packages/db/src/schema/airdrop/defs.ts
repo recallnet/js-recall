@@ -17,10 +17,8 @@ export const seasons = pgTable("seasons", {
   id: serial().primaryKey().notNull(),
   number: integer().notNull().unique(),
   name: text().notNull().unique(),
-  startDate: timestamp("start_date", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-  endDate: timestamp("end_date", { withTimezone: true }),
+  startDate: timestamp("start_date", { withTimezone: true }).notNull(),
+  endDate: timestamp("end_date", { withTimezone: true }).notNull(),
 });
 
 // Main table for storing airdrop allocations data

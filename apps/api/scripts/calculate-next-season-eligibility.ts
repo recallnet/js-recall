@@ -55,10 +55,11 @@ function calculateMedian(values: bigint[]): bigint {
  * Calculate eligibility for the next conviction claims airdrop.
  *
  * This script:
- * 1. Finds accounts with active stakes (where ex-date > reference time)
+ * 1. Finds accounts with stakes that are locked until after the start of the
+ *    given season
  * 2. Calculates total forfeited amounts from all seasons
- * 3. Subtracts claims from subsequent seasons to get available pool
- * 4. Distributes rewards proportionally based on active stake amounts
+ * 3. Subtracts claims from conviction claim seasons to get available pool
+ * 4. Distributes rewards proportionally based on locked stake amounts
  */
 async function calculateNextSeasonEligibility() {
   // Parse command line arguments
@@ -68,13 +69,7 @@ async function calculateNextSeasonEligibility() {
       airdrop: {
         type: "string",
         short: "a",
-        description: "Airdrop number for the output",
-      },
-      time: {
-        type: "string",
-        short: "t",
-        description:
-          "Reference time in ISO format (e.g., 2024-12-31T00:00:00Z)",
+        description: "Airdrop number to be calculated",
       },
       prepend: {
         type: "string",
@@ -98,8 +93,6 @@ Usage: pnpm tsx calculate-next-season-eligibility.ts --season <number> --time <I
 
 Options:
   -a, --airdrop   Airdrop number for the output (required)
-  -t, --time      Reference time in ISO format (required)
-                  Example: 2024-12-31T00:00:00Z
   -p, --prepend   Prepend existing data from the specified file to the new csv file
   -h, --help      Show this help message
 
@@ -116,38 +109,32 @@ Examples:
     process.exit(1);
   }
 
-  if (!values.time) {
-    console.error(`${colors.red}Error: --time is required${colors.reset}`);
-    process.exit(1);
-  }
-
-  const airdropNumber = parseInt(values.airdrop);
-  if (isNaN(airdropNumber) || airdropNumber < 0) {
+  const airdropNumber = parseInt(values.airdrop, 10);
+  if (isNaN(airdropNumber) || airdropNumber < 1) {
     console.error(`${colors.red}Error: Invalid airdrop number${colors.reset}`);
     process.exit(1);
   }
 
-  const referenceTime = new Date(values.time);
-  if (isNaN(referenceTime.getTime())) {
-    console.error(
-      `${colors.red}Error: Invalid time format. Use ISO format like 2024-12-31T00:00:00Z${colors.reset}`,
-    );
-    process.exit(1);
-  }
-
   console.log(
-    `${colors.cyan}🔍 Calculating eligibility for airdrop ${airdropNumber}${colors.reset}`,
+    `${colors.cyan}🔍 Calculating eligibility for airdrop season ${airdropNumber}${colors.reset}`,
   );
-  console.log(`📅 Reference time: ${referenceTime.toISOString()}\n`);
 
   try {
     // Step 1: Find all accounts with active stakes
     console.log(
       `${colors.blue}Step 1: Finding accounts with active stakes...${colors.reset}`,
     );
+    const [currentSeason] = await db
+      .select()
+      .from(seasons)
+      .where(eq(seasons.number, airdropNumber - 1));
+    if (!currentSeason) {
+      console.error(`Season ${airdropNumber - 1} not found`);
+      process.exit(1);
+    }
 
-    // Active stakes are those where blockTimestamp + duration > referenceTime
-    // We need to convert duration (seconds) to milliseconds and add to timestamp
+    // Actively locked stakes that came from an airdrop are those where
+    // blockTimestamp + duration > season start time
     const activeStakesQuery = await db
       .select({
         account: convictionClaims.account,
@@ -161,14 +148,14 @@ Examples:
         and(
           // Only claims with duration > 0 (actual stakes)
           gte(convictionClaims.duration, 1n),
-          // Only stakes from claims before the reference time
-          lte(convictionClaims.blockTimestamp, referenceTime),
-          // Ex-date calculation: blockTimestamp + duration seconds > referenceTime
-          sql`${convictionClaims.blockTimestamp} + (${convictionClaims.duration} * interval '1 second') > ${referenceTime}`,
+          // get stakes from claims before the end of the current season
+          lte(convictionClaims.blockTimestamp, currentSeason.endDate),
+          // and with durations that lasted at least until the start of the current season
+          sql`${convictionClaims.blockTimestamp} + (${convictionClaims.duration} * interval '1 second') > ${currentSeason.endDate}`,
         ),
       );
 
-    // Group active stakes by account
+    // Group active stakes by account, to get the sum for each address
     const accountStakes = new Map<string, bigint>();
     for (const stake of activeStakesQuery) {
       const current = accountStakes.get(stake.account) || 0n;
@@ -196,17 +183,21 @@ Examples:
       `${colors.blue}Step 3: Calculating total forfeited amounts...${colors.reset}`,
     );
 
-    // Get all claims to calculate forfeited amounts
+    // Get all claims, up to the beginning of the next season, to calculate
+    // the total forfeited amount.  We will can use this with the total amount
+    // of completed conviction claims to get the current conviction reward pool
     const allClaims = await db
       .select({
         eligibleAmount: convictionClaims.eligibleAmount,
         claimedAmount: convictionClaims.claimedAmount,
         season: convictionClaims.season,
       })
-      .from(convictionClaims);
+      .from(convictionClaims)
+      .where(lte(convictionClaims.blockTimestamp, currentSeason.endDate));
 
     // Calculate total forfeited (eligibleAmount - claimedAmount for each claim)
     let totalForfeited = 0n;
+    // Also collect season information for logging
     const forfeitedBySeason = new Map<number, bigint>();
 
     for (const claim of allClaims) {
@@ -217,21 +208,15 @@ Examples:
       forfeitedBySeason.set(claim.season, currentSeasonForfeited + forfeited);
     }
 
+    // Step 4: Calculate claims from seasons after 0, these are the conviction
+    //         rewards claims
     console.log(
-      `💰 Total forfeited across all seasons: ${attoValueToStringValue(totalForfeited)}`,
+      `\n${colors.blue}Step 4: Calculating conviction rewards claims...${colors.reset}`,
     );
 
-    // Show breakdown by season
-    for (const [season, amount] of forfeitedBySeason.entries()) {
-      console.log(`   Season ${season}: ${attoValueToStringValue(amount)}`);
-    }
-
-    // Step 4: Calculate claims from subsequent seasons (seasons after 0)
-    console.log(
-      `\n${colors.blue}Step 4: Calculating claims from subsequent seasons...${colors.reset}`,
-    );
-
-    const subsequentSeasonClaims = await db
+    // Get all claims from season 1 and forward, so we can subtract that value
+    // from the total forfeited amount to get the remaining conviction pool.
+    const convictionClaimsBySeason = await db
       .select({
         season: convictionClaims.season,
         totalClaimed: sql<string>`SUM(${convictionClaims.claimedAmount})`.as(
@@ -239,44 +224,36 @@ Examples:
         ),
       })
       .from(convictionClaims)
-      .where(gte(convictionClaims.season, 1))
+      // everything up to the end of this season, exclude season 0
+      .where(
+        and(
+          // season 1 up to the airdrop being calculated
+          gte(convictionClaims.season, 1),
+          lte(convictionClaims.season, airdropNumber - 1),
+        ),
+      )
       .groupBy(convictionClaims.season);
 
-    let totalSubsequentClaims = 0n;
-    for (const seasonData of subsequentSeasonClaims) {
+    let totalConvictionRewardsClaimed = 0n;
+    for (const seasonData of convictionClaimsBySeason) {
       const claimed = BigInt(seasonData.totalClaimed || "0");
-      totalSubsequentClaims += claimed;
-      console.log(
-        `   Season ${seasonData.season}: ${attoValueToStringValue(claimed)}`,
-      );
+      totalConvictionRewardsClaimed += claimed;
     }
 
-    if (subsequentSeasonClaims.length === 0) {
-      console.log(`   No subsequent season claims found`);
-    }
-
-    // Step 5: Calculate available rewards pool
+    // Step 5: Calculate remaining available conviction rewards pool
     console.log(
-      `\n${colors.blue}Step 5: Calculating available rewards pool...${colors.reset}`,
+      `\n${colors.blue}Step 5: Calculating conviction rewards pool...${colors.reset}`,
     );
 
-    const availableRewards = totalForfeited - totalSubsequentClaims;
+    const availableRewards = totalForfeited - totalConvictionRewardsClaimed;
     console.log(
       `🎁 Available rewards: ${attoValueToStringValue(availableRewards)}`,
     );
     console.log(
-      `   (${attoValueToStringValue(totalForfeited)} forfeited - ${attoValueToStringValue(totalSubsequentClaims)} already claimed)\n`,
+      `   (${attoValueToStringValue(totalForfeited)} forfeited - ${attoValueToStringValue(totalConvictionRewardsClaimed)} already claimed)\n`,
     );
 
     // Step 6: Query for all agent boosters during the season.
-    const [season] = await db
-      .select()
-      .from(seasons)
-      .where(eq(seasons.number, airdropNumber - 1));
-    if (!season) {
-      console.error(`Season ${airdropNumber - 1} not found`);
-      process.exit(1);
-    }
     const userAgentBoosts = await db
       .select({
         address: boostChanges.wallet,
@@ -286,8 +263,8 @@ Examples:
       .innerJoin(boostChanges, eq(agentBoosts.changeId, boostChanges.id))
       .where(
         and(
-          gte(agentBoosts.createdAt, season.startDate),
-          lte(agentBoosts.createdAt, referenceTime),
+          gte(agentBoosts.createdAt, currentSeason.startDate),
+          lte(agentBoosts.createdAt, currentSeason.endDate),
         ),
       )
       .groupBy(boostChanges.wallet);
@@ -318,8 +295,8 @@ Examples:
       )
       .where(
         and(
-          gte(competitions.startDate, season.startDate),
-          lte(competitions.startDate, referenceTime),
+          gte(competitions.startDate, currentSeason.startDate),
+          lte(competitions.startDate, currentSeason.endDate),
           eq(competitionAgents.status, "active"),
         ),
       )
@@ -370,7 +347,7 @@ Examples:
       `${colors.blue}Step 9: Generating CSV output...${colors.reset}`,
     );
 
-    const csvFileName = `airdrop_${airdropNumber}_${referenceTime.toISOString()}.csv`;
+    const csvFileName = `airdrop_${airdropNumber}_${currentSeason.endDate.toISOString()}.csv`;
     const csvPath = path.join(process.cwd(), "scripts", "data", csvFileName);
 
     // Create CSV header
@@ -455,6 +432,14 @@ Examples:
     console.log(
       `✅ Calculated rewards for ${eligibleAccounts.length} accounts\n`,
     );
+    console.log(
+      `💰 Total forfeited across all seasons: ${attoValueToStringValue(totalForfeited)}`,
+    );
+
+    // Show breakdown by season
+    for (const [season, amount] of forfeitedBySeason.entries()) {
+      console.log(`   Season ${season}: ${attoValueToStringValue(amount)}`);
+    }
 
     // Calculate and display reward statistics for eligible entries
     if (eligibleAccounts.length > 0) {
