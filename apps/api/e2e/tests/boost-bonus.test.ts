@@ -133,9 +133,11 @@ describe("Bonus Boosts E2E", () => {
 
       // Verify API response
       expect(response.success).toBe(true);
-      expect((response as any).data.results).toHaveLength(2);
+      if (!response.success) throw new Error("Response should be successful");
 
-      const [result1, result2] = (response as any).data.results;
+      expect(response.data.results).toHaveLength(2);
+
+      const [result1, result2] = response.data.results;
 
       // Verify result structure
       expect(result1.userId).toBe(user1.id);
@@ -216,7 +218,9 @@ describe("Bonus Boosts E2E", () => {
       // Test 1: Empty array
       const emptyResponse = await adminClient.addBonusBoosts({ boosts: [] });
       expect(emptyResponse.success).toBe(false);
-      expect((emptyResponse as any).error).toContain("at least one");
+      if (emptyResponse.success) throw new Error("Should have failed");
+
+      expect(emptyResponse.error).toContain("at least one");
 
       // Test 2: Array > 100 items
       const largeArray = Array.from({ length: 101 }, () => ({
@@ -228,7 +232,9 @@ describe("Bonus Boosts E2E", () => {
         boosts: largeArray,
       });
       expect(largeResponse.success).toBe(false);
-      expect((largeResponse as any).error).toContain("more than 100");
+      if (largeResponse.success) throw new Error("Should have failed");
+
+      expect(largeResponse.error).toContain("more than 100");
 
       // Test 3: Expiration in past
       const pastResponse = await adminClient.addBonusBoosts({
@@ -241,7 +247,9 @@ describe("Bonus Boosts E2E", () => {
         ],
       });
       expect(pastResponse.success).toBe(false);
-      expect((pastResponse as any).error).toContain("future");
+      if (pastResponse.success) throw new Error("Should have failed");
+
+      expect(pastResponse.error).toContain("future");
 
       // Test 4: Expiration < 1 min away
       const soonResponse = await adminClient.addBonusBoosts({
@@ -254,7 +262,9 @@ describe("Bonus Boosts E2E", () => {
         ],
       });
       expect(soonResponse.success).toBe(false);
-      expect((soonResponse as any).error).toContain("future");
+      if (soonResponse.success) throw new Error("Should have failed");
+
+      expect(soonResponse.error).toContain("future");
 
       // Test 5: User not found
       const notFoundResponse = await adminClient.addBonusBoosts({
@@ -267,7 +277,9 @@ describe("Bonus Boosts E2E", () => {
         ],
       });
       expect(notFoundResponse.success).toBe(false);
-      expect((notFoundResponse as any).error).toContain("validation failed");
+      if (notFoundResponse.success) throw new Error("Should have failed");
+
+      expect(notFoundResponse.error).toContain("validation failed");
 
       // Test 6: Invalid wallet format
       const invalidWalletResponse = await adminClient.addBonusBoosts({
@@ -280,7 +292,9 @@ describe("Bonus Boosts E2E", () => {
         ],
       });
       expect(invalidWalletResponse.success).toBe(false);
-      expect((invalidWalletResponse as any).error).toContain("wallet");
+      if (invalidWalletResponse.success) throw new Error("Should have failed");
+
+      expect(invalidWalletResponse.error).toContain("wallet");
 
       // Test 7: Zero amount
       const zeroResponse = await adminClient.addBonusBoosts({
@@ -293,7 +307,9 @@ describe("Bonus Boosts E2E", () => {
         ],
       });
       expect(zeroResponse.success).toBe(false);
-      expect((zeroResponse as any).error).toContain("positive");
+      if (zeroResponse.success) throw new Error("Should have failed");
+
+      expect(zeroResponse.error).toContain("positive");
 
       // Test 8: Amount > 10^18
       const largeAmountResponse = await adminClient.addBonusBoosts({
@@ -306,7 +322,9 @@ describe("Bonus Boosts E2E", () => {
         ],
       });
       expect(largeAmountResponse.success).toBe(false);
-      expect((largeAmountResponse as any).error).toContain("maximum");
+      if (largeAmountResponse.success) throw new Error("Should have failed");
+
+      expect(largeAmountResponse.error).toContain("maximum");
 
       // Test 9: Invalid amount format
       const invalidAmountResponse = await adminClient.addBonusBoosts({
@@ -333,7 +351,9 @@ describe("Bonus Boosts E2E", () => {
         ],
       });
       expect(largeMetaResponse.success).toBe(false);
-      expect((largeMetaResponse as any).error).toContain("1000");
+      if (largeMetaResponse.success) throw new Error("Should have failed");
+
+      expect(largeMetaResponse.error).toContain("1000");
     });
 
     test("rejects batch with duplicate wallet addresses", async () => {
@@ -363,7 +383,9 @@ describe("Bonus Boosts E2E", () => {
 
       // Verify rejection
       expect(response.success).toBe(false);
-      expect((response as any).error).toContain("duplicate");
+      if (response.success) throw new Error("Should have failed");
+
+      expect(response.error).toContain("duplicate");
 
       // Verify no boost_bonus entries created
       const boosts = await db
@@ -395,7 +417,9 @@ describe("Bonus Boosts E2E", () => {
 
       // Verify rejection
       expect(response.success).toBe(false);
-      expect((response as any).error).toContain("maximum");
+      if (response.success) throw new Error("Should have failed");
+
+      expect(response.error).toContain("maximum");
 
       // Verify no boost_bonus entries created
       const boosts = await db
@@ -546,7 +570,9 @@ describe("Bonus Boosts E2E", () => {
       });
 
       expect(response1.success).toBe(true);
-      const boost1Id = (response1 as any).data.results[0].id;
+      if (!response1.success) throw new Error("Should have succeeded");
+
+      const boost1Id = response1.data.results[0]!.id;
       const response2 = await adminClient.addBonusBoosts({
         boosts: [
           {
@@ -558,7 +584,9 @@ describe("Bonus Boosts E2E", () => {
       });
 
       expect(response2.success).toBe(true);
-      const boost2Id = (response2 as any).data.results[0].id;
+      if (!response2.success) throw new Error("Should have succeeded");
+
+      const boost2Id = response2.data.results[0]!.id;
       const boosts = await db
         .select()
         .from(boostBonus)
@@ -618,7 +646,9 @@ describe("Bonus Boosts E2E", () => {
       });
 
       expect(response.success).toBe(false);
-      expect((response as any).error).toBeDefined();
+      if (response.success) throw new Error("Should have failed");
+
+      expect(response.error).toBeDefined();
       const boostsForUser1 = await db
         .select()
         .from(boostBonus)
@@ -672,9 +702,12 @@ describe("Bonus Boosts E2E", () => {
 
       expect(addResponse1.success).toBe(true);
       expect(addResponse2.success).toBe(true);
+      if (!addResponse1.success || !addResponse2.success)
+        throw new Error("Should have succeeded");
+
       const boostIds = [
-        (addResponse1 as any).data.results[0].id,
-        (addResponse2 as any).data.results[0].id,
+        addResponse1.data.results[0]!.id,
+        addResponse2.data.results[0]!.id,
       ];
 
       // Verify boosts were applied to A and B, not C
@@ -708,7 +741,9 @@ describe("Bonus Boosts E2E", () => {
       });
 
       expect(revokeResponse.success).toBe(true);
-      const results = (revokeResponse as any).data.results;
+      if (!revokeResponse.success) throw new Error("Should have succeeded");
+
+      const results = revokeResponse.data.results;
       expect(results).toHaveLength(2);
 
       // Verify both boosts marked inactive
@@ -769,28 +804,34 @@ describe("Bonus Boosts E2E", () => {
           },
         ],
       });
-      const validBoostId = (addResponse as any).data.results[0].id;
+      if (!addResponse.success) throw new Error("Should have succeeded");
+
+      const validBoostId = addResponse.data.results[0]!.id;
 
       // Test 1: Empty array
       const emptyResponse = await adminClient.revokeBonusBoosts({
         boostIds: [],
       });
       expect(emptyResponse.success).toBe(false);
-      expect((emptyResponse as any).error).toContain("at least one");
+      expect(emptyResponse.error).toContain("at least one");
 
       // Test 2: Invalid UUID format
       const invalidUuidResponse = await adminClient.revokeBonusBoosts({
         boostIds: ["not-a-uuid"],
       });
       expect(invalidUuidResponse.success).toBe(false);
-      expect((invalidUuidResponse as any).error).toContain("Invalid");
+      if (invalidUuidResponse.success) throw new Error("Should have failed");
+
+      expect(invalidUuidResponse.error).toContain("Invalid");
 
       // Test 3: Non-existent boost ID
       const nonExistentResponse = await adminClient.revokeBonusBoosts({
         boostIds: ["00000000-0000-0000-0000-000000000000"],
       });
       expect(nonExistentResponse.success).toBe(false);
-      expect((nonExistentResponse as any).error).toContain("revocation failed");
+      if (nonExistentResponse.success) throw new Error("Should have failed");
+
+      expect(nonExistentResponse.error).toContain("revocation failed");
 
       // Test 4: Already revoked boost
       await adminClient.revokeBonusBoosts({ boostIds: [validBoostId] });
@@ -798,9 +839,9 @@ describe("Bonus Boosts E2E", () => {
         boostIds: [validBoostId],
       });
       expect(alreadyRevokedResponse.success).toBe(false);
-      expect((alreadyRevokedResponse as any).error).toContain(
-        "revocation failed",
-      );
+      if (alreadyRevokedResponse.success) throw new Error("Should have failed");
+
+      expect(alreadyRevokedResponse.error).toContain("revocation failed");
     });
 
     test("revokes one boost while leaving others active", async () => {
@@ -822,7 +863,9 @@ describe("Bonus Boosts E2E", () => {
       });
 
       expect(response1.success).toBe(true);
-      const boost1Id = (response1 as any).data.results[0].id;
+      if (!response1.success) throw new Error("Should have succeeded");
+
+      const boost1Id = response1.data.results[0]!.id;
       const response2 = await adminClient.addBonusBoosts({
         boosts: [
           {
@@ -834,7 +877,9 @@ describe("Bonus Boosts E2E", () => {
       });
 
       expect(response2.success).toBe(true);
-      const boost2Id = (response2 as any).data.results[0].id;
+      if (!response2.success) throw new Error("Should have succeeded");
+
+      const boost2Id = response2.data.results[0]!.id;
       const initialBalance = await db
         .select()
         .from(boostBalances)
@@ -911,7 +956,9 @@ describe("Bonus Boosts E2E", () => {
       });
 
       expect(response.success).toBe(true);
-      const boostId = (response as any).data.results[0].id;
+      if (!response.success) throw new Error("Should have succeeded");
+
+      const boostId = response.data.results[0]!.id;
 
       // Verify boost applied to competition
       const initialBalance = await db
@@ -992,7 +1039,9 @@ describe("Bonus Boosts E2E", () => {
       });
 
       expect(response.success).toBe(true);
-      const boostId = (response as any).data.results[0].id;
+      if (!response.success) throw new Error("Should have succeeded");
+
+      const boostId = response.data.results[0]!.id;
 
       // Wait for boost to expire
       await new Promise((resolve) => setTimeout(resolve, 311000)); // Wait 311 seconds
@@ -1334,7 +1383,9 @@ describe("Bonus Boosts E2E", () => {
           },
         ],
       });
-      const boost1Id = (response1 as any).data.results[0].id;
+      if (!response1.success) throw new Error("Should have succeeded");
+
+      const boost1Id = response1.data.results[0]!.id;
 
       await adminClient.addBonusBoosts({
         boosts: [
