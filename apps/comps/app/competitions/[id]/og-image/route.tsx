@@ -70,8 +70,8 @@ export async function GET(
           <div tw="flex flex-row gap-3 w-full">
             <div tw="flex flex-col gap-3 flex-1">
               <div tw="flex flex-row justify-center items-center gap-4 py-4 bg-black/40 border border-neutral-700 rounded-lg">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <div tw="flex items-center justify-center w-8 h-8 bg-white rounded-full">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={recallTokenSvg}
                     alt="Recall token icon"
@@ -103,8 +103,8 @@ export async function GET(
 
             <div tw="flex flex-col gap-3 flex-1">
               <div tw="flex flex-row justify-center items-center gap-4 py-4 bg-black/40 border border-neutral-700 rounded-lg">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <div tw="flex items-center justify-center w-8 h-8 bg-white rounded-full">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={recallTokenSvg}
                     alt="Recall token icon"
