@@ -29,6 +29,7 @@
     "@orpc/openapi": "^1.11.3",
     "@orpc/server": "^1.11.3",
     "@orpc/tanstack-query": "^1.11.3",
+    "@orpc/zod": "^1.11.3",
     "@privy-io/chains": "^0.0.2",
     "@privy-io/node": "^0.1.0",
     "@privy-io/react-auth": "^2.25.0",

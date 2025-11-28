@@ -1,4 +1,6 @@
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
+import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
+import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import { cookies, headers } from "next/headers";
 
 import { createLogger } from "@/lib/logger";
@@ -23,7 +25,20 @@ import {
 } from "@/lib/services";
 import { router } from "@/rpc/router/trading/index";
 
-const openApiHandler = new OpenAPIHandler(router);
+const openApiHandler = new OpenAPIHandler(router, {
+  plugins: [
+    new OpenAPIReferencePlugin({
+      docsProvider: "swagger",
+      schemaConverters: [new ZodToJsonSchemaConverter()],
+      specGenerateOptions: {
+        info: {
+          title: "Trading Simulator API",
+          version: "1.0.0",
+        },
+      },
+    }),
+  ],
+});
 
 async function handleRequest(
   request: Request,

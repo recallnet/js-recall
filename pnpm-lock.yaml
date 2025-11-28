@@ -173,7 +173,7 @@ importers:
     devDependencies:
       '@elizaos/core':
         specifier: ^0.25.9
-        version: 0.25.9(@types/debug@4.1.12)(@types/node@18.19.101)(bufferutil@4.0.9)(encoding@0.1.13)(jiti@2.4.2)(jsdom@26.1.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(lightningcss@1.30.1)(react@19.1.0)(terser@5.44.0)(tsx@4.19.4)(typescript@5.8.3)(utf-8-validate@5.0.10)(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@5.0.10))(yaml@2.8.1)
+        version: 0.25.9(@types/debug@4.1.12)(@types/node@18.19.101)(bufferutil@4.0.9)(encoding@0.1.13)(jiti@2.4.2)(jsdom@26.1.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(lightningcss@1.30.1)(react@19.1.0)(terser@5.44.0)(tsx@4.19.4)(typescript@5.8.3)(utf-8-validate@5.0.10)(ws@8.18.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(yaml@2.8.1)
       '@openzeppelin/merkle-tree':
         specifier: ^1.0.8
         version: 1.0.8
@@ -215,7 +215,7 @@ importers:
         version: 9.0.8
       '@vitejs/plugin-react':
         specifier: ^5.0.2
-        version: 5.0.2(vite@6.3.5(@types/node@18.19.101)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.0)(tsx@4.19.4)(yaml@2.8.1))
+        version: 5.0.2(vite@7.1.6(@types/node@18.19.101)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.0)(tsx@4.19.4)(yaml@2.8.1))
       '@vitest/coverage-v8':
         specifier: ^3.2.4
         version: 3.2.4(vitest@3.2.4(@types/debug@4.1.12)(@types/node@18.19.101)(jiti@2.4.2)(jsdom@26.1.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(lightningcss@1.30.1)(terser@5.44.0)(tsx@4.19.4)(yaml@2.8.1))
@@ -269,7 +269,7 @@ importers:
         version: 5.8.3
       vite-tsconfig-paths:
         specifier: ^5.1.4
-        version: 5.1.4(typescript@5.8.3)(vite@6.3.5(@types/node@18.19.101)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.0)(tsx@4.19.4)(yaml@2.8.1))
+        version: 5.1.4(typescript@5.8.3)(vite@7.1.6(@types/node@18.19.101)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.0)(tsx@4.19.4)(yaml@2.8.1))
       vitest:
         specifier: ^3.2.4
         version: 3.2.4(@types/debug@4.1.12)(@types/node@18.19.101)(jiti@2.4.2)(jsdom@26.1.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(lightningcss@1.30.1)(terser@5.44.0)(tsx@4.19.4)(yaml@2.8.1)
@@ -303,6 +303,9 @@ importers:
       '@orpc/tanstack-query':
         specifier: ^1.11.3
         version: 1.11.3(@opentelemetry/api@1.9.0)(@orpc/client@1.11.3(@opentelemetry/api@1.9.0))(@tanstack/query-core@5.76.0)
+      '@orpc/zod':
+        specifier: ^1.11.3
+        version: 1.11.3(@opentelemetry/api@1.9.0)(@orpc/contract@1.11.3(@opentelemetry/api@1.9.0))(@orpc/server@1.11.3(@opentelemetry/api@1.9.0)(crossws@0.3.5)(ws@8.18.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)))(crossws@0.3.5)(ws@8.18.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(zod@3.25.76)
       '@privy-io/chains':
         specifier: ^0.0.2
         version: 0.0.2
@@ -486,7 +489,7 @@ importers:
         version: 9.0.8
       '@vitejs/plugin-react':
         specifier: ^5.0.2
-        version: 5.0.2(vite@7.1.6(@types/node@20.17.48)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.0)(tsx@4.20.6)(yaml@2.8.1))
+        version: 5.0.2(vite@6.3.5(@types/node@20.17.48)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.0)(tsx@4.20.6)(yaml@2.8.1))
       '@vitest/coverage-v8':
         specifier: ^3.2.4
         version: 3.2.4(vitest@3.2.4(@types/debug@4.1.12)(@types/node@20.17.48)(jiti@2.4.2)(jsdom@26.1.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(lightningcss@1.30.1)(terser@5.44.0)(tsx@4.20.6)(yaml@2.8.1))
@@ -510,7 +513,7 @@ importers:
         version: 5.8.3
       vite-tsconfig-paths:
         specifier: 6.0.0-beta.4
-        version: 6.0.0-beta.4(typescript@5.8.3)(vite@7.1.6(@types/node@20.17.48)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.0)(tsx@4.20.6)(yaml@2.8.1))
+        version: 6.0.0-beta.4(typescript@5.8.3)(vite@6.3.5(@types/node@20.17.48)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.0)(tsx@4.20.6)(yaml@2.8.1))
       vitest:
         specifier: ^3.2.4
         version: 3.2.4(@types/debug@4.1.12)(@types/node@20.17.48)(jiti@2.4.2)(jsdom@26.1.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(lightningcss@1.30.1)(terser@5.44.0)(tsx@4.20.6)(yaml@2.8.1)
@@ -3958,6 +3961,9 @@ packages:
   '@orpc/interop@1.11.3':
     resolution: {integrity: sha512-NOTXLsp1jkFyHGzZM0qST9LtCrBUr5qN7OEDpslPXm2xV6I1IFok15QoVtxg033vEBXD5AbtTVCkzmaLb5JJ1w==}
 
+  '@orpc/json-schema@1.11.3':
+    resolution: {integrity: sha512-xaJfzXFDdo2HXkXBC0oWT+RjHaipyxn+r2nS8XfQdkDfQ/6CL0TFdN2irFcMaTXkWzEpyUuzZ+/vElZ4QVeQ+w==}
+
   '@orpc/openapi-client@1.11.3':
     resolution: {integrity: sha512-6xjf4O5J7Ge6m1mLlsTrM/SQaOOvcIFpW9uxGJImlXmfYn36Ui0FshU/z+mV6xSYbiywLIfM3VKPMrUUQTbweg==}
 
@@ -4011,6 +4017,13 @@ packages:
     peerDependencies:
       '@orpc/client': 1.11.3
       '@tanstack/query-core': '>=5.80.2'
+
+  '@orpc/zod@1.11.3':
+    resolution: {integrity: sha512-nkZMK+LfNo4qtN59NCAyf+bG83R+T79Mvqx8KiRdjfGF/4nfFhaGIuNieQJIVRgddpzr7nFcHcJJf9DEyp2KnQ==}
+    peerDependencies:
+      '@orpc/contract': 1.11.3
+      '@orpc/server': 1.11.3
+      zod: '>=3.25.0'
 
   '@paulmillr/qr@0.2.1':
     resolution: {integrity: sha512-IHnV6A+zxU7XwmKFinmYjUcwlyK9+xkG3/s9KcQhI9BjQKycrJ1JRO+FbNYPwZiPKW3je/DR0k7w8/gLa5eaxQ==}
@@ -8761,6 +8774,10 @@ packages:
   escape-string-regexp@4.0.0:
     resolution: {integrity: sha512-TtpcNJ3XAzx3Gq8sWRzJaVajRs0uVxA2YAkdb1jm2YkPz4G6egUFAyA3n5vtEIZefPk5Wa4UXbKuS5fKkJWdgA==}
     engines: {node: '>=10'}
+
+  escape-string-regexp@5.0.0:
+    resolution: {integrity: sha512-/veY75JbMK4j1yjvuUxuVsiS/hr/4iHs9FTT6cgTexxdE0Ly/glccBAkloH/DofkjRbZU3bnoj38mOmhkZ0lHw==}
+    engines: {node: '>=12'}
 
   escodegen@2.1.0:
     resolution: {integrity: sha512-2NlIDTwUWJN0mRPQOdtQBzbUHvdGY2P1VXSyU83Q3xKxM7WHX2Ql8dKq782Q9TgQUNOLEzEYu9bzLNj1q88I5w==}
@@ -13568,6 +13585,9 @@ packages:
     resolution: {integrity: sha512-NsmoXalsWVDMGupxZ5R08ka9flZjjiLvHVAWYOKtiKM8ujtZWr9cRffak+uSE48+Ob8ObalXpwyeUiyDD6QFgg==}
     engines: {node: '>=8'}
 
+  wildcard-match@5.1.4:
+    resolution: {integrity: sha512-wldeCaczs8XXq7hj+5d/F38JE2r7EXgb6WQDM84RVwxy81T/sxB5e9+uZLK9Q9oNz1mlvjut+QtvgaOQFPVq/g==}
+
   word-wrap@1.2.5:
     resolution: {integrity: sha512-BN22B5eaMMI9UMtjrGd5g5eCYPpCPDUy0FJXbYsaT5zYxjFOckS53SQDE3pWkVoWpHXVb3BrYcEN4Twa55B5cA==}
     engines: {node: '>=0.10.0'}
@@ -16089,7 +16109,7 @@ snapshots:
 
   '@electric-sql/pglite@0.2.17': {}
 
-  '@elizaos/core@0.25.9(@types/debug@4.1.12)(@types/node@18.19.101)(bufferutil@4.0.9)(encoding@0.1.13)(jiti@2.4.2)(jsdom@26.1.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(lightningcss@1.30.1)(react@19.1.0)(terser@5.44.0)(tsx@4.19.4)(typescript@5.8.3)(utf-8-validate@5.0.10)(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@5.0.10))(yaml@2.8.1)':
+  '@elizaos/core@0.25.9(@types/debug@4.1.12)(@types/node@18.19.101)(bufferutil@4.0.9)(encoding@0.1.13)(jiti@2.4.2)(jsdom@26.1.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(lightningcss@1.30.1)(react@19.1.0)(terser@5.44.0)(tsx@4.19.4)(typescript@5.8.3)(utf-8-validate@5.0.10)(ws@8.18.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(yaml@2.8.1)':
     dependencies:
       '@ai-sdk/amazon-bedrock': 1.1.6(zod@3.25.76)
       '@ai-sdk/anthropic': 1.1.6(zod@3.25.76)
@@ -16111,7 +16131,7 @@ snapshots:
       js-sha1: 0.7.0
       js-tiktoken: 1.0.15
       ollama-ai-provider: 0.16.1(zod@3.25.76)
-      openai: 4.82.0(encoding@0.1.13)(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@5.0.10))(zod@3.25.76)
+      openai: 4.82.0(encoding@0.1.13)(ws@8.18.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(zod@3.25.76)
       pino: 9.7.0
       pino-pretty: 13.1.2
       sql.js: 1.13.0
@@ -18337,6 +18357,19 @@ snapshots:
 
   '@orpc/interop@1.11.3': {}
 
+  '@orpc/json-schema@1.11.3(@opentelemetry/api@1.9.0)(crossws@0.3.5)(ws@8.18.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))':
+    dependencies:
+      '@orpc/contract': 1.11.3(@opentelemetry/api@1.9.0)
+      '@orpc/interop': 1.11.3
+      '@orpc/openapi': 1.11.3(@opentelemetry/api@1.9.0)(crossws@0.3.5)(ws@8.18.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))
+      '@orpc/server': 1.11.3(@opentelemetry/api@1.9.0)(crossws@0.3.5)(ws@8.18.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))
+      '@orpc/shared': 1.11.3(@opentelemetry/api@1.9.0)
+    transitivePeerDependencies:
+      - '@opentelemetry/api'
+      - crossws
+      - fastify
+      - ws
+
   '@orpc/openapi-client@1.11.3(@opentelemetry/api@1.9.0)':
     dependencies:
       '@orpc/client': 1.11.3(@opentelemetry/api@1.9.0)
@@ -18441,6 +18474,22 @@ snapshots:
       '@tanstack/query-core': 5.76.0
     transitivePeerDependencies:
       - '@opentelemetry/api'
+
+  '@orpc/zod@1.11.3(@opentelemetry/api@1.9.0)(@orpc/contract@1.11.3(@opentelemetry/api@1.9.0))(@orpc/server@1.11.3(@opentelemetry/api@1.9.0)(crossws@0.3.5)(ws@8.18.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)))(crossws@0.3.5)(ws@8.18.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(zod@3.25.76)':
+    dependencies:
+      '@orpc/contract': 1.11.3(@opentelemetry/api@1.9.0)
+      '@orpc/json-schema': 1.11.3(@opentelemetry/api@1.9.0)(crossws@0.3.5)(ws@8.18.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))
+      '@orpc/openapi': 1.11.3(@opentelemetry/api@1.9.0)(crossws@0.3.5)(ws@8.18.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))
+      '@orpc/server': 1.11.3(@opentelemetry/api@1.9.0)(crossws@0.3.5)(ws@8.18.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))
+      '@orpc/shared': 1.11.3(@opentelemetry/api@1.9.0)
+      escape-string-regexp: 5.0.0
+      wildcard-match: 5.1.4
+      zod: 3.25.76
+    transitivePeerDependencies:
+      - '@opentelemetry/api'
+      - crossws
+      - fastify
+      - ws
 
   '@paulmillr/qr@0.2.1': {}
 
@@ -22432,7 +22481,7 @@ snapshots:
       - utf-8-validate
     optional: true
 
-  '@vitejs/plugin-react@5.0.2(vite@6.3.5(@types/node@18.19.101)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.0)(tsx@4.19.4)(yaml@2.8.1))':
+  '@vitejs/plugin-react@5.0.2(vite@6.3.5(@types/node@20.17.48)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.0)(tsx@4.20.6)(yaml@2.8.1))':
     dependencies:
       '@babel/core': 7.28.4
       '@babel/plugin-transform-react-jsx-self': 7.27.1(@babel/core@7.28.4)
@@ -22440,11 +22489,11 @@ snapshots:
       '@rolldown/pluginutils': 1.0.0-beta.34
       '@types/babel__core': 7.20.5
       react-refresh: 0.17.0
-      vite: 6.3.5(@types/node@18.19.101)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.0)(tsx@4.19.4)(yaml@2.8.1)
+      vite: 6.3.5(@types/node@20.17.48)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.0)(tsx@4.20.6)(yaml@2.8.1)
     transitivePeerDependencies:
       - supports-color
 
-  '@vitejs/plugin-react@5.0.2(vite@7.1.6(@types/node@20.17.48)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.0)(tsx@4.20.6)(yaml@2.8.1))':
+  '@vitejs/plugin-react@5.0.2(vite@7.1.6(@types/node@18.19.101)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.0)(tsx@4.19.4)(yaml@2.8.1))':
     dependencies:
       '@babel/core': 7.28.4
       '@babel/plugin-transform-react-jsx-self': 7.27.1(@babel/core@7.28.4)
@@ -22452,7 +22501,7 @@ snapshots:
       '@rolldown/pluginutils': 1.0.0-beta.34
       '@types/babel__core': 7.20.5
       react-refresh: 0.17.0
-      vite: 7.1.6(@types/node@20.17.48)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.0)(tsx@4.20.6)(yaml@2.8.1)
+      vite: 7.1.6(@types/node@18.19.101)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.0)(tsx@4.19.4)(yaml@2.8.1)
     transitivePeerDependencies:
       - supports-color
 
@@ -25463,6 +25512,8 @@ snapshots:
 
   escape-string-regexp@4.0.0: {}
 
+  escape-string-regexp@5.0.0: {}
+
   escodegen@2.1.0:
     dependencies:
       esprima: 4.0.1
@@ -27921,7 +27972,7 @@ snapshots:
       is-inside-container: 1.0.0
       wsl-utils: 0.1.0
 
-  openai@4.82.0(encoding@0.1.13)(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@5.0.10))(zod@3.25.76):
+  openai@4.82.0(encoding@0.1.13)(ws@8.18.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(zod@3.25.76):
     dependencies:
       '@types/node': 18.19.101
       '@types/node-fetch': 2.6.12
@@ -27931,7 +27982,7 @@ snapshots:
       formdata-node: 4.4.1
       node-fetch: 2.7.0(encoding@0.1.13)
     optionalDependencies:
-      ws: 8.18.3(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+      ws: 8.18.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       zod: 3.25.76
     transitivePeerDependencies:
       - encoding
@@ -30819,13 +30870,13 @@ snapshots:
       - tsx
       - yaml
 
-  vite-tsconfig-paths@5.1.4(typescript@5.8.3)(vite@6.3.5(@types/node@18.19.101)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.0)(tsx@4.19.4)(yaml@2.8.1)):
+  vite-tsconfig-paths@5.1.4(typescript@5.8.3)(vite@7.1.6(@types/node@18.19.101)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.0)(tsx@4.19.4)(yaml@2.8.1)):
     dependencies:
       debug: 4.4.1
       globrex: 0.1.2
       tsconfck: 3.1.5(typescript@5.8.3)
     optionalDependencies:
-      vite: 6.3.5(@types/node@18.19.101)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.0)(tsx@4.19.4)(yaml@2.8.1)
+      vite: 7.1.6(@types/node@18.19.101)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.0)(tsx@4.19.4)(yaml@2.8.1)
     transitivePeerDependencies:
       - supports-color
       - typescript
@@ -30863,13 +30914,13 @@ snapshots:
       - supports-color
       - typescript
 
-  vite-tsconfig-paths@6.0.0-beta.4(typescript@5.8.3)(vite@7.1.6(@types/node@20.17.48)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.0)(tsx@4.20.6)(yaml@2.8.1)):
+  vite-tsconfig-paths@6.0.0-beta.4(typescript@5.8.3)(vite@6.3.5(@types/node@20.17.48)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.0)(tsx@4.20.6)(yaml@2.8.1)):
     dependencies:
       debug: 4.4.3(supports-color@8.1.1)
       globrex: 0.1.2
       tsconfck: 3.1.5(typescript@5.8.3)
     optionalDependencies:
-      vite: 7.1.6(@types/node@20.17.48)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.0)(tsx@4.20.6)(yaml@2.8.1)
+      vite: 6.3.5(@types/node@20.17.48)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.0)(tsx@4.20.6)(yaml@2.8.1)
     transitivePeerDependencies:
       - supports-color
       - typescript
@@ -30976,7 +31027,7 @@ snapshots:
       tsx: 4.20.6
       yaml: 2.8.1
 
-  vite@7.1.6(@types/node@20.17.48)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.0)(tsx@4.20.6)(yaml@2.8.1):
+  vite@7.1.6(@types/node@18.19.101)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.0)(tsx@4.19.4)(yaml@2.8.1):
     dependencies:
       esbuild: 0.25.9
       fdir: 6.5.0(picomatch@4.0.3)
@@ -30985,12 +31036,12 @@ snapshots:
       rollup: 4.52.3
       tinyglobby: 0.2.15
     optionalDependencies:
-      '@types/node': 20.17.48
+      '@types/node': 18.19.101
       fsevents: 2.3.3
       jiti: 2.4.2
       lightningcss: 1.30.1
       terser: 5.44.0
-      tsx: 4.20.6
+      tsx: 4.19.4
       yaml: 2.8.1
 
   vite@7.1.6(@types/node@22.15.19)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.0)(tsx@4.20.6)(yaml@2.8.1):
@@ -31520,6 +31571,8 @@ snapshots:
   widest-line@3.1.0:
     dependencies:
       string-width: 4.2.3
+
+  wildcard-match@5.1.4: {}
 
   word-wrap@1.2.5: {}
 
