@@ -18,6 +18,7 @@ import {
   partnerService,
   portfolioSnapshotterService,
   rewardsService,
+  sportsService,
   userService,
 } from "@/lib/services";
 import { router } from "@/rpc/router/index";
@@ -50,6 +51,7 @@ async function handleRequest(
       emailService,
       leaderboardService,
       rewardsService,
+      sportsService,
       logger: createLogger("OpenApiHandler"),
     },
   });
