@@ -2801,4 +2801,45 @@ export class ApiClient {
       return this.handleApiError(error, "get game predictions");
     }
   }
+
+  /**
+   * Admin: Add bonus boosts to users
+   * Requires admin authentication
+   */
+  async addBonusBoosts(data: {
+    boosts: Array<{
+      wallet: string;
+      amount: string;
+      expiresAt: string;
+      meta?: Record<string, string | number | boolean>;
+    }>;
+  }): Promise<ApiResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.post(
+        "/api/admin/boost-bonus",
+        data,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "add bonus boosts");
+    }
+  }
+  
+  /**
+   * Admin: Revoke bonus boosts
+   * Requires admin authentication
+   */
+  async revokeBonusBoosts(data: {
+    boostIds: string[];
+  }): Promise<ApiResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.post(
+        "/api/admin/boost-bonus/revoke",
+        data,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "revoke bonus boosts");
+    }
+  }
 }

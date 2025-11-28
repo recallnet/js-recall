@@ -1921,7 +1921,6 @@ export function makeAdminController(services: ServiceRegistry) {
 
     /**
      * Add bonus boost to users
-     * Stubbed endpoint - returns 501 Not Implemented
      * @param req Express request
      * @param res Express response
      * @param next Express next function
@@ -1931,15 +1930,166 @@ export function makeAdminController(services: ServiceRegistry) {
         // Validate request body
         const { boosts } = flatParse(AdminAddBonusBoostSchema, req.body);
 
-        // Stubbed endpoint - return 501 Not Implemented
-        res.status(501).json({
-          success: false,
-          error: "Not Implemented",
-          message:
-            "This endpoint is stubbed for API contract validation. Full implementation pending.",
+        adminLogger.info(
+          { boostCount: boosts.length },
+          "Processing batch add bonus boost request",
+        );
+
+        // Step 1: Pre-validate all items before processing any
+        // This ensures all-or-nothing transaction semantics
+        const validationErrors = [];
+
+        for (let i = 0; i < boosts.length; i++) {
+          const boostItem = boosts[i]!;
+
+          // Check if user exists for each wallet
+          try {
+            const user = await services.userService.getUserByWalletAddress(
+              boostItem.wallet,
+            );
+            if (!user) {
+              validationErrors.push({
+                index: i,
+                wallet: boostItem.wallet,
+                error: `User with wallet ${boostItem.wallet} not found`,
+              });
+            }
+          } catch (error) {
+            validationErrors.push({
+              index: i,
+              wallet: boostItem.wallet,
+              error:
+                error instanceof Error
+                  ? error.message
+                  : "Failed to validate user",
+            });
+          }
+        }
+
+        // If any validation errors, reject entire batch
+        if (validationErrors.length > 0) {
+          adminLogger.warn(
+            { errorCount: validationErrors.length },
+            "Batch validation failed - rejecting entire batch",
+          );
+
+          return res.status(400).json({
+            success: false,
+            error: "Batch validation failed",
+            message: `Found ${validationErrors.length} validation error(s). No boosts were created.`,
+            data: {
+              errors: validationErrors,
+            },
+          });
+        }
+
+        // Step 2: All items validated - now process each one
+        const results = [];
+        const errors = [];
+
+        for (let i = 0; i < boosts.length; i++) {
+          const boostItem = boosts[i]!;
+
+          try {
+            // Convert amount from string to BigInt
+            const amount = BigInt(boostItem.amount);
+
+            adminLogger.info(
+              {
+                index: i,
+                wallet: boostItem.wallet,
+                amount: boostItem.amount,
+                expiresAt: boostItem.expiresAt,
+              },
+              "Processing boost item",
+            );
+
+            // Add the bonus boost
+            const result = await services.boostBonusService.addBoostBonus(
+              boostItem.wallet,
+              amount,
+              boostItem.expiresAt,
+              undefined, // createdByAdminId - could extract from auth if needed
+              boostItem.meta,
+            );
+
+            adminLogger.info(
+              {
+                index: i,
+                boostBonusId: result.boostBonusId,
+                activeCount: result.appliedToCompetitions.active.length,
+                pendingCount: result.appliedToCompetitions.pending.length,
+              },
+              "Successfully added bonus boost",
+            );
+
+            results.push({
+              id: result.boostBonusId,
+              userId: result.userId,
+              amount: result.amount.toString(),
+              expiresAt: result.expiresAt.toISOString(),
+              isActive: true,
+              appliedToCompetitions: {
+                active: result.appliedToCompetitions.active,
+                pending: result.appliedToCompetitions.pending,
+              },
+            });
+          } catch (itemError) {
+            const errorMessage =
+              itemError instanceof Error
+                ? itemError.message
+                : "Unknown error occurred";
+
+            adminLogger.error(
+              {
+                index: i,
+                wallet: boostItem.wallet,
+                error: errorMessage,
+              },
+              "Failed to add bonus boost for item",
+            );
+
+            errors.push({
+              index: i,
+              wallet: boostItem.wallet,
+              error: errorMessage,
+            });
+          }
+        }
+
+        // If any items failed during processing, return error with details
+        if (errors.length > 0) {
+          adminLogger.warn(
+            {
+              successCount: results.length,
+              errorCount: errors.length,
+            },
+            "Batch processing completed with errors",
+          );
+
+          return res.status(400).json({
+            success: false,
+            error: "Batch processing failed",
+            message: `Failed to process ${errors.length} out of ${boosts.length} boost items`,
+            data: {
+              successCount: results.length,
+              errorCount: errors.length,
+              results,
+              errors,
+            },
+          });
+        }
+
+        // All items succeeded
+        adminLogger.info(
+          { successCount: results.length },
+          "Batch add bonus boost completed successfully",
+        );
+
+        res.status(201).json({
+          success: true,
           data: {
-            requestedCount: boosts.length,
-            note: "When implemented, this will process all boosts in the batch and return results for each item.",
+            results,
           },
         });
       } catch (error) {
@@ -1949,7 +2099,6 @@ export function makeAdminController(services: ServiceRegistry) {
 
     /**
      * Revoke bonus boost
-     * Stubbed endpoint - returns 501 Not Implemented
      * @param req Express request
      * @param res Express response
      * @param next Express next function
@@ -1959,15 +2108,104 @@ export function makeAdminController(services: ServiceRegistry) {
         // Validate request body
         const { boostIds } = flatParse(AdminRevokeBonusBoostSchema, req.body);
 
-        // Stubbed endpoint - return 501 Not Implemented
-        res.status(501).json({
-          success: false,
-          error: "Not Implemented",
-          message:
-            "This endpoint is stubbed for API contract validation. Full implementation pending.",
+        adminLogger.info(
+          { boostIdCount: boostIds.length },
+          "Processing batch revoke bonus boost request",
+        );
+
+        // Process each boost ID in the batch
+        const results = [];
+        const errors = [];
+
+        for (let i = 0; i < boostIds.length; i++) {
+          const boostId = boostIds[i]!;
+
+          try {
+            adminLogger.info(
+              {
+                index: i,
+                boostId,
+              },
+              "Revoking bonus boost",
+            );
+
+            // Revoke the bonus boost
+            const result =
+              await services.boostBonusService.revokeBoostBonus(boostId);
+
+            adminLogger.info(
+              {
+                index: i,
+                boostId: result.boostBonusId,
+                removedCount: result.removedFromPending.length,
+                keptCount: result.keptInActive.length,
+              },
+              "Successfully revoked bonus boost",
+            );
+
+            results.push({
+              id: result.boostBonusId,
+              revoked: result.revoked,
+              revokedAt: result.revokedAt.toISOString(),
+              removedFromPending: result.removedFromPending,
+              keptInActive: result.keptInActive,
+            });
+          } catch (itemError) {
+            const errorMessage =
+              itemError instanceof Error
+                ? itemError.message
+                : "Unknown error occurred";
+
+            adminLogger.error(
+              {
+                index: i,
+                boostId,
+                error: errorMessage,
+              },
+              "Failed to revoke bonus boost",
+            );
+
+            errors.push({
+              index: i,
+              boostId,
+              error: errorMessage,
+            });
+          }
+        }
+
+        // If any items failed, return 400 with details
+        if (errors.length > 0) {
+          adminLogger.warn(
+            {
+              successCount: results.length,
+              errorCount: errors.length,
+            },
+            "Batch revocation completed with errors",
+          );
+
+          return res.status(400).json({
+            success: false,
+            error: "Batch revocation failed",
+            message: `Failed to revoke ${errors.length} out of ${boostIds.length} boost items`,
+            data: {
+              successCount: results.length,
+              errorCount: errors.length,
+              results,
+              errors,
+            },
+          });
+        }
+
+        // All items succeeded
+        adminLogger.info(
+          { successCount: results.length },
+          "Batch revoke bonus boost completed successfully",
+        );
+
+        res.status(200).json({
+          success: true,
           data: {
-            requestedCount: boostIds.length,
-            note: "When implemented, this will revoke all specified boosts and return results for each item.",
+            results,
           },
         });
       } catch (error) {
