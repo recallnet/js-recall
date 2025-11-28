@@ -31,12 +31,7 @@ export type AddBoostBonusResult = {
   /** When the boost expires */
   expiresAt: Date;
   /** Competition IDs where boost was applied */
-  appliedToCompetitions: {
-    /** Active competition IDs */
-    active: string[];
-    /** Pending competition IDs */
-    pending: string[];
-  };
+  appliedToCompetitions: string[];
 };
 
 /**
@@ -119,7 +114,6 @@ export class BoostBonusService {
    * - If same revocation is retried, unique constraint prevents duplicate and returns noop
    *
    * @param boostBonusId - The ID of the bonus boost to revoke
-   * @param tx - Optional transaction (if not provided, creates new transaction)
    * @returns Result containing revocation details and affected competitions
    * @throws Error if boost not found or already revoked
    *
@@ -133,7 +127,6 @@ export class BoostBonusService {
    */
   async revokeBoostBonus(
     boostBonusId: string,
-    tx?: Transaction,
   ): Promise<RevokeBoostBonusResult> {
     const executeWithTx = async (transaction: Transaction) => {
       // Step 1: Validate boost exists and is active
@@ -323,16 +316,23 @@ export class BoostBonusService {
       };
     };
 
-    // If transaction provided, use it; otherwise create new transaction
-    if (tx) {
-      return executeWithTx(tx);
-    } else {
-      return this.#db.transaction(executeWithTx);
-    }
+    return this.#db.transaction(executeWithTx);
   }
 
   /**
    * Adds a bonus boost to a user and applies it to eligible competitions.
+   *
+   * **Updating Boosts:**
+   * To modify an existing bonus boost (change amount or expiration), admins must:
+   * 1. Call `revokeBoostBonus(oldBoostId)` to revoke the existing boost
+   * 2. Call `addBoostBonus(...)` with new parameters to create a new boost
+   *
+   * This two-step approach is intentional - it avoids the complexity of:
+   * - Handling amount increases/decreases across multiple competitions
+   * - Managing expiration date changes and re-evaluating eligibility
+   * - Maintaining audit trails for what changed and when
+   *
+   * The revoke + add pattern provides clear semantics and maintains data integrity.
    *
    * This method:
    * 1. Validates the input parameters:
@@ -374,7 +374,6 @@ export class BoostBonusService {
    * @param expiresAt - When the boost expires (must be at least 1 minute in future)
    * @param createdByAdminId - Optional admin ID who created the boost
    * @param meta - Optional metadata (primitives only, max 1000 chars serialized)
-   * @param tx - Optional transaction (if not provided, creates new transaction)
    * @returns Result containing created boost and list of competitions where it was applied
    * @throws Error if validation fails or user not found
    *
@@ -388,7 +387,7 @@ export class BoostBonusService {
    *   { source: 'farcaster', campaignId: 'campaign-123' }
    * );
    * console.log(`Created boost ${result.boostBonusId}`);
-   * console.log(`Applied to ${result.appliedToCompetitions.active.length} active competitions`);
+   * console.log(`Applied to ${result.appliedToCompetitions.length} competitions`);
    * ```
    */
   async addBoostBonus(
@@ -397,7 +396,6 @@ export class BoostBonusService {
     expiresAt: Date,
     createdByAdminId?: string,
     meta?: Record<string, unknown>,
-    tx?: Transaction,
   ): Promise<AddBoostBonusResult> {
     const executeWithTx = async (transaction: Transaction) => {
       // Step 1: Validate input parameters
@@ -494,8 +492,7 @@ export class BoostBonusService {
       this.#logger.info(
         {
           boostBonusId: boost.id,
-          activeCount: appliedCompetitions.active.length,
-          pendingCount: appliedCompetitions.pending.length,
+          appliedCount: appliedCompetitions.length,
         },
         "Completed adding bonus boost",
       );
@@ -509,12 +506,7 @@ export class BoostBonusService {
       };
     };
 
-    // If transaction provided, use it; otherwise create new transaction
-    if (tx) {
-      return executeWithTx(tx);
-    } else {
-      return this.#db.transaction(executeWithTx);
-    }
+    return this.#db.transaction(executeWithTx);
   }
 
   /**
@@ -544,7 +536,7 @@ export class BoostBonusService {
    * @param amount - Amount of boost to award
    * @param expiresAt - When the boost expires
    * @param tx - Transaction to use for database operations
-   * @returns Object containing lists of active and pending competition IDs where boost was applied
+   * @returns Array of competition IDs where boost was applied
    *
    * @private
    */
@@ -555,10 +547,9 @@ export class BoostBonusService {
     amount: bigint,
     expiresAt: Date,
     tx: Transaction,
-  ): Promise<{ active: string[]; pending: string[] }> {
+  ): Promise<string[]> {
     const now = new Date();
-    const activeCompetitions: string[] = [];
-    const pendingCompetitions: string[] = [];
+    const appliedCompetitions: string[] = [];
 
     // Find active and pending competitions (limited to 1000 for safety)
     const activeComps = await this.#competitionRepository.findByStatus({
@@ -569,18 +560,6 @@ export class BoostBonusService {
       status: "pending",
       params: { sort: "createdAt", limit: 1000, offset: 0 },
     });
-
-    // Warn if we hit the safety limit
-    if (activeComps.total > 1000 || pendingComps.total > 1000) {
-      this.#logger.warn(
-        {
-          boostBonusId,
-          activeTotal: activeComps.total,
-          pendingTotal: pendingComps.total,
-        },
-        "Competition count exceeds safety limit - some competitions may not receive boost",
-      );
-    }
 
     const competitions = [
       ...activeComps.competitions,
@@ -656,11 +635,7 @@ export class BoostBonusService {
         );
 
         if (result.type === "applied") {
-          if (competition.status === "active") {
-            activeCompetitions.push(competitionId);
-          } else {
-            pendingCompetitions.push(competitionId);
-          }
+          appliedCompetitions.push(competitionId);
 
           this.#logger.info(
             {
@@ -692,9 +667,6 @@ export class BoostBonusService {
       }
     }
 
-    return {
-      active: activeCompetitions,
-      pending: pendingCompetitions,
-    };
+    return appliedCompetitions;
   }
 }

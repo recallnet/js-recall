@@ -322,8 +322,7 @@ describe("BoostBonusService", () => {
 
       const result = await service.addBoostBonus(testWallet, amount, expiresAt);
 
-      expect(result.appliedToCompetitions.active).toHaveLength(0);
-      expect(result.appliedToCompetitions.pending).toHaveLength(0);
+      expect(result.appliedToCompetitions).toHaveLength(0);
       expect(mockBoostRepo.increase).not.toHaveBeenCalled();
     });
 
@@ -347,8 +346,7 @@ describe("BoostBonusService", () => {
 
       const result = await service.addBoostBonus(testWallet, amount, expiresAt);
 
-      expect(result.appliedToCompetitions.active).toHaveLength(0);
-      expect(result.appliedToCompetitions.pending).toHaveLength(0);
+      expect(result.appliedToCompetitions).toHaveLength(0);
       expect(mockBoostRepo.increase).not.toHaveBeenCalled();
     });
 
@@ -372,8 +370,7 @@ describe("BoostBonusService", () => {
 
       const result = await service.addBoostBonus(testWallet, amount, expiresAt);
 
-      expect(result.appliedToCompetitions.active).toHaveLength(0);
-      expect(result.appliedToCompetitions.pending).toHaveLength(0);
+      expect(result.appliedToCompetitions).toHaveLength(0);
       expect(mockBoostRepo.increase).not.toHaveBeenCalled();
     });
 
@@ -402,8 +399,7 @@ describe("BoostBonusService", () => {
 
       const result = await service.addBoostBonus(testWallet, amount, expiresAt);
 
-      expect(result.appliedToCompetitions.active).toHaveLength(0);
-      expect(result.appliedToCompetitions.pending).toHaveLength(0);
+      expect(result.appliedToCompetitions).toHaveLength(0);
       expect(mockBoostRepo.increase).toHaveBeenCalled();
     });
 
@@ -434,38 +430,6 @@ describe("BoostBonusService", () => {
           new Date(Date.now() + ONE_DAY_MS),
         ),
       ).rejects.toThrow("Repository error");
-    });
-
-    it("works with external transaction parameter", async () => {
-      const now = new Date();
-      const amount = 1000n;
-      const expiresAt = new Date(now.getTime() + ONE_DAY_MS);
-      const externalTx = "external-tx" as unknown as Transaction;
-
-      mockUserRepo.findByWalletAddress.mockResolvedValue(
-        createMockUser({ id: testUserId, walletAddress: testWallet }),
-      );
-      mockBoostRepo.createBoostBonus.mockResolvedValue(
-        createMockBoostBonus({
-          id: testBoostBonusId,
-          userId: testUserId,
-          amount,
-          expiresAt,
-        }),
-      );
-      setupEmptyCompetitions();
-
-      await service.addBoostBonus(
-        testWallet,
-        amount,
-        expiresAt,
-        undefined,
-        undefined,
-        externalTx,
-      );
-
-      expect(mockDb.transaction).not.toHaveBeenCalled();
-      expect(mockUserRepo.findByWalletAddress).toHaveBeenCalled();
     });
   });
 
@@ -621,25 +585,6 @@ describe("BoostBonusService", () => {
         "Repository error",
       );
     });
-
-    it("works with external transaction parameter", async () => {
-      const externalTx = "external-tx" as unknown as Transaction;
-      const boost = createBoost();
-
-      mockBoostRepo.findBoostBonusById.mockResolvedValue(boost);
-      mockUserRepo.findById.mockResolvedValue(
-        createMockUser({ id: testUserId, walletAddress: testWallet }),
-      );
-      mockBoostRepo.findBoostChangesByBoostBonusId.mockResolvedValue([]);
-      mockBoostRepo.updateBoostBonus.mockResolvedValue(
-        createMockBoostBonus({ ...boost, isActive: false }),
-      );
-
-      await service.revokeBoostBonus(testBoostBonusId, externalTx);
-
-      expect(mockDb.transaction).not.toHaveBeenCalled();
-      expect(mockBoostRepo.findBoostBonusById).toHaveBeenCalled();
-    });
   });
 
   describe("Error Handling", () => {
@@ -767,7 +712,7 @@ describe("BoostBonusService", () => {
         );
 
         expect(result.boostBonusId).toBe(testBoostBonusId);
-        expect(result.appliedToCompetitions.active).toEqual(["comp-2"]);
+        expect(result.appliedToCompetitions).toEqual(["comp-2"]);
         expect(mockBoostRepo.increase).toHaveBeenCalledTimes(2);
         expect(mockLogger.warn).toHaveBeenCalledWith(
           { boostBonusId: testBoostBonusId, competitionId: "comp-1" },
