@@ -35,6 +35,38 @@ const openApiHandler = new OpenAPIHandler(router, {
           title: "Trading Simulator API",
           version: "1.0.0",
         },
+        components: {
+          securitySchemes: {
+            BearerAuth: {
+              type: "http",
+              scheme: "bearer",
+              description:
+                "API key provided in the Authorization header using Bearer token authentication",
+            },
+            AgentApiKey: {
+              type: "http",
+              scheme: "bearer",
+              description: "Agent API key provided as Bearer token",
+            },
+            cookieAuth: {
+              type: "apiKey",
+              in: "cookie",
+              name: "privy-id-token",
+              description: "Privy authentication token stored in cookie",
+            },
+          },
+        },
+        security: [
+          {
+            BearerAuth: [],
+          },
+          {
+            AgentApiKey: [],
+          },
+          {
+            cookieAuth: [],
+          },
+        ],
       },
     }),
   ],
