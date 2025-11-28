@@ -1084,6 +1084,18 @@ describe("BoostBonusService", () => {
       const newBoostStartDate = new Date(now.getTime() + TWO_DAYS_MS);
 
       setupMockTransaction();
+      mockBoostRepo.findBoostChangesByCompetitionId.mockResolvedValue([
+        {
+          id: "change-1",
+          balanceId: "bal-1",
+          meta: { boostBonusId: "boost-123" },
+        },
+        {
+          id: "change-2",
+          balanceId: "bal-2",
+          meta: { boostBonusId: "boost-456" },
+        },
+      ]);
 
       const result = await service.cleanupInvalidBoostBonusesForCompetition(
         competitionId,
@@ -1092,10 +1104,8 @@ describe("BoostBonusService", () => {
       );
 
       expect(result.removedBoostIds).toHaveLength(0);
-      expect(result.keptBoostIds).toHaveLength(0);
-      expect(
-        mockBoostRepo.findBoostChangesByCompetitionId,
-      ).not.toHaveBeenCalled();
+      expect(result.keptBoostIds).toEqual(["boost-123", "boost-456"]);
+      expect(mockBoostRepo.findBoostChangesByCompetitionId).toHaveBeenCalled();
       expect(mockLogger.info).toHaveBeenCalledWith(
         expect.objectContaining({
           competitionId,
@@ -1158,6 +1168,13 @@ describe("BoostBonusService", () => {
       const newBoostStartDate = new Date(now.getTime() - ONE_DAY_MS);
 
       setupMockTransaction();
+      mockBoostRepo.findBoostChangesByCompetitionId.mockResolvedValue([
+        {
+          id: "change-1",
+          balanceId: "bal-1",
+          meta: { boostBonusId: "boost-789" },
+        },
+      ]);
 
       const result = await service.cleanupInvalidBoostBonusesForCompetition(
         competitionId,
@@ -1166,10 +1183,8 @@ describe("BoostBonusService", () => {
       );
 
       expect(result.removedBoostIds).toHaveLength(0);
-      expect(result.keptBoostIds).toHaveLength(0);
-      expect(
-        mockBoostRepo.findBoostChangesByCompetitionId,
-      ).not.toHaveBeenCalled();
+      expect(result.keptBoostIds).toEqual(["boost-789"]);
+      expect(mockBoostRepo.findBoostChangesByCompetitionId).toHaveBeenCalled();
       expect(mockLogger.info).toHaveBeenCalledWith(
         expect.objectContaining({
           competitionId,

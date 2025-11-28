@@ -129,7 +129,6 @@ export class BoostBonusService {
     boostBonusId: string,
   ): Promise<RevokeBoostBonusResult> {
     const executeWithTx = async (transaction: Transaction) => {
-      // Step 1: Validate boost exists and is active
       const boost = await this.#boostRepository.findBoostBonusById(
         boostBonusId,
         transaction,
@@ -145,7 +144,6 @@ export class BoostBonusService {
         );
       }
 
-      // Get user to retrieve wallet address
       const user = await this.#userRepository.findById(
         boost.userId,
         transaction,
@@ -154,7 +152,6 @@ export class BoostBonusService {
         throw new Error(`User with id ${boost.userId} not found`);
       }
 
-      // Step 2: Mark boost as inactive and set revoked_at
       const now = new Date();
       const revokedBoost = await this.#boostRepository.updateBoostBonus(
         boostBonusId,
@@ -170,7 +167,6 @@ export class BoostBonusService {
         "Marked bonus boost as revoked",
       );
 
-      // Step 3: Find all competitions where boost was applied
       const boostChanges =
         await this.#boostRepository.findBoostChangesByBoostBonusId(
           boostBonusId,
@@ -196,14 +192,12 @@ export class BoostBonusService {
         "Found boost_changes entries for revocation",
       );
 
-      // Step 4: Process each competition - remove boost if window hasn't opened
       const removedFromPending: string[] = [];
       const keptInActive: string[] = [];
 
       for (const change of boostChanges) {
         const competitionId = change.competitionId;
 
-        // Get competition to check boost window status
         const competition =
           await this.#competitionRepository.findById(competitionId);
 
@@ -215,7 +209,6 @@ export class BoostBonusService {
           continue;
         }
 
-        // Check if competition has boost dates set
         if (!competition.boostStartDate || !competition.boostEndDate) {
           this.#logger.warn(
             { boostBonusId, competitionId },
@@ -224,12 +217,10 @@ export class BoostBonusService {
           continue;
         }
 
-        // Check if boosting window is currently open
         const windowIsOpen =
           competition.boostStartDate < now && now < competition.boostEndDate;
 
         if (windowIsOpen) {
-          // Window is open - user might have spent boost, can't safely revoke
           this.#logger.info(
             { boostBonusId, competitionId },
             "Boosting window is open - keeping boost (user might have spent it)",
@@ -238,13 +229,11 @@ export class BoostBonusService {
           continue;
         }
 
-        // Window hasn't opened - safe to remove boost
         this.#logger.info(
           { boostBonusId, competitionId },
           "Boosting window not open - removing boost from competition",
         );
 
-        // Create idempotency key for revocation
         const idemKey = TEXT_ENCODER.encode(
           new URLSearchParams({
             revokeBonusBoost: boostBonusId,
@@ -253,7 +242,6 @@ export class BoostBonusService {
         );
 
         try {
-          // Decrease balance - this will noop if already revoked via idempotency
           const result = await this.#boostRepository.decrease(
             {
               userId: boost.userId,
@@ -302,7 +290,6 @@ export class BoostBonusService {
             );
             continue;
           }
-          // Re-throw other errors (don't mask unexpected issues)
           throw error;
         }
       }
@@ -407,7 +394,6 @@ export class BoostBonusService {
     meta?: Record<string, unknown>,
   ): Promise<AddBoostBonusResult> {
     const executeWithTx = async (transaction: Transaction) => {
-      // Step 1: Validate input parameters
       if (amount <= 0n) {
         throw new Error("Boost amount must be greater than 0");
       }
@@ -426,7 +412,6 @@ export class BoostBonusService {
         );
       }
 
-      // Validate meta field
       if (meta) {
         for (const value of Object.values(meta)) {
           const type = typeof value;
@@ -455,7 +440,6 @@ export class BoostBonusService {
         "Starting to add bonus boost",
       );
 
-      // Step 2: Find user by wallet address
       const user = await this.#userRepository.findByWalletAddress(wallet);
       if (!user) {
         throw new Error(`User with wallet ${wallet} not found`);
@@ -466,7 +450,6 @@ export class BoostBonusService {
         "Found user for bonus boost",
       );
 
-      // Step 3: Create bonus boost entry
       const boost = await this.#boostRepository.createBoostBonus(
         {
           userId: user.id,
@@ -483,7 +466,6 @@ export class BoostBonusService {
         "Created bonus boost entry",
       );
 
-      // Step 4: Apply boost to eligible competitions
       const appliedCompetitions =
         await this.applyBoostBonusToEligibleCompetitions(
           user.id,
@@ -538,6 +520,12 @@ export class BoostBonusService {
    *    - If opened: Keep boost (could have been spent)
    * 4. Use idempotency key: `cleanupInvalidBoost=${boostBonusId}&competition=${competitionId}`
    *
+   * **Idempotency:**
+   * - If the same boost becomes invalid, gets cleaned up, then is re-added and becomes
+   *   invalid again, the idempotency key will prevent the second cleanup.
+   * - This is acceptable because it means the boost was manually re-added by an admin,
+   *   implying intentional restoration despite the date conflict.
+   *
    * **Integration:**
    * Called from CompetitionService.updateCompetition() when boostStartDate is updated.
    *
@@ -546,7 +534,7 @@ export class BoostBonusService {
    * @param oldBoostStartDate - The previous boostStartDate value (null if not set before)
    * @param tx - Optional transaction (if not provided, creates new transaction)
    * @returns Object containing lists of removed and kept boost IDs
-   * @throws Error if competition not found or cleanup fails
+   * @throws Error if boost repository operations fail or unexpected errors occur
    *
    * @example
    * ```typescript
@@ -584,7 +572,6 @@ export class BoostBonusService {
         "Starting cleanup of invalid bonus boosts for competition",
       );
 
-      // Can't safely remove boosts if window already opened
       if (
         (oldBoostStartDate && oldBoostStartDate < now) ||
         newBoostStartDate < now
@@ -593,13 +580,26 @@ export class BoostBonusService {
           { competitionId, oldBoostStartDate, newBoostStartDate },
           "Boosting window already opened - keeping all boosts for safety",
         );
+
+        const boostChanges =
+          await this.#boostRepository.findBoostChangesByCompetitionId(
+            competitionId,
+            transaction,
+          );
+        const keptBoostIds = [
+          ...new Set(
+            boostChanges
+              .map((change) => change.meta?.boostBonusId as string | undefined)
+              .filter((id): id is string => id !== undefined),
+          ),
+        ];
+
         return {
           removedBoostIds: [],
-          keptBoostIds: [],
+          keptBoostIds,
         };
       }
 
-      // Step 1: Find all boost_changes entries for this competition with meta.boostBonusId
       const boostChanges =
         await this.#boostRepository.findBoostChangesByCompetitionId(
           competitionId,
@@ -622,7 +622,6 @@ export class BoostBonusService {
         "Found boost_changes entries for cleanup evaluation",
       );
 
-      // Step 2: Get unique boost bonus IDs
       const boostBonusIds = [
         ...new Set(
           boostChanges
@@ -642,7 +641,6 @@ export class BoostBonusService {
         };
       }
 
-      // Step 3: Fetch boost_bonus entries
       const boosts = await this.#boostRepository.findBoostBonusesByIds(
         boostBonusIds,
         transaction,
@@ -653,7 +651,6 @@ export class BoostBonusService {
         "Retrieved bonus boost entries for cleanup evaluation",
       );
 
-      // Step 4: Batch-fetch all users upfront to avoid N+1 queries
       const userIds = [...new Set(boosts.map((b) => b.userId))];
       const users = await this.#userRepository.findByIds(userIds, transaction);
       const userMap = new Map(users.map((u) => [u.id, u]));
@@ -663,11 +660,9 @@ export class BoostBonusService {
         "Batch-fetched users for boost cleanup",
       );
 
-      // Step 5: Process each boost - remove if invalid
       for (const boost of boosts) {
         const boostBonusId = boost.id;
 
-        // Check if boost is now invalid: newBoostStartDate >= boost.expiresAt
         // Using >= because if they're equal, window opens when boost expires (invalid)
         const isInvalid = newBoostStartDate >= boost.expiresAt;
 
@@ -685,7 +680,6 @@ export class BoostBonusService {
           continue;
         }
 
-        // Boost is now invalid - remove it
         this.#logger.info(
           {
             boostBonusId,
@@ -696,7 +690,6 @@ export class BoostBonusService {
           "Boost now invalid (boostStartDate >= expiresAt) - removing from competition",
         );
 
-        // Get user from the pre-fetched map
         const user = userMap.get(boost.userId);
         if (!user) {
           this.#logger.warn(
@@ -706,7 +699,6 @@ export class BoostBonusService {
           continue;
         }
 
-        // Create idempotency key for cleanup
         const idemKey = TEXT_ENCODER.encode(
           new URLSearchParams({
             cleanupInvalidBoost: boostBonusId,
@@ -715,7 +707,6 @@ export class BoostBonusService {
         );
 
         try {
-          // Decrease balance
           const result = await this.#boostRepository.decrease(
             {
               userId: boost.userId,
@@ -749,7 +740,6 @@ export class BoostBonusService {
             );
           }
         } catch (error) {
-          // Handle case where competition is deleted during cleanup
           const constraint = checkForeignKeyViolation(error);
           if (constraint?.includes("competition_id")) {
             this.#logger.warn(
@@ -758,7 +748,6 @@ export class BoostBonusService {
             );
             continue;
           }
-          // Re-throw other errors (don't mask unexpected issues)
           throw error;
         }
       }
@@ -778,7 +767,6 @@ export class BoostBonusService {
       };
     };
 
-    // If transaction provided, use it; otherwise create new transaction
     if (tx) {
       return executeWithTx(tx);
     } else {
@@ -828,7 +816,6 @@ export class BoostBonusService {
     const now = new Date();
     const appliedCompetitions: string[] = [];
 
-    // Find active and pending competitions (limited to 1000 for safety)
     const activeComps = await this.#competitionRepository.findByStatus({
       status: "active",
       params: { sort: "createdAt", limit: 1000, offset: 0 },
@@ -851,7 +838,6 @@ export class BoostBonusService {
     for (const competition of competitions) {
       const competitionId = competition.id;
 
-      // Check if competition has boost dates set
       if (!competition.boostStartDate || !competition.boostEndDate) {
         this.#logger.warn(
           { boostBonusId, competitionId },
@@ -860,7 +846,6 @@ export class BoostBonusService {
         continue;
       }
 
-      // Check eligibility criteria - eligibility is determined by boost window dates only
       const boostStartDateEligible = competition.boostStartDate < expiresAt;
       const windowNotEnded = competition.boostEndDate > now;
 
@@ -880,14 +865,12 @@ export class BoostBonusService {
         continue;
       }
 
-      // Competition is eligible - apply boost
       this.#logger.info(
         { boostBonusId, competitionId, status: competition.status },
         "Applying bonus boost to eligible competition",
       );
 
       try {
-        // Create idempotency key
         const idemKey = TEXT_ENCODER.encode(
           new URLSearchParams({
             bonusBoost: boostBonusId,
@@ -895,7 +878,6 @@ export class BoostBonusService {
           }).toString(),
         );
 
-        // Increase balance
         const result = await this.#boostRepository.increase(
           {
             userId,
@@ -945,7 +927,6 @@ export class BoostBonusService {
           );
           continue;
         }
-        // Re-throw other errors (don't mask unexpected issues)
         throw error;
       }
     }
