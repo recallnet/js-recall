@@ -69,20 +69,22 @@ export async function GET(
 
           <div tw="flex flex-row gap-3 w-full">
             <div tw="flex flex-col gap-3 flex-1">
-              <div tw="flex flex-row justify-center items-center gap-3 py-4 bg-black/40 border border-neutral-700 rounded-lg">
+              <div tw="flex flex-row justify-center items-center gap-4 py-4 bg-black/40 border border-neutral-700 rounded-lg">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={recallTokenSvg}
-                  alt="Recall token icon"
-                  width={24}
-                  height={24}
-                />
+                <div tw="flex items-center justify-center w-8 h-8 bg-white rounded-full">
+                  <img
+                    src={recallTokenSvg}
+                    alt="Recall token icon"
+                    width={20}
+                    height={20}
+                  />
+                </div>
                 <span tw="text-4xl text-neutral-200 leading-none">
                   {formatBigintAmount(
                     BigInt(competition.rewardsTge?.agentPool ?? 0),
                   )}
-                </span>{" "}
-                <span tw="font-light text-3xl text-neutral-400 leading-none">
+                </span>
+                <span tw="font-light text-3xl text-neutral-400 leading-none ml-2">
                   for Agents
                 </span>
               </div>
@@ -100,20 +102,22 @@ export async function GET(
             </div>
 
             <div tw="flex flex-col gap-3 flex-1">
-              <div tw="flex flex-row justify-center items-center gap-3 py-4 bg-black/40 border border-neutral-700 rounded-lg">
+              <div tw="flex flex-row justify-center items-center gap-4 py-4 bg-black/40 border border-neutral-700 rounded-lg">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={recallTokenSvg}
-                  alt="Recall token icon"
-                  width={24}
-                  height={24}
-                />
+                <div tw="flex items-center justify-center w-8 h-8 bg-white rounded-full">
+                  <img
+                    src={recallTokenSvg}
+                    alt="Recall token icon"
+                    width={20}
+                    height={20}
+                  />
+                </div>
                 <span tw="text-4xl text-neutral-200 leading-none">
                   {formatBigintAmount(
                     BigInt(competition.rewardsTge?.userPool ?? 0),
                   )}
-                </span>{" "}
-                <span tw="font-light text-3xl text-neutral-400 leading-none">
+                </span>
+                <span tw="font-light text-3xl text-neutral-400 leading-none ml-2">
                   for Boosters
                 </span>
               </div>
@@ -131,7 +135,7 @@ export async function GET(
             </div>
           </div>
 
-          <div tw="flex flex-row items-center gap-4 justify-center">
+          <div tw="flex flex-row items-center gap-6 justify-center">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={recallLogoSvg} alt="Recall logo" height={32} />
             <div tw="text-3xl text-sky-300 tracking-wider leading-none font-mono">
