@@ -21,7 +21,7 @@ import {
   sportsService,
   userService,
 } from "@/lib/services";
-import { router } from "@/rpc/router/index";
+import { router } from "@/rpc/router/trading/index";
 
 const openApiHandler = new OpenAPIHandler(router);
 
@@ -30,7 +30,7 @@ async function handleRequest(
   { params }: { params: Promise<Record<string, string | string[]>> },
 ) {
   const { matched, response } = await openApiHandler.handle(request, {
-    prefix: "/api",
+    prefix: "/api/trading",
     context: {
       cookies: await cookies(),
       headers: await headers(),
