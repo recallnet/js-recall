@@ -1,5 +1,13 @@
 import { randomUUID } from "crypto";
-import { and, count as drizzleCount, eq, ilike, ne, sql } from "drizzle-orm";
+import {
+  and,
+  count as drizzleCount,
+  eq,
+  ilike,
+  inArray,
+  ne,
+  sql,
+} from "drizzle-orm";
 import { Logger } from "pino";
 
 import { users } from "../schema/core/defs.js";
@@ -92,16 +100,42 @@ export class UserRepository {
   /**
    * Find a user by ID
    * @param id User ID to find
+   * @param tx Optional transaction
    */
-  async findById(id: string): Promise<SelectUser | undefined> {
+  async findById(
+    id: string,
+    tx?: Transaction,
+  ): Promise<SelectUser | undefined> {
     try {
-      const [result] = await this.#db
-        .select()
-        .from(users)
-        .where(eq(users.id, id));
+      const db = tx ?? this.#db;
+      const [result] = await db.select().from(users).where(eq(users.id, id));
       return result;
     } catch (error) {
       this.#logger.error({ error }, "[UserRepository] Error in findById");
+      throw error;
+    }
+  }
+
+  /**
+   * Find multiple users by their IDs
+   * @param ids Array of user IDs to find
+   * @param tx Optional transaction
+   * @returns Array of users found (may be fewer than requested if some don't exist)
+   */
+  async findByIds(ids: string[], tx?: Transaction): Promise<SelectUser[]> {
+    try {
+      if (ids.length === 0) {
+        return [];
+      }
+
+      const db = tx ?? this.#db;
+      const results = await db
+        .select()
+        .from(users)
+        .where(inArray(users.id, ids));
+      return results;
+    } catch (error) {
+      this.#logger.error({ error }, "[UserRepository] Error in findByIds");
       throw error;
     }
   }

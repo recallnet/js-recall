@@ -876,6 +876,11 @@ describe("BoostBonusService", () => {
         boostChanges,
       );
       mockBoostRepo.findBoostBonusesByIds.mockResolvedValue(boosts);
+      const userIds = [...new Set(boosts.map((b) => b.userId))];
+      const users = userIds.map((id) =>
+        createMockUser({ id, walletAddress: testWallet }),
+      );
+      mockUserRepo.findByIds.mockResolvedValue(users);
     };
 
     it("removes invalid boosts when boostStartDate moves after boost expiration", async () => {
@@ -1295,7 +1300,7 @@ describe("BoostBonusService", () => {
         ],
         [boost],
       );
-      mockUserRepo.findById.mockResolvedValue(undefined);
+      mockUserRepo.findByIds.mockResolvedValue([]);
 
       const result = await service.cleanupInvalidBoostBonusesForCompetition(
         competitionId,
