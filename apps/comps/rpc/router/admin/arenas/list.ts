@@ -12,6 +12,12 @@ import { adminMiddleware } from "@/rpc/middleware/admin";
 export const listArenas = base
   .use(adminMiddleware)
   .input(AdminListArenasQuerySchema)
+  .route({
+    method: "GET",
+    path: "/admin/arenas",
+    summary: "List all arenas",
+    tags: ["admin", "arenas"],
+  })
   .handler(async ({ input, context, errors }) => {
     try {
       const { nameFilter, ...pagingParams } = input;
