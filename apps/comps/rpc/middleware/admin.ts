@@ -18,7 +18,7 @@ export const adminMiddleware = base.middleware(
       const authHeader = context.headers.get("authorization");
 
       if (!authHeader || !authHeader.startsWith("Bearer ")) {
-        throw errors.UNAUTHORIZED;
+        throw errors.UNAUTHORIZED();
       }
 
       const apiKey = authHeader.substring(7);
