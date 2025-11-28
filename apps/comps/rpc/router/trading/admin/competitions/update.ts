@@ -14,7 +14,7 @@ import { adminMiddleware } from "@/rpc/middleware/admin";
  */
 export const updateCompetition = base
   .use(adminMiddleware)
-  .input(AdminUpdateCompetitionSchema)
+  .input(AdminUpdateCompetitionSchema.merge(AdminUpdateCompetitionParamsSchema))
   .route({
     method: "PUT",
     path: "/admin/competition/{competitionId}",
@@ -23,10 +23,8 @@ export const updateCompetition = base
     tags: ["admin"],
   })
   .handler(async ({ input, context, errors }) => {
-    const params = AdminUpdateCompetitionParamsSchema.parse(context.params);
-
     try {
-      const { competitionId } = params;
+      const { competitionId } = input;
       const {
         rewards,
         tradingConstraints,

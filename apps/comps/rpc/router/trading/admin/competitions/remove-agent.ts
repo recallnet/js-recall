@@ -14,7 +14,11 @@ import { adminMiddleware } from "@/rpc/middleware/admin";
  */
 export const removeAgentFromCompetition = base
   .use(adminMiddleware)
-  .input(AdminRemoveAgentFromCompetitionBodySchema.partial())
+  .input(
+    AdminRemoveAgentFromCompetitionParamsSchema.merge(
+      AdminRemoveAgentFromCompetitionBodySchema.partial(),
+    ),
+  )
   .route({
     method: "POST",
     path: "/admin/competitions/{competitionId}/agents/{agentId}/remove",
@@ -23,21 +27,17 @@ export const removeAgentFromCompetition = base
     tags: ["admin"],
   })
   .handler(async ({ input, context, errors }) => {
-    const params = AdminRemoveAgentFromCompetitionParamsSchema.parse(
-      context.params,
-    );
-
     try {
       // Check if competition exists
       const competition = await context.competitionService.getCompetition(
-        params.competitionId,
+        input.competitionId,
       );
       if (!competition) {
         throw errors.NOT_FOUND({ message: "Competition not found" });
       }
 
       // Check if agent exists
-      const agent = await context.agentService.getAgent(params.agentId);
+      const agent = await context.agentService.getAgent(input.agentId);
       if (!agent) {
         throw errors.NOT_FOUND({ message: "Agent not found" });
       }
@@ -45,8 +45,8 @@ export const removeAgentFromCompetition = base
       // Check if agent is in the competition
       const isInCompetition =
         await context.competitionService.isAgentInCompetition(
-          params.competitionId,
-          params.agentId,
+          input.competitionId,
+          input.agentId,
         );
       if (!isInCompetition) {
         throw errors.BAD_REQUEST({
@@ -56,8 +56,8 @@ export const removeAgentFromCompetition = base
 
       // Remove agent from competition
       await context.competitionService.removeAgentFromCompetition(
-        params.competitionId,
-        params.agentId,
+        input.competitionId,
+        input.agentId,
         `Admin removal: ${input.reason || "No reason provided"}`,
       );
 

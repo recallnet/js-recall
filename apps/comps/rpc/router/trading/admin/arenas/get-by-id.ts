@@ -11,6 +11,7 @@ import { adminMiddleware } from "@/rpc/middleware/admin";
  */
 export const getArenaById = base
   .use(adminMiddleware)
+  .input(AdminArenaParamsSchema)
   .route({
     method: "GET",
     path: "/admin/arenas/{id}",
@@ -18,9 +19,7 @@ export const getArenaById = base
     description: "Get detailed information about a specific arena",
     tags: ["admin"],
   })
-  .handler(async ({ context, errors }) => {
-    const input = AdminArenaParamsSchema.parse(context.params);
-
+  .handler(async ({ context, input, errors }) => {
     try {
       const arena = await context.arenaService.findById(input.id);
       return { success: true, arena };

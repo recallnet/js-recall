@@ -14,7 +14,7 @@ import { adminMiddleware } from "@/rpc/middleware/admin";
  */
 export const deactivateAgent = base
   .use(adminMiddleware)
-  .input(AdminDeactivateAgentBodySchema)
+  .input(AdminDeactivateAgentBodySchema.merge(AdminDeactivateAgentParamsSchema))
   .route({
     method: "POST",
     path: "/admin/agents/{agentId}/deactivate",
@@ -23,11 +23,9 @@ export const deactivateAgent = base
     tags: ["admin"],
   })
   .handler(async ({ input, context, errors }) => {
-    const params = AdminDeactivateAgentParamsSchema.parse(context.params);
-
     try {
       // Get the agent first to check if it exists
-      const agent = await context.agentService.getAgent(params.agentId);
+      const agent = await context.agentService.getAgent(input.agentId);
 
       if (!agent) {
         throw errors.NOT_FOUND({ message: "Agent not found" });
@@ -42,7 +40,7 @@ export const deactivateAgent = base
 
       // Deactivate the agent
       const deactivatedAgent = await context.agentService.deactivateAgent(
-        params.agentId,
+        input.agentId,
         input.reason,
       );
 

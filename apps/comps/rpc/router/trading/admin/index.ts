@@ -6,8 +6,8 @@ import { users } from "./users";
 
 export const router = {
   arenas,
-  partners,
-  competitions,
-  agents,
-  users,
+  // partners,
+  // competitions,
+  // agents,
+  // users,
 } as const;

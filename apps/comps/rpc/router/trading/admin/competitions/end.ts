@@ -10,6 +10,7 @@ import { adminMiddleware } from "@/rpc/middleware/admin";
  */
 export const endCompetition = base
   .use(adminMiddleware)
+  .input(AdminEndCompetitionSchema)
   .route({
     method: "POST",
     path: "/admin/competition/end",
@@ -17,9 +18,7 @@ export const endCompetition = base
     description: "End a competition and calculate final results",
     tags: ["admin"],
   })
-  .handler(async ({ context, errors }) => {
-    const input = AdminEndCompetitionSchema.parse(context.params);
-
+  .handler(async ({ context, input, errors }) => {
     try {
       const { competition, leaderboard } =
         await context.competitionService.endCompetition(input.competitionId);

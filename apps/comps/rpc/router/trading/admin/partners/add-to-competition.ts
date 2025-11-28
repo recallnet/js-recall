@@ -14,7 +14,7 @@ import { adminMiddleware } from "@/rpc/middleware/admin";
  */
 export const addPartnerToCompetition = base
   .use(adminMiddleware)
-  .input(AdminAddPartnerToCompetitionSchema)
+  .input(AdminAddPartnerToCompetitionSchema.merge(AdminCompetitionParamsSchema))
   .route({
     method: "POST",
     path: "/admin/competitions/{competitionId}/partners",
@@ -24,11 +24,9 @@ export const addPartnerToCompetition = base
     tags: ["admin"],
   })
   .handler(async ({ input, context, errors }) => {
-    const params = AdminCompetitionParamsSchema.parse(context.params);
-
     try {
       const association = await context.partnerService.addToCompetition({
-        competitionId: params.competitionId,
+        competitionId: input.competitionId,
         partnerId: input.partnerId,
         position: input.position,
       });

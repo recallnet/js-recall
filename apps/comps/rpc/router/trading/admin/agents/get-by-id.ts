@@ -11,6 +11,7 @@ import { adminMiddleware } from "@/rpc/middleware/admin";
  */
 export const getAgentById = base
   .use(adminMiddleware)
+  .input(AdminGetAgentParamsSchema)
   .route({
     method: "GET",
     path: "/admin/agents/{agentId}",
@@ -18,9 +19,7 @@ export const getAgentById = base
     description: "Get detailed information about a specific agent",
     tags: ["admin"],
   })
-  .handler(async ({ context, errors }) => {
-    const input = AdminGetAgentParamsSchema.parse(context.params);
-
+  .handler(async ({ context, input, errors }) => {
     try {
       const agent = await context.agentService.getAgent(input.agentId);
 

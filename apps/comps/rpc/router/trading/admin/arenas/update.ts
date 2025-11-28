@@ -14,7 +14,7 @@ import { adminMiddleware } from "@/rpc/middleware/admin";
  */
 export const updateArena = base
   .use(adminMiddleware)
-  .input(AdminUpdateArenaSchema)
+  .input(AdminArenaParamsSchema.merge(AdminUpdateArenaSchema))
   .route({
     method: "PUT",
     path: "/admin/arenas/{id}",
@@ -23,10 +23,8 @@ export const updateArena = base
     tags: ["admin"],
   })
   .handler(async ({ input, context, errors }) => {
-    const params = AdminArenaParamsSchema.parse(context.params);
-
     try {
-      const { id } = params;
+      const { id } = input;
       const updateData = input;
       const arena = await context.arenaService.update(id, updateData);
       return { success: true, arena };

@@ -11,6 +11,7 @@ import { adminMiddleware } from "@/rpc/middleware/admin";
  */
 export const getPartnerById = base
   .use(adminMiddleware)
+  .input(AdminPartnerParamsSchema)
   .route({
     method: "GET",
     path: "/admin/partners/{id}",
@@ -18,9 +19,7 @@ export const getPartnerById = base
     description: "Get detailed information about a specific partner",
     tags: ["admin"],
   })
-  .handler(async ({ context, errors }) => {
-    const input = AdminPartnerParamsSchema.parse(context.params);
-
+  .handler(async ({ context, input, errors }) => {
     try {
       const partner = await context.partnerService.findById(input.id);
       return { success: true, partner };

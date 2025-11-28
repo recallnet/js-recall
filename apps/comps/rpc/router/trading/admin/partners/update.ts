@@ -14,7 +14,7 @@ import { adminMiddleware } from "@/rpc/middleware/admin";
  */
 export const updatePartner = base
   .use(adminMiddleware)
-  .input(AdminUpdatePartnerSchema)
+  .input(AdminUpdatePartnerSchema.merge(AdminPartnerParamsSchema))
   .route({
     method: "PUT",
     path: "/admin/partners/{id}",
@@ -23,10 +23,8 @@ export const updatePartner = base
     tags: ["admin"],
   })
   .handler(async ({ input, context, errors }) => {
-    const params = AdminPartnerParamsSchema.parse(context.params);
-
     try {
-      const { id } = params;
+      const { id } = input;
       const updateData = input;
       const partner = await context.partnerService.update(id, updateData);
       return { success: true, partner };
