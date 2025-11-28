@@ -12,6 +12,13 @@ import { adminMiddleware } from "@/rpc/middleware/admin";
 export const createPartner = base
   .use(adminMiddleware)
   .input(AdminCreatePartnerSchema)
+  .route({
+    method: "POST",
+    path: "/admin/partners",
+    summary: "Create a new partner",
+    description: "Create a new partner for competitions",
+    tags: ["admin"],
+  })
   .handler(async ({ input, context, errors }) => {
     try {
       const partner = await context.partnerService.createPartner(input);

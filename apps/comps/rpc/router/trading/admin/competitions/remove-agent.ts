@@ -15,6 +15,13 @@ import { adminMiddleware } from "@/rpc/middleware/admin";
 export const removeAgentFromCompetition = base
   .use(adminMiddleware)
   .input(AdminRemoveAgentFromCompetitionBodySchema.partial())
+  .route({
+    method: "POST",
+    path: "/admin/competitions/{competitionId}/agents/{agentId}/remove",
+    summary: "Remove agent from competition",
+    description: "Remove an agent from a competition with optional reason",
+    tags: ["admin"],
+  })
   .handler(async ({ input, context, errors }) => {
     const params = AdminRemoveAgentFromCompetitionParamsSchema.parse(
       context.params,

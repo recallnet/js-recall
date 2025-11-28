@@ -15,6 +15,13 @@ import { adminMiddleware } from "@/rpc/middleware/admin";
 export const updateCompetition = base
   .use(adminMiddleware)
   .input(AdminUpdateCompetitionSchema)
+  .route({
+    method: "PUT",
+    path: "/admin/competition/{competitionId}",
+    summary: "Update competition",
+    description: "Update an existing competition's configuration",
+    tags: ["admin"],
+  })
   .handler(async ({ input, context, errors }) => {
     const params = AdminUpdateCompetitionParamsSchema.parse(context.params);
 

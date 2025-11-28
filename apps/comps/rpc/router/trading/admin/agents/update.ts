@@ -15,6 +15,13 @@ import { adminMiddleware } from "@/rpc/middleware/admin";
 export const updateAgent = base
   .use(adminMiddleware)
   .input(AdminUpdateAgentBodySchema)
+  .route({
+    method: "PUT",
+    path: "/admin/agents/{agentId}",
+    summary: "Update agent",
+    description: "Update an agent's information",
+    tags: ["admin"],
+  })
   .handler(async ({ input, context, errors }) => {
     const params = AdminUpdateAgentParamsSchema.parse(context.params);
 

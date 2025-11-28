@@ -11,6 +11,13 @@ import { adminMiddleware } from "@/rpc/middleware/admin";
  */
 export const getCompetitionPartners = base
   .use(adminMiddleware)
+  .route({
+    method: "GET",
+    path: "/admin/competitions/{competitionId}/partners",
+    summary: "Get partners for a competition",
+    description: "Get all partners associated with a specific competition",
+    tags: ["admin"],
+  })
   .handler(async ({ context, errors }) => {
     const input = AdminCompetitionParamsSchema.parse(context.params);
 

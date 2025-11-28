@@ -15,6 +15,13 @@ import { adminMiddleware } from "@/rpc/middleware/admin";
 export const deactivateAgent = base
   .use(adminMiddleware)
   .input(AdminDeactivateAgentBodySchema)
+  .route({
+    method: "POST",
+    path: "/admin/agents/{agentId}/deactivate",
+    summary: "Deactivate agent",
+    description: "Deactivate an agent with a reason",
+    tags: ["admin"],
+  })
   .handler(async ({ input, context, errors }) => {
     const params = AdminDeactivateAgentParamsSchema.parse(context.params);
 

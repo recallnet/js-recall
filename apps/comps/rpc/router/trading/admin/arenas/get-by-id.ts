@@ -11,6 +11,13 @@ import { adminMiddleware } from "@/rpc/middleware/admin";
  */
 export const getArenaById = base
   .use(adminMiddleware)
+  .route({
+    method: "GET",
+    path: "/admin/arenas/{id}",
+    summary: "Get arena by ID",
+    description: "Get detailed information about a specific arena",
+    tags: ["admin"],
+  })
   .handler(async ({ context, errors }) => {
     const input = AdminArenaParamsSchema.parse(context.params);
 

@@ -10,6 +10,13 @@ import { adminMiddleware } from "@/rpc/middleware/admin";
  */
 export const listUsers = base
   .use(adminMiddleware)
+  .route({
+    method: "GET",
+    path: "/admin/users",
+    summary: "List all users",
+    description: "Get a list of all users in the system",
+    tags: ["admin"],
+  })
   .handler(async ({ context, errors }) => {
     try {
       const users = await context.userService.getAllUsers();

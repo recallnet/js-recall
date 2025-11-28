@@ -11,6 +11,13 @@ import { adminMiddleware } from "@/rpc/middleware/admin";
  */
 export const removePartnerFromCompetition = base
   .use(adminMiddleware)
+  .route({
+    method: "DELETE",
+    path: "/admin/competitions/{competitionId}/partners/{partnerId}",
+    summary: "Remove partner from competition",
+    description: "Remove a partner association from a competition",
+    tags: ["admin"],
+  })
   .handler(async ({ context, errors }) => {
     const input = AdminCompetitionPartnerParamsSchema.parse(context.params);
 

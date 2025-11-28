@@ -14,6 +14,13 @@ import { adminMiddleware } from "@/rpc/middleware/admin";
 export const createCompetition = base
   .use(adminMiddleware)
   .input(AdminCreateCompetitionSchema)
+  .route({
+    method: "POST",
+    path: "/admin/competition/create",
+    summary: "Create a new competition",
+    description: "Create a new competition with specified configuration",
+    tags: ["admin"],
+  })
   .handler(async ({ input, context, errors }) => {
     try {
       const competition = await context.competitionService.createCompetition({

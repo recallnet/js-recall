@@ -14,6 +14,13 @@ import { adminMiddleware } from "@/rpc/middleware/admin";
 export const startCompetition = base
   .use(adminMiddleware)
   .input(AdminStartCompetitionSchema)
+  .route({
+    method: "POST",
+    path: "/admin/competition/start",
+    summary: "Start a competition",
+    description: "Start an existing competition or create and start a new one",
+    tags: ["admin"],
+  })
   .handler(async ({ input, context, errors }) => {
     try {
       const { competitionId, agentIds, tradingConstraints, ...creationFields } =

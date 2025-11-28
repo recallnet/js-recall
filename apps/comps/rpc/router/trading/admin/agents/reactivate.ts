@@ -11,6 +11,13 @@ import { adminMiddleware } from "@/rpc/middleware/admin";
  */
 export const reactivateAgent = base
   .use(adminMiddleware)
+  .route({
+    method: "POST",
+    path: "/admin/agents/{agentId}/reactivate",
+    summary: "Reactivate agent",
+    description: "Reactivate a previously deactivated agent",
+    tags: ["admin"],
+  })
   .handler(async ({ context, errors }) => {
     const input = AdminReactivateAgentParamsSchema.parse(context.params);
 

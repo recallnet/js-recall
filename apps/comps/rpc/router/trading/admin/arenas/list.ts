@@ -16,7 +16,8 @@ export const listArenas = base
     method: "GET",
     path: "/admin/arenas",
     summary: "List all arenas",
-    tags: ["admin", "arenas"],
+    description: "Get paginated list of arenas with optional name filtering",
+    tags: ["admin"],
   })
   .handler(async ({ input, context, errors }) => {
     try {

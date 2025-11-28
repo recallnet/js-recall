@@ -11,6 +11,13 @@ import { adminMiddleware } from "@/rpc/middleware/admin";
  */
 export const deleteAgent = base
   .use(adminMiddleware)
+  .route({
+    method: "DELETE",
+    path: "/admin/agents/{agentId}",
+    summary: "Delete agent",
+    description: "Delete an agent by ID",
+    tags: ["admin"],
+  })
   .handler(async ({ context, errors }) => {
     const input = AdminDeleteAgentParamsSchema.parse(context.params);
 

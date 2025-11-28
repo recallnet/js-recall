@@ -12,6 +12,13 @@ import { adminMiddleware } from "@/rpc/middleware/admin";
 export const listPartners = base
   .use(adminMiddleware)
   .input(AdminListPartnersQuerySchema)
+  .route({
+    method: "GET",
+    path: "/admin/partners",
+    summary: "List all partners",
+    description: "Get paginated list of partners with optional name filtering",
+    tags: ["admin"],
+  })
   .handler(async ({ input, context, errors }) => {
     try {
       const { nameFilter, ...pagingParams } = input;

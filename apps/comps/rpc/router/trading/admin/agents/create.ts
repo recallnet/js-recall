@@ -12,6 +12,13 @@ import { adminMiddleware } from "@/rpc/middleware/admin";
 export const createAgent = base
   .use(adminMiddleware)
   .input(AdminCreateAgentSchema)
+  .route({
+    method: "POST",
+    path: "/admin/agents",
+    summary: "Create a new agent",
+    description: "Create a new agent for a user",
+    tags: ["admin"],
+  })
   .handler(async ({ input, context, errors }) => {
     try {
       const createdAgent = await context.agentService.createAgentForOwner(

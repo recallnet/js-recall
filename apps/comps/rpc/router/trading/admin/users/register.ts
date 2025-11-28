@@ -12,22 +12,18 @@ import { adminMiddleware } from "@/rpc/middleware/admin";
 export const registerUser = base
   .use(adminMiddleware)
   .input(AdminRegisterUserSchema)
+  .route({
+    method: "POST",
+    path: "/admin/users",
+    summary: "Register a new user",
+    description:
+      "Admin-only endpoint to register a new user and optionally create their first agent",
+    tags: ["admin"],
+  })
   .handler(async ({ input, context, errors }) => {
     try {
       const { user, agent, agentError } =
-        await context.adminService.registerUserAndAgent({
-          walletAddress: input.walletAddress,
-          name: input.name,
-          email: input.email,
-          userImageUrl: input.userImageUrl,
-          userMetadata: input.userMetadata,
-          agentName: input.agentName,
-          agentHandle: input.agentHandle,
-          agentDescription: input.agentDescription,
-          agentImageUrl: input.agentImageUrl,
-          agentMetadata: input.agentMetadata,
-          agentWalletAddress: input.agentWalletAddress,
-        });
+        await context.adminService.registerUserAndAgent(input);
 
       // Handle case where agent creation failed but user was created successfully
       if (agentError) {

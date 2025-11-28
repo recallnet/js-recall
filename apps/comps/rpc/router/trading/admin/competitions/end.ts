@@ -10,6 +10,13 @@ import { adminMiddleware } from "@/rpc/middleware/admin";
  */
 export const endCompetition = base
   .use(adminMiddleware)
+  .route({
+    method: "POST",
+    path: "/admin/competition/end",
+    summary: "End a competition",
+    description: "End a competition and calculate final results",
+    tags: ["admin"],
+  })
   .handler(async ({ context, errors }) => {
     const input = AdminEndCompetitionSchema.parse(context.params);
 

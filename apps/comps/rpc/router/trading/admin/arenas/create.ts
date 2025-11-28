@@ -12,6 +12,13 @@ import { adminMiddleware } from "@/rpc/middleware/admin";
 export const createArena = base
   .use(adminMiddleware)
   .input(AdminCreateArenaSchema)
+  .route({
+    method: "POST",
+    path: "/admin/arenas",
+    summary: "Create a new arena",
+    description: "Create a new arena with specified configuration",
+    tags: ["admin"],
+  })
   .handler(async ({ input, context, errors }) => {
     try {
       const arena = await context.arenaService.createArena(input);

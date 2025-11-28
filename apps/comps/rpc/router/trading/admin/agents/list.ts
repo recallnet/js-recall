@@ -12,6 +12,13 @@ import { adminMiddleware } from "@/rpc/middleware/admin";
 export const listAgents = base
   .use(adminMiddleware)
   .input(AdminListAllAgentsQuerySchema)
+  .route({
+    method: "GET",
+    path: "/admin/agents",
+    summary: "List all agents",
+    description: "Get paginated list of all agents",
+    tags: ["admin"],
+  })
   .handler(async ({ input, context, errors }) => {
     try {
       const { limit = 50, offset = 0, sort = "-createdAt" } = input;

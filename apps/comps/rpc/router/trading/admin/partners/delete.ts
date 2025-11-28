@@ -11,6 +11,13 @@ import { adminMiddleware } from "@/rpc/middleware/admin";
  */
 export const deletePartner = base
   .use(adminMiddleware)
+  .route({
+    method: "DELETE",
+    path: "/admin/partners/{id}",
+    summary: "Delete partner",
+    description: "Delete a partner by ID",
+    tags: ["admin"],
+  })
   .handler(async ({ context, errors }) => {
     const input = AdminPartnerParamsSchema.parse(context.params);
 

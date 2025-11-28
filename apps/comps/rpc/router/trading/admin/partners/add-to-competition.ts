@@ -15,6 +15,14 @@ import { adminMiddleware } from "@/rpc/middleware/admin";
 export const addPartnerToCompetition = base
   .use(adminMiddleware)
   .input(AdminAddPartnerToCompetitionSchema)
+  .route({
+    method: "POST",
+    path: "/admin/competitions/{competitionId}/partners",
+    summary: "Add partner to competition",
+    description:
+      "Associate a partner with a competition at a specific position",
+    tags: ["admin"],
+  })
   .handler(async ({ input, context, errors }) => {
     const params = AdminCompetitionParamsSchema.parse(context.params);
 

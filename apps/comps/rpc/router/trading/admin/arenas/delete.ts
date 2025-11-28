@@ -11,6 +11,13 @@ import { adminMiddleware } from "@/rpc/middleware/admin";
  */
 export const deleteArena = base
   .use(adminMiddleware)
+  .route({
+    method: "DELETE",
+    path: "/admin/arenas/{id}",
+    summary: "Delete arena",
+    description: "Delete an arena by ID",
+    tags: ["admin"],
+  })
   .handler(async ({ context, errors }) => {
     const input = AdminArenaParamsSchema.parse(context.params);
 
