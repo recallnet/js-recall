@@ -1,14 +1,34 @@
 import { ImageResponse } from "next/og";
+import { readFile } from "node:fs/promises";
+import { extname, join } from "node:path";
 
-import { getBaseUrl } from "@/lib/get-site-url";
 import { createSafeClient } from "@/rpc/clients/server-side";
 import { formatCompetitionDates } from "@/utils/competition-utils";
 import { formatBigintAmount } from "@/utils/format";
 
+/**
+ * Loads an asset from the public directory and returns it as a base64 data URL.
+ *
+ * @param assetPath - Path relative to the public directory
+ * @returns Base64 data URL for the asset
+ */
+async function loadAssetAsBase64(assetPath: string): Promise<string> {
+  const fullPath = join(process.cwd(), "public", assetPath);
+  const buffer = await readFile(fullPath);
+  const base64 = buffer.toString("base64");
+
+  const ext = extname(assetPath).toLowerCase();
+  let mimeType = "image/svg+xml";
+  if (ext === ".png") mimeType = "image/png";
+  if (ext === ".jpg" || ext === ".jpeg") mimeType = "image/jpeg";
+
+  return `data:${mimeType};base64,${base64}`;
+}
+
 export async function GET(
   _req: Request,
   context: { params: Promise<{ id: string }> },
-) {
+): Promise<ImageResponse> {
   const client = await createSafeClient();
   const { id } = await context.params;
 
@@ -33,10 +53,11 @@ export async function GET(
     );
   }
 
-  const baseUrl = getBaseUrl();
-  const backgroundImage = `${baseUrl}/og-background.svg`;
-  const recallSvgUrl = `${baseUrl}/recall-token.svg`;
-  const recallTextSvgUrl = `${baseUrl}/logo_white.svg`;
+  const [backgroundImage, recallTokenSvg, recallLogoSvg] = await Promise.all([
+    loadAssetAsBase64("og-background.svg"),
+    loadAssetAsBase64("recall-token.svg"),
+    loadAssetAsBase64("logo_white.svg"),
+  ]);
 
   return new ImageResponse(
     (
@@ -56,9 +77,10 @@ export async function GET(
               <div tw="flex flex-row justify-center items-center gap-3 w-[451px] h-[72px] bg-black/40 border border-[#3D3D3D] rounded-lg">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={recallSvgUrl}
-                  alt={"Recall token icon"}
-                  tw="w-6 h-6 rounded-full"
+                  src={recallTokenSvg}
+                  alt="Recall token icon"
+                  width={24}
+                  height={24}
                 />
                 <span tw="font-normal text-[40px] text-[#E5E5E5] leading-none">
                   {formatBigintAmount(
@@ -86,9 +108,10 @@ export async function GET(
               <div tw="flex flex-row justify-center items-center gap-3 w-[451px] h-[72px] bg-black/40 border border-[#3D3D3D] rounded-lg">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={recallSvgUrl}
-                  alt={"Recall token icon"}
-                  tw="w-6 h-6 rounded-full"
+                  src={recallTokenSvg}
+                  alt="Recall token icon"
+                  width={24}
+                  height={24}
                 />
                 <span tw="font-normal text-[40px] text-[#E5E5E5] leading-none">
                   {formatBigintAmount(
@@ -115,7 +138,7 @@ export async function GET(
 
           <div tw="flex flex-col items-center gap-4 w-full">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={recallTextSvgUrl} alt={"Recall text icon"} tw="h-8" />
+            <img src={recallLogoSvg} alt="Recall logo" height={32} />
             <div tw="font-normal text-[32px] text-[#87B0D9] tracking-wider leading-none font-mono">
               https://app.recall.network
             </div>
