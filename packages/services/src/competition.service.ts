@@ -1498,54 +1498,66 @@ export class CompetitionService {
    * @returns void
    * @throws Error if any final game is missing required data
    */
-  async #validateNflGamesReadyForScoring(competitionId: string): Promise<void> {
-    // Get all games for this competition
+  async #getNflCompetitionGames(competitionId: string): Promise<SelectGame[]> {
     const gameIds =
       await this.sportsService.competitionGamesRepository.findGameIdsByCompetitionId(
         competitionId,
       );
 
     if (gameIds.length === 0) {
+      return [];
+    }
+
+    return await this.sportsService.gamesRepository.findByIds(gameIds);
+  }
+
+  #evaluateNflGameReadiness(games: SelectGame[]): {
+    finalGames: SelectGame[];
+    nonFinalGames: SelectGame[];
+    invalidFinalGames: Array<{ game: SelectGame; reason: string }>;
+  } {
+    const finalGames: SelectGame[] = [];
+    const nonFinalGames: SelectGame[] = [];
+    const invalidFinalGames: Array<{ game: SelectGame; reason: string }> = [];
+
+    for (const game of games) {
+      if (game.status === "final") {
+        finalGames.push(game);
+
+        if (!game.endTime) {
+          invalidFinalGames.push({ game, reason: "missing end time" });
+        } else if (!game.winner) {
+          invalidFinalGames.push({ game, reason: "missing winner" });
+        }
+      } else {
+        nonFinalGames.push(game);
+      }
+    }
+
+    return { finalGames, nonFinalGames, invalidFinalGames };
+  }
+
+  async #validateNflGamesReadyForScoring(competitionId: string): Promise<void> {
+    const games = await this.#getNflCompetitionGames(competitionId);
+
+    if (games.length === 0) {
       throw new Error(
         `Cannot end NFL competition ${competitionId}: No games found`,
       );
     }
 
-    // Get game details to check which are final
-    const games = await this.sportsService.gamesRepository.findByIds(gameIds);
-    const finalGames = games.filter((game) => game.status === "final");
+    const { finalGames, nonFinalGames, invalidFinalGames } =
+      this.#evaluateNflGameReadiness(games);
 
-    // Validate ALL games are final before allowing competition to end
-    if (finalGames.length !== games.length) {
-      const nonFinalCount = games.length - finalGames.length;
+    if (nonFinalGames.length > 0) {
       throw new ApiError(
         400,
-        `Cannot end NFL competition ${competitionId}: ${nonFinalCount} of ${games.length} games are not yet final. All games must be completed before ending the competition.`,
+        `Cannot end NFL competition ${competitionId}: ${nonFinalGames.length} of ${games.length} games are not yet final. All games must be completed before ending the competition.`,
       );
     }
 
-    // Validate each final game has required scoring data
-    const invalidGames: Array<{
-      game: SelectGame;
-      reason: string;
-    }> = [];
-
-    for (const game of finalGames) {
-      if (!game.endTime) {
-        invalidGames.push({
-          game,
-          reason: "missing end time",
-        });
-      } else if (!game.winner) {
-        invalidGames.push({
-          game,
-          reason: "missing winner",
-        });
-      }
-    }
-
-    if (invalidGames.length > 0) {
-      const details = invalidGames
+    if (invalidFinalGames.length > 0) {
+      const details = invalidFinalGames
         .map(
           ({ game, reason }) =>
             `${game.awayTeam} @ ${game.homeTeam} (${game.id}): ${reason}`,
@@ -1554,7 +1566,7 @@ export class CompetitionService {
 
       throw new ApiError(
         400,
-        `Cannot end NFL competition ${competitionId}: ${invalidGames.length} final game(s) are not ready for scoring. ` +
+        `Cannot end NFL competition ${competitionId}: ${invalidFinalGames.length} final game(s) are not ready for scoring. ` +
           `Games must have end times and winners before the competition can end. Details: ${details}`,
       );
     }
@@ -1572,15 +1584,8 @@ export class CompetitionService {
    * @throws Error if any games are not finalized or scored
    */
   async #ensureNflGamesScored(competitionId: string): Promise<void> {
-    // Get all games for this competition
-    const gameIds =
-      await this.sportsService.competitionGamesRepository.findGameIdsByCompetitionId(
-        competitionId,
-      );
-
-    // Get game details to check which are final
-    const games = await this.sportsService.gamesRepository.findByIds(gameIds);
-    const finalGames = games.filter((game) => game.status === "final");
+    const games = await this.#getNflCompetitionGames(competitionId);
+    const { finalGames } = this.#evaluateNflGameReadiness(games);
 
     this.logger.debug(
       `[CompetitionService] Ensuring ${finalGames.length} final games are scored for competition ${competitionId}`,
@@ -3294,6 +3299,76 @@ export class CompetitionService {
    */
   async getAllCompetitionAgents(competitionId: string): Promise<string[]> {
     return await this.competitionRepo.getAllCompetitionAgents(competitionId);
+  }
+
+  /**
+   * Automatically end NFL competitions when all linked games have finalized
+   */
+  async processNflCompetitionAutoEndChecks(): Promise<void> {
+    try {
+      const competitions =
+        await this.competitionRepo.findActiveCompetitionsByType(
+          "sports_prediction",
+        );
+
+      if (competitions.length === 0) {
+        this.logger.debug(
+          "[CompetitionManager] No active NFL competitions to evaluate for early ending",
+        );
+        return;
+      }
+
+      for (const competition of competitions) {
+        try {
+          const games = await this.#getNflCompetitionGames(competition.id);
+          if (games.length === 0) {
+            this.logger.warn(
+              `[CompetitionManager] Sports competition ${competition.name} (${competition.id}) has no games configured`,
+            );
+            continue;
+          }
+
+          const { nonFinalGames, invalidFinalGames } =
+            this.#evaluateNflGameReadiness(games);
+
+          if (nonFinalGames.length > 0) {
+            this.logger.debug(
+              `[CompetitionManager] Competition ${competition.name} (${competition.id}) still has ${nonFinalGames.length} non-final game(s)`,
+            );
+            continue;
+          }
+
+          if (invalidFinalGames.length > 0) {
+            const details = invalidFinalGames
+              .map(
+                ({ game, reason }) =>
+                  `${game.awayTeam} @ ${game.homeTeam} (${game.id}): ${reason}`,
+              )
+              .join("; ");
+            this.logger.warn(
+              `[CompetitionManager] Competition ${competition.name} (${competition.id}) has final games missing scoring data: ${details}`,
+            );
+            continue;
+          }
+
+          this.logger.info(
+            `[CompetitionManager] Auto-ending NFL competition ${competition.name} (${competition.id}) because all games are final`,
+          );
+          await this.endNflCompetition(competition.id);
+        } catch (error) {
+          this.logger.error(
+            { error, competitionId: competition.id },
+            `[CompetitionManager] Error auto-ending NFL competition ${competition.id}`,
+          );
+        }
+      }
+    } catch (error) {
+      this.logger.error(
+        { error },
+        "[CompetitionManager] Error in processNflCompetitionAutoEndChecks",
+      );
+      throw error;
+    }
   }
 
   /**
