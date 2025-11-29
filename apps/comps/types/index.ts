@@ -5,3 +5,4 @@ export * from "./auth";
 export * from "./api";
 export * from "./profile";
 export * from "./admin";
+export * from "./conviction-claims";
