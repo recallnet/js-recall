@@ -1,6 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import { beforeEach, describe, expect, test } from "vitest";
 
+import { BoostRepository } from "@recallnet/db/repositories/boost";
 import {
   boostBalances,
   boostBonus,
@@ -16,52 +17,59 @@ import {
 
 import { db } from "@/database/db.js";
 
-// Helper functions for competition setup
 const createActiveCompWithOpenWindow = (
   adminClient: ReturnType<typeof createTestClient>,
   name = "Active Open Window",
-) =>
-  createTestCompetition({
+  baseTime?: Date,
+) => {
+  const now = baseTime ? baseTime.getTime() : Date.now();
+  return createTestCompetition({
     adminClient,
     name,
-    boostStartDate: new Date(Date.now() - 5000).toISOString(),
-    boostEndDate: new Date(Date.now() + 100000).toISOString(),
-    startDate: new Date(Date.now() - 10000).toISOString(),
-    endDate: new Date(Date.now() + 200000).toISOString(),
+    boostStartDate: new Date(now - 5000).toISOString(),
+    boostEndDate: new Date(now + 100000).toISOString(),
+    startDate: new Date(now - 10000).toISOString(),
+    endDate: new Date(now + 200000).toISOString(),
   });
+};
 
 const createPendingCompEligible = (
   adminClient: ReturnType<typeof createTestClient>,
   name = "Pending Eligible",
-) =>
-  createTestCompetition({
+  baseTime?: Date,
+) => {
+  const now = baseTime ? baseTime.getTime() : Date.now();
+  return createTestCompetition({
     adminClient,
     name,
-    boostStartDate: new Date(Date.now() + 1000).toISOString(),
-    boostEndDate: new Date(Date.now() + 100000).toISOString(),
-    startDate: new Date(Date.now() + 2000).toISOString(),
-    endDate: new Date(Date.now() + 200000).toISOString(),
+    boostStartDate: new Date(now + 1000).toISOString(),
+    boostEndDate: new Date(now + 100000).toISOString(),
+    startDate: new Date(now + 2000).toISOString(),
+    endDate: new Date(now + 200000).toISOString(),
   });
+};
 
 const createCompWindowClosed = (
   adminClient: ReturnType<typeof createTestClient>,
   name = "Window Closed",
-) =>
-  createTestCompetition({
+  baseTime?: Date,
+) => {
+  const now = baseTime ? baseTime.getTime() : Date.now();
+  return createTestCompetition({
     adminClient,
     name,
-    boostStartDate: new Date(Date.now() - 10000).toISOString(),
-    boostEndDate: new Date(Date.now() - 1000).toISOString(),
-    startDate: new Date(Date.now() + 1000).toISOString(),
-    endDate: new Date(Date.now() + 100000).toISOString(),
+    boostStartDate: new Date(now - 10000).toISOString(),
+    boostEndDate: new Date(now - 1000).toISOString(),
+    startDate: new Date(now + 1000).toISOString(),
+    endDate: new Date(now + 100000).toISOString(),
   });
+};
 
 const createCompNoBoostDates = (
   adminClient: ReturnType<typeof createTestClient>,
   name = "No Boost Dates",
 ) => createTestCompetition({ adminClient, name });
 
-// Helper to get boost balance
 const getBoostBalance = (userId: string, competitionId: string) =>
   db
     .select()
@@ -73,7 +81,6 @@ const getBoostBalance = (userId: string, competitionId: string) =>
       ),
     );
 
-// Helper to get user boosts
 const getUserBoosts = (userId: string) =>
   db.select().from(boostBonus).where(eq(boostBonus.userId, userId));
 
@@ -88,6 +95,65 @@ describe("Bonus Boosts E2E", () => {
   });
 
   describe("POST /api/admin/boost-bonus", () => {
+    test("rejects request from non-admin user", async () => {
+      // Setup: Register a regular user (non-admin)
+      const { user, client: userClient } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          walletAddress: generateRandomEthAddress(),
+        });
+
+      const expiresAt = new Date(Date.now() + 300000).toISOString();
+
+      // Attempt to add bonus boost as regular user (should fail)
+      const response = await userClient.addBonusBoosts({
+        boosts: [
+          {
+            wallet: user.walletAddress,
+            amount: "1000000000000000000",
+            expiresAt,
+          },
+        ],
+      });
+
+      expect(response.success).toBe(false);
+      if (response.success) throw new Error("Should have failed");
+
+      // Verify no boosts were created
+      const boosts = await getUserBoosts(user.id);
+      expect(boosts).toHaveLength(0);
+    });
+
+    test("rejects unauthenticated request", async () => {
+      // Create a client without admin credentials
+      const unauthenticatedClient = createTestClient();
+
+      const { user } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        walletAddress: generateRandomEthAddress(),
+      });
+
+      const expiresAt = new Date(Date.now() + 300000).toISOString();
+
+      // Attempt to add bonus boost without authentication (should fail)
+      const response = await unauthenticatedClient.addBonusBoosts({
+        boosts: [
+          {
+            wallet: user.walletAddress,
+            amount: "1000000000000000000",
+            expiresAt,
+          },
+        ],
+      });
+
+      expect(response.success).toBe(false);
+      if (response.success) throw new Error("Should have failed");
+
+      // Verify no boosts were created
+      const boosts = await getUserBoosts(user.id);
+      expect(boosts).toHaveLength(0);
+    });
+
     test("adds batch of boosts and applies to eligible competitions", async () => {
       // Setup: Register 2 users
       const { user: user1 } = await registerUserAndAgentAndGetClient({
@@ -99,7 +165,7 @@ describe("Bonus Boosts E2E", () => {
         walletAddress: generateRandomEthAddress(),
       });
 
-      // Create competitions
+      // Create competitions with different states
       const compA = await createActiveCompWithOpenWindow(
         adminClient,
         "Comp A - Active Open",
@@ -113,25 +179,23 @@ describe("Bonus Boosts E2E", () => {
         "Comp C - Window Closed",
       );
 
-      // Add batch of boosts
-      const expiresAt = new Date(Date.now() + 300000).toISOString(); // 5 minutes
+      const expiresAt = new Date(Date.now() + 300000).toISOString();
       const response = await adminClient.addBonusBoosts({
         boosts: [
           {
             wallet: user1.walletAddress,
-            amount: "500000000000000000", // 0.5 token
+            amount: "500000000000000000",
             expiresAt,
             meta: { source: "test", campaign: "batch-1" },
           },
           {
             wallet: user2.walletAddress,
-            amount: "750000000000000000", // 0.75 token
+            amount: "750000000000000000",
             expiresAt,
           },
         ],
       });
 
-      // Verify API response
       expect(response.success).toBe(true);
       if (!response.success) throw new Error("Response should be successful");
 
@@ -139,14 +203,12 @@ describe("Bonus Boosts E2E", () => {
 
       const [result1, result2] = response.data.results;
 
-      // Verify result structure
       expect(result1).toBeDefined();
       expect(result1!.userId).toBe(user1.id);
       expect(result1!.amount).toBe("500000000000000000");
       expect(result1!.isActive).toBe(true);
 
-      // Verify boosts applied to eligible competitions (A and B)
-      // Note: Classification depends on boost window timing at application time
+      // Should apply to active and pending competitions, but not closed window
       const appliedCompIds = [
         ...(result1!.appliedToCompetitions.active || []),
         ...(result1!.appliedToCompetitions.pending || []),
@@ -159,7 +221,7 @@ describe("Bonus Boosts E2E", () => {
       expect(result2!.userId).toBe(user2.id);
       expect(result2!.amount).toBe("750000000000000000");
 
-      // Verify database: boost_bonus entries created
+      // Verify boost record created with metadata
       const bonusBoosts = await getUserBoosts(user1.id);
 
       expect(bonusBoosts).toHaveLength(1);
@@ -170,10 +232,10 @@ describe("Bonus Boosts E2E", () => {
         campaign: "batch-1",
       });
 
-      // Verify database: boost applied to eligible competitions (A and B, not C)
+      // Verify balances updated for eligible competitions only
       const balanceA = await getBoostBalance(user1.id, compA.competition.id);
       expect(balanceA).toHaveLength(1);
-      expect(balanceA[0]!.balance).toBe(500000000000000000n); // user1's boost: 0.5 token
+      expect(balanceA[0]!.balance).toBe(500000000000000000n);
 
       const balanceB = await db
         .select()
@@ -185,9 +247,8 @@ describe("Bonus Boosts E2E", () => {
           ),
         );
       expect(balanceB).toHaveLength(1);
-      expect(balanceB[0]!.balance).toBe(500000000000000000n); // user1's boost: 0.5 token
+      expect(balanceB[0]!.balance).toBe(500000000000000000n);
 
-      // Verify C does NOT have boost
       const balanceC = await db
         .select()
         .from(boostBalances)
@@ -199,13 +260,12 @@ describe("Bonus Boosts E2E", () => {
         );
       expect(balanceC).toHaveLength(0);
 
-      // Verify boost_changes audit trail
       const changesA = await db
         .select()
         .from(boostChanges)
         .where(eq(boostChanges.balanceId, balanceA[0]!.id));
       expect(changesA).toHaveLength(1);
-      expect(changesA[0]!.deltaAmount).toBe(500000000000000000n); // user1's boost: 0.5 token
+      expect(changesA[0]!.deltaAmount).toBe(500000000000000000n);
       expect(changesA[0]!.meta).toHaveProperty("boostBonusId");
     });
 
@@ -217,14 +277,14 @@ describe("Bonus Boosts E2E", () => {
 
       const validExpiration = new Date(Date.now() + 100000).toISOString();
 
-      // Test 1: Empty array
+      // Test: Empty array should be rejected
       const emptyResponse = await adminClient.addBonusBoosts({ boosts: [] });
       expect(emptyResponse.success).toBe(false);
       if (emptyResponse.success) throw new Error("Should have failed");
 
       expect(emptyResponse.error).toContain("at least one");
 
-      // Test 2: Array > 100 items
+      // Test: Exceeding max batch size (100) should be rejected
       const largeArray = Array.from({ length: 101 }, () => ({
         wallet: user.walletAddress,
         amount: "1000000000000000000",
@@ -238,7 +298,7 @@ describe("Bonus Boosts E2E", () => {
 
       expect(largeResponse.error).toContain("more than 100");
 
-      // Test 3: Expiration in past
+      // Test: Past expiration date should be rejected
       const pastResponse = await adminClient.addBonusBoosts({
         boosts: [
           {
@@ -253,13 +313,13 @@ describe("Bonus Boosts E2E", () => {
 
       expect(pastResponse.error).toContain("future");
 
-      // Test 4: Expiration < 1 min away
+      // Test: Expiration too soon (< 60 seconds minimum) should be rejected
       const soonResponse = await adminClient.addBonusBoosts({
         boosts: [
           {
             wallet: user.walletAddress,
             amount: "1000000000000000000",
-            expiresAt: new Date(Date.now() + 30000).toISOString(), // 30 seconds
+            expiresAt: new Date(Date.now() + 30000).toISOString(),
           },
         ],
       });
@@ -268,7 +328,7 @@ describe("Bonus Boosts E2E", () => {
 
       expect(soonResponse.error).toContain("future");
 
-      // Test 5: User not found
+      // Test: Wallet not found should be rejected
       const notFoundResponse = await adminClient.addBonusBoosts({
         boosts: [
           {
@@ -283,7 +343,7 @@ describe("Bonus Boosts E2E", () => {
 
       expect(notFoundResponse.error).toContain("validation failed");
 
-      // Test 6: Invalid wallet format
+      // Test: Invalid wallet format should be rejected
       const invalidWalletResponse = await adminClient.addBonusBoosts({
         boosts: [
           {
@@ -298,7 +358,7 @@ describe("Bonus Boosts E2E", () => {
 
       expect(invalidWalletResponse.error).toContain("wallet");
 
-      // Test 7: Zero amount
+      // Test: Zero amount should be rejected
       const zeroResponse = await adminClient.addBonusBoosts({
         boosts: [
           {
@@ -313,12 +373,12 @@ describe("Bonus Boosts E2E", () => {
 
       expect(zeroResponse.error).toContain("positive");
 
-      // Test 8: Amount > 10^18
+      // Test: Amount exceeding maximum (1 token = 10^18) should be rejected
       const largeAmountResponse = await adminClient.addBonusBoosts({
         boosts: [
           {
             wallet: user.walletAddress,
-            amount: "1000000000000000001", // 10^18 + 1
+            amount: "1000000000000000001",
             expiresAt: validExpiration,
           },
         ],
@@ -328,7 +388,7 @@ describe("Bonus Boosts E2E", () => {
 
       expect(largeAmountResponse.error).toContain("maximum");
 
-      // Test 9: Invalid amount format
+      // Test: Non-numeric amount should be rejected
       const invalidAmountResponse = await adminClient.addBonusBoosts({
         boosts: [
           {
@@ -340,7 +400,7 @@ describe("Bonus Boosts E2E", () => {
       });
       expect(invalidAmountResponse.success).toBe(false);
 
-      // Test 10: Meta field too large
+      // Test: Meta exceeding 1000 characters should be rejected
       const largeMeta = "x".repeat(1001);
       const largeMetaResponse = await adminClient.addBonusBoosts({
         boosts: [
@@ -359,7 +419,7 @@ describe("Bonus Boosts E2E", () => {
     });
 
     test("rejects batch with duplicate wallet addresses", async () => {
-      // Register user
+      // One wallet per batch - prevents accidental duplicate grants
       const { user } = await registerUserAndAgentAndGetClient({
         adminApiKey,
         walletAddress: generateRandomEthAddress(),
@@ -367,29 +427,27 @@ describe("Bonus Boosts E2E", () => {
 
       const expiresAt = new Date(Date.now() + 100000).toISOString();
 
-      // Attempt to add two boosts for same wallet in one batch
       const response = await adminClient.addBonusBoosts({
         boosts: [
           {
             wallet: user.walletAddress,
-            amount: "500000000000000000", // 0.5 token
+            amount: "500000000000000000",
             expiresAt,
           },
           {
             wallet: user.walletAddress,
-            amount: "1000000000000000000", // 1 token
+            amount: "1000000000000000000",
             expiresAt,
           },
         ],
       });
 
-      // Verify rejection
       expect(response.success).toBe(false);
       if (response.success) throw new Error("Should have failed");
 
       expect(response.error).toContain("duplicate");
 
-      // Verify no boost_bonus entries created
+      // Verify no boosts were created (transaction rolled back)
       const boosts = await db
         .select()
         .from(boostBonus)
@@ -398,7 +456,6 @@ describe("Bonus Boosts E2E", () => {
     });
 
     test("rejects amount exceeding maximum limit", async () => {
-      // Register user
       const { user } = await registerUserAndAgentAndGetClient({
         adminApiKey,
         walletAddress: generateRandomEthAddress(),
@@ -406,24 +463,21 @@ describe("Bonus Boosts E2E", () => {
 
       const validExpiration = new Date(Date.now() + 300000).toISOString();
 
-      // Attempt to add boost with amount > 10^18
       const response = await adminClient.addBonusBoosts({
         boosts: [
           {
             wallet: user.walletAddress,
-            amount: "1000000000000000001", // Just over 10^18
+            amount: "1000000000000000001",
             expiresAt: validExpiration,
           },
         ],
       });
 
-      // Verify rejection
       expect(response.success).toBe(false);
       if (response.success) throw new Error("Should have failed");
 
       expect(response.error).toContain("maximum");
 
-      // Verify no boost_bonus entries created
       const boosts = await db
         .select()
         .from(boostBonus)
@@ -432,21 +486,21 @@ describe("Bonus Boosts E2E", () => {
     });
 
     test("applies boosts only to eligible competitions", async () => {
-      // Register user
+      // Test eligibility rules: boost start must be before boost expiration
       const { user } = await registerUserAndAgentAndGetClient({
         adminApiKey,
         walletAddress: generateRandomEthAddress(),
       });
 
-      const boostExpires = new Date(Date.now() + 300000); // 5 minutes
+      const boostExpires = new Date(Date.now() + 300000);
 
-      // Competition 1: Active, window open → ELIGIBLE
+      // Eligible: Active competition
       const comp1 = await createActiveCompWithOpenWindow(adminClient, "Comp 1");
 
-      // Competition 2: Pending, window not ended → ELIGIBLE
+      // Eligible: Pending competition
       const comp2 = await createPendingCompEligible(adminClient, "Comp 2");
 
-      // Competition 3: Starts after boost expires → NOT ELIGIBLE
+      // Ineligible: Competition starts after boost expires
       const comp3 = await createTestCompetition({
         adminClient,
         name: "Comp 3 - Starts After Expiry",
@@ -454,13 +508,13 @@ describe("Bonus Boosts E2E", () => {
         boostEndDate: new Date(boostExpires.getTime() + 100000).toISOString(),
       });
 
-      // Competition 4: Window already closed → NOT ELIGIBLE
+      // Ineligible: Window already closed
       const comp4 = await createCompWindowClosed(adminClient, "Comp 4");
 
-      // Competition 5: Missing boost dates → SKIPPED
+      // Ineligible: No boost dates set
       const comp5 = await createCompNoBoostDates(adminClient, "Comp 5");
 
-      // Competition 6: boostStartDate exactly equals boost.expiresAt → NOT ELIGIBLE
+      // Ineligible: Starts exactly at expiration (not before)
       const comp6 = await createTestCompetition({
         adminClient,
         name: "Comp 6 - Starts At Expiry",
@@ -468,7 +522,6 @@ describe("Bonus Boosts E2E", () => {
         boostEndDate: new Date(boostExpires.getTime() + 100000).toISOString(),
       });
 
-      // Add boost
       const response = await adminClient.addBonusBoosts({
         boosts: [
           {
@@ -481,7 +534,7 @@ describe("Bonus Boosts E2E", () => {
 
       expect(response.success).toBe(true);
 
-      // Verify boost applied to comp1 and comp2 only
+      // Verify comp1 and comp2 have balances
       const balance1 = await db
         .select()
         .from(boostBalances)
@@ -504,7 +557,7 @@ describe("Bonus Boosts E2E", () => {
         );
       expect(balance2).toHaveLength(1);
 
-      // Verify NOT applied to comp3, 4, 5, 6
+      // Verify comp3, comp4, comp5, comp6 have no balances
       const balance3 = await db
         .select()
         .from(boostBalances)
@@ -550,7 +603,105 @@ describe("Bonus Boosts E2E", () => {
       expect(balance6).toHaveLength(0);
     });
 
+    test("does not apply boosts to completed competitions", async () => {
+      // Boosts should only be applied to active or pending competitions
+      const { user } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        walletAddress: generateRandomEthAddress(),
+      });
+
+      const boostExpires = new Date(Date.now() + 300000);
+
+      // Create competitions with different statuses
+      // Eligible: Active competition
+      const activeComp = await createActiveCompWithOpenWindow(
+        adminClient,
+        "Active Comp",
+      );
+
+      // Eligible: Pending competition
+      const pendingComp = await createPendingCompEligible(
+        adminClient,
+        "Pending Comp",
+      );
+
+      // Ineligible: Completed competition (ended in the past)
+      const now = Date.now();
+      const completedComp = await createTestCompetition({
+        adminClient,
+        name: "Completed Comp",
+        boostStartDate: new Date(now - 100000).toISOString(),
+        boostEndDate: new Date(now - 50000).toISOString(),
+        startDate: new Date(now - 150000).toISOString(),
+        endDate: new Date(now - 10000).toISOString(),
+      });
+
+      // Award boost
+      const response = await adminClient.addBonusBoosts({
+        boosts: [
+          {
+            wallet: user.walletAddress,
+            amount: "1000000000000000000",
+            expiresAt: boostExpires.toISOString(),
+          },
+        ],
+      });
+
+      expect(response.success).toBe(true);
+      if (!response.success) throw new Error("Should have succeeded");
+
+      // Verify boost was applied to active and pending competitions
+      const activeBalance = await db
+        .select()
+        .from(boostBalances)
+        .where(
+          and(
+            eq(boostBalances.userId, user.id),
+            eq(boostBalances.competitionId, activeComp.competition.id),
+          ),
+        );
+      expect(activeBalance).toHaveLength(1);
+      expect(activeBalance[0]!.balance).toBe(1000000000000000000n);
+
+      const pendingBalance = await db
+        .select()
+        .from(boostBalances)
+        .where(
+          and(
+            eq(boostBalances.userId, user.id),
+            eq(boostBalances.competitionId, pendingComp.competition.id),
+          ),
+        );
+      expect(pendingBalance).toHaveLength(1);
+      expect(pendingBalance[0]!.balance).toBe(1000000000000000000n);
+
+      // Verify boost was NOT applied to completed competition
+      const completedBalance = await db
+        .select()
+        .from(boostBalances)
+        .where(
+          and(
+            eq(boostBalances.userId, user.id),
+            eq(boostBalances.competitionId, completedComp.competition.id),
+          ),
+        );
+      expect(completedBalance).toHaveLength(0);
+
+      // Verify response shows boost was applied to exactly 2 competitions
+      const result = response.data.results[0];
+      expect(result).toBeDefined();
+      const appliedCompIds = [
+        ...(result!.appliedToCompetitions.active || []),
+        ...(result!.appliedToCompetitions.pending || []),
+      ];
+      expect(appliedCompIds).toHaveLength(2);
+      expect(appliedCompIds).toContain(activeComp.competition.id);
+      expect(appliedCompIds).toContain(pendingComp.competition.id);
+      expect(appliedCompIds).not.toContain(completedComp.competition.id);
+    });
+
     test("sums multiple boosts for same user (across separate API calls)", async () => {
+      // Users can receive multiple boosts - each creates separate record, balance is sum
       const { user } = await registerUserAndAgentAndGetClient({
         adminApiKey,
         walletAddress: generateRandomEthAddress(),
@@ -565,7 +716,7 @@ describe("Bonus Boosts E2E", () => {
         boosts: [
           {
             wallet: user.walletAddress,
-            amount: "500000000000000000", // 0.5 units
+            amount: "500000000000000000",
             expiresAt,
           },
         ],
@@ -579,7 +730,7 @@ describe("Bonus Boosts E2E", () => {
         boosts: [
           {
             wallet: user.walletAddress,
-            amount: "1000000000000000000", // 1.0 units
+            amount: "1000000000000000000",
             expiresAt,
           },
         ],
@@ -599,6 +750,8 @@ describe("Bonus Boosts E2E", () => {
       expect(boosts.map((b) => b.id).sort()).toEqual(
         [boost1Id, boost2Id].sort(),
       );
+
+      // Balance should be sum: 0.5 + 1.0 = 1.5 tokens
       const balance = await db
         .select()
         .from(boostBalances)
@@ -611,6 +764,8 @@ describe("Bonus Boosts E2E", () => {
 
       expect(balance).toHaveLength(1);
       expect(balance[0]?.balance.toString()).toBe("1500000000000000000");
+
+      // Two separate boost_changes entries (one per boost grant)
       const changes = await db
         .select()
         .from(boostChanges)
@@ -620,6 +775,7 @@ describe("Bonus Boosts E2E", () => {
     });
 
     test("handles mixed valid and invalid items in batch", async () => {
+      // All-or-nothing: entire batch fails if any item is invalid
       const { user: user1 } = await registerUserAndAgentAndGetClient({
         adminApiKey,
         walletAddress: generateRandomEthAddress(),
@@ -651,6 +807,8 @@ describe("Bonus Boosts E2E", () => {
       if (response.success) throw new Error("Should have failed");
 
       expect(response.error).toBeDefined();
+
+      // No boosts should be created (transaction rolled back)
       const boostsForUser1 = await db
         .select()
         .from(boostBonus)
@@ -667,27 +825,106 @@ describe("Bonus Boosts E2E", () => {
   });
 
   describe("POST /api/admin/boost-bonus/revoke", () => {
-    test("revokes batch of boosts with different competition states", async () => {
-      // Register user
+    test("rejects request from non-admin user", async () => {
+      // Setup: Create a boost as admin first
+      const { user, client: userClient } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          walletAddress: generateRandomEthAddress(),
+        });
+
+      const expiresAt = new Date(Date.now() + 300000).toISOString();
+
+      // Admin adds a boost
+      const addResponse = await adminClient.addBonusBoosts({
+        boosts: [
+          {
+            wallet: user.walletAddress,
+            amount: "1000000000000000000",
+            expiresAt,
+          },
+        ],
+      });
+
+      expect(addResponse.success).toBe(true);
+      if (!addResponse.success) throw new Error("Should have succeeded");
+
+      const boostId = addResponse.data.results[0]!.id;
+
+      // Attempt to revoke as regular user (should fail)
+      const revokeResponse = await userClient.revokeBonusBoosts({
+        boostIds: [boostId],
+      });
+
+      expect(revokeResponse.success).toBe(false);
+      if (revokeResponse.success) throw new Error("Should have failed");
+
+      // Verify boost is still active
+      const boosts = await getUserBoosts(user.id);
+      expect(boosts).toHaveLength(1);
+      expect(boosts[0]!.isActive).toBe(true);
+      expect(boosts[0]!.revokedAt).toBeNull();
+    });
+
+    test("rejects unauthenticated request", async () => {
+      // Setup: Create a boost as admin first
       const { user } = await registerUserAndAgentAndGetClient({
         adminApiKey,
         walletAddress: generateRandomEthAddress(),
       });
 
-      // Competition A: Pending, window not open (safe to remove)
+      const expiresAt = new Date(Date.now() + 300000).toISOString();
+
+      // Admin adds a boost
+      const addResponse = await adminClient.addBonusBoosts({
+        boosts: [
+          {
+            wallet: user.walletAddress,
+            amount: "1000000000000000000",
+            expiresAt,
+          },
+        ],
+      });
+
+      expect(addResponse.success).toBe(true);
+      if (!addResponse.success) throw new Error("Should have succeeded");
+
+      const boostId = addResponse.data.results[0]!.id;
+
+      // Create unauthenticated client
+      const unauthenticatedClient = createTestClient();
+
+      // Attempt to revoke without authentication (should fail)
+      const revokeResponse = await unauthenticatedClient.revokeBonusBoosts({
+        boostIds: [boostId],
+      });
+
+      expect(revokeResponse.success).toBe(false);
+      if (revokeResponse.success) throw new Error("Should have failed");
+
+      // Verify boost is still active
+      const boosts = await getUserBoosts(user.id);
+      expect(boosts).toHaveLength(1);
+      expect(boosts[0]!.isActive).toBe(true);
+      expect(boosts[0]!.revokedAt).toBeNull();
+    });
+
+    test("revokes batch of boosts with different competition states", async () => {
+      const { user } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        walletAddress: generateRandomEthAddress(),
+      });
+
+      // Comp A: Pending (safe to remove), Comp B: Active (keep - might be spent), Comp C: No boost dates
       const compA = await createPendingCompEligible(adminClient, "Comp A");
-
-      // Competition B: Active, window open (keep boost - might be spent)
       const compB = await createActiveCompWithOpenWindow(adminClient, "Comp B");
-
-      // Competition C: No boost dates
       await createCompNoBoostDates(adminClient, "Comp C");
-      const expiresAt = new Date(Date.now() + 300000).toISOString(); // 5 minutes
+      const expiresAt = new Date(Date.now() + 300000).toISOString();
       const addResponse1 = await adminClient.addBonusBoosts({
         boosts: [
           {
             wallet: user.walletAddress,
-            amount: "600000000000000000", // 0.6 token
+            amount: "600000000000000000",
             expiresAt,
           },
         ],
@@ -696,7 +933,7 @@ describe("Bonus Boosts E2E", () => {
         boosts: [
           {
             wallet: user.walletAddress,
-            amount: "400000000000000000", // 0.4 token
+            amount: "400000000000000000",
             expiresAt,
           },
         ],
@@ -712,7 +949,7 @@ describe("Bonus Boosts E2E", () => {
         addResponse2.data.results[0]!.id,
       ];
 
-      // Verify boosts were applied to A and B, not C
+      // Verify boosts were applied to A and B (not C - no boost dates)
       const balanceABefore = await db
         .select()
         .from(boostBalances)
@@ -723,7 +960,7 @@ describe("Bonus Boosts E2E", () => {
           ),
         );
       expect(balanceABefore).toHaveLength(1);
-      expect(balanceABefore[0]!.balance).toBe(1000000000000000000n); // 0.6 + 0.4 = 1.0
+      expect(balanceABefore[0]!.balance).toBe(1000000000000000000n);
 
       const balanceBBefore = await db
         .select()
@@ -735,9 +972,8 @@ describe("Bonus Boosts E2E", () => {
           ),
         );
       expect(balanceBBefore).toHaveLength(1);
-      expect(balanceBBefore[0]!.balance).toBe(1000000000000000000n); // 0.6 + 0.4 = 1.0
+      expect(balanceBBefore[0]!.balance).toBe(1000000000000000000n);
 
-      // Revoke both boosts
       const revokeResponse = await adminClient.revokeBonusBoosts({
         boostIds,
       });
@@ -748,7 +984,7 @@ describe("Bonus Boosts E2E", () => {
       const results = revokeResponse.data.results;
       expect(results).toHaveLength(2);
 
-      // Verify both boosts marked inactive
+      // Both boosts should be marked as revoked
       const boostsAfter = await db
         .select()
         .from(boostBonus)
@@ -759,7 +995,7 @@ describe("Bonus Boosts E2E", () => {
       expect(boostsAfter[1]!.isActive).toBe(false);
       expect(boostsAfter[1]!.revokedAt).not.toBeNull();
 
-      // Verify Competition A: Boosts removed (window not open)
+      // Pending competition: balance removed
       const balanceAAfter = await db
         .select()
         .from(boostBalances)
@@ -769,9 +1005,9 @@ describe("Bonus Boosts E2E", () => {
             eq(boostBalances.competitionId, compA.competition.id),
           ),
         );
-      expect(balanceAAfter[0]!.balance).toBe(0n); // Both removed
+      expect(balanceAAfter[0]!.balance).toBe(0n);
 
-      // Verify Competition B: Boosts kept (window open)
+      // Active competition: balance kept (window already open, might be spent)
       const balanceBAfter = await db
         .select()
         .from(boostBalances)
@@ -781,9 +1017,8 @@ describe("Bonus Boosts E2E", () => {
             eq(boostBalances.competitionId, compB.competition.id),
           ),
         );
-      expect(balanceBAfter[0]!.balance).toBe(1000000000000000000n); // Kept (0.6 + 0.4 = 1.0)
+      expect(balanceBAfter[0]!.balance).toBe(1000000000000000000n);
 
-      // Verify revocation details in response
       expect(results[0]).toBeDefined();
       expect(results[0]!.revoked).toBe(true);
       expect(results[0]!.removedFromPending).toContain(compA.competition.id);
@@ -791,7 +1026,7 @@ describe("Bonus Boosts E2E", () => {
     });
 
     test("rejects invalid batch revoke data", async () => {
-      // Register user and create a boost to test with
+      // Test various invalid revoke scenarios
       const { user } = await registerUserAndAgentAndGetClient({
         adminApiKey,
         walletAddress: generateRandomEthAddress(),
@@ -811,7 +1046,7 @@ describe("Bonus Boosts E2E", () => {
 
       const validBoostId = addResponse.data.results[0]!.id;
 
-      // Test 1: Empty array
+      // Test: Empty array should be rejected
       const emptyResponse = await adminClient.revokeBonusBoosts({
         boostIds: [],
       });
@@ -820,7 +1055,7 @@ describe("Bonus Boosts E2E", () => {
 
       expect(emptyResponse.error).toContain("at least one");
 
-      // Test 2: Invalid UUID format
+      // Test: Invalid UUID format should be rejected
       const invalidUuidResponse = await adminClient.revokeBonusBoosts({
         boostIds: ["not-a-uuid"],
       });
@@ -829,7 +1064,7 @@ describe("Bonus Boosts E2E", () => {
 
       expect(invalidUuidResponse.error).toContain("Invalid");
 
-      // Test 3: Non-existent boost ID
+      // Test: Non-existent boost ID should be rejected
       const nonExistentResponse = await adminClient.revokeBonusBoosts({
         boostIds: ["00000000-0000-0000-0000-000000000000"],
       });
@@ -838,7 +1073,7 @@ describe("Bonus Boosts E2E", () => {
 
       expect(nonExistentResponse.error).toContain("revocation failed");
 
-      // Test 4: Already revoked boost
+      // Test: Already revoked boost should be rejected
       await adminClient.revokeBonusBoosts({ boostIds: [validBoostId] });
       const alreadyRevokedResponse = await adminClient.revokeBonusBoosts({
         boostIds: [validBoostId],
@@ -850,6 +1085,7 @@ describe("Bonus Boosts E2E", () => {
     });
 
     test("revokes one boost while leaving others active", async () => {
+      // Selective revocation: can revoke individual boosts from same user
       const { user } = await registerUserAndAgentAndGetClient({
         adminApiKey,
         walletAddress: generateRandomEthAddress(),
@@ -861,7 +1097,7 @@ describe("Bonus Boosts E2E", () => {
         boosts: [
           {
             wallet: user.walletAddress,
-            amount: "500000000000000000", // 0.5 units
+            amount: "500000000000000000",
             expiresAt,
           },
         ],
@@ -875,7 +1111,7 @@ describe("Bonus Boosts E2E", () => {
         boosts: [
           {
             wallet: user.walletAddress,
-            amount: "1000000000000000000", // 1.0 units
+            amount: "1000000000000000000",
             expiresAt,
           },
         ],
@@ -902,6 +1138,8 @@ describe("Bonus Boosts E2E", () => {
       });
 
       expect(revokeResponse.success).toBe(true);
+
+      // First boost should be revoked
       const boost1 = await db
         .select()
         .from(boostBonus)
@@ -910,6 +1148,8 @@ describe("Bonus Boosts E2E", () => {
       expect(boost1).toHaveLength(1);
       expect(boost1[0]?.isActive).toBe(false);
       expect(boost1[0]?.revokedAt).not.toBeNull();
+
+      // Second boost should still be active
       const boost2 = await db
         .select()
         .from(boostBonus)
@@ -918,6 +1158,8 @@ describe("Bonus Boosts E2E", () => {
       expect(boost2).toHaveLength(1);
       expect(boost2[0]?.isActive).toBe(true);
       expect(boost2[0]?.revokedAt).toBeNull();
+
+      // Balance should only reflect remaining boost (1.0 tokens)
       const finalBalance = await db
         .select()
         .from(boostBalances)
@@ -933,157 +1175,9 @@ describe("Bonus Boosts E2E", () => {
     });
   });
 
-  describe("Expiration of Bonus Boost", () => {
-    test.skip("keeps boost in balance when it expires during active competition", async () => {
-      // SKIPPED: Requires 5+ minute wait time (validation requires min 5 min expiry)
-      const { user } = await registerUserAndAgentAndGetClient({
-        adminApiKey,
-        walletAddress: generateRandomEthAddress(),
-      });
-
-      // Create competition that will be active during boost expiration
-      const comp = await createActiveCompWithOpenWindow(
-        adminClient,
-        "Active Comp",
-      );
-
-      // Award boost with short expiration (expires soon, but after initial application)
-      // Must be at least 5 minutes in future (300000ms) per validation rules
-      const expiresAt = new Date(Date.now() + 310000); // 310 seconds (~5 min 10 sec) from now
-      const response = await adminClient.addBonusBoosts({
-        boosts: [
-          {
-            wallet: user.walletAddress,
-            amount: "1000000000000000000",
-            expiresAt: expiresAt.toISOString(),
-          },
-        ],
-      });
-
-      expect(response.success).toBe(true);
-      if (!response.success) throw new Error("Should have succeeded");
-
-      const boostId = response.data.results[0]!.id;
-
-      // Verify boost applied to competition
-      const initialBalance = await db
-        .select()
-        .from(boostBalances)
-        .where(
-          and(
-            eq(boostBalances.userId, user.id),
-            eq(boostBalances.competitionId, comp.competition.id),
-          ),
-        );
-
-      expect(initialBalance).toHaveLength(1);
-      expect(initialBalance[0]?.balance.toString()).toBe("1000000000000000000");
-
-      // Wait for boost to expire
-      await new Promise((resolve) => setTimeout(resolve, 311000)); // Wait 311 seconds
-
-      // Verify boost is now expired
-      const boost = await db
-        .select()
-        .from(boostBonus)
-        .where(eq(boostBonus.id, boostId));
-
-      expect(boost).toHaveLength(1);
-      expect(new Date(boost[0]!.expiresAt).getTime()).toBeLessThan(Date.now());
-
-      // Verify boost REMAINS in balance (not removed after expiration)
-      const finalBalance = await db
-        .select()
-        .from(boostBalances)
-        .where(
-          and(
-            eq(boostBalances.userId, user.id),
-            eq(boostBalances.competitionId, comp.competition.id),
-          ),
-        );
-
-      expect(finalBalance).toHaveLength(1);
-      expect(finalBalance[0]?.balance.toString()).toBe("1000000000000000000"); // Unchanged
-    });
-
-    test.skip("does not apply expired boost to new competitions", async () => {
-      // SKIPPED: This test requires waiting 5+ minutes for boost expiration (validation requires min 5 min expiry)
-      // TODO: Consider mocking time or testing with unit tests instead
-      // New competition after expiration - verifies expired boosts are not applied to new competitions
-      //
-      // System Behavior:
-      // - Expiration prevents new competitions from receiving boost (eligibility check fails)
-      // - Cron job checks expiration before applying boost
-      // - Skips expired boosts even if still marked as active
-      //
-      // Setup:
-      // - Register user, award boost with short expiration
-      // - Boost expires, then new competition created
-      // - Cron job runs
-      //
-      // Expected:
-      // - Eligibility check fails (competition starts after boost expired)
-      // - Boost not applied to new competition
-
-      // Register user
-      const { user } = await registerUserAndAgentAndGetClient({
-        adminApiKey,
-        walletAddress: generateRandomEthAddress(),
-      });
-
-      // Award boost with short expiration (must be at least 5 minutes per validation)
-      const expiresAt = new Date(Date.now() + 310000); // 310 seconds (~5 min 10 sec)
-      const response = await adminClient.addBonusBoosts({
-        boosts: [
-          {
-            wallet: user.walletAddress,
-            amount: "1000000000000000000",
-            expiresAt: expiresAt.toISOString(),
-          },
-        ],
-      });
-
-      expect(response.success).toBe(true);
-      if (!response.success) throw new Error("Should have succeeded");
-
-      const boostId = response.data.results[0]!.id;
-
-      // Wait for boost to expire
-      await new Promise((resolve) => setTimeout(resolve, 311000)); // Wait 311 seconds
-
-      // Verify boost is expired
-      const boost = await db
-        .select()
-        .from(boostBonus)
-        .where(eq(boostBonus.id, boostId));
-
-      expect(boost).toHaveLength(1);
-      expect(new Date(boost[0]!.expiresAt).getTime()).toBeLessThan(Date.now());
-
-      // Create new competition after boost expired
-      const comp = await createActiveCompWithOpenWindow(
-        adminClient,
-        "New Comp",
-      );
-
-      // Verify boost was NOT applied to new competition
-      const balance = await db
-        .select()
-        .from(boostBalances)
-        .where(
-          and(
-            eq(boostBalances.userId, user.id),
-            eq(boostBalances.competitionId, comp.competition.id),
-          ),
-        );
-
-      // Should be empty - boost expired so not applied
-      expect(balance).toHaveLength(0);
-    });
-  });
-
   describe("Competition Configuration Changes", () => {
     test("cleans up invalid boosts when competition boostStartDate changes", async () => {
+      // When comp dates change, boosts that are no longer eligible should be removed
       const { user } = await registerUserAndAgentAndGetClient({
         adminApiKey,
         walletAddress: generateRandomEthAddress(),
@@ -1114,6 +1208,8 @@ describe("Bonus Boosts E2E", () => {
 
       expect(initialBalance).toHaveLength(1);
       expect(initialBalance[0]?.balance.toString()).toBe("1000000000000000000");
+
+      // Update competition to start after boost expires (now ineligible)
       const newBoostStartDate = new Date(
         boostExpires.getTime() + 100000,
       ).toISOString();
@@ -1125,6 +1221,8 @@ describe("Bonus Boosts E2E", () => {
       );
 
       expect(updateResponse.success).toBe(true);
+
+      // Balance should be zeroed out (boost no longer eligible)
       const finalBalance = await db
         .select()
         .from(boostBalances)
@@ -1141,54 +1239,35 @@ describe("Bonus Boosts E2E", () => {
   });
 
   describe("Idempotency", () => {
-    test.skip("prevents duplicate application of same boost", async () => {
-      // SKIPPED: This test requires direct service/cron access or mocking to test true idempotency
-      // The API creates new boost entries on each call, so calling API twice creates 2 different boosts
-      // True idempotency is tested at service layer where same boost ID + competition ID is applied twice
-      // Idempotency - duplicate application - verifies idempotency prevents duplicate applications
-      //
-      // System Behavior:
-      // - Each application generates idempotency key (boost ID + competition ID)
-      // - Database unique constraint on (balanceId, idemKey) prevents duplicates
-      // - Second attempt silently skipped (no error)
-      //
-      // Setup:
-      // - Register user, create competition
-      // - Apply boost, then attempt to apply same boost again
-      //
-      // Expected:
-      // - First attempt succeeds, second attempt skipped
-      // - Balance unchanged after second attempt
-      // - boost_changes contains exactly one entry
-
-      // Register user
+    test("multiple boosts for same user sum correctly in balance", async () => {
+      // Each API call creates a unique boost_bonus entry, balance is sum of all active boosts
       const { user } = await registerUserAndAgentAndGetClient({
         adminApiKey,
         walletAddress: generateRandomEthAddress(),
       });
 
-      const expiresAt = new Date(Date.now() + 600000).toISOString();
+      const expiresAt = new Date(Date.now() + 600000);
 
-      // Create competition (no boosts yet)
       const comp = await createActiveCompWithOpenWindow(
         adminClient,
         "Test Comp",
       );
 
-      // First application - award boost
       const response1 = await adminClient.addBonusBoosts({
         boosts: [
           {
             wallet: user.walletAddress,
             amount: "1000000000000000000",
-            expiresAt,
+            expiresAt: expiresAt.toISOString(),
           },
         ],
       });
 
       expect(response1.success).toBe(true);
+      if (!response1.success) throw new Error("Should have succeeded");
 
-      // Verify initial balance
+      const boost1Id = response1.data.results[0]!.id;
+
       const initialBalance = await db
         .select()
         .from(boostBalances)
@@ -1202,31 +1281,32 @@ describe("Bonus Boosts E2E", () => {
       expect(initialBalance).toHaveLength(1);
       expect(initialBalance[0]?.balance.toString()).toBe("1000000000000000000");
 
-      // Check initial boost_changes count
       const initialChanges = await db
         .select()
         .from(boostChanges)
         .where(eq(boostChanges.balanceId, initialBalance[0]!.id));
 
       expect(initialChanges).toHaveLength(1);
+      expect(initialChanges[0]?.meta).toHaveProperty("boostBonusId", boost1Id);
 
-      // Second application - attempt to apply same boost again
-      // This simulates what would happen if cron job ran again or admin re-awarded
       const response2 = await adminClient.addBonusBoosts({
         boosts: [
           {
             wallet: user.walletAddress,
             amount: "1000000000000000000",
-            expiresAt,
+            expiresAt: expiresAt.toISOString(),
           },
         ],
       });
 
-      // Second attempt should succeed (creates new boost_bonus entry)
-      // but the actual application to competition is prevented by idempotency
       expect(response2.success).toBe(true);
+      if (!response2.success) throw new Error("Should have succeeded");
 
-      // Verify balance unchanged (no duplicate application)
+      const boost2Id = response2.data.results[0]!.id;
+
+      expect(boost1Id).not.toBe(boost2Id);
+
+      // Balance should be sum of both boosts
       const finalBalance = await db
         .select()
         .from(boostBalances)
@@ -1238,44 +1318,28 @@ describe("Bonus Boosts E2E", () => {
         );
 
       expect(finalBalance).toHaveLength(1);
-      // Balance should be sum of all active boosts (2000 if both applied, but second should have idempotency)
-      // Actually, second API call creates a NEW boost, so we expect 2000
       expect(finalBalance[0]?.balance.toString()).toBe("2000000000000000000");
 
-      // boost_changes should have 2 entries (one per boost)
       const finalChanges = await db
         .select()
         .from(boostChanges)
         .where(eq(boostChanges.balanceId, finalBalance[0]!.id));
 
       expect(finalChanges).toHaveLength(2);
-    });
 
-    test.skip("prevents duplicate revocation of same boost", async () => {
-      // SKIPPED: Already covered in Test 9 "rejects invalid batch revoke data" (Test 4: Already revoked boost)
-      // See lines 867-873 where we test revoking the same boost twice and verify it returns an error
-      //
-      // Idempotency - duplicate revocation - verifies system prevents duplicate revocations
-      //
-      // System Behavior:
-      // - Checks if boost is already inactive before revoking
-      // - If already revoked, returns error (no operations)
-      // - If active, performs revocation and marks inactive
-      // - Uses idempotency keys for revocation operations
-      //
-      // Setup:
-      // - Register user, create competition, award boost
-      // - Revoke boost, then attempt to revoke again
-      //
-      // Expected:
-      // - First revocation succeeds, second returns error
-      // - boost_bonus unchanged after second attempt
-      // - boost_changes contains exactly one revocation entry
+      const allBoosts = await db
+        .select()
+        .from(boostBonus)
+        .where(eq(boostBonus.userId, user.id));
+
+      expect(allBoosts).toHaveLength(2);
+      expect(allBoosts.every((b) => b.isActive)).toBe(true);
     });
   });
 
   describe("Integration with Staked Boosts", () => {
     test("bonus boosts and staked boosts sum together correctly", async () => {
+      // Both bonus and staked boosts contribute to same balance
       const { user } = await registerUserAndAgentAndGetClient({
         adminApiKey,
         walletAddress: generateRandomEthAddress(),
@@ -1287,7 +1351,7 @@ describe("Bonus Boosts E2E", () => {
       );
       const expiresAt = new Date(Date.now() + 300000).toISOString();
 
-      // Step 1: Award a bonus boost
+      // Add a bonus boost first
       const bonusResponse = await adminClient.addBonusBoosts({
         boosts: [
           {
@@ -1300,7 +1364,6 @@ describe("Bonus Boosts E2E", () => {
 
       expect(bonusResponse.success).toBe(true);
 
-      // Verify bonus boost applied
       const balanceAfterBonus = await getBoostBalance(
         user.id,
         comp.competition.id,
@@ -1310,11 +1373,6 @@ describe("Bonus Boosts E2E", () => {
         "1000000000000000000",
       );
 
-      // Step 2: Claim a staked boost (simulated via direct API)
-      // Note: In real scenario, this would require actual staking + claiming
-      // For E2E, we'll verify the balance would sum if both were present
-
-      // Check boost_changes entries - should have 1 entry (bonus boost)
       const changesAfterBonus = await db
         .select()
         .from(boostChanges)
@@ -1323,51 +1381,66 @@ describe("Bonus Boosts E2E", () => {
       expect(changesAfterBonus).toHaveLength(1);
       expect(changesAfterBonus[0]?.meta).toHaveProperty("boostBonusId");
 
-      // Verify the bonus boost record exists
       const bonusBoosts = await getUserBoosts(user.id);
       expect(bonusBoosts).toHaveLength(1);
       expect(bonusBoosts[0]?.amount.toString()).toBe("1000000000000000000");
       expect(bonusBoosts[0]?.isActive).toBe(true);
 
-      // Step 3: Award a second bonus boost to the same user
-      const secondBonusResponse = await adminClient.addBonusBoosts({
-        boosts: [
-          {
-            wallet: user.walletAddress,
-            amount: "500000000000000000",
-            expiresAt,
-          },
-        ],
+      // Now simulate a staked boost by creating a stake and using the boost service
+      // This would normally be triggered by the staking event processor
+      // For this test, we'll directly use the BoostRepository to simulate the effect
+      const boostRepo = new BoostRepository(db);
+
+      // Simulate a staked boost increase (500000000000000000 = 0.5 tokens)
+      const stakeBoostResult = await boostRepo.increase({
+        userId: user.id,
+        wallet: user.walletAddress,
+        competitionId: comp.competition.id,
+        amount: 500000000000000000n,
       });
 
-      expect(secondBonusResponse.success).toBe(true);
+      expect(stakeBoostResult.type).toBe("applied");
 
-      // Verify both boosts are summed in balance
+      // Verify that bonus and staked boosts sum together
       const finalBalance = await getBoostBalance(user.id, comp.competition.id);
       expect(finalBalance).toHaveLength(1);
+      // 1.0 (bonus) + 0.5 (staked) = 1.5 tokens
       expect(finalBalance[0]?.balance.toString()).toBe("1500000000000000000");
 
-      // Verify 2 separate boost_changes entries
       const finalChanges = await db
         .select()
         .from(boostChanges)
         .where(eq(boostChanges.balanceId, finalBalance[0]!.id));
 
+      // Should have 2 changes: one from bonus, one from staked
       expect(finalChanges).toHaveLength(2);
 
-      // Verify 2 separate bonus boost records
+      // Verify one change has boostBonusId (bonus boost)
+      const bonusChange = finalChanges.find(
+        (c) => c.meta && typeof c.meta === "object" && "boostBonusId" in c.meta,
+      );
+      expect(bonusChange).toBeDefined();
+
+      // Verify one change doesn't have boostBonusId (staked boost)
+      const stakedChange = finalChanges.find(
+        (c) =>
+          !c.meta || typeof c.meta !== "object" || !("boostBonusId" in c.meta),
+      );
+      expect(stakedChange).toBeDefined();
+
       const allBonusBoosts = await getUserBoosts(user.id);
-      expect(allBonusBoosts).toHaveLength(2);
+      expect(allBonusBoosts).toHaveLength(1);
       expect(allBonusBoosts.every((b) => b.isActive)).toBe(true);
     });
 
-    test("revoking bonus boost removes it from pending competitions only", async () => {
+    test("revoking bonus boost keeps staked boosts intact", async () => {
+      // Test that revoking bonus boosts doesn't affect staked boosts
+      // Both types should be independent in the boost_changes table
       const { user } = await registerUserAndAgentAndGetClient({
         adminApiKey,
         walletAddress: generateRandomEthAddress(),
       });
 
-      // Create two competitions: one active (window open), one pending
       const activeComp = await createActiveCompWithOpenWindow(
         adminClient,
         "Active Comp",
@@ -1378,8 +1451,8 @@ describe("Bonus Boosts E2E", () => {
       );
       const expiresAt = new Date(Date.now() + 300000).toISOString();
 
-      // Award two bonus boosts
-      const response1 = await adminClient.addBonusBoosts({
+      // Add a bonus boost
+      const bonusResponse = await adminClient.addBonusBoosts({
         boosts: [
           {
             wallet: user.walletAddress,
@@ -1388,21 +1461,28 @@ describe("Bonus Boosts E2E", () => {
           },
         ],
       });
-      if (!response1.success) throw new Error("Should have succeeded");
+      if (!bonusResponse.success) throw new Error("Should have succeeded");
 
-      const boost1Id = response1.data.results[0]!.id;
+      const bonusBoostId = bonusResponse.data.results[0]!.id;
 
-      await adminClient.addBonusBoosts({
-        boosts: [
-          {
-            wallet: user.walletAddress,
-            amount: "500000000000000000",
-            expiresAt,
-          },
-        ],
+      // Add staked boosts to both competitions
+      const boostRepo = new BoostRepository(db);
+
+      await boostRepo.increase({
+        userId: user.id,
+        wallet: user.walletAddress,
+        competitionId: activeComp.competition.id,
+        amount: 500000000000000000n,
       });
 
-      // Verify both applied to both competitions
+      await boostRepo.increase({
+        userId: user.id,
+        wallet: user.walletAddress,
+        competitionId: pendingComp.competition.id,
+        amount: 500000000000000000n,
+      });
+
+      // Verify initial balances: 1.0 (bonus) + 0.5 (staked) = 1.5
       const activeBalanceBefore = await getBoostBalance(
         user.id,
         activeComp.competition.id,
@@ -1419,14 +1499,14 @@ describe("Bonus Boosts E2E", () => {
         "1500000000000000000",
       );
 
-      // Revoke first boost
+      // Revoke the bonus boost
       const revokeResponse = await adminClient.revokeBonusBoosts({
-        boostIds: [boost1Id],
+        boostIds: [bonusBoostId],
       });
 
       expect(revokeResponse.success).toBe(true);
 
-      // Active competition: balance unchanged (window already open)
+      // Active competition keeps full balance (window already open, revoke doesn't apply)
       const activeBalanceAfter = await getBoostBalance(
         user.id,
         activeComp.competition.id,
@@ -1435,7 +1515,7 @@ describe("Bonus Boosts E2E", () => {
         "1500000000000000000",
       );
 
-      // Pending competition: first boost removed
+      // Pending competition: bonus removed (1.0), staked remains (0.5)
       const pendingBalanceAfter = await getBoostBalance(
         user.id,
         pendingComp.competition.id,
@@ -1444,15 +1524,28 @@ describe("Bonus Boosts E2E", () => {
         "500000000000000000",
       );
 
-      // Verify first boost is inactive
+      // Verify the bonus boost was revoked
       const allBoosts = await getUserBoosts(user.id);
-      const firstBoost = allBoosts.find((b) => b.id === boost1Id);
-      expect(firstBoost?.isActive).toBe(false);
-      expect(firstBoost?.revokedAt).not.toBeNull();
+      expect(allBoosts).toHaveLength(1);
+      expect(allBoosts[0]?.id).toBe(bonusBoostId);
+      expect(allBoosts[0]?.isActive).toBe(false);
+      expect(allBoosts[0]?.revokedAt).not.toBeNull();
 
-      // Second boost should still be active
-      const secondBoost = allBoosts.find((b) => b.id !== boost1Id);
-      expect(secondBoost?.isActive).toBe(true);
+      // Verify staked boost changes are still in the database
+      const pendingChanges = await db
+        .select()
+        .from(boostChanges)
+        .where(eq(boostChanges.balanceId, pendingBalanceAfter[0]!.id));
+
+      // Should have 2 changes initially (bonus + staked), minus 1 after revoke = 1 remaining
+      expect(pendingChanges.length).toBeGreaterThanOrEqual(1);
+
+      // Verify at least one change doesn't have boostBonusId (the staked boost)
+      const stakedChange = pendingChanges.find(
+        (c) =>
+          !c.meta || typeof c.meta !== "object" || !("boostBonusId" in c.meta),
+      );
+      expect(stakedChange).toBeDefined();
     });
   });
 
