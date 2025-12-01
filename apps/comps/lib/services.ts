@@ -9,6 +9,7 @@ import {
   ArenaService,
   BalanceService,
   BoostAwardService,
+  BoostBonusService,
   BoostService,
   CalmarRatioService,
   CompetitionRewardService,
@@ -229,6 +230,14 @@ export const sportsService = new SportsService(
   createLogger("SportsService"),
 );
 
+export const boostBonusService = new BoostBonusService(
+  db,
+  boostRepository,
+  competitionRepository,
+  userRepository,
+  createLogger("BoostBonusService"),
+);
+
 export const competitionService = new CompetitionService(
   balanceService,
   tradeSimulatorService,
@@ -239,6 +248,7 @@ export const competitionService = new CompetitionService(
   competitionRewardsService,
   rewardsService,
   perpsDataProcessor,
+  boostBonusService,
   agentRepository,
   agentScoreRepository,
   arenaRepository,
