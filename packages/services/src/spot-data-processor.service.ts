@@ -307,8 +307,9 @@ export class SpotDataProcessor {
         }
         const decimalsPower = Math.pow(10, decimals);
 
-        // Parse balance from hex string to number
-        const balanceNum = parseInt(b.balance, 16) / decimalsPower;
+        // Parse balance as decimal string (provider normalizes all formats to decimal)
+        // BigInt handles large numbers safely before converting to Number
+        const balanceNum = Number(BigInt(b.balance)) / decimalsPower;
 
         // Use native symbol (ETH, MATIC) for native tokens, otherwise use price symbol
         const symbol = isNative ? getNativeTokenSymbol(b.chain) : price.symbol;

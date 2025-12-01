@@ -1619,7 +1619,8 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
         const rawBalance = Math.floor(balance * Math.pow(10, decimals));
         return {
           contractAddress: tokenAddress,
-          balance: `0x${rawBalance.toString(16)}`,
+          // Return decimal string (same format as real AlchemyRpcProvider after normalization)
+          balance: rawBalance.toString(),
         };
       },
     );

@@ -614,4 +614,33 @@ describe("RpcSpotProvider - Integration Tests (Real Blockchain)", () => {
     expect(nativeSwap?.toAmount).toBeGreaterThan(0);
     console.log(`✓ Swap amounts are valid`);
   }, 30000);
+
+  test("should return all balances as DECIMAL strings (provider normalizes format)", async () => {
+    if (!process.env.ALCHEMY_API_KEY) {
+      console.log("Skipping test - no ALCHEMY_API_KEY");
+      return;
+    }
+
+    // Use Vitalik's address which reliably has both ETH and tokens
+    const testWallet = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045";
+
+    // Native balance from getBalance() should be DECIMAL string
+    const nativeBalance = await realRpcProvider.getBalance(testWallet, "eth");
+    const nativeIsDecimal = /^\d+$/.test(nativeBalance);
+    expect(nativeIsDecimal).toBe(true);
+
+    // Token balances from getTokenBalances() should ALSO be DECIMAL strings
+    // (provider normalizes Alchemy's hex response to decimal for consistent format)
+    const tokenBalances = await realRpcProvider.getTokenBalances(
+      testWallet,
+      "eth",
+    );
+    expect(tokenBalances.length).toBeGreaterThan(0);
+    const tokenIsDecimal = /^\d+$/.test(tokenBalances[0]?.balance || "");
+    expect(tokenIsDecimal).toBe(true);
+
+    console.log(
+      `✓ Format verified: both native and tokens return DECIMAL strings`,
+    );
+  }, 30000);
 });
