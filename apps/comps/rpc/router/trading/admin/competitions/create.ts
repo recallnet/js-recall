@@ -20,6 +20,7 @@ export const createCompetition = base
     summary: "Create a new competition",
     description: "Create a new competition with specified configuration",
     tags: ["admin"],
+    successStatus: 201,
   })
   .handler(async ({ input, context, errors }) => {
     try {

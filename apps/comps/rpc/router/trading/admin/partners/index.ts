@@ -5,7 +5,9 @@ import { getPartnerById } from "./get-by-id";
 import { getCompetitionPartners } from "./get-competition-partners";
 import { listPartners } from "./list";
 import { removePartnerFromCompetition } from "./remove-from-competition";
+import { replaceCompetitionPartners } from "./replace-competition-partners";
 import { updatePartner } from "./update";
+import { updateCompetitionPartnerPosition } from "./update-competition-partner-position";
 
 export const partners = {
   create: createPartner,
@@ -16,4 +18,6 @@ export const partners = {
   addToCompetition: addPartnerToCompetition,
   getCompetitionPartners: getCompetitionPartners,
   removeFromCompetition: removePartnerFromCompetition,
+  replaceCompetitionPartners: replaceCompetitionPartners,
+  updateCompetitionPartnerPosition: updateCompetitionPartnerPosition,
 } as const;

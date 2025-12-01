@@ -11,6 +11,7 @@ import { adminMiddleware } from "@/rpc/middleware/admin";
  */
 export const reactivateAgent = base
   .use(adminMiddleware)
+  .input(AdminReactivateAgentParamsSchema)
   .route({
     method: "POST",
     path: "/admin/agents/{agentId}/reactivate",
@@ -18,9 +19,7 @@ export const reactivateAgent = base
     description: "Reactivate a previously deactivated agent",
     tags: ["admin"],
   })
-  .handler(async ({ context, errors }) => {
-    const input = AdminReactivateAgentParamsSchema.parse(context.params);
-
+  .handler(async ({ context, input, errors }) => {
     try {
       // Get the agent first to check if it exists and is actually inactive
       const agent = await context.agentService.getAgent(input.agentId);

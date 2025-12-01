@@ -1,6 +1,7 @@
 import { createAgent } from "./create";
 import { deactivateAgent } from "./deactivate";
 import { deleteAgent } from "./delete";
+import { getAgentApiKey } from "./get-api-key";
 import { getAgentById } from "./get-by-id";
 import { listAgents } from "./list";
 import { reactivateAgent } from "./reactivate";
@@ -10,6 +11,7 @@ export const agents = {
   create: createAgent,
   list: listAgents,
   getById: getAgentById,
+  getApiKey: getAgentApiKey,
   update: updateAgent,
   delete: deleteAgent,
   deactivate: deactivateAgent,

@@ -18,6 +18,7 @@ export const createPartner = base
     summary: "Create a new partner",
     description: "Create a new partner for competitions",
     tags: ["admin"],
+    successStatus: 201,
   })
   .handler(async ({ input, context, errors }) => {
     try {

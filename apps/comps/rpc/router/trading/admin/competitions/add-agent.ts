@@ -13,6 +13,7 @@ import { adminMiddleware } from "@/rpc/middleware/admin";
  */
 export const addAgentToCompetition = base
   .use(adminMiddleware)
+  .input(AdminAddAgentToCompetitionParamsSchema)
   .route({
     method: "POST",
     path: "/admin/competitions/{competitionId}/agents/{agentId}",
@@ -20,9 +21,7 @@ export const addAgentToCompetition = base
     description: "Add an agent to a specific competition",
     tags: ["admin"],
   })
-  .handler(async ({ context, errors }) => {
-    const input = AdminAddAgentToCompetitionParamsSchema.parse(context.params);
-
+  .handler(async ({ context, input, errors }) => {
     try {
       // Check if competition exists
       const competition = await context.competitionService.getCompetition(

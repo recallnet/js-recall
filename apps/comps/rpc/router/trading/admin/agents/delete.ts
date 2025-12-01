@@ -11,6 +11,7 @@ import { adminMiddleware } from "@/rpc/middleware/admin";
  */
 export const deleteAgent = base
   .use(adminMiddleware)
+  .input(AdminDeleteAgentParamsSchema)
   .route({
     method: "DELETE",
     path: "/admin/agents/{agentId}",
@@ -18,9 +19,7 @@ export const deleteAgent = base
     description: "Delete an agent by ID",
     tags: ["admin"],
   })
-  .handler(async ({ context, errors }) => {
-    const input = AdminDeleteAgentParamsSchema.parse(context.params);
-
+  .handler(async ({ context, input, errors }) => {
     try {
       // Get the agent first to check if it exists
       const agent = await context.agentService.getAgent(input.agentId);

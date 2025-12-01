@@ -18,6 +18,7 @@ export const createArena = base
     summary: "Create a new arena",
     description: "Create a new arena with specified configuration",
     tags: ["admin"],
+    successStatus: 201,
   })
   .handler(async ({ input, context, errors }) => {
     try {

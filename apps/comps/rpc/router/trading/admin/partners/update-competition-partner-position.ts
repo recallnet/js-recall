@@ -1,35 +1,41 @@
 import { ORPCError } from "@orpc/server";
 
-import { AdminCreateAgentSchema } from "@recallnet/services/types";
-import { ApiError } from "@recallnet/services/types";
+import {
+  AdminCompetitionPartnerParamsSchema,
+  AdminUpdatePartnerPositionSchema,
+  ApiError,
+} from "@recallnet/services/types";
 
 import { base } from "@/rpc/context/base";
 import { adminMiddleware } from "@/rpc/middleware/admin";
 
 /**
- * Create a new agent
+ * Update partner position in a competition
  */
-export const createAgent = base
+export const updateCompetitionPartnerPosition = base
   .use(adminMiddleware)
-  .input(AdminCreateAgentSchema)
+  .input(
+    AdminCompetitionPartnerParamsSchema.merge(AdminUpdatePartnerPositionSchema),
+  )
   .route({
-    method: "POST",
-    path: "/admin/agents",
-    summary: "Create a new agent",
-    description: "Create a new agent for a user",
+    method: "PUT",
+    path: "/admin/competitions/{competitionId}/partners/{partnerId}",
+    summary: "Update partner position",
+    description: "Update the display position of a partner in a competition",
     tags: ["admin"],
-    successStatus: 201,
   })
   .handler(async ({ input, context, errors }) => {
     try {
-      const createdAgent = await context.agentService.createAgentForOwner(
-        { userId: input.user.id, walletAddress: input.user.walletAddress },
-        input.agent,
+      // Update partner position
+      const association = await context.partnerService.updatePosition(
+        input.competitionId,
+        input.partnerId,
+        input.position,
       );
 
       return {
         success: true,
-        agent: createdAgent,
+        association,
       };
     } catch (error) {
       if (error instanceof ORPCError) {
@@ -53,8 +59,11 @@ export const createAgent = base
         throw errors.INTERNAL({ message: error.message });
       }
 
-      throw errors.INTERNAL({ message: "Failed to create agent" });
+      throw errors.INTERNAL({
+        message: "Failed to update partner position",
+      });
     }
   });
 
-export type CreateAgentType = typeof createAgent;
+export type UpdateCompetitionPartnerPositionType =
+  typeof updateCompetitionPartnerPosition;
