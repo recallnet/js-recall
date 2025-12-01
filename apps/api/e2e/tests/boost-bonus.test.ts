@@ -1710,8 +1710,7 @@ describe("Bonus Boosts E2E", () => {
 
       // Run cron job
       const services = new ServiceRegistry();
-      const cronResult =
-        await services.boostBonusService.applyBonusBoostsToEligibleCompetitions();
+      await services.boostBonusService.applyBonusBoostsToEligibleCompetitions();
 
       // Verify neither boost was applied
       const balance1 = await getBoostBalance(user1.id, comp.competition!.id);
