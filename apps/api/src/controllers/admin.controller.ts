@@ -43,8 +43,8 @@ import {
 import {
   ActorStatus,
   AdminCreateAgentSchema,
+  AdminSearchResults,
   Agent,
-  AgentPublic,
   ApiError,
   User,
   toApiAgent,
@@ -70,11 +70,6 @@ interface AdminAgentRegistrationResponse {
   success: boolean;
   agent: Agent;
   agentError?: string;
-}
-
-interface AdminSearchResults {
-  users: User[];
-  agents: AgentPublic[];
 }
 
 export interface AdminSearchUsersAndAgentsResponse {

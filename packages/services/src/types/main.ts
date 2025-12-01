@@ -1187,6 +1187,14 @@ export const AgentSearchParamsSchema = z.object({
 export type AgentSearchParams = z.infer<typeof AgentSearchParamsSchema>;
 
 /**
+ * Admin search results interface
+ */
+export interface AdminSearchResults {
+  users: User[];
+  agents: AgentPublic[];
+}
+
+/**
  * Admin search users and agents query parameters schema
  */
 export const AdminSearchUsersAndAgentsQuerySchema = z.strictObject({
