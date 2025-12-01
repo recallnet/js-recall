@@ -567,7 +567,7 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
 
     // Native transfers (EXTERNAL/INTERNAL category) don't have rawContract
     // Return zero address instead of "ETH" string for proper price lookup
-    // The spot-data-processor maps zero address to WETH for pricing
+    // The getTokenAddressForPriceLookup() utility maps zero address to WETH/WMATIC for pricing (used by multiple services)
     return NATIVE_TOKEN_ADDRESS;
   }
 
