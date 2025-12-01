@@ -11,6 +11,7 @@ import {
   toApiUser,
 } from "@recallnet/services/types";
 
+import { db } from "@/database/db.js";
 import { flatParse } from "@/lib/flat-parse.js";
 import { adminLogger } from "@/lib/logger.js";
 import { ServiceRegistry } from "@/services/index.js";
@@ -1983,14 +1984,13 @@ export function makeAdminController(services: ServiceRegistry) {
           });
         }
 
-        // Step 2: All items validated - now process each one
-        const results = [];
-        const errors = [];
+        // Step 2: Process all boosts in a single transaction for all-or-nothing semantics
+        const results = await db.transaction(async (tx) => {
+          const batchResults = [];
 
-        for (let i = 0; i < boosts.length; i++) {
-          const boostItem = boosts[i]!;
+          for (let i = 0; i < boosts.length; i++) {
+            const boostItem = boosts[i]!;
 
-          try {
             // Convert amount from string to BigInt
             const amount = BigInt(boostItem.amount);
 
@@ -2004,13 +2004,14 @@ export function makeAdminController(services: ServiceRegistry) {
               "Processing boost item",
             );
 
-            // Add the bonus boost
+            // Add the bonus boost within the transaction
             const result = await services.boostBonusService.addBoostBonus(
               boostItem.wallet,
               amount,
               boostItem.expiresAt,
               undefined, // createdByAdminId - could extract from auth if needed
               boostItem.meta,
+              tx, // Pass the transaction to ensure atomicity
             );
 
             adminLogger.info(
@@ -2022,7 +2023,7 @@ export function makeAdminController(services: ServiceRegistry) {
               "Successfully added bonus boost",
             );
 
-            results.push({
+            batchResults.push({
               id: result.boostBonusId,
               userId: result.userId,
               amount: result.amount.toString(),
@@ -2030,51 +2031,10 @@ export function makeAdminController(services: ServiceRegistry) {
               isActive: true,
               appliedToCompetitions: result.appliedToCompetitions,
             });
-          } catch (itemError) {
-            const errorMessage =
-              itemError instanceof Error
-                ? itemError.message
-                : "Unknown error occurred";
-
-            adminLogger.error(
-              {
-                index: i,
-                wallet: boostItem.wallet,
-                error: errorMessage,
-              },
-              "Failed to add bonus boost for item",
-            );
-
-            errors.push({
-              index: i,
-              wallet: boostItem.wallet,
-              error: errorMessage,
-            });
           }
-        }
 
-        // If any items failed during processing, return error with details
-        if (errors.length > 0) {
-          adminLogger.warn(
-            {
-              successCount: results.length,
-              errorCount: errors.length,
-            },
-            "Batch processing completed with errors",
-          );
-
-          return res.status(400).json({
-            success: false,
-            error: "Batch processing failed",
-            message: `Failed to process ${errors.length} out of ${boosts.length} boost items`,
-            data: {
-              successCount: results.length,
-              errorCount: errors.length,
-              results,
-              errors,
-            },
-          });
-        }
+          return batchResults;
+        });
 
         // All items succeeded
         adminLogger.info(
@@ -2089,6 +2049,11 @@ export function makeAdminController(services: ServiceRegistry) {
           },
         });
       } catch (error) {
+        // If transaction fails, log the error and return failure
+        adminLogger.error(
+          { error: error instanceof Error ? error.message : "Unknown error" },
+          "Batch add bonus boost failed - transaction rolled back",
+        );
         next(error);
       }
     },
@@ -2109,14 +2074,13 @@ export function makeAdminController(services: ServiceRegistry) {
           "Processing batch revoke bonus boost request",
         );
 
-        // Process each boost ID in the batch
-        const results = [];
-        const errors = [];
+        // Process all boosts in a single transaction for all-or-nothing semantics
+        const results = await db.transaction(async (tx) => {
+          const batchResults = [];
 
-        for (let i = 0; i < boostIds.length; i++) {
-          const boostId = boostIds[i]!;
+          for (let i = 0; i < boostIds.length; i++) {
+            const boostId = boostIds[i]!;
 
-          try {
             adminLogger.info(
               {
                 index: i,
@@ -2125,9 +2089,11 @@ export function makeAdminController(services: ServiceRegistry) {
               "Revoking bonus boost",
             );
 
-            // Revoke the bonus boost
-            const result =
-              await services.boostBonusService.revokeBoostBonus(boostId);
+            // Revoke the bonus boost within the transaction
+            const result = await services.boostBonusService.revokeBoostBonus(
+              boostId,
+              tx,
+            );
 
             adminLogger.info(
               {
@@ -2139,58 +2105,17 @@ export function makeAdminController(services: ServiceRegistry) {
               "Successfully revoked bonus boost",
             );
 
-            results.push({
+            batchResults.push({
               id: result.boostBonusId,
               revoked: result.revoked,
               revokedAt: result.revokedAt.toISOString(),
               removedFromPending: result.removedFromPending,
               keptInActive: result.keptInActive,
             });
-          } catch (itemError) {
-            const errorMessage =
-              itemError instanceof Error
-                ? itemError.message
-                : "Unknown error occurred";
-
-            adminLogger.error(
-              {
-                index: i,
-                boostId,
-                error: errorMessage,
-              },
-              "Failed to revoke bonus boost",
-            );
-
-            errors.push({
-              index: i,
-              boostId,
-              error: errorMessage,
-            });
           }
-        }
 
-        // If any items failed, return 400 with details
-        if (errors.length > 0) {
-          adminLogger.warn(
-            {
-              successCount: results.length,
-              errorCount: errors.length,
-            },
-            "Batch revocation completed with errors",
-          );
-
-          return res.status(400).json({
-            success: false,
-            error: "Batch revocation failed",
-            message: `Failed to revoke ${errors.length} out of ${boostIds.length} boost items`,
-            data: {
-              successCount: results.length,
-              errorCount: errors.length,
-              results,
-              errors,
-            },
-          });
-        }
+          return batchResults;
+        });
 
         // All items succeeded
         adminLogger.info(
@@ -2205,6 +2130,11 @@ export function makeAdminController(services: ServiceRegistry) {
           },
         });
       } catch (error) {
+        // If transaction fails, log the error and return failure
+        adminLogger.error(
+          { error: error instanceof Error ? error.message : "Unknown error" },
+          "Batch revoke bonus boost failed - transaction rolled back",
+        );
         next(error);
       }
     },

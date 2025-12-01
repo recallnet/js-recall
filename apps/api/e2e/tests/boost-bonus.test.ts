@@ -209,10 +209,7 @@ describe("Bonus Boosts E2E", () => {
       expect(result1!.isActive).toBe(true);
 
       // Should apply to active and pending competitions, but not closed window
-      const appliedCompIds = [
-        ...(result1!.appliedToCompetitions.active || []),
-        ...(result1!.appliedToCompetitions.pending || []),
-      ];
+      const appliedCompIds = result1!.appliedToCompetitions || [];
       expect(appliedCompIds).toContain(compA.competition.id);
       expect(appliedCompIds).toContain(compB.competition.id);
       expect(appliedCompIds).not.toContain(compC.competition.id);
@@ -690,10 +687,7 @@ describe("Bonus Boosts E2E", () => {
       // Verify response shows boost was applied to exactly 2 competitions
       const result = response.data.results[0];
       expect(result).toBeDefined();
-      const appliedCompIds = [
-        ...(result!.appliedToCompetitions.active || []),
-        ...(result!.appliedToCompetitions.pending || []),
-      ];
+      const appliedCompIds = result!.appliedToCompetitions || [];
       expect(appliedCompIds).toHaveLength(2);
       expect(appliedCompIds).toContain(activeComp.competition.id);
       expect(appliedCompIds).toContain(pendingComp.competition.id);

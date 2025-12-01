@@ -1243,10 +1243,7 @@ export interface BonusBoostResult {
   amount: string;
   expiresAt: string;
   isActive: boolean;
-  appliedToCompetitions: {
-    active: string[];
-    pending: string[];
-  };
+  appliedToCompetitions: string[];
 }
 
 export interface AddBonusBoostsResponse {

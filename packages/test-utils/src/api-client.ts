@@ -2826,7 +2826,7 @@ export class ApiClient {
       return this.handleApiError(error, "add bonus boosts");
     }
   }
-  
+
   /**
    * Admin: Revoke bonus boosts
    * Requires admin authentication
