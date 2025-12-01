@@ -17,6 +17,7 @@ import { ServiceRegistry } from "@/services/index.js";
 
 import {
   AdminAddAgentToCompetitionParamsSchema,
+  AdminAddBonusBoostSchema,
   AdminAddPartnerToCompetitionSchema,
   AdminArenaParamsSchema,
   AdminCompetitionParamsSchema,
@@ -44,6 +45,7 @@ import {
   AdminRemoveAgentFromCompetitionBodySchema,
   AdminRemoveAgentFromCompetitionParamsSchema,
   AdminReplaceCompetitionPartnersSchema,
+  AdminRevokeBonusBoostSchema,
   AdminRewardsAllocationSchema,
   AdminSetupSchema,
   AdminStartCompetitionSchema,
@@ -631,7 +633,11 @@ export function makeAdminController(services: ServiceRegistry) {
           boosterAllocationUnit,
           rewardRules,
           rewardDetails,
+          boostTimeDecayRate,
           displayState,
+          gameIds,
+          paperTradingConfig,
+          paperTradingInitialBalances,
         } = flatParse(AdminCreateCompetitionSchema, req.body);
 
         // Create a new competition
@@ -674,7 +680,11 @@ export function makeAdminController(services: ServiceRegistry) {
             boosterAllocationUnit,
             rewardRules,
             rewardDetails,
+            boostTimeDecayRate,
             displayState,
+            gameIds,
+            paperTradingConfig,
+            paperTradingInitialBalances,
           },
         );
 
@@ -734,6 +744,8 @@ export function makeAdminController(services: ServiceRegistry) {
           rewardRules,
           rewardDetails,
           displayState,
+          paperTradingConfig,
+          paperTradingInitialBalances,
         } = flatParse(AdminStartCompetitionSchema, req.body);
 
         // Call service method with creation params only if no competitionId
@@ -778,6 +790,8 @@ export function makeAdminController(services: ServiceRegistry) {
                   rewardRules,
                   rewardDetails,
                   displayState,
+                  paperTradingConfig,
+                  paperTradingInitialBalances,
                 },
           });
 
@@ -802,8 +816,24 @@ export function makeAdminController(services: ServiceRegistry) {
           AdminEndCompetitionSchema,
           req.body,
         );
+        const competition =
+          await services.competitionService.getCompetition(competitionId);
+        if (!competition) {
+          throw new ApiError(404, "Competition not found");
+        }
 
-        // End the competition
+        // End the NFL competition (note: slightly different leaderboard format)
+        if (competition.type === "sports_prediction") {
+          const { competition: endedCompetition, leaderboard } =
+            await services.competitionService.endNflCompetition(competitionId);
+          return res.status(200).json({
+            success: true,
+            competition: endedCompetition,
+            leaderboard,
+          });
+        }
+
+        // End the competition for all other competition types
         const { competition: endedCompetition, leaderboard } =
           await services.competitionService.endCompetition(competitionId);
 
@@ -840,9 +870,12 @@ export function makeAdminController(services: ServiceRegistry) {
           evaluationMetric,
           perpsProvider,
           prizePools,
+          gameIds,
+          paperTradingConfig,
+          paperTradingInitialBalances,
           ...competitionUpdates
         } = flatParse(AdminUpdateCompetitionSchema, req.body);
-        // Extract rewards, tradingConstraints, evaluationMetric, and perpsProvider from the validated data
+        // Extract rewards, tradingConstraints, evaluationMetric, perpsProvider, paperTradingConfig, and paperTradingInitialBalances from the validated data
         const updates = competitionUpdates;
 
         // Check if there are any updates to apply
@@ -852,7 +885,10 @@ export function makeAdminController(services: ServiceRegistry) {
           !tradingConstraints &&
           !evaluationMetric &&
           !perpsProvider &&
-          !prizePools
+          !prizePools &&
+          !gameIds &&
+          !paperTradingConfig &&
+          !paperTradingInitialBalances
         ) {
           throw new ApiError(400, "No valid fields provided for update");
         }
@@ -867,6 +903,9 @@ export function makeAdminController(services: ServiceRegistry) {
             evaluationMetric,
             perpsProvider,
             prizePools,
+            gameIds,
+            paperTradingConfig,
+            paperTradingInitialBalances,
           );
 
         // Return the updated competition
@@ -878,6 +917,7 @@ export function makeAdminController(services: ServiceRegistry) {
               rank: reward.rank,
               reward: reward.reward,
             })),
+            gameIds,
           },
         });
       } catch (error) {
@@ -1875,6 +1915,62 @@ export function makeAdminController(services: ServiceRegistry) {
         });
       } catch (error) {
         adminLogger.error({ error }, "Error allocating rewards");
+        next(error);
+      }
+    },
+
+    /**
+     * Add bonus boost to users
+     * Stubbed endpoint - returns 501 Not Implemented
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async addBonusBoost(req: Request, res: Response, next: NextFunction) {
+      try {
+        // Validate request body
+        const { boosts } = flatParse(AdminAddBonusBoostSchema, req.body);
+
+        // Stubbed endpoint - return 501 Not Implemented
+        res.status(501).json({
+          success: false,
+          error: "Not Implemented",
+          message:
+            "This endpoint is stubbed for API contract validation. Full implementation pending.",
+          data: {
+            requestedCount: boosts.length,
+            note: "When implemented, this will process all boosts in the batch and return results for each item.",
+          },
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Revoke bonus boost
+     * Stubbed endpoint - returns 501 Not Implemented
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async revokeBonusBoost(req: Request, res: Response, next: NextFunction) {
+      try {
+        // Validate request body
+        const { boostIds } = flatParse(AdminRevokeBonusBoostSchema, req.body);
+
+        // Stubbed endpoint - return 501 Not Implemented
+        res.status(501).json({
+          success: false,
+          error: "Not Implemented",
+          message:
+            "This endpoint is stubbed for API contract validation. Full implementation pending.",
+          data: {
+            requestedCount: boostIds.length,
+            note: "When implemented, this will revoke all specified boosts and return results for each item.",
+          },
+        });
+      } catch (error) {
         next(error);
       }
     },

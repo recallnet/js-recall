@@ -1,5 +1,7 @@
 import { Hex } from "viem";
 
+import { ConvictionClaimsRepository } from "@recallnet/db/repositories/conviction-claims";
+import { EventsRepository } from "@recallnet/db/repositories/indexing-events";
 import {
   AgentRankService,
   AgentService,
@@ -19,10 +21,16 @@ import {
   RewardsService,
   RiskMetricsService,
   SortinoRatioService,
+  SportsService,
   TradeSimulatorService,
   TradingConstraintsService,
   UserService,
 } from "@recallnet/services";
+import {
+  EventProcessor,
+  IndexingService,
+  TransactionProcessor,
+} from "@recallnet/services/indexing";
 import { WalletWatchlist } from "@recallnet/services/lib";
 import { MultiChainProvider } from "@recallnet/services/providers";
 import {
@@ -46,6 +54,8 @@ import {
   competitionRewardsRepository,
   convictionClaimsRepository,
   leaderboardRepository,
+  paperTradingConfigRepository,
+  paperTradingInitialBalancesRepository,
   perpsRepository,
   rewardsRepository,
   stakesRepository,
@@ -75,7 +85,7 @@ export const airdropService = new AirdropService(
 
 export const balanceService = new BalanceService(
   balanceRepository,
-  config,
+  paperTradingInitialBalancesRepository,
   createLogger("BalanceService"),
 );
 
@@ -211,7 +221,12 @@ export const rewardsService = new RewardsService(
   getRewardsAllocator(),
   db,
   createLogger("RewardsService"),
-  config.rewards.boostTimeDecayRate,
+);
+
+export const sportsService = new SportsService(
+  db,
+  competitionRepository,
+  createLogger("SportsService"),
 );
 
 export const competitionService = new CompetitionService(
@@ -227,8 +242,11 @@ export const competitionService = new CompetitionService(
   agentRepository,
   agentScoreRepository,
   arenaRepository,
+  sportsService,
   perpsRepository,
   competitionRepository,
+  paperTradingConfigRepository,
+  paperTradingInitialBalancesRepository,
   stakesRepository,
   userRepository,
   db,
@@ -286,4 +304,47 @@ function getRewardsAllocator(): RewardsAllocator {
   }
 
   return new NoopRewardsAllocator();
+}
+
+let eventsIndexingService: IndexingService | null = null;
+let transactionsIndexingService: IndexingService | null = null;
+
+export function getEventsIndexingService(): IndexingService {
+  if (!eventsIndexingService) {
+    const stakingConfig = config.getStakingIndexConfig();
+    const logger = createLogger("EventsIndexingService");
+    const eventProcessor = new EventProcessor(
+      db,
+      rewardsRepository,
+      new EventsRepository(db),
+      stakesRepository,
+      boostAwardService,
+      competitionService,
+      logger,
+    );
+    eventsIndexingService = IndexingService.createEventsIndexingService(
+      logger,
+      eventProcessor,
+      stakingConfig,
+    );
+  }
+  return eventsIndexingService;
+}
+
+export function getTransactionsIndexingService(): IndexingService {
+  if (!transactionsIndexingService) {
+    const stakingConfig = config.getStakingIndexConfig();
+    const logger = createLogger("TransactionsIndexingService");
+    const transactionProcessor = new TransactionProcessor(
+      new ConvictionClaimsRepository(db, logger),
+      logger,
+    );
+    transactionsIndexingService =
+      IndexingService.createTransactionsIndexingService(
+        logger,
+        transactionProcessor,
+        stakingConfig,
+      );
+  }
+  return transactionsIndexingService;
 }

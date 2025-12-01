@@ -8,6 +8,7 @@
         "DB_CA_CERT_BASE64",
         "DB_CA_CERT_PATH",
         "DB_SSL",
+        "DB_SKIP_MIGRATIONS",
         "FRONTEND_URL",
         "DOMAIN",
         "SESSION_TTL",
@@ -99,11 +100,12 @@
         "REWARDS_TOKEN_CONTRACT_ADDRESS",
         "REWARDS_NETWORK",
         "REWARDS_SLACK_WEBHOOK_URL",
-        "REWARDS_BOOST_TIME_DECAY_RATE",
         "RPC_PROVIDER",
         "NO_STAKE_BOOST_AMOUNT",
         "CHAINALYSIS_API_KEY",
-        "SYMPHONY_API_URL"
+        "SYMPHONY_API_URL",
+        "SPORTSDATAIO_API_KEY",
+        "SPORTSDATAIO_BASE_URL"
       ]
     }
   }

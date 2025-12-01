@@ -1081,6 +1081,13 @@ export function configureAdminRoutes(
    *                 type: string
    *                 nullable: true
    *                 description: Additional reward details
+   *               boostTimeDecayRate:
+   *                 type: number
+   *                 nullable: true
+   *                 minimum: 0.1
+   *                 maximum: 0.9
+   *                 description: Decay rate for boost time calculations. Must be between 0.1 and 0.9.
+   *                 example: 0.5
    *               displayState:
    *                 type: string
    *                 nullable: true
@@ -1092,6 +1099,43 @@ export function configureAdminRoutes(
    *                   type: string
    *                 description: Agent IDs ineligible to receive rewards from this competition
    *                 example: ["agent-id-1", "agent-id-2"]
+   *               paperTradingConfig:
+   *                 type: object
+   *                 nullable: true
+   *                 description: Paper trading configuration for the competition
+   *                 properties:
+   *                   maxTradePercentage:
+   *                     type: integer
+   *                     minimum: 1
+   *                     maximum: 100
+   *                     description: "Maximum percentage of portfolio that can be traded in a single trade (default: 25)"
+   *                     example: 25
+   *               paperTradingInitialBalances:
+   *                 type: array
+   *                 nullable: true
+   *                 description: Initial token balances for the competition
+   *                 items:
+   *                   type: object
+   *                   required:
+   *                     - specificChain
+   *                     - tokenSymbol
+   *                     - amount
+   *                   properties:
+   *                     specificChain:
+   *                       type: string
+   *                       maxLength: 20
+   *                       description: Specific chain identifier
+   *                       example: "base"
+   *                     tokenSymbol:
+   *                       type: string
+   *                       maxLength: 20
+   *                       description: Token symbol
+   *                       example: "USDC"
+   *                     amount:
+   *                       type: integer
+   *                       minimum: 0
+   *                       description: Initial balance amount
+   *                       example: 10000
    *     responses:
    *       201:
    *         description: Competition created successfully
@@ -1479,6 +1523,13 @@ export function configureAdminRoutes(
    *                 type: string
    *                 nullable: true
    *                 description: Additional reward details
+   *               boostTimeDecayRate:
+   *                 type: number
+   *                 nullable: true
+   *                 minimum: 0.1
+   *                 maximum: 0.9
+   *                 description: Decay rate for boost time calculations. Must be between 0.1 and 0.9.
+   *                 example: 0.5
    *               displayState:
    *                 type: string
    *                 nullable: true
@@ -1963,6 +2014,13 @@ export function configureAdminRoutes(
    *                 type: string
    *                 nullable: true
    *                 description: Additional reward details
+   *               boostTimeDecayRate:
+   *                 type: number
+   *                 nullable: true
+   *                 minimum: 0.1
+   *                 maximum: 0.9
+   *                 description: Decay rate for boost time calculations. Must be between 0.1 and 0.9.
+   *                 example: 0.5
    *               displayState:
    *                 type: string
    *                 nullable: true
@@ -1974,6 +2032,43 @@ export function configureAdminRoutes(
    *                   type: string
    *                 description: Agent IDs ineligible to receive rewards from this competition
    *                 example: ["agent-id-1", "agent-id-2"]
+   *               paperTradingConfig:
+   *                 type: object
+   *                 nullable: true
+   *                 description: Paper trading configuration for the competition
+   *                 properties:
+   *                   maxTradePercentage:
+   *                     type: integer
+   *                     minimum: 1
+   *                     maximum: 100
+   *                     description: "Maximum percentage of portfolio that can be traded in a single trade (default: 25)"
+   *                     example: 25
+   *               paperTradingInitialBalances:
+   *                 type: array
+   *                 nullable: true
+   *                 description: Initial token balances for the competition
+   *                 items:
+   *                   type: object
+   *                   required:
+   *                     - specificChain
+   *                     - tokenSymbol
+   *                     - amount
+   *                   properties:
+   *                     specificChain:
+   *                       type: string
+   *                       maxLength: 20
+   *                       description: Specific chain identifier
+   *                       example: "base"
+   *                     tokenSymbol:
+   *                       type: string
+   *                       maxLength: 20
+   *                       description: Token symbol
+   *                       example: "USDC"
+   *                     amount:
+   *                       type: integer
+   *                       minimum: 0
+   *                       description: Initial balance amount
+   *                       example: 10000
    *     responses:
    *       200:
    *         description: Competition updated successfully
@@ -3789,6 +3884,189 @@ export function configureAdminRoutes(
    *         description: Server error
    */
   router.post("/rewards/allocate", controller.allocateRewards);
+
+  /**
+   * @openapi
+   * /api/admin/boost-bonus:
+   *   post:
+   *     tags:
+   *       - Admin
+   *     summary: Add bonus boost to users
+   *     description: |
+   *       Add bonus boosts to multiple users in a single request. Each boost applies to all competitions
+   *       that start before the expiration date.
+   *
+   *       **Note**: This endpoint is currently stubbed and returns 501 Not Implemented for API contract validation.
+   *     security:
+   *       - BearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - boosts
+   *             properties:
+   *               boosts:
+   *                 type: array
+   *                 minItems: 1
+   *                 maxItems: 100
+   *                 description: Array of boost items to add (max 100 items per batch, no duplicate wallets within batch)
+   *                 items:
+   *                   type: object
+   *                   required:
+   *                     - wallet
+   *                     - amount
+   *                     - expiresAt
+   *                   properties:
+   *                     wallet:
+   *                       type: string
+   *                       pattern: ^0x[0-9a-fA-F]{40}$
+   *                       description: User wallet address (Ethereum hex address)
+   *                       example: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0"
+   *                     amount:
+   *                       type: string
+   *                       pattern: ^\d+$
+   *                       description: Boost amount as numeric string (BigInt). Must be > 0 and <= 10^18.
+   *                       example: "500000000000000000"
+   *                     expiresAt:
+   *                       type: string
+   *                       format: date-time
+   *                       description: ISO 8601 expiration date (must be at least 1 minute in the future)
+   *                       example: "2025-12-31T23:59:59Z"
+   *                     meta:
+   *                       type: object
+   *                       description: Optional metadata (primitives only - string, number, boolean). Max 1000 characters when serialized to JSON.
+   *                       additionalProperties:
+   *                         oneOf:
+   *                           - type: string
+   *                           - type: number
+   *                           - type: boolean
+   *                       example:
+   *                         source: "farcaster"
+   *                         campaignId: "campaign-123"
+   *           example:
+   *             boosts:
+   *               - wallet: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0"
+   *                 amount: "500000000000000000"
+   *                 expiresAt: "2025-12-31T23:59:59Z"
+   *                 meta:
+   *                   source: "farcaster"
+   *               - wallet: "0x8ba1f109551bD432803012645Aac136c22C172c8"
+   *                 amount: "250000000000000000"
+   *                 expiresAt: "2025-12-31T23:59:59Z"
+   *     responses:
+   *       501:
+   *         description: Not Implemented - Endpoint is stubbed for API contract validation
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: false
+   *                 error:
+   *                   type: string
+   *                   example: "Not Implemented"
+   *                 message:
+   *                   type: string
+   *                   example: "This endpoint is stubbed for API contract validation. Full implementation pending."
+   *                 data:
+   *                   type: object
+   *                   properties:
+   *                     requestedCount:
+   *                       type: number
+   *                       description: Number of boost items in the request
+   *                       example: 2
+   *                     note:
+   *                       type: string
+   *                       example: "When implemented, this will process 2 boost grants and apply them to eligible competitions"
+   *       400:
+   *         description: Bad Request - Invalid request format, validation errors, or empty array
+   *       401:
+   *         description: Unauthorized - Admin authentication required
+   *       500:
+   *         description: Internal server error
+   */
+  router.post("/boost-bonus", controller.addBonusBoost);
+
+  /**
+   * @openapi
+   * /api/admin/boost-bonus/revoke:
+   *   post:
+   *     tags:
+   *       - Admin
+   *     summary: Revoke bonus boost
+   *     description: |
+   *       Revoke multiple bonus boosts in a single request. Prevents future applications and removes
+   *       from pending competitions where the boosting window hasn't opened.
+   *
+   *       **Note**: This endpoint is currently stubbed and returns 501 Not Implemented for API contract validation.
+   *     security:
+   *       - BearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - boostIds
+   *             properties:
+   *               boostIds:
+   *                 type: array
+   *                 minItems: 1
+   *                 maxItems: 100
+   *                 description: Array of boost IDs to revoke (max 100 items per batch)
+   *                 items:
+   *                   type: string
+   *                   format: uuid
+   *                 example:
+   *                   - "12345678-1234-1234-1234-123456789012"
+   *                   - "87654321-4321-4321-4321-210987654321"
+   *           example:
+   *             boostIds:
+   *               - "12345678-1234-1234-1234-123456789012"
+   *               - "87654321-4321-4321-4321-210987654321"
+   *     responses:
+   *       501:
+   *         description: Not Implemented - Endpoint is stubbed for API contract validation
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: false
+   *                 error:
+   *                   type: string
+   *                   example: "Not Implemented"
+   *                 message:
+   *                   type: string
+   *                   example: "This endpoint is stubbed for API contract validation. Full implementation pending."
+   *                 data:
+   *                   type: object
+   *                   properties:
+   *                     requestedCount:
+   *                       type: number
+   *                       description: Number of boost IDs in the request
+   *                       example: 2
+   *                     note:
+   *                       type: string
+   *                       example: "When implemented, this will revoke 2 boosts and remove them from pending competitions"
+   *       400:
+   *         description: Bad Request - Invalid request format, validation errors, empty array, or boost already revoked
+   *       401:
+   *         description: Unauthorized - Admin authentication required
+   *       404:
+   *         description: Not Found - One or more boost IDs not found
+   *       500:
+   *         description: Internal server error
+   */
+  router.post("/boost-bonus/revoke", controller.revokeBonusBoost);
 
   return router;
 }

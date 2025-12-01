@@ -13,6 +13,7 @@ import {
   emailService,
   leaderboardService,
   rewardsService,
+  sportsService,
   userService,
 } from "@/lib/services";
 import { router } from "@/rpc/router/index";
@@ -35,6 +36,7 @@ async function handleRequest(request: Request) {
       emailService,
       leaderboardService,
       rewardsService,
+      sportsService,
       logger: createLogger("RpcHandler"),
     },
   });

@@ -20,6 +20,7 @@ import {
   emailService,
   leaderboardService,
   rewardsService,
+  sportsService,
   userService,
 } from "../../lib/services.js";
 import { router } from "../../rpc/router/index.js";
@@ -72,6 +73,7 @@ export async function createTestRpcClient(
       emailService,
       leaderboardService,
       rewardsService,
+      sportsService,
       logger: createLogger("TestRpcClient"),
     },
   });

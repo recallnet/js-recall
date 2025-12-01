@@ -1,0 +1,228 @@
+"use client";
+
+import { useQuery } from "@tanstack/react-query";
+import { ChevronRight, Plus } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+
+import { Button } from "@recallnet/ui2/components/button";
+import { Skeleton } from "@recallnet/ui2/components/skeleton";
+import { cn } from "@recallnet/ui2/lib/utils";
+
+import { BreadcrumbNav } from "@/components/breadcrumb-nav";
+import CompetitionSkeleton from "@/components/competition-skeleton";
+import { FooterSection } from "@/components/footer-section";
+import { JoinCompetitionButton } from "@/components/join-competition-button";
+import { JoinSwarmSection } from "@/components/join-swarm-section";
+import { BrierScoreChart } from "@/components/nfl/brier-score-chart";
+import { GameTabs } from "@/components/nfl/game-tabs";
+import {
+  NflCompetitionKey,
+  NflCompetitionKeyTab,
+} from "@/components/nfl/nfl-competition-key";
+import { NflStandingsTable } from "@/components/nfl/nfl-standings-table";
+import { LIMIT_AGENTS_PER_CHART } from "@/components/timeline-chart/constants";
+import { getSocialLinksArray } from "@/data/social";
+import { useNflGames } from "@/hooks/sports/useNflGames";
+import { useNflRules } from "@/hooks/sports/useNflRules";
+import { openForBoosting } from "@/lib/open-for-boosting";
+import { tanstackClient } from "@/rpc/clients/tanstack-query";
+import type { RouterOutputs } from "@/rpc/router";
+import { NflGame } from "@/types/nfl";
+import { getCompetitionPollingInterval } from "@/utils/competition-utils";
+
+type CompetitionDetails = RouterOutputs["competitions"]["getById"];
+
+interface NflCompetitionPageProps {
+  competition: CompetitionDetails;
+}
+
+export default function NflCompetitionPage({
+  competition,
+}: NflCompetitionPageProps) {
+  const [selectedGameId, setSelectedGameId] = useState<string | undefined>();
+  const [activeKeyTab, setActiveKeyTab] =
+    useState<NflCompetitionKeyTab>("games");
+
+  const competitionId = competition.id;
+  const {
+    data: gamesData,
+    isLoading: gamesLoading,
+    error: gamesError,
+  } = useNflGames(competitionId);
+  const { data: rulesData, isLoading: rulesLoading } =
+    useNflRules(competitionId);
+
+  const { data: chartAgentsData } = useQuery(
+    tanstackClient.competitions.getAgents.queryOptions({
+      input: {
+        competitionId,
+        paging: {
+          sort: "rank",
+          offset: 0,
+          limit: LIMIT_AGENTS_PER_CHART,
+        },
+      },
+      staleTime: 60 * 1000,
+      refetchInterval: () => getCompetitionPollingInterval(competition.status),
+    }),
+  );
+
+  const games = useMemo(() => gamesData?.games ?? [], [gamesData]);
+
+  useEffect(() => {
+    if (!games.length) {
+      return;
+    }
+
+    const alreadySelected = games.some((game) => game.id === selectedGameId);
+    if (!alreadySelected) {
+      setSelectedGameId(games[0]?.id);
+    }
+  }, [games, selectedGameId]);
+
+  const selectedGame: NflGame | undefined = useMemo(
+    () => games.find((game) => game.id === selectedGameId),
+    [games, selectedGameId],
+  );
+
+  const handleSelectGame = (
+    gameId: string,
+    goToPredictions?: boolean,
+  ): void => {
+    setSelectedGameId(gameId);
+    if (goToPredictions) {
+      setActiveKeyTab("predictions");
+    }
+  };
+
+  if (gamesLoading && !gamesData) {
+    return <CompetitionSkeleton />;
+  }
+
+  const BoostAgentsBtn = ({
+    className,
+    disabled,
+  }: {
+    className: string;
+    disabled?: boolean;
+  }) => (
+    <Button
+      disabled={!openForBoosting(competition) || disabled}
+      variant="default"
+      className={cn(
+        "border border-yellow-500 bg-black text-white hover:bg-yellow-500 hover:text-black disabled:hover:bg-black disabled:hover:text-white",
+        className,
+      )}
+      size="lg"
+    >
+      <span className="font-semibold">BOOST AGENTS</span>{" "}
+      <ChevronRight className="ml-2" size={18} />
+    </Button>
+  );
+
+  const chartCard = (
+    <div className="w-full">
+      <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="text-xl font-semibold">Prediction Progression</h2>
+        </div>
+      </div>
+
+      {gamesLoading && (
+        <div className="h-150">
+          <Skeleton className="h-full w-full rounded-lg" />
+        </div>
+      )}
+
+      {gamesError && (
+        <div className="text-destructive text-sm">
+          Failed to load games for this competition.
+        </div>
+      )}
+
+      {!gamesLoading && !gamesError && games.length > 0 && (
+        <>
+          <GameTabs
+            games={games}
+            selectedGameId={selectedGameId}
+            onSelect={(gameId) => handleSelectGame(gameId)}
+          />
+          <div className="mt-4">
+            <BrierScoreChart
+              key={competitionId}
+              competition={competition}
+              game={selectedGame}
+              agents={chartAgentsData?.agents}
+            />
+          </div>
+        </>
+      )}
+
+      {!gamesLoading && !gamesError && games.length === 0 && (
+        <div className="h-120 flex w-full items-center justify-center">
+          <div className="text-secondary-foreground text-center text-xl">
+            This competition does not have any games configured yet.
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  return (
+    <div>
+      <BreadcrumbNav
+        items={[
+          { label: "Home", href: "/" },
+          { label: "Competitions", href: "/competitions" },
+          { label: competition.name },
+        ]}
+      />
+
+      <div>
+        <div className="mb-10 grid grid-cols-1 gap-6 md:grid-cols-3">
+          <div className="space-y-4 md:col-span-2">{chartCard}</div>
+
+          <div className="space-y-4 md:col-span-1">
+            {/* Key component handles desktop/mobile views internally */}
+            <NflCompetitionKey
+              competition={competition}
+              games={games}
+              selectedGameId={selectedGameId}
+              onSelectGame={handleSelectGame}
+              rules={rulesData}
+              rulesLoading={rulesLoading}
+              activeTab={activeKeyTab}
+              onTabChange={setActiveKeyTab}
+            />
+
+            {/* Desktop-only action buttons */}
+            <div className="hidden grid-cols-1 gap-4 sm:grid-cols-2 md:grid">
+              <JoinCompetitionButton
+                competitionId={competitionId}
+                className="w-full border border-white bg-white text-blue-500 hover:border-blue-500 hover:bg-blue-500 hover:text-white disabled:hover:border-white disabled:hover:bg-white disabled:hover:text-blue-500"
+                disabled={competition.status !== "pending"}
+                size="lg"
+              >
+                <span>COMPETE</span> <Plus className="ml-2" size={18} />
+              </JoinCompetitionButton>
+
+              <BoostAgentsBtn className="w-full uppercase" />
+            </div>
+          </div>
+        </div>
+
+        {/* Standings Table */}
+        <div className="mt-50 mb-10 md:mt-40">
+          <NflStandingsTable
+            competitionId={competitionId}
+            competition={competition}
+            games={games}
+          />
+        </div>
+      </div>
+
+      <JoinSwarmSection socialLinks={getSocialLinksArray()} className="mt-12" />
+      <FooterSection />
+    </div>
+  );
+}
