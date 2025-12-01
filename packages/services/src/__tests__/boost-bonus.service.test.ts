@@ -488,7 +488,7 @@ describe("BoostBonusService", () => {
         revokedAt: null,
       });
 
-    it("marks boost as inactive and removes from pending competitions", async () => {
+    it("marks boost as inactive and removes from competitions where window hasn't opened", async () => {
       const boost = createBoost();
       setupRevokeBoostMocks(boost, [
         { id: "change-1", balanceId: "bal-1", competitionId: "comp-1" },

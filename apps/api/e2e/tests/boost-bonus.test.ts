@@ -7,6 +7,7 @@ import {
   boostBonus,
   boostChanges,
 } from "@recallnet/db/schema/boost/defs";
+import { competitions } from "@recallnet/db/schema/core/defs";
 import {
   createTestClient,
   createTestCompetition,
@@ -16,6 +17,7 @@ import {
 } from "@recallnet/test-utils";
 
 import { db } from "@/database/db.js";
+import { ServiceRegistry } from "@/services/index.js";
 
 const createActiveCompWithOpenWindow = (
   adminClient: ReturnType<typeof createTestClient>,
@@ -1544,89 +1546,243 @@ describe("Bonus Boosts E2E", () => {
   });
 
   describe("Cron Job Integration", () => {
-    test.skip("applies boosts to eligible competitions", async () => {
-      // Cron job - applies boosts - verifies cron applies boosts to eligible competitions
-      //
+    test("applies boosts to eligible competitions", async () => {
       // System Behavior:
-      // - Cron runs every 3 hours, finds pending competitions
-      // - Evaluates eligibility (competition starts before boost expires, window not ended, dates set)
+      // - Cron runs every 3 hours, finds pending AND active competitions
+      // - Evaluates eligibility (boost window starts before expiry, window not ended, dates set)
       // - Applies eligible boosts using idempotency keys
-      //
-      // Scenario A: New competition created after boost awarded
-      // - Register user, award boost (no competitions exist)
-      // - Create new competition, cron job runs
-      // - Expected: Boost applied to competition
-      //
-      // Scenario B: Competition gets dates set after boost awarded
-      // - Register user, create competition without boost dates
-      // - Award boost (skipped - no dates), then set boost dates
-      // - Cron job runs
-      // - Expected: Boost applied to competition
-      // - Edge cases: Expired boost → no application, revoked boost → no application,
-      //   past boostEndDate → no application
+      // - Handles both pending and active to catch competitions created after boost was awarded
+
+      // Setup: Register user
+      const { user } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        walletAddress: generateRandomEthAddress(),
+      });
+
+      // Award boost (no competitions exist yet)
+      const expiresAt = new Date(Date.now() + 300000).toISOString(); // 5 minutes
+      await adminClient.addBonusBoosts({
+        boosts: [
+          {
+            wallet: user.walletAddress,
+            amount: "1000000000000000000", // 1 token
+            expiresAt,
+          },
+        ],
+      });
+
+      // Scenario A: Create new pending competition
+      const pendingComp = await createPendingCompEligible(
+        adminClient,
+        "Pending Competition",
+      );
+
+      // Scenario B: Create new active competition
+      const activeComp = await createActiveCompWithOpenWindow(
+        adminClient,
+        "Active Competition",
+      );
+
+      // Run cron job
+      const services = new ServiceRegistry();
+      const cronResult =
+        await services.boostBonusService.applyBonusBoostsToEligibleCompetitions();
+
+      // Verify results
+      expect(cronResult.totalBoostsApplied).toBe(2); // Applied to both competitions
+      expect(cronResult.competitionsProcessed).toBe(2);
+      expect(cronResult.errors).toHaveLength(0);
+
+      // Verify database - boost applied to both competitions
+      const pendingBalance = await getBoostBalance(
+        user.id,
+        pendingComp.competition!.id,
+      );
+      expect(pendingBalance).toHaveLength(1);
+      expect(pendingBalance[0]!.balance).toBe(1000000000000000000n);
+
+      const activeBalance = await getBoostBalance(
+        user.id,
+        activeComp.competition!.id,
+      );
+      expect(activeBalance).toHaveLength(1);
+      expect(activeBalance[0]!.balance).toBe(1000000000000000000n);
     });
 
-    test.skip("prevents duplicate boost applications", async () => {
-      // Cron job - idempotency - verifies cron doesn't duplicate boosts via idempotency keys
-      //
+    test("prevents duplicate boost applications", async () => {
       // System Behavior:
       // - Both immediate application (on award) and cron use same idempotency key format
       // - Database unique constraint on (balanceId, idemKey) prevents duplicates
-      // - Second attempt silently skipped (no error)
-      //
-      // Scenario A: Cron runs after immediate application
-      // - Register user, create competition, award boost (immediately applied)
-      // - Cron job runs
-      // - Expected: Duplicate prevented, boost_changes contains exactly one entry
-      //
-      // Scenario B: Concurrent API grant and cron job
-      // - Register user, create pending competition
-      // - Admin grants boost via API while cron job runs simultaneously
-      // - Expected: Boost applied exactly once (not duplicated), transaction isolation prevents race conditions
+
+      // Setup: Register user and create competition
+      const { user } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        walletAddress: generateRandomEthAddress(),
+      });
+
+      const comp = await createPendingCompEligible(
+        adminClient,
+        "Test Competition",
+      );
+
+      // Award boost (immediately applied to competition)
+      const expiresAt = new Date(Date.now() + 300000).toISOString();
+      await adminClient.addBonusBoosts({
+        boosts: [
+          {
+            wallet: user.walletAddress,
+            amount: "1000000000000000000",
+            expiresAt,
+          },
+        ],
+      });
+
+      // Verify initial application
+      const initialBalance = await getBoostBalance(
+        user.id,
+        comp.competition!.id,
+      );
+      expect(initialBalance).toHaveLength(1);
+      expect(initialBalance[0]!.balance).toBe(1000000000000000000n);
+
+      // Run cron job (should skip due to idempotency)
+      const services = new ServiceRegistry();
+      const cronResult =
+        await services.boostBonusService.applyBonusBoostsToEligibleCompetitions();
+
+      // Verify no duplicate applied
+      expect(cronResult.totalBoostsApplied).toBe(0); // No new applications
+
+      const finalBalance = await getBoostBalance(user.id, comp.competition!.id);
+      expect(finalBalance).toHaveLength(1);
+      expect(finalBalance[0]!.balance).toBe(1000000000000000000n); // Still same amount
     });
 
-    test.skip("skips inactive and expired boosts in cron job", async () => {
-      // Cron job - skips inactive/expired boosts - verifies cron excludes revoked and expired boosts
-      //
+    test("skips inactive and expired boosts in cron job", async () => {
       // System Behavior:
       // - Cron queries for active boosts only (filters is_active=true)
-      // - Revoked boosts excluded from query
       // - Expired boosts excluded during eligibility check (expiresAt < now)
-      // - New competitions don't receive revoked or expired boosts
-      //
-      // Scenario A: Revoked boost
-      // - Register user, award boost, revoke boost
-      // - Create new competition, cron job runs
-      // - Expected: Revoked boost excluded from query, boost not applied
-      //
-      // Scenario B: Expired boost
-      // - Register user, award boost with short expiration (expires before new competition)
-      // - Create new competition, cron job runs
-      // - Expected: Expired boost excluded during eligibility check, boost not applied
+
+      // Setup: Register two users
+      const { user: user1 } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        walletAddress: generateRandomEthAddress(),
+      });
+      const { user: user2 } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        walletAddress: generateRandomEthAddress(),
+      });
+
+      // Scenario A: Award boost to user1, then revoke it
+      const response1 = await adminClient.addBonusBoosts({
+        boosts: [
+          {
+            wallet: user1.walletAddress,
+            amount: "1000000000000000000",
+            expiresAt: new Date(Date.now() + 300000).toISOString(),
+          },
+        ],
+      });
+      if (!response1.success) throw new Error("Failed to add boost");
+      const boost1Id = response1.data.results[0]!.id;
+
+      // Revoke the boost
+      await adminClient.revokeBonusBoosts({
+        boostIds: [boost1Id],
+      });
+
+      // Scenario B: Award boost to user2 with very short expiration (already expired)
+      const pastDate = new Date(Date.now() - 10000).toISOString(); // 10 seconds ago
+      await db.insert(boostBonus).values({
+        id: crypto.randomUUID(),
+        userId: user2.id,
+        amount: 1000000000000000000n,
+        expiresAt: new Date(pastDate),
+        isActive: true,
+        createdAt: new Date(),
+      });
+
+      // Create new competition
+      const comp = await createPendingCompEligible(
+        adminClient,
+        "Test Competition",
+      );
+
+      // Run cron job
+      const services = new ServiceRegistry();
+      const cronResult =
+        await services.boostBonusService.applyBonusBoostsToEligibleCompetitions();
+
+      // Verify neither boost was applied
+      const balance1 = await getBoostBalance(user1.id, comp.competition!.id);
+      expect(balance1).toHaveLength(0);
+
+      const balance2 = await getBoostBalance(user2.id, comp.competition!.id);
+      expect(balance2).toHaveLength(0);
     });
 
-    test.skip("handles failures gracefully in cron job", async () => {
-      // Cron job - error handling - verifies cron continues processing even if one competition fails
-      //
+    test("handles failures gracefully in cron job", async () => {
       // System Behavior:
       // - Processes each competition independently (isolated error handling)
-      // - Catches and logs errors with full context (competition ID, boost ID, error details)
       // - Continues processing other competitions without stopping the job
-      // - Accepts partial success (some competitions get boosts, others fail)
-      // - Failed competitions will be retried on next cron run (implicit retry mechanism)
-      // - No database storage of failures (errors only logged)
-      //
-      // Setup:
-      // - Register user, award boost
-      // - Create competitions: A (valid), B (invalid - e.g., deleted, missing dates), C (valid)
-      // - Cron job runs
-      //
-      // Expected:
-      // - Competition A: Boost applied successfully
-      // - Competition B: Error caught and logged with context, processing continues
-      // - Competition C: Boost applied successfully
-      // - Cron job completes (does not crash)
-      // - Failed competition B will be retried on next cron run
+
+      // Setup: Register user
+      const { user } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        walletAddress: generateRandomEthAddress(),
+      });
+
+      // Award boost
+      await adminClient.addBonusBoosts({
+        boosts: [
+          {
+            wallet: user.walletAddress,
+            amount: "1000000000000000000",
+            expiresAt: new Date(Date.now() + 300000).toISOString(),
+          },
+        ],
+      });
+
+      // Create three competitions
+      const compA = await createPendingCompEligible(
+        adminClient,
+        "Competition A",
+      );
+      const compB = await createPendingCompEligible(
+        adminClient,
+        "Competition B",
+      );
+      const compC = await createPendingCompEligible(
+        adminClient,
+        "Competition C",
+      );
+
+      // Delete competition B to simulate failure
+      await db
+        .delete(competitions)
+        .where(eq(competitions.id, compB.competition!.id));
+
+      // Run cron job
+      const services = new ServiceRegistry();
+      const cronResult =
+        await services.boostBonusService.applyBonusBoostsToEligibleCompetitions();
+
+      // Verify partial success - boosts applied to A and C, but not B
+      expect(cronResult.totalBoostsApplied).toBe(2); // Only A and C
+      expect(cronResult.competitionsProcessed).toBe(2);
+
+      // Verify A and C received boosts
+      const balanceA = await getBoostBalance(user.id, compA.competition!.id);
+      expect(balanceA).toHaveLength(1);
+      expect(balanceA[0]!.balance).toBe(1000000000000000000n);
+
+      const balanceC = await getBoostBalance(user.id, compC.competition!.id);
+      expect(balanceC).toHaveLength(1);
+      expect(balanceC[0]!.balance).toBe(1000000000000000000n);
+
+      // B should have no balance (competition deleted)
+      const balanceB = await getBoostBalance(user.id, compB.competition!.id);
+      expect(balanceB).toHaveLength(0);
     });
   });
 });

@@ -24,8 +24,10 @@ async function awardAllBoost() {
   const stakesRepository = services.stakesRepository;
   const userManager = services.userService;
   const boostAwardService = services.boostAwardService;
+  const boostBonusService = services.boostBonusService;
 
   try {
+    // Step 1: Award stake-based boosts to pending competitions
     const upcomingCompetitionsRes = await competitionRepository.findByStatus({
       status: "pending",
       params: { limit: 100, offset: 0, sort: "" },
@@ -87,6 +89,27 @@ async function awardAllBoost() {
           stakes = [];
         }
       }
+    }
+
+    // Step 2: Apply bonus boosts to eligible competitions (both pending AND active)
+    logger.info("Starting to apply bonus boosts to eligible competitions...");
+    const bonusBoostResult =
+      await boostBonusService.applyBonusBoostsToEligibleCompetitions();
+    logger.info(
+      {
+        totalBoostsApplied: bonusBoostResult.totalBoostsApplied,
+        competitionsProcessed: bonusBoostResult.competitionsProcessed,
+        competitionsSkipped: bonusBoostResult.competitionsSkipped,
+        errorCount: bonusBoostResult.errors.length,
+      },
+      "Completed applying bonus boosts to eligible competitions",
+    );
+
+    if (bonusBoostResult.errors.length > 0) {
+      logger.warn(
+        { errors: bonusBoostResult.errors },
+        "Some competitions failed during bonus boost application",
+      );
     }
 
     const duration = Date.now() - startTime;
