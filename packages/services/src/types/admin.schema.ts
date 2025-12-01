@@ -608,3 +608,69 @@ export const AdminCompetitionPartnerParamsSchema = z.object({
   competitionId: UuidSchema,
   partnerId: UuidSchema,
 });
+
+/**
+ * Schema for a single bonus boost item in batch add request
+ */
+export const AdminBonusBoostItemSchema = z.object({
+  wallet: WalletAddressSchema,
+  amount: z
+    .string()
+    .regex(/^\d+$/, "Amount must be a valid numeric string")
+    .refine(
+      (val) => BigInt(val) > 0n,
+      "Amount must be positive (greater than zero)",
+    )
+    .refine(
+      (val) => BigInt(val) <= BigInt("1000000000000000000"), // 10^18 max
+      "Amount exceeds maximum allowed value (10^18)",
+    ),
+  expiresAt: z.iso
+    .datetime()
+    .pipe(z.coerce.date())
+    .refine(
+      (date) => date.getTime() > Date.now() + 60000, // At least 1 minute in future
+      "Expiration date must be at least 1 minute in the future",
+    ),
+  meta: z
+    .record(z.string(), z.union([z.string(), z.number(), z.boolean()]))
+    .refine(
+      (obj) => JSON.stringify(obj).length <= 1000,
+      "Meta object must not exceed 1000 characters when serialized",
+    )
+    .optional(),
+});
+
+/**
+ * Admin add bonus boost schema
+ * Accepts an array of boost items to add
+ */
+export const AdminAddBonusBoostSchema = z
+  .object({
+    boosts: z
+      .array(AdminBonusBoostItemSchema)
+      .min(1, "At least one boost item is required")
+      .max(100, "Cannot process more than 100 boosts at once"),
+  })
+  .refine(
+    (data) => {
+      const wallets = data.boosts.map((b) => b.wallet.toLowerCase());
+      const uniqueWallets = new Set(wallets);
+      return wallets.length === uniqueWallets.size;
+    },
+    {
+      message: "Duplicate wallet addresses found in batch",
+      path: ["boosts"],
+    },
+  );
+
+/**
+ * Admin revoke bonus boost schema
+ * Accepts an array of boost IDs to revoke
+ */
+export const AdminRevokeBonusBoostSchema = z.object({
+  boostIds: z
+    .array(UuidSchema)
+    .min(1, "At least one boost ID is required")
+    .max(100, "Cannot revoke more than 100 boosts at once"),
+});

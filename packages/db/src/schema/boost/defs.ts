@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import {
   bigint,
+  boolean,
   index,
   jsonb,
   numeric,
@@ -11,7 +12,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
-import { agents, competitions, users } from "../core/defs.js";
+import { admins, agents, competitions, users } from "../core/defs.js";
 import { bytea, tokenAmount } from "../custom-types.js";
 import { stakes } from "../indexing/defs.js";
 
@@ -202,5 +203,66 @@ export const agentBoosts = pgTable(
       t.agentBoostTotalId,
       t.changeId,
     ),
+  ],
+);
+
+/**
+ * boost_bonus
+ *
+ * Tracks bonus boosts awarded to users by admins.
+ *
+ * Purpose:
+ * - Per-user bonus boosts (not per-competition) that apply to all competitions
+ *   that start before the expiration date.
+ * - Multiple entries per user allowed (amounts are summed when active).
+ * - Supports revocation via `is_active` flag.
+ *
+ * Invariants / notes:
+ * - `expires_at` is always required (NOT NULL) - no infinite boosts.
+ * - `amount` must be > 0 (enforced by CHECK).
+ * - Multiple active boosts per user are summed when calculating total boost.
+ * - `is_active = false` prevents future applications to new competitions.
+ * - `revoked_at` tracks when boost was revoked (null if not revoked).
+ * - `created_by_admin_id` provides audit trail.
+ * - `meta` JSONB field for flexible metadata (e.g., source, campaign_id).
+ *
+ * Typical queries:
+ * - Find all active bonus boosts for a user.
+ * - Find all active bonus boosts (for cron job).
+ * - Find users with active boosts expiring after a date.
+ */
+export const boostBonus = pgTable(
+  "boost_bonus",
+  {
+    id: uuid("id").primaryKey().notNull().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    amount: tokenAmount("amount").notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    isActive: boolean("is_active").notNull().default(true),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    createdByAdminId: uuid("created_by_admin_id").references(() => admins.id, {
+      onDelete: "set null",
+    }),
+    meta: jsonb("meta")
+      .notNull()
+      .default(sql`'{}'::jsonb`),
+  },
+  (t) => [
+    // amount must be positive (> 0)
+    sql`CHECK (${t.amount} > 0)`,
+    index("boost_bonus_user_active_idx")
+      .on(t.userId, t.isActive, t.expiresAt)
+      .where(sql`${t.isActive} = true`),
+    index("boost_bonus_user_id_idx").on(t.userId),
+    index("boost_bonus_expires_at_idx").on(t.expiresAt),
+    index("boost_bonus_is_active_idx").on(t.isActive),
   ],
 );

@@ -1248,6 +1248,67 @@ Calculate and allocate rewards for a competition by building a Merkle tree and p
 | --------------- | ------ |
 | BearerAuth      |        |
 
+### /api/admin/boost-bonus
+
+#### POST
+
+##### Summary:
+
+Add bonus boost to users
+
+##### Description:
+
+Add bonus boosts to multiple users in a single request. Each boost applies to all competitions
+that start before the expiration date.
+
+**Note**: This endpoint is currently stubbed and returns 501 Not Implemented for API contract validation.
+
+##### Responses
+
+| Code | Description                                                             |
+| ---- | ----------------------------------------------------------------------- |
+| 400  | Bad Request - Invalid request format, validation errors, or empty array |
+| 401  | Unauthorized - Admin authentication required                            |
+| 500  | Internal server error                                                   |
+| 501  | Not Implemented - Endpoint is stubbed for API contract validation       |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| BearerAuth      |        |
+
+### /api/admin/boost-bonus/revoke
+
+#### POST
+
+##### Summary:
+
+Revoke bonus boost
+
+##### Description:
+
+Revoke multiple bonus boosts in a single request. Prevents future applications and removes
+from pending competitions where the boosting window hasn't opened.
+
+**Note**: This endpoint is currently stubbed and returns 501 Not Implemented for API contract validation.
+
+##### Responses
+
+| Code | Description                                                                                    |
+| ---- | ---------------------------------------------------------------------------------------------- |
+| 400  | Bad Request - Invalid request format, validation errors, empty array, or boost already revoked |
+| 401  | Unauthorized - Admin authentication required                                                   |
+| 404  | Not Found - One or more boost IDs not found                                                    |
+| 500  | Internal server error                                                                          |
+| 501  | Not Implemented - Endpoint is stubbed for API contract validation                              |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| BearerAuth      |        |
+
 ### /api/agent/profile
 
 #### GET
