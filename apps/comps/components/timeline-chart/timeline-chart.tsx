@@ -105,7 +105,10 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
                   <span className="flex items-center gap-1.5">
                     {tab.label}
                     {isPrimaryMetric(tab.value) && (
-                      <Star className="h-3.5 w-3.5 fill-yellow-500 text-yellow-500" />
+                      <Star
+                        className="h-3.5 w-3.5 fill-yellow-500 text-yellow-500"
+                        aria-label="Ranking metric"
+                      />
                     )}
                   </span>
                 </TabsTrigger>
@@ -125,7 +128,10 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
                       {perpsMetricTabs.find((t) => t.value === activeChartTab)
                         ?.label || "Select Metric"}
                       {isPrimaryMetric(activeChartTab) && (
-                        <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />
+                        <Star
+                          className="h-3 w-3 fill-yellow-500 text-yellow-500"
+                          aria-label="Ranking metric"
+                        />
                       )}
                     </span>
                     <ChevronDown className="ml-2 h-4 w-4" />
@@ -141,7 +147,10 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
                       <span className="flex items-center gap-1.5">
                         {tab.label}
                         {isPrimaryMetric(tab.value) && (
-                          <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />
+                          <Star
+                            className="h-3 w-3 fill-yellow-500 text-yellow-500"
+                            aria-label="Ranking metric"
+                          />
                         )}
                       </span>
                     </DropdownMenuItem>
@@ -269,7 +278,10 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
                 >
                   <span className="flex items-center gap-1.5">
                     ROI
-                    <Star className="h-3.5 w-3.5 fill-yellow-500 text-yellow-500" />
+                    <Star
+                      className="h-3.5 w-3.5 fill-yellow-500 text-yellow-500"
+                      aria-label="Ranking metric"
+                    />
                   </span>
                 </TabsTrigger>
                 <TabsTrigger
@@ -312,7 +324,10 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
                       (isSpotLiveCompetition ? (
                         <>
                           ROI
-                          <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />
+                          <Star
+                            className="h-3 w-3 fill-yellow-500 text-yellow-500"
+                            aria-label="Ranking metric"
+                          />
                         </>
                       ) : (
                         "% Return"
@@ -331,7 +346,10 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
                     >
                       <span className="flex items-center gap-1.5">
                         ROI
-                        <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />
+                        <Star
+                          className="h-3 w-3 fill-yellow-500 text-yellow-500"
+                          aria-label="Ranking metric"
+                        />
                       </span>
                     </DropdownMenuItem>
                     <DropdownMenuItem
