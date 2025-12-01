@@ -46,9 +46,12 @@ export function getWrappedNativeAddress(
     specificChainTokens[chain as keyof typeof specificChainTokens];
   if (!chainTokens) return undefined;
 
-  // SVM uses 'sol' key, EVM chains use 'eth' key
+  // SVM uses 'sol' key, Polygon uses 'matic' key, other EVM chains use 'eth' key
   if (chain === "svm" && "sol" in chainTokens) {
     return chainTokens.sol;
+  }
+  if (chain === "polygon" && "matic" in chainTokens) {
+    return chainTokens.matic;
   }
   if ("eth" in chainTokens) {
     return chainTokens.eth;
@@ -99,7 +102,8 @@ export const specificChainTokens = {
     usdt: "0xdAC17F958D2ee523a2206206994597C13D831ec7", // USDT on Ethereum
   },
   polygon: {
-    eth: "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619",
+    matic: "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270", // WMATIC - wrapped native MATIC
+    eth: "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619", // Bridged WETH (not native)
     usdc: "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359",
     usdt: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F",
   },

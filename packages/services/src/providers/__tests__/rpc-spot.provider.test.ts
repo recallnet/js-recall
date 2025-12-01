@@ -7,7 +7,11 @@ import { Logger } from "pino";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MockProxy, mock } from "vitest-mock-extended";
 
-import { NATIVE_TOKEN_ADDRESS } from "../../lib/config-utils.js";
+import {
+  NATIVE_TOKEN_ADDRESS,
+  getTokenAddressForPriceLookup,
+  getWrappedNativeAddress,
+} from "../../lib/config-utils.js";
 import { IRpcProvider } from "../../types/rpc.js";
 import { ProtocolFilter } from "../../types/spot-live.js";
 import { RpcSpotProvider } from "../spot-live/rpc-spot.provider.js";
@@ -766,6 +770,28 @@ describe("RpcSpotProvider", () => {
       );
       // toToken must be zero address for proper price lookup
       expect(result[0]?.toToken).toBe(NATIVE_TOKEN_ADDRESS);
+    });
+  });
+
+  describe("native token address mapping", () => {
+    it("should map Polygon native token to WMATIC (not WETH)", () => {
+      // Polygon's native token is MATIC, so we need WMATIC for price lookups
+      const wmaticAddress = getWrappedNativeAddress("polygon");
+      expect(wmaticAddress).toBe("0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270");
+
+      // Verify it's NOT the bridged WETH address
+      expect(wmaticAddress).not.toBe(
+        "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619",
+      );
+
+      // Verify getTokenAddressForPriceLookup also returns WMATIC for Polygon
+      const priceLookupAddress = getTokenAddressForPriceLookup(
+        NATIVE_TOKEN_ADDRESS,
+        "polygon",
+      );
+      expect(priceLookupAddress).toBe(
+        "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270",
+      );
     });
   });
 
