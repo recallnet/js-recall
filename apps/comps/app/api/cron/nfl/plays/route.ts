@@ -17,7 +17,7 @@ export const GET = withCronAuth(async (_: NextRequest) => {
   try {
     logger.info("Fetching active competitions and games...");
     const ingestedCount =
-      await sportsIngesterService.nflIngesterService.ingestActiveGames();
+      await sportsIngesterService.nflIngesterService.ingestGamePlays();
 
     const duration = Date.now() - startTime;
     logger.info(
