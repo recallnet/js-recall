@@ -613,6 +613,90 @@ describe("CompetitionService", () => {
         updatedRewards: [],
       });
     });
+
+    it("should reject spotLiveConfig updates on non-pending competitions", async () => {
+      const activeSpotLiveCompetition: SelectCompetition &
+        SelectTradingCompetition = {
+        ...mockCompetition,
+        type: "spot_live_trading",
+        status: "active",
+      };
+
+      competitionRepo.findById.mockResolvedValue(activeSpotLiveCompetition);
+
+      await expect(
+        competitionService.updateCompetition(
+          activeSpotLiveCompetition.id,
+          {},
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          { selfFundingThresholdUsd: 100 },
+        ),
+      ).rejects.toThrow(
+        "Cannot update spot live configuration once competition has started",
+      );
+    });
+
+    it("should reject perpsProvider updates on non-pending competitions", async () => {
+      const activePerpsCompetition: SelectCompetition &
+        SelectTradingCompetition = {
+        ...mockCompetition,
+        type: "perpetual_futures",
+        status: "active",
+      };
+
+      competitionRepo.findById.mockResolvedValue(activePerpsCompetition);
+
+      await expect(
+        competitionService.updateCompetition(
+          activePerpsCompetition.id,
+          {},
+          undefined,
+          undefined,
+          undefined,
+          {
+            provider: "symphony",
+            initialCapital: 1000,
+            selfFundingThreshold: 0,
+          },
+        ),
+      ).rejects.toThrow(
+        "Cannot update perps configuration once competition has started",
+      );
+    });
+
+    it("should require spotLiveConfig when converting to spot_live_trading", async () => {
+      const pendingCompetition: SelectCompetition & SelectTradingCompetition = {
+        ...mockCompetition,
+        type: "trading",
+        status: "pending",
+      };
+
+      competitionRepo.findById.mockResolvedValue(pendingCompetition);
+      arenaRepo.findById.mockResolvedValue({
+        id: "default-spot-live-arena",
+        name: "Spot Live Arena",
+        createdBy: null,
+        category: "spot_live",
+        skill: "trading",
+        venues: [],
+        chains: ["base"],
+        kind: "spot_live",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      await expect(
+        competitionService.updateCompetition(pendingCompetition.id, {
+          type: "spot_live_trading",
+        }),
+      ).rejects.toThrow(
+        "Spot live configuration is required when changing to spot_live_trading type",
+      );
+    });
   });
 
   describe("getCompetitionAgentsWithMetrics", () => {

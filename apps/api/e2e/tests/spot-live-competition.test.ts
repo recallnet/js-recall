@@ -1906,4 +1906,349 @@ describe("Spot Live Competition", () => {
     expect(spotLiveComp?.simpleReturn).not.toBeNull();
     expect(typeof spotLiveComp?.simpleReturn).toBe("number");
   });
+
+  describe("Spot Live Competition Updates", () => {
+    test("should allow updating minFundingThreshold on pending spot live competition", async () => {
+      const adminClient = createTestClient(getBaseUrl());
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Create a pending spot live competition
+      const createResponse = await adminClient.createCompetition({
+        name: `Spot Live Update Test ${Date.now()}`,
+        description: "Test partial config updates",
+        type: "spot_live_trading",
+        arenaId: "default-spot-live-arena",
+        spotLiveConfig: {
+          dataSource: "rpc_direct",
+          dataSourceConfig: {
+            type: "rpc_direct",
+            provider: "alchemy",
+            chains: ["base"],
+          },
+          chains: ["base"],
+          selfFundingThresholdUsd: 10,
+          syncIntervalMinutes: 2,
+        },
+      });
+
+      expect(createResponse.success).toBe(true);
+      const competitionId = (
+        createResponse as { success: true; competition: { id: string } }
+      ).competition.id;
+
+      // Update only minFundingThreshold (partial update)
+      const updateResponse = await adminClient.updateCompetition(
+        competitionId,
+        {
+          spotLiveConfig: {
+            minFundingThreshold: 50,
+          },
+        },
+      );
+
+      expect(updateResponse.success).toBe(true);
+
+      // Verify the update was applied
+      const detailsResponse = await adminClient.getCompetition(competitionId);
+      expect(detailsResponse.success).toBe(true);
+      const details = detailsResponse as CompetitionDetailResponse;
+
+      // The minFundingThreshold should be updated
+      expect(details.competition.spotLiveConfig?.minFundingThreshold).toBe(50);
+      // selfFundingThresholdUsd should remain unchanged
+      expect(details.competition.spotLiveConfig?.selfFundingThresholdUsd).toBe(
+        10,
+      );
+    });
+
+    test("should allow updating selfFundingThresholdUsd on pending spot live competition", async () => {
+      const adminClient = createTestClient(getBaseUrl());
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Create a pending spot live competition
+      const createResponse = await adminClient.createCompetition({
+        name: `Spot Live SelfFunding Update ${Date.now()}`,
+        description: "Test selfFundingThresholdUsd update",
+        type: "spot_live_trading",
+        arenaId: "default-spot-live-arena",
+        spotLiveConfig: {
+          dataSource: "rpc_direct",
+          dataSourceConfig: {
+            type: "rpc_direct",
+            provider: "alchemy",
+            chains: ["base"],
+          },
+          chains: ["base"],
+          selfFundingThresholdUsd: 10,
+          syncIntervalMinutes: 2,
+        },
+      });
+
+      expect(createResponse.success).toBe(true);
+      const competitionId = (
+        createResponse as { success: true; competition: { id: string } }
+      ).competition.id;
+
+      // Update selfFundingThresholdUsd
+      const updateResponse = await adminClient.updateCompetition(
+        competitionId,
+        {
+          spotLiveConfig: {
+            selfFundingThresholdUsd: 100,
+          },
+        },
+      );
+
+      expect(updateResponse.success).toBe(true);
+
+      // Verify the update was applied
+      const detailsResponse = await adminClient.getCompetition(competitionId);
+      expect(detailsResponse.success).toBe(true);
+      const details = detailsResponse as CompetitionDetailResponse;
+
+      expect(details.competition.spotLiveConfig?.selfFundingThresholdUsd).toBe(
+        100,
+      );
+    });
+
+    test("should allow clearing minFundingThreshold by setting to null", async () => {
+      const adminClient = createTestClient(getBaseUrl());
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Create a pending spot live competition with minFundingThreshold set
+      const createResponse = await adminClient.createCompetition({
+        name: `Spot Live Clear MinFunding ${Date.now()}`,
+        description: "Test clearing minFundingThreshold",
+        type: "spot_live_trading",
+        arenaId: "default-spot-live-arena",
+        spotLiveConfig: {
+          dataSource: "rpc_direct",
+          dataSourceConfig: {
+            type: "rpc_direct",
+            provider: "alchemy",
+            chains: ["base"],
+          },
+          chains: ["base"],
+          selfFundingThresholdUsd: 10,
+          minFundingThreshold: 25,
+          syncIntervalMinutes: 2,
+        },
+      });
+
+      expect(createResponse.success).toBe(true);
+      const competitionId = (
+        createResponse as { success: true; competition: { id: string } }
+      ).competition.id;
+
+      // Clear minFundingThreshold by setting to null
+      const updateResponse = await adminClient.updateCompetition(
+        competitionId,
+        {
+          spotLiveConfig: {
+            minFundingThreshold: null,
+          },
+        },
+      );
+
+      expect(updateResponse.success).toBe(true);
+
+      // Verify the update was applied
+      const detailsResponse = await adminClient.getCompetition(competitionId);
+      expect(detailsResponse.success).toBe(true);
+      const details = detailsResponse as CompetitionDetailResponse;
+
+      expect(
+        details.competition.spotLiveConfig?.minFundingThreshold,
+      ).toBeNull();
+    });
+
+    test("should prevent updating spotLiveConfig on active competition", async () => {
+      const adminClient = createTestClient(getBaseUrl());
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Register an agent with wallet for spot live
+      const { agent } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Agent for Active Spot Live",
+        agentWalletAddress: "0xaaaa000000000000000000000000000000000001",
+      });
+
+      // Start a spot live competition (becomes active)
+      const startResponse = await startSpotLiveTestCompetition({
+        adminClient,
+        name: `Active Spot Live ${Date.now()}`,
+        agentIds: [agent.id],
+      });
+
+      expect(startResponse.success).toBe(true);
+      const competitionId = startResponse.competition.id;
+
+      // Wait for initial sync
+      await wait(1000);
+
+      // Try to update spotLiveConfig (should fail)
+      const updateResponse = await adminClient.updateCompetition(
+        competitionId,
+        {
+          spotLiveConfig: {
+            selfFundingThresholdUsd: 200,
+          },
+        },
+      );
+
+      expect(updateResponse.success).toBe(false);
+      expect((updateResponse as ErrorResponse).error).toContain(
+        "Cannot update spot live configuration once competition has started",
+      );
+    });
+
+    test("should convert paper trading competition to spot live", async () => {
+      const adminClient = createTestClient(getBaseUrl());
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Create a paper trading competition
+      const createResponse = await adminClient.createCompetition({
+        name: `Paper to Spot Live ${Date.now()}`,
+        description: "Test converting paper trading to spot live",
+        type: "trading",
+        arenaId: "default-paper-arena",
+      });
+
+      expect(createResponse.success).toBe(true);
+      const competitionId = (
+        createResponse as { success: true; competition: { id: string } }
+      ).competition.id;
+
+      // Verify it's a paper trading competition
+      const detailsBefore = await adminClient.getCompetition(competitionId);
+      expect(detailsBefore.success).toBe(true);
+      expect(
+        (detailsBefore as CompetitionDetailResponse).competition.type,
+      ).toBe("trading");
+
+      // Convert to spot live trading
+      const updateResponse = await adminClient.updateCompetition(
+        competitionId,
+        {
+          type: "spot_live_trading",
+          arenaId: "default-spot-live-arena",
+          spotLiveConfig: {
+            dataSource: "rpc_direct",
+            dataSourceConfig: {
+              type: "rpc_direct",
+              provider: "alchemy",
+              chains: ["base"],
+            },
+            chains: ["base"],
+            selfFundingThresholdUsd: 10,
+            syncIntervalMinutes: 2,
+          },
+        },
+      );
+
+      expect(updateResponse.success).toBe(true);
+
+      // Verify conversion
+      const detailsAfter = await adminClient.getCompetition(competitionId);
+      expect(detailsAfter.success).toBe(true);
+      expect((detailsAfter as CompetitionDetailResponse).competition.type).toBe(
+        "spot_live_trading",
+      );
+      expect(
+        (detailsAfter as CompetitionDetailResponse).competition.spotLiveConfig,
+      ).toBeDefined();
+    });
+
+    test("should require spotLiveConfig when converting to spot_live_trading", async () => {
+      const adminClient = createTestClient(getBaseUrl());
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Create a paper trading competition
+      const createResponse = await adminClient.createCompetition({
+        name: `Missing Config Conversion ${Date.now()}`,
+        description: "Test missing spotLiveConfig validation",
+        type: "trading",
+        arenaId: "default-paper-arena",
+      });
+
+      expect(createResponse.success).toBe(true);
+      const competitionId = (
+        createResponse as { success: true; competition: { id: string } }
+      ).competition.id;
+
+      // Try to convert without spotLiveConfig (should fail)
+      const updateResponse = await adminClient.updateCompetition(
+        competitionId,
+        {
+          type: "spot_live_trading",
+        },
+      );
+
+      expect(updateResponse.success).toBe(false);
+      expect((updateResponse as ErrorResponse).error).toContain(
+        "Spot live configuration is required",
+      );
+    });
+
+    test("should convert spot live to paper trading and remove config", async () => {
+      const adminClient = createTestClient(getBaseUrl());
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Create a spot live competition
+      const createResponse = await adminClient.createCompetition({
+        name: `Spot Live to Paper ${Date.now()}`,
+        description: "Test converting spot live to paper trading",
+        type: "spot_live_trading",
+        arenaId: "default-spot-live-arena",
+        spotLiveConfig: {
+          dataSource: "rpc_direct",
+          dataSourceConfig: {
+            type: "rpc_direct",
+            provider: "alchemy",
+            chains: ["base"],
+          },
+          chains: ["base"],
+          selfFundingThresholdUsd: 10,
+          syncIntervalMinutes: 2,
+        },
+      });
+
+      expect(createResponse.success).toBe(true);
+      const competitionId = (
+        createResponse as { success: true; competition: { id: string } }
+      ).competition.id;
+
+      // Verify it's a spot live competition with config
+      const detailsBefore = await adminClient.getCompetition(competitionId);
+      expect(detailsBefore.success).toBe(true);
+      expect(
+        (detailsBefore as CompetitionDetailResponse).competition.type,
+      ).toBe("spot_live_trading");
+      expect(
+        (detailsBefore as CompetitionDetailResponse).competition.spotLiveConfig,
+      ).toBeDefined();
+
+      // Convert to paper trading
+      const updateResponse = await adminClient.updateCompetition(
+        competitionId,
+        {
+          type: "trading",
+          arenaId: "default-paper-arena",
+        },
+      );
+
+      expect(updateResponse.success).toBe(true);
+
+      // Verify conversion and config removal
+      const detailsAfter = await adminClient.getCompetition(competitionId);
+      expect(detailsAfter.success).toBe(true);
+      expect((detailsAfter as CompetitionDetailResponse).competition.type).toBe(
+        "trading",
+      );
+      // spotLiveConfig should be removed or null
+      expect(
+        (detailsAfter as CompetitionDetailResponse).competition.spotLiveConfig,
+      ).toBeFalsy();
+    });
+  });
 });

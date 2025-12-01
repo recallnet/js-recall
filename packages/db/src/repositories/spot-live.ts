@@ -290,6 +290,37 @@ export class SpotLiveRepository {
     }
   }
 
+  /**
+   * Delete all chains for a competition
+   * @param competitionId Competition ID
+   * @param tx Optional transaction
+   * @returns True if any deleted, false otherwise
+   */
+  async deleteCompetitionChains(
+    competitionId: string,
+    tx?: Transaction,
+  ): Promise<boolean> {
+    try {
+      const executor = tx || this.#db;
+      const result = await executor
+        .delete(spotLiveCompetitionChains)
+        .where(eq(spotLiveCompetitionChains.competitionId, competitionId));
+
+      const deleted = (result?.rowCount ?? 0) > 0;
+
+      if (deleted) {
+        this.#logger.debug(
+          `[SpotLiveRepository] Deleted chains for competition ${competitionId}`,
+        );
+      }
+
+      return deleted;
+    } catch (error) {
+      this.#logger.error({ error }, "Error in deleteCompetitionChains");
+      throw error;
+    }
+  }
+
   // =============================================================================
   // PROTOCOL WHITELIST
   // =============================================================================

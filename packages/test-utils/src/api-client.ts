@@ -730,6 +730,7 @@ export class ApiClient {
       rewardRules,
       rewardDetails,
       displayState,
+      spotLiveConfig,
     }: {
       name?: string;
       description?: string;
@@ -769,6 +770,16 @@ export class ApiClient {
       rewardRules?: string;
       rewardDetails?: string;
       displayState?: DisplayState;
+      spotLiveConfig?: {
+        dataSource?: "rpc_direct" | "envio_indexing" | "hybrid";
+        dataSourceConfig?: Record<string, unknown>;
+        selfFundingThresholdUsd?: number;
+        minFundingThreshold?: number | null;
+        syncIntervalMinutes?: number;
+        chains?: string[];
+        allowedProtocols?: Array<{ protocol: string; chain: string }>;
+        allowedTokens?: Array<{ address: string; specificChain: string }>;
+      };
     },
   ): Promise<UpdateCompetitionResponse | ErrorResponse> {
     try {
@@ -804,6 +815,7 @@ export class ApiClient {
           rewardRules,
           rewardDetails,
           displayState,
+          spotLiveConfig,
         },
       );
 

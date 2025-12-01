@@ -649,13 +649,13 @@ Update competition fields (excludes startDate, endDate, status)
 
 ##### Responses
 
-| Code | Description                                                                                                                                                                                          |
-| ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 200  | Competition updated successfully                                                                                                                                                                     |
-| 400  | Bad request - Missing competitionId, no valid fields provided, attempting to update restricted fields (startDate, endDate, status), or missing perpsProvider when changing type to perpetual_futures |
-| 401  | Unauthorized - Admin authentication required                                                                                                                                                         |
-| 404  | Competition not found                                                                                                                                                                                |
-| 500  | Server error                                                                                                                                                                                         |
+| Code | Description                                                                                                                                                                                                                                                          |
+| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 200  | Competition updated successfully                                                                                                                                                                                                                                     |
+| 400  | Bad request - Missing competitionId, no valid fields provided, attempting to update restricted fields (startDate, endDate, status), missing perpsProvider when changing type to perpetual_futures, or missing spotLiveConfig when changing type to spot_live_trading |
+| 401  | Unauthorized - Admin authentication required                                                                                                                                                                                                                         |
+| 404  | Competition not found                                                                                                                                                                                                                                                |
+| 500  | Server error                                                                                                                                                                                                                                                         |
 
 ##### Security
 

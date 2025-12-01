@@ -136,12 +136,28 @@ export interface ISpotLiveDataProvider {
 /**
  * Configuration for spot live data providers
  * Stored in trading_comps.spot_live_competition_config.data_source_config as JSONB
+ *
+ * For Alchemy: Only `type`, `provider`, and `chains` are required.
+ * The API key is read from ALCHEMY_API_KEY env var, and URLs are constructed automatically.
+ *
+ * @example
+ * // Minimal Alchemy config:
+ * {
+ *   type: "rpc_direct",
+ *   provider: "alchemy",
+ *   chains: ["base", "arbitrum"]
+ * }
  */
 export interface SpotLiveProviderConfig {
+  /** Data source type */
   type: "rpc_direct" | "envio_indexing" | "hybrid";
+  /** RPC provider name (required for rpc_direct) - API key read from environment */
   provider?: "alchemy" | "quicknode";
+  /** Custom RPC URLs by chain (optional - Alchemy SDK auto-constructs URLs from API key) */
   rpcUrls?: Record<string, string>;
+  /** GraphQL endpoint URL (for envio_indexing) */
   graphqlUrl?: string;
+  /** Chains to monitor for trades */
   chains: string[];
 }
 
