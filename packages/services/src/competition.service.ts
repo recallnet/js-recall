@@ -1515,32 +1515,52 @@ export class CompetitionService {
     return await this.sportsService.gamesRepository.findByIds(gameIds);
   }
 
+  /**
+   * Evaluate the readiness of NFL games for scoring
+   * @param games The games to evaluate
+   * @returns An object containing the final games and invalid final games for scoring (either
+   * missing end time / winner, or non-final games that are not ready for scoring)
+   */
   #evaluateNflGameReadiness(games: SelectGame[]): {
     finalGames: SelectGame[];
-    nonFinalGames: SelectGame[];
-    invalidFinalGames: Array<{ game: SelectGame; reason: string }>;
+    invalidGames: Array<{
+      game: SelectGame;
+      reason: string;
+    }>;
   } {
     const finalGames: SelectGame[] = [];
-    const nonFinalGames: SelectGame[] = [];
-    const invalidFinalGames: Array<{ game: SelectGame; reason: string }> = [];
+    const invalidGames: Array<{
+      game: SelectGame;
+      reason: string;
+    }> = [];
 
     for (const game of games) {
       if (game.status === "final") {
         finalGames.push(game);
 
-        if (!game.endTime) {
-          invalidFinalGames.push({ game, reason: "missing end time" });
-        } else if (!game.winner) {
-          invalidFinalGames.push({ game, reason: "missing winner" });
+        if (!game.endTime || !game.winner) {
+          invalidGames.push({
+            game,
+            reason: "missing end time or winner",
+          });
         }
       } else {
-        nonFinalGames.push(game);
+        invalidGames.push({
+          game,
+          reason: "game not yet final",
+        });
       }
     }
 
-    return { finalGames, nonFinalGames, invalidFinalGames };
+    return { finalGames, invalidGames };
   }
 
+  /**
+   * Validate that all final games in an NFL competition are ready for scoring
+   * @param competitionId The competition ID
+   * @returns void
+   * @throws Error if any final game is missing required data, or if a game is not yet final
+   */
   async #validateNflGamesReadyForScoring(competitionId: string): Promise<void> {
     const games = await this.#getNflCompetitionGames(competitionId);
 
@@ -1550,18 +1570,10 @@ export class CompetitionService {
       );
     }
 
-    const { finalGames, nonFinalGames, invalidFinalGames } =
-      this.#evaluateNflGameReadiness(games);
+    const { finalGames, invalidGames } = this.#evaluateNflGameReadiness(games);
 
-    if (nonFinalGames.length > 0) {
-      throw new ApiError(
-        400,
-        `Cannot end NFL competition ${competitionId}: ${nonFinalGames.length} of ${games.length} games are not yet final. All games must be completed before ending the competition.`,
-      );
-    }
-
-    if (invalidFinalGames.length > 0) {
-      const details = invalidFinalGames
+    if (invalidGames.length > 0) {
+      const details = invalidGames
         .map(
           ({ game, reason }) =>
             `${game.awayTeam} @ ${game.homeTeam} (${game.id}): ${reason}`,
@@ -1570,8 +1582,8 @@ export class CompetitionService {
 
       throw new ApiError(
         400,
-        `Cannot end NFL competition ${competitionId}: ${invalidFinalGames.length} final game(s) are not ready for scoring. ` +
-          `Games must have end times and winners before the competition can end. Details: ${details}`,
+        `Cannot end NFL competition ${competitionId}: ${invalidGames.length} of ${games.length} games are not ready for scoring. ` +
+          `All games must be completed and have end times and winners before the competition can end. Details: ${details}`,
       );
     }
 
@@ -3351,18 +3363,9 @@ export class CompetitionService {
             continue;
           }
 
-          const { nonFinalGames, invalidFinalGames } =
-            this.#evaluateNflGameReadiness(games);
-
-          if (nonFinalGames.length > 0) {
-            this.logger.debug(
-              `[CompetitionManager] Competition ${competition.name} (${competition.id}) still has ${nonFinalGames.length} non-final game(s)`,
-            );
-            continue;
-          }
-
-          if (invalidFinalGames.length > 0) {
-            const details = invalidFinalGames
+          const { invalidGames } = this.#evaluateNflGameReadiness(games);
+          if (invalidGames.length > 0) {
+            const details = invalidGames
               .map(
                 ({ game, reason }) =>
                   `${game.awayTeam} @ ${game.homeTeam} (${game.id}): ${reason}`,
