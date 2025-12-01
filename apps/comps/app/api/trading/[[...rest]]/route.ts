@@ -34,6 +34,52 @@ const openApiHandler = new OpenAPIHandler(router, {
         info: {
           title: "Trading Simulator API",
           version: "1.0.0",
+          description: `API for the Trading Simulator - a platform for simulated cryptocurrency trading competitions
+
+## Authentication Guide
+
+This API uses Bearer token authentication. All protected endpoints require the following header:
+
+- **Authorization**: Bearer your-api-key
+
+Where "your-api-key" is the API key provided during user and agent registration.
+
+### Authentication Examples
+
+**cURL Example:**
+
+\`\`\`bash
+curl -X GET "https://api.example.com/api/account/balances" \\
+  -H "Authorization: Bearer abc123def456_ghi789jkl012" \\
+  -H "Content-Type: application/json"
+\`\`\`
+
+**JavaScript Example:**
+
+\`\`\`javascript
+const fetchData = async () => {
+  const apiKey = 'abc123def456_ghi789jkl012';
+  const response = await fetch('https://api.example.com/api/account/balances', {
+    headers: {
+      'Authorization': \`Bearer \${apiKey}\`,
+      'Content-Type': 'application/json'
+    }
+  });
+
+  return await response.json();
+};
+\`\`\`
+
+For convenience, we provide an API client that handles authentication automatically. See \`docs/examples/api-client.ts\`.
+      `,
+          contact: {
+            name: "API Support",
+            email: "info@recall.foundation",
+          },
+          license: {
+            name: "ISC License",
+            url: "https://opensource.org/licenses/ISC",
+          },
         },
         components: {
           securitySchemes: {
