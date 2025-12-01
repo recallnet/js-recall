@@ -25,7 +25,7 @@ const GlobalSearchParamsSchema = z.object({
   join: z.enum(["and", "or"]).optional(),
 });
 
-interface AdminSearchResults {
+export interface AdminSearchResults {
   users: any[];
   agents: any[];
 }
