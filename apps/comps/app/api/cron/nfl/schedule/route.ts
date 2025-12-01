@@ -10,7 +10,7 @@ const logger = createLogger("CronNflScheduleIngester");
  * Helper function to resolve the season from the request query parameters.
  * If no season is provided, the current year is used.
  * @param request - The incoming request
- * @returns The season to sync (defaults to current year)
+ * @returns The season to sync (defaults to current year for 2025 season)
  */
 function resolveSeason(request: NextRequest): string {
   const requestedSeason = request.nextUrl.searchParams.get("season");
@@ -18,12 +18,12 @@ function resolveSeason(request: NextRequest): string {
     return requestedSeason.trim();
   }
 
-  return new Date().getUTCFullYear().toString();
+  return "2025";
 }
 
 /**
  * Cron job to handle syncing of NFL schedules. Runs every 5 minutes and
- * accepts optional `season` query parameter (defaults to current year).
+ * accepts optional `season` query parameter (defaults to current year for 2025 season).
  * Requires `SPORTSDATAIO_API_KEY` environment variable.
  */
 export const GET = withCronAuth(async (request: NextRequest) => {

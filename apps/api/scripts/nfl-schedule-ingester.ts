@@ -22,7 +22,7 @@ function parseArguments(): {
       season: {
         type: "string",
         short: "s",
-        default: new Date().getUTCFullYear().toString(),
+        default: "2025",
       },
     },
   });
