@@ -22,6 +22,7 @@ import {
   RewardsService,
   RiskMetricsService,
   SortinoRatioService,
+  SportsIngesterService,
   SportsService,
   TradeSimulatorService,
   TradingConstraintsService,
@@ -228,6 +229,12 @@ export const sportsService = new SportsService(
   db,
   competitionRepository,
   createLogger("SportsService"),
+);
+
+export const sportsIngesterService = new SportsIngesterService(
+  sportsService,
+  createLogger("SportsIngesterService"),
+  { sportsDataApi: config.sportsDataApi },
 );
 
 export const boostBonusService = new BoostBonusService(
