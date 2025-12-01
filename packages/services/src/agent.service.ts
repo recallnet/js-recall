@@ -1602,13 +1602,14 @@ export class AgentService {
             hasRiskMetrics: !!riskMetrics,
           };
         } else if (competition.type === "spot_live_trading") {
-          // Spot live uses ROI (pnlPercent) as the ranking metric
+          // Spot live uses ROI as the ranking metric
+          // Convert pnlPercent to decimal format (0.5 for 50%) to match repository layer
           return {
             ...baseMetrics,
             totalTrades: tradeCountsMap.get(competition.id) || 0,
             totalPositions: 0, // Not applicable for spot trading
             calmarRatio: null,
-            simpleReturn: pnlPercent, // ROI calculated from (current - starting) / starting * 100
+            simpleReturn: pnlPercent / 100, // Decimal format: 0.5 for 50% ROI
             maxDrawdown: null,
             hasRiskMetrics: false,
           };

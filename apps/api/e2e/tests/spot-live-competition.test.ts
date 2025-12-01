@@ -1907,6 +1907,88 @@ describe("Spot Live Competition", () => {
     expect(typeof spotLiveComp?.simpleReturn).toBe("number");
   });
 
+  test("should return simpleReturn in DECIMAL format from getAgentCompetitions", async () => {
+    // Verifies simpleReturn format consistency between code paths
+    //
+    // This test catches the bug where agent.service.ts attachBulkCompetitionMetrics
+    // returns simpleReturn as PERCENTAGE (50) instead of DECIMAL (0.5) like the
+    // repository layer does.
+    //
+    // Key invariant: Both code paths must return the SAME value for the same agent
+
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agent with ROI test wallet
+    const { agent, client: agentClient } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "High ROI Format Test Agent",
+        agentWalletAddress: "0x0001000000000000000000000000000000000001",
+      });
+
+    // Start spot live competition
+    const response = await startSpotLiveTestCompetition({
+      adminClient,
+      name: `simpleReturn Format Test ${Date.now()}`,
+      agentIds: [agent.id],
+    });
+
+    expect(response.success).toBe(true);
+    const competition = response.competition;
+
+    await wait(2000);
+
+    // Trigger sync to process trades
+    const services = new ServiceRegistry();
+    await services.spotDataProcessor.processSpotLiveCompetition(competition.id);
+    await wait(500);
+
+    // CODE PATH 1: getCompetitionAgents (uses repository layer getSpotLiveROILeaderboard)
+    // This is KNOWN to return decimal format correctly
+    const leaderboardResponse = await adminClient.getCompetitionAgents(
+      competition.id,
+    );
+    expect(leaderboardResponse.success).toBe(true);
+    const leaderboardAgents = (leaderboardResponse as CompetitionAgentsResponse)
+      .agents;
+    const leaderboardEntry = leaderboardAgents.find((a) => a.id === agent.id);
+    expect(leaderboardEntry).toBeDefined();
+
+    const leaderboardSimpleReturn = leaderboardEntry?.simpleReturn as number;
+    console.log(
+      `[TEST] getCompetitionAgents simpleReturn = ${leaderboardSimpleReturn}`,
+    );
+
+    // CODE PATH 2: getAgentCompetitions (uses agent.service.ts attachBulkCompetitionMetrics)
+    const competitionsResponse = await agentClient.getAgentCompetitions(
+      agent.id,
+    );
+    expect(competitionsResponse.success).toBe(true);
+
+    const typedResponse = competitionsResponse as AgentCompetitionsResponse;
+    const spotLiveComp = typedResponse.competitions.find(
+      (c: EnhancedCompetition) => c.id === competition.id,
+    );
+    expect(spotLiveComp).toBeDefined();
+
+    const competitionsSimpleReturn = spotLiveComp?.simpleReturn as number;
+    console.log(
+      `[TEST] getAgentCompetitions simpleReturn = ${competitionsSimpleReturn}`,
+    );
+
+    // Assertions:
+    // 1. Both values must be in decimal format (reasonable ROI, not percentage)
+    //    If buggy: competitionsSimpleReturn would be 100x larger (e.g., 50 instead of 0.5)
+    expect(Math.abs(leaderboardSimpleReturn)).toBeLessThan(5); // < 500% ROI
+    expect(Math.abs(competitionsSimpleReturn)).toBeLessThan(5); // < 500% ROI
+
+    // 2. Both code paths must return the SAME value (format consistency)
+    //    If bug exists: leaderboard = 0.5 (decimal), competitions = 50 (percentage) - FAIL!
+    //    If fixed: both values are equal - PASS!
+    expect(competitionsSimpleReturn).toBeCloseTo(leaderboardSimpleReturn, 2);
+  });
+
   describe("Spot Live Competition Updates", () => {
     test("should allow updating minFundingThreshold on pending spot live competition", async () => {
       const adminClient = createTestClient(getBaseUrl());
