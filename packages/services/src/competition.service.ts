@@ -3689,13 +3689,16 @@ export class CompetitionService {
         throw new ApiError(404, "Competition not found");
       }
 
-      // Fetch evaluation metric for perps competitions
+      // Fetch evaluation metric based on competition type
       let evaluationMetric: EvaluationMetric | undefined;
       if (competition.type === "perpetual_futures") {
         const perpsConfig = await this.perpsRepo.getPerpsCompetitionConfig(
           params.competitionId,
         );
         evaluationMetric = perpsConfig?.evaluationMetric;
+      } else if (competition.type === "spot_live_trading") {
+        // Spot live competitions are ranked by ROI (simple_return)
+        evaluationMetric = "simple_return";
       }
 
       // Build stats based on competition type
