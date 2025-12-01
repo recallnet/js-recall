@@ -252,7 +252,7 @@ describe("AlchemyRpcProvider - Pagination Correctness", () => {
       "latest",
     );
 
-    // CRITICAL VERIFICATION
+    // Verification
     expect(fromCallCount).toBe(3); // fromAddress: 3 pages
     expect(toCallCount).toBe(2); // toAddress: 2 pages
     expect(result.transfers.length).toBe(3700); // 2200 from + 1500 to

@@ -239,7 +239,7 @@ describe("RpcSpotProvider - Integration Tests (Real Blockchain)", () => {
       console.error(`  This means detectSwapPattern() is broken`);
     }
 
-    // CRITICAL: This tests if basic swap detection works
+    // This tests if basic swap detection works
     expect(knownSwap).toBeDefined();
     expect(knownSwap?.blockNumber).toBe(KNOWN_AERODROME_SWAP.blockNumber);
   }, 30000);
