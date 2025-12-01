@@ -2017,8 +2017,7 @@ export function makeAdminController(services: ServiceRegistry) {
               {
                 index: i,
                 boostBonusId: result.boostBonusId,
-                activeCount: result.appliedToCompetitions.active.length,
-                pendingCount: result.appliedToCompetitions.pending.length,
+                appliedCount: result.appliedToCompetitions.length,
               },
               "Successfully added bonus boost",
             );
@@ -2029,10 +2028,7 @@ export function makeAdminController(services: ServiceRegistry) {
               amount: result.amount.toString(),
               expiresAt: result.expiresAt.toISOString(),
               isActive: true,
-              appliedToCompetitions: {
-                active: result.appliedToCompetitions.active,
-                pending: result.appliedToCompetitions.pending,
-              },
+              appliedToCompetitions: result.appliedToCompetitions,
             });
           } catch (itemError) {
             const errorMessage =
