@@ -7,6 +7,7 @@ import { Logger } from "pino";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MockProxy, mock } from "vitest-mock-extended";
 
+import { NATIVE_TOKEN_ADDRESS } from "../../lib/config-utils.js";
 import { IRpcProvider } from "../../types/rpc.js";
 import { ProtocolFilter } from "../../types/spot-live.js";
 import { RpcSpotProvider } from "../spot-live/rpc-spot.provider.js";
@@ -643,7 +644,10 @@ describe("RpcSpotProvider", () => {
       expect(result).toHaveLength(0);
     });
 
-    it("should handle native ETH transfers", async () => {
+    it("should handle native ETH transfers with zero address", async () => {
+      // Native ETH → ERC20 swap
+      // The fromToken should be NATIVE_TOKEN_ADDRESS (zero address), not "ETH" string
+      // This enables proper price lookup by mapping zero address to WETH
       const ethSwap: AssetTransfersWithMetadataResult[] = [
         createMockTransfer({
           from: "0xagent123",
@@ -695,10 +699,73 @@ describe("RpcSpotProvider", () => {
       ]);
 
       expect(result).toHaveLength(1);
-      expect(result[0]?.fromToken).toBe("ETH");
+      // fromToken must be zero address for proper price lookup
+      // (mapped to WETH in spot-data-processor)
+      expect(result[0]?.fromToken).toBe(NATIVE_TOKEN_ADDRESS);
       expect(result[0]?.toToken).toBe(
         "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
       );
+    });
+
+    it("should handle ERC20 to native ETH swaps with zero address", async () => {
+      // ERC20 → Native ETH swap (reverse direction)
+      // The toToken should be NATIVE_TOKEN_ADDRESS (zero address)
+      const ethSwap: AssetTransfersWithMetadataResult[] = [
+        createMockTransfer({
+          from: "0xagent123",
+          to: "0xrouter456",
+          value: 1000,
+          asset: "USDC",
+          hash: "0xtxhash2",
+          blockNum: "0x1000000",
+          metadata: { blockTimestamp: "2025-01-15T10:00:00.000Z" },
+          rawContract: {
+            address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+            decimal: "6",
+            value: "0x3b9aca00",
+          },
+          category: AssetTransfersCategory.ERC20,
+          uniqueId: "unique9",
+        }),
+        createMockTransfer({
+          from: "0xrouter456",
+          to: "0xagent123",
+          value: 0.5,
+          asset: "ETH",
+          hash: "0xtxhash2",
+          blockNum: "0x1000000",
+          metadata: { blockTimestamp: "2025-01-15T10:00:00.000Z" },
+          category: AssetTransfersCategory.INTERNAL,
+          uniqueId: "unique10",
+        }),
+      ];
+
+      mockRpcProvider.getAssetTransfers.mockResolvedValue({
+        transfers: ethSwap,
+        pageKey: undefined,
+      });
+
+      mockRpcProvider.getTransactionReceipt.mockResolvedValue({
+        transactionHash: "0xtxhash2",
+        blockNumber: 1000000,
+        gasUsed: "150000",
+        effectiveGasPrice: "50000000000",
+        status: true,
+        from: "0xagent123",
+        to: "0xrouter456",
+        logs: [],
+      });
+
+      const result = await provider.getTradesSince("0xagent123", 10000, [
+        "base",
+      ]);
+
+      expect(result).toHaveLength(1);
+      expect(result[0]?.fromToken).toBe(
+        "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+      );
+      // toToken must be zero address for proper price lookup
+      expect(result[0]?.toToken).toBe(NATIVE_TOKEN_ADDRESS);
     });
   });
 
@@ -804,6 +871,45 @@ describe("RpcSpotProvider", () => {
       // Should call getAssetTransfers for each chain
       expect(mockRpcProvider.getAssetTransfers).toHaveBeenCalledTimes(3);
       expect(result.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe("getNativeBalance", () => {
+    beforeEach(() => {
+      provider = new RpcSpotProvider(mockRpcProvider, [], mockLogger);
+    });
+
+    it("should return native balance from underlying provider", async () => {
+      const expectedBalance = "1000000000000000000"; // 1 ETH in wei
+      mockRpcProvider.getBalance.mockResolvedValue(expectedBalance);
+
+      const result = await provider.getNativeBalance("0xagent123", "base");
+
+      expect(result).toBe(expectedBalance);
+      expect(mockRpcProvider.getBalance).toHaveBeenCalledWith(
+        "0xagent123",
+        "base",
+      );
+    });
+
+    it("should throw error for Solana chain", async () => {
+      await expect(
+        provider.getNativeBalance("0xagent123", "svm"),
+      ).rejects.toThrow(
+        "Solana (svm) is not supported for RPC-based spot live trading",
+      );
+    });
+
+    it("should work with different EVM chains", async () => {
+      mockRpcProvider.getBalance.mockResolvedValue("500000000000000000");
+
+      const chains = ["base", "arbitrum", "optimism", "polygon"] as const;
+      for (const chain of chains) {
+        const result = await provider.getNativeBalance("0xagent123", chain);
+        expect(result).toBe("500000000000000000");
+      }
+
+      expect(mockRpcProvider.getBalance).toHaveBeenCalledTimes(4);
     });
   });
 });

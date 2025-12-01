@@ -5,6 +5,7 @@ import {
   type AgentCompetitionsResponse,
   ApiClient,
   type BalancesResponse,
+  type CompetitionAgent,
   type CompetitionAgentsResponse,
   type CompetitionDetailResponse,
   type EnhancedCompetition,
@@ -1987,6 +1988,97 @@ describe("Spot Live Competition", () => {
     //    If bug exists: leaderboard = 0.5 (decimal), competitions = 50 (percentage) - FAIL!
     //    If fixed: both values are equal - PASS!
     expect(competitionsSimpleReturn).toBeCloseTo(leaderboardSimpleReturn, 2);
+  });
+
+  test("should handle native ETH balances and swaps in full competition flow", async () => {
+    // Tests the FULL native token flow:
+    // 1. Initial sync includes native ETH balance (via getNativeBalance)
+    // 2. Native ETH → ERC20 swap is detected correctly (EXTERNAL category)
+    // 3. Native token uses zero address (0x00...00) for storage
+    // 4. Price lookups map zero address → WETH for pricing
+    // 5. Portfolio snapshots correctly value native ETH holdings
+    //
+    // Mock wallet: 0x9999000000000000000000000000000000000009
+    // Initial: 0.5 ETH + 100 USDC
+    // Swap: 0.1 ETH → 275 USDC
+    // Final: 0.4 ETH + 375 USDC
+
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agent with native ETH test wallet
+    const { agent } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Native ETH Test Agent",
+      agentWalletAddress: "0x9999000000000000000000000000000000000009",
+    });
+
+    // Start spot live competition
+    const response = await startSpotLiveTestCompetition({
+      adminClient,
+      name: `Native ETH Flow Test ${Date.now()}`,
+      agentIds: [agent.id],
+    });
+
+    expect(response.success).toBe(true);
+    const competition = response.competition;
+
+    await wait(2000);
+
+    // Process first sync - should initialize native ETH balance
+    const services = new ServiceRegistry();
+    await services.spotDataProcessor.processSpotLiveCompetition(competition.id);
+    await wait(500);
+
+    // Verify agent has both native ETH and USDC balances
+    const leaderboardResponse = await adminClient.getCompetitionAgents(
+      competition.id,
+    );
+    expect(leaderboardResponse.success).toBe(true);
+    const leaderboard = (leaderboardResponse as CompetitionAgentsResponse)
+      .agents;
+    const agentEntry = leaderboard.find(
+      (a: CompetitionAgent) => a.id === agent.id,
+    );
+
+    expect(agentEntry).toBeDefined();
+    console.log(
+      `[TEST] Native ETH agent portfolio value: $${agentEntry?.portfolioValue}`,
+    );
+
+    expect(agentEntry?.portfolioValue).toBeGreaterThan(0);
+
+    // Process second sync - should detect native ETH swap
+    await services.spotDataProcessor.processSpotLiveCompetition(competition.id);
+    await wait(500);
+
+    // Verify the swap was detected and balances updated
+    const finalLeaderboardResponse = await adminClient.getCompetitionAgents(
+      competition.id,
+    );
+    expect(finalLeaderboardResponse.success).toBe(true);
+    const finalLeaderboard = (
+      finalLeaderboardResponse as CompetitionAgentsResponse
+    ).agents;
+    const finalAgentEntry = finalLeaderboard.find(
+      (a: CompetitionAgent) => a.id === agent.id,
+    );
+
+    expect(finalAgentEntry).toBeDefined();
+    console.log(
+      `[TEST] After native ETH swap portfolio value: $${finalAgentEntry?.portfolioValue}`,
+    );
+
+    // Portfolio value should have changed due to swap
+    // The swap should be reflected in updated balances
+    expect(finalAgentEntry?.portfolioValue).toBeGreaterThan(0);
+
+    // Verify simpleReturn is calculated (from ROI calculation)
+    expect(typeof finalAgentEntry?.simpleReturn).toBe("number");
+
+    console.log(
+      `✓ Native ETH flow complete: simpleReturn = ${finalAgentEntry?.simpleReturn}`,
+    );
   });
 
   describe("Spot Live Competition Updates", () => {

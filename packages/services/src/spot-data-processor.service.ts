@@ -12,6 +12,11 @@ import type {
   InsertTrade,
 } from "@recallnet/db/schema/trading/types";
 
+import {
+  NATIVE_TOKEN_ADDRESS,
+  getNativeTokenSymbol,
+  getTokenAddressForPriceLookup,
+} from "./lib/config-utils.js";
 import { PortfolioSnapshotterService } from "./portfolio-snapshotter.service.js";
 import { PriceTrackerService } from "./price-tracker.service.js";
 import { SpotLiveProviderFactory } from "./providers/spot-live-provider.factory.js";
@@ -177,6 +182,7 @@ export class SpotDataProcessor {
       }> = [];
 
       for (const chain of chains) {
+        // Fetch ERC20 token balances
         const balances = await provider.getTokenBalances?.(
           walletAddress,
           chain,
@@ -188,6 +194,38 @@ export class SpotDataProcessor {
               tokenAddress: b.contractAddress.toLowerCase(),
               balance: b.balance,
             });
+          }
+        }
+
+        // Fetch native token balance (ETH, MATIC, etc.)
+        if (provider.getNativeBalance) {
+          try {
+            const nativeBalance = await provider.getNativeBalance(
+              walletAddress,
+              chain,
+            );
+            // Only add if balance is non-zero
+            if (nativeBalance && nativeBalance !== "0") {
+              allTokenBalances.push({
+                chain,
+                tokenAddress: NATIVE_TOKEN_ADDRESS,
+                balance: nativeBalance,
+              });
+              this.logger.debug(
+                `[SpotDataProcessor] Found native balance ${nativeBalance} wei on ${chain}`,
+              );
+            }
+          } catch (nativeError) {
+            this.logger.warn(
+              {
+                error:
+                  nativeError instanceof Error
+                    ? nativeError.message
+                    : String(nativeError),
+                chain,
+              },
+              `[SpotDataProcessor] Failed to fetch native balance for chain ${chain}`,
+            );
           }
         }
       }
@@ -221,8 +259,9 @@ export class SpotDataProcessor {
       }
 
       // 3. Fetch prices for all tokens
+      // Map native token addresses (zero address) to WETH for price lookup
       const tokenPriceRequests = filteredBalances.map((b) => ({
-        tokenAddress: b.tokenAddress,
+        tokenAddress: getTokenAddressForPriceLookup(b.tokenAddress, b.chain),
         specificChain: b.chain,
       }));
 
@@ -238,7 +277,12 @@ export class SpotDataProcessor {
       }> = [];
 
       for (const b of filteredBalances) {
-        const priceKey = `${b.tokenAddress}:${b.chain}`;
+        // Use mapped address for price lookup (WETH for native tokens)
+        const lookupAddress = getTokenAddressForPriceLookup(
+          b.tokenAddress,
+          b.chain,
+        );
+        const priceKey = `${lookupAddress}:${b.chain}`;
         const price = priceMap.get(priceKey);
 
         if (!price) {
@@ -248,21 +292,32 @@ export class SpotDataProcessor {
           continue;
         }
 
+        // Check if this is a native token (zero address)
+        const isNative = b.tokenAddress === NATIVE_TOKEN_ADDRESS;
+
         // Get token decimals for proper parsing
-        const decimals = await provider.getTokenDecimals?.(
-          b.tokenAddress,
-          b.chain,
-        );
-        const decimalsPower = Math.pow(10, decimals ?? 18);
+        // Native tokens always use 18 decimals (ETH, MATIC, etc.)
+        let decimals = 18;
+        if (!isNative) {
+          const tokenDecimals = await provider.getTokenDecimals?.(
+            b.tokenAddress,
+            b.chain,
+          );
+          decimals = tokenDecimals ?? 18;
+        }
+        const decimalsPower = Math.pow(10, decimals);
 
         // Parse balance from hex string to number
         const balanceNum = parseInt(b.balance, 16) / decimalsPower;
+
+        // Use native symbol (ETH, MATIC) for native tokens, otherwise use price symbol
+        const symbol = isNative ? getNativeTokenSymbol(b.chain) : price.symbol;
 
         balanceRecordsToInsert.push({
           tokenAddress: b.tokenAddress,
           chain: b.chain,
           amount: balanceNum,
-          symbol: price.symbol,
+          symbol,
         });
       }
 
@@ -312,7 +367,8 @@ export class SpotDataProcessor {
 
   /**
    * Fetch prices for all tokens using bulk price API
-   * @returns Map of "address:chain" key to price report
+   * Maps native token addresses (zero address) to WETH for price lookup
+   * @returns Map of "address:chain" key to price report (keyed by ORIGINAL address)
    */
   private async fetchPricesForTrades(
     tokens: Array<{ address: string; chain: SpecificChain }>,
@@ -324,8 +380,9 @@ export class SpotDataProcessor {
     }
 
     // Transform to TokenPriceRequest format for bulk API
+    // Map native token addresses (zero address) to WETH for price lookup
     const priceRequests = tokens.map((t) => ({
-      tokenAddress: t.address,
+      tokenAddress: getTokenAddressForPriceLookup(t.address, t.chain),
       specificChain: t.chain,
     }));
 
@@ -333,15 +390,20 @@ export class SpotDataProcessor {
     const bulkPriceMap = await this.priceTracker.getBulkPrices(priceRequests);
 
     // Transform results to use "address:chain" keying
+    // Key by ORIGINAL address so callers can look up by the address they know
     let successCount = 0;
     let failCount = 0;
 
     for (const { address, chain } of tokens) {
-      const mapKey = `${address.toLowerCase()}:${chain}`;
-      const price = bulkPriceMap.get(mapKey);
+      // Look up price using the mapped address (WETH for native)
+      const lookupAddress = getTokenAddressForPriceLookup(address, chain);
+      const lookupKey = `${lookupAddress.toLowerCase()}:${chain}`;
+      const price = bulkPriceMap.get(lookupKey);
 
       if (price) {
-        priceMap.set(mapKey, price);
+        // Store using ORIGINAL address so callers can find it
+        const originalKey = `${address.toLowerCase()}:${chain}`;
+        priceMap.set(originalKey, price);
         successCount++;
       } else {
         failCount++;

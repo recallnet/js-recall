@@ -1,6 +1,94 @@
 import { SpecificChain, SpecificChainBalances } from "../types/index.js";
 
 /**
+ * Zero address used to represent native tokens (ETH, MATIC, etc.) in EVM chains
+ * This address is used for storage and identification, not for price lookup
+ */
+export const NATIVE_TOKEN_ADDRESS =
+  "0x0000000000000000000000000000000000000000";
+
+/**
+ * Native token symbols by chain
+ */
+export const NATIVE_TOKEN_SYMBOLS: Record<string, string> = {
+  eth: "ETH",
+  base: "ETH",
+  arbitrum: "ETH",
+  optimism: "ETH",
+  polygon: "MATIC",
+  bsc: "BNB",
+  avalanche: "AVAX",
+  linea: "ETH",
+  zksync: "ETH",
+  scroll: "ETH",
+  mantle: "MNT",
+};
+
+/**
+ * Check if a token address is the native token (zero address)
+ * @param tokenAddress The token address to check
+ * @returns True if the address is the native token address
+ */
+export function isNativeToken(tokenAddress: string): boolean {
+  return tokenAddress.toLowerCase() === NATIVE_TOKEN_ADDRESS.toLowerCase();
+}
+
+/**
+ * Get the wrapped native token address (WETH/WSOL) for a given chain
+ * Used for price lookups since DEX APIs use wrapped versions, not native tokens
+ * @param chain The specific chain
+ * @returns Wrapped native address for the chain, or undefined if not configured
+ */
+export function getWrappedNativeAddress(
+  chain: SpecificChain,
+): string | undefined {
+  const chainTokens =
+    specificChainTokens[chain as keyof typeof specificChainTokens];
+  if (!chainTokens) return undefined;
+
+  // SVM uses 'sol' key, EVM chains use 'eth' key
+  if (chain === "svm" && "sol" in chainTokens) {
+    return chainTokens.sol;
+  }
+  if ("eth" in chainTokens) {
+    return chainTokens.eth;
+  }
+  return undefined;
+}
+
+/**
+ * Map a token address for price lookup
+ * If the token is native (zero address), returns the WETH address for that chain
+ * Otherwise returns the original address
+ * @param tokenAddress The token address (may be zero address for native)
+ * @param chain The specific chain
+ * @returns The address to use for price lookup
+ */
+export function getTokenAddressForPriceLookup(
+  tokenAddress: string,
+  chain: SpecificChain,
+): string {
+  if (isNativeToken(tokenAddress)) {
+    const wethAddress = getWrappedNativeAddress(chain);
+    if (wethAddress) {
+      return wethAddress;
+    }
+    // Fallback: return original address if no WETH configured for chain
+    // This will likely fail price lookup, but better than silently using wrong address
+  }
+  return tokenAddress;
+}
+
+/**
+ * Get the native token symbol for a chain
+ * @param chain The specific chain
+ * @returns Native token symbol (e.g., "ETH", "MATIC")
+ */
+export function getNativeTokenSymbol(chain: string): string {
+  return NATIVE_TOKEN_SYMBOLS[chain] ?? "ETH";
+}
+
+/**
  * Token addresses for each supported chain
  * Shared constant used by both API and comps apps
  */
