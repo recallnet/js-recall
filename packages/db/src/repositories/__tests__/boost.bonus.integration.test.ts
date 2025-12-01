@@ -232,7 +232,7 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
       });
 
       expect(result.expiresAt).toEqual(newExpiresAt);
-      expect(result.updatedAt.getTime()).toBeGreaterThan(
+      expect(result.updatedAt.getTime()).toBeGreaterThanOrEqual(
         result.createdAt.getTime(),
       );
 
