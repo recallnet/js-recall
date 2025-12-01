@@ -153,7 +153,7 @@ export interface SpotLiveProviderConfig {
   type: "rpc_direct" | "envio_indexing" | "hybrid";
   /** RPC provider name (required for rpc_direct) - API key read from environment */
   provider?: "alchemy" | "quicknode";
-  /** Custom RPC URLs by chain (optional - Alchemy SDK auto-constructs URLs from API key) */
+  /** Custom RPC URLs by chain (optional for Alchemy - auto-constructed; required for QuickNode and Infura) */
   rpcUrls?: Record<string, string>;
   /** GraphQL endpoint URL (for envio_indexing) */
   graphqlUrl?: string;
