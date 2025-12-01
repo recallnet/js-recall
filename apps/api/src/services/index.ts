@@ -10,6 +10,8 @@ import { BalanceRepository } from "@recallnet/db/repositories/balance";
 import { BoostRepository } from "@recallnet/db/repositories/boost";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { CompetitionRewardsRepository } from "@recallnet/db/repositories/competition-rewards";
+import { ConvictionClaimsRepository } from "@recallnet/db/repositories/conviction-claims";
+import { EventsRepository } from "@recallnet/db/repositories/indexing-events";
 import { LeaderboardRepository } from "@recallnet/db/repositories/leaderboard";
 import { PaperTradingConfigRepository } from "@recallnet/db/repositories/paper-trading-config";
 import { PaperTradingInitialBalancesRepository } from "@recallnet/db/repositories/paper-trading-initial-balances";
@@ -27,6 +29,7 @@ import {
   ArenaService,
   BalanceService,
   BoostAwardService,
+  BoostBonusService,
   BoostService,
   CalmarRatioService,
   CompetitionRewardService,
@@ -47,6 +50,11 @@ import {
   TradingConstraintsService,
   UserService,
 } from "@recallnet/services";
+import {
+  EventProcessor,
+  IndexingService,
+  TransactionProcessor,
+} from "@recallnet/services/indexing";
 import { MockPrivyClient } from "@recallnet/services/lib";
 import { WalletWatchlist } from "@recallnet/services/lib";
 import {
@@ -64,16 +72,8 @@ import {
 import config from "@/config/index.js";
 import { db, dbRead } from "@/database/db.js";
 import {
-  INDEXING_EVENTS_HYPERSYNC_QUERY,
-  INDEXING_TRANSACTIONS_HYPERSYNC_QUERY,
-} from "@/indexing/blockchain-config.js";
-import { ConvictionClaimsRepository } from "@/indexing/conviction-claims.repository.js";
-import { EventProcessor } from "@/indexing/event-processor.js";
-import { EventsRepository } from "@/indexing/events.repository.js";
-import { IndexingService } from "@/indexing/indexing.service.js";
-import { TransactionProcessor } from "@/indexing/transaction-processor.js";
-import {
   configLogger,
+  createLogger,
   indexingLogger,
   repositoryLogger,
   serviceLogger,
@@ -105,6 +105,7 @@ class ServiceRegistry {
   private _competitionRewardService: CompetitionRewardService;
   private _perpsDataProcessor: PerpsDataProcessor;
   private _boostService: BoostService;
+  private _boostBonusService: BoostBonusService;
   private readonly _competitionRepository: CompetitionRepository;
   private readonly _agentRepository: AgentRepository;
   private readonly _perpsRepository: PerpsRepository;
@@ -115,11 +116,7 @@ class ServiceRegistry {
   private readonly _partnerRepository: PartnerRepository;
   private readonly _paperTradingConfigRepository: PaperTradingConfigRepository;
   private readonly _paperTradingInitialBalancesRepository: PaperTradingInitialBalancesRepository;
-  private readonly _eventIndexingService: IndexingService | undefined;
-  private readonly _transactionIndexingService: IndexingService | undefined;
   private readonly _eventsRepository: EventsRepository;
-  private readonly _eventProcessor: EventProcessor;
-  private readonly _transactionProcessor: TransactionProcessor;
   private readonly _convictionClaimsRepository: ConvictionClaimsRepository;
   private readonly _boostAwardService: BoostAwardService;
   private readonly _privyClient: PrivyClient;
@@ -128,6 +125,10 @@ class ServiceRegistry {
   private readonly _rewardsAllocator: RewardsAllocator;
   private readonly _sportsService: SportsService;
   private readonly _sportsIngesterService: SportsIngesterService;
+  private _eventIndexingService?: IndexingService;
+  private _transactionIndexingService?: IndexingService;
+  private _eventProcessor?: EventProcessor;
+  private _transactionProcessor?: TransactionProcessor;
 
   constructor() {
     // Initialize Privy client (use MockPrivyClient in test mode to avoid real API calls)
@@ -356,6 +357,15 @@ class ServiceRegistry {
       serviceLogger,
     );
 
+    // Initialize BoostBonusService with its dependencies
+    this._boostBonusService = new BoostBonusService(
+      db,
+      this._boostRepository,
+      this._competitionRepository,
+      this._userRepository,
+      serviceLogger,
+    );
+
     // Initialize RewardsService with its dependencies
     this._rewardsService = new RewardsService(
       this._rewardsRepository,
@@ -377,6 +387,7 @@ class ServiceRegistry {
       this._competitionRewardService,
       this._rewardsService,
       this._perpsDataProcessor,
+      this._boostBonusService,
       this._agentRepository,
       agentScoreRepository,
       this._arenaRepository,
@@ -406,37 +417,10 @@ class ServiceRegistry {
       serviceLogger,
     );
 
-    this._convictionClaimsRepository = new ConvictionClaimsRepository(db);
-
-    this._eventProcessor = new EventProcessor(
+    this._convictionClaimsRepository = new ConvictionClaimsRepository(
       db,
-      this._rewardsRepository,
-      this._eventsRepository,
-      this._stakesRepository,
-      this._boostAwardService,
-      this._competitionService,
-      indexingLogger,
+      createLogger("ConvictionClaimsRepository"),
     );
-
-    if (INDEXING_EVENTS_HYPERSYNC_QUERY) {
-      this._eventIndexingService = new IndexingService(
-        indexingLogger,
-        this._eventProcessor,
-        INDEXING_EVENTS_HYPERSYNC_QUERY,
-      );
-    }
-
-    this._transactionProcessor = new TransactionProcessor(
-      this._convictionClaimsRepository,
-      indexingLogger,
-    );
-    if (INDEXING_TRANSACTIONS_HYPERSYNC_QUERY) {
-      this._transactionIndexingService = new IndexingService(
-        indexingLogger,
-        this._transactionProcessor,
-        INDEXING_TRANSACTIONS_HYPERSYNC_QUERY,
-      );
-    }
   }
 
   public static getInstance(): ServiceRegistry {
@@ -507,11 +491,26 @@ class ServiceRegistry {
     return this._perpsDataProcessor;
   }
 
-  get eventIndexingService(): IndexingService | undefined {
+  get eventIndexingService(): IndexingService {
+    if (!this._eventIndexingService) {
+      this._eventIndexingService = IndexingService.createEventsIndexingService(
+        indexingLogger,
+        this.eventProcessor,
+        config.stakingIndex.getConfig(),
+      );
+    }
     return this._eventIndexingService;
   }
 
-  get transactionIndexingService(): IndexingService | undefined {
+  get transactionIndexingService(): IndexingService {
+    if (!this._transactionIndexingService) {
+      this._transactionIndexingService =
+        IndexingService.createTransactionsIndexingService(
+          indexingLogger,
+          this.transactionProcessor,
+          config.stakingIndex.getConfig(),
+        );
+    }
     return this._transactionIndexingService;
   }
 
@@ -520,6 +519,12 @@ class ServiceRegistry {
   }
 
   get transactionProcessor(): TransactionProcessor {
+    if (!this._transactionProcessor) {
+      this._transactionProcessor = new TransactionProcessor(
+        this._convictionClaimsRepository,
+        indexingLogger,
+      );
+    }
     return this._transactionProcessor;
   }
 
@@ -539,11 +544,26 @@ class ServiceRegistry {
     return this._boostService;
   }
 
+  get boostBonusService(): BoostBonusService {
+    return this._boostBonusService;
+  }
+
   get privyClient(): PrivyClient {
     return this._privyClient;
   }
 
   get eventProcessor(): EventProcessor {
+    if (!this._eventProcessor) {
+      this._eventProcessor = new EventProcessor(
+        db,
+        this._rewardsRepository,
+        this._eventsRepository,
+        this._stakesRepository,
+        this._boostAwardService,
+        this._competitionService,
+        indexingLogger,
+      );
+    }
     return this._eventProcessor;
   }
 

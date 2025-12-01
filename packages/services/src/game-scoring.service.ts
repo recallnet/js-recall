@@ -1,5 +1,6 @@
 import { Logger } from "pino";
 
+import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { CompetitionAggregateScoresRepository } from "@recallnet/db/repositories/competition-aggregate-scores";
 import { CompetitionGamesRepository } from "@recallnet/db/repositories/competition-games";
 import { GamePredictionScoresRepository } from "@recallnet/db/repositories/game-prediction-scores";
@@ -46,6 +47,7 @@ export class GameScoringService {
   readonly #competitionAggregateScoresRepo: CompetitionAggregateScoresRepository;
   readonly #gamesRepo: GamesRepository;
   readonly #competitionGamesRepo: CompetitionGamesRepository;
+  readonly #competitionRepo: CompetitionRepository;
   readonly #db: Database;
   readonly #logger: Logger;
 
@@ -55,6 +57,7 @@ export class GameScoringService {
     competitionAggregateScoresRepo: CompetitionAggregateScoresRepository,
     gamesRepo: GamesRepository,
     competitionGamesRepo: CompetitionGamesRepository,
+    competitionRepo: CompetitionRepository,
     db: Database,
     logger: Logger,
   ) {
@@ -63,6 +66,7 @@ export class GameScoringService {
     this.#competitionAggregateScoresRepo = competitionAggregateScoresRepo;
     this.#gamesRepo = gamesRepo;
     this.#competitionGamesRepo = competitionGamesRepo;
+    this.#competitionRepo = competitionRepo;
     this.#db = db;
     this.#logger = logger;
   }
@@ -198,9 +202,8 @@ export class GameScoringService {
               gameId,
               competitionId,
             },
-            "No valid predictions found for competition",
+            "No valid predictions found for competition; recording zero scores",
           );
-          continue;
         }
 
         totalScored += await this.#scoreCompetitionPredictions(
@@ -223,15 +226,32 @@ export class GameScoringService {
     game: SelectGame,
     predictions: SelectGamePrediction[],
   ): Promise<number> {
+    // Get all active agents and score them, irrespective of whether they have predictions
+    const registeredAgentIds =
+      await this.#competitionRepo.getAgents(competitionId);
     const predictionsByAgent = new Map<string, SelectGamePrediction[]>();
+
+    for (const agentId of registeredAgentIds) {
+      predictionsByAgent.set(agentId, []);
+    }
     for (const prediction of predictions) {
       const agentPredictions = predictionsByAgent.get(prediction.agentId) || [];
       agentPredictions.push(prediction);
       predictionsByAgent.set(prediction.agentId, agentPredictions);
     }
+    const agentsWithPredictions = Array.from(
+      predictionsByAgent.entries(),
+    ).filter(([, preds]) => preds.length > 0).length;
 
     this.#logger.info(
-      `Scoring competition ${competitionId} for ${predictionsByAgent.size} agents`,
+      {
+        competitionId,
+        agentsWithPredictions,
+        agentsWithNoPredictions:
+          registeredAgentIds.length - agentsWithPredictions,
+        totalRegisteredAgents: registeredAgentIds.length,
+      },
+      "Scoring competition predictions",
     );
 
     let scoredCount = 0;
@@ -239,16 +259,20 @@ export class GameScoringService {
       throw new Error(`Cannot score game ${game.id}: game is not completed`);
     }
 
+    // Agents with predictions get calculated scores, and those without any predictions get a score of 0
     for (const [agentId, agentPredictions] of predictionsByAgent.entries()) {
       try {
-        const timeWeightedBrierScore = this.#calculateTimeWeightedBrier(
-          agentPredictions,
-          game.startTime,
-          game.endTime,
-          game.winner,
-        );
+        const hasPredictions = agentPredictions.length > 0;
+        const timeWeightedBrierScore = hasPredictions
+          ? this.#calculateTimeWeightedBrier(
+              agentPredictions,
+              game.startTime,
+              game.endTime,
+              game.winner,
+            )
+          : 0;
 
-        const finalPrediction = agentPredictions[0];
+        const finalPrediction = hasPredictions ? agentPredictions[0] : null;
 
         await this.#db.transaction(async (tx) => {
           await this.#gamePredictionScoresRepo.upsert(
@@ -257,7 +281,7 @@ export class GameScoringService {
               gameId: game.id,
               agentId,
               timeWeightedBrierScore,
-              finalPrediction: finalPrediction?.predictedWinner || null,
+              finalPrediction: finalPrediction?.predictedWinner ?? null,
               finalConfidence: finalPrediction?.confidence ?? null,
               predictionCount: agentPredictions.length,
             },

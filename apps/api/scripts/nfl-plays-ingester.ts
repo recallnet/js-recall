@@ -26,13 +26,13 @@ async function ingestPlays(): Promise<void> {
   logger.info("Auto-discovering active competitions and in-progress games...");
 
   try {
-    const ingestedCount =
-      await services.sportsIngesterService.nflIngesterService.ingestActiveGames();
+    const { count, gameIds } =
+      await services.sportsIngesterService.nflIngesterService.ingestGamePlays();
 
-    if (ingestedCount === 0) {
-      logger.debug("No active games found");
+    if (count === 0) {
+      logger.debug("No games found (active or unscored)");
     } else {
-      logger.info(`Ingested data for ${ingestedCount} active games`);
+      logger.info({ count, gameIds }, "Ingested plays for games");
     }
   } catch (error) {
     logger.error({ error }, "Error during live data ingester");

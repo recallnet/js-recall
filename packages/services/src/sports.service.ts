@@ -60,6 +60,7 @@ export class SportsService {
       this.competitionAggregateScoresRepository,
       this.gamesRepository,
       this.competitionGamesRepository,
+      competitionRepo,
       db,
       logger,
     );

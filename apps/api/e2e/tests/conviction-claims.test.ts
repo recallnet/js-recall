@@ -1,10 +1,11 @@
 import { beforeEach, describe, expect, test } from "vitest";
 
+import { ConvictionClaimsRepository } from "@recallnet/db/repositories/conviction-claims";
 import { seasons } from "@recallnet/db/schema/airdrop/defs";
 import { convictionClaims } from "@recallnet/db/schema/conviction-claims/defs";
 
 import { db } from "@/database/db.js";
-import { ConvictionClaimsRepository } from "@/indexing/conviction-claims.repository.js";
+import { logger } from "@/lib/logger.js";
 
 describe("ConvictionClaimsRepository", () => {
   let convictionClaimsRepository: ConvictionClaimsRepository;
@@ -29,7 +30,7 @@ describe("ConvictionClaimsRepository", () => {
       .onConflictDoNothing();
 
     // Initialize repository
-    convictionClaimsRepository = new ConvictionClaimsRepository(db);
+    convictionClaimsRepository = new ConvictionClaimsRepository(db, logger);
 
     // Setup test data
     testAccount1 = "0x686bab3F162e72F903fA9DA42D1726e5D01BB46A";

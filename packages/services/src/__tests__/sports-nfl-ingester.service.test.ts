@@ -138,6 +138,8 @@ describe("SportsNflIngesterService", () => {
         awayTeam: "MIN",
         spread: null,
         overUnder: null,
+        homeTeamMoneyLine: null,
+        awayTeamMoneyLine: null,
         venue: null,
         status: "in_progress",
         winner: null,
@@ -186,6 +188,8 @@ describe("SportsNflIngesterService", () => {
         awayTeam: "MIN",
         spread: null,
         overUnder: null,
+        homeTeamMoneyLine: null,
+        awayTeamMoneyLine: null,
         venue: null,
         status: "scheduled",
         winner: null,
@@ -218,11 +222,14 @@ describe("SportsNflIngesterService", () => {
           Season: 2025,
           Week: 1,
           Date: "2025-09-08T19:15:00",
+          DateTimeUTC: "2025-09-08T23:15:00",
           GameEndDateTime: null,
           HomeTeam: "CHI",
           AwayTeam: "MIN",
           AwayScore: null,
           HomeScore: null,
+          AwayTeamMoneyLine: null,
+          HomeTeamMoneyLine: null,
           HasStarted: false,
           IsInProgress: false,
           IsOver: false,
@@ -257,6 +264,8 @@ describe("SportsNflIngesterService", () => {
         awayTeam: "MIN",
         spread: null,
         overUnder: null,
+        homeTeamMoneyLine: null,
+        awayTeamMoneyLine: null,
         venue: "Soldier Field",
         status: "scheduled",
         winner: null,
@@ -361,6 +370,8 @@ describe("SportsNflIngesterService", () => {
         awayTeam: "MIN",
         spread: 1.5,
         overUnder: 43.5,
+        homeTeamMoneyLine: null,
+        awayTeamMoneyLine: null,
         venue: "Soldier Field",
         status: "scheduled",
         winner: null,
@@ -393,6 +404,8 @@ describe("SportsNflIngesterService", () => {
         awayTeam: "MIN",
         spread: null,
         overUnder: null,
+        homeTeamMoneyLine: null,
+        awayTeamMoneyLine: null,
         venue: "Soldier Field",
         status: "final",
         winner: "MIN",
@@ -414,8 +427,8 @@ describe("SportsNflIngesterService", () => {
     });
   });
 
-  describe("ingestActiveGames", () => {
-    it("should ingest all active games", async () => {
+  describe("ingestGamePlays", () => {
+    it("should ingest all active games and return count and gameIds", async () => {
       const game: SelectGame = {
         id: randomUUID(),
         providerGameId: 19068,
@@ -427,6 +440,8 @@ describe("SportsNflIngesterService", () => {
         awayTeam: "MIN",
         spread: null,
         overUnder: null,
+        homeTeamMoneyLine: null,
+        awayTeamMoneyLine: null,
         venue: null,
         status: "in_progress",
         winner: null,
@@ -453,11 +468,14 @@ describe("SportsNflIngesterService", () => {
           GlobalGameID: 19068,
           GameKey: "202510106",
           Date: "2025-09-08T19:15:00",
+          DateTimeUTC: "2025-09-08T23:15:00",
           GameEndDateTime: null,
           HomeTeam: "CHI",
           AwayTeam: "MIN",
           AwayScore: 14,
           HomeScore: 7,
+          AwayTeamMoneyLine: null,
+          HomeTeamMoneyLine: null,
           HasStarted: true,
           IsInProgress: true,
           IsOver: false,
@@ -485,24 +503,26 @@ describe("SportsNflIngesterService", () => {
       mockGamesRepo.findByProviderGameIdForUpdate.mockResolvedValue(game);
       mockGamesRepo.upsert.mockResolvedValue(game);
 
-      const result = await service.ingestActiveGames();
+      const result = await service.ingestGamePlays();
 
-      expect(result).toBe(1);
+      expect(result.count).toBe(1);
+      expect(result.gameIds).toContain(game.id);
       expect(mockProvider.getPlayByPlay).toHaveBeenCalledWith(19068);
     });
 
-    it("should return 0 when no active games found", async () => {
+    it("should return empty result when no active games found", async () => {
       mockCompetitionRepo.findByStatus.mockResolvedValue({
         competitions: [],
         total: 0,
       });
 
-      const result = await service.ingestActiveGames();
+      const result = await service.ingestGamePlays();
 
-      expect(result).toBe(0);
+      expect(result.count).toBe(0);
+      expect(result.gameIds).toEqual([]);
     });
 
-    it("should continue on error for individual games", async () => {
+    it("should continue on error for individual games and include all gameIds", async () => {
       const game1: SelectGame = {
         id: randomUUID(),
         providerGameId: 19068,
@@ -514,6 +534,8 @@ describe("SportsNflIngesterService", () => {
         awayTeam: "MIN",
         spread: null,
         overUnder: null,
+        homeTeamMoneyLine: null,
+        awayTeamMoneyLine: null,
         venue: null,
         status: "in_progress",
         winner: null,
@@ -532,6 +554,8 @@ describe("SportsNflIngesterService", () => {
         awayTeam: "DET",
         spread: null,
         overUnder: null,
+        homeTeamMoneyLine: null,
+        awayTeamMoneyLine: null,
         venue: null,
         status: "in_progress",
         winner: null,
@@ -562,11 +586,14 @@ describe("SportsNflIngesterService", () => {
             GlobalGameID: 19069,
             GameKey: "202510107",
             Date: "2025-09-08T19:15:00",
+            DateTimeUTC: "2025-09-08T23:15:00",
             GameEndDateTime: null,
             HomeTeam: "DET",
             AwayTeam: "GB",
             AwayScore: 0,
             HomeScore: 0,
+            AwayTeamMoneyLine: null,
+            HomeTeamMoneyLine: null,
             HasStarted: true,
             IsInProgress: true,
             IsOver: false,
@@ -593,10 +620,13 @@ describe("SportsNflIngesterService", () => {
       mockGamesRepo.findByProviderGameIdForUpdate.mockResolvedValue(undefined);
       mockGamesRepo.upsert.mockResolvedValue(game2);
 
-      const result = await service.ingestActiveGames();
+      const result = await service.ingestGamePlays();
 
       // Should process second game despite first failing
-      expect(result).toBe(1);
+      expect(result.count).toBe(1);
+      // gameIds should include both games that were attempted
+      expect(result.gameIds).toContain(game1.id);
+      expect(result.gameIds).toContain(game2.id);
     });
   });
 
@@ -619,6 +649,8 @@ describe("SportsNflIngesterService", () => {
         awayTeam: "MIN",
         spread: null,
         overUnder: null,
+        homeTeamMoneyLine: null,
+        awayTeamMoneyLine: null,
         venue: "Soldier Field",
         status: "scheduled",
         winner: null,
@@ -684,11 +716,14 @@ describe("SportsNflIngesterService", () => {
           GlobalGameID: 19068,
           GameKey: "202510106",
           Date: "2025-09-08T19:15:00",
+          DateTimeUTC: "2025-09-08T23:15:00",
           GameEndDateTime: null,
           HomeTeam: "CHI",
           AwayTeam: "MIN",
           AwayScore: 0,
           HomeScore: 0,
+          AwayTeamMoneyLine: null,
+          HomeTeamMoneyLine: null,
           HasStarted: true,
           IsInProgress: true,
           IsOver: false,
@@ -766,6 +801,8 @@ describe("SportsNflIngesterService", () => {
         awayTeam: "MIN",
         spread: null,
         overUnder: null,
+        homeTeamMoneyLine: null,
+        awayTeamMoneyLine: null,
         venue: "Soldier Field",
         status: "scheduled",
         winner: null,
@@ -818,11 +855,14 @@ describe("SportsNflIngesterService", () => {
           GlobalGameID: 19068,
           GameKey: "202510106",
           Date: "2025-09-08T19:15:00",
+          DateTimeUTC: "2025-09-08T23:15:00",
           GameEndDateTime: null,
           HomeTeam: "CHI",
           AwayTeam: "MIN",
           AwayScore: 0,
           HomeScore: 0,
+          AwayTeamMoneyLine: null,
+          HomeTeamMoneyLine: null,
           HasStarted: true,
           IsInProgress: true,
           IsOver: false,
@@ -890,6 +930,8 @@ describe("SportsNflIngesterService", () => {
         awayTeam: "MIN",
         spread: null,
         overUnder: null,
+        homeTeamMoneyLine: null,
+        awayTeamMoneyLine: null,
         venue: "Soldier Field",
         status: "scheduled",
         winner: null,
@@ -916,11 +958,14 @@ describe("SportsNflIngesterService", () => {
           GlobalGameID: 19068,
           GameKey: "202510106",
           Date: "2025-09-08T19:15:00",
+          DateTimeUTC: "2025-09-08T23:15:00",
           GameEndDateTime: null,
           HomeTeam: "CHI",
           AwayTeam: "MIN",
           AwayScore: 0,
           HomeScore: 0,
+          AwayTeamMoneyLine: null,
+          HomeTeamMoneyLine: null,
           HasStarted: true,
           IsInProgress: true,
           IsOver: false,
@@ -967,6 +1012,8 @@ describe("SportsNflIngesterService", () => {
         awayTeam: "MIN",
         spread: null,
         overUnder: null,
+        homeTeamMoneyLine: null,
+        awayTeamMoneyLine: null,
         venue: "Soldier Field",
         status: "in_progress", // Already in progress
         winner: null,
@@ -992,11 +1039,14 @@ describe("SportsNflIngesterService", () => {
           GlobalGameID: 19068,
           GameKey: "202510106",
           Date: "2025-09-08T19:15:00",
+          DateTimeUTC: "2025-09-08T23:15:00",
           GameEndDateTime: null,
           HomeTeam: "CHI",
           AwayTeam: "MIN",
           AwayScore: 7,
           HomeScore: 3,
+          AwayTeamMoneyLine: null,
+          HomeTeamMoneyLine: null,
           HasStarted: true,
           IsInProgress: true,
           IsOver: false,
@@ -1048,6 +1098,8 @@ describe("SportsNflIngesterService", () => {
         awayTeam: "MIN",
         spread: null,
         overUnder: null,
+        homeTeamMoneyLine: null,
+        awayTeamMoneyLine: null,
         venue: "Soldier Field",
         status: "scheduled",
         winner: null,
@@ -1113,11 +1165,14 @@ describe("SportsNflIngesterService", () => {
           GlobalGameID: 19068,
           GameKey: "202510106",
           Date: "2025-09-08T19:15:00",
+          DateTimeUTC: "2025-09-08T23:15:00",
           GameEndDateTime: null,
           HomeTeam: "CHI",
           AwayTeam: "MIN",
           AwayScore: 0,
           HomeScore: 0,
+          AwayTeamMoneyLine: null,
+          HomeTeamMoneyLine: null,
           HasStarted: true,
           IsInProgress: true,
           IsOver: false,
@@ -1159,6 +1214,299 @@ describe("SportsNflIngesterService", () => {
         },
         mockTransaction,
       );
+    });
+  });
+
+  describe("Schedule sync marks game final without winner/endTime", () => {
+    it("should finalize and score game when playbyplay is called after schedule sync marked it final", async () => {
+      const gameId = randomUUID();
+      const gameStartTime = new Date("2025-09-08T19:15:00Z");
+      const gameEndTime = new Date("2025-09-08T22:30:00Z");
+
+      // Simulate: schedule sync already marked game as final but without winner/endTime
+      const existingGameFromScheduleSync: SelectGame = {
+        id: gameId,
+        providerGameId: 19068,
+        season: 2025,
+        week: 1,
+        startTime: gameStartTime,
+        endTime: null, // Missing!
+        homeTeam: "CHI",
+        awayTeam: "MIN",
+        spread: null,
+        overUnder: null,
+        homeTeamMoneyLine: null,
+        awayTeamMoneyLine: null,
+        venue: "Soldier Field",
+        status: "final", // Schedule sync marked it final
+        winner: null, // Missing!
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      // Play-by-play data shows the game is over with scores
+      const mockPlayByPlayData: SportsDataIOPlayByPlay = {
+        Score: {
+          SeasonType: 1,
+          Season: 2025,
+          Week: 1,
+          GlobalGameID: 19068,
+          GameKey: "202510106",
+          Date: "2025-09-08T19:15:00",
+          DateTimeUTC: "2025-09-08T23:15:00",
+          GameEndDateTime: "2025-09-08T22:30:00",
+          HomeTeam: "CHI",
+          AwayTeam: "MIN",
+          AwayScore: 24,
+          HomeScore: 17,
+          AwayTeamMoneyLine: null,
+          HomeTeamMoneyLine: null,
+          HasStarted: true,
+          IsInProgress: false,
+          IsOver: true,
+          Status: "Final",
+          StadiumDetails: {
+            StadiumID: 1,
+            Name: "Soldier Field",
+            City: "Chicago",
+            State: "IL",
+          },
+          Quarter: "Final",
+          TimeRemaining: "0:00",
+          Possession: null,
+          Down: null,
+          Distance: null,
+          YardLine: null,
+          YardLineTerritory: null,
+          DownAndDistance: null,
+        },
+        Quarters: [],
+        Plays: [],
+      };
+
+      const updatedGame: SelectGame = {
+        ...existingGameFromScheduleSync,
+        endTime: gameEndTime,
+        winner: "MIN",
+      };
+
+      mockProvider.getPlayByPlay.mockResolvedValue(mockPlayByPlayData);
+      // Return the game that was marked final by schedule sync (missing winner/endTime)
+      mockGamesRepo.findByProviderGameIdForUpdate.mockResolvedValue(
+        existingGameFromScheduleSync,
+      );
+      mockGamesRepo.upsert.mockResolvedValue(updatedGame);
+      mockGamesRepo.finalizeGame.mockResolvedValue(updatedGame);
+      mockGameScoringService.scoreGame.mockResolvedValue(3);
+
+      const result = await service.ingestGamePlayByPlay(19068);
+
+      expect(result).toBe(gameId);
+
+      // Should have called upsert with winner and endTime
+      expect(mockGamesRepo.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: "final",
+          winner: "MIN",
+          endTime: expect.any(Date),
+        }),
+        mockTransaction,
+      );
+
+      // Should have called finalizeGame
+      expect(mockGamesRepo.finalizeGame).toHaveBeenCalledWith(
+        gameId,
+        expect.any(Date),
+        "MIN",
+      );
+
+      // Should have called scoreGame
+      expect(mockGameScoringService.scoreGame).toHaveBeenCalledWith(gameId);
+    });
+
+    it("should NOT re-finalize game when it was already fully finalized", async () => {
+      const gameId = randomUUID();
+      const gameStartTime = new Date("2025-09-08T19:15:00Z");
+      const gameEndTime = new Date("2025-09-08T22:30:00Z");
+
+      // Game was already fully finalized (has status, winner, and endTime)
+      const existingFinalizedGame: SelectGame = {
+        id: gameId,
+        providerGameId: 19068,
+        season: 2025,
+        week: 1,
+        startTime: gameStartTime,
+        endTime: gameEndTime,
+        homeTeam: "CHI",
+        awayTeam: "MIN",
+        spread: null,
+        overUnder: null,
+        homeTeamMoneyLine: null,
+        awayTeamMoneyLine: null,
+        venue: "Soldier Field",
+        status: "final",
+        winner: "MIN",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      const mockPlayByPlayData: SportsDataIOPlayByPlay = {
+        Score: {
+          SeasonType: 1,
+          Season: 2025,
+          Week: 1,
+          GlobalGameID: 19068,
+          GameKey: "202510106",
+          Date: "2025-09-08T19:15:00",
+          DateTimeUTC: "2025-09-08T23:15:00",
+          GameEndDateTime: "2025-09-08T22:30:00",
+          HomeTeam: "CHI",
+          AwayTeam: "MIN",
+          AwayScore: 24,
+          HomeScore: 17,
+          AwayTeamMoneyLine: null,
+          HomeTeamMoneyLine: null,
+          HasStarted: true,
+          IsInProgress: false,
+          IsOver: true,
+          Status: "Final",
+          StadiumDetails: {
+            StadiumID: 1,
+            Name: "Soldier Field",
+            City: "Chicago",
+            State: "IL",
+          },
+          Quarter: "Final",
+          TimeRemaining: "0:00",
+          Possession: null,
+          Down: null,
+          Distance: null,
+          YardLine: null,
+          YardLineTerritory: null,
+          DownAndDistance: null,
+        },
+        Quarters: [],
+        Plays: [],
+      };
+
+      mockProvider.getPlayByPlay.mockResolvedValue(mockPlayByPlayData);
+      mockGamesRepo.findByProviderGameIdForUpdate.mockResolvedValue(
+        existingFinalizedGame,
+      );
+
+      const result = await service.ingestGamePlayByPlay(19068);
+
+      expect(result).toBe(gameId);
+
+      // Should NOT have called upsert (early return)
+      expect(mockGamesRepo.upsert).not.toHaveBeenCalled();
+
+      // Should NOT have called finalizeGame
+      expect(mockGamesRepo.finalizeGame).not.toHaveBeenCalled();
+
+      // Should NOT have called scoreGame
+      expect(mockGameScoringService.scoreGame).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("discoverUnscoredFinalGames", () => {
+    it("should find final games missing winner or endTime", async () => {
+      const competition = createMockCompetition();
+
+      const unscoredFinalGame: SelectGame = {
+        id: randomUUID(),
+        providerGameId: 19068,
+        season: 2025,
+        week: 1,
+        startTime: new Date(),
+        endTime: null, // Missing!
+        homeTeam: "CHI",
+        awayTeam: "MIN",
+        spread: null,
+        overUnder: null,
+        homeTeamMoneyLine: null,
+        awayTeamMoneyLine: null,
+        venue: null,
+        status: "final",
+        winner: null, // Missing!
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      const scoredFinalGame: SelectGame = {
+        id: randomUUID(),
+        providerGameId: 19069,
+        season: 2025,
+        week: 1,
+        startTime: new Date(),
+        endTime: new Date(),
+        homeTeam: "DET",
+        awayTeam: "GB",
+        spread: null,
+        overUnder: null,
+        homeTeamMoneyLine: null,
+        awayTeamMoneyLine: null,
+        venue: null,
+        status: "final",
+        winner: "GB",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      mockCompetitionRepo.findByStatus.mockResolvedValue({
+        competitions: [competition],
+        total: 1,
+      });
+      mockCompetitionGamesRepo.findGameIdsByCompetitionId.mockResolvedValue([
+        unscoredFinalGame.id,
+        scoredFinalGame.id,
+      ]);
+      mockGamesRepo.findByIds.mockResolvedValue([
+        unscoredFinalGame,
+        scoredFinalGame,
+      ]);
+
+      const result = await service.discoverUnscoredFinalGames();
+
+      expect(result).toHaveLength(1);
+      expect(result[0]!.id).toBe(unscoredFinalGame.id);
+    });
+
+    it("should return empty when all final games are properly scored", async () => {
+      const competition = createMockCompetition();
+
+      const scoredFinalGame: SelectGame = {
+        id: randomUUID(),
+        providerGameId: 19068,
+        season: 2025,
+        week: 1,
+        startTime: new Date(),
+        endTime: new Date(),
+        homeTeam: "CHI",
+        awayTeam: "MIN",
+        spread: null,
+        overUnder: null,
+        homeTeamMoneyLine: null,
+        awayTeamMoneyLine: null,
+        venue: null,
+        status: "final",
+        winner: "MIN",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      mockCompetitionRepo.findByStatus.mockResolvedValue({
+        competitions: [competition],
+        total: 1,
+      });
+      mockCompetitionGamesRepo.findGameIdsByCompetitionId.mockResolvedValue([
+        scoredFinalGame.id,
+      ]);
+      mockGamesRepo.findByIds.mockResolvedValue([scoredFinalGame]);
+
+      const result = await service.discoverUnscoredFinalGames();
+
+      expect(result).toEqual([]);
     });
   });
 });

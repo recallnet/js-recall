@@ -1,7 +1,10 @@
 import { NextFunction, Response } from "express";
 import { z } from "zod/v4";
 
-import { NFL_TEAMS } from "@recallnet/db/schema/sports/types";
+import {
+  NFL_TEAMS,
+  type SelectGamePlay,
+} from "@recallnet/db/schema/sports/types";
 import { ApiError } from "@recallnet/services/types";
 
 import { competitionLogger } from "@/lib/logger.js";
@@ -17,6 +20,37 @@ const PredictGameWinnerSchema = z.object({
   predictedWinner: z.enum(NFL_TEAMS),
   confidence: z.number().min(0).max(1),
   reason: z.string().min(1, "Reason is required"),
+});
+
+const mapGamePlay = (play: SelectGamePlay) => ({
+  id: play.id,
+  sequence: play.sequence,
+  quarterName: play.quarterName,
+  timeRemainingMinutes: play.timeRemainingMinutes,
+  timeRemainingSeconds: play.timeRemainingSeconds,
+  down: play.down,
+  distance: play.distance,
+  yardLine: play.yardLine,
+  yardLineTerritory: play.yardLineTerritory,
+  yardsToEndZone: play.yardsToEndZone,
+  team: play.team,
+  opponent: play.opponent,
+  description: play.description,
+  playType: play.playType,
+  homeScore: play.homeScore,
+  awayScore: play.awayScore,
+});
+
+const buildGamePlayMetadata = (play?: SelectGamePlay | null) => ({
+  homeScore: play?.homeScore ?? null,
+  awayScore: play?.awayScore ?? null,
+  quarterName: play?.quarterName ?? null,
+  timeRemainingMinutes: play?.timeRemainingMinutes ?? null,
+  timeRemainingSeconds: play?.timeRemainingSeconds ?? null,
+  down: play?.down ?? null,
+  distance: play?.distance ?? null,
+  yardLine: play?.yardLine ?? null,
+  yardLineTerritory: play?.yardLineTerritory ?? null,
 });
 
 /**
@@ -63,6 +97,8 @@ export function makeNflController(services: ServiceRegistry) {
               homeTeam: game.homeTeam,
               awayTeam: game.awayTeam,
               overUnder: game.overUnder,
+              homeTeamMoneyLine: game.homeTeamMoneyLine,
+              awayTeamMoneyLine: game.awayTeamMoneyLine,
               startTime: game.startTime.toISOString(),
               venue: game.venue,
               status: game.status,
@@ -160,6 +196,8 @@ export function makeNflController(services: ServiceRegistry) {
               awayTeam: game.awayTeam,
               spread: game.spread,
               overUnder: game.overUnder,
+              homeTeamMoneyLine: game.homeTeamMoneyLine,
+              awayTeamMoneyLine: game.awayTeamMoneyLine,
               venue: game.venue,
               status: game.status,
               winner: game.winner,
@@ -205,39 +243,33 @@ export function makeNflController(services: ServiceRegistry) {
           res.status(200).json({
             success: true,
             data: {
-              play: latestPlay,
+              metadata: buildGamePlayMetadata(latestPlay),
+              play: latestPlay ? mapGamePlay(latestPlay) : null,
             },
           });
         } else {
           // Get paginated plays
-          const [plays, total] = await Promise.all([
+          const [plays, total, latestSnapshot] = await Promise.all([
             services.sportsService.gamePlaysRepository.findByGameId(gameId, {
               limit,
               offset,
               sort,
             }),
             services.sportsService.gamePlaysRepository.countByGameId(gameId),
+            services.sportsService.gamePlaysRepository.findByGameId(gameId, {
+              limit: 1,
+              offset: 0,
+              sort: "-createdAt",
+            }),
           ]);
+          const metadataSource =
+            latestSnapshot.length > 0 ? latestSnapshot[0] : null;
 
           res.status(200).json({
             success: true,
             data: {
-              plays: plays.map((play) => ({
-                id: play.id,
-                sequence: play.sequence,
-                quarterName: play.quarterName,
-                timeRemainingMinutes: play.timeRemainingMinutes,
-                timeRemainingSeconds: play.timeRemainingSeconds,
-                down: play.down,
-                distance: play.distance,
-                yardLine: play.yardLine,
-                yardLineTerritory: play.yardLineTerritory,
-                yardsToEndZone: play.yardsToEndZone,
-                team: play.team,
-                opponent: play.opponent,
-                description: play.description,
-                playType: play.playType,
-              })),
+              metadata: buildGamePlayMetadata(metadataSource),
+              plays: plays.map(mapGamePlay),
               pagination: {
                 total,
                 limit,

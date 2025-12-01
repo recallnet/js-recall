@@ -1,13 +1,25 @@
-import { and, desc, eq, isNull, notExists, sql, sum } from "drizzle-orm";
+import {
+  and,
+  desc,
+  eq,
+  gt,
+  inArray,
+  isNull,
+  notExists,
+  sql,
+  sum,
+} from "drizzle-orm";
 import { randomBytes } from "node:crypto";
 import { z } from "zod";
 
 import { BlockchainAddressAsU8A } from "../coders/index.js";
 import * as schema from "../schema/boost/defs.js";
 import {
+  InsertBoostBonus,
   InsertStakeBoostAward,
   SelectAgentBoost,
   SelectAgentBoostTotal,
+  SelectBoostBonus,
 } from "../schema/boost/types.js";
 import { agents } from "../schema/core/defs.js";
 import { stakes } from "../schema/indexing/defs.js";
@@ -26,6 +38,7 @@ export type {
 /** Schema of an optional structured context to attach to each boost change. */
 const BoostChangeMetaSchema = z.object({
   description: z.string().optional(),
+  boostBonusId: z.string().optional(), // UUID of bonus boost that created this change
 });
 /** Optional structured context to attach to each boost change. */
 type BoostChangeMeta = z.infer<typeof BoostChangeMetaSchema>;
@@ -1055,5 +1068,295 @@ class BoostRepository {
       return res;
     });
     return res;
+  }
+
+  /**
+   * Creates a new bonus boost entry.
+   *
+   * Multiple entries per user are allowed - amounts are summed when active.
+   *
+   * @param args - Bonus boost creation arguments
+   * @param tx - Optional transaction
+   * @returns Created bonus boost entry
+   */
+  async createBoostBonus(
+    args: {
+      userId: string;
+      amount: bigint;
+      expiresAt: Date;
+      createdByAdminId?: string;
+      meta?: Record<string, unknown>;
+    },
+    tx?: Transaction,
+  ): Promise<SelectBoostBonus> {
+    if (args.amount <= 0n) {
+      throw new Error("Bonus boost amount must be greater than 0");
+    }
+
+    const executor = tx || this.#db;
+    const [result] = await executor
+      .insert(schema.boostBonus)
+      .values({
+        userId: args.userId,
+        amount: args.amount,
+        expiresAt: args.expiresAt,
+        createdByAdminId: args.createdByAdminId ?? null,
+        meta: args.meta ?? {},
+      })
+      .returning();
+    if (!result) {
+      throw new Error("Failed to create bonus boost");
+    }
+    return result;
+  }
+
+  /**
+   * Updates an existing bonus boost entry.
+   *
+   * Note: The `amount` field is intentionally immutable. Once a boost is created
+   * and applied to competitions, changing the amount would create data inconsistencies
+   * in the audit trail. To correct an amount, revoke the boost and create a new one.
+   *
+   * @param id - Bonus boost ID
+   * @param updates - Fields to update (amount is immutable)
+   * @param tx - Optional transaction
+   * @returns Updated bonus boost entry
+   */
+  async updateBoostBonus(
+    id: string,
+    updates: {
+      expiresAt?: Date;
+      isActive?: boolean;
+      revokedAt?: Date | null;
+      meta?: Record<string, unknown>;
+    },
+    tx?: Transaction,
+  ): Promise<SelectBoostBonus> {
+    const executor = tx || this.#db;
+
+    const updateData: Partial<InsertBoostBonus> = {
+      ...updates,
+      updatedAt: new Date(),
+    };
+
+    const [result] = await executor
+      .update(schema.boostBonus)
+      .set(updateData)
+      .where(eq(schema.boostBonus.id, id))
+      .returning();
+    if (!result) {
+      throw new Error(`Bonus boost with id ${id} not found`);
+    }
+    return result;
+  }
+
+  /**
+   * Finds all active bonus boosts for a user.
+   *
+   * @param userId - User ID
+   * @param tx - Optional transaction
+   * @returns Array of active bonus boost entries
+   */
+  async findActiveBoostBonusesByUserId(
+    userId: string,
+    tx?: Transaction,
+  ): Promise<SelectBoostBonus[]> {
+    const executor = tx || this.#db;
+    return executor
+      .select()
+      .from(schema.boostBonus)
+      .where(
+        and(
+          eq(schema.boostBonus.userId, userId),
+          eq(schema.boostBonus.isActive, true),
+        ),
+      )
+      .orderBy(desc(schema.boostBonus.createdAt));
+  }
+
+  /**
+   * Finds a bonus boost by ID.
+   *
+   * @param id - Bonus boost ID
+   * @param tx - Optional transaction
+   * @returns Bonus boost entry or undefined if not found
+   */
+  async findBoostBonusById(
+    id: string,
+    tx?: Transaction,
+  ): Promise<SelectBoostBonus | undefined> {
+    const executor = tx || this.#db;
+    const [result] = await executor
+      .select()
+      .from(schema.boostBonus)
+      .where(eq(schema.boostBonus.id, id))
+      .limit(1);
+    return result;
+  }
+
+  /**
+   * Finds all active bonus boosts (for cron job processing).
+   *
+   * @param tx - Optional transaction
+   * @returns Array of all active bonus boost entries
+   */
+  async findAllActiveBoostBonuses(
+    tx?: Transaction,
+  ): Promise<SelectBoostBonus[]> {
+    const executor = tx || this.#db;
+    return executor
+      .select()
+      .from(schema.boostBonus)
+      .where(eq(schema.boostBonus.isActive, true))
+      .orderBy(desc(schema.boostBonus.createdAt));
+  }
+
+  /**
+   * Finds users with active bonus boosts that expire after a given date.
+   *
+   * Used for cron job eligibility checks.
+   *
+   * @param beforeDate - Only return boosts that expire after this date
+   * @param tx - Optional transaction
+   * @returns Array of active bonus boost entries
+   */
+  async findUsersWithActiveBoostBonuses(
+    beforeDate: Date,
+    tx?: Transaction,
+  ): Promise<SelectBoostBonus[]> {
+    const executor = tx || this.#db;
+    return executor
+      .select()
+      .from(schema.boostBonus)
+      .where(
+        and(
+          eq(schema.boostBonus.isActive, true),
+          gt(schema.boostBonus.expiresAt, beforeDate),
+        ),
+      )
+      .orderBy(desc(schema.boostBonus.createdAt));
+  }
+
+  /**
+   * Finds all boost_changes entries for a specific bonus boost.
+   *
+   * Used for revocation to find where boost was applied.
+   *
+   * @param boostBonusId - Bonus boost ID
+   * @param tx - Optional transaction
+   * @returns Array of boost_changes entries with meta.boostBonusId matching the given ID
+   */
+  async findBoostChangesByBoostBonusId(
+    boostBonusId: string,
+    tx?: Transaction,
+  ): Promise<Array<{ id: string; balanceId: string; competitionId: string }>> {
+    const executor = tx || this.#db;
+    // Query boost_changes where meta contains boostBonusId
+    // Note: This requires JSONB query - we'll need to join with boost_balances to get competitionId
+    const results = await executor
+      .select({
+        id: schema.boostChanges.id,
+        balanceId: schema.boostChanges.balanceId,
+        competitionId: schema.boostBalances.competitionId,
+      })
+      .from(schema.boostChanges)
+      .innerJoin(
+        schema.boostBalances,
+        eq(schema.boostChanges.balanceId, schema.boostBalances.id),
+      )
+      .where(
+        sql`${schema.boostChanges.meta}->>'boostBonusId' = ${boostBonusId}`,
+      );
+    return results;
+  }
+
+  /**
+   * Finds all boost_changes entries for a specific competition.
+   *
+   * Used for cleanup when boostStartDate changes.
+   *
+   * @param competitionId - Competition ID
+   * @param tx - Optional transaction
+   * @returns Array of boost_changes entries with meta.boostBonusId
+   */
+  async findBoostChangesByCompetitionId(
+    competitionId: string,
+    tx?: Transaction,
+  ): Promise<
+    Array<{
+      id: string;
+      balanceId: string;
+      meta: Record<string, unknown>;
+    }>
+  > {
+    const executor = tx || this.#db;
+    const results = await executor
+      .select({
+        id: schema.boostChanges.id,
+        balanceId: schema.boostChanges.balanceId,
+        meta: schema.boostChanges.meta,
+      })
+      .from(schema.boostChanges)
+      .innerJoin(
+        schema.boostBalances,
+        eq(schema.boostChanges.balanceId, schema.boostBalances.id),
+      )
+      .where(
+        and(
+          eq(schema.boostBalances.competitionId, competitionId),
+          sql`${schema.boostChanges.meta}->>'boostBonusId' IS NOT NULL`,
+        ),
+      );
+    return results.map((r) => ({
+      ...r,
+      meta: r.meta as Record<string, unknown>,
+    }));
+  }
+
+  /**
+   * Finds multiple bonus boosts by IDs.
+   *
+   * @param boostBonusIds - Array of bonus boost IDs
+   * @param tx - Optional transaction
+   * @returns Array of bonus boost entries
+   */
+  async findBoostBonusesByIds(
+    boostBonusIds: string[],
+    tx?: Transaction,
+  ): Promise<SelectBoostBonus[]> {
+    if (boostBonusIds.length === 0) {
+      return [];
+    }
+    const executor = tx || this.#db;
+    return executor
+      .select()
+      .from(schema.boostBonus)
+      .where(inArray(schema.boostBonus.id, boostBonusIds));
+  }
+
+  /**
+   * Sums all active bonus boost amounts for a user.
+   *
+   * @param userId - User ID
+   * @param tx - Optional transaction
+   * @returns Sum of all active bonus boost amounts
+   */
+  async sumActiveBoostBonusesForUser(
+    userId: string,
+    tx?: Transaction,
+  ): Promise<bigint> {
+    const executor = tx || this.#db;
+    const [result] = await executor
+      .select({
+        sum: sql`COALESCE(SUM(${schema.boostBonus.amount}), 0)`.mapWith(BigInt),
+      })
+      .from(schema.boostBonus)
+      .where(
+        and(
+          eq(schema.boostBonus.userId, userId),
+          eq(schema.boostBonus.isActive, true),
+        ),
+      );
+    return result?.sum ?? 0n;
   }
 }

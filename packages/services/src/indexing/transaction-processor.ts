@@ -2,7 +2,7 @@ import { QueryResponse } from "@envio-dev/hypersync-client";
 import type { Logger } from "pino";
 import { type Hex, decodeFunctionData } from "viem";
 
-import type { ConvictionClaimsRepository } from "@/indexing/conviction-claims.repository.js";
+import type { ConvictionClaimsRepository } from "@recallnet/db/repositories/conviction-claims";
 
 export { TransactionProcessor };
 
