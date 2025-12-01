@@ -2045,6 +2045,11 @@ export function makeAdminController(services: ServiceRegistry) {
           },
         });
       } catch (error) {
+        // If transaction fails, log the error and return failure
+        adminLogger.error(
+          { error: error instanceof Error ? error.message : "Unknown error" },
+          "Batch add bonus boost failed - transaction rolled back",
+        );
         next(error);
       }
     },
@@ -2119,6 +2124,11 @@ export function makeAdminController(services: ServiceRegistry) {
           },
         });
       } catch (error) {
+        // If transaction fails, log the error and return failure
+        adminLogger.error(
+          { error: error instanceof Error ? error.message : "Unknown error" },
+          "Batch revoke bonus boost failed - transaction rolled back",
+        );
         next(error);
       }
     },
