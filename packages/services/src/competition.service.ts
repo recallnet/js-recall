@@ -2779,7 +2779,6 @@ export class CompetitionService {
         );
       }
 
-
       // Cleanup invalid bonus boosts if boostStartDate was updated
       if (
         this.boostBonusService &&
@@ -2798,7 +2797,6 @@ export class CompetitionService {
           tx,
         );
       }
-      
 
       return { competition: updatedCompetition, updatedRewards };
     });
