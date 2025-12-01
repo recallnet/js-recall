@@ -245,14 +245,6 @@ export const boostBonusService = new BoostBonusService(
   createLogger("BoostBonusService"),
 );
 
-export const boostBonusService = new BoostBonusService(
-  db,
-  boostRepository,
-  competitionRepository,
-  userRepository,
-  createLogger("BoostBonusService"),
-);
-
 export const competitionService = new CompetitionService(
   balanceService,
   tradeSimulatorService,
