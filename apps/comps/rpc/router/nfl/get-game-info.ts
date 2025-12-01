@@ -41,6 +41,8 @@ export const getGameInfo = base
           awayTeam: game.awayTeam,
           spread: game.spread,
           overUnder: game.overUnder,
+          awayTeamMoneyLine: game.awayTeamMoneyLine,
+          homeTeamMoneyLine: game.homeTeamMoneyLine,
           venue: game.venue,
           status: game.status,
           winner: game.winner,

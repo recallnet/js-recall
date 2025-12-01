@@ -6,7 +6,7 @@
     "description": "API for the Trading Simulator - a platform for simulated cryptocurrency trading competitions\n\n## Authentication Guide\n\nThis API uses Bearer token authentication. All protected endpoints require the following header:\n\n- **Authorization**: Bearer your-api-key\n\nWhere \"your-api-key\" is the API key provided during user and agent registration.\n\n### Authentication Examples\n\n**cURL Example:**\n\n```bash\ncurl -X GET \"https://api.example.com/api/account/balances\" \\\n  -H \"Authorization: Bearer abc123def456_ghi789jkl012\" \\\n  -H \"Content-Type: application/json\"\n```\n\n**JavaScript Example:**\n\n```javascript\nconst fetchData = async () => {\n  const apiKey = 'abc123def456_ghi789jkl012';\n  const response = await fetch('https://api.example.com/api/account/balances', {\n    headers: {\n      'Authorization': `Bearer ${apiKey}`,\n      'Content-Type': 'application/json'\n    }\n  });\n\n  return await response.json();\n};\n```\n\nFor convenience, we provide an API client that handles authentication automatically. See `docs/examples/api-client.ts`.\n      ",
     "contact": {
       "name": "API Support",
-      "email": "support@example.com"
+      "email": "info@recall.foundation"
     },
     "license": {
       "name": "ISC License",
@@ -37,6 +37,11 @@
         "type": "http",
         "scheme": "bearer",
         "description": "API key provided in the Authorization header using Bearer token authentication"
+      },
+      "AgentApiKey": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Agent API key provided as Bearer token"
       },
       "PrivyCookie": {
         "type": "apiKey",
@@ -159,10 +164,6 @@
       "description": "Authentication endpoints"
     },
     {
-      "name": "Account",
-      "description": "Account management endpoints"
-    },
-    {
       "name": "User",
       "description": "User management endpoints"
     },
@@ -189,6 +190,26 @@
     {
       "name": "Health",
       "description": "Health check endpoints"
+    },
+    {
+      "name": "Agents",
+      "description": "Public agent discovery endpoints"
+    },
+    {
+      "name": "Arenas",
+      "description": "Arena listing and details"
+    },
+    {
+      "name": "Leaderboard",
+      "description": "Agent leaderboard rankings"
+    },
+    {
+      "name": "Perpetual Futures",
+      "description": "Perpetual futures trading endpoints"
+    },
+    {
+      "name": "NFL",
+      "description": "NFL prediction game endpoints"
     }
   ],
   "paths": {
@@ -5396,6 +5417,245 @@
         }
       }
     },
+    "/api/admin/boost-bonus": {
+      "post": {
+        "tags": ["Admin"],
+        "summary": "Add bonus boost to users",
+        "description": "Add bonus boosts to multiple users in a single request. Each boost applies to all competitions\nthat start before the expiration date.\n\n**Note**: This endpoint is currently stubbed and returns 501 Not Implemented for API contract validation.\n",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["boosts"],
+                "properties": {
+                  "boosts": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 100,
+                    "description": "Array of boost items to add (max 100 items per batch, no duplicate wallets within batch)",
+                    "items": {
+                      "type": "object",
+                      "required": ["wallet", "amount", "expiresAt"],
+                      "properties": {
+                        "wallet": {
+                          "type": "string",
+                          "pattern": "^0x[0-9a-fA-F]{40}$",
+                          "description": "User wallet address (Ethereum hex address)",
+                          "example": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0"
+                        },
+                        "amount": {
+                          "type": "string",
+                          "pattern": "^\\d+$",
+                          "description": "Boost amount as numeric string (BigInt). Must be > 0 and <= 10^18.",
+                          "example": "500000000000000000"
+                        },
+                        "expiresAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "description": "ISO 8601 expiration date (must be at least 1 minute in the future)",
+                          "example": "2025-12-31T23:59:59Z"
+                        },
+                        "meta": {
+                          "type": "object",
+                          "description": "Optional metadata (primitives only - string, number, boolean). Max 1000 characters when serialized to JSON.",
+                          "additionalProperties": {
+                            "oneOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "boolean"
+                              }
+                            ]
+                          },
+                          "example": {
+                            "source": "farcaster",
+                            "campaignId": "campaign-123"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "example": {
+                "boosts": [
+                  {
+                    "wallet": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0",
+                    "amount": "500000000000000000",
+                    "expiresAt": "2025-12-31T23:59:59Z",
+                    "meta": {
+                      "source": "farcaster"
+                    }
+                  },
+                  {
+                    "wallet": "0x8ba1f109551bD432803012645Aac136c22C172c8",
+                    "amount": "250000000000000000",
+                    "expiresAt": "2025-12-31T23:59:59Z"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "400": {
+            "description": "Bad Request - Invalid request format, validation errors, or empty array"
+          },
+          "401": {
+            "description": "Unauthorized - Admin authentication required"
+          },
+          "500": {
+            "description": "Internal server error"
+          },
+          "501": {
+            "description": "Not Implemented - Endpoint is stubbed for API contract validation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Not Implemented"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "This endpoint is stubbed for API contract validation. Full implementation pending."
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "requestedCount": {
+                          "type": "number",
+                          "description": "Number of boost items in the request",
+                          "example": 2
+                        },
+                        "note": {
+                          "type": "string",
+                          "example": "When implemented, this will process 2 boost grants and apply them to eligible competitions"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/boost-bonus/revoke": {
+      "post": {
+        "tags": ["Admin"],
+        "summary": "Revoke bonus boost",
+        "description": "Revoke multiple bonus boosts in a single request. Prevents future applications and removes\nfrom pending competitions where the boosting window hasn't opened.\n\n**Note**: This endpoint is currently stubbed and returns 501 Not Implemented for API contract validation.\n",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["boostIds"],
+                "properties": {
+                  "boostIds": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 100,
+                    "description": "Array of boost IDs to revoke (max 100 items per batch)",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "example": [
+                      "12345678-1234-1234-1234-123456789012",
+                      "87654321-4321-4321-4321-210987654321"
+                    ]
+                  }
+                }
+              },
+              "example": {
+                "boostIds": [
+                  "12345678-1234-1234-1234-123456789012",
+                  "87654321-4321-4321-4321-210987654321"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "400": {
+            "description": "Bad Request - Invalid request format, validation errors, empty array, or boost already revoked"
+          },
+          "401": {
+            "description": "Unauthorized - Admin authentication required"
+          },
+          "404": {
+            "description": "Not Found - One or more boost IDs not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          },
+          "501": {
+            "description": "Not Implemented - Endpoint is stubbed for API contract validation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Not Implemented"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "This endpoint is stubbed for API contract validation. Full implementation pending."
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "requestedCount": {
+                          "type": "number",
+                          "description": "Number of boost IDs in the request",
+                          "example": 2
+                        },
+                        "note": {
+                          "type": "string",
+                          "example": "When implemented, this will revoke 2 boosts and remove them from pending competitions"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/agent/profile": {
       "get": {
         "summary": "Get authenticated agent profile",
@@ -8920,7 +9180,7 @@
         ],
         "security": [
           {
-            "bearerAuth": []
+            "BearerAuth": []
           }
         ],
         "responses": {
@@ -9688,6 +9948,14 @@
                                 "nullable": true,
                                 "example": 43.5
                               },
+                              "homeTeamMoneyLine": {
+                                "type": "integer",
+                                "nullable": true
+                              },
+                              "awayTeamMoneyLine": {
+                                "type": "integer",
+                                "nullable": true
+                              },
                               "startTime": {
                                 "type": "string",
                                 "format": "date-time"
@@ -9816,6 +10084,14 @@
                               "type": "number",
                               "nullable": true
                             },
+                            "homeTeamMoneyLine": {
+                              "type": "integer",
+                              "nullable": true
+                            },
+                            "awayTeamMoneyLine": {
+                              "type": "integer",
+                              "nullable": true
+                            },
                             "venue": {
                               "type": "string",
                               "nullable": true
@@ -9938,6 +10214,48 @@
                     "data": {
                       "type": "object",
                       "properties": {
+                        "metadata": {
+                          "type": "object",
+                          "description": "Latest scoreboard snapshot for the game",
+                          "properties": {
+                            "homeScore": {
+                              "type": "integer",
+                              "nullable": true
+                            },
+                            "awayScore": {
+                              "type": "integer",
+                              "nullable": true
+                            },
+                            "quarterName": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "timeRemainingMinutes": {
+                              "type": "integer",
+                              "nullable": true
+                            },
+                            "timeRemainingSeconds": {
+                              "type": "integer",
+                              "nullable": true
+                            },
+                            "down": {
+                              "type": "integer",
+                              "nullable": true
+                            },
+                            "distance": {
+                              "type": "integer",
+                              "nullable": true
+                            },
+                            "yardLine": {
+                              "type": "integer",
+                              "nullable": true
+                            },
+                            "yardLineTerritory": {
+                              "type": "string",
+                              "nullable": true
+                            }
+                          }
+                        },
                         "plays": {
                           "type": "array",
                           "items": {
@@ -9994,9 +10312,22 @@
                               "playType": {
                                 "type": "string",
                                 "nullable": true
+                              },
+                              "homeScore": {
+                                "type": "integer",
+                                "nullable": true
+                              },
+                              "awayScore": {
+                                "type": "integer",
+                                "nullable": true
                               }
                             }
                           }
+                        },
+                        "play": {
+                          "type": "object",
+                          "nullable": true,
+                          "description": "Present when requesting only the latest play"
                         },
                         "pagination": {
                           "type": "object",
@@ -10052,7 +10383,7 @@
         "tags": ["NFL"],
         "security": [
           {
-            "bearerAuth": []
+            "BearerAuth": []
           }
         ],
         "parameters": [

@@ -14,6 +14,7 @@ import type {
 import type { Database, Transaction } from "@recallnet/db/types";
 
 import { GameScoringService } from "./game-scoring.service.js";
+import { convertEasternToUtc, parseUtcTimestamp } from "./lib/sports-utils.js";
 import { SportsDataIONflProvider } from "./providers/sportsdataio.provider.js";
 import type {
   SportsDataIOGameStatus,
@@ -117,26 +118,94 @@ export class NflIngesterService {
   }
 
   /**
+   * Discover final games that are missing winner or endTime
+   * These games were marked final by schedule sync but need play-by-play data
+   * @returns Array of final games missing scoring data
+   */
+  async discoverUnscoredFinalGames(): Promise<SelectGame[]> {
+    // Find all active NFL competitions
+    const { competitions } = await this.#competitionRepo.findByStatus({
+      status: "active",
+      params: {
+        sort: "createdAt",
+        limit: 100,
+        offset: 0,
+      },
+    });
+    const activeNflCompetitions = competitions.filter(
+      (c) => c.type === "sports_prediction",
+    );
+    if (activeNflCompetitions.length === 0) {
+      this.#logger.debug("No active NFL competitions found");
+      return [];
+    }
+    const allGameIds: string[] = [];
+    for (const competition of activeNflCompetitions) {
+      const gameIds =
+        await this.#competitionGamesRepo.findGameIdsByCompetitionId(
+          competition.id,
+        );
+      allGameIds.push(...gameIds);
+    }
+
+    // Get games without finalization data
+    const uniqueGameIds = [...new Set(allGameIds)];
+    if (uniqueGameIds.length === 0) {
+      this.#logger.debug("No games found in active competitions");
+      return [];
+    }
+    const games = await this.#gamesRepo.findByIds(uniqueGameIds);
+    const unscoredFinalGames = games.filter(
+      (g) => g.status === "final" && (g.winner === null || g.endTime === null),
+    );
+
+    this.#logger.info(
+      { count: unscoredFinalGames.length, total: games.length },
+      "Found final games missing scoring data",
+    );
+
+    return unscoredFinalGames;
+  }
+
+  /**
    * Ingest play-by-play data for all active games in active competitions
+   * Also processes any final games that are missing scoring data
    * @returns Number of games ingested
    */
-  async ingestActiveGames(): Promise<number> {
+  async ingestGamePlays(): Promise<{ count: number; gameIds: string[] }> {
+    // Get both in-progress games and final games missing scoring data
     const activeGames = await this.discoverActiveGames();
+    const unscoredFinalGames = await this.discoverUnscoredFinalGames();
+    const allGamesToProcess = new Map<string, SelectGame>();
+    for (const game of activeGames) {
+      allGamesToProcess.set(game.id, game);
+    }
+    for (const game of unscoredFinalGames) {
+      allGamesToProcess.set(game.id, game);
+    }
 
-    if (activeGames.length === 0) {
-      this.#logger.warn("No active competitions with in-progress games found");
-      return 0;
+    const gamesToIngest = Array.from(allGamesToProcess.values());
+    if (gamesToIngest.length === 0) {
+      this.#logger.debug(
+        "No games to ingest (no in-progress or unscored final games)",
+      );
+      return { count: 0, gameIds: [] };
     }
 
     this.#logger.info(
-      `Ingesting ${activeGames.length} in-progress games across active competitions`,
+      {
+        count: gamesToIngest.length,
+        active: activeGames.length,
+        unscored: unscoredFinalGames.length,
+      },
+      "Ingesting games",
     );
 
     let ingestedCount = 0;
-    for (const game of activeGames) {
+    for (const game of gamesToIngest) {
       try {
         this.#logger.info(
-          `Ingesting game ${game.id} (${game.awayTeam} @ ${game.homeTeam})...`,
+          `Ingesting game ${game.id} (${game.awayTeam} @ ${game.homeTeam}, status: ${game.status})...`,
         );
         await this.ingestGamePlayByPlay(game.providerGameId);
         ingestedCount++;
@@ -150,10 +219,13 @@ export class NflIngesterService {
     }
 
     this.#logger.info(
-      `Successfully ingested ${ingestedCount}/${activeGames.length} games`,
+      `Successfully ingested ${ingestedCount}/${gamesToIngest.length} games`,
     );
 
-    return ingestedCount;
+    return {
+      count: ingestedCount,
+      gameIds: gamesToIngest.map((g) => g.id),
+    };
   }
 
   /**
@@ -190,11 +262,13 @@ export class NflIngesterService {
           providerGameId: game.GlobalGameID,
           season: game.Season,
           week: game.Week,
-          startTime: new Date(game.Date),
+          startTime: parseUtcTimestamp(game.DateTimeUTC),
           homeTeam: game.HomeTeam,
           awayTeam: game.AwayTeam,
           spread: game.PointSpread,
           overUnder: game.OverUnder,
+          awayTeamMoneyLine: game.AwayTeamMoneyLine,
+          homeTeamMoneyLine: game.HomeTeamMoneyLine,
           venue: game.StadiumDetails?.Name || null,
           status: this.#mapResponseToNflGameStatus(game.Status),
         });
@@ -267,7 +341,13 @@ export class NflIngesterService {
       const { game, finalizeContext } = await this.#db.transaction(
         async (tx: Transaction) => {
           const gameResult = await this.#ingestGame(data, tx);
-          await this.#ingestPlays(data, gameResult.game.id, tx);
+          await this.#ingestPlays(
+            data,
+            gameResult.game.id,
+            data.Score.Date,
+            data.Score.DateTimeUTC,
+            tx,
+          );
           return gameResult;
         },
       );
@@ -427,7 +507,10 @@ export class NflIngesterService {
       score.GlobalGameID,
       tx,
     );
-    const wasAlreadyFinal = existingGame?.status === "final";
+    const wasAlreadyFinal =
+      existingGame?.status === "final" &&
+      existingGame.winner !== null &&
+      existingGame.endTime !== null;
     // If game was already final, return the existing game
     if (wasAlreadyFinal) {
       return { game: existingGame };
@@ -450,7 +533,12 @@ export class NflIngesterService {
 
         let endTime: Date;
         if (score.GameEndDateTime) {
-          endTime = new Date(score.GameEndDateTime);
+          // GameEndDateTime is in Eastern Time, convert to UTC using the known offset
+          endTime = convertEasternToUtc(
+            score.GameEndDateTime,
+            score.Date,
+            score.DateTimeUTC,
+          );
           this.#logger.debug(
             { gameEndDateTime: score.GameEndDateTime },
             "Using GameEndDateTime from API as game end time",
@@ -459,7 +547,12 @@ export class NflIngesterService {
           const lastPlay = data.Plays.reduce((latest, play) =>
             play.Sequence > latest.Sequence ? play : latest,
           );
-          endTime = new Date(lastPlay.PlayTime);
+          // PlayTime is in Eastern Time, convert to UTC using the known offset
+          endTime = convertEasternToUtc(
+            lastPlay.PlayTime,
+            score.Date,
+            score.DateTimeUTC,
+          );
           this.#logger.debug(
             {
               lastPlayTime: lastPlay.PlayTime,
@@ -485,9 +578,11 @@ export class NflIngesterService {
         providerGameId: score.GlobalGameID,
         season: score.Season,
         week: score.Week,
-        startTime: new Date(score.Date),
+        startTime: parseUtcTimestamp(score.DateTimeUTC),
         homeTeam: score.HomeTeam,
         awayTeam: score.AwayTeam,
+        awayTeamMoneyLine: score.AwayTeamMoneyLine,
+        homeTeamMoneyLine: score.HomeTeamMoneyLine,
         venue: score.StadiumDetails?.Name || null,
         status,
         winner: finalizeContext?.winner,
@@ -541,17 +636,31 @@ export class NflIngesterService {
    * Ingests all plays (predictable and non-predictable) from Plays array,
    * and creates an open play from current game state in Score object.
    * Non-predictable plays have actualOutcome=null and are excluded from predictions.
+   * @param data Play-by-play response data
+   * @param gameId Database game ID
+   * @param referenceLocal Reference local timestamp for timezone conversion
+   * @param referenceUtc Reference UTC timestamp for timezone conversion
+   * @param tx Database transaction
    */
   async #ingestPlays(
     data: SportsDataIOPlayByPlay,
     gameId: string,
+    referenceLocal: string,
+    referenceUtc: string,
     tx: Transaction,
   ): Promise<void> {
     let ingestedCount = 0;
+    const scoreboard = data.Score;
 
     // First, ingest all completed plays from the Plays array
     for (const play of data.Plays) {
       try {
+        // PlayTime is in Eastern Time, convert to UTC using the known offset
+        const playTimeUtc = convertEasternToUtc(
+          play.PlayTime,
+          referenceLocal,
+          referenceUtc,
+        );
         await this.#gamePlaysRepo.upsert(
           {
             gameId,
@@ -560,12 +669,14 @@ export class NflIngesterService {
             quarterName: play.QuarterName,
             timeRemainingMinutes: play.TimeRemainingMinutes,
             timeRemainingSeconds: play.TimeRemainingSeconds,
-            playTime: new Date(play.PlayTime),
+            playTime: playTimeUtc,
             down: play.Down,
             distance: play.Distance ? parseInt(play.Distance.toString()) : null,
             yardLine: play.YardLine,
             yardLineTerritory: play.YardLineTerritory,
             yardsToEndZone: play.YardsToEndZone,
+            awayScore: scoreboard?.AwayScore ?? null,
+            homeScore: scoreboard?.HomeScore ?? null,
             playType: play.Type,
             team: play.Team,
             opponent: play.Opponent,

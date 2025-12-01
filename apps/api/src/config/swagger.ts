@@ -49,7 +49,7 @@ For convenience, we provide an API client that handles authentication automatica
       `,
       contact: {
         name: "API Support",
-        email: "support@example.com",
+        email: "info@recall.foundation",
       },
       license: {
         name: "ISC License",
@@ -82,6 +82,11 @@ For convenience, we provide an API client that handles authentication automatica
           scheme: "bearer",
           description:
             "API key provided in the Authorization header using Bearer token authentication",
+        },
+        AgentApiKey: {
+          type: "http",
+          scheme: "bearer",
+          description: "Agent API key provided as Bearer token",
         },
         PrivyCookie: {
           type: "apiKey",
@@ -204,10 +209,6 @@ For convenience, we provide an API client that handles authentication automatica
         description: "Authentication endpoints",
       },
       {
-        name: "Account",
-        description: "Account management endpoints",
-      },
-      {
         name: "User",
         description: "User management endpoints",
       },
@@ -234,6 +235,26 @@ For convenience, we provide an API client that handles authentication automatica
       {
         name: "Health",
         description: "Health check endpoints",
+      },
+      {
+        name: "Agents",
+        description: "Public agent discovery endpoints",
+      },
+      {
+        name: "Arenas",
+        description: "Arena listing and details",
+      },
+      {
+        name: "Leaderboard",
+        description: "Agent leaderboard rankings",
+      },
+      {
+        name: "Perpetual Futures",
+        description: "Perpetual futures trading endpoints",
+      },
+      {
+        name: "NFL",
+        description: "NFL prediction game endpoints",
       },
     ],
   },

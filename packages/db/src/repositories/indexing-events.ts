@@ -1,11 +1,61 @@
 import { and, desc, eq } from "drizzle-orm";
 
-import { BlockHashCoder, TxHashCoder } from "@recallnet/db/coders";
-import { indexingEvents } from "@recallnet/db/schema/indexing/defs";
+import { BlockHashCoder, TxHashCoder } from "../coders/index.js";
+import { indexingEvents } from "../schema/indexing/defs.js";
+import type { Database } from "../types.js";
 
-import config from "@/config/index.js";
-import { db } from "@/database/db.js";
-import { EventData } from "@/indexing/blockchain-types.js";
+/**
+ * Normalized event data structure used by our indexer.
+ *
+ * Purpose:
+ * - Converts a `RawLog` into a consistent, strongly-typed record.
+ *
+ * Fields:
+ * - blockNumber / blockHash / blockTimestamp: canonical chain coordinates.
+ * - transactionHash / logIndex: unique identifier within the block.
+ * - raw: untouched payload (topics + data + address) for re-decoding or audits.
+ * - type: internal event type (`stake` / `unstake` / …).
+ * - createdAt: indexer ingested timestamp (when _we_ created the entry).
+ */
+export type EventData = {
+  // Blockchain metadata (stored immediately during indexing)
+  blockNumber: bigint;
+  blockHash: string;
+  blockTimestamp: Date;
+  transactionHash: string;
+  logIndex: number;
+  // Raw event payload (stored without parsing)
+  raw: {
+    topics: [signature: `0x${string}`, ...args: `0x${string}`[]];
+    data: `0x${string}`;
+    address: `0x${string}`;
+  };
+  type: EventType;
+  // Indexer metadata
+  createdAt: Date;
+};
+
+/**
+ * Known blockchain event categories.
+ *
+ * - "stake"    → Stake(staker, tokenId, amount, startTime, lockupEndTime)
+ * - "unstake"  → Unstake(staker, tokenId, amountToUnstake, withdrawAllowedTime)
+ * - "relock"   → Relock(staker, tokenId, updatedOldStakeAmount)
+ * - "withdraw" → Withdraw(staker, tokenId, amount)
+ * - "rewardClaimed" → RewardClaimed(root, user, amount)
+ * - "allocationAdded" → AllocationAdded(root, token, allocatedAmount, startTimestamp)
+ * - "unknown"  → Fallback when topic0 doesn't match our ABI set.
+ *
+ * This is the discriminator used throughout the indexer / DB schema.
+ */
+export type EventType =
+  | "stake"
+  | "unstake"
+  | "relock"
+  | "withdraw"
+  | "rewardClaimed"
+  | "allocationAdded"
+  | "unknown";
 
 /**
  * EventsRepository
@@ -29,9 +79,9 @@ import { EventData } from "@/indexing/blockchain-types.js";
  * - Timestamps are UTC (`timestamp` without time zone).
  */
 export class EventsRepository {
-  readonly #db: typeof db;
+  readonly #db: Database;
 
-  constructor(database: typeof db = db) {
+  constructor(database: Database) {
     this.#db = database;
   }
 
@@ -113,25 +163,22 @@ export class EventsRepository {
    * Usage:
    * - `IndexingService.loop()` uses this to resume with `fromBlock = last`.
    *
-   * Fallback:
-   * - If no rows exist, falls back to `config.stakingIndex.eventStartBlock`.
-   *
    * Returns:
-   * - bigint block number (never undefined).
+   * - bigint block number if events exist
+   * - undefined if no rows exist (caller should use fallback start block)
    *
    * Performance:
    * - Uses ORDER BY block_number DESC LIMIT 1; ensure an index on block_number
    *   exists (present in schema) for O(log N) retrieval.
    */
-  async lastBlockNumber(): Promise<bigint> {
+  async lastBlockNumber(): Promise<bigint | undefined> {
     const [row] = await this.#db
       .select({ blockNumber: indexingEvents.blockNumber })
       .from(indexingEvents)
       .orderBy(desc(indexingEvents.blockNumber))
       .limit(1);
 
-    const lastBlockNumber =
-      row?.blockNumber ?? config.stakingIndex.eventStartBlock;
-    return BigInt(lastBlockNumber);
+    const lastBlockNumber = row?.blockNumber;
+    return lastBlockNumber !== undefined ? BigInt(lastBlockNumber) : undefined;
   }
 }

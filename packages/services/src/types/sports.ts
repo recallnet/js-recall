@@ -95,11 +95,14 @@ export interface SportsDataIOScore {
   Season: number;
   Week: number;
   Date: string;
+  DateTimeUTC: string;
   GameEndDateTime: string | null;
   AwayTeam: NflTeam;
   HomeTeam: NflTeam;
   AwayScore: number | null;
   HomeScore: number | null;
+  AwayTeamMoneyLine: number | null;
+  HomeTeamMoneyLine: number | null;
   Quarter: string | null;
   TimeRemaining: string | null;
   Possession: string | null;

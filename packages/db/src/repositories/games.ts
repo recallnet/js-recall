@@ -46,6 +46,8 @@ export class GamesRepository {
         awayTeam: data.awayTeam,
         spread: data.spread,
         overUnder: data.overUnder,
+        awayTeamMoneyLine: data.awayTeamMoneyLine,
+        homeTeamMoneyLine: data.homeTeamMoneyLine,
         venue: data.venue,
         status: data.status,
         endTime: data.endTime,
@@ -59,6 +61,12 @@ export class GamesRepository {
       }
       if (conflictUpdate.winner === undefined) {
         delete conflictUpdate.winner;
+      }
+      if (conflictUpdate.awayTeamMoneyLine === undefined) {
+        delete conflictUpdate.awayTeamMoneyLine;
+      }
+      if (conflictUpdate.homeTeamMoneyLine === undefined) {
+        delete conflictUpdate.homeTeamMoneyLine;
       }
 
       const [result] = await executor

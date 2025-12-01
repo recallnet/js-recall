@@ -2905,6 +2905,10 @@ export class CompetitionRepository {
           eq(competitions.status, "ended"),
           isNotNull(competitions.endDate),
           isNull(rewardsRoots.competitionId),
+          or(
+            gt(competitionPrizePools.agentPool, BigInt(0)),
+            gt(competitionPrizePools.userPool, BigInt(0)),
+          ),
         ),
       )
       .orderBy(asc(competitions.endDate))

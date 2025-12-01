@@ -17,6 +17,7 @@ import { ServiceRegistry } from "@/services/index.js";
 
 import {
   AdminAddAgentToCompetitionParamsSchema,
+  AdminAddBonusBoostSchema,
   AdminAddPartnerToCompetitionSchema,
   AdminArenaParamsSchema,
   AdminCompetitionParamsSchema,
@@ -44,6 +45,7 @@ import {
   AdminRemoveAgentFromCompetitionBodySchema,
   AdminRemoveAgentFromCompetitionParamsSchema,
   AdminReplaceCompetitionPartnersSchema,
+  AdminRevokeBonusBoostSchema,
   AdminRewardsAllocationSchema,
   AdminSetupSchema,
   AdminStartCompetitionSchema,
@@ -1913,6 +1915,62 @@ export function makeAdminController(services: ServiceRegistry) {
         });
       } catch (error) {
         adminLogger.error({ error }, "Error allocating rewards");
+        next(error);
+      }
+    },
+
+    /**
+     * Add bonus boost to users
+     * Stubbed endpoint - returns 501 Not Implemented
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async addBonusBoost(req: Request, res: Response, next: NextFunction) {
+      try {
+        // Validate request body
+        const { boosts } = flatParse(AdminAddBonusBoostSchema, req.body);
+
+        // Stubbed endpoint - return 501 Not Implemented
+        res.status(501).json({
+          success: false,
+          error: "Not Implemented",
+          message:
+            "This endpoint is stubbed for API contract validation. Full implementation pending.",
+          data: {
+            requestedCount: boosts.length,
+            note: "When implemented, this will process all boosts in the batch and return results for each item.",
+          },
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Revoke bonus boost
+     * Stubbed endpoint - returns 501 Not Implemented
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async revokeBonusBoost(req: Request, res: Response, next: NextFunction) {
+      try {
+        // Validate request body
+        const { boostIds } = flatParse(AdminRevokeBonusBoostSchema, req.body);
+
+        // Stubbed endpoint - return 501 Not Implemented
+        res.status(501).json({
+          success: false,
+          error: "Not Implemented",
+          message:
+            "This endpoint is stubbed for API contract validation. Full implementation pending.",
+          data: {
+            requestedCount: boostIds.length,
+            note: "When implemented, this will revoke all specified boosts and return results for each item.",
+          },
+        });
+      } catch (error) {
         next(error);
       }
     },

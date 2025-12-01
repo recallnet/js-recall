@@ -35,6 +35,12 @@
         "types": "./dist/types/index.d.ts",
         "default": "./dist/types/index.js"
       }
+    },
+    "./indexing": {
+      "import": {
+        "types": "./dist/indexing/index.d.ts",
+        "default": "./dist/indexing/index.js"
+      }
     }
   },
   "files": [
@@ -55,6 +61,7 @@
   },
   "dependencies": {
     "@coingecko/coingecko-typescript": "^2.0.0",
+    "@envio-dev/hypersync-client": "^0.6.5",
     "@recallnet/conversions": "workspace:*",
     "@recallnet/db": "workspace:*",
     "@recallnet/rewards": "workspace:*",
@@ -63,6 +70,7 @@
     "@solana/web3.js": "^1.98.4",
     "axios": "^1.6.0",
     "decimal.js": "^10.6.0",
+    "drizzle-orm": "^0.43.1",
     "jose": "^5.10.0",
     "lru-cache": "^11.1.0",
     "merkletreejs": "^0.5.2",

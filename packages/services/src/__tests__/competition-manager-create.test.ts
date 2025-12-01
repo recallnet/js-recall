@@ -17,6 +17,7 @@ import { Database, Transaction } from "@recallnet/db/types";
 import type { AgentService } from "../agent.service.js";
 import type { AgentRankService } from "../agentrank.service.js";
 import type { BalanceService } from "../balance.service.js";
+import type { BoostBonusService } from "../boost-bonus.service.js";
 import type { CompetitionRewardService } from "../competition-reward.service.js";
 import { CompetitionService } from "../competition.service.js";
 import { specificChainTokens } from "../lib/config-utils.js";
@@ -37,6 +38,7 @@ describe("CompetitionService - createCompetition", () => {
   let competitionRewardService: MockProxy<CompetitionRewardService>;
   let rewardsService: MockProxy<RewardsService>;
   let perpsDataProcessor: MockProxy<PerpsDataProcessor>;
+  let boostBonusService: MockProxy<BoostBonusService>;
   let agentRepo: MockProxy<AgentRepository>;
   let agentScoreRepo: MockProxy<AgentScoreRepository>;
   let arenaRepo: MockProxy<ArenaRepository>;
@@ -62,6 +64,7 @@ describe("CompetitionService - createCompetition", () => {
     competitionRewardService = mock<CompetitionRewardService>();
     rewardsService = mock<RewardsService>();
     perpsDataProcessor = mock<PerpsDataProcessor>();
+    boostBonusService = mock<BoostBonusService>();
     agentRepo = mock<AgentRepository>();
     agentScoreRepo = mock<AgentScoreRepository>();
     arenaRepo = mock<ArenaRepository>();
@@ -160,6 +163,7 @@ describe("CompetitionService - createCompetition", () => {
       competitionRewardService,
       rewardsService,
       perpsDataProcessor,
+      boostBonusService,
       agentRepo,
       agentScoreRepo,
       arenaRepo,
@@ -780,6 +784,7 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
   let competitionRewardService: MockProxy<CompetitionRewardService>;
   let rewardsService: MockProxy<RewardsService>;
   let perpsDataProcessor: MockProxy<PerpsDataProcessor>;
+  let boostBonusService: MockProxy<BoostBonusService>;
   let agentRepo: MockProxy<AgentRepository>;
   let agentScoreRepo: MockProxy<AgentScoreRepository>;
   let arenaRepo: MockProxy<ArenaRepository>;
@@ -806,6 +811,7 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
     competitionRewardService = mock<CompetitionRewardService>();
     rewardsService = mock<RewardsService>();
     perpsDataProcessor = mock<PerpsDataProcessor>();
+    boostBonusService = mock<BoostBonusService>();
     agentRepo = mock<AgentRepository>();
     agentScoreRepo = mock<AgentScoreRepository>();
     arenaRepo = mock<ArenaRepository>();
@@ -836,6 +842,7 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
       competitionRewardService,
       rewardsService,
       perpsDataProcessor,
+      boostBonusService,
       agentRepo,
       agentScoreRepo,
       arenaRepo,

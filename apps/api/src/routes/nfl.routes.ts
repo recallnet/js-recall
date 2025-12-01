@@ -165,6 +165,12 @@ export function configureNflRoutes(
    *                             type: number
    *                             nullable: true
    *                             example: 43.5
+   *                           homeTeamMoneyLine:
+   *                             type: integer
+   *                             nullable: true
+   *                           awayTeamMoneyLine:
+   *                             type: integer
+   *                             nullable: true
    *                           startTime:
    *                             type: string
    *                             format: date-time
@@ -257,6 +263,12 @@ export function configureNflRoutes(
    *                         overUnder:
    *                           type: number
    *                           nullable: true
+   *                         homeTeamMoneyLine:
+   *                           type: integer
+   *                           nullable: true
+   *                         awayTeamMoneyLine:
+   *                           type: integer
+   *                           nullable: true
    *                         venue:
    *                           type: string
    *                           nullable: true
@@ -344,6 +356,37 @@ export function configureNflRoutes(
    *                 data:
    *                   type: object
    *                   properties:
+   *                     metadata:
+   *                       type: object
+   *                       description: Latest scoreboard snapshot for the game
+   *                       properties:
+   *                         homeScore:
+   *                           type: integer
+   *                           nullable: true
+   *                         awayScore:
+   *                           type: integer
+   *                           nullable: true
+   *                         quarterName:
+   *                           type: string
+   *                           nullable: true
+   *                         timeRemainingMinutes:
+   *                           type: integer
+   *                           nullable: true
+   *                         timeRemainingSeconds:
+   *                           type: integer
+   *                           nullable: true
+   *                         down:
+   *                           type: integer
+   *                           nullable: true
+   *                         distance:
+   *                           type: integer
+   *                           nullable: true
+   *                         yardLine:
+   *                           type: integer
+   *                           nullable: true
+   *                         yardLineTerritory:
+   *                           type: string
+   *                           nullable: true
    *                     plays:
    *                       type: array
    *                       items:
@@ -387,6 +430,16 @@ export function configureNflRoutes(
    *                           playType:
    *                             type: string
    *                             nullable: true
+   *                           homeScore:
+   *                             type: integer
+   *                             nullable: true
+   *                           awayScore:
+   *                             type: integer
+   *                             nullable: true
+   *                     play:
+   *                       type: object
+   *                       nullable: true
+   *                       description: Present when requesting only the latest play
    *                     pagination:
    *                       type: object
    *                       properties:
@@ -426,7 +479,7 @@ export function configureNflRoutes(
    *     tags:
    *       - NFL
    *     security:
-   *       - bearerAuth: []
+   *       - BearerAuth: []
    *     parameters:
    *       - in: path
    *         name: competitionId
