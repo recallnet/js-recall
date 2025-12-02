@@ -177,6 +177,80 @@ describe("DexScreenerProvider", () => {
     }, 15000);
   });
 
+  describe("Wrapped native token price fetching (integration)", () => {
+    it("should fetch WBNB price on BSC", async () => {
+      const priceReport = await provider.getPrice(
+        specificChainTokens.bsc.bnb,
+        BlockchainType.EVM,
+        "bsc",
+      );
+
+      expect(priceReport).not.toBeNull();
+      expect(typeof priceReport?.price).toBe("number");
+      expect(priceReport?.price).toBeGreaterThan(0);
+    }, 15000);
+
+    it("should fetch WAVAX price on Avalanche", async () => {
+      const priceReport = await provider.getPrice(
+        specificChainTokens.avalanche.avax,
+        BlockchainType.EVM,
+        "avalanche",
+      );
+
+      expect(priceReport).not.toBeNull();
+      expect(typeof priceReport?.price).toBe("number");
+      expect(priceReport?.price).toBeGreaterThan(0);
+    }, 15000);
+
+    it("should fetch WETH price on Linea", async () => {
+      const priceReport = await provider.getPrice(
+        specificChainTokens.linea.eth,
+        BlockchainType.EVM,
+        "linea",
+      );
+
+      expect(priceReport).not.toBeNull();
+      expect(typeof priceReport?.price).toBe("number");
+      expect(priceReport?.price).toBeGreaterThan(0);
+    }, 15000);
+
+    it("should fetch WETH price on zkSync Era", async () => {
+      const priceReport = await provider.getPrice(
+        specificChainTokens.zksync.eth,
+        BlockchainType.EVM,
+        "zksync",
+      );
+
+      expect(priceReport).not.toBeNull();
+      expect(typeof priceReport?.price).toBe("number");
+      expect(priceReport?.price).toBeGreaterThan(0);
+    }, 15000);
+
+    it("should fetch WETH price on Scroll", async () => {
+      const priceReport = await provider.getPrice(
+        specificChainTokens.scroll.eth,
+        BlockchainType.EVM,
+        "scroll",
+      );
+
+      expect(priceReport).not.toBeNull();
+      expect(typeof priceReport?.price).toBe("number");
+      expect(priceReport?.price).toBeGreaterThan(0);
+    }, 15000);
+
+    it("should fetch WMNT price on Mantle", async () => {
+      const priceReport = await provider.getPrice(
+        specificChainTokens.mantle.mnt,
+        BlockchainType.EVM,
+        "mantle",
+      );
+
+      expect(priceReport).not.toBeNull();
+      expect(typeof priceReport?.price).toBe("number");
+      expect(priceReport?.price).toBeGreaterThan(0);
+    }, 15000);
+  });
+
   describe("Chain detection", () => {
     it("should detect Solana addresses correctly", async () => {
       const chain = provider.determineChain(specificChainTokens.svm.sol);

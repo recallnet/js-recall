@@ -46,12 +46,22 @@ export function getWrappedNativeAddress(
     specificChainTokens[chain as keyof typeof specificChainTokens];
   if (!chainTokens) return undefined;
 
-  // SVM uses 'sol' key, Polygon uses 'matic' key, other EVM chains use 'eth' key
+  // Each chain has its own native token key
+  // SVM: sol, Polygon: matic, BSC: bnb, Avalanche: avax, Mantle: mnt, others: eth
   if (chain === "svm" && "sol" in chainTokens) {
     return chainTokens.sol;
   }
   if (chain === "polygon" && "matic" in chainTokens) {
     return chainTokens.matic;
+  }
+  if (chain === "bsc" && "bnb" in chainTokens) {
+    return chainTokens.bnb;
+  }
+  if (chain === "avalanche" && "avax" in chainTokens) {
+    return chainTokens.avax;
+  }
+  if (chain === "mantle" && "mnt" in chainTokens) {
+    return chainTokens.mnt;
   }
   if ("eth" in chainTokens) {
     return chainTokens.eth;
@@ -126,6 +136,24 @@ export const specificChainTokens = {
     eth: "0x4200000000000000000000000000000000000006",
     usdc: "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85",
     usdt: "0x94b008aa00579c1307b0ef2c499ad98a8ce58e58",
+  },
+  bsc: {
+    bnb: "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c", // WBNB - wrapped native BNB
+  },
+  avalanche: {
+    avax: "0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7", // WAVAX - wrapped native AVAX
+  },
+  linea: {
+    eth: "0xe5D7C2a44FfDDf6b295A15c148167daaAf5Cf34f", // WETH on Linea
+  },
+  zksync: {
+    eth: "0x5AEa5775959fBC2557Cc8789bC1bf90A239D9a91", // WETH on zkSync Era
+  },
+  scroll: {
+    eth: "0x5300000000000000000000000000000000000004", // WETH on Scroll
+  },
+  mantle: {
+    mnt: "0x78c1b0c915c4faa5fffa6cabf0219da63d7f4cb8", // WMNT - wrapped native MNT
   },
 } as const;
 
