@@ -9,6 +9,7 @@ import {
   ArenaService,
   BalanceService,
   BoostAwardService,
+  BoostBonusService,
   BoostService,
   CalmarRatioService,
   CompetitionRewardService,
@@ -21,6 +22,7 @@ import {
   RewardsService,
   RiskMetricsService,
   SortinoRatioService,
+  SportsIngesterService,
   SportsService,
   TradeSimulatorService,
   TradingConstraintsService,
@@ -229,6 +231,20 @@ export const sportsService = new SportsService(
   createLogger("SportsService"),
 );
 
+export const sportsIngesterService = new SportsIngesterService(
+  sportsService,
+  createLogger("SportsIngesterService"),
+  { sportsDataApi: config.sportsDataApi },
+);
+
+export const boostBonusService = new BoostBonusService(
+  db,
+  boostRepository,
+  competitionRepository,
+  userRepository,
+  createLogger("BoostBonusService"),
+);
+
 export const competitionService = new CompetitionService(
   balanceService,
   tradeSimulatorService,
@@ -239,6 +255,7 @@ export const competitionService = new CompetitionService(
   competitionRewardsService,
   rewardsService,
   perpsDataProcessor,
+  boostBonusService,
   agentRepository,
   agentScoreRepository,
   arenaRepository,
