@@ -1940,9 +1940,7 @@ export function makeAdminController(services: ServiceRegistry) {
         // This ensures all-or-nothing transaction semantics
         const validationErrors = [];
 
-        for (let i = 0; i < boosts.length; i++) {
-          const boostItem = boosts[i]!;
-
+        for (const [i, boostItem] of boosts.entries()) {
           // Check if user exists for each wallet
           try {
             const user = await services.userService.getUserByWalletAddress(
@@ -1988,9 +1986,7 @@ export function makeAdminController(services: ServiceRegistry) {
         const results = await db.transaction(async (tx) => {
           const batchResults = [];
 
-          for (let i = 0; i < boosts.length; i++) {
-            const boostItem = boosts[i]!;
-
+          for (const [i, boostItem] of boosts.entries()) {
             // Convert amount from string to BigInt
             const amount = BigInt(boostItem.amount);
 
@@ -2073,9 +2069,7 @@ export function makeAdminController(services: ServiceRegistry) {
         const results = await db.transaction(async (tx) => {
           const batchResults = [];
 
-          for (let i = 0; i < boostIds.length; i++) {
-            const boostId = boostIds[i]!;
-
+          for (const [i, boostId] of boostIds.entries()) {
             adminLogger.info(
               {
                 index: i,
