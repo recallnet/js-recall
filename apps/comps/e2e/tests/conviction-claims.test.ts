@@ -4,8 +4,10 @@ import { ConvictionClaimsRepository } from "@recallnet/db/repositories/convictio
 import { seasons } from "@recallnet/db/schema/airdrop/defs";
 import { convictionClaims } from "@recallnet/db/schema/conviction-claims/defs";
 
-import { db } from "@/database/db.js";
-import { logger } from "@/lib/logger.js";
+import { db } from "@/lib/db";
+import { createLogger } from "@/lib/logger";
+
+const logger = createLogger("ConvictionClaimsTest");
 
 describe("ConvictionClaimsRepository", () => {
   let convictionClaimsRepository: ConvictionClaimsRepository;

@@ -21,8 +21,10 @@ import {
 } from "@recallnet/test-utils";
 import { TestPrivyUser } from "@recallnet/test-utils";
 
-import { db } from "@/database/db.js";
-import { logger } from "@/lib/logger.js";
+import { db } from "@/lib/db";
+import { createLogger } from "@/lib/logger";
+
+const logger = createLogger("RewardsApiTest");
 
 // Mock the RewardsAllocator class
 const createMockRewardsAllocator = (transactionHash: string | null) => ({
