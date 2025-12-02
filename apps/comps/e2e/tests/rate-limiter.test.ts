@@ -1,6 +1,7 @@
 import axios, { AxiosError } from "axios";
 import { beforeEach, describe, expect, test } from "vitest";
 
+import { specificChainTokens } from "@recallnet/services/lib";
 import { BalancesResponse, ErrorResponse } from "@recallnet/test-utils";
 import { getBaseUrl } from "@recallnet/test-utils";
 import {
@@ -10,8 +11,6 @@ import {
   startTestCompetition,
   wait,
 } from "@recallnet/test-utils";
-
-import config from "@/config/index.js";
 
 describe("Rate Limiter Middleware", () => {
   // Clean up test state before each test
@@ -190,7 +189,7 @@ describe("Rate Limiter Middleware", () => {
     // This confirms different endpoints have different limits
     const priceResponse = await client.request(
       "get",
-      `/api/price?token=${config.specificChainTokens.svm.sol}`,
+      `/api/price?token=${specificChainTokens.svm.sol}`,
     );
 
     if ((priceResponse as BalancesResponse).success === true) {

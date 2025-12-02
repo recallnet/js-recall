@@ -18,8 +18,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import schema from "@recallnet/db/schema";
 
-import { config } from "@/config/index.js";
-import { createLogger } from "@/lib/logger.js";
+import { createLogger } from "@/lib/logger";
 
 const logger = createLogger("MultiCompetitionBalancesTest");
 
@@ -49,7 +48,10 @@ describe("Multi-Competition Balance Isolation", () => {
 
   beforeAll(async () => {
     // Create a separate test database
-    const testDbUrl = config.database.url;
+    const testDbUrl = process.env.POSTGRES_URL;
+    if (!testDbUrl) {
+      throw new Error("POSTGRES_URL environment variable is required");
+    }
     const testDbName = `test_multi_comp_${Date.now()}`;
 
     const adminPool = new Pool({ connectionString: testDbUrl });
@@ -69,7 +71,7 @@ describe("Multi-Competition Balance Isolation", () => {
     );
     fs.mkdirSync(tempMigrationsDir, { recursive: true });
 
-    const originalMigrationsDir = path.join(process.cwd(), "drizzle");
+    const originalMigrationsDir = path.join(process.cwd(), "../api/drizzle");
     const allMigrations = fs
       .readdirSync(originalMigrationsDir)
       .filter((f) => f.endsWith(".sql"))
@@ -288,7 +290,7 @@ describe("Multi-Competition Balance Isolation", () => {
       await testPool.end();
 
       const adminPool = new Pool({
-        connectionString: config.database.url,
+        connectionString: process.env.POSTGRES_URL,
       });
       await adminPool.query(`DROP DATABASE IF EXISTS ${dbName}`);
       await adminPool.end();
@@ -336,7 +338,7 @@ describe("Multi-Competition Balance Isolation", () => {
       logger.info("Adding migration #57 to temp directory and running it...");
 
       // Copy migration #57 to temp directory
-      const originalMigrationsDir = path.join(process.cwd(), "drizzle");
+      const originalMigrationsDir = path.join(process.cwd(), "../api/drizzle");
       const migration57File = fs
         .readdirSync(originalMigrationsDir)
         .find((f) => f.startsWith("0057_"));

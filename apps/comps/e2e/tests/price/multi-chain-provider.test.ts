@@ -15,8 +15,10 @@ import {
   registerUserAndAgentAndGetClient,
 } from "@recallnet/test-utils";
 
-import config from "@/config/index.js";
-import { logger } from "@/lib/logger.js";
+import { config } from "@/config/private";
+import { createLogger } from "@/lib/logger";
+
+const logger = createLogger("MultiChainProviderTest");
 
 // Load environment variables
 dotenv.config();

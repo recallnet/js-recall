@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import { beforeEach, describe, expect, test } from "vitest";
 
+import { specificChainTokens } from "@recallnet/services/lib";
 import {
   CROSS_CHAIN_TRADING_TYPE,
   GetUserAgentsResponse,
@@ -14,8 +15,7 @@ import {
   wait,
 } from "@recallnet/test-utils";
 
-import { config } from "@/config/index.js";
-import { db } from "@/database/db.js";
+import { db } from "@/lib/db";
 
 // Type definitions for database query results
 interface LeaderboardEntry {
@@ -59,7 +59,7 @@ describe("Total ROI Calculation Tests", () => {
     const tradeAmount = 1000;
     // Burn 1000 USDC (we have a known roi this way)
     await agentClient.executeTrade({
-      fromToken: config.specificChainTokens.eth.usdc,
+      fromToken: specificChainTokens.eth.usdc,
       toToken: "0x000000000000000000000000000000000000dead",
       amount: tradeAmount.toString(),
       competitionId,
@@ -130,7 +130,7 @@ describe("Total ROI Calculation Tests", () => {
     const tradeAmount1 = 500;
     // Execute a trade in first competition
     await agentClient.executeTrade({
-      fromToken: config.specificChainTokens.eth.usdc,
+      fromToken: specificChainTokens.eth.usdc,
       toToken: "0x000000000000000000000000000000000000dead",
       amount: tradeAmount1.toString(),
       competitionId: startResponse1.competition.id,
@@ -159,7 +159,7 @@ describe("Total ROI Calculation Tests", () => {
 
     // Execute trades in second competition
     await agentClient.executeTrade({
-      fromToken: config.specificChainTokens.eth.usdc,
+      fromToken: specificChainTokens.eth.usdc,
       toToken: "0x000000000000000000000000000000000000dead",
       amount: tradeAmount2.toString(),
       competitionId: startResponse2.competition.id,
@@ -242,7 +242,7 @@ describe("Total ROI Calculation Tests", () => {
     const tradeAmount = 500;
     // Execute trade in first competition
     await agentClient.executeTrade({
-      fromToken: config.specificChainTokens.eth.usdc,
+      fromToken: specificChainTokens.eth.usdc,
       toToken: "0x000000000000000000000000000000000000dead",
       amount: tradeAmount.toString(),
       competitionId: startResponse1.competition.id,
@@ -265,7 +265,7 @@ describe("Total ROI Calculation Tests", () => {
 
     // Execute trade in second competition but don't end it
     await agentClient.executeTrade({
-      fromToken: config.specificChainTokens.eth.usdc,
+      fromToken: specificChainTokens.eth.usdc,
       toToken: "0x000000000000000000000000000000000000dead",
       amount: "1000",
       competitionId: startResponse2.competition.id,
@@ -313,7 +313,7 @@ describe("Total ROI Calculation Tests", () => {
 
     // Execute trade but don't end competition
     await agentClient.executeTrade({
-      fromToken: config.specificChainTokens.eth.usdc,
+      fromToken: specificChainTokens.eth.usdc,
       toToken: "0x000000000000000000000000000000000000dead",
       amount: "1000",
       competitionId: startResponse.competition.id,

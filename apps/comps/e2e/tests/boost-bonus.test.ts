@@ -16,8 +16,8 @@ import {
   registerUserAndAgentAndGetClient,
 } from "@recallnet/test-utils";
 
-import { db } from "@/database/db.js";
-import { ServiceRegistry } from "@/services/index.js";
+import { db } from "@/lib/db";
+import { boostBonusService } from "@/lib/services";
 
 const createActiveCompWithOpenWindow = (
   adminClient: ReturnType<typeof createTestClient>,
@@ -1586,9 +1586,8 @@ describe("Bonus Boosts E2E", () => {
       );
 
       // Run boost application service
-      const services = new ServiceRegistry();
       const cronResult =
-        await services.boostBonusService.applyBonusBoostsToEligibleCompetitions();
+        await boostBonusService.applyBonusBoostsToEligibleCompetitions();
 
       // Verify results
       expect(cronResult.totalBoostsApplied).toBe(2); // Applied to both competitions
@@ -1648,9 +1647,8 @@ describe("Bonus Boosts E2E", () => {
       expect(initialBalance[0]!.balance).toBe(1000000000000000000n);
 
       // Run service again (should skip due to idempotency)
-      const services = new ServiceRegistry();
       const cronResult =
-        await services.boostBonusService.applyBonusBoostsToEligibleCompetitions();
+        await boostBonusService.applyBonusBoostsToEligibleCompetitions();
 
       // Verify no duplicate applied
       expect(cronResult.totalBoostsApplied).toBe(0); // No new applications
@@ -1711,8 +1709,7 @@ describe("Bonus Boosts E2E", () => {
       );
 
       // Run boost application service
-      const services = new ServiceRegistry();
-      await services.boostBonusService.applyBonusBoostsToEligibleCompetitions();
+      await boostBonusService.applyBonusBoostsToEligibleCompetitions();
 
       // Verify neither boost was applied
       const balance1 = await getBoostBalance(user1.id, comp.competition!.id);
@@ -1764,9 +1761,8 @@ describe("Bonus Boosts E2E", () => {
         .where(eq(competitions.id, compB.competition!.id));
 
       // Run boost application service
-      const services = new ServiceRegistry();
       const cronResult =
-        await services.boostBonusService.applyBonusBoostsToEligibleCompetitions();
+        await boostBonusService.applyBonusBoostsToEligibleCompetitions();
 
       // Verify partial success - boosts applied to A and C, but not B
       expect(cronResult.totalBoostsApplied).toBe(2); // Only A and C

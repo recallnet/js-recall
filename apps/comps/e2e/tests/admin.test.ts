@@ -61,7 +61,7 @@ import {
   wait,
 } from "@recallnet/test-utils";
 
-import { db } from "@/database/db.js";
+import { db } from "@/lib/db";
 
 describe("Admin API", () => {
   let adminApiKey: string;

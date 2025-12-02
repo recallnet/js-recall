@@ -1,6 +1,7 @@
 import axios from "axios";
 import { beforeEach, describe, expect, test } from "vitest";
 
+import { specificChainTokens } from "@recallnet/services/lib";
 import { BlockchainType } from "@recallnet/services/types";
 import {
   AdminAgentResponse,
@@ -15,8 +16,6 @@ import {
   startTestCompetition,
   wait,
 } from "@recallnet/test-utils";
-
-import config from "@/config/index.js";
 
 // TODO: need user deactivation test
 
@@ -123,8 +122,8 @@ describe("Agent Deactivation API", () => {
 
     // Attempt to execute a trade - should also fail with deactivation message
     try {
-      const usdcTokenAddress = config.specificChainTokens.svm.usdc;
-      const solTokenAddress = config.specificChainTokens.svm.sol;
+      const usdcTokenAddress = specificChainTokens.svm.usdc;
+      const solTokenAddress = specificChainTokens.svm.sol;
 
       await client.executeTrade({
         fromToken: usdcTokenAddress,
@@ -279,8 +278,8 @@ describe("Agent Deactivation API", () => {
 
     // Make some trades to differentiate portfolio values
     // We'll have Agent 3 (to be deactivated) make some trades to put them on the leaderboard
-    const usdcTokenAddress = config.specificChainTokens.svm.usdc;
-    const solTokenAddress = config.specificChainTokens.svm.sol;
+    const usdcTokenAddress = specificChainTokens.svm.usdc;
+    const solTokenAddress = specificChainTokens.svm.sol;
 
     // Have Agent 3 execute a trade
     await client3.executeTrade({
@@ -451,7 +450,7 @@ describe("Agent Deactivation API", () => {
     const competitionId = competition.id;
 
     // Make trades to establish different portfolio values
-    const usdcTokenAddress = config.specificChainTokens.svm.usdc;
+    const usdcTokenAddress = specificChainTokens.svm.usdc;
     const competitionId2 = competition.id;
 
     // Agent1: Keep high portfolio value (no trades - maintains starting balance)
