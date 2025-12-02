@@ -6,6 +6,9 @@ import { createSafeClient } from "@/rpc/clients/server-side";
 import { formatCompetitionDates } from "@/utils/competition-utils";
 import { formatBigintAmount } from "@/utils/format";
 
+const BUTTON_BLUE = "#0E66BE";
+const BUTTON_BLUE_LIGHT = "#1A8FE3";
+
 /**
  * Loads an asset from the public directory and returns it as a base64 data URL.
  *
@@ -43,103 +46,113 @@ export async function GET(
           Recall Competitions
         </div>
       ),
-      { width: 1200, height: 630 },
+      { width: 1200, height: 675 },
     );
   }
 
   const [backgroundImage, recallTokenSvg, recallLogoSvg] = await Promise.all([
-    loadAssetAsBase64("og-background.svg"),
+    loadAssetAsBase64("og-background.png"),
     loadAssetAsBase64("recall-token.svg"),
-    loadAssetAsBase64("logo_white.svg"),
+    loadAssetAsBase64("logo_full_grey.svg"),
   ]);
+
+  const totalRewards =
+    BigInt(competition.rewardsTge?.agentPool ?? 0) +
+    BigInt(competition.rewardsTge?.userPool ?? 0);
 
   return new ImageResponse(
     (
       <div
-        tw="flex flex-col items-center justify-center w-full h-full"
+        tw="flex w-full h-full"
         style={{
           backgroundImage: `url(${backgroundImage})`,
-          backgroundSize: "100% 100%",
+          backgroundSize: "cover",
         }}
       >
-        <div tw="flex flex-col items-center justify-center gap-12 w-3/4">
-          <h1 tw="font-bold text-7xl text-neutral-200 leading-none text-center flex justify-center">
-            {competition.name}
-          </h1>
-
-          <div tw="flex flex-row gap-3 w-full">
-            <div tw="flex flex-col gap-3 flex-1">
-              <div tw="flex flex-row justify-center items-center gap-4 py-4 bg-black/40 border border-neutral-700 rounded-lg">
-                <div tw="flex items-center justify-center w-8 h-8 bg-white rounded-full">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={recallTokenSvg}
-                    alt="Recall token icon"
-                    width={20}
-                    height={20}
-                  />
-                </div>
-                <span tw="text-4xl text-neutral-200 leading-none">
-                  {formatBigintAmount(
-                    BigInt(competition.rewardsTge?.agentPool ?? 0),
-                  )}
-                </span>
-                <span tw="font-light text-3xl text-neutral-400 leading-none ml-2">
-                  for Agents
-                </span>
-              </div>
-              <div tw="flex flex-col justify-center items-center gap-3 py-6 bg-black/40 border border-neutral-700 rounded-lg">
-                <span tw="text-3xl text-neutral-400 leading-none">
-                  Duration
-                </span>
-                <span tw="text-4xl text-neutral-200 leading-none">
-                  {formatCompetitionDates(
-                    competition.startDate,
-                    competition.endDate,
-                  )}
-                </span>
-              </div>
-            </div>
-
-            <div tw="flex flex-col gap-3 flex-1">
-              <div tw="flex flex-row justify-center items-center gap-4 py-4 bg-black/40 border border-neutral-700 rounded-lg">
-                <div tw="flex items-center justify-center w-8 h-8 bg-white rounded-full">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={recallTokenSvg}
-                    alt="Recall token icon"
-                    width={20}
-                    height={20}
-                  />
-                </div>
-                <span tw="text-4xl text-neutral-200 leading-none">
-                  {formatBigintAmount(
-                    BigInt(competition.rewardsTge?.userPool ?? 0),
-                  )}
-                </span>
-                <span tw="font-light text-3xl text-neutral-400 leading-none ml-2">
-                  for Boosters
-                </span>
-              </div>
-              <div tw="flex flex-col justify-center items-center gap-3 py-6 bg-black/40 border border-neutral-700 rounded-lg">
-                <span tw="text-3xl text-neutral-400 leading-none">
-                  Boost Window
-                </span>
-                <span tw="text-4xl text-neutral-200 leading-none">
-                  {formatCompetitionDates(
-                    competition.boostStartDate,
-                    competition.boostEndDate,
-                  )}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div tw="flex flex-row items-center gap-6 justify-center">
+        {/* Left section */}
+        <div
+          tw="flex flex-col w-1/2 px-16"
+          style={{ justifyContent: "flex-end", paddingBottom: "80px" }}
+        >
+          <div tw="flex flex-col items-center">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={recallLogoSvg} alt="Recall logo" height={32} />
-            <div tw="text-3xl text-sky-300 tracking-wider leading-none font-mono">
-              https://app.recall.network
+            <img
+              src={recallLogoSvg}
+              alt="Recall logo"
+              height={28}
+              width={120}
+            />
+
+            <h1
+              tw="text-5xl text-white leading-tight mt-6 text-center"
+              style={{ fontWeight: 700 }}
+            >
+              {competition.name.toUpperCase()}
+            </h1>
+
+            <span tw="text-xl mt-6 tracking-widest text-gray-400 uppercase">
+              {formatCompetitionDates(
+                competition.startDate,
+                competition.endDate,
+              )}
+            </span>
+          </div>
+        </div>
+
+        {/* Right section */}
+        <div
+          tw="flex flex-col w-1/2 px-16"
+          style={{ justifyContent: "flex-end", paddingBottom: "80px" }}
+        >
+          <div tw="flex flex-col items-center">
+            {/* Top text - left aligned */}
+            <div tw="flex flex-col items-start w-full">
+              <div tw="flex text-xl tracking-wider" style={{ gap: "8px" }}>
+                <span tw="text-gray-400">{"///"}</span>
+                <span tw="text-white">PREDICT</span>
+                <span tw="text-gray-400">THE WINNERS</span>
+              </div>
+
+              <div tw="flex text-xl tracking-wider mt-1" style={{ gap: "8px" }}>
+                <span tw="text-gray-400">&amp;</span>
+                <span tw="text-white">EARN</span>
+                <span tw="text-gray-400">UP TO</span>
+              </div>
+            </div>
+
+            <div tw="flex items-center mt-10" style={{ gap: "16px" }}>
+              <div tw="flex items-center justify-center w-14 h-14 bg-white rounded-full">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={recallTokenSvg}
+                  alt="Recall token"
+                  width={36}
+                  height={36}
+                />
+              </div>
+              <span tw="text-white text-8xl" style={{ fontWeight: 300 }}>
+                {formatBigintAmount(totalRewards)}
+              </span>
+            </div>
+
+            {/* Bottom text - right aligned */}
+            <div tw="flex flex-col items-end w-full mt-4">
+              <div tw="flex text-xl tracking-wider" style={{ gap: "8px" }}>
+                <span tw="text-gray-400">IN</span>
+                <span tw="text-white">REWARDS</span>
+                <span tw="text-gray-400">{"///"}</span>
+              </div>
+            </div>
+
+            <div
+              tw="flex items-center justify-center mt-10 px-28 py-5 rounded-xl text-white text-2xl tracking-widest"
+              style={{
+                background: `linear-gradient(180deg, ${BUTTON_BLUE_LIGHT} 0%, ${BUTTON_BLUE} 100%)`,
+                fontWeight: 600,
+                boxShadow: "0 4px 12px rgba(14, 102, 190, 0.4)",
+              }}
+            >
+              PREDICT
             </div>
           </div>
         </div>
@@ -147,7 +160,7 @@ export async function GET(
     ),
     {
       width: 1200,
-      height: 630,
+      height: 675,
     },
   );
 }
