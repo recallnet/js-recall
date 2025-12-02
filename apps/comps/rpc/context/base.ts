@@ -97,6 +97,7 @@ export const base = os
       message: "An internal server error occurred",
     },
     UNAUTHORIZED: {},
+    FORBIDDEN: {},
     BAD_REQUEST: {
       message: "Bad request",
     },
