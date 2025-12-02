@@ -1,7 +1,6 @@
 import { Decimal } from "decimal.js";
 import { Logger } from "pino";
 
-import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { SpotLiveRepository } from "@recallnet/db/repositories/spot-live";
 import { SpecificChain } from "@recallnet/db/repositories/types";
 import {
@@ -18,7 +17,7 @@ interface SelfFundingAlert {
   detectedValue: number;
   thresholdValue: number;
   violationType: "deposit" | "withdrawal_exceeds_limit";
-  detectionMethod: "transfer_history" | "balance_reconciliation";
+  detectionMethod: "transfer_history";
   specificChain: SpecificChain | null;
   txHash: string | null;
   confidence: "high" | "medium" | "low";
@@ -31,7 +30,6 @@ interface SelfFundingAlert {
  * Configuration for self-funding detection
  */
 interface MonitoringConfig {
-  reconciliationThreshold: number;
   criticalAmountThreshold: number;
 }
 
@@ -51,33 +49,25 @@ interface AgentMonitoringResult {
  */
 export class SpotLiveMonitoringService {
   private spotLiveRepo: SpotLiveRepository;
-  private competitionRepo: CompetitionRepository;
   private logger: Logger;
 
   // Default thresholds (in USD)
   // Transfer detection: ALL mid-competition transfers are violations (no threshold)
-  // Reconciliation: Allow $100 variance for price fluctuations
   // Critical: Classify violations > $500 as critical priority
-  private static readonly DEFAULT_RECONCILIATION_THRESHOLD = 100;
   private static readonly DEFAULT_CRITICAL_THRESHOLD = 500;
 
   private readonly config: MonitoringConfig;
 
   constructor(
     spotLiveRepo: SpotLiveRepository,
-    competitionRepo: CompetitionRepository,
     logger: Logger,
     config?: Partial<MonitoringConfig>,
   ) {
     this.spotLiveRepo = spotLiveRepo;
-    this.competitionRepo = competitionRepo;
     this.logger = logger;
 
     // Initialize with defaults, allow overrides
     this.config = {
-      reconciliationThreshold:
-        config?.reconciliationThreshold ??
-        SpotLiveMonitoringService.DEFAULT_RECONCILIATION_THRESHOLD,
       criticalAmountThreshold:
         config?.criticalAmountThreshold ??
         SpotLiveMonitoringService.DEFAULT_CRITICAL_THRESHOLD,
@@ -263,16 +253,6 @@ export class SpotLiveMonitoringService {
         alerts.push(transferAlert);
       }
 
-      // 2. Check balance reconciliation (read portfolio snapshots from database)
-      const reconciliationAlert = await this.checkBalanceReconciliation(
-        agent.agentId,
-        competitionId,
-      );
-
-      if (reconciliationAlert) {
-        alerts.push(reconciliationAlert);
-      }
-
       return { ...agent, alerts };
     } catch (error) {
       this.logger.error(
@@ -383,89 +363,6 @@ export class SpotLiveMonitoringService {
       // Unlike perps (where transfer history is optional), spot live competitions
       // rely on transfer detection for violation enforcement.
       // However, we still return null to allow reconciliation check to run.
-      return null;
-    }
-  }
-
-  /**
-   * Check for unexplained portfolio value increases via balance reconciliation
-   * Compares first snapshot (starting value) with latest snapshot (current value)
-   */
-  private async checkBalanceReconciliation(
-    agentId: string,
-    competitionId: string,
-  ): Promise<SelfFundingAlert | null> {
-    try {
-      // Get bounded snapshots (first and latest)
-      const snapshots = await this.competitionRepo.getBoundedSnapshots(
-        competitionId,
-        agentId,
-      );
-
-      if (!snapshots || !snapshots.oldest || !snapshots.newest) {
-        this.logger.debug(
-          `[SpotLiveMonitoringService] No snapshots found for agent ${agentId}`,
-        );
-        return null;
-      }
-
-      // Use Decimal for precision
-      const startingValueDecimal = new Decimal(
-        snapshots.oldest.totalValue ?? 0,
-      );
-      const currentValueDecimal = new Decimal(snapshots.newest.totalValue ?? 0);
-      const unexplainedAmountDecimal =
-        currentValueDecimal.minus(startingValueDecimal);
-
-      // Convert to numbers for comparisons and storage
-      const startingValue = startingValueDecimal.toNumber();
-      const currentValue = currentValueDecimal.toNumber();
-      const unexplainedAmount = unexplainedAmountDecimal.toNumber();
-
-      // Only flag if discrepancy exceeds reconciliation threshold
-      // Note: This is different from transfer detection - reconciliation allows some variance
-      // for price fluctuations, trading profits/losses, etc.
-      if (
-        unexplainedAmountDecimal
-          .abs()
-          .lessThanOrEqualTo(this.config.reconciliationThreshold)
-      ) {
-        return null;
-      }
-
-      this.logger.warn(
-        `[SpotLiveMonitoringService] Balance reconciliation discrepancy for agent ${agentId}: ` +
-          `Starting: $${startingValue.toFixed(2)}, Current: $${currentValue.toFixed(2)}, ` +
-          `Unexplained: $${unexplainedAmount.toFixed(2)}`,
-      );
-
-      return {
-        agentId,
-        competitionId,
-        detectedValue: currentValue,
-        thresholdValue: startingValue + this.config.reconciliationThreshold,
-        violationType:
-          unexplainedAmount > 0 ? "deposit" : "withdrawal_exceeds_limit",
-        detectionMethod: "balance_reconciliation",
-        specificChain: null, // Reconciliation spans all chains
-        txHash: null, // No specific transaction
-        confidence: unexplainedAmountDecimal
-          .abs()
-          .greaterThan(this.config.criticalAmountThreshold)
-          ? "high"
-          : "medium",
-        severity: unexplainedAmountDecimal
-          .abs()
-          .greaterThan(this.config.criticalAmountThreshold)
-          ? "critical"
-          : "warning",
-        note: `Unexplained portfolio value change. Starting: $${startingValue.toFixed(2)}, Current: $${currentValue.toFixed(2)}. May include price fluctuations or undetected transfers.`,
-      };
-    } catch (error) {
-      this.logger.error(
-        { error },
-        `[SpotLiveMonitoringService] Error checking balance reconciliation:`,
-      );
       return null;
     }
   }
