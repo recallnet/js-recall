@@ -659,7 +659,22 @@ export class BoostBonusService {
             }
 
             // Get user to retrieve wallet address
-            const user = await this.#userRepository.findById(boost.userId);
+            let user;
+            try {
+              user = await this.#userRepository.findById(boost.userId);
+            } catch (error) {
+              this.#logger.error(
+                {
+                  boostBonusId: boost.id,
+                  userId: boost.userId,
+                  competitionId,
+                  error: error instanceof Error ? error.message : String(error),
+                },
+                "Error looking up user for boost - skipping this boost",
+              );
+              continue;
+            }
+
             if (!user) {
               this.#logger.warn(
                 { boostBonusId: boost.id, userId: boost.userId },
