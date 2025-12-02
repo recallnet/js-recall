@@ -127,6 +127,7 @@ export class BoostBonusService {
    */
   async revokeBoostBonus(
     boostBonusId: string,
+    tx?: Transaction,
   ): Promise<RevokeBoostBonusResult> {
     const executeWithTx = async (transaction: Transaction) => {
       const boost = await this.#boostRepository.findBoostBonusById(
@@ -312,6 +313,10 @@ export class BoostBonusService {
       };
     };
 
+    // If transaction provided, use it; otherwise create a new one
+    if (tx) {
+      return executeWithTx(tx);
+    }
     return this.#db.transaction(executeWithTx);
   }
 
@@ -370,6 +375,7 @@ export class BoostBonusService {
    * @param expiresAt - When the boost expires (must be at least 1 minute in future)
    * @param createdByAdminId - Optional admin ID who created the boost
    * @param meta - Optional metadata (primitives only, max 1000 chars serialized)
+   * @param tx - Optional transaction (if not provided, creates new transaction)
    * @returns Result containing created boost and list of competitions where it was applied
    * @throws Error if validation fails or user not found
    *
@@ -392,6 +398,7 @@ export class BoostBonusService {
     expiresAt: Date,
     createdByAdminId?: string,
     meta?: Record<string, unknown>,
+    tx?: Transaction,
   ): Promise<AddBoostBonusResult> {
     const executeWithTx = async (transaction: Transaction) => {
       if (amount <= 0n) {
@@ -493,7 +500,11 @@ export class BoostBonusService {
       };
     };
 
-    return this.#db.transaction(executeWithTx);
+    if (tx) {
+      return executeWithTx(tx);
+    } else {
+      return this.#db.transaction(executeWithTx);
+    }
   }
 
   /**
@@ -900,6 +911,7 @@ export class BoostBonusService {
             {
               boostBonusId,
               competitionId,
+              status: competition.status,
               amount: amount.toString(),
               newBalance: result.balanceAfter.toString(),
             },

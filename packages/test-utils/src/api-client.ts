@@ -17,6 +17,7 @@ import {
 } from "./privy.js";
 import { getBaseUrl } from "./server.js";
 import {
+  AddBonusBoostsResponse,
   AddPartnerToCompetitionResponse,
   AdminAddAgentToCompetitionResponse,
   AdminAgentResponse,
@@ -76,6 +77,7 @@ import {
   RemovePartnerFromCompetitionResponse,
   ReplaceCompetitionPartnersResponse,
   ResetApiKeyResponse,
+  RevokeBonusBoostsResponse,
   RewardsProofsResponse,
   RewardsTotalResponse,
   SpecificChain,
@@ -2799,6 +2801,47 @@ export class ApiClient {
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "get game predictions");
+    }
+  }
+
+  /**
+   * Admin: Add bonus boosts to users
+   * Requires admin authentication
+   */
+  async addBonusBoosts(data: {
+    boosts: Array<{
+      wallet: string;
+      amount: string;
+      expiresAt: string;
+      meta?: Record<string, string | number | boolean>;
+    }>;
+  }): Promise<AddBonusBoostsResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.post(
+        "/api/admin/boost-bonus",
+        data,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "add bonus boosts");
+    }
+  }
+
+  /**
+   * Admin: Revoke bonus boosts
+   * Requires admin authentication
+   */
+  async revokeBonusBoosts(data: {
+    boostIds: string[];
+  }): Promise<RevokeBonusBoostsResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.post(
+        "/api/admin/boost-bonus/revoke",
+        data,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "revoke bonus boosts");
     }
   }
 }
