@@ -11,6 +11,7 @@ import { useUserStakes } from "@/hooks/useStakingContract";
 import type { StakeInfoWithId } from "@/types/staking";
 import { formatAmount } from "@/utils/format";
 
+import { Heading } from "./Heading";
 import type { StakeEntryAction } from "./StakeEntryBase";
 import { StakeEntryBase } from "./StakeEntryBase";
 import { calculateTimeProgress } from "./stakeTime";
@@ -137,7 +138,7 @@ export const InactiveStakes: React.FunctionComponent = () => {
   if (isLoading) {
     return (
       <div className="mb-8">
-        <h2 className="mb-2 text-2xl font-bold text-white">Inactive Stakes</h2>
+        <Heading text1="Inactive" text2="Stakes" className="mb-2" />
         <p className="mb-4 text-sm text-gray-400">Loading your stakes...</p>
       </div>
     );
@@ -146,7 +147,7 @@ export const InactiveStakes: React.FunctionComponent = () => {
   if (error) {
     return (
       <div className="mb-8">
-        <h2 className="mb-2 text-2xl font-bold text-white">Inactive Stakes</h2>
+        <Heading text1="Inactive" text2="Stakes" className="mb-2" />
         <p className="mb-4 text-sm text-red-400">
           Error loading stakes: {error.message}
         </p>
@@ -160,7 +161,7 @@ export const InactiveStakes: React.FunctionComponent = () => {
 
   return (
     <div className="mb-8 flex flex-col gap-4">
-      <h2 className="text-2xl font-bold text-white">Inactive Stakes</h2>
+      <Heading text1="Inactive" text2="Stakes" />
       <div className="flex flex-col gap-8">
         {stakes.map((stake: StakeInfoWithId) => (
           <InactiveStakeEntry
