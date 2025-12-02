@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
 
 import { PriceTrackerService } from "@recallnet/services";
+import { specificChainTokens } from "@recallnet/services/lib";
 import { MultiChainProvider } from "@recallnet/services/providers";
 import { BlockchainType } from "@recallnet/services/types";
 import { BalancesResponse, SnapshotResponse } from "@recallnet/test-utils";
@@ -12,15 +13,14 @@ import {
   wait,
 } from "@recallnet/test-utils";
 
-import config from "@/config/index.js";
-import { logger } from "@/lib/logger.js";
-import { ServiceRegistry } from "@/services/index.js";
+import { config } from "@/config/private";
+import { createLogger } from "@/lib/logger";
+import { portfolioSnapshotterService } from "@/lib/services";
 
+const logger = createLogger("PortfolioSnapshotsTest");
 const reason = "portfolio-snapshots end-to-end tests";
 
 describe("Portfolio Snapshots", () => {
-  const services = new ServiceRegistry();
-
   let adminApiKey: string;
 
   // Reset database between tests
@@ -108,9 +108,7 @@ describe("Portfolio Snapshots", () => {
     const initialSnapshotCount = initialSnapshotsResponse.snapshots.length;
 
     // Force a snapshot directly
-    await services.portfolioSnapshotterService.takePortfolioSnapshots(
-      competitionId,
-    );
+    await portfolioSnapshotterService.takePortfolioSnapshots(competitionId);
     // Wait for snapshot to be processed
     await wait(500);
 
@@ -127,9 +125,7 @@ describe("Portfolio Snapshots", () => {
     const countAfterFirstManualSnapshot = afterFirstSnapshotCount;
 
     // Force another snapshot
-    await services.portfolioSnapshotterService.takePortfolioSnapshots(
-      competitionId,
-    );
+    await portfolioSnapshotterService.takePortfolioSnapshots(competitionId);
 
     // Wait for snapshot to be processed
     await wait(500);
@@ -175,8 +171,8 @@ describe("Portfolio Snapshots", () => {
     await wait(500);
 
     // Execute a trade to change the portfolio composition
-    const usdcTokenAddress = config.specificChainTokens.svm.usdc;
-    const solTokenAddress = config.specificChainTokens.svm.sol;
+    const usdcTokenAddress = specificChainTokens.svm.usdc;
+    const solTokenAddress = specificChainTokens.svm.sol;
 
     await client.executeTrade({
       fromToken: usdcTokenAddress,
@@ -283,7 +279,7 @@ describe("Portfolio Snapshots", () => {
     const freshnessThreshold = config.priceTracker.priceTTLMs;
 
     // Ensure we have a token priced in the database first by querying the price directly
-    const usdcTokenAddress = config.specificChainTokens.svm.usdc;
+    const usdcTokenAddress = specificChainTokens.svm.usdc;
 
     // Use direct service call instead of API
     const multiChainProvider = new MultiChainProvider(config, logger);

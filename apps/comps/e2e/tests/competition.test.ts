@@ -11,6 +11,7 @@ import {
   paperTradingConfig,
   paperTradingInitialBalances,
 } from "@recallnet/db/schema/trading/defs";
+import { specificChainTokens } from "@recallnet/services/lib";
 import {
   AgentCompetitionsResponse,
   AgentProfileResponse,
@@ -52,9 +53,8 @@ import {
 } from "@recallnet/test-utils";
 import { wait } from "@recallnet/test-utils";
 
-import { config } from "@/config/index.js";
-import { db } from "@/database/db.js";
-import { ServiceRegistry } from "@/services/index.js";
+import { db } from "@/lib/db";
+import { portfolioSnapshotterService } from "@/lib/services";
 
 describe("Competition API", () => {
   let adminApiKey: string;
@@ -370,8 +370,8 @@ describe("Competition API", () => {
     // Execute a buy trade (buying SOL with USDC)
     const buyTradeResponse = await agentClient.executeTrade({
       reason: "testing create comp with trading constraints",
-      fromToken: config.specificChainTokens.eth.usdc,
-      toToken: config.specificChainTokens.svm.sol,
+      fromToken: specificChainTokens.eth.usdc,
+      toToken: specificChainTokens.svm.sol,
       amount: "100",
       competitionId,
       fromChain: BlockchainType.EVM,
@@ -2178,32 +2178,32 @@ describe("Competition API", () => {
     await wait(100);
     // Make trades with both clients
     const trades1 = await client1.executeTrade({
-      fromToken: config.specificChainTokens.eth.eth,
-      toToken: config.specificChainTokens.eth.usdc,
+      fromToken: specificChainTokens.eth.eth,
+      toToken: specificChainTokens.eth.usdc,
       amount: "0.001",
       competitionId,
       reason: "Test trade 1",
     });
     expect(trades1.success).toBe(true);
     const trades2 = await client1.executeTrade({
-      fromToken: config.specificChainTokens.eth.eth,
-      toToken: config.specificChainTokens.eth.usdt,
+      fromToken: specificChainTokens.eth.eth,
+      toToken: specificChainTokens.eth.usdt,
       amount: "0.001",
       competitionId,
       reason: "Test trade 2",
     });
     expect(trades2.success).toBe(true);
     const trades3 = await client2.executeTrade({
-      fromToken: config.specificChainTokens.eth.eth,
-      toToken: config.specificChainTokens.eth.usdt,
+      fromToken: specificChainTokens.eth.eth,
+      toToken: specificChainTokens.eth.usdt,
       amount: "0.001",
       competitionId,
       reason: "Test trade 3",
     });
     expect(trades3.success).toBe(true);
     const trades4 = await client2.executeTrade({
-      fromToken: config.specificChainTokens.eth.eth,
-      toToken: config.specificChainTokens.eth.usdc,
+      fromToken: specificChainTokens.eth.eth,
+      toToken: specificChainTokens.eth.usdc,
       amount: "0.001",
       competitionId,
       reason: "Test trade 4",
@@ -2310,14 +2310,14 @@ describe("Competition API", () => {
     });
     // Make trades - agent2 wins, agent1 loses
     await agentClient1.executeTrade({
-      fromToken: config.specificChainTokens.eth.usdc,
+      fromToken: specificChainTokens.eth.usdc,
       toToken: "0x000000000000000000000000000000000000dead",
       amount: "100",
       competitionId: tradingCompId1,
       reason: "Agent1 loses trading comp",
     });
     await agentClient2.executeTrade({
-      fromToken: config.specificChainTokens.eth.usdc,
+      fromToken: specificChainTokens.eth.usdc,
       toToken: "0x000000000000000000000000000000000000dead",
       amount: "10",
       competitionId: tradingCompId1,
@@ -2602,10 +2602,7 @@ describe("Competition API", () => {
       agentName: "Sort Test Client Agent",
     });
     // Force a snapshot directly
-    const services = new ServiceRegistry();
-    await services.portfolioSnapshotterService.takePortfolioSnapshots(
-      competitionId,
-    );
+    await portfolioSnapshotterService.takePortfolioSnapshots(competitionId);
 
     // Test sorting by default (rank)
     const rankDefaultResponse = (await client.getCompetitionAgents(
@@ -4625,8 +4622,8 @@ describe("Competition API", () => {
       // Agent 1: Best performer - buy valuable ETH
       for (let i = 0; i < 3; i++) {
         await agent1Client.executeTrade({
-          fromToken: config.specificChainTokens.eth.usdc,
-          toToken: config.specificChainTokens.eth.eth, // ETH - valuable asset
+          fromToken: specificChainTokens.eth.usdc,
+          toToken: specificChainTokens.eth.eth, // ETH - valuable asset
           amount: "100",
           competitionId,
           reason: `Agent 1 winning trade ${i + 1} - buying ETH`,
@@ -4635,14 +4632,14 @@ describe("Competition API", () => {
 
       // Agent 2: Second best - mixed strategy (some good, some bad)
       await agent2Client.executeTrade({
-        fromToken: config.specificChainTokens.eth.usdc,
-        toToken: config.specificChainTokens.eth.eth, // Good trade
+        fromToken: specificChainTokens.eth.usdc,
+        toToken: specificChainTokens.eth.eth, // Good trade
         amount: "100",
         competitionId,
         reason: "Agent 2 good trade - buying ETH",
       });
       await agent2Client.executeTrade({
-        fromToken: config.specificChainTokens.eth.usdc,
+        fromToken: specificChainTokens.eth.usdc,
         toToken: "0x000000000000000000000000000000000000dead", // Bad trade - burn tokens
         amount: "50",
         competitionId,
@@ -4651,7 +4648,7 @@ describe("Competition API", () => {
 
       // Agent 3: Third place - burn moderate amount
       await agent3Client.executeTrade({
-        fromToken: config.specificChainTokens.eth.usdc,
+        fromToken: specificChainTokens.eth.usdc,
         toToken: "0x000000000000000000000000000000000000dead", // Burn address
         amount: "200",
         competitionId,
@@ -4660,7 +4657,7 @@ describe("Competition API", () => {
 
       // Agent 4: Last place - burn most tokens
       await agent4Client.executeTrade({
-        fromToken: config.specificChainTokens.eth.usdc,
+        fromToken: specificChainTokens.eth.usdc,
         toToken: "0x000000000000000000000000000000000000dead", // Burn address
         amount: "500",
         competitionId,
@@ -4814,8 +4811,8 @@ describe("Competition API", () => {
         (agent1ApiKeyResponse as UserAgentApiKeyResponse).apiKey,
       );
       await agent1Client.executeTrade({
-        fromToken: config.specificChainTokens.eth.usdc,
-        toToken: config.specificChainTokens.eth.eth, // ETH - valuable asset
+        fromToken: specificChainTokens.eth.usdc,
+        toToken: specificChainTokens.eth.eth, // ETH - valuable asset
         amount: "200",
         competitionId,
         reason: "User 1 winning trade - buying ETH",
@@ -4830,7 +4827,7 @@ describe("Competition API", () => {
         (agent2ApiKeyResponse as UserAgentApiKeyResponse).apiKey,
       );
       await agent2Client.executeTrade({
-        fromToken: config.specificChainTokens.eth.usdc,
+        fromToken: specificChainTokens.eth.usdc,
         toToken: "0x000000000000000000000000000000000000dead", // Burn address
         amount: "300",
         competitionId,
@@ -4992,8 +4989,8 @@ describe("Competition API", () => {
 
       // Execute a trade
       await agentClient.executeTrade({
-        fromToken: config.specificChainTokens.eth.usdc,
-        toToken: config.specificChainTokens.eth.eth,
+        fromToken: specificChainTokens.eth.usdc,
+        toToken: specificChainTokens.eth.eth,
         amount: "100",
         competitionId,
         reason: "Trade in active competition",
@@ -5192,8 +5189,8 @@ describe("Competition API", () => {
     // Execute a trade
     const tradeResponse = await agentClient.executeTrade({
       reason: "testing get trades endpoint",
-      fromToken: config.specificChainTokens.eth.usdc,
-      toToken: config.specificChainTokens.eth.eth,
+      fromToken: specificChainTokens.eth.usdc,
+      toToken: specificChainTokens.eth.eth,
       amount: "100",
       competitionId,
       fromChain: BlockchainType.EVM,
@@ -6301,7 +6298,7 @@ describe("Competition API", () => {
       // Agent 1: Best performer (burns least)
       await client1.executeTrade({
         competitionId,
-        fromToken: config.specificChainTokens.eth.usdc,
+        fromToken: specificChainTokens.eth.usdc,
         toToken: "0x000000000000000000000000000000000000dead",
         amount: "10",
         reason: "Agent1 wins - burns least",
@@ -6310,7 +6307,7 @@ describe("Competition API", () => {
       // Agent 2: Second best but excluded from rewards
       await client2.executeTrade({
         competitionId,
-        fromToken: config.specificChainTokens.eth.usdc,
+        fromToken: specificChainTokens.eth.usdc,
         toToken: "0x000000000000000000000000000000000000dead",
         amount: "100",
         reason: "Agent2 rank 2 but excluded",
@@ -6319,7 +6316,7 @@ describe("Competition API", () => {
       // Agent 3: Third place (burns most)
       await client3.executeTrade({
         competitionId,
-        fromToken: config.specificChainTokens.eth.usdc,
+        fromToken: specificChainTokens.eth.usdc,
         toToken: "0x000000000000000000000000000000000000dead",
         amount: "500",
         reason: "Agent3 loses - burns most",
@@ -6400,7 +6397,7 @@ describe("Competition API", () => {
 
       await agentClient.executeTrade({
         competitionId,
-        fromToken: config.specificChainTokens.eth.usdc,
+        fromToken: specificChainTokens.eth.usdc,
         toToken: "0x000000000000000000000000000000000000dead",
         amount: "10",
         reason: "Trade to establish rank",
@@ -6448,7 +6445,7 @@ describe("Competition API", () => {
 
       await agentClient.executeTrade({
         competitionId,
-        fromToken: config.specificChainTokens.eth.usdc,
+        fromToken: specificChainTokens.eth.usdc,
         toToken: "0x000000000000000000000000000000000000dead",
         amount: "10",
         reason: "Trade to establish rank",
@@ -6501,7 +6498,7 @@ describe("Competition API", () => {
       // Make trades
       await client1.executeTrade({
         competitionId,
-        fromToken: config.specificChainTokens.eth.usdc,
+        fromToken: specificChainTokens.eth.usdc,
         toToken: "0x000000000000000000000000000000000000dead",
         amount: "10",
         reason: "Winner",
@@ -6509,7 +6506,7 @@ describe("Competition API", () => {
 
       await client2.executeTrade({
         competitionId,
-        fromToken: config.specificChainTokens.eth.usdc,
+        fromToken: specificChainTokens.eth.usdc,
         toToken: "0x000000000000000000000000000000000000dead",
         amount: "100",
         reason: "Excluded agent",
@@ -6590,7 +6587,7 @@ describe("Competition API", () => {
       // Make predictable trades (burn tokens - less burned = better)
       await client1.executeTrade({
         competitionId,
-        fromToken: config.specificChainTokens.eth.usdc,
+        fromToken: specificChainTokens.eth.usdc,
         toToken: "0x000000000000000000000000000000000000dead",
         amount: "10",
         reason: "Agent1 rank 1",
@@ -6598,7 +6595,7 @@ describe("Competition API", () => {
 
       await client2.executeTrade({
         competitionId,
-        fromToken: config.specificChainTokens.eth.usdc,
+        fromToken: specificChainTokens.eth.usdc,
         toToken: "0x000000000000000000000000000000000000dead",
         amount: "100",
         reason: "Agent2 rank 2 but globally ineligible",
@@ -6606,7 +6603,7 @@ describe("Competition API", () => {
 
       await client3.executeTrade({
         competitionId,
-        fromToken: config.specificChainTokens.eth.usdc,
+        fromToken: specificChainTokens.eth.usdc,
         toToken: "0x000000000000000000000000000000000000dead",
         amount: "500",
         reason: "Agent3 rank 3",
@@ -6699,7 +6696,7 @@ describe("Competition API", () => {
       // Make predictable trades
       await client1.executeTrade({
         competitionId,
-        fromToken: config.specificChainTokens.eth.usdc,
+        fromToken: specificChainTokens.eth.usdc,
         toToken: "0x000000000000000000000000000000000000dead",
         amount: "10",
         reason: "Agent1 rank 1",
@@ -6707,7 +6704,7 @@ describe("Competition API", () => {
 
       await client2.executeTrade({
         competitionId,
-        fromToken: config.specificChainTokens.eth.usdc,
+        fromToken: specificChainTokens.eth.usdc,
         toToken: "0x000000000000000000000000000000000000dead",
         amount: "50",
         reason: "Agent2 rank 2 - competition excluded",
@@ -6715,7 +6712,7 @@ describe("Competition API", () => {
 
       await client3.executeTrade({
         competitionId,
-        fromToken: config.specificChainTokens.eth.usdc,
+        fromToken: specificChainTokens.eth.usdc,
         toToken: "0x000000000000000000000000000000000000dead",
         amount: "200",
         reason: "Agent3 rank 3 - globally excluded",
@@ -6723,7 +6720,7 @@ describe("Competition API", () => {
 
       await client4.executeTrade({
         competitionId,
-        fromToken: config.specificChainTokens.eth.usdc,
+        fromToken: specificChainTokens.eth.usdc,
         toToken: "0x000000000000000000000000000000000000dead",
         amount: "600",
         reason: "Agent4 rank 4",
@@ -6798,7 +6795,7 @@ describe("Competition API", () => {
 
       await agentClient.executeTrade({
         competitionId: comp1Id,
-        fromToken: config.specificChainTokens.eth.usdc,
+        fromToken: specificChainTokens.eth.usdc,
         toToken: "0x000000000000000000000000000000000000dead",
         amount: "10",
         reason: "Trade while ineligible",
@@ -6835,7 +6832,7 @@ describe("Competition API", () => {
 
       await agentClient.executeTrade({
         competitionId: comp2Id,
-        fromToken: config.specificChainTokens.eth.usdc,
+        fromToken: specificChainTokens.eth.usdc,
         toToken: "0x000000000000000000000000000000000000dead",
         amount: "10",
         reason: "Trade while eligible",

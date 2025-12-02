@@ -8,10 +8,10 @@ import {
   wait,
 } from "@recallnet/test-utils";
 
-import { ServiceRegistry } from "@/services/index.js";
+import { competitionRepository } from "@/lib/repositories";
+import { portfolioSnapshotterService } from "@/lib/services";
 
 describe("get24hSnapshots Repository Function", () => {
-  const services = new ServiceRegistry();
   let adminApiKey: string;
 
   beforeEach(async () => {
@@ -23,7 +23,7 @@ describe("get24hSnapshots Repository Function", () => {
     const competitionId = "test-competition-id";
     const agentIds: string[] = [];
 
-    const result = await services.competitionRepository.get24hSnapshots(
+    const result = await competitionRepository.get24hSnapshots(
       competitionId,
       agentIds,
     );
@@ -64,20 +64,16 @@ describe("get24hSnapshots Repository Function", () => {
     await wait(1000);
 
     // Manually trigger additional snapshots to have data at different times
-    await services.portfolioSnapshotterService.takePortfolioSnapshots(
-      competitionId,
-    );
+    await portfolioSnapshotterService.takePortfolioSnapshots(competitionId);
     await wait(500);
-    await services.portfolioSnapshotterService.takePortfolioSnapshots(
-      competitionId,
-    );
+    await portfolioSnapshotterService.takePortfolioSnapshots(competitionId);
     await wait(500);
 
     // Call the function under test
-    const result = await services.competitionRepository.get24hSnapshots(
-      competitionId,
-      [agent1.id, agent2.id],
-    );
+    const result = await competitionRepository.get24hSnapshots(competitionId, [
+      agent1.id,
+      agent2.id,
+    ]);
 
     expect(result).toBeDefined();
     expect(result.earliestSnapshots).toBeDefined();
@@ -140,10 +136,9 @@ describe("get24hSnapshots Repository Function", () => {
     await wait(1000);
 
     // Call the function under test
-    const result = await services.competitionRepository.get24hSnapshots(
-      competitionId,
-      [agent.id],
-    );
+    const result = await competitionRepository.get24hSnapshots(competitionId, [
+      agent.id,
+    ]);
 
     expect(result).toBeDefined();
     expect(result.earliestSnapshots).toBeDefined();
@@ -168,7 +163,7 @@ describe("get24hSnapshots Repository Function", () => {
       "550e8400-e29b-41d4-a716-446655440002",
     ];
 
-    const result = await services.competitionRepository.get24hSnapshots(
+    const result = await competitionRepository.get24hSnapshots(
       nonExistentCompetitionId,
       agentIds,
     );
@@ -208,7 +203,7 @@ describe("get24hSnapshots Repository Function", () => {
       "550e8400-e29b-41d4-a716-446655440003",
       "550e8400-e29b-41d4-a716-446655440004",
     ];
-    const result = await services.competitionRepository.get24hSnapshots(
+    const result = await competitionRepository.get24hSnapshots(
       competitionId,
       nonExistentAgentIds,
     );
@@ -245,7 +240,7 @@ describe("get24hSnapshots Repository Function", () => {
 
     // Mix existing and non-existing agent IDs
     const mixedAgentIds = [agent.id, "550e8400-e29b-41d4-a716-446655440005"];
-    const result = await services.competitionRepository.get24hSnapshots(
+    const result = await competitionRepository.get24hSnapshots(
       competitionId,
       mixedAgentIds,
     );
@@ -270,7 +265,7 @@ describe("get24hSnapshots Repository Function", () => {
     const agentIds: string[] = [];
 
     // The function should execute without timing-related errors
-    const result = await services.competitionRepository.get24hSnapshots(
+    const result = await competitionRepository.get24hSnapshots(
       competitionId,
       agentIds,
     );
@@ -306,24 +301,17 @@ describe("get24hSnapshots Repository Function", () => {
     await wait(1000);
 
     // Create multiple snapshots at different times
-    await services.portfolioSnapshotterService.takePortfolioSnapshots(
-      competitionId,
-    );
+    await portfolioSnapshotterService.takePortfolioSnapshots(competitionId);
     await wait(500);
-    await services.portfolioSnapshotterService.takePortfolioSnapshots(
-      competitionId,
-    );
+    await portfolioSnapshotterService.takePortfolioSnapshots(competitionId);
     await wait(500);
-    await services.portfolioSnapshotterService.takePortfolioSnapshots(
-      competitionId,
-    );
+    await portfolioSnapshotterService.takePortfolioSnapshots(competitionId);
     await wait(500);
 
     // Call the function under test
-    const result = await services.competitionRepository.get24hSnapshots(
-      competitionId,
-      [agent.id],
-    );
+    const result = await competitionRepository.get24hSnapshots(competitionId, [
+      agent.id,
+    ]);
 
     expect(result).toBeDefined();
     expect(result.earliestSnapshots.length).toBeGreaterThan(0);

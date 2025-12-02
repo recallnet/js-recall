@@ -9,8 +9,10 @@ import { competitions, users } from "@recallnet/db/schema/core/defs";
 import { rewards, rewardsRoots } from "@recallnet/db/schema/rewards/defs";
 import { EventProcessor } from "@recallnet/services/indexing";
 
-import { db } from "@/database/db.js";
-import { ServiceRegistry } from "@/services/index.js";
+import { db } from "@/lib/db";
+import { createLogger } from "@/lib/logger";
+import { rewardsRepository, stakesRepository } from "@/lib/repositories";
+import { boostAwardService, competitionService } from "@/lib/services";
 
 describe("EventProcessor", () => {
   let eventProcessor: EventProcessor;
@@ -20,15 +22,19 @@ describe("EventProcessor", () => {
   let competitionId: string;
   let rootHashId: string;
   let userId: string;
-  let services: ServiceRegistry;
 
   beforeEach(async () => {
-    // Initialize services using ServiceRegistry
-    services = new ServiceRegistry();
-
-    // Get the event processor from the service registry
-    eventProcessor = services.eventProcessor;
-    eventsRepository = services.eventsRepository;
+    // Initialize event processor and repository directly
+    eventsRepository = new EventsRepository(db);
+    eventProcessor = new EventProcessor(
+      db,
+      rewardsRepository,
+      eventsRepository,
+      stakesRepository,
+      boostAwardService,
+      competitionService,
+      createLogger("EventProcessor"),
+    );
 
     // Set up test data in the database
     competitionId = "a82d8ae0-6f5a-417c-a35e-e389b73f0b39";
