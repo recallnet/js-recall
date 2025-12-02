@@ -60,6 +60,7 @@ export const COMPETITION_STATUS = {
 export const COMPETITION_TYPE = {
   TRADING: "trading",
   PERPETUAL_FUTURES: "perpetual_futures",
+  SPOT_LIVE_TRADING: "spot_live_trading",
 } as const;
 
 // Competition type
@@ -451,6 +452,14 @@ export interface TradeTransaction {
   toSpecificChain: string | null;
   toTokenSymbol: string;
   fromTokenSymbol: string;
+  // Spot live specific fields (optional)
+  tradeType?: "simulated" | "spot_live";
+  txHash?: string | null;
+  blockNumber?: number | null;
+  protocol?: string | null;
+  gasUsed?: string | null;
+  gasPrice?: string | null;
+  gasCostUsd?: string | null;
 }
 
 // Trade history response
@@ -502,7 +511,7 @@ export interface Competition {
   startDate: string | null;
   endDate: string | null;
   status: CompetitionStatus;
-  type?: CompetitionType; // Competition type (trading or perpetual_futures)
+  type?: CompetitionType; // Competition type (trading, perpetual_futures or spot_live_trading)
   crossChainTradingType: CrossChainTradingType;
   sandboxMode: boolean; // Controls automatic joining of newly registered agents
   createdAt: string;
@@ -1105,6 +1114,54 @@ export interface AdminCompetitionTransferViolationsResponse
     agentName: string;
     transferCount: number;
   }>;
+}
+
+/**
+ * SPOT LIVE TRADING TYPES
+ */
+
+// Spot live configuration for competition creation
+export interface SpotLiveConfig {
+  dataSource: "rpc_direct" | "envio_indexing" | "hybrid";
+  dataSourceConfig: Record<string, unknown>;
+  chains: string[];
+  allowedProtocols?: Array<{ protocol: string; chain: string }>;
+  allowedTokens?: Array<{ address: string; specificChain: string }>;
+  selfFundingThresholdUsd?: number;
+  minFundingThreshold?: number;
+  syncIntervalMinutes?: number;
+}
+
+// Spot live self-funding alert
+export interface SpotLiveSelfFundingAlert {
+  id: string;
+  agentId: string;
+  competitionId: string;
+  detectionMethod: string;
+  violationType: string;
+  detectedValue: string;
+  thresholdValue: string;
+  specificChain: string | null;
+  txHash: string | null;
+  transferSnapshot: unknown | null;
+  detectedAt: string;
+  reviewed: boolean;
+  reviewNote: string | null;
+  actionTaken: string | null;
+  reviewedAt: string | null;
+  reviewedBy: string | null;
+}
+
+// Spot live alerts response
+export interface SpotLiveAlertsResponse extends ApiResponse {
+  success: true;
+  alerts: SpotLiveSelfFundingAlert[];
+}
+
+// Review spot live alert response
+export interface ReviewSpotLiveAlertResponse extends ApiResponse {
+  success: true;
+  alert: SpotLiveSelfFundingAlert;
 }
 
 /**
