@@ -11,7 +11,7 @@ import {
   wait,
 } from "@recallnet/test-utils";
 
-import { ServiceRegistry } from "@/services/index.js";
+import { competitionService } from "@/lib/services";
 
 describe("Competition End Date Processing", () => {
   let adminApiKey: string;
@@ -65,8 +65,7 @@ describe("Competition End Date Processing", () => {
     // This is simulating a cron execution of auto-end-competitions script.
     await wait(7000);
 
-    const services = new ServiceRegistry();
-    await services.competitionService.processCompetitionEndDateChecks();
+    await competitionService.processCompetitionEndDateChecks();
 
     // Check if competition has been automatically ended
     const endedCompetition = await adminClient.getCompetition(competition.id);
@@ -121,8 +120,7 @@ describe("Competition End Date Processing", () => {
     ).toBe("active");
 
     // This is simulating a cron execution of auto-end-competitions script.
-    const services = new ServiceRegistry();
-    await services.competitionService.processCompetitionEndDateChecks();
+    await competitionService.processCompetitionEndDateChecks();
 
     // Competition should still be active since end date hasn't passed
     const stillActiveCompetition = await adminClient.getCompetition(
@@ -207,8 +205,7 @@ describe("Competition End Date Processing", () => {
     await wait(5000);
 
     // Process auto-end
-    const services = new ServiceRegistry();
-    await services.competitionService.processCompetitionEndDateChecks();
+    await competitionService.processCompetitionEndDateChecks();
 
     // All 3 competitions should now be ended
     const comp1Updated = await adminClient.getCompetition(comp1.id);

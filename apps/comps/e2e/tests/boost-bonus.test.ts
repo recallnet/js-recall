@@ -15,7 +15,7 @@ import {
   registerUserAndAgentAndGetClient,
 } from "@recallnet/test-utils";
 
-import { db } from "@/database/db.js";
+import { db } from "@/lib/db";
 
 const createActiveCompWithOpenWindow = (
   adminClient: ReturnType<typeof createTestClient>,

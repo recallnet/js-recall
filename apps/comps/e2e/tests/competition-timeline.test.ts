@@ -15,7 +15,7 @@ import {
   startTestCompetition,
 } from "@recallnet/test-utils";
 
-import ServiceRegistry from "@/services/index.js";
+import { portfolioSnapshotterService } from "@/lib/services";
 
 describe("Competition Timeline API", () => {
   let adminApiKey: string;
@@ -76,10 +76,7 @@ describe("Competition Timeline API", () => {
     });
 
     // Force a snapshot directly
-    const services = new ServiceRegistry();
-    await services.portfolioSnapshotterService.takePortfolioSnapshots(
-      competition.id,
-    );
+    await portfolioSnapshotterService.takePortfolioSnapshots(competition.id);
 
     // Get competition timeline
     const timelineResponse = (await agentClient1.getCompetitionTimeline(
@@ -291,10 +288,7 @@ describe("Competition Timeline API", () => {
     });
 
     // Force a snapshot directly
-    const services = new ServiceRegistry();
-    await services.portfolioSnapshotterService.takePortfolioSnapshots(
-      competition.id,
-    );
+    await portfolioSnapshotterService.takePortfolioSnapshots(competition.id);
 
     // Disqualify agent 2
     await adminClient.removeAgentFromCompetition(
