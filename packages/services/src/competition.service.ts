@@ -206,6 +206,24 @@ interface TradingConstraintsInput {
 }
 
 /**
+ * Resolved spot live configuration after validation
+ */
+interface ResolvedSpotLiveConfig {
+  resolvedProtocols: Array<{
+    protocol: string;
+    specificChain: SpecificChain;
+    routerAddress: string;
+    swapEventSignature: string;
+    factoryAddress: string | null;
+  }>;
+  resolvedTokens: Array<{
+    specificChain: SpecificChain;
+    tokenAddress: string;
+    tokenSymbol: string;
+  }>;
+}
+
+/**
  * Represents an entry in a competition leaderboard
  */
 interface LeaderboardEntry {
