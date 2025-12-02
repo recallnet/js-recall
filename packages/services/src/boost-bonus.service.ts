@@ -44,10 +44,10 @@ export type RevokeBoostBonusResult = {
   revoked: boolean;
   /** Timestamp when the boost was revoked */
   revokedAt: Date;
-  /** Competition IDs where the boost was removed from pending */
-  removedFromPending: string[];
+  /** Competition IDs where the boost was removed (window not yet open) */
+  removedFromCompetitions: string[];
   /** Competition IDs where the boost was kept (window already open) */
-  keptInActive: string[];
+  keptInCompetitions: string[];
 };
 
 /**
@@ -60,8 +60,8 @@ export type RevokeBoostBonusResult = {
  * - Removing boosts from competitions
  *
  * Key concepts:
- * - **Revocation**: Marks boost as inactive and removes from pending competitions
- * - **Window Check**: Only removes boost if boosting window hasn't opened
+ * - **Revocation**: Marks boost as inactive and removes from competitions where window hasn't opened
+ * - **Window Check**: Only removes boost if boosting window hasn't opened yet
  * - **Idempotency**: Uses unique keys to prevent duplicate operations
  * - **Transaction Safety**: All operations are atomic
  */
@@ -121,8 +121,8 @@ export class BoostBonusService {
    * ```typescript
    * const result = await boostBonusService.revokeBoostBonus('boost-uuid');
    * console.log(`Revoked boost ${result.boostBonusId}`);
-   * console.log(`Removed from ${result.removedFromPending.length} pending competitions`);
-   * console.log(`Kept in ${result.keptInActive.length} active competitions`);
+   * console.log(`Removed from ${result.removedFromCompetitions.length} competitions (window not yet open)`);
+   * console.log(`Kept in ${result.keptInCompetitions.length} competitions (window already open)`);
    * ```
    */
   async revokeBoostBonus(
@@ -183,8 +183,8 @@ export class BoostBonusService {
           boostBonusId: revokedBoost.id,
           revoked: true,
           revokedAt: now,
-          removedFromPending: [],
-          keptInActive: [],
+          removedFromCompetitions: [],
+          keptInCompetitions: [],
         };
       }
 
@@ -193,8 +193,8 @@ export class BoostBonusService {
         "Found boost_changes entries for revocation",
       );
 
-      const removedFromPending: string[] = [];
-      const keptInActive: string[] = [];
+      const removedFromCompetitions: string[] = [];
+      const keptInCompetitions: string[] = [];
 
       for (const change of boostChanges) {
         const competitionId = change.competitionId;
@@ -226,7 +226,7 @@ export class BoostBonusService {
             { boostBonusId, competitionId },
             "Boosting window is open - keeping boost (user might have spent it)",
           );
-          keptInActive.push(competitionId);
+          keptInCompetitions.push(competitionId);
           continue;
         }
 
@@ -259,7 +259,7 @@ export class BoostBonusService {
           );
 
           if (result.type === "applied") {
-            removedFromPending.push(competitionId);
+            removedFromCompetitions.push(competitionId);
             this.#logger.info(
               {
                 boostBonusId,
@@ -298,8 +298,8 @@ export class BoostBonusService {
       this.#logger.info(
         {
           boostBonusId,
-          removedCount: removedFromPending.length,
-          keptCount: keptInActive.length,
+          removedCount: removedFromCompetitions.length,
+          keptCount: keptInCompetitions.length,
         },
         "Completed bonus boost revocation",
       );
@@ -308,8 +308,8 @@ export class BoostBonusService {
         boostBonusId: revokedBoost.id,
         revoked: true,
         revokedAt: now,
-        removedFromPending,
-        keptInActive,
+        removedFromCompetitions,
+        keptInCompetitions,
       };
     };
 
@@ -344,7 +344,7 @@ export class BoostBonusService {
    * 2. Finds user by wallet address
    * 3. Creates bonus boost entry in database
    * 4. Applies boost to all eligible competitions (active + pending)
-   * 5. Returns created boost and list of competitions where it was applied
+   * 5. Returns created boost and list of competition IDs where it was applied
    *
    * **Eligibility Criteria for Competitions:**
    * - Competition status is "active" OR "pending"
@@ -376,7 +376,7 @@ export class BoostBonusService {
    * @param createdByAdminId - Optional admin ID who created the boost
    * @param meta - Optional metadata (primitives only, max 1000 chars serialized)
    * @param tx - Optional transaction (if not provided, creates new transaction)
-   * @returns Result containing created boost and list of competitions where it was applied
+   * @returns Result containing created boost and list of competition IDs where it was applied
    * @throws Error if validation fails or user not found
    *
    * @example
@@ -504,6 +504,303 @@ export class BoostBonusService {
       return executeWithTx(tx);
     } else {
       return this.#db.transaction(executeWithTx);
+    }
+  }
+
+  /**
+   * Applies all active bonus boosts to eligible competitions.
+   *
+   * This method is called by the cron job to apply bonus boosts to competitions.
+   * It's also used when a new competition is created or when boost dates are set.
+   *
+   * **Process:**
+   * 1. Find all active bonus boosts (is_active = true, expiresAt > now)
+   * 2. For each boost, apply it to eligible competitions
+   * 3. Use idempotency keys to prevent duplicate applications
+   * 4. Handle errors gracefully - if one competition fails, continue with others
+   *
+   * **Eligibility Criteria:**
+   * - Competition status is "pending" OR "active"
+   * - `competition.boostStartDate < boost.expiresAt` (boost window starts before expiration)
+   * - `competition.boostEndDate > now` (boost window hasn't ended yet)
+   * - Competition must have `boostStartDate` and `boostEndDate` set
+   *
+   * **Error Handling:**
+   * - Processes each competition independently (isolated error handling)
+   * - Logs errors with full context but continues processing
+   * - Failed competitions will be retried on next cron run
+   *
+   * @returns Summary of applied boosts with counts per competition
+   *
+   * @example
+   * ```typescript
+   * // Called by cron job
+   * const summary = await boostBonusService.applyBonusBoostsToEligibleCompetitions();
+   * console.log(`Applied ${summary.totalBoostsApplied} boosts to ${summary.competitionsProcessed} competitions`);
+   * ```
+   */
+  async applyBonusBoostsToEligibleCompetitions(): Promise<{
+    totalBoostsApplied: number;
+    competitionsProcessed: number;
+    competitionsSkipped: number;
+    errors: Array<{ competitionId: string; error: string }>;
+  }> {
+    const startTime = Date.now();
+    const now = new Date();
+    let totalBoostsApplied = 0;
+    let competitionsProcessed = 0;
+    let competitionsSkipped = 0;
+    const errors: Array<{ competitionId: string; error: string }> = [];
+
+    this.#logger.info(
+      "Starting to apply bonus boosts to eligible competitions",
+    );
+
+    try {
+      // Step 1: Find all active bonus boosts
+      const activeBoosts =
+        await this.#boostRepository.findAllActiveBoostBonuses();
+
+      if (activeBoosts.length === 0) {
+        this.#logger.info("No active bonus boosts found");
+        return {
+          totalBoostsApplied: 0,
+          competitionsProcessed: 0,
+          competitionsSkipped: 0,
+          errors: [],
+        };
+      }
+
+      this.#logger.info(
+        { boostCount: activeBoosts.length },
+        "Found active bonus boosts to process",
+      );
+
+      // Step 2: Find all eligible competitions
+      const pendingComps = await this.#competitionRepository.findByStatus({
+        status: "pending",
+        params: { sort: "createdAt", limit: 1000, offset: 0 },
+      });
+      const activeComps = await this.#competitionRepository.findByStatus({
+        status: "active",
+        params: { sort: "createdAt", limit: 1000, offset: 0 },
+      });
+
+      const allCompetitions = [
+        ...pendingComps.competitions,
+        ...activeComps.competitions,
+      ];
+
+      if (allCompetitions.length === 0) {
+        this.#logger.info("No eligible competitions found");
+        return {
+          totalBoostsApplied: 0,
+          competitionsProcessed: 0,
+          competitionsSkipped: 0,
+          errors: [],
+        };
+      }
+
+      this.#logger.info(
+        { competitionCount: allCompetitions.length },
+        "Found competitions to process",
+      );
+
+      // Step 3: Process each competition independently
+      for (const competition of allCompetitions) {
+        const competitionId = competition.id;
+
+        try {
+          // Check if competition has boost dates set
+          if (!competition.boostStartDate || !competition.boostEndDate) {
+            this.#logger.warn(
+              { competitionId },
+              "Competition missing boost dates - skipping",
+            );
+            competitionsSkipped++;
+            continue;
+          }
+
+          // Check if boost window hasn't ended yet
+          if (competition.boostEndDate <= now) {
+            this.#logger.debug(
+              { competitionId, boostEndDate: competition.boostEndDate },
+              "Competition boost window already ended - skipping",
+            );
+            competitionsSkipped++;
+            continue;
+          }
+
+          let boostsAppliedToCompetition = 0;
+
+          // Step 4: Apply each eligible boost to this competition
+          for (const boost of activeBoosts) {
+            // Check if boost is expired
+            if (boost.expiresAt <= now) {
+              this.#logger.debug(
+                { boostBonusId: boost.id, expiresAt: boost.expiresAt },
+                "Boost expired - skipping",
+              );
+              continue;
+            }
+
+            // Check eligibility: boostStartDate < boost.expiresAt
+            if (competition.boostStartDate >= boost.expiresAt) {
+              this.#logger.debug(
+                {
+                  boostBonusId: boost.id,
+                  competitionId,
+                  boostStartDate: competition.boostStartDate,
+                  expiresAt: boost.expiresAt,
+                },
+                "Competition boost window starts after boost expires - skipping",
+              );
+              continue;
+            }
+
+            // Get user to retrieve wallet address
+            let user;
+            try {
+              user = await this.#userRepository.findById(boost.userId);
+            } catch (error) {
+              this.#logger.error(
+                {
+                  boostBonusId: boost.id,
+                  userId: boost.userId,
+                  competitionId,
+                  error: error instanceof Error ? error.message : String(error),
+                },
+                "Error looking up user for boost - skipping this boost",
+              );
+              continue;
+            }
+
+            if (!user) {
+              this.#logger.warn(
+                { boostBonusId: boost.id, userId: boost.userId },
+                "User not found for boost - skipping",
+              );
+              continue;
+            }
+
+            // Apply boost in its own transaction
+            try {
+              await this.#db.transaction(async (tx) => {
+                // Create idempotency key
+                const idemKey = TEXT_ENCODER.encode(
+                  new URLSearchParams({
+                    bonusBoost: boost.id,
+                    competition: competitionId,
+                  }).toString(),
+                );
+
+                // Increase balance
+                const result = await this.#boostRepository.increase(
+                  {
+                    userId: boost.userId,
+                    wallet: user.walletAddress,
+                    competitionId,
+                    amount: boost.amount,
+                    idemKey,
+                    meta: {
+                      description: `Bonus boost ${boost.id}`,
+                      boostBonusId: boost.id,
+                    },
+                  },
+                  tx,
+                );
+
+                if (result.type === "applied") {
+                  boostsAppliedToCompetition++;
+                  totalBoostsApplied++;
+
+                  this.#logger.info(
+                    {
+                      boostBonusId: boost.id,
+                      competitionId,
+                      competitionStatus: competition.status,
+                      amount: boost.amount.toString(),
+                      newBalance: result.balanceAfter.toString(),
+                    },
+                    "Successfully applied bonus boost to competition",
+                  );
+                } else if (result.type === "noop") {
+                  this.#logger.debug(
+                    { boostBonusId: boost.id, competitionId },
+                    "Idempotency prevented duplicate application",
+                  );
+                }
+              });
+            } catch (error) {
+              // Handle case where competition is deleted between query and application
+              const constraint = checkForeignKeyViolation(error);
+              if (constraint?.includes("competition_id")) {
+                this.#logger.warn(
+                  { boostBonusId: boost.id, competitionId },
+                  "Competition was deleted during boost application - skipping",
+                );
+                continue;
+              }
+
+              // Log other errors but continue processing
+              this.#logger.error(
+                {
+                  boostBonusId: boost.id,
+                  competitionId,
+                  error: error instanceof Error ? error.message : String(error),
+                },
+                "Error applying boost to competition - skipping",
+              );
+              continue;
+            }
+          }
+
+          if (boostsAppliedToCompetition > 0) {
+            competitionsProcessed++;
+            this.#logger.info(
+              { competitionId, boostsApplied: boostsAppliedToCompetition },
+              "Completed processing competition",
+            );
+          } else {
+            competitionsSkipped++;
+          }
+        } catch (error) {
+          // Catch any unexpected errors for this competition
+          const errorMessage =
+            error instanceof Error ? error.message : String(error);
+          errors.push({ competitionId, error: errorMessage });
+
+          this.#logger.error(
+            { competitionId, error: errorMessage },
+            "Error processing competition - continuing with next",
+          );
+        }
+      }
+
+      const duration = Date.now() - startTime;
+      this.#logger.info(
+        {
+          totalBoostsApplied,
+          competitionsProcessed,
+          competitionsSkipped,
+          errorCount: errors.length,
+          durationMs: duration,
+        },
+        "Completed applying bonus boosts to eligible competitions",
+      );
+
+      return {
+        totalBoostsApplied,
+        competitionsProcessed,
+        competitionsSkipped,
+        errors,
+      };
+    } catch (error) {
+      this.#logger.error(
+        { error: error instanceof Error ? error.message : String(error) },
+        "Fatal error applying bonus boosts to eligible competitions",
+      );
+      throw error;
     }
   }
 

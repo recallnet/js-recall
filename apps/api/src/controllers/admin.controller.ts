@@ -2088,8 +2088,8 @@ export function makeAdminController(services: ServiceRegistry) {
               {
                 index: i,
                 boostId: result.boostBonusId,
-                removedCount: result.removedFromPending.length,
-                keptCount: result.keptInActive.length,
+                removedCount: result.removedFromCompetitions.length,
+                keptCount: result.keptInCompetitions.length,
               },
               "Successfully revoked bonus boost",
             );
@@ -2098,8 +2098,8 @@ export function makeAdminController(services: ServiceRegistry) {
               id: result.boostBonusId,
               revoked: result.revoked,
               revokedAt: result.revokedAt.toISOString(),
-              removedFromPending: result.removedFromPending,
-              keptInActive: result.keptInActive,
+              removedFromCompetitions: result.removedFromCompetitions,
+              keptInCompetitions: result.keptInCompetitions,
             });
           }
 
