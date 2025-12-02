@@ -1257,8 +1257,8 @@ export interface RevokeBonusBoostResult {
   id: string;
   revoked: boolean;
   revokedAt: string;
-  removedFromPending: string[];
-  keptInActive: string[];
+  removedFromCompetitions: string[];
+  keptInCompetitions: string[];
 }
 
 export interface RevokeBonusBoostsResponse {

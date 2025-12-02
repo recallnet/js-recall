@@ -210,7 +210,7 @@ describe("Bonus Boosts E2E", () => {
       expect(result1!.amount).toBe("500000000000000000");
       expect(result1!.isActive).toBe(true);
 
-      // Should apply to active and pending competitions, but not closed window
+      // Should apply to eligible competitions, but not closed window
       const appliedCompIds = result1!.appliedToCompetitions || [];
       expect(appliedCompIds).toContain(compA.competition.id);
       expect(appliedCompIds).toContain(compB.competition.id);
@@ -649,7 +649,7 @@ describe("Bonus Boosts E2E", () => {
       expect(response.success).toBe(true);
       if (!response.success) throw new Error("Should have succeeded");
 
-      // Verify boost was applied to active and pending competitions
+      // Verify boost was applied to eligible competitions
       const activeBalance = await db
         .select()
         .from(boostBalances)
@@ -1017,8 +1017,10 @@ describe("Bonus Boosts E2E", () => {
 
       expect(results[0]).toBeDefined();
       expect(results[0]!.revoked).toBe(true);
-      expect(results[0]!.removedFromPending).toContain(compA.competition.id);
-      expect(results[0]!.keptInActive).toContain(compB.competition.id);
+      expect(results[0]!.removedFromCompetitions).toContain(
+        compA.competition.id,
+      );
+      expect(results[0]!.keptInCompetitions).toContain(compB.competition.id);
     });
 
     test("rejects invalid batch revoke data", async () => {
@@ -1545,13 +1547,13 @@ describe("Bonus Boosts E2E", () => {
     });
   });
 
-  describe("Cron Job Integration", () => {
+  describe("Applying Boosts to Eligible Competitions", () => {
     test("applies boosts to eligible competitions", async () => {
       // System Behavior:
-      // - Cron runs every 3 hours, finds pending AND active competitions
+      // - Service finds competitions with "pending" or "active" status
       // - Evaluates eligibility (boost window starts before expiry, window not ended, dates set)
       // - Applies eligible boosts using idempotency keys
-      // - Handles both pending and active to catch competitions created after boost was awarded
+      // - Handles competitions created after boost was awarded
 
       // Setup: Register user
       const { user } = await registerUserAndAgentAndGetClient({
@@ -1583,7 +1585,7 @@ describe("Bonus Boosts E2E", () => {
         "Active Competition",
       );
 
-      // Run cron job
+      // Run boost application service
       const services = new ServiceRegistry();
       const cronResult =
         await services.boostBonusService.applyBonusBoostsToEligibleCompetitions();
@@ -1611,7 +1613,7 @@ describe("Bonus Boosts E2E", () => {
 
     test("prevents duplicate boost applications", async () => {
       // System Behavior:
-      // - Both immediate application (on award) and cron use same idempotency key format
+      // - Both immediate application (on award) and service use same idempotency key format
       // - Database unique constraint on (balanceId, idemKey) prevents duplicates
 
       // Setup: Register user and create competition
@@ -1645,7 +1647,7 @@ describe("Bonus Boosts E2E", () => {
       expect(initialBalance).toHaveLength(1);
       expect(initialBalance[0]!.balance).toBe(1000000000000000000n);
 
-      // Run cron job (should skip due to idempotency)
+      // Run service again (should skip due to idempotency)
       const services = new ServiceRegistry();
       const cronResult =
         await services.boostBonusService.applyBonusBoostsToEligibleCompetitions();
@@ -1658,9 +1660,9 @@ describe("Bonus Boosts E2E", () => {
       expect(finalBalance[0]!.balance).toBe(1000000000000000000n); // Still same amount
     });
 
-    test("skips inactive and expired boosts in cron job", async () => {
+    test("skips inactive and expired boosts", async () => {
       // System Behavior:
-      // - Cron queries for active boosts only (filters is_active=true)
+      // - Service queries for active boosts only (filters is_active=true)
       // - Expired boosts excluded during eligibility check (expiresAt < now)
 
       // Setup: Register two users
@@ -1708,7 +1710,7 @@ describe("Bonus Boosts E2E", () => {
         "Test Competition",
       );
 
-      // Run cron job
+      // Run boost application service
       const services = new ServiceRegistry();
       await services.boostBonusService.applyBonusBoostsToEligibleCompetitions();
 
@@ -1720,10 +1722,10 @@ describe("Bonus Boosts E2E", () => {
       expect(balance2).toHaveLength(0);
     });
 
-    test("handles failures gracefully in cron job", async () => {
+    test("handles failures gracefully", async () => {
       // System Behavior:
       // - Processes each competition independently (isolated error handling)
-      // - Continues processing other competitions without stopping the job
+      // - Continues processing other competitions without stopping
 
       // Setup: Register user
       const { user } = await registerUserAndAgentAndGetClient({
@@ -1761,7 +1763,7 @@ describe("Bonus Boosts E2E", () => {
         .delete(competitions)
         .where(eq(competitions.id, compB.competition!.id));
 
-      // Run cron job
+      // Run boost application service
       const services = new ServiceRegistry();
       const cronResult =
         await services.boostBonusService.applyBonusBoostsToEligibleCompetitions();

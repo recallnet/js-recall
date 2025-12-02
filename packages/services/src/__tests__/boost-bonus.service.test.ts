@@ -564,8 +564,8 @@ describe("BoostBonusService", () => {
 
       const result = await service.revokeBoostBonus(testBoostBonusId);
 
-      expect(result.keptInActive).toContain("comp-1");
-      expect(result.removedFromPending).toHaveLength(0);
+      expect(result.keptInCompetitions).toContain("comp-1");
+      expect(result.removedFromCompetitions).toHaveLength(0);
       expect(mockBoostRepo.decrease).not.toHaveBeenCalled();
     });
 
@@ -809,7 +809,7 @@ describe("BoostBonusService", () => {
         const result = await service.revokeBoostBonus(testBoostBonusId);
 
         expect(result.revoked).toBe(true);
-        expect(result.removedFromPending).toEqual(["comp-2"]);
+        expect(result.removedFromCompetitions).toEqual(["comp-2"]);
         expect(mockBoostRepo.decrease).toHaveBeenCalledTimes(2);
         expect(mockLogger.warn).toHaveBeenCalledWith(
           { boostBonusId: testBoostBonusId, competitionId: "comp-1" },
@@ -922,7 +922,7 @@ describe("BoostBonusService", () => {
         const result = await service.revokeBoostBonus(testBoostBonusId);
 
         expect(result.revoked).toBe(true);
-        expect(result.removedFromPending).toEqual(["comp-2"]);
+        expect(result.removedFromCompetitions).toEqual(["comp-2"]);
         expect(mockBoostRepo.decrease).toHaveBeenCalledTimes(2);
         expect(mockLogger.warn).toHaveBeenCalledWith(
           { boostBonusId: testBoostBonusId, competitionId: "comp-1" },

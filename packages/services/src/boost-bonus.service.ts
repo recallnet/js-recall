@@ -44,10 +44,10 @@ export type RevokeBoostBonusResult = {
   revoked: boolean;
   /** Timestamp when the boost was revoked */
   revokedAt: Date;
-  /** Competition IDs where the boost was removed from pending */
-  removedFromPending: string[];
+  /** Competition IDs where the boost was removed (window not yet open) */
+  removedFromCompetitions: string[];
   /** Competition IDs where the boost was kept (window already open) */
-  keptInActive: string[];
+  keptInCompetitions: string[];
 };
 
 /**
@@ -61,7 +61,7 @@ export type RevokeBoostBonusResult = {
  *
  * Key concepts:
  * - **Revocation**: Marks boost as inactive and removes from competitions where window hasn't opened
- * - **Window Check**: Only removes boost if boosting window hasn't opened (pending or active)
+ * - **Window Check**: Only removes boost if boosting window hasn't opened yet
  * - **Idempotency**: Uses unique keys to prevent duplicate operations
  * - **Transaction Safety**: All operations are atomic
  */
@@ -121,8 +121,8 @@ export class BoostBonusService {
    * ```typescript
    * const result = await boostBonusService.revokeBoostBonus('boost-uuid');
    * console.log(`Revoked boost ${result.boostBonusId}`);
-   * console.log(`Removed from ${result.removedFromPending.length} competitions (window not yet open)`);
-   * console.log(`Kept in ${result.keptInActive.length} competitions (window already open)`);
+   * console.log(`Removed from ${result.removedFromCompetitions.length} competitions (window not yet open)`);
+   * console.log(`Kept in ${result.keptInCompetitions.length} competitions (window already open)`);
    * ```
    */
   async revokeBoostBonus(
@@ -183,8 +183,8 @@ export class BoostBonusService {
           boostBonusId: revokedBoost.id,
           revoked: true,
           revokedAt: now,
-          removedFromPending: [],
-          keptInActive: [],
+          removedFromCompetitions: [],
+          keptInCompetitions: [],
         };
       }
 
@@ -193,8 +193,8 @@ export class BoostBonusService {
         "Found boost_changes entries for revocation",
       );
 
-      const removedFromPending: string[] = [];
-      const keptInActive: string[] = [];
+      const removedFromCompetitions: string[] = [];
+      const keptInCompetitions: string[] = [];
 
       for (const change of boostChanges) {
         const competitionId = change.competitionId;
@@ -226,7 +226,7 @@ export class BoostBonusService {
             { boostBonusId, competitionId },
             "Boosting window is open - keeping boost (user might have spent it)",
           );
-          keptInActive.push(competitionId);
+          keptInCompetitions.push(competitionId);
           continue;
         }
 
@@ -259,7 +259,7 @@ export class BoostBonusService {
           );
 
           if (result.type === "applied") {
-            removedFromPending.push(competitionId);
+            removedFromCompetitions.push(competitionId);
             this.#logger.info(
               {
                 boostBonusId,
@@ -298,8 +298,8 @@ export class BoostBonusService {
       this.#logger.info(
         {
           boostBonusId,
-          removedCount: removedFromPending.length,
-          keptCount: keptInActive.length,
+          removedCount: removedFromCompetitions.length,
+          keptCount: keptInCompetitions.length,
         },
         "Completed bonus boost revocation",
       );
@@ -308,8 +308,8 @@ export class BoostBonusService {
         boostBonusId: revokedBoost.id,
         revoked: true,
         revokedAt: now,
-        removedFromPending,
-        keptInActive,
+        removedFromCompetitions,
+        keptInCompetitions,
       };
     };
 
@@ -508,14 +508,14 @@ export class BoostBonusService {
   }
 
   /**
-   * Applies all active bonus boosts to pending and active competitions.
+   * Applies all active bonus boosts to eligible competitions.
    *
    * This method is called by the cron job to apply bonus boosts to competitions.
    * It's also used when a new competition is created or when boost dates are set.
    *
    * **Process:**
    * 1. Find all active bonus boosts (is_active = true, expiresAt > now)
-   * 2. For each boost, apply it to eligible pending and active competitions
+   * 2. For each boost, apply it to eligible competitions
    * 3. Use idempotency keys to prevent duplicate applications
    * 4. Handle errors gracefully - if one competition fails, continue with others
    *
@@ -524,11 +524,6 @@ export class BoostBonusService {
    * - `competition.boostStartDate < boost.expiresAt` (boost window starts before expiration)
    * - `competition.boostEndDate > now` (boost window hasn't ended yet)
    * - Competition must have `boostStartDate` and `boostEndDate` set
-   *
-   * **Why Both Pending and Active:**
-   * - Handles competitions created AFTER boosts were awarded
-   * - Catches active competitions that may have been missed
-   * - Idempotency ensures boosts are never applied twice
    *
    * **Error Handling:**
    * - Processes each competition independently (isolated error handling)
@@ -558,7 +553,7 @@ export class BoostBonusService {
     const errors: Array<{ competitionId: string; error: string }> = [];
 
     this.#logger.info(
-      "Starting to apply bonus boosts to pending and active competitions",
+      "Starting to apply bonus boosts to eligible competitions",
     );
 
     try {
@@ -581,7 +576,7 @@ export class BoostBonusService {
         "Found active bonus boosts to process",
       );
 
-      // Step 2: Find all pending and active competitions
+      // Step 2: Find all eligible competitions
       const pendingComps = await this.#competitionRepository.findByStatus({
         status: "pending",
         params: { sort: "createdAt", limit: 1000, offset: 0 },
@@ -597,7 +592,7 @@ export class BoostBonusService {
       ];
 
       if (allCompetitions.length === 0) {
-        this.#logger.info("No pending or active competitions found");
+        this.#logger.info("No eligible competitions found");
         return {
           totalBoostsApplied: 0,
           competitionsProcessed: 0,
@@ -607,24 +602,9 @@ export class BoostBonusService {
       }
 
       this.#logger.info(
-        {
-          competitionCount: allCompetitions.length,
-          pendingCount: pendingComps.competitions.length,
-          activeCount: activeComps.competitions.length,
-        },
+        { competitionCount: allCompetitions.length },
         "Found competitions to process",
       );
-
-      // Warn if we hit the safety limit
-      if (pendingComps.total > 1000 || activeComps.total > 1000) {
-        this.#logger.warn(
-          {
-            pendingTotal: pendingComps.total,
-            activeTotal: activeComps.total,
-          },
-          "Competition count exceeds safety limit - some competitions may not receive boosts",
-        );
-      }
 
       // Step 3: Process each competition independently
       for (const competition of allCompetitions) {
@@ -791,7 +771,7 @@ export class BoostBonusService {
           errorCount: errors.length,
           durationMs: duration,
         },
-        "Completed applying bonus boosts to pending and active competitions",
+        "Completed applying bonus boosts to eligible competitions",
       );
 
       return {
@@ -803,7 +783,7 @@ export class BoostBonusService {
     } catch (error) {
       this.#logger.error(
         { error: error instanceof Error ? error.message : String(error) },
-        "Fatal error applying bonus boosts to pending and active competitions",
+        "Fatal error applying bonus boosts to eligible competitions",
       );
       throw error;
     }
