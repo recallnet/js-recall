@@ -309,8 +309,6 @@ export class SpotLiveMonitoringService {
         )
         .toNumber();
 
-      const totalTransferredUsd = totalDepositedUsd + totalWithdrawnUsd;
-
       // Determine primary violation type (deposits are more serious)
       const violationType: "deposit" | "withdrawal_exceeds_limit" =
         deposits.length > 0 ? "deposit" : "withdrawal_exceeds_limit";
@@ -337,10 +335,15 @@ export class SpotLiveMonitoringService {
       const specificChain = firstTransfer?.specificChain ?? null;
       const txHash = firstTransfer?.txHash ?? null;
 
+      // Use the amount that matches the violation type for semantic correctness
+      // (note field still contains full breakdown of all violations)
+      const detectedValue =
+        violationType === "deposit" ? totalDepositedUsd : totalWithdrawnUsd;
+
       return {
         agentId,
         competitionId,
-        detectedValue: totalTransferredUsd,
+        detectedValue,
         thresholdValue: 0, // Threshold not used - all transfers are violations
         violationType,
         detectionMethod: "transfer_history",
@@ -348,7 +351,7 @@ export class SpotLiveMonitoringService {
         txHash,
         confidence,
         severity:
-          totalTransferredUsd > this.config.criticalAmountThreshold
+          detectedValue > this.config.criticalAmountThreshold
             ? "critical"
             : "warning",
         evidence: transfers,
