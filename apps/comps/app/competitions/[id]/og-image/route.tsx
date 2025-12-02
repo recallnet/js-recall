@@ -9,6 +9,82 @@ import { formatBigintAmount } from "@/utils/format";
 const BUTTON_BLUE = "#0E66BE";
 const BUTTON_BLUE_LIGHT = "#1A8FE3";
 
+/** Font configuration for OG image generation */
+interface FontConfig {
+  name: string;
+  data: ArrayBuffer;
+  weight: 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900;
+  style: "normal" | "italic";
+}
+
+/**
+ * Loads a font from Google Fonts.
+ * Note: Satori (next/og) only supports TTF/OTF, not WOFF2, and Geist Mono is not supported.
+ *
+ * @param family - Font family name (e.g., "Geist" or "Roboto Mono")
+ * @param weight - Font weight to load
+ * @returns ArrayBuffer of font data
+ */
+async function loadGoogleFont(
+  family: string,
+  weight: number,
+): Promise<ArrayBuffer> {
+  const encodedFamily = encodeURIComponent(family);
+  const url = `https://fonts.googleapis.com/css2?family=${encodedFamily}:wght@${weight}&display=swap`;
+  const css = await (await fetch(url)).text();
+  const resource = css.match(
+    /src: url\((.+)\) format\('(opentype|truetype|woff2)'\)/,
+  );
+
+  if (resource?.[1]) {
+    const response = await fetch(resource[1]);
+    if (response.ok) {
+      return await response.arrayBuffer();
+    }
+  }
+
+  throw new Error(`Failed to load ${family} font weight ${weight}`);
+}
+
+/**
+ * Loads fonts for OG image generation using Geist and Roboto Mono from Google Fonts.
+ *
+ * @returns Array of font configurations
+ */
+async function loadFonts(): Promise<FontConfig[]> {
+  const [
+    geistLight,
+    geistRegular,
+    geistBold,
+    robotoMonoRegular,
+    robotoMonoBold,
+  ] = await Promise.all([
+    loadGoogleFont("Geist", 300),
+    loadGoogleFont("Geist", 400),
+    loadGoogleFont("Geist", 700),
+    loadGoogleFont("Roboto Mono", 400),
+    loadGoogleFont("Roboto Mono", 700),
+  ]);
+
+  return [
+    { name: "Geist", data: geistLight, weight: 300, style: "normal" },
+    { name: "Geist", data: geistRegular, weight: 400, style: "normal" },
+    { name: "Geist", data: geistBold, weight: 700, style: "normal" },
+    {
+      name: "Roboto Mono",
+      data: robotoMonoRegular,
+      weight: 400,
+      style: "normal",
+    },
+    {
+      name: "Roboto Mono",
+      data: robotoMonoBold,
+      weight: 700,
+      style: "normal",
+    },
+  ];
+}
+
 /**
  * Loads an asset from the public directory and returns it as a base64 data URL.
  *
@@ -39,9 +115,10 @@ export async function GET(
   const client = await createSafeClient();
   const { id } = await context.params;
 
-  const { data: competition } = await client.competitions.getById({
-    id,
-  });
+  const [{ data: competition }, fonts] = await Promise.all([
+    client.competitions.getById({ id }),
+    loadFonts(),
+  ]);
 
   const [backgroundImage, recallTokenSvg, recallLogoSvg] = await Promise.all([
     loadAssetAsBase64("og-background.png"),
@@ -49,15 +126,21 @@ export async function GET(
     loadAssetAsBase64("logo_full_grey.svg"),
   ]);
 
+  const monospaceFontFamily = "Roboto Mono, sans-serif";
+  const normalFontFamily = "Geist, sans-serif";
+
   // Fall back to simple image if any required assets failed to load
   if (!competition || !backgroundImage || !recallTokenSvg || !recallLogoSvg) {
     return new ImageResponse(
       (
-        <div tw="flex w-full h-full items-center justify-center bg-slate-950 text-white text-5xl font-bold">
+        <div
+          tw="flex w-full h-full items-center justify-center bg-slate-950 text-white text-5xl font-bold"
+          style={{ fontFamily: monospaceFontFamily }}
+        >
           {competition?.name || "Recall Competitions"}
         </div>
       ),
-      { width: 1200, height: 675 },
+      { width: 1200, height: 675, fonts },
     );
   }
 
@@ -70,14 +153,15 @@ export async function GET(
       <div
         tw="flex w-full h-full"
         style={{
+          fontFamily: monospaceFontFamily,
           backgroundImage: `url(${backgroundImage})`,
           backgroundSize: "cover",
         }}
       >
         {/* Left section */}
         <div
-          tw="flex flex-col w-1/2 px-16"
-          style={{ justifyContent: "flex-end", paddingBottom: "80px" }}
+          tw="flex flex-col w-1/2 px-16 pb-16"
+          style={{ justifyContent: "flex-end" }}
         >
           <div tw="flex flex-col items-center">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -88,14 +172,11 @@ export async function GET(
               width={120}
             />
 
-            <h1
-              tw="text-5xl text-white leading-tight mt-6 text-center"
-              style={{ fontWeight: 700 }}
-            >
-              {competition.name.toUpperCase()}
+            <h1 tw="text-5xl text-white leading-tight mt-6 text-center font-bold uppercase">
+              {competition.name}
             </h1>
 
-            <span tw="text-xl mt-6 tracking-widest text-gray-400 uppercase">
+            <span tw="text-2xl mt-6 tracking-widest text-gray-400 uppercase font-semibold">
               {formatCompetitionDates(
                 competition.startDate,
                 competition.endDate,
@@ -106,26 +187,32 @@ export async function GET(
 
         {/* Right section */}
         <div
-          tw="flex flex-col w-1/2 px-16"
-          style={{ justifyContent: "flex-end", paddingBottom: "80px" }}
+          tw="flex flex-col w-1/2 px-12"
+          style={{ justifyContent: "flex-end", paddingBottom: "70px" }}
         >
-          <div tw="flex flex-col items-center">
+          <div tw="flex flex-col items-center font-normal">
             {/* Top text - left aligned */}
             <div tw="flex flex-col items-start w-full">
-              <div tw="flex text-xl tracking-wider" style={{ gap: "8px" }}>
+              <div
+                tw="text-3xl tracking-wider"
+                style={{ display: "flex", columnGap: "20px" }}
+              >
                 <span tw="text-gray-400">{"///"}</span>
                 <span tw="text-white">PREDICT</span>
                 <span tw="text-gray-400">THE WINNERS</span>
               </div>
 
-              <div tw="flex text-xl tracking-wider mt-1" style={{ gap: "8px" }}>
-                <span tw="text-gray-400">&amp;</span>
+              <div
+                tw="text-3xl tracking-wider mt-1"
+                style={{ display: "flex", columnGap: "20px" }}
+              >
+                <span tw="text-gray-400">&</span>
                 <span tw="text-white">EARN</span>
                 <span tw="text-gray-400">UP TO</span>
               </div>
             </div>
 
-            <div tw="flex items-center mt-10" style={{ gap: "16px" }}>
+            <div tw="flex items-center mt-2" style={{ gap: "16px" }}>
               <div tw="flex items-center justify-center w-14 h-14 bg-white rounded-full">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
@@ -135,14 +222,20 @@ export async function GET(
                   height={36}
                 />
               </div>
-              <span tw="text-white text-8xl" style={{ fontWeight: 300 }}>
-                {formatBigintAmount(totalRewards)}
+              <span
+                tw="text-white font-bold text-[120px]"
+                style={{ fontFamily: normalFontFamily }}
+              >
+                {formatBigintAmount(totalRewards, undefined, false)}
               </span>
             </div>
 
             {/* Bottom text - right aligned */}
-            <div tw="flex flex-col items-end w-full mt-4">
-              <div tw="flex text-xl tracking-wider" style={{ gap: "8px" }}>
+            <div tw="flex flex-col items-end w-full mt-2">
+              <div
+                tw="text-3xl tracking-wider"
+                style={{ display: "flex", columnGap: "20px" }}
+              >
                 <span tw="text-gray-400">IN</span>
                 <span tw="text-white">REWARDS</span>
                 <span tw="text-gray-400">{"///"}</span>
@@ -150,11 +243,10 @@ export async function GET(
             </div>
 
             <div
-              tw="flex items-center justify-center mt-10 px-28 py-5 rounded-xl text-white text-2xl tracking-widest"
+              tw="flex items-center justify-center mt-20 px-42 py-7 rounded-xl text-white text-4xl tracking-widest font-semibold"
               style={{
                 background: `linear-gradient(180deg, ${BUTTON_BLUE_LIGHT} 0%, ${BUTTON_BLUE} 100%)`,
-                fontWeight: 600,
-                boxShadow: "0 4px 12px rgba(14, 102, 190, 0.4)",
+                boxShadow: "0 4px 20px rgba(0, 0, 0, 0.45)",
               }}
             >
               PREDICT
@@ -166,6 +258,7 @@ export async function GET(
     {
       width: 1200,
       height: 675,
+      fonts,
     },
   );
 }
