@@ -1,3 +1,7 @@
+INSERT INTO seasons (number, name, start_date, end_date)
+	VALUES (1, 'Season 1', '2025-11-15 00:00:00+00', '2025-12-14 00:00:00+00')
+	ON CONFLICT DO NOTHING;
+--> statement-breakpoint
 DO $$
 BEGIN
     UPDATE "seasons"
