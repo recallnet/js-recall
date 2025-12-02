@@ -1,7 +1,7 @@
 DO $$
 BEGIN
     UPDATE "seasons"
-        SET "end_date" = '2025-12-14 17:00:00-07'
+        SET "end_date" = '2025-12-14 00:00:00+00'
         WHERE "id" = 2 AND "number" = 1;
 EXCEPTION
     WHEN OTHERS THEN

@@ -150,7 +150,7 @@ Examples:
           gte(convictionClaims.duration, 1n),
           // get stakes from claims before the end of the current season
           lte(convictionClaims.blockTimestamp, currentSeason.endDate),
-          // and with durations that lasted at least until the start of the current season
+          // and with durations that lasted at least until the end of the current season
           sql`${convictionClaims.blockTimestamp} + (${convictionClaims.duration} * interval '1 second') > ${currentSeason.endDate}`,
         ),
       );
@@ -183,7 +183,7 @@ Examples:
       `${colors.blue}Step 3: Calculating total forfeited amounts...${colors.reset}`,
     );
 
-    // Get all claims, up to the beginning of the next season, to calculate
+    // Get all claims, up to the end of the current season, to calculate
     // the total forfeited amount.  We will can use this with the total amount
     // of completed conviction claims to get the current conviction reward pool
     const allClaims = await db
