@@ -139,21 +139,27 @@ export const specificChainTokens = {
   },
   bsc: {
     bnb: "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c", // WBNB - wrapped native BNB
+    usdc: "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d", // Binance-Peg USDC (canonical)
   },
   avalanche: {
     avax: "0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7", // WAVAX - wrapped native AVAX
+    usdc: "0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E", // Native USDC (Circle)
   },
   linea: {
     eth: "0xe5D7C2a44FfDDf6b295A15c148167daaAf5Cf34f", // WETH on Linea
+    usdc: "0x176211869cA2b568f2A7D4EE941E073a821EE1ff", // Native USDC (upgraded from bridged March 2025)
   },
   zksync: {
     eth: "0x5AEa5775959fBC2557Cc8789bC1bf90A239D9a91", // WETH on zkSync Era
+    usdc: "0x1d17CBcF0D6D143135aE902365D2E5e2A16538D4", // Native USDC (Circle)
   },
   scroll: {
     eth: "0x5300000000000000000000000000000000000004", // WETH on Scroll
+    usdc: "0x06eFdBFf2a14a7c8E15944D1F4A48F9F95F663A4", // Native USDC
   },
   mantle: {
     mnt: "0x78c1b0c915c4faa5fffa6cabf0219da63d7f4cb8", // WMNT - wrapped native MNT
+    usdc: "0x09Bc4E0D864854c6aFB6eB9A9cdF58aC190D0dF9", // Bridged USDC (no native USDC on Mantle yet)
   },
 } as const;
 

@@ -251,6 +251,81 @@ describe("DexScreenerProvider", () => {
     }, 15000);
   });
 
+  describe("USDC price fetching on new chains (integration)", () => {
+    it("should fetch USDC price on BSC", async () => {
+      const priceReport = await provider.getPrice(
+        specificChainTokens.bsc.usdc,
+        BlockchainType.EVM,
+        "bsc",
+      );
+
+      expect(priceReport).not.toBeNull();
+      expect(typeof priceReport?.price).toBe("number");
+      // USDC should be close to $1
+      expect(priceReport?.price).toBeCloseTo(1, 1);
+    }, 15000);
+
+    it("should fetch USDC price on Avalanche", async () => {
+      const priceReport = await provider.getPrice(
+        specificChainTokens.avalanche.usdc,
+        BlockchainType.EVM,
+        "avalanche",
+      );
+
+      expect(priceReport).not.toBeNull();
+      expect(typeof priceReport?.price).toBe("number");
+      expect(priceReport?.price).toBeCloseTo(1, 1);
+    }, 15000);
+
+    it("should fetch USDC price on Linea", async () => {
+      const priceReport = await provider.getPrice(
+        specificChainTokens.linea.usdc,
+        BlockchainType.EVM,
+        "linea",
+      );
+
+      expect(priceReport).not.toBeNull();
+      expect(typeof priceReport?.price).toBe("number");
+      expect(priceReport?.price).toBeCloseTo(1, 1);
+    }, 15000);
+
+    it("should fetch USDC price on zkSync Era", async () => {
+      const priceReport = await provider.getPrice(
+        specificChainTokens.zksync.usdc,
+        BlockchainType.EVM,
+        "zksync",
+      );
+
+      expect(priceReport).not.toBeNull();
+      expect(typeof priceReport?.price).toBe("number");
+      expect(priceReport?.price).toBeCloseTo(1, 1);
+    }, 15000);
+
+    it("should fetch USDC price on Scroll", async () => {
+      const priceReport = await provider.getPrice(
+        specificChainTokens.scroll.usdc,
+        BlockchainType.EVM,
+        "scroll",
+      );
+
+      expect(priceReport).not.toBeNull();
+      expect(typeof priceReport?.price).toBe("number");
+      expect(priceReport?.price).toBeCloseTo(1, 1);
+    }, 15000);
+
+    it("should fetch USDC price on Mantle", async () => {
+      const priceReport = await provider.getPrice(
+        specificChainTokens.mantle.usdc,
+        BlockchainType.EVM,
+        "mantle",
+      );
+
+      expect(priceReport).not.toBeNull();
+      expect(typeof priceReport?.price).toBe("number");
+      expect(priceReport?.price).toBeCloseTo(1, 1);
+    }, 15000);
+  });
+
   describe("Chain detection", () => {
     it("should detect Solana addresses correctly", async () => {
       const chain = provider.determineChain(specificChainTokens.svm.sol);
