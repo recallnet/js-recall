@@ -9,6 +9,13 @@ import { formatBigintAmount } from "@/utils/format";
 const BUTTON_BLUE = "#0E66BE";
 const BUTTON_BLUE_LIGHT = "#1A8FE3";
 
+/** Cached assets for OG image generation */
+interface CachedAssets {
+  backgroundImage: string | null;
+  recallTokenSvg: string | null;
+  recallLogoSvg: string | null;
+}
+
 /** Font configuration for OG image generation */
 interface FontConfig {
   name: string;
@@ -16,6 +23,12 @@ interface FontConfig {
   weight: 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900;
   style: "normal" | "italic";
 }
+
+/** Module-level cache for fonts to avoid repeated network requests */
+let cachedFontsPromise: Promise<FontConfig[]> | null = null;
+
+/** Module-level cache for assets to avoid repeated file system reads */
+let cachedAssetsPromise: Promise<CachedAssets> | null = null;
 
 /**
  * Loads a font from Google Fonts.
@@ -48,41 +61,47 @@ async function loadGoogleFont(
 
 /**
  * Loads fonts for OG image generation using Geist and Roboto Mono from Google Fonts.
+ * Font data is cached in memory to avoid repeated network requests on each OG image generation.
  *
  * @returns Array of font configurations
  */
 async function loadFonts(): Promise<FontConfig[]> {
-  const [
-    geistLight,
-    geistRegular,
-    geistBold,
-    robotoMonoRegular,
-    robotoMonoBold,
-  ] = await Promise.all([
-    loadGoogleFont("Geist", 300),
-    loadGoogleFont("Geist", 400),
-    loadGoogleFont("Geist", 700),
-    loadGoogleFont("Roboto Mono", 400),
-    loadGoogleFont("Roboto Mono", 700),
-  ]);
+  if (!cachedFontsPromise) {
+    cachedFontsPromise = (async () => {
+      const [
+        geistLight,
+        geistRegular,
+        geistBold,
+        robotoMonoRegular,
+        robotoMonoBold,
+      ] = await Promise.all([
+        loadGoogleFont("Geist", 300),
+        loadGoogleFont("Geist", 400),
+        loadGoogleFont("Geist", 700),
+        loadGoogleFont("Roboto Mono", 400),
+        loadGoogleFont("Roboto Mono", 700),
+      ]);
 
-  return [
-    { name: "Geist", data: geistLight, weight: 300, style: "normal" },
-    { name: "Geist", data: geistRegular, weight: 400, style: "normal" },
-    { name: "Geist", data: geistBold, weight: 700, style: "normal" },
-    {
-      name: "Roboto Mono",
-      data: robotoMonoRegular,
-      weight: 400,
-      style: "normal",
-    },
-    {
-      name: "Roboto Mono",
-      data: robotoMonoBold,
-      weight: 700,
-      style: "normal",
-    },
-  ];
+      return [
+        { name: "Geist", data: geistLight, weight: 300, style: "normal" },
+        { name: "Geist", data: geistRegular, weight: 400, style: "normal" },
+        { name: "Geist", data: geistBold, weight: 700, style: "normal" },
+        {
+          name: "Roboto Mono",
+          data: robotoMonoRegular,
+          weight: 400,
+          style: "normal",
+        },
+        {
+          name: "Roboto Mono",
+          data: robotoMonoBold,
+          weight: 700,
+          style: "normal",
+        },
+      ];
+    })();
+  }
+  return cachedFontsPromise;
 }
 
 /**
@@ -103,9 +122,31 @@ async function loadAssetAsBase64(assetPath: string): Promise<string | null> {
     if (ext === ".jpg" || ext === ".jpeg") mimeType = "image/jpeg";
 
     return `data:${mimeType};base64,${base64}`;
-  } catch {
+  } catch (err) {
+    console.error(`Failed to load asset at path "${assetPath}":`, err);
     return null;
   }
+}
+
+/**
+ * Loads static assets for OG image generation.
+ * Asset data is cached in memory to avoid repeated file system reads on each OG image generation.
+ *
+ * @returns Object containing base64-encoded assets
+ */
+async function loadAssets(): Promise<CachedAssets> {
+  if (!cachedAssetsPromise) {
+    cachedAssetsPromise = (async () => {
+      const [backgroundImage, recallTokenSvg, recallLogoSvg] =
+        await Promise.all([
+          loadAssetAsBase64("og-background.png"),
+          loadAssetAsBase64("recall-token.svg"),
+          loadAssetAsBase64("logo_full_grey.svg"),
+        ]);
+      return { backgroundImage, recallTokenSvg, recallLogoSvg };
+    })();
+  }
+  return cachedAssetsPromise;
 }
 
 export async function GET(
@@ -115,16 +156,13 @@ export async function GET(
   const client = await createSafeClient();
   const { id } = await context.params;
 
-  const [{ data: competition }, fonts] = await Promise.all([
+  const [{ data: competition }, fonts, assets] = await Promise.all([
     client.competitions.getById({ id }),
     loadFonts(),
+    loadAssets(),
   ]);
 
-  const [backgroundImage, recallTokenSvg, recallLogoSvg] = await Promise.all([
-    loadAssetAsBase64("og-background.png"),
-    loadAssetAsBase64("recall-token.svg"),
-    loadAssetAsBase64("logo_full_grey.svg"),
-  ]);
+  const { backgroundImage, recallTokenSvg, recallLogoSvg } = assets;
 
   const monospaceFontFamily = "Roboto Mono, sans-serif";
   const normalFontFamily = "Geist, sans-serif";
