@@ -13,19 +13,23 @@ const BUTTON_BLUE_LIGHT = "#1A8FE3";
  * Loads an asset from the public directory and returns it as a base64 data URL.
  *
  * @param assetPath - Path relative to the public directory
- * @returns Base64 data URL for the asset
+ * @returns Base64 data URL for the asset, or null if the asset cannot be loaded
  */
-async function loadAssetAsBase64(assetPath: string): Promise<string> {
-  const fullPath = join(process.cwd(), "public", assetPath);
-  const buffer = await readFile(fullPath);
-  const base64 = buffer.toString("base64");
+async function loadAssetAsBase64(assetPath: string): Promise<string | null> {
+  try {
+    const fullPath = join(process.cwd(), "public", assetPath);
+    const buffer = await readFile(fullPath);
+    const base64 = buffer.toString("base64");
 
-  const ext = extname(assetPath).toLowerCase();
-  let mimeType = "image/svg+xml";
-  if (ext === ".png") mimeType = "image/png";
-  if (ext === ".jpg" || ext === ".jpeg") mimeType = "image/jpeg";
+    const ext = extname(assetPath).toLowerCase();
+    let mimeType = "image/svg+xml";
+    if (ext === ".png") mimeType = "image/png";
+    if (ext === ".jpg" || ext === ".jpeg") mimeType = "image/jpeg";
 
-  return `data:${mimeType};base64,${base64}`;
+    return `data:${mimeType};base64,${base64}`;
+  } catch {
+    return null;
+  }
 }
 
 export async function GET(
@@ -39,22 +43,23 @@ export async function GET(
     id,
   });
 
-  if (!competition) {
-    return new ImageResponse(
-      (
-        <div tw="flex w-full h-full items-center justify-center bg-slate-950 text-white text-5xl font-bold">
-          Recall Competitions
-        </div>
-      ),
-      { width: 1200, height: 675 },
-    );
-  }
-
   const [backgroundImage, recallTokenSvg, recallLogoSvg] = await Promise.all([
     loadAssetAsBase64("og-background.png"),
     loadAssetAsBase64("recall-token.svg"),
     loadAssetAsBase64("logo_full_grey.svg"),
   ]);
+
+  // Fall back to simple image if any required assets failed to load
+  if (!competition || !backgroundImage || !recallTokenSvg || !recallLogoSvg) {
+    return new ImageResponse(
+      (
+        <div tw="flex w-full h-full items-center justify-center bg-slate-950 text-white text-5xl font-bold">
+          {competition?.name || "Recall Competitions"}
+        </div>
+      ),
+      { width: 1200, height: 675 },
+    );
+  }
 
   const totalRewards =
     BigInt(competition.rewardsTge?.agentPool ?? 0) +
