@@ -10,7 +10,11 @@ import { BalanceRepository } from "@recallnet/db/repositories/balance";
 import { BoostRepository } from "@recallnet/db/repositories/boost";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { CompetitionRewardsRepository } from "@recallnet/db/repositories/competition-rewards";
+import { ConvictionClaimsRepository } from "@recallnet/db/repositories/conviction-claims";
+import { EventsRepository } from "@recallnet/db/repositories/indexing-events";
 import { LeaderboardRepository } from "@recallnet/db/repositories/leaderboard";
+import { PaperTradingConfigRepository } from "@recallnet/db/repositories/paper-trading-config";
+import { PaperTradingInitialBalancesRepository } from "@recallnet/db/repositories/paper-trading-initial-balances";
 import { PartnerRepository } from "@recallnet/db/repositories/partner";
 import { PerpsRepository } from "@recallnet/db/repositories/perps";
 import { RewardsRepository } from "@recallnet/db/repositories/rewards";
@@ -26,6 +30,7 @@ import {
   ArenaService,
   BalanceService,
   BoostAwardService,
+  BoostBonusService,
   BoostService,
   CalmarRatioService,
   CompetitionRewardService,
@@ -40,11 +45,18 @@ import {
   RiskMetricsService,
   SimulatedTradeExecutionService,
   SortinoRatioService,
+  SportsIngesterService,
+  SportsService,
   SpotDataProcessor,
   TradeSimulatorService,
   TradingConstraintsService,
   UserService,
 } from "@recallnet/services";
+import {
+  EventProcessor,
+  IndexingService,
+  TransactionProcessor,
+} from "@recallnet/services/indexing";
 import {
   MockAlchemyRpcProvider,
   MockPrivyClient,
@@ -65,16 +77,8 @@ import {
 import config from "@/config/index.js";
 import { db, dbRead } from "@/database/db.js";
 import {
-  INDEXING_EVENTS_HYPERSYNC_QUERY,
-  INDEXING_TRANSACTIONS_HYPERSYNC_QUERY,
-} from "@/indexing/blockchain-config.js";
-import { ConvictionClaimsRepository } from "@/indexing/conviction-claims.repository.js";
-import { EventProcessor } from "@/indexing/event-processor.js";
-import { EventsRepository } from "@/indexing/events.repository.js";
-import { IndexingService } from "@/indexing/indexing.service.js";
-import { TransactionProcessor } from "@/indexing/transaction-processor.js";
-import {
   configLogger,
+  createLogger,
   indexingLogger,
   repositoryLogger,
   serviceLogger,
@@ -107,6 +111,7 @@ class ServiceRegistry {
   private _perpsDataProcessor: PerpsDataProcessor;
   private _spotDataProcessor: SpotDataProcessor;
   private _boostService: BoostService;
+  private _boostBonusService: BoostBonusService;
   private readonly _competitionRepository: CompetitionRepository;
   private readonly _agentRepository: AgentRepository;
   private readonly _perpsRepository: PerpsRepository;
@@ -116,17 +121,21 @@ class ServiceRegistry {
   private readonly _userRepository: UserRepository;
   private readonly _arenaRepository: ArenaRepository;
   private readonly _partnerRepository: PartnerRepository;
-  private readonly _eventIndexingService: IndexingService | undefined;
-  private readonly _transactionIndexingService: IndexingService | undefined;
+  private readonly _paperTradingConfigRepository: PaperTradingConfigRepository;
+  private readonly _paperTradingInitialBalancesRepository: PaperTradingInitialBalancesRepository;
   private readonly _eventsRepository: EventsRepository;
-  private readonly _eventProcessor: EventProcessor;
-  private readonly _transactionProcessor: TransactionProcessor;
   private readonly _convictionClaimsRepository: ConvictionClaimsRepository;
   private readonly _boostAwardService: BoostAwardService;
   private readonly _privyClient: PrivyClient;
   private _rewardsService: RewardsService;
   private readonly _rewardsRepository: RewardsRepository;
   private readonly _rewardsAllocator: RewardsAllocator;
+  private readonly _sportsService: SportsService;
+  private readonly _sportsIngesterService: SportsIngesterService;
+  private _eventIndexingService?: IndexingService;
+  private _transactionIndexingService?: IndexingService;
+  private _eventProcessor?: EventProcessor;
+  private _transactionProcessor?: TransactionProcessor;
 
   constructor() {
     // Initialize Privy client (use MockPrivyClient in test mode to avoid real API calls)
@@ -180,6 +189,9 @@ class ServiceRegistry {
       balanceRepository,
     );
     const tradingConstraintsRepository = new TradingConstraintsRepository(db);
+    this._paperTradingConfigRepository = new PaperTradingConfigRepository(db);
+    this._paperTradingInitialBalancesRepository =
+      new PaperTradingInitialBalancesRepository(db);
     const agentScoreRepository = new AgentScoreRepository(db, repositoryLogger);
     const agentNonceRepository = new AgentNonceRepository(db);
     const leaderboardRepository = new LeaderboardRepository(
@@ -195,6 +207,18 @@ class ServiceRegistry {
       repositoryLogger,
     );
 
+    // Initialize Sports Service (encapsulates all NFL sports prediction functionality)
+    this._sportsService = new SportsService(
+      db,
+      this._competitionRepository,
+      serviceLogger,
+    );
+    this._sportsIngesterService = new SportsIngesterService(
+      this._sportsService,
+      serviceLogger,
+      config,
+    );
+
     const walletWatchlist = new WalletWatchlist(config, serviceLogger);
 
     const multichainProvider = new MultiChainProvider(config, serviceLogger);
@@ -207,7 +231,7 @@ class ServiceRegistry {
     // Initialize services in dependency order
     this._balanceService = new BalanceService(
       balanceRepository,
-      config,
+      this._paperTradingInitialBalancesRepository,
       serviceLogger,
     );
     this._priceTrackerService = new PriceTrackerService(
@@ -364,6 +388,15 @@ class ServiceRegistry {
       serviceLogger,
     );
 
+    // Initialize BoostBonusService with its dependencies
+    this._boostBonusService = new BoostBonusService(
+      db,
+      this._boostRepository,
+      this._competitionRepository,
+      this._userRepository,
+      serviceLogger,
+    );
+
     // Initialize RewardsService with its dependencies
     this._rewardsService = new RewardsService(
       this._rewardsRepository,
@@ -373,7 +406,6 @@ class ServiceRegistry {
       this._rewardsAllocator,
       db,
       serviceLogger,
-      config.rewards.boostTimeDecayRate,
     );
 
     this._competitionService = new CompetitionService(
@@ -388,12 +420,16 @@ class ServiceRegistry {
       this._rewardsService,
       this._perpsDataProcessor,
       this._spotDataProcessor,
+      this._boostBonusService,
       this._agentRepository,
       agentScoreRepository,
       this._arenaRepository,
+      this._sportsService,
       this._perpsRepository,
       this._spotLiveRepository,
       this._competitionRepository,
+      this._paperTradingConfigRepository,
+      this._paperTradingInitialBalancesRepository,
       this._stakesRepository,
       tradeRepository,
       this._userRepository,
@@ -411,41 +447,15 @@ class ServiceRegistry {
       tradeRepository,
       this._tradingConstraintsService,
       dexScreenerProvider,
+      this._paperTradingConfigRepository,
       config,
       serviceLogger,
     );
 
-    this._convictionClaimsRepository = new ConvictionClaimsRepository(db);
-
-    this._eventProcessor = new EventProcessor(
+    this._convictionClaimsRepository = new ConvictionClaimsRepository(
       db,
-      this._rewardsRepository,
-      this._eventsRepository,
-      this._stakesRepository,
-      this._boostAwardService,
-      this._competitionService,
-      indexingLogger,
+      createLogger("ConvictionClaimsRepository"),
     );
-
-    if (INDEXING_EVENTS_HYPERSYNC_QUERY) {
-      this._eventIndexingService = new IndexingService(
-        indexingLogger,
-        this._eventProcessor,
-        INDEXING_EVENTS_HYPERSYNC_QUERY,
-      );
-    }
-
-    this._transactionProcessor = new TransactionProcessor(
-      this._convictionClaimsRepository,
-      indexingLogger,
-    );
-    if (INDEXING_TRANSACTIONS_HYPERSYNC_QUERY) {
-      this._transactionIndexingService = new IndexingService(
-        indexingLogger,
-        this._transactionProcessor,
-        INDEXING_TRANSACTIONS_HYPERSYNC_QUERY,
-      );
-    }
   }
 
   public static getInstance(): ServiceRegistry {
@@ -524,11 +534,26 @@ class ServiceRegistry {
     return this._spotLiveRepository;
   }
 
-  get eventIndexingService(): IndexingService | undefined {
+  get eventIndexingService(): IndexingService {
+    if (!this._eventIndexingService) {
+      this._eventIndexingService = IndexingService.createEventsIndexingService(
+        indexingLogger,
+        this.eventProcessor,
+        config.stakingIndex.getConfig(),
+      );
+    }
     return this._eventIndexingService;
   }
 
-  get transactionIndexingService(): IndexingService | undefined {
+  get transactionIndexingService(): IndexingService {
+    if (!this._transactionIndexingService) {
+      this._transactionIndexingService =
+        IndexingService.createTransactionsIndexingService(
+          indexingLogger,
+          this.transactionProcessor,
+          config.stakingIndex.getConfig(),
+        );
+    }
     return this._transactionIndexingService;
   }
 
@@ -537,6 +562,12 @@ class ServiceRegistry {
   }
 
   get transactionProcessor(): TransactionProcessor {
+    if (!this._transactionProcessor) {
+      this._transactionProcessor = new TransactionProcessor(
+        this._convictionClaimsRepository,
+        indexingLogger,
+      );
+    }
     return this._transactionProcessor;
   }
 
@@ -556,11 +587,26 @@ class ServiceRegistry {
     return this._boostService;
   }
 
+  get boostBonusService(): BoostBonusService {
+    return this._boostBonusService;
+  }
+
   get privyClient(): PrivyClient {
     return this._privyClient;
   }
 
   get eventProcessor(): EventProcessor {
+    if (!this._eventProcessor) {
+      this._eventProcessor = new EventProcessor(
+        db,
+        this._rewardsRepository,
+        this._eventsRepository,
+        this._stakesRepository,
+        this._boostAwardService,
+        this._competitionService,
+        indexingLogger,
+      );
+    }
     return this._eventProcessor;
   }
 
@@ -594,6 +640,22 @@ class ServiceRegistry {
 
   get partnerService(): PartnerService {
     return this._partnerService;
+  }
+
+  get sportsService(): SportsService {
+    return this._sportsService;
+  }
+
+  get sportsIngesterService(): SportsIngesterService {
+    return this._sportsIngesterService;
+  }
+
+  get paperTradingConfigRepository(): PaperTradingConfigRepository {
+    return this._paperTradingConfigRepository;
+  }
+
+  get paperTradingInitialBalancesRepository(): PaperTradingInitialBalancesRepository {
+    return this._paperTradingInitialBalancesRepository;
   }
 
   private getRewardsAllocator(): RewardsAllocator {
@@ -660,6 +722,7 @@ export {
   PortfolioSnapshotterService,
   PriceTrackerService,
   ServiceRegistry,
+  SportsService,
   SimulatedTradeExecutionService,
   TradeSimulatorService,
   TradingConstraintsService,

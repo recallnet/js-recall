@@ -14,11 +14,59 @@ Vercel Cron Jobs work differently from traditional cron:
 
 ## Available Cron Jobs
 
+### Auto-Calculate Rewards
+
+**Endpoint:** `/api/cron/auto-calculate-rewards`  
+**Schedule:** Every minute (`* * * * *`)  
+**Description:** Picks the next competition awaiting rewards, generates the Merkle report, and sends a Slack summary (requires `REWARDS_SLACK_WEBHOOK_URL`, `REWARDS_TOKEN_CONTRACT_ADDRESS`, and `REWARDS_CONTRACT_ADDRESS`).
+
 ### Auto-Start Competitions
 
 **Endpoint:** `/api/cron/auto-start-competitions`
 **Schedule:** Every minute (`* * * * *`)
 **Description:** Automatically starts competitions that have reached their start date
+
+### Auto-End Competitions
+
+**Endpoint:** `/api/cron/auto-end-competitions`  
+**Schedule:** Every minute (`* * * * *`)  
+**Description:** Ends competitions that reached their end date by running `competitionService.processCompetitionEndDateChecks()` so leaderboards close on time.
+
+### Index Staking Events
+
+**Endpoint:** `/api/cron/index-staking-events`  
+**Schedule:** Every minute (`* * * * *`)  
+**Description:** Runs the staking events indexer, which pulls on-chain event logs through Hypersync and updates stakes, rewards, and boosts when `stakeIndexingEnabled` is true (requires the `INDEXING_*` environment variables).
+
+### Index Staking Transactions
+
+**Endpoint:** `/api/cron/index-staking-transactions`  
+**Schedule:** Every minute (`* * * * *`)  
+**Description:** Runs the staking transactions indexer to ingest conviction claim transactions via Hypersync when `stakeIndexingEnabled` is true, keeping transaction-derived staking data current (uses the same `INDEXING_*` environment variables as the events indexer).
+
+### NFL Plays Ingester
+
+**Endpoint:** `/api/cron/nfl/plays`  
+**Schedule:** Every minute (`*/1 * * * *`)  
+**Description:** Discovers active NFL competitions, fetches in-progress games, and ingests live play-by-play data (requires `SPORTSDATAIO_API_KEY`)
+
+### NFL Schedule Ingester
+
+**Endpoint:** `/api/cron/nfl/schedule`  
+**Schedule:** Every 5 minutes (`*/5 * * * *`)  
+**Description:** Syncs the NFL schedule for the requested season (defaults to current year). Supports a `season` query parameter (e.g., `/api/cron/nfl/schedule?season=2025reg`) and requires `SPORTSDATAIO_API_KEY`.
+
+### Process Perps Competitions
+
+**Endpoint:** `/api/cron/process-perps-competitions`  
+**Schedule:** Every minute (`* * * * *`)  
+**Description:** Processes active perpetual futures competitions by fetching Symphony data, creating portfolio snapshots, updating risk metrics, and running self-funding monitoring. Each competition is skipped if it was processed within the past minute.
+
+### Take Portfolio Snapshots
+
+**Endpoint:** `/api/cron/take-portfolio-snapshots`  
+**Schedule:** Every 5 minutes (`*/5 * * * *`)  
+**Description:** Creates trading competition portfolio snapshots (non-perpetual) with `portfolioSnapshotterService`, ensuring each competition is captured at most once every five minutes. Perps competitions are handled by the perps cron.
 
 ## Configuration
 
@@ -49,6 +97,17 @@ The `vercel.json` file configures cron schedules:
   ]
 }
 ```
+
+Also ensure the following environment variables are configured in Vercel:
+
+- `CRON_SECRET` (required for all cron jobs)
+- Sports data API environment variables:
+  - `SPORTSDATAIO_API_KEY`
+  - `SPORTSDATAIO_BASE_URL` (optional override)
+- Rewards auto-calculation:
+  - `REWARDS_SLACK_WEBHOOK_URL`
+  - `REWARDS_TOKEN_CONTRACT_ADDRESS`
+  - `REWARDS_CONTRACT_ADDRESS`
 
 ### 3. Deploy to Vercel
 

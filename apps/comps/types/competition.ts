@@ -44,7 +44,8 @@ export interface AgentStatus {
 export type CompetitionType =
   | "trading"
   | "perpetual_futures"
-  | "spot_live_trading";
+  | "spot_live_trading"
+  | "sports_prediction";
 
 export type EvaluationMetric =
   | "calmar_ratio"

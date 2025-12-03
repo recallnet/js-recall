@@ -38,14 +38,14 @@ describe("AirdropService", () => {
           number: 0,
           name: "Genesis",
           startDate: season0Start,
-          endDate: null,
+          endDate: new Date(season0Start.getTime() + 30 * 24 * 60 * 60 * 1000),
         },
         {
           id: 2,
           number: 1,
           name: "Season 1",
           startDate: season1Start,
-          endDate: null,
+          endDate: new Date(season1Start.getTime() + 30 * 24 * 60 * 60 * 1000),
         },
       ]);
 
@@ -125,7 +125,7 @@ describe("AirdropService", () => {
           number: 0,
           name: "Genesis",
           startDate: new Date("2024-01-01"),
-          endDate: null,
+          endDate: new Date("2024-01-31"),
         },
       ]);
 
@@ -171,7 +171,7 @@ describe("AirdropService", () => {
           number: 0,
           name: "Genesis",
           startDate: new Date("2024-01-01"),
-          endDate: null,
+          endDate: new Date("2024-01-31"),
         },
       ]);
 
@@ -224,21 +224,21 @@ describe("AirdropService", () => {
           number: 0,
           name: "Genesis",
           startDate: season0Start,
-          endDate: null,
+          endDate: new Date(season0Start.getTime() + 30 * 24 * 60 * 60 * 1000),
         },
         {
           id: 2,
           number: 1,
           name: "Season 1",
           startDate: season1Start,
-          endDate: null,
+          endDate: new Date(season1Start.getTime() + 30 * 24 * 60 * 60 * 1000),
         },
         {
           id: 3,
           number: 2,
           name: "Season 2",
           startDate: season2Start,
-          endDate: null,
+          endDate: new Date(season2Start.getTime() + 30 * 24 * 60 * 60 * 1000),
         },
       ]);
 
@@ -445,7 +445,7 @@ describe("AirdropService", () => {
           number: 0,
           name: "Genesis",
           startDate: new Date("2024-01-01"),
-          endDate: null,
+          endDate: new Date("2024-01-31"),
         },
       ]);
 
@@ -486,7 +486,7 @@ describe("AirdropService", () => {
           number: 2,
           name: "Season 2",
           startDate: new Date("2026-01-01"),
-          endDate: null,
+          endDate: new Date("2026-01-31"),
         },
       ]);
 
@@ -573,7 +573,9 @@ describe("AirdropService", () => {
           number: 0,
           name: "Genesis",
           startDate: seasonStartDate,
-          endDate: null,
+          endDate: new Date(
+            seasonStartDate.getTime() + 30 * 24 * 60 * 60 * 1000,
+          ),
         },
       ]);
 
@@ -624,7 +626,9 @@ describe("AirdropService", () => {
           number: 1,
           name: "Season 1",
           startDate: seasonStartDate,
-          endDate: null,
+          endDate: new Date(
+            seasonStartDate.getTime() + 30 * 24 * 60 * 60 * 1000,
+          ),
         },
       ]);
 
@@ -680,7 +684,9 @@ describe("AirdropService", () => {
           number: 0,
           name: "Genesis",
           startDate: seasonStartDate,
-          endDate: null,
+          endDate: new Date(
+            seasonStartDate.getTime() + 30 * 24 * 60 * 60 * 1000,
+          ),
         },
       ]);
 
@@ -736,7 +742,9 @@ describe("AirdropService", () => {
           number: 1,
           name: "Season 1",
           startDate: seasonStartDate,
-          endDate: null,
+          endDate: new Date(
+            seasonStartDate.getTime() + 30 * 24 * 60 * 60 * 1000,
+          ),
         },
       ]);
 

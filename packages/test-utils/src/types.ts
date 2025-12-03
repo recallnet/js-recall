@@ -589,6 +589,7 @@ export interface Competition {
       specificChain: SpecificChain;
     }>;
   } | null;
+  gameIds?: string[] | null;
 }
 
 // Leaderboard entry (per-competition leaderboard)
@@ -1308,4 +1309,36 @@ export interface RewardsProofsResponse {
   success: true;
   address: string;
   rewards: RewardProof[];
+}
+
+// Bonus Boost API response types
+export interface BonusBoostResult {
+  id: string;
+  userId: string;
+  amount: string;
+  expiresAt: string;
+  isActive: boolean;
+  appliedToCompetitions: string[];
+}
+
+export interface AddBonusBoostsResponse {
+  success: true;
+  data: {
+    results: BonusBoostResult[];
+  };
+}
+
+export interface RevokeBonusBoostResult {
+  id: string;
+  revoked: boolean;
+  revokedAt: string;
+  removedFromCompetitions: string[];
+  keptInCompetitions: string[];
+}
+
+export interface RevokeBonusBoostsResponse {
+  success: true;
+  data: {
+    results: RevokeBonusBoostResult[];
+  };
 }

@@ -109,6 +109,7 @@ export const config = {
       process.env.DATABASE_READ_REPLICA_URL ||
       process.env.DATABASE_URL ||
       "postgresql://postgres:postgres@localhost:5432/trading_simulator",
+    skipMigrations: process.env.DB_SKIP_MIGRATIONS === "true",
   },
   redis: {
     url: process.env.REDIS_URL || "redis://localhost:6379",
@@ -234,22 +235,24 @@ export const config = {
   },
   stakingIndex: {
     isEnabled: process.env.INDEXING_ENABLED === "true",
-    stakingContract: process.env.INDEXING_STAKING_CONTRACT,
-    rewardsContract: process.env.INDEXING_REWARDS_CONTRACT,
-    convictionClaimsContract:
-      process.env.INDEXING_CONVICTION_CLAIMS_CONTRACT ||
-      "0x6A3044c1Cf077F386c9345eF84f2518A2682Dfff",
-    eventStartBlock: process.env.INDEXING_EVENTS_START_BLOCK
-      ? parseInt(process.env.INDEXING_EVENTS_START_BLOCK, 10)
-      : 27459229,
-    transactionsStartBlock: process.env.INDEXING_TRANSACTIONS_START_BLOCK
-      ? parseInt(process.env.INDEXING_TRANSACTIONS_START_BLOCK, 10)
-      : 36800000,
-    hypersyncUrl: process.env.INDEXING_HYPERSYNC_URL,
-    hypersyncBearerToken: process.env.INDEXING_HYPERSYNC_BEARER_TOKEN,
-    delayMs: process.env.INDEXING_DELAY
-      ? parseInt(process.env.INDEXING_DELAY, 10)
-      : 3000,
+    getConfig: () => ({
+      stakingContract: process.env.INDEXING_STAKING_CONTRACT || "",
+      rewardsContract: process.env.INDEXING_REWARDS_CONTRACT || "",
+      convictionClaimsContract:
+        process.env.INDEXING_CONVICTION_CLAIMS_CONTRACT ||
+        "0x6A3044c1Cf077F386c9345eF84f2518A2682Dfff",
+      eventStartBlock: process.env.INDEXING_EVENTS_START_BLOCK
+        ? parseInt(process.env.INDEXING_EVENTS_START_BLOCK, 10)
+        : 27459229,
+      transactionsStartBlock: process.env.INDEXING_TRANSACTIONS_START_BLOCK
+        ? parseInt(process.env.INDEXING_TRANSACTIONS_START_BLOCK, 10)
+        : 36800000,
+      hypersyncUrl: process.env.INDEXING_HYPERSYNC_URL || "",
+      hypersyncBearerToken: process.env.INDEXING_HYPERSYNC_BEARER_TOKEN || "",
+      delayMs: process.env.INDEXING_DELAY
+        ? parseInt(process.env.INDEXING_DELAY, 10)
+        : 3000,
+    }),
   },
   // Sentry configuration (imported from shared config)
   sentry: createSentryConfig(),
@@ -279,10 +282,6 @@ export const config = {
     network: process.env.REWARDS_NETWORK || "baseSepolia",
     // Slack webhook URL for rewards notifications
     slackWebhookUrl: process.env.REWARDS_SLACK_WEBHOOK_URL || "",
-    // Decay rate for boost time calculations
-    boostTimeDecayRate: process.env.REWARDS_BOOST_TIME_DECAY_RATE
-      ? parseFloat(process.env.REWARDS_BOOST_TIME_DECAY_RATE)
-      : undefined,
   },
   boost: {
     // Amount of boost (in wei) to grant on wallet linking pre TGE
@@ -296,6 +295,12 @@ export const config = {
   },
   symphony: {
     apiUrl: process.env.SYMPHONY_API_URL || "https://api.symphony.io",
+  },
+  // For sports prediction data
+  sportsDataApi: {
+    apiKey: process.env.SPORTSDATAIO_API_KEY || "",
+    baseUrl:
+      process.env.SPORTSDATAIO_BASE_URL || "https://api.sportsdata.io/v3/nfl",
   },
 };
 

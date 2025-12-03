@@ -11,11 +11,12 @@ import path from "path";
 import { arenas } from "@recallnet/db/schema/core/defs";
 import { dbManager } from "@recallnet/test-utils";
 import {
+  MockHyperliquidServer,
+  MockSportsDataIOServer,
+  MockSymphonyServer,
   startLoopsMockServer,
   stopLoopsMockServer,
 } from "@recallnet/test-utils";
-import { MockHyperliquidServer } from "@recallnet/test-utils";
-import { MockSymphonyServer } from "@recallnet/test-utils";
 import { startServer, stopServer } from "@recallnet/test-utils";
 
 import { db } from "@/database/db.js";
@@ -31,6 +32,8 @@ const testLogger = createLogger("E2E-Setup");
 export let mockSymphonyServer: MockSymphonyServer | null = null;
 // Mock Hyperliquid server instance
 export let mockHyperliquidServer: MockHyperliquidServer | null = null;
+// Mock SportsDataIO NFL server instance
+export let mockSportsDataIOServer: MockSportsDataIOServer | null = null;
 
 // Function to log to both Pino logger and file
 const log = (message: string) => {
@@ -226,6 +229,18 @@ export async function setup() {
         kind: "Competition",
       })
       .onConflictDoNothing();
+
+    await db
+      .insert(arenas)
+      .values({
+        id: "default-nfl-game-prediction-arena",
+        name: "Default NFL Game Prediction Arena",
+        createdBy: "system",
+        category: "sports",
+        skill: "sports_prediction",
+        kind: "Competition",
+      })
+      .onConflictDoNothing();
     log("✅ Default arenas created");
 
     // Start mock Symphony server for perps testing
@@ -238,6 +253,16 @@ export async function setup() {
     mockHyperliquidServer = new MockHyperliquidServer(4568);
     await mockHyperliquidServer.start();
 
+    // Start mock SportsDataIO NFL server
+    log("🏈 Starting mock SportsDataIO NFL server...");
+    const baselineDir = path.resolve(__dirname, "../fixtures/nfl");
+    mockSportsDataIOServer = new MockSportsDataIOServer(
+      4569,
+      testLogger,
+      baselineDir,
+    );
+    await mockSportsDataIOServer.start();
+
     // Set Symphony API URL to point to our mock server
     const SYMPHONY_API_URL = "http://localhost:4567";
     testLogger.info(`SYMPHONY_API_URL set to: ${SYMPHONY_API_URL}`);
@@ -245,6 +270,11 @@ export async function setup() {
     // Set Hyperliquid API URL to point to our mock server
     const HYPERLIQUID_API_URL = "http://localhost:4568";
     testLogger.info(`HYPERLIQUID_API_URL set to: ${HYPERLIQUID_API_URL}`);
+
+    // Set SportsDataIO base URL to point to our mock server
+    process.env.SPORTSDATAIO_BASE_URL = "http://localhost:4569";
+    process.env.SPORTSDATAIO_API_KEY = "mock-api-key";
+    testLogger.info("SPORTSDATAIO_BASE_URL set to: http://localhost:4569");
 
     // Start server
     log("🌐 Starting server...");
@@ -276,6 +306,13 @@ export async function teardown() {
     log("🛑 Stopping mock Hyperliquid server...");
     await mockHyperliquidServer.stop();
     mockHyperliquidServer = null;
+  }
+
+  // Stop mock SportsDataIO server
+  if (mockSportsDataIOServer) {
+    log("🛑 Stopping mock SportsDataIO NFL server...");
+    await mockSportsDataIOServer.stop();
+    mockSportsDataIOServer = null;
   }
 
   // Close database connection using our DbManager

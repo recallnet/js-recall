@@ -442,6 +442,41 @@
       "when": 1763556336527,
       "tag": "0062_yummy_paladin",
       "breakpoints": true
+    },
+    {
+      "idx": 63,
+      "version": "7",
+      "when": 1763679621151,
+      "tag": "0063_exotic_nocturne",
+      "breakpoints": true
+    },
+    {
+      "idx": 64,
+      "version": "7",
+      "when": 1764102019612,
+      "tag": "0064_lowly_iron_lad",
+      "breakpoints": true
+    },
+    {
+      "idx": 65,
+      "version": "7",
+      "when": 1764123119513,
+      "tag": "0065_burly_iron_patriot",
+      "breakpoints": true
+    },
+    {
+      "idx": 66,
+      "version": "7",
+      "when": 1764354950879,
+      "tag": "0066_dizzy_major_mapleleaf",
+      "breakpoints": true
+    },
+    {
+      "idx": 67,
+      "version": "7",
+      "when": 1764649632024,
+      "tag": "0067_elite_paibok",
+      "breakpoints": true
     }
   ]
 }

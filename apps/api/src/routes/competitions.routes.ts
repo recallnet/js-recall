@@ -1455,7 +1455,7 @@ export function configureCompetitionsRoutes(
    *           default: ""
    *         description: Sort order (currently unused but included for consistency)
    *     security:
-   *       - bearerAuth: []
+   *       - BearerAuth: []
    *     responses:
    *       200:
    *         description: List of positions with pagination info

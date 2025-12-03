@@ -1,0 +1,184 @@
+import { AnyColumn, eq, sql } from "drizzle-orm";
+import { Logger } from "pino";
+
+import { gamePlays } from "../schema/sports/defs.js";
+import { InsertGamePlay, SelectGamePlay } from "../schema/sports/types.js";
+import { Database, Transaction } from "../types.js";
+import { PagingParams } from "./types/index.js";
+import { getSort } from "./util/query.js";
+
+const gamePlaysFields: Record<string, AnyColumn> = {
+  sequence: gamePlays.sequence,
+  createdAt: gamePlays.createdAt,
+};
+
+/**
+ * Game Plays Repository
+ * Handles database operations for game plays
+ */
+export class GamePlaysRepository {
+  readonly #db: Database;
+  readonly #logger: Logger;
+
+  constructor(database: Database, logger: Logger) {
+    this.#db = database;
+    this.#logger = logger;
+  }
+
+  /**
+   * Insert a new game play
+   * @param play Play data to insert
+   * @returns The inserted play
+   */
+  async insert(play: InsertGamePlay): Promise<SelectGamePlay> {
+    try {
+      const now = new Date();
+      const data = {
+        ...play,
+        createdAt: play.createdAt || now,
+        updatedAt: now,
+      };
+
+      const [result] = await this.#db
+        .insert(gamePlays)
+        .values(data)
+        .returning();
+
+      if (!result) {
+        throw new Error("Failed to insert game play - no result returned");
+      }
+
+      return result;
+    } catch (error) {
+      this.#logger.error({ error }, "Error in insert");
+      throw error;
+    }
+  }
+
+  /**
+   * Upsert a game play by gameId and sequence
+   * @param play Play data to insert or update
+   * @returns The upserted play
+   */
+  async upsert(
+    play: InsertGamePlay,
+    tx?: Transaction,
+  ): Promise<SelectGamePlay> {
+    try {
+      const now = new Date();
+      const data = {
+        ...play,
+        createdAt: play.createdAt || now,
+        updatedAt: now,
+      };
+
+      const executor = tx || this.#db;
+      const [result] = await executor
+        .insert(gamePlays)
+        .values(data)
+        .onConflictDoUpdate({
+          target: [gamePlays.gameId, gamePlays.sequence],
+          set: {
+            providerPlayId: data.providerPlayId,
+            quarterName: data.quarterName,
+            timeRemainingMinutes: data.timeRemainingMinutes,
+            timeRemainingSeconds: data.timeRemainingSeconds,
+            playTime: data.playTime,
+            down: data.down,
+            distance: data.distance,
+            yardLine: data.yardLine,
+            yardLineTerritory: data.yardLineTerritory,
+            yardsToEndZone: data.yardsToEndZone,
+            awayScore: data.awayScore,
+            homeScore: data.homeScore,
+            playType: data.playType,
+            team: data.team,
+            opponent: data.opponent,
+            description: data.description,
+            updatedAt: now,
+          },
+        })
+        .returning();
+
+      if (!result) {
+        throw new Error("Failed to upsert game play - no result returned");
+      }
+
+      return result;
+    } catch (error) {
+      this.#logger.error({ error }, "Error in upsert");
+      throw error;
+    }
+  }
+
+  /**
+   * Find a play by ID
+   * @param id Play ID
+   * @returns The play or undefined
+   */
+  async findById(id: string): Promise<SelectGamePlay | undefined> {
+    try {
+      const [result] = await this.#db
+        .select()
+        .from(gamePlays)
+        .where(eq(gamePlays.id, id))
+        .limit(1);
+
+      return result;
+    } catch (error) {
+      this.#logger.error({ error }, "Error in findById");
+      throw error;
+    }
+  }
+
+  /**
+   * Find plays by game ID
+   * @param gameId Game ID
+   * @returns Array of plays
+   */
+  async findByGameId(
+    gameId: string,
+    params: PagingParams,
+  ): Promise<SelectGamePlay[]> {
+    try {
+      const { limit, offset } = params;
+
+      let query = this.#db
+        .select()
+        .from(gamePlays)
+        .where(eq(gamePlays.gameId, gameId))
+        .$dynamic();
+
+      if (params.sort) {
+        query = getSort(query, params.sort, gamePlaysFields);
+      }
+      query = query.limit(limit).offset(offset);
+
+      const results = await query.execute();
+
+      return results;
+    } catch (error) {
+      this.#logger.error({ error }, "Error in findByGameId");
+      throw error;
+    }
+  }
+
+  /**
+   * Count plays for a game
+   * @param gameId Game ID
+   * @returns Total number of plays
+   */
+  async countByGameId(gameId: string): Promise<number> {
+    try {
+      const [result] = await this.#db
+        .select({ count: sql<number>`count(*)` })
+        .from(gamePlays)
+        .where(eq(gamePlays.gameId, gameId));
+
+      return Number(result?.count ?? 0);
+    } catch (error) {
+      this.#logger.error({ error }, "Error in countByGameId");
+      throw error;
+    }
+  }
+}

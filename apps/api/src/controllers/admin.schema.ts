@@ -214,6 +214,52 @@ export const SpotLiveConfigUpdateSchema = z.object({
 });
 
 /**
+ * Paper trading config schema
+ */
+export const PaperTradingConfigSchema = z
+  .object({
+    maxTradePercentage: z.number().int().min(1).max(100).optional(),
+  })
+  .optional();
+
+/**
+ * Paper trading initial balance schema
+ */
+export const PaperTradingInitialBalanceSchema = z.object({
+  specificChain: SpecificChainSchema,
+  tokenSymbol: z.string().min(1).max(20),
+  amount: z.number().gt(0),
+});
+
+/**
+ * Paper trading initial balances schema (array of balances)
+ */
+export const PaperTradingInitialBalancesSchema = z
+  .array(PaperTradingInitialBalanceSchema)
+  .min(1, "At least one initial balance is required")
+  .optional()
+  .refine(
+    (balances) => {
+      if (!balances || balances.length === 0) return true;
+
+      // Check for duplicates using Set
+      const seen = new Set<string>();
+      for (const balance of balances) {
+        const key = `${balance.specificChain}:${balance.tokenSymbol}`;
+        if (seen.has(key)) {
+          return false; // Duplicate found
+        }
+        seen.add(key);
+      }
+      return true;
+    },
+    {
+      message:
+        "Duplicate entries detected: each (specificChain, tokenSymbol) pair must be unique",
+    },
+  );
+
+/**
  * Admin create or update competition schema
  */
 export const AdminCreateCompetitionSchema = z
@@ -267,9 +313,24 @@ export const AdminCreateCompetitionSchema = z
     boosterAllocationUnit: z.enum(allocationUnit.enumValues).optional(),
     rewardRules: z.string().optional(),
     rewardDetails: z.string().optional(),
+    boostTimeDecayRate: z
+      .number()
+      .min(0.1)
+      .max(0.9)
+      .optional()
+      .describe(
+        "Decay rate for boost time calculations. Must be between 0.1 and 0.9.",
+      ),
 
     // Display
     displayState: z.enum(displayState.enumValues).optional(),
+
+    // NFL schedule
+    gameIds: z.array(UuidSchema).optional(),
+
+    // Paper trading configuration
+    paperTradingConfig: PaperTradingConfigSchema,
+    paperTradingInitialBalances: PaperTradingInitialBalancesSchema,
   })
   .refine(
     (data) => {
@@ -293,10 +354,12 @@ export const AdminUpdateCompetitionSchema = AdminCreateCompetitionSchema.omit({
   name: true,
   arenaId: true,
   spotLiveConfig: true, // Use partial version for updates
+  paperTradingInitialBalances: true,
 }).extend({
   name: z.string().optional(),
   spotLiveConfig: SpotLiveConfigUpdateSchema.optional(), // Partial updates supported
   arenaId: z.string().min(1, "Arena ID is required").optional(),
+  paperTradingInitialBalances: PaperTradingInitialBalancesSchema.optional(),
 });
 
 /**
@@ -354,9 +417,21 @@ export const AdminStartCompetitionSchema = z
     boosterAllocationUnit: z.enum(allocationUnit.enumValues).optional(),
     rewardRules: z.string().optional(),
     rewardDetails: z.string().optional(),
+    boostTimeDecayRate: z
+      .number()
+      .min(0.1)
+      .max(0.9)
+      .optional()
+      .describe(
+        "Decay rate for boost time calculations. Must be between 0.1 and 0.9.",
+      ),
 
     // Display
     displayState: z.enum(displayState.enumValues).optional(),
+
+    // Paper trading configuration
+    paperTradingConfig: PaperTradingConfigSchema,
+    paperTradingInitialBalances: PaperTradingInitialBalancesSchema,
   })
   .refine((data) => data.competitionId || data.name, {
     message: "Either competitionId or name must be provided",
@@ -698,4 +773,70 @@ export const AdminCompetitionParamsSchema = z.object({
 export const AdminCompetitionPartnerParamsSchema = z.object({
   competitionId: UuidSchema,
   partnerId: UuidSchema,
+});
+
+/**
+ * Schema for a single bonus boost item in batch add request
+ */
+export const AdminBonusBoostItemSchema = z.object({
+  wallet: WalletAddressSchema,
+  amount: z
+    .string()
+    .regex(/^\d+$/, "Amount must be a valid numeric string")
+    .refine(
+      (val) => BigInt(val) > 0n,
+      "Amount must be positive (greater than zero)",
+    )
+    .refine(
+      (val) => BigInt(val) <= BigInt("1000000000000000000"), // 10^18 max
+      "Amount exceeds maximum allowed value (10^18)",
+    ),
+  expiresAt: z.iso
+    .datetime()
+    .pipe(z.coerce.date())
+    .refine(
+      (date) => date.getTime() > Date.now() + 60000, // At least 1 minute in future
+      "Expiration date must be at least 1 minute in the future",
+    ),
+  meta: z
+    .record(z.string(), z.union([z.string(), z.number(), z.boolean()]))
+    .refine(
+      (obj) => JSON.stringify(obj).length <= 1000,
+      "Meta object must not exceed 1000 characters when serialized",
+    )
+    .optional(),
+});
+
+/**
+ * Admin add bonus boost schema
+ * Accepts an array of boost items to add
+ */
+export const AdminAddBonusBoostSchema = z
+  .object({
+    boosts: z
+      .array(AdminBonusBoostItemSchema)
+      .min(1, "At least one boost item is required")
+      .max(100, "Cannot process more than 100 boosts at once"),
+  })
+  .refine(
+    (data) => {
+      const wallets = data.boosts.map((b) => b.wallet.toLowerCase());
+      const uniqueWallets = new Set(wallets);
+      return wallets.length === uniqueWallets.size;
+    },
+    {
+      message: "Duplicate wallet addresses found in batch",
+      path: ["boosts"],
+    },
+  );
+
+/**
+ * Admin revoke bonus boost schema
+ * Accepts an array of boost IDs to revoke
+ */
+export const AdminRevokeBonusBoostSchema = z.object({
+  boostIds: z
+    .array(UuidSchema)
+    .min(1, "At least one boost ID is required")
+    .max(100, "Cannot revoke more than 100 boosts at once"),
 });

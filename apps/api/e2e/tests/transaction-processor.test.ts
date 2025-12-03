@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, test } from "vitest";
 
+import { ConvictionClaimsRepository } from "@recallnet/db/repositories/conviction-claims";
 import { seasons } from "@recallnet/db/schema/airdrop/defs";
 import { convictionClaims } from "@recallnet/db/schema/conviction-claims/defs";
+import { TransactionProcessor } from "@recallnet/services/indexing";
 
 import { db } from "@/database/db.js";
-import { ConvictionClaimsRepository } from "@/indexing/conviction-claims.repository.js";
-import { TransactionProcessor } from "@/indexing/transaction-processor.js";
 import { ServiceRegistry } from "@/services/index.js";
 
 describe("TransactionProcessor", () => {
@@ -27,13 +27,16 @@ describe("TransactionProcessor", () => {
 
     // Insert required seasons for the tests
     // Season 1 is used in multiple tests
+    const startDate = new Date("2024-01-01T00:00:00Z");
+    const endDate = new Date(startDate.getTime() + 30 * 24 * 60 * 60 * 1000);
     await db
       .insert(seasons)
       .values({
         id: 1,
         number: 1,
         name: "Season 1",
-        startDate: new Date("2024-01-01T00:00:00Z"),
+        startDate,
+        endDate,
       })
       .onConflictDoNothing();
   });

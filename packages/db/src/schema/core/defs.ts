@@ -53,6 +53,7 @@ export const competitionType = pgEnum("competition_type", [
   "trading",
   "perpetual_futures",
   "spot_live_trading",
+  "sports_prediction",
 ]);
 
 /**
@@ -365,6 +366,11 @@ export const competitions = pgTable(
     rewardRules: text("reward_rules"),
     rewardDetails: text("reward_details"),
     rewardsIneligible: text("rewards_ineligible").array(),
+    boostTimeDecayRate: numeric("boost_time_decay_rate", {
+      precision: 5,
+      scale: 4,
+      mode: "number",
+    }),
 
     // Engine routing
     engineId: engineType("engine_id"),

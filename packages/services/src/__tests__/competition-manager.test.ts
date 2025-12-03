@@ -7,6 +7,8 @@ import { AgentRepository } from "@recallnet/db/repositories/agent";
 import { AgentScoreRepository } from "@recallnet/db/repositories/agent-score";
 import { ArenaRepository } from "@recallnet/db/repositories/arena";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
+import { PaperTradingConfigRepository } from "@recallnet/db/repositories/paper-trading-config";
+import { PaperTradingInitialBalancesRepository } from "@recallnet/db/repositories/paper-trading-initial-balances";
 import { PerpsRepository } from "@recallnet/db/repositories/perps";
 import { SpotLiveRepository } from "@recallnet/db/repositories/spot-live";
 import { StakesRepository } from "@recallnet/db/repositories/stakes";
@@ -29,12 +31,15 @@ import { Database, Transaction } from "@recallnet/db/types";
 import type { AgentService } from "../agent.service.js";
 import type { AgentRankService } from "../agentrank.service.js";
 import type { BalanceService } from "../balance.service.js";
+import type { BoostBonusService } from "../boost-bonus.service.js";
 import type { CompetitionRewardService } from "../competition-reward.service.js";
 import { CompetitionService } from "../competition.service.js";
+import { specificChainTokens } from "../lib/config-utils.js";
 import type { PerpsDataProcessor } from "../perps-data-processor.service.js";
 import type { PortfolioSnapshotterService } from "../portfolio-snapshotter.service.js";
 import type { PriceTrackerService } from "../price-tracker.service.js";
 import { RewardsService } from "../rewards.service.js";
+import type { SportsService } from "../sports.service.js";
 import type { SpotDataProcessor } from "../spot-data-processor.service.js";
 import type { TradeSimulatorService } from "../trade-simulator.service.js";
 import type { TradingConstraintsService } from "../trading-constraints.service.js";
@@ -99,11 +104,15 @@ describe("CompetitionService", () => {
   let perpsDataProcessor: MockProxy<PerpsDataProcessor>;
   let spotDataProcessor: MockProxy<SpotDataProcessor>;
   let spotLiveRepo: MockProxy<SpotLiveRepository>;
+  let boostBonusService: MockProxy<BoostBonusService>;
   let agentRepo: MockProxy<AgentRepository>;
   let agentScoreRepo: MockProxy<AgentScoreRepository>;
   let arenaRepo: MockProxy<ArenaRepository>;
+  let sportsService: MockProxy<SportsService>;
   let perpsRepo: MockProxy<PerpsRepository>;
   let competitionRepo: MockProxy<CompetitionRepository>;
+  let paperTradingConfigRepo: MockProxy<PaperTradingConfigRepository>;
+  let paperTradingInitialBalancesRepo: MockProxy<PaperTradingInitialBalancesRepository>;
   let stakesRepo: MockProxy<StakesRepository>;
   let tradeRepo: MockProxy<TradeRepository>;
   let userRepo: MockProxy<UserRepository>;
@@ -151,6 +160,7 @@ describe("CompetitionService", () => {
     engineId: "spot_paper_trading" as const,
     engineVersion: "1.0.0",
     rewardsIneligible: null,
+    boostTimeDecayRate: null,
   };
 
   const mockRewards: SelectCompetitionReward[] = [
@@ -194,11 +204,16 @@ describe("CompetitionService", () => {
     perpsDataProcessor = mock<PerpsDataProcessor>();
     spotDataProcessor = mock<SpotDataProcessor>();
     spotLiveRepo = mock<SpotLiveRepository>();
+    boostBonusService = mock<BoostBonusService>();
     agentRepo = mock<AgentRepository>();
     agentScoreRepo = mock<AgentScoreRepository>();
     arenaRepo = mock<ArenaRepository>();
+    sportsService = mock<SportsService>();
     perpsRepo = mock<PerpsRepository>();
     competitionRepo = mock<CompetitionRepository>();
+    paperTradingConfigRepo = mock<PaperTradingConfigRepository>();
+    paperTradingInitialBalancesRepo =
+      mock<PaperTradingInitialBalancesRepository>();
     stakesRepo = mock<StakesRepository>();
     tradeRepo = mock<TradeRepository>();
     userRepo = mock<UserRepository>();
@@ -230,12 +245,16 @@ describe("CompetitionService", () => {
       rewardsService,
       perpsDataProcessor,
       spotDataProcessor,
+      boostBonusService,
       agentRepo,
       agentScoreRepo,
       arenaRepo,
+      sportsService,
       perpsRepo,
       spotLiveRepo,
       competitionRepo,
+      paperTradingConfigRepo,
+      paperTradingInitialBalancesRepo,
       stakesRepo,
       tradeRepo,
       userRepo,
@@ -254,6 +273,7 @@ describe("CompetitionService", () => {
         maxTradePercentage: 25,
         rateLimiting: { windowMs: 60000, maxRequests: 100 },
         specificChainBalances: { eth: { eth: 1 } },
+        specificChainTokens,
       },
       logger,
     );

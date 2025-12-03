@@ -8,3 +8,6 @@ export type InsertAgentBoost = typeof defs.agentBoosts.$inferInsert;
 
 export type SelectStakeBoostAward = typeof defs.stakeBoostAwards.$inferSelect;
 export type InsertStakeBoostAward = typeof defs.stakeBoostAwards.$inferInsert;
+
+export type SelectBoostBonus = typeof defs.boostBonus.$inferSelect;
+export type InsertBoostBonus = typeof defs.boostBonus.$inferInsert;

@@ -56,6 +56,8 @@ apps/api/baseline/*.sql
 
 # Comps E2E logs
 apps/comps/**/*.log
+# Cursor plans
+.cursor/plans/
 
 # Misc
 .DS_Store
