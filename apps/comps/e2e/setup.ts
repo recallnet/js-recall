@@ -69,12 +69,6 @@ export async function setup() {
   // Ensure TEST_MODE is set
   process.env.TEST_MODE = "true";
 
-  // Set POSTGRES_URL to match DATABASE_URL for comps services
-  // (comps uses POSTGRES_URL, API uses DATABASE_URL)
-  if (process.env.DATABASE_URL && !process.env.POSTGRES_URL) {
-    process.env.POSTGRES_URL = process.env.DATABASE_URL;
-  }
-
   // Ensure METRICS_PORT is set for test environment
   if (!process.env.METRICS_PORT) {
     process.env.METRICS_PORT = "3003";

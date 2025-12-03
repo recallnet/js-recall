@@ -268,7 +268,6 @@ jobs:
           TEST_MODE: true
           CI: true
           DATABASE_URL: postgresql://postgres:postgres@${{ steps.setup-e2e.outputs.db_host }}:5432/trading_simulator_test
-          POSTGRES_URL: postgresql://postgres:postgres@${{ steps.setup-e2e.outputs.db_host }}:5432/trading_simulator_test
           TEST_HOST: ${{ steps.setup-e2e.outputs.test_host }}
           DB_CONNECTION_TIMEOUT: 5000
           DB_IDLE_TIMEOUT: 1000
