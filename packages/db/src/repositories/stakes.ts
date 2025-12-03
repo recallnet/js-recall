@@ -131,6 +131,7 @@ class StakesRepository {
    */
   stake(args: StakeArgs, tx?: Transaction): Promise<StakeRow | undefined> {
     const wallet = BlockchainAddressAsU8A.encode(args.wallet);
+    const walletAddress = args.wallet.toLowerCase();
     const executor = tx || this.#db;
     return executor.transaction(async (tx) => {
       const [stake] = await tx
@@ -138,6 +139,7 @@ class StakesRepository {
         .values({
           id: args.stakeId,
           wallet: wallet,
+          walletAddress,
           amount: args.amount,
           stakedAt: args.blockTimestamp,
           canUnstakeAfter: new Date(
@@ -162,6 +164,7 @@ class StakesRepository {
           id: crypto.randomUUID(),
           stakeId: args.stakeId,
           wallet: wallet,
+          walletAddress,
           deltaAmount: args.amount,
           kind: "stake",
           txHash: txHash,
@@ -258,9 +261,14 @@ class StakesRepository {
             eq(schema.stakes.amount, amountStaked), // Concurrency Guard
           ),
         )
-        .returning({ wallet: schema.stakes.wallet });
+        .returning({
+          wallet: schema.stakes.wallet,
+          walletAddress: schema.stakes.walletAddress,
+        });
+
       const wallet = rows[0]?.wallet;
-      if (!wallet) {
+      const walletAddress = rows[0]?.walletAddress;
+      if (!wallet || !walletAddress) {
         throw new Error("Stake not found or stale amount (concurrent update)");
       }
       const txHash = TxHashCoder.encode(args.txHash);
@@ -269,6 +277,7 @@ class StakesRepository {
         id: crypto.randomUUID(),
         stakeId: args.stakeId,
         wallet: wallet,
+        walletAddress: walletAddress,
         deltaAmount: deltaAmount,
         kind: "stake",
         txHash: txHash,
@@ -315,9 +324,13 @@ class StakesRepository {
             isNull(schema.stakes.unstakedAt),
           ),
         )
-        .returning({ wallet: schema.stakes.wallet });
+        .returning({
+          wallet: schema.stakes.wallet,
+          walletAddress: schema.stakes.walletAddress,
+        });
       const wallet = rows[0]?.wallet;
-      if (!wallet) {
+      const walletAddress = rows[0]?.walletAddress;
+      if (!wallet || !walletAddress) {
         throw new Error("Stake not found or stale amount (concurrent update)");
       }
       const txHash = TxHashCoder.encode(args.txHash);
@@ -326,6 +339,7 @@ class StakesRepository {
         id: crypto.randomUUID(),
         stakeId: args.stakeId,
         wallet: wallet,
+        walletAddress: walletAddress,
         deltaAmount: deltaAmount,
         kind: "unstake",
         txHash: txHash,
@@ -386,12 +400,14 @@ class StakesRepository {
         )
         .returning({
           wallet: schema.stakes.wallet,
+          walletAddress: schema.stakes.walletAddress,
           amount: schema.stakes.amount,
         });
-      if (!row || !row.amount || !row.wallet) {
+      if (!row || !row.amount || !row.wallet || !row.walletAddress) {
         throw new Error("Stake not found or stale (concurrent update)");
       }
       const wallet = row.wallet;
+      const walletAddress = row.walletAddress;
       const amount = row.amount;
       const txHash = TxHashCoder.encode(args.txHash);
       const blockHash = BlockHashCoder.encode(args.blockHash);
@@ -399,6 +415,7 @@ class StakesRepository {
         id: crypto.randomUUID(),
         stakeId: args.stakeId,
         wallet: wallet,
+        walletAddress: walletAddress,
         deltaAmount: -amount,
         kind: "relock",
         txHash: txHash,
@@ -456,6 +473,7 @@ class StakesRepository {
         )
         .returning({
           wallet: schema.stakes.wallet,
+          walletAddress: schema.stakes.walletAddress,
           amount: schema.stakes.amount,
         });
       if (!row) {
@@ -463,6 +481,7 @@ class StakesRepository {
         throw new Error("Stake not found or stale (concurrent update)");
       }
       const wallet = row.wallet;
+      const walletAddress = row.walletAddress;
       const amountAfter = row.amount;
       const delta = amountAfter - amountBefore; // should be negative
       const txHash = TxHashCoder.encode(args.txHash);
@@ -471,6 +490,7 @@ class StakesRepository {
         id: crypto.randomUUID(),
         stakeId: args.stakeId,
         wallet: wallet,
+        walletAddress: walletAddress,
         deltaAmount: delta,
         kind: "relock",
         txHash: txHash,
@@ -507,17 +527,22 @@ class StakesRepository {
             isNull(schema.stakes.withdrawnAt),
           ),
         )
-        .returning({ wallet: schema.stakes.wallet });
+        .returning({
+          wallet: schema.stakes.wallet,
+          walletAddress: schema.stakes.walletAddress,
+        });
       if (!row) {
         throw new Error("Stake not found or stale (concurrent update)");
       }
       const wallet = row.wallet;
+      const walletAddress = row.walletAddress;
       const txHash = TxHashCoder.encode(args.txHash);
       const blockHash = BlockHashCoder.encode(args.blockHash);
       await tx.insert(schema.stakeChanges).values({
         id: crypto.randomUUID(),
         stakeId: args.stakeId,
         wallet: wallet,
+        walletAddress: walletAddress,
         deltaAmount: 0n,
         kind: "withdraw",
         txHash: txHash,
@@ -554,14 +579,14 @@ class StakesRepository {
     wallet: string,
     tx?: Transaction,
   ): Promise<Array<StakeRow>> {
-    const walletBytes = BlockchainAddressAsU8A.encode(wallet);
+    const walletAddress = wallet.toLowerCase();
     const executor = tx ?? this.#db;
     return executor
       .select()
       .from(schema.stakes)
       .where(
         and(
-          eq(schema.stakes.wallet, walletBytes),
+          eq(schema.stakes.walletAddress, walletAddress),
           isNull(schema.stakes.unstakedAt),
         ),
       )
@@ -583,7 +608,7 @@ class StakesRepository {
     wallet: string,
     tx?: Transaction,
   ): Promise<bigint> {
-    const walletBytes = BlockchainAddressAsU8A.encode(wallet);
+    const walletAddress = wallet.toLowerCase();
     const executor = tx ?? this.#db;
 
     const result = await executor
@@ -593,7 +618,7 @@ class StakesRepository {
       .from(schema.stakes)
       .where(
         and(
-          eq(schema.stakes.wallet, walletBytes),
+          eq(schema.stakes.walletAddress, walletAddress),
           isNull(schema.stakes.unstakedAt),
         ),
       );

@@ -1,5 +1,5 @@
 import { Logger } from "pino";
-import { type Hex, encodePacked, hexToBytes, keccak256 } from "viem";
+import { encodePacked, keccak256 } from "viem";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { type DeepMockProxy } from "vitest-mock-extended";
 
@@ -351,6 +351,7 @@ describe("RewardsService", () => {
           agentId: "agent-1",
           address:
             "0x1111111111111111111111111111111111111111" as `0x${string}`,
+          walletAddress: "0x1111111111111111111111111111111111111111",
           amount: 100n,
           leafHash: Buffer.from("hash1"),
           claimed: false,
@@ -516,6 +517,7 @@ describe("RewardsService", () => {
           agentId: "agent-1",
           address:
             "0x1111111111111111111111111111111111111111" as `0x${string}`,
+          walletAddress: "0x1111111111111111111111111111111111111111",
           amount: BigInt("1000000000000000000000000"), // 1M tokens
           leafHash: Buffer.from("hash1"),
           claimed: false,
@@ -580,6 +582,7 @@ describe("RewardsService", () => {
           agentId: "agent-1",
           address:
             "0x1111111111111111111111111111111111111111" as `0x${string}`,
+          walletAddress: "0x1111111111111111111111111111111111111111",
           amount: 100n,
           leafHash: Buffer.from("hash1"),
           claimed: false,
@@ -612,6 +615,7 @@ describe("RewardsService", () => {
           agentId: "agent-1",
           address:
             "0x1111111111111111111111111111111111111111" as `0x${string}`,
+          walletAddress: "0x1111111111111111111111111111111111111111",
           amount: 100n,
           leafHash: Buffer.from("hash1"),
           claimed: false,
@@ -625,6 +629,7 @@ describe("RewardsService", () => {
           agentId: "agent-2",
           address:
             "0x2222222222222222222222222222222222222222" as `0x${string}`,
+          walletAddress: "0x2222222222222222222222222222222222222222",
           amount: 200n,
           leafHash: Buffer.from("hash2"),
           claimed: false,
@@ -687,6 +692,7 @@ describe("RewardsService", () => {
           agentId: "agent-1",
           address:
             "0x1111111111111111111111111111111111111111" as `0x${string}`,
+          walletAddress: "0x1111111111111111111111111111111111111111",
           amount: 150n,
           leafHash: Buffer.from("hash1"),
           claimed: false,
@@ -700,6 +706,7 @@ describe("RewardsService", () => {
           agentId: "agent-2",
           address:
             "0x2222222222222222222222222222222222222222" as `0x${string}`,
+          walletAddress: "0x2222222222222222222222222222222222222222",
           amount: 350n,
           leafHash: Buffer.from("hash2"),
           claimed: false,
@@ -739,6 +746,7 @@ describe("RewardsService", () => {
           agentId: "agent-1",
           address:
             "0x1111111111111111111111111111111111111111" as `0x${string}`,
+          walletAddress: "0x1111111111111111111111111111111111111111",
           amount: 100n,
           leafHash: Buffer.from("hash1"),
           claimed: false,
@@ -781,6 +789,7 @@ describe("RewardsService", () => {
           agentId: "agent-1",
           address:
             "0x1111111111111111111111111111111111111111" as `0x${string}`,
+          walletAddress: "0x1111111111111111111111111111111111111111",
           amount: 100n,
           leafHash: Buffer.from("hash1"),
           claimed: false,
@@ -826,6 +835,7 @@ describe("RewardsService", () => {
           agentId: "agent-1",
           address:
             "0x1111111111111111111111111111111111111111" as `0x${string}`,
+          walletAddress: "0x1111111111111111111111111111111111111111",
           amount: 100n,
           leafHash: Buffer.from(
             createLeafNode(
@@ -1070,6 +1080,7 @@ describe("RewardsService", () => {
           agentId: "agent-1",
           address:
             "0x1111111111111111111111111111111111111111" as `0x${string}`,
+          walletAddress: "0x1111111111111111111111111111111111111111",
           amount: largeAmount,
           leafHash: Buffer.from("hash1"),
           claimed: false,
@@ -1083,6 +1094,7 @@ describe("RewardsService", () => {
           agentId: "agent-2",
           address:
             "0x2222222222222222222222222222222222222222" as `0x${string}`,
+          walletAddress: "0x2222222222222222222222222222222222222222",
           amount: 1n,
           leafHash: Buffer.from("hash2"),
           claimed: false,
@@ -1126,6 +1138,7 @@ describe("RewardsService", () => {
           agentId: "agent-1",
           address:
             "0x1111111111111111111111111111111111111111" as `0x${string}`,
+          walletAddress: "0x1111111111111111111111111111111111111111",
           amount: 0n,
           leafHash: Buffer.from(
             createLeafNode(
@@ -1175,6 +1188,7 @@ describe("RewardsService", () => {
           userId: "user-1",
           agentId: "agent-1",
           address: duplicateAddress,
+          walletAddress: duplicateAddress.toLowerCase(),
           amount: 100n,
           leafHash: Buffer.from(
             createLeafNode(duplicateAddress, 100n).slice(2),
@@ -1190,6 +1204,7 @@ describe("RewardsService", () => {
           userId: "user-2",
           agentId: "agent-2",
           address: duplicateAddress,
+          walletAddress: duplicateAddress.toLowerCase(),
           amount: 200n,
           leafHash: Buffer.from(
             createLeafNode(duplicateAddress, 200n).slice(2),
@@ -1274,6 +1289,7 @@ describe("RewardsService", () => {
           agentId: "agent-1",
           address:
             "0x1111111111111111111111111111111111111111" as `0x${string}`,
+          walletAddress: "0x1111111111111111111111111111111111111111",
           amount: 100n,
           leafHash: Buffer.from("hash1"),
           claimed: false,
@@ -1346,35 +1362,35 @@ describe("RewardsService", () => {
     const testBoostSpendingData = [
       {
         userId: "user-1",
-        wallet: new Uint8Array(20).fill(0xaa), // 0xaa...aa
+        wallet: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         deltaAmount: BigInt(-100),
         createdAt: new Date("2024-01-01T12:00:00Z"),
         agentId: "Competitor A",
       },
       {
         userId: "user-1",
-        wallet: new Uint8Array(20).fill(0xaa), // 0xaa...aa
+        wallet: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         deltaAmount: BigInt(-50),
         createdAt: new Date("2024-01-02T18:00:00Z"),
         agentId: "Competitor B",
       },
       {
         userId: "user-2",
-        wallet: new Uint8Array(20).fill(0xbb), // 0xbb...bb
+        wallet: "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
         deltaAmount: BigInt(-80),
         createdAt: new Date("2024-01-01T15:00:00Z"),
         agentId: "Competitor A",
       },
       {
         userId: "user-2",
-        wallet: new Uint8Array(20).fill(0xbb), // 0xbb...bb
+        wallet: "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
         deltaAmount: BigInt(-120),
         createdAt: new Date("2024-01-01T20:00:00Z"),
         agentId: "Competitor B",
       },
       {
         userId: "user-3",
-        wallet: new Uint8Array(20).fill(0xcc), // 0xcc...cc
+        wallet: "0xcccccccccccccccccccccccccccccccccccccccc",
         deltaAmount: BigInt(-200),
         createdAt: new Date("2024-01-01T08:00:00Z"),
         agentId: "Competitor C",
@@ -1541,11 +1557,10 @@ describe("RewardsService", () => {
       const boostSpendingData = testCaseData.boostAllocations.map(
         (allocation, index) => ({
           userId: `user-${index}`,
-          wallet: hexToBytes(
+          wallet:
             userAddressMap[
               allocation.user as keyof typeof userAddressMap
-            ] as Hex,
-          ),
+            ]?.toLowerCase() ?? null,
           deltaAmount: BigInt(-allocation.boost), // Negative amount for spending
           createdAt: new Date(allocation.timestamp),
           agentId: allocation.competitor,
@@ -2213,6 +2228,7 @@ describe("RewardsService", () => {
           userId: "user-1",
           agentId: "agent-1",
           address: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          walletAddress: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
           amount: BigInt("100000000000000000000"),
           leafHash: new Uint8Array(32).fill(0x01),
           claimed: false,

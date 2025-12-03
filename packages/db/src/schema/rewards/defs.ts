@@ -8,6 +8,7 @@ import {
   timestamp,
   uniqueIndex,
   uuid,
+  varchar,
 } from "drizzle-orm/pg-core";
 
 import { agents, competitions, users } from "../core/defs.js";
@@ -35,6 +36,7 @@ export const rewards = pgTable(
       onDelete: "cascade",
     }),
     address: blockchainAddress("address").notNull(),
+    walletAddress: varchar("wallet_address", { length: 42 }),
     amount: tokenAmount("amount").notNull(),
     leafHash: bytea("leaf_hash").notNull(),
     claimed: boolean().default(false).notNull(),
@@ -50,6 +52,7 @@ export const rewards = pgTable(
     index("idx_rewards_user_id").on(table.userId),
     index("idx_rewards_agent_id").on(table.agentId),
     index("idx_rewards_address").on(table.address),
+    index("idx_rewards_wallet_address").on(table.walletAddress),
     uniqueIndex("uq_rewards_competition_id_user_id_agent_id").on(
       table.competitionId,
       table.userId,

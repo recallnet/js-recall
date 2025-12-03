@@ -21,6 +21,7 @@ import {
   SelectAgentBoostTotal,
   SelectBoostBonus,
 } from "../schema/boost/types.js";
+import * as coreSchema from "../schema/core/defs.js";
 import { agents } from "../schema/core/defs.js";
 import { stakes } from "../schema/indexing/defs.js";
 import type { Transaction } from "../types.js";
@@ -641,7 +642,7 @@ class BoostRepository {
     return await executor
       .select({
         userId: schema.boostBalances.userId,
-        wallet: schema.boostChanges.wallet,
+        wallet: coreSchema.users.walletAddress,
         deltaAmount: schema.boostChanges.deltaAmount,
         createdAt: schema.boostChanges.createdAt,
         agentId: schema.agentBoostTotals.agentId,
@@ -650,6 +651,10 @@ class BoostRepository {
       .innerJoin(
         schema.boostBalances,
         eq(schema.boostChanges.balanceId, schema.boostBalances.id),
+      )
+      .innerJoin(
+        coreSchema.users,
+        eq(schema.boostBalances.userId, coreSchema.users.id),
       )
       .innerJoin(
         schema.agentBoosts,
@@ -967,7 +972,7 @@ class BoostRepository {
     tx?: Transaction,
   ) {
     const executor = tx || this.#db;
-    const u8aWallet = BlockchainAddressAsU8A.encode(wallet);
+    const walletAddress = wallet.toLowerCase();
     const awardsQuery = executor
       .select()
       .from(schema.stakeBoostAwards)
@@ -982,7 +987,7 @@ class BoostRepository {
       .from(stakes)
       .where(
         and(
-          eq(stakes.wallet, u8aWallet),
+          eq(stakes.walletAddress, walletAddress),
           isNull(stakes.unstakedAt),
           notExists(awardsQuery),
         ),
