@@ -54,6 +54,9 @@ apps/api/**/*.log
 apps/api/*.log
 apps/api/baseline/*.sql
 
+# Comps E2E logs
+apps/comps/**/*.log
+
 # Misc
 .DS_Store
 *.pem

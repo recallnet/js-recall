@@ -543,6 +543,7 @@ export class AlchemyRpcProvider implements IRpcProvider {
               await provider.core.getTokenBalances(walletAddress);
 
             // Filter out zero balances and null/undefined values
+            // Normalize hex balances to decimal strings (same format as getBalance)
             return balances.tokenBalances
               .filter(
                 (balance: { tokenBalance?: string | null }) =>
@@ -556,7 +557,8 @@ export class AlchemyRpcProvider implements IRpcProvider {
                   tokenBalance?: string | null;
                 }) => ({
                   contractAddress: balance.contractAddress,
-                  balance: balance.tokenBalance!, // Safe to assert - filter guarantees non-null
+                  // Convert hex to decimal string for consistent format with getBalance()
+                  balance: BigInt(balance.tokenBalance!).toString(),
                 }),
               );
           },

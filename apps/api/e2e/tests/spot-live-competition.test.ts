@@ -5,6 +5,7 @@ import {
   type AgentCompetitionsResponse,
   ApiClient,
   type BalancesResponse,
+  type CompetitionAgent,
   type CompetitionAgentsResponse,
   type CompetitionDetailResponse,
   type EnhancedCompetition,
@@ -2027,6 +2028,215 @@ describe("Spot Live Competition", () => {
     //    If bug exists: leaderboard = 0.5 (decimal), competitions = 50 (percentage) - FAIL!
     //    If fixed: both values are equal - PASS!
     expect(competitionsSimpleReturn).toBeCloseTo(leaderboardSimpleReturn, 2);
+  });
+
+  test("should handle native ETH balances and swaps in full competition flow", async () => {
+    // Tests the FULL native token flow:
+    // 1. Initial sync includes native ETH balance (via getNativeBalance)
+    // 2. Native ETH → ERC20 swap is detected correctly (EXTERNAL category)
+    // 3. Native token uses zero address (0x00...00) for storage
+    // 4. Price lookups map zero address → WETH for pricing
+    // 5. Portfolio snapshots correctly value native ETH holdings
+    //
+    // Mock wallet: 0x9999000000000000000000000000000000000009
+    // Initial: 0.5 ETH + 100 USDC
+    // Swap: 0.1 ETH → 275 USDC
+    // Final: 0.4 ETH + 375 USDC
+
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agent with native ETH test wallet
+    const { agent } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Native ETH Test Agent",
+      agentWalletAddress: "0x9999000000000000000000000000000000000009",
+    });
+
+    // Start spot live competition
+    const response = await startSpotLiveTestCompetition({
+      adminClient,
+      name: `Native ETH Flow Test ${Date.now()}`,
+      agentIds: [agent.id],
+    });
+
+    expect(response.success).toBe(true);
+    const competition = response.competition;
+
+    await wait(2000);
+
+    // Process first sync - should initialize native ETH balance
+    const services = new ServiceRegistry();
+    await services.spotDataProcessor.processSpotLiveCompetition(competition.id);
+    await wait(500);
+
+    // Verify agent has both native ETH and USDC balances
+    const leaderboardResponse = await adminClient.getCompetitionAgents(
+      competition.id,
+    );
+    expect(leaderboardResponse.success).toBe(true);
+    const leaderboard = (leaderboardResponse as CompetitionAgentsResponse)
+      .agents;
+    const agentEntry = leaderboard.find(
+      (a: CompetitionAgent) => a.id === agent.id,
+    );
+
+    expect(agentEntry).toBeDefined();
+    console.log(
+      `[TEST] Native ETH agent portfolio value: $${agentEntry?.portfolioValue}`,
+    );
+
+    expect(agentEntry?.portfolioValue).toBeGreaterThan(0);
+
+    // Process second sync - should detect native ETH swap
+    await services.spotDataProcessor.processSpotLiveCompetition(competition.id);
+    await wait(500);
+
+    // Verify the swap was detected and balances updated
+    const finalLeaderboardResponse = await adminClient.getCompetitionAgents(
+      competition.id,
+    );
+    expect(finalLeaderboardResponse.success).toBe(true);
+    const finalLeaderboard = (
+      finalLeaderboardResponse as CompetitionAgentsResponse
+    ).agents;
+    const finalAgentEntry = finalLeaderboard.find(
+      (a: CompetitionAgent) => a.id === agent.id,
+    );
+
+    expect(finalAgentEntry).toBeDefined();
+    console.log(
+      `[TEST] After native ETH swap portfolio value: $${finalAgentEntry?.portfolioValue}`,
+    );
+
+    // Portfolio value should have changed due to swap
+    // The swap should be reflected in updated balances
+    expect(finalAgentEntry?.portfolioValue).toBeGreaterThan(0);
+
+    // Verify simpleReturn is calculated (from ROI calculation)
+    expect(typeof finalAgentEntry?.simpleReturn).toBe("number");
+
+    console.log(
+      `✓ Native ETH flow complete: simpleReturn = ${finalAgentEntry?.simpleReturn}`,
+    );
+  });
+
+  test("should include native ETH in portfolio when whitelist contains WETH but not zero address", async () => {
+    // Tests Fix: Native tokens should be auto-allowed when wrapped native is in whitelist
+    //
+    // Scenario:
+    // - Token whitelist contains WETH (0x4200...) and USDC, but NOT zero address
+    // - Agent has native ETH (stored as zero address: 0x0000...0000)
+    // - Native ETH should STILL be tracked because WETH is whitelisted
+    //
+    // If bug exists: Native ETH would be silently filtered out, portfolio shows only USDC
+    // If fixed: Native ETH is auto-allowed, portfolio includes both ETH and USDC value
+
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agent with native ETH test wallet
+    const { agent, client: agentClient } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Native ETH Whitelist Agent",
+        agentWalletAddress: "0x9999000000000000000000000000000000000009", // Has 0.5 ETH + 100 USDC
+      });
+
+    // Start competition with whitelist containing WETH but NOT zero address
+    const response = await startSpotLiveTestCompetition({
+      adminClient,
+      name: `Native Whitelist Test ${Date.now()}`,
+      agentIds: [agent.id],
+      spotLiveConfig: {
+        dataSource: "rpc_direct" as const,
+        dataSourceConfig: {
+          type: "rpc_direct" as const,
+          provider: "alchemy" as const,
+          chains: ["base"],
+        },
+        chains: ["base"],
+        allowedTokens: [
+          {
+            address: "0x4200000000000000000000000000000000000006", // WETH on Base
+            specificChain: "base",
+          },
+          {
+            address: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913", // USDC
+            specificChain: "base",
+          },
+          // NOTE: Zero address (0x0000...0000) is NOT in whitelist
+          // But native ETH should still be tracked because WETH is whitelisted
+        ],
+        selfFundingThresholdUsd: 10,
+        syncIntervalMinutes: 2,
+      },
+    });
+
+    expect(response.success).toBe(true);
+    const competition = response.competition;
+
+    await wait(2000);
+
+    // Trigger sync
+    const services = new ServiceRegistry();
+    await services.spotDataProcessor.processSpotLiveCompetition(competition.id);
+    await wait(500);
+
+    // Check agent's balances - should include native ETH
+    const balancesResponse = await agentClient.getBalance(competition.id);
+    expect(balancesResponse.success).toBe(true);
+
+    const typedBalances = balancesResponse as BalancesResponse;
+    const balances = typedBalances.balances;
+
+    // Find native ETH balance (stored as zero address)
+    const nativeEthBalance = balances.find(
+      (b) =>
+        b.tokenAddress.toLowerCase() ===
+        "0x0000000000000000000000000000000000000000",
+    );
+
+    // Find USDC balance
+    const usdcBalance = balances.find(
+      (b) =>
+        b.tokenAddress.toLowerCase() ===
+        "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+    );
+
+    // Native ETH should be present (auto-allowed because WETH is whitelisted)
+    expect(nativeEthBalance).toBeDefined();
+    expect(nativeEthBalance?.amount).toBeGreaterThan(0);
+    console.log(
+      `[TEST] Native ETH balance: ${nativeEthBalance?.amount} (should be ~0.5)`,
+    );
+
+    // USDC should also be present
+    expect(usdcBalance).toBeDefined();
+    expect(usdcBalance?.amount).toBeGreaterThan(0);
+
+    // Portfolio value should include BOTH native ETH and USDC
+    const leaderboardResponse = await adminClient.getCompetitionAgents(
+      competition.id,
+    );
+    expect(leaderboardResponse.success).toBe(true);
+    const leaderboard = (leaderboardResponse as CompetitionAgentsResponse)
+      .agents;
+    const agentEntry = leaderboard.find(
+      (a: CompetitionAgent) => a.id === agent.id,
+    );
+
+    expect(agentEntry).toBeDefined();
+    // Portfolio should be > $100 (USDC alone) because it includes native ETH value
+    // 0.5 ETH @ ~$2750 = ~$1375 + $100 USDC = ~$1475
+    expect(agentEntry?.portfolioValue).toBeGreaterThan(500);
+    console.log(
+      `[TEST] Portfolio value with native ETH: $${agentEntry?.portfolioValue}`,
+    );
+
+    console.log(
+      `✓ Native ETH correctly included in whitelist-enabled competition`,
+    );
   });
 
   describe("Spot Live Competition Updates", () => {

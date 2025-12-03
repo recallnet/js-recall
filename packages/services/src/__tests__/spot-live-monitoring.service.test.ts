@@ -470,10 +470,11 @@ describe("SpotLiveMonitoringService", () => {
         expect(alert?.note).toContain("1 withdrawal(s) totaling $100.00");
       });
 
-      it("should handle transfers with missing amountUsd gracefully", async () => {
+      it("should handle transfers with missing amountUsd as critical and flag for review", async () => {
         const transferNoUsd: SelectSpotLiveTransferHistory = {
           ...sampleTransfer,
           amountUsd: null,
+          tokenSymbol: "ETH",
         };
 
         mockSpotLiveRepo.getAgentSpotLiveTransfers.mockResolvedValue([
@@ -489,7 +490,7 @@ describe("SpotLiveMonitoringService", () => {
           competitionEndDate,
         );
 
-        // Should still detect violation with 0 USD value
+        // Should still detect violation with 0 USD value but flag as critical
         expect(result.totalAlertsCreated).toBe(1);
         expect(
           mockSpotLiveRepo.batchCreateSpotLiveSelfFundingAlerts,
@@ -497,9 +498,19 @@ describe("SpotLiveMonitoringService", () => {
           expect.arrayContaining([
             expect.objectContaining({
               detectedValue: "0", // Falls back to 0
+              transferSnapshot: expect.objectContaining({
+                severity: "critical", // Critical because unpriced = unknown value
+              }),
             }),
           ]),
         );
+
+        // Verify note contains warning about unpriced transfers
+        const alert = result.successful[0]?.alerts[0];
+        expect(alert?.note).toContain(
+          "could not be priced - amounts shown may be understated",
+        );
+        expect(alert?.note).toContain("Manual review required");
       });
 
       it("should set severity based on critical threshold", async () => {

@@ -2,6 +2,7 @@ import * as Sentry from "@sentry/node";
 import { AssetTransfersWithMetadataResult } from "alchemy-sdk";
 import { Logger } from "pino";
 
+import { NATIVE_TOKEN_ADDRESS } from "../../lib/config-utils.js";
 import { SpecificChain } from "../../types/index.js";
 import { IRpcProvider } from "../../types/rpc.js";
 import {
@@ -154,6 +155,26 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
     }
 
     return await this.rpcProvider.getTokenBalances(walletAddress, chain);
+  }
+
+  /**
+   * Get native token balance for a wallet on a chain
+   * @param walletAddress Wallet address to query
+   * @param chain Chain to query
+   * @returns Native balance in wei as string
+   */
+  async getNativeBalance(
+    walletAddress: string,
+    chain: SpecificChain,
+  ): Promise<string> {
+    // Block Solana - requires different balance fetching logic
+    if (chain === "svm") {
+      throw new Error(
+        "Solana (svm) is not supported for RPC-based spot live trading. Solana native balance requires separate implementation.",
+      );
+    }
+
+    return await this.rpcProvider.getBalance(walletAddress, chain);
   }
 
   /**
@@ -532,21 +553,22 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
   }
 
   /**
-   * Get token address from transfer with fallback logic
+   * Get token address from transfer
+   * For ERC20 tokens, returns the contract address
+   * For native tokens (ETH, MATIC, etc.), returns NATIVE_TOKEN_ADDRESS (zero address)
    * @param transfer Transfer object from Alchemy
-   * @returns Token address (contract address or asset symbol)
+   * @returns Token address (contract address for ERC20, zero address for native)
    */
   private getTokenAddress(transfer: Transfer): string {
+    // ERC20 tokens have rawContract.address
     if (transfer.rawContract?.address) {
       return transfer.rawContract.address;
     }
 
-    if (transfer.asset) {
-      return transfer.asset;
-    }
-
-    // Default to ETH for native transfers
-    return "ETH";
+    // Native transfers (EXTERNAL/INTERNAL category) don't have rawContract
+    // Return zero address instead of "ETH" string for proper price lookup
+    // The getTokenAddressForPriceLookup() utility maps zero address to WETH/WMATIC for pricing (used by multiple services)
+    return NATIVE_TOKEN_ADDRESS;
   }
 
   /**

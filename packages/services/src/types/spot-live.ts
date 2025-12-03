@@ -102,6 +102,18 @@ export interface ISpotLiveDataProvider {
   ): Promise<Array<{ contractAddress: string; balance: string }>>;
 
   /**
+   * Get native token balance for a wallet on a chain
+   * Used during initial sync to include ETH, MATIC, etc. in portfolio
+   * @param walletAddress Wallet address to query
+   * @param chain Chain to query
+   * @returns Native balance as string (in wei/smallest unit)
+   */
+  getNativeBalance?(
+    walletAddress: string,
+    chain: SpecificChain,
+  ): Promise<string>;
+
+  /**
    * Get token decimals for proper balance parsing
    * @param tokenAddress Token contract address
    * @param chain Chain where token exists

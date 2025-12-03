@@ -4,6 +4,7 @@ import { TradeRepository } from "@recallnet/db/repositories/trade";
 import { SelectTrade } from "@recallnet/db/schema/trading/types";
 
 import { BalanceService } from "./balance.service.js";
+import { getTokenAddressForPriceLookup } from "./lib/config-utils.js";
 import { getPriceMapKey } from "./lib/price-map-key.js";
 import { calculateSlippage } from "./lib/trade-utils.js";
 import { PriceTrackerService } from "./price-tracker.service.js";
@@ -218,12 +219,17 @@ export class TradeSimulatorService {
 
     for (const balance of balances) {
       // Get price with chain specificity to avoid multi-chain collision bug
+      // Map native token addresses (zero address) to WETH for price lookup
       const chainType =
         balance.specificChain === "svm"
           ? BlockchainType.SVM
           : BlockchainType.EVM;
-      const price = await this.priceTrackerService.getPrice(
+      const lookupAddress = getTokenAddressForPriceLookup(
         balance.tokenAddress,
+        balance.specificChain as SpecificChain,
+      );
+      const price = await this.priceTrackerService.getPrice(
+        lookupAddress,
         chainType,
         balance.specificChain,
       );
@@ -263,13 +269,28 @@ export class TradeSimulatorService {
       );
 
       // Step 2: Build unique token+chain requests
+      // Track mapping from original address to lookup address (WETH for native)
       const uniqueRequests = new Map<string, TokenPriceRequest>();
+      const addressMapping = new Map<string, string>(); // original key -> lookup key
+
       for (const balance of allBalances) {
-        const key = getPriceMapKey(balance.tokenAddress, balance.specificChain);
-        if (!uniqueRequests.has(key)) {
-          uniqueRequests.set(key, {
-            tokenAddress: balance.tokenAddress,
-            specificChain: balance.specificChain,
+        const originalKey = getPriceMapKey(
+          balance.tokenAddress,
+          balance.specificChain,
+        );
+        const lookupAddress = getTokenAddressForPriceLookup(
+          balance.tokenAddress,
+          balance.specificChain as SpecificChain,
+        );
+        const lookupKey = getPriceMapKey(lookupAddress, balance.specificChain);
+
+        // Store the mapping for later price lookup
+        addressMapping.set(originalKey, lookupKey);
+
+        if (!uniqueRequests.has(lookupKey)) {
+          uniqueRequests.set(lookupKey, {
+            tokenAddress: lookupAddress,
+            specificChain: balance.specificChain as SpecificChain,
           });
         }
       }
@@ -285,12 +306,14 @@ export class TradeSimulatorService {
       });
 
       // Step 5: Calculate portfolio values efficiently
+      // Use the address mapping to find prices for native tokens
       allBalances.forEach((balance) => {
-        const priceKey = getPriceMapKey(
+        const originalKey = getPriceMapKey(
           balance.tokenAddress,
           balance.specificChain,
         );
-        const priceReport = priceMap.get(priceKey);
+        const lookupKey = addressMapping.get(originalKey) || originalKey;
+        const priceReport = priceMap.get(lookupKey);
         if (priceReport && priceReport.price) {
           const currentValue = portfolioValues.get(balance.agentId) || 0;
           const tokenValue = balance.amount * priceReport.price;
