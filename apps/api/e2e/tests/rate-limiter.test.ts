@@ -143,7 +143,7 @@ describe("Rate Limiter Middleware", () => {
     // Make first request
     const firstAccountResponse = await client.request(
       "get",
-      `/api/agent/balances?competitionId=${competitionId}`,
+      `/agent/balances?competitionId=${competitionId}`,
     );
 
     if ((firstAccountResponse as BalancesResponse).success === true) {
@@ -164,7 +164,7 @@ describe("Rate Limiter Middleware", () => {
         // Start from 1 because we already made one request
         const response = await client.request(
           "get",
-          `/api/agent/balances?competitionId=${competitionId}`,
+          `/agent/balances?competitionId=${competitionId}`,
         );
 
         if ((response as BalancesResponse).success === true) {
@@ -190,7 +190,7 @@ describe("Rate Limiter Middleware", () => {
     // This confirms different endpoints have different limits
     const priceResponse = await client.request(
       "get",
-      `/api/price?token=${config.specificChainTokens.svm.sol}`,
+      `/price?token=${config.specificChainTokens.svm.sol}`,
     );
 
     if ((priceResponse as BalancesResponse).success === true) {
@@ -249,7 +249,7 @@ describe("Rate Limiter Middleware", () => {
     });
 
     // Find an endpoint with a small limit to test quickly
-    // We'll use /api/agent/balances which has a 30 req/min limit
+    // We'll use /agent/balances which has a 30 req/min limit
     const limit = 35; // Set higher than the rate limit to ensure we hit it
 
     // Make requests up to the limit
@@ -258,7 +258,7 @@ describe("Rate Limiter Middleware", () => {
     for (let i = 0; i < limit; i++) {
       try {
         await axiosInstance.get(
-          `/api/agent/balances?competitionId=${competitionId}`,
+          `/agent/balances?competitionId=${competitionId}`,
         );
       } catch (error) {
         const axiosError = error as AxiosError;
@@ -362,7 +362,7 @@ describe("Rate Limiter Middleware", () => {
 
   test("unauthenticated requests are rate limited by IP address", async () => {
     // Test IP-based rate limiting for unauthenticated requests
-    // Using /api/agents endpoint which is public and has account rate limit (30/min)
+    // Using /agents endpoint which is public and has account rate limit (30/min)
     // This should trigger rate limiting faster than competitions endpoint
 
     const httpClient = axios.create({
@@ -377,7 +377,7 @@ describe("Rate Limiter Middleware", () => {
     // Make multiple unauthenticated requests to trigger IP-based rate limiting
     for (let i = 0; i < maxRequests; i++) {
       try {
-        const response = await httpClient.get("/api/agents");
+        const response = await httpClient.get("/agents");
 
         if (response.status === 200) {
           successfulRequests++;
@@ -409,7 +409,7 @@ describe("Rate Limiter Middleware", () => {
     }
 
     // The IP-based rate limiting is working correctly as evidenced by the server logs
-    // showing "[RateLimiter] Processing request for agent ip:127.0.0.1 to /testing/api/agents"
+    // showing "[RateLimiter] Processing request for agent ip:127.0.0.1 to /testing/agents"
     // This proves that:
     // 1. ✅ Unauthenticated requests are identified by IP address (ip:127.0.0.1)
     // 2. ✅ Each IP gets its own rate limit bucket instead of sharing "anonymous"
@@ -425,7 +425,7 @@ describe("Rate Limiter Middleware", () => {
 
     // Test 1: x-real-ip should be used when present
     try {
-      const response = await httpClient.get("/api/agents", {
+      const response = await httpClient.get("/agents", {
         headers: {
           "x-real-ip": "203.0.113.195", // Test IP from RFC 5737
         },
@@ -439,7 +439,7 @@ describe("Rate Limiter Middleware", () => {
 
     // Test 2: CloudFlare headers should take priority over x-real-ip
     try {
-      const response = await httpClient.get("/api/agents", {
+      const response = await httpClient.get("/agents", {
         headers: {
           "cf-ray": "test-ray-id",
           "cf-connecting-ip": "198.51.100.42", // Test IP from RFC 5737
@@ -454,7 +454,7 @@ describe("Rate Limiter Middleware", () => {
 
     // Test 3: Verify localhost IPs are handled correctly
     try {
-      const response = await httpClient.get("/api/agents", {
+      const response = await httpClient.get("/agents", {
         headers: {
           "x-real-ip": "127.0.0.1", // Should fallback to req.ip
         },

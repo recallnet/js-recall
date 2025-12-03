@@ -157,7 +157,7 @@ describe("Competition Timeline API", () => {
 
     // Test: Direct axios call without authentication
     const response = await axios.get(
-      `${getBaseUrl()}/api/competitions/${competitionResponse.competition.id}/timeline`,
+      `${getBaseUrl()}/competitions/${competitionResponse.competition.id}/timeline`,
     );
 
     expect(response.status).toBe(200);

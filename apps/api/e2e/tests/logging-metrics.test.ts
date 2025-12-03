@@ -56,9 +56,9 @@ describe("Logging and Metrics API", () => {
     await client.loginAsAdmin(adminApiKey);
 
     // Make requests to different endpoints to generate varied metrics
-    await client.getHealthStatus(); // GET /api/health
-    await client.listAgents(); // GET /api/admin/agents
-    await client.listUsers(); // GET /api/admin/users
+    await client.getHealthStatus(); // GET /health
+    await client.listAgents(); // GET /admin/agents
+    await client.listUsers(); // GET /admin/users
 
     // Get metrics
     const metricsResponse = await client.getMetrics();
@@ -70,8 +70,8 @@ describe("Logging and Metrics API", () => {
 
     // Check that we have metrics for different routes (using actual route patterns)
     expect(metricsText).toContain("/health");
-    expect(metricsText).toContain("/api/admin/agents");
-    expect(metricsText).toContain("/api/admin/users");
+    expect(metricsText).toContain("/admin/agents");
+    expect(metricsText).toContain("/admin/users");
 
     // Check that we have successful status codes
     expect(metricsText).toContain('status_code="200"');
@@ -283,9 +283,9 @@ describe("Logging and Metrics API", () => {
     expect(metricsText).toContain("http_request_duration_ms");
 
     // Check for trading-specific endpoints (using actual route patterns)
-    expect(metricsText).toContain("/api/trade/execute");
-    expect(metricsText).toContain("/api/agent/profile");
-    expect(metricsText).toContain("/api/agent/balances");
+    expect(metricsText).toContain("/trade/execute");
+    expect(metricsText).toContain("/agent/profile");
+    expect(metricsText).toContain("/agent/balances");
 
     // Verify we have successful responses
     expect(metricsText).toContain('status_code="200"');
@@ -362,8 +362,8 @@ describe("Logging and Metrics API", () => {
     expect(typeof metricsResponse).toBe("string");
 
     const metricsText = metricsResponse as string;
-    expect(metricsText).toContain("/api/agent/profile");
-    expect(metricsText).toContain("/api/agent/balances");
+    expect(metricsText).toContain("/agent/profile");
+    expect(metricsText).toContain("/agent/balances");
   });
 
   test("metrics persist through agent API key reset workflow", async () => {
@@ -414,9 +414,9 @@ describe("Logging and Metrics API", () => {
     expect(typeof metricsResponse).toBe("string");
 
     const metricsText = metricsResponse as string;
-    expect(metricsText).toContain("/api/agent/profile");
-    expect(metricsText).toContain("/api/agent/balances");
-    expect(metricsText).toContain("/api/agent/reset-api-key");
+    expect(metricsText).toContain("/agent/profile");
+    expect(metricsText).toContain("/agent/balances");
+    expect(metricsText).toContain("/agent/reset-api-key");
   });
 
   test("error responses are properly tracked in metrics", async () => {
@@ -424,7 +424,7 @@ describe("Logging and Metrics API", () => {
 
     // Make a request that should fail (no authentication)
     try {
-      await axios.get(`${getBaseUrl()}/api/admin/agents`);
+      await axios.get(`${getBaseUrl()}/admin/agents`);
     } catch (error) {
       // Expected to fail with 401
       expect(axios.isAxiosError(error)).toBe(true);

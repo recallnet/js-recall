@@ -147,7 +147,7 @@ export class ApiClient {
       // For admin routes, use admin API key if available
       if (
         this.adminApiKey &&
-        (config.url?.startsWith("/api/admin") ||
+        (config.url?.startsWith("/admin") ||
           config.url?.includes("admin") ||
           config.url?.includes("competition")) &&
         this.adminApiKey !== this.apiKey
@@ -215,7 +215,7 @@ export class ApiClient {
     email: string,
   ): Promise<AdminUserResponse | ErrorResponse> {
     try {
-      const response = await this.axiosInstance.post("/api/admin/setup", {
+      const response = await this.axiosInstance.post("/admin/setup", {
         username,
         password,
         email,
@@ -251,7 +251,7 @@ export class ApiClient {
         queryParams.append("offset", params.offset.toString());
 
       const queryString = queryParams.toString();
-      const url = `/api/agents/${agentId}/competitions${queryString ? `?${queryString}` : ""}`;
+      const url = `/agents/${agentId}/competitions${queryString ? `?${queryString}` : ""}`;
 
       const response = await this.axiosInstance.get(url);
       return response.data;
@@ -268,7 +268,7 @@ export class ApiClient {
       this.adminApiKey = apiKey;
 
       // Verify the API key by making a simple admin request
-      const response = await this.axiosInstance.get("/api/admin/agents");
+      const response = await this.axiosInstance.get("/admin/agents");
       return response.data.success;
     } catch (error) {
       // Clear the admin API key if login fails
@@ -392,7 +392,7 @@ export class ApiClient {
     agentWalletAddress?: string;
   }): Promise<UserRegistrationResponse | ErrorResponse> {
     try {
-      const response = await this.axiosInstance.post("/api/admin/users", {
+      const response = await this.axiosInstance.post("/admin/users", {
         walletAddress,
         embeddedWalletAddress,
         privyId,
@@ -444,7 +444,7 @@ export class ApiClient {
     };
   }): Promise<AdminAgentResponse | ErrorResponse> {
     try {
-      const response = await this.axiosInstance.post("/api/admin/agents", {
+      const response = await this.axiosInstance.post("/admin/agents", {
         user,
         agent,
       });
@@ -562,7 +562,7 @@ export class ApiClient {
       }
 
       const response = await this.axiosInstance.post(
-        "/api/admin/competition/start",
+        "/admin/competition/start",
         requestData,
       );
 
@@ -711,7 +711,7 @@ export class ApiClient {
 
     try {
       const response = await this.axiosInstance.post(
-        "/api/admin/competition/create",
+        "/admin/competition/create",
         {
           name: competitionName,
           description,
@@ -856,7 +856,7 @@ export class ApiClient {
   ): Promise<UpdateCompetitionResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.put(
-        `/api/admin/competition/${competitionId}`,
+        `/admin/competition/${competitionId}`,
         {
           name,
           description,
@@ -920,7 +920,7 @@ export class ApiClient {
   }): Promise<StartCompetitionResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.post(
-        "/api/admin/competition/start",
+        "/admin/competition/start",
         {
           competitionId,
           agentIds,
@@ -949,7 +949,7 @@ export class ApiClient {
    */
   async getUserProfile(): Promise<UserProfileResponse | ErrorResponse> {
     try {
-      const response = await this.axiosInstance.get("/api/user/profile");
+      const response = await this.axiosInstance.get("/user/profile");
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "get profile");
@@ -961,7 +961,7 @@ export class ApiClient {
    */
   async getAgentProfile(): Promise<AgentProfileResponse | ErrorResponse> {
     try {
-      const response = await this.axiosInstance.get("/api/agent/profile");
+      const response = await this.axiosInstance.get("/agent/profile");
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "get profile");
@@ -980,7 +980,7 @@ export class ApiClient {
   }): Promise<UserProfileResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.put(
-        "/api/user/profile",
+        "/user/profile",
         profileData,
       );
       return response.data;
@@ -999,7 +999,7 @@ export class ApiClient {
   }): Promise<AgentProfileResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.put(
-        "/api/agent/profile",
+        "/agent/profile",
         profileData,
       );
       return response.data;
@@ -1026,7 +1026,7 @@ export class ApiClient {
   ): Promise<AgentProfileResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.put(
-        `/api/user/agents/${agentId}/profile`,
+        `/user/agents/${agentId}/profile`,
         profileData,
       );
       return response.data;
@@ -1040,7 +1040,7 @@ export class ApiClient {
    */
   async listAgents(): Promise<AdminAgentsListResponse | ErrorResponse> {
     try {
-      const response = await this.axiosInstance.get("/api/admin/agents");
+      const response = await this.axiosInstance.get("/admin/agents");
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "list agents");
@@ -1055,7 +1055,7 @@ export class ApiClient {
     filter?: string,
   ): Promise<AgentsGetResponse | ErrorResponse> {
     try {
-      let url = `/api/agents?limit=${pagingParams.limit}&offset=${pagingParams.offset}`;
+      let url = `/agents?limit=${pagingParams.limit}&offset=${pagingParams.offset}`;
       if (pagingParams.sort) {
         url += `&sort=${pagingParams.sort}`;
       }
@@ -1075,7 +1075,7 @@ export class ApiClient {
    */
   async listUsers(): Promise<AdminUsersListResponse | ErrorResponse> {
     try {
-      const response = await this.axiosInstance.get("/api/admin/users");
+      const response = await this.axiosInstance.get("/admin/users");
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "list users");
@@ -1101,7 +1101,7 @@ export class ApiClient {
   ): Promise<ApiResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.put(
-        `/api/admin/agents/${agentId}`,
+        `/admin/agents/${agentId}`,
         body,
       );
       return response.data;
@@ -1117,7 +1117,7 @@ export class ApiClient {
   async deleteAgent(agentId: string): Promise<ApiResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.delete(
-        `/api/admin/agents/${agentId}`,
+        `/admin/agents/${agentId}`,
       );
       return response.data;
     } catch (error) {
@@ -1131,7 +1131,7 @@ export class ApiClient {
   async deleteUser(userId: string): Promise<ApiResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.delete(
-        `/api/admin/users/${userId}`,
+        `/admin/users/${userId}`,
       );
       return response.data;
     } catch (error) {
@@ -1150,7 +1150,7 @@ export class ApiClient {
   ): Promise<ApiResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.post(
-        `/api/admin/agents/${agentId}/deactivate`,
+        `/admin/agents/${agentId}/deactivate`,
         { reason },
       );
       return response.data;
@@ -1170,7 +1170,7 @@ export class ApiClient {
   // ): Promise<AdminUserResponse | ErrorResponse> {
   //   try {
   //     const response = await this.axiosInstance.post(
-  //       `/api/admin/users/${userId}/deactivate`,
+  //       `/admin/users/${userId}/deactivate`,
   //       { reason },
   //     );
   //     return response.data;
@@ -1188,7 +1188,7 @@ export class ApiClient {
   ): Promise<AdminAgentResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.post(
-        `/api/admin/agents/${agentId}/reactivate`,
+        `/admin/agents/${agentId}/reactivate`,
       );
       return response.data;
     } catch (error) {
@@ -1209,7 +1209,7 @@ export class ApiClient {
   ): Promise<AdminRemoveAgentFromCompetitionResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.post(
-        `/api/admin/competitions/${competitionId}/agents/${agentId}/remove`,
+        `/admin/competitions/${competitionId}/agents/${agentId}/remove`,
         { reason },
       );
       return response.data;
@@ -1229,7 +1229,7 @@ export class ApiClient {
   ): Promise<AdminReactivateAgentInCompetitionResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.post(
-        `/api/admin/competitions/${competitionId}/agents/${agentId}/reactivate`,
+        `/admin/competitions/${competitionId}/agents/${agentId}/reactivate`,
       );
       return response.data;
     } catch (error) {
@@ -1248,7 +1248,7 @@ export class ApiClient {
   ): Promise<AdminAddAgentToCompetitionResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.post(
-        `/api/admin/competitions/${competitionId}/agents/${agentId}`,
+        `/admin/competitions/${competitionId}/agents/${agentId}`,
       );
       return response.data;
     } catch (error) {
@@ -1266,7 +1266,7 @@ export class ApiClient {
   ): Promise<AdminCompetitionTransferViolationsResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.get(
-        `/api/admin/competition/${competitionId}/transfer-violations`,
+        `/admin/competition/${competitionId}/transfer-violations`,
       );
       return response.data;
     } catch (error) {
@@ -1283,7 +1283,7 @@ export class ApiClient {
   ): Promise<AgentApiKeyResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.get(
-        `/api/admin/agents/${agentId}/key`,
+        `/admin/agents/${agentId}/key`,
       );
       return response.data;
     } catch (error) {
@@ -1297,9 +1297,7 @@ export class ApiClient {
    */
   async getAgent(agentId: string): Promise<AdminAgentResponse | ErrorResponse> {
     try {
-      const response = await this.axiosInstance.get(
-        `/api/admin/agents/${agentId}`,
-      );
+      const response = await this.axiosInstance.get(`/admin/agents/${agentId}`);
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "get admin agent");
@@ -1314,7 +1312,7 @@ export class ApiClient {
     agentId: string,
   ): Promise<PublicAgentResponse | ErrorResponse> {
     try {
-      const response = await this.axiosInstance.get(`/api/agents/${agentId}`);
+      const response = await this.axiosInstance.get(`/agents/${agentId}`);
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "get public agent");
@@ -1329,7 +1327,7 @@ export class ApiClient {
   ): Promise<BalancesResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.get(
-        `/api/agent/balances?competitionId=${encodeURIComponent(competitionId)}`,
+        `/agent/balances?competitionId=${encodeURIComponent(competitionId)}`,
       );
       return response.data as BalancesResponse;
     } catch (error) {
@@ -1345,7 +1343,7 @@ export class ApiClient {
   ): Promise<TradeHistoryResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.get(
-        `/api/agent/trades?competitionId=${competitionId}`,
+        `/agent/trades?competitionId=${competitionId}`,
       );
       return response.data as TradeHistoryResponse;
     } catch (error) {
@@ -1370,10 +1368,7 @@ export class ApiClient {
       );
 
       // Make the API call with the exact parameters
-      const response = await this.axiosInstance.post(
-        "/api/trade/execute",
-        params,
-      );
+      const response = await this.axiosInstance.post("/trade/execute", params);
 
       return response.data as TradeResponse;
     } catch (error) {
@@ -1396,7 +1391,7 @@ export class ApiClient {
   }): Promise<CreateArenaResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.post(
-        "/api/admin/arenas",
+        "/admin/arenas",
         arenaData,
       );
       return response.data;
@@ -1411,7 +1406,7 @@ export class ApiClient {
    */
   async getArena(id: string): Promise<GetArenaResponse | ErrorResponse> {
     try {
-      const response = await this.axiosInstance.get(`/api/admin/arenas/${id}`);
+      const response = await this.axiosInstance.get(`/admin/arenas/${id}`);
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "get arena");
@@ -1439,7 +1434,7 @@ export class ApiClient {
         queryParams.append("nameFilter", params.nameFilter);
 
       const response = await this.axiosInstance.get(
-        `/api/admin/arenas?${queryParams.toString()}`,
+        `/admin/arenas?${queryParams.toString()}`,
       );
       return response.data;
     } catch (error) {
@@ -1464,7 +1459,7 @@ export class ApiClient {
   ): Promise<UpdateArenaResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.put(
-        `/api/admin/arenas/${id}`,
+        `/admin/arenas/${id}`,
         updateData,
       );
       return response.data;
@@ -1479,9 +1474,7 @@ export class ApiClient {
    */
   async deleteArena(id: string): Promise<DeleteArenaResponse | ErrorResponse> {
     try {
-      const response = await this.axiosInstance.delete(
-        `/api/admin/arenas/${id}`,
-      );
+      const response = await this.axiosInstance.delete(`/admin/arenas/${id}`);
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "delete arena");
@@ -1500,7 +1493,7 @@ export class ApiClient {
   }): Promise<CreatePartnerResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.post(
-        "/api/admin/partners",
+        "/admin/partners",
         partnerData,
       );
       return response.data;
@@ -1515,9 +1508,7 @@ export class ApiClient {
    */
   async getPartner(id: string): Promise<GetPartnerResponse | ErrorResponse> {
     try {
-      const response = await this.axiosInstance.get(
-        `/api/admin/partners/${id}`,
-      );
+      const response = await this.axiosInstance.get(`/admin/partners/${id}`);
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "get partner");
@@ -1545,7 +1536,7 @@ export class ApiClient {
         queryParams.append("nameFilter", params.nameFilter);
 
       const response = await this.axiosInstance.get(
-        `/api/admin/partners?${queryParams.toString()}`,
+        `/admin/partners?${queryParams.toString()}`,
       );
       return response.data;
     } catch (error) {
@@ -1569,7 +1560,7 @@ export class ApiClient {
   ): Promise<UpdatePartnerResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.put(
-        `/api/admin/partners/${id}`,
+        `/admin/partners/${id}`,
         updateData,
       );
       return response.data;
@@ -1586,9 +1577,7 @@ export class ApiClient {
     id: string,
   ): Promise<DeletePartnerResponse | ErrorResponse> {
     try {
-      const response = await this.axiosInstance.delete(
-        `/api/admin/partners/${id}`,
-      );
+      const response = await this.axiosInstance.delete(`/admin/partners/${id}`);
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "delete partner");
@@ -1604,7 +1593,7 @@ export class ApiClient {
   ): Promise<GetCompetitionPartnersResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.get(
-        `/api/admin/competitions/${competitionId}/partners`,
+        `/admin/competitions/${competitionId}/partners`,
       );
       return response.data;
     } catch (error) {
@@ -1625,7 +1614,7 @@ export class ApiClient {
   ): Promise<AddPartnerToCompetitionResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.post(
-        `/api/admin/competitions/${competitionId}/partners`,
+        `/admin/competitions/${competitionId}/partners`,
         { partnerId, position },
       );
       return response.data;
@@ -1647,7 +1636,7 @@ export class ApiClient {
   ): Promise<UpdatePartnerPositionResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.put(
-        `/api/admin/competitions/${competitionId}/partners/${partnerId}`,
+        `/admin/competitions/${competitionId}/partners/${partnerId}`,
         { position },
       );
       return response.data;
@@ -1667,7 +1656,7 @@ export class ApiClient {
   ): Promise<RemovePartnerFromCompetitionResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.delete(
-        `/api/admin/competitions/${competitionId}/partners/${partnerId}`,
+        `/admin/competitions/${competitionId}/partners/${partnerId}`,
       );
       return response.data;
     } catch (error) {
@@ -1686,7 +1675,7 @@ export class ApiClient {
   ): Promise<ReplaceCompetitionPartnersResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.put(
-        `/api/admin/competitions/${competitionId}/partners/replace`,
+        `/admin/competitions/${competitionId}/partners/replace`,
         { partners },
       );
       return response.data;
@@ -1704,7 +1693,7 @@ export class ApiClient {
   ): Promise<GetCompetitionPartnersResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.get(
-        `/api/competitions/${competitionId}/partners`,
+        `/competitions/${competitionId}/partners`,
       );
       return response.data;
     } catch (error) {
@@ -1732,7 +1721,7 @@ export class ApiClient {
       if (params?.name) queryParams.append("name", params.name);
 
       const response = await this.axiosInstance.get(
-        `/api/arenas?${queryParams.toString()}`,
+        `/arenas?${queryParams.toString()}`,
       );
       return response.data;
     } catch (error) {
@@ -1746,7 +1735,7 @@ export class ApiClient {
    */
   async getArenaById(id: string): Promise<GetArenaResponse | ErrorResponse> {
     try {
-      const response = await this.axiosInstance.get(`/api/arenas/${id}`);
+      const response = await this.axiosInstance.get(`/arenas/${id}`);
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "get arena by id");
@@ -1772,7 +1761,7 @@ export class ApiClient {
       if (params?.arenaId !== undefined)
         queryParams.append("arenaId", params.arenaId);
       const response = await this.axiosInstance.get(
-        `/api/leaderboard?${queryParams.toString()}`,
+        `/leaderboard?${queryParams.toString()}`,
       );
       return response.data as GlobalLeaderboardResponse;
     } catch (error) {
@@ -1802,7 +1791,7 @@ export class ApiClient {
   ): Promise<CompetitionRulesResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.get(
-        `/api/competitions/${competitionId}/rules`,
+        `/competitions/${competitionId}/rules`,
       );
       return response.data as CompetitionRulesResponse;
     } catch (error) {
@@ -1826,7 +1815,7 @@ export class ApiClient {
       if (limit !== undefined) params.append("limit", limit.toString());
       if (offset !== undefined) params.append("offset", offset.toString());
 
-      const url = `/api/competitions?${params.toString()}`;
+      const url = `/competitions?${params.toString()}`;
       const response = await this.axiosInstance.get(url);
       return response.data as UpcomingCompetitionsResponse;
     } catch (error) {
@@ -1847,7 +1836,7 @@ export class ApiClient {
   ): Promise<CompetitionDetailResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.get(
-        `/api/competitions/${competitionId}`,
+        `/competitions/${competitionId}`,
       );
       return response.data as CompetitionDetailResponse;
     } catch (error) {
@@ -1890,7 +1879,7 @@ export class ApiClient {
     }
 
     const queryString = queryParams.toString();
-    const url = `/api/competitions/${competitionId}/agents${queryString ? `?${queryString}` : ""}`;
+    const url = `/competitions/${competitionId}/agents${queryString ? `?${queryString}` : ""}`;
 
     return this.request<CompetitionAgentsResponse>("get", url);
   }
@@ -1912,7 +1901,7 @@ export class ApiClient {
       if (limit !== undefined) params.append("limit", limit.toString());
       if (offset !== undefined) params.append("offset", offset.toString());
 
-      const url = `/api/competitions/${competitionId}/trades?${params.toString()}`;
+      const url = `/competitions/${competitionId}/trades?${params.toString()}`;
       const response = await this.axiosInstance.get(url);
       return response.data as TradeHistoryResponse;
     } catch (error) {
@@ -1940,7 +1929,7 @@ export class ApiClient {
       if (limit !== undefined) params.append("limit", limit.toString());
       if (offset !== undefined) params.append("offset", offset.toString());
 
-      const url = `/api/competitions/${competitionId}/boosts/all${params.toString() ? `?${params.toString()}` : ""}`;
+      const url = `/competitions/${competitionId}/boosts/all${params.toString() ? `?${params.toString()}` : ""}`;
       const response = await this.axiosInstance.get(url);
       return response.data as CompetitionBoostsResponse;
     } catch (error) {
@@ -1970,7 +1959,7 @@ export class ApiClient {
       if (limit !== undefined) params.append("limit", limit.toString());
       if (offset !== undefined) params.append("offset", offset.toString());
 
-      const url = `/api/competitions/${competitionId}/agents/${agentId}/trades?${params.toString()}`;
+      const url = `/competitions/${competitionId}/agents/${agentId}/trades?${params.toString()}`;
       const response = await this.axiosInstance.get(url);
       return response.data as TradeHistoryResponse;
     } catch (error) {
@@ -1992,7 +1981,7 @@ export class ApiClient {
     agentId: string,
   ): Promise<AgentPerpsPositionsResponse | ErrorResponse> {
     try {
-      const url = `/api/competitions/${competitionId}/agents/${agentId}/perps/positions`;
+      const url = `/competitions/${competitionId}/agents/${agentId}/perps/positions`;
       const response = await this.axiosInstance.get(url);
       return response.data as AgentPerpsPositionsResponse;
     } catch (error) {
@@ -2023,7 +2012,7 @@ export class ApiClient {
       if (offset !== undefined) params.append("offset", offset.toString());
       if (status !== undefined) params.append("status", status);
 
-      const url = `/api/competitions/${competitionId}/perps/all-positions?${params.toString()}`;
+      const url = `/competitions/${competitionId}/perps/all-positions?${params.toString()}`;
       const response = await this.axiosInstance.get(url);
       return response.data as CompetitionAllPerpsPositionsResponse;
     } catch (error) {
@@ -2044,7 +2033,7 @@ export class ApiClient {
     competitionId: string,
     bucket?: number,
   ): Promise<CompetitionTimelineResponse | ErrorResponse> {
-    let path = `/api/competitions/${competitionId}/timeline`;
+    let path = `/competitions/${competitionId}/timeline`;
     const params = new URLSearchParams();
 
     if (bucket !== undefined) {
@@ -2070,7 +2059,7 @@ export class ApiClient {
   ): Promise<CompetitionJoinResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.post(
-        `/api/competitions/${competitionId}/agents/${agentId}`,
+        `/competitions/${competitionId}/agents/${agentId}`,
       );
       return response.data as CompetitionJoinResponse;
     } catch (error) {
@@ -2090,7 +2079,7 @@ export class ApiClient {
   ): Promise<CompetitionLeaveResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.delete(
-        `/api/competitions/${competitionId}/agents/${agentId}`,
+        `/competitions/${competitionId}/agents/${agentId}`,
       );
       return response.data as CompetitionLeaveResponse;
     } catch (error) {
@@ -2112,7 +2101,7 @@ export class ApiClient {
     specificChain?: SpecificChain,
   ): Promise<PriceResponse | ErrorResponse> {
     try {
-      let path = `/api/price?token=${encodeURIComponent(token)}`;
+      let path = `/price?token=${encodeURIComponent(token)}`;
       if (chain) {
         path += `&chain=${encodeURIComponent(chain)}`;
       }
@@ -2137,7 +2126,7 @@ export class ApiClient {
   ): Promise<QuoteResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.get(
-        `/api/trade/quote?fromToken=${encodeURIComponent(fromToken)}&toToken=${encodeURIComponent(toToken)}&amount=${encodeURIComponent(amount)}&competitionId=${encodeURIComponent(competitionId)}`,
+        `/trade/quote?fromToken=${encodeURIComponent(fromToken)}&toToken=${encodeURIComponent(toToken)}&amount=${encodeURIComponent(amount)}&competitionId=${encodeURIComponent(competitionId)}`,
       );
       return response.data as QuoteResponse;
     } catch (error) {
@@ -2153,12 +2142,9 @@ export class ApiClient {
     competitionId: string,
   ): Promise<ApiResponse | ErrorResponse> {
     try {
-      const response = await this.axiosInstance.post(
-        "/api/admin/competition/end",
-        {
-          competitionId,
-        },
-      );
+      const response = await this.axiosInstance.post("/admin/competition/end", {
+        competitionId,
+      });
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "end competition");
@@ -2170,7 +2156,7 @@ export class ApiClient {
    */
   async getHealthStatus(): Promise<HealthCheckResponse | ErrorResponse> {
     try {
-      const response = await this.axiosInstance.get("/api/health");
+      const response = await this.axiosInstance.get("/health");
       return response.data as HealthCheckResponse;
     } catch (error) {
       return this.handleApiError(error, "get health status");
@@ -2184,7 +2170,7 @@ export class ApiClient {
     DetailedHealthCheckResponse | ErrorResponse
   > {
     try {
-      const response = await this.axiosInstance.get("/api/health/detailed");
+      const response = await this.axiosInstance.get("/health/detailed");
       return response.data as DetailedHealthCheckResponse;
     } catch (error) {
       return this.handleApiError(error, "get detailed health status");
@@ -2252,9 +2238,7 @@ export class ApiClient {
    */
   async resetApiKey(): Promise<ResetApiKeyResponse | ErrorResponse> {
     try {
-      const response = await this.axiosInstance.post(
-        "/api/agent/reset-api-key",
-      );
+      const response = await this.axiosInstance.post("/agent/reset-api-key");
       return response.data as ResetApiKeyResponse;
     } catch (error) {
       return this.handleApiError(error, "reset API key");
@@ -2272,7 +2256,7 @@ export class ApiClient {
     signature: string,
   ): Promise<AgentWalletVerificationResponse | ErrorResponse> {
     try {
-      const response = await this.axiosInstance.post("/api/auth/verify", {
+      const response = await this.axiosInstance.post("/auth/verify", {
         message,
         signature,
       });
@@ -2317,7 +2301,7 @@ export class ApiClient {
       if (searchParams?.join)
         queryParams.append("join", searchParams.join.toString());
 
-      const url = `/api/admin/search?${queryParams.toString()}`;
+      const url = `/admin/search?${queryParams.toString()}`;
 
       return this.request("get", url);
     } catch (error) {
@@ -2331,7 +2315,7 @@ export class ApiClient {
    */
   async getAgentNonce(): Promise<AgentNonceResponse | ErrorResponse> {
     try {
-      const response = await this.axiosInstance.get("/api/auth/agent/nonce");
+      const response = await this.axiosInstance.get("/auth/agent/nonce");
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "get agent nonce");
@@ -2346,7 +2330,7 @@ export class ApiClient {
    */
   async login(): Promise<LoginResponse | ErrorResponse> {
     try {
-      const response = await this.axiosInstance.post("/api/auth/login");
+      const response = await this.axiosInstance.post("/auth/login");
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "login with Privy");
@@ -2369,7 +2353,7 @@ export class ApiClient {
     metadata?: Record<string, unknown>,
   ): Promise<AgentProfileResponse | ErrorResponse> {
     try {
-      const response = await this.axiosInstance.post("/api/user/agents", {
+      const response = await this.axiosInstance.post("/user/agents", {
         name,
         handle,
         description,
@@ -2403,7 +2387,7 @@ export class ApiClient {
         queryParams.append("sort", params.sort);
       }
 
-      const url = `/api/user/agents${queryParams.toString() ? `?${queryParams.toString()}` : ""}`;
+      const url = `/user/agents${queryParams.toString() ? `?${queryParams.toString()}` : ""}`;
       const response = await this.axiosInstance.get(url);
       return response.data;
     } catch (error) {
@@ -2419,9 +2403,7 @@ export class ApiClient {
     agentId: string,
   ): Promise<AgentProfileResponse | ErrorResponse> {
     try {
-      const response = await this.axiosInstance.get(
-        `/api/user/agents/${agentId}`,
-      );
+      const response = await this.axiosInstance.get(`/user/agents/${agentId}`);
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "get user agent");
@@ -2437,7 +2419,7 @@ export class ApiClient {
   ): Promise<UserAgentApiKeyResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.get(
-        `/api/user/agents/${agentId}/api-key`,
+        `/user/agents/${agentId}/api-key`,
       );
       return response.data;
     } catch (error) {
@@ -2466,7 +2448,7 @@ export class ApiClient {
       if (params?.sort) queryParams.append("sort", params.sort);
 
       const queryString = queryParams.toString();
-      const url = `/api/user/competitions${queryString ? `?${queryString}` : ""}`;
+      const url = `/user/competitions${queryString ? `?${queryString}` : ""}`;
 
       const response = await this.axiosInstance.get(url);
       return response.data;
@@ -2484,7 +2466,7 @@ export class ApiClient {
     walletAddress: string,
   ): Promise<LinkUserWalletResponse | ErrorResponse> {
     try {
-      const response = await this.axiosInstance.post("/api/user/wallet/link", {
+      const response = await this.axiosInstance.post("/user/wallet/link", {
         walletAddress,
       });
       return response.data;
@@ -2503,7 +2485,7 @@ export class ApiClient {
   ): Promise<PerpsPositionsResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.get(
-        `/api/agent/perps/positions?competitionId=${competitionId}`,
+        `/agent/perps/positions?competitionId=${competitionId}`,
       );
       return response.data;
     } catch (error) {
@@ -2519,7 +2501,7 @@ export class ApiClient {
     UserSubscriptionResponse | ErrorResponse
   > {
     try {
-      const response = await this.axiosInstance.post("/api/user/subscribe");
+      const response = await this.axiosInstance.post("/user/subscribe");
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "subscribe to mailing list");
@@ -2536,7 +2518,7 @@ export class ApiClient {
   ): Promise<PerpsAccountResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.get(
-        `/api/agent/perps/account?competitionId=${competitionId}`,
+        `/agent/perps/account?competitionId=${competitionId}`,
       );
       return response.data;
     } catch (error) {
@@ -2554,7 +2536,7 @@ export class ApiClient {
   ): Promise<PerpsPositionsResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.get(
-        `/api/agents/${agentId}/perps/positions`,
+        `/agents/${agentId}/perps/positions`,
       );
       return response.data;
     } catch (error) {
@@ -2572,7 +2554,7 @@ export class ApiClient {
   ): Promise<PerpsAccountResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.get(
-        `/api/agents/${agentId}/perps/account`,
+        `/agents/${agentId}/perps/account`,
       );
       return response.data;
     } catch (error) {
@@ -2592,7 +2574,7 @@ export class ApiClient {
   ): Promise<CompetitionPerpsPositionsResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.get(
-        `/api/competitions/${competitionId}/perps/positions`,
+        `/competitions/${competitionId}/perps/positions`,
         { params },
       );
       return response.data;
@@ -2609,7 +2591,7 @@ export class ApiClient {
     UserSubscriptionResponse | ErrorResponse
   > {
     try {
-      const response = await this.axiosInstance.post("/api/user/unsubscribe");
+      const response = await this.axiosInstance.post("/user/unsubscribe");
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "unsubscribe from mailing list");
@@ -2624,7 +2606,7 @@ export class ApiClient {
     RewardsTotalResponse | ErrorResponse
   > {
     try {
-      const response = await this.axiosInstance.get("/api/user/rewards/total");
+      const response = await this.axiosInstance.get("/user/rewards/total");
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "get total claimable rewards");
@@ -2637,7 +2619,7 @@ export class ApiClient {
    */
   async getRewardsWithProofs(): Promise<RewardsProofsResponse | ErrorResponse> {
     try {
-      const response = await this.axiosInstance.get("/api/user/rewards/proofs");
+      const response = await this.axiosInstance.get("/user/rewards/proofs");
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "get rewards with proofs");
@@ -2658,7 +2640,7 @@ export class ApiClient {
   ) {
     try {
       const response = await this.axiosInstance.get(
-        `/api/nfl/competitions/${competitionId}/plays?state=open&limit=${limit}&offset=${offset}`,
+        `/nfl/competitions/${competitionId}/plays?state=open&limit=${limit}&offset=${offset}`,
       );
       return response.data;
     } catch (error) {
@@ -2677,7 +2659,7 @@ export class ApiClient {
   ) {
     try {
       const response = await this.axiosInstance.post(
-        `/api/nfl/competitions/${competitionId}/games/${providerGameId}/predictions`,
+        `/nfl/competitions/${competitionId}/games/${providerGameId}/predictions`,
         { prediction, confidence },
       );
       return response.data;
@@ -2692,8 +2674,8 @@ export class ApiClient {
   async getNflLeaderboard(competitionId: string, gameId?: string) {
     try {
       const url = gameId
-        ? `/api/nfl/competitions/${competitionId}/leaderboard?gameId=${gameId}`
-        : `/api/nfl/competitions/${competitionId}/leaderboard`;
+        ? `/nfl/competitions/${competitionId}/leaderboard?gameId=${gameId}`
+        : `/nfl/competitions/${competitionId}/leaderboard`;
       const response = await this.axiosInstance.get(url);
       return response.data;
     } catch (error) {
@@ -2707,7 +2689,7 @@ export class ApiClient {
   async getNflGames(competitionId: string) {
     try {
       const response = await this.axiosInstance.get(
-        `/api/nfl/competitions/${competitionId}/games`,
+        `/nfl/competitions/${competitionId}/games`,
       );
       return response.data;
     } catch (error) {
@@ -2721,7 +2703,7 @@ export class ApiClient {
   async getNflRules(competitionId: string) {
     try {
       const response = await this.axiosInstance.get(
-        `/api/nfl/competitions/${competitionId}/rules`,
+        `/nfl/competitions/${competitionId}/rules`,
       );
       return response.data;
     } catch (error) {
@@ -2735,7 +2717,7 @@ export class ApiClient {
   async getNflGameInfo(competitionId: string, gameId: string) {
     try {
       const response = await this.axiosInstance.get(
-        `/api/nfl/competitions/${competitionId}/games/${gameId}`,
+        `/nfl/competitions/${competitionId}/games/${gameId}`,
       );
       return response.data;
     } catch (error) {
@@ -2755,8 +2737,8 @@ export class ApiClient {
   ) {
     try {
       const url = latest
-        ? `/api/nfl/competitions/${competitionId}/games/${gameId}/plays?latest=true`
-        : `/api/nfl/competitions/${competitionId}/games/${gameId}/plays?limit=${limit}&offset=${offset}`;
+        ? `/nfl/competitions/${competitionId}/games/${gameId}/plays?latest=true`
+        : `/nfl/competitions/${competitionId}/games/${gameId}/plays?limit=${limit}&offset=${offset}`;
       const response = await this.axiosInstance.get(url);
       return response.data;
     } catch (error) {
@@ -2776,7 +2758,7 @@ export class ApiClient {
   ) {
     try {
       const response = await this.axiosInstance.post(
-        `/api/nfl/competitions/${competitionId}/games/${gameId}/predictions`,
+        `/nfl/competitions/${competitionId}/games/${gameId}/predictions`,
         { predictedWinner, confidence, reason },
       );
       return response.data;
@@ -2795,8 +2777,8 @@ export class ApiClient {
   ) {
     try {
       const url = agentId
-        ? `/api/nfl/competitions/${competitionId}/games/${gameId}/predictions?agentId=${agentId}`
-        : `/api/nfl/competitions/${competitionId}/games/${gameId}/predictions`;
+        ? `/nfl/competitions/${competitionId}/games/${gameId}/predictions?agentId=${agentId}`
+        : `/nfl/competitions/${competitionId}/games/${gameId}/predictions`;
       const response = await this.axiosInstance.get(url);
       return response.data;
     } catch (error) {
@@ -2818,7 +2800,7 @@ export class ApiClient {
   }): Promise<AddBonusBoostsResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.post(
-        "/api/admin/boost-bonus",
+        "/admin/boost-bonus",
         data,
       );
       return response.data;
@@ -2836,7 +2818,7 @@ export class ApiClient {
   }): Promise<RevokeBonusBoostsResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.post(
-        "/api/admin/boost-bonus/revoke",
+        "/admin/boost-bonus/revoke",
         data,
       );
       return response.data;

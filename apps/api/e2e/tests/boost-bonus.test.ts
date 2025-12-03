@@ -96,7 +96,7 @@ describe("Bonus Boosts E2E", () => {
     await adminClient.loginAsAdmin(adminApiKey);
   });
 
-  describe("POST /api/admin/boost-bonus", () => {
+  describe("POST /admin/boost-bonus", () => {
     test("rejects request from non-admin user", async () => {
       // Setup: Register a regular user (non-admin)
       const { user, client: userClient } =
@@ -820,7 +820,7 @@ describe("Bonus Boosts E2E", () => {
     });
   });
 
-  describe("POST /api/admin/boost-bonus/revoke", () => {
+  describe("POST /admin/boost-bonus/revoke", () => {
     test("rejects request from non-admin user", async () => {
       // Setup: Create a boost as admin first
       const { user, client: userClient } =

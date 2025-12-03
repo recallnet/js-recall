@@ -853,7 +853,7 @@ describe("Sandbox Mode", () => {
     // Get snapshots for this specific agent
     const snapshotsResponse = await adminClient.request(
       "get",
-      `/api/admin/competition/${competition.id}/snapshots?agentId=${newAgent!.id}`,
+      `/admin/competition/${competition.id}/snapshots?agentId=${newAgent!.id}`,
     );
     const typedResponse = snapshotsResponse as SnapshotResponse;
     expect(typedResponse.success).toBe(true);

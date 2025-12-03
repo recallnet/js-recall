@@ -806,7 +806,7 @@ describe("Agent API", () => {
     // Step 2: Try to have the agent update its email
     try {
       await axios.put(
-        `${getBaseUrl()}/api/agent/profile`,
+        `${getBaseUrl()}/agent/profile`,
         {
           email: "test@test.com",
         },
@@ -832,7 +832,7 @@ describe("Agent API", () => {
         test: "test",
       };
       await axios.put(
-        `${getBaseUrl()}/api/agent/profile`,
+        `${getBaseUrl()}/agent/profile`,
         {
           metadata: agentMetadata,
         },
@@ -853,7 +853,7 @@ describe("Agent API", () => {
     }
   });
 
-  test("GET /api/agents/:agentId retrieves agent details", async () => {
+  test("GET /agents/:agentId retrieves agent details", async () => {
     // Setup admin client and login
     const adminClient = createTestClient();
     const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
@@ -894,7 +894,7 @@ describe("Agent API", () => {
     expect(agent.id).toBeDefined();
 
     // Make a GET request to fetch the agent details using the agent ID
-    const response = await axios.get(`${getBaseUrl()}/api/agents/${agent.id}`, {
+    const response = await axios.get(`${getBaseUrl()}/agents/${agent.id}`, {
       headers: {
         // Make sure that other agents/users can load details for a given agent id
         Authorization: `Bearer ${apiKey2}`,
@@ -966,7 +966,7 @@ describe("Agent API", () => {
     expect(agent?.id).toBeDefined();
 
     // Make a public GET request to fetch the agent details using the agent ID
-    const response = await axios.get(`${getBaseUrl()}/api/agents/${agent?.id}`);
+    const response = await axios.get(`${getBaseUrl()}/agents/${agent?.id}`);
 
     // Validate response
     expect(response.status).toBe(200);
@@ -977,7 +977,7 @@ describe("Agent API", () => {
     expect(agentData.agent.apiKey).not.toBeDefined();
   });
 
-  test("GET /api/agents/:agentId returns 400 with invalid agent id", async () => {
+  test("GET /agents/:agentId returns 400 with invalid agent id", async () => {
     // Setup admin client and login
     const adminClient = createTestClient();
     const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
@@ -1001,7 +1001,7 @@ describe("Agent API", () => {
 
     try {
       // Make a GET request to fetch the agent details using the agent ID
-      await axios.get(`${getBaseUrl()}/api/agents/foo123`, {
+      await axios.get(`${getBaseUrl()}/agents/foo123`, {
         headers: {
           // Make sure that other agents/users can load details for a given agent id
           Authorization: `Bearer ${apiKey}`,
@@ -1019,7 +1019,7 @@ describe("Agent API", () => {
     }
   });
 
-  test("GET /api/agents/:agentId/competitions retrieves agent competitions", async () => {
+  test("GET /agents/:agentId/competitions retrieves agent competitions", async () => {
     // Setup admin client and login
     const adminClient = createTestClient();
     const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
@@ -3164,7 +3164,7 @@ Purpose: WALLET_VERIFICATION`;
       // Test 1: Custom handle
       const response1 = await siweClient.request<AgentProfileResponse>(
         "post",
-        "/api/user/agents",
+        "/user/agents",
         {
           name: "Another Agent",
           handle: "custom_handle",
@@ -3183,7 +3183,7 @@ Purpose: WALLET_VERIFICATION`;
       // Test 2: Duplicate handle rejection
       const response2 = await siweClient.request<ErrorResponse>(
         "post",
-        "/api/user/agents",
+        "/user/agents",
         {
           name: "Third Agent",
           handle: "custom_handle", // Same as agent 2
@@ -3200,7 +3200,7 @@ Purpose: WALLET_VERIFICATION`;
       // Test 3: Handle with special characters
       const response3 = await siweClient.request<AgentProfileResponse>(
         "post",
-        "/api/user/agents",
+        "/user/agents",
         {
           name: "Agent@123!",
           handle: "agent@123!",
@@ -3217,7 +3217,7 @@ Purpose: WALLET_VERIFICATION`;
       // Test 4: Invalid handle format (uppercase)
       const response4 = await siweClient.request<ErrorResponse>(
         "post",
-        "/api/user/agents",
+        "/user/agents",
         {
           name: "Test Agent",
           handle: "UPPERCASE_HANDLE", // Should fail - must be lowercase
@@ -3233,7 +3233,7 @@ Purpose: WALLET_VERIFICATION`;
       // Test 5: Invalid handle format (too long)
       const response5 = await siweClient.request<ErrorResponse>(
         "post",
-        "/api/user/agents",
+        "/user/agents",
         {
           name: "Test Agent",
           handle: "a".repeat(16), // Should fail - too long
@@ -3250,7 +3250,7 @@ Purpose: WALLET_VERIFICATION`;
       // Test 6: Invalid handle format (too short)
       const response6 = await siweClient.request<ErrorResponse>(
         "post",
-        "/api/user/agents",
+        "/user/agents",
         {
           name: "Test Agent",
           handle: "a", // Should fail - too short
@@ -3275,7 +3275,7 @@ Purpose: WALLET_VERIFICATION`;
       // Create an agent
       const createResponse = await siweClient.request<AgentProfileResponse>(
         "post",
-        "/api/user/agents",
+        "/user/agents",
         {
           name: "Update Test Agent",
           handle: "original_handle",
@@ -3302,7 +3302,7 @@ Purpose: WALLET_VERIFICATION`;
       // Create another agent
       const createResponse2 = await siweClient.request<AgentProfileResponse>(
         "post",
-        "/api/user/agents",
+        "/user/agents",
         {
           name: "Second Update Test Agent",
           handle: "second_handle",
