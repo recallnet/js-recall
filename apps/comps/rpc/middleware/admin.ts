@@ -1,5 +1,7 @@
 import { ORPCError } from "@orpc/server";
 
+import { ApiError } from "@recallnet/services/types";
+
 import { base } from "@/rpc/context/base";
 
 /**
@@ -61,6 +63,9 @@ export const adminMiddleware = base.middleware(
       });
     } catch (error) {
       if (error instanceof ORPCError) {
+        throw error;
+      }
+      if (error instanceof ApiError) {
         throw error;
       }
       throw new ORPCError("INTERNAL", {
