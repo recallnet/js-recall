@@ -98,11 +98,28 @@ export const TokenWhitelistInputSchema = z.object({
 
 /**
  * Spot live data source configuration schema
+ *
+ * For Alchemy: Only `type`, `provider`, and `chains` are required.
+ * The API key is read from ALCHEMY_API_KEY env var, URLs are auto-constructed.
+ *
+ * @example
+ * // Minimal Alchemy config:
+ * { type: "rpc_direct", provider: "alchemy", chains: ["base", "arbitrum"] }
  */
 export const SpotLiveDataSourceConfigSchema = z.object({
   type: z.enum(["rpc_direct", "envio_indexing", "hybrid"]),
-  provider: z.enum(["alchemy", "quicknode", "infura"]).optional(),
-  rpcUrls: z.record(z.string(), z.string().url()).optional(),
+  provider: z
+    .enum(["alchemy", "quicknode", "infura"])
+    .optional()
+    .describe(
+      "RPC provider - API key read from environment (e.g., ALCHEMY_API_KEY)",
+    ),
+  rpcUrls: z
+    .record(z.string(), z.string().url())
+    .optional()
+    .describe(
+      "Custom RPC URLs by chain (optional - Alchemy auto-constructs URLs)",
+    ),
   graphqlUrl: z.string().url().optional(),
   chains: z.array(SpecificChainSchema).min(1, "At least one chain is required"),
 });
@@ -139,12 +156,60 @@ export const SpotLiveConfigSchema = z.object({
     .number()
     .min(0)
     .optional()
-    .describe("Minimum portfolio balance to remain in competition (USD)"),
+    .describe(
+      "Minimum portfolio balance required at competition start (USD). Agents below this threshold are removed BEFORE trading begins. Not enforced during ongoing trading.",
+    ),
   syncIntervalMinutes: z
     .number()
     .int()
     .min(1)
     .default(2)
+    .describe("How often to sync blockchain data (minutes)"),
+});
+
+/**
+ * Partial spot live config schema for updates
+ * All fields are optional - only provided fields will be updated
+ */
+export const SpotLiveConfigUpdateSchema = z.object({
+  dataSource: z.enum(["rpc_direct", "envio_indexing", "hybrid"]).optional(),
+  dataSourceConfig: SpotLiveDataSourceConfigSchema.optional(),
+  chains: z
+    .array(SpecificChainSchema)
+    .min(1, "At least one chain is required")
+    .optional()
+    .describe("Chains enabled for this competition - replaces existing chains"),
+  allowedProtocols: z
+    .array(ProtocolFilterInputSchema)
+    .optional()
+    .describe(
+      "Protocol whitelist - replaces existing protocols. Admin provides name + chain, system resolves addresses",
+    ),
+  allowedTokens: z
+    .array(TokenWhitelistInputSchema)
+    .min(2, "At least 2 tokens required for trading")
+    .optional()
+    .describe(
+      "Token whitelist - replaces existing tokens. Admin provides address + chain, system validates and fetches symbol",
+    ),
+  selfFundingThresholdUsd: z
+    .number()
+    .min(0)
+    .optional()
+    .describe("Threshold for flagging self-funding violations (USD)"),
+  minFundingThreshold: z
+    .number()
+    .min(0)
+    .nullable()
+    .optional()
+    .describe(
+      "Minimum portfolio balance required at competition start (USD). Agents below this threshold are removed BEFORE trading begins. Not enforced during ongoing trading. Set to null to remove.",
+    ),
+  syncIntervalMinutes: z
+    .number()
+    .int()
+    .min(1)
+    .optional()
     .describe("How often to sync blockchain data (minutes)"),
 });
 
@@ -227,8 +292,10 @@ export const AdminCreateCompetitionSchema = z
 export const AdminUpdateCompetitionSchema = AdminCreateCompetitionSchema.omit({
   name: true,
   arenaId: true,
+  spotLiveConfig: true, // Use partial version for updates
 }).extend({
   name: z.string().optional(),
+  spotLiveConfig: SpotLiveConfigUpdateSchema.optional(), // Partial updates supported
   arenaId: z.string().min(1, "Arena ID is required").optional(),
 });
 

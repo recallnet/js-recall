@@ -89,16 +89,22 @@ describe("SpotLiveProviderFactory", () => {
       ).toThrow("Provider name required for rpc_direct type");
     });
 
-    it("should throw error when RPC URLs are missing", () => {
+    it("should create provider without rpcUrls (Alchemy SDK auto-constructs URLs)", () => {
       const config: SpotLiveProviderConfig = {
         type: "rpc_direct",
         provider: "alchemy",
         chains: ["base"],
       };
 
-      expect(() =>
-        SpotLiveProviderFactory.createProvider(config, [], mockLogger),
-      ).toThrow("RPC URLs required for rpc_direct provider");
+      // rpcUrls is optional - Alchemy SDK constructs URLs from API key
+      const provider = SpotLiveProviderFactory.createProvider(
+        config,
+        [],
+        mockLogger,
+      );
+
+      expect(provider).toBeInstanceOf(RpcSpotProvider);
+      expect(provider.getName()).toContain("Alchemy");
     });
 
     it("should throw error when API key is not in environment", () => {

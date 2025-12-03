@@ -102,6 +102,18 @@ export interface ISpotLiveDataProvider {
   ): Promise<Array<{ contractAddress: string; balance: string }>>;
 
   /**
+   * Get native token balance for a wallet on a chain
+   * Used during initial sync to include ETH, MATIC, etc. in portfolio
+   * @param walletAddress Wallet address to query
+   * @param chain Chain to query
+   * @returns Native balance as string (in wei/smallest unit)
+   */
+  getNativeBalance?(
+    walletAddress: string,
+    chain: SpecificChain,
+  ): Promise<string>;
+
+  /**
    * Get token decimals for proper balance parsing
    * @param tokenAddress Token contract address
    * @param chain Chain where token exists
@@ -136,12 +148,28 @@ export interface ISpotLiveDataProvider {
 /**
  * Configuration for spot live data providers
  * Stored in trading_comps.spot_live_competition_config.data_source_config as JSONB
+ *
+ * For Alchemy: Only `type`, `provider`, and `chains` are required.
+ * The API key is read from ALCHEMY_API_KEY env var, and URLs are constructed automatically.
+ *
+ * @example
+ * // Minimal Alchemy config:
+ * {
+ *   type: "rpc_direct",
+ *   provider: "alchemy",
+ *   chains: ["base", "arbitrum"]
+ * }
  */
 export interface SpotLiveProviderConfig {
+  /** Data source type */
   type: "rpc_direct" | "envio_indexing" | "hybrid";
+  /** RPC provider name (required for rpc_direct) - API key read from environment */
   provider?: "alchemy" | "quicknode";
+  /** Custom RPC URLs by chain (optional for Alchemy - auto-constructed; required for QuickNode and Infura) */
   rpcUrls?: Record<string, string>;
+  /** GraphQL endpoint URL (for envio_indexing) */
   graphqlUrl?: string;
+  /** Chains to monitor for trades */
   chains: string[];
 }
 

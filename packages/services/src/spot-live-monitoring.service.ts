@@ -294,7 +294,12 @@ export class SpotLiveMonitoringService {
       const deposits = transfers.filter((t) => t.type === "deposit");
       const withdrawals = transfers.filter((t) => t.type === "withdraw");
 
+      // Track unpriced transfers - these are suspicious because we can't confirm the value
+      const unpricedTransfers = transfers.filter((t) => t.amountUsd === null);
+      const hasUnpricedTransfers = unpricedTransfers.length > 0;
+
       // Calculate totals using Decimal for precision
+      // Unpriced transfers are counted as $0 for calculation, but flagged separately
       const totalDepositedUsd = deposits
         .reduce(
           (sum, t) => sum.plus(new Decimal(t.amountUsd ?? "0")),
@@ -326,6 +331,15 @@ export class SpotLiveMonitoringService {
         note += `${withdrawals.length} withdrawal(s) totaling $${totalWithdrawnUsd.toFixed(2)}`;
       }
 
+      // Flag unpriced transfers as requiring manual review
+      if (hasUnpricedTransfers) {
+        note += `. WARNING: ${unpricedTransfers.length} transfer(s) could not be priced - amounts shown may be understated. Manual review required.`;
+        this.logger.warn(
+          `[SpotLiveMonitoringService] ${unpricedTransfers.length} unpriced transfer(s) detected for agent ${agentId}. ` +
+            `Tokens: ${unpricedTransfers.map((t) => `${t.tokenSymbol ?? "UNKNOWN"} on ${t.specificChain}`).join(", ")}`,
+        );
+      }
+
       this.logger.warn(
         `[SpotLiveMonitoringService] Transfer violation detected for agent ${agentId}: ${note}`,
       );
@@ -340,6 +354,15 @@ export class SpotLiveMonitoringService {
       const detectedValue =
         violationType === "deposit" ? totalDepositedUsd : totalWithdrawnUsd;
 
+      // Severity is critical if:
+      // 1. Detected amount exceeds critical threshold, OR
+      // 2. Any transfers couldn't be priced (unknown value - assume worst case)
+      const severity: "critical" | "warning" =
+        detectedValue > this.config.criticalAmountThreshold ||
+        hasUnpricedTransfers
+          ? "critical"
+          : "warning";
+
       return {
         agentId,
         competitionId,
@@ -350,10 +373,7 @@ export class SpotLiveMonitoringService {
         specificChain,
         txHash,
         confidence,
-        severity:
-          detectedValue > this.config.criticalAmountThreshold
-            ? "critical"
-            : "warning",
+        severity,
         evidence: transfers,
         note,
       };

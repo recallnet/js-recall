@@ -5,6 +5,7 @@ import {
   type AgentCompetitionsResponse,
   ApiClient,
   type BalancesResponse,
+  type CompetitionAgent,
   type CompetitionAgentsResponse,
   type CompetitionDetailResponse,
   type EnhancedCompetition,
@@ -184,11 +185,33 @@ describe("Spot Live Competition", () => {
       agentWalletAddress: "0x1111111111111111111111111111111111111111",
     });
 
-    // Start a spot live competition
+    // Start a spot live competition with protocols and tokens configured
     const response = await startSpotLiveTestCompetition({
       adminClient,
       name: `Spot Live Detail Test ${Date.now()}`,
       agentIds: [agent1.id],
+      spotLiveConfig: {
+        dataSource: "rpc_direct" as const,
+        dataSourceConfig: {
+          type: "rpc_direct" as const,
+          provider: "alchemy" as const,
+          chains: ["base"],
+        },
+        chains: ["base"],
+        allowedProtocols: [{ protocol: "aerodrome", chain: "base" }],
+        allowedTokens: [
+          {
+            address: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+            specificChain: "base",
+          },
+          {
+            address: "0x4200000000000000000000000000000000000006",
+            specificChain: "base",
+          },
+        ],
+        selfFundingThresholdUsd: 10,
+        syncIntervalMinutes: 2,
+      },
     });
 
     expect(response.success).toBe(true);
@@ -207,6 +230,24 @@ describe("Spot Live Competition", () => {
     const comp = typedDetailResponse.competition as EnhancedCompetition;
     expect(comp.stats?.totalAgents).toBeDefined();
     expect(comp.stats?.totalTrades).toBeDefined();
+
+    // Verify spotLiveConfig includes allowedProtocols and allowedTokens
+    expect(comp.spotLiveConfig).toBeDefined();
+    expect(comp.spotLiveConfig?.allowedProtocols).toBeDefined();
+    expect(comp.spotLiveConfig?.allowedProtocols?.length).toBe(1);
+    expect(comp.spotLiveConfig?.allowedProtocols?.[0]).toMatchObject({
+      protocol: "aerodrome",
+      specificChain: "base",
+    });
+
+    expect(comp.spotLiveConfig?.allowedTokens).toBeDefined();
+    expect(comp.spotLiveConfig?.allowedTokens?.length).toBe(2);
+    expect(comp.spotLiveConfig?.allowedTokens?.[0]).toMatchObject({
+      address: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+      specificChain: "base",
+    });
+    // Verify symbol is included in allowedTokens response
+    expect(comp.spotLiveConfig?.allowedTokens?.[0]?.symbol).toBeDefined();
   });
 
   test("should detect Aerodrome swaps and update agent balances", async () => {
@@ -1905,5 +1946,641 @@ describe("Spot Live Competition", () => {
     expect(spotLiveComp?.simpleReturn).toBeDefined();
     expect(spotLiveComp?.simpleReturn).not.toBeNull();
     expect(typeof spotLiveComp?.simpleReturn).toBe("number");
+  });
+
+  test("should return simpleReturn in DECIMAL format from getAgentCompetitions", async () => {
+    // Verifies simpleReturn format consistency between code paths
+    //
+    // This test catches the bug where agent.service.ts attachBulkCompetitionMetrics
+    // returns simpleReturn as PERCENTAGE (50) instead of DECIMAL (0.5) like the
+    // repository layer does.
+    //
+    // Key invariant: Both code paths must return the SAME value for the same agent
+
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agent with ROI test wallet
+    const { agent, client: agentClient } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "High ROI Format Test Agent",
+        agentWalletAddress: "0x0001000000000000000000000000000000000001",
+      });
+
+    // Start spot live competition
+    const response = await startSpotLiveTestCompetition({
+      adminClient,
+      name: `simpleReturn Format Test ${Date.now()}`,
+      agentIds: [agent.id],
+    });
+
+    expect(response.success).toBe(true);
+    const competition = response.competition;
+
+    await wait(2000);
+
+    // Trigger sync to process trades
+    const services = new ServiceRegistry();
+    await services.spotDataProcessor.processSpotLiveCompetition(competition.id);
+    await wait(500);
+
+    // CODE PATH 1: getCompetitionAgents (uses repository layer getSpotLiveROILeaderboard)
+    // This is KNOWN to return decimal format correctly
+    const leaderboardResponse = await adminClient.getCompetitionAgents(
+      competition.id,
+    );
+    expect(leaderboardResponse.success).toBe(true);
+    const leaderboardAgents = (leaderboardResponse as CompetitionAgentsResponse)
+      .agents;
+    const leaderboardEntry = leaderboardAgents.find((a) => a.id === agent.id);
+    expect(leaderboardEntry).toBeDefined();
+
+    const leaderboardSimpleReturn = leaderboardEntry?.simpleReturn as number;
+    console.log(
+      `[TEST] getCompetitionAgents simpleReturn = ${leaderboardSimpleReturn}`,
+    );
+
+    // CODE PATH 2: getAgentCompetitions (uses agent.service.ts attachBulkCompetitionMetrics)
+    const competitionsResponse = await agentClient.getAgentCompetitions(
+      agent.id,
+    );
+    expect(competitionsResponse.success).toBe(true);
+
+    const typedResponse = competitionsResponse as AgentCompetitionsResponse;
+    const spotLiveComp = typedResponse.competitions.find(
+      (c: EnhancedCompetition) => c.id === competition.id,
+    );
+    expect(spotLiveComp).toBeDefined();
+
+    const competitionsSimpleReturn = spotLiveComp?.simpleReturn as number;
+    console.log(
+      `[TEST] getAgentCompetitions simpleReturn = ${competitionsSimpleReturn}`,
+    );
+
+    // Assertions:
+    // 1. Both values must be in decimal format (reasonable ROI, not percentage)
+    //    If buggy: competitionsSimpleReturn would be 100x larger (e.g., 50 instead of 0.5)
+    expect(Math.abs(leaderboardSimpleReturn)).toBeLessThan(5); // < 500% ROI
+    expect(Math.abs(competitionsSimpleReturn)).toBeLessThan(5); // < 500% ROI
+
+    // 2. Both code paths must return the SAME value (format consistency)
+    //    If bug exists: leaderboard = 0.5 (decimal), competitions = 50 (percentage) - FAIL!
+    //    If fixed: both values are equal - PASS!
+    expect(competitionsSimpleReturn).toBeCloseTo(leaderboardSimpleReturn, 2);
+  });
+
+  test("should handle native ETH balances and swaps in full competition flow", async () => {
+    // Tests the FULL native token flow:
+    // 1. Initial sync includes native ETH balance (via getNativeBalance)
+    // 2. Native ETH → ERC20 swap is detected correctly (EXTERNAL category)
+    // 3. Native token uses zero address (0x00...00) for storage
+    // 4. Price lookups map zero address → WETH for pricing
+    // 5. Portfolio snapshots correctly value native ETH holdings
+    //
+    // Mock wallet: 0x9999000000000000000000000000000000000009
+    // Initial: 0.5 ETH + 100 USDC
+    // Swap: 0.1 ETH → 275 USDC
+    // Final: 0.4 ETH + 375 USDC
+
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agent with native ETH test wallet
+    const { agent } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Native ETH Test Agent",
+      agentWalletAddress: "0x9999000000000000000000000000000000000009",
+    });
+
+    // Start spot live competition
+    const response = await startSpotLiveTestCompetition({
+      adminClient,
+      name: `Native ETH Flow Test ${Date.now()}`,
+      agentIds: [agent.id],
+    });
+
+    expect(response.success).toBe(true);
+    const competition = response.competition;
+
+    await wait(2000);
+
+    // Process first sync - should initialize native ETH balance
+    const services = new ServiceRegistry();
+    await services.spotDataProcessor.processSpotLiveCompetition(competition.id);
+    await wait(500);
+
+    // Verify agent has both native ETH and USDC balances
+    const leaderboardResponse = await adminClient.getCompetitionAgents(
+      competition.id,
+    );
+    expect(leaderboardResponse.success).toBe(true);
+    const leaderboard = (leaderboardResponse as CompetitionAgentsResponse)
+      .agents;
+    const agentEntry = leaderboard.find(
+      (a: CompetitionAgent) => a.id === agent.id,
+    );
+
+    expect(agentEntry).toBeDefined();
+    console.log(
+      `[TEST] Native ETH agent portfolio value: $${agentEntry?.portfolioValue}`,
+    );
+
+    expect(agentEntry?.portfolioValue).toBeGreaterThan(0);
+
+    // Process second sync - should detect native ETH swap
+    await services.spotDataProcessor.processSpotLiveCompetition(competition.id);
+    await wait(500);
+
+    // Verify the swap was detected and balances updated
+    const finalLeaderboardResponse = await adminClient.getCompetitionAgents(
+      competition.id,
+    );
+    expect(finalLeaderboardResponse.success).toBe(true);
+    const finalLeaderboard = (
+      finalLeaderboardResponse as CompetitionAgentsResponse
+    ).agents;
+    const finalAgentEntry = finalLeaderboard.find(
+      (a: CompetitionAgent) => a.id === agent.id,
+    );
+
+    expect(finalAgentEntry).toBeDefined();
+    console.log(
+      `[TEST] After native ETH swap portfolio value: $${finalAgentEntry?.portfolioValue}`,
+    );
+
+    // Portfolio value should have changed due to swap
+    // The swap should be reflected in updated balances
+    expect(finalAgentEntry?.portfolioValue).toBeGreaterThan(0);
+
+    // Verify simpleReturn is calculated (from ROI calculation)
+    expect(typeof finalAgentEntry?.simpleReturn).toBe("number");
+
+    console.log(
+      `✓ Native ETH flow complete: simpleReturn = ${finalAgentEntry?.simpleReturn}`,
+    );
+  });
+
+  test("should include native ETH in portfolio when whitelist contains WETH but not zero address", async () => {
+    // Tests Fix: Native tokens should be auto-allowed when wrapped native is in whitelist
+    //
+    // Scenario:
+    // - Token whitelist contains WETH (0x4200...) and USDC, but NOT zero address
+    // - Agent has native ETH (stored as zero address: 0x0000...0000)
+    // - Native ETH should STILL be tracked because WETH is whitelisted
+    //
+    // If bug exists: Native ETH would be silently filtered out, portfolio shows only USDC
+    // If fixed: Native ETH is auto-allowed, portfolio includes both ETH and USDC value
+
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agent with native ETH test wallet
+    const { agent, client: agentClient } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Native ETH Whitelist Agent",
+        agentWalletAddress: "0x9999000000000000000000000000000000000009", // Has 0.5 ETH + 100 USDC
+      });
+
+    // Start competition with whitelist containing WETH but NOT zero address
+    const response = await startSpotLiveTestCompetition({
+      adminClient,
+      name: `Native Whitelist Test ${Date.now()}`,
+      agentIds: [agent.id],
+      spotLiveConfig: {
+        dataSource: "rpc_direct" as const,
+        dataSourceConfig: {
+          type: "rpc_direct" as const,
+          provider: "alchemy" as const,
+          chains: ["base"],
+        },
+        chains: ["base"],
+        allowedTokens: [
+          {
+            address: "0x4200000000000000000000000000000000000006", // WETH on Base
+            specificChain: "base",
+          },
+          {
+            address: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913", // USDC
+            specificChain: "base",
+          },
+          // NOTE: Zero address (0x0000...0000) is NOT in whitelist
+          // But native ETH should still be tracked because WETH is whitelisted
+        ],
+        selfFundingThresholdUsd: 10,
+        syncIntervalMinutes: 2,
+      },
+    });
+
+    expect(response.success).toBe(true);
+    const competition = response.competition;
+
+    await wait(2000);
+
+    // Trigger sync
+    const services = new ServiceRegistry();
+    await services.spotDataProcessor.processSpotLiveCompetition(competition.id);
+    await wait(500);
+
+    // Check agent's balances - should include native ETH
+    const balancesResponse = await agentClient.getBalance(competition.id);
+    expect(balancesResponse.success).toBe(true);
+
+    const typedBalances = balancesResponse as BalancesResponse;
+    const balances = typedBalances.balances;
+
+    // Find native ETH balance (stored as zero address)
+    const nativeEthBalance = balances.find(
+      (b) =>
+        b.tokenAddress.toLowerCase() ===
+        "0x0000000000000000000000000000000000000000",
+    );
+
+    // Find USDC balance
+    const usdcBalance = balances.find(
+      (b) =>
+        b.tokenAddress.toLowerCase() ===
+        "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+    );
+
+    // Native ETH should be present (auto-allowed because WETH is whitelisted)
+    expect(nativeEthBalance).toBeDefined();
+    expect(nativeEthBalance?.amount).toBeGreaterThan(0);
+    console.log(
+      `[TEST] Native ETH balance: ${nativeEthBalance?.amount} (should be ~0.5)`,
+    );
+
+    // USDC should also be present
+    expect(usdcBalance).toBeDefined();
+    expect(usdcBalance?.amount).toBeGreaterThan(0);
+
+    // Portfolio value should include BOTH native ETH and USDC
+    const leaderboardResponse = await adminClient.getCompetitionAgents(
+      competition.id,
+    );
+    expect(leaderboardResponse.success).toBe(true);
+    const leaderboard = (leaderboardResponse as CompetitionAgentsResponse)
+      .agents;
+    const agentEntry = leaderboard.find(
+      (a: CompetitionAgent) => a.id === agent.id,
+    );
+
+    expect(agentEntry).toBeDefined();
+    // Portfolio should be > $100 (USDC alone) because it includes native ETH value
+    // 0.5 ETH @ ~$2750 = ~$1375 + $100 USDC = ~$1475
+    expect(agentEntry?.portfolioValue).toBeGreaterThan(500);
+    console.log(
+      `[TEST] Portfolio value with native ETH: $${agentEntry?.portfolioValue}`,
+    );
+
+    console.log(
+      `✓ Native ETH correctly included in whitelist-enabled competition`,
+    );
+  });
+
+  describe("Spot Live Competition Updates", () => {
+    test("should allow updating minFundingThreshold on pending spot live competition", async () => {
+      const adminClient = createTestClient(getBaseUrl());
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Create a pending spot live competition
+      const createResponse = await adminClient.createCompetition({
+        name: `Spot Live Update Test ${Date.now()}`,
+        description: "Test partial config updates",
+        type: "spot_live_trading",
+        arenaId: "default-spot-live-arena",
+        spotLiveConfig: {
+          dataSource: "rpc_direct",
+          dataSourceConfig: {
+            type: "rpc_direct",
+            provider: "alchemy",
+            chains: ["base"],
+          },
+          chains: ["base"],
+          selfFundingThresholdUsd: 10,
+          syncIntervalMinutes: 2,
+        },
+      });
+
+      expect(createResponse.success).toBe(true);
+      const competitionId = (
+        createResponse as { success: true; competition: { id: string } }
+      ).competition.id;
+
+      // Update only minFundingThreshold (partial update)
+      const updateResponse = await adminClient.updateCompetition(
+        competitionId,
+        {
+          spotLiveConfig: {
+            minFundingThreshold: 50,
+          },
+        },
+      );
+
+      expect(updateResponse.success).toBe(true);
+
+      // Verify the update was applied
+      const detailsResponse = await adminClient.getCompetition(competitionId);
+      expect(detailsResponse.success).toBe(true);
+      const details = detailsResponse as CompetitionDetailResponse;
+
+      // The minFundingThreshold should be updated
+      expect(details.competition.spotLiveConfig?.minFundingThreshold).toBe(50);
+      // selfFundingThresholdUsd should remain unchanged
+      expect(details.competition.spotLiveConfig?.selfFundingThresholdUsd).toBe(
+        10,
+      );
+    });
+
+    test("should allow updating selfFundingThresholdUsd on pending spot live competition", async () => {
+      const adminClient = createTestClient(getBaseUrl());
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Create a pending spot live competition
+      const createResponse = await adminClient.createCompetition({
+        name: `Spot Live SelfFunding Update ${Date.now()}`,
+        description: "Test selfFundingThresholdUsd update",
+        type: "spot_live_trading",
+        arenaId: "default-spot-live-arena",
+        spotLiveConfig: {
+          dataSource: "rpc_direct",
+          dataSourceConfig: {
+            type: "rpc_direct",
+            provider: "alchemy",
+            chains: ["base"],
+          },
+          chains: ["base"],
+          selfFundingThresholdUsd: 10,
+          syncIntervalMinutes: 2,
+        },
+      });
+
+      expect(createResponse.success).toBe(true);
+      const competitionId = (
+        createResponse as { success: true; competition: { id: string } }
+      ).competition.id;
+
+      // Update selfFundingThresholdUsd
+      const updateResponse = await adminClient.updateCompetition(
+        competitionId,
+        {
+          spotLiveConfig: {
+            selfFundingThresholdUsd: 100,
+          },
+        },
+      );
+
+      expect(updateResponse.success).toBe(true);
+
+      // Verify the update was applied
+      const detailsResponse = await adminClient.getCompetition(competitionId);
+      expect(detailsResponse.success).toBe(true);
+      const details = detailsResponse as CompetitionDetailResponse;
+
+      expect(details.competition.spotLiveConfig?.selfFundingThresholdUsd).toBe(
+        100,
+      );
+    });
+
+    test("should allow clearing minFundingThreshold by setting to null", async () => {
+      const adminClient = createTestClient(getBaseUrl());
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Create a pending spot live competition with minFundingThreshold set
+      const createResponse = await adminClient.createCompetition({
+        name: `Spot Live Clear MinFunding ${Date.now()}`,
+        description: "Test clearing minFundingThreshold",
+        type: "spot_live_trading",
+        arenaId: "default-spot-live-arena",
+        spotLiveConfig: {
+          dataSource: "rpc_direct",
+          dataSourceConfig: {
+            type: "rpc_direct",
+            provider: "alchemy",
+            chains: ["base"],
+          },
+          chains: ["base"],
+          selfFundingThresholdUsd: 10,
+          minFundingThreshold: 25,
+          syncIntervalMinutes: 2,
+        },
+      });
+
+      expect(createResponse.success).toBe(true);
+      const competitionId = (
+        createResponse as { success: true; competition: { id: string } }
+      ).competition.id;
+
+      // Clear minFundingThreshold by setting to null
+      const updateResponse = await adminClient.updateCompetition(
+        competitionId,
+        {
+          spotLiveConfig: {
+            minFundingThreshold: null,
+          },
+        },
+      );
+
+      expect(updateResponse.success).toBe(true);
+
+      // Verify the update was applied
+      const detailsResponse = await adminClient.getCompetition(competitionId);
+      expect(detailsResponse.success).toBe(true);
+      const details = detailsResponse as CompetitionDetailResponse;
+
+      expect(
+        details.competition.spotLiveConfig?.minFundingThreshold,
+      ).toBeNull();
+    });
+
+    test("should prevent updating spotLiveConfig on active competition", async () => {
+      const adminClient = createTestClient(getBaseUrl());
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Register an agent with wallet for spot live
+      const { agent } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Agent for Active Spot Live",
+        agentWalletAddress: "0xaaaa000000000000000000000000000000000001",
+      });
+
+      // Start a spot live competition (becomes active)
+      const startResponse = await startSpotLiveTestCompetition({
+        adminClient,
+        name: `Active Spot Live ${Date.now()}`,
+        agentIds: [agent.id],
+      });
+
+      expect(startResponse.success).toBe(true);
+      const competitionId = startResponse.competition.id;
+
+      // Wait for initial sync
+      await wait(1000);
+
+      // Try to update spotLiveConfig (should fail)
+      const updateResponse = await adminClient.updateCompetition(
+        competitionId,
+        {
+          spotLiveConfig: {
+            selfFundingThresholdUsd: 200,
+          },
+        },
+      );
+
+      expect(updateResponse.success).toBe(false);
+      expect((updateResponse as ErrorResponse).error).toContain(
+        "Cannot update spot live configuration once competition has started",
+      );
+    });
+
+    test("should convert paper trading competition to spot live", async () => {
+      const adminClient = createTestClient(getBaseUrl());
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Create a paper trading competition
+      const createResponse = await adminClient.createCompetition({
+        name: `Paper to Spot Live ${Date.now()}`,
+        description: "Test converting paper trading to spot live",
+        type: "trading",
+        arenaId: "default-paper-arena",
+      });
+
+      expect(createResponse.success).toBe(true);
+      const competitionId = (
+        createResponse as { success: true; competition: { id: string } }
+      ).competition.id;
+
+      // Verify it's a paper trading competition
+      const detailsBefore = await adminClient.getCompetition(competitionId);
+      expect(detailsBefore.success).toBe(true);
+      expect(
+        (detailsBefore as CompetitionDetailResponse).competition.type,
+      ).toBe("trading");
+
+      // Convert to spot live trading
+      const updateResponse = await adminClient.updateCompetition(
+        competitionId,
+        {
+          type: "spot_live_trading",
+          arenaId: "default-spot-live-arena",
+          spotLiveConfig: {
+            dataSource: "rpc_direct",
+            dataSourceConfig: {
+              type: "rpc_direct",
+              provider: "alchemy",
+              chains: ["base"],
+            },
+            chains: ["base"],
+            selfFundingThresholdUsd: 10,
+            syncIntervalMinutes: 2,
+          },
+        },
+      );
+
+      expect(updateResponse.success).toBe(true);
+
+      // Verify conversion
+      const detailsAfter = await adminClient.getCompetition(competitionId);
+      expect(detailsAfter.success).toBe(true);
+      expect((detailsAfter as CompetitionDetailResponse).competition.type).toBe(
+        "spot_live_trading",
+      );
+      expect(
+        (detailsAfter as CompetitionDetailResponse).competition.spotLiveConfig,
+      ).toBeDefined();
+    });
+
+    test("should require spotLiveConfig when converting to spot_live_trading", async () => {
+      const adminClient = createTestClient(getBaseUrl());
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Create a paper trading competition
+      const createResponse = await adminClient.createCompetition({
+        name: `Missing Config Conversion ${Date.now()}`,
+        description: "Test missing spotLiveConfig validation",
+        type: "trading",
+        arenaId: "default-paper-arena",
+      });
+
+      expect(createResponse.success).toBe(true);
+      const competitionId = (
+        createResponse as { success: true; competition: { id: string } }
+      ).competition.id;
+
+      // Try to convert without spotLiveConfig (should fail)
+      const updateResponse = await adminClient.updateCompetition(
+        competitionId,
+        {
+          type: "spot_live_trading",
+        },
+      );
+
+      expect(updateResponse.success).toBe(false);
+      expect((updateResponse as ErrorResponse).error).toContain(
+        "Spot live configuration is required",
+      );
+    });
+
+    test("should convert spot live to paper trading and remove config", async () => {
+      const adminClient = createTestClient(getBaseUrl());
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Create a spot live competition
+      const createResponse = await adminClient.createCompetition({
+        name: `Spot Live to Paper ${Date.now()}`,
+        description: "Test converting spot live to paper trading",
+        type: "spot_live_trading",
+        arenaId: "default-spot-live-arena",
+        spotLiveConfig: {
+          dataSource: "rpc_direct",
+          dataSourceConfig: {
+            type: "rpc_direct",
+            provider: "alchemy",
+            chains: ["base"],
+          },
+          chains: ["base"],
+          selfFundingThresholdUsd: 10,
+          syncIntervalMinutes: 2,
+        },
+      });
+
+      expect(createResponse.success).toBe(true);
+      const competitionId = (
+        createResponse as { success: true; competition: { id: string } }
+      ).competition.id;
+
+      // Verify it's a spot live competition with config
+      const detailsBefore = await adminClient.getCompetition(competitionId);
+      expect(detailsBefore.success).toBe(true);
+      expect(
+        (detailsBefore as CompetitionDetailResponse).competition.type,
+      ).toBe("spot_live_trading");
+      expect(
+        (detailsBefore as CompetitionDetailResponse).competition.spotLiveConfig,
+      ).toBeDefined();
+
+      // Convert to paper trading
+      const updateResponse = await adminClient.updateCompetition(
+        competitionId,
+        {
+          type: "trading",
+          arenaId: "default-paper-arena",
+        },
+      );
+
+      expect(updateResponse.success).toBe(true);
+
+      // Verify conversion and config removal
+      const detailsAfter = await adminClient.getCompetition(competitionId);
+      expect(detailsAfter.success).toBe(true);
+      expect((detailsAfter as CompetitionDetailResponse).competition.type).toBe(
+        "trading",
+      );
+      // spotLiveConfig should be removed or null
+      expect(
+        (detailsAfter as CompetitionDetailResponse).competition.spotLiveConfig,
+      ).toBeFalsy();
+    });
   });
 });

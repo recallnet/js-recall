@@ -4445,7 +4445,7 @@ describe("Perps Competition", () => {
     expect(poorMetrics?.rank).toBeLessThan(3);
   });
 
-  test("should allow updating evaluation metric on active competition", async () => {
+  test("should reject updating evaluation metric on active competition", async () => {
     const adminClient = createTestClient(getBaseUrl());
     await adminClient.loginAsAdmin(adminApiKey);
 
@@ -4467,7 +4467,7 @@ describe("Perps Competition", () => {
     expect(competition.success).toBe(true);
     expect(competition.competition.status).toBe("active");
 
-    // Update evaluation metric while competition is active
+    // Attempt to update evaluation metric while competition is active
     const updateResponse = await adminClient.updateCompetition(
       competition.competition.id,
       {
@@ -4475,16 +4475,11 @@ describe("Perps Competition", () => {
       },
     );
 
-    // Verify update succeeded
-    expect(updateResponse.success).toBe(true);
-
-    // Verify the competition's metric was updated
-    const detailsResponse = await adminClient.getCompetition(
-      competition.competition.id,
+    // Verify update was rejected
+    expect(updateResponse.success).toBe(false);
+    expect((updateResponse as ErrorResponse).error).toContain(
+      "Cannot update perps configuration once competition has started",
     );
-    expect(detailsResponse.success).toBe(true);
-    const details = detailsResponse as CompetitionDetailResponse;
-    expect(details.competition.status).toBe("active");
   });
 
   test("should return empty timeline for competition with no snapshots", async () => {

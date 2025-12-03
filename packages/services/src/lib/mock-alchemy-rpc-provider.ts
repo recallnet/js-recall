@@ -27,10 +27,22 @@ function createMockTransfer(params: {
   blockTimestamp: string;
   tokenAddress: string;
   decimal: string;
+  category?: AssetTransfersCategory;
 }): AssetTransfersWithMetadataResult {
+  // Use EXTERNAL category for native tokens (ETH, MATIC, etc.)
+  const isNativeTransfer =
+    params.asset === "ETH" ||
+    params.asset === "MATIC" ||
+    params.asset === "BNB";
+  const category =
+    params.category ??
+    (isNativeTransfer
+      ? AssetTransfersCategory.EXTERNAL
+      : AssetTransfersCategory.ERC20);
+
   return {
     uniqueId: `${params.hash}-${params.from}-${params.to}`.toLowerCase(),
-    category: AssetTransfersCategory.ERC20,
+    category,
     blockNum: params.blockNum,
     from: params.from,
     to: params.to,
@@ -40,11 +52,13 @@ function createMockTransfer(params: {
     tokenId: null,
     asset: params.asset,
     hash: params.hash,
-    rawContract: {
-      address: params.tokenAddress,
-      decimal: params.decimal,
-      value: null,
-    },
+    rawContract: isNativeTransfer
+      ? { address: null, decimal: null, value: null }
+      : {
+          address: params.tokenAddress,
+          decimal: params.decimal,
+          value: null,
+        },
     metadata: {
       blockTimestamp: params.blockTimestamp,
     },
@@ -962,6 +976,91 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
         ["0x833589fcd6edb6e08f4c7c32d4f71b54bda02913", 500], // Initial: $500 USDC
       ]),
     });
+
+    // =============================================================================
+    // NATIVE ETH TEST WALLET
+    // Tests native token support: initial balance, swap detection, portfolio pricing
+    // =============================================================================
+
+    // Native ETH Test Wallet: 0.5 ETH + 100 USDC initial
+    // Swap: 0.1 ETH → ~275 USDC (at ~$2750/ETH)
+    // Final: 0.4 ETH + 375 USDC
+    const nativeSwapTime = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    this.setWalletData("0x9999000000000000000000000000000000000009", {
+      transfers: [
+        // Native ETH → USDC swap via Aerodrome
+        // Agent sends 0.1 ETH (native, EXTERNAL category)
+        createMockTransfer({
+          from: "0x9999000000000000000000000000000000000009",
+          to: "0xcf77a3ba9a5ca399b7c97c74d54e5b1beb874e43", // Aerodrome router
+          value: 0.1,
+          asset: "ETH",
+          hash: "0xnative_eth_swap_1",
+          blockNum: "0x1e8700", // Block 2003712
+          blockTimestamp: nativeSwapTime,
+          tokenAddress: "0x0000000000000000000000000000000000000000", // Zero address for native
+          decimal: "18",
+          category: AssetTransfersCategory.EXTERNAL, // Native transfer
+        }),
+        // Agent receives USDC back
+        createMockTransfer({
+          from: "0xaeropool_native",
+          to: "0x9999000000000000000000000000000000000009",
+          value: 275,
+          asset: "USDC",
+          hash: "0xnative_eth_swap_1",
+          blockNum: "0x1e8700",
+          blockTimestamp: nativeSwapTime,
+          tokenAddress: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+          decimal: "6",
+          category: AssetTransfersCategory.ERC20,
+        }),
+      ],
+      transactions: new Map([
+        [
+          "0xnative_eth_swap_1",
+          {
+            hash: "0xnative_eth_swap_1",
+            from: "0x9999000000000000000000000000000000000009",
+            to: "0xcf77a3ba9a5ca399b7c97c74d54e5b1beb874e43", // Aerodrome router
+            blockNumber: 2003712,
+          },
+        ],
+      ]),
+      receipts: new Map([
+        [
+          "0xnative_eth_swap_1",
+          {
+            transactionHash: "0xnative_eth_swap_1",
+            blockNumber: 2003712,
+            gasUsed: "180000",
+            effectiveGasPrice: "50000000000",
+            status: true,
+            from: "0x9999000000000000000000000000000000000009",
+            to: "0xcf77a3ba9a5ca399b7c97c74d54e5b1beb874e43",
+            logs: [
+              {
+                address: "0xaeropool_native",
+                blockNumber: 2003712,
+                blockHash: "0xnativehash1",
+                transactionIndex: 0,
+                removed: false,
+                logIndex: 0,
+                transactionHash: "0xnative_eth_swap_1",
+                topics: [
+                  "0xb3e2773606abfd36b5bd91394b3a54d1398336c65005baf7bf7a05efeffaf75b", // Aerodrome Swap
+                ],
+                data: "0x",
+              },
+            ],
+          },
+        ],
+      ]),
+      balances: new Map([
+        ["0x833589fcd6edb6e08f4c7c32d4f71b54bda02913", 100], // Initial: 100 USDC
+      ]),
+      nativeBalance: "500000000000000000", // Initial: 0.5 ETH in wei
+    });
   }
 
   /**
@@ -1088,7 +1187,8 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
       lowerAddress === "0x8888888888888888888888888888888888888888" || // Portfolio filter test
       lowerAddress === "0x0001000000000000000000000000000000000001" || // ROI ranking test - highest ROI
       lowerAddress === "0x0002000000000000000000000000000000000002" || // ROI ranking test - medium ROI
-      lowerAddress === "0x0003000000000000000000000000000000000003" // ROI ranking test - lowest ROI
+      lowerAddress === "0x0003000000000000000000000000000000000003" || // ROI ranking test - lowest ROI
+      lowerAddress === "0x9999000000000000000000000000000000000009" // Native ETH swap test
     ) {
       // Test wallets with swaps/transfers - reveal on first manual sync (sync 1+)
       // This simulates the swap/transfer happening AFTER competition starts
@@ -1220,16 +1320,33 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
   }
 
   /**
-   * Get ETH balance for a wallet
+   * Get native token balance for a wallet (ETH, MATIC, etc.)
+   * Used by spot live trading to initialize native balances
    */
   async getBalance(
     walletAddress: string,
     chain: SpecificChain,
   ): Promise<string> {
-    void walletAddress; // Not used in mock
-    void chain; // Not used in mock
-    // Return mock ETH balance (not used in spot live trading, but required by interface)
-    return "1000000000000000000"; // 1 ETH in wei
+    void chain; // Not used in mock - single chain per wallet
+    const data = this.getWalletData(walletAddress);
+    const lowerAddress = walletAddress.toLowerCase();
+
+    // Read call index to determine sync number (for progressive balance updates)
+    const callIdx = this.callIndex.get(lowerAddress) || 0;
+    const syncNumber = Math.ceil(callIdx / 2);
+
+    // Special handling for native ETH test wallet
+    if (lowerAddress === "0x9999000000000000000000000000000000000009") {
+      // Native ETH swap test wallet - balance decreases after swap
+      if (syncNumber === 0) {
+        return "500000000000000000"; // 0.5 ETH initial
+      } else {
+        return "400000000000000000"; // 0.4 ETH after swap (0.1 ETH sold)
+      }
+    }
+
+    // Return wallet-specific native balance or default
+    return data.nativeBalance ?? "0";
   }
 
   /**
@@ -1473,6 +1590,22 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
         // After trade: $500 → $550 (10% ROI)
         balancesToReturn.set("0x833589fcd6edb6e08f4c7c32d4f71b54bda02913", 550);
       }
+    } else if (lowerAddress === "0x9999000000000000000000000000000000000009") {
+      // Native ETH Test Wallet: Tests native balance + swap
+      // Initial: 100 USDC (native ETH handled separately via getBalance)
+      // After swap: 375 USDC (100 + 275 from selling 0.1 ETH)
+      balancesToReturn = new Map();
+
+      if (syncNumber === 0) {
+        balancesToReturn.set("0x833589fcd6edb6e08f4c7c32d4f71b54bda02913", 100); // Initial: 100 USDC
+      } else {
+        // After native ETH swap: +275 USDC
+        balancesToReturn.set("0x833589fcd6edb6e08f4c7c32d4f71b54bda02913", 375);
+      }
+
+      this.logger.info(
+        `[MockAlchemyRpcProvider] Native ETH wallet 0x9999 getTokenBalances at sync #${syncNumber}: USDC=${balancesToReturn.get("0x833589fcd6edb6e08f4c7c32d4f71b54bda02913")}`,
+      );
     }
 
     return Array.from(balancesToReturn.entries()).map(
@@ -1486,7 +1619,8 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
         const rawBalance = Math.floor(balance * Math.pow(10, decimals));
         return {
           contractAddress: tokenAddress,
-          balance: `0x${rawBalance.toString(16)}`,
+          // Return decimal string (same format as real AlchemyRpcProvider after normalization)
+          balance: rawBalance.toString(),
         };
       },
     );
@@ -1527,4 +1661,6 @@ interface MockWalletData {
   transactions: Map<string, TransactionData>;
   receipts: Map<string, TransactionReceipt>;
   balances: Map<string, number>;
+  /** Native token balance in wei (e.g., ETH balance) */
+  nativeBalance?: string;
 }

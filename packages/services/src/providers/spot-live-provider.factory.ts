@@ -90,9 +90,8 @@ export class SpotLiveProviderFactory {
       );
     }
 
-    if (!config.rpcUrls) {
-      throw new Error("RPC URLs required for rpc_direct provider");
-    }
+    // Note: rpcUrls is optional - Alchemy SDK constructs URLs automatically from API key
+    // Future providers (QuickNode, Infura) may require explicit URLs
 
     // Get API key from environment based on provider
     const apiKey = this.getRpcApiKey(config.provider);

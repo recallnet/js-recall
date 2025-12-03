@@ -3,6 +3,7 @@ import path from "path";
 import { Logger } from "pino";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 
+import { NATIVE_TOKEN_ADDRESS } from "../../lib/config-utils.js";
 import { getDexProtocolConfig } from "../../lib/dex-protocols.js";
 import type { ProtocolFilter } from "../../types/spot-live.js";
 import { AlchemyRpcProvider } from "../spot-live/alchemy-rpc.provider.js";
@@ -33,6 +34,18 @@ const KNOWN_AERODROME_SWAP = {
   blockNumber: 38606282,
   wallet: TEST_WALLETS.aerodromeSwapper,
   // Swap: 2.022104 USDC → 11.08 WPAY
+};
+
+// Known Native ETH → ERC20 swap on Base via Aerodrome
+// This transaction swaps 0.116 ETH for ~73,509 output tokens
+const KNOWN_NATIVE_ETH_SWAP = {
+  txHash: "0xf5605f56cf3f38dfbbd9d62361a37df0b3a21c7c0a78403232d5724f0e61b33d",
+  blockNumber: 38911955,
+  wallet: "0xA6a64eF4424af48B557b1534774b6D064707Bb41",
+  // Swap: ~0.116 ETH → ~73,509 tokens
+  expectedFromToken: NATIVE_TOKEN_ADDRESS, // Zero address for native ETH
+  expectedToToken: "0xc48823ec67720a04a9dfd8c7d109b2c3d6622094".toLowerCase(), // Output token on Base
+  description: "Native ETH → Token swap via Aerodrome",
 };
 
 // Get Aerodrome protocol config from constants
@@ -226,7 +239,7 @@ describe("RpcSpotProvider - Integration Tests (Real Blockchain)", () => {
       console.error(`  This means detectSwapPattern() is broken`);
     }
 
-    // CRITICAL: This tests if basic swap detection works
+    // This tests if basic swap detection works
     expect(knownSwap).toBeDefined();
     expect(knownSwap?.blockNumber).toBe(KNOWN_AERODROME_SWAP.blockNumber);
   }, 30000);
@@ -531,5 +544,103 @@ describe("RpcSpotProvider - Integration Tests (Real Blockchain)", () => {
 
     expect(swapFoundInTransfers).toBe(false);
     console.log(`✓ Swap transaction correctly excluded from transfer history`);
+  }, 30000);
+
+  test("should detect Native ETH → ERC20 swap with zero address as fromToken", async () => {
+    if (!process.env.ALCHEMY_API_KEY) {
+      console.log("Skipping test - no ALCHEMY_API_KEY");
+      return;
+    }
+
+    // Create provider without protocol filter (all DEXs allowed)
+    provider = new RpcSpotProvider(
+      realRpcProvider,
+      [], // No protocol filter
+      mockLogger,
+    );
+
+    // Use narrow block range around our known native ETH swap
+    const fromBlock = KNOWN_NATIVE_ETH_SWAP.blockNumber - 10;
+    const toBlock = KNOWN_NATIVE_ETH_SWAP.blockNumber + 10;
+
+    console.log(`\nScanning blocks ${fromBlock} to ${toBlock} on Base...`);
+    console.log(
+      `Looking for native ETH swap: ${KNOWN_NATIVE_ETH_SWAP.description}`,
+    );
+
+    const trades = await provider.getTradesSince(
+      KNOWN_NATIVE_ETH_SWAP.wallet,
+      fromBlock,
+      ["base"],
+      toBlock,
+    );
+
+    console.log(`Found ${trades.length} trades from real blockchain`);
+
+    // Should find at least one trade
+    expect(trades.length).toBeGreaterThan(0);
+
+    // Find our specific native ETH swap transaction
+    const nativeSwap = trades.find(
+      (t) =>
+        t.txHash.toLowerCase() === KNOWN_NATIVE_ETH_SWAP.txHash.toLowerCase(),
+    );
+
+    expect(nativeSwap).toBeDefined();
+    console.log(`\n✓ Found native ETH swap transaction:`);
+    console.log(`  TxHash: ${nativeSwap?.txHash}`);
+    console.log(`  From Token: ${nativeSwap?.fromToken}`);
+    console.log(`  To Token: ${nativeSwap?.toToken}`);
+    console.log(`  From Amount: ${nativeSwap?.fromAmount}`);
+    console.log(`  To Amount: ${nativeSwap?.toAmount}`);
+
+    // Verify fromToken is the NATIVE_TOKEN_ADDRESS (zero address)
+    // This ensures native ETH swaps are correctly identified for price lookups
+    expect(nativeSwap?.fromToken.toLowerCase()).toBe(
+      KNOWN_NATIVE_ETH_SWAP.expectedFromToken.toLowerCase(),
+    );
+    console.log(
+      `✓ Native ETH correctly identified with zero address: ${NATIVE_TOKEN_ADDRESS}`,
+    );
+
+    // Verify toToken is the expected output token
+    expect(nativeSwap?.toToken.toLowerCase()).toBe(
+      KNOWN_NATIVE_ETH_SWAP.expectedToToken.toLowerCase(),
+    );
+    console.log(`✓ Output token correctly identified`);
+
+    // Verify amounts are sensible
+    expect(nativeSwap?.fromAmount).toBeGreaterThan(0);
+    expect(nativeSwap?.toAmount).toBeGreaterThan(0);
+    console.log(`✓ Swap amounts are valid`);
+  }, 30000);
+
+  test("should return all balances as DECIMAL strings (provider normalizes format)", async () => {
+    if (!process.env.ALCHEMY_API_KEY) {
+      console.log("Skipping test - no ALCHEMY_API_KEY");
+      return;
+    }
+
+    // Use Vitalik's address which reliably has both ETH and tokens
+    const testWallet = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045";
+
+    // Native balance from getBalance() should be DECIMAL string
+    const nativeBalance = await realRpcProvider.getBalance(testWallet, "eth");
+    const nativeIsDecimal = /^\d+$/.test(nativeBalance);
+    expect(nativeIsDecimal).toBe(true);
+
+    // Token balances from getTokenBalances() should ALSO be DECIMAL strings
+    // (provider normalizes Alchemy's hex response to decimal for consistent format)
+    const tokenBalances = await realRpcProvider.getTokenBalances(
+      testWallet,
+      "eth",
+    );
+    expect(tokenBalances.length).toBeGreaterThan(0);
+    const tokenIsDecimal = /^\d+$/.test(tokenBalances[0]?.balance || "");
+    expect(tokenIsDecimal).toBe(true);
+
+    console.log(
+      `✓ Format verified: both native and tokens return DECIMAL strings`,
+    );
   }, 30000);
 });

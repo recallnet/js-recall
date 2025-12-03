@@ -847,9 +847,10 @@ export function makeAdminController(services: ServiceRegistry) {
           evaluationMetric,
           perpsProvider,
           prizePools,
+          spotLiveConfig,
           ...competitionUpdates
         } = flatParse(AdminUpdateCompetitionSchema, req.body);
-        // Extract rewards, tradingConstraints, evaluationMetric, and perpsProvider from the validated data
+        // Extract rewards, tradingConstraints, evaluationMetric, perpsProvider, and spotLiveConfig from the validated data
         const updates = competitionUpdates;
 
         // Check if there are any updates to apply
@@ -859,7 +860,8 @@ export function makeAdminController(services: ServiceRegistry) {
           !tradingConstraints &&
           !evaluationMetric &&
           !perpsProvider &&
-          !prizePools
+          !prizePools &&
+          !spotLiveConfig
         ) {
           throw new ApiError(400, "No valid fields provided for update");
         }
@@ -874,6 +876,7 @@ export function makeAdminController(services: ServiceRegistry) {
             evaluationMetric,
             perpsProvider,
             prizePools,
+            spotLiveConfig,
           );
 
         // Return the updated competition

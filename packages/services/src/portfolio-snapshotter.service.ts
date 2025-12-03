@@ -3,6 +3,7 @@ import { Logger } from "pino";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 
 import { BalanceService } from "./balance.service.js";
+import { getTokenAddressForPriceLookup } from "./lib/config-utils.js";
 import { getPriceMapKey } from "./lib/price-map-key.js";
 import { PriceTrackerService } from "./price-tracker.service.js";
 import {
@@ -267,16 +268,30 @@ export class PortfolioSnapshotterService {
       }
 
       // Step 1: Determine which token+chain combinations need prices
-      const requestsNeeded: TokenPriceRequest[] = [];
+      // Track both original address and lookup address for native → WETH mapping
+      const requestsNeeded: Array<{
+        original: TokenPriceRequest;
+        lookup: TokenPriceRequest;
+      }> = [];
 
       if (attemptNumber === 1) {
         // First attempt: fetch prices for all token+chain combinations
-        requestsNeeded.push(
-          ...balances.map((b) => ({
-            tokenAddress: b.tokenAddress,
-            specificChain: b.specificChain,
-          })),
-        );
+        for (const b of balances) {
+          const lookupAddress = getTokenAddressForPriceLookup(
+            b.tokenAddress,
+            b.specificChain,
+          );
+          requestsNeeded.push({
+            original: {
+              tokenAddress: b.tokenAddress,
+              specificChain: b.specificChain,
+            },
+            lookup: {
+              tokenAddress: lookupAddress,
+              specificChain: b.specificChain,
+            },
+          });
+        }
       } else {
         // Subsequent attempts: only fetch token+chain combinations that don't have prices yet
         for (const balance of balances) {
@@ -285,9 +300,19 @@ export class PortfolioSnapshotterService {
             balance.specificChain,
           );
           if (balance.amount > 0 && priceMap.get(priceKey) == null) {
+            const lookupAddress = getTokenAddressForPriceLookup(
+              balance.tokenAddress,
+              balance.specificChain,
+            );
             requestsNeeded.push({
-              tokenAddress: balance.tokenAddress,
-              specificChain: balance.specificChain,
+              original: {
+                tokenAddress: balance.tokenAddress,
+                specificChain: balance.specificChain,
+              },
+              lookup: {
+                tokenAddress: lookupAddress,
+                specificChain: balance.specificChain,
+              },
             });
           }
         }
@@ -302,20 +327,33 @@ export class PortfolioSnapshotterService {
       }
 
       // Step 2: Fetch prices for token+chain combinations that need pricing
+      // Use lookup addresses (WETH for native tokens) for API request
       this.logger.debug(
         `[PortfolioSnapshotter] Fetching prices for ${requestsNeeded.length} token+chain combinations (attempt ${attemptNumber}/${maxRetries + 1})`,
       );
 
+      const lookupRequests = requestsNeeded.map((r) => r.lookup);
       const newPrices =
-        await this.priceTrackerService.getBulkPrices(requestsNeeded);
+        await this.priceTrackerService.getBulkPrices(lookupRequests);
 
-      // Merge new prices into our map (preserving existing successful prices)
-      for (const [mapKey, priceReport] of newPrices) {
+      // Merge new prices into our map using ORIGINAL address as key
+      // This ensures lookups using balance.tokenAddress work correctly
+      for (const request of requestsNeeded) {
+        const lookupKey = getPriceMapKey(
+          request.lookup.tokenAddress,
+          request.lookup.specificChain,
+        );
+        const originalKey = getPriceMapKey(
+          request.original.tokenAddress,
+          request.original.specificChain,
+        );
+        const priceReport = newPrices.get(lookupKey);
+
         if (priceReport) {
-          priceMap.set(mapKey, priceReport);
-        } else if (!priceMap.has(mapKey)) {
+          priceMap.set(originalKey, priceReport);
+        } else if (!priceMap.has(originalKey)) {
           // Set to null to track that we attempted to fetch this combination
-          priceMap.set(mapKey, null);
+          priceMap.set(originalKey, null);
         }
       }
 

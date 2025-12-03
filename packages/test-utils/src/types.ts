@@ -571,6 +571,24 @@ export interface Competition {
     reward: number;
     agentId?: string;
   }[];
+  // Spot live trading configuration
+  spotLiveConfig?: {
+    dataSource?: "rpc_direct" | "envio_indexing" | "hybrid";
+    dataSourceConfig?: Record<string, unknown>;
+    selfFundingThresholdUsd?: number;
+    minFundingThreshold?: number | null;
+    syncIntervalMinutes?: number;
+    chains?: SpecificChain[];
+    allowedProtocols?: Array<{
+      protocol: string;
+      specificChain: SpecificChain;
+    }>;
+    allowedTokens?: Array<{
+      address: string;
+      symbol: string;
+      specificChain: SpecificChain;
+    }>;
+  } | null;
 }
 
 // Leaderboard entry (per-competition leaderboard)
