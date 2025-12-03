@@ -1,5 +1,5 @@
 {
-  "id": "c41c11b1-bd6c-4a27-984c-6f3099c4a7cd",
+  "id": "05ad7c7b-658e-490b-b385-05f9ca3d8ce3",
   "prevId": "2bbf21af-ca68-4023-80e7-ae4f2fd9cfc5",
   "version": "7",
   "dialect": "postgresql",
@@ -5847,35 +5847,7 @@
           "default": "now()"
         }
       },
-      "indexes": {
-        "idx_sync_state_agent_comp_chain": {
-          "name": "idx_sync_state_agent_comp_chain",
-          "columns": [
-            {
-              "expression": "agent_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "competition_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "specific_chain",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
+      "indexes": {},
       "foreignKeys": {
         "spot_live_agent_sync_state_agent_id_agents_id_fk": {
           "name": "spot_live_agent_sync_state_agent_id_agents_id_fk",
@@ -5896,14 +5868,13 @@
           "onUpdate": "cascade"
         }
       },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "sync_state_unique": {
-          "name": "sync_state_unique",
-          "nullsNotDistinct": false,
+      "compositePrimaryKeys": {
+        "spot_live_agent_sync_state_agent_id_competition_id_specific_chain_pk": {
+          "name": "spot_live_agent_sync_state_agent_id_competition_id_specific_chain_pk",
           "columns": ["agent_id", "competition_id", "specific_chain"]
         }
       },
+      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false

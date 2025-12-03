@@ -7,6 +7,7 @@ import {
   jsonb,
   numeric,
   pgSchema,
+  primaryKey,
   serial,
   text,
   timestamp,
@@ -977,16 +978,10 @@ export const spotLiveAgentSyncState = tradingComps.table(
       .defaultNow(),
   },
   (table) => [
-    index("idx_sync_state_agent_comp_chain").on(
-      table.agentId,
-      table.competitionId,
-      table.specificChain,
-    ),
-    unique("sync_state_unique").on(
-      table.agentId,
-      table.competitionId,
-      table.specificChain,
-    ),
+    // Composite primary key - these 3 columns uniquely identify each sync state record
+    primaryKey({
+      columns: [table.agentId, table.competitionId, table.specificChain],
+    }),
   ],
 );
 

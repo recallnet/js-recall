@@ -7,7 +7,7 @@ CREATE TABLE "trading_comps"."spot_live_agent_sync_state" (
 	"specific_chain" varchar(20) NOT NULL,
 	"last_scanned_block" integer NOT NULL,
 	"last_scanned_at" timestamp with time zone DEFAULT now() NOT NULL,
-	CONSTRAINT "sync_state_unique" UNIQUE("agent_id","competition_id","specific_chain")
+	CONSTRAINT "spot_live_agent_sync_state_agent_id_competition_id_specific_chain_pk" PRIMARY KEY("agent_id","competition_id","specific_chain")
 );
 --> statement-breakpoint
 CREATE TABLE "trading_comps"."spot_live_allowed_protocols" (
@@ -119,7 +119,6 @@ ALTER TABLE "trading_comps"."spot_live_self_funding_alerts" ADD CONSTRAINT "spot
 ALTER TABLE "trading_comps"."spot_live_self_funding_alerts" ADD CONSTRAINT "spot_live_self_funding_alerts_reviewed_by_admins_id_fk" FOREIGN KEY ("reviewed_by") REFERENCES "public"."admins"("id") ON DELETE set null ON UPDATE cascade;--> statement-breakpoint
 ALTER TABLE "trading_comps"."spot_live_transfer_history" ADD CONSTRAINT "spot_live_transfer_history_agent_id_agents_id_fk" FOREIGN KEY ("agent_id") REFERENCES "public"."agents"("id") ON DELETE cascade ON UPDATE cascade;--> statement-breakpoint
 ALTER TABLE "trading_comps"."spot_live_transfer_history" ADD CONSTRAINT "spot_live_transfer_history_competition_id_competitions_id_fk" FOREIGN KEY ("competition_id") REFERENCES "public"."competitions"("id") ON DELETE cascade ON UPDATE cascade;--> statement-breakpoint
-CREATE INDEX "idx_sync_state_agent_comp_chain" ON "trading_comps"."spot_live_agent_sync_state" USING btree ("agent_id","competition_id","specific_chain");--> statement-breakpoint
 CREATE INDEX "idx_spot_live_protocols_competition_id" ON "trading_comps"."spot_live_allowed_protocols" USING btree ("competition_id");--> statement-breakpoint
 CREATE INDEX "idx_spot_live_protocols_chain" ON "trading_comps"."spot_live_allowed_protocols" USING btree ("competition_id","specific_chain");--> statement-breakpoint
 CREATE INDEX "idx_spot_live_tokens_competition_id" ON "trading_comps"."spot_live_allowed_tokens" USING btree ("competition_id");--> statement-breakpoint
