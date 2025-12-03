@@ -373,7 +373,7 @@ export function configureAgentsRoutes(
    *                       simpleReturn:
    *                         type: number
    *                         nullable: true
-   *                         description: Simple return (end value / start value - 1) - only for perps competitions
+   *                         description: Simple return (end value / start value - 1) - for perps and spot_live_trading competitions
    *                       maxDrawdown:
    *                         type: number
    *                         nullable: true
@@ -383,11 +383,11 @@ export function configureAgentsRoutes(
    *                         description: Whether risk metrics are available for this agent (perps only, requires 2+ snapshots)
    *                       competitionType:
    *                         type: string
-   *                         enum: ["trading", "perpetual_futures"]
+   *                         enum: ["trading", "perpetual_futures", "spot_live_trading"]
    *                         description: "Type of competition determining which metrics are available"
    *                       totalTrades:
    *                         type: integer
-   *                         description: "Total number of trades made by agent (only for paper trading competitions)"
+   *                         description: "Total number of trades made by agent (for paper trading and spot_live_trading competitions)"
    *                         example: 15
    *                       totalPositions:
    *                         type: integer

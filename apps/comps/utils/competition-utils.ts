@@ -255,3 +255,16 @@ export function checkIsPerpsCompetition(
 ): boolean {
   return type === "perpetual_futures";
 }
+
+/**
+ * Checks if a competition is a spot live trading competition.
+ * Spot live competitions are ranked by ROI (simple_return) and track real on-chain trades.
+ *
+ * @param type - The competition type from the API
+ * @returns True if the competition is spot live trading, false otherwise
+ */
+export function checkIsSpotLiveCompetition(
+  type: RouterOutputs["competitions"]["getById"]["type"],
+): boolean {
+  return type === "spot_live_trading";
+}

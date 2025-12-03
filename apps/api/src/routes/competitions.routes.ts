@@ -410,7 +410,7 @@ export function configureCompetitionsRoutes(
    *                       description: Competition status
    *                     type:
    *                       type: string
-   *                       enum: [trading, perpetual_futures]
+   *                       enum: [trading, perpetual_futures, spot_live_trading]
    *                       description: Competition type
    *                     crossChainTradingType:
    *                       type: string
@@ -432,11 +432,11 @@ export function configureCompetitionsRoutes(
    *                       properties:
    *                         competitionType:
    *                           type: string
-   *                           enum: ["trading", "perpetual_futures"]
+   *                           enum: ["trading", "perpetual_futures", "spot_live_trading"]
    *                           description: Type of competition determining which metrics are available
    *                         totalTrades:
    *                           type: number
-   *                           description: Total number of trades (only for paper trading competitions)
+   *                           description: Total number of trades (for paper trading and spot_live_trading competitions)
    *                         totalPositions:
    *                           type: number
    *                           description: Total number of positions (only for perpetual futures competitions)
@@ -455,7 +455,61 @@ export function configureCompetitionsRoutes(
    *                     evaluationMetric:
    *                       type: string
    *                       enum: [calmar_ratio, sortino_ratio, simple_return, max_drawdown, total_pnl]
-   *                       description: Primary evaluation metric for perps competitions (only present for perpetual_futures type)
+   *                       description: Primary evaluation metric (present for perpetual_futures and spot_live_trading types)
+   *                     spotLiveConfig:
+   *                       type: object
+   *                       nullable: true
+   *                       description: Spot live trading configuration (only present for spot_live_trading type)
+   *                       properties:
+   *                         dataSource:
+   *                           type: string
+   *                           enum: [rpc_direct, envio_indexing, hybrid]
+   *                           description: Data source type for tracking on-chain trades
+   *                         dataSourceConfig:
+   *                           type: object
+   *                           description: Data source configuration details
+   *                         selfFundingThresholdUsd:
+   *                           type: number
+   *                           description: Threshold for self-funding detection in USD
+   *                         minFundingThreshold:
+   *                           type: number
+   *                           nullable: true
+   *                           description: Minimum portfolio balance to start in competition (enforced at competition start)
+   *                         syncIntervalMinutes:
+   *                           type: number
+   *                           description: Interval in minutes between blockchain data syncs
+   *                         chains:
+   *                           type: array
+   *                           items:
+   *                             type: string
+   *                           description: Enabled blockchain networks for this competition
+   *                         allowedProtocols:
+   *                           type: array
+   *                           description: Allowed DeFi protocols for trading (empty array means all protocols allowed)
+   *                           items:
+   *                             type: object
+   *                             properties:
+   *                               protocol:
+   *                                 type: string
+   *                                 description: Protocol identifier (e.g., uniswap_v3, aerodrome)
+   *                               specificChain:
+   *                                 type: string
+   *                                 description: Chain the protocol is enabled on
+   *                         allowedTokens:
+   *                           type: array
+   *                           description: Allowed tokens for trading (empty array means all tokens allowed)
+   *                           items:
+   *                             type: object
+   *                             properties:
+   *                               address:
+   *                                 type: string
+   *                                 description: Token contract address
+   *                               symbol:
+   *                                 type: string
+   *                                 description: Token symbol (e.g., WETH, USDC)
+   *                               specificChain:
+   *                                 type: string
+   *                                 description: Chain the token is on
    *                     createdAt:
    *                       type: string
    *                       format: date-time
@@ -1034,8 +1088,8 @@ export function configureCompetitionsRoutes(
    *   get:
    *     tags:
    *       - Competition
-   *     summary: Get trades for a competition (Paper Trading Only)
-   *     description: Get all trades for a specific competition. Only available for paper trading competitions.
+   *     summary: Get trades for a competition
+   *     description: Get all trades for a specific competition. Available for paper trading and spot live trading competitions.
    *     security:
    *       - BearerAuth: []
    *     parameters:
@@ -1110,8 +1164,8 @@ export function configureCompetitionsRoutes(
    *   get:
    *     tags:
    *       - Competition
-   *     summary: Get trades for an agent in a competition (Paper Trading Only)
-   *     description: Get all trades for a specific agent in a specific competition. Only available for paper trading competitions.
+   *     summary: Get trades for an agent in a competition
+   *     description: Get all trades for a specific agent in a specific competition. Available for paper trading and spot live trading competitions.
    *     security:
    *       - BearerAuth: []
    *     parameters:

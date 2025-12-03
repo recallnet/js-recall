@@ -64,6 +64,7 @@
     "allocate-rewards": "tsx scripts/allocate-rewards.ts",
     "cron:portfolio-snapshot": "tsx scripts/take-portfolio-snapshots.ts",
     "cron:process-perps": "tsx scripts/process-perps-competitions.ts",
+    "cron:process-spot-live": "tsx scripts/process-spot-live-competitions.ts",
     "run:indexer": "tsx scripts/indexer.ts",
     "indexer:internal-tx-claims-update": "tsx scripts/backfill-internal-tx-claims --update",
     "indexer:internal-tx-claims-check": "tsx scripts/backfill-internal-tx-claims",
@@ -71,6 +72,7 @@
     "cron:auto-start-competitions": "tsx scripts/auto-start-competitions.ts",
     "cron:portfolio-snapshot:run-once": "tsx scripts/take-portfolio-snapshots.ts --run-once",
     "cron:process-perps:run-once": "tsx scripts/process-perps-competitions.ts --run-once",
+    "cron:process-spot-live:run-once": "tsx scripts/process-spot-live-competitions.ts --run-once",
     "cron:auto-end-competitions:run-once": "tsx scripts/auto-end-competitions.ts --run-once",
     "cron:auto-start-competitions:run-once": "tsx scripts/auto-start-competitions.ts --run-once",
     "cron:auto-calculate-rewards": "tsx scripts/auto-calculate-rewards.ts",
@@ -128,7 +130,6 @@
     "zod": "3.25.76"
   },
   "devDependencies": {
-    "@elizaos/core": "^0.25.9",
     "@openzeppelin/merkle-tree": "^1.0.8",
     "@recallnet/eslint-config": "workspace:^",
     "@recallnet/test-utils": "workspace:*",

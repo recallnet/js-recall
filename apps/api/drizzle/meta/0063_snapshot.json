@@ -1,5 +1,5 @@
 {
-  "id": "fe811757-2bc6-416f-a95a-b7bc71715801",
+  "id": "05ad7c7b-658e-490b-b385-05f9ca3d8ce3",
   "prevId": "2bbf21af-ca68-4023-80e7-ae4f2fd9cfc5",
   "version": "7",
   "dialect": "postgresql",
@@ -5811,6 +5811,74 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "trading_comps.spot_live_agent_sync_state": {
+      "name": "spot_live_agent_sync_state",
+      "schema": "trading_comps",
+      "columns": {
+        "agent_id": {
+          "name": "agent_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "competition_id": {
+          "name": "competition_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "specific_chain": {
+          "name": "specific_chain",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "last_scanned_block": {
+          "name": "last_scanned_block",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "last_scanned_at": {
+          "name": "last_scanned_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "spot_live_agent_sync_state_agent_id_agents_id_fk": {
+          "name": "spot_live_agent_sync_state_agent_id_agents_id_fk",
+          "tableFrom": "spot_live_agent_sync_state",
+          "tableTo": "agents",
+          "columnsFrom": ["agent_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        },
+        "spot_live_agent_sync_state_competition_id_competitions_id_fk": {
+          "name": "spot_live_agent_sync_state_competition_id_competitions_id_fk",
+          "tableFrom": "spot_live_agent_sync_state",
+          "tableTo": "competitions",
+          "columnsFrom": ["competition_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {
+        "spot_live_agent_sync_state_agent_id_competition_id_specific_chain_pk": {
+          "name": "spot_live_agent_sync_state_agent_id_competition_id_specific_chain_pk",
+          "columns": ["agent_id", "competition_id", "specific_chain"]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "trading_comps.spot_live_allowed_protocols": {
       "name": "spot_live_allowed_protocols",
       "schema": "trading_comps",
@@ -6157,7 +6225,7 @@
           "type": "integer",
           "primaryKey": false,
           "notNull": false,
-          "default": 5
+          "default": 2
         },
         "created_at": {
           "name": "created_at",
@@ -6197,6 +6265,82 @@
           "tableFrom": "spot_live_competition_config",
           "tableTo": "competitions",
           "columnsFrom": ["competition_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "trading_comps.spot_live_competitions_leaderboard": {
+      "name": "spot_live_competitions_leaderboard",
+      "schema": "trading_comps",
+      "columns": {
+        "competitions_leaderboard_id": {
+          "name": "competitions_leaderboard_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "simple_return": {
+          "name": "simple_return",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "pnl": {
+          "name": "pnl",
+          "type": "numeric(30, 15)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "starting_value": {
+          "name": "starting_value",
+          "type": "numeric(30, 15)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "current_value": {
+          "name": "current_value",
+          "type": "numeric(30, 15)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "total_trades": {
+          "name": "total_trades",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        }
+      },
+      "indexes": {
+        "idx_spot_live_competitions_leaderboard_return": {
+          "name": "idx_spot_live_competitions_leaderboard_return",
+          "columns": [
+            {
+              "expression": "simple_return",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "spot_live_competitions_leaderboard_competitions_leaderboard_id_competitions_leaderboard_id_fk": {
+          "name": "spot_live_competitions_leaderboard_competitions_leaderboard_id_competitions_leaderboard_id_fk",
+          "tableFrom": "spot_live_competitions_leaderboard",
+          "tableTo": "competitions_leaderboard",
+          "columnsFrom": ["competitions_leaderboard_id"],
           "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "cascade"
@@ -7048,7 +7192,13 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "trades_tx_hash_competition_agent_unique": {
+          "name": "trades_tx_hash_competition_agent_unique",
+          "nullsNotDistinct": false,
+          "columns": ["tx_hash", "competition_id", "agent_id"]
+        }
+      },
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false

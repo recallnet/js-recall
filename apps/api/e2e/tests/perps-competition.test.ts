@@ -1603,7 +1603,7 @@ describe("Perps Competition", () => {
     const errorResponse = violationsResponse as ErrorResponse;
     expect(errorResponse.status).toBe(400);
     expect(errorResponse.error).toContain(
-      "not a perpetual futures competition",
+      "perpetual futures and spot live trading",
     );
   });
 
@@ -3521,7 +3521,9 @@ describe("Perps Competition", () => {
     const joinErrorResponse = joinNoWalletResponse as ErrorResponse;
     expect(joinErrorResponse.status).toBe(400);
     expect(joinErrorResponse.error).toContain("wallet address");
-    expect(joinErrorResponse.error).toContain("perpetual futures");
+    expect(joinErrorResponse.error).toContain(
+      "participate in this competition",
+    );
 
     // Test 2: Agent WITH wallet should SUCCEED to join
     const joinWithWalletResponse = await agentWithWalletClient.joinCompetition(
@@ -3608,7 +3610,7 @@ describe("Perps Competition", () => {
     expect(addAgentResponse.success).toBe(false);
     const addErrorResponse = addAgentResponse as ErrorResponse;
     expect(addErrorResponse.error).toContain("wallet address");
-    expect(addErrorResponse.error).toContain("perpetual futures");
+    expect(addErrorResponse.error).toContain("participate in this competition");
 
     // Verify agent with wallet CAN be added by admin
     const { agent: agentWithWallet } = await registerUserAndAgentAndGetClient({
@@ -4443,7 +4445,7 @@ describe("Perps Competition", () => {
     expect(poorMetrics?.rank).toBeLessThan(3);
   });
 
-  test("should allow updating evaluation metric on active competition", async () => {
+  test("should reject updating evaluation metric on active competition", async () => {
     const adminClient = createTestClient(getBaseUrl());
     await adminClient.loginAsAdmin(adminApiKey);
 
@@ -4465,7 +4467,7 @@ describe("Perps Competition", () => {
     expect(competition.success).toBe(true);
     expect(competition.competition.status).toBe("active");
 
-    // Update evaluation metric while competition is active
+    // Attempt to update evaluation metric while competition is active
     const updateResponse = await adminClient.updateCompetition(
       competition.competition.id,
       {
@@ -4473,16 +4475,11 @@ describe("Perps Competition", () => {
       },
     );
 
-    // Verify update succeeded
-    expect(updateResponse.success).toBe(true);
-
-    // Verify the competition's metric was updated
-    const detailsResponse = await adminClient.getCompetition(
-      competition.competition.id,
+    // Verify update was rejected
+    expect(updateResponse.success).toBe(false);
+    expect((updateResponse as ErrorResponse).error).toContain(
+      "Cannot update perps configuration once competition has started",
     );
-    expect(detailsResponse.success).toBe(true);
-    const details = detailsResponse as CompetitionDetailResponse;
-    expect(details.competition.status).toBe("active");
   });
 
   test("should return empty timeline for competition with no snapshots", async () => {

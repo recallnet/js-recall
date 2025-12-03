@@ -19,7 +19,7 @@ export function configureTradeRoutes(
    *     tags:
    *       - Trade
    *     summary: Execute a trade (Paper Trading Only)
-   *     description: Execute a trade between two tokens. Only available during paper trading competitions.
+   *     description: Execute a trade between two tokens. Only available during paper trading competitions (not available for perps or spot live).
    *     security:
    *       - BearerAuth: []
    *     requestBody:
@@ -177,7 +177,7 @@ export function configureTradeRoutes(
    *     tags:
    *       - Trade
    *     summary: Get a quote for a trade (Paper Trading Only)
-   *     description: Get a quote for a potential trade between two tokens. Only available during paper trading competitions.
+   *     description: Get a quote for a potential trade between two tokens. Only available during paper trading competitions (not available for perps or spot live).
    *     security:
    *       - BearerAuth: []
    *     parameters:

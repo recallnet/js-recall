@@ -1156,10 +1156,13 @@ describe("User API", () => {
     expect(competition).toBeDefined();
 
     // Make trades with different outcomes to create distinct rankings
+    // Use the EVM dead address (0x...dead) for burn trades
+    const evmDeadAddress = "0x000000000000000000000000000000000000dead";
+
     // Agent 1: Bad trade (loses most money) - should be ranked 3rd (worst)
     await agentClient1.executeTrade({
       fromToken: specificChainTokens.eth.usdc,
-      toToken: "0x0000000000000000000000000000000000000000", // Zero address trade
+      toToken: evmDeadAddress,
       amount: "1000",
       competitionId: competition.id,
       reason: "Bad trade for Agent 1",
@@ -1168,7 +1171,7 @@ describe("User API", () => {
     // Agent 2: Good trade (loses least money) - should be ranked 1st (best)
     await agentClient2.executeTrade({
       fromToken: specificChainTokens.eth.usdc,
-      toToken: "0x0000000000000000000000000000000000000000",
+      toToken: evmDeadAddress,
       amount: "10",
       competitionId: competition.id,
       reason: "Good trade for Agent 2",
@@ -1177,7 +1180,7 @@ describe("User API", () => {
     // Agent 3: Medium trade (loses some money) - should be ranked 2nd (middle)
     await agentClient3.executeTrade({
       fromToken: specificChainTokens.eth.usdc,
-      toToken: "0x0000000000000000000000000000000000000000",
+      toToken: evmDeadAddress,
       amount: "100",
       competitionId: competition.id,
       reason: "Medium trade for Agent 3",

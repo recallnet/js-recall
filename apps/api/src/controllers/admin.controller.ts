@@ -34,6 +34,7 @@ import {
   AdminGetCompetitionSnapshotsQuerySchema,
   AdminGetCompetitionTransferViolationsParamsSchema,
   AdminGetPerformanceReportsQuerySchema,
+  AdminGetSpotLiveAlertsQuerySchema,
   AdminListAllAgentsQuerySchema,
   AdminListArenasQuerySchema,
   AdminListPartnersQuerySchema,
@@ -44,6 +45,8 @@ import {
   AdminRemoveAgentFromCompetitionBodySchema,
   AdminRemoveAgentFromCompetitionParamsSchema,
   AdminReplaceCompetitionPartnersSchema,
+  AdminReviewSpotLiveAlertBodySchema,
+  AdminReviewSpotLiveAlertParamsSchema,
   AdminRewardsAllocationSchema,
   AdminSetupSchema,
   AdminStartCompetitionSchema,
@@ -615,6 +618,7 @@ export function makeAdminController(services: ServiceRegistry) {
           rewards,
           evaluationMetric,
           perpsProvider,
+          spotLiveConfig,
           prizePools,
           rewardsIneligible,
           arenaId,
@@ -658,6 +662,7 @@ export function makeAdminController(services: ServiceRegistry) {
             rewards,
             evaluationMetric,
             perpsProvider,
+            spotLiveConfig,
             prizePools,
             rewardsIneligible,
             arenaId,
@@ -717,6 +722,7 @@ export function makeAdminController(services: ServiceRegistry) {
           rewards,
           evaluationMetric,
           perpsProvider,
+          spotLiveConfig,
           prizePools,
           rewardsIneligible,
           arenaId,
@@ -761,6 +767,7 @@ export function makeAdminController(services: ServiceRegistry) {
                   rewards,
                   evaluationMetric,
                   perpsProvider,
+                  spotLiveConfig,
                   prizePools,
                   rewardsIneligible,
                   arenaId: arenaId!, // Guaranteed by Zod refinement when creating new competition
@@ -840,9 +847,10 @@ export function makeAdminController(services: ServiceRegistry) {
           evaluationMetric,
           perpsProvider,
           prizePools,
+          spotLiveConfig,
           ...competitionUpdates
         } = flatParse(AdminUpdateCompetitionSchema, req.body);
-        // Extract rewards, tradingConstraints, evaluationMetric, and perpsProvider from the validated data
+        // Extract rewards, tradingConstraints, evaluationMetric, perpsProvider, and spotLiveConfig from the validated data
         const updates = competitionUpdates;
 
         // Check if there are any updates to apply
@@ -852,7 +860,8 @@ export function makeAdminController(services: ServiceRegistry) {
           !tradingConstraints &&
           !evaluationMetric &&
           !perpsProvider &&
-          !prizePools
+          !prizePools &&
+          !spotLiveConfig
         ) {
           throw new ApiError(400, "No valid fields provided for update");
         }
@@ -867,6 +876,7 @@ export function makeAdminController(services: ServiceRegistry) {
             evaluationMetric,
             perpsProvider,
             prizePools,
+            spotLiveConfig,
           );
 
         // Return the updated competition
@@ -943,6 +953,12 @@ export function makeAdminController(services: ServiceRegistry) {
           agentHandle: agentMap.get(entry.agentId)?.handle || "unknown_agent",
           ownerName: agentMap.get(entry.agentId)?.ownerName || "Unknown Owner",
           portfolioValue: entry.value,
+          pnl: entry.pnl,
+          // Spot live metrics (only present for spot_live_trading competitions)
+          simpleReturn: entry.simpleReturn ?? null,
+          startingValue: entry.startingValue ?? null,
+          currentValue: entry.currentValue ?? null,
+          totalTrades: entry.totalTrades ?? null,
         }));
 
         // Return performance report
@@ -1668,12 +1684,16 @@ export function makeAdminController(services: ServiceRegistry) {
           });
         }
 
-        // Validate wallet address for perps competitions
-        if (competition.type === "perpetual_futures" && !agent.walletAddress) {
+        // Validate wallet address for competitions requiring on-chain wallets
+        if (
+          (competition.type === "perpetual_futures" ||
+            competition.type === "spot_live_trading") &&
+          !agent.walletAddress
+        ) {
           return res.status(400).json({
             success: false,
             error:
-              "Agent must have a wallet address to participate in perpetual futures competitions",
+              "Agent must have a wallet address to participate in this competition",
           });
         }
 
@@ -1844,6 +1864,106 @@ export function makeAdminController(services: ServiceRegistry) {
         res.json({
           success: true,
           violations,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Get unreviewed self-funding alerts for a spot live competition
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async getSpotLiveSelfFundingAlerts(
+      req: Request,
+      res: Response,
+      next: NextFunction,
+    ) {
+      try {
+        const { competitionId } = flatParse(
+          AdminGetCompetitionTransferViolationsParamsSchema,
+          req.params,
+        );
+        const query = flatParse(AdminGetSpotLiveAlertsQuerySchema, req.query);
+
+        // Build filters for repository query
+        const filters: {
+          reviewed?: boolean;
+          violationType?: string;
+        } = {};
+
+        if (query.reviewed !== "all") {
+          filters.reviewed = query.reviewed === "true";
+        }
+
+        if (query.violationType && query.violationType !== "all") {
+          filters.violationType = query.violationType;
+        }
+
+        // Get alerts from service with SQL filtering
+        const alerts =
+          await services.competitionService.getSpotLiveSelfFundingAlerts(
+            competitionId,
+            filters,
+          );
+
+        res.json({
+          success: true,
+          alerts,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Review a spot live self-funding alert
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async reviewSpotLiveSelfFundingAlert(
+      req: Request,
+      res: Response,
+      next: NextFunction,
+    ) {
+      try {
+        const { competitionId, alertId } = flatParse(
+          AdminReviewSpotLiveAlertParamsSchema,
+          req.params,
+        );
+        const { reviewNote, actionTaken } = flatParse(
+          AdminReviewSpotLiveAlertBodySchema,
+          req.body,
+        );
+
+        // Update alert (service validates alert belongs to competition)
+        const adminId = req.adminId as string;
+        const updatedAlert =
+          await services.competitionService.reviewSpotLiveSelfFundingAlert(
+            competitionId,
+            alertId,
+            {
+              reviewed: true,
+              reviewedAt: new Date(),
+              reviewNote,
+              actionTaken,
+              reviewedBy: adminId,
+            },
+          );
+
+        if (!updatedAlert) {
+          return res.status(404).json({
+            success: false,
+            error: "Alert not found",
+          });
+        }
+
+        res.json({
+          success: true,
+          alert: updatedAlert,
         });
       } catch (error) {
         next(error);
