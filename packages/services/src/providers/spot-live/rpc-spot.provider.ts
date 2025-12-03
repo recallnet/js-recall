@@ -129,8 +129,10 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
   }
 
   /**
-   * Clear transfer cache (call before processing each agent)
-   * Prevents data mixing between agents
+   * Clear transfer cache
+   * WARNING: Do NOT call per-agent during concurrent processing - this clears ALL keys
+   * and causes race conditions. Cache keys are wallet-specific, so no clearing needed.
+   * Only call if reusing a provider instance across multiple competition syncs.
    */
   clearTransferCache(): void {
     this.transferCache.clear();

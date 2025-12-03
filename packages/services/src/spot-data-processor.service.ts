@@ -22,7 +22,6 @@ import {
 import { PortfolioSnapshotterService } from "./portfolio-snapshotter.service.js";
 import { PriceTrackerService } from "./price-tracker.service.js";
 import { SpotLiveProviderFactory } from "./providers/spot-live-provider.factory.js";
-import { RpcSpotProvider } from "./providers/spot-live/rpc-spot.provider.js";
 import { SpotLiveMonitoringService } from "./spot-live-monitoring.service.js";
 import {
   PriceReport,
@@ -471,11 +470,10 @@ export class SpotDataProcessor {
     const startTime = Date.now();
 
     try {
-      // Clear provider's transfer cache before processing this agent
-      // With unified sync state, this enables caching between getTradesSince and getTransferHistory
-      if ("clearTransferCache" in provider) {
-        (provider as RpcSpotProvider).clearTransferCache();
-      }
+      // Note: Transfer cache is NOT cleared per-agent because:
+      // 1. Cache keys are wallet-specific (walletAddress:chain:block)
+      // 2. Agents are processed concurrently - clearing would wipe other agents' data
+      // 3. Provider is ephemeral (created/discarded per competition sync)
 
       this.logger.info(
         `[SpotDataProcessor] Processing agent ${agentId} for competition ${competitionId}`,
