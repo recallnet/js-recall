@@ -62,6 +62,7 @@ describe("BoostRepository.recordStakeBoostAward() Integration Tests", () => {
     await db.insert(stakes).values({
       id: testStakeId,
       wallet: BlockchainAddressAsU8A.encode(testWallet),
+      walletAddress: testWallet.toLowerCase(),
       amount: 1000n,
       stakedAt: now,
       canUnstakeAfter: new Date(now.getTime() + 3600000),
@@ -183,6 +184,7 @@ describe("BoostRepository.recordStakeBoostAward() Integration Tests", () => {
       await db.insert(stakes).values({
         id: testStakeId2,
         wallet: BlockchainAddressAsU8A.encode(testWallet),
+        walletAddress: testWallet.toLowerCase(),
         amount: 2000n,
         stakedAt: now,
         canUnstakeAfter: new Date(now.getTime() + 3600000),

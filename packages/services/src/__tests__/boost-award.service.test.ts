@@ -334,6 +334,7 @@ describe("BoostAwardService", () => {
     ) => ({
       id,
       wallet: new Uint8Array(20), // 20-byte EVM address
+      walletAddress: testWallet.toLowerCase(),
       amount,
       stakedAt,
       canUnstakeAfter,
