@@ -119,7 +119,7 @@ Options:
   -h, --help      Show this help message
 
 Examples:
-  pnpm tsx generate-merkle-tree.ts --filename ./data/airdrop_2_2024-12-14T00:00:00Z.csv
+  pnpm tsx generate-merkle-tree.ts --filename airdrop_2_2024-12-14T00:00:00Z.csv
 `);
     process.exit(0);
   }
