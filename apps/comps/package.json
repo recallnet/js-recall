@@ -14,6 +14,7 @@
     "clean": "rm -rf .turbo .next node_modules",
     "test": "vitest run --project unit",
     "test:e2e": "vitest run --project e2e",
+    "test:e2e-vercel": "vitest run --project e2e-vercel",
     "test:coverage": "vitest run --project unit --coverage",
     "docs:check": "typedoc --emit none",
     "docs:build": "typedoc",

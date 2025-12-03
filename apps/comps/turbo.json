@@ -79,7 +79,8 @@
         "INDEXING_TRANSACTIONS_START_BLOCK",
 
         "SPORTSDATAIO_API_KEY",
-        "SPORTSDATAIO_BASE_URL"
+        "SPORTSDATAIO_BASE_URL",
+        "USE_EXTERNAL_SERVER"
       ]
     }
   }
