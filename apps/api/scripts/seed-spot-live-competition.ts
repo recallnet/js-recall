@@ -32,7 +32,6 @@
  * 1. Local API server running on http://localhost:3000
  * 2. Local database with proper schema (run migrations first)
  * 3. Valid admin API key (obtain from your local setup)
- * 4. Arena 'spot-live-trading' must exist in the database
  *
  * ================================================================================
  */
@@ -466,9 +465,57 @@ async function seedSpotLiveCompetition(): Promise<void> {
       );
     }
 
-    // Step 2: Create spot live competition using admin API
+    // =========================================================================
+    // Step 2: Create the spot live arena if it doesn't exist
+    // =========================================================================
     console.log(
-      `\n${colors.blue}Step 2: Creating spot live competition via admin API...${colors.reset}`,
+      `\n${colors.blue}Step 2: Creating spot live arena...${colors.reset}`,
+    );
+
+    interface CreateArenaResponse {
+      success: boolean;
+      arena?: { id: string; name: string };
+      error?: string;
+    }
+
+    try {
+      const arenaResponse = await apiRequest<CreateArenaResponse>(
+        "POST",
+        "/api/admin/arenas",
+        {
+          id: "spot-live-trading",
+          name: "Spot Live Trading Arena",
+          createdBy: "system",
+          category: "crypto_trading",
+          skill: "spot_live_trading",
+        },
+      );
+
+      if (arenaResponse.success) {
+        console.log(`  ✓ Created arena: spot-live-trading`);
+      } else {
+        console.log(`  ℹ Arena may already exist: ${arenaResponse.error}`);
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      // Check if it's a conflict (arena already exists)
+      if (
+        errorMessage.includes("409") ||
+        errorMessage.includes("already exists") ||
+        errorMessage.includes("duplicate")
+      ) {
+        console.log(`  ℹ Arena already exists (skipping creation)`);
+      } else {
+        console.log(`  ✗ Arena creation failed: ${errorMessage}`);
+        throw err; // Re-throw if it's not a "already exists" error
+      }
+    }
+
+    // =========================================================================
+    // Step 3: Create spot live competition via admin API
+    // =========================================================================
+    console.log(
+      `\n${colors.blue}Step 3: Creating spot live competition via admin API...${colors.reset}`,
     );
 
     const competitionName = `Test Spot Live Competition ${uniqueSuffix} ${Date.now()}`;
@@ -519,9 +566,9 @@ async function seedSpotLiveCompetition(): Promise<void> {
       `${colors.green}  ✓ Created competition: ${competitionName} (${competitionId})${colors.reset}`,
     );
 
-    // Step 3: Start the competition with agents
+    // Step 4: Start the competition with agents
     console.log(
-      `\n${colors.blue}Step 3: Starting competition with agents via admin API...${colors.reset}`,
+      `\n${colors.blue}Step 4: Starting competition with agents via admin API...${colors.reset}`,
     );
 
     interface StartCompetitionResponse {
@@ -548,9 +595,9 @@ async function seedSpotLiveCompetition(): Promise<void> {
       `${colors.green}  ✓ Competition started with ${createdAgentIds.length} agents${colors.reset}`,
     );
 
-    // Step 4: Seed trades, balances, and snapshots directly in database
+    // Step 5: Seed trades, balances, and snapshots directly in database
     console.log(
-      `\n${colors.blue}Step 4: Seeding trades, balances, and portfolio snapshots...${colors.reset}`,
+      `\n${colors.blue}Step 5: Seeding trades, balances, and portfolio snapshots...${colors.reset}`,
     );
 
     await db.transaction(async () => {
