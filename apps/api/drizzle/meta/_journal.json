@@ -442,13 +442,6 @@
       "when": 1763556336527,
       "tag": "0062_yummy_paladin",
       "breakpoints": true
-    },
-    {
-      "idx": 63,
-      "version": "7",
-      "when": 1764784957080,
-      "tag": "0063_busy_sleepwalker",
-      "breakpoints": true
     }
   ]
 }
