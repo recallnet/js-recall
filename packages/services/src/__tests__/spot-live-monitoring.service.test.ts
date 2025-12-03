@@ -1,7 +1,6 @@
 import { Logger } from "pino";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { SpotLiveRepository } from "@recallnet/db/repositories/spot-live";
 import type {
   SelectSpotLiveCompetitionConfig,
@@ -19,10 +18,6 @@ class MockSpotLiveRepository {
   getSpotLiveCompetitionConfig = vi.fn();
 }
 
-class MockCompetitionRepository {
-  getBoundedSnapshots = vi.fn();
-}
-
 class MockLogger {
   info = vi.fn();
   debug = vi.fn();
@@ -33,7 +28,6 @@ class MockLogger {
 describe("SpotLiveMonitoringService", () => {
   let service: SpotLiveMonitoringService;
   let mockSpotLiveRepo: MockSpotLiveRepository;
-  let mockCompetitionRepo: MockCompetitionRepository;
   let mockLogger: MockLogger;
 
   const competitionStartDate = new Date("2024-01-01");
@@ -78,7 +72,6 @@ describe("SpotLiveMonitoringService", () => {
     vi.clearAllMocks();
 
     mockSpotLiveRepo = new MockSpotLiveRepository();
-    mockCompetitionRepo = new MockCompetitionRepository();
     mockLogger = new MockLogger();
 
     // Default repository mocks
@@ -90,27 +83,9 @@ describe("SpotLiveMonitoringService", () => {
     mockSpotLiveRepo.getSpotLiveCompetitionConfig.mockResolvedValue(
       sampleSpotLiveConfig,
     );
-    // Default: Small variance to avoid triggering reconciliation alerts in transfer tests
-    mockCompetitionRepo.getBoundedSnapshots.mockResolvedValue({
-      oldest: {
-        id: 1,
-        agentId: "agent-1",
-        competitionId: "comp-1",
-        timestamp: new Date("2024-01-01"),
-        totalValue: 10000,
-      },
-      newest: {
-        id: 2,
-        agentId: "agent-1",
-        competitionId: "comp-1",
-        timestamp: new Date("2024-01-15"),
-        totalValue: 10050,
-      }, // $50 variance (< $100 threshold)
-    });
 
     service = new SpotLiveMonitoringService(
       mockSpotLiveRepo as unknown as SpotLiveRepository,
-      mockCompetitionRepo as unknown as CompetitionRepository,
       mockLogger as unknown as Logger,
     );
   });
@@ -119,14 +94,12 @@ describe("SpotLiveMonitoringService", () => {
     it("should initialize with default thresholds", () => {
       const testService = new SpotLiveMonitoringService(
         mockSpotLiveRepo as unknown as SpotLiveRepository,
-        mockCompetitionRepo as unknown as CompetitionRepository,
         mockLogger as unknown as Logger,
       );
       expect(testService).toBeDefined();
       expect(mockLogger.info).toHaveBeenCalledWith(
         expect.objectContaining({
           config: expect.objectContaining({
-            reconciliationThreshold: 100,
             criticalAmountThreshold: 500,
           }),
         }),
@@ -136,12 +109,10 @@ describe("SpotLiveMonitoringService", () => {
 
     it("should accept custom thresholds", () => {
       const customConfig = {
-        reconciliationThreshold: 200,
         criticalAmountThreshold: 1000,
       };
       const testService = new SpotLiveMonitoringService(
         mockSpotLiveRepo as unknown as SpotLiveRepository,
-        mockCompetitionRepo as unknown as CompetitionRepository,
         mockLogger as unknown as Logger,
         customConfig,
       );
@@ -217,11 +188,10 @@ describe("SpotLiveMonitoringService", () => {
           competitionEndDate,
         );
 
-        // Should not fetch transfers or snapshots since agent is skipped
+        // Should not fetch transfers since agent is skipped
         expect(
           mockSpotLiveRepo.getAgentSpotLiveTransfers,
         ).not.toHaveBeenCalled();
-        expect(mockCompetitionRepo.getBoundedSnapshots).not.toHaveBeenCalled();
         expect(result.successful[0]?.alerts).toHaveLength(0);
       });
 
@@ -230,10 +200,10 @@ describe("SpotLiveMonitoringService", () => {
           id: "alert-1",
           agentId: "agent-1",
           competitionId: "comp-1",
-          detectionMethod: "balance_reconciliation",
+          detectionMethod: "transfer_history",
           violationType: "deposit",
           detectedValue: "11000",
-          thresholdValue: "10100",
+          thresholdValue: "0",
           specificChain: null,
           txHash: null,
           transferSnapshot: {},
@@ -551,25 +521,6 @@ describe("SpotLiveMonitoringService", () => {
         mockSpotLiveRepo.batchGetAgentsSpotLiveSelfFundingAlerts.mockResolvedValue(
           new Map(),
         );
-        mockSpotLiveRepo.getAgentSpotLiveTransfers.mockResolvedValue([
-          sampleTransfer, // $500
-        ]);
-        mockCompetitionRepo.getBoundedSnapshots.mockResolvedValue({
-          oldest: {
-            id: 1,
-            agentId: "agent-1",
-            competitionId: "comp-1",
-            timestamp: new Date("2024-01-01"),
-            totalValue: 10000,
-          },
-          newest: {
-            id: 2,
-            agentId: "agent-1",
-            competitionId: "comp-1",
-            timestamp: new Date("2024-01-15"),
-            totalValue: 10500,
-          },
-        });
 
         const largeTransfer: SelectSpotLiveTransferHistory = {
           ...sampleTransfer,
@@ -641,301 +592,9 @@ describe("SpotLiveMonitoringService", () => {
           competitionEndDate,
         );
 
-        // Should still check reconciliation (error logged, no throw)
-        expect(mockCompetitionRepo.getBoundedSnapshots).toHaveBeenCalled();
-        expect(result.successful).toHaveLength(1);
-      });
-    });
-
-    describe("balance reconciliation", () => {
-      it("should detect unexplained balance increase", async () => {
-        // Mock snapshots with large unexplained increase
-        mockCompetitionRepo.getBoundedSnapshots.mockResolvedValue({
-          oldest: {
-            id: 1,
-            agentId: "agent-1",
-            competitionId: "comp-1",
-            timestamp: new Date("2024-01-01"),
-            totalValue: 10000,
-          },
-          newest: {
-            id: 2,
-            agentId: "agent-1",
-            competitionId: "comp-1",
-            timestamp: new Date("2024-01-15"),
-            totalValue: 11500, // $1500 increase
-          },
-        });
-
-        const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
-
-        const result = await service.monitorAgents(
-          agents,
-          "comp-1",
-          competitionStartDate,
-          competitionEndDate,
-        );
-
-        // Unexplained: 1500 (above $100 threshold)
-        expect(result.totalAlertsCreated).toBe(1);
-        expect(
-          mockSpotLiveRepo.batchCreateSpotLiveSelfFundingAlerts,
-        ).toHaveBeenCalledWith(
-          expect.arrayContaining([
-            expect.objectContaining({
-              detectionMethod: "balance_reconciliation",
-              detectedValue: "11500",
-              thresholdValue: "10100", // Starting + threshold
-            }),
-          ]),
-        );
-      });
-
-      it("should NOT alert if within reconciliation threshold", async () => {
-        // Mock snapshots with small variance (price fluctuation)
-        mockCompetitionRepo.getBoundedSnapshots.mockResolvedValue({
-          oldest: {
-            id: 1,
-            agentId: "agent-1",
-            competitionId: "comp-1",
-            timestamp: new Date("2024-01-01"),
-            totalValue: 10000,
-          },
-          newest: {
-            id: 2,
-            agentId: "agent-1",
-            competitionId: "comp-1",
-            timestamp: new Date("2024-01-15"),
-            totalValue: 10050, // Only $50 increase
-          },
-        });
-
-        const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
-
-        const result = await service.monitorAgents(
-          agents,
-          "comp-1",
-          competitionStartDate,
-          competitionEndDate,
-        );
-
-        // $50 is below $100 threshold - no alert
-        expect(result.totalAlertsCreated).toBe(0);
-      });
-
-      it("should handle negative unexplained amounts (absolute value)", async () => {
-        // Mock snapshots with decrease (possible withdrawal or losses)
-        mockCompetitionRepo.getBoundedSnapshots.mockResolvedValue({
-          oldest: {
-            id: 1,
-            agentId: "agent-1",
-            competitionId: "comp-1",
-            timestamp: new Date("2024-01-01"),
-            totalValue: 10000,
-          },
-          newest: {
-            id: 2,
-            agentId: "agent-1",
-            competitionId: "comp-1",
-            timestamp: new Date("2024-01-15"),
-            totalValue: 9700, // $300 decrease
-          },
-        });
-
-        const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
-
-        const result = await service.monitorAgents(
-          agents,
-          "comp-1",
-          competitionStartDate,
-          competitionEndDate,
-        );
-
-        // -$300 is > $100 threshold (absolute value)
-        expect(result.totalAlertsCreated).toBe(1);
-        expect(
-          mockSpotLiveRepo.batchCreateSpotLiveSelfFundingAlerts,
-        ).toHaveBeenCalledWith(
-          expect.arrayContaining([
-            expect.objectContaining({
-              detectionMethod: "balance_reconciliation",
-              violationType: "withdrawal_exceeds_limit", // Negative = withdrawal
-            }),
-          ]),
-        );
-      });
-
-      it("should handle missing snapshots gracefully", async () => {
-        mockCompetitionRepo.getBoundedSnapshots.mockResolvedValue(null);
-
-        const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
-
-        const result = await service.monitorAgents(
-          agents,
-          "comp-1",
-          competitionStartDate,
-          competitionEndDate,
-        );
-
-        // No reconciliation alert (no snapshots)
-        // Should still succeed (no throw)
+        // Error is logged but doesn't throw - agent is still processed
         expect(result.successful).toHaveLength(1);
         expect(result.totalAlertsCreated).toBe(0);
-      });
-
-      it("should set confidence based on critical threshold", async () => {
-        // Test medium confidence (below $500 critical)
-        mockCompetitionRepo.getBoundedSnapshots.mockResolvedValue({
-          oldest: {
-            id: 1,
-            agentId: "agent-1",
-            competitionId: "comp-1",
-            timestamp: new Date("2024-01-01"),
-            totalValue: 10000,
-          },
-          newest: {
-            id: 2,
-            agentId: "agent-1",
-            competitionId: "comp-1",
-            timestamp: new Date("2024-01-15"),
-            totalValue: 10300, // $300 increase (< $500)
-          },
-        });
-
-        const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
-
-        await service.monitorAgents(
-          agents,
-          "comp-1",
-          competitionStartDate,
-          competitionEndDate,
-        );
-
-        expect(
-          mockSpotLiveRepo.batchCreateSpotLiveSelfFundingAlerts,
-        ).toHaveBeenCalledWith(
-          expect.arrayContaining([
-            expect.objectContaining({
-              transferSnapshot: expect.objectContaining({
-                confidence: "medium", // Below critical threshold
-                severity: "warning",
-              }),
-            }),
-          ]),
-        );
-
-        // Reset and test high confidence (above $500)
-        vi.clearAllMocks();
-        mockSpotLiveRepo.batchGetAgentsSpotLiveSelfFundingAlerts.mockResolvedValue(
-          new Map(),
-        );
-        mockSpotLiveRepo.getAgentSpotLiveTransfers.mockResolvedValue([]);
-        mockCompetitionRepo.getBoundedSnapshots.mockResolvedValue({
-          oldest: {
-            id: 1,
-            agentId: "agent-1",
-            competitionId: "comp-1",
-            timestamp: new Date("2024-01-01"),
-            totalValue: 10000,
-          },
-          newest: {
-            id: 2,
-            agentId: "agent-1",
-            competitionId: "comp-1",
-            timestamp: new Date("2024-01-15"),
-            totalValue: 11000, // $1000 increase (> $500)
-          },
-        });
-
-        await service.monitorAgents(
-          agents,
-          "comp-1",
-          competitionStartDate,
-          competitionEndDate,
-        );
-
-        expect(
-          mockSpotLiveRepo.batchCreateSpotLiveSelfFundingAlerts,
-        ).toHaveBeenCalledWith(
-          expect.arrayContaining([
-            expect.objectContaining({
-              transferSnapshot: expect.objectContaining({
-                confidence: "high", // Above critical threshold
-                severity: "critical",
-              }),
-            }),
-          ]),
-        );
-      });
-
-      it("should handle snapshot fetch error gracefully", async () => {
-        mockCompetitionRepo.getBoundedSnapshots.mockRejectedValue(
-          new Error("Database error"),
-        );
-
-        const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
-
-        const result = await service.monitorAgents(
-          agents,
-          "comp-1",
-          competitionStartDate,
-          competitionEndDate,
-        );
-
-        // Should still succeed (error logged, no throw)
-        expect(result.successful).toHaveLength(1);
-        expect(result.totalAlertsCreated).toBe(0);
-      });
-    });
-
-    describe("multiple detection methods", () => {
-      it("should create alerts from both transfer and reconciliation", async () => {
-        // Setup transfer detection
-        mockSpotLiveRepo.getAgentSpotLiveTransfers.mockResolvedValue([
-          sampleTransfer, // $500 deposit
-        ]);
-
-        // Setup reconciliation detection
-        mockCompetitionRepo.getBoundedSnapshots.mockResolvedValue({
-          oldest: {
-            id: 1,
-            agentId: "agent-1",
-            competitionId: "comp-1",
-            timestamp: new Date("2024-01-01"),
-            totalValue: 10000,
-          },
-          newest: {
-            id: 2,
-            agentId: "agent-1",
-            competitionId: "comp-1",
-            timestamp: new Date("2024-01-15"),
-            totalValue: 11000, // $1000 unexplained
-          },
-        });
-
-        const agents = [{ agentId: "agent-1", walletAddress: "0x123" }];
-
-        const result = await service.monitorAgents(
-          agents,
-          "comp-1",
-          competitionStartDate,
-          competitionEndDate,
-        );
-
-        // Should create 2 alerts (one from each method)
-        expect(result.totalAlertsCreated).toBe(2);
-        expect(
-          mockSpotLiveRepo.batchCreateSpotLiveSelfFundingAlerts,
-        ).toHaveBeenCalledWith(
-          expect.arrayContaining([
-            expect.objectContaining({
-              detectionMethod: "transfer_history",
-            }),
-            expect.objectContaining({
-              detectionMethod: "balance_reconciliation",
-            }),
-          ]),
-        );
       });
     });
 
@@ -962,13 +621,10 @@ describe("SpotLiveMonitoringService", () => {
           mockSpotLiveRepo.batchGetAgentsSpotLiveSelfFundingAlerts,
         ).toHaveBeenCalledWith(["agent-1", "agent-2", "agent-3"], "comp-1");
 
-        // Should process each agent
+        // Should process each agent's transfers
         expect(
           mockSpotLiveRepo.getAgentSpotLiveTransfers,
         ).toHaveBeenCalledTimes(3);
-        expect(mockCompetitionRepo.getBoundedSnapshots).toHaveBeenCalledTimes(
-          3,
-        );
       });
 
       it("should handle graceful degradation when transfer fetch fails", async () => {
@@ -978,10 +634,10 @@ describe("SpotLiveMonitoringService", () => {
           { agentId: "agent-3", walletAddress: "0x333" },
         ];
 
-        // Agent 2's transfer fetch fails, but monitoring continues with reconciliation
+        // Agent 2's transfer fetch fails, but monitoring continues
         mockSpotLiveRepo.getAgentSpotLiveTransfers
           .mockResolvedValueOnce([]) // agent-1: success
-          .mockRejectedValueOnce(new Error("Database timeout")) // agent-2: transfer fails, but continues
+          .mockRejectedValueOnce(new Error("Database timeout")) // agent-2: transfer fails
           .mockResolvedValueOnce([]); // agent-3: success
 
         const result = await service.monitorAgents(
@@ -995,10 +651,7 @@ describe("SpotLiveMonitoringService", () => {
         expect(result.successful).toHaveLength(3);
         expect(result.failed).toHaveLength(0);
 
-        // Agent 2 still had reconciliation check run (transfer error was logged)
-        expect(mockCompetitionRepo.getBoundedSnapshots).toHaveBeenCalledTimes(
-          3,
-        );
+        // Transfer error was logged
         expect(mockLogger.error).toHaveBeenCalledWith(
           expect.any(Object),
           expect.stringContaining("Error checking transfer history"),

@@ -1209,7 +1209,6 @@ export class SpotDataProcessor {
 
         const monitoring = new SpotLiveMonitoringService(
           this.spotLiveRepo,
-          this.competitionRepo,
           this.logger,
         );
 
