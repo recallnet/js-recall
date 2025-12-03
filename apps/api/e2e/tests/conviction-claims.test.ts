@@ -19,13 +19,16 @@ describe("ConvictionClaimsRepository", () => {
     await db.delete(convictionClaims);
 
     // Ensure Genesis season exists (in case it was deleted by resetDatabase)
+    const startDate = new Date("2025-10-13T00:00:00Z");
+    const endDate = new Date(startDate.getTime() + 30 * 24 * 60 * 60 * 1000);
     await db
       .insert(seasons)
       .values({
         id: 0,
         number: 0,
         name: "Genesis",
-        startDate: new Date("2025-10-13T00:00:00Z"),
+        startDate,
+        endDate,
       })
       .onConflictDoNothing();
 

@@ -84,54 +84,6 @@ const parseBooleanFromCsv = (value: string | undefined): boolean => {
   return value === "1" || value?.toLowerCase() === "true";
 };
 
-// Helper function to prompt user for confirmation
-// async function promptUser(question: string): Promise<boolean> {
-//   const rl = readline.createInterface({
-//     input: process.stdin,
-//     output: process.stdout,
-//   });
-
-//   return new Promise((resolve) => {
-//     rl.question(question, (answer) => {
-//       rl.close();
-//       resolve(answer.toLowerCase() === "y" || answer.toLowerCase() === "yes");
-//     });
-//   });
-// }
-
-// TODO: in the airdrop app we can nuke the db and reload from the csv because
-//  the data is fixed. Now we are going to update the airdrop each month. need
-//  to figure out if this nuke and reload strat will continue to work.
-// async function clearExistingData(): Promise<void> {
-//   console.log("🗑️  Clearing existing data...");
-//   try {
-//     // Clear allocations table
-//     await db.delete(schema.airdropAllocations);
-//   } catch (err) {
-//     console.log("could not delete airdrop_allocations table:", err);
-//     // Ask for confirmation before clearing allocations table
-//     const confirmAllocations = await promptUser(
-//       "⚠️  Do you want to continue even though the airdrop_allocations table cannot be deleted? (y/n): ",
-//     );
-//     if (!confirmAllocations) {
-//       throw err;
-//     }
-//   }
-//   try {
-//     // Clear metadata table
-//     await db.delete(schema.merkleMetadata);
-//   } catch (err) {
-//     console.log("could not delete merkle_metadata table:", err);
-//     const confirmMetadata = await promptUser(
-//       "⚠️  Do you want to continue even though the merkle_metadata table cannot be deleted? (y/n): ",
-//     );
-//     if (!confirmMetadata) {
-//       throw err;
-//     }
-//   }
-//   console.log("✅ Existing data cleared");
-// }
-
 // Create repository instance
 const airdropRepository = new AirdropRepository(
   db,
@@ -148,11 +100,6 @@ function processAirdropFile(): Promise<void> {
         short: "f",
         description: "CSV filename to process",
       },
-      nextName: {
-        type: "string",
-        short: "n",
-        description: "Next season name",
-      },
       help: {
         type: "boolean",
         short: "h",
@@ -165,15 +112,14 @@ function processAirdropFile(): Promise<void> {
     console.log(`
 ${colors.cyan}Generate Merkle Tree for Next Season Eligibility for Conviction Claims Airdrop${colors.reset}
 
-Usage: pnpm generate-merkle-tree.ts --filename <filename> --nextName <next-season-name>
+Usage: pnpm generate-merkle-tree.ts --filename <filename>
 
 Options:
   -f, --filename  CSV filename, relative to ./scripts/data/, to process with format airdrop_<season-number>_<iso-timestamp>.csv (required)
-  -n, --nextName  Next season name (required)
   -h, --help      Show this help message
 
 Examples:
-  pnpm tsx generate-merkle-tree.ts --filename ./data/airdrop_2_2024-12-31T00:00:00Z.csv --nextName "January 2025"
+  pnpm tsx generate-merkle-tree.ts --filename airdrop_2_2024-12-14T00:00:00Z.csv
 `);
     process.exit(0);
   }
@@ -181,11 +127,6 @@ Examples:
   // Validate arguments
   if (!values.filename) {
     console.error(`${colors.red}Error: --filename is required${colors.reset}`);
-    process.exit(1);
-  }
-
-  if (!values.nextName) {
-    console.error(`${colors.red}Error: --nextName is required${colors.reset}`);
     process.exit(1);
   }
 
@@ -197,7 +138,6 @@ Examples:
 
   const airdropString = filenameParts[1]!;
   const timestampString = filenameParts[2]!.replace(".csv", "");
-  const nextSeasonName = values.nextName;
 
   const airdropNumber = parseInt(airdropString);
   if (isNaN(airdropNumber) || airdropNumber < 0) {
@@ -377,17 +317,7 @@ Examples:
           // Save to database using repository
           console.log("💾 Saving to database...");
 
-          // TODO: Add clearAllData method to repository if you want to clear existing data first
-
           await db.transaction(async (tx) => {
-            await airdropRepository.newSeason(
-              {
-                number: airdropNumber,
-                startDate: referenceTime,
-                name: nextSeasonName,
-              },
-              tx,
-            );
             await airdropRepository.insertAllocationsBatch(
               allocations,
               undefined,
