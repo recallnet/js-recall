@@ -184,11 +184,33 @@ describe("Spot Live Competition", () => {
       agentWalletAddress: "0x1111111111111111111111111111111111111111",
     });
 
-    // Start a spot live competition
+    // Start a spot live competition with protocols and tokens configured
     const response = await startSpotLiveTestCompetition({
       adminClient,
       name: `Spot Live Detail Test ${Date.now()}`,
       agentIds: [agent1.id],
+      spotLiveConfig: {
+        dataSource: "rpc_direct" as const,
+        dataSourceConfig: {
+          type: "rpc_direct" as const,
+          provider: "alchemy" as const,
+          chains: ["base"],
+        },
+        chains: ["base"],
+        allowedProtocols: [{ protocol: "aerodrome", chain: "base" }],
+        allowedTokens: [
+          {
+            address: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+            specificChain: "base",
+          },
+          {
+            address: "0x4200000000000000000000000000000000000006",
+            specificChain: "base",
+          },
+        ],
+        selfFundingThresholdUsd: 10,
+        syncIntervalMinutes: 2,
+      },
     });
 
     expect(response.success).toBe(true);
@@ -207,6 +229,24 @@ describe("Spot Live Competition", () => {
     const comp = typedDetailResponse.competition as EnhancedCompetition;
     expect(comp.stats?.totalAgents).toBeDefined();
     expect(comp.stats?.totalTrades).toBeDefined();
+
+    // Verify spotLiveConfig includes allowedProtocols and allowedTokens
+    expect(comp.spotLiveConfig).toBeDefined();
+    expect(comp.spotLiveConfig?.allowedProtocols).toBeDefined();
+    expect(comp.spotLiveConfig?.allowedProtocols?.length).toBe(1);
+    expect(comp.spotLiveConfig?.allowedProtocols?.[0]).toMatchObject({
+      protocol: "aerodrome",
+      specificChain: "base",
+    });
+
+    expect(comp.spotLiveConfig?.allowedTokens).toBeDefined();
+    expect(comp.spotLiveConfig?.allowedTokens?.length).toBe(2);
+    expect(comp.spotLiveConfig?.allowedTokens?.[0]).toMatchObject({
+      address: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+      specificChain: "base",
+    });
+    // Verify symbol is included in allowedTokens response
+    expect(comp.spotLiveConfig?.allowedTokens?.[0]?.symbol).toBeDefined();
   });
 
   test("should detect Aerodrome swaps and update agent balances", async () => {

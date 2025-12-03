@@ -182,7 +182,13 @@ interface SpotLiveConfigResponse {
   selfFundingThresholdUsd: number;
   minFundingThreshold: number | null;
   syncIntervalMinutes: number;
-  chains: string[];
+  chains: SpecificChain[];
+  allowedProtocols: Array<{ protocol: string; specificChain: SpecificChain }>;
+  allowedTokens: Array<{
+    address: string;
+    symbol: string;
+    specificChain: SpecificChain;
+  }>;
 }
 
 /**
@@ -4232,10 +4238,15 @@ export class CompetitionService {
         evaluationMetric = "simple_return";
 
         // Fetch spot live config
-        const [rawConfig, chains] = await Promise.all([
-          this.spotLiveRepo.getSpotLiveCompetitionConfig(params.competitionId),
-          this.spotLiveRepo.getEnabledChains(params.competitionId),
-        ]);
+        const [rawConfig, chains, allowedProtocols, allowedTokens] =
+          await Promise.all([
+            this.spotLiveRepo.getSpotLiveCompetitionConfig(
+              params.competitionId,
+            ),
+            this.spotLiveRepo.getEnabledChains(params.competitionId),
+            this.spotLiveRepo.getAllowedProtocols(params.competitionId),
+            this.spotLiveRepo.getAllowedTokens(params.competitionId),
+          ]);
 
         if (rawConfig) {
           spotLiveConfig = {
@@ -4252,6 +4263,15 @@ export class CompetitionService {
               : null,
             syncIntervalMinutes: rawConfig.syncIntervalMinutes ?? 2, // Default interval
             chains,
+            allowedProtocols: allowedProtocols.map((p) => ({
+              protocol: p.protocol,
+              specificChain: p.specificChain,
+            })),
+            allowedTokens: allowedTokens.map((t) => ({
+              address: t.tokenAddress,
+              symbol: t.tokenSymbol,
+              specificChain: t.specificChain,
+            })),
           };
         }
       }

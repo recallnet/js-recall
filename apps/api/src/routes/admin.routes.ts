@@ -2263,6 +2263,33 @@ export function configureAdminRoutes(
    *                           items:
    *                             type: string
    *                           description: Enabled blockchain networks for this competition
+   *                         allowedProtocols:
+   *                           type: array
+   *                           description: Allowed DeFi protocols for trading (empty array means all protocols allowed)
+   *                           items:
+   *                             type: object
+   *                             properties:
+   *                               protocol:
+   *                                 type: string
+   *                                 description: Protocol identifier (e.g., uniswap_v3, aerodrome)
+   *                               specificChain:
+   *                                 type: string
+   *                                 description: Chain the protocol is enabled on
+   *                         allowedTokens:
+   *                           type: array
+   *                           description: Allowed tokens for trading (empty array means all tokens allowed)
+   *                           items:
+   *                             type: object
+   *                             properties:
+   *                               address:
+   *                                 type: string
+   *                                 description: Token contract address
+   *                               symbol:
+   *                                 type: string
+   *                                 description: Token symbol (e.g., WETH, USDC)
+   *                               specificChain:
+   *                                 type: string
+   *                                 description: Chain the token is on
    *       400:
    *         description: Bad request - Missing competitionId, no valid fields provided, attempting to update restricted fields (startDate, endDate, status), missing perpsProvider when changing type to perpetual_futures, or missing spotLiveConfig when changing type to spot_live_trading
    *       401:

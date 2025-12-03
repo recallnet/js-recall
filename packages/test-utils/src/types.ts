@@ -578,9 +578,16 @@ export interface Competition {
     selfFundingThresholdUsd?: number;
     minFundingThreshold?: number | null;
     syncIntervalMinutes?: number;
-    chains?: string[];
-    allowedProtocols?: Array<{ protocol: string; chain: string }>;
-    allowedTokens?: Array<{ address: string; specificChain: string }>;
+    chains?: SpecificChain[];
+    allowedProtocols?: Array<{
+      protocol: string;
+      specificChain: SpecificChain;
+    }>;
+    allowedTokens?: Array<{
+      address: string;
+      symbol: string;
+      specificChain: SpecificChain;
+    }>;
   } | null;
 }
 
