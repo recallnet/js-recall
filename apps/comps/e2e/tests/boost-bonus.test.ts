@@ -372,12 +372,12 @@ describe("Bonus Boosts E2E", () => {
 
       expect(zeroResponse.error).toContain("positive");
 
-      // Test: Amount exceeding maximum (1 token = 10^18) should be rejected
+      // Test: Amount exceeding maximum (1 million boost = 10^24) should be rejected
       const largeAmountResponse = await adminClient.addBonusBoosts({
         boosts: [
           {
             wallet: user.walletAddress,
-            amount: "1000000000000000001",
+            amount: "1000000000000000000000001",
             expiresAt: validExpiration,
           },
         ],
@@ -466,7 +466,7 @@ describe("Bonus Boosts E2E", () => {
         boosts: [
           {
             wallet: user.walletAddress,
-            amount: "1000000000000000001",
+            amount: "1000000000000000000000001",
             expiresAt: validExpiration,
           },
         ],
