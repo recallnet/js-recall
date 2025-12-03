@@ -11,6 +11,7 @@ import {
   toApiUser,
 } from "@recallnet/services/types";
 
+import { db } from "@/database/db.js";
 import { flatParse } from "@/lib/flat-parse.js";
 import { adminLogger } from "@/lib/logger.js";
 import { ServiceRegistry } from "@/services/index.js";
@@ -1921,7 +1922,6 @@ export function makeAdminController(services: ServiceRegistry) {
 
     /**
      * Add bonus boost to users
-     * Stubbed endpoint - returns 501 Not Implemented
      * @param req Express request
      * @param res Express response
      * @param next Express next function
@@ -1931,15 +1931,117 @@ export function makeAdminController(services: ServiceRegistry) {
         // Validate request body
         const { boosts } = flatParse(AdminAddBonusBoostSchema, req.body);
 
-        // Stubbed endpoint - return 501 Not Implemented
-        res.status(501).json({
-          success: false,
-          error: "Not Implemented",
-          message:
-            "This endpoint is stubbed for API contract validation. Full implementation pending.",
+        adminLogger.info(
+          { boostCount: boosts.length },
+          "Processing batch add bonus boost request",
+        );
+
+        // Step 1: Pre-validate all items before processing any
+        // This ensures all-or-nothing transaction semantics
+        const validationErrors = [];
+
+        for (const [i, boostItem] of boosts.entries()) {
+          // Check if user exists for each wallet
+          try {
+            const user = await services.userService.getUserByWalletAddress(
+              boostItem.wallet,
+            );
+            if (!user) {
+              validationErrors.push({
+                index: i,
+                wallet: boostItem.wallet,
+                error: `User with wallet ${boostItem.wallet} not found`,
+              });
+            }
+          } catch (error) {
+            validationErrors.push({
+              index: i,
+              wallet: boostItem.wallet,
+              error:
+                error instanceof Error
+                  ? error.message
+                  : "Failed to validate user",
+            });
+          }
+        }
+
+        // If any validation errors, reject entire batch
+        if (validationErrors.length > 0) {
+          adminLogger.warn(
+            { errorCount: validationErrors.length },
+            "Batch validation failed - rejecting entire batch",
+          );
+
+          return res.status(400).json({
+            success: false,
+            error: "Batch validation failed",
+            message: `Found ${validationErrors.length} validation error(s). No boosts were created.`,
+            data: {
+              errors: validationErrors,
+            },
+          });
+        }
+
+        // Step 2: Process all boosts in a single transaction for all-or-nothing semantics
+        const results = await db.transaction(async (tx) => {
+          const batchResults = [];
+
+          for (const [i, boostItem] of boosts.entries()) {
+            // Convert amount from string to BigInt
+            const amount = BigInt(boostItem.amount);
+
+            adminLogger.info(
+              {
+                index: i,
+                wallet: boostItem.wallet,
+                amount: boostItem.amount,
+                expiresAt: boostItem.expiresAt,
+              },
+              "Processing boost item",
+            );
+
+            // Add the bonus boost within the transaction
+            const result = await services.boostBonusService.addBoostBonus(
+              boostItem.wallet,
+              amount,
+              boostItem.expiresAt,
+              undefined, // createdByAdminId - could extract from auth if needed
+              boostItem.meta,
+              tx, // Pass the transaction to ensure atomicity
+            );
+
+            adminLogger.info(
+              {
+                index: i,
+                boostBonusId: result.boostBonusId,
+                appliedCount: result.appliedToCompetitions.length,
+              },
+              "Successfully added bonus boost",
+            );
+
+            batchResults.push({
+              id: result.boostBonusId,
+              userId: result.userId,
+              amount: result.amount.toString(),
+              expiresAt: result.expiresAt.toISOString(),
+              isActive: true,
+              appliedToCompetitions: result.appliedToCompetitions,
+            });
+          }
+
+          return batchResults;
+        });
+
+        // All items succeeded
+        adminLogger.info(
+          { successCount: results.length },
+          "Batch add bonus boost completed successfully",
+        );
+
+        res.status(201).json({
+          success: true,
           data: {
-            requestedCount: boosts.length,
-            note: "When implemented, this will process all boosts in the batch and return results for each item.",
+            results,
           },
         });
       } catch (error) {
@@ -1949,7 +2051,6 @@ export function makeAdminController(services: ServiceRegistry) {
 
     /**
      * Revoke bonus boost
-     * Stubbed endpoint - returns 501 Not Implemented
      * @param req Express request
      * @param res Express response
      * @param next Express next function
@@ -1959,15 +2060,62 @@ export function makeAdminController(services: ServiceRegistry) {
         // Validate request body
         const { boostIds } = flatParse(AdminRevokeBonusBoostSchema, req.body);
 
-        // Stubbed endpoint - return 501 Not Implemented
-        res.status(501).json({
-          success: false,
-          error: "Not Implemented",
-          message:
-            "This endpoint is stubbed for API contract validation. Full implementation pending.",
+        adminLogger.info(
+          { boostIdCount: boostIds.length },
+          "Processing batch revoke bonus boost request",
+        );
+
+        // Process all boosts in a single transaction for all-or-nothing semantics
+        const results = await db.transaction(async (tx) => {
+          const batchResults = [];
+
+          for (const [i, boostId] of boostIds.entries()) {
+            adminLogger.info(
+              {
+                index: i,
+                boostId,
+              },
+              "Revoking bonus boost",
+            );
+
+            // Revoke the bonus boost within the transaction
+            const result = await services.boostBonusService.revokeBoostBonus(
+              boostId,
+              tx,
+            );
+
+            adminLogger.info(
+              {
+                index: i,
+                boostId: result.boostBonusId,
+                removedCount: result.removedFromCompetitions.length,
+                keptCount: result.keptInCompetitions.length,
+              },
+              "Successfully revoked bonus boost",
+            );
+
+            batchResults.push({
+              id: result.boostBonusId,
+              revoked: result.revoked,
+              revokedAt: result.revokedAt.toISOString(),
+              removedFromCompetitions: result.removedFromCompetitions,
+              keptInCompetitions: result.keptInCompetitions,
+            });
+          }
+
+          return batchResults;
+        });
+
+        // All items succeeded
+        adminLogger.info(
+          { successCount: results.length },
+          "Batch revoke bonus boost completed successfully",
+        );
+
+        res.status(200).json({
+          success: true,
           data: {
-            requestedCount: boostIds.length,
-            note: "When implemented, this will revoke all specified boosts and return results for each item.",
+            results,
           },
         });
       } catch (error) {
