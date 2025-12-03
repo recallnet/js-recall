@@ -473,14 +473,14 @@ export class SpotLiveRepository {
    */
   async getAllowedTokenAddresses(
     competitionId: string,
-  ): Promise<Map<string, Set<string>>> {
+  ): Promise<Map<SpecificChain, Set<string>>> {
     try {
       const tokens = await this.#dbRead
         .select()
         .from(spotLiveAllowedTokens)
         .where(eq(spotLiveAllowedTokens.competitionId, competitionId));
 
-      const tokenMap = new Map<string, Set<string>>();
+      const tokenMap = new Map<SpecificChain, Set<string>>();
 
       for (const token of tokens) {
         const existing = tokenMap.get(token.specificChain);

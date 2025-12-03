@@ -16,6 +16,8 @@ import {
   NATIVE_TOKEN_ADDRESS,
   getNativeTokenSymbol,
   getTokenAddressForPriceLookup,
+  getWrappedNativeAddress,
+  isNativeToken,
 } from "./lib/config-utils.js";
 import { PortfolioSnapshotterService } from "./portfolio-snapshotter.service.js";
 import { PriceTrackerService } from "./price-tracker.service.js";
@@ -805,7 +807,10 @@ export class SpotDataProcessor {
                 // Key by address:chain for multi-chain support
                 const priceKey = `${t.tokenAddress.toLowerCase()}:${t.chain}`;
                 const price = transferPriceMap.get(priceKey);
-                const tokenSymbol = price?.symbol ?? "UNKNOWN";
+                // Use native token symbol for native tokens (zero address), not the price API's wrapped symbol
+                const tokenSymbol = isNativeToken(t.tokenAddress)
+                  ? getNativeTokenSymbol(t.chain)
+                  : (price?.symbol ?? "UNKNOWN");
                 const amountUsd = price
                   ? (t.amount * price.price).toString()
                   : null;
@@ -1130,6 +1135,15 @@ export class SpotDataProcessor {
         swapEventSignature: p.swapEventSignature,
         factoryAddress: p.factoryAddress,
       }));
+
+      // If whitelist includes wrapped native token, also allow native token (zero address)
+      // Native ETH and WETH are economically equivalent - if WETH is whitelisted, native ETH should be tracked too
+      for (const [chain, tokenSet] of allowedTokens.entries()) {
+        const wrappedNative = getWrappedNativeAddress(chain);
+        if (wrappedNative && tokenSet.has(wrappedNative.toLowerCase())) {
+          tokenSet.add(NATIVE_TOKEN_ADDRESS.toLowerCase());
+        }
+      }
 
       const tokenWhitelistEnabled = allowedTokens.size > 0;
 
