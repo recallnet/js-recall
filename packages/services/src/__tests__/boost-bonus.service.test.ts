@@ -218,12 +218,12 @@ describe("BoostBonusService", () => {
       ).rejects.toThrow("Boost amount must be greater than 0");
     });
 
-    it("validates amount does not exceed maximum (10^18)", async () => {
+    it("validates amount does not exceed maximum (10^24)", async () => {
       setupMockTransaction();
       await expect(
         service.addBoostBonus(
           testWallet,
-          10n ** 18n + 1n,
+          10n ** 24n + 1n,
           new Date(Date.now() + ONE_DAY_MS),
         ),
       ).rejects.toThrow("Boost amount exceeds maximum allowed value");

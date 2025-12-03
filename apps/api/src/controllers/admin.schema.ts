@@ -788,8 +788,8 @@ export const AdminBonusBoostItemSchema = z.object({
       "Amount must be positive (greater than zero)",
     )
     .refine(
-      (val) => BigInt(val) <= BigInt("1000000000000000000"), // 10^18 max
-      "Amount exceeds maximum allowed value (10^18)",
+      (val) => BigInt(val) <= BigInt("1000000000000000000000000"), // 10^24 max (1 million boost)
+      "Amount exceeds maximum allowed value (10^24)",
     ),
   expiresAt: z.iso
     .datetime()

@@ -4200,7 +4200,7 @@ export function configureAdminRoutes(
    *                     amount:
    *                       type: string
    *                       pattern: ^\d+$
-   *                       description: Boost amount as numeric string (BigInt). Must be > 0 and <= 10^18.
+   *                       description: Boost amount as numeric string (BigInt). Must be > 0 and <= 10^24 (1 million boost).
    *                       example: "500000000000000000"
    *                     expiresAt:
    *                       type: string
