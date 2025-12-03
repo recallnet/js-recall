@@ -25,6 +25,8 @@ export * from "./providers/sportsdataio.provider.js";
 export * from "./rewards.service.js";
 export * from "./risk-metrics.service.js";
 export * from "./simulated-trade-execution.service.js";
+export * from "./spot-data-processor.service.js";
+export * from "./spot-live-monitoring.service.js";
 export * from "./sports-ingester.service.js";
 export * from "./sports-nfl-ingester.service.js";
 export * from "./sports.service.js";

@@ -10,7 +10,9 @@ import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { PaperTradingConfigRepository } from "@recallnet/db/repositories/paper-trading-config";
 import { PaperTradingInitialBalancesRepository } from "@recallnet/db/repositories/paper-trading-initial-balances";
 import { PerpsRepository } from "@recallnet/db/repositories/perps";
+import { SpotLiveRepository } from "@recallnet/db/repositories/spot-live";
 import { StakesRepository } from "@recallnet/db/repositories/stakes";
+import { TradeRepository } from "@recallnet/db/repositories/trade";
 import { CompetitionAgentStatus } from "@recallnet/db/repositories/types";
 import { UserRepository } from "@recallnet/db/repositories/user";
 import {
@@ -35,8 +37,10 @@ import { CompetitionService } from "../competition.service.js";
 import { specificChainTokens } from "../lib/config-utils.js";
 import type { PerpsDataProcessor } from "../perps-data-processor.service.js";
 import type { PortfolioSnapshotterService } from "../portfolio-snapshotter.service.js";
+import type { PriceTrackerService } from "../price-tracker.service.js";
 import { RewardsService } from "../rewards.service.js";
 import type { SportsService } from "../sports.service.js";
+import type { SpotDataProcessor } from "../spot-data-processor.service.js";
 import type { TradeSimulatorService } from "../trade-simulator.service.js";
 import type { TradingConstraintsService } from "../trading-constraints.service.js";
 
@@ -91,12 +95,15 @@ describe("CompetitionService", () => {
   let balanceService: MockProxy<BalanceService>;
   let tradeSimulatorService: MockProxy<TradeSimulatorService>;
   let portfolioSnapshotterService: MockProxy<PortfolioSnapshotterService>;
+  let priceTrackerService: MockProxy<PriceTrackerService>;
   let agentService: MockProxy<AgentService>;
   let agentRankService: MockProxy<AgentRankService>;
   let tradingConstraintsService: MockProxy<TradingConstraintsService>;
   let competitionRewardService: MockProxy<CompetitionRewardService>;
   let rewardsService: MockProxy<RewardsService>;
   let perpsDataProcessor: MockProxy<PerpsDataProcessor>;
+  let spotDataProcessor: MockProxy<SpotDataProcessor>;
+  let spotLiveRepo: MockProxy<SpotLiveRepository>;
   let boostBonusService: MockProxy<BoostBonusService>;
   let agentRepo: MockProxy<AgentRepository>;
   let agentScoreRepo: MockProxy<AgentScoreRepository>;
@@ -107,6 +114,7 @@ describe("CompetitionService", () => {
   let paperTradingConfigRepo: MockProxy<PaperTradingConfigRepository>;
   let paperTradingInitialBalancesRepo: MockProxy<PaperTradingInitialBalancesRepository>;
   let stakesRepo: MockProxy<StakesRepository>;
+  let tradeRepo: MockProxy<TradeRepository>;
   let userRepo: MockProxy<UserRepository>;
   let mockDb: MockProxy<Database>;
   let logger: MockProxy<Logger>;
@@ -187,12 +195,15 @@ describe("CompetitionService", () => {
     balanceService = mock<BalanceService>();
     tradeSimulatorService = mock<TradeSimulatorService>();
     portfolioSnapshotterService = mock<PortfolioSnapshotterService>();
+    priceTrackerService = mock<PriceTrackerService>();
     agentService = mock<AgentService>();
     agentRankService = mock<AgentRankService>();
     tradingConstraintsService = mock<TradingConstraintsService>();
     competitionRewardService = mock<CompetitionRewardService>();
     rewardsService = mock<RewardsService>();
     perpsDataProcessor = mock<PerpsDataProcessor>();
+    spotDataProcessor = mock<SpotDataProcessor>();
+    spotLiveRepo = mock<SpotLiveRepository>();
     boostBonusService = mock<BoostBonusService>();
     agentRepo = mock<AgentRepository>();
     agentScoreRepo = mock<AgentScoreRepository>();
@@ -204,8 +215,13 @@ describe("CompetitionService", () => {
     paperTradingInitialBalancesRepo =
       mock<PaperTradingInitialBalancesRepository>();
     stakesRepo = mock<StakesRepository>();
+    tradeRepo = mock<TradeRepository>();
     userRepo = mock<UserRepository>();
     mockDb = mock<Database>();
+    // Mock database transaction method
+    mockDb.transaction.mockImplementation(async (callback) => {
+      return await callback(mockTx);
+    });
     logger = mock<Logger>();
 
     // Setup default mock return values
@@ -221,22 +237,26 @@ describe("CompetitionService", () => {
       balanceService,
       tradeSimulatorService,
       portfolioSnapshotterService,
+      priceTrackerService,
       agentService,
       agentRankService,
       tradingConstraintsService,
       competitionRewardService,
       rewardsService,
       perpsDataProcessor,
+      spotDataProcessor,
       boostBonusService,
       agentRepo,
       agentScoreRepo,
       arenaRepo,
       sportsService,
       perpsRepo,
+      spotLiveRepo,
       competitionRepo,
       paperTradingConfigRepo,
       paperTradingInitialBalancesRepo,
       stakesRepo,
+      tradeRepo,
       userRepo,
       mockDb,
       {
@@ -612,6 +632,90 @@ describe("CompetitionService", () => {
         competition: mockCompetition,
         updatedRewards: [],
       });
+    });
+
+    it("should reject spotLiveConfig updates on non-pending competitions", async () => {
+      const activeSpotLiveCompetition: SelectCompetition &
+        SelectTradingCompetition = {
+        ...mockCompetition,
+        type: "spot_live_trading",
+        status: "active",
+      };
+
+      competitionRepo.findById.mockResolvedValue(activeSpotLiveCompetition);
+
+      await expect(
+        competitionService.updateCompetition(
+          activeSpotLiveCompetition.id,
+          {},
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          { selfFundingThresholdUsd: 100 },
+        ),
+      ).rejects.toThrow(
+        "Cannot update spot live configuration once competition has started",
+      );
+    });
+
+    it("should reject perpsProvider updates on non-pending competitions", async () => {
+      const activePerpsCompetition: SelectCompetition &
+        SelectTradingCompetition = {
+        ...mockCompetition,
+        type: "perpetual_futures",
+        status: "active",
+      };
+
+      competitionRepo.findById.mockResolvedValue(activePerpsCompetition);
+
+      await expect(
+        competitionService.updateCompetition(
+          activePerpsCompetition.id,
+          {},
+          undefined,
+          undefined,
+          undefined,
+          {
+            provider: "symphony",
+            initialCapital: 1000,
+            selfFundingThreshold: 0,
+          },
+        ),
+      ).rejects.toThrow(
+        "Cannot update perps configuration once competition has started",
+      );
+    });
+
+    it("should require spotLiveConfig when converting to spot_live_trading", async () => {
+      const pendingCompetition: SelectCompetition & SelectTradingCompetition = {
+        ...mockCompetition,
+        type: "trading",
+        status: "pending",
+      };
+
+      competitionRepo.findById.mockResolvedValue(pendingCompetition);
+      arenaRepo.findById.mockResolvedValue({
+        id: "default-spot-live-arena",
+        name: "Spot Live Arena",
+        createdBy: null,
+        category: "spot_live",
+        skill: "trading",
+        venues: [],
+        chains: ["base"],
+        kind: "spot_live",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      await expect(
+        competitionService.updateCompetition(pendingCompetition.id, {
+          type: "spot_live_trading",
+        }),
+      ).rejects.toThrow(
+        "Spot live configuration is required when changing to spot_live_trading type",
+      );
     });
   });
 

@@ -10,7 +10,9 @@ import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { PaperTradingConfigRepository } from "@recallnet/db/repositories/paper-trading-config";
 import { PaperTradingInitialBalancesRepository } from "@recallnet/db/repositories/paper-trading-initial-balances";
 import { PerpsRepository } from "@recallnet/db/repositories/perps";
+import { SpotLiveRepository } from "@recallnet/db/repositories/spot-live";
 import { StakesRepository } from "@recallnet/db/repositories/stakes";
+import { TradeRepository } from "@recallnet/db/repositories/trade";
 import { UserRepository } from "@recallnet/db/repositories/user";
 import { Database, Transaction } from "@recallnet/db/types";
 
@@ -23,21 +25,27 @@ import { CompetitionService } from "../competition.service.js";
 import { specificChainTokens } from "../lib/config-utils.js";
 import type { PerpsDataProcessor } from "../perps-data-processor.service.js";
 import type { PortfolioSnapshotterService } from "../portfolio-snapshotter.service.js";
+import type { PriceTrackerService } from "../price-tracker.service.js";
 import { RewardsService } from "../rewards.service.js";
 import type { SportsService } from "../sports.service.js";
+import type { SpotDataProcessor } from "../spot-data-processor.service.js";
 import type { TradeSimulatorService } from "../trade-simulator.service.js";
 import type { TradingConstraintsService } from "../trading-constraints.service.js";
+import { BlockchainType } from "../types/index.js";
 
 describe("CompetitionService - createCompetition", () => {
   let balanceService: MockProxy<BalanceService>;
   let tradeSimulatorService: MockProxy<TradeSimulatorService>;
   let portfolioSnapshotterService: MockProxy<PortfolioSnapshotterService>;
+  let priceTrackerService: MockProxy<PriceTrackerService>;
   let agentService: MockProxy<AgentService>;
   let agentRankService: MockProxy<AgentRankService>;
   let tradingConstraintsService: MockProxy<TradingConstraintsService>;
   let competitionRewardService: MockProxy<CompetitionRewardService>;
   let rewardsService: MockProxy<RewardsService>;
   let perpsDataProcessor: MockProxy<PerpsDataProcessor>;
+  let spotDataProcessor: MockProxy<SpotDataProcessor>;
+  let spotLiveRepo: MockProxy<SpotLiveRepository>;
   let boostBonusService: MockProxy<BoostBonusService>;
   let agentRepo: MockProxy<AgentRepository>;
   let agentScoreRepo: MockProxy<AgentScoreRepository>;
@@ -48,9 +56,12 @@ describe("CompetitionService - createCompetition", () => {
   let paperTradingConfigRepo: MockProxy<PaperTradingConfigRepository>;
   let paperTradingInitialBalancesRepo: MockProxy<PaperTradingInitialBalancesRepository>;
   let stakesRepo: MockProxy<StakesRepository>;
+  let tradeRepo: MockProxy<TradeRepository>;
   let userRepo: MockProxy<UserRepository>;
   let mockDb: MockProxy<Database>;
   let logger: MockProxy<Logger>;
+
+  const mockTx = mock<Transaction>();
 
   let competitionService: CompetitionService;
 
@@ -58,12 +69,15 @@ describe("CompetitionService - createCompetition", () => {
     balanceService = mock<BalanceService>();
     tradeSimulatorService = mock<TradeSimulatorService>();
     portfolioSnapshotterService = mock<PortfolioSnapshotterService>();
+    priceTrackerService = mock<PriceTrackerService>();
     agentService = mock<AgentService>();
     agentRankService = mock<AgentRankService>();
     tradingConstraintsService = mock<TradingConstraintsService>();
     competitionRewardService = mock<CompetitionRewardService>();
     rewardsService = mock<RewardsService>();
     perpsDataProcessor = mock<PerpsDataProcessor>();
+    spotDataProcessor = mock<SpotDataProcessor>();
+    spotLiveRepo = mock<SpotLiveRepository>();
     boostBonusService = mock<BoostBonusService>();
     agentRepo = mock<AgentRepository>();
     agentScoreRepo = mock<AgentScoreRepository>();
@@ -75,8 +89,13 @@ describe("CompetitionService - createCompetition", () => {
     paperTradingInitialBalancesRepo =
       mock<PaperTradingInitialBalancesRepository>();
     stakesRepo = mock<StakesRepository>();
+    tradeRepo = mock<TradeRepository>();
     userRepo = mock<UserRepository>();
     mockDb = mock<Database>();
+    // Mock database transaction method
+    mockDb.transaction.mockImplementation(async (callback) => {
+      return await callback(mockTx);
+    });
     logger = mock<Logger>();
 
     // Setup default mock return values
@@ -157,22 +176,26 @@ describe("CompetitionService - createCompetition", () => {
       balanceService,
       tradeSimulatorService,
       portfolioSnapshotterService,
+      priceTrackerService,
       agentService,
       agentRankService,
       tradingConstraintsService,
       competitionRewardService,
       rewardsService,
       perpsDataProcessor,
+      spotDataProcessor,
       boostBonusService,
       agentRepo,
       agentScoreRepo,
       arenaRepo,
       sportsService,
       perpsRepo,
+      spotLiveRepo,
       competitionRepo,
       paperTradingConfigRepo,
       paperTradingInitialBalancesRepo,
       stakesRepo,
+      tradeRepo,
       userRepo,
       mockDb,
       {
@@ -778,12 +801,15 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
   let balanceService: MockProxy<BalanceService>;
   let tradeSimulatorService: MockProxy<TradeSimulatorService>;
   let portfolioSnapshotterService: MockProxy<PortfolioSnapshotterService>;
+  let priceTrackerService: MockProxy<PriceTrackerService>;
   let agentService: MockProxy<AgentService>;
   let agentRankService: MockProxy<AgentRankService>;
   let tradingConstraintsService: MockProxy<TradingConstraintsService>;
   let competitionRewardService: MockProxy<CompetitionRewardService>;
   let rewardsService: MockProxy<RewardsService>;
   let perpsDataProcessor: MockProxy<PerpsDataProcessor>;
+  let spotDataProcessor: MockProxy<SpotDataProcessor>;
+  let spotLiveRepo: MockProxy<SpotLiveRepository>;
   let boostBonusService: MockProxy<BoostBonusService>;
   let agentRepo: MockProxy<AgentRepository>;
   let agentScoreRepo: MockProxy<AgentScoreRepository>;
@@ -794,10 +820,12 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
   let paperTradingConfigRepo: MockProxy<PaperTradingConfigRepository>;
   let paperTradingInitialBalancesRepo: MockProxy<PaperTradingInitialBalancesRepository>;
   let stakesRepo: MockProxy<StakesRepository>;
+  let tradeRepo: MockProxy<TradeRepository>;
   let userRepo: MockProxy<UserRepository>;
   let mockDb: MockProxy<Database>;
   let logger: MockProxy<Logger>;
 
+  const mockTx = mock<Transaction>();
   const mockCompetitionId = randomUUID();
 
   beforeEach(() => {
@@ -805,12 +833,15 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
     balanceService = mock<BalanceService>();
     tradeSimulatorService = mock<TradeSimulatorService>();
     portfolioSnapshotterService = mock<PortfolioSnapshotterService>();
+    priceTrackerService = mock<PriceTrackerService>();
     agentService = mock<AgentService>();
     agentRankService = mock<AgentRankService>();
     tradingConstraintsService = mock<TradingConstraintsService>();
     competitionRewardService = mock<CompetitionRewardService>();
     rewardsService = mock<RewardsService>();
     perpsDataProcessor = mock<PerpsDataProcessor>();
+    spotDataProcessor = mock<SpotDataProcessor>();
+    spotLiveRepo = mock<SpotLiveRepository>();
     boostBonusService = mock<BoostBonusService>();
     agentRepo = mock<AgentRepository>();
     agentScoreRepo = mock<AgentScoreRepository>();
@@ -822,8 +853,13 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
     paperTradingInitialBalancesRepo =
       mock<PaperTradingInitialBalancesRepository>();
     stakesRepo = mock<StakesRepository>();
+    tradeRepo = mock<TradeRepository>();
     userRepo = mock<UserRepository>();
     mockDb = mock<Database>();
+    // Mock database transaction method
+    mockDb.transaction.mockImplementation(async (callback) => {
+      return await callback(mockTx);
+    });
     logger = mock<Logger>();
 
     // Mock paperTradingInitialBalancesRepo.findByCompetitionId to return empty array by default
@@ -836,22 +872,26 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
       balanceService,
       tradeSimulatorService,
       portfolioSnapshotterService,
+      priceTrackerService,
       agentService,
       agentRankService,
       tradingConstraintsService,
       competitionRewardService,
       rewardsService,
       perpsDataProcessor,
+      spotDataProcessor,
       boostBonusService,
       agentRepo,
       agentScoreRepo,
       arenaRepo,
       sportsService,
       perpsRepo,
+      spotLiveRepo,
       competitionRepo,
       paperTradingConfigRepo,
       paperTradingInitialBalancesRepo,
       stakesRepo,
+      tradeRepo,
       userRepo,
       mockDb,
       {
@@ -1606,5 +1646,372 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
 
     // Verify final agent list only has agent1
     expect(result.agentIds).toEqual([agent1Id]);
+  });
+
+  describe("spot_live_trading competition creation", () => {
+    beforeEach(() => {
+      // Setup arena for spot live
+      arenaRepo.findById.mockImplementation(async (id) => {
+        if (id === "spot-live-arena" || id === "test-arena") {
+          return {
+            id,
+            name: "Spot Live Arena",
+            kind: "default",
+            createdBy: null,
+            skill: "spot_live_trading",
+            category: "crypto_trading",
+            venues: null,
+            chains: null,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          };
+        }
+        return undefined;
+      });
+
+      // Setup spot live repo mocks
+      spotLiveRepo.createSpotLiveCompetitionConfig.mockImplementation(
+        async () => ({
+          competitionId: randomUUID(),
+          dataSource: "rpc_direct",
+          dataSourceConfig: {},
+          selfFundingThresholdUsd: "10.00",
+          minFundingThreshold: null,
+          inactivityHours: 24,
+          syncIntervalMinutes: 2,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }),
+      );
+      spotLiveRepo.batchCreateCompetitionChains.mockResolvedValue([]);
+      spotLiveRepo.batchCreateAllowedProtocols.mockResolvedValue([]);
+      spotLiveRepo.batchCreateAllowedTokens.mockResolvedValue([]);
+
+      // Mock transaction to pass through callback and return result
+      mockDb.transaction.mockImplementation(async (callback) => {
+        const mockTx = {} as Transaction;
+        return await callback(mockTx);
+      });
+    });
+
+    test("should reject if spotLiveConfig is missing", async () => {
+      await expect(
+        competitionService.createCompetition({
+          name: "Spot Live Test",
+          arenaId: "spot-live-arena",
+          type: "spot_live_trading",
+        }),
+      ).rejects.toThrow(
+        "Spot live configuration is required for spot_live_trading competitions",
+      );
+    });
+
+    test("should reject protocol on non-enabled chain", async () => {
+      await expect(
+        competitionService.createCompetition({
+          name: "Test",
+          arenaId: "spot-live-arena",
+          type: "spot_live_trading",
+          spotLiveConfig: {
+            dataSource: "rpc_direct",
+            dataSourceConfig: {
+              type: "rpc_direct",
+              provider: "alchemy",
+              chains: ["base"],
+            },
+            chains: ["base"], // Base only
+            allowedProtocols: [
+              { protocol: "aerodrome", chain: "arbitrum" }, // Wrong chain!
+            ],
+          },
+        }),
+      ).rejects.toThrow("not in enabled chains");
+
+      expect(competitionRepo.create).not.toHaveBeenCalled();
+    });
+
+    test("should reject token on non-enabled chain", async () => {
+      await expect(
+        competitionService.createCompetition({
+          name: "Test",
+          arenaId: "spot-live-arena",
+          type: "spot_live_trading",
+          spotLiveConfig: {
+            dataSource: "rpc_direct",
+            dataSourceConfig: {
+              type: "rpc_direct",
+              provider: "alchemy",
+              chains: ["base"],
+            },
+            chains: ["base"], // Base only
+            allowedTokens: [
+              {
+                address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+                specificChain: "arbitrum", // Wrong chain!
+              },
+              {
+                address: "0x4200000000000000000000000000000000000006",
+                specificChain: "arbitrum", // Wrong chain!
+              },
+            ],
+          },
+        }),
+      ).rejects.toThrow("not in enabled chains");
+
+      expect(competitionRepo.create).not.toHaveBeenCalled();
+      expect(priceTrackerService.getPrice).not.toHaveBeenCalled();
+    });
+
+    test("should reject protocol filter with 0 tokens on that chain", async () => {
+      priceTrackerService.getPrice
+        .mockResolvedValueOnce({
+          token: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+          price: 1.0,
+          symbol: "USDC",
+          timestamp: new Date(),
+          chain: BlockchainType.EVM,
+          specificChain: "arbitrum",
+        })
+        .mockResolvedValueOnce({
+          token: "0xaf88d065e77c8cc2239327c5edb3a432268e5831",
+          price: 1.0,
+          symbol: "USDC",
+          timestamp: new Date(),
+          chain: BlockchainType.EVM,
+          specificChain: "arbitrum",
+        });
+
+      await expect(
+        competitionService.createCompetition({
+          name: "Test",
+          arenaId: "spot-live-arena",
+          type: "spot_live_trading",
+          spotLiveConfig: {
+            dataSource: "rpc_direct",
+            dataSourceConfig: {
+              type: "rpc_direct",
+              provider: "alchemy",
+              chains: ["base", "arbitrum"],
+            },
+            chains: ["base", "arbitrum"],
+            allowedProtocols: [
+              { protocol: "aerodrome", chain: "base" }, // Base has protocol filter
+            ],
+            allowedTokens: [
+              // But only Arbitrum has tokens!
+              {
+                address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+                specificChain: "arbitrum",
+              },
+              {
+                address: "0xaf88d065e77c8cc2239327c5edb3a432268e5831",
+                specificChain: "arbitrum",
+              },
+            ],
+          },
+        }),
+      ).rejects.toThrow(
+        "Chain 'base' has protocol filter but only 0 whitelisted token(s)",
+      );
+
+      expect(competitionRepo.create).not.toHaveBeenCalled();
+    });
+
+    test("should reject unknown protocol", async () => {
+      await expect(
+        competitionService.createCompetition({
+          name: "Test",
+          arenaId: "spot-live-arena",
+          type: "spot_live_trading",
+          spotLiveConfig: {
+            dataSource: "rpc_direct",
+            dataSourceConfig: {
+              type: "rpc_direct",
+              provider: "alchemy",
+              chains: ["base"],
+            },
+            chains: ["base"],
+            allowedProtocols: [{ protocol: "unknown-dex", chain: "base" }],
+          },
+        }),
+      ).rejects.toThrow("Unknown protocol");
+
+      expect(competitionRepo.create).not.toHaveBeenCalled();
+    });
+
+    test("should reject if only 1 token per chain", async () => {
+      priceTrackerService.getPrice.mockResolvedValue({
+        token: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+        price: 1.0,
+        symbol: "USDC",
+        timestamp: new Date(),
+        chain: BlockchainType.EVM,
+        specificChain: "base",
+      });
+
+      await expect(
+        competitionService.createCompetition({
+          name: "Test",
+          arenaId: "spot-live-arena",
+          type: "spot_live_trading",
+          spotLiveConfig: {
+            dataSource: "rpc_direct",
+            dataSourceConfig: {
+              type: "rpc_direct",
+              provider: "alchemy",
+              chains: ["base"],
+            },
+            chains: ["base"],
+            allowedTokens: [
+              {
+                address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+                specificChain: "base",
+              },
+            ],
+          },
+        }),
+      ).rejects.toThrow("At least 2 tokens required per chain");
+
+      expect(competitionRepo.create).not.toHaveBeenCalled();
+    });
+
+    test("should reject unpriceable token", async () => {
+      priceTrackerService.getPrice
+        .mockResolvedValueOnce({
+          token: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+          price: 1.0,
+          symbol: "USDC",
+          timestamp: new Date(),
+          chain: BlockchainType.EVM,
+          specificChain: "base",
+        })
+        .mockResolvedValueOnce(null);
+
+      await expect(
+        competitionService.createCompetition({
+          name: "Test",
+          arenaId: "spot-live-arena",
+          type: "spot_live_trading",
+          spotLiveConfig: {
+            dataSource: "rpc_direct",
+            dataSourceConfig: {
+              type: "rpc_direct",
+              provider: "alchemy",
+              chains: ["base"],
+            },
+            chains: ["base"],
+            allowedTokens: [
+              {
+                address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+                specificChain: "base",
+              },
+              {
+                address: "0xBAD0000000000000000000000000000000000000",
+                specificChain: "base",
+              },
+            ],
+          },
+        }),
+      ).rejects.toThrow("not supported or cannot be priced");
+
+      expect(competitionRepo.create).not.toHaveBeenCalled();
+    });
+
+    test("should create with valid protocols and tokens", async () => {
+      priceTrackerService.getPrice
+        .mockResolvedValueOnce({
+          token: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+          price: 1.0,
+          symbol: "USDC",
+          timestamp: new Date(),
+          chain: BlockchainType.EVM,
+          specificChain: "base",
+        })
+        .mockResolvedValueOnce({
+          token: "0x4200000000000000000000000000000000000006",
+          price: 2500,
+          symbol: "ETH",
+          timestamp: new Date(),
+          chain: BlockchainType.EVM,
+          specificChain: "base",
+        });
+
+      const result = await competitionService.createCompetition({
+        name: "Aerodrome Blue Chip",
+        arenaId: "test-arena",
+        type: "spot_live_trading",
+        spotLiveConfig: {
+          dataSource: "rpc_direct",
+          dataSourceConfig: {
+            type: "rpc_direct",
+            provider: "alchemy",
+            chains: ["base"],
+          },
+          chains: ["base"],
+          allowedProtocols: [{ protocol: "aerodrome", chain: "base" }],
+          allowedTokens: [
+            {
+              address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+              specificChain: "base",
+            },
+            {
+              address: "0x4200000000000000000000000000000000000006",
+              specificChain: "base",
+            },
+          ],
+        },
+      });
+
+      expect(result).toBeDefined();
+      expect(priceTrackerService.getPrice).toHaveBeenCalledTimes(2);
+      expect(spotLiveRepo.batchCreateAllowedProtocols).toHaveBeenCalledWith(
+        expect.any(String),
+        [
+          expect.objectContaining({
+            protocol: "aerodrome",
+            specificChain: "base",
+            routerAddress: "0xcf77a3ba9a5ca399b7c97c74d54e5b1beb874e43",
+          }),
+        ],
+        expect.anything(),
+      );
+      expect(spotLiveRepo.batchCreateAllowedTokens).toHaveBeenCalledWith(
+        expect.any(String),
+        [
+          expect.objectContaining({
+            tokenSymbol: "USDC",
+            specificChain: "base",
+          }),
+          expect.objectContaining({
+            tokenSymbol: "ETH",
+            specificChain: "base",
+          }),
+        ],
+        expect.anything(),
+      );
+    });
+
+    test("should work with protocols but no tokens", async () => {
+      const result = await competitionService.createCompetition({
+        name: "Aerodrome Only",
+        arenaId: "spot-live-arena",
+        type: "spot_live_trading",
+        spotLiveConfig: {
+          dataSource: "rpc_direct",
+          dataSourceConfig: {
+            type: "rpc_direct",
+            provider: "alchemy",
+            chains: ["base"],
+          },
+          chains: ["base"],
+          allowedProtocols: [{ protocol: "aerodrome", chain: "base" }],
+        },
+      });
+
+      expect(result).toBeDefined();
+      expect(priceTrackerService.getPrice).not.toHaveBeenCalled();
+      expect(spotLiveRepo.batchCreateAllowedProtocols).toHaveBeenCalled();
+      expect(spotLiveRepo.batchCreateAllowedTokens).not.toHaveBeenCalled();
+    });
   });
 });

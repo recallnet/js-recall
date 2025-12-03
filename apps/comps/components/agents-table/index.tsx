@@ -47,8 +47,11 @@ import { openForBoosting } from "@/lib/open-for-boosting";
 import { tanstackClient } from "@/rpc/clients/tanstack-query";
 import { RouterOutputs } from "@/rpc/router";
 import { PaginationResponse } from "@/types";
-import { checkTableHeaderIsPrimaryMetric } from "@/utils/competition-utils";
-import { checkIsPerpsCompetition } from "@/utils/competition-utils";
+import {
+  checkIsPerpsCompetition,
+  checkIsSpotLiveCompetition,
+  checkTableHeaderIsPrimaryMetric,
+} from "@/utils/competition-utils";
 import { formatCompactNumber, formatPercentage } from "@/utils/format";
 import { getSortState } from "@/utils/table";
 
@@ -345,6 +348,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
   };
 
   const isPerpsCompetition = checkIsPerpsCompetition(competition.type);
+  const isSpotLiveCompetition = checkIsSpotLiveCompetition(competition.type);
 
   // When agents are not active in a competition, display DQ'd tooltips or hide stats
   const agentIsInactive = useCallback(
@@ -411,7 +415,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
           flex: true,
         },
       },
-      // Show Calmar Ratio as primary metric for perps, Portfolio Value for others
+      // Show ROI + risk metrics for perps, ROI + portfolio for spot live, portfolio + P&L for paper trading
       ...(isPerpsCompetition
         ? [
             {
@@ -541,138 +545,272 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
               },
             },
           ]
-        : [
-            {
-              id: "portfolioValue",
-              accessorKey: "portfolioValue",
-              header: () => (
-                <Tooltip content="The total value of the agent's portfolio in USD.">
-                  <span>Portfolio Value</span>
-                </Tooltip>
-              ),
-              cell: ({
-                row,
-              }: {
-                row: {
-                  original: RouterOutputs["competitions"]["getAgents"]["agents"][number];
-                };
-              }) => {
-                if (
-                  competition.status === "pending" ||
-                  agentIsInactive(row.original)
-                ) {
-                  return (
-                    <span className="text-secondary-foreground font-semibold">
-                      -
-                    </span>
-                  );
-                }
-                return (
-                  <span className="text-secondary-foreground font-semibold">
-                    {row.original.portfolioValue.toLocaleString("en-US", {
-                      style: "currency",
-                      currency: "USD",
-                      maximumFractionDigits: 2,
-                    })}
+        : isSpotLiveCompetition
+          ? [
+              // Spot live: ROI (ranking metric), Portfolio Value, P&L
+              {
+                id: "simpleReturn",
+                accessorKey: "simpleReturn",
+                header: () => (
+                  <span>
+                    <Tooltip content="Return on investment as a percentage of the starting equity. Agents are ranked by this metric.">
+                      ROI
+                    </Tooltip>
                   </span>
-                );
-              },
-              enableSorting: true,
-              size: 140,
-            },
-            {
-              id: "pnl",
-              accessorKey: "pnl",
-              header: () => (
-                <Tooltip content="The profit or loss as a percentage of the agent's starting portfolio value.">
-                  P&L
-                </Tooltip>
-              ),
-              cell: ({
-                row,
-              }: {
-                row: {
-                  original: RouterOutputs["competitions"]["getAgents"]["agents"][number];
-                };
-              }) => {
-                if (
-                  competition.status === "pending" ||
-                  agentIsInactive(row.original)
-                ) {
+                ),
+                cell: ({
+                  row,
+                }: {
+                  row: {
+                    original: RouterOutputs["competitions"]["getAgents"]["agents"][number];
+                  };
+                }) => {
+                  if (
+                    competition.status === "pending" ||
+                    agentIsInactive(row.original)
+                  ) {
+                    return (
+                      <span className="text-secondary-foreground font-semibold">
+                        -
+                      </span>
+                    );
+                  }
                   return (
-                    <span className="text-secondary-foreground font-semibold">
-                      -
+                    <span
+                      className={`font-semibold ${
+                        row.original.simpleReturn &&
+                        Number(row.original.simpleReturn) > 0
+                          ? "text-green-400"
+                          : row.original.simpleReturn &&
+                              Number(row.original.simpleReturn) < 0
+                            ? "text-red-400"
+                            : "text-secondary-foreground"
+                      }`}
+                    >
+                      {row.original.simpleReturn !== null
+                        ? `${(Number(row.original.simpleReturn) * 100).toFixed(2)}%`
+                        : "-"}
                     </span>
                   );
-                }
-                const pnlColor =
-                  row.original.pnlPercent >= 0
-                    ? "text-green-500"
-                    : "text-red-500";
-                return (
-                  <div className="flex flex-col">
-                    <span className={`text-secondary-foreground font-semibold`}>
-                      {row.original.pnlPercent >= 0 ? "+" : ""}
+                },
+                enableSorting: true,
+                meta: {
+                  className: isMobile ? "max-w-[80px]" : "max-w-[100px]",
+                },
+              },
+              {
+                id: "portfolioValue",
+                accessorKey: "portfolioValue",
+                header: () => (
+                  <Tooltip content="The total value of the agent's portfolio in USD.">
+                    <span>Portfolio Value</span>
+                  </Tooltip>
+                ),
+                cell: ({
+                  row,
+                }: {
+                  row: {
+                    original: RouterOutputs["competitions"]["getAgents"]["agents"][number];
+                  };
+                }) => {
+                  if (
+                    competition.status === "pending" ||
+                    agentIsInactive(row.original)
+                  ) {
+                    return (
+                      <span className="text-secondary-foreground font-semibold">
+                        -
+                      </span>
+                    );
+                  }
+                  return (
+                    <span className="text-secondary-foreground font-semibold">
+                      {row.original.portfolioValue.toLocaleString("en-US", {
+                        style: "currency",
+                        currency: "USD",
+                        maximumFractionDigits: 2,
+                      })}
+                    </span>
+                  );
+                },
+                enableSorting: true,
+                size: 140,
+              },
+              {
+                id: "pnl",
+                accessorKey: "pnl",
+                header: () => (
+                  <Tooltip content="The profit or loss in USD.">P&L</Tooltip>
+                ),
+                cell: ({
+                  row,
+                }: {
+                  row: {
+                    original: RouterOutputs["competitions"]["getAgents"]["agents"][number];
+                  };
+                }) => {
+                  if (
+                    competition.status === "pending" ||
+                    agentIsInactive(row.original)
+                  ) {
+                    return (
+                      <span className="text-secondary-foreground font-semibold">
+                        -
+                      </span>
+                    );
+                  }
+                  const pnlColor =
+                    row.original.pnl >= 0 ? "text-green-500" : "text-red-500";
+                  return (
+                    <span className={`font-semibold ${pnlColor}`}>
+                      {row.original.pnl >= 0 ? "+" : ""}
                       {row.original.pnl.toLocaleString("en-US", {
                         style: "currency",
                         currency: "USD",
                         maximumFractionDigits: 2,
                       })}
                     </span>
-                    <span className={`text-xs ${pnlColor}`}>
-                      ({row.original.pnlPercent >= 0 ? "+" : ""}
-                      {row.original.pnlPercent.toFixed(2)}%)
-                    </span>
-                  </div>
-                );
+                  );
+                },
+                enableSorting: true,
+                size: 120,
               },
-              enableSorting: true,
-              size: 120,
-            },
-            {
-              id: "change24h",
-              accessorKey: "change24h",
-              header: () => (
-                <Tooltip content="The change in the agent's portfolio value in the last 24 hours, expressed as a percentage.">
-                  24h
-                </Tooltip>
-              ),
-              cell: ({
-                row,
-              }: {
-                row: {
-                  original: RouterOutputs["competitions"]["getAgents"]["agents"][number];
-                };
-              }) => {
-                if (
-                  competition.status === "pending" ||
-                  agentIsInactive(row.original)
-                ) {
+            ]
+          : [
+              // Paper trading: Portfolio Value (ranking metric), P&L, 24h
+              {
+                id: "portfolioValue",
+                accessorKey: "portfolioValue",
+                header: () => (
+                  <Tooltip content="The total value of the agent's portfolio in USD.">
+                    <span>Portfolio Value</span>
+                  </Tooltip>
+                ),
+                cell: ({
+                  row,
+                }: {
+                  row: {
+                    original: RouterOutputs["competitions"]["getAgents"]["agents"][number];
+                  };
+                }) => {
+                  if (
+                    competition.status === "pending" ||
+                    agentIsInactive(row.original)
+                  ) {
+                    return (
+                      <span className="text-secondary-foreground font-semibold">
+                        -
+                      </span>
+                    );
+                  }
                   return (
                     <span className="text-secondary-foreground font-semibold">
-                      -
+                      {row.original.portfolioValue.toLocaleString("en-US", {
+                        style: "currency",
+                        currency: "USD",
+                        maximumFractionDigits: 2,
+                      })}
                     </span>
                   );
-                }
-                const percentColor =
-                  row.original.change24hPercent >= 0
-                    ? "text-green-500"
-                    : "text-red-500";
-                return (
-                  <div className="flex flex-col font-semibold">
-                    <span className={`text-xs ${percentColor}`}>
-                      {row.original.change24hPercent >= 0 ? "+" : ""}
-                      {row.original.change24hPercent.toFixed(2)}%
-                    </span>
-                  </div>
-                );
+                },
+                enableSorting: true,
+                size: 140,
               },
-              enableSorting: true,
-              meta: {
-                className: isMobile ? "max-w-[60px]" : "max-w-[100px]",
+              {
+                id: "pnl",
+                accessorKey: "pnl",
+                header: () => (
+                  <Tooltip content="The profit or loss as a percentage of the agent's starting portfolio value.">
+                    P&L
+                  </Tooltip>
+                ),
+                cell: ({
+                  row,
+                }: {
+                  row: {
+                    original: RouterOutputs["competitions"]["getAgents"]["agents"][number];
+                  };
+                }) => {
+                  if (
+                    competition.status === "pending" ||
+                    agentIsInactive(row.original)
+                  ) {
+                    return (
+                      <span className="text-secondary-foreground font-semibold">
+                        -
+                      </span>
+                    );
+                  }
+                  const pnlColor =
+                    row.original.pnlPercent >= 0
+                      ? "text-green-500"
+                      : "text-red-500";
+                  return (
+                    <div className="flex flex-col">
+                      <span
+                        className={`text-secondary-foreground font-semibold`}
+                      >
+                        {row.original.pnlPercent >= 0 ? "+" : ""}
+                        {row.original.pnl.toLocaleString("en-US", {
+                          style: "currency",
+                          currency: "USD",
+                          maximumFractionDigits: 2,
+                        })}
+                      </span>
+                      <span className={`text-xs ${pnlColor}`}>
+                        ({row.original.pnlPercent >= 0 ? "+" : ""}
+                        {row.original.pnlPercent.toFixed(2)}%)
+                      </span>
+                    </div>
+                  );
+                },
+                enableSorting: true,
+                size: 120,
               },
-            },
-          ]),
+              {
+                id: "change24h",
+                accessorKey: "change24h",
+                header: () => (
+                  <Tooltip content="The change in the agent's portfolio value in the last 24 hours, expressed as a percentage.">
+                    24h
+                  </Tooltip>
+                ),
+                cell: ({
+                  row,
+                }: {
+                  row: {
+                    original: RouterOutputs["competitions"]["getAgents"]["agents"][number];
+                  };
+                }) => {
+                  if (
+                    competition.status === "pending" ||
+                    agentIsInactive(row.original)
+                  ) {
+                    return (
+                      <span className="text-secondary-foreground font-semibold">
+                        -
+                      </span>
+                    );
+                  }
+                  const percentColor =
+                    row.original.change24hPercent >= 0
+                      ? "text-green-500"
+                      : "text-red-500";
+                  return (
+                    <div className="flex flex-col font-semibold">
+                      <span className={`text-xs ${percentColor}`}>
+                        {row.original.change24hPercent >= 0 ? "+" : ""}
+                        {row.original.change24hPercent.toFixed(2)}%
+                      </span>
+                    </div>
+                  );
+                },
+                enableSorting: true,
+                meta: {
+                  className: isMobile ? "max-w-[60px]" : "max-w-[100px]",
+                },
+              },
+            ]),
       {
         id: "boostPool",
         accessorKey: "boostTotal",
@@ -805,6 +943,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
       isOpenForBoosting,
       isSuccessUserBoosts,
       isPerpsCompetition,
+      isSpotLiveCompetition,
       isMobile,
       competition.status,
       agentIsInactive,
