@@ -80,7 +80,7 @@ export async function setup() {
     process.env.METRICS_PORT = "3003";
   }
 
-  // Ensure Loops variables are set
+  // Ensure Loops variables are set (for API server)
   if (!process.env.LOOPS_BASE_URL) {
     process.env.LOOPS_BASE_URL = "http://127.0.0.1:4010";
   }
@@ -89,6 +89,17 @@ export async function setup() {
   }
   if (!process.env.LOOPS_MAILING_LIST_ID) {
     process.env.LOOPS_MAILING_LIST_ID = "test-mailing-list";
+  }
+
+  // Set EMAIL_* variables for comps app RPC services (they use different env var names)
+  if (!process.env.EMAIL_BASE_URL) {
+    process.env.EMAIL_BASE_URL = "http://127.0.0.1:4010";
+  }
+  if (!process.env.EMAIL_API_KEY) {
+    process.env.EMAIL_API_KEY = "test-api-key";
+  }
+  if (!process.env.EMAIL_MAILING_LIST_ID) {
+    process.env.EMAIL_MAILING_LIST_ID = "test-mailing-list";
   }
 
   log("🚀 Setting up E2E test environment...");

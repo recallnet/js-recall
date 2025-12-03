@@ -9,20 +9,12 @@ import { RewardsRepository } from "@recallnet/db/repositories/rewards";
 import { competitions } from "@recallnet/db/schema/core/defs";
 import { InsertReward } from "@recallnet/db/schema/rewards/types";
 import { RewardsService, createLeafNode } from "@recallnet/services";
-import { ApiClient } from "@recallnet/test-utils";
-import {
-  RewardProof,
-  RewardsProofsResponse,
-  RewardsTotalResponse,
-} from "@recallnet/test-utils";
-import {
-  createPrivyAuthenticatedClient,
-  createTestClient,
-} from "@recallnet/test-utils";
-import { TestPrivyUser } from "@recallnet/test-utils";
 
 import { db } from "@/lib/db";
 import { createLogger } from "@/lib/logger";
+
+import { createTestRpcClient } from "../utils/rpc-client-helpers.js";
+import { createPrivyAuthenticatedRpcClient } from "../utils/test-helpers.js";
 
 const logger = createLogger("RewardsApiTest");
 
@@ -35,15 +27,14 @@ const createMockRewardsAllocator = (transactionHash: string | null) => ({
   }),
 });
 
-let testUserAddress: string;
-let testClient: ApiClient;
-
 describe("Rewards API", () => {
   // Clean up test state before each test
   let rewardsService: RewardsService;
   let testCompetitionId: string;
   let testRewards: InsertReward[];
-  let testUser: TestPrivyUser;
+  let testUserAddress: string;
+  let testUserId: string;
+  let testRpcClient: Awaited<ReturnType<typeof createTestRpcClient>>;
   let mockRewardsAllocator: ReturnType<typeof createMockRewardsAllocator>;
 
   // Test constants for the allocate method
@@ -89,15 +80,15 @@ describe("Rewards API", () => {
     expect(!competition).toBe(false);
     testCompetitionId = competitionId;
 
-    // Create a SIWE-authenticated client to get a test user address
-    const { client, user } = await createPrivyAuthenticatedClient({
+    // Create a Privy-authenticated RPC client
+    const { user, rpcClient } = await createPrivyAuthenticatedRpcClient({
       userName: `Test User ${Date.now()}`,
       userEmail: `test-user-${Date.now()}@test.com`,
     });
 
-    testUserAddress = user.walletAddress;
-    testClient = client;
-    testUser = user as unknown as TestPrivyUser;
+    testUserAddress = user.walletAddress || user.embeddedWalletAddress;
+    testUserId = user.id;
+    testRpcClient = rpcClient;
 
     // Create test rewards data with proper leaf hashes
     testRewards = [];
@@ -112,7 +103,7 @@ describe("Rewards API", () => {
     testRewards.push({
       id: crypto.randomUUID(),
       competitionId: testCompetitionId,
-      userId: user.id,
+      userId: testUserId,
       address: testUserAddress as `0x${string}`,
       amount: totalAmount,
       leafHash: hexToBytes(leafHashHex),
@@ -127,51 +118,24 @@ describe("Rewards API", () => {
   });
 
   test("unauthenticated user cannot access rewards endpoints", async () => {
-    const client = createTestClient();
+    // Create RPC client without authentication
+    const unauthRpcClient = await createTestRpcClient();
 
-    // Test GET /user/rewards/total without authentication
-    const totalResponse = await client.getTotalClaimableRewards();
-    expect(totalResponse.success).toBe(false);
-
-    // Test GET /user/rewards/proofs without authentication
-    const proofsResponse = await client.getRewardsWithProofs();
-    expect(proofsResponse.success).toBe(false);
-  });
-
-  test("authenticated user can get total claimable rewards", async () => {
-    // Verify testClient and testUser are properly initialized
-    expect(testClient).toBeDefined();
-    expect(testUser).toBeDefined();
-    expect(testUser.walletAddress).toBeDefined();
-
-    // Get total claimable rewards using the test client
-    const response = await testClient.getTotalClaimableRewards();
-
-    expect(response.success).toBe(true);
-    const responseData = response as RewardsTotalResponse;
-    expect(responseData.address.toLowerCase()).toBe(
-      testUser.walletAddress?.toLowerCase(),
+    // Test rewards.getClaimData without authentication (should throw)
+    await expect(unauthRpcClient.rewards.getClaimData()).rejects.toThrow(
+      /Unauthorized/,
     );
-    expect(responseData.totalClaimableRewards).toBeDefined();
-    expect(typeof responseData.totalClaimableRewards).toBe("string");
-    // The rewards have amounts 1 and 1, so total should be "2"
-    expect(responseData.totalClaimableRewards).toBe("2");
   });
 
   test("authenticated user can get rewards with proofs", async () => {
-    // Get rewards with proofs using the test client
-    const response = await testClient.getRewardsWithProofs();
+    // Get rewards with proofs using the RPC client
+    const rewards = await testRpcClient.rewards.getClaimData();
 
-    expect(response.success).toBe(true);
-    const responseData = response as RewardsProofsResponse;
-    expect(responseData.address.toLowerCase()).toBe(
-      testUser.walletAddress?.toLowerCase(),
-    );
-    expect(Array.isArray(responseData.rewards)).toBe(true);
-    expect(responseData.rewards.length).toBe(1); // Should have exactly one reward
+    expect(Array.isArray(rewards)).toBe(true);
+    expect(rewards.length).toBe(1); // Should have exactly one reward
 
-    // Validate the reward structure for both rewards
-    responseData.rewards.forEach((reward: RewardProof) => {
+    // Validate the reward structure
+    rewards.forEach((reward) => {
       expect(reward.merkleRoot).toMatch(/^0x[a-fA-F0-9]{64}$/);
       expect(typeof reward.amount).toBe("string");
       expect(reward.amount).toBe("2"); // Single reward has amount 2
@@ -203,14 +167,13 @@ describe("Rewards API", () => {
 
     expect(!competition).toBe(false);
 
-    // Create a SIWE-authenticated client to get a test user address
-    const { client, user } = await createPrivyAuthenticatedClient({
+    // Create a Privy-authenticated RPC client
+    const { user, rpcClient } = await createPrivyAuthenticatedRpcClient({
       userName: `Test User Null TX ${Date.now()}`,
       userEmail: `test-user-null-tx-${Date.now()}@test.com`,
     });
 
     const userAddress = user.walletAddress;
-    const clientForTest = client;
 
     // Create rewards repository and service with null-returning allocator
     const rewardsRepository = new RewardsRepository(db, logger);
@@ -237,7 +200,7 @@ describe("Rewards API", () => {
       totalAmount,
     );
 
-    const rewards: InsertReward[] = [
+    const rewardsData: InsertReward[] = [
       {
         id: crypto.randomUUID(),
         competitionId: competitionId,
@@ -250,7 +213,7 @@ describe("Rewards API", () => {
     ];
 
     // Insert test rewards into database
-    await rewardsRepository.insertRewards(rewards);
+    await rewardsRepository.insertRewards(rewardsData);
 
     // Execute the allocate method with null-returning allocator
     await serviceWithNullAllocator.allocate(competitionId, testStartTimestamp);
@@ -258,12 +221,9 @@ describe("Rewards API", () => {
     // Verify that allocate was called
     expect(nullAllocator.allocate).toHaveBeenCalled();
 
-    // Verify that getRewardsWithProofs returns empty array even though rewards were added
-    const response = await clientForTest.getRewardsWithProofs();
-    expect(response.success).toBe(true);
-    const responseData = response as RewardsProofsResponse;
-    expect(responseData.address.toLowerCase()).toBe(userAddress?.toLowerCase());
-    expect(Array.isArray(responseData.rewards)).toBe(true);
-    expect(responseData.rewards.length).toBe(0); // Should be empty because tx is null
+    // Verify that getClaimData returns empty array even though rewards were added
+    const rewards = await rpcClient.rewards.getClaimData();
+    expect(Array.isArray(rewards)).toBe(true);
+    expect(rewards.length).toBe(0); // Should be empty because tx is null
   });
 });

@@ -46,6 +46,20 @@ export function cacheMiddleware<
   return os
     .$context<{ logger: Logger }>()
     .middleware(async ({ context, next, path }, input) => {
+      // In test environments (Vitest), Next.js cache is not available
+      // Check if we're in a test environment by looking for Vitest globals
+      const isTestEnvironment =
+        typeof process !== "undefined" &&
+        (process.env.VITEST === "true" || process.env.NODE_ENV === "test");
+
+      if (isTestEnvironment) {
+        context.logger.debug(
+          { path },
+          "Test environment detected, skipping cache middleware",
+        );
+        return next();
+      }
+
       // Extract additional context values for cache key if specified
       const contextValues = options?.includeContext?.(context as TInContext);
 

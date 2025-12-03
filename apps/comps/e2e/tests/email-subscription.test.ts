@@ -3,29 +3,32 @@ import { describe, expect, test } from "vitest";
 
 import { users } from "@recallnet/db/schema/core/defs";
 import {
-  ApiClient,
-  UserProfileResponse,
-  UserSubscriptionResponse,
   connectToDb,
+  createMockPrivyToken,
   createTestPrivyUser,
   generateRandomEthAddress,
   generateRandomPrivyId,
 } from "@recallnet/test-utils";
 
+import { createTestRpcClient } from "../utils/rpc-client-helpers.js";
+
 describe("email subscription", () => {
   test("should subscribe user to email list upon user creation", async () => {
-    const client = new ApiClient();
     const testUser = createTestPrivyUser({
       name: "Alice Test",
       email: "alice@example.com",
     });
     const { name, email, privyId } = testUser;
-    const authResult = await client.authenticateWithPrivy(testUser);
-    expect(authResult.success).toBe(true);
 
-    const { user, success } =
-      (await client.getUserProfile()) as UserProfileResponse;
-    expect(success).toBe(true);
+    // Create mock Privy token and RPC client
+    const privyToken = await createMockPrivyToken(testUser);
+    const rpcClient = await createTestRpcClient(privyToken);
+
+    // Login to create user
+    await rpcClient.user.login();
+
+    // Get profile and verify user is subscribed by default
+    const user = await rpcClient.user.getProfile();
     expect(user.name).toBe(name);
     expect(user.email).toBe(email);
     expect(user.privyId).toBe(privyId);
@@ -33,8 +36,6 @@ describe("email subscription", () => {
   });
 
   test("subscribes user and is idempotent on subscribe", async () => {
-    const client = new ApiClient();
-
     // Manually create a user via db write
     const db = await connectToDb();
     const walletAddress = generateRandomEthAddress();
@@ -55,49 +56,48 @@ describe("email subscription", () => {
       .returning();
     expect(row).toBeDefined();
     expect(row!.isSubscribed).toBe(false);
-    const userClient = await client.createPrivyUserClient({
+
+    // Create test user and RPC client
+    const testUser = createTestPrivyUser({
       email,
       privyId,
       walletAddress,
     });
+    const privyToken = await createMockPrivyToken(testUser);
+    const rpcClient = await createTestRpcClient(privyToken);
 
     // Initial profile
-    const profile = (await userClient.getUserProfile()) as UserProfileResponse;
-    expect(profile.success).toBe(true);
-    expect(profile.user.isSubscribed).toBe(false);
+    const profile = await rpcClient.user.getProfile();
+    expect(profile.isSubscribed).toBe(false);
 
     // Subscribe
-    const sub =
-      (await userClient.subscribeToMailingList()) as UserSubscriptionResponse;
-    expect(sub.success).toBe(true);
-    expect(sub.isSubscribed).toBe(true);
+    const subResult = await rpcClient.user.subscribe();
+    expect(subResult.isSubscribed).toBe(true);
 
-    // Duplicate subscribe -> idempotent 200
-    const dup =
-      (await userClient.subscribeToMailingList()) as UserSubscriptionResponse;
-    expect(dup.success).toBe(true);
-    expect(dup.isSubscribed).toBe(true);
+    // Duplicate subscribe -> idempotent
+    const dupResult = await rpcClient.user.subscribe();
+    expect(dupResult.isSubscribed).toBe(true);
   });
 
   test("unsubscribes user and is idempotent on unsubscribe", async () => {
-    const client = new ApiClient();
-    const userClient = await client.createPrivyUserClient();
+    // Create test user and RPC client
+    const testUser = createTestPrivyUser();
+    const privyToken = await createMockPrivyToken(testUser);
+    const rpcClient = await createTestRpcClient(privyToken);
+
+    // Login to create user
+    await rpcClient.user.login();
 
     // Ensure subscribed first (this happens upon user creation)
-    const profile = (await userClient.getUserProfile()) as UserProfileResponse;
-    expect(profile.success).toBe(true);
-    expect(profile.user.isSubscribed).toBe(true);
+    const profile = await rpcClient.user.getProfile();
+    expect(profile.isSubscribed).toBe(true);
 
     // Unsubscribe
-    const unsub =
-      (await userClient.unsubscribeFromMailingList()) as UserSubscriptionResponse;
-    expect(unsub.success).toBe(true);
-    expect(unsub.isSubscribed).toBe(false);
+    const unsubResult = await rpcClient.user.unsubscribe();
+    expect(unsubResult.isSubscribed).toBe(false);
 
-    // Duplicate unsubscribe -> idempotent 200
-    const dupUnsub =
-      (await userClient.unsubscribeFromMailingList()) as UserSubscriptionResponse;
-    expect(dupUnsub.success).toBe(true);
-    expect(dupUnsub.isSubscribed).toBe(false);
+    // Duplicate unsubscribe -> idempotent
+    const dupUnsubResult = await rpcClient.user.unsubscribe();
+    expect(dupUnsubResult.isSubscribed).toBe(false);
   });
 });
