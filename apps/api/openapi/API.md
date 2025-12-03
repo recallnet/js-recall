@@ -1344,7 +1344,7 @@ Revoke bonus boost
 ##### Description:
 
 Revoke multiple bonus boosts in a single request. Prevents future applications and removes
-from pending competitions where the boosting window hasn't opened.
+from competitions where the boosting window hasn't opened.
 
 **Note**: This endpoint is currently stubbed and returns 501 Not Implemented for API contract validation.
 
