@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, test } from "vitest";
 
 import { agentScore } from "@recallnet/db/schema/ranking/defs";
+import { specificChainTokens } from "@recallnet/services/lib";
 import {
   CROSS_CHAIN_TRADING_TYPE,
   CreateCompetitionResponse,
@@ -14,8 +15,6 @@ import {
   getAdminApiKey,
   registerUserAndAgentAndGetClient,
 } from "@recallnet/test-utils";
-
-import { config } from "@/config/index.js";
 
 describe("Leaderboard API", () => {
   let adminApiKey: string;
@@ -57,14 +56,14 @@ describe("Leaderboard API", () => {
 
     // Make some trades
     await agentClient1.executeTrade({
-      fromToken: config.specificChainTokens.eth.usdc,
+      fromToken: specificChainTokens.eth.usdc,
       toToken: "0x000000000000000000000000000000000000dead", // Effectively make agent 1 lose
       amount: "100",
       competitionId,
       reason: "Test trade",
     });
     await agentClient2.executeTrade({
-      fromToken: config.specificChainTokens.eth.usdc,
+      fromToken: specificChainTokens.eth.usdc,
       toToken: "0x000000000000000000000000000000000000dead",
       amount: "1",
       competitionId,
@@ -130,14 +129,14 @@ describe("Leaderboard API", () => {
 
     // Make some trades
     await agentClient1.executeTrade({
-      fromToken: config.specificChainTokens.eth.usdc,
+      fromToken: specificChainTokens.eth.usdc,
       toToken: "0x000000000000000000000000000000000000dead", // Effectively make agent 1 lose
       amount: "100",
       competitionId,
       reason: "Test trade",
     });
     await agentClient2.executeTrade({
-      fromToken: config.specificChainTokens.eth.usdc,
+      fromToken: specificChainTokens.eth.usdc,
       toToken: "0x000000000000000000000000000000000000dead",
       amount: "1",
       competitionId,
@@ -206,14 +205,14 @@ describe("Leaderboard API", () => {
 
     // Make some trades
     await agentClient1.executeTrade({
-      fromToken: config.specificChainTokens.eth.usdc,
+      fromToken: specificChainTokens.eth.usdc,
       toToken: "0x000000000000000000000000000000000000dead", // Effectively make agent 1 lose
       amount: "100",
       competitionId: competitionId1,
       reason: "Test trade",
     });
     await agentClient2.executeTrade({
-      fromToken: config.specificChainTokens.eth.usdc,
+      fromToken: specificChainTokens.eth.usdc,
       toToken: "0x000000000000000000000000000000000000dead",
       amount: "1",
       competitionId: competitionId1,
@@ -234,14 +233,14 @@ describe("Leaderboard API", () => {
 
     // Make some trades
     await agentClient1.executeTrade({
-      fromToken: config.specificChainTokens.eth.usdc,
+      fromToken: specificChainTokens.eth.usdc,
       toToken: "0x000000000000000000000000000000000000dead", // Effectively make agent 1 lose
       amount: "100",
       competitionId: competitionId2,
       reason: "Test trade",
     });
     await agentClient2.executeTrade({
-      fromToken: config.specificChainTokens.eth.usdc,
+      fromToken: specificChainTokens.eth.usdc,
       toToken: "0x000000000000000000000000000000000000dead",
       amount: "1",
       competitionId: competitionId2,
@@ -397,14 +396,14 @@ describe("Leaderboard API", () => {
       agentIds: [agent1.id, agent2.id],
     });
     await agentClient1.executeTrade({
-      fromToken: config.specificChainTokens.eth.usdc,
+      fromToken: specificChainTokens.eth.usdc,
       toToken: "0x000000000000000000000000000000000000dead",
       amount: "100",
       competitionId: tradingCompId1,
       reason: "Test trade - agent1 loses",
     });
     await agentClient2.executeTrade({
-      fromToken: config.specificChainTokens.eth.usdc,
+      fromToken: specificChainTokens.eth.usdc,
       toToken: "0x000000000000000000000000000000000000dead",
       amount: "10",
       competitionId: tradingCompId1,
@@ -484,14 +483,14 @@ describe("Leaderboard API", () => {
       agentIds: [agent1.id, agent2.id],
     });
     await agentClient1.executeTrade({
-      fromToken: config.specificChainTokens.eth.usdc,
+      fromToken: specificChainTokens.eth.usdc,
       toToken: "0x000000000000000000000000000000000000dead",
       amount: "50",
       competitionId: tradingCompId2,
       reason: "Test trade - agent1 second comp",
     });
     await agentClient2.executeTrade({
-      fromToken: config.specificChainTokens.eth.usdc,
+      fromToken: specificChainTokens.eth.usdc,
       toToken: "0x000000000000000000000000000000000000dead",
       amount: "25",
       competitionId: tradingCompId2,
@@ -606,14 +605,14 @@ describe("Leaderboard API", () => {
     });
 
     await agentClient1.executeTrade({
-      fromToken: config.specificChainTokens.eth.usdc,
+      fromToken: specificChainTokens.eth.usdc,
       toToken: "0x000000000000000000000000000000000000dead",
       amount: "100",
       competitionId: comp1Id,
       reason: "Test trade",
     });
     await agentClient2.executeTrade({
-      fromToken: config.specificChainTokens.eth.usdc,
+      fromToken: specificChainTokens.eth.usdc,
       toToken: "0x000000000000000000000000000000000000dead",
       amount: "10",
       competitionId: comp1Id,

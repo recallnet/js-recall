@@ -94,6 +94,7 @@
     "@vitest/coverage-v8": "^3.2.4",
     "dotenv": "^16.0.3",
     "jsdom": "^26.1.0",
+    "merkletreejs": "^0.5.2",
     "typedoc": "^0.28.1",
     "typedoc-plugin-coverage": "^3.4.1",
     "typedoc-plugin-markdown": "^4.6.0",

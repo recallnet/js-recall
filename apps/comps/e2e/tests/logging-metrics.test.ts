@@ -1,6 +1,7 @@
 import axios from "axios";
 import { beforeEach, describe, expect, test } from "vitest";
 
+import { specificChainTokens } from "@recallnet/services/lib";
 import {
   CreateCompetitionResponse,
   ResetApiKeyResponse,
@@ -11,8 +12,6 @@ import {
   getAdminApiKey,
   registerUserAndAgentAndGetClient,
 } from "@recallnet/test-utils";
-
-import { config } from "@/config/index.js";
 
 describe("Logging and Metrics API", () => {
   let adminApiKey: string;
@@ -233,8 +232,8 @@ describe("Logging and Metrics API", () => {
 
     // Agent 1: Execute a few trades
     const trade1Response = await agentClient1.executeTrade({
-      fromToken: config.specificChainTokens.eth.usdc,
-      toToken: config.specificChainTokens.eth.eth,
+      fromToken: specificChainTokens.eth.usdc,
+      toToken: specificChainTokens.eth.eth,
       amount: "100",
       competitionId,
       reason: "Logging test trade 1 - USDC to ETH",
@@ -242,8 +241,8 @@ describe("Logging and Metrics API", () => {
     expect(trade1Response.success).toBe(true);
 
     const trade2Response = await agentClient1.executeTrade({
-      fromToken: config.specificChainTokens.eth.usdc,
-      toToken: config.specificChainTokens.eth.usdt,
+      fromToken: specificChainTokens.eth.usdc,
+      toToken: specificChainTokens.eth.usdt,
       amount: "50",
       competitionId,
       reason: "Logging test trade 2 - USDC to USDT",
@@ -252,8 +251,8 @@ describe("Logging and Metrics API", () => {
 
     // Agent 2: Execute trades
     const trade3Response = await agentClient2.executeTrade({
-      fromToken: config.specificChainTokens.eth.usdc,
-      toToken: config.specificChainTokens.eth.eth,
+      fromToken: specificChainTokens.eth.usdc,
+      toToken: specificChainTokens.eth.eth,
       amount: "75",
       competitionId,
       reason: "Logging test trade 3 - USDC to ETH",
@@ -495,8 +494,8 @@ describe("Logging and Metrics API", () => {
 
     // INSERT operations (should be classified as "INSERT")
     await agentClient.executeTrade({
-      fromToken: config.specificChainTokens.eth.usdc,
-      toToken: config.specificChainTokens.eth.eth,
+      fromToken: specificChainTokens.eth.usdc,
+      toToken: specificChainTokens.eth.eth,
       amount: "50",
       competitionId,
       reason: "DB Classification test trade",
