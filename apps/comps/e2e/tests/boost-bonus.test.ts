@@ -466,7 +466,7 @@ describe("Bonus Boosts E2E", () => {
         boosts: [
           {
             wallet: user.walletAddress,
-            amount: "1000000000000000001",
+            amount: "1000000000000000000000001",
             expiresAt: validExpiration,
           },
         ],
