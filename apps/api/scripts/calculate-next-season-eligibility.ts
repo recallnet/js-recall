@@ -89,7 +89,7 @@ async function calculateNextSeasonEligibility() {
     console.log(`
 ${colors.cyan}Calculate Next Season Eligibility for Conviction Claims Airdrop${colors.reset}
 
-Usage: pnpm tsx calculate-next-season-eligibility.ts --season <number> --time <ISO-date> [--concat]
+Usage: pnpm tsx calculate-next-season-eligibility.ts --airdrop <number> [--prepend <file>]
 
 Options:
   -a, --airdrop   Airdrop number for the output (required)
@@ -97,8 +97,8 @@ Options:
   -h, --help      Show this help message
 
 Examples:
-  pnpm tsx calculate-next-season-eligibility.ts --airdrop 2 --time "2024-12-31T00:00:00Z"
-  pnpm tsx calculate-next-season-eligibility.ts --airdrop 2 --time "2024-12-31T00:00:00Z" --prepend airdrop_1_2024-11-29T00:00:00.000Z
+  pnpm tsx calculate-next-season-eligibility.ts --airdrop 2
+  pnpm tsx calculate-next-season-eligibility.ts --airdrop 2 --prepend airdrop_1_2024-11-29T00:00:00.000Z.csv
 `);
     process.exit(0);
   }
