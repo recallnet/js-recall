@@ -5,21 +5,21 @@ import { seasons } from "@recallnet/db/schema/airdrop/defs";
 import { convictionClaims } from "@recallnet/db/schema/conviction-claims/defs";
 import { TransactionProcessor } from "@recallnet/services/indexing";
 
-import { db } from "@/database/db.js";
-import { ServiceRegistry } from "@/services/index.js";
+import { db } from "@/lib/db";
+import { createLogger } from "@/lib/logger";
 
 describe("TransactionProcessor", () => {
   let transactionProcessor: TransactionProcessor;
   let convictionClaimsRepository: ConvictionClaimsRepository;
-  let services: ServiceRegistry;
 
   beforeEach(async () => {
-    // Initialize services using ServiceRegistry first
-    services = new ServiceRegistry();
-
-    // Get the transaction processor and repository from the service registry
-    transactionProcessor = services.transactionProcessor;
-    convictionClaimsRepository = services.convictionClaimsRepository;
+    // Initialize transaction processor and repository directly
+    const logger = createLogger("TransactionProcessor");
+    convictionClaimsRepository = new ConvictionClaimsRepository(db, logger);
+    transactionProcessor = new TransactionProcessor(
+      convictionClaimsRepository,
+      logger,
+    );
 
     // Clean up existing data
     await db.delete(convictionClaims);

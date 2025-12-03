@@ -13,7 +13,7 @@ import {
   wait,
 } from "@recallnet/test-utils";
 
-import { ServiceRegistry } from "@/services/index.js";
+import { competitionService } from "@/lib/services";
 
 describe("Competition Start Date Processing", () => {
   let adminApiKey: string;
@@ -59,8 +59,7 @@ describe("Competition Start Date Processing", () => {
     // Wait beyond the start time (simulate cron delay)
     await wait(6000);
 
-    const services = new ServiceRegistry();
-    await services.competitionService.processCompetitionStartDateChecks();
+    await competitionService.processCompetitionStartDateChecks();
 
     // Verify competition is active now
     const updatedCompetition = await adminClient.getCompetition(competition.id);
@@ -105,8 +104,7 @@ describe("Competition Start Date Processing", () => {
     const competition = (createResponse as CreateCompetitionResponse)
       .competition;
 
-    const services = new ServiceRegistry();
-    await services.competitionService.processCompetitionStartDateChecks();
+    await competitionService.processCompetitionStartDateChecks();
 
     // Competition should still be pending
     const stillPending = await adminClient.getCompetition(competition.id);
@@ -134,8 +132,7 @@ describe("Competition Start Date Processing", () => {
     const competition = (createResponse as CreateCompetitionResponse)
       .competition;
 
-    const services = new ServiceRegistry();
-    await services.competitionService.processCompetitionStartDateChecks();
+    await competitionService.processCompetitionStartDateChecks();
 
     // Competition should still be pending since no agents are registered
     const stillPending = await adminClient.getCompetition(competition.id);
@@ -176,8 +173,7 @@ describe("Competition Start Date Processing", () => {
     expect(joinSandbox.success).toBe(true);
 
     // Wait and process
-    const services = new ServiceRegistry();
-    await services.competitionService.processCompetitionStartDateChecks();
+    await competitionService.processCompetitionStartDateChecks();
 
     // Competition should still be pending
     const result = await adminClient.getCompetition(sandboxComp.id);
@@ -251,8 +247,7 @@ describe("Competition Start Date Processing", () => {
     await wait(2000);
 
     // Process auto-start
-    const services = new ServiceRegistry();
-    await services.competitionService.processCompetitionStartDateChecks();
+    await competitionService.processCompetitionStartDateChecks();
 
     // All 3 competitions should now be active
     const comp1Updated = await adminClient.getCompetition(comp1.id);

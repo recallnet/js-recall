@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, test } from "vitest";
 
 import { agents } from "@recallnet/db/schema/core/defs";
 import { generateHandleFromName, isValidHandle } from "@recallnet/services/lib";
+import { specificChainTokens } from "@recallnet/services/lib";
 import { ApiClient } from "@recallnet/test-utils";
 import {
   AdminAgentsListResponse,
@@ -33,8 +34,7 @@ import {
   registerUserAndAgentAndGetClient,
 } from "@recallnet/test-utils";
 
-import { config } from "@/config/index.js";
-import { ServiceRegistry } from "@/services/index.js";
+import { portfolioSnapshotterService } from "@/lib/services";
 
 describe("Agent API", () => {
   // Clean up test state before each test
@@ -1819,7 +1819,7 @@ Purpose: WALLET_VERIFICATION`;
       agentIds: [agent.id],
     });
     await agentClient.executeTrade({
-      fromToken: config.specificChainTokens.eth.usdc,
+      fromToken: specificChainTokens.eth.usdc,
       toToken: "0x000000000000000000000000000000000000dead", // Burn address - make agent 1 lose
       amount: "100",
       competitionId: firstCompetitionId,
@@ -2045,8 +2045,8 @@ Purpose: WALLET_VERIFICATION`;
 
       // Execute a trade to create history
       await agentClient.executeTrade({
-        fromToken: config.specificChainTokens.eth.usdc,
-        toToken: config.specificChainTokens.eth.eth,
+        fromToken: specificChainTokens.eth.usdc,
+        toToken: specificChainTokens.eth.eth,
         amount: "100",
         competitionId,
         reason: "Trade before leaving",
@@ -2111,16 +2111,16 @@ Purpose: WALLET_VERIFICATION`;
 
       // Execute some trades for agent1 to generate metrics
       await agentClient1.executeTrade({
-        fromToken: config.specificChainTokens.eth.usdc,
-        toToken: config.specificChainTokens.eth.eth,
+        fromToken: specificChainTokens.eth.usdc,
+        toToken: specificChainTokens.eth.eth,
         amount: "100",
         competitionId,
         reason: "Test trade 1",
       });
 
       await agentClient1.executeTrade({
-        fromToken: config.specificChainTokens.eth.eth,
-        toToken: config.specificChainTokens.eth.usdc,
+        fromToken: specificChainTokens.eth.eth,
+        toToken: specificChainTokens.eth.usdc,
         amount: "0.01",
         competitionId,
         reason: "Test trade 2",
@@ -2209,8 +2209,8 @@ Purpose: WALLET_VERIFICATION`;
       // Execute different numbers of trades in each competition
       // Competition 1: 1 trade
       await agentClient.executeTrade({
-        fromToken: config.specificChainTokens.eth.usdc,
-        toToken: config.specificChainTokens.eth.eth,
+        fromToken: specificChainTokens.eth.usdc,
+        toToken: specificChainTokens.eth.eth,
         amount: "100",
         competitionId: comp1Id,
         reason: "Comp 1 trade",
@@ -2223,22 +2223,22 @@ Purpose: WALLET_VERIFICATION`;
         agentIds: [agent.id],
       });
       await agentClient.executeTrade({
-        fromToken: config.specificChainTokens.eth.usdc,
-        toToken: config.specificChainTokens.eth.eth,
+        fromToken: specificChainTokens.eth.usdc,
+        toToken: specificChainTokens.eth.eth,
         amount: "50",
         competitionId: comp2Id,
         reason: "Comp 2 trade 1",
       });
       await agentClient.executeTrade({
-        fromToken: config.specificChainTokens.eth.eth,
-        toToken: config.specificChainTokens.eth.usdc,
+        fromToken: specificChainTokens.eth.eth,
+        toToken: specificChainTokens.eth.usdc,
         amount: "0.01",
         competitionId: comp2Id,
         reason: "Comp 2 trade 2",
       });
       await agentClient.executeTrade({
-        fromToken: config.specificChainTokens.eth.usdc,
-        toToken: config.specificChainTokens.eth.eth,
+        fromToken: specificChainTokens.eth.usdc,
+        toToken: specificChainTokens.eth.eth,
         amount: "75",
         competitionId: comp2Id,
         reason: "Comp 2 trade 3",
@@ -2347,14 +2347,14 @@ Purpose: WALLET_VERIFICATION`;
       // Agent1 good performance, Agent2 poor
       await agentClient1.executeTrade({
         competitionId: comp1Id,
-        fromToken: config.specificChainTokens.eth.usdc,
-        toToken: config.specificChainTokens.eth.eth,
+        fromToken: specificChainTokens.eth.usdc,
+        toToken: specificChainTokens.eth.eth,
         amount: "100",
         reason: "agent1 good trade",
       });
       await agentClient2.executeTrade({
         competitionId: comp1Id,
-        fromToken: config.specificChainTokens.eth.usdc,
+        fromToken: specificChainTokens.eth.usdc,
         toToken: "0x000000000000000000000000000000000000dead",
         amount: "100",
         reason: "agent2 bad trade",
@@ -2376,14 +2376,14 @@ Purpose: WALLET_VERIFICATION`;
       // Agent2 good performance, Agent1 poor
       await agentClient2.executeTrade({
         competitionId: comp2Id,
-        fromToken: config.specificChainTokens.eth.usdc,
-        toToken: config.specificChainTokens.eth.eth,
+        fromToken: specificChainTokens.eth.usdc,
+        toToken: specificChainTokens.eth.eth,
         amount: "100",
         reason: "agent2 good trade",
       });
       await agentClient1.executeTrade({
         competitionId: comp2Id,
-        fromToken: config.specificChainTokens.eth.usdc,
+        fromToken: specificChainTokens.eth.usdc,
         toToken: "0x000000000000000000000000000000000000dead",
         amount: "50",
         reason: "agent1 bad trade",
@@ -2609,8 +2609,8 @@ Purpose: WALLET_VERIFICATION`;
       // Agent 1: Top performer (keeps valuable assets - ETH)
       for (let i = 0; i < 3; i++) {
         await agentClients[0]?.executeTrade({
-          fromToken: config.specificChainTokens.eth.usdc,
-          toToken: config.specificChainTokens.eth.eth, // ETH - valuable
+          fromToken: specificChainTokens.eth.usdc,
+          toToken: specificChainTokens.eth.eth, // ETH - valuable
           amount: "100",
           competitionId,
           reason: `Agent 1 smart trade ${i + 1} - buying ETH`,
@@ -2619,14 +2619,14 @@ Purpose: WALLET_VERIFICATION`;
 
       // Agent 2: Medium performer (mixed strategy - some good, some bad trades)
       await agentClients[1]?.executeTrade({
-        fromToken: config.specificChainTokens.eth.usdc,
-        toToken: config.specificChainTokens.eth.eth, // ETH - good trade
+        fromToken: specificChainTokens.eth.usdc,
+        toToken: specificChainTokens.eth.eth, // ETH - good trade
         amount: "100",
         competitionId,
         reason: "Agent 2 good trade - buying ETH",
       });
       await agentClients[1]?.executeTrade({
-        fromToken: config.specificChainTokens.eth.usdc,
+        fromToken: specificChainTokens.eth.usdc,
         toToken: "0x000000000000000000000000000000000000dead", // Burn address - bad trade
         amount: "50",
         competitionId,
@@ -2635,7 +2635,7 @@ Purpose: WALLET_VERIFICATION`;
 
       // Agent 3: Poor performer (burns most tokens)
       await agentClients[2]?.executeTrade({
-        fromToken: config.specificChainTokens.eth.usdc,
+        fromToken: specificChainTokens.eth.usdc,
         toToken: "0x000000000000000000000000000000000000dead", // Burn address - terrible trade
         amount: "200",
         competitionId,
@@ -2644,7 +2644,7 @@ Purpose: WALLET_VERIFICATION`;
 
       // Agent 4: Worst performer (burns everything)
       await agentClients[3]?.executeTrade({
-        fromToken: config.specificChainTokens.eth.usdc,
+        fromToken: specificChainTokens.eth.usdc,
         toToken: "0x000000000000000000000000000000000000dead", // Burn address - catastrophic trade
         amount: "500",
         competitionId,
@@ -2652,10 +2652,7 @@ Purpose: WALLET_VERIFICATION`;
       });
 
       // Trigger portfolio snapshots proactively
-      const services = new ServiceRegistry();
-      await services.portfolioSnapshotterService.takePortfolioSnapshots(
-        competitionId,
-      );
+      await portfolioSnapshotterService.takePortfolioSnapshots(competitionId);
 
       // Check rankings for each agent
       const rankingResults = [];
@@ -2782,8 +2779,8 @@ Purpose: WALLET_VERIFICATION`;
         // Agent 1: Escalating strategy (1, 2, 3 trades respectively)
         for (let j = 0; j < i; j++) {
           await agentClient1.executeTrade({
-            fromToken: config.specificChainTokens.eth.usdc,
-            toToken: config.specificChainTokens.eth.eth, // ETH
+            fromToken: specificChainTokens.eth.usdc,
+            toToken: specificChainTokens.eth.eth, // ETH
             amount: "100",
             competitionId,
             reason: `Agent 1 trade ${j + 1} in competition ${i}`,
@@ -2795,8 +2792,8 @@ Purpose: WALLET_VERIFICATION`;
           // Even competitions: good trades (buy ETH)
           for (let j = 0; j < 2; j++) {
             await agentClient2.executeTrade({
-              fromToken: config.specificChainTokens.eth.usdc,
-              toToken: config.specificChainTokens.eth.eth, // ETH
+              fromToken: specificChainTokens.eth.usdc,
+              toToken: specificChainTokens.eth.eth, // ETH
               amount: "50",
               competitionId,
               reason: `Agent 2 good trade ${j + 1} in competition ${i}`,
@@ -2805,7 +2802,7 @@ Purpose: WALLET_VERIFICATION`;
         } else {
           // Odd competitions: bad trades (burn tokens)
           await agentClient2.executeTrade({
-            fromToken: config.specificChainTokens.eth.usdc,
+            fromToken: specificChainTokens.eth.usdc,
             toToken: "0x000000000000000000000000000000000000dead", // Burn
             amount: "100",
             competitionId,
@@ -2993,7 +2990,7 @@ Purpose: WALLET_VERIFICATION`;
       // Execute trades to create different performance levels
       // Agent 1: Good performance (buys ETH)
       await agentClient1.executeTrade({
-        fromToken: config.specificChainTokens.eth.usdc,
+        fromToken: specificChainTokens.eth.usdc,
         toToken: "0x000000000000000000000000000000000000dead",
         amount: "1",
         competitionId,
@@ -3002,7 +2999,7 @@ Purpose: WALLET_VERIFICATION`;
 
       // Agent 2: Medium performance (mixed strategy)
       await agentClient2.executeTrade({
-        fromToken: config.specificChainTokens.eth.usdc,
+        fromToken: specificChainTokens.eth.usdc,
         toToken: "0x000000000000000000000000000000000000dead",
         amount: "50",
         competitionId,
@@ -3011,7 +3008,7 @@ Purpose: WALLET_VERIFICATION`;
 
       // Agent 3: Poor performance (burns tokens)
       await agentClient3.executeTrade({
-        fromToken: config.specificChainTokens.eth.usdc,
+        fromToken: specificChainTokens.eth.usdc,
         toToken: "0x000000000000000000000000000000000000dead",
         amount: "200",
         competitionId,
@@ -3019,10 +3016,7 @@ Purpose: WALLET_VERIFICATION`;
       });
 
       // Trigger portfolio snapshots
-      const services = new ServiceRegistry();
-      await services.portfolioSnapshotterService.takePortfolioSnapshots(
-        competitionId,
-      );
+      await portfolioSnapshotterService.takePortfolioSnapshots(competitionId);
 
       // Get initial rankings with all agents active
       const initialRankings = [];
@@ -3079,9 +3073,7 @@ Purpose: WALLET_VERIFICATION`;
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
       // Trigger portfolio snapshots again to ensure data is updated
-      await services.portfolioSnapshotterService.takePortfolioSnapshots(
-        competitionId,
-      );
+      await portfolioSnapshotterService.takePortfolioSnapshots(competitionId);
 
       // Wait a bit more for snapshots to be processed
       await new Promise((resolve) => setTimeout(resolve, 2000));
