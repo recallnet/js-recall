@@ -1,12 +1,8 @@
 import { beforeEach, describe, expect, test } from "vitest";
 
-import {
-  ErrorResponse,
-  GetArenaResponse,
-  ListArenasResponse,
-  createTestClient,
-  getAdminApiKey,
-} from "@recallnet/test-utils";
+import { createTestClient, getAdminApiKey } from "@recallnet/test-utils";
+
+import { createTestRpcClient } from "../utils/rpc-client-helpers.js";
 
 describe("Arena API", () => {
   let adminApiKey: string;
@@ -30,21 +26,20 @@ describe("Arena API", () => {
     });
     expect(createResponse.success).toBe(true);
 
-    // List arenas using public endpoint
-    const testClient = createTestClient();
-    const listResponse = (await testClient.getArenas({
+    // List arenas using RPC (public access, no auth needed)
+    const rpcClient = await createTestRpcClient();
+    const { arenas, pagination } = await rpcClient.arena.list({
       limit: 20,
       offset: 0,
-    })) as ListArenasResponse;
+    });
 
-    expect(listResponse.success).toBe(true);
-    expect(listResponse.arenas).toBeDefined();
-    expect(Array.isArray(listResponse.arenas)).toBe(true);
-    expect(listResponse.pagination).toBeDefined();
-    expect(listResponse.pagination.total).toBeGreaterThan(0);
+    expect(arenas).toBeDefined();
+    expect(Array.isArray(arenas)).toBe(true);
+    expect(pagination).toBeDefined();
+    expect(pagination.total).toBeGreaterThan(0);
 
     // Verify our created arena is in the list
-    const foundArena = listResponse.arenas.find((a) => a.id === arenaId);
+    const foundArena = arenas.find((a) => a.id === arenaId);
     expect(foundArena).toBeDefined();
     expect(foundArena?.name).toBe("Test Arena for Listing");
   });
@@ -65,18 +60,15 @@ describe("Arena API", () => {
     });
     expect(createResponse.success).toBe(true);
 
-    // Get arena using public endpoint
-    const testClient = createTestClient();
-    const getResponse = (await testClient.getArenaById(
-      arenaId,
-    )) as GetArenaResponse;
+    // Get arena using RPC (public access, no auth needed)
+    const rpcClient = await createTestRpcClient();
+    const arena = await rpcClient.arena.getById({ id: arenaId });
 
-    expect(getResponse.success).toBe(true);
-    expect(getResponse.arena).toBeDefined();
-    expect(getResponse.arena.id).toBe(arenaId);
-    expect(getResponse.arena.name).toBe("Test Arena for Get");
-    expect(getResponse.arena.skill).toBe("perpetual_futures");
-    expect(getResponse.arena.venues).toEqual(["hyperliquid"]);
+    expect(arena).toBeDefined();
+    expect(arena.id).toBe(arenaId);
+    expect(arena.name).toBe("Test Arena for Get");
+    expect(arena.skill).toBe("perpetual_futures");
+    expect(arena.venues).toEqual(["hyperliquid"]);
   });
 
   test("should filter arenas by name", async () => {
@@ -103,17 +95,16 @@ describe("Arena API", () => {
       createdBy: "test-admin",
     });
 
-    // List with name filter
-    const testClient = createTestClient();
-    const listResponse = (await testClient.getArenas({
+    // List with name filter using RPC
+    const rpcClient = await createTestRpcClient();
+    const { arenas } = await rpcClient.arena.list({
       name: uniqueName,
-    })) as ListArenasResponse;
+    });
 
-    expect(listResponse.success).toBe(true);
-    expect(listResponse.arenas.length).toBeGreaterThanOrEqual(2);
+    expect(arenas.length).toBeGreaterThanOrEqual(2);
 
     // Verify both arenas are in the filtered results
-    const arenaIds = listResponse.arenas.map((a) => a.id);
+    const arenaIds = arenas.map((a) => a.id);
     expect(arenaIds).toContain(arena1Id);
     expect(arenaIds).toContain(arena2Id);
   });
@@ -135,33 +126,31 @@ describe("Arena API", () => {
     }
 
     // Get first page
-    const testClient = createTestClient();
-    const page1 = (await testClient.getArenas({
+    const rpcClient = await createTestRpcClient();
+    const page1 = await rpcClient.arena.list({
       limit: 2,
       offset: 0,
-    })) as ListArenasResponse;
+    });
 
-    expect(page1.success).toBe(true);
     expect(page1.arenas.length).toBeLessThanOrEqual(2);
     expect(page1.pagination.limit).toBe(2);
     expect(page1.pagination.offset).toBe(0);
 
     // Get second page
-    const page2 = (await testClient.getArenas({
+    const page2 = await rpcClient.arena.list({
       limit: 2,
       offset: 2,
-    })) as ListArenasResponse;
+    });
 
-    expect(page2.success).toBe(true);
     expect(page2.pagination.offset).toBe(2);
   });
 
   test("should return 404 for non-existent arena", async () => {
-    const testClient = createTestClient();
-    const response = await testClient.getArenaById("non-existent-arena-id");
+    const rpcClient = await createTestRpcClient();
 
-    expect(response.success).toBe(false);
-    expect((response as ErrorResponse).status).toBe(404);
+    await expect(
+      rpcClient.arena.getById({ id: "non-existent-arena-id" }),
+    ).rejects.toThrow(/not found/i);
   });
 
   test("should allow unauthenticated access to public arena endpoints", async () => {
@@ -178,17 +167,13 @@ describe("Arena API", () => {
       createdBy: "test-admin",
     });
 
-    // Access without authentication
-    const unauthClient = createTestClient();
-    // DO NOT login
+    // Access without authentication using RPC
+    const rpcClient = await createTestRpcClient();
 
-    const listResponse = (await unauthClient.getArenas()) as ListArenasResponse;
-    expect(listResponse.success).toBe(true);
+    const { arenas } = await rpcClient.arena.list({});
+    expect(arenas).toBeDefined();
 
-    const getResponse = (await unauthClient.getArenaById(
-      arenaId,
-    )) as GetArenaResponse;
-    expect(getResponse.success).toBe(true);
-    expect(getResponse.arena.id).toBe(arenaId);
+    const arena = await rpcClient.arena.getById({ id: arenaId });
+    expect(arena.id).toBe(arenaId);
   });
 });

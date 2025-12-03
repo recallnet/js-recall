@@ -5,7 +5,6 @@ import { specificChainTokens } from "@recallnet/services/lib";
 import {
   CROSS_CHAIN_TRADING_TYPE,
   CreateCompetitionResponse,
-  GlobalLeaderboardResponse,
   StartCompetitionResponse,
 } from "@recallnet/test-utils";
 import { connectToDb } from "@recallnet/test-utils";
@@ -16,13 +15,18 @@ import {
   registerUserAndAgentAndGetClient,
 } from "@recallnet/test-utils";
 
+import { createTestRpcClient } from "../utils/rpc-client-helpers.js";
+
 describe("Leaderboard API", () => {
   let adminApiKey: string;
+  let rpcClient: Awaited<ReturnType<typeof createTestRpcClient>>;
 
   // Clean up test state before each test
   beforeEach(async () => {
     // Store the admin API key for authentication
     adminApiKey = await getAdminApiKey();
+    // Create RPC client for leaderboard queries (public access, no auth needed)
+    rpcClient = await createTestRpcClient();
   });
 
   test("should get global leaderboard with scores and ranks", async () => {
@@ -72,16 +76,13 @@ describe("Leaderboard API", () => {
 
     await adminClient.endCompetition(startResponse.competition.id);
 
-    // Get global leaderboard
-    const leaderboard =
-      (await agentClient1.getGlobalLeaderboard()) as GlobalLeaderboardResponse;
-    expect(leaderboard.success).toBe(true);
+    // Get global leaderboard using RPC (public access, no auth needed)
+    const { agents } = await rpcClient.leaderboard.getGlobal({});
 
-    const agents = leaderboard.agents;
     expect(agents).toHaveLength(2);
 
     // Verify agent data structure
-    for (const agent of leaderboard.agents) {
+    for (const agent of agents) {
       expect(agent.id).toBeDefined();
       expect(agent.name).toBeDefined();
       expect(agent.score).toBeDefined();
@@ -90,12 +91,12 @@ describe("Leaderboard API", () => {
     }
 
     // Verify agents are ordered by rank
-    const ranks = leaderboard.agents.map((a) => a.rank);
+    const ranks = agents.map((a) => a.rank);
     expect(ranks).toEqual([...ranks].sort((a, b) => a - b));
 
     // Verify agent score
-    expect(leaderboard.agents[0]?.score).toBe(1582.529098428072);
-    expect(leaderboard.agents[1]?.score).toBe(1456.0379920213372);
+    expect(agents[0]?.score).toBe(1582.529098428072);
+    expect(agents[1]?.score).toBe(1456.0379920213372);
   });
 
   test("should use query params to filter leaderboard", async () => {
@@ -145,20 +146,18 @@ describe("Leaderboard API", () => {
 
     await adminClient.endCompetition(startResponse.competition.id);
 
-    // Get global leaderboard
-    const leaderboard = (await agentClient1.getGlobalLeaderboard({
+    // Get global leaderboard using RPC with pagination
+    const { agents } = await rpcClient.leaderboard.getGlobal({
       limit: 1,
       offset: 1,
-    })) as GlobalLeaderboardResponse;
-    expect(leaderboard.success).toBe(true);
+    });
 
     // Verify agents
-    const agents = leaderboard.agents;
     expect(agents).toHaveLength(1);
 
     // Agent 1 is in second place, so their rank should be 2 and the only agent in the leaderboard after offset
     // TODO: sending to the zero address doesn't guarantee the order we want: https://github.com/recallnet/js-recall/issues/481
-    for (const agent of leaderboard.agents) {
+    for (const agent of agents) {
       expect(agent.id).toBeDefined();
       expect(agent.name).toBeDefined();
       expect(agent.score).toBeDefined();
@@ -167,11 +166,11 @@ describe("Leaderboard API", () => {
     }
 
     // Verify agent rank/score
-    expect(leaderboard.agents[0]?.score).toBe(1456.0379920213372);
-    expect(leaderboard.agents[0]?.rank).toBe(2);
+    expect(agents[0]?.score).toBe(1456.0379920213372);
+    expect(agents[0]?.rank).toBe(2);
 
     // Verify agents are ordered by rank
-    const ranks = leaderboard.agents.map((a) => a.rank);
+    const ranks = agents.map((a) => a.rank);
     expect(ranks).toEqual([...ranks].sort((a, b) => a - b));
   });
 
@@ -250,10 +249,8 @@ describe("Leaderboard API", () => {
     // End second competition
     await adminClient.endCompetition(startResponse2.competition.id);
 
-    // Get global leaderboard
-    const leaderboard =
-      (await agentClient1.getGlobalLeaderboard()) as GlobalLeaderboardResponse;
-    expect(leaderboard.success).toBe(true);
+    // Get global leaderboard using RPC
+    const leaderboard = await rpcClient.leaderboard.getGlobal({});
 
     // Verify agents (agent 2 is in first place, agent 1 is in second place)
     // TODO: sending to the zero address doesn't guarantee the order we want: https://github.com/recallnet/js-recall/issues/481
@@ -313,31 +310,27 @@ describe("Leaderboard API", () => {
     });
 
     // Before ending the perps comp, check that the trading leaderboard has values but perps is empty
-    const leaderboard1 = (await adminClient.getGlobalLeaderboard({
+    const leaderboard1 = await rpcClient.leaderboard.getGlobal({
       type: "trading",
-    })) as GlobalLeaderboardResponse;
-    expect(leaderboard1.success).toBe(true);
+    });
     expect(leaderboard1.agents.length).toBe(2);
     expect(leaderboard1.pagination.total).toBe(2);
-    const leaderboard2 = (await adminClient.getGlobalLeaderboard({
+    const leaderboard2 = await rpcClient.leaderboard.getGlobal({
       type: "perpetual_futures",
-    })) as GlobalLeaderboardResponse;
-    expect(leaderboard2.success).toBe(true);
+    });
     expect(leaderboard2.agents.length).toBe(0);
     expect(leaderboard2.pagination.total).toBe(0);
     await adminClient.endCompetition(perpCompId);
 
     // Final check that both types have values
-    const leaderboard3 = (await adminClient.getGlobalLeaderboard({
+    const leaderboard3 = await rpcClient.leaderboard.getGlobal({
       type: "trading",
-    })) as GlobalLeaderboardResponse;
-    expect(leaderboard3.success).toBe(true);
+    });
     expect(leaderboard3.agents.length).toBe(2);
     expect(leaderboard3.pagination.total).toBe(2);
-    const leaderboard4 = (await adminClient.getGlobalLeaderboard({
+    const leaderboard4 = await rpcClient.leaderboard.getGlobal({
       type: "perpetual_futures",
-    })) as GlobalLeaderboardResponse;
-    expect(leaderboard4.success).toBe(true);
+    });
     expect(leaderboard4.agents.length).toBe(2);
     expect(leaderboard4.pagination.total).toBe(2);
 
@@ -412,11 +405,10 @@ describe("Leaderboard API", () => {
 
     // Store initial scores for "trading" type
     await adminClient.endCompetition(tradingCompId1);
-    const leaderboardAfterTrading1 = (await agentClient1.getGlobalLeaderboard({
+    const leaderboardAfterTrading1 = await rpcClient.leaderboard.getGlobal({
       type: "trading",
-    })) as GlobalLeaderboardResponse;
+    });
     expect(leaderboardAfterTrading1.agents).toHaveLength(2);
-    expect(leaderboardAfterTrading1.success).toBe(true);
     const tradingScoresRound1 = new Map<string, number>();
     leaderboardAfterTrading1.agents.forEach((agent) => {
       tradingScoresRound1.set(agent.id, agent.score);
@@ -444,11 +436,9 @@ describe("Leaderboard API", () => {
 
     // Check that trading scores haven't changed
     await adminClient.endCompetition(simulatedPerpCompId1);
-    const tradingLeaderboardAfterPerps =
-      (await agentClient1.getGlobalLeaderboard({
-        type: "trading",
-      })) as GlobalLeaderboardResponse;
-    expect(tradingLeaderboardAfterPerps.success).toBe(true);
+    const tradingLeaderboardAfterPerps = await rpcClient.leaderboard.getGlobal({
+      type: "trading",
+    });
     expect(tradingLeaderboardAfterPerps.agents).toHaveLength(2); // Only agents 1 & 2 have trading scores
     const agent1TradingScore = tradingLeaderboardAfterPerps.agents.find(
       (a) => a.id === agent1.id,
@@ -460,10 +450,9 @@ describe("Leaderboard API", () => {
     expect(agent2TradingScore).toBe(tradingScoresRound1.get(agent2.id));
 
     // Check perps leaderboard has all 4 agents
-    const perpsLeaderboard = (await agentClient1.getGlobalLeaderboard({
+    const perpsLeaderboard = await rpcClient.leaderboard.getGlobal({
       type: "perpetual_futures",
-    })) as GlobalLeaderboardResponse;
-    expect(perpsLeaderboard.success).toBe(true);
+    });
     expect(perpsLeaderboard.agents).toHaveLength(4); // All 4 agents competed in perps
 
     // ===== SECOND ROUND: Additional competitions to verify segregation =====
@@ -499,10 +488,9 @@ describe("Leaderboard API", () => {
 
     // Get leaderboard after second trading competition & verify they're different from round 1
     await adminClient.endCompetition(tradingCompId2);
-    const leaderboardAfterTrading2 = (await agentClient1.getGlobalLeaderboard({
+    const leaderboardAfterTrading2 = await rpcClient.leaderboard.getGlobal({
       type: "trading",
-    })) as GlobalLeaderboardResponse;
-    expect(leaderboardAfterTrading2.success).toBe(true);
+    });
     expect(leaderboardAfterTrading2.agents).toHaveLength(2);
     const tradingScoresRound2 = new Map<string, number>();
     leaderboardAfterTrading2.agents
@@ -539,10 +527,9 @@ describe("Leaderboard API", () => {
 
     // Verify trading scores haven't changed after second perp competition (type segregation)
     await adminClient.endCompetition(simulatedPerpCompId2);
-    const finalTradingLeaderboard = (await agentClient1.getGlobalLeaderboard({
+    const finalTradingLeaderboard = await rpcClient.leaderboard.getGlobal({
       type: "trading",
-    })) as GlobalLeaderboardResponse;
-    expect(finalTradingLeaderboard.success).toBe(true);
+    });
     expect(finalTradingLeaderboard.agents).toHaveLength(2); // Only agents 1 & 2 have trading scores
     const finalAgent1TradingScore = finalTradingLeaderboard.agents.find(
       (a) => a.id === agent1.id,
@@ -554,10 +541,9 @@ describe("Leaderboard API", () => {
     expect(finalAgent2TradingScore).toBe(tradingScoresRound2.get(agent2.id));
 
     // Also verify perps leaderboard still has all 4 agents
-    const finalPerpsLeaderboard = (await agentClient1.getGlobalLeaderboard({
+    const finalPerpsLeaderboard = await rpcClient.leaderboard.getGlobal({
       type: "perpetual_futures",
-    })) as GlobalLeaderboardResponse;
-    expect(finalPerpsLeaderboard.success).toBe(true);
+    });
     expect(finalPerpsLeaderboard.agents).toHaveLength(4); // All 4 agents have perps scores
   });
 
@@ -621,12 +607,11 @@ describe("Leaderboard API", () => {
 
     await adminClient.endCompetition(comp1Id);
 
-    // Get arena-specific leaderboard
-    const arenaLeaderboard = (await agentClient1.getGlobalLeaderboard({
+    // Get arena-specific leaderboard using RPC
+    const arenaLeaderboard = await rpcClient.leaderboard.getGlobal({
       arenaId,
-    })) as GlobalLeaderboardResponse;
+    });
 
-    expect(arenaLeaderboard.success).toBe(true);
     expect(arenaLeaderboard.agents).toHaveLength(2);
 
     // Verify arena leaderboard has correct data
