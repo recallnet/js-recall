@@ -4001,7 +4001,7 @@ export function configureAdminRoutes(
    *     summary: Revoke bonus boost
    *     description: |
    *       Revoke multiple bonus boosts in a single request. Prevents future applications and removes
-   *       from pending competitions where the boosting window hasn't opened.
+   *       from competitions where the boosting window hasn't opened.
    *
    *       **Note**: This endpoint is currently stubbed and returns 501 Not Implemented for API contract validation.
    *     security:
@@ -4056,7 +4056,7 @@ export function configureAdminRoutes(
    *                       example: 2
    *                     note:
    *                       type: string
-   *                       example: "When implemented, this will revoke 2 boosts and remove them from pending competitions"
+   *                       example: "When implemented, this will revoke 2 boosts and remove them from competitions where the boosting window hasn't opened"
    *       400:
    *         description: Bad Request - Invalid request format, validation errors, empty array, or boost already revoked
    *       401:
