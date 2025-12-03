@@ -56,7 +56,7 @@ async function startServer() {
     env: {
       ...process.env,
       NODE_ENV: "test",
-      PORT: "3001",
+      PORT: process.env.TEST_PORT,
     },
   });
 
@@ -106,6 +106,9 @@ function setupEnvironment() {
 
   // Ensure TEST_MODE is set
   process.env.TEST_MODE = "true";
+  process.env.TEST_HOST = process.env.TEST_HOST || "localhost";
+  process.env.TEST_PORT = process.env.TEST_PORT || "3001";
+  process.env.TEST_API_BASE_URL = `http://${process.env.TEST_HOST}:${process.env.TEST_PORT}/api/trading`;
 }
 
 // Setup function to run before all tests
