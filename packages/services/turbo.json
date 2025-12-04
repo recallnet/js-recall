@@ -5,6 +5,7 @@
     "build": {
       "env": [
         "ROOT_ENCRYPTION_KEY",
+        "TEST_MODE",
         "EVM_CHAINS",
         "COINGECKO_API_KEY",
         "COINGECKO_MODE",
