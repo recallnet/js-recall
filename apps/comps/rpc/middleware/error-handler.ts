@@ -13,8 +13,26 @@ export const errorHandlerMiddleware = base.middleware(
     try {
       return await next({ context });
     } catch (error) {
-      // Re-throw ORPC errors as-is
+      // context.logger.error({ error }, "=== boom");
+
+      // Handle ORPC errors with validation issues
       if (error instanceof ORPCError) {
+        const data = error.data as
+          | { issues?: Array<{ message?: string }> }
+          | undefined;
+
+        // Handle validation issues in error.data.issues format
+        if (data?.issues && Array.isArray(data.issues)) {
+          const validationMessages = data.issues
+            .map((issue: { message?: string }) => issue.message)
+            .join("; ");
+          const message = `${error.message}: ${validationMessages}`;
+          throw errors.BAD_REQUEST({
+            message,
+            data,
+          });
+        }
+
         throw error;
       }
 
