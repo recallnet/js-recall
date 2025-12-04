@@ -63,9 +63,8 @@ export class AdminService {
   /**
    * Validates if an encryption key meets security requirements
    */
-  private isValidEncryptionKey(key: string | undefined): boolean {
-    return !!(
-      key &&
+  private isValidEncryptionKey(key: string): boolean {
+    return (
       key.length >= 32 &&
       !key.includes("default_encryption_key") &&
       !key.includes("your_") &&
@@ -97,13 +96,14 @@ export class AdminService {
     try {
       const existingKey = process.env.ROOT_ENCRYPTION_KEY;
 
-      if (!this.isValidEncryptionKey(existingKey)) {
+      if (!existingKey || !this.isValidEncryptionKey(existingKey)) {
         const newKey = this.generateEncryptionKey();
         this.updateEncryptionKeyInMemory(newKey);
         this.logger.info(
           "Generated ROOT_ENCRYPTION_KEY in memory (test mode - file not modified)",
         );
       } else {
+        this.updateEncryptionKeyInMemory(existingKey);
         this.logger.info(
           "Using existing ROOT_ENCRYPTION_KEY from environment (test mode)",
         );
@@ -137,7 +137,8 @@ export class AdminService {
       // Check if key exists and is valid
       if (keyMatch) {
         const currentValue = keyMatch[0].split("=")[1];
-        if (this.isValidEncryptionKey(currentValue)) {
+        if (currentValue && this.isValidEncryptionKey(currentValue)) {
+          this.updateEncryptionKeyInMemory(currentValue);
           this.logger.info("ROOT_ENCRYPTION_KEY already exists in .env");
           return;
         }
