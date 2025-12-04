@@ -1195,20 +1195,56 @@ export interface AdminSearchResults {
 }
 
 /**
+ * Converts dot-notation query parameters to nested objects
+ * Example: { "user.name": "Alice", "user.email": "test@example.com" }
+ *       -> { user: { name: "Alice", email: "test@example.com" } }
+ */
+function expandDotNotation(obj: unknown): unknown {
+  if (typeof obj !== "object" || obj === null) {
+    return obj;
+  }
+
+  const result: Record<string, unknown> = {};
+
+  for (const [key, value] of Object.entries(obj)) {
+    const parts = key.split(".");
+    let current = result;
+
+    for (let i = 0; i < parts.length - 1; i++) {
+      const part = parts[i] as string;
+      current[part] ??= {};
+      current = current[part] as Record<string, unknown>;
+    }
+
+    current[parts[parts.length - 1] as string] = value;
+  }
+
+  return result;
+}
+
+/**
  * Admin search users and agents query parameters schema
  */
-export const AdminSearchUsersAndAgentsQuerySchema = z.strictObject({
-  user: UserSearchParamsSchema.strict().optional(),
-  agent: AgentSearchParamsSchema.strict().optional(),
-  join: z.preprocess((val) => {
-    if (val === "") return true; // Note: allows for bare `join` instead of only `join=true`
-    if (typeof val === "string") {
-      if (val.toLowerCase() === "true") return true;
-      if (val.toLowerCase() === "false") return false;
-    }
-    return val;
-  }, z.boolean().default(false)),
-});
+export const AdminSearchUsersAndAgentsQuerySchema = z.preprocess(
+  expandDotNotation,
+  z
+    .strictObject({
+      user: UserSearchParamsSchema.strict().optional(),
+      agent: AgentSearchParamsSchema.strict().optional(),
+      join: z.preprocess((val) => {
+        if (val === "") return true; // Note: allows for bare `join` instead of only `join=true`
+        if (typeof val === "string") {
+          if (val.toLowerCase() === "true") return true;
+          if (val.toLowerCase() === "false") return false;
+        }
+        return val;
+      }, z.boolean().default(false)),
+    })
+    .refine((data) => data.user !== undefined || data.agent !== undefined, {
+      message:
+        "Invalid request format: must provide user or agent search parameters",
+    }),
+);
 
 export type AdminSearchUsersAndAgentsQuery = z.infer<
   typeof AdminSearchUsersAndAgentsQuerySchema
