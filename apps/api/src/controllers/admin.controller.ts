@@ -11,6 +11,7 @@ import {
   toApiUser,
 } from "@recallnet/services/types";
 
+import { db } from "@/database/db.js";
 import { flatParse } from "@/lib/flat-parse.js";
 import { adminLogger } from "@/lib/logger.js";
 import { ServiceRegistry } from "@/services/index.js";
@@ -35,6 +36,7 @@ import {
   AdminGetCompetitionSnapshotsQuerySchema,
   AdminGetCompetitionTransferViolationsParamsSchema,
   AdminGetPerformanceReportsQuerySchema,
+  AdminGetSpotLiveAlertsQuerySchema,
   AdminListAllAgentsQuerySchema,
   AdminListArenasQuerySchema,
   AdminListPartnersQuerySchema,
@@ -45,6 +47,8 @@ import {
   AdminRemoveAgentFromCompetitionBodySchema,
   AdminRemoveAgentFromCompetitionParamsSchema,
   AdminReplaceCompetitionPartnersSchema,
+  AdminReviewSpotLiveAlertBodySchema,
+  AdminReviewSpotLiveAlertParamsSchema,
   AdminRevokeBonusBoostSchema,
   AdminRewardsAllocationSchema,
   AdminSetupSchema,
@@ -617,6 +621,7 @@ export function makeAdminController(services: ServiceRegistry) {
           rewards,
           evaluationMetric,
           perpsProvider,
+          spotLiveConfig,
           prizePools,
           rewardsIneligible,
           arenaId,
@@ -664,6 +669,7 @@ export function makeAdminController(services: ServiceRegistry) {
             rewards,
             evaluationMetric,
             perpsProvider,
+            spotLiveConfig,
             prizePools,
             rewardsIneligible,
             arenaId,
@@ -727,6 +733,7 @@ export function makeAdminController(services: ServiceRegistry) {
           rewards,
           evaluationMetric,
           perpsProvider,
+          spotLiveConfig,
           prizePools,
           rewardsIneligible,
           arenaId,
@@ -773,6 +780,7 @@ export function makeAdminController(services: ServiceRegistry) {
                   rewards,
                   evaluationMetric,
                   perpsProvider,
+                  spotLiveConfig,
                   prizePools,
                   rewardsIneligible,
                   arenaId: arenaId!, // Guaranteed by Zod refinement when creating new competition
@@ -870,12 +878,12 @@ export function makeAdminController(services: ServiceRegistry) {
           evaluationMetric,
           perpsProvider,
           prizePools,
+          spotLiveConfig,
           gameIds,
           paperTradingConfig,
           paperTradingInitialBalances,
           ...competitionUpdates
         } = flatParse(AdminUpdateCompetitionSchema, req.body);
-        // Extract rewards, tradingConstraints, evaluationMetric, perpsProvider, paperTradingConfig, and paperTradingInitialBalances from the validated data
         const updates = competitionUpdates;
 
         // Check if there are any updates to apply
@@ -886,6 +894,7 @@ export function makeAdminController(services: ServiceRegistry) {
           !evaluationMetric &&
           !perpsProvider &&
           !prizePools &&
+          !spotLiveConfig &&
           !gameIds &&
           !paperTradingConfig &&
           !paperTradingInitialBalances
@@ -903,6 +912,7 @@ export function makeAdminController(services: ServiceRegistry) {
             evaluationMetric,
             perpsProvider,
             prizePools,
+            spotLiveConfig,
             gameIds,
             paperTradingConfig,
             paperTradingInitialBalances,
@@ -983,6 +993,12 @@ export function makeAdminController(services: ServiceRegistry) {
           agentHandle: agentMap.get(entry.agentId)?.handle || "unknown_agent",
           ownerName: agentMap.get(entry.agentId)?.ownerName || "Unknown Owner",
           portfolioValue: entry.value,
+          pnl: entry.pnl,
+          // Spot live metrics (only present for spot_live_trading competitions)
+          simpleReturn: entry.simpleReturn ?? null,
+          startingValue: entry.startingValue ?? null,
+          currentValue: entry.currentValue ?? null,
+          totalTrades: entry.totalTrades ?? null,
         }));
 
         // Return performance report
@@ -1708,12 +1724,16 @@ export function makeAdminController(services: ServiceRegistry) {
           });
         }
 
-        // Validate wallet address for perps competitions
-        if (competition.type === "perpetual_futures" && !agent.walletAddress) {
+        // Validate wallet address for competitions requiring on-chain wallets
+        if (
+          (competition.type === "perpetual_futures" ||
+            competition.type === "spot_live_trading") &&
+          !agent.walletAddress
+        ) {
           return res.status(400).json({
             success: false,
             error:
-              "Agent must have a wallet address to participate in perpetual futures competitions",
+              "Agent must have a wallet address to participate in this competition",
           });
         }
 
@@ -1891,6 +1911,106 @@ export function makeAdminController(services: ServiceRegistry) {
     },
 
     /**
+     * Get unreviewed self-funding alerts for a spot live competition
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async getSpotLiveSelfFundingAlerts(
+      req: Request,
+      res: Response,
+      next: NextFunction,
+    ) {
+      try {
+        const { competitionId } = flatParse(
+          AdminGetCompetitionTransferViolationsParamsSchema,
+          req.params,
+        );
+        const query = flatParse(AdminGetSpotLiveAlertsQuerySchema, req.query);
+
+        // Build filters for repository query
+        const filters: {
+          reviewed?: boolean;
+          violationType?: string;
+        } = {};
+
+        if (query.reviewed !== "all") {
+          filters.reviewed = query.reviewed === "true";
+        }
+
+        if (query.violationType && query.violationType !== "all") {
+          filters.violationType = query.violationType;
+        }
+
+        // Get alerts from service with SQL filtering
+        const alerts =
+          await services.competitionService.getSpotLiveSelfFundingAlerts(
+            competitionId,
+            filters,
+          );
+
+        res.json({
+          success: true,
+          alerts,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Review a spot live self-funding alert
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async reviewSpotLiveSelfFundingAlert(
+      req: Request,
+      res: Response,
+      next: NextFunction,
+    ) {
+      try {
+        const { competitionId, alertId } = flatParse(
+          AdminReviewSpotLiveAlertParamsSchema,
+          req.params,
+        );
+        const { reviewNote, actionTaken } = flatParse(
+          AdminReviewSpotLiveAlertBodySchema,
+          req.body,
+        );
+
+        // Update alert (service validates alert belongs to competition)
+        const adminId = req.adminId as string;
+        const updatedAlert =
+          await services.competitionService.reviewSpotLiveSelfFundingAlert(
+            competitionId,
+            alertId,
+            {
+              reviewed: true,
+              reviewedAt: new Date(),
+              reviewNote,
+              actionTaken,
+              reviewedBy: adminId,
+            },
+          );
+
+        if (!updatedAlert) {
+          return res.status(404).json({
+            success: false,
+            error: "Alert not found",
+          });
+        }
+
+        res.json({
+          success: true,
+          alert: updatedAlert,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
      * Allocate rewards for a competition
      * @param req Express request
      * @param res Express response
@@ -1921,7 +2041,6 @@ export function makeAdminController(services: ServiceRegistry) {
 
     /**
      * Add bonus boost to users
-     * Stubbed endpoint - returns 501 Not Implemented
      * @param req Express request
      * @param res Express response
      * @param next Express next function
@@ -1931,15 +2050,117 @@ export function makeAdminController(services: ServiceRegistry) {
         // Validate request body
         const { boosts } = flatParse(AdminAddBonusBoostSchema, req.body);
 
-        // Stubbed endpoint - return 501 Not Implemented
-        res.status(501).json({
-          success: false,
-          error: "Not Implemented",
-          message:
-            "This endpoint is stubbed for API contract validation. Full implementation pending.",
+        adminLogger.info(
+          { boostCount: boosts.length },
+          "Processing batch add bonus boost request",
+        );
+
+        // Step 1: Pre-validate all items before processing any
+        // This ensures all-or-nothing transaction semantics
+        const validationErrors = [];
+
+        for (const [i, boostItem] of boosts.entries()) {
+          // Check if user exists for each wallet
+          try {
+            const user = await services.userService.getUserByWalletAddress(
+              boostItem.wallet,
+            );
+            if (!user) {
+              validationErrors.push({
+                index: i,
+                wallet: boostItem.wallet,
+                error: `User with wallet ${boostItem.wallet} not found`,
+              });
+            }
+          } catch (error) {
+            validationErrors.push({
+              index: i,
+              wallet: boostItem.wallet,
+              error:
+                error instanceof Error
+                  ? error.message
+                  : "Failed to validate user",
+            });
+          }
+        }
+
+        // If any validation errors, reject entire batch
+        if (validationErrors.length > 0) {
+          adminLogger.warn(
+            { errorCount: validationErrors.length },
+            "Batch validation failed - rejecting entire batch",
+          );
+
+          return res.status(400).json({
+            success: false,
+            error: "Batch validation failed",
+            message: `Found ${validationErrors.length} validation error(s). No boosts were created.`,
+            data: {
+              errors: validationErrors,
+            },
+          });
+        }
+
+        // Step 2: Process all boosts in a single transaction for all-or-nothing semantics
+        const results = await db.transaction(async (tx) => {
+          const batchResults = [];
+
+          for (const [i, boostItem] of boosts.entries()) {
+            // Convert amount from string to BigInt
+            const amount = BigInt(boostItem.amount);
+
+            adminLogger.info(
+              {
+                index: i,
+                wallet: boostItem.wallet,
+                amount: boostItem.amount,
+                expiresAt: boostItem.expiresAt,
+              },
+              "Processing boost item",
+            );
+
+            // Add the bonus boost within the transaction
+            const result = await services.boostBonusService.addBoostBonus(
+              boostItem.wallet,
+              amount,
+              boostItem.expiresAt,
+              undefined, // createdByAdminId - could extract from auth if needed
+              boostItem.meta,
+              tx, // Pass the transaction to ensure atomicity
+            );
+
+            adminLogger.info(
+              {
+                index: i,
+                boostBonusId: result.boostBonusId,
+                appliedCount: result.appliedToCompetitions.length,
+              },
+              "Successfully added bonus boost",
+            );
+
+            batchResults.push({
+              id: result.boostBonusId,
+              userId: result.userId,
+              amount: result.amount.toString(),
+              expiresAt: result.expiresAt.toISOString(),
+              isActive: true,
+              appliedToCompetitions: result.appliedToCompetitions,
+            });
+          }
+
+          return batchResults;
+        });
+
+        // All items succeeded
+        adminLogger.info(
+          { successCount: results.length },
+          "Batch add bonus boost completed successfully",
+        );
+
+        res.status(201).json({
+          success: true,
           data: {
-            requestedCount: boosts.length,
-            note: "When implemented, this will process all boosts in the batch and return results for each item.",
+            results,
           },
         });
       } catch (error) {
@@ -1949,7 +2170,6 @@ export function makeAdminController(services: ServiceRegistry) {
 
     /**
      * Revoke bonus boost
-     * Stubbed endpoint - returns 501 Not Implemented
      * @param req Express request
      * @param res Express response
      * @param next Express next function
@@ -1959,15 +2179,62 @@ export function makeAdminController(services: ServiceRegistry) {
         // Validate request body
         const { boostIds } = flatParse(AdminRevokeBonusBoostSchema, req.body);
 
-        // Stubbed endpoint - return 501 Not Implemented
-        res.status(501).json({
-          success: false,
-          error: "Not Implemented",
-          message:
-            "This endpoint is stubbed for API contract validation. Full implementation pending.",
+        adminLogger.info(
+          { boostIdCount: boostIds.length },
+          "Processing batch revoke bonus boost request",
+        );
+
+        // Process all boosts in a single transaction for all-or-nothing semantics
+        const results = await db.transaction(async (tx) => {
+          const batchResults = [];
+
+          for (const [i, boostId] of boostIds.entries()) {
+            adminLogger.info(
+              {
+                index: i,
+                boostId,
+              },
+              "Revoking bonus boost",
+            );
+
+            // Revoke the bonus boost within the transaction
+            const result = await services.boostBonusService.revokeBoostBonus(
+              boostId,
+              tx,
+            );
+
+            adminLogger.info(
+              {
+                index: i,
+                boostId: result.boostBonusId,
+                removedCount: result.removedFromCompetitions.length,
+                keptCount: result.keptInCompetitions.length,
+              },
+              "Successfully revoked bonus boost",
+            );
+
+            batchResults.push({
+              id: result.boostBonusId,
+              revoked: result.revoked,
+              revokedAt: result.revokedAt.toISOString(),
+              removedFromCompetitions: result.removedFromCompetitions,
+              keptInCompetitions: result.keptInCompetitions,
+            });
+          }
+
+          return batchResults;
+        });
+
+        // All items succeeded
+        adminLogger.info(
+          { successCount: results.length },
+          "Batch revoke bonus boost completed successfully",
+        );
+
+        res.status(200).json({
+          success: true,
           data: {
-            requestedCount: boostIds.length,
-            note: "When implemented, this will revoke all specified boosts and return results for each item.",
+            results,
           },
         });
       } catch (error) {

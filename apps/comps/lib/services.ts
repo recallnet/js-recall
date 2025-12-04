@@ -9,6 +9,7 @@ import {
   ArenaService,
   BalanceService,
   BoostAwardService,
+  BoostBonusService,
   BoostService,
   CalmarRatioService,
   CompetitionRewardService,
@@ -21,7 +22,9 @@ import {
   RewardsService,
   RiskMetricsService,
   SortinoRatioService,
+  SportsIngesterService,
   SportsService,
+  SpotDataProcessor,
   TradeSimulatorService,
   TradingConstraintsService,
   UserService,
@@ -58,6 +61,7 @@ import {
   paperTradingInitialBalancesRepository,
   perpsRepository,
   rewardsRepository,
+  spotLiveRepository,
   stakesRepository,
   tradeRepository,
   tradingConstraintsRepository,
@@ -201,6 +205,17 @@ export const perpsDataProcessor = new PerpsDataProcessor(
   createLogger("PerpsDataProcessor"),
 );
 
+export const spotDataProcessor = new SpotDataProcessor(
+  agentRepository,
+  competitionRepository,
+  spotLiveRepository,
+  tradeRepository,
+  balanceRepository,
+  portfolioSnapshotterService,
+  priceTrackerService,
+  createLogger("SpotDataProcessor"),
+);
+
 export const arenaService = new ArenaService(
   arenaRepository,
   competitionRepository,
@@ -229,25 +244,44 @@ export const sportsService = new SportsService(
   createLogger("SportsService"),
 );
 
+export const sportsIngesterService = new SportsIngesterService(
+  sportsService,
+  createLogger("SportsIngesterService"),
+  { sportsDataApi: config.sportsDataApi },
+);
+
+export const boostBonusService = new BoostBonusService(
+  db,
+  boostRepository,
+  competitionRepository,
+  userRepository,
+  createLogger("BoostBonusService"),
+);
+
 export const competitionService = new CompetitionService(
   balanceService,
   tradeSimulatorService,
   portfolioSnapshotterService,
+  priceTrackerService,
   agentService,
   agentRankService,
   tradingConstraintsService,
   competitionRewardsService,
   rewardsService,
   perpsDataProcessor,
+  spotDataProcessor,
+  boostBonusService,
   agentRepository,
   agentScoreRepository,
   arenaRepository,
   sportsService,
   perpsRepository,
+  spotLiveRepository,
   competitionRepository,
   paperTradingConfigRepository,
   paperTradingInitialBalancesRepository,
   stakesRepository,
+  tradeRepository,
   userRepository,
   db,
   config,

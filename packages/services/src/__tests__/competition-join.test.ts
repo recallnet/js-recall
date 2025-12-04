@@ -10,7 +10,9 @@ import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { PaperTradingConfigRepository } from "@recallnet/db/repositories/paper-trading-config";
 import { PaperTradingInitialBalancesRepository } from "@recallnet/db/repositories/paper-trading-initial-balances";
 import { PerpsRepository } from "@recallnet/db/repositories/perps";
+import { SpotLiveRepository } from "@recallnet/db/repositories/spot-live";
 import { StakesRepository } from "@recallnet/db/repositories/stakes";
+import { TradeRepository } from "@recallnet/db/repositories/trade";
 import { UserRepository } from "@recallnet/db/repositories/user";
 import type { SelectAgent } from "@recallnet/db/schema/core/types";
 import { SelectCompetition } from "@recallnet/db/schema/core/types";
@@ -19,13 +21,16 @@ import { Database } from "@recallnet/db/types";
 import type { AgentService } from "../agent.service.js";
 import type { AgentRankService } from "../agentrank.service.js";
 import type { BalanceService } from "../balance.service.js";
+import type { BoostBonusService } from "../boost-bonus.service.js";
 import type { CompetitionRewardService } from "../competition-reward.service.js";
 import { CompetitionService } from "../competition.service.js";
 import { specificChainTokens } from "../lib/config-utils.js";
 import type { PerpsDataProcessor } from "../perps-data-processor.service.js";
 import type { PortfolioSnapshotterService } from "../portfolio-snapshotter.service.js";
+import type { PriceTrackerService } from "../price-tracker.service.js";
 import { RewardsService } from "../rewards.service.js";
 import type { SportsService } from "../sports.service.js";
+import type { SpotDataProcessor } from "../spot-data-processor.service.js";
 import type { TradeSimulatorService } from "../trade-simulator.service.js";
 import type { TradingConstraintsService } from "../trading-constraints.service.js";
 import {
@@ -39,21 +44,26 @@ describe("CompetitionService - joinCompetition", () => {
   let balanceService: MockProxy<BalanceService>;
   let tradeSimulatorService: MockProxy<TradeSimulatorService>;
   let portfolioSnapshotterService: MockProxy<PortfolioSnapshotterService>;
+  let priceTrackerService: MockProxy<PriceTrackerService>;
   let agentService: MockProxy<AgentService>;
   let agentRankService: MockProxy<AgentRankService>;
   let tradingConstraintsService: MockProxy<TradingConstraintsService>;
   let competitionRewardService: MockProxy<CompetitionRewardService>;
   let rewardsService: MockProxy<RewardsService>;
   let perpsDataProcessor: MockProxy<PerpsDataProcessor>;
+  let spotDataProcessor: MockProxy<SpotDataProcessor>;
+  let boostBonusService: MockProxy<BoostBonusService>;
   let agentRepo: MockProxy<AgentRepository>;
   let agentScoreRepo: MockProxy<AgentScoreRepository>;
   let arenaRepo: MockProxy<ArenaRepository>;
   let sportsService: MockProxy<SportsService>;
   let perpsRepo: MockProxy<PerpsRepository>;
+  let spotLiveRepo: MockProxy<SpotLiveRepository>;
   let competitionRepo: MockProxy<CompetitionRepository>;
   let paperTradingConfigRepo: MockProxy<PaperTradingConfigRepository>;
   let paperTradingInitialBalancesRepo: MockProxy<PaperTradingInitialBalancesRepository>;
   let stakesRepo: MockProxy<StakesRepository>;
+  let tradeRepo: MockProxy<TradeRepository>;
   let userRepo: MockProxy<UserRepository>;
   let mockDb: MockProxy<Database>;
   let logger: MockProxy<Logger>;
@@ -129,22 +139,27 @@ describe("CompetitionService - joinCompetition", () => {
     balanceService = mock<BalanceService>();
     tradeSimulatorService = mock<TradeSimulatorService>();
     portfolioSnapshotterService = mock<PortfolioSnapshotterService>();
+    priceTrackerService = mock<PriceTrackerService>();
     agentService = mock<AgentService>();
     agentRankService = mock<AgentRankService>();
     tradingConstraintsService = mock<TradingConstraintsService>();
     competitionRewardService = mock<CompetitionRewardService>();
     rewardsService = mock<RewardsService>();
     perpsDataProcessor = mock<PerpsDataProcessor>();
+    spotDataProcessor = mock<SpotDataProcessor>();
+    boostBonusService = mock<BoostBonusService>();
     agentRepo = mock<AgentRepository>();
     agentScoreRepo = mock<AgentScoreRepository>();
     arenaRepo = mock<ArenaRepository>();
     sportsService = mock<SportsService>();
     perpsRepo = mock<PerpsRepository>();
+    spotLiveRepo = mock<SpotLiveRepository>();
     competitionRepo = mock<CompetitionRepository>();
     paperTradingConfigRepo = mock<PaperTradingConfigRepository>();
     paperTradingInitialBalancesRepo =
       mock<PaperTradingInitialBalancesRepository>();
     stakesRepo = mock<StakesRepository>();
+    tradeRepo = mock<TradeRepository>();
     userRepo = mock<UserRepository>();
     mockDb = mock<Database>();
     logger = mock<Logger>();
@@ -175,21 +190,26 @@ describe("CompetitionService - joinCompetition", () => {
       balanceService,
       tradeSimulatorService,
       portfolioSnapshotterService,
+      priceTrackerService,
       agentService,
       agentRankService,
       tradingConstraintsService,
       competitionRewardService,
       rewardsService,
       perpsDataProcessor,
+      spotDataProcessor,
+      boostBonusService,
       agentRepo,
       agentScoreRepo,
       arenaRepo,
       sportsService,
       perpsRepo,
+      spotLiveRepo,
       competitionRepo,
       paperTradingConfigRepo,
       paperTradingInitialBalancesRepo,
       stakesRepo,
+      tradeRepo,
       userRepo,
       mockDb,
       mockConfig,
@@ -754,6 +774,27 @@ describe("CompetitionService - joinCompetition", () => {
         mockCompetition.id,
         mockAgent.id,
       );
+    });
+
+    it("should reject agent without wallet for spot_live_trading competitions", async () => {
+      const agentNoWallet = { ...mockAgent, walletAddress: null };
+      const spotLiveCompetition = {
+        ...mockCompetition,
+        type: "spot_live_trading" as const,
+      };
+
+      agentService.getAgent.mockResolvedValue(agentNoWallet);
+      competitionRepo.findById.mockResolvedValue(spotLiveCompetition);
+      competitionRepo.isAgentActiveInCompetition.mockResolvedValue(false);
+
+      await expect(
+        competitionService.joinCompetition(
+          mockCompetition.id,
+          mockAgent.id,
+          mockUserId,
+          undefined,
+        ),
+      ).rejects.toThrow("Agent must have a wallet address");
     });
   });
 

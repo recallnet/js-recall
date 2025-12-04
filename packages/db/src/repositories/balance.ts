@@ -215,6 +215,62 @@ export class BalanceRepository {
   }
 
   /**
+   * Create initial balances for spot live trading from blockchain data
+   * Unlike resetAgentBalances, this method already has chain info for each token
+   * @param agentId Agent ID
+   * @param competitionId Competition ID
+   * @param balanceData Array of balance records with chain info
+   */
+  async createInitialSpotLiveBalances(
+    agentId: string,
+    competitionId: string,
+    balanceData: Array<{
+      tokenAddress: string;
+      chain: SpecificChain;
+      amount: number;
+      symbol: string;
+    }>,
+  ): Promise<void> {
+    try {
+      await this.#db.transaction(async (tx) => {
+        // First delete all current balances for this agent in this competition
+        await tx
+          .delete(balances)
+          .where(
+            and(
+              eq(balances.agentId, agentId),
+              eq(balances.competitionId, competitionId),
+            ),
+          );
+
+        // Then insert new balances with explicit chain info
+        const now = new Date();
+        const balanceValues = balanceData.map((b) => ({
+          agentId,
+          competitionId,
+          tokenAddress: b.tokenAddress,
+          amount: b.amount,
+          specificChain: b.chain,
+          symbol: b.symbol,
+          createdAt: now,
+          updatedAt: now,
+        }));
+
+        if (balanceValues.length > 0) {
+          await tx.insert(balances).values(balanceValues);
+        }
+      });
+
+      this.#logger.debug(
+        `[BalanceRepository] Created ${balanceData.length} spot live balances for agent ${agentId}`,
+      );
+    } catch (error) {
+      this.#logger.error({ error }, "Error in createInitialSpotLiveBalances");
+      throw error;
+    }
+  }
+
+  /**
    * Atomic balance update within a transaction
    * @param tx Database transaction
    * @param agentId Agent ID
@@ -260,6 +316,10 @@ export class BalanceRepository {
     if (!result) {
       if (amountDelta > 0) {
         // Create balance if it doesn't exist for increments
+        // Use ON CONFLICT DO UPDATE to handle concurrent INSERTs
+        // Scenario: Multiple trades create same toToken balance concurrently
+        // Without ON CONFLICT: Second INSERT fails on unique constraint
+        // With ON CONFLICT: Second INSERT becomes UPDATE, adding to amount
         const [newResult] = await tx
           .insert(balances)
           .values({
@@ -271,6 +331,19 @@ export class BalanceRepository {
             symbol,
             createdAt: new Date(),
             updatedAt: new Date(),
+          })
+          .onConflictDoUpdate({
+            target: [
+              balances.agentId,
+              balances.tokenAddress,
+              balances.competitionId,
+            ],
+            set: {
+              amount: sql`${balances.amount} + ${amountDelta}`,
+              updatedAt: new Date(),
+              specificChain,
+              symbol,
+            },
           })
           .returning();
 

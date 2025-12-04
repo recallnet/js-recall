@@ -22,6 +22,7 @@ import { config } from "@/config/public";
 import { useCompetitionTimeline } from "@/hooks/useCompetitionTimeline";
 import {
   checkIsPerpsCompetition,
+  checkIsSpotLiveCompetition,
   getEvaluationMetricTabValue,
   getOrderedMetricTabs,
 } from "@/utils/competition-utils";
@@ -39,11 +40,17 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
   className,
 }) => {
   const isPerpsCompetition = checkIsPerpsCompetition(competition.type);
+  const isSpotLiveCompetition = checkIsSpotLiveCompetition(competition.type);
 
-  // Determine default tab based on evaluation metric for perps competitions
+  // Determine default tab based on competition type and evaluation metric
+  // - Perps: Use configured evaluation metric (ROI, Calmar, etc.)
+  // - Spot Live: Default to ROI since it's the ranking metric
+  // - Paper Trading: Default to Account Value
   const defaultTab = isPerpsCompetition
     ? getEvaluationMetricTabValue(competition.evaluationMetric)
-    : "account-value";
+    : isSpotLiveCompetition
+      ? "percent-return"
+      : "account-value";
 
   const [activeChartTab, setActiveChartTab] = useState(defaultTab);
   const [dateRange, setDateRange] = useState<"all" | "72h">("all");
@@ -98,7 +105,10 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
                   <span className="flex items-center gap-1.5">
                     {tab.label}
                     {isPrimaryMetric(tab.value) && (
-                      <Star className="h-3.5 w-3.5 fill-yellow-500 text-yellow-500" />
+                      <Star
+                        className="h-3.5 w-3.5 fill-yellow-500 text-yellow-500"
+                        aria-label="Ranking metric"
+                      />
                     )}
                   </span>
                 </TabsTrigger>
@@ -118,7 +128,10 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
                       {perpsMetricTabs.find((t) => t.value === activeChartTab)
                         ?.label || "Select Metric"}
                       {isPrimaryMetric(activeChartTab) && (
-                        <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />
+                        <Star
+                          className="h-3 w-3 fill-yellow-500 text-yellow-500"
+                          aria-label="Ranking metric"
+                        />
                       )}
                     </span>
                     <ChevronDown className="ml-2 h-4 w-4" />
@@ -134,7 +147,10 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
                       <span className="flex items-center gap-1.5">
                         {tab.label}
                         {isPrimaryMetric(tab.value) && (
-                          <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />
+                          <Star
+                            className="h-3 w-3 fill-yellow-500 text-yellow-500"
+                            aria-label="Ranking metric"
+                          />
                         )}
                       </span>
                     </DropdownMenuItem>
@@ -253,18 +269,44 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
         {/* Chart Tabs Header */}
         <div className="flex items-center justify-between pb-2">
           <TabsList className="hidden flex-wrap gap-2 sm:flex">
-            <TabsTrigger
-              value="account-value"
-              className="border border-white bg-black px-4 py-2 font-semibold uppercase text-white transition-colors duration-200 hover:bg-white hover:text-black data-[state=active]:bg-white data-[state=active]:text-black"
-            >
-              Account Value
-            </TabsTrigger>
-            <TabsTrigger
-              value="percent-return"
-              className="border border-white bg-black px-4 py-2 font-semibold uppercase text-white transition-colors duration-200 hover:bg-white hover:text-black data-[state=active]:bg-white data-[state=active]:text-black"
-            >
-              % Return
-            </TabsTrigger>
+            {/* For spot live, show ROI first since it's the ranking metric */}
+            {isSpotLiveCompetition ? (
+              <>
+                <TabsTrigger
+                  value="percent-return"
+                  className="border border-white bg-black px-4 py-2 font-semibold uppercase text-white transition-colors duration-200 hover:bg-white hover:text-black data-[state=active]:bg-white data-[state=active]:text-black"
+                >
+                  <span className="flex items-center gap-1.5">
+                    ROI
+                    <Star
+                      className="h-3.5 w-3.5 fill-yellow-500 text-yellow-500"
+                      aria-label="Ranking metric"
+                    />
+                  </span>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="account-value"
+                  className="border border-white bg-black px-4 py-2 font-semibold uppercase text-white transition-colors duration-200 hover:bg-white hover:text-black data-[state=active]:bg-white data-[state=active]:text-black"
+                >
+                  Account Value
+                </TabsTrigger>
+              </>
+            ) : (
+              <>
+                <TabsTrigger
+                  value="account-value"
+                  className="border border-white bg-black px-4 py-2 font-semibold uppercase text-white transition-colors duration-200 hover:bg-white hover:text-black data-[state=active]:bg-white data-[state=active]:text-black"
+                >
+                  Account Value
+                </TabsTrigger>
+                <TabsTrigger
+                  value="percent-return"
+                  className="border border-white bg-black px-4 py-2 font-semibold uppercase text-white transition-colors duration-200 hover:bg-white hover:text-black data-[state=active]:bg-white data-[state=active]:text-black"
+                >
+                  % Return
+                </TabsTrigger>
+              </>
+            )}
           </TabsList>
 
           {/* Mobile dropdown - shown only on small screens */}
@@ -276,24 +318,63 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
                   size="sm"
                   className="h-auto border border-white bg-black px-3 py-2.5 text-xs font-semibold uppercase text-white hover:bg-white hover:text-black"
                 >
-                  {activeChartTab === "account-value" && "Account Value"}
-                  {activeChartTab === "percent-return" && "% Return"}
+                  <span className="flex items-center gap-1.5">
+                    {activeChartTab === "account-value" && "Account Value"}
+                    {activeChartTab === "percent-return" &&
+                      (isSpotLiveCompetition ? (
+                        <>
+                          ROI
+                          <Star
+                            className="h-3 w-3 fill-yellow-500 text-yellow-500"
+                            aria-label="Ranking metric"
+                          />
+                        </>
+                      ) : (
+                        "% Return"
+                      ))}
+                  </span>
                   <ChevronDown className="ml-2 h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start">
-                <DropdownMenuItem
-                  onClick={() => setActiveChartTab("account-value")}
-                  className="border-0.5 cursor-pointer border-b p-3 font-mono text-xs font-semibold uppercase hover:bg-gray-800"
-                >
-                  Account Value
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => setActiveChartTab("percent-return")}
-                  className="border-0.5 cursor-pointer border-b p-3 font-mono text-xs font-semibold uppercase hover:bg-gray-800"
-                >
-                  % Return
-                </DropdownMenuItem>
+                {/* For spot live, show ROI first with star indicator */}
+                {isSpotLiveCompetition ? (
+                  <>
+                    <DropdownMenuItem
+                      onClick={() => setActiveChartTab("percent-return")}
+                      className="border-0.5 cursor-pointer border-b p-3 font-mono text-xs font-semibold uppercase hover:bg-gray-800"
+                    >
+                      <span className="flex items-center gap-1.5">
+                        ROI
+                        <Star
+                          className="h-3 w-3 fill-yellow-500 text-yellow-500"
+                          aria-label="Ranking metric"
+                        />
+                      </span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => setActiveChartTab("account-value")}
+                      className="border-0.5 cursor-pointer border-b p-3 font-mono text-xs font-semibold uppercase hover:bg-gray-800"
+                    >
+                      Account Value
+                    </DropdownMenuItem>
+                  </>
+                ) : (
+                  <>
+                    <DropdownMenuItem
+                      onClick={() => setActiveChartTab("account-value")}
+                      className="border-0.5 cursor-pointer border-b p-3 font-mono text-xs font-semibold uppercase hover:bg-gray-800"
+                    >
+                      Account Value
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => setActiveChartTab("percent-return")}
+                      className="border-0.5 cursor-pointer border-b p-3 font-mono text-xs font-semibold uppercase hover:bg-gray-800"
+                    >
+                      % Return
+                    </DropdownMenuItem>
+                  </>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -348,7 +429,7 @@ export const TimelineChart: React.FC<PortfolioChartProps> = ({
           />
         </TabsContent>
 
-        {/* % Gain Tab */}
+        {/* % Return / ROI Tab */}
         <TabsContent value="percent-return" className="m-0">
           <MetricTimelineChart
             timelineData={timelineRaw || []}

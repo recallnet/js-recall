@@ -218,12 +218,12 @@ describe("BoostBonusService", () => {
       ).rejects.toThrow("Boost amount must be greater than 0");
     });
 
-    it("validates amount does not exceed maximum (10^18)", async () => {
+    it("validates amount does not exceed maximum (10^24)", async () => {
       setupMockTransaction();
       await expect(
         service.addBoostBonus(
           testWallet,
-          10n ** 18n + 1n,
+          10n ** 24n + 1n,
           new Date(Date.now() + ONE_DAY_MS),
         ),
       ).rejects.toThrow("Boost amount exceeds maximum allowed value");
@@ -488,7 +488,7 @@ describe("BoostBonusService", () => {
         revokedAt: null,
       });
 
-    it("marks boost as inactive and removes from pending competitions", async () => {
+    it("marks boost as inactive and removes from competitions where window hasn't opened", async () => {
       const boost = createBoost();
       setupRevokeBoostMocks(boost, [
         { id: "change-1", balanceId: "bal-1", competitionId: "comp-1" },
@@ -564,8 +564,8 @@ describe("BoostBonusService", () => {
 
       const result = await service.revokeBoostBonus(testBoostBonusId);
 
-      expect(result.keptInActive).toContain("comp-1");
-      expect(result.removedFromPending).toHaveLength(0);
+      expect(result.keptInCompetitions).toContain("comp-1");
+      expect(result.removedFromCompetitions).toHaveLength(0);
       expect(mockBoostRepo.decrease).not.toHaveBeenCalled();
     });
 
@@ -809,7 +809,7 @@ describe("BoostBonusService", () => {
         const result = await service.revokeBoostBonus(testBoostBonusId);
 
         expect(result.revoked).toBe(true);
-        expect(result.removedFromPending).toEqual(["comp-2"]);
+        expect(result.removedFromCompetitions).toEqual(["comp-2"]);
         expect(mockBoostRepo.decrease).toHaveBeenCalledTimes(2);
         expect(mockLogger.warn).toHaveBeenCalledWith(
           { boostBonusId: testBoostBonusId, competitionId: "comp-1" },
@@ -922,7 +922,7 @@ describe("BoostBonusService", () => {
         const result = await service.revokeBoostBonus(testBoostBonusId);
 
         expect(result.revoked).toBe(true);
-        expect(result.removedFromPending).toEqual(["comp-2"]);
+        expect(result.removedFromCompetitions).toEqual(["comp-2"]);
         expect(mockBoostRepo.decrease).toHaveBeenCalledTimes(2);
         expect(mockLogger.warn).toHaveBeenCalledWith(
           { boostBonusId: testBoostBonusId, competitionId: "comp-1" },
@@ -960,6 +960,606 @@ describe("BoostBonusService", () => {
           constraint: "boost_balances_user_id_users_id_fk",
         });
       });
+    });
+  });
+
+  describe("cleanupInvalidBoostBonusesForCompetition", () => {
+    const competitionId = "comp-123";
+
+    const setupCleanupMocks = (
+      boostChanges: Array<{
+        id: string;
+        balanceId: string;
+        meta: Record<string, unknown>;
+      }>,
+      boosts: SelectBoostBonus[],
+    ) => {
+      setupMockTransaction();
+      mockBoostRepo.findBoostChangesByCompetitionId.mockResolvedValue(
+        boostChanges,
+      );
+      mockBoostRepo.findBoostBonusesByIds.mockResolvedValue(boosts);
+      const userIds = [...new Set(boosts.map((b) => b.userId))];
+      const users = userIds.map((id) =>
+        createMockUser({ id, walletAddress: testWallet }),
+      );
+      mockUserRepo.findByIds.mockResolvedValue(users);
+    };
+
+    it("removes invalid boosts when boostStartDate moves after boost expiration", async () => {
+      const now = new Date();
+      const oldBoostStartDate = new Date(now.getTime() + ONE_DAY_MS);
+      const newBoostStartDate = new Date(
+        now.getTime() + TWO_DAYS_MS + ONE_DAY_MS,
+      );
+      const boostExpiresAt = new Date(now.getTime() + TWO_DAYS_MS);
+
+      const boost = createMockBoostBonus({
+        id: "boost-123",
+        userId: testUserId,
+        amount: 1000n,
+        expiresAt: boostExpiresAt,
+      });
+
+      setupCleanupMocks(
+        [
+          {
+            id: "change-1",
+            balanceId: "bal-1",
+            meta: { boostBonusId: "boost-123" },
+          },
+        ],
+        [boost],
+      );
+      mockUserRepo.findById.mockResolvedValue(
+        createMockUser({ id: testUserId, walletAddress: testWallet }),
+      );
+      mockBoostRepo.decrease.mockResolvedValue({
+        type: "applied",
+        changeId: "cleanup-change",
+        balanceAfter: 0n,
+        idemKey: new Uint8Array(32),
+      });
+
+      const result = await service.cleanupInvalidBoostBonusesForCompetition(
+        competitionId,
+        newBoostStartDate,
+        oldBoostStartDate,
+      );
+
+      expect(result.removedBoostIds).toEqual(["boost-123"]);
+      expect(result.keptBoostIds).toHaveLength(0);
+      expect(mockBoostRepo.decrease).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: testUserId,
+          competitionId,
+          amount: 1000n,
+          meta: expect.objectContaining({
+            description: expect.stringContaining("Cleanup invalid bonus boost"),
+            boostBonusId: "boost-123",
+          }),
+        }),
+        expect.anything(),
+      );
+    });
+
+    it("keeps boosts when boostStartDate still before expiration", async () => {
+      const now = new Date();
+      const oldBoostStartDate = new Date(now.getTime() + ONE_DAY_MS);
+      const newBoostStartDate = new Date(now.getTime() + ONE_DAY_MS + 1000);
+      const boostExpiresAt = new Date(now.getTime() + TWO_DAYS_MS);
+
+      const boost = createMockBoostBonus({
+        id: "boost-123",
+        userId: testUserId,
+        amount: 1000n,
+        expiresAt: boostExpiresAt,
+      });
+
+      setupCleanupMocks(
+        [
+          {
+            id: "change-1",
+            balanceId: "bal-1",
+            meta: { boostBonusId: "boost-123" },
+          },
+        ],
+        [boost],
+      );
+
+      const result = await service.cleanupInvalidBoostBonusesForCompetition(
+        competitionId,
+        newBoostStartDate,
+        oldBoostStartDate,
+      );
+
+      expect(result.removedBoostIds).toHaveLength(0);
+      expect(result.keptBoostIds).toEqual(["boost-123"]);
+      expect(mockBoostRepo.decrease).not.toHaveBeenCalled();
+    });
+
+    it("keeps all boosts when previous window already opened", async () => {
+      const now = new Date();
+      const oldBoostStartDate = new Date(now.getTime() - 1000);
+      const newBoostStartDate = new Date(now.getTime() + TWO_DAYS_MS);
+
+      setupMockTransaction();
+      mockBoostRepo.findBoostChangesByCompetitionId.mockResolvedValue([
+        {
+          id: "change-1",
+          balanceId: "bal-1",
+          meta: { boostBonusId: "boost-123" },
+        },
+        {
+          id: "change-2",
+          balanceId: "bal-2",
+          meta: { boostBonusId: "boost-456" },
+        },
+      ]);
+
+      const result = await service.cleanupInvalidBoostBonusesForCompetition(
+        competitionId,
+        newBoostStartDate,
+        oldBoostStartDate,
+      );
+
+      expect(result.removedBoostIds).toHaveLength(0);
+      expect(result.keptBoostIds).toEqual(["boost-123", "boost-456"]);
+      expect(mockBoostRepo.findBoostChangesByCompetitionId).toHaveBeenCalled();
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        expect.objectContaining({
+          competitionId,
+          oldBoostStartDate,
+          newBoostStartDate,
+        }),
+        expect.stringContaining("window already opened"),
+      );
+    });
+
+    it("handles null oldBoostStartDate by proceeding with cleanup", async () => {
+      const now = new Date();
+      const newBoostStartDate = new Date(now.getTime() + TWO_DAYS_MS);
+      const boostExpiresAt = new Date(now.getTime() + ONE_DAY_MS);
+
+      const boost = createMockBoostBonus({
+        id: "boost-123",
+        userId: testUserId,
+        amount: 1000n,
+        expiresAt: boostExpiresAt,
+      });
+
+      setupCleanupMocks(
+        [
+          {
+            id: "change-1",
+            balanceId: "bal-1",
+            meta: { boostBonusId: "boost-123" },
+          },
+        ],
+        [boost],
+      );
+      mockUserRepo.findById.mockResolvedValue(
+        createMockUser({ id: testUserId, walletAddress: testWallet }),
+      );
+      mockBoostRepo.decrease.mockResolvedValue({
+        type: "applied",
+        changeId: "cleanup-change",
+        balanceAfter: 0n,
+        idemKey: new Uint8Array(32),
+      });
+
+      const result = await service.cleanupInvalidBoostBonusesForCompetition(
+        competitionId,
+        newBoostStartDate,
+        null,
+      );
+
+      expect(result.removedBoostIds).toEqual(["boost-123"]);
+      expect(mockBoostRepo.findBoostChangesByCompetitionId).toHaveBeenCalled();
+      expect(mockLogger.info).not.toHaveBeenCalledWith(
+        expect.anything(),
+        expect.stringContaining("Previous boosting window already opened"),
+      );
+    });
+
+    it("keeps all boosts when newBoostStartDate is in the past", async () => {
+      const now = new Date();
+      const oldBoostStartDate = new Date(now.getTime() + ONE_DAY_MS);
+      const newBoostStartDate = new Date(now.getTime() - ONE_DAY_MS);
+
+      setupMockTransaction();
+      mockBoostRepo.findBoostChangesByCompetitionId.mockResolvedValue([
+        {
+          id: "change-1",
+          balanceId: "bal-1",
+          meta: { boostBonusId: "boost-789" },
+        },
+      ]);
+
+      const result = await service.cleanupInvalidBoostBonusesForCompetition(
+        competitionId,
+        newBoostStartDate,
+        oldBoostStartDate,
+      );
+
+      expect(result.removedBoostIds).toHaveLength(0);
+      expect(result.keptBoostIds).toEqual(["boost-789"]);
+      expect(mockBoostRepo.findBoostChangesByCompetitionId).toHaveBeenCalled();
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        expect.objectContaining({
+          competitionId,
+          oldBoostStartDate,
+          newBoostStartDate,
+        }),
+        expect.stringContaining("window already opened"),
+      );
+    });
+
+    it("treats boostStartDate exactly equal to expiresAt as invalid (boundary)", async () => {
+      const now = new Date();
+      const oldBoostStartDate = new Date(now.getTime() + ONE_DAY_MS);
+      const boostExpiresAt = new Date(now.getTime() + TWO_DAYS_MS);
+      const newBoostStartDate = boostExpiresAt;
+
+      const boost = createMockBoostBonus({
+        id: "boost-123",
+        userId: testUserId,
+        amount: 1000n,
+        expiresAt: boostExpiresAt,
+      });
+
+      setupCleanupMocks(
+        [
+          {
+            id: "change-1",
+            balanceId: "bal-1",
+            meta: { boostBonusId: "boost-123" },
+          },
+        ],
+        [boost],
+      );
+      mockUserRepo.findById.mockResolvedValue(
+        createMockUser({ id: testUserId, walletAddress: testWallet }),
+      );
+      mockBoostRepo.decrease.mockResolvedValue({
+        type: "applied",
+        changeId: "cleanup-change",
+        balanceAfter: 0n,
+        idemKey: new Uint8Array(32),
+      });
+
+      const result = await service.cleanupInvalidBoostBonusesForCompetition(
+        competitionId,
+        newBoostStartDate,
+        oldBoostStartDate,
+      );
+
+      expect(result.removedBoostIds).toEqual(["boost-123"]);
+      expect(mockBoostRepo.decrease).toHaveBeenCalled();
+    });
+
+    it("returns empty arrays when no boost changes found", async () => {
+      const now = new Date();
+      const oldBoostStartDate = new Date(now.getTime() + ONE_DAY_MS);
+      const newBoostStartDate = new Date(now.getTime() + TWO_DAYS_MS);
+
+      setupCleanupMocks([], []);
+
+      const result = await service.cleanupInvalidBoostBonusesForCompetition(
+        competitionId,
+        newBoostStartDate,
+        oldBoostStartDate,
+      );
+
+      expect(result.removedBoostIds).toHaveLength(0);
+      expect(result.keptBoostIds).toHaveLength(0);
+      expect(mockBoostRepo.findBoostBonusesByIds).not.toHaveBeenCalled();
+    });
+
+    it("returns empty arrays when boost changes have no boostBonusId in meta", async () => {
+      const now = new Date();
+      const oldBoostStartDate = new Date(now.getTime() + ONE_DAY_MS);
+      const newBoostStartDate = new Date(now.getTime() + TWO_DAYS_MS);
+
+      setupCleanupMocks(
+        [
+          {
+            id: "change-1",
+            balanceId: "bal-1",
+            meta: {},
+          },
+        ],
+        [],
+      );
+
+      const result = await service.cleanupInvalidBoostBonusesForCompetition(
+        competitionId,
+        newBoostStartDate,
+        oldBoostStartDate,
+      );
+
+      expect(result.removedBoostIds).toHaveLength(0);
+      expect(result.keptBoostIds).toHaveLength(0);
+      expect(mockLogger.debug).toHaveBeenCalledWith(
+        expect.objectContaining({ competitionId }),
+        expect.stringContaining(
+          "No boost_changes entries have boostBonusId in meta",
+        ),
+      );
+    });
+
+    it("handles multiple boosts with mixed validity", async () => {
+      const now = new Date();
+      const oldBoostStartDate = new Date(now.getTime() + ONE_DAY_MS);
+      const newBoostStartDate = new Date(now.getTime() + TWO_DAYS_MS);
+      const validExpiresAt = new Date(now.getTime() + TWO_DAYS_MS + 1000);
+      const invalidExpiresAt = new Date(now.getTime() + ONE_DAY_MS + 1000);
+
+      const validBoost = createMockBoostBonus({
+        id: "boost-valid",
+        userId: testUserId,
+        amount: 1000n,
+        expiresAt: validExpiresAt,
+      });
+
+      const invalidBoost = createMockBoostBonus({
+        id: "boost-invalid",
+        userId: testUserId,
+        amount: 500n,
+        expiresAt: invalidExpiresAt,
+      });
+
+      setupCleanupMocks(
+        [
+          {
+            id: "change-1",
+            balanceId: "bal-1",
+            meta: { boostBonusId: "boost-valid" },
+          },
+          {
+            id: "change-2",
+            balanceId: "bal-2",
+            meta: { boostBonusId: "boost-invalid" },
+          },
+        ],
+        [validBoost, invalidBoost],
+      );
+      mockUserRepo.findById.mockResolvedValue(
+        createMockUser({ id: testUserId, walletAddress: testWallet }),
+      );
+      mockBoostRepo.decrease.mockResolvedValue({
+        type: "applied",
+        changeId: "cleanup-change",
+        balanceAfter: 0n,
+        idemKey: new Uint8Array(32),
+      });
+
+      const result = await service.cleanupInvalidBoostBonusesForCompetition(
+        competitionId,
+        newBoostStartDate,
+        oldBoostStartDate,
+      );
+
+      expect(result.removedBoostIds).toEqual(["boost-invalid"]);
+      expect(result.keptBoostIds).toEqual(["boost-valid"]);
+      expect(mockBoostRepo.decrease).toHaveBeenCalledTimes(1);
+    });
+
+    it("handles noop result from boost decrease", async () => {
+      const now = new Date();
+      const oldBoostStartDate = new Date(now.getTime() + ONE_DAY_MS);
+      const newBoostStartDate = new Date(
+        now.getTime() + TWO_DAYS_MS + ONE_DAY_MS,
+      );
+      const boostExpiresAt = new Date(now.getTime() + TWO_DAYS_MS);
+
+      const boost = createMockBoostBonus({
+        id: "boost-123",
+        userId: testUserId,
+        amount: 1000n,
+        expiresAt: boostExpiresAt,
+      });
+
+      setupCleanupMocks(
+        [
+          {
+            id: "change-1",
+            balanceId: "bal-1",
+            meta: { boostBonusId: "boost-123" },
+          },
+        ],
+        [boost],
+      );
+      mockUserRepo.findById.mockResolvedValue(
+        createMockUser({ id: testUserId, walletAddress: testWallet }),
+      );
+      mockBoostRepo.decrease.mockResolvedValue({
+        type: "noop",
+        balance: 0n,
+        idemKey: new Uint8Array(32),
+      });
+
+      const result = await service.cleanupInvalidBoostBonusesForCompetition(
+        competitionId,
+        newBoostStartDate,
+        oldBoostStartDate,
+      );
+
+      expect(result.removedBoostIds).toHaveLength(0);
+      expect(mockBoostRepo.decrease).toHaveBeenCalled();
+      expect(mockLogger.warn).toHaveBeenCalledWith(
+        expect.objectContaining({ boostBonusId: "boost-123", competitionId }),
+        expect.stringContaining("Idempotency prevented cleanup"),
+      );
+    });
+
+    it("skips boost when user not found", async () => {
+      const now = new Date();
+      const oldBoostStartDate = new Date(now.getTime() + ONE_DAY_MS);
+      const newBoostStartDate = new Date(
+        now.getTime() + TWO_DAYS_MS + ONE_DAY_MS,
+      );
+      const boostExpiresAt = new Date(now.getTime() + TWO_DAYS_MS);
+
+      const boost = createMockBoostBonus({
+        id: "boost-123",
+        userId: testUserId,
+        amount: 1000n,
+        expiresAt: boostExpiresAt,
+      });
+
+      setupCleanupMocks(
+        [
+          {
+            id: "change-1",
+            balanceId: "bal-1",
+            meta: { boostBonusId: "boost-123" },
+          },
+        ],
+        [boost],
+      );
+      mockUserRepo.findByIds.mockResolvedValue([]);
+
+      const result = await service.cleanupInvalidBoostBonusesForCompetition(
+        competitionId,
+        newBoostStartDate,
+        oldBoostStartDate,
+      );
+
+      expect(result.removedBoostIds).toHaveLength(0);
+      expect(mockBoostRepo.decrease).not.toHaveBeenCalled();
+      expect(mockLogger.warn).toHaveBeenCalledWith(
+        expect.objectContaining({
+          boostBonusId: "boost-123",
+          userId: testUserId,
+        }),
+        expect.stringContaining("User not found during boost cleanup"),
+      );
+    });
+
+    it("skips competition when FK violation occurs", async () => {
+      const now = new Date();
+      const oldBoostStartDate = new Date(now.getTime() + ONE_DAY_MS);
+      const newBoostStartDate = new Date(
+        now.getTime() + TWO_DAYS_MS + ONE_DAY_MS,
+      );
+      const boostExpiresAt = new Date(now.getTime() + TWO_DAYS_MS);
+      const competitionFkError = {
+        code: "23503",
+        constraint: "boost_balances_competition_id_competitions_id_fk",
+      };
+
+      const boost = createMockBoostBonus({
+        id: "boost-123",
+        userId: testUserId,
+        amount: 1000n,
+        expiresAt: boostExpiresAt,
+      });
+
+      setupCleanupMocks(
+        [
+          {
+            id: "change-1",
+            balanceId: "bal-1",
+            meta: { boostBonusId: "boost-123" },
+          },
+        ],
+        [boost],
+      );
+      mockUserRepo.findById.mockResolvedValue(
+        createMockUser({ id: testUserId, walletAddress: testWallet }),
+      );
+      mockBoostRepo.decrease.mockRejectedValue(competitionFkError);
+
+      const result = await service.cleanupInvalidBoostBonusesForCompetition(
+        competitionId,
+        newBoostStartDate,
+        oldBoostStartDate,
+      );
+
+      expect(result.removedBoostIds).toHaveLength(0);
+      expect(mockLogger.warn).toHaveBeenCalledWith(
+        expect.objectContaining({ boostBonusId: "boost-123", competitionId }),
+        expect.stringContaining("Competition was deleted during boost cleanup"),
+      );
+    });
+
+    it("propagates non-FK errors", async () => {
+      const now = new Date();
+      const oldBoostStartDate = new Date(now.getTime() + ONE_DAY_MS);
+      const newBoostStartDate = new Date(
+        now.getTime() + TWO_DAYS_MS + ONE_DAY_MS,
+      );
+      const boostExpiresAt = new Date(now.getTime() + TWO_DAYS_MS);
+
+      const boost = createMockBoostBonus({
+        id: "boost-123",
+        userId: testUserId,
+        amount: 1000n,
+        expiresAt: boostExpiresAt,
+      });
+
+      setupCleanupMocks(
+        [
+          {
+            id: "change-1",
+            balanceId: "bal-1",
+            meta: { boostBonusId: "boost-123" },
+          },
+        ],
+        [boost],
+      );
+      mockUserRepo.findById.mockResolvedValue(
+        createMockUser({ id: testUserId, walletAddress: testWallet }),
+      );
+      mockBoostRepo.decrease.mockRejectedValue(
+        new Error("Unexpected database error"),
+      );
+
+      await expect(
+        service.cleanupInvalidBoostBonusesForCompetition(
+          competitionId,
+          newBoostStartDate,
+          oldBoostStartDate,
+        ),
+      ).rejects.toThrow("Unexpected database error");
+    });
+
+    it("runs within a database transaction", async () => {
+      const now = new Date();
+      const oldBoostStartDate = new Date(now.getTime() + ONE_DAY_MS);
+      const newBoostStartDate = new Date(now.getTime() + TWO_DAYS_MS);
+
+      setupCleanupMocks([], []);
+
+      await service.cleanupInvalidBoostBonusesForCompetition(
+        competitionId,
+        newBoostStartDate,
+        oldBoostStartDate,
+      );
+
+      expect(mockDb.transaction).toHaveBeenCalledTimes(1);
+    });
+
+    it("works with external transaction parameter", async () => {
+      const now = new Date();
+      const oldBoostStartDate = new Date(now.getTime() + ONE_DAY_MS);
+      const newBoostStartDate = new Date(now.getTime() + TWO_DAYS_MS);
+      const externalTx = "external-tx" as unknown as Transaction;
+
+      mockBoostRepo.findBoostChangesByCompetitionId.mockResolvedValue([]);
+
+      await service.cleanupInvalidBoostBonusesForCompetition(
+        competitionId,
+        newBoostStartDate,
+        oldBoostStartDate,
+        externalTx,
+      );
+
+      expect(mockDb.transaction).not.toHaveBeenCalled();
+      expect(
+        mockBoostRepo.findBoostChangesByCompetitionId,
+      ).toHaveBeenCalledWith(competitionId, externalTx);
     });
   });
 });

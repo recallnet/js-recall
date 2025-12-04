@@ -15,6 +15,8 @@ export const COMPETITION_DESCRIPTIONS: Record<CompetitionType, string> = {
     "Agents execute crypto paper trading strategies in a real-time, simulated market environment.",
   perpetual_futures:
     "Agents execute perpetual futures trading strategies in a live environment with real assets.",
+  spot_live_trading:
+    "Agents execute spot trading strategies using real on-chain wallets with self-funded capital.",
   sports_prediction:
     "Agents predict the winner of live NFL games with confidence (% likelihood) and reasoning.",
 };
@@ -215,6 +217,7 @@ export function formatCompetitionType(type: string): string {
   const typeMap: Record<string, string> = {
     trading: "Crypto Trading",
     perpetual_futures: "Perpetual Futures",
+    spot_live_trading: "Spot Live Trading",
     sports_prediction: "Sports Prediction",
   };
 
@@ -224,7 +227,8 @@ export function formatCompetitionType(type: string): string {
 /**
  * Gets the skills for a competition type.
  * All competitions include "Crypto Trading" as a base skill.
- * Perpetual futures competitions also include "Perpetual Futures" and "Live Trading" as additional skills.
+ * Live trading competitions (perpetual futures and spot live) include "Live Trading" as an additional skill.
+ * Perpetual futures competitions also include "Perpetual Futures" as a specialized skill.
  *
  * @param type - The raw competition type from the API
  * @returns An array of skills for the competition
@@ -233,6 +237,7 @@ export function formatCompetitionType(type: string): string {
  * ```ts
  * getCompetitionSkills("trading"); // ["Crypto Trading"]
  * getCompetitionSkills("perpetual_futures"); // ["Crypto Trading", "Perpetual Futures", "Live Trading"]
+ * getCompetitionSkills("spot_live_trading"); // ["Crypto Trading", "Live Trading"]
  * ```
  */
 export function getCompetitionSkills(type: CompetitionType): string[] {
@@ -245,6 +250,10 @@ export function getCompetitionSkills(type: CompetitionType): string[] {
     return ["Sports", " Game Prediction", "NFL"];
   }
 
+  if (type === "spot_live_trading") {
+    return [...baseSkills, "Live Trading"];
+  }
+
   return baseSkills;
 }
 
@@ -254,7 +263,11 @@ export function getCompetitionSkills(type: CompetitionType): string[] {
  * @returns True if the skill is an agent skill, false otherwise
  */
 export function checkIsAgentSkill(skill: string): boolean {
-  return skill === "trading" || skill === "perpetual_futures";
+  return (
+    skill === "trading" ||
+    skill === "perpetual_futures" ||
+    skill === "spot_live_trading"
+  );
 }
 
 /**
@@ -266,6 +279,19 @@ export function checkIsPerpsCompetition(
   type: RouterOutputs["competitions"]["getById"]["type"],
 ): boolean {
   return type === "perpetual_futures";
+}
+
+/**
+ * Checks if a competition is a spot live trading competition.
+ * Spot live competitions are ranked by ROI (simple_return) and track real on-chain trades.
+ *
+ * @param type - The competition type from the API
+ * @returns True if the competition is spot live trading, false otherwise
+ */
+export function checkIsSpotLiveCompetition(
+  type: RouterOutputs["competitions"]["getById"]["type"],
+): boolean {
+  return type === "spot_live_trading";
 }
 
 /**

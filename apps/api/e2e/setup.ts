@@ -221,6 +221,18 @@ export async function setup() {
     await db
       .insert(arenas)
       .values({
+        id: "default-spot-live-arena",
+        name: "Default Spot Live Trading Arena",
+        createdBy: "system",
+        category: "crypto_trading",
+        skill: "spot_live_trading",
+        kind: "Competition",
+      })
+      .onConflictDoNothing();
+
+    await db
+      .insert(arenas)
+      .values({
         id: "default-nfl-game-prediction-arena",
         name: "Default NFL Game Prediction Arena",
         createdBy: "system",

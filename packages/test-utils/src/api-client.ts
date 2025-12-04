@@ -17,6 +17,7 @@ import {
 } from "./privy.js";
 import { getBaseUrl } from "./server.js";
 import {
+  AddBonusBoostsResponse,
   AddPartnerToCompetitionResponse,
   AdminAddAgentToCompetitionResponse,
   AdminAgentResponse,
@@ -76,9 +77,13 @@ import {
   RemovePartnerFromCompetitionResponse,
   ReplaceCompetitionPartnersResponse,
   ResetApiKeyResponse,
+  ReviewSpotLiveAlertResponse,
+  RevokeBonusBoostsResponse,
   RewardsProofsResponse,
   RewardsTotalResponse,
   SpecificChain,
+  SpotLiveAlertsResponse,
+  SpotLiveConfig,
   StartCompetitionResponse,
   TradeExecutionParams,
   TradeHistoryResponse,
@@ -479,6 +484,7 @@ export class ApiClient {
             minFundingThreshold?: number;
             apiUrl?: string;
           };
+          spotLiveConfig?: SpotLiveConfig;
           prizePools?: {
             agent: number;
             users: number;
@@ -529,10 +535,13 @@ export class ApiClient {
 
       // Add default arenaId if not provided
       if (!requestData.arenaId) {
-        requestData.arenaId =
-          requestData.type === "perpetual_futures"
-            ? "default-perps-arena"
-            : "default-paper-arena";
+        if (requestData.type === "perpetual_futures") {
+          requestData.arenaId = "default-perps-arena";
+        } else if (requestData.type === "spot_live_trading") {
+          requestData.arenaId = "default-spot-live-arena";
+        } else {
+          requestData.arenaId = "default-paper-arena";
+        }
       }
 
       // Default paperTradingInitialBalances for paper trading competitions only
@@ -593,6 +602,7 @@ export class ApiClient {
     rewards,
     evaluationMetric,
     perpsProvider,
+    spotLiveConfig,
     prizePools,
     rewardsIneligible,
     arenaId,
@@ -640,6 +650,7 @@ export class ApiClient {
       minFundingThreshold?: number;
       apiUrl?: string;
     };
+    spotLiveConfig?: SpotLiveConfig;
     prizePools?: {
       agent: number;
       users: number;
@@ -673,10 +684,12 @@ export class ApiClient {
   }): Promise<CreateCompetitionResponse | ErrorResponse> {
     const competitionName = name || `Test competition ${Date.now()}`;
     // Default arenaId based on competition type
-    const defaultArenaId =
-      type === "perpetual_futures"
-        ? "default-perps-arena"
-        : "default-paper-arena";
+    let defaultArenaId = "default-paper-arena";
+    if (type === "perpetual_futures") {
+      defaultArenaId = "default-perps-arena";
+    } else if (type === "spot_live_trading") {
+      defaultArenaId = "default-spot-live-arena";
+    }
 
     // Default paperTradingInitialBalances for paper trading competitions only
     const competitionType = type ?? "trading";
@@ -730,6 +743,7 @@ export class ApiClient {
           rewards,
           evaluationMetric,
           perpsProvider,
+          spotLiveConfig,
           prizePools,
           rewardsIneligible,
           arenaId: arenaId || defaultArenaId,
@@ -797,6 +811,7 @@ export class ApiClient {
       rewardRules,
       rewardDetails,
       displayState,
+      spotLiveConfig,
       gameIds,
       boostTimeDecayRate,
       paperTradingConfig,
@@ -840,6 +855,16 @@ export class ApiClient {
       rewardRules?: string;
       rewardDetails?: string;
       displayState?: DisplayState;
+      spotLiveConfig?: {
+        dataSource?: "rpc_direct" | "envio_indexing" | "hybrid";
+        dataSourceConfig?: Record<string, unknown>;
+        selfFundingThresholdUsd?: number;
+        minFundingThreshold?: number | null;
+        syncIntervalMinutes?: number;
+        chains?: string[];
+        allowedProtocols?: Array<{ protocol: string; chain: string }>;
+        allowedTokens?: Array<{ address: string; specificChain: string }>;
+      };
       gameIds?: string[];
       boostTimeDecayRate?: number;
       paperTradingConfig?: {
@@ -885,6 +910,7 @@ export class ApiClient {
           rewardRules,
           rewardDetails,
           displayState,
+          spotLiveConfig,
           gameIds,
           boostTimeDecayRate,
           paperTradingConfig,
@@ -2643,6 +2669,34 @@ export class ApiClient {
   }
 
   /**
+   * Get spot live self-funding alerts for a competition (admin only)
+   * @param competitionId Competition ID
+   * @param params Optional filters for reviewed status and violation type
+   * @returns Spot live alerts response
+   */
+  async getSpotLiveSelfFundingAlerts(
+    competitionId: string,
+    params?: {
+      reviewed?: string;
+      violationType?: string;
+    },
+  ): Promise<SpotLiveAlertsResponse | ErrorResponse> {
+    try {
+      const queryParams = new URLSearchParams();
+      if (params?.reviewed) queryParams.append("reviewed", params.reviewed);
+      if (params?.violationType)
+        queryParams.append("violationType", params.violationType);
+
+      const response = await this.axiosInstance.get(
+        `/api/admin/competition/${competitionId}/spot-live/alerts?${queryParams.toString()}`,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get spot live self-funding alerts");
+    }
+  }
+
+  /**
    * NFL API Methods
    */
 
@@ -2661,6 +2715,32 @@ export class ApiClient {
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "get NFL open plays");
+    }
+  }
+
+  /**
+   * Review a spot live self-funding alert (admin only)
+   * @param competitionId Competition ID
+   * @param alertId Alert ID
+   * @param reviewData Review note and action taken
+   * @returns Updated alert
+   */
+  async reviewSpotLiveSelfFundingAlert(
+    competitionId: string,
+    alertId: string,
+    reviewData: {
+      reviewNote: string;
+      actionTaken: string;
+    },
+  ): Promise<ReviewSpotLiveAlertResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.put(
+        `/api/admin/competition/${competitionId}/spot-live/alerts/${alertId}/review`,
+        reviewData,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "review spot live self-funding alert");
     }
   }
 
@@ -2799,6 +2879,47 @@ export class ApiClient {
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "get game predictions");
+    }
+  }
+
+  /**
+   * Admin: Add bonus boosts to users
+   * Requires admin authentication
+   */
+  async addBonusBoosts(data: {
+    boosts: Array<{
+      wallet: string;
+      amount: string;
+      expiresAt: string;
+      meta?: Record<string, string | number | boolean>;
+    }>;
+  }): Promise<AddBonusBoostsResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.post(
+        "/api/admin/boost-bonus",
+        data,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "add bonus boosts");
+    }
+  }
+
+  /**
+   * Admin: Revoke bonus boosts
+   * Requires admin authentication
+   */
+  async revokeBonusBoosts(data: {
+    boostIds: string[];
+  }): Promise<RevokeBonusBoostsResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.post(
+        "/api/admin/boost-bonus/revoke",
+        data,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "revoke bonus boosts");
     }
   }
 }
