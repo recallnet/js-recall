@@ -131,12 +131,17 @@ export class AdminService {
       }
 
       const envContent = fs.readFileSync(envPath, "utf8");
-      const rootKeyPattern = /ROOT_ENCRYPTION_KEY=.*$/m;
+      // Match ROOT_ENCRYPTION_KEY=... only on non-commented lines
+      // ^(?!\s*#) - negative lookahead: line doesn't start with optional whitespace + #
+      const rootKeyPattern = /^(?!\s*#)\s*ROOT_ENCRYPTION_KEY=.*$/m;
       const keyMatch = rootKeyPattern.exec(envContent);
 
       // Check if key exists and is valid
       if (keyMatch) {
-        const currentValue = keyMatch[0].split("=")[1];
+        // Extract the value after the = sign, handling optional whitespace
+        const matchedLine = keyMatch[0];
+        const currentValue = matchedLine.split("=")[1]?.trim();
+
         if (currentValue && this.isValidEncryptionKey(currentValue)) {
           this.updateEncryptionKeyInMemory(currentValue);
           this.logger.info("ROOT_ENCRYPTION_KEY already exists in .env");
