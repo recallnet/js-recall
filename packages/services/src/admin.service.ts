@@ -61,81 +61,135 @@ export class AdminService {
   }
 
   /**
-   * Ensures ROOT_ENCRYPTION_KEY exists in .env file, generating one if needed
+   * Validates if an encryption key meets security requirements
    */
-  private async ensureRootEncryptionKey(): Promise<void> {
+  private isValidEncryptionKey(key: string): boolean {
+    return (
+      key.length >= 32 &&
+      !key.includes("default_encryption_key") &&
+      !key.includes("your_") &&
+      !key.includes("dev_") &&
+      !key.includes("test_") &&
+      !key.includes("replace_in_production")
+    );
+  }
+
+  /**
+   * Generates a new secure encryption key
+   */
+  private generateEncryptionKey(): string {
+    return crypto.randomBytes(32).toString("hex");
+  }
+
+  /**
+   * Updates the encryption key in memory
+   */
+  private updateEncryptionKeyInMemory(newKey: string): void {
+    process.env.ROOT_ENCRYPTION_KEY = newKey;
+    this.rootEncryptionKey = newKey;
+  }
+
+  /**
+   * Ensures ROOT_ENCRYPTION_KEY exists in test mode (memory only)
+   */
+  private ensureEncryptionKeyInTestMode(): void {
     try {
-      // Find the correct .env file based on environment
-      const envFile = process.env.NODE_ENV === "test" ? ".env.test" : ".env";
+      const existingKey = process.env.ROOT_ENCRYPTION_KEY;
+
+      if (!existingKey || !this.isValidEncryptionKey(existingKey)) {
+        const newKey = this.generateEncryptionKey();
+        this.updateEncryptionKeyInMemory(newKey);
+        this.logger.info(
+          "Generated ROOT_ENCRYPTION_KEY in memory (test mode - file not modified)",
+        );
+      } else {
+        this.updateEncryptionKeyInMemory(existingKey);
+        this.logger.info(
+          "Using existing ROOT_ENCRYPTION_KEY from environment (test mode)",
+        );
+      }
+    } catch (error) {
+      this.logger.error(
+        { error },
+        "Error ensuring ROOT_ENCRYPTION_KEY in test mode",
+      );
+    }
+  }
+
+  /**
+   * Ensures ROOT_ENCRYPTION_KEY exists in .env file for non-test mode
+   */
+  private ensureEncryptionKeyInEnvFile(): void {
+    try {
+      const envFile = ".env";
       const envPath = path.resolve(process.cwd(), envFile);
       this.logger.info(`Checking for ${envFile} file at: ${envPath}`);
 
-      if (fs.existsSync(envPath)) {
-        const envContent = fs.readFileSync(envPath, "utf8");
-        const rootKeyPattern = /ROOT_ENCRYPTION_KEY=.*$/m;
-
-        // Check if ROOT_ENCRYPTION_KEY already exists and is not the default
-        const keyMatch = rootKeyPattern.exec(envContent);
-        let needsNewKey = true;
-
-        if (keyMatch) {
-          const currentValue = keyMatch[0].split("=")[1];
-          if (
-            currentValue &&
-            currentValue.length >= 32 &&
-            !currentValue.includes("default_encryption_key") &&
-            !currentValue.includes("your_") &&
-            !currentValue.includes("dev_") &&
-            !currentValue.includes("test_") &&
-            !currentValue.includes("replace_in_production")
-          ) {
-            // Key exists and seems to be a proper key already
-            this.logger.info("ROOT_ENCRYPTION_KEY already exists in .env");
-            needsNewKey = false;
-          }
-        }
-
-        if (needsNewKey) {
-          // Generate a new secure encryption key
-          const newEncryptionKey = crypto.randomBytes(32).toString("hex");
-          this.logger.info("Generated new ROOT_ENCRYPTION_KEY");
-
-          // Update the .env file
-          let updatedEnvContent = envContent;
-
-          if (keyMatch) {
-            // Replace existing key
-            updatedEnvContent = envContent.replace(
-              rootKeyPattern,
-              `ROOT_ENCRYPTION_KEY=${newEncryptionKey}`,
-            );
-          } else {
-            // Add new key
-            updatedEnvContent =
-              envContent.trim() +
-              `\n\nROOT_ENCRYPTION_KEY=${newEncryptionKey}\n`;
-          }
-
-          fs.writeFileSync(envPath, updatedEnvContent);
-          this.logger.info(`Updated ROOT_ENCRYPTION_KEY in ${envFile} file`);
-
-          // We need to update the process.env with the new key for it to be used immediately
-          process.env.ROOT_ENCRYPTION_KEY = newEncryptionKey;
-
-          // Reload the configuration to pick up the new encryption key
-          this.rootEncryptionKey = newEncryptionKey;
-
-          this.logger.info("✅ Configuration reloaded with new encryption key");
-        }
-      } else {
+      if (!fs.existsSync(envPath)) {
         this.logger.error(`${envFile} file not found at expected location`);
+        return;
       }
+
+      const envContent = fs.readFileSync(envPath, "utf8");
+      // Match ROOT_ENCRYPTION_KEY=... only on non-commented lines
+      // ^(?!\s*#) - negative lookahead: line doesn't start with optional whitespace + #
+      const rootKeyPattern = /^(?!\s*#)\s*ROOT_ENCRYPTION_KEY=.*$/m;
+      const keyMatch = rootKeyPattern.exec(envContent);
+
+      // Check if key exists and is valid
+      if (keyMatch) {
+        // Extract the value after the = sign, handling optional whitespace
+        const matchedLine = keyMatch[0];
+        const currentValue = matchedLine.split("=")[1]?.trim();
+
+        if (currentValue && this.isValidEncryptionKey(currentValue)) {
+          this.updateEncryptionKeyInMemory(currentValue);
+          this.logger.info("ROOT_ENCRYPTION_KEY already exists in .env");
+          return;
+        }
+      }
+
+      // Generate and persist new key
+      const newEncryptionKey = this.generateEncryptionKey();
+      this.logger.info("Generated new ROOT_ENCRYPTION_KEY");
+
+      // Update the .env file content
+      const updatedEnvContent = keyMatch
+        ? envContent.replace(
+            rootKeyPattern,
+            `ROOT_ENCRYPTION_KEY=${newEncryptionKey}`,
+          )
+        : envContent.trim() + `\n\nROOT_ENCRYPTION_KEY=${newEncryptionKey}\n`;
+
+      fs.writeFileSync(envPath, updatedEnvContent);
+      this.logger.info(`Updated ROOT_ENCRYPTION_KEY in ${envFile} file`);
+
+      // Update in memory
+      this.updateEncryptionKeyInMemory(newEncryptionKey);
+
+      this.logger.info("✅ Configuration reloaded with new encryption key");
     } catch (envError) {
       this.logger.error(
         { error: envError },
         "Error updating ROOT_ENCRYPTION_KEY",
       );
       // Continue with admin setup even if the env update fails
+    }
+  }
+
+  /**
+   * Ensures ROOT_ENCRYPTION_KEY exists, generating one if needed.
+   * In test mode, the key is generated in memory only without modifying files.
+   * In non-test mode, the key is persisted to the .env file.
+   */
+  private async ensureRootEncryptionKey(): Promise<void> {
+    const isTestMode =
+      process.env.NODE_ENV === "test" || process.env.TEST_MODE === "true";
+
+    if (isTestMode) {
+      this.ensureEncryptionKeyInTestMode();
+    } else {
+      this.ensureEncryptionKeyInEnvFile();
     }
   }
 

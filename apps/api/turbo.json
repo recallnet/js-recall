@@ -13,7 +13,6 @@
         "DOMAIN",
         "SESSION_TTL",
         "COOKIE_NAME",
-        "DISABLE_PARTICIPANT_LEADERBOARD_ACCESS",
         "EVM_CHAINS",
         "INDEXING_ENABLED",
         "INDEXING_DELAY",

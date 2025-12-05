@@ -52,6 +52,7 @@ export const competitionStatus = pgEnum("competition_status", [
 export const competitionType = pgEnum("competition_type", [
   "trading",
   "perpetual_futures",
+  "spot_live_trading",
   "sports_prediction",
 ]);
 

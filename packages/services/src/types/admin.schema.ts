@@ -78,6 +78,143 @@ export const PerpsProviderSchema = z.object({
 });
 
 /**
+ * Protocol filter input schema - Admin provides protocol name + chain only
+ * System resolves router address, event signature, and factory address from constants
+ */
+export const ProtocolFilterInputSchema = z.object({
+  protocol: z.string().min(1, "Protocol name is required"),
+  chain: SpecificChainSchema,
+});
+
+/**
+ * Token whitelist input schema - Admin provides address + specificChain
+ * System validates token is tradeable and fetches symbol via price API
+ */
+export const TokenWhitelistInputSchema = z.object({
+  address: z
+    .string()
+    .regex(/^0x[a-fA-F0-9]{40}$/, "Invalid token address format"),
+  specificChain: SpecificChainSchema,
+});
+
+/**
+ * Spot live data source configuration schema
+ *
+ * For Alchemy: Only `type`, `provider`, and `chains` are required.
+ * The API key is read from ALCHEMY_API_KEY env var, URLs are auto-constructed.
+ *
+ * @example
+ * // Minimal Alchemy config:
+ * { type: "rpc_direct", provider: "alchemy", chains: ["base", "arbitrum"] }
+ */
+export const SpotLiveDataSourceConfigSchema = z.object({
+  type: z.enum(["rpc_direct", "envio_indexing", "hybrid"]),
+  provider: z
+    .enum(["alchemy", "quicknode", "infura"])
+    .optional()
+    .describe(
+      "RPC provider - API key read from environment (e.g., ALCHEMY_API_KEY)",
+    ),
+  rpcUrls: z
+    .record(z.string(), z.string().url())
+    .optional()
+    .describe(
+      "Custom RPC URLs by chain (optional - Alchemy auto-constructs URLs)",
+    ),
+  graphqlUrl: z.string().url().optional(),
+  chains: z.array(SpecificChainSchema).min(1, "At least one chain is required"),
+});
+
+/**
+ * Spot live configuration schema for competition creation
+ */
+export const SpotLiveConfigSchema = z.object({
+  dataSource: z.enum(["rpc_direct", "envio_indexing", "hybrid"]),
+  dataSourceConfig: SpotLiveDataSourceConfigSchema,
+  chains: z
+    .array(SpecificChainSchema)
+    .min(1, "At least one chain is required")
+    .describe("Chains enabled for this competition"),
+  allowedProtocols: z
+    .array(ProtocolFilterInputSchema)
+    .optional()
+    .describe(
+      "Protocol whitelist - Admin provides name + chain, system resolves addresses",
+    ),
+  allowedTokens: z
+    .array(TokenWhitelistInputSchema)
+    .min(2, "At least 2 tokens required for trading")
+    .optional()
+    .describe(
+      "Token whitelist - Admin provides address + chain, system validates and fetches symbol",
+    ),
+  selfFundingThresholdUsd: z
+    .number()
+    .min(0)
+    .default(10)
+    .describe("Threshold for flagging self-funding violations (USD)"),
+  minFundingThreshold: z
+    .number()
+    .min(0)
+    .optional()
+    .describe(
+      "Minimum portfolio balance required at competition start (USD). Agents below this threshold are removed BEFORE trading begins. Not enforced during ongoing trading.",
+    ),
+  syncIntervalMinutes: z
+    .number()
+    .int()
+    .min(1)
+    .default(2)
+    .describe("How often to sync blockchain data (minutes)"),
+});
+
+/**
+ * Partial spot live config schema for updates
+ * All fields are optional - only provided fields will be updated
+ */
+export const SpotLiveConfigUpdateSchema = z.object({
+  dataSource: z.enum(["rpc_direct", "envio_indexing", "hybrid"]).optional(),
+  dataSourceConfig: SpotLiveDataSourceConfigSchema.optional(),
+  chains: z
+    .array(SpecificChainSchema)
+    .min(1, "At least one chain is required")
+    .optional()
+    .describe("Chains enabled for this competition - replaces existing chains"),
+  allowedProtocols: z
+    .array(ProtocolFilterInputSchema)
+    .optional()
+    .describe(
+      "Protocol whitelist - replaces existing protocols. Admin provides name + chain, system resolves addresses",
+    ),
+  allowedTokens: z
+    .array(TokenWhitelistInputSchema)
+    .min(2, "At least 2 tokens required for trading")
+    .optional()
+    .describe(
+      "Token whitelist - replaces existing tokens. Admin provides address + chain, system validates and fetches symbol",
+    ),
+  selfFundingThresholdUsd: z
+    .number()
+    .min(0)
+    .optional()
+    .describe("Threshold for flagging self-funding violations (USD)"),
+  minFundingThreshold: z
+    .number()
+    .min(0)
+    .nullable()
+    .optional()
+    .describe(
+      "Minimum portfolio balance required at competition start (USD). Agents below this threshold are removed BEFORE trading begins. Not enforced during ongoing trading. Set to null to remove.",
+    ),
+  syncIntervalMinutes: z
+    .number()
+    .int()
+    .min(1)
+    .optional()
+    .describe("How often to sync blockchain data (minutes)"),
+});
+
+/**
  * Paper trading config schema
  */
 export const PaperTradingConfigSchema = z
@@ -149,6 +286,7 @@ export const AdminCreateCompetitionSchema = z
       "Metric used for ranking agents. Defaults to calmar_ratio for perps, simple_return for spot trading",
     ),
     perpsProvider: PerpsProviderSchema.optional(), // Only required for perps competitions
+    spotLiveConfig: SpotLiveConfigSchema.optional(), // Only required for spot_live_trading competitions
     prizePools: z
       .object({
         agent: z.number().min(0),
@@ -216,9 +354,11 @@ export const AdminCreateCompetitionSchema = z
 export const AdminUpdateCompetitionSchema = AdminCreateCompetitionSchema.omit({
   name: true,
   arenaId: true,
+  spotLiveConfig: true, // Use partial version for updates
   paperTradingInitialBalances: true,
 }).extend({
   name: z.string().optional(),
+  spotLiveConfig: SpotLiveConfigUpdateSchema.optional(), // Partial updates supported
   arenaId: z.string().min(1, "Arena ID is required").optional(),
   paperTradingInitialBalances: PaperTradingInitialBalancesSchema.optional(),
 });
@@ -250,6 +390,7 @@ export const AdminStartCompetitionSchema = z
       "Metric used for ranking agents. Defaults to calmar_ratio for perps, simple_return for spot trading",
     ),
     perpsProvider: PerpsProviderSchema.optional(), // Only required for perps competitions
+    spotLiveConfig: SpotLiveConfigSchema.optional(), // Only required for spot_live_trading competitions
     prizePools: z
       .object({
         agent: z.number().min(0),
@@ -466,6 +607,32 @@ export const AdminGetCompetitionTransferViolationsParamsSchema = z.object({
 });
 
 /**
+ * Admin get spot live self-funding alerts query schema
+ */
+export const AdminGetSpotLiveAlertsQuerySchema = z.object({
+  reviewed: z.enum(["true", "false", "all"]).optional().default("false"),
+  violationType: z
+    .enum(["deposit", "withdrawal_exceeds_limit", "all"])
+    .optional(),
+});
+
+/**
+ * Admin review spot live self-funding alert params schema
+ */
+export const AdminReviewSpotLiveAlertParamsSchema = z.object({
+  competitionId: UuidSchema,
+  alertId: UuidSchema,
+});
+
+/**
+ * Admin review spot live self-funding alert body schema
+ */
+export const AdminReviewSpotLiveAlertBodySchema = z.object({
+  reviewNote: z.string().min(1, "Review note is required"),
+  actionTaken: z.enum(["dismissed", "disqualified", "warning"]),
+});
+
+/**
  * Admin rewards allocation schema
  */
 export const AdminRewardsAllocationSchema = z.object({
@@ -622,8 +789,8 @@ export const AdminBonusBoostItemSchema = z.object({
       "Amount must be positive (greater than zero)",
     )
     .refine(
-      (val) => BigInt(val) <= BigInt("1000000000000000000"), // 10^18 max
-      "Amount exceeds maximum allowed value (10^18)",
+      (val) => BigInt(val) <= BigInt("1000000000000000000000000"), // 10^24 max (1 million boost)
+      "Amount exceeds maximum allowed value (10^24)",
     ),
   expiresAt: z.iso
     .datetime()

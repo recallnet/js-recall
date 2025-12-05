@@ -878,7 +878,7 @@ export function configureAdminRoutes(
    *               type:
    *                 type: string
    *                 description: The type of competition
-   *                 enum: [trading, perpetual_futures]
+   *                 enum: [trading, perpetual_futures, spot_live_trading]
    *                 default: trading
    *                 example: trading
    *               externalUrl:
@@ -1001,6 +1001,73 @@ export function configureAdminRoutes(
    *                     type: string
    *                     description: Optional API URL override for the provider
    *                     example: https://api.symphony.com
+   *               spotLiveConfig:
+   *                 type: object
+   *                 nullable: true
+   *                 description: Configuration for spot live trading (required when type is spot_live_trading)
+   *                 properties:
+   *                   dataSource:
+   *                     type: string
+   *                     enum: [rpc_direct, envio_indexing, hybrid]
+   *                     description: Data source type for tracking on-chain trades
+   *                     example: rpc_direct
+   *                   dataSourceConfig:
+   *                     type: object
+   *                     description: Data source configuration. For Alchemy, only type, provider, and chains are required (API key read from ALCHEMY_API_KEY env var)
+   *                     properties:
+   *                       type:
+   *                         type: string
+   *                         enum: [rpc_direct, envio_indexing, hybrid]
+   *                         description: Must match dataSource
+   *                         example: rpc_direct
+   *                       provider:
+   *                         type: string
+   *                         enum: [alchemy, quicknode, infura]
+   *                         description: RPC provider name - API key read from environment (e.g., ALCHEMY_API_KEY)
+   *                         example: alchemy
+   *                       chains:
+   *                         type: array
+   *                         items:
+   *                           type: string
+   *                         description: Chains to monitor for trades
+   *                         example: ["base", "arbitrum"]
+   *                   chains:
+   *                     type: array
+   *                     items:
+   *                       type: string
+   *                     description: Chains enabled for this competition
+   *                     example: ["base", "arbitrum"]
+   *                   allowedProtocols:
+   *                     type: array
+   *                     nullable: true
+   *                     description: Protocol whitelist (optional)
+   *                     items:
+   *                       type: object
+   *                       properties:
+   *                         protocol:
+   *                           type: string
+   *                           description: Protocol name (e.g., aerodrome, uniswap_v3)
+   *                         chain:
+   *                           type: string
+   *                           description: Chain for this protocol
+   *                   allowedTokens:
+   *                     type: array
+   *                     nullable: true
+   *                     description: Token whitelist (optional, min 2 tokens if specified)
+   *                     items:
+   *                       type: object
+   *                       properties:
+   *                         address:
+   *                           type: string
+   *                           description: Token contract address
+   *                         specificChain:
+   *                           type: string
+   *                           description: Chain for this token
+   *                   selfFundingThresholdUsd:
+   *                     type: number
+   *                     description: Threshold for self-funding violation detection in USD
+   *                     default: 10
+   *                     example: 10
    *               prizePools:
    *                 type: object
    *                 description: Prize pool configuration
@@ -1180,7 +1247,7 @@ export function configureAdminRoutes(
    *                       description: Whether sandbox mode is enabled for this competition
    *                     type:
    *                       type: string
-   *                       enum: [trading, perpetual_futures]
+   *                       enum: [trading, perpetual_futures, spot_live_trading]
    *                       default: trading
    *                       description: The type of competition
    *                     createdAt:
@@ -1395,7 +1462,7 @@ export function configureAdminRoutes(
    *               type:
    *                 type: string
    *                 description: The type of competition
-   *                 enum: [trading, perpetual_futures]
+   *                 enum: [trading, perpetual_futures, spot_live_trading]
    *                 default: trading
    *                 example: trading
    *               tradingConstraints:
@@ -1594,7 +1661,7 @@ export function configureAdminRoutes(
    *                       description: Whether sandbox mode is enabled for this competition
    *                     type:
    *                       type: string
-   *                       enum: [trading, perpetual_futures]
+   *                       enum: [trading, perpetual_futures, spot_live_trading]
    *                       description: The type of competition
    *                     maxParticipants:
    *                       type: integer
@@ -1803,7 +1870,7 @@ export function configureAdminRoutes(
    *                       description: Type of cross-chain trading allowed in this competition
    *                     type:
    *                       type: string
-   *                       enum: [trading, perpetual_futures]
+   *                       enum: [trading, perpetual_futures, spot_live_trading]
    *                       description: The type of competition
    *                     maxParticipants:
    *                       type: integer
@@ -1867,7 +1934,7 @@ export function configureAdminRoutes(
    *               type:
    *                 type: string
    *                 description: The type of competition
-   *                 enum: [trading, perpetual_futures]
+   *                 enum: [trading, perpetual_futures, spot_live_trading]
    *                 example: trading
    *               externalUrl:
    *                 type: string
@@ -1926,6 +1993,40 @@ export function configureAdminRoutes(
    *                     type: string
    *                     description: Optional API URL override for the provider
    *                     example: https://api.symphony.com
+   *               spotLiveConfig:
+   *                 type: object
+   *                 nullable: true
+   *                 description: Configuration for spot live trading (required when changing type to spot_live_trading)
+   *                 properties:
+   *                   dataSource:
+   *                     type: string
+   *                     enum: [rpc_direct, envio_indexing, hybrid]
+   *                     description: Data source type for tracking on-chain trades
+   *                     example: rpc_direct
+   *                   dataSourceConfig:
+   *                     type: object
+   *                     description: Data source configuration. For Alchemy, only type, provider, and chains are required
+   *                     properties:
+   *                       type:
+   *                         type: string
+   *                         enum: [rpc_direct, envio_indexing, hybrid]
+   *                       provider:
+   *                         type: string
+   *                         enum: [alchemy, quicknode, infura]
+   *                         description: RPC provider - API key read from environment
+   *                       chains:
+   *                         type: array
+   *                         items:
+   *                           type: string
+   *                   chains:
+   *                     type: array
+   *                     items:
+   *                       type: string
+   *                     description: Chains enabled for this competition
+   *                   selfFundingThresholdUsd:
+   *                     type: number
+   *                     description: Threshold for self-funding violation detection in USD
+   *                     default: 10
    *               prizePools:
    *                 type: object
    *                 description: Prize pool configuration
@@ -2094,7 +2195,7 @@ export function configureAdminRoutes(
    *                       description: Competition description
    *                     type:
    *                       type: string
-   *                       enum: [trading, perpetual_futures]
+   *                       enum: [trading, perpetual_futures, spot_live_trading]
    *                       description: The type of competition
    *                     externalUrl:
    *                       type: string
@@ -2230,8 +2331,62 @@ export function configureAdminRoutes(
    *                       items:
    *                         type: string
    *                       description: Agent IDs ineligible to receive rewards from this competition
+   *                     spotLiveConfig:
+   *                       type: object
+   *                       nullable: true
+   *                       description: Spot live trading configuration (only present for spot_live_trading type)
+   *                       properties:
+   *                         dataSource:
+   *                           type: string
+   *                           enum: [rpc_direct, envio_indexing, hybrid]
+   *                           description: Data source type for tracking on-chain trades
+   *                         dataSourceConfig:
+   *                           type: object
+   *                           description: Data source configuration details
+   *                         selfFundingThresholdUsd:
+   *                           type: number
+   *                           description: Threshold for self-funding detection in USD
+   *                         minFundingThreshold:
+   *                           type: number
+   *                           nullable: true
+   *                           description: Minimum portfolio balance to start in competition (enforced at competition start)
+   *                         syncIntervalMinutes:
+   *                           type: number
+   *                           description: Interval in minutes between blockchain data syncs
+   *                         chains:
+   *                           type: array
+   *                           items:
+   *                             type: string
+   *                           description: Enabled blockchain networks for this competition
+   *                         allowedProtocols:
+   *                           type: array
+   *                           description: Allowed DeFi protocols for trading (empty array means all protocols allowed)
+   *                           items:
+   *                             type: object
+   *                             properties:
+   *                               protocol:
+   *                                 type: string
+   *                                 description: Protocol identifier (e.g., uniswap_v3, aerodrome)
+   *                               specificChain:
+   *                                 type: string
+   *                                 description: Chain the protocol is enabled on
+   *                         allowedTokens:
+   *                           type: array
+   *                           description: Allowed tokens for trading (empty array means all tokens allowed)
+   *                           items:
+   *                             type: object
+   *                             properties:
+   *                               address:
+   *                                 type: string
+   *                                 description: Token contract address
+   *                               symbol:
+   *                                 type: string
+   *                                 description: Token symbol (e.g., WETH, USDC)
+   *                               specificChain:
+   *                                 type: string
+   *                                 description: Chain the token is on
    *       400:
-   *         description: Bad request - Missing competitionId, no valid fields provided, attempting to update restricted fields (startDate, endDate, status), or missing perpsProvider when changing type to perpetual_futures
+   *         description: Bad request - Missing competitionId, no valid fields provided, attempting to update restricted fields (startDate, endDate, status), missing perpsProvider when changing type to perpetual_futures, or missing spotLiveConfig when changing type to spot_live_trading
    *       401:
    *         description: Unauthorized - Admin authentication required
    *       404:
@@ -2316,8 +2471,8 @@ export function configureAdminRoutes(
    *   get:
    *     tags:
    *       - Admin
-   *     summary: Get transfer violations for a perps competition
-   *     description: Returns agents who have made transfers during the competition (mid-competition transfers are prohibited)
+   *     summary: Get transfer violations for a perps or spot live competition
+   *     description: Returns agents who have made transfers during the competition (mid-competition transfers are prohibited for both perps and spot live)
    *     security:
    *       - BearerAuth: []
    *     parameters:
@@ -2357,7 +2512,7 @@ export function configureAdminRoutes(
    *                         description: Number of transfers made during competition
    *                         minimum: 1
    *       400:
-   *         description: Competition is not a perps competition
+   *         description: Competition is not a perps or spot live competition
    *         content:
    *           application/json:
    *             schema:
@@ -2368,7 +2523,7 @@ export function configureAdminRoutes(
    *                   example: false
    *                 error:
    *                   type: string
-   *                   example: Competition is not a perpetual futures competition
+   *                   example: Transfer violations are only applicable to perpetual futures and spot live trading competitions
    *       404:
    *         description: Competition not found
    *         content:
@@ -2388,6 +2543,123 @@ export function configureAdminRoutes(
   router.get(
     "/competition/:competitionId/transfer-violations",
     controller.getCompetitionTransferViolations,
+  );
+
+  /**
+   * @openapi
+   * /api/admin/competition/{competitionId}/spot-live/alerts:
+   *   get:
+   *     tags:
+   *       - Admin
+   *     summary: Get self-funding alerts for a spot live competition
+   *     description: Returns self-funding violation alerts detected via transfer history or balance reconciliation
+   *     parameters:
+   *       - in: path
+   *         name: competitionId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         description: Competition ID
+   *       - in: query
+   *         name: reviewed
+   *         schema:
+   *           type: string
+   *           enum: [true, false, all]
+   *           default: false
+   *         description: Filter by review status
+   *       - in: query
+   *         name: violationType
+   *         schema:
+   *           type: string
+   *           enum: [transfer, balance_reconciliation, all]
+   *         description: Filter by violation type
+   *     responses:
+   *       200:
+   *         description: Alerts retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *                 alerts:
+   *                   type: array
+   *                   items:
+   *                     type: object
+   *       404:
+   *         description: Competition not found
+   *       500:
+   *         description: Server error
+   */
+  router.get(
+    "/competition/:competitionId/spot-live/alerts",
+    controller.getSpotLiveSelfFundingAlerts,
+  );
+
+  /**
+   * @openapi
+   * /api/admin/competition/{competitionId}/spot-live/alerts/{alertId}/review:
+   *   put:
+   *     tags:
+   *       - Admin
+   *     summary: Review a self-funding alert
+   *     description: Mark an alert as reviewed with admin decision and notes
+   *     parameters:
+   *       - in: path
+   *         name: competitionId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         description: Competition ID
+   *       - in: path
+   *         name: alertId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         description: Alert ID
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - reviewNote
+   *               - actionTaken
+   *             properties:
+   *               reviewNote:
+   *                 type: string
+   *                 description: Admin review notes
+   *               actionTaken:
+   *                 type: string
+   *                 enum: [dismissed, disqualified, warning]
+   *                 description: Action taken on this alert
+   *     responses:
+   *       200:
+   *         description: Alert reviewed successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *                 alert:
+   *                   type: object
+   *       404:
+   *         description: Alert not found
+   *       500:
+   *         description: Server error
+   */
+  router.put(
+    "/competition/:competitionId/spot-live/alerts/:alertId/review",
+    controller.reviewSpotLiveSelfFundingAlert,
   );
 
   /**
@@ -2457,7 +2729,7 @@ export function configureAdminRoutes(
    *                       description: Type of cross-chain trading allowed in this competition
    *                     type:
    *                       type: string
-   *                       enum: [trading, perpetual_futures]
+   *                       enum: [trading, perpetual_futures, spot_live_trading]
    *                       description: The type of competition
    *                 leaderboard:
    *                   type: array
@@ -3928,7 +4200,7 @@ export function configureAdminRoutes(
    *                     amount:
    *                       type: string
    *                       pattern: ^\d+$
-   *                       description: Boost amount as numeric string (BigInt). Must be > 0 and <= 10^18.
+   *                       description: Boost amount as numeric string (BigInt). Must be > 0 and <= 10^24 (1 million boost).
    *                       example: "500000000000000000"
    *                     expiresAt:
    *                       type: string

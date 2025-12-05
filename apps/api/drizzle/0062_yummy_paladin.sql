@@ -39,7 +39,7 @@ CREATE TABLE "seasons" (
 );
 --> statement-breakpoint
 INSERT INTO seasons (number, name, start_date, end_date)
-	VALUES (0, 'Genesis', '2025-10-13T00:00:00Z', null)
+	VALUES (0, 'Genesis', '2025-10-13 00:00:00+00', '2025-11-15 00:00:00+00')
 	ON CONFLICT DO NOTHING;
 --> statement-breakpoint
 ALTER TABLE "airdrop_allocations" ADD CONSTRAINT "airdrop_allocations_season_seasons_number_fk" FOREIGN KEY ("season") REFERENCES "public"."seasons"("number") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint

@@ -17,6 +17,7 @@ import { PaperTradingInitialBalancesRepository } from "@recallnet/db/repositorie
 import { PartnerRepository } from "@recallnet/db/repositories/partner";
 import { PerpsRepository } from "@recallnet/db/repositories/perps";
 import { RewardsRepository } from "@recallnet/db/repositories/rewards";
+import { SpotLiveRepository } from "@recallnet/db/repositories/spot-live";
 import { StakesRepository } from "@recallnet/db/repositories/stakes";
 import { TradeRepository } from "@recallnet/db/repositories/trade";
 import { TradingConstraintsRepository } from "@recallnet/db/repositories/trading-constraints";
@@ -84,6 +85,12 @@ export const perpsRepository = new PerpsRepository(
   db,
   db,
   createLogger("PerpsRepository"),
+);
+
+export const spotLiveRepository = new SpotLiveRepository(
+  db,
+  db,
+  createLogger("SpotLiveRepository"),
 );
 
 export const stakesRepository = new StakesRepository(db);

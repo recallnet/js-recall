@@ -470,6 +470,20 @@
       "when": 1764354950879,
       "tag": "0066_dizzy_major_mapleleaf",
       "breakpoints": true
+    },
+    {
+      "idx": 67,
+      "version": "7",
+      "when": 1764649632024,
+      "tag": "0067_elite_paibok",
+      "breakpoints": true
+    },
+    {
+      "idx": 68,
+      "version": "7",
+      "when": 1764788427882,
+      "tag": "0068_stale_spencer_smythe",
+      "breakpoints": true
     }
   ]
 }

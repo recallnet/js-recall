@@ -39,11 +39,15 @@ export function configureLeaderboardRoutes(
    *           enum:
    *             - trading
    *             - perpetual_futures
+   *             - spot_live_trading
+   *             - sports_prediction
    *           default: trading
    *         description: |
    *           Competition type (used when arenaId not provided).
    *           - trading: Paper trading
    *           - perpetual_futures: Perpetual futures
+   *           - spot_live_trading: Spot live trading (on-chain)
+   *           - sports_prediction: Sports prediction
    *           default: trading
    *       - in: query
    *         name: limit

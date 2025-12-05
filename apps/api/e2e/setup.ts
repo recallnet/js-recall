@@ -52,14 +52,9 @@ export async function setup() {
   testLogger.info(`Looking for .env.test at: ${envTestPath}`);
   testLogger.info(`.env.test file exists: ${envTestExists}`);
 
-  // Check if leaderboard-access test is being run by examining command line arguments
+  // Check which test is being run by examining command line arguments
   const args = process.argv.slice(2);
   testLogger.info({ args }, "42 setup");
-  const isLeaderboardTest = args.some(
-    (arg) =>
-      arg.includes("leaderboard-access.test") ||
-      arg.includes("leaderboard-access"),
-  );
 
   const isTradingTest = args.some(
     (arg) => arg.includes("trading.test") || arg.includes("trading"),
@@ -78,15 +73,10 @@ export async function setup() {
   if (envTestExists) {
     // Save original values for debugging
     const originalBaseUsdcBalance = process.env.INITIAL_BASE_USDC_BALANCE;
-    const originalLeaderboardAccess =
-      process.env.DISABLE_PARTICIPANT_LEADERBOARD_ACCESS;
 
     // Determine if test needs to preserve process.env
     const shouldUseProcessEnv =
-      isLeaderboardTest ||
-      isTradingTest ||
-      isBaseTradingTest ||
-      isRateLimiterDisabledTest;
+      isTradingTest || isBaseTradingTest || isRateLimiterDisabledTest;
 
     // Force override with .env.test values
     const result = config({
@@ -109,9 +99,6 @@ export async function setup() {
       testLogger.info(
         `- INITIAL_BASE_USDC_BALANCE: ${process.env.INITIAL_BASE_USDC_BALANCE} (was: ${originalBaseUsdcBalance})`,
       );
-      testLogger.info(
-        `- DISABLE_PARTICIPANT_LEADERBOARD_ACCESS: ${process.env.DISABLE_PARTICIPANT_LEADERBOARD_ACCESS} (was: ${originalLeaderboardAccess})`,
-      );
     }
   } else {
     testLogger.warn(
@@ -129,12 +116,6 @@ export async function setup() {
         `Loaded .env file: ${result.parsed ? "successfully" : "failed"}`,
       );
     }
-  }
-  if (isLeaderboardTest) {
-    process.env.DISABLE_PARTICIPANT_LEADERBOARD_ACCESS = "true";
-    testLogger.info(
-      `DISABLE_PARTICIPANT_LEADERBOARD_ACCESS set to: ${process.env.DISABLE_PARTICIPANT_LEADERBOARD_ACCESS}`,
-    );
   }
   if (isTradingTest) {
     process.env.MAX_TRADE_PERCENTAGE = "10";
@@ -214,6 +195,18 @@ export async function setup() {
         createdBy: "system",
         category: "crypto_trading",
         skill: "perpetual_futures",
+        kind: "Competition",
+      })
+      .onConflictDoNothing();
+
+    await db
+      .insert(arenas)
+      .values({
+        id: "default-spot-live-arena",
+        name: "Default Spot Live Trading Arena",
+        createdBy: "system",
+        category: "crypto_trading",
+        skill: "spot_live_trading",
         kind: "Competition",
       })
       .onConflictDoNothing();

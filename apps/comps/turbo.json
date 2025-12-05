@@ -83,7 +83,8 @@
 
         "SPORTSDATAIO_API_KEY",
         "SPORTSDATAIO_BASE_URL",
-        "USE_EXTERNAL_SERVER"
+        "USE_EXTERNAL_SERVER",
+        "DISABLE_RATE_LIMITER"
       ]
     }
   }

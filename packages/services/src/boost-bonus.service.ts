@@ -6,13 +6,14 @@ import type { UserRepository } from "@recallnet/db/repositories/user";
 import type { Database, Transaction } from "@recallnet/db/types";
 
 import { checkForeignKeyViolation } from "./lib/error-utils.js";
+import { ApiError } from "./types/index.js";
 
 // Text encoder for idempotency keys
 const TEXT_ENCODER = new TextEncoder();
 
 // Validation constraints for bonus boosts
-/** Maximum boost amount: 1 quintillion (10^18) */
-const MAX_BONUS_BOOST_AMOUNT = 10n ** 18n;
+/** Maximum boost amount: 1 million boost (10^24) */
+const MAX_BONUS_BOOST_AMOUNT = 10n ** 24n;
 /** Minimum time in the future for expiration: 1 minute in milliseconds */
 const MIN_EXPIRATION_FUTURE_TIME_MS = 60 * 1000;
 /** Maximum length of meta field when serialized to JSON */
@@ -136,11 +137,15 @@ export class BoostBonusService {
       );
 
       if (!boost) {
-        throw new Error(`Bonus boost with id ${boostBonusId} not found`);
+        throw new ApiError(
+          404,
+          `Bonus boost with id ${boostBonusId} not found`,
+        );
       }
 
       if (!boost.isActive) {
-        throw new Error(
+        throw new ApiError(
+          400,
           `Bonus boost with id ${boostBonusId} is already revoked`,
         );
       }
@@ -337,7 +342,7 @@ export class BoostBonusService {
    *
    * This method:
    * 1. Validates the input parameters:
-   *    - Amount must be > 0 and <= 10^18
+   *    - Amount must be > 0 and <= 10^24
    *    - Expiration must be at least 1 minute in the future
    *    - Meta field must be <= 1000 characters when serialized
    *    - Meta field must only contain primitives (string, number, boolean)
@@ -353,7 +358,7 @@ export class BoostBonusService {
    * - Competition must have `boostStartDate` and `boostEndDate` set
    *
    * **Validation:**
-   * - Amount must be > 0 and <= 10^18 (1 quintillion)
+   * - Amount must be > 0 and <= 10^24 (1 million boost)
    * - Expiration must be at least 1 minute in the future
    * - Meta field must be <= 1000 characters when serialized
    * - Meta field must only contain primitives (no nested objects/arrays)
@@ -371,7 +376,7 @@ export class BoostBonusService {
    * - If same boost is applied twice to same competition, second attempt is noop
    *
    * @param wallet - User's wallet address (0x...)
-   * @param amount - Amount of boost to award (must be > 0 and <= 10^18)
+   * @param amount - Amount of boost to award (must be > 0 and <= 10^24)
    * @param expiresAt - When the boost expires (must be at least 1 minute in future)
    * @param createdByAdminId - Optional admin ID who created the boost
    * @param meta - Optional metadata (primitives only, max 1000 chars serialized)
@@ -406,7 +411,7 @@ export class BoostBonusService {
       }
 
       if (amount > MAX_BONUS_BOOST_AMOUNT) {
-        throw new Error(`Boost amount exceeds maximum allowed value (10^18)`);
+        throw new Error(`Boost amount exceeds maximum allowed value (10^24)`);
       }
 
       const now = new Date();

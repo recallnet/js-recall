@@ -21,9 +21,10 @@ import { useCompetitionRules } from "@/hooks";
 import { useCompetitionPerpsPositions } from "@/hooks/useCompetitionPerpsPositions";
 import { useCompetitionTrades } from "@/hooks/useCompetitionTrades";
 import { RouterOutputs } from "@/rpc/router";
-import { checkIsPerpsCompetition } from "@/utils/competition-utils";
 import {
   LIMIT_ITEMS_PER_PAGE,
+  checkIsPerpsCompetition,
+  checkIsSpotLiveCompetition,
   shouldShowRelativeTimestamp,
 } from "@/utils/competition-utils";
 import {
@@ -50,6 +51,7 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
   className,
 }) => {
   const isPerpsCompetition = checkIsPerpsCompetition(competition.type);
+  const isSpotLiveCompetition = checkIsSpotLiveCompetition(competition.type);
   const [balancesExpanded, setBalancesExpanded] = useState(false);
   const [tradingRulesExpanded, setTradingRulesExpanded] = useState(false);
   const [chainsExpanded, setChainsExpanded] = useState(false);
@@ -454,7 +456,7 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
         >
           <CompetitionInfoSections
             competition={competition}
-            showEvaluationMetric={isPerpsCompetition}
+            showEvaluationMetric={isPerpsCompetition || isSpotLiveCompetition}
           />
         </TabsContent>
 
@@ -644,6 +646,7 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
       activeTab,
       className,
       isPerpsCompetition,
+      isSpotLiveCompetition,
       tradesData,
       isLoadingTrades,
       openPositionsData,

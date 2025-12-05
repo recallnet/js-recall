@@ -26,6 +26,7 @@ export default defineConfig({
     "src/repositories/indexing-events.ts",
     "src/repositories/partner.ts",
     "src/repositories/perps.ts",
+    "src/repositories/spot-live.ts",
     "src/repositories/rewards.ts",
     "src/repositories/stakes.ts",
     "src/repositories/trade.ts",

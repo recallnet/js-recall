@@ -124,8 +124,6 @@ export const config = {
     maxRequests: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || "100", 10),
     disable: process.env.DISABLE_RATE_LIMITER === "true",
   },
-  leaderboardAccess:
-    process.env.DISABLE_PARTICIPANT_LEADERBOARD_ACCESS === "true",
   // Specific chain initial balances
   specificChainBalances: getSpecificChainBalances(),
   // Specific chain token addresses

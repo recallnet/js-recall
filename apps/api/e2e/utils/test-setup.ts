@@ -97,32 +97,6 @@ afterAll(async () => {
       log("[File Teardown] Forced garbage collection");
     }
 
-    // Clean up any generated ROOT_ENCRYPTION_KEY from .env.test to prevent git commits
-    try {
-      const envTestPath = path.resolve(__dirname, "../../.env.test");
-      if (fs.existsSync(envTestPath)) {
-        const envContent = fs.readFileSync(envTestPath, "utf8");
-
-        // Remove any ROOT_ENCRYPTION_KEY line that was added during tests
-        const updatedContent = envContent.replace(
-          /^ROOT_ENCRYPTION_KEY=.*$\n?/m,
-          "",
-        );
-
-        if (updatedContent !== envContent) {
-          fs.writeFileSync(envTestPath, updatedContent);
-          log("[File Teardown] ✅ Removed ROOT_ENCRYPTION_KEY from .env.test");
-        }
-      }
-    } catch (envCleanupError) {
-      log(
-        "[File Teardown] Warning: Could not clean up .env.test encryption key: " +
-          (envCleanupError instanceof Error
-            ? envCleanupError.message
-            : String(envCleanupError)),
-      );
-    }
-
     // Add a longer delay to allow logging infrastructure and database connections to clean up
     // This is especially important in CI environments where rapid test cycles can cause resource conflicts
     await new Promise((resolve) => setTimeout(resolve, 1000));
