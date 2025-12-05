@@ -5844,7 +5844,7 @@
                         "amount": {
                           "type": "string",
                           "pattern": "^\\d+$",
-                          "description": "Boost amount as numeric string (BigInt). Must be > 0 and <= 10^18.",
+                          "description": "Boost amount as numeric string (BigInt). Must be > 0 and <= 10^24 (1 million boost).",
                           "example": "500000000000000000"
                         },
                         "expiresAt": {
@@ -10095,10 +10095,15 @@
             "name": "type",
             "schema": {
               "type": "string",
-              "enum": ["trading", "perpetual_futures"],
+              "enum": [
+                "trading",
+                "perpetual_futures",
+                "spot_live_trading",
+                "sports_prediction"
+              ],
               "default": "trading"
             },
-            "description": "Competition type (used when arenaId not provided).\n- trading: Paper trading\n- perpetual_futures: Perpetual futures\ndefault: trading\n"
+            "description": "Competition type (used when arenaId not provided).\n- trading: Paper trading\n- perpetual_futures: Perpetual futures\n- spot_live_trading: Spot live trading (on-chain)\n- sports_prediction: Sports prediction\ndefault: trading\n"
           },
           {
             "in": "query",
