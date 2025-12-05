@@ -48,9 +48,9 @@ describe("Multi-Competition Balance Isolation", () => {
 
   beforeAll(async () => {
     // Create a separate test database
-    const testDbUrl = process.env.POSTGRES_URL;
+    const testDbUrl = process.env.DATABASE_URL;
     if (!testDbUrl) {
-      throw new Error("POSTGRES_URL environment variable is required");
+      throw new Error("DATABASE_URL environment variable is required");
     }
     const testDbName = `test_multi_comp_${Date.now()}`;
 
@@ -290,7 +290,7 @@ describe("Multi-Competition Balance Isolation", () => {
       await testPool.end();
 
       const adminPool = new Pool({
-        connectionString: process.env.POSTGRES_URL,
+        connectionString: process.env.DATABASE_URL,
       });
       await adminPool.query(`DROP DATABASE IF EXISTS ${dbName}`);
       await adminPool.end();

@@ -18,8 +18,15 @@ const sslConfig = () => {
 };
 
 const pool = new Pool({
-  connectionString: process.env.POSTGRES_URL,
+  connectionString: process.env.DATABASE_URL,
   ssl: sslConfig(),
 });
 
 export const db = drizzle(pool, { schema });
+
+const poolReadReplica = new Pool({
+  connectionString: process.env.DATABASE_READ_REPLICA_URL,
+  ssl: sslConfig(),
+});
+
+export const dbReadReplica = drizzle(poolReadReplica, { schema });

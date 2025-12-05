@@ -16,15 +16,20 @@ import { PrivyClient } from "@privy-io/server-auth";
 import { RequestCookie } from "next/dist/compiled/@edge-runtime/cookies";
 import { Logger } from "pino";
 
+import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import {
+  AdminService,
   AgentService,
   AirdropService,
   ArenaService,
+  BalanceService,
   BoostAwardService,
   BoostService,
   CompetitionService,
   EmailService,
   LeaderboardService,
+  PartnerService,
+  PortfolioSnapshotterService,
   RewardsService,
   SportsService,
   UserService,
@@ -40,12 +45,16 @@ export interface CookieStore {
  *
  * @property cookies - HTTP cookies from the request (Next.js)
  * @property privyClient - Privy authentication/session client
+ * @property adminService - Service for admin operations
  * @property boostService - Service for boost-related operations
  * @property boostAwardService - Service for boost awards and staking
  * @property userService - Service for user-related operations
  * @property competitionService - Service for competition operations
  * @property agentService - Service for agent management operations
  * @property arenaService - Service for arena operations
+ * @property partnerService - Service for partner operations
+ * @property balanceService - Service for balance operations
+ * @property portfolioSnapshotterService - Service for portfolio snapshot operations
  * @property emailService - Service for email operations
  * @property leaderboardService - Service for leaderboard operations
  * @property rewardsService - Service for reward operations
@@ -59,14 +68,21 @@ export interface CookieStore {
 export const base = os
   .$context<{
     cookies: CookieStore;
+    headers: Headers;
+    params: Record<string, string | string[]>;
     privyClient: PrivyClient;
+    adminService: AdminService;
     airdropService: AirdropService;
     boostService: BoostService;
     boostAwardService: BoostAwardService;
     userService: UserService;
     competitionService: CompetitionService;
+    competitionRepository: CompetitionRepository;
     agentService: AgentService;
     arenaService: ArenaService;
+    partnerService: PartnerService;
+    balanceService: BalanceService;
+    portfolioSnapshotterService: PortfolioSnapshotterService;
     emailService: EmailService;
     leaderboardService: LeaderboardService;
     rewardsService: RewardsService;
@@ -81,6 +97,7 @@ export const base = os
       message: "An internal server error occurred",
     },
     UNAUTHORIZED: {},
+    FORBIDDEN: {},
     BAD_REQUEST: {
       message: "Bad request",
     },

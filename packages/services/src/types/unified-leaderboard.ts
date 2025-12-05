@@ -1,4 +1,4 @@
-import type { LeaderboardAgent } from "./index.js";
+import type { LeaderboardAgent } from "./main.js";
 
 // ============================================================================
 // BENCHMARK DATA TYPES

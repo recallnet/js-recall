@@ -42,7 +42,7 @@ export default defineConfig({
           root: "./",
           environment: "jsdom",
           include: ["**/*.test.ts", "**/*.test.tsx"],
-          exclude: ["e2e/**", "node_modules/**"],
+          exclude: ["e2e/**", "e2e-vercel/**", "node_modules/**"],
           typecheck: { enabled: true, include: ["**/*.test.ts"] },
         },
       },
@@ -56,6 +56,30 @@ export default defineConfig({
           typecheck: { enabled: true, include: ["**/*.test.ts"] },
           globalSetup: "./e2e/setup.ts",
           setupFiles: "./e2e/utils/test-setup.ts",
+          testTimeout: 120_000,
+          sequence: {
+            concurrent: false,
+            shuffle: false,
+          },
+          maxConcurrency: 1,
+          pool: "threads",
+          poolOptions: {
+            threads: {
+              singleThread: true,
+            },
+          },
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: "e2e-vercel",
+          root: "./",
+          dir: "./e2e-vercel",
+          include: ["**/*.test.ts"],
+          typecheck: { enabled: true, include: ["**/*.test.ts"] },
+          globalSetup: "./e2e-vercel/setup.ts",
+          setupFiles: "./e2e-vercel/utils/test-setup.ts",
           testTimeout: 120_000,
           sequence: {
             concurrent: false,

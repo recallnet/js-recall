@@ -20,7 +20,8 @@
         "SENTRY_ORG",
         "SENTRY_PROJECT",
         "NEXT_RUNTIME",
-        "POSTGRES_URL",
+        "DATABASE_URL",
+        "DATABASE_READ_REPLICA_URL",
         "DATABASE_CA_CERT",
         "PRIVY_APP_SECRET",
         "PRIVY_APP_ID",
@@ -62,6 +63,9 @@
         "COINGECKO_API_KEY",
         "COINGECKO_MODE",
         "TEST_MODE",
+        "TEST_HOST",
+        "TEST_PORT",
+        "TEST_API_BASE_URL",
         "METRICS_PORT",
         "CI",
         "CRON_SECRET",
@@ -79,6 +83,7 @@
 
         "SPORTSDATAIO_API_KEY",
         "SPORTSDATAIO_BASE_URL",
+        "USE_EXTERNAL_SERVER",
         "DISABLE_RATE_LIMITER"
       ]
     }

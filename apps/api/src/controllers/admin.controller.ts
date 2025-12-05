@@ -4,18 +4,11 @@ import {
   ActorStatus,
   AdminCreateAgentSchema,
   Agent,
-  AgentPublic,
   ApiError,
   User,
   toApiAgent,
   toApiUser,
 } from "@recallnet/services/types";
-
-import { db } from "@/database/db.js";
-import { flatParse } from "@/lib/flat-parse.js";
-import { adminLogger } from "@/lib/logger.js";
-import { ServiceRegistry } from "@/services/index.js";
-
 import {
   AdminAddAgentToCompetitionParamsSchema,
   AdminAddBonusBoostSchema,
@@ -60,7 +53,14 @@ import {
   AdminUpdateCompetitionSchema,
   AdminUpdatePartnerPositionSchema,
   AdminUpdatePartnerSchema,
-} from "./admin.schema.js";
+} from "@recallnet/services/types";
+import { AdminSearchResults } from "@recallnet/services/types";
+
+import { db } from "@/database/db.js";
+import { flatParse } from "@/lib/flat-parse.js";
+import { adminLogger } from "@/lib/logger.js";
+import { ServiceRegistry } from "@/services/index.js";
+
 import { parseAdminSearchQuery } from "./request-helpers.js";
 
 // TODO: need user deactivation logic
@@ -76,11 +76,6 @@ interface AdminAgentRegistrationResponse {
   success: boolean;
   agent: Agent;
   agentError?: string;
-}
-
-interface AdminSearchResults {
-  users: User[];
-  agents: AgentPublic[];
 }
 
 export interface AdminSearchUsersAndAgentsResponse {
