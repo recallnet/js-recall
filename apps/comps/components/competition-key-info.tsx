@@ -209,7 +209,7 @@ export function CompetitionInfoSections({
             <div className="font-bold">
               {competition.minimumStake ? (
                 <span className="flex items-center gap-2">
-                  {formatAmount(competition.minimumStake, 0, true)} <Recall />
+                  <Recall /> {formatAmount(competition.minimumStake, 0, true)}
                 </span>
               ) : (
                 "N/A"
