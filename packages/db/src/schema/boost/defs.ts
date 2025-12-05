@@ -188,7 +188,7 @@ export const agentBoosts = pgTable(
     agentBoostTotalId: uuid("agent_boost_total_id")
       .notNull()
       .references(() => agentBoostTotals.id, {
-        onDelete: "restrict",
+        onDelete: "cascade",
         onUpdate: "cascade",
       }),
     changeId: uuid("change_id")
