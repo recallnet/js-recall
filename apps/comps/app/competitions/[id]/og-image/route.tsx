@@ -68,37 +68,44 @@ async function loadGoogleFont(
 async function loadFonts(): Promise<FontConfig[]> {
   if (!cachedFontsPromise) {
     cachedFontsPromise = (async () => {
-      const [
-        geistLight,
-        geistRegular,
-        geistBold,
-        robotoMonoRegular,
-        robotoMonoBold,
-      ] = await Promise.all([
-        loadGoogleFont("Geist", 300),
-        loadGoogleFont("Geist", 400),
-        loadGoogleFont("Geist", 700),
-        loadGoogleFont("Roboto Mono", 400),
-        loadGoogleFont("Roboto Mono", 700),
-      ]);
+      try {
+        const [
+          geistLight,
+          geistRegular,
+          geistBold,
+          robotoMonoRegular,
+          robotoMonoBold,
+        ] = await Promise.all([
+          loadGoogleFont("Geist", 300),
+          loadGoogleFont("Geist", 400),
+          loadGoogleFont("Geist", 700),
+          loadGoogleFont("Roboto Mono", 400),
+          loadGoogleFont("Roboto Mono", 700),
+        ]);
 
-      return [
-        { name: "Geist", data: geistLight, weight: 300, style: "normal" },
-        { name: "Geist", data: geistRegular, weight: 400, style: "normal" },
-        { name: "Geist", data: geistBold, weight: 700, style: "normal" },
-        {
-          name: "Roboto Mono",
-          data: robotoMonoRegular,
-          weight: 400,
-          style: "normal",
-        },
-        {
-          name: "Roboto Mono",
-          data: robotoMonoBold,
-          weight: 700,
-          style: "normal",
-        },
-      ];
+        return [
+          { name: "Geist", data: geistLight, weight: 300, style: "normal" },
+          { name: "Geist", data: geistRegular, weight: 400, style: "normal" },
+          { name: "Geist", data: geistBold, weight: 700, style: "normal" },
+          {
+            name: "Roboto Mono",
+            data: robotoMonoRegular,
+            weight: 400,
+            style: "normal",
+          },
+          {
+            name: "Roboto Mono",
+            data: robotoMonoBold,
+            weight: 700,
+            style: "normal",
+          },
+        ];
+      } catch (err) {
+        // Clear cache on error so subsequent requests can retry
+        cachedFontsPromise = null;
+        console.error("Failed to load fonts:", err);
+        return [];
+      }
     })();
   }
   return cachedFontsPromise;
@@ -153,141 +160,157 @@ export async function GET(
   _req: Request,
   context: { params: Promise<{ id: string }> },
 ): Promise<ImageResponse> {
-  const client = await createSafeClient();
-  const { id } = await context.params;
-
-  const [{ data: competition }, fonts, assets] = await Promise.all([
-    client.competitions.getById({ id }),
-    loadFonts(),
-    loadAssets(),
-  ]);
-
-  const { backgroundImage, recallTokenSvg, recallLogoSvg } = assets;
-
   const monospaceFontFamily = "Roboto Mono, sans-serif";
-  const normalFontFamily = "Geist, sans-serif";
 
-  // Fall back to simple image if any required assets failed to load
-  if (!competition || !backgroundImage || !recallTokenSvg || !recallLogoSvg) {
+  try {
+    const client = await createSafeClient();
+    const { id } = await context.params;
+
+    const [{ data: competition }, fonts, assets] = await Promise.all([
+      client.competitions.getById({ id }),
+      loadFonts(),
+      loadAssets(),
+    ]);
+
+    const { backgroundImage, recallTokenSvg, recallLogoSvg } = assets;
+    const normalFontFamily = "Geist, sans-serif";
+
+    // Fall back to simple image if any required assets failed to load
+    if (!competition || !backgroundImage || !recallTokenSvg || !recallLogoSvg) {
+      return new ImageResponse(
+        (
+          <div
+            tw="flex w-full h-full items-center justify-center bg-slate-950 text-white text-5xl font-bold"
+            style={{ fontFamily: monospaceFontFamily }}
+          >
+            {competition?.name || "Recall Competitions"}
+          </div>
+        ),
+        { width: 1200, height: 675, fonts },
+      );
+    }
+
+    const totalRewards =
+      BigInt(competition.rewardsTge?.agentPool ?? 0) +
+      BigInt(competition.rewardsTge?.userPool ?? 0);
+
+    return new ImageResponse(
+      (
+        <div
+          tw="flex w-full h-full"
+          style={{
+            fontFamily: monospaceFontFamily,
+            backgroundImage: `url(${backgroundImage})`,
+            backgroundSize: "cover",
+          }}
+        >
+          {/* Left section */}
+          <div
+            tw="flex flex-col w-1/2 px-16 pb-16"
+            style={{ justifyContent: "flex-end" }}
+          >
+            <div tw="flex flex-col items-center">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={recallLogoSvg}
+                alt="Recall logo"
+                height={28}
+                width={120}
+              />
+
+              <h1 tw="text-5xl text-white leading-tight mt-6 text-center font-bold uppercase">
+                {competition.name}
+              </h1>
+
+              <span tw="text-2xl mt-6 tracking-widest text-gray-400 uppercase font-semibold">
+                {formatCompetitionDates(
+                  competition.startDate,
+                  competition.endDate,
+                )}
+              </span>
+            </div>
+          </div>
+
+          {/* Right section */}
+          <div
+            tw="flex flex-col w-1/2 px-12"
+            style={{ justifyContent: "flex-end", paddingBottom: "70px" }}
+          >
+            <div tw="flex flex-col items-center font-normal">
+              {/* Top text - left aligned */}
+              <div tw="flex flex-col items-start w-full">
+                <div
+                  tw="text-3xl tracking-wider"
+                  style={{ display: "flex", columnGap: "20px" }}
+                >
+                  <span tw="text-gray-400">{"///"}</span>
+                  <span tw="text-white">PREDICT</span>
+                  <span tw="text-gray-400">WINNERS</span>
+                </div>
+              </div>
+
+              <div tw="flex items-center mt-2" style={{ gap: "16px" }}>
+                <div tw="flex items-center justify-center w-14 h-14 bg-white rounded-full">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={recallTokenSvg}
+                    alt="Recall token"
+                    width={36}
+                    height={36}
+                  />
+                </div>
+                <span
+                  tw="text-white font-bold text-[120px]"
+                  style={{ fontFamily: normalFontFamily }}
+                >
+                  {formatBigintAmount(totalRewards, undefined, false)}
+                </span>
+              </div>
+
+              {/* Bottom text - right aligned */}
+              <div tw="flex flex-col items-end w-full mt-2">
+                <div
+                  tw="text-3xl tracking-wider"
+                  style={{ display: "flex", columnGap: "20px" }}
+                >
+                  <span tw="text-white">REWARD</span>
+                  <span tw="text-gray-400">POOL</span>
+                  <span tw="text-gray-400">{"///"}</span>
+                </div>
+              </div>
+
+              <div
+                tw="flex items-center justify-center mt-20 px-42 py-7 rounded-xl text-white text-4xl tracking-widest font-semibold"
+                style={{
+                  background: `linear-gradient(180deg, ${BUTTON_BLUE_LIGHT} 0%, ${BUTTON_BLUE} 100%)`,
+                  boxShadow: "0 4px 20px rgba(0, 0, 0, 0.45)",
+                }}
+              >
+                PREDICT
+              </div>
+            </div>
+          </div>
+        </div>
+      ),
+      {
+        width: 1200,
+        height: 675,
+        fonts,
+      },
+    );
+  } catch (err) {
+    console.error("Failed to generate OG image:", err);
+    // Return a simple fallback image on any unexpected error
     return new ImageResponse(
       (
         <div
           tw="flex w-full h-full items-center justify-center bg-slate-950 text-white text-5xl font-bold"
           style={{ fontFamily: monospaceFontFamily }}
         >
-          {competition?.name || "Recall Competitions"}
+          Recall Competitions
         </div>
       ),
-      { width: 1200, height: 675, fonts },
+      { width: 1200, height: 675 },
     );
   }
-
-  const totalRewards =
-    BigInt(competition.rewardsTge?.agentPool ?? 0) +
-    BigInt(competition.rewardsTge?.userPool ?? 0);
-
-  return new ImageResponse(
-    (
-      <div
-        tw="flex w-full h-full"
-        style={{
-          fontFamily: monospaceFontFamily,
-          backgroundImage: `url(${backgroundImage})`,
-          backgroundSize: "cover",
-        }}
-      >
-        {/* Left section */}
-        <div
-          tw="flex flex-col w-1/2 px-16 pb-16"
-          style={{ justifyContent: "flex-end" }}
-        >
-          <div tw="flex flex-col items-center">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={recallLogoSvg}
-              alt="Recall logo"
-              height={28}
-              width={120}
-            />
-
-            <h1 tw="text-5xl text-white leading-tight mt-6 text-center font-bold uppercase">
-              {competition.name}
-            </h1>
-
-            <span tw="text-2xl mt-6 tracking-widest text-gray-400 uppercase font-semibold">
-              {formatCompetitionDates(
-                competition.startDate,
-                competition.endDate,
-              )}
-            </span>
-          </div>
-        </div>
-
-        {/* Right section */}
-        <div
-          tw="flex flex-col w-1/2 px-12"
-          style={{ justifyContent: "flex-end", paddingBottom: "70px" }}
-        >
-          <div tw="flex flex-col items-center font-normal">
-            {/* Top text - left aligned */}
-            <div tw="flex flex-col items-start w-full">
-              <div
-                tw="text-3xl tracking-wider"
-                style={{ display: "flex", columnGap: "20px" }}
-              >
-                <span tw="text-gray-400">{"///"}</span>
-                <span tw="text-white">PREDICT</span>
-                <span tw="text-gray-400">WINNERS</span>
-              </div>
-            </div>
-
-            <div tw="flex items-center mt-2" style={{ gap: "16px" }}>
-              <div tw="flex items-center justify-center w-14 h-14 bg-white rounded-full">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={recallTokenSvg}
-                  alt="Recall token"
-                  width={36}
-                  height={36}
-                />
-              </div>
-              <span
-                tw="text-white font-bold text-[120px]"
-                style={{ fontFamily: normalFontFamily }}
-              >
-                {formatBigintAmount(totalRewards, undefined, false)}
-              </span>
-            </div>
-
-            {/* Bottom text - right aligned */}
-            <div tw="flex flex-col items-end w-full mt-2">
-              <div
-                tw="text-3xl tracking-wider"
-                style={{ display: "flex", columnGap: "20px" }}
-              >
-                <span tw="text-white">REWARD</span>
-                <span tw="text-gray-400">POOL</span>
-                <span tw="text-gray-400">{"///"}</span>
-              </div>
-            </div>
-
-            <div
-              tw="flex items-center justify-center mt-20 px-42 py-7 rounded-xl text-white text-4xl tracking-widest font-semibold"
-              style={{
-                background: `linear-gradient(180deg, ${BUTTON_BLUE_LIGHT} 0%, ${BUTTON_BLUE} 100%)`,
-                boxShadow: "0 4px 20px rgba(0, 0, 0, 0.45)",
-              }}
-            >
-              PREDICT
-            </div>
-          </div>
-        </div>
-      </div>
-    ),
-    {
-      width: 1200,
-      height: 675,
-      fonts,
-    },
-  );
 }
