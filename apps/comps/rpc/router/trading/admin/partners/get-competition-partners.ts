@@ -1,15 +1,14 @@
-import { ORPCError } from "@orpc/server";
-
 import { AdminCompetitionParamsSchema } from "@recallnet/services/types";
-import { ApiError } from "@recallnet/services/types";
 
 import { base } from "@/rpc/context/base";
 import { adminMiddleware } from "@/rpc/middleware/admin";
+import { errorHandlerMiddleware } from "@/rpc/middleware/error-handler";
 
 /**
  * Get partners for a competition
  */
 export const getCompetitionPartners = base
+  .use(errorHandlerMiddleware)
   .use(adminMiddleware)
   .input(AdminCompetitionParamsSchema)
   .route({
@@ -19,32 +18,11 @@ export const getCompetitionPartners = base
     description: "Get all partners associated with a specific competition",
     tags: ["admin"],
   })
-  .handler(async ({ context, input, errors }) => {
-    try {
-      const partners = await context.partnerService.findByCompetition(
-        input.competitionId,
-      );
-      return { success: true, partners };
-    } catch (error) {
-      if (error instanceof ORPCError) {
-        throw error;
-      }
-
-      if (error instanceof ApiError) {
-        switch (error.statusCode) {
-          case 404:
-            throw errors.NOT_FOUND({ message: error.message });
-          default:
-            throw errors.INTERNAL({ message: error.message });
-        }
-      }
-
-      if (error instanceof Error) {
-        throw errors.INTERNAL({ message: error.message });
-      }
-
-      throw errors.INTERNAL({ message: "Failed to get competition partners" });
-    }
+  .handler(async ({ context, input }) => {
+    const partners = await context.partnerService.findByCompetition(
+      input.competitionId,
+    );
+    return { success: true, partners };
   });
 
 export type GetCompetitionPartnersType = typeof getCompetitionPartners;

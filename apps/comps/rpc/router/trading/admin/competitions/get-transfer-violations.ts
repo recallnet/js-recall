@@ -24,7 +24,7 @@ export const getTransferViolations = base
     description: "Get all agents with transfer violations in a competition",
     tags: ["admin"],
   })
-  .handler(async ({ input, context }) => {
+  .handler(async ({ input, context, errors }) => {
     // Check if competition exists
     const competition = await context.competitionService.getCompetition(
       input.competitionId,
