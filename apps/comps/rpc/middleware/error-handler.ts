@@ -13,7 +13,7 @@ export const errorHandlerMiddleware = base.middleware(
     try {
       return await next({ context });
     } catch (error) {
-      // context.logger.error({ error }, "=== boom");
+      context.logger.debug({ error }, "error");
 
       // Handle ORPC errors with validation issues
       if (error instanceof ORPCError) {

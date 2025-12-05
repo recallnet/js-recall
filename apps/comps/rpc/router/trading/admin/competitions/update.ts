@@ -1,20 +1,51 @@
-import { ORPCError } from "@orpc/server";
-
 import {
   AdminUpdateCompetitionParamsSchema,
   AdminUpdateCompetitionSchema,
-  ApiError,
 } from "@recallnet/services/types";
 
 import { base } from "@/rpc/context/base";
 import { adminMiddleware } from "@/rpc/middleware/admin";
+import { errorHandlerMiddleware } from "@/rpc/middleware/error-handler";
+
+function inputRefinement(data: any) {
+  const {
+    rewards,
+    tradingConstraints,
+    evaluationMetric,
+    perpsProvider,
+    prizePools,
+    gameIds,
+    paperTradingConfig,
+    paperTradingInitialBalances,
+    ...updates
+  } = data;
+
+  return (
+    Object.keys(updates).length > 1 ||
+    rewards !== undefined ||
+    tradingConstraints !== undefined ||
+    evaluationMetric !== undefined ||
+    perpsProvider !== undefined ||
+    prizePools !== undefined ||
+    gameIds !== undefined ||
+    paperTradingConfig !== undefined ||
+    paperTradingInitialBalances !== undefined
+  );
+}
 
 /**
  * Update a competition
  */
 export const updateCompetition = base
+  .use(errorHandlerMiddleware)
   .use(adminMiddleware)
-  .input(AdminUpdateCompetitionSchema.merge(AdminUpdateCompetitionParamsSchema))
+  .input(
+    AdminUpdateCompetitionParamsSchema.merge(
+      AdminUpdateCompetitionSchema,
+    ).refine(inputRefinement, {
+      message: "No valid fields provided for update",
+    }),
+  )
   .route({
     method: "PUT",
     path: "/admin/competition/{competitionId}",
@@ -22,61 +53,46 @@ export const updateCompetition = base
     description: "Update an existing competition's configuration",
     tags: ["admin"],
   })
-  .handler(async ({ input, context, errors }) => {
-    try {
-      const { competitionId } = input;
-      const {
-        rewards,
+  .handler(async ({ input, context }) => {
+    context.logger.debug({ input });
+    const { competitionId } = input;
+    const {
+      rewards,
+      tradingConstraints,
+      evaluationMetric,
+      perpsProvider,
+      prizePools,
+      gameIds,
+      paperTradingConfig,
+      paperTradingInitialBalances,
+      ...updates
+    } = input;
+
+    const { competition: updatedCompetition, updatedRewards } =
+      await context.competitionService.updateCompetition(
+        competitionId,
+        updates,
         tradingConstraints,
+        rewards,
         evaluationMetric,
         perpsProvider,
         prizePools,
-        ...updates
-      } = input;
+        gameIds,
+        paperTradingConfig,
+        paperTradingInitialBalances,
+      );
 
-      const { competition, updatedRewards } =
-        await context.competitionService.updateCompetition(
-          competitionId,
-          updates,
-          tradingConstraints,
-          rewards,
-          evaluationMetric,
-          perpsProvider,
-          prizePools,
-        );
-
-      return {
-        success: true,
-        competition: {
-          ...competition,
-          rewards: updatedRewards.map((reward) => ({
-            rank: reward.rank,
-            reward: reward.reward,
-          })),
-        },
-      };
-    } catch (error) {
-      if (error instanceof ORPCError) {
-        throw error;
-      }
-
-      if (error instanceof ApiError) {
-        switch (error.statusCode) {
-          case 400:
-            throw errors.BAD_REQUEST({ message: error.message });
-          case 404:
-            throw errors.NOT_FOUND({ message: error.message });
-          default:
-            throw errors.INTERNAL({ message: error.message });
-        }
-      }
-
-      if (error instanceof Error) {
-        throw errors.INTERNAL({ message: error.message });
-      }
-
-      throw errors.INTERNAL({ message: "Failed to update competition" });
-    }
+    return {
+      success: true,
+      competition: {
+        ...updatedCompetition,
+        rewards: updatedRewards.map((reward) => ({
+          rank: reward.rank,
+          reward: reward.reward,
+        })),
+        gameIds,
+      },
+    };
   });
 
 export type UpdateCompetitionType = typeof updateCompetition;
