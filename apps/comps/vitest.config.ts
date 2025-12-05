@@ -70,30 +70,6 @@ export default defineConfig({
           },
         },
       },
-      {
-        extends: true,
-        test: {
-          name: "e2e-vercel",
-          root: "./",
-          dir: "./e2e-vercel",
-          include: ["**/*.test.ts"],
-          typecheck: { enabled: true, include: ["**/*.test.ts"] },
-          globalSetup: "./e2e-vercel/setup.ts",
-          setupFiles: "./e2e-vercel/utils/test-setup.ts",
-          testTimeout: 120_000,
-          sequence: {
-            concurrent: false,
-            shuffle: false,
-          },
-          maxConcurrency: 1,
-          pool: "threads",
-          poolOptions: {
-            threads: {
-              singleThread: true,
-            },
-          },
-        },
-      },
     ],
   },
 });

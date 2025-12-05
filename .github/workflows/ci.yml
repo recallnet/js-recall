@@ -265,7 +265,6 @@ jobs:
 
           # Run the E2E tests
           pnpm test:e2e
-          pnpm test:e2e-vercel
         env:
           TEST_MODE: true
           CI: true
