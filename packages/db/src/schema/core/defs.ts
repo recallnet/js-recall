@@ -15,7 +15,7 @@ import {
   varchar,
 } from "drizzle-orm/pg-core";
 
-import { tokenAmount } from "../custom-types.js";
+import { ethAddress, tokenAmount } from "../custom-types.js";
 
 export const MAX_HANDLE_LENGTH = 15;
 
@@ -101,7 +101,7 @@ export const users = pgTable(
   "users",
   {
     id: uuid().primaryKey().notNull(),
-    walletAddress: varchar("wallet_address", { length: 42 }).unique().notNull(),
+    walletAddress: ethAddress("wallet_address").unique().notNull(),
     // Note: only tracked for the `walletAddress` column since embedded wallets are guaranteed
     walletLastVerifiedAt: timestamp("wallet_last_verified_at", {
       withTimezone: true,
@@ -118,9 +118,7 @@ export const users = pgTable(
     // For any new user, we initially set these as the same value—optionally, letting a user
     // link a custom wallet. For any legacy user, we keep their `walletAddress` and prompt them
     // to link their custom wallet to Privy account (within UI flows).
-    embeddedWalletAddress: varchar("embedded_wallet_address", {
-      length: 42,
-    }).unique(),
+    embeddedWalletAddress: ethAddress("embedded_wallet_address").unique(),
     privyId: text("privy_id").unique(),
     name: varchar({ length: 100 }),
     email: varchar({ length: 100 }).unique(),

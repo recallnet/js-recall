@@ -7,6 +7,21 @@ export function tokenAmount(name: string) {
   return numeric(name, { precision: 78, scale: 0, mode: "bigint" });
 }
 
+export const ethAddress = customType<{
+  data: string;
+  driverData: string;
+}>({
+  dataType() {
+    return "varchar(42)";
+  },
+  toDriver(value: string): string {
+    return value.toLowerCase();
+  },
+  fromDriver(value: string): string {
+    return value;
+  },
+});
+
 /**
  * PG column for a blockchain address
  */

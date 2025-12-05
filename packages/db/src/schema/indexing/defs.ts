@@ -11,7 +11,7 @@ import {
   varchar,
 } from "drizzle-orm/pg-core";
 
-import { bytea, tokenAmount } from "../custom-types.js";
+import { bytea, ethAddress, tokenAmount } from "../custom-types.js";
 
 export { indexingEvents, stakes, stakeChanges };
 
@@ -119,7 +119,7 @@ const stakes = pgTable(
   {
     id: bigint("id", { mode: "bigint" }).primaryKey().notNull(), // on-chain receipt / NFT id
     wallet: bytea("wallet").notNull(), // canonicalized EVM addr
-    walletAddress: varchar("wallet_address", { length: 42 }),
+    walletAddress: ethAddress("wallet_address"),
     amount: tokenAmount("amount").notNull(),
     // lifecycle
     stakedAt: timestamp("staked_at").notNull(),
@@ -168,7 +168,7 @@ const stakeChanges = pgTable(
       .notNull()
       .references(() => stakes.id),
     wallet: bytea("wallet").notNull(),
-    walletAddress: varchar("wallet_address", { length: 42 }),
+    walletAddress: ethAddress("wallet_address"),
     // delta — signed: +stake, 0 for relock, -move from staked to withdrawable, -withdraw, etc.
     deltaAmount: tokenAmount("delta_amount").notNull(),
     kind: varchar("kind", { length: 24 }).notNull(), // See EventType for possible values

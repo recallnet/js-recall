@@ -8,11 +8,15 @@ import {
   timestamp,
   uniqueIndex,
   uuid,
-  varchar,
 } from "drizzle-orm/pg-core";
 
 import { agents, competitions, users } from "../core/defs.js";
-import { blockchainAddress, bytea, tokenAmount } from "../custom-types.js";
+import {
+  blockchainAddress,
+  bytea,
+  ethAddress,
+  tokenAmount,
+} from "../custom-types.js";
 
 export const epochs = pgTable("epochs", {
   id: uuid().primaryKey().notNull().defaultRandom(),
@@ -36,7 +40,7 @@ export const rewards = pgTable(
       onDelete: "cascade",
     }),
     address: blockchainAddress("address").notNull(),
-    walletAddress: varchar("wallet_address", { length: 42 }),
+    walletAddress: ethAddress("wallet_address"),
     amount: tokenAmount("amount").notNull(),
     leafHash: bytea("leaf_hash").notNull(),
     claimed: boolean().default(false).notNull(),
