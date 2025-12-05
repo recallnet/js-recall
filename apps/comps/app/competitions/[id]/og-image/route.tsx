@@ -237,16 +237,7 @@ export async function GET(
               >
                 <span tw="text-gray-400">{"///"}</span>
                 <span tw="text-white">PREDICT</span>
-                <span tw="text-gray-400">THE WINNERS</span>
-              </div>
-
-              <div
-                tw="text-3xl tracking-wider mt-1"
-                style={{ display: "flex", columnGap: "20px" }}
-              >
-                <span tw="text-gray-400">&</span>
-                <span tw="text-white">EARN</span>
-                <span tw="text-gray-400">UP TO</span>
+                <span tw="text-gray-400">WINNERS</span>
               </div>
             </div>
 
@@ -274,8 +265,8 @@ export async function GET(
                 tw="text-3xl tracking-wider"
                 style={{ display: "flex", columnGap: "20px" }}
               >
-                <span tw="text-gray-400">IN</span>
-                <span tw="text-white">REWARDS</span>
+                <span tw="text-white">REWARD</span>
+                <span tw="text-gray-400">POOL</span>
                 <span tw="text-gray-400">{"///"}</span>
               </div>
             </div>
