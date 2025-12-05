@@ -99,7 +99,7 @@ export const boostChanges = pgTable(
     balanceId: uuid("balance_id")
       .notNull()
       .references(() => boostBalances.id, {
-        onDelete: "restrict",
+        onDelete: "cascade",
         onUpdate: "cascade",
       }),
     wallet: bytea("wallet").notNull(),
