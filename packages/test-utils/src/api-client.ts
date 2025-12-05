@@ -2670,7 +2670,7 @@ export class ApiClient {
         queryParams.append("violationType", params.violationType);
 
       const response = await this.axiosInstance.get(
-        `/api/admin/competition/${competitionId}/spot-live/alerts?${queryParams.toString()}`,
+        `/admin/competition/${competitionId}/spot-live/alerts?${queryParams.toString()}`,
       );
       return response.data;
     } catch (error) {
@@ -2717,7 +2717,7 @@ export class ApiClient {
   ): Promise<ReviewSpotLiveAlertResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.put(
-        `/api/admin/competition/${competitionId}/spot-live/alerts/${alertId}/review`,
+        `/admin/competition/${competitionId}/spot-live/alerts/${alertId}/review`,
         reviewData,
       );
       return response.data;
