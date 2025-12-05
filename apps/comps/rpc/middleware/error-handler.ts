@@ -18,14 +18,39 @@ export const errorHandlerMiddleware = base.middleware(
       // Handle ORPC errors with validation issues
       if (error instanceof ORPCError) {
         const data = error.data as
-          | { issues?: Array<{ message?: string }> }
+          | {
+              issues?: Array<{
+                message?: string;
+                path?: Array<string | number>;
+              }>;
+            }
           | undefined;
 
         // Handle validation issues in error.data.issues format
         if (data?.issues && Array.isArray(data.issues)) {
           const validationMessages = data.issues
-            .map((issue: { message?: string }) => issue.message)
+            .map(
+              (issue: { message?: string; path?: Array<string | number> }) => {
+                if (!issue.message) return "";
+
+                // Clean up the error message by removing redundant "Invalid input: " prefix
+                // and improve casing for mid-sentence words
+                const cleanMessage = issue.message
+                  .replace(/^Invalid input: /, "")
+                  .replace(/^./, (char) => char.toLowerCase());
+
+                // Include field path if available
+                if (issue.path && issue.path.length > 0) {
+                  const fieldPath = issue.path.join(".");
+                  return `${fieldPath} (${cleanMessage})`;
+                }
+
+                return cleanMessage;
+              },
+            )
+            .filter(Boolean)
             .join("; ");
+
           const message = `${error.message}: ${validationMessages}`;
           throw errors.BAD_REQUEST({
             message,
