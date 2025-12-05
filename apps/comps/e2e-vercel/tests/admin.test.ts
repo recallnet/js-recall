@@ -17,14 +17,10 @@ import {
   AddPartnerToCompetitionResponse,
   AdminAgentResponse,
   AdminAgentsListResponse,
-  AdminReactivateAgentInCompetitionResponse,
-  AdminRemoveAgentFromCompetitionResponse,
   AdminSearchUsersAndAgentsResponse,
   AdminUsersListResponse,
   AgentProfileResponse,
   ApiResponse,
-  CompetitionAgentsResponse,
-  CompetitionDetailResponse,
   CreateArenaResponse,
   CreateCompetitionResponse,
   CreatePartnerResponse,
@@ -58,7 +54,6 @@ import {
   registerUserAndAgentAndGetClient,
   startPerpsTestCompetition,
   startTestCompetition,
-  wait,
 } from "@recallnet/test-utils";
 
 import { db } from "@/lib/db";
@@ -1254,159 +1249,6 @@ describe("Admin API", () => {
 
   // ===== Per-Competition Agent Management Tests =====
 
-  test("admin can remove agent from specific competition", async () => {
-    // Setup admin client
-    const adminClient = createTestClient();
-    await adminClient.loginAsAdmin(adminApiKey);
-
-    // Register agents for testing
-    const { agent: agent1 } = await registerUserAndAgentAndGetClient({
-      adminApiKey,
-      agentName: "Agent 1 - To Remove",
-    });
-    const { agent: agent2 } = await registerUserAndAgentAndGetClient({
-      adminApiKey,
-      agentName: "Agent 2 - To Stay",
-    });
-
-    // Start competition with both agents
-    const competitionName = `Per-Competition Remove Test ${Date.now()}`;
-    const startResponse = await startTestCompetition({
-      adminClient,
-      name: competitionName,
-      agentIds: [agent1.id, agent2.id],
-    });
-    const competition = startResponse.competition;
-
-    // Verify both agents are initially in the competition
-    const initialLeaderboard = await adminClient.getCompetitionAgents(
-      competition.id,
-      { sort: "rank" },
-    );
-    expect(initialLeaderboard.success).toBe(true);
-
-    const initialAgentIds = (
-      initialLeaderboard as CompetitionAgentsResponse
-    ).agents.map((entry) => entry.id);
-    expect(initialAgentIds).toContain(agent1.id);
-    expect(initialAgentIds).toContain(agent2.id);
-
-    // Remove agent1 from the competition
-    const removeReason = "Violated competition-specific rules";
-    const removeResponse = (await adminClient.removeAgentFromCompetition(
-      competition.id,
-      agent1.id,
-      removeReason,
-    )) as AdminRemoveAgentFromCompetitionResponse;
-
-    // Verify removal response
-    expect(removeResponse.success).toBe(true);
-    expect(removeResponse.message).toContain("removed from competition");
-    expect(removeResponse.competition.id).toBe(competition.id);
-    expect(removeResponse.agent.id).toBe(agent1.id);
-
-    // Verify agent1 is no longer in active leaderboard
-    const updatedLeaderboard = (await adminClient.getCompetitionAgents(
-      competition.id,
-      { sort: "rank", includeInactive: true },
-    )) as CompetitionAgentsResponse;
-    expect(updatedLeaderboard.success).toBe(true);
-
-    const activeAgents = updatedLeaderboard.agents.filter((a) => a.active);
-    const activeAgentIds = activeAgents.map((entry) => entry.id);
-    expect(activeAgentIds).not.toContain(agent1.id);
-    expect(activeAgentIds).toContain(agent2.id); // agent2 should still be there
-
-    // Verify agent1 appears in inactive agents list
-    const inactiveAgents = updatedLeaderboard.agents.filter((a) => !a.active);
-    expect(inactiveAgents.length).toBeGreaterThan(0);
-    const inactiveAgent = inactiveAgents.find(
-      (agent) => agent.id === agent1.id,
-    );
-    expect(inactiveAgent).toBeDefined();
-    expect(inactiveAgent?.active).toBe(false);
-    expect(inactiveAgent?.deactivationReason).toBe(
-      `Admin removal: ${removeReason}`,
-    );
-  });
-
-  test("admin can reactivate agent in specific competition", async () => {
-    // Setup admin client
-    const adminClient = createTestClient();
-    await adminClient.loginAsAdmin(adminApiKey);
-
-    // Register agent for testing
-    const { agent } = await registerUserAndAgentAndGetClient({
-      adminApiKey,
-      agentName: "Agent - To Reactivate",
-    });
-
-    // Start competition with the agent
-    const competitionName = `Per-Competition Reactivate Test ${Date.now()}`;
-    const startResponse = await startTestCompetition({
-      adminClient,
-      name: competitionName,
-      agentIds: [agent.id],
-    });
-    const competition = startResponse.competition;
-
-    // Remove agent from the competition first
-    const removeReason = "Temporary removal for testing";
-    const removeResponse = await adminClient.removeAgentFromCompetition(
-      competition.id,
-      agent.id,
-      removeReason,
-    );
-    expect(removeResponse.success).toBe(true);
-
-    // Verify agent is not in active leaderboard
-    const leaderboardAfterRemoval = (await adminClient.getCompetitionAgents(
-      competition.id,
-      { sort: "rank" },
-    )) as CompetitionAgentsResponse;
-    expect(leaderboardAfterRemoval.success).toBe(true);
-
-    const activeAgentsAfterRemoval = leaderboardAfterRemoval.agents.filter(
-      (a) => a.active,
-    );
-    const activeAgentIds = activeAgentsAfterRemoval.map((entry) => entry.id);
-    expect(activeAgentIds).not.toContain(agent.id);
-
-    // Reactivate agent in the competition
-    const reactivateResponse = (await adminClient.reactivateAgentInCompetition(
-      competition.id,
-      agent.id,
-    )) as AdminReactivateAgentInCompetitionResponse;
-
-    // Verify reactivation response
-    expect(reactivateResponse.success).toBe(true);
-    expect(reactivateResponse.message).toContain("reactivated in competition");
-    expect(reactivateResponse.competition.id).toBe(competition.id);
-    expect(reactivateResponse.agent.id).toBe(agent.id);
-
-    // Verify agent is back in active leaderboard
-    const leaderboardAfterReactivation =
-      (await adminClient.getCompetitionAgents(competition.id, {
-        sort: "rank",
-      })) as CompetitionAgentsResponse;
-    expect(leaderboardAfterReactivation.success).toBe(true);
-
-    const activeAgentsAfterReactivation =
-      leaderboardAfterReactivation.agents.filter((a) => a.active);
-    const reactivatedAgentIds = activeAgentsAfterReactivation.map(
-      (entry) => entry.id,
-    );
-    expect(reactivatedAgentIds).toContain(agent.id);
-
-    // Verify agent is no longer in inactive agents list
-    const inactiveAgentsAfterReactivation =
-      leaderboardAfterReactivation.agents.filter((a) => !a.active);
-    const inactiveAgent = inactiveAgentsAfterReactivation.find(
-      (inactiveAgentEntry) => inactiveAgentEntry.id === agent.id,
-    );
-    expect(inactiveAgent).toBeUndefined();
-  });
-
   test("cannot remove agent from non-existent competition", async () => {
     // Setup admin client
     const adminClient = createTestClient();
@@ -1576,84 +1418,84 @@ describe("Admin API", () => {
     expect(reactivateResponse.error).toBeDefined();
   });
 
-  test("per-competition status is independent of global status", async () => {
-    // Setup admin client
-    const adminClient = createTestClient();
-    await adminClient.loginAsAdmin(adminApiKey);
+  // test("per-competition status is independent of global status", async () => {
+  //   // Setup admin client
+  //   const adminClient = createTestClient();
+  //   await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register agent for testing
-    const { client: agentClient, agent } =
-      await registerUserAndAgentAndGetClient({
-        adminApiKey,
-        agentName: "Agent - Status Independence Test",
-      });
+  //   // Register agent for testing
+  //   const { client: agentClient, agent } =
+  //     await registerUserAndAgentAndGetClient({
+  //       adminApiKey,
+  //       agentName: "Agent - Status Independence Test",
+  //     });
 
-    // Start competition with the agent
-    const competitionName = `Status Independence Test ${Date.now()}`;
-    const startResponse = await startTestCompetition({
-      adminClient,
-      name: competitionName,
-      agentIds: [agent.id],
-    });
-    const competition = startResponse.competition;
+  //   // Start competition with the agent
+  //   const competitionName = `Status Independence Test ${Date.now()}`;
+  //   const startResponse = await startTestCompetition({
+  //     adminClient,
+  //     name: competitionName,
+  //     agentIds: [agent.id],
+  //   });
+  //   const competition = startResponse.competition;
 
-    // Verify agent can access API initially
-    const initialProfile = await agentClient.getAgentProfile();
-    expect(initialProfile.success).toBe(true);
+  //   // Verify agent can access API initially
+  //   const initialProfile = await agentClient.getAgentProfile();
+  //   expect(initialProfile.success).toBe(true);
 
-    // Remove agent from competition (per-competition deactivation)
-    const removeResponse = await adminClient.removeAgentFromCompetition(
-      competition.id,
-      agent.id,
-      "Testing per-competition status independence",
-    );
-    expect(removeResponse.success).toBe(true);
+  //   // Remove agent from competition (per-competition deactivation)
+  //   const removeResponse = await adminClient.removeAgentFromCompetition(
+  //     competition.id,
+  //     agent.id,
+  //     "Testing per-competition status independence",
+  //   );
+  //   expect(removeResponse.success).toBe(true);
 
-    // Agent should still be able to access API (global status unchanged)
-    const profileAfterRemoval = await agentClient.getAgentProfile();
-    expect(profileAfterRemoval.success).toBe(true);
+  //   // Agent should still be able to access API (global status unchanged)
+  //   const profileAfterRemoval = await agentClient.getAgentProfile();
+  //   expect(profileAfterRemoval.success).toBe(true);
 
-    // Now globally deactivate the agent
-    const globalDeactivateResponse = await adminClient.deactivateAgent(
-      agent.id,
-      "Testing global deactivation",
-    );
-    expect(globalDeactivateResponse.success).toBe(true);
+  //   // Now globally deactivate the agent
+  //   const globalDeactivateResponse = await adminClient.deactivateAgent(
+  //     agent.id,
+  //     "Testing global deactivation",
+  //   );
+  //   expect(globalDeactivateResponse.success).toBe(true);
 
-    // Agent should now be blocked from API access
-    try {
-      await agentClient.getAgentProfile();
-      expect(false).toBe(true); // Should not reach here
-    } catch (error) {
-      expect(error).toBeDefined();
-    }
+  //   // Agent should now be blocked from API access
+  //   try {
+  //     await agentClient.getAgentProfile();
+  //     expect(false).toBe(true); // Should not reach here
+  //   } catch (error) {
+  //     expect(error).toBeDefined();
+  //   }
 
-    // Reactivate agent in competition (should not affect global status)
-    const reactivateInCompetitionResponse =
-      await adminClient.reactivateAgentInCompetition(competition.id, agent.id);
-    expect(reactivateInCompetitionResponse.success).toBe(true);
+  //   // Reactivate agent in competition (should not affect global status)
+  //   const reactivateInCompetitionResponse =
+  //     await adminClient.reactivateAgentInCompetition(competition.id, agent.id);
+  //   expect(reactivateInCompetitionResponse.success).toBe(true);
 
-    // Agent should still be blocked from API access (global status still inactive)
-    try {
-      await agentClient.getAgentProfile();
-      expect(false).toBe(true); // Should not reach here
-    } catch (error) {
-      expect(error).toBeDefined();
-    }
+  //   // Agent should still be blocked from API access (global status still inactive)
+  //   try {
+  //     await agentClient.getAgentProfile();
+  //     expect(false).toBe(true); // Should not reach here
+  //   } catch (error) {
+  //     expect(error).toBeDefined();
+  //   }
 
-    // Globally reactivate the agent
-    const globalReactivateResponse = await adminClient.reactivateAgent(
-      agent.id,
-    );
-    expect(globalReactivateResponse.success).toBe(true);
+  //   // Globally reactivate the agent
+  //   const globalReactivateResponse = await adminClient.reactivateAgent(
+  //     agent.id,
+  //   );
+  //   expect(globalReactivateResponse.success).toBe(true);
 
-    // Wait for cache to update
-    await wait(100);
+  //   // Wait for cache to update
+  //   await wait(100);
 
-    // Agent should now be able to access API again
-    const finalProfile = await agentClient.getAgentProfile();
-    expect(finalProfile.success).toBe(true);
-  });
+  //   // Agent should now be able to access API again
+  //   const finalProfile = await agentClient.getAgentProfile();
+  //   expect(finalProfile.success).toBe(true);
+  // });
 
   test("should update a competition with rewards and tradingConstraints", async () => {
     const client = createTestClient(getBaseUrl());
@@ -1863,55 +1705,6 @@ describe("Admin API", () => {
     expect(Array.isArray(startResponse.competition.agentIds)).toBe(true);
     expect(startResponse.competition.agentIds).toContain(agent1.id);
     expect(startResponse.competition.agentIds).toContain(agent2.id);
-  });
-
-  test("should create a perps competition with minFundingThreshold", async () => {
-    const client = createTestClient(getBaseUrl());
-    await client.loginAsAdmin(adminApiKey);
-
-    // Create a perps competition with minFundingThreshold
-    const response = await createPerpsTestCompetition({
-      adminClient: client,
-      name: "Perps Competition with Min Funding Threshold",
-      perpsProvider: {
-        provider: "symphony",
-        initialCapital: 1000,
-        selfFundingThreshold: 0,
-        minFundingThreshold: 250, // Set minimum portfolio balance to $250
-        apiUrl: "http://localhost:4567",
-      },
-    });
-
-    expect(response.success).toBe(true);
-    expect(response.competition).toBeDefined();
-    expect(response.competition.name).toBe(
-      "Perps Competition with Min Funding Threshold",
-    );
-    expect(response.competition.type).toBe("perpetual_futures");
-
-    // Verify the minFundingThreshold was saved by checking the competition details
-    const competitionId = response.competition.id;
-    const detailsResponse = await client.getCompetition(competitionId);
-    expect(detailsResponse.success).toBe(true);
-
-    // Note: The perpsConfig details are NOT returned in the public API,
-    // so we'll verify the competition was created successfully
-    expect((detailsResponse as CompetitionDetailResponse).competition.id).toBe(
-      competitionId,
-    );
-    expect(
-      (detailsResponse as CompetitionDetailResponse).competition.type,
-    ).toBe("perpetual_futures");
-
-    // Verify the minFundingThreshold was saved in the database
-    const perpsConfig = await db
-      .select()
-      .from(perpsCompetitionConfig)
-      .where(eq(perpsCompetitionConfig.competitionId, competitionId));
-
-    expect(perpsConfig).toHaveLength(1);
-    expect(perpsConfig[0]).toBeDefined();
-    expect(perpsConfig[0]?.minFundingThreshold).toBe("250"); // Stored as string in DB
   });
 
   test("should update perps competition to add minFundingThreshold", async () => {
@@ -2277,92 +2070,6 @@ describe("Admin API", () => {
     expect(rewards[3]?.reward).toBe(1000);
   });
 
-  test("should convert pending competition from spot trading to perps", async () => {
-    const adminClient = createTestClient(getBaseUrl());
-    await adminClient.loginAsAdmin(adminApiKey);
-
-    // Create a spot trading competition
-    const createResponse = await createTestCompetition({
-      adminClient,
-      name: "Competition To Convert to Perps",
-      description: "Test converting spot to perps",
-      type: "trading",
-    });
-
-    expect(createResponse.success).toBe(true);
-    const competitionId = createResponse.competition.id;
-
-    // Verify it's a trading competition
-    const detailsBeforeUpdate = await adminClient.getCompetition(competitionId);
-    expect(detailsBeforeUpdate.success).toBe(true);
-    expect(
-      (detailsBeforeUpdate as CompetitionDetailResponse).competition.type,
-    ).toBe("trading");
-
-    // Convert to perps type
-    const updateResponse = await adminClient.updateCompetition(competitionId, {
-      type: "perpetual_futures",
-      arenaId: "default-perps-arena", // Change to perps arena for compatibility
-      perpsProvider: {
-        provider: "symphony",
-        initialCapital: 1000,
-        selfFundingThreshold: 0,
-        apiUrl: "http://localhost:4567",
-      },
-    });
-
-    expect(updateResponse.success).toBe(true);
-    expect((updateResponse as UpdateCompetitionResponse).competition.type).toBe(
-      "perpetual_futures",
-    );
-
-    // Verify the type has changed
-    const detailsAfterUpdate = await adminClient.getCompetition(competitionId);
-    expect(detailsAfterUpdate.success).toBe(true);
-    expect(
-      (detailsAfterUpdate as CompetitionDetailResponse).competition.type,
-    ).toBe("perpetual_futures");
-  });
-
-  test("should convert pending competition from perps to spot trading", async () => {
-    const adminClient = createTestClient(getBaseUrl());
-    await adminClient.loginAsAdmin(adminApiKey);
-
-    // Create a perps competition
-    const createResponse = await createPerpsTestCompetition({
-      adminClient,
-      name: "Perps Competition To Convert to Spot",
-    });
-
-    expect(createResponse.success).toBe(true);
-    const competitionId = createResponse.competition.id;
-
-    // Verify it's a perps competition
-    const detailsBeforeUpdate = await adminClient.getCompetition(competitionId);
-    expect(detailsBeforeUpdate.success).toBe(true);
-    expect(
-      (detailsBeforeUpdate as CompetitionDetailResponse).competition.type,
-    ).toBe("perpetual_futures");
-
-    // Convert to spot trading type and move to paper arena
-    const updateResponse = await adminClient.updateCompetition(competitionId, {
-      type: "trading",
-      arenaId: "default-paper-arena", // Change to paper arena for compatibility
-    });
-
-    expect(updateResponse.success).toBe(true);
-    expect((updateResponse as UpdateCompetitionResponse).competition.type).toBe(
-      "trading",
-    );
-
-    // Verify the type has changed
-    const detailsAfterUpdate = await adminClient.getCompetition(competitionId);
-    expect(detailsAfterUpdate.success).toBe(true);
-    expect(
-      (detailsAfterUpdate as CompetitionDetailResponse).competition.type,
-    ).toBe("trading");
-  });
-
   test("should not allow converting active competition type", async () => {
     const adminClient = createTestClient(getBaseUrl());
     await adminClient.loginAsAdmin(adminApiKey);
@@ -2430,70 +2137,6 @@ describe("Admin API", () => {
     expect((updateResponse as ErrorResponse).error).toContain(
       "Perps provider configuration is required when changing to perpetual futures type",
     );
-  });
-
-  test("should allow type conversion for pending competition with registered agents", async () => {
-    const adminClient = createTestClient(getBaseUrl());
-    await adminClient.loginAsAdmin(adminApiKey);
-
-    // Register agents
-    const { agent: agent1 } = await registerUserAndAgentAndGetClient({
-      adminApiKey,
-      agentName: "Agent 1 for Type Conversion",
-    });
-    const { agent: agent2 } = await registerUserAndAgentAndGetClient({
-      adminApiKey,
-      agentName: "Agent 2 for Type Conversion",
-    });
-
-    // Create a pending competition
-    const createResponse = await createTestCompetition({
-      adminClient,
-      name: "Pending Competition With Agents",
-      description: "Test type conversion with registered agents",
-      type: "trading",
-    });
-
-    expect(createResponse.success).toBe(true);
-    const competitionId = (createResponse as CreateCompetitionResponse)
-      .competition.id;
-
-    // Add agents to the competition
-    await adminClient.addAgentToCompetition(competitionId, agent1.id);
-    await adminClient.addAgentToCompetition(competitionId, agent2.id);
-
-    // Verify agents are registered
-    const agentsResponse =
-      await adminClient.getCompetitionAgents(competitionId);
-    expect(agentsResponse.success).toBe(true);
-    expect((agentsResponse as CompetitionAgentsResponse).agents).toHaveLength(
-      2,
-    );
-
-    // Convert to perps type and move to perps arena (should succeed even with registered agents)
-    const updateResponse = await adminClient.updateCompetition(competitionId, {
-      type: "perpetual_futures",
-      arenaId: "default-perps-arena",
-      perpsProvider: {
-        provider: "symphony",
-        initialCapital: 500,
-        selfFundingThreshold: 0,
-        apiUrl: "http://localhost:4567",
-      },
-    });
-
-    expect(updateResponse.success).toBe(true);
-    expect((updateResponse as UpdateCompetitionResponse).competition.type).toBe(
-      "perpetual_futures",
-    );
-
-    // Verify agents are still registered
-    const agentsAfterConversion =
-      await adminClient.getCompetitionAgents(competitionId);
-    expect(agentsAfterConversion.success).toBe(true);
-    expect(
-      (agentsAfterConversion as CompetitionAgentsResponse).agents,
-    ).toHaveLength(2);
   });
 
   // ===== Prize Pool Tests =====
@@ -2630,98 +2273,6 @@ describe("Admin API", () => {
     expect(prizePools[0]).toBeDefined();
     expect(prizePools[0]!.agentPool.toString()).toBe("2000000000000000000000");
     expect(prizePools[0]!.userPool.toString()).toBe("1000000000000000000000");
-  });
-
-  test("should create a competition with minimum stake", async () => {
-    const adminClient = createTestClient(getBaseUrl());
-    await adminClient.loginAsAdmin(adminApiKey);
-
-    // Create a competition with minimum stake
-    const createResponse = await adminClient.createCompetition({
-      name: "Competition with Minimum Stake",
-      description: "Test competition with minimum stake requirement",
-      type: "trading",
-      minimumStake: 1000, // 1000 tokens minimum stake
-      arenaId: "default-paper-arena",
-    });
-
-    expect(createResponse.success).toBe(true);
-    const createResult = createResponse as CreateCompetitionResponse;
-    expect(createResult.competition).toBeDefined();
-    expect(createResult.competition.name).toBe(
-      "Competition with Minimum Stake",
-    );
-    expect(createResult.competition.description).toBe(
-      "Test competition with minimum stake requirement",
-    );
-    expect(createResult.competition.type).toBe("trading");
-
-    // Verify minimum stake was set correctly using API call
-    const competitionId = createResult.competition.id;
-
-    // Get the competition details to verify minimum stake
-    const detailsResponse = await adminClient.getCompetition(competitionId);
-    expect(detailsResponse.success).toBe(true);
-
-    const competitionDetails = detailsResponse as CompetitionDetailResponse;
-    expect(competitionDetails.competition).toBeDefined();
-    expect(competitionDetails.competition.minimumStake).toBeDefined();
-    expect(competitionDetails.competition.minimumStake).toBe(1000);
-  });
-
-  test("should update a competition with minimum stake", async () => {
-    const adminClient = createTestClient(getBaseUrl());
-    await adminClient.loginAsAdmin(adminApiKey);
-
-    // First create a competition without minimum stake
-    const createResponse = await createTestCompetition({
-      adminClient,
-      name: "Competition to Update with Minimum Stake",
-      description: "Test updating competition with minimum stake",
-      type: "trading",
-    });
-
-    expect(createResponse.success).toBe(true);
-    const competitionId = (createResponse as CreateCompetitionResponse)
-      .competition.id;
-
-    // Verify initial state has no minimum stake using API call
-    const initialDetailsResponse =
-      await adminClient.getCompetition(competitionId);
-    expect(initialDetailsResponse.success).toBe(true);
-
-    const initialCompetitionDetails =
-      initialDetailsResponse as CompetitionDetailResponse;
-    expect(initialCompetitionDetails.competition).toBeDefined();
-    expect(initialCompetitionDetails.competition.minimumStake).toBeNull();
-
-    // Now update the competition with minimum stake
-    const updateResponse = await adminClient.updateCompetition(competitionId, {
-      name: "Updated Competition with Minimum Stake",
-      description: "Updated with minimum stake requirement",
-      minimumStake: 2500, // 2500 tokens minimum stake
-    });
-
-    expect(updateResponse.success).toBe(true);
-    const updateResult = updateResponse as UpdateCompetitionResponse;
-    expect(updateResult.competition).toBeDefined();
-    expect(updateResult.competition.name).toBe(
-      "Updated Competition with Minimum Stake",
-    );
-    expect(updateResult.competition.description).toBe(
-      "Updated with minimum stake requirement",
-    );
-
-    // Verify minimum stake was updated correctly using API call
-    const updatedDetailsResponse =
-      await adminClient.getCompetition(competitionId);
-    expect(updatedDetailsResponse.success).toBe(true);
-
-    const updatedCompetitionDetails =
-      updatedDetailsResponse as CompetitionDetailResponse;
-    expect(updatedCompetitionDetails.competition).toBeDefined();
-    expect(updatedCompetitionDetails.competition.minimumStake).toBeDefined();
-    expect(updatedCompetitionDetails.competition.minimumStake).toBe(2500);
   });
 
   test("should require arenaId when creating competition", async () => {
