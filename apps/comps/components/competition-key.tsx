@@ -3,6 +3,7 @@
 import { ChevronDown, ExternalLink, Info, X } from "lucide-react";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 
+import type { SpecificChain } from "@recallnet/services/types";
 import { Button } from "@recallnet/ui2/components/button";
 import {
   Tabs,
@@ -38,16 +39,32 @@ import { BoostsTabContent } from "./competition-key-boost";
 import { SkeletonList } from "./skeleton-loaders";
 
 /**
- * Maps chain identifiers to their block explorer transaction URLs
+ * Maps chain identifiers to their block explorer transaction URLs.
+ * Using SpecificChain type ensures compile-time safety if chains are added/removed.
  */
-const CHAIN_EXPLORER_TX_URLS: Record<string, string> = {
-  base: "https://basescan.org/tx/",
-  ethereum: "https://etherscan.io/tx/",
+const CHAIN_EXPLORER_TX_URLS: Record<SpecificChain, string> = {
+  // EVM chains
+  eth: "https://etherscan.io/tx/",
   polygon: "https://polygonscan.com/tx/",
+  bsc: "https://bscscan.com/tx/",
   arbitrum: "https://arbiscan.io/tx/",
   optimism: "https://optimistic.etherscan.io/tx/",
-  solana: "https://solscan.io/tx/",
+  avalanche: "https://snowscan.xyz/tx/",
+  base: "https://basescan.org/tx/",
+  linea: "https://lineascan.build/tx/",
+  zksync: "https://explorer.zksync.io/tx/",
+  scroll: "https://scrollscan.com/tx/",
+  mantle: "https://explorer.mantle.xyz/tx/",
+  // SVM chains
+  svm: "https://solscan.io/tx/",
 };
+
+/**
+ * Type guard to check if a string is a valid SpecificChain
+ */
+function isSpecificChain(chain: string): chain is SpecificChain {
+  return chain in CHAIN_EXPLORER_TX_URLS;
+}
 
 /**
  * Gets the block explorer URL for a transaction hash on a given chain
@@ -57,8 +74,9 @@ function getExplorerTxUrl(
   chain: string | null | undefined,
 ): string | null {
   if (!txHash || !chain) return null;
-  const baseUrl = CHAIN_EXPLORER_TX_URLS[chain.toLowerCase()];
-  return baseUrl ? `${baseUrl}${txHash}` : null;
+  const normalizedChain = chain.toLowerCase();
+  if (!isSpecificChain(normalizedChain)) return null;
+  return `${CHAIN_EXPLORER_TX_URLS[normalizedChain]}${txHash}`;
 }
 
 export interface CompetitionKeyProps {
