@@ -1,14 +1,12 @@
-import { ORPCError } from "@orpc/server";
-
-import { ApiError } from "@recallnet/services/types";
-
 import { base } from "@/rpc/context/base";
 import { adminMiddleware } from "@/rpc/middleware/admin";
+import { errorHandlerMiddleware } from "@/rpc/middleware/error-handler";
 
 /**
  * List all users
  */
 export const listUsers = base
+  .use(errorHandlerMiddleware)
   .use(adminMiddleware)
   .route({
     method: "GET",
@@ -17,25 +15,9 @@ export const listUsers = base
     description: "Get a list of all users in the system",
     tags: ["admin"],
   })
-  .handler(async ({ context, errors }) => {
-    try {
-      const users = await context.userService.getAllUsers();
-      return { success: true, users };
-    } catch (error) {
-      if (error instanceof ORPCError) {
-        throw error;
-      }
-
-      if (error instanceof ApiError) {
-        throw errors.INTERNAL({ message: error.message });
-      }
-
-      if (error instanceof Error) {
-        throw errors.INTERNAL({ message: error.message });
-      }
-
-      throw errors.INTERNAL({ message: "Failed to list users" });
-    }
+  .handler(async ({ context }) => {
+    const users = await context.userService.getAllUsers();
+    return { success: true, users };
   });
 
 export type ListUsersType = typeof listUsers;
