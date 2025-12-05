@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, Info, X } from "lucide-react";
+import { ChevronDown, ExternalLink, Info, X } from "lucide-react";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 
 import { Button } from "@recallnet/ui2/components/button";
@@ -36,6 +36,30 @@ import {
 import { AgentAvatar } from "./agent-avatar";
 import { BoostsTabContent } from "./competition-key-boost";
 import { SkeletonList } from "./skeleton-loaders";
+
+/**
+ * Maps chain identifiers to their block explorer transaction URLs
+ */
+const CHAIN_EXPLORER_TX_URLS: Record<string, string> = {
+  base: "https://basescan.org/tx/",
+  ethereum: "https://etherscan.io/tx/",
+  polygon: "https://polygonscan.com/tx/",
+  arbitrum: "https://arbiscan.io/tx/",
+  optimism: "https://optimistic.etherscan.io/tx/",
+  solana: "https://solscan.io/tx/",
+};
+
+/**
+ * Gets the block explorer URL for a transaction hash on a given chain
+ */
+function getExplorerTxUrl(
+  txHash: string,
+  chain: string | null | undefined,
+): string | null {
+  if (!txHash || !chain) return null;
+  const baseUrl = CHAIN_EXPLORER_TX_URLS[chain.toLowerCase()];
+  return baseUrl ? `${baseUrl}${txHash}` : null;
+}
 
 export interface CompetitionKeyProps {
   competition: RouterOutputs["competitions"]["getById"];
@@ -230,11 +254,35 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
 
                         {/* Right column: Trade details */}
                         <div className="flex flex-col items-end gap-1 text-right">
-                          <span className="text-xs text-gray-400">
-                            {formatAmount(trade.fromAmount)}{" "}
-                            {trade.fromTokenSymbol} →{" "}
-                            {formatAmount(trade.toAmount)} {trade.toTokenSymbol}
-                          </span>
+                          {(() => {
+                            const explorerUrl =
+                              trade.txHash &&
+                              getExplorerTxUrl(
+                                trade.txHash,
+                                trade.fromSpecificChain,
+                              );
+                            const tradeContent = (
+                              <span className="text-xs text-gray-400">
+                                {formatAmount(trade.fromAmount)}{" "}
+                                {trade.fromTokenSymbol} →{" "}
+                                {formatAmount(trade.toAmount)}{" "}
+                                {trade.toTokenSymbol}
+                              </span>
+                            );
+                            return explorerUrl ? (
+                              <a
+                                href={explorerUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-1 text-xs text-gray-400 transition-colors hover:text-white"
+                              >
+                                {tradeContent}
+                                <ExternalLink className="h-3 w-3" />
+                              </a>
+                            ) : (
+                              tradeContent
+                            );
+                          })()}
                           {trade.timestamp && (
                             <span className="text-xs text-gray-500">
                               {formatDateShort(new Date(trade.timestamp), true)}
