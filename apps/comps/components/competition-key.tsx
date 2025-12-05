@@ -193,7 +193,7 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
           >
             Info
           </TabsTrigger>
-          {!isPerpsCompetition && (
+          {!isPerpsCompetition && !isSpotLiveCompetition && (
             <TabsTrigger
               value="rules"
               className="border border-white bg-black px-4 py-2 text-xs font-semibold uppercase text-white transition-colors duration-200 hover:bg-white hover:text-black data-[state=active]:bg-white data-[state=active]:text-black"
@@ -460,8 +460,8 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
           />
         </TabsContent>
 
-        {/* Rules Tab */}
-        {!isPerpsCompetition && (
+        {/* Rules Tab - hidden for perps and spot live (paper trading rules not applicable) */}
+        {!isPerpsCompetition && !isSpotLiveCompetition && (
           <TabsContent
             value="rules"
             className="m-0 flex-1 overflow-hidden border"
