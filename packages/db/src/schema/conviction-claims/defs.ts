@@ -7,11 +7,10 @@ import {
   timestamp,
   uniqueIndex,
   uuid,
-  varchar,
 } from "drizzle-orm/pg-core";
 
 import { seasons } from "../airdrop/defs.js";
-import { bytea, tokenAmount } from "../custom-types.js";
+import { bytea, ethAddress, tokenAmount } from "../custom-types.js";
 
 /**
  * Conviction Claims table
@@ -34,7 +33,7 @@ export const convictionClaims = pgTable(
 
     // Claim data
     account: text("account").notNull(), // Address that claimed
-    walletAddress: varchar("wallet_address", { length: 42 }),
+    walletAddress: ethAddress("wallet_address"),
     eligibleAmount: tokenAmount("eligible_amount").notNull(),
     claimedAmount: tokenAmount("claimed_amount").notNull(),
     season: integer("season") // Season number (0, 1, 2, etc.)
