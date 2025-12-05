@@ -330,6 +330,7 @@ describe("ConvictionClaimsRepository", () => {
       expect(insertMock).toHaveBeenCalledWith(convictionClaims);
       expect(valuesMock).toHaveBeenCalledWith({
         account: claimData.account.toLowerCase(),
+        walletAddress: claimData.account.toLowerCase(),
         eligibleAmount: claimData.eligibleAmount,
         claimedAmount: claimData.claimedAmount,
         season: claimData.season,

@@ -81,6 +81,7 @@ describe("EventProcessor", () => {
       competitionId: competitionId,
       userId: userId,
       address: "0x00a826b7a0c21c7f3c7156c4e1aa197a111b8233",
+      walletAddress: "0x00a826b7a0c21c7f3c7156c4e1aa197a111b8233",
       amount: BigInt("100000000000000000"),
       leafHash: new Uint8Array(), // it does not matter for the test
       claimed: false,

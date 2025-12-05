@@ -11,7 +11,7 @@ import {
   varchar,
 } from "drizzle-orm/pg-core";
 
-import { bytea, tokenAmount } from "../custom-types.js";
+import { bytea, ethAddress, tokenAmount } from "../custom-types.js";
 
 export { indexingEvents, stakes, stakeChanges };
 
@@ -119,6 +119,7 @@ const stakes = pgTable(
   {
     id: bigint("id", { mode: "bigint" }).primaryKey().notNull(), // on-chain receipt / NFT id
     wallet: bytea("wallet").notNull(), // canonicalized EVM addr
+    walletAddress: ethAddress("wallet_address"),
     amount: tokenAmount("amount").notNull(),
     // lifecycle
     stakedAt: timestamp("staked_at").notNull(),
@@ -132,6 +133,7 @@ const stakes = pgTable(
   },
   (t) => ({
     walletIdx: index("stakes_wallet_idx").on(t.wallet),
+    walletAddressIdx: index("stakes_wallet_address_idx").on(t.walletAddress),
     statusIdx: index("stakes_status_idx").on(t.unstakedAt, t.withdrawnAt),
     createdIdx: index("stakes_created_at_idx").on(t.createdAt),
     // ---- Invariants / checks ----
@@ -166,6 +168,7 @@ const stakeChanges = pgTable(
       .notNull()
       .references(() => stakes.id),
     wallet: bytea("wallet").notNull(),
+    walletAddress: ethAddress("wallet_address"),
     // delta — signed: +stake, 0 for relock, -move from staked to withdrawable, -withdraw, etc.
     deltaAmount: tokenAmount("delta_amount").notNull(),
     kind: varchar("kind", { length: 24 }).notNull(), // See EventType for possible values
@@ -180,6 +183,9 @@ const stakeChanges = pgTable(
     uniqEvent: uniqueIndex("stake_changes_event_uq").on(t.txHash, t.logIndex),
     stakeIdx: index("stake_changes_stake_idx").on(t.stakeId),
     walletIdx: index("stake_changes_wallet_idx").on(t.wallet),
+    walletAddressIdx: index("stake_changes_wallet_address_idx").on(
+      t.walletAddress,
+    ),
     walletCreatedIdx: index("stake_changes_wallet_created_idx").on(
       t.wallet,
       sql`${t.createdAt} DESC`,

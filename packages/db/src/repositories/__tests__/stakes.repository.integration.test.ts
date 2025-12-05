@@ -93,6 +93,7 @@ describe("StakesRepository integration", () => {
     expect(change?.deltaAmount).toBe(1000n);
     expect(change?.kind).toBe("stake");
     expect(change?.wallet).toEqual(BlockchainAddressAsU8A.encode(wallet));
+    expect(change?.walletAddress).toBe(wallet.toLowerCase());
     expect(change?.txHash).toEqual(TxHashCoder.encode(tx.txHash));
     expect(change?.blockHash).toEqual(BlockHashCoder.encode(tx.blockHash));
 
