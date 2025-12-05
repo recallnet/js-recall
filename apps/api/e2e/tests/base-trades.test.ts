@@ -23,13 +23,11 @@ import { logger } from "@/lib/logger.js";
 describe("Base Chain Trading", () => {
   let adminApiKey: string;
 
-  // Base tokens to test with
+  // Base tokens to test with - using well-known tokens with reliable price data
   const BASE_TOKENS = [
-    "0x3992B27dA26848C2b19CeA6Fd25ad5568B68AB98", // DEGEN
-    "0x63706e401c06ac8513145b7687A14804d17f814b", // MOBY
-    "0xB6fe221Fe9EeF5aBa221c348bA20A1Bf5e73624c", // SUSHI
-    "0x0b3e328455c4059EEb9e3f84b5543F74E24e7E1b", // OBO
-    "0x98d0baa52b2D063E780DE12F615f963Fe8537553", // BEAN
+    "0x4200000000000000000000000000000000000006", // WETH on Base
+    "0x50c5725949a6f0c72e6c4a641f24049a917db0cb", // DAI on Base
+    "0x2Ae3F1Ec7F1F5012CFEab0185bfc7aa3cf0DEc22", // cbETH on Base
   ];
 
   // Base USDC token address
@@ -70,9 +68,9 @@ describe("Base Chain Trading", () => {
       // disable trading constraints for testing base chain functionality
       tradingConstraints: noTradingConstraints,
       paperTradingInitialBalances: [
-        { specificChain: "base", tokenSymbol: "usdc", amount: 10 },
-        { specificChain: "eth", tokenSymbol: "usdc", amount: 10 },
-        { specificChain: "svm", tokenSymbol: "usdc", amount: 10 },
+        { specificChain: "base", tokenSymbol: "usdc", amount: 1000 },
+        { specificChain: "eth", tokenSymbol: "usdc", amount: 1000 },
+        { specificChain: "svm", tokenSymbol: "usdc", amount: 1000 },
       ],
     });
     const competitionId = competitionResponse.competition.id;
