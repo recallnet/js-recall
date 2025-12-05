@@ -33,13 +33,13 @@ export const getCompetitionSnapshots = base
       "Get portfolio snapshots for agents in a competition, optionally filtered by agentId",
     tags: ["admin"],
   })
-  .handler(async ({ input, context }) => {
+  .handler(async ({ input, context, errors }) => {
     // Check if competition exists
     const competition = await context.competitionService.getCompetition(
       input.competitionId,
     );
     if (!competition) {
-      throw new Error("Competition not found");
+      throw errors.NOT_FOUND({ message: "Competition not found" });
     }
 
     // Get snapshots based on whether an agent ID was provided
@@ -48,7 +48,7 @@ export const getCompetitionSnapshots = base
       // Check if the agent exists
       const agent = await context.agentService.getAgent(input.agentId);
       if (!agent) {
-        throw new Error("Agent not found");
+        throw errors.NOT_FOUND({ message: "Agent not found" });
       }
 
       // Check if the agent is in the competition
@@ -59,7 +59,9 @@ export const getCompetitionSnapshots = base
         );
 
       if (!agentInCompetition) {
-        throw new Error("Agent is not participating in this competition");
+        throw errors.BAD_REQUEST({
+          message: "Agent is not participating in this competition",
+        });
       }
 
       // Get snapshots for the specific agent

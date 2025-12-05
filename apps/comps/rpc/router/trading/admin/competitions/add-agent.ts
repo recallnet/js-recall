@@ -18,19 +18,19 @@ export const addAgentToCompetition = base
     description: "Add an agent to a specific competition",
     tags: ["admin"],
   })
-  .handler(async ({ context, input }) => {
+  .handler(async ({ context, input, errors }) => {
     // Check if competition exists
     const competition = await context.competitionService.getCompetition(
       input.competitionId,
     );
     if (!competition) {
-      throw new Error("Competition not found");
+      throw errors.NOT_FOUND({ message: "Competition not found" });
     }
 
     // Check if agent exists
     const agent = await context.agentService.getAgent(input.agentId);
     if (!agent) {
-      throw new Error("Agent not found");
+      throw errors.NOT_FOUND({ message: "Agent not found" });
     }
 
     // Check if agent is already in the competition
@@ -40,19 +40,24 @@ export const addAgentToCompetition = base
         input.agentId,
       );
     if (isInCompetition) {
-      throw new Error("Agent is already participating in this competition");
+      throw errors.BAD_REQUEST({
+        message: "Agent is already participating in this competition",
+      });
     }
 
     // Check if competition is ended
     if (competition.status === "ended") {
-      throw new Error("Cannot add agent to ended competition");
+      throw errors.BAD_REQUEST({
+        message: "Cannot add agent to ended competition",
+      });
     }
 
     // HARD RULE: Cannot add agents to active non-sandbox competitions
     if (competition.status === "active" && !competition.sandboxMode) {
-      throw new Error(
-        "Cannot add agents to active non-sandbox competitions - this would be unfair to existing participants",
-      );
+      throw errors.BAD_REQUEST({
+        message:
+          "Cannot add agents to active non-sandbox competitions - this would be unfair to existing participants",
+      });
     }
 
     // In sandbox mode, reset agent balances

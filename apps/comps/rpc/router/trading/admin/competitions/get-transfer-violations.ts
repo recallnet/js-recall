@@ -30,7 +30,7 @@ export const getTransferViolations = base
       input.competitionId,
     );
     if (!competition) {
-      throw new Error("Competition not found");
+      throw errors.NOT_FOUND({ message: "Competition not found" });
     }
 
     // Get transfer violations
