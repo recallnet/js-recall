@@ -1,5 +1,3 @@
-import type { z } from "zod/v4";
-
 import {
   AdminUpdateCompetitionParamsSchema,
   AdminUpdateCompetitionSchema,
@@ -9,50 +7,13 @@ import { base } from "@/rpc/context/base";
 import { adminMiddleware } from "@/rpc/middleware/admin";
 import { errorHandlerMiddleware } from "@/rpc/middleware/error-handler";
 
-type UpdateCompetitionInput = z.infer<
-  typeof AdminUpdateCompetitionParamsSchema
-> &
-  z.infer<typeof AdminUpdateCompetitionSchema>;
-
-function inputRefinement(data: UpdateCompetitionInput) {
-  const {
-    rewards,
-    tradingConstraints,
-    evaluationMetric,
-    perpsProvider,
-    prizePools,
-    gameIds,
-    paperTradingConfig,
-    paperTradingInitialBalances,
-    ...updates
-  } = data;
-
-  return (
-    Object.keys(updates).length > 1 ||
-    rewards !== undefined ||
-    tradingConstraints !== undefined ||
-    evaluationMetric !== undefined ||
-    perpsProvider !== undefined ||
-    prizePools !== undefined ||
-    gameIds !== undefined ||
-    paperTradingConfig !== undefined ||
-    paperTradingInitialBalances !== undefined
-  );
-}
-
 /**
  * Update a competition
  */
 export const updateCompetition = base
   .use(errorHandlerMiddleware)
   .use(adminMiddleware)
-  .input(
-    AdminUpdateCompetitionParamsSchema.merge(
-      AdminUpdateCompetitionSchema,
-    ).refine(inputRefinement, {
-      message: "No valid fields provided for update",
-    }),
-  )
+  .input(AdminUpdateCompetitionParamsSchema.merge(AdminUpdateCompetitionSchema))
   .route({
     method: "PUT",
     path: "/admin/competition/{competitionId}",
@@ -60,7 +21,7 @@ export const updateCompetition = base
     description: "Update an existing competition's configuration",
     tags: ["admin"],
   })
-  .handler(async ({ input, context }) => {
+  .handler(async ({ input, context, errors }) => {
     context.logger.debug({ input });
     const { competitionId } = input;
     const {
@@ -69,11 +30,29 @@ export const updateCompetition = base
       evaluationMetric,
       perpsProvider,
       prizePools,
+      spotLiveConfig,
       gameIds,
       paperTradingConfig,
       paperTradingInitialBalances,
       ...updates
     } = input;
+
+    if (
+      Object.keys(updates).length === 1 &&
+      !rewards &&
+      !tradingConstraints &&
+      !evaluationMetric &&
+      !perpsProvider &&
+      !prizePools &&
+      !spotLiveConfig &&
+      !gameIds &&
+      !paperTradingConfig &&
+      !paperTradingInitialBalances
+    ) {
+      throw errors.BAD_REQUEST({
+        message: "No valid fields provided for update",
+      });
+    }
 
     const { competition: updatedCompetition, updatedRewards } =
       await context.competitionService.updateCompetition(
@@ -84,6 +63,7 @@ export const updateCompetition = base
         evaluationMetric,
         perpsProvider,
         prizePools,
+        spotLiveConfig,
         gameIds,
         paperTradingConfig,
         paperTradingInitialBalances,

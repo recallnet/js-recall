@@ -1226,7 +1226,7 @@ describe("Admin API", () => {
     // Try to update status (should be rejected as restricted field)
     try {
       const result = await axios.put(
-        `${getBaseUrl()}/admin/competition/${competitionId}?test1=true`,
+        `${getBaseUrl()}/admin/competition/${competitionId}`,
         {
           status: "active",
         },
@@ -2335,7 +2335,7 @@ describe("Admin API", () => {
     expect(createResponse1.success).toBe(false);
     expect(createResponse1.status).toEqual(400);
     expect(createResponse1.error).toContain(
-      'invalid option: expected one of "trading"|"perpetual_futures"|"sports_prediction"',
+      'invalid option: expected one of "trading"|"perpetual_futures"|"spot_live_trading"|"sports_prediction"',
     );
 
     const createResponse2 = (await adminClient.createCompetition({
