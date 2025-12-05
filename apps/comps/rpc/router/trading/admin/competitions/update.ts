@@ -1,3 +1,5 @@
+import type { z } from "zod/v4";
+
 import {
   AdminUpdateCompetitionParamsSchema,
   AdminUpdateCompetitionSchema,
@@ -7,7 +9,12 @@ import { base } from "@/rpc/context/base";
 import { adminMiddleware } from "@/rpc/middleware/admin";
 import { errorHandlerMiddleware } from "@/rpc/middleware/error-handler";
 
-function inputRefinement(data: any) {
+type UpdateCompetitionInput = z.infer<
+  typeof AdminUpdateCompetitionParamsSchema
+> &
+  z.infer<typeof AdminUpdateCompetitionSchema>;
+
+function inputRefinement(data: UpdateCompetitionInput) {
   const {
     rewards,
     tradingConstraints,
