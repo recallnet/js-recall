@@ -121,6 +121,13 @@ interface TestAgent {
 // ETH price assumption for calculations
 const ETH_PRICE_USD = 3500;
 
+// NOTE: All trades use the same real Base transaction hash for UI testing.
+// This allows us to verify that the txHash hyperlink to BaseScan works correctly
+// in the frontend (competition-key.tsx). The hash points to a real transaction
+// so clicking through confirms the link format is correct.
+const TEST_TX_HASH =
+  "0x0f8345ce2a18b4c017923d6800c18e665949444ce86491229f42f0b3f9758e04";
+
 const testAgents: TestAgent[] = [
   {
     name: "DeFi Alpha Hunter",
@@ -139,8 +146,7 @@ const testAgents: TestAgent[] = [
         fromAmount: 10000,
         toAmount: 3.0,
         tradeAmountUsd: 10000,
-        txHash:
-          "0x1111111111111111111111111111111111111111111111111111111111111111",
+        txHash: TEST_TX_HASH,
         blockNumber: 25000100,
         daysAgo: 5,
       },
@@ -150,8 +156,7 @@ const testAgents: TestAgent[] = [
         fromAmount: 2500,
         toAmount: 0.75,
         tradeAmountUsd: 2500,
-        txHash:
-          "0x1111111111111111111111111111111111111111111111111111111111111112",
+        txHash: TEST_TX_HASH,
         blockNumber: 25100200,
         daysAgo: 3,
       },
@@ -161,8 +166,7 @@ const testAgents: TestAgent[] = [
         fromAmount: 0.25,
         toAmount: 900,
         tradeAmountUsd: 900,
-        txHash:
-          "0x1111111111111111111111111111111111111111111111111111111111111113",
+        txHash: TEST_TX_HASH,
         blockNumber: 25200300,
         daysAgo: 1,
       },
@@ -187,8 +191,7 @@ const testAgents: TestAgent[] = [
         fromAmount: 17000,
         toAmount: 5.0,
         tradeAmountUsd: 17000,
-        txHash:
-          "0x2222222222222222222222222222222222222222222222222222222222222221",
+        txHash: TEST_TX_HASH,
         blockNumber: 25000500,
         daysAgo: 6,
       },
@@ -213,8 +216,7 @@ const testAgents: TestAgent[] = [
         fromAmount: 3500,
         toAmount: 1.0,
         tradeAmountUsd: 3500,
-        txHash:
-          "0x3333333333333333333333333333333333333333333333333333333333333331",
+        txHash: TEST_TX_HASH,
         blockNumber: 25050000,
         daysAgo: 5,
       },
@@ -224,8 +226,7 @@ const testAgents: TestAgent[] = [
         fromAmount: 0.5,
         toAmount: 1800,
         tradeAmountUsd: 1800,
-        txHash:
-          "0x3333333333333333333333333333333333333333333333333333333333333332",
+        txHash: TEST_TX_HASH,
         blockNumber: 25150000,
         daysAgo: 2,
       },
@@ -250,8 +251,7 @@ const testAgents: TestAgent[] = [
         fromAmount: 9900,
         toAmount: 2.5, // Bought at ~$3960/ETH (bad timing)
         tradeAmountUsd: 9900,
-        txHash:
-          "0x4444444444444444444444444444444444444444444444444444444444444441",
+        txHash: TEST_TX_HASH,
         blockNumber: 25080000,
         daysAgo: 4,
       },
@@ -276,8 +276,7 @@ const testAgents: TestAgent[] = [
         fromAmount: 5000,
         toAmount: 1.5,
         tradeAmountUsd: 5000,
-        txHash:
-          "0x5555555555555555555555555555555555555555555555555555555555555551",
+        txHash: TEST_TX_HASH,
         blockNumber: 25020000,
         daysAgo: 6,
       },
@@ -287,8 +286,7 @@ const testAgents: TestAgent[] = [
         fromAmount: 1.4,
         toAmount: 4500, // Panic sold at loss
         tradeAmountUsd: 4500,
-        txHash:
-          "0x5555555555555555555555555555555555555555555555555555555555555552",
+        txHash: TEST_TX_HASH,
         blockNumber: 25180000,
         daysAgo: 1,
       },

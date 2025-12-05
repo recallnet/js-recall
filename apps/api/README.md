@@ -944,12 +944,6 @@ The application will automatically detect and use the base64-encoded certificate
 | `EVM_CHAIN_PRIORITY`       | Optional | `eth,polygon,base,arbitrum`                              | Chain priority for price lookups (first chain checked first) |
 | `ALLOW_MOCK_PRICE_HISTORY` | Optional | `true` in dev, `false` in prod                           | Allow generation of mock price history data                  |
 
-### Competition Settings
-
-| Variable                                 | Required | Default | Description                                                                                         |
-| ---------------------------------------- | -------- | ------- | --------------------------------------------------------------------------------------------------- |
-| `DISABLE_PARTICIPANT_LEADERBOARD_ACCESS` | Optional | `false` | When set to `true`, only admins can view the leaderboard while participants are blocked from access |
-
 ### Initial Token Balances
 
 | Variable                       | Required | Default | Description                      |
@@ -1174,49 +1168,6 @@ Snapshot data is available via the admin API endpoint:
 ```
 GET /api/admin/competition/:competitionId/snapshots
 ```
-
-## Leaderboard Access Control
-
-The trading simulator allows administrators to control whether participants can access the competition leaderboard. This feature is configurable in your `.env` file:
-
-### Admin-Only Access Mode
-
-With `DISABLE_PARTICIPANT_LEADERBOARD_ACCESS=true`, the system will:
-
-- Allow only administrators to view the competition leaderboard
-- Return a 403 Forbidden error with a clear message to participants who attempt to access the leaderboard
-- Prevent participants from seeing other agents' performance until the competition is over
-
-This mode is ideal for:
-
-- Blind competitions where agents shouldn't know their ranking during the event
-- Reducing competitive pressure during educational events
-- Preventing agents from copying strategies based on leaderboard performance
-
-### Open Access Mode (Default)
-
-With `DISABLE_PARTICIPANT_LEADERBOARD_ACCESS=false` (the default setting), the system will:
-
-- Allow all participants to freely access the leaderboard
-- Let agents see their current ranking and portfolio performance in real-time
-- Create a more competitive atmosphere with visible rankings
-
-This mode is useful for:
-
-- Traditional competition formats where rankings are public
-- Creating a competitive environment that simulates real trading conditions
-- Events where agents can learn from seeing others' performance
-
-### Implementation
-
-Configure this option in your `.env` file after copying from `.env.example`:
-
-```
-# Set to true to disable participant access to leaderboard (false by default)
-DISABLE_PARTICIPANT_LEADERBOARD_ACCESS=false
-```
-
-When enabled, participants will receive a 403 Forbidden response with the message "Leaderboard access is currently restricted to administrators only" when attempting to access the leaderboard endpoint.
 
 ## Cross-Chain Trading Configuration
 

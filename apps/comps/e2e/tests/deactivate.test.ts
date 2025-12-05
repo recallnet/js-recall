@@ -17,15 +17,20 @@ import {
   wait,
 } from "@recallnet/test-utils";
 
+import { createTestRpcClient } from "../utils/rpc-client-helpers.js";
+
 // TODO: need user deactivation test
 
 describe("Agent Deactivation API", () => {
   let adminApiKey: string;
+  let rpcClient: Awaited<ReturnType<typeof createTestRpcClient>>;
 
   // Clean up test state before each test
   beforeEach(async () => {
     // Store the admin API key for authentication
     adminApiKey = await getAdminApiKey();
+    // Create RPC client for competition queries (public access, no auth needed)
+    rpcClient = await createTestRpcClient();
   });
 
   test("admin can deactivate an agent", async () => {
@@ -317,12 +322,10 @@ describe("Agent Deactivation API", () => {
     await wait(1000);
 
     // Check leaderboard before deactivation
-    const leaderboardBefore = await client1.getCompetitionAgents(
+    const leaderboardBefore = await rpcClient.competitions.getAgents({
       competitionId,
-      { sort: "rank" },
-    );
-    expect(leaderboardBefore.success).toBe(true);
-    if (!leaderboardBefore.success) throw new Error("Failed to get agents");
+      paging: { sort: "rank", limit: 50, offset: 0 },
+    });
 
     expect(leaderboardBefore.agents).toBeDefined();
 
@@ -348,12 +351,11 @@ describe("Agent Deactivation API", () => {
     expect(deactivateResponse.success).toBe(true);
 
     // Check leaderboard after deactivation (include inactive agents)
-    const leaderboardAfter = await client1.getCompetitionAgents(competitionId, {
-      sort: "rank",
+    const leaderboardAfter = await rpcClient.competitions.getAgents({
+      competitionId,
+      paging: { sort: "rank", limit: 50, offset: 0 },
       includeInactive: true,
     });
-    expect(leaderboardAfter.success).toBe(true);
-    if (!leaderboardAfter.success) throw new Error("Failed to get agents");
 
     expect(leaderboardAfter.agents).toBeDefined();
     const inactiveAgentsAfter = leaderboardAfter.agents.filter(
@@ -390,11 +392,10 @@ describe("Agent Deactivation API", () => {
     await wait(100);
 
     // Check leaderboard after reactivation
-    const leaderboardFinal = await client1.getCompetitionAgents(competitionId, {
-      sort: "rank",
+    const leaderboardFinal = await rpcClient.competitions.getAgents({
+      competitionId,
+      paging: { sort: "rank", limit: 50, offset: 0 },
     });
-    expect(leaderboardFinal.success).toBe(true);
-    if (!leaderboardFinal.success) throw new Error("Failed to get agents");
 
     expect(leaderboardFinal.agents).toBeDefined();
     const inactiveAgentsFinal = leaderboardFinal.agents.filter(
@@ -428,11 +429,10 @@ describe("Agent Deactivation API", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Register two agents for the competition
-    const { client: client1, agent: agent1 } =
-      await registerUserAndAgentAndGetClient({
-        adminApiKey,
-        agentName: "Top Performer",
-      });
+    const { agent: agent1 } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Top Performer",
+    });
     const { client: client2, agent: agent2 } =
       await registerUserAndAgentAndGetClient({
         adminApiKey,
@@ -469,28 +469,26 @@ describe("Agent Deactivation API", () => {
     await wait(1000);
 
     // Get initial competition agents to verify rankings
-    const initialAgentsResponse =
-      await client1.getCompetitionAgents(competitionId);
-    expect(initialAgentsResponse.success).toBe(true);
+    const initialAgentsResponse = await rpcClient.competitions.getAgents({
+      competitionId,
+    });
 
-    if ("agents" in initialAgentsResponse) {
-      expect(initialAgentsResponse.agents.length).toBe(2);
+    expect(initialAgentsResponse.agents.length).toBe(2);
 
-      // Find each agent's position
-      const agent1Data = initialAgentsResponse.agents.find(
-        (a) => a.id === agent1.id,
-      );
-      const agent2Data = initialAgentsResponse.agents.find(
-        (a) => a.id === agent2.id,
-      );
+    // Find each agent's position
+    const agent1Data = initialAgentsResponse.agents.find(
+      (a) => a.id === agent1.id,
+    );
+    const agent2Data = initialAgentsResponse.agents.find(
+      (a) => a.id === agent2.id,
+    );
 
-      expect(agent1Data).toBeDefined();
-      expect(agent2Data).toBeDefined();
+    expect(agent1Data).toBeDefined();
+    expect(agent2Data).toBeDefined();
 
-      // Verify initial rankings (agent1 should be rank 1 with higher portfolio, agent2 should be rank 2 after burning tokens)
-      expect(agent1Data?.rank).toBe(1);
-      expect(agent2Data?.rank).toBe(2);
-    }
+    // Verify initial rankings (agent1 should be rank 1 with higher portfolio, agent2 should be rank 2 after burning tokens)
+    expect(agent1Data?.rank).toBe(1);
+    expect(agent2Data?.rank).toBe(2);
 
     // Now remove the top performing agent (agent1)
     const removeReason = "Disqualified for ranking consistency test";
@@ -504,69 +502,63 @@ describe("Agent Deactivation API", () => {
     // Immediately check the competition agents again (this is the critical test)
     // Before our fix, agent2 would still show position 2 even though they're the only agent
     // After our fix, agent2 should show position 1
-    const afterRemovalResponse =
-      await client2.getCompetitionAgents(competitionId);
-    expect(afterRemovalResponse.success).toBe(true);
+    const afterRemovalResponse = await rpcClient.competitions.getAgents({
+      competitionId,
+    });
 
-    if ("agents" in afterRemovalResponse) {
-      // Should only have 1 agent now (agent2)
-      expect(afterRemovalResponse.agents.length).toBe(1);
+    // Should only have 1 agent now (agent2)
+    expect(afterRemovalResponse.agents.length).toBe(1);
 
-      const remainingAgent = afterRemovalResponse.agents[0];
-      expect(remainingAgent?.id).toBe(agent2.id);
+    const remainingAgent = afterRemovalResponse.agents[0];
+    expect(remainingAgent?.id).toBe(agent2.id);
 
-      // This is the key assertion - the remaining agent should have rank 1, not rank 2
-      // This validates that our fix properly filters disqualified agents from ranking calculations
-      expect(remainingAgent?.rank).toBe(1);
+    // This is the key assertion - the remaining agent should have rank 1, not rank 2
+    // This validates that our fix properly filters disqualified agents from ranking calculations
+    expect(remainingAgent?.rank).toBe(1);
 
-      // Agent should still be marked as active
-      expect(remainingAgent?.active).toBe(true);
+    // Agent should still be marked as active
+    expect(remainingAgent?.active).toBe(true);
 
-      // Verify the removed agent is not in the response at all
-      const removedAgentData = afterRemovalResponse.agents.find(
-        (a) => a.id === agent1.id,
-      );
-      expect(removedAgentData).toBeUndefined();
-    }
+    // Verify the removed agent is not in the response at all
+    const removedAgentData = afterRemovalResponse.agents.find(
+      (a) => a.id === agent1.id,
+    );
+    expect(removedAgentData).toBeUndefined();
 
     // Double-check via the pagination metadata
-    if ("pagination" in afterRemovalResponse) {
-      expect(afterRemovalResponse.pagination.total).toBe(1);
-    }
+    expect(afterRemovalResponse.pagination.total).toBe(1);
 
     // ADDITIONAL TEST: Verify the agents endpoint also shows correct rankings immediately
     // This ensures our fix works across all ranking-related APIs
-    const leaderboardResponse = await client2.getCompetitionAgents(
+    const leaderboardResponse = await rpcClient.competitions.getAgents({
       competitionId,
-      { sort: "rank", includeInactive: true },
+      paging: { sort: "rank", limit: 50, offset: 0 },
+      includeInactive: true,
+    });
+
+    const activeAgentsCheck = leaderboardResponse.agents.filter(
+      (a) => a.active,
     );
-    expect(leaderboardResponse.success).toBe(true);
+    // Should only have 1 agent in active leaderboard
+    expect(activeAgentsCheck.length).toBe(1);
 
-    if ("agents" in leaderboardResponse) {
-      const activeAgentsCheck = leaderboardResponse.agents.filter(
-        (a) => a.active,
-      );
-      // Should only have 1 agent in active leaderboard
-      expect(activeAgentsCheck.length).toBe(1);
+    const leaderboardAgent = activeAgentsCheck[0];
+    expect(leaderboardAgent?.id).toBe(agent2.id);
 
-      const leaderboardAgent = activeAgentsCheck[0];
-      expect(leaderboardAgent?.id).toBe(agent2.id);
+    // Critical assertion: leaderboard should also show rank 1 immediately
+    expect(leaderboardAgent?.rank).toBe(1);
+    expect(leaderboardAgent?.active).toBe(true);
 
-      // Critical assertion: leaderboard should also show rank 1 immediately
-      expect(leaderboardAgent?.rank).toBe(1);
-      expect(leaderboardAgent?.active).toBe(true);
+    // Should have 1 inactive agent (the removed agent1)
+    const inactiveAgentsCheck = leaderboardResponse.agents.filter(
+      (a) => !a.active,
+    );
+    expect(inactiveAgentsCheck.length).toBe(1);
 
-      // Should have 1 inactive agent (the removed agent1)
-      const inactiveAgentsCheck = leaderboardResponse.agents.filter(
-        (a) => !a.active,
-      );
-      expect(inactiveAgentsCheck.length).toBe(1);
-
-      // Verify the removed agent appears in inactive agents array
-      const inactiveAgent = inactiveAgentsCheck[0];
-      expect(inactiveAgent?.id).toBe(agent1.id);
-      expect(inactiveAgent?.active).toBe(false);
-      expect(inactiveAgent?.deactivationReason).toContain(removeReason);
-    }
+    // Verify the removed agent appears in inactive agents array
+    const inactiveAgent = inactiveAgentsCheck[0];
+    expect(inactiveAgent?.id).toBe(agent1.id);
+    expect(inactiveAgent?.active).toBe(false);
+    expect(inactiveAgent?.deactivationReason).toContain(removeReason);
   });
 });
