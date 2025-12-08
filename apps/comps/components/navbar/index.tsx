@@ -21,9 +21,7 @@ import { PrivyAuthButton } from "@/components/privy-auth-button";
 import { config } from "@/config/public";
 import { useSession } from "@/hooks";
 
-import { NonStakeBoost } from "./NonStakeBoost";
 import { RecallToken } from "./RecallToken";
-import { StakeBoost } from "./StakeBoost";
 
 export const Navbar: React.FunctionComponent = () => {
   const pathname = usePathname();
@@ -124,9 +122,6 @@ export const Navbar: React.FunctionComponent = () => {
               >
                 {config.publicFlags.tge && <RecallToken />}
               </div>
-              {config.publicFlags.tge ? <StakeBoost /> : <NonStakeBoost />}
-              {/* <GetRecall /> */}
-              {/* <StakeRecall /> */}
             </div>
           )}
           {isAuthenticated && !isWalletConnected && (
