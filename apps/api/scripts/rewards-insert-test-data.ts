@@ -1,8 +1,8 @@
+import { randomUUID } from "crypto";
 import * as dotenv from "dotenv";
 import { blue, cyan, green, magenta, red, yellow } from "kleur/colors";
 import { MerkleTree } from "merkletreejs";
 import * as path from "path";
-import { randomUUID } from "crypto";
 import { hexToBytes, keccak256 } from "viem";
 
 import { competitions, users } from "@recallnet/db/schema/core/defs";

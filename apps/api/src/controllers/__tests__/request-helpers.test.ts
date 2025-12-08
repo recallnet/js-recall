@@ -1,5 +1,5 @@
-import { Request } from "express";
 import { randomUUID } from "crypto";
+import { Request } from "express";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import {
@@ -356,7 +356,10 @@ describe("Request Helpers", () => {
     });
 
     it("should return false for agent admin requests", () => {
-      const req = { agentId: randomUUID(), isAdmin: true } as AuthenticatedRequest;
+      const req = {
+        agentId: randomUUID(),
+        isAdmin: true,
+      } as AuthenticatedRequest;
       expect(checkIsPublicOrUserRequest(req)).toBe(false);
     });
   });

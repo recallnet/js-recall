@@ -1,10 +1,10 @@
+import { randomUUID } from "crypto";
 import * as dotenv from "dotenv";
 import { eq } from "drizzle-orm";
 import { blue, cyan, green, red, yellow } from "kleur/colors";
 import { MerkleTree } from "merkletreejs";
 import * as path from "path";
 import { parse } from "ts-command-line-args";
-import { randomUUID } from "crypto";
 import { hexToBytes, keccak256 } from "viem";
 
 import { competitions, users } from "@recallnet/db/schema/core/defs";
