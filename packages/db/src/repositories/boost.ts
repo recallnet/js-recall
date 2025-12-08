@@ -45,7 +45,7 @@ type BoostChangeMeta = z.infer<typeof BoostChangeMetaSchema>;
 const DEFAULT_META: BoostChangeMeta = {};
 
 /**
- * Arguments for changing a wallet’s Boost balance.
+ * Arguments for changing a user's Boost balance.
  *
  * Idempotency:
  * - Provide a stable `idemKey` to make the operation retry-safe.
@@ -65,7 +65,7 @@ type BoostDiffArgs = {
   /** Optional metadata persisted with the journal row. */
   meta?: BoostChangeMeta;
   /**
-   * Idempotency key (unique per balance_id = (wallet, competitionId)).
+   * Idempotency key (unique per balance_id = (user, competitionId)).
    * Reusing the same key makes the call safe to retry.
    */
   idemKey?: Uint8Array;
@@ -193,17 +193,17 @@ class BoostRepository {
   }
 
   /**
-   * Credit Boost to a wallet (earn).
+   * Credit Boost to a user (earn).
    *
    * Behavior:
    * 1) Insert a row into `boost_changes` with (+amount, idemKey). If a row with the
-   *    same (wallet, idemKey) already exists, this is an idempotent no-op.
+   *    same (userId, idemKey) already exists, this is an idempotent no-op.
    * 2) If the change was inserted (first time), upsert into `boost_balances`:
    *    - create row if missing
    *    - otherwise `balance = balance + amount`, `updated_at = now()`
    *
    * Idempotency:
-   * - Reusing the same `idemKey` for the same wallet will not double-credit.
+   * - Reusing the same `idemKey` for the same user will not double-credit.
    *
    * Returns:
    * - `{ changeId, balanceAfter, idemKey }` when the credit was applied.
@@ -745,15 +745,7 @@ class BoostRepository {
       .limit(limit)
       .offset(offset);
 
-    return results.map((row) => ({
-      userId: row.userId,
-      wallet: row.wallet,
-      agentId: row.agentId,
-      agentName: row.agentName,
-      agentHandle: row.agentHandle,
-      amount: row.amount,
-      createdAt: row.createdAt,
-    }));
+    return results;
   }
 
   /**

@@ -78,7 +78,7 @@ export const boostBalances = pgTable(
  * - Provides audit trail, idempotency, and replay capability.
  *
  * Invariants / notes:
- * - (balance_id, idem_key) is unique → an operation is applied at most once per balance (user x competitionId) entry.
+ * - (balance_id, idem_key) is unique → an operation is applied at most once per balance (i.e., userId x competitionId) entry.
  * - `delta_amount` is signed: positive for earn, negative for spend.
  * - `meta` holds structured context (competition id, reason, etc).
  * - Rows are never updated, but will be cascade-deleted if the parent balance is deleted.
