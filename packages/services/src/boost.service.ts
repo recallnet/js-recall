@@ -87,11 +87,10 @@ export class BoostService {
     this.logger = logger;
   }
 
-  claimBoost(userId: string, wallet: string, competitionId: string) {
+  claimBoost(userId: string, competitionId: string) {
     return ResultAsync.fromPromise(
       this.boostRepository.increase({
         userId,
-        wallet,
         competitionId,
         amount: this.noStakeBoostAmount,
         idemKey: Buffer.from(`claim-${userId}-${competitionId}`),
@@ -284,7 +283,7 @@ export class BoostService {
             }) as const,
         ).map((competition) => ({ user, competition }));
       })
-      .andThen(({ user, competition }) => {
+      .andThen(({ competition }) => {
         if (!competition) {
           return errAsync({ type: "CompetitionNotFound" } as const);
         }
@@ -309,7 +308,6 @@ export class BoostService {
         return ResultAsync.fromPromise(
           this.boostRepository.boostAgent({
             userId,
-            wallet: user.walletAddress,
             agentId,
             competitionId,
             amount,

@@ -12,7 +12,6 @@ import {
 import { randomBytes } from "node:crypto";
 import { z } from "zod";
 
-import { BlockchainAddressAsU8A } from "../coders/index.js";
 import * as schema from "../schema/boost/defs.js";
 import {
   InsertBoostBonus,
@@ -55,8 +54,6 @@ const DEFAULT_META: BoostChangeMeta = {};
 type BoostDiffArgs = {
   /** User ID */
   userId: string;
-  /** EVM address; will be lowercased before persisting. */
-  wallet: string;
   /** Competition ID */
   competitionId: string;
   /**
@@ -92,8 +89,6 @@ type BoostDiffResult =
 
 type BoostAgentArgs = {
   userId: string;
-  /** EVM address; will be lowercased before persisting. */
-  wallet: string;
   agentId: string;
   /** Competition ID */
   competitionId: string;
@@ -121,7 +116,7 @@ type BoostAgentResult =
 
 type ListCompetitionBoost = {
   userId: string;
-  wallet: Uint8Array;
+  wallet: string;
   agentId: string;
   agentName: string;
   agentHandle: string;
@@ -134,14 +129,13 @@ type ListCompetitionBoost = {
  *
  * Off-chain accounting for the "Boost"s.
  * Tables (see schema/boost/defs.ts):
- *  - boost_balances: current mutable balance per wallet (CHECK balance >= 0)
+ *  - boost_balances: current mutable balance per user/competition (CHECK balance >= 0)
  *  - boost_changes: immutable append-only journal of deltas with an idempotency key
  *
  * Core ideas:
- *  - **Idempotency** effectively via (wallet, competitionId, idem_key) through balanceId=(wallet, competitionId). Repeating the same logical operation
- *    with the same `idemKey` will be applied at most once.
+ *  - **Idempotency** effectively via (balanceId, idem_key). Repeating the same logical operation
+ *    with the same `idemKey` against the same balance will be applied at most once.
  *  - **Atomicity**: change log and balance mutation happen in a single DB transaction.
- *  - **Lowercasing**: All wallets are canonicalized to lowercase before writes.
  *
  * Common usage:
  *  - Call `increase({ wallet, amount, idemKey? })` to credit Boost.
@@ -150,13 +144,13 @@ type ListCompetitionBoost = {
  *
  * Idempotency key (`idemKey`):
  * - **Why it exists: ** Distributed systems deliver duplicates (retries, redeliveries,
- *   crash-replays). `idemKey` ensures the *same logical operation* on a given wallet
+ *   crash-replays). `idemKey` ensures the *same logical operation* on a given balance
  *   is applied **at most once**. We enforce this with a unique constraint on
- *   `(wallet, idem_key)` in `boost_changes`.
+ *   `(balance_id, idem_key)` in `boost_changes`.
  *
- * - **Scope: ** The key is **per-wallet**. The same `idemKey` value can be reused
- *   for a *different* wallet without a conflict. If an operation spans multiple wallets
- *   (e.g., a transfer), use **distinct** keys per wallet-side.
+ * - **Scope: ** The key is **per balance** (user + competition). The same `idemKey` value can be reused
+ *   for a *different* balance without a conflict. If an operation spans multiple wallets
+ *   (e.g., a transfer), use **distinct** keys per balance-side.
  *
  * - **How to choose: **
  *   1) **Deterministic (recommended for integrators / jobs):**
@@ -229,7 +223,6 @@ class BoostRepository {
       throw new Error("amount must be non-negative");
     }
     const idemKey = args.idemKey ?? randomBytes(32);
-    const wallet = BlockchainAddressAsU8A.encode(args.wallet);
     const meta = args.meta || DEFAULT_META;
     const competitionId = args.competitionId;
 
@@ -279,11 +272,10 @@ class BoostRepository {
         }
         balanceRow = selected;
       }
-      // 1) Try to record the change (idempotent via (wallet, idem_key))
+      // 1) Try to record the change (idempotent via (balance_id, idem_key))
       const [insertedChange] = await tx
         .insert(schema.boostChanges)
         .values({
-          wallet,
           balanceId: balanceRow.id,
           deltaAmount: amount,
           meta,
@@ -367,7 +359,6 @@ class BoostRepository {
     }
     const userId = args.userId;
     const idemKey = args.idemKey ?? randomBytes(32);
-    const wallet = BlockchainAddressAsU8A.encode(args.wallet);
     const meta = args.meta || DEFAULT_META;
     const competitionId = args.competitionId;
 
@@ -392,13 +383,13 @@ class BoostRepository {
       if (!balanceRow) {
         // A safety net for unexpected database behavior
         throw new Error(
-          `Can not decrease balance of non-existent wallet ${args.wallet} and competition ${competitionId}`,
+          `Can not decrease balance of non-existent user ${userId} and competition ${competitionId}`,
         );
       }
       const currentBalance = balanceRow.balance;
       if (currentBalance < amount) {
         throw new Error(
-          `Can not decrease balance below zero for wallet ${args.wallet} and competition ${competitionId}`,
+          `Can not decrease balance below zero for user ${userId} and competition ${competitionId}`,
         );
       }
       // 2) Lock the (wallet, idemKey) change row if it exists
@@ -438,15 +429,14 @@ class BoostRepository {
 
       if (!updatedRow) {
         throw new Error(
-          `Can not decrease balance for wallet ${args.wallet} and competition ${competitionId}`,
+          `Can not decrease balance for user ${userId} and competition ${competitionId}`,
         );
       }
 
-      // 4) Record the change (unique (wallet, idem_key) prevents dupes)
+      // 4) Record the change (unique (balance_id, idem_key) prevents dupes)
       const [change] = await tx
         .insert(schema.boostChanges)
         .values({
-          wallet,
           balanceId: balanceRow.id,
           deltaAmount: -amount,
           meta,
@@ -459,7 +449,7 @@ class BoostRepository {
 
       if (!change) {
         throw new Error(
-          `Can not add change for wallet ${args.wallet}, competition ${competitionId} and delta -${amount}`,
+          `Can not add change for user ${userId}, competition ${competitionId} and delta -${amount}`,
         );
       }
 
@@ -720,7 +710,7 @@ class BoostRepository {
     const results = await executor
       .select({
         userId: schema.boostBalances.userId,
-        wallet: schema.boostChanges.wallet,
+        wallet: coreSchema.users.walletAddress,
         agentId: schema.agentBoostTotals.agentId,
         agentName: agents.name,
         agentHandle: agents.handle,
@@ -738,6 +728,10 @@ class BoostRepository {
         eq(schema.boostChanges.balanceId, schema.boostBalances.id),
       )
       .innerJoin(
+        coreSchema.users,
+        eq(schema.boostBalances.userId, coreSchema.users.id),
+      )
+      .innerJoin(
         schema.agentBoosts,
         eq(schema.boostChanges.id, schema.agentBoosts.changeId),
       )
@@ -751,7 +745,15 @@ class BoostRepository {
       .limit(limit)
       .offset(offset);
 
-    return results;
+    return results.map((row) => ({
+      userId: row.userId,
+      wallet: row.wallet,
+      agentId: row.agentId,
+      agentName: row.agentName,
+      agentHandle: row.agentHandle,
+      amount: row.amount,
+      createdAt: row.createdAt,
+    }));
   }
 
   /**
@@ -849,14 +851,14 @@ class BoostRepository {
    * @returns Promise resolving to boost operation result
    */
   async boostAgent(
-    { agentId, amount, competitionId, userId, wallet, idemKey }: BoostAgentArgs,
+    { agentId, amount, competitionId, userId, idemKey }: BoostAgentArgs,
     tx?: Transaction,
   ): Promise<BoostAgentResult> {
     const executor = tx || this.#db;
     return await executor.transaction(async (tx) => {
       // First, try to decrease the user's boost balance
       const diffRes = await this.decrease(
-        { userId, amount, competitionId, wallet, idemKey },
+        { userId, amount, competitionId, idemKey },
         tx,
       );
 
@@ -875,7 +877,7 @@ class BoostRepository {
 
         if (!agentBoostTotal) {
           throw new Error(
-            `Boost deduction already executed from wallet ${wallet} for competition ${competitionId}, but no agent boost total record exists for agent ${agentId}`,
+            `Boost deduction already executed from user ${userId} for competition ${competitionId}, but no agent boost total record exists for agent ${agentId}`,
           );
         }
         return {
