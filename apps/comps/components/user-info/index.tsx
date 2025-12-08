@@ -16,7 +16,8 @@ import { Input } from "@recallnet/ui2/components/input";
 import { toast } from "@recallnet/ui2/components/toast";
 
 import { ConflictError } from "@/lib/api-client";
-import { ProfileResponse, UpdateProfileRequest } from "@/types/profile";
+import type { RouterOutputs } from "@/rpc/router";
+import { UpdateProfileRequest } from "@/types/profile";
 import { asOptionalStringWithoutEmpty } from "@/utils";
 
 import { EditButton } from "../edit-button";
@@ -61,7 +62,7 @@ const FieldValue = ({ children }: { children: React.ReactNode }) => (
 );
 
 interface UserInfoSectionProps {
-  user: ProfileResponse["user"];
+  user: RouterOutputs["user"]["getProfile"];
   onSave: (data: Partial<UpdateProfileRequest>) => Promise<void>;
   onLinkWallet: () => Promise<void>;
 }
@@ -96,7 +97,7 @@ export default function UserInfoSection({
       website: user?.metadata?.website || "",
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.name, user?.metadata?.website]);
+  }, [user?.name, user?.metadata]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Escape") {
@@ -137,19 +138,19 @@ export default function UserInfoSection({
   };
 
   return (
-    <div className="flex w-full border">
+    <div className="flex w-full rounded-xl border">
       <ProfilePicture
-        image={user?.imageUrl}
+        image={user?.imageUrl ?? undefined}
         onSave={async (newUrl) => {
           await onSave({ imageUrl: newUrl });
         }}
-        className="w-90 my-auto hidden sm:block"
+        className="w-90 my-auto hidden sm:block sm:rounded-l-xl"
         fallbackData={{
           walletAddress: user?.walletAddress,
-          name: user?.name,
+          name: user?.name ?? undefined,
         }}
       />
-      <div className="flex w-full flex-col items-start justify-center gap-2 border-l p-4">
+      <div className="flex w-full flex-col items-start justify-center gap-2 p-4 sm:border-l">
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(handleSave)}

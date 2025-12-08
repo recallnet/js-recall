@@ -1,21 +1,23 @@
 import { MerkleTree } from "merkletreejs";
 import { Logger } from "pino";
-import { Hex, bytesToHex, encodePacked, hexToBytes, keccak256 } from "viem";
+import { Hex, encodePacked, hexToBytes, keccak256 } from "viem";
 
+import { AgentRepository } from "@recallnet/db/repositories/agent";
 import { BoostRepository } from "@recallnet/db/repositories/boost";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { RewardsRepository } from "@recallnet/db/repositories/rewards";
-import { rewardsRoots, rewardsTree } from "@recallnet/db/schema/voting/defs";
+import { rewardsRoots, rewardsTree } from "@recallnet/db/schema/rewards/defs";
 import { Database, Transaction } from "@recallnet/db/types";
 import {
   BoostAllocation,
   BoostAllocationWindow,
   Leaderboard,
+  PrizePoolDecayRate,
   Reward,
   calculateRewardsForCompetitors,
   calculateRewardsForUsers,
 } from "@recallnet/rewards";
-import RewardsAllocator from "@recallnet/staking-contracts/rewards-allocator";
+import { RewardsAllocator } from "@recallnet/staking-contracts";
 
 /**
  * Service for handling reward-related operations
@@ -24,6 +26,7 @@ export class RewardsService {
   private rewardsRepo: RewardsRepository;
   private competitionRepository: CompetitionRepository;
   private boostRepository: BoostRepository;
+  private agentRepo: AgentRepository;
   private rewardsAllocator: RewardsAllocator;
   private db: Database;
   private logger: Logger;
@@ -32,6 +35,7 @@ export class RewardsService {
     rewardsRepo: RewardsRepository,
     competitionRepository: CompetitionRepository,
     boostRepository: BoostRepository,
+    agentRepo: AgentRepository,
     rewardsAllocator: RewardsAllocator,
     db: Database,
     logger: Logger,
@@ -39,6 +43,7 @@ export class RewardsService {
     this.rewardsRepo = rewardsRepo;
     this.competitionRepository = competitionRepository;
     this.boostRepository = boostRepository;
+    this.agentRepo = agentRepo;
     this.rewardsAllocator = rewardsAllocator;
     this.db = db;
     this.logger = logger;
@@ -58,8 +63,29 @@ export class RewardsService {
    */
   public async calculateAndAllocate(
     competitionId: string,
-    startTimestamp: number,
+    startTimestamp?: number | undefined,
   ): Promise<void> {
+    if (!startTimestamp) {
+      const competition =
+        await this.competitionRepository.findById(competitionId);
+      if (!competition) {
+        throw new Error(
+          `Competition not found for competition ${competitionId}`,
+        );
+      }
+
+      if (!competition.endDate) {
+        // set startTimestamp to now if competition has no end date
+        startTimestamp = Math.floor(Date.now() / 1000);
+      } else {
+        // add 1 hour to the end date if competition has an end date
+        startTimestamp = Math.floor(
+          new Date(competition.endDate.getTime() + 60 * 60 * 1000).getTime() /
+            1000,
+        );
+      }
+    }
+
     const prizePool =
       await this.competitionRepository.getCompetitionPrizePools(competitionId);
     if (!prizePool) {
@@ -90,15 +116,15 @@ export class RewardsService {
     prizePoolCompetitors: bigint,
     tx?: Transaction,
   ): Promise<void> {
-    try {
+    const executeWithLock = async (transaction: Transaction) => {
       const competition =
         await this.competitionRepository.findById(competitionId);
       if (!competition) {
         throw new Error("Competition not found");
       }
 
-      if (!competition.votingStartDate || !competition.votingEndDate) {
-        throw new Error("Voting start or end date not found");
+      if (!competition.boostStartDate || !competition.boostEndDate) {
+        throw new Error("Boost start or end date not found");
       }
 
       if (competition.status !== "ended") {
@@ -106,8 +132,8 @@ export class RewardsService {
       }
 
       const boostAllocationWindow = {
-        start: competition.votingStartDate,
-        end: competition.votingEndDate,
+        start: competition.boostStartDate,
+        end: competition.boostEndDate,
       };
 
       const leaderboardWithWallets =
@@ -131,12 +157,32 @@ export class RewardsService {
         (entry) => {
           return {
             user_id: entry.userId,
-            user_wallet: bytesToHex(entry.wallet) as string,
+            user_wallet: entry.wallet,
             competitor: entry.agentId,
             boost: -entry.deltaAmount, // Convert negative spending to positive boost
             timestamp: entry.createdAt,
           };
         },
+      );
+
+      // Fetch agent details with lock to prevent concurrent eligibility updates
+      const agentIds = leaderBoard.map((entry) => entry.competitor);
+      const agents = await this.agentRepo.findByIdsWithLock(
+        agentIds,
+        transaction,
+      );
+      const globallyIneligibleAgents = agents
+        .filter((agent) => agent.isRewardsIneligible)
+        .map((agent) => agent.id);
+
+      // Combine competition-specific and global exclusions (deduplicated)
+      const competitionExclusions = competition.rewardsIneligible ?? [];
+      const allExcludedAgents = Array.from(
+        new Set([...competitionExclusions, ...globallyIneligibleAgents]),
+      );
+
+      this.logger.debug(
+        `[RewardsService] Excluding ${allExcludedAgents.length} unique agents from rewards (${competitionExclusions.length} competition-specific, ${globallyIneligibleAgents.length} globally ineligible)`,
       );
 
       const rewards = this.calculate(
@@ -145,29 +191,47 @@ export class RewardsService {
         boostAllocations,
         leaderBoard,
         boostAllocationWindow,
+        allExcludedAgents.length > 0 ? allExcludedAgents : undefined,
+        competition.boostTimeDecayRate ?? undefined,
       );
 
-      const rewardsToInsert = rewards.map((reward) => ({
-        userId: reward.owner,
-        agentId: reward.competitor ?? null,
-        competitionId: competitionId,
-        address: reward.address,
-        amount: reward.amount,
-        leafHash: hexToBytes(
-          createLeafNode(reward.address as Hex, reward.amount),
-        ),
-        id: crypto.randomUUID(),
-      }));
+      const rewardsToInsert = rewards.map((reward) => {
+        const normalizedAddress = reward.address.toLowerCase();
+        return {
+          userId: reward.owner,
+          agentId: reward.competitor ?? null,
+          competitionId: competitionId,
+          address: normalizedAddress,
+          walletAddress: normalizedAddress,
+          amount: reward.amount,
+          leafHash: hexToBytes(
+            createLeafNode(reward.address as Hex, reward.amount),
+          ),
+          id: crypto.randomUUID(),
+        };
+      });
       await runWithConcurrencyLimit(
         rewardsToInsert,
         1000,
         10,
         async (batch) => {
-          await this.rewardsRepo.insertRewards(batch, tx);
+          await this.rewardsRepo.insertRewards(batch, transaction);
         },
       );
+    };
+
+    try {
+      // If tx provided, use it; otherwise create one
+      if (tx) {
+        await executeWithLock(tx);
+      } else {
+        await this.db.transaction(executeWithLock);
+      }
     } catch (error) {
-      this.logger.error("[RewardsService] Error in calculateRewards:", error);
+      this.logger.error(
+        { error },
+        "[RewardsService] Error in calculateRewards",
+      );
       throw error;
     }
   }
@@ -398,7 +462,169 @@ export class RewardsService {
   }
 
   /**
+   * Get rewards report data for a competition
+   * @param competitionId The competition ID (UUID) to generate report for
+   * @returns Report data including competition info, rewards stats, and merkle root
+   */
+  public async getRewardsReportData(competitionId: string): Promise<{
+    competition: {
+      id: string;
+      name: string;
+    };
+    merkleRoot: string;
+    totalRecipients: number;
+    totalBoosters: number;
+    totalAgents: number;
+    totalRewards: bigint;
+    agentRewards: Array<{
+      address: string;
+      amount: bigint;
+    }>;
+    boosterRewards: Array<{
+      address: string;
+      amount: bigint;
+    }>;
+    boosterStats: {
+      average: bigint;
+      median: bigint;
+      largest: bigint;
+      smallest: bigint;
+      largestAddress: string;
+      smallestAddress: string;
+    };
+    top5Agents: Array<{
+      address: string;
+      amount: bigint;
+    }>;
+    top5Boosters: Array<{
+      address: string;
+      amount: bigint;
+    }>;
+  }> {
+    const competition =
+      await this.competitionRepository.findById(competitionId);
+    if (!competition) {
+      throw new Error(`Competition not found: ${competitionId}`);
+    }
+
+    const rewardsRoot =
+      await this.rewardsRepo.getRewardsRootByCompetition(competitionId);
+    if (!rewardsRoot) {
+      throw new Error(
+        `Rewards root not found for competition: ${competitionId}`,
+      );
+    }
+
+    const rewards =
+      await this.rewardsRepo.getRewardsByCompetition(competitionId);
+
+    // Separate agent rewards (have agentId) from booster rewards (no agentId)
+    const agentRewards = rewards
+      .filter((r) => r.agentId !== null)
+      .map((r) => ({
+        address: r.address,
+        amount: r.amount,
+      }));
+
+    const boosterRewards = rewards
+      .filter((r) => r.agentId === null)
+      .map((r) => ({
+        address: r.address,
+        amount: r.amount,
+      }));
+
+    // Calculate booster statistics
+    const boosterAmounts = boosterRewards
+      .map((r) => r.amount)
+      .sort((a, b) => {
+        if (a < b) return -1;
+        if (a > b) return 1;
+        return 0;
+      });
+
+    const calculateMedian = (sorted: bigint[]): bigint => {
+      if (sorted.length === 0) return 0n;
+      const mid = Math.floor(sorted.length / 2);
+      if (sorted.length % 2 === 0) {
+        return (sorted[mid - 1]! + sorted[mid]!) / 2n;
+      }
+      return sorted[mid]!;
+    };
+
+    const totalBoosterAmount = boosterAmounts.reduce(
+      (acc, amount) => acc + amount,
+      0n,
+    );
+    const average =
+      boosterAmounts.length > 0
+        ? totalBoosterAmount / BigInt(boosterAmounts.length)
+        : 0n;
+    const median = calculateMedian(boosterAmounts);
+    const largest =
+      boosterAmounts.length > 0
+        ? boosterAmounts[boosterAmounts.length - 1]!
+        : 0n;
+    const smallest = boosterAmounts.length > 0 ? boosterAmounts[0]! : 0n;
+
+    const largestReward = boosterRewards.find((r) => r.amount === largest);
+    const smallestReward = boosterRewards.find((r) => r.amount === smallest);
+
+    const boosterStats = {
+      average,
+      median,
+      largest,
+      smallest,
+      largestAddress: largestReward?.address || "",
+      smallestAddress: smallestReward?.address || "",
+    };
+
+    // Get top 5 agents and boosters
+    const top5Agents = [...agentRewards]
+      .sort((a, b) => {
+        if (a.amount < b.amount) return 1;
+        if (a.amount > b.amount) return -1;
+        return 0;
+      })
+      .slice(0, 5);
+
+    const top5Boosters = [...boosterRewards]
+      .sort((a, b) => {
+        if (a.amount < b.amount) return 1;
+        if (a.amount > b.amount) return -1;
+        return 0;
+      })
+      .slice(0, 5);
+
+    const totalRewards = rewards.reduce((acc, r) => acc + r.amount, 0n);
+
+    const merkleRoot = `0x${Buffer.from(rewardsRoot.rootHash).toString("hex")}`;
+
+    return {
+      competition: {
+        id: competition.id,
+        name: competition.name || `Competition #${competition.id}`,
+      },
+      merkleRoot,
+      totalRecipients: rewards.length,
+      totalBoosters: boosterRewards.length,
+      totalAgents: agentRewards.length,
+      totalRewards,
+      agentRewards,
+      boosterRewards,
+      boosterStats,
+      top5Agents,
+      top5Boosters,
+    };
+  }
+
+  /**
    * Internal method to calculate rewards
+   * @param prizePoolUsers Prize pool for users
+   * @param prizePoolCompetitors Prize pool for competitors
+   * @param boostAllocations Boost allocation data
+   * @param leaderBoard Competition leaderboard
+   * @param window Boost allocation window
+   * @param excludedAgentIds Optional array of agent IDs ineligible for rewards
    * @returns Array of calculated rewards
    * @private
    */
@@ -408,50 +634,32 @@ export class RewardsService {
     boostAllocations: BoostAllocation[],
     leaderBoard: Leaderboard,
     window: BoostAllocationWindow,
+    excludedAgentIds?: string[],
+    boostTimeDecayRate?: number,
   ): Reward[] {
     const userRewards = calculateRewardsForUsers(
       prizePoolUsers,
       boostAllocations,
       leaderBoard,
       window,
+      PrizePoolDecayRate,
+      boostTimeDecayRate,
     );
     const competitorRewards = calculateRewardsForCompetitors(
       prizePoolCompetitors,
       leaderBoard,
     );
 
-    // in case an address is both a voter and a competitor, we need to sum the amounts
-    // while keeping the references to owner and competitor
-    const rewards = [...userRewards, ...competitorRewards];
-    const rewardsByAddress = rewards.reduce(
-      (acc, reward) => {
-        if (!acc[reward.address]) {
-          acc[reward.address] = [
-            reward.amount,
-            reward.owner,
-            reward.competitor,
-          ];
-          return acc;
-        }
-
-        acc[reward.address] = [
-          acc[reward.address]![0] + reward.amount,
-          reward.owner,
-          acc[reward.address]![2] ?? reward.competitor,
-        ];
-        return acc;
-      },
-      {} as Record<string, [bigint, string, string?]>,
+    // Filter out agents ineligible for rewards (per-competition configuration)
+    const excludedCompetitors = excludedAgentIds
+      ? new Set(excludedAgentIds)
+      : new Set();
+    const filteredCompetitorRewards = competitorRewards.filter(
+      (reward) =>
+        reward.competitor && !excludedCompetitors.has(reward.competitor),
     );
 
-    return Object.entries(rewardsByAddress).map(
-      ([address, [amount, owner, competitor]]) => ({
-        address,
-        amount,
-        owner,
-        competitor,
-      }),
-    );
+    return [...userRewards, ...filteredCompetitorRewards];
   }
 }
 

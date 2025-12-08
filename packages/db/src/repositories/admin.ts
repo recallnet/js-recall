@@ -42,7 +42,7 @@ export class AdminRepository {
 
       return result;
     } catch (error) {
-      this.#logger.error("Error in create:", error);
+      this.#logger.error({ error }, "Error in create");
       throw error;
     }
   }
@@ -54,7 +54,7 @@ export class AdminRepository {
     try {
       return await this.#db.select().from(admins);
     } catch (error) {
-      this.#logger.error("Error in findAll:", error);
+      this.#logger.error({ error }, "Error in findAll");
       throw error;
     }
   }
@@ -71,7 +71,7 @@ export class AdminRepository {
         .where(eq(admins.id, id));
       return result;
     } catch (error) {
-      this.#logger.error("Error in findById:", error);
+      this.#logger.error({ error }, "Error in findById");
       throw error;
     }
   }
@@ -89,7 +89,7 @@ export class AdminRepository {
 
       return result;
     } catch (error) {
-      this.#logger.error("Error in findByUsername:", error);
+      this.#logger.error({ error }, "Error in findByUsername");
       throw error;
     }
   }
@@ -107,7 +107,7 @@ export class AdminRepository {
 
       return result;
     } catch (error) {
-      this.#logger.error("Error in findByEmail:", error);
+      this.#logger.error({ error }, "Error in findByEmail");
       throw error;
     }
   }
@@ -134,7 +134,7 @@ export class AdminRepository {
 
       return result;
     } catch (error) {
-      this.#logger.error("Error in update:", error);
+      this.#logger.error({ error }, "Error in update");
       throw error;
     }
   }
@@ -153,7 +153,7 @@ export class AdminRepository {
 
       return !!result;
     } catch (error) {
-      this.#logger.error("Error in delete:", error);
+      this.#logger.error({ error }, "Error in delete");
       throw error;
     }
   }
@@ -181,7 +181,7 @@ export class AdminRepository {
 
       return result;
     } catch (error) {
-      this.#logger.error("Error in setApiKey:", error);
+      this.#logger.error({ error }, "Error in setApiKey");
       throw error;
     }
   }
@@ -208,7 +208,7 @@ export class AdminRepository {
 
       return result;
     } catch (error) {
-      this.#logger.error("Error in updateLastLogin:", error);
+      this.#logger.error({ error }, "Error in updateLastLogin");
       throw error;
     }
   }
@@ -236,7 +236,7 @@ export class AdminRepository {
 
       return result;
     } catch (error) {
-      this.#logger.error("Error in updatePassword:", error);
+      this.#logger.error({ error }, "Error in updatePassword");
       throw error;
     }
   }
@@ -278,7 +278,7 @@ export class AdminRepository {
         .from(admins)
         .where(and(...conditions));
     } catch (error) {
-      this.#logger.error("Error in searchAdmins:", error);
+      this.#logger.error({ error }, "Error in searchAdmins");
       throw error;
     }
   }
@@ -293,7 +293,7 @@ export class AdminRepository {
         .from(admins);
       return result?.count ?? 0;
     } catch (error) {
-      this.#logger.error("Error in count:", error);
+      this.#logger.error({ error }, "Error in count");
       throw error;
     }
   }

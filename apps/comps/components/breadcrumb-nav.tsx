@@ -24,7 +24,9 @@ interface BreadcrumbNavProps {
 
 export function BreadcrumbNav({ items, className }: BreadcrumbNavProps) {
   return (
-    <div className={cn("flex items-center gap-4 border-b pb-5", className)}>
+    <div
+      className={cn("mb-6 flex items-center gap-2 border-b pb-4", className)}
+    >
       <BackButton />
       <Breadcrumb>
         <BreadcrumbList className="font-mono">

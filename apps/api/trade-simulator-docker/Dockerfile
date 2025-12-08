@@ -12,6 +12,7 @@ COPY packages/staking-contracts/package.json packages/staking-contracts/
 COPY packages/services/package.json packages/services/
 COPY packages/conversions/package.json packages/conversions/
 COPY packages/rewards/package.json packages/rewards/
+COPY packages/test-utils/package.json packages/test-utils/
 COPY apps/api/package.json apps/api/
 
 RUN pnpm install --frozen-lockfile
@@ -24,6 +25,7 @@ RUN pnpm --filter=@recallnet/db build && \
     pnpm --filter=@recallnet/rewards build && \
     pnpm --filter=@recallnet/conversions build && \
     pnpm --filter=@recallnet/services build && \
+    pnpm --filter=@recallnet/test-utils build && \
     pnpm --filter=api build
 
 FROM node:22-alpine

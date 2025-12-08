@@ -1,8 +1,15 @@
+import { Hex } from "viem";
+
+import { ConvictionClaimsRepository } from "@recallnet/db/repositories/conviction-claims";
+import { EventsRepository } from "@recallnet/db/repositories/indexing-events";
 import {
   AgentRankService,
   AgentService,
+  AirdropService,
+  ArenaService,
   BalanceService,
   BoostAwardService,
+  BoostBonusService,
   BoostService,
   CalmarRatioService,
   CompetitionRewardService,
@@ -12,30 +19,53 @@ import {
   PerpsDataProcessor,
   PortfolioSnapshotterService,
   PriceTrackerService,
+  RewardsService,
+  RiskMetricsService,
+  SortinoRatioService,
+  SportsIngesterService,
+  SportsService,
+  SpotDataProcessor,
   TradeSimulatorService,
   TradingConstraintsService,
   UserService,
-  VoteService,
 } from "@recallnet/services";
+import {
+  EventProcessor,
+  IndexingService,
+  TransactionProcessor,
+} from "@recallnet/services/indexing";
 import { WalletWatchlist } from "@recallnet/services/lib";
 import { MultiChainProvider } from "@recallnet/services/providers";
+import {
+  ExternallyOwnedAccountAllocator,
+  Network,
+  NoopRewardsAllocator,
+  RewardsAllocator,
+  SafeTransactionProposer,
+} from "@recallnet/staking-contracts";
 
 import { config } from "@/config/private";
 import {
   agentNonceRepository,
   agentRepository,
   agentScoreRepository,
+  airdropRepository,
+  arenaRepository,
   balanceRepository,
   boostRepository,
   competitionRepository,
   competitionRewardsRepository,
+  convictionClaimsRepository,
   leaderboardRepository,
+  paperTradingConfigRepository,
+  paperTradingInitialBalancesRepository,
   perpsRepository,
+  rewardsRepository,
+  spotLiveRepository,
   stakesRepository,
   tradeRepository,
   tradingConstraintsRepository,
   userRepository,
-  voteRepository,
 } from "@/lib/repositories";
 
 import { db } from "./db";
@@ -51,9 +81,15 @@ export const walletWatchList = new WalletWatchlist(
   createLogger("WalletWatchlist"),
 );
 
+export const airdropService = new AirdropService(
+  airdropRepository,
+  createLogger("AirdropService"),
+  convictionClaimsRepository,
+);
+
 export const balanceService = new BalanceService(
   balanceRepository,
-  config,
+  paperTradingInitialBalancesRepository,
   createLogger("BalanceService"),
 );
 
@@ -86,7 +122,6 @@ export const userService = new UserService(
   emailService,
   agentRepository,
   userRepository,
-  voteRepository,
   boostRepository,
   walletWatchList,
   db,
@@ -134,13 +169,6 @@ export const agentRankService = new AgentRankService(
   createLogger("AgentRankService"),
 );
 
-export const voteService = new VoteService(
-  agentRepository,
-  competitionRepository,
-  voteRepository,
-  createLogger("VoteService"),
-);
-
 export const tradingConstraintsService = new TradingConstraintsService(
   tradingConstraintsRepository,
   config,
@@ -152,40 +180,205 @@ export const competitionRewardsService = new CompetitionRewardService(
 
 export const calmarRatioService = new CalmarRatioService(
   competitionRepository,
-  perpsRepository,
   createLogger("CalmarRatioService"),
 );
 
-const perpsDataProcessor = new PerpsDataProcessor(
+export const sortinoRatioService = new SortinoRatioService(
+  competitionRepository,
+  createLogger("SortinoRatioService"),
+);
+
+const riskMetricsService = new RiskMetricsService(
   calmarRatioService,
+  sortinoRatioService,
+  perpsRepository,
+  competitionRepository,
+  db,
+  createLogger("RiskMetricsService"),
+);
+
+export const perpsDataProcessor = new PerpsDataProcessor(
+  riskMetricsService,
   agentRepository,
   competitionRepository,
   perpsRepository,
   createLogger("PerpsDataProcessor"),
 );
 
+export const spotDataProcessor = new SpotDataProcessor(
+  agentRepository,
+  competitionRepository,
+  spotLiveRepository,
+  tradeRepository,
+  balanceRepository,
+  portfolioSnapshotterService,
+  priceTrackerService,
+  createLogger("SpotDataProcessor"),
+);
+
+export const arenaService = new ArenaService(
+  arenaRepository,
+  competitionRepository,
+  createLogger("ArenaService"),
+);
+
 export const leaderboardService = new LeaderboardService(
   leaderboardRepository,
+  arenaRepository,
   createLogger("LeaderboardService"),
+);
+
+export const rewardsService = new RewardsService(
+  rewardsRepository,
+  competitionRepository,
+  boostRepository,
+  agentRepository,
+  getRewardsAllocator(),
+  db,
+  createLogger("RewardsService"),
+);
+
+export const sportsService = new SportsService(
+  db,
+  competitionRepository,
+  createLogger("SportsService"),
+);
+
+export const sportsIngesterService = new SportsIngesterService(
+  sportsService,
+  createLogger("SportsIngesterService"),
+  { sportsDataApi: config.sportsDataApi },
+);
+
+export const boostBonusService = new BoostBonusService(
+  db,
+  boostRepository,
+  competitionRepository,
+  userRepository,
+  createLogger("BoostBonusService"),
 );
 
 export const competitionService = new CompetitionService(
   balanceService,
   tradeSimulatorService,
   portfolioSnapshotterService,
+  priceTrackerService,
   agentService,
   agentRankService,
-  voteService,
   tradingConstraintsService,
   competitionRewardsService,
+  rewardsService,
   perpsDataProcessor,
+  spotDataProcessor,
+  boostBonusService,
   agentRepository,
   agentScoreRepository,
+  arenaRepository,
+  sportsService,
   perpsRepository,
+  spotLiveRepository,
   competitionRepository,
+  paperTradingConfigRepository,
+  paperTradingInitialBalancesRepository,
   stakesRepository,
+  tradeRepository,
   userRepository,
   db,
   config,
   createLogger("CompetitionService"),
 );
+
+function getRewardsAllocator(): RewardsAllocator {
+  if (config.server.nodeEnv === "test") {
+    return new NoopRewardsAllocator();
+  }
+
+  const logger = createLogger("RewardAllocatorProvider");
+
+  if (config.rewards.eoaEnabled) {
+    if (
+      !config.rewards.eoaPrivateKey ||
+      !config.rewards.contractAddress ||
+      !config.rewards.rpcProvider
+    ) {
+      logger.warn("Rewards EOA config is not set");
+      return new NoopRewardsAllocator();
+    }
+
+    return new ExternallyOwnedAccountAllocator(
+      config.rewards.eoaPrivateKey as Hex,
+      config.rewards.rpcProvider,
+      config.rewards.contractAddress as Hex,
+      config.rewards.tokenContractAddress as Hex,
+      config.rewards.network as Network,
+    );
+  }
+
+  if (config.rewards.safeProposerEnabled) {
+    if (
+      !config.rewards.safeAddress ||
+      !config.rewards.safeProposerPrivateKey ||
+      !config.rewards.safeApiKey ||
+      !config.rewards.contractAddress ||
+      !config.rewards.rpcProvider
+    ) {
+      logger.warn("Rewards safe proposer config is not set");
+      return new NoopRewardsAllocator();
+    }
+
+    return new SafeTransactionProposer({
+      safeAddress: config.rewards.safeAddress as Hex,
+      proposerPrivateKey: config.rewards.safeProposerPrivateKey as Hex,
+      apiKey: config.rewards.safeApiKey,
+      contractAddress: config.rewards.contractAddress as Hex,
+      rpcUrl: config.rewards.rpcProvider,
+      network: config.rewards.network as Network,
+      tokenAddress: config.rewards.tokenContractAddress as Hex,
+    });
+  }
+
+  return new NoopRewardsAllocator();
+}
+
+let eventsIndexingService: IndexingService | null = null;
+let transactionsIndexingService: IndexingService | null = null;
+
+export function getEventsIndexingService(): IndexingService {
+  if (!eventsIndexingService) {
+    const stakingConfig = config.getStakingIndexConfig();
+    const logger = createLogger("EventsIndexingService");
+    const eventProcessor = new EventProcessor(
+      db,
+      rewardsRepository,
+      new EventsRepository(db),
+      stakesRepository,
+      boostAwardService,
+      competitionService,
+      logger,
+    );
+    eventsIndexingService = IndexingService.createEventsIndexingService(
+      logger,
+      eventProcessor,
+      stakingConfig,
+    );
+  }
+  return eventsIndexingService;
+}
+
+export function getTransactionsIndexingService(): IndexingService {
+  if (!transactionsIndexingService) {
+    const stakingConfig = config.getStakingIndexConfig();
+    const logger = createLogger("TransactionsIndexingService");
+    const transactionProcessor = new TransactionProcessor(
+      new ConvictionClaimsRepository(db, logger),
+      logger,
+    );
+    transactionsIndexingService =
+      IndexingService.createTransactionsIndexingService(
+        logger,
+        transactionProcessor,
+        stakingConfig,
+      );
+  }
+  return transactionsIndexingService;
+}

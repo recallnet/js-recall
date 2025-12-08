@@ -12,8 +12,8 @@ import type {
   SelectPerpsAccountSummary,
 } from "@recallnet/db/schema/trading/types";
 
-import { CalmarRatioService } from "../calmar-ratio.service.js";
 import { PerpsDataProcessor } from "../perps-data-processor.service.js";
+import { RiskMetricsService } from "../risk-metrics.service.js";
 import type { AgentPerpsSyncData } from "../types/perps.js";
 import type {
   IPerpsDataProvider,
@@ -25,7 +25,7 @@ import type {
 vi.mock("@recallnet/db/repositories/agent");
 vi.mock("@recallnet/db/repositories/competition");
 vi.mock("@recallnet/db/repositories/perps");
-vi.mock("../calmar-ratio.service.js");
+vi.mock("../risk-metrics.service.js");
 
 describe("PerpsDataProcessor", () => {
   let processor: PerpsDataProcessor;
@@ -33,7 +33,7 @@ describe("PerpsDataProcessor", () => {
   let mockAgentRepo: AgentRepository;
   let mockCompetitionRepo: CompetitionRepository;
   let mockPerpsRepo: PerpsRepository;
-  let mockCalmarRatioService: CalmarRatioService;
+  let mockRiskMetricsService: RiskMetricsService;
   let mockLogger: Logger;
 
   // Sample data that matches what the provider returns
@@ -150,7 +150,7 @@ describe("PerpsDataProcessor", () => {
     mockAgentRepo = {} as AgentRepository;
     mockCompetitionRepo = {} as CompetitionRepository;
     mockPerpsRepo = {} as PerpsRepository;
-    mockCalmarRatioService = {} as CalmarRatioService;
+    mockRiskMetricsService = {} as RiskMetricsService;
     mockLogger = {
       info: vi.fn(),
       error: vi.fn(),
@@ -266,7 +266,7 @@ describe("PerpsDataProcessor", () => {
     mockAgentRepo.findByIds = vi.fn().mockResolvedValue([]);
 
     processor = new PerpsDataProcessor(
-      mockCalmarRatioService,
+      mockRiskMetricsService,
       mockAgentRepo,
       mockCompetitionRepo,
       mockPerpsRepo,
@@ -1083,6 +1083,8 @@ describe("PerpsDataProcessor", () => {
         status: "active",
         deactivationReason: null,
         deactivationDate: null,
+        isRewardsIneligible: false,
+        rewardsIneligibilityReason: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -1141,6 +1143,8 @@ describe("PerpsDataProcessor", () => {
         status: "active",
         deactivationReason: null,
         deactivationDate: null,
+        isRewardsIneligible: false,
+        rewardsIneligibilityReason: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -1160,6 +1164,8 @@ describe("PerpsDataProcessor", () => {
         status: "active",
         deactivationReason: null,
         deactivationDate: null,
+        isRewardsIneligible: false,
+        rewardsIneligibilityReason: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -1206,8 +1212,8 @@ describe("PerpsDataProcessor", () => {
         endDate: new Date(),
         joinStartDate: null,
         joinEndDate: null,
-        votingStartDate: null,
-        votingEndDate: null,
+        boostStartDate: null,
+        boostEndDate: null,
         requiresAgoraId: false,
         maxParticipants: null,
         registeredParticipants: 0,
@@ -1221,6 +1227,24 @@ describe("PerpsDataProcessor", () => {
         cancelReason: null,
         crossChainTradingType: "allow" as const,
         minimumStake: null,
+        evaluationMetric: "calmar_ratio" as const,
+        vips: null,
+        allowlist: null,
+        blocklist: null,
+        minRecallRank: null,
+        allowlistOnly: false,
+        agentAllocation: null,
+        agentAllocationUnit: null,
+        boosterAllocation: null,
+        boosterAllocationUnit: null,
+        rewardRules: null,
+        rewardDetails: null,
+        rewardsIneligible: null,
+        displayState: null,
+        arenaId: "default-perps-arena",
+        engineId: "perpetual_futures" as const,
+        engineVersion: "1.0.0",
+        boostTimeDecayRate: null,
       };
 
       vi.mocked(mockCompetitionRepo.findById).mockResolvedValue(
@@ -1243,8 +1267,8 @@ describe("PerpsDataProcessor", () => {
         endDate: new Date(),
         joinStartDate: null,
         joinEndDate: null,
-        votingStartDate: null,
-        votingEndDate: null,
+        boostStartDate: null,
+        boostEndDate: null,
         requiresAgoraId: false,
         maxParticipants: null,
         registeredParticipants: 0,
@@ -1256,8 +1280,26 @@ describe("PerpsDataProcessor", () => {
         canceledBy: null,
         canceledAt: null,
         cancelReason: null,
+        vips: null,
+        allowlist: null,
+        blocklist: null,
+        minRecallRank: null,
+        allowlistOnly: false,
+        agentAllocation: null,
+        agentAllocationUnit: null,
+        boosterAllocation: null,
+        boosterAllocationUnit: null,
+        rewardRules: null,
+        rewardDetails: null,
+        rewardsIneligible: null,
+        displayState: null,
+        arenaId: "default-paper-arena",
+        engineId: "spot_paper_trading" as const,
+        engineVersion: "1.0.0",
         crossChainTradingType: "allow" as const,
         minimumStake: null,
+        evaluationMetric: "calmar_ratio" as const,
+        boostTimeDecayRate: null,
       };
 
       vi.mocked(mockCompetitionRepo.findById).mockResolvedValue(

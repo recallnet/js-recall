@@ -9,10 +9,10 @@ import { GetTimelineType, getTimeline } from "./get-timeline";
 import { GetTradesType, getTrades } from "./get-trades";
 import { JoinType, join } from "./join";
 import { LeaveType, leave } from "./leave";
-import { ListEnrichedType, listEnriched } from "./list-enriched";
+import { ListType, list } from "./list";
 
 export const router: {
-  listEnriched: ListEnrichedType;
+  list: ListType;
   getById: GetByIdType;
   getAgents: GetAgentsType;
   getTimeline: GetTimelineType;
@@ -22,7 +22,7 @@ export const router: {
   leave: LeaveType;
   getRules: GetRulesType;
 } = {
-  listEnriched,
+  list,
   getById,
   getAgents,
   getTimeline,

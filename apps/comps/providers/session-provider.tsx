@@ -14,6 +14,7 @@ import * as Sentry from "@sentry/nextjs";
 import {
   QueryObserverResult,
   RefetchOptions,
+  skipToken,
   useMutation,
   useQuery,
   useQueryClient,
@@ -24,22 +25,17 @@ import {
   useCallback,
   useEffect,
   useMemo,
-  useRef,
   useState,
 } from "react";
+import { useAccount, useChainId, useDisconnect } from "wagmi";
 
 import { WrongNetworkModal } from "@/components/modals/wrong-network";
 import { WrongWalletModal } from "@/components/modals/wrong-wallet";
-import {
-  useSafeAccount,
-  useSafeChainId,
-  useSafeDisconnect,
-} from "@/hooks/useSafeWagmi";
-import { ApiClient } from "@/lib/api-client";
 import { mergeWithoutUndefined } from "@/lib/merge-without-undefined";
 import { userWalletState } from "@/lib/user-wallet-state";
 import { tanstackClient } from "@/rpc/clients/tanstack-query";
-import { User as BackendUser, UpdateProfileRequest } from "@/types";
+import type { RouterOutputs } from "@/rpc/router";
+import { UpdateProfileRequest } from "@/types";
 
 export type Session = {
   // Login to Privy state
@@ -56,14 +52,16 @@ export type Session = {
   linkOrConnectWalletError: Error | null;
 
   // Fetch user state
-  backendUser: BackendUser | undefined;
+  backendUser: RouterOutputs["user"]["getProfile"] | undefined;
   isFetchBackendUserLoading: boolean;
   isFetchBackendUserError: boolean;
   fetchBackendUserError: Error | null;
   // Allow caller to manually refetch user data
   refetchBackendUser: (
     options?: RefetchOptions,
-  ) => Promise<QueryObserverResult<BackendUser | undefined, Error>>;
+  ) => Promise<
+    QueryObserverResult<RouterOutputs["user"]["getProfile"] | undefined, Error>
+  >;
 
   // Login to backend state
   isLoginToBackendPending: boolean;
@@ -71,7 +69,9 @@ export type Session = {
   loginToBackendError: Error | null;
 
   // Update backendUser state
-  updateBackendUser: (updates: UpdateProfileRequest) => Promise<BackendUser>;
+  updateBackendUser: (
+    updates: UpdateProfileRequest,
+  ) => Promise<RouterOutputs["user"]["updateProfile"]>;
   isUpdateBackendUserPending: boolean;
   isUpdateBackendUserError: boolean;
   updateBackendUserError: Error | null;
@@ -93,16 +93,14 @@ export const SessionContext = createContext<Session | null>(null);
 
 export function SessionProvider({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
-  const apiClient = useRef(new ApiClient());
 
   const { user, ready, authenticated, logout, isModalOpen, createWallet } =
     usePrivy();
-  const { ready: walletsReady } = useWallets();
 
-  const { disconnect } = useSafeDisconnect();
-  const { isConnected, chainId: currentChainId } = useSafeAccount();
+  const { disconnect } = useDisconnect();
+  const { isConnected, chainId: currentChainId } = useAccount();
   const { wallets, ready: readyWallets } = useWallets();
-  const defaultChainId = useSafeChainId();
+  const defaultChainId = useChainId();
   const isWrongChain = currentChainId !== defaultChainId;
   const { setActiveWallet } = useSetActiveWallet();
 
@@ -131,6 +129,41 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     [disconnect],
   );
 
+  const {
+    mutate: loginToBackend,
+    isSuccess: isLoginToBackendSuccess,
+    isPending: isLoginToBackendPending,
+    isError: isLoginToBackendError,
+    error: loginToBackendError,
+  } = useMutation(
+    tanstackClient.user.login.mutationOptions({
+      onSuccess: () => {
+        refetchBackendUser();
+      },
+      onError: (error) => {
+        console.error("Login to backend failed:", {
+          error: error?.message || String(error),
+          privyAuthenticated: authenticated,
+          privyReady: ready,
+          privyWalletsReady: readyWallets,
+          browserOnline: navigator.onLine,
+        });
+
+        Sentry.captureException(
+          error instanceof Error ? error : new Error(String(error)),
+          {
+            extra: {
+              privyAuthenticated: authenticated,
+              privyReady: ready,
+              privyWalletsReady: readyWallets,
+              browserOnline: navigator.onLine,
+            },
+          },
+        );
+      },
+    }),
+  );
+
   const { login: loginInner } = useLogin({
     onComplete: async ({ user, isNewUser }) => {
       // Note: Privy has a known issue where embedded wallets are, sometimes, not created for a
@@ -140,13 +173,11 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         const message = `Privy failed to create embedded wallet. Creating wallet for user DID: ${user.id}`;
         console.warn(message);
         Sentry.captureMessage(message, "warning");
-        const wallet = await createWallet();
-
-        console.log("Created wallet:", wallet);
+        await createWallet();
       }
 
       setShouldLinkWallet(isNewUser);
-      loginToBackend();
+      loginToBackend(undefined);
     },
     onError: (err) => {
       if (err === "exited_auth_flow") return;
@@ -160,45 +191,6 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     },
     [loginInner, setLoginError],
   );
-
-  const {
-    mutate: loginToBackend,
-    isSuccess: isLoginToBackendSuccess,
-    isPending: isLoginToBackendPending,
-    isError: isLoginToBackendError,
-    error: loginToBackendError,
-  } = useMutation({
-    mutationFn: async () => {
-      await apiClient.current.login();
-    },
-    retry: 3,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000), // Exponential backoff: 1s, 2s, 4s, max 10s
-    onSuccess: () => {
-      refetchBackendUser();
-    },
-    onError: (error) => {
-      console.error("Login to backend failed:", {
-        error: error?.message || String(error),
-        privyAuthenticated: authenticated,
-        privyReady: ready,
-        privyWalletsReady: walletsReady,
-        browserOnline: navigator.onLine,
-      });
-
-      Sentry.captureException(
-        error instanceof Error ? error : new Error(String(error)),
-        {
-          extra: {
-            privyAuthenticated: authenticated,
-            privyReady: ready,
-            privyWalletsReady: walletsReady,
-            browserOnline: navigator.onLine,
-          },
-        },
-      );
-    },
-  });
-
   // Query for BackendUser session data
   const {
     data: backendUser,
@@ -208,9 +200,9 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     refetch: refetchBackendUser,
   } = useQuery(
     tanstackClient.user.getProfile.queryOptions({
-      enabled: authenticated && ready && isLoginToBackendSuccess,
+      input: authenticated && ready && isLoginToBackendSuccess ? {} : skipToken,
       staleTime: 5 * 60 * 1000, // 5 minutes
-      gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
+      gcTime: 10 * 60 * 1000, // 10 minutes
       retry: (failureCount, error) => {
         // Don't retry on 401/403 errors (UNAUTHORIZED)
         if (
@@ -290,12 +282,13 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   const { connectWallet } = useConnectWallet({
     onError: (err) => {
+      if (err === "generic_connect_wallet_error") return;
       setLinkOrConnectWalletError(new Error(err));
     },
   });
 
   const linkOrConnectWallet = useCallback(
-    (options?: ConnectWalletModalOptions | MouseEvent<any, any>) => {
+    (options?: ConnectWalletModalOptions | MouseEvent<HTMLElement>) => {
       setLinkOrConnectWalletError(null);
 
       if (!backendUser) return;
@@ -311,11 +304,12 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         case "external-linked":
           connectWallet(options);
           return;
-        case "unknown":
+        case "unknown": {
           const message = `Unknown wallet state for user ID: ${backendUser.id}`;
           setLinkOrConnectWalletError(new Error(message));
           console.error(message);
           return;
+        }
       }
     },
     [linkWallet, setLinkOrConnectWalletError, connectWallet, backendUser],
@@ -358,8 +352,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       console.error("Failed to sync active wallet:", error);
     }
   }, [
-    backendUser?.walletAddress,
-    backendUser?.embeddedWalletAddress,
+    backendUser,
     connectedExternalWallets,
     readyWallets,
     setActiveWallet,
@@ -400,13 +393,19 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         await queryClient.cancelQueries({ queryKey: queryKey });
 
         // Snapshot the previous value
-        const previousUser = queryClient.getQueryData<BackendUser>(queryKey);
+        const previousUser =
+          queryClient.getQueryData<RouterOutputs["user"]["getProfile"]>(
+            queryKey,
+          );
 
         // Optimistically update the cache
-        queryClient.setQueryData<BackendUser>(queryKey, (old) => {
-          if (!old) return undefined;
-          return mergeWithoutUndefined(old, updates);
-        });
+        queryClient.setQueryData<RouterOutputs["user"]["getProfile"]>(
+          queryKey,
+          (old) => {
+            if (!old) return undefined;
+            return mergeWithoutUndefined(old, updates);
+          },
+        );
 
         // Return a context object with the snapshotted value
         return { previousUser: previousUser };
@@ -422,7 +421,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       },
       onSuccess: (updatedUser) => {
         // Update cache with the actual server response
-        queryClient.setQueryData<BackendUser>(
+        queryClient.setQueryData<RouterOutputs["user"]["getProfile"]>(
           tanstackClient.user.getProfile.key(),
           updatedUser,
         );
@@ -443,7 +442,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
       // Disconnect from wagmi first to clear connection state
       if (isConnected) {
-        await disconnect();
+        disconnect();
       }
       // Then logout from Privy
       await logout();
@@ -525,7 +524,6 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
           expectedWalletAddress={backendUser?.walletAddress || ""}
         />
       )}
-
       {session.isAuthenticated &&
         isWalletConnected &&
         !isWrongWalletModalOpen &&

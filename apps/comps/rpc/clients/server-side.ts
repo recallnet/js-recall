@@ -9,11 +9,15 @@ import { createLogger } from "@/lib/logger";
 import { privyClient } from "@/lib/privy-client";
 import {
   agentService,
+  airdropService,
+  arenaService,
   boostAwardService,
   boostService,
   competitionService,
   emailService,
   leaderboardService,
+  rewardsService,
+  sportsService,
   userService,
 } from "@/lib/services";
 import { router } from "@/rpc/router/index";
@@ -23,13 +27,17 @@ export async function createClient(): Promise<RouterClient<typeof router>> {
     context: {
       cookies: await cookies(),
       privyClient,
+      airdropService,
       boostService,
       boostAwardService,
       userService,
       competitionService,
       agentService,
+      arenaService,
       emailService,
       leaderboardService,
+      rewardsService,
+      sportsService,
       logger: createLogger("ServerSideRpcClient"),
     },
   });

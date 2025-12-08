@@ -14,6 +14,830 @@ export function configureAdminRoutes(
 
   /**
    * @openapi
+   * /api/admin/arenas:
+   *   post:
+   *     tags:
+   *       - Admin
+   *     summary: Create a new arena
+   *     description: Create a new arena for grouping and organizing competitions
+   *     security:
+   *       - BearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - id
+   *               - name
+   *               - createdBy
+   *               - category
+   *               - skill
+   *             properties:
+   *               id:
+   *                 type: string
+   *                 description: Arena ID (lowercase kebab-case)
+   *                 pattern: ^[a-z0-9-]+$
+   *                 example: aerodrome-base-weekly
+   *               name:
+   *                 type: string
+   *                 description: Arena name
+   *                 example: Aerodrome Base Weekly Trading
+   *               createdBy:
+   *                 type: string
+   *                 description: Creator identifier
+   *                 example: admin-123
+   *               category:
+   *                 type: string
+   *                 description: Arena category
+   *                 example: crypto_trading
+   *               skill:
+   *                 type: string
+   *                 description: Arena skill type
+   *                 example: spot_paper_trading
+   *               venues:
+   *                 type: array
+   *                 description: Venue identifiers
+   *                 items:
+   *                   type: string
+   *                 example: ["aerodrome", "uniswap"]
+   *               chains:
+   *                 type: array
+   *                 description: Chain identifiers
+   *                 items:
+   *                   type: string
+   *                 example: ["base", "arbitrum"]
+   *     responses:
+   *       201:
+   *         description: Arena created successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   description: Operation success status
+   *                 arena:
+   *                   type: object
+   *                   properties:
+   *                     id:
+   *                       type: string
+   *                       description: Arena ID
+   *                     name:
+   *                       type: string
+   *                       description: Arena name
+   *                     category:
+   *                       type: string
+   *                       description: Arena category
+   *                     skill:
+   *                       type: string
+   *                       description: Arena skill
+   *                     venues:
+   *                       type: array
+   *                       nullable: true
+   *                       items:
+   *                         type: string
+   *                     chains:
+   *                       type: array
+   *                       nullable: true
+   *                       items:
+   *                         type: string
+   *       400:
+   *         description: Bad Request - Invalid arena ID format or missing required fields
+   *       401:
+   *         description: Unauthorized - Admin authentication required
+   *       409:
+   *         description: Conflict - Arena with this ID already exists
+   *       500:
+   *         description: Server error
+   */
+  router.post("/arenas", controller.createArena);
+
+  /**
+   * @openapi
+   * /api/admin/arenas:
+   *   get:
+   *     tags:
+   *       - Admin
+   *     summary: List all arenas
+   *     description: Get paginated list of arenas with optional name filtering
+   *     security:
+   *       - BearerAuth: []
+   *     parameters:
+   *       - in: query
+   *         name: limit
+   *         schema:
+   *           type: integer
+   *           minimum: 1
+   *           maximum: 100
+   *           default: 20
+   *         description: Number of arenas to return
+   *       - in: query
+   *         name: offset
+   *         schema:
+   *           type: integer
+   *           minimum: 0
+   *           default: 0
+   *         description: Number of arenas to skip
+   *       - in: query
+   *         name: sort
+   *         schema:
+   *           type: string
+   *           default: ""
+   *         description: Sort field and direction (e.g., "name:asc")
+   *       - in: query
+   *         name: nameFilter
+   *         schema:
+   *           type: string
+   *         description: Filter arenas by name (case-insensitive partial match)
+   *     responses:
+   *       200:
+   *         description: Arenas retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                 arenas:
+   *                   type: array
+   *                   items:
+   *                     type: object
+   *                 pagination:
+   *                   type: object
+   *                   properties:
+   *                     total:
+   *                       type: integer
+   *                     limit:
+   *                       type: integer
+   *                     offset:
+   *                       type: integer
+   *                     hasMore:
+   *                       type: boolean
+   *       401:
+   *         description: Unauthorized - Admin authentication required
+   *       500:
+   *         description: Server error
+   */
+  router.get("/arenas", controller.listArenas);
+
+  /**
+   * @openapi
+   * /api/admin/arenas/{id}:
+   *   get:
+   *     tags:
+   *       - Admin
+   *     summary: Get arena by ID
+   *     description: Retrieve detailed information about a specific arena
+   *     security:
+   *       - BearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: Arena ID
+   *     responses:
+   *       200:
+   *         description: Arena retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                 arena:
+   *                   type: object
+   *       401:
+   *         description: Unauthorized - Admin authentication required
+   *       404:
+   *         description: Arena not found
+   *       500:
+   *         description: Server error
+   */
+  router.get("/arenas/:id", controller.getArena);
+
+  /**
+   * @openapi
+   * /api/admin/arenas/{id}:
+   *   put:
+   *     tags:
+   *       - Admin
+   *     summary: Update an arena
+   *     description: Update arena metadata and classification
+   *     security:
+   *       - BearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: Arena ID
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               name:
+   *                 type: string
+   *                 description: Arena name
+   *               category:
+   *                 type: string
+   *                 description: Arena category
+   *               skill:
+   *                 type: string
+   *                 description: Arena skill
+   *               venues:
+   *                 type: array
+   *                 items:
+   *                   type: string
+   *               chains:
+   *                 type: array
+   *                 items:
+   *                   type: string
+   *     responses:
+   *       200:
+   *         description: Arena updated successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                 arena:
+   *                   type: object
+   *       401:
+   *         description: Unauthorized - Admin authentication required
+   *       404:
+   *         description: Arena not found
+   *       500:
+   *         description: Server error
+   */
+  router.put("/arenas/:id", controller.updateArena);
+
+  /**
+   * @openapi
+   * /api/admin/arenas/{id}:
+   *   delete:
+   *     tags:
+   *       - Admin
+   *     summary: Delete an arena
+   *     description: Delete an arena (fails if arena has associated competitions)
+   *     security:
+   *       - BearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: Arena ID
+   *     responses:
+   *       200:
+   *         description: Arena deleted successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                 message:
+   *                   type: string
+   *       401:
+   *         description: Unauthorized - Admin authentication required
+   *       404:
+   *         description: Arena not found
+   *       409:
+   *         description: Conflict - Arena has associated competitions
+   *       500:
+   *         description: Server error
+   */
+  router.delete("/arenas/:id", controller.deleteArena);
+
+  /**
+   * @openapi
+   * /api/admin/partners:
+   *   post:
+   *     tags:
+   *       - Admin
+   *     summary: Create a new partner
+   *     description: Create a new partner that can be associated with competitions
+   *     security:
+   *       - BearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - name
+   *             properties:
+   *               name:
+   *                 type: string
+   *                 description: Partner name
+   *                 example: Aerodrome Finance
+   *               url:
+   *                 type: string
+   *                 format: uri
+   *                 description: Partner website URL
+   *                 example: https://aerodrome.finance
+   *               logoUrl:
+   *                 type: string
+   *                 format: uri
+   *                 description: Partner logo URL
+   *                 example: https://aerodrome.finance/logo.png
+   *               details:
+   *                 type: string
+   *                 description: Partner details or description
+   *                 example: Leading DEX on Base
+   *     responses:
+   *       201:
+   *         description: Partner created successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                 partner:
+   *                   type: object
+   *       400:
+   *         description: Bad Request - Invalid data
+   *       401:
+   *         description: Unauthorized - Admin authentication required
+   *       409:
+   *         description: Conflict - Partner with this name already exists
+   *       500:
+   *         description: Server error
+   */
+  router.post("/partners", controller.createPartner);
+
+  /**
+   * @openapi
+   * /api/admin/partners:
+   *   get:
+   *     tags:
+   *       - Admin
+   *     summary: List all partners
+   *     description: Get paginated list of partners with optional name filtering
+   *     security:
+   *       - BearerAuth: []
+   *     parameters:
+   *       - in: query
+   *         name: limit
+   *         schema:
+   *           type: integer
+   *           minimum: 1
+   *           maximum: 100
+   *           default: 20
+   *         description: Number of partners to return
+   *       - in: query
+   *         name: offset
+   *         schema:
+   *           type: integer
+   *           minimum: 0
+   *           default: 0
+   *         description: Number of partners to skip
+   *       - in: query
+   *         name: sort
+   *         schema:
+   *           type: string
+   *           default: ""
+   *         description: Sort field and direction
+   *       - in: query
+   *         name: nameFilter
+   *         schema:
+   *           type: string
+   *         description: Filter partners by name (case-insensitive partial match)
+   *     responses:
+   *       200:
+   *         description: Partners retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                 partners:
+   *                   type: array
+   *                   items:
+   *                     type: object
+   *                 pagination:
+   *                   type: object
+   *       401:
+   *         description: Unauthorized - Admin authentication required
+   *       500:
+   *         description: Server error
+   */
+  router.get("/partners", controller.listPartners);
+
+  /**
+   * @openapi
+   * /api/admin/partners/{id}:
+   *   get:
+   *     tags:
+   *       - Admin
+   *     summary: Get partner by ID
+   *     description: Retrieve detailed information about a specific partner
+   *     security:
+   *       - BearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         description: Partner ID
+   *     responses:
+   *       200:
+   *         description: Partner retrieved successfully
+   *       401:
+   *         description: Unauthorized - Admin authentication required
+   *       404:
+   *         description: Partner not found
+   *       500:
+   *         description: Server error
+   */
+  router.get("/partners/:id", controller.getPartner);
+
+  /**
+   * @openapi
+   * /api/admin/partners/{id}:
+   *   put:
+   *     tags:
+   *       - Admin
+   *     summary: Update a partner
+   *     description: Update partner information
+   *     security:
+   *       - BearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         description: Partner ID
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               name:
+   *                 type: string
+   *               url:
+   *                 type: string
+   *                 format: uri
+   *               logoUrl:
+   *                 type: string
+   *                 format: uri
+   *               details:
+   *                 type: string
+   *     responses:
+   *       200:
+   *         description: Partner updated successfully
+   *       401:
+   *         description: Unauthorized - Admin authentication required
+   *       404:
+   *         description: Partner not found
+   *       500:
+   *         description: Server error
+   */
+  router.put("/partners/:id", controller.updatePartner);
+
+  /**
+   * @openapi
+   * /api/admin/partners/{id}:
+   *   delete:
+   *     tags:
+   *       - Admin
+   *     summary: Delete a partner
+   *     description: Delete a partner (cascades to remove all competition associations)
+   *     security:
+   *       - BearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         description: Partner ID
+   *     responses:
+   *       200:
+   *         description: Partner deleted successfully
+   *       401:
+   *         description: Unauthorized - Admin authentication required
+   *       404:
+   *         description: Partner not found
+   *       500:
+   *         description: Server error
+   */
+  router.delete("/partners/:id", controller.deletePartner);
+
+  /**
+   * @openapi
+   * /api/admin/competitions/{competitionId}/partners:
+   *   get:
+   *     tags:
+   *       - Admin
+   *     summary: Get partners for a competition
+   *     description: Retrieve all partners associated with a competition, ordered by position
+   *     security:
+   *       - BearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: competitionId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         description: Competition ID
+   *     responses:
+   *       200:
+   *         description: Partners retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                 partners:
+   *                   type: array
+   *                   items:
+   *                     type: object
+   *                     properties:
+   *                       id:
+   *                         type: string
+   *                         format: uuid
+   *                       name:
+   *                         type: string
+   *                       url:
+   *                         type: string
+   *                         nullable: true
+   *                       logoUrl:
+   *                         type: string
+   *                         nullable: true
+   *                       details:
+   *                         type: string
+   *                         nullable: true
+   *                       position:
+   *                         type: integer
+   *                       competitionPartnerId:
+   *                         type: string
+   *                         format: uuid
+   *                       createdAt:
+   *                         type: string
+   *                         format: date-time
+   *                       updatedAt:
+   *                         type: string
+   *                         format: date-time
+   *       401:
+   *         description: Unauthorized
+   *       500:
+   *         description: Server error
+   */
+  router.get(
+    "/competitions/:competitionId/partners",
+    controller.getCompetitionPartners,
+  );
+
+  /**
+   * @openapi
+   * /api/admin/competitions/{competitionId}/partners:
+   *   post:
+   *     tags:
+   *       - Admin
+   *     summary: Add partner to competition
+   *     description: Associate a partner with a competition at a specific display position
+   *     security:
+   *       - BearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: competitionId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         description: Competition ID
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - partnerId
+   *               - position
+   *             properties:
+   *               partnerId:
+   *                 type: string
+   *                 format: uuid
+   *                 description: Partner ID
+   *               position:
+   *                 type: integer
+   *                 minimum: 1
+   *                 description: Display position (1-indexed)
+   *     responses:
+   *       201:
+   *         description: Partner added successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                 association:
+   *                   type: object
+   *       400:
+   *         description: Bad Request
+   *       401:
+   *         description: Unauthorized
+   *       404:
+   *         description: Partner or Competition not found
+   *       409:
+   *         description: Conflict - Position already taken or partner already associated
+   *       500:
+   *         description: Server error
+   */
+  router.post(
+    "/competitions/:competitionId/partners",
+    controller.addPartnerToCompetition,
+  );
+
+  /**
+   * @openapi
+   * /api/admin/competitions/{competitionId}/partners/replace:
+   *   put:
+   *     tags:
+   *       - Admin
+   *     summary: Replace all partners for a competition
+   *     description: Atomically replace all partner associations for a competition
+   *     security:
+   *       - BearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: competitionId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         description: Competition ID
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - partners
+   *             properties:
+   *               partners:
+   *                 type: array
+   *                 items:
+   *                   type: object
+   *                   required:
+   *                     - partnerId
+   *                     - position
+   *                   properties:
+   *                     partnerId:
+   *                       type: string
+   *                       format: uuid
+   *                     position:
+   *                       type: integer
+   *                       minimum: 1
+   *     responses:
+   *       200:
+   *         description: Partners replaced successfully
+   *       400:
+   *         description: Bad Request
+   *       401:
+   *         description: Unauthorized
+   *       404:
+   *         description: One or more partners not found
+   *       500:
+   *         description: Server error
+   */
+  router.put(
+    "/competitions/:competitionId/partners/replace",
+    controller.replaceCompetitionPartners,
+  );
+
+  /**
+   * @openapi
+   * /api/admin/competitions/{competitionId}/partners/{partnerId}:
+   *   put:
+   *     tags:
+   *       - Admin
+   *     summary: Update partner position
+   *     description: Update the display position of a partner in a competition
+   *     security:
+   *       - BearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: competitionId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         description: Competition ID
+   *       - in: path
+   *         name: partnerId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         description: Partner ID
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - position
+   *             properties:
+   *               position:
+   *                 type: integer
+   *                 minimum: 1
+   *                 description: Display position
+   *     responses:
+   *       200:
+   *         description: Position updated successfully
+   *       401:
+   *         description: Unauthorized
+   *       404:
+   *         description: Partner association not found
+   *       409:
+   *         description: Position already taken by another partner
+   *       500:
+   *         description: Server error
+   */
+  router.put(
+    "/competitions/:competitionId/partners/:partnerId",
+    controller.updatePartnerPosition,
+  );
+
+  /**
+   * @openapi
+   * /api/admin/competitions/{competitionId}/partners/{partnerId}:
+   *   delete:
+   *     tags:
+   *       - Admin
+   *     summary: Remove partner from competition
+   *     description: Remove the association between a partner and a competition
+   *     security:
+   *       - BearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: competitionId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         description: Competition ID
+   *       - in: path
+   *         name: partnerId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         description: Partner ID
+   *     responses:
+   *       200:
+   *         description: Partner removed successfully
+   *       401:
+   *         description: Unauthorized
+   *       404:
+   *         description: Partner association not found
+   *       500:
+   *         description: Server error
+   */
+  router.delete(
+    "/competitions/:competitionId/partners/:partnerId",
+    controller.removePartnerFromCompetition,
+  );
+
+  /**
+   * @openapi
    * /api/admin/competition/create:
    *   post:
    *     tags:
@@ -30,6 +854,7 @@ export function configureAdminRoutes(
    *             type: object
    *             required:
    *               - name
+   *               - arenaId
    *             properties:
    *               name:
    *                 type: string
@@ -53,7 +878,7 @@ export function configureAdminRoutes(
    *               type:
    *                 type: string
    *                 description: The type of competition
-   *                 enum: [trading, perpetual_futures]
+   *                 enum: [trading, perpetual_futures, spot_live_trading]
    *                 default: trading
    *                 example: trading
    *               externalUrl:
@@ -74,15 +899,15 @@ export function configureAdminRoutes(
    *                 format: date-time
    *                 description: End date for the competition (ISO 8601 format)
    *                 example: "2024-02-15T23:59:59Z"
-   *               votingStartDate:
+   *               boostStartDate:
    *                 type: string
    *                 format: date-time
-   *                 description: Start date for voting (ISO 8601 format)
+   *                 description: Start date for boosting (ISO 8601 format)
    *                 example: "2024-01-15T00:00:00Z"
-   *               votingEndDate:
+   *               boostEndDate:
    *                 type: string
    *                 format: date-time
-   *                 description: End date for voting (ISO 8601 format)
+   *                 description: End date for boosting (ISO 8601 format)
    *                 example: "2024-01-30T23:59:59Z"
    *               joinStartDate:
    *                 type: string
@@ -144,6 +969,11 @@ export function configureAdminRoutes(
    *                   "1": 1000
    *                   "2": 500
    *                   "3": 250
+   *               evaluationMetric:
+   *                 type: string
+   *                 enum: [calmar_ratio, sortino_ratio, simple_return]
+   *                 description: Metric used for ranking agents. Defaults to calmar_ratio for perps, simple_return for spot trading
+   *                 example: calmar_ratio
    *               perpsProvider:
    *                 type: object
    *                 nullable: true
@@ -171,6 +1001,73 @@ export function configureAdminRoutes(
    *                     type: string
    *                     description: Optional API URL override for the provider
    *                     example: https://api.symphony.com
+   *               spotLiveConfig:
+   *                 type: object
+   *                 nullable: true
+   *                 description: Configuration for spot live trading (required when type is spot_live_trading)
+   *                 properties:
+   *                   dataSource:
+   *                     type: string
+   *                     enum: [rpc_direct, envio_indexing, hybrid]
+   *                     description: Data source type for tracking on-chain trades
+   *                     example: rpc_direct
+   *                   dataSourceConfig:
+   *                     type: object
+   *                     description: Data source configuration. For Alchemy, only type, provider, and chains are required (API key read from ALCHEMY_API_KEY env var)
+   *                     properties:
+   *                       type:
+   *                         type: string
+   *                         enum: [rpc_direct, envio_indexing, hybrid]
+   *                         description: Must match dataSource
+   *                         example: rpc_direct
+   *                       provider:
+   *                         type: string
+   *                         enum: [alchemy, quicknode, infura]
+   *                         description: RPC provider name - API key read from environment (e.g., ALCHEMY_API_KEY)
+   *                         example: alchemy
+   *                       chains:
+   *                         type: array
+   *                         items:
+   *                           type: string
+   *                         description: Chains to monitor for trades
+   *                         example: ["base", "arbitrum"]
+   *                   chains:
+   *                     type: array
+   *                     items:
+   *                       type: string
+   *                     description: Chains enabled for this competition
+   *                     example: ["base", "arbitrum"]
+   *                   allowedProtocols:
+   *                     type: array
+   *                     nullable: true
+   *                     description: Protocol whitelist (optional)
+   *                     items:
+   *                       type: object
+   *                       properties:
+   *                         protocol:
+   *                           type: string
+   *                           description: Protocol name (e.g., aerodrome, uniswap_v3)
+   *                         chain:
+   *                           type: string
+   *                           description: Chain for this protocol
+   *                   allowedTokens:
+   *                     type: array
+   *                     nullable: true
+   *                     description: Token whitelist (optional, min 2 tokens if specified)
+   *                     items:
+   *                       type: object
+   *                       properties:
+   *                         address:
+   *                           type: string
+   *                           description: Token contract address
+   *                         specificChain:
+   *                           type: string
+   *                           description: Chain for this token
+   *                   selfFundingThresholdUsd:
+   *                     type: number
+   *                     description: Threshold for self-funding violation detection in USD
+   *                     default: 10
+   *                     example: 10
    *               prizePools:
    *                 type: object
    *                 description: Prize pool configuration
@@ -185,6 +1082,127 @@ export function configureAdminRoutes(
    *                     minimum: 0
    *                     description: User prize pool amount
    *                     example: 500
+   *               arenaId:
+   *                 type: string
+   *                 description: Arena ID for routing competitions to specific execution engines (required)
+   *                 example: default-paper-arena
+   *               engineId:
+   *                 type: string
+   *                 nullable: true
+   *                 enum: [spot_paper_trading, perpetual_futures, spot_live_trading]
+   *                 description: Engine type identifier (optional, defaults based on competition type)
+   *                 example: spot_paper_trading
+   *               engineVersion:
+   *                 type: string
+   *                 nullable: true
+   *                 description: Engine version (optional)
+   *                 example: 1.0.0
+   *               vips:
+   *                 type: array
+   *                 nullable: true
+   *                 items:
+   *                   type: string
+   *                 description: VIP agent IDs with special access
+   *               allowlist:
+   *                 type: array
+   *                 nullable: true
+   *                 items:
+   *                   type: string
+   *                 description: Allowlisted agent IDs
+   *               blocklist:
+   *                 type: array
+   *                 nullable: true
+   *                 items:
+   *                   type: string
+   *                 description: Blocklisted agent IDs
+   *               minRecallRank:
+   *                 type: integer
+   *                 nullable: true
+   *                 description: Minimum global Recall rank required to join
+   *               allowlistOnly:
+   *                 type: boolean
+   *                 description: Whether only allowlisted agents can join
+   *               agentAllocation:
+   *                 type: number
+   *                 nullable: true
+   *                 description: Agent reward pool allocation amount
+   *               agentAllocationUnit:
+   *                 type: string
+   *                 nullable: true
+   *                 enum: [RECALL, USDC, USD]
+   *                 description: Unit for agent reward allocation
+   *               boosterAllocation:
+   *                 type: number
+   *                 nullable: true
+   *                 description: Booster reward pool allocation amount
+   *               boosterAllocationUnit:
+   *                 type: string
+   *                 nullable: true
+   *                 enum: [RECALL, USDC, USD]
+   *                 description: Unit for booster reward allocation
+   *               rewardRules:
+   *                 type: string
+   *                 nullable: true
+   *                 description: Rules for reward distribution
+   *               rewardDetails:
+   *                 type: string
+   *                 nullable: true
+   *                 description: Additional reward details
+   *               boostTimeDecayRate:
+   *                 type: number
+   *                 nullable: true
+   *                 minimum: 0.1
+   *                 maximum: 0.9
+   *                 description: Decay rate for boost time calculations. Must be between 0.1 and 0.9.
+   *                 example: 0.5
+   *               displayState:
+   *                 type: string
+   *                 nullable: true
+   *                 enum: [active, waitlist, cancelled, pending, paused]
+   *                 description: UI display state
+   *               rewardsIneligible:
+   *                 type: array
+   *                 items:
+   *                   type: string
+   *                 description: Agent IDs ineligible to receive rewards from this competition
+   *                 example: ["agent-id-1", "agent-id-2"]
+   *               paperTradingConfig:
+   *                 type: object
+   *                 nullable: true
+   *                 description: Paper trading configuration for the competition
+   *                 properties:
+   *                   maxTradePercentage:
+   *                     type: integer
+   *                     minimum: 1
+   *                     maximum: 100
+   *                     description: "Maximum percentage of portfolio that can be traded in a single trade (default: 25)"
+   *                     example: 25
+   *               paperTradingInitialBalances:
+   *                 type: array
+   *                 nullable: true
+   *                 description: Initial token balances for the competition
+   *                 items:
+   *                   type: object
+   *                   required:
+   *                     - specificChain
+   *                     - tokenSymbol
+   *                     - amount
+   *                   properties:
+   *                     specificChain:
+   *                       type: string
+   *                       maxLength: 20
+   *                       description: Specific chain identifier
+   *                       example: "base"
+   *                     tokenSymbol:
+   *                       type: string
+   *                       maxLength: 20
+   *                       description: Token symbol
+   *                       example: "USDC"
+   *                     amount:
+   *                       type: integer
+   *                       minimum: 0
+   *                       description: Initial balance amount
+   *                       example: 10000
    *     responses:
    *       201:
    *         description: Competition created successfully
@@ -229,7 +1247,7 @@ export function configureAdminRoutes(
    *                       description: Whether sandbox mode is enabled for this competition
    *                     type:
    *                       type: string
-   *                       enum: [trading, perpetual_futures]
+   *                       enum: [trading, perpetual_futures, spot_live_trading]
    *                       default: trading
    *                       description: The type of competition
    *                     createdAt:
@@ -280,6 +1298,81 @@ export function configureAdminRoutes(
    *                           type: number
    *                           nullable: true
    *                           description: Minimum number of trades required per day (null if no requirement)
+   *                     arenaId:
+   *                       type: string
+   *                       nullable: true
+   *                       description: Arena ID for grouping competitions
+   *                     engineId:
+   *                       type: string
+   *                       nullable: true
+   *                       enum: [spot_paper_trading, perpetual_futures, spot_live_trading]
+   *                       description: Engine type identifier
+   *                     engineVersion:
+   *                       type: string
+   *                       nullable: true
+   *                       description: Engine version
+   *                     vips:
+   *                       type: array
+   *                       nullable: true
+   *                       items:
+   *                         type: string
+   *                       description: VIP agent IDs with special access
+   *                     allowlist:
+   *                       type: array
+   *                       nullable: true
+   *                       items:
+   *                         type: string
+   *                       description: Allowlisted agent IDs
+   *                     blocklist:
+   *                       type: array
+   *                       nullable: true
+   *                       items:
+   *                         type: string
+   *                       description: Blocklisted agent IDs
+   *                     minRecallRank:
+   *                       type: integer
+   *                       nullable: true
+   *                       description: Minimum global Recall rank required to join
+   *                     allowlistOnly:
+   *                       type: boolean
+   *                       description: Whether only allowlisted agents can join
+   *                     agentAllocation:
+   *                       type: number
+   *                       nullable: true
+   *                       description: Agent reward pool allocation amount
+   *                     agentAllocationUnit:
+   *                       type: string
+   *                       nullable: true
+   *                       enum: [RECALL, USDC, USD]
+   *                       description: Unit for agent reward allocation
+   *                     boosterAllocation:
+   *                       type: number
+   *                       nullable: true
+   *                       description: Booster reward pool allocation amount
+   *                     boosterAllocationUnit:
+   *                       type: string
+   *                       nullable: true
+   *                       enum: [RECALL, USDC, USD]
+   *                       description: Unit for booster reward allocation
+   *                     rewardRules:
+   *                       type: string
+   *                       nullable: true
+   *                       description: Rules for reward distribution
+   *                     rewardDetails:
+   *                       type: string
+   *                       nullable: true
+   *                       description: Additional reward details
+   *                     displayState:
+   *                       type: string
+   *                       nullable: true
+   *                       enum: [active, waitlist, cancelled, pending, paused]
+   *                       description: UI display state
+   *                     rewardsIneligible:
+   *                       type: array
+   *                       nullable: true
+   *                       items:
+   *                         type: string
+   *                       description: Agent IDs ineligible to receive rewards from this competition
    *       400:
    *         description: |-
    *           Bad Request - Various validation errors:
@@ -340,15 +1433,15 @@ export function configureAdminRoutes(
    *                 format: date-time
    *                 description: End date for the competition (ISO 8601 format)
    *                 example: "2024-02-15T23:59:59Z"
-   *               votingStartDate:
+   *               boostStartDate:
    *                 type: string
    *                 format: date-time
-   *                 description: Start date for voting (ISO 8601 format, used when creating a new competition)
+   *                 description: Start date for boosting (ISO 8601 format, used when creating a new competition)
    *                 example: "2024-01-15T00:00:00Z"
-   *               votingEndDate:
+   *               boostEndDate:
    *                 type: string
    *                 format: date-time
-   *                 description: End date for voting (ISO 8601 format, used when creating a new competition)
+   *                 description: End date for boosting (ISO 8601 format, used when creating a new competition)
    *                 example: "2024-01-30T23:59:59Z"
    *               agentIds:
    *                 type: array
@@ -369,7 +1462,7 @@ export function configureAdminRoutes(
    *               type:
    *                 type: string
    *                 description: The type of competition
-   *                 enum: [trading]
+   *                 enum: [trading, perpetual_futures, spot_live_trading]
    *                 default: trading
    *                 example: trading
    *               tradingConstraints:
@@ -412,6 +1505,11 @@ export function configureAdminRoutes(
    *                   "1": 1000
    *                   "2": 500
    *                   "3": 250
+   *               evaluationMetric:
+   *                 type: string
+   *                 enum: [calmar_ratio, sortino_ratio, simple_return]
+   *                 description: Metric used for ranking agents. Defaults to calmar_ratio for perps, simple_return for spot trading
+   *                 example: calmar_ratio
    *               prizePools:
    *                 type: object
    *                 description: Prize pool configuration
@@ -426,6 +1524,90 @@ export function configureAdminRoutes(
    *                     minimum: 0
    *                     description: User prize pool amount
    *                     example: 500
+   *               arenaId:
+   *                 type: string
+   *                 description: Arena ID for routing competitions (required when creating new competition, not needed when starting existing)
+   *                 example: default-paper-arena
+   *               engineId:
+   *                 type: string
+   *                 nullable: true
+   *                 enum: [spot_paper_trading, perpetual_futures, spot_live_trading]
+   *                 description: Engine type identifier (optional)
+   *                 example: spot_paper_trading
+   *               engineVersion:
+   *                 type: string
+   *                 nullable: true
+   *                 description: Engine version (optional)
+   *                 example: 1.0.0
+   *               vips:
+   *                 type: array
+   *                 nullable: true
+   *                 items:
+   *                   type: string
+   *                 description: VIP agent IDs with special access
+   *               allowlist:
+   *                 type: array
+   *                 nullable: true
+   *                 items:
+   *                   type: string
+   *                 description: Allowlisted agent IDs
+   *               blocklist:
+   *                 type: array
+   *                 nullable: true
+   *                 items:
+   *                   type: string
+   *                 description: Blocklisted agent IDs
+   *               minRecallRank:
+   *                 type: integer
+   *                 nullable: true
+   *                 description: Minimum global Recall rank required to join
+   *               allowlistOnly:
+   *                 type: boolean
+   *                 description: Whether only allowlisted agents can join
+   *               agentAllocation:
+   *                 type: number
+   *                 nullable: true
+   *                 description: Agent reward pool allocation amount
+   *               agentAllocationUnit:
+   *                 type: string
+   *                 nullable: true
+   *                 enum: [RECALL, USDC, USD]
+   *                 description: Unit for agent reward allocation
+   *               boosterAllocation:
+   *                 type: number
+   *                 nullable: true
+   *                 description: Booster reward pool allocation amount
+   *               boosterAllocationUnit:
+   *                 type: string
+   *                 nullable: true
+   *                 enum: [RECALL, USDC, USD]
+   *                 description: Unit for booster reward allocation
+   *               rewardRules:
+   *                 type: string
+   *                 nullable: true
+   *                 description: Rules for reward distribution
+   *               rewardDetails:
+   *                 type: string
+   *                 nullable: true
+   *                 description: Additional reward details
+   *               boostTimeDecayRate:
+   *                 type: number
+   *                 nullable: true
+   *                 minimum: 0.1
+   *                 maximum: 0.9
+   *                 description: Decay rate for boost time calculations. Must be between 0.1 and 0.9.
+   *                 example: 0.5
+   *               displayState:
+   *                 type: string
+   *                 nullable: true
+   *                 enum: [active, waitlist, cancelled, pending, paused]
+   *                 description: UI display state
+   *               rewardsIneligible:
+   *                 type: array
+   *                 items:
+   *                   type: string
+   *                 description: Agent IDs ineligible to receive rewards from this competition
+   *                 example: ["agent-id-1", "agent-id-2"]
    *     responses:
    *       200:
    *         description: Competition started successfully
@@ -479,7 +1661,7 @@ export function configureAdminRoutes(
    *                       description: Whether sandbox mode is enabled for this competition
    *                     type:
    *                       type: string
-   *                       enum: [trading]
+   *                       enum: [trading, perpetual_futures, spot_live_trading]
    *                       description: The type of competition
    *                     maxParticipants:
    *                       type: integer
@@ -526,6 +1708,81 @@ export function configureAdminRoutes(
    *                           type: number
    *                           nullable: true
    *                           description: Minimum number of trades required per day (null if no requirement)
+   *                     arenaId:
+   *                       type: string
+   *                       nullable: true
+   *                       description: Arena ID for grouping competitions
+   *                     engineId:
+   *                       type: string
+   *                       nullable: true
+   *                       enum: [spot_paper_trading, perpetual_futures, spot_live_trading]
+   *                       description: Engine type identifier
+   *                     engineVersion:
+   *                       type: string
+   *                       nullable: true
+   *                       description: Engine version
+   *                     vips:
+   *                       type: array
+   *                       nullable: true
+   *                       items:
+   *                         type: string
+   *                       description: VIP agent IDs with special access
+   *                     allowlist:
+   *                       type: array
+   *                       nullable: true
+   *                       items:
+   *                         type: string
+   *                       description: Allowlisted agent IDs
+   *                     blocklist:
+   *                       type: array
+   *                       nullable: true
+   *                       items:
+   *                         type: string
+   *                       description: Blocklisted agent IDs
+   *                     minRecallRank:
+   *                       type: integer
+   *                       nullable: true
+   *                       description: Minimum global Recall rank required to join
+   *                     allowlistOnly:
+   *                       type: boolean
+   *                       description: Whether only allowlisted agents can join
+   *                     agentAllocation:
+   *                       type: number
+   *                       nullable: true
+   *                       description: Agent reward pool allocation amount
+   *                     agentAllocationUnit:
+   *                       type: string
+   *                       nullable: true
+   *                       enum: [RECALL, USDC, USD]
+   *                       description: Unit for agent reward allocation
+   *                     boosterAllocation:
+   *                       type: number
+   *                       nullable: true
+   *                       description: Booster reward pool allocation amount
+   *                     boosterAllocationUnit:
+   *                       type: string
+   *                       nullable: true
+   *                       enum: [RECALL, USDC, USD]
+   *                       description: Unit for booster reward allocation
+   *                     rewardRules:
+   *                       type: string
+   *                       nullable: true
+   *                       description: Rules for reward distribution
+   *                     rewardDetails:
+   *                       type: string
+   *                       nullable: true
+   *                       description: Additional reward details
+   *                     displayState:
+   *                       type: string
+   *                       nullable: true
+   *                       enum: [active, waitlist, cancelled, pending, paused]
+   *                       description: UI display state
+   *                     rewardsIneligible:
+   *                       type: array
+   *                       nullable: true
+   *                       items:
+   *                         type: string
+   *                       description: Agent IDs ineligible to receive rewards from this competition
    *                 initializedAgents:
    *                   type: array
    *                   items:
@@ -613,7 +1870,7 @@ export function configureAdminRoutes(
    *                       description: Type of cross-chain trading allowed in this competition
    *                     type:
    *                       type: string
-   *                       enum: [trading]
+   *                       enum: [trading, perpetual_futures, spot_live_trading]
    *                       description: The type of competition
    *                     maxParticipants:
    *                       type: integer
@@ -677,7 +1934,7 @@ export function configureAdminRoutes(
    *               type:
    *                 type: string
    *                 description: The type of competition
-   *                 enum: [trading, perpetual_futures]
+   *                 enum: [trading, perpetual_futures, spot_live_trading]
    *                 example: trading
    *               externalUrl:
    *                 type: string
@@ -687,16 +1944,21 @@ export function configureAdminRoutes(
    *                 type: string
    *                 description: URL to competition image
    *                 example: https://example.com/image.jpg
-   *               votingStartDate:
+   *               boostStartDate:
    *                 type: string
    *                 format: date-time
-   *                 description: Voting start date
+   *                 description: Boosting start date
    *                 example: 2023-05-01T00:00:00Z
-   *               votingEndDate:
+   *               boostEndDate:
    *                 type: string
    *                 format: date-time
-   *                 description: Voting end date
+   *                 description: Boosting end date
    *                 example: 2023-05-07T23:59:59Z
+   *               evaluationMetric:
+   *                 type: string
+   *                 enum: [calmar_ratio, sortino_ratio, simple_return]
+   *                 description: Metric used for ranking agents
+   *                 example: calmar_ratio
    *               rewards:
    *                 type: object
    *                 nullable: true
@@ -731,6 +1993,40 @@ export function configureAdminRoutes(
    *                     type: string
    *                     description: Optional API URL override for the provider
    *                     example: https://api.symphony.com
+   *               spotLiveConfig:
+   *                 type: object
+   *                 nullable: true
+   *                 description: Configuration for spot live trading (required when changing type to spot_live_trading)
+   *                 properties:
+   *                   dataSource:
+   *                     type: string
+   *                     enum: [rpc_direct, envio_indexing, hybrid]
+   *                     description: Data source type for tracking on-chain trades
+   *                     example: rpc_direct
+   *                   dataSourceConfig:
+   *                     type: object
+   *                     description: Data source configuration. For Alchemy, only type, provider, and chains are required
+   *                     properties:
+   *                       type:
+   *                         type: string
+   *                         enum: [rpc_direct, envio_indexing, hybrid]
+   *                       provider:
+   *                         type: string
+   *                         enum: [alchemy, quicknode, infura]
+   *                         description: RPC provider - API key read from environment
+   *                       chains:
+   *                         type: array
+   *                         items:
+   *                           type: string
+   *                   chains:
+   *                     type: array
+   *                     items:
+   *                       type: string
+   *                     description: Chains enabled for this competition
+   *                   selfFundingThresholdUsd:
+   *                     type: number
+   *                     description: Threshold for self-funding violation detection in USD
+   *                     default: 10
    *               prizePools:
    *                 type: object
    *                 description: Prize pool configuration
@@ -751,6 +2047,129 @@ export function configureAdminRoutes(
    *                 nullable: true
    *                 description: Minimum stake amount required to join the competition (in USD)
    *                 example: 100
+   *               arenaId:
+   *                 type: string
+   *                 nullable: true
+   *                 description: Arena ID for routing competitions (optional - can reassign competition to different arena)
+   *                 example: default-paper-arena
+   *               engineId:
+   *                 type: string
+   *                 nullable: true
+   *                 enum: [spot_paper_trading, perpetual_futures, spot_live_trading]
+   *                 description: Engine type identifier (optional)
+   *                 example: spot_paper_trading
+   *               engineVersion:
+   *                 type: string
+   *                 nullable: true
+   *                 description: Engine version (optional)
+   *                 example: 1.0.0
+   *               vips:
+   *                 type: array
+   *                 nullable: true
+   *                 items:
+   *                   type: string
+   *                 description: VIP agent IDs with special access
+   *               allowlist:
+   *                 type: array
+   *                 nullable: true
+   *                 items:
+   *                   type: string
+   *                 description: Allowlisted agent IDs
+   *               blocklist:
+   *                 type: array
+   *                 nullable: true
+   *                 items:
+   *                   type: string
+   *                 description: Blocklisted agent IDs
+   *               minRecallRank:
+   *                 type: integer
+   *                 nullable: true
+   *                 description: Minimum global Recall rank required to join
+   *               allowlistOnly:
+   *                 type: boolean
+   *                 nullable: true
+   *                 description: Whether only allowlisted agents can join
+   *               agentAllocation:
+   *                 type: number
+   *                 nullable: true
+   *                 description: Agent reward pool allocation amount
+   *               agentAllocationUnit:
+   *                 type: string
+   *                 nullable: true
+   *                 enum: [RECALL, USDC, USD]
+   *                 description: Unit for agent reward allocation
+   *               boosterAllocation:
+   *                 type: number
+   *                 nullable: true
+   *                 description: Booster reward pool allocation amount
+   *               boosterAllocationUnit:
+   *                 type: string
+   *                 nullable: true
+   *                 enum: [RECALL, USDC, USD]
+   *                 description: Unit for booster reward allocation
+   *               rewardRules:
+   *                 type: string
+   *                 nullable: true
+   *                 description: Rules for reward distribution
+   *               rewardDetails:
+   *                 type: string
+   *                 nullable: true
+   *                 description: Additional reward details
+   *               boostTimeDecayRate:
+   *                 type: number
+   *                 nullable: true
+   *                 minimum: 0.1
+   *                 maximum: 0.9
+   *                 description: Decay rate for boost time calculations. Must be between 0.1 and 0.9.
+   *                 example: 0.5
+   *               displayState:
+   *                 type: string
+   *                 nullable: true
+   *                 enum: [active, waitlist, cancelled, pending, paused]
+   *                 description: UI display state
+   *               rewardsIneligible:
+   *                 type: array
+   *                 items:
+   *                   type: string
+   *                 description: Agent IDs ineligible to receive rewards from this competition
+   *                 example: ["agent-id-1", "agent-id-2"]
+   *               paperTradingConfig:
+   *                 type: object
+   *                 nullable: true
+   *                 description: Paper trading configuration for the competition
+   *                 properties:
+   *                   maxTradePercentage:
+   *                     type: integer
+   *                     minimum: 1
+   *                     maximum: 100
+   *                     description: "Maximum percentage of portfolio that can be traded in a single trade (default: 25)"
+   *                     example: 25
+   *               paperTradingInitialBalances:
+   *                 type: array
+   *                 nullable: true
+   *                 description: Initial token balances for the competition
+   *                 items:
+   *                   type: object
+   *                   required:
+   *                     - specificChain
+   *                     - tokenSymbol
+   *                     - amount
+   *                   properties:
+   *                     specificChain:
+   *                       type: string
+   *                       maxLength: 20
+   *                       description: Specific chain identifier
+   *                       example: "base"
+   *                     tokenSymbol:
+   *                       type: string
+   *                       maxLength: 20
+   *                       description: Token symbol
+   *                       example: "USDC"
+   *                     amount:
+   *                       type: integer
+   *                       minimum: 0
+   *                       description: Initial balance amount
+   *                       example: 10000
    *     responses:
    *       200:
    *         description: Competition updated successfully
@@ -776,7 +2195,7 @@ export function configureAdminRoutes(
    *                       description: Competition description
    *                     type:
    *                       type: string
-   *                       enum: [trading, perpetual_futures]
+   *                       enum: [trading, perpetual_futures, spot_live_trading]
    *                       description: The type of competition
    *                     externalUrl:
    *                       type: string
@@ -796,15 +2215,15 @@ export function configureAdminRoutes(
    *                       format: date-time
    *                       description: Competition end date
    *                       nullable: true
-   *                     votingStartDate:
+   *                     boostStartDate:
    *                       type: string
    *                       format: date-time
-   *                       description: Voting start date
+   *                       description: Boosting start date
    *                       nullable: true
-   *                     votingEndDate:
+   *                     boostEndDate:
    *                       type: string
    *                       format: date-time
-   *                       description: Voting end date
+   *                       description: Boosting end date
    *                       nullable: true
    *                     status:
    *                       type: string
@@ -837,8 +2256,137 @@ export function configureAdminRoutes(
    *                       type: string
    *                       format: date-time
    *                       description: Competition last update date
+   *                     arenaId:
+   *                       type: string
+   *                       nullable: true
+   *                       description: Arena ID for grouping competitions
+   *                     engineId:
+   *                       type: string
+   *                       nullable: true
+   *                       enum: [spot_paper_trading, perpetual_futures, spot_live_trading]
+   *                       description: Engine type identifier
+   *                     engineVersion:
+   *                       type: string
+   *                       nullable: true
+   *                       description: Engine version
+   *                     vips:
+   *                       type: array
+   *                       nullable: true
+   *                       items:
+   *                         type: string
+   *                       description: VIP agent IDs with special access
+   *                     allowlist:
+   *                       type: array
+   *                       nullable: true
+   *                       items:
+   *                         type: string
+   *                       description: Allowlisted agent IDs
+   *                     blocklist:
+   *                       type: array
+   *                       nullable: true
+   *                       items:
+   *                         type: string
+   *                       description: Blocklisted agent IDs
+   *                     minRecallRank:
+   *                       type: integer
+   *                       nullable: true
+   *                       description: Minimum global Recall rank required to join
+   *                     allowlistOnly:
+   *                       type: boolean
+   *                       description: Whether only allowlisted agents can join
+   *                     agentAllocation:
+   *                       type: number
+   *                       nullable: true
+   *                       description: Agent reward pool allocation amount
+   *                     agentAllocationUnit:
+   *                       type: string
+   *                       nullable: true
+   *                       enum: [RECALL, USDC, USD]
+   *                       description: Unit for agent reward allocation
+   *                     boosterAllocation:
+   *                       type: number
+   *                       nullable: true
+   *                       description: Booster reward pool allocation amount
+   *                     boosterAllocationUnit:
+   *                       type: string
+   *                       nullable: true
+   *                       enum: [RECALL, USDC, USD]
+   *                       description: Unit for booster reward allocation
+   *                     rewardRules:
+   *                       type: string
+   *                       nullable: true
+   *                       description: Rules for reward distribution
+   *                     rewardDetails:
+   *                       type: string
+   *                       nullable: true
+   *                       description: Additional reward details
+   *                     displayState:
+   *                       type: string
+   *                       nullable: true
+   *                       enum: [active, waitlist, cancelled, pending, paused]
+   *                       description: UI display state
+   *                     rewardsIneligible:
+   *                       type: array
+   *                       nullable: true
+   *                       items:
+   *                         type: string
+   *                       description: Agent IDs ineligible to receive rewards from this competition
+   *                     spotLiveConfig:
+   *                       type: object
+   *                       nullable: true
+   *                       description: Spot live trading configuration (only present for spot_live_trading type)
+   *                       properties:
+   *                         dataSource:
+   *                           type: string
+   *                           enum: [rpc_direct, envio_indexing, hybrid]
+   *                           description: Data source type for tracking on-chain trades
+   *                         dataSourceConfig:
+   *                           type: object
+   *                           description: Data source configuration details
+   *                         selfFundingThresholdUsd:
+   *                           type: number
+   *                           description: Threshold for self-funding detection in USD
+   *                         minFundingThreshold:
+   *                           type: number
+   *                           nullable: true
+   *                           description: Minimum portfolio balance to start in competition (enforced at competition start)
+   *                         syncIntervalMinutes:
+   *                           type: number
+   *                           description: Interval in minutes between blockchain data syncs
+   *                         chains:
+   *                           type: array
+   *                           items:
+   *                             type: string
+   *                           description: Enabled blockchain networks for this competition
+   *                         allowedProtocols:
+   *                           type: array
+   *                           description: Allowed DeFi protocols for trading (empty array means all protocols allowed)
+   *                           items:
+   *                             type: object
+   *                             properties:
+   *                               protocol:
+   *                                 type: string
+   *                                 description: Protocol identifier (e.g., uniswap_v3, aerodrome)
+   *                               specificChain:
+   *                                 type: string
+   *                                 description: Chain the protocol is enabled on
+   *                         allowedTokens:
+   *                           type: array
+   *                           description: Allowed tokens for trading (empty array means all tokens allowed)
+   *                           items:
+   *                             type: object
+   *                             properties:
+   *                               address:
+   *                                 type: string
+   *                                 description: Token contract address
+   *                               symbol:
+   *                                 type: string
+   *                                 description: Token symbol (e.g., WETH, USDC)
+   *                               specificChain:
+   *                                 type: string
+   *                                 description: Chain the token is on
    *       400:
-   *         description: Bad request - Missing competitionId, no valid fields provided, attempting to update restricted fields (startDate, endDate, status), or missing perpsProvider when changing type to perpetual_futures
+   *         description: Bad request - Missing competitionId, no valid fields provided, attempting to update restricted fields (startDate, endDate, status), missing perpsProvider when changing type to perpetual_futures, or missing spotLiveConfig when changing type to spot_live_trading
    *       401:
    *         description: Unauthorized - Admin authentication required
    *       404:
@@ -923,8 +2471,8 @@ export function configureAdminRoutes(
    *   get:
    *     tags:
    *       - Admin
-   *     summary: Get transfer violations for a perps competition
-   *     description: Returns agents who have made transfers during the competition (mid-competition transfers are prohibited)
+   *     summary: Get transfer violations for a perps or spot live competition
+   *     description: Returns agents who have made transfers during the competition (mid-competition transfers are prohibited for both perps and spot live)
    *     security:
    *       - BearerAuth: []
    *     parameters:
@@ -964,7 +2512,7 @@ export function configureAdminRoutes(
    *                         description: Number of transfers made during competition
    *                         minimum: 1
    *       400:
-   *         description: Competition is not a perps competition
+   *         description: Competition is not a perps or spot live competition
    *         content:
    *           application/json:
    *             schema:
@@ -975,7 +2523,7 @@ export function configureAdminRoutes(
    *                   example: false
    *                 error:
    *                   type: string
-   *                   example: Competition is not a perpetual futures competition
+   *                   example: Transfer violations are only applicable to perpetual futures and spot live trading competitions
    *       404:
    *         description: Competition not found
    *         content:
@@ -995,6 +2543,123 @@ export function configureAdminRoutes(
   router.get(
     "/competition/:competitionId/transfer-violations",
     controller.getCompetitionTransferViolations,
+  );
+
+  /**
+   * @openapi
+   * /api/admin/competition/{competitionId}/spot-live/alerts:
+   *   get:
+   *     tags:
+   *       - Admin
+   *     summary: Get self-funding alerts for a spot live competition
+   *     description: Returns self-funding violation alerts detected via transfer history or balance reconciliation
+   *     parameters:
+   *       - in: path
+   *         name: competitionId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         description: Competition ID
+   *       - in: query
+   *         name: reviewed
+   *         schema:
+   *           type: string
+   *           enum: [true, false, all]
+   *           default: false
+   *         description: Filter by review status
+   *       - in: query
+   *         name: violationType
+   *         schema:
+   *           type: string
+   *           enum: [transfer, balance_reconciliation, all]
+   *         description: Filter by violation type
+   *     responses:
+   *       200:
+   *         description: Alerts retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *                 alerts:
+   *                   type: array
+   *                   items:
+   *                     type: object
+   *       404:
+   *         description: Competition not found
+   *       500:
+   *         description: Server error
+   */
+  router.get(
+    "/competition/:competitionId/spot-live/alerts",
+    controller.getSpotLiveSelfFundingAlerts,
+  );
+
+  /**
+   * @openapi
+   * /api/admin/competition/{competitionId}/spot-live/alerts/{alertId}/review:
+   *   put:
+   *     tags:
+   *       - Admin
+   *     summary: Review a self-funding alert
+   *     description: Mark an alert as reviewed with admin decision and notes
+   *     parameters:
+   *       - in: path
+   *         name: competitionId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         description: Competition ID
+   *       - in: path
+   *         name: alertId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         description: Alert ID
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - reviewNote
+   *               - actionTaken
+   *             properties:
+   *               reviewNote:
+   *                 type: string
+   *                 description: Admin review notes
+   *               actionTaken:
+   *                 type: string
+   *                 enum: [dismissed, disqualified, warning]
+   *                 description: Action taken on this alert
+   *     responses:
+   *       200:
+   *         description: Alert reviewed successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *                 alert:
+   *                   type: object
+   *       404:
+   *         description: Alert not found
+   *       500:
+   *         description: Server error
+   */
+  router.put(
+    "/competition/:competitionId/spot-live/alerts/:alertId/review",
+    controller.reviewSpotLiveSelfFundingAlert,
   );
 
   /**
@@ -1064,7 +2729,7 @@ export function configureAdminRoutes(
    *                       description: Type of cross-chain trading allowed in this competition
    *                     type:
    *                       type: string
-   *                       enum: [trading]
+   *                       enum: [trading, perpetual_futures, spot_live_trading]
    *                       description: The type of competition
    *                 leaderboard:
    *                   type: array
@@ -1897,6 +3562,13 @@ export function configureAdminRoutes(
    *                       type: string
    *                       description: URL to the agent's image
    *                       nullable: true
+   *                     isRewardsIneligible:
+   *                       type: boolean
+   *                       description: Whether the agent is globally ineligible for rewards
+   *                     rewardsIneligibilityReason:
+   *                       type: string
+   *                       description: Reason for rewards ineligibility
+   *                       nullable: true
    *                     createdAt:
    *                       type: string
    *                       format: date-time
@@ -1960,6 +3632,14 @@ export function configureAdminRoutes(
    *                 type: object
    *                 description: Agent's new metadata
    *                 example: { "strategy": "updated-strategy" }
+   *               isRewardsIneligible:
+   *                 type: boolean
+   *                 description: Whether the agent is globally ineligible for rewards across all competitions
+   *                 example: true
+   *               rewardsIneligibilityReason:
+   *                 type: string
+   *                 description: Optional reason for rewards ineligibility
+   *                 example: "Test agent - not eligible for production rewards"
    *     responses:
    *       200:
    *         description: Agent updated successfully
@@ -2008,6 +3688,13 @@ export function configureAdminRoutes(
    *                     metadata:
    *                       type: object
    *                       description: Agent metadata
+   *                       nullable: true
+   *                     isRewardsIneligible:
+   *                       type: boolean
+   *                       description: Whether the agent is globally ineligible for rewards
+   *                     rewardsIneligibilityReason:
+   *                       type: string
+   *                       description: Reason for rewards ineligibility
    *                       nullable: true
    *                     createdAt:
    *                       type: string
@@ -2469,6 +4156,189 @@ export function configureAdminRoutes(
    *         description: Server error
    */
   router.post("/rewards/allocate", controller.allocateRewards);
+
+  /**
+   * @openapi
+   * /api/admin/boost-bonus:
+   *   post:
+   *     tags:
+   *       - Admin
+   *     summary: Add bonus boost to users
+   *     description: |
+   *       Add bonus boosts to multiple users in a single request. Each boost applies to all competitions
+   *       that start before the expiration date.
+   *
+   *       **Note**: This endpoint is currently stubbed and returns 501 Not Implemented for API contract validation.
+   *     security:
+   *       - BearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - boosts
+   *             properties:
+   *               boosts:
+   *                 type: array
+   *                 minItems: 1
+   *                 maxItems: 100
+   *                 description: Array of boost items to add (max 100 items per batch, no duplicate wallets within batch)
+   *                 items:
+   *                   type: object
+   *                   required:
+   *                     - wallet
+   *                     - amount
+   *                     - expiresAt
+   *                   properties:
+   *                     wallet:
+   *                       type: string
+   *                       pattern: ^0x[0-9a-fA-F]{40}$
+   *                       description: User wallet address (Ethereum hex address)
+   *                       example: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0"
+   *                     amount:
+   *                       type: string
+   *                       pattern: ^\d+$
+   *                       description: Boost amount as numeric string (BigInt). Must be > 0 and <= 10^24 (1 million boost).
+   *                       example: "500000000000000000"
+   *                     expiresAt:
+   *                       type: string
+   *                       format: date-time
+   *                       description: ISO 8601 expiration date (must be at least 1 minute in the future)
+   *                       example: "2025-12-31T23:59:59Z"
+   *                     meta:
+   *                       type: object
+   *                       description: Optional metadata (primitives only - string, number, boolean). Max 1000 characters when serialized to JSON.
+   *                       additionalProperties:
+   *                         oneOf:
+   *                           - type: string
+   *                           - type: number
+   *                           - type: boolean
+   *                       example:
+   *                         source: "farcaster"
+   *                         campaignId: "campaign-123"
+   *           example:
+   *             boosts:
+   *               - wallet: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0"
+   *                 amount: "500000000000000000"
+   *                 expiresAt: "2025-12-31T23:59:59Z"
+   *                 meta:
+   *                   source: "farcaster"
+   *               - wallet: "0x8ba1f109551bD432803012645Aac136c22C172c8"
+   *                 amount: "250000000000000000"
+   *                 expiresAt: "2025-12-31T23:59:59Z"
+   *     responses:
+   *       501:
+   *         description: Not Implemented - Endpoint is stubbed for API contract validation
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: false
+   *                 error:
+   *                   type: string
+   *                   example: "Not Implemented"
+   *                 message:
+   *                   type: string
+   *                   example: "This endpoint is stubbed for API contract validation. Full implementation pending."
+   *                 data:
+   *                   type: object
+   *                   properties:
+   *                     requestedCount:
+   *                       type: number
+   *                       description: Number of boost items in the request
+   *                       example: 2
+   *                     note:
+   *                       type: string
+   *                       example: "When implemented, this will process 2 boost grants and apply them to eligible competitions"
+   *       400:
+   *         description: Bad Request - Invalid request format, validation errors, or empty array
+   *       401:
+   *         description: Unauthorized - Admin authentication required
+   *       500:
+   *         description: Internal server error
+   */
+  router.post("/boost-bonus", controller.addBonusBoost);
+
+  /**
+   * @openapi
+   * /api/admin/boost-bonus/revoke:
+   *   post:
+   *     tags:
+   *       - Admin
+   *     summary: Revoke bonus boost
+   *     description: |
+   *       Revoke multiple bonus boosts in a single request. Prevents future applications and removes
+   *       from competitions where the boosting window hasn't opened.
+   *
+   *       **Note**: This endpoint is currently stubbed and returns 501 Not Implemented for API contract validation.
+   *     security:
+   *       - BearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - boostIds
+   *             properties:
+   *               boostIds:
+   *                 type: array
+   *                 minItems: 1
+   *                 maxItems: 100
+   *                 description: Array of boost IDs to revoke (max 100 items per batch)
+   *                 items:
+   *                   type: string
+   *                   format: uuid
+   *                 example:
+   *                   - "12345678-1234-1234-1234-123456789012"
+   *                   - "87654321-4321-4321-4321-210987654321"
+   *           example:
+   *             boostIds:
+   *               - "12345678-1234-1234-1234-123456789012"
+   *               - "87654321-4321-4321-4321-210987654321"
+   *     responses:
+   *       501:
+   *         description: Not Implemented - Endpoint is stubbed for API contract validation
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: false
+   *                 error:
+   *                   type: string
+   *                   example: "Not Implemented"
+   *                 message:
+   *                   type: string
+   *                   example: "This endpoint is stubbed for API contract validation. Full implementation pending."
+   *                 data:
+   *                   type: object
+   *                   properties:
+   *                     requestedCount:
+   *                       type: number
+   *                       description: Number of boost IDs in the request
+   *                       example: 2
+   *                     note:
+   *                       type: string
+   *                       example: "When implemented, this will revoke 2 boosts and remove them from competitions where the boosting window hasn't opened"
+   *       400:
+   *         description: Bad Request - Invalid request format, validation errors, empty array, or boost already revoked
+   *       401:
+   *         description: Unauthorized - Admin authentication required
+   *       404:
+   *         description: Not Found - One or more boost IDs not found
+   *       500:
+   *         description: Internal server error
+   */
+  router.post("/boost-bonus/revoke", controller.revokeBonusBoost);
 
   return router;
 }

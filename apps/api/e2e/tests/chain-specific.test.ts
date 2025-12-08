@@ -2,22 +2,22 @@ import { and, desc, eq } from "drizzle-orm";
 import { beforeEach, describe, expect, test } from "vitest";
 
 import { trades } from "@recallnet/db/schema/trading/defs";
-
-import { config } from "@/config/index.js";
-import { db } from "@/database/db.js";
 import {
   BalancesResponse,
   BlockchainType,
   SpecificChain,
   TradeResponse,
-} from "@/e2e/utils/api-types.js";
+} from "@recallnet/test-utils";
 import {
   createTestClient,
   getAdminApiKey,
   noTradingConstraints,
   registerUserAndAgentAndGetClient,
   startTestCompetition,
-} from "@/e2e/utils/test-helpers.js";
+} from "@recallnet/test-utils";
+
+import { config } from "@/config/index.js";
+import { db } from "@/database/db.js";
 
 const reason = "chain specific end to end tests";
 
@@ -43,14 +43,17 @@ describe("Specific Chains", () => {
 
     // Start a competition with the agent
     const competitionName = `Specific Chain Test ${Date.now()}`;
-    await startTestCompetition({
+    const competitionResponse = await startTestCompetition({
       adminClient,
       name: competitionName,
       agentIds: [agent.id],
     });
+    const competitionId = competitionResponse.competition.id;
 
     // Use the agent client API to get balances instead of direct DB query
-    const balancesResponse = (await client.getBalance()) as BalancesResponse;
+    const balancesResponse = (await client.getBalance(
+      competitionId,
+    )) as BalancesResponse;
     expect(balancesResponse.success).toBe(true);
     expect(Array.isArray(balancesResponse.balances)).toBe(true);
     expect(balancesResponse.balances.length).toBeGreaterThan(0);
@@ -103,14 +106,17 @@ describe("Specific Chains", () => {
 
     // Start a competition with the agent
     const competitionName = `Trade Chain Test ${Date.now()}`;
-    await startTestCompetition({
+    const competitionResponse = await startTestCompetition({
       adminClient,
       name: competitionName,
       agentIds: [agent.id],
     });
+    const competitionId = competitionResponse.competition.id;
 
     // Get agent's current balances
-    const balanceResponse = (await client.getBalance()) as BalancesResponse;
+    const balanceResponse = (await client.getBalance(
+      competitionId,
+    )) as BalancesResponse;
     expect(balanceResponse.success).toBe(true);
 
     // Find ETH and USDC tokens for a trade using config addresses
@@ -152,6 +158,7 @@ describe("Specific Chains", () => {
       fromToken: ethToken,
       toToken: usdcToken,
       amount: tradeAmount,
+      competitionId,
       reason,
     });
     expect(tradeResponse.success).toBe(true);
@@ -184,15 +191,18 @@ describe("Specific Chains", () => {
 
     // Start a competition with the agent
     const competitionName = `Token Purchase Test ${Date.now()}`;
-    await startTestCompetition({
+    const competitionResponse2 = await startTestCompetition({
       adminClient,
       name: competitionName,
       agentIds: [agent.id],
       tradingConstraints: noTradingConstraints,
     });
+    const competitionId2 = competitionResponse2.competition.id;
 
     // Get agent's current balances
-    const balanceResponse = (await client.getBalance()) as BalancesResponse;
+    const balanceResponse = (await client.getBalance(
+      competitionId2,
+    )) as BalancesResponse;
     expect(balanceResponse.success).toBe(true);
 
     // Target token we want to purchase (LINK on optimism)
@@ -206,6 +216,7 @@ describe("Specific Chains", () => {
       fromToken: usdcAddress,
       toToken: targetTokenAddress,
       amount: "100",
+      competitionId: competitionId2,
       reason,
     });
 
@@ -213,8 +224,9 @@ describe("Specific Chains", () => {
     expect(tradeResponse.success).toBe(true);
 
     // Get updated balances to verify we received the target token
-    const updatedBalanceResponse =
-      (await client.getBalance()) as BalancesResponse;
+    const updatedBalanceResponse = (await client.getBalance(
+      competitionId2,
+    )) as BalancesResponse;
     expect(updatedBalanceResponse.success).toBe(true);
 
     // Find the target token in the updated balances
@@ -249,7 +261,9 @@ describe("Specific Chains", () => {
     expect(trade?.toSpecificChain).toBe("optimism");
 
     // Verify that balances contain specificChain
-    const balancesResponse = (await client.getBalance()) as BalancesResponse;
+    const balancesResponse = (await client.getBalance(
+      competitionId2,
+    )) as BalancesResponse;
     expect(balancesResponse.success).toBe(true);
     expect(Array.isArray(balancesResponse.balances)).toBe(true);
     expect(balancesResponse.balances.length).toBeGreaterThan(0);
@@ -269,6 +283,7 @@ describe("Specific Chains", () => {
       fromToken: targetTokenAddress,
       toToken: usdcAddress,
       amount: trade?.toAmount.toString() ?? "0",
+      competitionId: competitionId2,
       reason,
     });
     // Verify the swap back was successful
@@ -341,11 +356,12 @@ describe("Specific Chains", () => {
 
     // Start a competition with the agent
     const competitionName = `Token Purchase Test ${Date.now()}`;
-    await startTestCompetition({
+    const competitionResponse3 = await startTestCompetition({
       adminClient,
       name: competitionName,
       agentIds: [agent.id],
     });
+    const competitionId3 = competitionResponse3.competition.id;
 
     // Track successfully purchased tokens
     const purchasedTokens: string[] = [];
@@ -353,7 +369,9 @@ describe("Specific Chains", () => {
     for (const token of tokens) {
       try {
         // Get agent's current balances
-        const balanceResponse = (await client.getBalance()) as BalancesResponse;
+        const balanceResponse = (await client.getBalance(
+          competitionId3,
+        )) as BalancesResponse;
         expect(balanceResponse.success).toBe(true);
 
         const specificChain = token.specificChain;
@@ -373,6 +391,7 @@ describe("Specific Chains", () => {
           fromToken: usdcAddress,
           toToken: tokenAddress,
           amount: "100",
+          competitionId: competitionId3,
           reason,
         });
 
@@ -407,7 +426,9 @@ describe("Specific Chains", () => {
     }
 
     // Verify that balances contain specificChain for all purchased tokens
-    const finalBalances = (await client.getBalance()) as BalancesResponse;
+    const finalBalances = (await client.getBalance(
+      competitionId3,
+    )) as BalancesResponse;
     expect(finalBalances.success).toBe(true);
     expect(Array.isArray(finalBalances.balances)).toBe(true);
 
@@ -449,7 +470,7 @@ describe("Specific Chains", () => {
 
     // Start a competition with the agent
     const competitionName = `Token Purchase Test ${Date.now()}`;
-    await startTestCompetition({
+    const competitionResponse4 = await startTestCompetition({
       adminClient,
       name: competitionName,
       agentIds: [agent.id],
@@ -457,9 +478,12 @@ describe("Specific Chains", () => {
       // so that the actual test path always runs.
       tradingConstraints: noTradingConstraints,
     });
+    const competitionId4 = competitionResponse4.competition.id;
 
     // Get agent's current balances
-    const balanceResponse = (await client.getBalance()) as BalancesResponse;
+    const balanceResponse = (await client.getBalance(
+      competitionId4,
+    )) as BalancesResponse;
     expect(balanceResponse.success).toBe(true);
 
     // // Target token we want to purchase
@@ -473,6 +497,7 @@ describe("Specific Chains", () => {
       fromToken: usdcAddress,
       toToken: targetTokenAddress,
       amount: "100",
+      competitionId: competitionId4,
       reason,
     })) as TradeResponse;
 
@@ -486,6 +511,7 @@ describe("Specific Chains", () => {
       fromSpecificChain: "optimism" as SpecificChain,
       toSpecificChain: "optimism" as SpecificChain,
       amount: "100",
+      competitionId: competitionId4,
       reason,
     })) as TradeResponse;
 

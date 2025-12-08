@@ -1,3 +1,5 @@
+import type { UserMetadata } from "@recallnet/db/schema/core/defs";
+
 export interface AdminAgent {
   id: string;
   handle: string;
@@ -33,7 +35,7 @@ export interface AdminCreateUserRequest {
   email: string;
   name?: string;
   imageUrl?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: UserMetadata;
   privyId?: string;
   embeddedWalletAddress?: string;
 }
@@ -95,7 +97,7 @@ export interface AdminUser {
   email: string;
   isSubscribed: boolean;
   imageUrl?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: UserMetadata;
   status: string;
   createdAt: string;
   updatedAt: string;

@@ -1,6 +1,9 @@
+// @ts-check
 import { withSentryConfig } from "@sentry/nextjs";
 
-/** @type {import('next').NextConfig} */
+/**
+ * @type {import('next').NextConfig}
+ **/
 const nextConfig = {
   images: {
     remotePatterns: [
@@ -11,6 +14,7 @@ const nextConfig = {
     ],
   },
   transpilePackages: ["@recallnet/ui2", "@recallnet/fonts"],
+  serverExternalPackages: ["@envio-dev/hypersync-client"],
 };
 
 // Wrap the config with Sentry
@@ -22,7 +26,8 @@ export default withSentryConfig(nextConfig, {
   project: "competitions-app",
 
   // Only print logs for uploading source maps in CI
-  silent: !process.env.CI,
+  // Use globalThis.process to avoid referencing an undefined identifier in environments where `process` is not declared.
+  silent: !globalThis.process.env.CI,
 
   // For all available options, see:
   // https://docs.sentry.io/platforms/javascript/guides/nextjs/manual-setup/
@@ -42,7 +47,7 @@ export default withSentryConfig(nextConfig, {
   tunnelRoute: "/monitoring",
 
   // Hides source maps from generated client bundles
-  hideSourceMaps: true,
+  sourcemaps: { disable: true },
 
   // Automatically tree-shake Sentry logger statements to reduce bundle size
   disableLogger: true,

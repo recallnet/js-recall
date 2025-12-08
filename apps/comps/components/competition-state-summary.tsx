@@ -26,13 +26,13 @@ const hasAgents = (
 };
 
 /**
- * Displays the current state of a competition including registration and voting status.
- * Shows registration window status (open/closed/full) and voting/boosting window status
+ * Displays the current state of a competition including registration and boosting status.
+ * Shows registration window status (open/closed/full) and boosting window status
  * with appropriate visual indicators and countdown timers.
  *
  * Handles multiple states:
  * - Registration not started, open, closing soon, closed, or full
- * - Voting not started, open, closing soon, or closed
+ * - Boosting not started, open, closing soon, or closed
  * - Special handling for competitions with no dates set
  */
 export const CompetitionStateSummary: React.FC<
@@ -45,13 +45,12 @@ export const CompetitionStateSummary: React.FC<
   const joinEndDate = competition.joinEndDate
     ? new Date(competition.joinEndDate)
     : null;
-  const votingStartDate = competition.votingStartDate
-    ? new Date(competition.votingStartDate)
+  const boostStartDate = competition.boostStartDate
+    ? new Date(competition.boostStartDate)
     : null;
-  const votingEndDate = competition.votingEndDate
-    ? new Date(competition.votingEndDate)
+  const boostEndDate = competition.boostEndDate
+    ? new Date(competition.boostEndDate)
     : null;
-  const hasVoted = competition.userVotingInfo?.info.hasVoted || false;
 
   const isRegistered = hasAgents(competition) && competition.agents.length > 0;
 
@@ -116,44 +115,34 @@ export const CompetitionStateSummary: React.FC<
     };
   };
 
-  const getVotingState = () => {
-    // 1. You already voted (grey)
-    if (hasVoted) {
-      return {
-        text: "You already voted",
-        color: "text-gray-500",
-        date: null,
-        showCountdown: false,
-      };
-    }
-
-    // 2. Voting period hasn't started (grey)
-    if (votingStartDate && isFuture(votingStartDate)) {
-      const timeDiff = votingStartDate.getTime() - now.getTime();
+  const getBoostingState = () => {
+    // Boosting period hasn't started (grey)
+    if (boostStartDate && isFuture(boostStartDate)) {
+      const timeDiff = boostStartDate.getTime() - now.getTime();
       const isLessThan24Hours = timeDiff < 24 * 60 * 60 * 1000;
 
       return {
-        text: "Boosting begins in",
+        text: "Boosting starts in",
         color: "text-gray-500",
-        date: votingStartDate,
+        date: boostStartDate,
         showCountdown: isLessThan24Hours,
       };
     }
 
-    // 3. Voting closes in [hh:mm:ss] (green)
-    if (votingEndDate && isFuture(votingEndDate)) {
-      const timeDiff = votingEndDate.getTime() - now.getTime();
+    // Boosting closes in [hh:mm:ss] (green)
+    if (boostEndDate && isFuture(boostEndDate)) {
+      const timeDiff = boostEndDate.getTime() - now.getTime();
       const isLessThan24Hours = timeDiff < 24 * 60 * 60 * 1000;
 
       return {
         text: "Boosting closes in",
         color: "text-green-500",
-        date: votingEndDate,
+        date: boostEndDate,
         showCountdown: isLessThan24Hours,
       };
     }
 
-    // 4. Boosting is closed (grey)
+    // Boosting is closed (grey)
     return {
       text: "Boosting is closed",
       color: "text-gray-500",
@@ -163,7 +152,7 @@ export const CompetitionStateSummary: React.FC<
   };
 
   const registrationState = getRegistrationState();
-  const votingState = getVotingState();
+  const boostingState = getBoostingState();
 
   return (
     <div className={cn("flex flex-col gap-2", className)}>
@@ -190,20 +179,20 @@ export const CompetitionStateSummary: React.FC<
           </div>
         </div>
 
-        {/* Voting State */}
+        {/* Boosting State */}
         <div className="flex flex-1 items-center gap-3">
-          <Circle className={cn("h-2 w-2 fill-current", votingState.color)} />
+          <Circle className={cn("h-2 w-2 fill-current", boostingState.color)} />
           <div className="flex items-center gap-1">
-            <span className="text-sm">{votingState.text}</span>
-            {votingState.date &&
-              (votingState.showCountdown ? (
+            <span className="text-sm">{boostingState.text}</span>
+            {boostingState.date &&
+              (boostingState.showCountdown ? (
                 <CountdownClock
-                  targetDate={votingState.date}
+                  targetDate={boostingState.date}
                   className="text-sm font-bold text-white"
                 />
               ) : (
                 <span className="text-sm font-bold text-white">
-                  {formatDistanceToNow(votingState.date)}
+                  {formatDistanceToNow(boostingState.date)}
                 </span>
               ))}
           </div>

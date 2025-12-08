@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { skipToken, useMutation, useQuery } from "@tanstack/react-query";
 
 import { config } from "@/config/public";
 import { sandboxClient } from "@/lib/sandbox-client";
@@ -40,8 +40,10 @@ export const useCreateSandboxAgent = () => {
 export const useSandboxAgentApiKey = (agentHandle: string | null) => {
   return useQuery<AdminAgentKeyResponse, Error>({
     queryKey: ["sandbox-agent-api-key", agentHandle],
-    queryFn: () => sandboxClient.getAgentApiKey(agentHandle!),
-    enabled: !!agentHandle && config.publicFlags.enableSandbox,
+    queryFn:
+      agentHandle && config.publicFlags.enableSandbox
+        ? () => sandboxClient.getAgentApiKey(agentHandle)
+        : skipToken,
   });
 };
 

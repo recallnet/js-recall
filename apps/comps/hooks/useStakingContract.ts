@@ -3,25 +3,25 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { type Address, getAddress } from "viem";
+import {
+  useAccount,
+  useChainId,
+  useReadContract,
+  useWaitForTransactionReceipt,
+  useWriteContract,
+} from "wagmi";
 
 import { StakingAbi } from "@/abi/Staking";
 import { config } from "@/config/public";
 
 import { useRecall } from "./useRecall";
-import {
-  useSafeAccount,
-  useSafeChainId,
-  useSafeReadContract,
-  useSafeWaitForTransactionReceipt,
-  useSafeWriteContract,
-} from "./useSafeWagmi";
 
 /**
  * Hook to get the staking contract address for the current chain
  * @returns The contract address for the current chain, or undefined if unsupported
  */
 export const useStakingContractAddress = (): Address | undefined => {
-  const chainId = useSafeChainId();
+  const chainId = useChainId();
 
   return useMemo(() => {
     if (!chainId) {
@@ -71,11 +71,11 @@ export const useStakingContract = (): UseStakingContractResult => {
     isPending,
     error: writeError,
     data: transactionHash,
-  } = useSafeWriteContract();
+  } = useWriteContract();
 
   // Wait for transaction confirmation
   const { isLoading: isConfirming, isSuccess: isConfirmed } =
-    useSafeWaitForTransactionReceipt({
+    useWaitForTransactionReceipt({
       hash: transactionHash,
     });
 
@@ -218,10 +218,10 @@ export const useStakingContract = (): UseStakingContractResult => {
  * @returns Read contract result with user stakes
  */
 export const useUserStakes = () => {
-  const { address, isConnected } = useSafeAccount();
+  const { address, isConnected } = useAccount();
   const contractAddress = useStakingContractAddress();
 
-  return useSafeReadContract({
+  return useReadContract({
     address: contractAddress,
     abi: StakingAbi,
     functionName: "getUserStakes",
@@ -238,7 +238,7 @@ export const useUserStakes = () => {
 export const useStakeInfo = (tokenId: bigint) => {
   const contractAddress = useStakingContractAddress();
 
-  return useSafeReadContract({
+  return useReadContract({
     address: contractAddress,
     abi: StakingAbi,
     functionName: "stakeInfo",
@@ -252,10 +252,10 @@ export const useStakeInfo = (tokenId: bigint) => {
  * @returns Read contract result with total user staked amount
  */
 export const useTotalUserStaked = () => {
-  const { address, isConnected } = useSafeAccount();
+  const { address, isConnected } = useAccount();
   const contractAddress = useStakingContractAddress();
 
-  return useSafeReadContract({
+  return useReadContract({
     address: contractAddress,
     abi: StakingAbi,
     functionName: "totalUserStaked",

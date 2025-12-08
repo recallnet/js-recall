@@ -55,6 +55,11 @@ jobs:
       - name: Run Lint Check
         run: pnpm lint
 
+      # TODO: uncomment this once type issues are fixed
+      # Note: it doesn't error locally, but only in CI
+      # - name: Run Type Check
+      #   run: pnpm check-types
+
       - name: Run Format Check
         run: pnpm format:check
 

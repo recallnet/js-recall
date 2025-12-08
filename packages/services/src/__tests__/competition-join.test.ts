@@ -5,9 +5,14 @@ import { MockProxy, mock } from "vitest-mock-extended";
 
 import { AgentRepository } from "@recallnet/db/repositories/agent";
 import { AgentScoreRepository } from "@recallnet/db/repositories/agent-score";
+import { ArenaRepository } from "@recallnet/db/repositories/arena";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
+import { PaperTradingConfigRepository } from "@recallnet/db/repositories/paper-trading-config";
+import { PaperTradingInitialBalancesRepository } from "@recallnet/db/repositories/paper-trading-initial-balances";
 import { PerpsRepository } from "@recallnet/db/repositories/perps";
+import { SpotLiveRepository } from "@recallnet/db/repositories/spot-live";
 import { StakesRepository } from "@recallnet/db/repositories/stakes";
+import { TradeRepository } from "@recallnet/db/repositories/trade";
 import { UserRepository } from "@recallnet/db/repositories/user";
 import type { SelectAgent } from "@recallnet/db/schema/core/types";
 import { SelectCompetition } from "@recallnet/db/schema/core/types";
@@ -16,10 +21,16 @@ import { Database } from "@recallnet/db/types";
 import type { AgentService } from "../agent.service.js";
 import type { AgentRankService } from "../agentrank.service.js";
 import type { BalanceService } from "../balance.service.js";
+import type { BoostBonusService } from "../boost-bonus.service.js";
 import type { CompetitionRewardService } from "../competition-reward.service.js";
 import { CompetitionService } from "../competition.service.js";
+import { specificChainTokens } from "../lib/config-utils.js";
 import type { PerpsDataProcessor } from "../perps-data-processor.service.js";
 import type { PortfolioSnapshotterService } from "../portfolio-snapshotter.service.js";
+import type { PriceTrackerService } from "../price-tracker.service.js";
+import { RewardsService } from "../rewards.service.js";
+import type { SportsService } from "../sports.service.js";
+import type { SpotDataProcessor } from "../spot-data-processor.service.js";
 import type { TradeSimulatorService } from "../trade-simulator.service.js";
 import type { TradingConstraintsService } from "../trading-constraints.service.js";
 import {
@@ -27,24 +38,32 @@ import {
   type SpecificChain,
   type SpecificChainBalances,
 } from "../types/index.js";
-import type { VoteService } from "../vote.service.js";
 
 describe("CompetitionService - joinCompetition", () => {
   let competitionService: CompetitionService;
   let balanceService: MockProxy<BalanceService>;
   let tradeSimulatorService: MockProxy<TradeSimulatorService>;
   let portfolioSnapshotterService: MockProxy<PortfolioSnapshotterService>;
+  let priceTrackerService: MockProxy<PriceTrackerService>;
   let agentService: MockProxy<AgentService>;
   let agentRankService: MockProxy<AgentRankService>;
-  let voteService: MockProxy<VoteService>;
   let tradingConstraintsService: MockProxy<TradingConstraintsService>;
   let competitionRewardService: MockProxy<CompetitionRewardService>;
+  let rewardsService: MockProxy<RewardsService>;
   let perpsDataProcessor: MockProxy<PerpsDataProcessor>;
+  let spotDataProcessor: MockProxy<SpotDataProcessor>;
+  let boostBonusService: MockProxy<BoostBonusService>;
   let agentRepo: MockProxy<AgentRepository>;
   let agentScoreRepo: MockProxy<AgentScoreRepository>;
+  let arenaRepo: MockProxy<ArenaRepository>;
+  let sportsService: MockProxy<SportsService>;
   let perpsRepo: MockProxy<PerpsRepository>;
+  let spotLiveRepo: MockProxy<SpotLiveRepository>;
   let competitionRepo: MockProxy<CompetitionRepository>;
+  let paperTradingConfigRepo: MockProxy<PaperTradingConfigRepository>;
+  let paperTradingInitialBalancesRepo: MockProxy<PaperTradingInitialBalancesRepository>;
   let stakesRepo: MockProxy<StakesRepository>;
+  let tradeRepo: MockProxy<TradeRepository>;
   let userRepo: MockProxy<UserRepository>;
   let mockDb: MockProxy<Database>;
   let logger: MockProxy<Logger>;
@@ -66,6 +85,8 @@ describe("CompetitionService - joinCompetition", () => {
     status: "active",
     deactivationReason: null,
     deactivationDate: null,
+    isRewardsIneligible: false,
+    rewardsIneligibilityReason: null,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -85,15 +106,32 @@ describe("CompetitionService - joinCompetition", () => {
     updatedAt: new Date(),
     imageUrl: null,
     externalUrl: null,
-    votingStartDate: null,
-    votingEndDate: null,
+    boostStartDate: null,
+    boostEndDate: null,
     joinStartDate: null,
     joinEndDate: null,
     maxParticipants: null,
     registeredParticipants: 0,
     sandboxMode: false,
     minimumStake: null,
+    vips: null,
+    allowlist: null,
+    blocklist: null,
+    minRecallRank: null,
+    allowlistOnly: false,
+    agentAllocation: null,
+    agentAllocationUnit: null,
+    boosterAllocation: null,
+    boosterAllocationUnit: null,
+    rewardRules: null,
+    rewardDetails: null,
     crossChainTradingType: "allow",
+    displayState: null,
+    arenaId: "default-paper-arena",
+    engineId: "spot_paper_trading" as const,
+    engineVersion: "1.0.0",
+    rewardsIneligible: null,
+    boostTimeDecayRate: null,
   };
 
   beforeEach(() => {
@@ -101,17 +139,27 @@ describe("CompetitionService - joinCompetition", () => {
     balanceService = mock<BalanceService>();
     tradeSimulatorService = mock<TradeSimulatorService>();
     portfolioSnapshotterService = mock<PortfolioSnapshotterService>();
+    priceTrackerService = mock<PriceTrackerService>();
     agentService = mock<AgentService>();
     agentRankService = mock<AgentRankService>();
-    voteService = mock<VoteService>();
     tradingConstraintsService = mock<TradingConstraintsService>();
     competitionRewardService = mock<CompetitionRewardService>();
+    rewardsService = mock<RewardsService>();
     perpsDataProcessor = mock<PerpsDataProcessor>();
+    spotDataProcessor = mock<SpotDataProcessor>();
+    boostBonusService = mock<BoostBonusService>();
     agentRepo = mock<AgentRepository>();
     agentScoreRepo = mock<AgentScoreRepository>();
+    arenaRepo = mock<ArenaRepository>();
+    sportsService = mock<SportsService>();
     perpsRepo = mock<PerpsRepository>();
+    spotLiveRepo = mock<SpotLiveRepository>();
     competitionRepo = mock<CompetitionRepository>();
+    paperTradingConfigRepo = mock<PaperTradingConfigRepository>();
+    paperTradingInitialBalancesRepo =
+      mock<PaperTradingInitialBalancesRepository>();
     stakesRepo = mock<StakesRepository>();
+    tradeRepo = mock<TradeRepository>();
     userRepo = mock<UserRepository>();
     mockDb = mock<Database>();
     logger = mock<Logger>();
@@ -129,6 +177,7 @@ describe("CompetitionService - joinCompetition", () => {
       specificChainBalances: {
         eth: { eth: 1 },
       } as SpecificChainBalances,
+      specificChainTokens,
       maxTradePercentage: 1,
       rateLimiting: {
         maxRequests: 100,
@@ -141,17 +190,26 @@ describe("CompetitionService - joinCompetition", () => {
       balanceService,
       tradeSimulatorService,
       portfolioSnapshotterService,
+      priceTrackerService,
       agentService,
       agentRankService,
-      voteService,
       tradingConstraintsService,
       competitionRewardService,
+      rewardsService,
       perpsDataProcessor,
+      spotDataProcessor,
+      boostBonusService,
       agentRepo,
       agentScoreRepo,
+      arenaRepo,
+      sportsService,
       perpsRepo,
+      spotLiveRepo,
       competitionRepo,
+      paperTradingConfigRepo,
+      paperTradingInitialBalancesRepo,
       stakesRepo,
+      tradeRepo,
       userRepo,
       mockDb,
       mockConfig,
@@ -716,6 +774,461 @@ describe("CompetitionService - joinCompetition", () => {
         mockCompetition.id,
         mockAgent.id,
       );
+    });
+
+    it("should reject agent without wallet for spot_live_trading competitions", async () => {
+      const agentNoWallet = { ...mockAgent, walletAddress: null };
+      const spotLiveCompetition = {
+        ...mockCompetition,
+        type: "spot_live_trading" as const,
+      };
+
+      agentService.getAgent.mockResolvedValue(agentNoWallet);
+      competitionRepo.findById.mockResolvedValue(spotLiveCompetition);
+      competitionRepo.isAgentActiveInCompetition.mockResolvedValue(false);
+
+      await expect(
+        competitionService.joinCompetition(
+          mockCompetition.id,
+          mockAgent.id,
+          mockUserId,
+          undefined,
+        ),
+      ).rejects.toThrow("Agent must have a wallet address");
+    });
+  });
+
+  describe("participation rules validation", () => {
+    it("should reject agent on blocklist", async () => {
+      const blockedAgent: SelectAgent = {
+        ...mockAgent,
+        id: "blocked-agent",
+      };
+      const mockCompetitionWithBlocklist = {
+        ...mockCompetition,
+        blocklist: ["blocked-agent", "other-blocked"],
+      };
+
+      agentService.getAgent.mockResolvedValue(blockedAgent);
+      competitionRepo.findById.mockResolvedValue(mockCompetitionWithBlocklist);
+      competitionRepo.isAgentActiveInCompetition.mockResolvedValue(false);
+
+      await expect(
+        competitionService.joinCompetition(
+          mockCompetition.id,
+          blockedAgent.id,
+          mockUserId,
+          undefined,
+        ),
+      ).rejects.toThrow(ApiError);
+
+      await expect(
+        competitionService.joinCompetition(
+          mockCompetition.id,
+          blockedAgent.id,
+          mockUserId,
+          undefined,
+        ),
+      ).rejects.toThrow("not permitted to join");
+    });
+
+    it("should reject agent when allowlistOnly is true and agent not on allowlist", async () => {
+      const mockCompetitionAllowlistOnly = {
+        ...mockCompetition,
+        allowlistOnly: true,
+        allowlist: ["allowed-agent-1", "allowed-agent-2"],
+      };
+
+      agentService.getAgent.mockResolvedValue(mockAgent);
+      competitionRepo.findById.mockResolvedValue(mockCompetitionAllowlistOnly);
+      competitionRepo.isAgentActiveInCompetition.mockResolvedValue(false);
+
+      await expect(
+        competitionService.joinCompetition(
+          mockCompetition.id,
+          mockAgent.id,
+          mockUserId,
+          undefined,
+        ),
+      ).rejects.toThrow(ApiError);
+
+      await expect(
+        competitionService.joinCompetition(
+          mockCompetition.id,
+          mockAgent.id,
+          mockUserId,
+          undefined,
+        ),
+      ).rejects.toThrow("allowlist-only");
+    });
+
+    it("should allow agent when allowlistOnly is true and agent on allowlist", async () => {
+      const allowedAgent: SelectAgent = {
+        ...mockAgent,
+        id: "allowed-agent",
+      };
+      const mockCompetitionAllowlistOnly = {
+        ...mockCompetition,
+        allowlistOnly: true,
+        allowlist: ["allowed-agent", "other-allowed"],
+      };
+
+      agentService.getAgent.mockResolvedValue(allowedAgent);
+      competitionRepo.findById.mockResolvedValue(mockCompetitionAllowlistOnly);
+      competitionRepo.isAgentActiveInCompetition.mockResolvedValue(false);
+      competitionRepo.addAgentToCompetition.mockResolvedValue();
+
+      await competitionService.joinCompetition(
+        mockCompetition.id,
+        allowedAgent.id,
+        mockUserId,
+        undefined,
+      );
+
+      expect(competitionRepo.addAgentToCompetition).toHaveBeenCalledWith(
+        mockCompetition.id,
+        allowedAgent.id,
+      );
+    });
+
+    it("should allow VIP agent and skip all checks including stake", async () => {
+      const vipAgent: SelectAgent = {
+        ...mockAgent,
+        id: "vip-agent",
+      };
+      const mockCompetitionWithVips = {
+        ...mockCompetition,
+        vips: ["vip-agent", "other-vip"],
+        minimumStake: 1000, // VIP should bypass this
+        minRecallRank: 10, // VIP should bypass this too
+      };
+
+      agentService.getAgent.mockResolvedValue(vipAgent);
+      competitionRepo.findById.mockResolvedValue(mockCompetitionWithVips);
+      competitionRepo.isAgentActiveInCompetition.mockResolvedValue(false);
+      competitionRepo.addAgentToCompetition.mockResolvedValue();
+
+      await competitionService.joinCompetition(
+        mockCompetition.id,
+        vipAgent.id,
+        mockUserId,
+        undefined,
+      );
+
+      // VIP should bypass stake check
+      expect(userRepo.findById).not.toHaveBeenCalled();
+      expect(stakesRepo.getTotalStakedByWallet).not.toHaveBeenCalled();
+      // VIP should bypass rank check
+      expect(agentScoreRepo.getAgentRank).not.toHaveBeenCalled();
+      // Should add agent directly
+      expect(competitionRepo.addAgentToCompetition).toHaveBeenCalled();
+    });
+
+    it("should allow allowlisted agent and skip rank check but still check stake", async () => {
+      const allowlistedAgent: SelectAgent = {
+        ...mockAgent,
+        id: "allowed-agent",
+      };
+      const mockCompetitionWithAllowlist = {
+        ...mockCompetition,
+        allowlist: ["allowed-agent", "other-allowed"],
+        minimumStake: 100, // Allowlist should NOT bypass stake
+        minRecallRank: 10, // Allowlist SHOULD bypass rank
+      };
+
+      const mockUser = {
+        id: mockUserId,
+        name: "Test User",
+        walletAddress: "0x1234567890123456789012345678901234567890",
+        walletLastVerifiedAt: new Date(),
+        embeddedWalletAddress: null,
+        privyId: "test-privy-id",
+        email: "test@example.com",
+        isSubscribed: false,
+        imageUrl: null,
+        metadata: null,
+        status: "active" as const,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastLoginAt: null,
+      };
+
+      agentService.getAgent.mockResolvedValue(allowlistedAgent);
+      competitionRepo.findById.mockResolvedValue(mockCompetitionWithAllowlist);
+      competitionRepo.isAgentActiveInCompetition.mockResolvedValue(false);
+      userRepo.findById.mockResolvedValue(mockUser);
+      stakesRepo.getTotalStakedByWallet.mockResolvedValue(BigInt(200e18)); // Sufficient stake
+      competitionRepo.addAgentToCompetition.mockResolvedValue();
+
+      await competitionService.joinCompetition(
+        mockCompetition.id,
+        allowlistedAgent.id,
+        mockUserId,
+        undefined,
+      );
+
+      // Should check stake for allowlisted agent (not bypassed)
+      expect(userRepo.findById).toHaveBeenCalled();
+      expect(stakesRepo.getTotalStakedByWallet).toHaveBeenCalled();
+      // Should not check rank for allowlisted agent (bypassed)
+      expect(agentScoreRepo.getAgentRank).not.toHaveBeenCalled();
+      expect(competitionRepo.addAgentToCompetition).toHaveBeenCalled();
+    });
+
+    it("should handle VIP early return when both vips and allowlist are set", async () => {
+      const vipAgent2: SelectAgent = {
+        ...mockAgent,
+        id: "vip-agent",
+      };
+      const mockCompetitionBoth = {
+        ...mockCompetition,
+        vips: ["vip-agent"],
+        allowlist: ["other-agent"], // Not checked due to VIP early return
+        minimumStake: 1000,
+        minRecallRank: 10,
+      };
+
+      agentService.getAgent.mockResolvedValue(vipAgent2);
+      competitionRepo.findById.mockResolvedValue(mockCompetitionBoth);
+      competitionRepo.isAgentActiveInCompetition.mockResolvedValue(false);
+      competitionRepo.addAgentToCompetition.mockResolvedValue();
+
+      await competitionService.joinCompetition(
+        mockCompetition.id,
+        vipAgent2.id,
+        mockUserId,
+        undefined,
+      );
+
+      // VIP early return should bypass all checks
+      expect(userRepo.findById).not.toHaveBeenCalled();
+      expect(stakesRepo.getTotalStakedByWallet).not.toHaveBeenCalled();
+      expect(agentScoreRepo.getAgentRank).not.toHaveBeenCalled();
+      expect(competitionRepo.addAgentToCompetition).toHaveBeenCalled();
+    });
+
+    it("should reject agent with no rank when rank requirement exists", async () => {
+      const mockCompetitionWithRank = {
+        ...mockCompetition,
+        minRecallRank: 50,
+      };
+
+      agentService.getAgent.mockResolvedValue(mockAgent);
+      competitionRepo.findById.mockResolvedValue(mockCompetitionWithRank);
+      competitionRepo.isAgentActiveInCompetition.mockResolvedValue(false);
+      agentScoreRepo.getAgentRank.mockResolvedValue(undefined); // No rank
+
+      await expect(
+        competitionService.joinCompetition(
+          mockCompetition.id,
+          mockAgent.id,
+          mockUserId,
+          undefined,
+        ),
+      ).rejects.toThrow(ApiError);
+
+      await expect(
+        competitionService.joinCompetition(
+          mockCompetition.id,
+          mockAgent.id,
+          mockUserId,
+          undefined,
+        ),
+      ).rejects.toThrow("has not yet established a rank");
+    });
+
+    it("should reject agent with insufficient rank", async () => {
+      const mockCompetitionWithRank = {
+        ...mockCompetition,
+        minRecallRank: 50,
+      };
+
+      agentService.getAgent.mockResolvedValue(mockAgent);
+      competitionRepo.findById.mockResolvedValue(mockCompetitionWithRank);
+      competitionRepo.isAgentActiveInCompetition.mockResolvedValue(false);
+      agentScoreRepo.getAgentRank.mockResolvedValue({
+        rank: 100, // Worse than required rank 50
+        ordinal: 1200,
+      });
+
+      await expect(
+        competitionService.joinCompetition(
+          mockCompetition.id,
+          mockAgent.id,
+          mockUserId,
+          undefined,
+        ),
+      ).rejects.toThrow(ApiError);
+
+      await expect(
+        competitionService.joinCompetition(
+          mockCompetition.id,
+          mockAgent.id,
+          mockUserId,
+          undefined,
+        ),
+      ).rejects.toThrow("current rank is 100");
+    });
+
+    it("should allow agent with sufficient rank", async () => {
+      const mockCompetitionWithRank = {
+        ...mockCompetition,
+        minRecallRank: 50,
+      };
+
+      agentService.getAgent.mockResolvedValue(mockAgent);
+      competitionRepo.findById.mockResolvedValue(mockCompetitionWithRank);
+      competitionRepo.isAgentActiveInCompetition.mockResolvedValue(false);
+      agentScoreRepo.getAgentRank.mockResolvedValue({
+        rank: 25, // Better than required rank 50
+        ordinal: 1500,
+      });
+      competitionRepo.addAgentToCompetition.mockResolvedValue();
+
+      await competitionService.joinCompetition(
+        mockCompetition.id,
+        mockAgent.id,
+        mockUserId,
+        undefined,
+      );
+
+      expect(agentScoreRepo.getAgentRank).toHaveBeenCalledWith(
+        mockAgent.id,
+        mockCompetition.type,
+      );
+      expect(competitionRepo.addAgentToCompetition).toHaveBeenCalled();
+    });
+
+    it("should allow agent when no participation rules are set (backward compatible)", async () => {
+      const mockCompetitionNoRules = {
+        ...mockCompetition,
+        vips: null,
+        allowlist: null,
+        blocklist: null,
+        minRecallRank: null,
+        allowlistOnly: false,
+      };
+
+      agentService.getAgent.mockResolvedValue(mockAgent);
+      competitionRepo.findById.mockResolvedValue(mockCompetitionNoRules);
+      competitionRepo.isAgentActiveInCompetition.mockResolvedValue(false);
+      competitionRepo.addAgentToCompetition.mockResolvedValue();
+
+      await competitionService.joinCompetition(
+        mockCompetition.id,
+        mockAgent.id,
+        mockUserId,
+        undefined,
+      );
+
+      expect(agentScoreRepo.getAgentRank).not.toHaveBeenCalled();
+      expect(competitionRepo.addAgentToCompetition).toHaveBeenCalled();
+    });
+
+    it("should treat empty arrays as no restriction", async () => {
+      const mockCompetitionEmptyArrays = {
+        ...mockCompetition,
+        vips: [],
+        allowlist: [],
+        blocklist: [],
+        minRecallRank: null,
+      };
+
+      agentService.getAgent.mockResolvedValue(mockAgent);
+      competitionRepo.findById.mockResolvedValue(mockCompetitionEmptyArrays);
+      competitionRepo.isAgentActiveInCompetition.mockResolvedValue(false);
+      competitionRepo.addAgentToCompetition.mockResolvedValue();
+
+      await competitionService.joinCompetition(
+        mockCompetition.id,
+        mockAgent.id,
+        mockUserId,
+        undefined,
+      );
+
+      expect(competitionRepo.addAgentToCompetition).toHaveBeenCalled();
+    });
+
+    it("should reject blocklisted agent even if they are on allowlist", async () => {
+      const conflictedAgent: SelectAgent = {
+        ...mockAgent,
+        id: "conflicted-agent",
+      };
+      const mockCompetitionConflict = {
+        ...mockCompetition,
+        blocklist: ["conflicted-agent"],
+        allowlist: ["conflicted-agent"], // Also on allowlist
+      };
+
+      agentService.getAgent.mockResolvedValue(conflictedAgent);
+      competitionRepo.findById.mockResolvedValue(mockCompetitionConflict);
+      competitionRepo.isAgentActiveInCompetition.mockResolvedValue(false);
+
+      await expect(
+        competitionService.joinCompetition(
+          mockCompetition.id,
+          conflictedAgent.id,
+          mockUserId,
+          undefined,
+        ),
+      ).rejects.toThrow(ApiError);
+
+      await expect(
+        competitionService.joinCompetition(
+          mockCompetition.id,
+          conflictedAgent.id,
+          mockUserId,
+          undefined,
+        ),
+      ).rejects.toThrow("not permitted");
+    });
+
+    it("should reject when allowlistOnly is true but no allowlist exists (misconfiguration)", async () => {
+      const mockCompetitionNoList = {
+        ...mockCompetition,
+        allowlistOnly: true,
+        allowlist: null, // No allowlist defined
+      };
+
+      agentService.getAgent.mockResolvedValue(mockAgent);
+      competitionRepo.findById.mockResolvedValue(mockCompetitionNoList);
+      competitionRepo.isAgentActiveInCompetition.mockResolvedValue(false);
+
+      try {
+        await competitionService.joinCompetition(
+          mockCompetition.id,
+          mockAgent.id,
+          mockUserId,
+          undefined,
+        );
+        expect.fail("Should have thrown ApiError");
+      } catch (error) {
+        expect(error).toBeInstanceOf(ApiError);
+        expect((error as ApiError).statusCode).toBe(500); // Server misconfiguration
+        expect((error as ApiError).message).toContain("misconfigured");
+        expect((error as ApiError).message).toContain("allowlist-only mode");
+      }
+    });
+
+    it("should reject blocklisted agent even if on VIP list", async () => {
+      const mockCompetitionBlockedVip = {
+        ...mockCompetition,
+        blocklist: [mockAgent.id],
+        vips: [mockAgent.id], // Same agent on both lists
+      };
+
+      agentService.getAgent.mockResolvedValue(mockAgent);
+      competitionRepo.findById.mockResolvedValue(mockCompetitionBlockedVip);
+      competitionRepo.isAgentActiveInCompetition.mockResolvedValue(false);
+
+      await expect(
+        competitionService.joinCompetition(
+          mockCompetition.id,
+          mockAgent.id,
+          mockUserId,
+          undefined,
+        ),
+      ).rejects.toThrow("not permitted");
     });
   });
 });

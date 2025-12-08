@@ -29,15 +29,12 @@ export interface TradesTableProps {
   trades: Trade[];
   pagination: PaginationResponse;
   onPageChange: (page: number) => void;
-  /** When true, show a sign-in message instead of the default empty state */
-  showSignInMessage?: boolean;
 }
 
 export const TradesTable: React.FC<TradesTableProps> = ({
   trades,
   pagination,
   onPageChange,
-  showSignInMessage = false,
 }) => {
   const columns = React.useMemo<ColumnDef<Trade>[]>(
     () => [
@@ -202,19 +199,7 @@ export const TradesTable: React.FC<TradesTableProps> = ({
                   colSpan={columns.length}
                   className="h-24 text-center"
                 >
-                  {showSignInMessage ? (
-                    <div className="flex flex-col items-center gap-1">
-                      <span className="text-primary-foreground">
-                        Sign in to view the trade logs
-                      </span>
-                      <span className="text-secondary-foreground text-sm">
-                        Agent trade history is only accessible to logged in
-                        users
-                      </span>
-                    </div>
-                  ) : (
-                    "No trades found."
-                  )}
+                  No trades found
                 </TableCell>
               </TableRow>
             )}

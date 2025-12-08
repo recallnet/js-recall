@@ -1,6 +1,107 @@
 import { SpecificChain, SpecificChainBalances } from "../types/index.js";
 
 /**
+ * Zero address used to represent native tokens (ETH, MATIC, etc.) in EVM chains
+ * This address is used for storage and identification, not for price lookup
+ */
+export const NATIVE_TOKEN_ADDRESS =
+  "0x0000000000000000000000000000000000000000";
+
+/**
+ * Native token symbols by chain
+ */
+export const NATIVE_TOKEN_SYMBOLS: Record<string, string> = {
+  eth: "ETH",
+  base: "ETH",
+  arbitrum: "ETH",
+  optimism: "ETH",
+  polygon: "MATIC",
+  bsc: "BNB",
+  avalanche: "AVAX",
+  linea: "ETH",
+  zksync: "ETH",
+  scroll: "ETH",
+  mantle: "MNT",
+};
+
+/**
+ * Check if a token address is the native token (zero address)
+ * @param tokenAddress The token address to check
+ * @returns True if the address is the native token address
+ */
+export function isNativeToken(tokenAddress: string): boolean {
+  return tokenAddress.toLowerCase() === NATIVE_TOKEN_ADDRESS.toLowerCase();
+}
+
+/**
+ * Get the wrapped native token address (WETH/WSOL) for a given chain
+ * Used for price lookups since DEX APIs use wrapped versions, not native tokens
+ * @param chain The specific chain
+ * @returns Wrapped native address for the chain, or undefined if not configured
+ */
+export function getWrappedNativeAddress(
+  chain: SpecificChain,
+): string | undefined {
+  const chainTokens =
+    specificChainTokens[chain as keyof typeof specificChainTokens];
+  if (!chainTokens) return undefined;
+
+  // Each chain has its own native token key
+  // SVM: sol, Polygon: matic, BSC: bnb, Avalanche: avax, Mantle: mnt, others: eth
+  if (chain === "svm" && "sol" in chainTokens) {
+    return chainTokens.sol;
+  }
+  if (chain === "polygon" && "matic" in chainTokens) {
+    return chainTokens.matic;
+  }
+  if (chain === "bsc" && "bnb" in chainTokens) {
+    return chainTokens.bnb;
+  }
+  if (chain === "avalanche" && "avax" in chainTokens) {
+    return chainTokens.avax;
+  }
+  if (chain === "mantle" && "mnt" in chainTokens) {
+    return chainTokens.mnt;
+  }
+  if ("eth" in chainTokens) {
+    return chainTokens.eth;
+  }
+  return undefined;
+}
+
+/**
+ * Map a token address for price lookup
+ * If the token is native (zero address), returns the WETH address for that chain
+ * Otherwise returns the original address
+ * @param tokenAddress The token address (may be zero address for native)
+ * @param chain The specific chain
+ * @returns The address to use for price lookup
+ */
+export function getTokenAddressForPriceLookup(
+  tokenAddress: string,
+  chain: SpecificChain,
+): string {
+  if (isNativeToken(tokenAddress)) {
+    const wethAddress = getWrappedNativeAddress(chain);
+    if (wethAddress) {
+      return wethAddress;
+    }
+    // Fallback: return original address if no WETH configured for chain
+    // This will likely fail price lookup, but better than silently using wrong address
+  }
+  return tokenAddress;
+}
+
+/**
+ * Get the native token symbol for a chain
+ * @param chain The specific chain
+ * @returns Native token symbol (e.g., "ETH", "MATIC")
+ */
+export function getNativeTokenSymbol(chain: string): string {
+  return NATIVE_TOKEN_SYMBOLS[chain] ?? "ETH";
+}
+
+/**
  * Token addresses for each supported chain
  * Shared constant used by both API and comps apps
  */
@@ -11,13 +112,14 @@ export const specificChainTokens = {
     usdt: "0xdAC17F958D2ee523a2206206994597C13D831ec7", // USDT on Ethereum
   },
   polygon: {
-    eth: "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619", // Weth on Polygon
-    usdc: "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174", // USDC on Polygon
-    usdt: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F", // USDT on Polygon
+    matic: "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270", // WMATIC - wrapped native MATIC
+    eth: "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619", // Bridged WETH (not native)
+    usdc: "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359",
+    usdt: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F",
   },
   base: {
     eth: "0x4200000000000000000000000000000000000006", // WETH on Base
-    usdc: "0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA", // USDbC on Base
+    usdc: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", // Native USDC on Base
     usdt: "0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb", // USDT on Base
   },
   svm: {
@@ -31,9 +133,33 @@ export const specificChainTokens = {
     usdt: "0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9", // USDT on Arbitrum
   },
   optimism: {
-    eth: "0x4200000000000000000000000000000000000006", // WETH on Optimism
-    usdc: "0x7f5c764cbc14f9669b88837ca1490cca17c31607", // USDC on Optimism
-    usdt: "0x94b008aa00579c1307b0ef2c499ad98a8ce58e58", // USDT on Optimism
+    eth: "0x4200000000000000000000000000000000000006",
+    usdc: "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85",
+    usdt: "0x94b008aa00579c1307b0ef2c499ad98a8ce58e58",
+  },
+  bsc: {
+    bnb: "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c", // WBNB - wrapped native BNB
+    usdc: "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d", // Binance-Peg USDC (canonical)
+  },
+  avalanche: {
+    avax: "0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7", // WAVAX - wrapped native AVAX
+    usdc: "0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E", // Native USDC (Circle)
+  },
+  linea: {
+    eth: "0xe5D7C2a44FfDDf6b295A15c148167daaAf5Cf34f", // WETH on Linea
+    usdc: "0x176211869cA2b568f2A7D4EE941E073a821EE1ff", // Native USDC (upgraded from bridged March 2025)
+  },
+  zksync: {
+    eth: "0x5AEa5775959fBC2557Cc8789bC1bf90A239D9a91", // WETH on zkSync Era
+    usdc: "0x1d17CBcF0D6D143135aE902365D2E5e2A16538D4", // Native USDC (Circle)
+  },
+  scroll: {
+    eth: "0x5300000000000000000000000000000000000004", // WETH on Scroll
+    usdc: "0x06eFdBFf2a14a7c8E15944D1F4A48F9F95F663A4", // Native USDC
+  },
+  mantle: {
+    mnt: "0x78c1b0c915c4faa5fffa6cabf0219da63d7f4cb8", // WMNT - wrapped native MNT
+    usdc: "0x09Bc4E0D864854c6aFB6eB9A9cdF58aC190D0dF9", // Bridged USDC (no native USDC on Mantle yet)
   },
 } as const;
 

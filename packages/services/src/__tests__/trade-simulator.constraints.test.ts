@@ -10,8 +10,8 @@ import {
   vi,
 } from "vitest";
 
+import { PaperTradingConfigRepository } from "@recallnet/db/repositories/paper-trading-config";
 import { TradeRepository } from "@recallnet/db/repositories/trade";
-import { TradingConstraintsRepository } from "@recallnet/db/repositories/trading-constraints";
 
 import { BalanceService } from "../balance.service.js";
 import { CompetitionService } from "../competition.service.js";
@@ -24,6 +24,7 @@ import { MultiChainProvider } from "../providers/multi-chain.provider.js";
 import { DexScreenerProvider } from "../providers/price/dexscreener.provider.js";
 import { SimulatedTradeExecutionService } from "../simulated-trade-execution.service.js";
 import { TradeSimulatorService } from "../trade-simulator.service.js";
+import { TradingConstraintsService } from "../trading-constraints.service.js";
 import {
   BlockchainType,
   PriceReport,
@@ -80,12 +81,18 @@ describe("SimulatedTradeExecutionService - Trading Constraints", () => {
     let mockTradeRepo: {
       create: ReturnType<typeof vi.fn>;
     };
-    let mockTradingConstraintsRepo: {
-      findByCompetitionId: ReturnType<typeof vi.fn>;
+    let mockTradingConstraintsService: {
+      getConstraintsWithDefaults: ReturnType<typeof vi.fn>;
     };
     let mockDexScreenerProvider: {
       getTokenPairData: ReturnType<typeof vi.fn>;
       isStablecoin: ReturnType<typeof vi.fn>;
+    };
+    let mockPaperTradingConfigRepo: {
+      findByCompetitionId: ReturnType<typeof vi.fn>;
+    };
+    let mockTradeSimulatorService: {
+      calculatePortfolioValue: ReturnType<typeof vi.fn>;
     };
     let mockConfig: {
       specificChainTokens: SpecificChainTokens;
@@ -127,7 +134,7 @@ describe("SimulatedTradeExecutionService - Trading Constraints", () => {
         getPrice: vi.fn(),
       };
 
-      const mockTradeSimulatorService = {
+      mockTradeSimulatorService = {
         calculatePortfolioValue: vi.fn(),
       };
 
@@ -135,8 +142,8 @@ describe("SimulatedTradeExecutionService - Trading Constraints", () => {
         create: vi.fn(),
       };
 
-      mockTradingConstraintsRepo = {
-        findByCompetitionId: vi.fn(),
+      mockTradingConstraintsService = {
+        getConstraintsWithDefaults: vi.fn(),
       };
 
       mockDexScreenerProvider = {
@@ -145,6 +152,10 @@ describe("SimulatedTradeExecutionService - Trading Constraints", () => {
           // Return true for stablecoins and SOL to exempt them from FDV checks
           return symbol === "USDC" || symbol === "SOL";
         }),
+      };
+
+      mockPaperTradingConfigRepo = {
+        findByCompetitionId: vi.fn().mockResolvedValue(null),
       };
 
       mockConfig = {
@@ -177,8 +188,9 @@ describe("SimulatedTradeExecutionService - Trading Constraints", () => {
         mockBalanceService as unknown as BalanceService,
         mockPriceTracker as unknown as PriceTrackerService,
         mockTradeRepo as unknown as TradeRepository,
-        mockTradingConstraintsRepo as unknown as TradingConstraintsRepository,
+        mockTradingConstraintsService as unknown as TradingConstraintsService,
         mockDexScreenerProvider as unknown as DexScreenerProvider,
+        mockPaperTradingConfigRepo as unknown as PaperTradingConfigRepository,
         mockConfig,
         mockLogger,
       );
@@ -587,9 +599,22 @@ describe("SimulatedTradeExecutionService - Trading Constraints", () => {
           .mockResolvedValueOnce(fromPrice)
           .mockResolvedValueOnce(toPrice);
 
-        mockTradingConstraintsRepo.findByCompetitionId.mockResolvedValue(
+        mockTradingConstraintsService.getConstraintsWithDefaults.mockResolvedValue(
           mockConstraints,
         );
+
+        // Mock portfolio value calculation
+        mockTradeSimulatorService.calculatePortfolioValue.mockResolvedValue(
+          1000,
+        );
+
+        // Mock paper trading config with maxTradePercentage
+        mockPaperTradingConfigRepo.findByCompetitionId.mockResolvedValue({
+          competitionId: "comp-1",
+          maxTradePercentage: 25,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
 
         mockTradeRepo.create.mockResolvedValue({
           id: randomUUID(),
@@ -681,6 +706,17 @@ describe("SimulatedTradeExecutionService - Trading Constraints", () => {
         mockPriceTracker.getPrice
           .mockResolvedValueOnce(validFromPrice)
           .mockResolvedValueOnce(invalidToPrice);
+
+        // Mock trading constraints
+        mockTradingConstraintsService.getConstraintsWithDefaults.mockResolvedValue(
+          {
+            minimumPairAgeHours: 168, // 7 days
+            minimum24hVolumeUsd: 100000,
+            minimumLiquidityUsd: 100000,
+            minimumFdvUsd: 1000000,
+            minTradesPerDay: null,
+          },
+        );
 
         // Mock competition service responses
         mockCompetitionService.getCompetition.mockResolvedValue({
@@ -1062,13 +1098,13 @@ describe("SimulatedTradeExecutionService - Trading Constraints", () => {
           },
           {
             name: "USDC (Polygon)",
-            address: "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174",
+            address: "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359",
             chain: BlockchainType.EVM,
             specificChain: "polygon",
           },
           {
             name: "USDC (Base)",
-            address: "0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA",
+            address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
             chain: BlockchainType.EVM,
             specificChain: "base",
           },

@@ -1,3 +1,5 @@
+import type { UserMetadata } from "@recallnet/db/schema/core/defs";
+
 export interface User {
   id: string;
   walletAddress: string;
@@ -9,9 +11,7 @@ export interface User {
   email: string;
   isSubscribed: boolean;
   imageUrl?: string;
-  metadata?: {
-    website?: string;
-  };
+  metadata?: UserMetadata;
   createdAt: string;
   updatedAt: string;
   lastLoginAt?: string;
@@ -25,9 +25,7 @@ export interface ProfileResponse {
 export interface UpdateProfileRequest {
   name?: string;
   imageUrl?: string;
-  metadata?: {
-    website?: string;
-  };
+  metadata?: UserMetadata;
 }
 
 export interface VerifyEmailResponse {

@@ -11,14 +11,21 @@ import {
   toApiUser,
 } from "@recallnet/services/types";
 
+import { db } from "@/database/db.js";
 import { flatParse } from "@/lib/flat-parse.js";
 import { adminLogger } from "@/lib/logger.js";
-import { updateFeaturesWithCompetition } from "@/lib/update-features-with-comp.js";
 import { ServiceRegistry } from "@/services/index.js";
 
 import {
   AdminAddAgentToCompetitionParamsSchema,
+  AdminAddBonusBoostSchema,
+  AdminAddPartnerToCompetitionSchema,
+  AdminArenaParamsSchema,
+  AdminCompetitionParamsSchema,
+  AdminCompetitionPartnerParamsSchema,
+  AdminCreateArenaSchema,
   AdminCreateCompetitionSchema,
+  AdminCreatePartnerSchema,
   AdminDeactivateAgentBodySchema,
   AdminDeactivateAgentParamsSchema,
   AdminDeleteAgentParamsSchema,
@@ -29,19 +36,30 @@ import {
   AdminGetCompetitionSnapshotsQuerySchema,
   AdminGetCompetitionTransferViolationsParamsSchema,
   AdminGetPerformanceReportsQuerySchema,
+  AdminGetSpotLiveAlertsQuerySchema,
   AdminListAllAgentsQuerySchema,
+  AdminListArenasQuerySchema,
+  AdminListPartnersQuerySchema,
+  AdminPartnerParamsSchema,
   AdminReactivateAgentInCompetitionParamsSchema,
   AdminReactivateAgentParamsSchema,
   AdminRegisterUserSchema,
   AdminRemoveAgentFromCompetitionBodySchema,
   AdminRemoveAgentFromCompetitionParamsSchema,
+  AdminReplaceCompetitionPartnersSchema,
+  AdminReviewSpotLiveAlertBodySchema,
+  AdminReviewSpotLiveAlertParamsSchema,
+  AdminRevokeBonusBoostSchema,
   AdminRewardsAllocationSchema,
   AdminSetupSchema,
   AdminStartCompetitionSchema,
   AdminUpdateAgentBodySchema,
   AdminUpdateAgentParamsSchema,
+  AdminUpdateArenaSchema,
   AdminUpdateCompetitionParamsSchema,
   AdminUpdateCompetitionSchema,
+  AdminUpdatePartnerPositionSchema,
+  AdminUpdatePartnerSchema,
 } from "./admin.schema.js";
 import { parseAdminSearchQuery } from "./request-helpers.js";
 
@@ -86,13 +104,10 @@ export function makeAdminController(services: ServiceRegistry) {
      */
     async setupAdmin(req: Request, res: Response, next: NextFunction) {
       try {
-        // Validate request body using flatParse
-        const result = flatParse(AdminSetupSchema, req.body);
-        if (!result.success) {
-          throw new ApiError(400, `Invalid request format: ${result.error}`);
-        }
-
-        const { username, password, email } = result.data;
+        const { username, password, email } = flatParse(
+          AdminSetupSchema,
+          req.body,
+        );
 
         // Setup the initial admin using AdminService
         const adminResult = await services.adminService.setupInitialAdmin(
@@ -126,18 +141,11 @@ export function makeAdminController(services: ServiceRegistry) {
      */
     async registerUser(req: Request, res: Response, next: NextFunction) {
       try {
-        // Validate request body using flatParse
         const result = flatParse(AdminRegisterUserSchema, req.body);
-        if (!result.success) {
-          return res.status(400).json({
-            success: false,
-            error: `Invalid request format: ${result.error}`,
-          });
-        }
 
         // Delegate business logic to service
         const { user, agent, agentError } =
-          await services.adminService.registerUserAndAgent(result.data);
+          await services.adminService.registerUserAndAgent(result);
 
         // Handle case where agent creation failed but user was created successfully
         if (agentError) {
@@ -172,11 +180,7 @@ export function makeAdminController(services: ServiceRegistry) {
      */
     async registerAgent(req: Request, res: Response, next: NextFunction) {
       try {
-        const result = flatParse(AdminCreateAgentSchema, req.body);
-        if (!result.success) {
-          throw new ApiError(400, `Invalid request format: ${result.error}`);
-        }
-        const { user, agent } = result.data;
+        const { user, agent } = flatParse(AdminCreateAgentSchema, req.body);
 
         // Create agent using service method that handles user resolution
         const createdAgent = await services.agentService.createAgentForOwner(
@@ -196,18 +200,407 @@ export function makeAdminController(services: ServiceRegistry) {
     },
 
     /**
+     * Create a new arena
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async createArena(req: Request, res: Response, next: NextFunction) {
+      try {
+        const arenaData = flatParse(AdminCreateArenaSchema, req.body);
+
+        const arena = await services.arenaService.createArena(arenaData);
+
+        res.status(201).json({
+          success: true,
+          arena,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Get an arena by ID
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async getArena(req: Request, res: Response, next: NextFunction) {
+      try {
+        const { id } = flatParse(AdminArenaParamsSchema, req.params);
+
+        const arena = await services.arenaService.findById(id);
+
+        res.status(200).json({
+          success: true,
+          arena,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * List all arenas with pagination
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async listArenas(req: Request, res: Response, next: NextFunction) {
+      try {
+        const { limit, offset, sort, nameFilter } = flatParse(
+          AdminListArenasQuerySchema,
+          req.query,
+        );
+
+        const result = await services.arenaService.findAll(
+          { limit, offset, sort },
+          nameFilter,
+        );
+
+        res.status(200).json({
+          success: true,
+          arenas: result.arenas,
+          pagination: result.pagination,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Update an arena
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async updateArena(req: Request, res: Response, next: NextFunction) {
+      try {
+        const { id } = flatParse(AdminArenaParamsSchema, req.params);
+        const updateData = flatParse(AdminUpdateArenaSchema, req.body);
+
+        const arena = await services.arenaService.update(id, updateData);
+
+        res.status(200).json({
+          success: true,
+          arena,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Delete an arena
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async deleteArena(req: Request, res: Response, next: NextFunction) {
+      try {
+        const { id } = flatParse(AdminArenaParamsSchema, req.params);
+
+        await services.arenaService.delete(id);
+
+        res.status(200).json({
+          success: true,
+          message: `Arena ${id} deleted successfully`,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Create a new partner
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async createPartner(req: Request, res: Response, next: NextFunction) {
+      try {
+        const partnerData = flatParse(AdminCreatePartnerSchema, req.body);
+
+        const partner =
+          await services.partnerService.createPartner(partnerData);
+
+        res.status(201).json({
+          success: true,
+          partner,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Get a partner by ID
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async getPartner(req: Request, res: Response, next: NextFunction) {
+      try {
+        const { id } = flatParse(AdminPartnerParamsSchema, req.params);
+
+        const partner = await services.partnerService.findById(id);
+
+        res.status(200).json({
+          success: true,
+          partner,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * List all partners with pagination
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async listPartners(req: Request, res: Response, next: NextFunction) {
+      try {
+        const { limit, offset, sort, nameFilter } = flatParse(
+          AdminListPartnersQuerySchema,
+          req.query,
+        );
+
+        const result = await services.partnerService.findAll(
+          { limit, offset, sort },
+          nameFilter,
+        );
+
+        res.status(200).json({
+          success: true,
+          partners: result.partners,
+          pagination: result.pagination,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Update a partner
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async updatePartner(req: Request, res: Response, next: NextFunction) {
+      try {
+        const { id } = flatParse(AdminPartnerParamsSchema, req.params);
+        const updateData = flatParse(AdminUpdatePartnerSchema, req.body);
+
+        const partner = await services.partnerService.update(id, updateData);
+
+        res.status(200).json({
+          success: true,
+          partner,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Delete a partner
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async deletePartner(req: Request, res: Response, next: NextFunction) {
+      try {
+        const { id } = flatParse(AdminPartnerParamsSchema, req.params);
+
+        await services.partnerService.delete(id);
+
+        res.status(200).json({
+          success: true,
+          message: `Partner ${id} deleted successfully`,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Get partners for a competition
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async getCompetitionPartners(
+      req: Request,
+      res: Response,
+      next: NextFunction,
+    ) {
+      try {
+        const { competitionId } = flatParse(
+          AdminCompetitionParamsSchema,
+          req.params,
+        );
+
+        const partners =
+          await services.partnerService.findByCompetition(competitionId);
+
+        res.status(200).json({
+          success: true,
+          partners,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Add partner to competition
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async addPartnerToCompetition(
+      req: Request,
+      res: Response,
+      next: NextFunction,
+    ) {
+      try {
+        const { competitionId } = flatParse(
+          AdminCompetitionParamsSchema,
+          req.params,
+        );
+        const { partnerId, position } = flatParse(
+          AdminAddPartnerToCompetitionSchema,
+          req.body,
+        );
+
+        const association = await services.partnerService.addToCompetition({
+          competitionId,
+          partnerId,
+          position,
+        });
+
+        res.status(201).json({
+          success: true,
+          association,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Update partner position in competition
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async updatePartnerPosition(
+      req: Request,
+      res: Response,
+      next: NextFunction,
+    ) {
+      try {
+        const { competitionId, partnerId } = flatParse(
+          AdminCompetitionPartnerParamsSchema,
+          req.params,
+        );
+        const { position } = flatParse(
+          AdminUpdatePartnerPositionSchema,
+          req.body,
+        );
+
+        const association = await services.partnerService.updatePosition(
+          competitionId,
+          partnerId,
+          position,
+        );
+
+        res.status(200).json({
+          success: true,
+          association,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Remove partner from competition
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async removePartnerFromCompetition(
+      req: Request,
+      res: Response,
+      next: NextFunction,
+    ) {
+      try {
+        const { competitionId, partnerId } = flatParse(
+          AdminCompetitionPartnerParamsSchema,
+          req.params,
+        );
+
+        await services.partnerService.removeFromCompetition(
+          competitionId,
+          partnerId,
+        );
+
+        res.status(200).json({
+          success: true,
+          message: `Partner removed from competition successfully`,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Replace all partners for a competition
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async replaceCompetitionPartners(
+      req: Request,
+      res: Response,
+      next: NextFunction,
+    ) {
+      try {
+        const { competitionId } = flatParse(
+          AdminCompetitionParamsSchema,
+          req.params,
+        );
+        const { partners } = flatParse(
+          AdminReplaceCompetitionPartnersSchema,
+          req.body,
+        );
+
+        const associations =
+          await services.partnerService.replaceCompetitionPartners(
+            competitionId,
+            partners,
+          );
+
+        res.status(200).json({
+          success: true,
+          partners: associations,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
      * @param req Express request
      * @param res Express response
      * @param next Express next function
      */
     async createCompetition(req: Request, res: Response, next: NextFunction) {
       try {
-        // Validate request body using flatParse
-        const result = flatParse(AdminCreateCompetitionSchema, req.body);
-        if (!result.success) {
-          throw new ApiError(400, `Invalid request format: ${result.error}`);
-        }
-
         const {
           name,
           description,
@@ -218,17 +611,39 @@ export function makeAdminController(services: ServiceRegistry) {
           type,
           startDate,
           endDate,
-          votingStartDate,
-          votingEndDate,
+          boostStartDate,
+          boostEndDate,
           joinStartDate,
           joinEndDate,
           maxParticipants,
           minimumStake,
           tradingConstraints,
           rewards,
+          evaluationMetric,
           perpsProvider,
+          spotLiveConfig,
           prizePools,
-        } = result.data;
+          rewardsIneligible,
+          arenaId,
+          engineId,
+          engineVersion,
+          vips,
+          allowlist,
+          blocklist,
+          minRecallRank,
+          allowlistOnly,
+          agentAllocation,
+          agentAllocationUnit,
+          boosterAllocation,
+          boosterAllocationUnit,
+          rewardRules,
+          rewardDetails,
+          boostTimeDecayRate,
+          displayState,
+          gameIds,
+          paperTradingConfig,
+          paperTradingInitialBalances,
+        } = flatParse(AdminCreateCompetitionSchema, req.body);
 
         // Create a new competition
         const competition = await services.competitionService.createCompetition(
@@ -242,18 +657,40 @@ export function makeAdminController(services: ServiceRegistry) {
             type,
             startDate: startDate ? new Date(startDate) : undefined,
             endDate: endDate ? new Date(endDate) : undefined,
-            votingStartDate: votingStartDate
-              ? new Date(votingStartDate)
+            boostStartDate: boostStartDate
+              ? new Date(boostStartDate)
               : undefined,
-            votingEndDate: votingEndDate ? new Date(votingEndDate) : undefined,
+            boostEndDate: boostEndDate ? new Date(boostEndDate) : undefined,
             joinStartDate: joinStartDate ? new Date(joinStartDate) : undefined,
             joinEndDate: joinEndDate ? new Date(joinEndDate) : undefined,
             maxParticipants,
             minimumStake,
             tradingConstraints,
             rewards,
+            evaluationMetric,
             perpsProvider,
+            spotLiveConfig,
             prizePools,
+            rewardsIneligible,
+            arenaId,
+            engineId,
+            engineVersion,
+            vips,
+            allowlist,
+            blocklist,
+            minRecallRank,
+            allowlistOnly,
+            agentAllocation,
+            agentAllocationUnit,
+            boosterAllocation,
+            boosterAllocationUnit,
+            rewardRules,
+            rewardDetails,
+            boostTimeDecayRate,
+            displayState,
+            gameIds,
+            paperTradingConfig,
+            paperTradingInitialBalances,
           },
         );
 
@@ -275,11 +712,6 @@ export function makeAdminController(services: ServiceRegistry) {
     async startCompetition(req: Request, res: Response, next: NextFunction) {
       try {
         // Validate request body
-        const result = flatParse(AdminStartCompetitionSchema, req.body);
-        if (!result.success) {
-          throw new ApiError(400, `Invalid request format: ${result.error}`);
-        }
-
         const {
           competitionId,
           agentIds,
@@ -294,14 +726,34 @@ export function makeAdminController(services: ServiceRegistry) {
           type,
           startDate,
           endDate,
-          votingStartDate,
-          votingEndDate,
+          boostStartDate,
+          boostEndDate,
           joinStartDate,
           joinEndDate,
           rewards,
+          evaluationMetric,
           perpsProvider,
+          spotLiveConfig,
           prizePools,
-        } = result.data;
+          rewardsIneligible,
+          arenaId,
+          engineId,
+          engineVersion,
+          vips,
+          allowlist,
+          blocklist,
+          minRecallRank,
+          allowlistOnly,
+          agentAllocation,
+          agentAllocationUnit,
+          boosterAllocation,
+          boosterAllocationUnit,
+          rewardRules,
+          rewardDetails,
+          displayState,
+          paperTradingConfig,
+          paperTradingInitialBalances,
+        } = flatParse(AdminStartCompetitionSchema, req.body);
 
         // Call service method with creation params only if no competitionId
         const competition =
@@ -321,19 +773,35 @@ export function makeAdminController(services: ServiceRegistry) {
                   type,
                   startDate,
                   endDate,
-                  votingStartDate,
-                  votingEndDate,
+                  boostStartDate,
+                  boostEndDate,
                   joinStartDate,
                   joinEndDate,
                   rewards,
+                  evaluationMetric,
                   perpsProvider,
+                  spotLiveConfig,
                   prizePools,
+                  rewardsIneligible,
+                  arenaId: arenaId!, // Guaranteed by Zod refinement when creating new competition
+                  engineId,
+                  engineVersion,
+                  vips,
+                  allowlist,
+                  blocklist,
+                  minRecallRank,
+                  allowlistOnly,
+                  agentAllocation,
+                  agentAllocationUnit,
+                  boosterAllocation,
+                  boosterAllocationUnit,
+                  rewardRules,
+                  rewardDetails,
+                  displayState,
+                  paperTradingConfig,
+                  paperTradingInitialBalances,
                 },
           });
-
-        const activeCompetition =
-          await services.competitionService.getActiveCompetition();
-        updateFeaturesWithCompetition(activeCompetition);
 
         // Return the started competition
         res.status(200).json({
@@ -352,21 +820,30 @@ export function makeAdminController(services: ServiceRegistry) {
      */
     async endCompetition(req: Request, res: Response, next: NextFunction) {
       try {
-        // Validate request body using flatParse
-        const result = flatParse(AdminEndCompetitionSchema, req.body);
-        if (!result.success) {
-          throw new ApiError(400, `Invalid request format: ${result.error}`);
+        const { competitionId } = flatParse(
+          AdminEndCompetitionSchema,
+          req.body,
+        );
+        const competition =
+          await services.competitionService.getCompetition(competitionId);
+        if (!competition) {
+          throw new ApiError(404, "Competition not found");
         }
 
-        const { competitionId } = result.data;
+        // End the NFL competition (note: slightly different leaderboard format)
+        if (competition.type === "sports_prediction") {
+          const { competition: endedCompetition, leaderboard } =
+            await services.competitionService.endNflCompetition(competitionId);
+          return res.status(200).json({
+            success: true,
+            competition: endedCompetition,
+            leaderboard,
+          });
+        }
 
-        // End the competition
+        // End the competition for all other competition types
         const { competition: endedCompetition, leaderboard } =
           await services.competitionService.endCompetition(competitionId);
-
-        const activeCompetition =
-          await services.competitionService.getActiveCompetition();
-        updateFeaturesWithCompetition(activeCompetition);
 
         adminLogger.info(
           `Successfully ended competition, id: ${competitionId}`,
@@ -390,32 +867,23 @@ export function makeAdminController(services: ServiceRegistry) {
      */
     async updateCompetition(req: Request, res: Response, next: NextFunction) {
       try {
-        // Validate params using flatParse
-        const paramsResult = flatParse(
+        const { competitionId } = flatParse(
           AdminUpdateCompetitionParamsSchema,
           req.params,
         );
-        if (!paramsResult.success) {
-          throw new ApiError(400, `Invalid parameters: ${paramsResult.error}`);
-        }
 
-        const { competitionId } = paramsResult.data;
-        const bodyResult = flatParse(AdminUpdateCompetitionSchema, req.body);
-        if (!bodyResult.success) {
-          throw new ApiError(
-            400,
-            `Invalid request format: ${bodyResult.error}`,
-          );
-        }
-
-        // Extract rewards, tradingConstraints, and perpsProvider from the validated data
         const {
           rewards,
           tradingConstraints,
+          evaluationMetric,
           perpsProvider,
           prizePools,
+          spotLiveConfig,
+          gameIds,
+          paperTradingConfig,
+          paperTradingInitialBalances,
           ...competitionUpdates
-        } = bodyResult.data;
+        } = flatParse(AdminUpdateCompetitionSchema, req.body);
         const updates = competitionUpdates;
 
         // Check if there are any updates to apply
@@ -423,8 +891,13 @@ export function makeAdminController(services: ServiceRegistry) {
           Object.keys(updates).length === 0 &&
           !rewards &&
           !tradingConstraints &&
+          !evaluationMetric &&
           !perpsProvider &&
-          !prizePools
+          !prizePools &&
+          !spotLiveConfig &&
+          !gameIds &&
+          !paperTradingConfig &&
+          !paperTradingInitialBalances
         ) {
           throw new ApiError(400, "No valid fields provided for update");
         }
@@ -436,8 +909,13 @@ export function makeAdminController(services: ServiceRegistry) {
             updates,
             tradingConstraints,
             rewards,
+            evaluationMetric,
             perpsProvider,
             prizePools,
+            spotLiveConfig,
+            gameIds,
+            paperTradingConfig,
+            paperTradingInitialBalances,
           );
 
         // Return the updated competition
@@ -449,6 +927,7 @@ export function makeAdminController(services: ServiceRegistry) {
               rank: reward.rank,
               reward: reward.reward,
             })),
+            gameIds,
           },
         });
       } catch (error) {
@@ -468,17 +947,10 @@ export function makeAdminController(services: ServiceRegistry) {
     ) {
       try {
         // Validate query using flatParse
-        const queryResult = flatParse(
+        const { competitionId } = flatParse(
           AdminGetPerformanceReportsQuerySchema,
           req.query,
         );
-        if (!queryResult.success) {
-          throw new ApiError(
-            400,
-            `Invalid query parameters: ${queryResult.error}`,
-          );
-        }
-        const { competitionId } = queryResult.data;
 
         // Get the competition
         const competition =
@@ -521,6 +993,12 @@ export function makeAdminController(services: ServiceRegistry) {
           agentHandle: agentMap.get(entry.agentId)?.handle || "unknown_agent",
           ownerName: agentMap.get(entry.agentId)?.ownerName || "Unknown Owner",
           portfolioValue: entry.value,
+          pnl: entry.pnl,
+          // Spot live metrics (only present for spot_live_trading competitions)
+          simpleReturn: entry.simpleReturn ?? null,
+          startingValue: entry.startingValue ?? null,
+          currentValue: entry.currentValue ?? null,
+          totalTrades: entry.totalTrades ?? null,
         }));
 
         // Return performance report
@@ -569,28 +1047,16 @@ export function makeAdminController(services: ServiceRegistry) {
       next: NextFunction,
     ) {
       try {
-        // Validate params using flatParse
-        const paramsResult = flatParse(
+        const { competitionId } = flatParse(
           AdminGetCompetitionSnapshotsParamsSchema,
           req.params,
         );
-        if (!paramsResult.success) {
-          throw new ApiError(400, `Invalid parameters: ${paramsResult.error}`);
-        }
-        const { competitionId } = paramsResult.data;
 
         // Validate query using flatParse
-        const queryResult = flatParse(
+        const { agentId } = flatParse(
           AdminGetCompetitionSnapshotsQuerySchema,
           req.query,
         );
-        if (!queryResult.success) {
-          throw new ApiError(
-            400,
-            `Invalid query parameters: ${queryResult.error}`,
-          );
-        }
-        const { agentId } = queryResult.data;
 
         // Check if the competition exists
         const competition =
@@ -720,19 +1186,11 @@ export function makeAdminController(services: ServiceRegistry) {
      */
     async listAllAgents(req: Request, res: Response, next: NextFunction) {
       try {
-        // Parse and validate pagination parameters
-        const queryResult = flatParse(AdminListAllAgentsQuerySchema, req.query);
-        if (!queryResult.success) {
-          throw new ApiError(
-            400,
-            `Invalid query parameters: ${queryResult.error}`,
-          );
-        }
         const {
           limit = 50,
           offset = 0,
           sort = "-createdAt",
-        } = queryResult.data;
+        } = flatParse(AdminListAllAgentsQuerySchema, req.query);
 
         // Get agents from the database with pagination
         const agents = await services.agentService.getAgents({
@@ -769,19 +1227,7 @@ export function makeAdminController(services: ServiceRegistry) {
      */
     async deleteAgent(req: Request, res: Response, next: NextFunction) {
       try {
-        // Validate params using flatParse
-        const paramsResult = flatParse(
-          AdminDeleteAgentParamsSchema,
-          req.params,
-        );
-        if (!paramsResult.success) {
-          return res.status(400).json({
-            success: false,
-            error: `Invalid parameters: ${paramsResult.error}`,
-          });
-        }
-
-        const { agentId } = paramsResult.data;
+        const { agentId } = flatParse(AdminDeleteAgentParamsSchema, req.params);
 
         // Get the agent first to check if it exists
         const agent = await services.agentService.getAgent(agentId);
@@ -808,7 +1254,7 @@ export function makeAdminController(services: ServiceRegistry) {
           });
         }
       } catch (error) {
-        adminLogger.error("Error deleting agent:", error);
+        adminLogger.error({ error }, "Error deleting agent");
         next(error);
       }
     },
@@ -821,29 +1267,11 @@ export function makeAdminController(services: ServiceRegistry) {
      */
     async deactivateAgent(req: Request, res: Response, next: NextFunction) {
       try {
-        // Validate params using flatParse
-        const paramsResult = flatParse(
+        const { agentId } = flatParse(
           AdminDeactivateAgentParamsSchema,
           req.params,
         );
-        if (!paramsResult.success) {
-          return res.status(400).json({
-            success: false,
-            error: `Invalid parameters: ${paramsResult.error}`,
-          });
-        }
-
-        // Validate body using flatParse
-        const bodyResult = flatParse(AdminDeactivateAgentBodySchema, req.body);
-        if (!bodyResult.success) {
-          return res.status(400).json({
-            success: false,
-            error: `Invalid request body: ${bodyResult.error}`,
-          });
-        }
-
-        const { agentId } = paramsResult.data;
-        const { reason } = bodyResult.data;
+        const { reason } = flatParse(AdminDeactivateAgentBodySchema, req.body);
 
         // Get the agent first to check if it exists
         const agent = await services.agentService.getAgent(agentId);
@@ -906,19 +1334,10 @@ export function makeAdminController(services: ServiceRegistry) {
      */
     async reactivateAgent(req: Request, res: Response, next: NextFunction) {
       try {
-        // Validate params using flatParse
-        const paramsResult = flatParse(
+        const { agentId } = flatParse(
           AdminReactivateAgentParamsSchema,
           req.params,
         );
-        if (!paramsResult.success) {
-          return res.status(400).json({
-            success: false,
-            error: `Invalid parameters: ${paramsResult.error}`,
-          });
-        }
-
-        const { agentId } = paramsResult.data;
 
         // Get the agent first to check if it exists and is actually inactive
         const agent = await services.agentService.getAgent(agentId);
@@ -977,16 +1396,7 @@ export function makeAdminController(services: ServiceRegistry) {
      */
     async getAgent(req: Request, res: Response, next: NextFunction) {
       try {
-        // Validate params using flatParse
-        const paramsResult = flatParse(AdminGetAgentParamsSchema, req.params);
-        if (!paramsResult.success) {
-          return res.status(400).json({
-            success: false,
-            error: `Invalid parameters: ${paramsResult.error}`,
-          });
-        }
-
-        const { agentId } = paramsResult.data;
+        const { agentId } = flatParse(AdminGetAgentParamsSchema, req.params);
 
         // Get the agent
         const agent = await services.agentService.getAgent(agentId);
@@ -1010,6 +1420,8 @@ export function makeAdminController(services: ServiceRegistry) {
           status: agent.status as ActorStatus,
           imageUrl: agent.imageUrl,
           metadata: agent.metadata,
+          isRewardsIneligible: agent.isRewardsIneligible,
+          rewardsIneligibilityReason: agent.rewardsIneligibilityReason,
           createdAt: agent.createdAt,
           updatedAt: agent.updatedAt,
         };
@@ -1032,30 +1444,17 @@ export function makeAdminController(services: ServiceRegistry) {
      */
     async updateAgent(req: Request, res: Response, next: NextFunction) {
       try {
-        // Validate params using flatParse
-        const paramsResult = flatParse(
-          AdminUpdateAgentParamsSchema,
-          req.params,
-        );
-        if (!paramsResult.success) {
-          return res.status(400).json({
-            success: false,
-            error: `Invalid parameters: ${paramsResult.error}`,
-          });
-        }
-
-        // Validate body using flatParse
-        const bodyResult = flatParse(AdminUpdateAgentBodySchema, req.body);
-        if (!bodyResult.success) {
-          return res.status(400).json({
-            success: false,
-            error: `Invalid request body: ${bodyResult.error}`,
-          });
-        }
-
-        const { agentId } = paramsResult.data;
-        const { name, handle, description, imageUrl, email, metadata } =
-          bodyResult.data;
+        const { agentId } = flatParse(AdminUpdateAgentParamsSchema, req.params);
+        const {
+          name,
+          handle,
+          description,
+          imageUrl,
+          email,
+          metadata,
+          isRewardsIneligible,
+          rewardsIneligibilityReason,
+        } = flatParse(AdminUpdateAgentBodySchema, req.body);
 
         // Get the current agent
         const agent = await services.agentService.getAgent(agentId);
@@ -1075,6 +1474,9 @@ export function makeAdminController(services: ServiceRegistry) {
           imageUrl: imageUrl ?? agent.imageUrl,
           email: email ?? agent.email,
           metadata: metadata ?? agent.metadata,
+          isRewardsIneligible: isRewardsIneligible ?? agent.isRewardsIneligible,
+          rewardsIneligibilityReason:
+            rewardsIneligibilityReason ?? agent.rewardsIneligibilityReason,
         };
 
         const updatedAgent = await services.agentService.updateAgent({
@@ -1100,6 +1502,8 @@ export function makeAdminController(services: ServiceRegistry) {
           status: updatedAgent.status as ActorStatus,
           imageUrl: updatedAgent.imageUrl,
           metadata: updatedAgent.metadata,
+          isRewardsIneligible: updatedAgent.isRewardsIneligible,
+          rewardsIneligibilityReason: updatedAgent.rewardsIneligibilityReason,
           createdAt: updatedAgent.createdAt,
           updatedAt: updatedAgent.updatedAt,
         };
@@ -1125,32 +1529,14 @@ export function makeAdminController(services: ServiceRegistry) {
       next: NextFunction,
     ) {
       try {
-        // Validate params using flatParse
-        const paramsResult = flatParse(
+        const { competitionId, agentId } = flatParse(
           AdminRemoveAgentFromCompetitionParamsSchema,
           req.params,
         );
-        if (!paramsResult.success) {
-          return res.status(400).json({
-            success: false,
-            error: `Invalid parameters: ${paramsResult.error}`,
-          });
-        }
-
-        // Validate body using flatParse
-        const bodyResult = flatParse(
+        const { reason } = flatParse(
           AdminRemoveAgentFromCompetitionBodySchema,
           req.body,
         );
-        if (!bodyResult.success) {
-          return res.status(400).json({
-            success: false,
-            error: `Invalid request body: ${bodyResult.error}`,
-          });
-        }
-
-        const { competitionId, agentId } = paramsResult.data;
-        const { reason } = bodyResult.data;
 
         // Check if competition exists
         const competition =
@@ -1223,19 +1609,10 @@ export function makeAdminController(services: ServiceRegistry) {
       next: NextFunction,
     ) {
       try {
-        // Validate params using flatParse
-        const paramsResult = flatParse(
+        const { competitionId, agentId } = flatParse(
           AdminReactivateAgentInCompetitionParamsSchema,
           req.params,
         );
-        if (!paramsResult.success) {
-          return res.status(400).json({
-            success: false,
-            error: `Invalid parameters: ${paramsResult.error}`,
-          });
-        }
-
-        const { competitionId, agentId } = paramsResult.data;
 
         // Check if competition exists
         const competition =
@@ -1314,19 +1691,10 @@ export function makeAdminController(services: ServiceRegistry) {
       next: NextFunction,
     ) {
       try {
-        // Validate params using flatParse
-        const paramsResult = flatParse(
+        const { competitionId, agentId } = flatParse(
           AdminAddAgentToCompetitionParamsSchema,
           req.params,
         );
-        if (!paramsResult.success) {
-          return res.status(400).json({
-            success: false,
-            error: `Invalid parameters: ${paramsResult.error}`,
-          });
-        }
-
-        const { competitionId, agentId } = paramsResult.data;
 
         // Check if competition exists
         const competition =
@@ -1356,12 +1724,16 @@ export function makeAdminController(services: ServiceRegistry) {
           });
         }
 
-        // Validate wallet address for perps competitions
-        if (competition.type === "perpetual_futures" && !agent.walletAddress) {
+        // Validate wallet address for competitions requiring on-chain wallets
+        if (
+          (competition.type === "perpetual_futures" ||
+            competition.type === "spot_live_trading") &&
+          !agent.walletAddress
+        ) {
           return res.status(400).json({
             success: false,
             error:
-              "Agent must have a wallet address to participate in perpetual futures competitions",
+              "Agent must have a wallet address to participate in this competition",
           });
         }
 
@@ -1408,6 +1780,7 @@ export function makeAdminController(services: ServiceRegistry) {
 
           await services.balanceService.resetAgentBalances(
             agentId,
+            competitionId,
             competition.type,
           );
         }
@@ -1480,16 +1853,10 @@ export function makeAdminController(services: ServiceRegistry) {
      */
     async getAgentApiKey(req: Request, res: Response, next: NextFunction) {
       try {
-        // Validate params using flatParse
-        const paramsResult = flatParse(
+        const { agentId } = flatParse(
           AdminGetAgentApiKeyParamsSchema,
           req.params,
         );
-        if (!paramsResult.success) {
-          throw new ApiError(400, `Invalid parameters: ${paramsResult.error}`);
-        }
-
-        const { agentId } = paramsResult.data;
 
         // Get the decrypted API key using the agent manager
         const result =
@@ -1523,15 +1890,10 @@ export function makeAdminController(services: ServiceRegistry) {
       next: NextFunction,
     ) {
       try {
-        // Validate params using flatParse
-        const result = flatParse(
+        const { competitionId } = flatParse(
           AdminGetCompetitionTransferViolationsParamsSchema,
           req.params,
         );
-        if (!result.success) {
-          throw new ApiError(400, `Invalid parameters: ${result.error}`);
-        }
-        const { competitionId } = result.data;
 
         // Get transfer violations from service
         const violations =
@@ -1549,6 +1911,106 @@ export function makeAdminController(services: ServiceRegistry) {
     },
 
     /**
+     * Get unreviewed self-funding alerts for a spot live competition
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async getSpotLiveSelfFundingAlerts(
+      req: Request,
+      res: Response,
+      next: NextFunction,
+    ) {
+      try {
+        const { competitionId } = flatParse(
+          AdminGetCompetitionTransferViolationsParamsSchema,
+          req.params,
+        );
+        const query = flatParse(AdminGetSpotLiveAlertsQuerySchema, req.query);
+
+        // Build filters for repository query
+        const filters: {
+          reviewed?: boolean;
+          violationType?: string;
+        } = {};
+
+        if (query.reviewed !== "all") {
+          filters.reviewed = query.reviewed === "true";
+        }
+
+        if (query.violationType && query.violationType !== "all") {
+          filters.violationType = query.violationType;
+        }
+
+        // Get alerts from service with SQL filtering
+        const alerts =
+          await services.competitionService.getSpotLiveSelfFundingAlerts(
+            competitionId,
+            filters,
+          );
+
+        res.json({
+          success: true,
+          alerts,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Review a spot live self-funding alert
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async reviewSpotLiveSelfFundingAlert(
+      req: Request,
+      res: Response,
+      next: NextFunction,
+    ) {
+      try {
+        const { competitionId, alertId } = flatParse(
+          AdminReviewSpotLiveAlertParamsSchema,
+          req.params,
+        );
+        const { reviewNote, actionTaken } = flatParse(
+          AdminReviewSpotLiveAlertBodySchema,
+          req.body,
+        );
+
+        // Update alert (service validates alert belongs to competition)
+        const adminId = req.adminId as string;
+        const updatedAlert =
+          await services.competitionService.reviewSpotLiveSelfFundingAlert(
+            competitionId,
+            alertId,
+            {
+              reviewed: true,
+              reviewedAt: new Date(),
+              reviewNote,
+              actionTaken,
+              reviewedBy: adminId,
+            },
+          );
+
+        if (!updatedAlert) {
+          return res.status(404).json({
+            success: false,
+            error: "Alert not found",
+          });
+        }
+
+        res.json({
+          success: true,
+          alert: updatedAlert,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
      * Allocate rewards for a competition
      * @param req Express request
      * @param res Express response
@@ -1556,12 +2018,10 @@ export function makeAdminController(services: ServiceRegistry) {
      */
     async allocateRewards(req: Request, res: Response, next: NextFunction) {
       try {
-        const result = flatParse(AdminRewardsAllocationSchema, req.body);
-        if (!result.success) {
-          throw new ApiError(400, `Invalid request format: ${result.error}`);
-        }
-
-        const { competitionId, startTimestamp } = result.data;
+        const { competitionId, startTimestamp } = flatParse(
+          AdminRewardsAllocationSchema,
+          req.body,
+        );
 
         await services.rewardsService.calculateAndAllocate(
           competitionId,
@@ -1574,7 +2034,210 @@ export function makeAdminController(services: ServiceRegistry) {
           competitionId,
         });
       } catch (error) {
-        adminLogger.error("Error allocating rewards:", error);
+        adminLogger.error({ error }, "Error allocating rewards");
+        next(error);
+      }
+    },
+
+    /**
+     * Add bonus boost to users
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async addBonusBoost(req: Request, res: Response, next: NextFunction) {
+      try {
+        // Validate request body
+        const { boosts } = flatParse(AdminAddBonusBoostSchema, req.body);
+
+        adminLogger.info(
+          { boostCount: boosts.length },
+          "Processing batch add bonus boost request",
+        );
+
+        // Step 1: Pre-validate all items before processing any
+        // This ensures all-or-nothing transaction semantics
+        const validationErrors = [];
+
+        for (const [i, boostItem] of boosts.entries()) {
+          // Check if user exists for each wallet
+          try {
+            const user = await services.userService.getUserByWalletAddress(
+              boostItem.wallet,
+            );
+            if (!user) {
+              validationErrors.push({
+                index: i,
+                wallet: boostItem.wallet,
+                error: `User with wallet ${boostItem.wallet} not found`,
+              });
+            }
+          } catch (error) {
+            validationErrors.push({
+              index: i,
+              wallet: boostItem.wallet,
+              error:
+                error instanceof Error
+                  ? error.message
+                  : "Failed to validate user",
+            });
+          }
+        }
+
+        // If any validation errors, reject entire batch
+        if (validationErrors.length > 0) {
+          adminLogger.warn(
+            { errorCount: validationErrors.length },
+            "Batch validation failed - rejecting entire batch",
+          );
+
+          return res.status(400).json({
+            success: false,
+            error: "Batch validation failed",
+            message: `Found ${validationErrors.length} validation error(s). No boosts were created.`,
+            data: {
+              errors: validationErrors,
+            },
+          });
+        }
+
+        // Step 2: Process all boosts in a single transaction for all-or-nothing semantics
+        const results = await db.transaction(async (tx) => {
+          const batchResults = [];
+
+          for (const [i, boostItem] of boosts.entries()) {
+            // Convert amount from string to BigInt
+            const amount = BigInt(boostItem.amount);
+
+            adminLogger.info(
+              {
+                index: i,
+                wallet: boostItem.wallet,
+                amount: boostItem.amount,
+                expiresAt: boostItem.expiresAt,
+              },
+              "Processing boost item",
+            );
+
+            // Add the bonus boost within the transaction
+            const result = await services.boostBonusService.addBoostBonus(
+              boostItem.wallet,
+              amount,
+              boostItem.expiresAt,
+              undefined, // createdByAdminId - could extract from auth if needed
+              boostItem.meta,
+              tx, // Pass the transaction to ensure atomicity
+            );
+
+            adminLogger.info(
+              {
+                index: i,
+                boostBonusId: result.boostBonusId,
+                appliedCount: result.appliedToCompetitions.length,
+              },
+              "Successfully added bonus boost",
+            );
+
+            batchResults.push({
+              id: result.boostBonusId,
+              userId: result.userId,
+              amount: result.amount.toString(),
+              expiresAt: result.expiresAt.toISOString(),
+              isActive: true,
+              appliedToCompetitions: result.appliedToCompetitions,
+            });
+          }
+
+          return batchResults;
+        });
+
+        // All items succeeded
+        adminLogger.info(
+          { successCount: results.length },
+          "Batch add bonus boost completed successfully",
+        );
+
+        res.status(201).json({
+          success: true,
+          data: {
+            results,
+          },
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Revoke bonus boost
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async revokeBonusBoost(req: Request, res: Response, next: NextFunction) {
+      try {
+        // Validate request body
+        const { boostIds } = flatParse(AdminRevokeBonusBoostSchema, req.body);
+
+        adminLogger.info(
+          { boostIdCount: boostIds.length },
+          "Processing batch revoke bonus boost request",
+        );
+
+        // Process all boosts in a single transaction for all-or-nothing semantics
+        const results = await db.transaction(async (tx) => {
+          const batchResults = [];
+
+          for (const [i, boostId] of boostIds.entries()) {
+            adminLogger.info(
+              {
+                index: i,
+                boostId,
+              },
+              "Revoking bonus boost",
+            );
+
+            // Revoke the bonus boost within the transaction
+            const result = await services.boostBonusService.revokeBoostBonus(
+              boostId,
+              tx,
+            );
+
+            adminLogger.info(
+              {
+                index: i,
+                boostId: result.boostBonusId,
+                removedCount: result.removedFromCompetitions.length,
+                keptCount: result.keptInCompetitions.length,
+              },
+              "Successfully revoked bonus boost",
+            );
+
+            batchResults.push({
+              id: result.boostBonusId,
+              revoked: result.revoked,
+              revokedAt: result.revokedAt.toISOString(),
+              removedFromCompetitions: result.removedFromCompetitions,
+              keptInCompetitions: result.keptInCompetitions,
+            });
+          }
+
+          return batchResults;
+        });
+
+        // All items succeeded
+        adminLogger.info(
+          { successCount: results.length },
+          "Batch revoke bonus boost completed successfully",
+        );
+
+        res.status(200).json({
+          success: true,
+          data: {
+            results,
+          },
+        });
+      } catch (error) {
         next(error);
       }
     },

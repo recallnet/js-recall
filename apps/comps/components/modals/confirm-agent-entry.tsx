@@ -18,6 +18,7 @@ import { formatAmount } from "@/utils/format";
 import { formatDate } from "@/utils/format";
 
 import { Recall } from "../Recall";
+import BigNumberDisplay from "../bignumber";
 import RewardsTGE from "../rewards-tge";
 
 interface ChooseAgentModalProps {
@@ -37,6 +38,13 @@ export const ConfirmAgentEntryModal: React.FC<ChooseAgentModalProps> = ({
   onBack,
   competition,
 }) => {
+  // Get best rank's score for the competition type
+  const topRankForCompetitionType =
+    agent?.stats.ranks && agent.stats.ranks.length > 0
+      ? agent.stats.ranks.find((rank) => rank.type === competition?.type)
+          ?.score || 0
+      : 0;
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="w-full max-w-[700px] p-4 sm:p-6">
@@ -71,22 +79,30 @@ export const ConfirmAgentEntryModal: React.FC<ChooseAgentModalProps> = ({
                   [{agent?.stats.bestPlacement?.rank || 0}]
                 </span>
               </li>
-              <li>
-                Total Votes{" "}
+              {/* // TODO: Re-implement with boosts */}
+              {/* <li>
+                Total Boosts{" "}
                 <span className="text-primary-foreground">
                   [{agent?.stats.totalVotes || 0}]
                 </span>
-              </li>
+              </li> */}
               <li>
-                Completed Comps{" "}
+                Completed Competitions{" "}
                 <span className="text-primary-foreground">
                   [{agent?.stats.completedCompetitions || 0}]
                 </span>
               </li>
               <li>
-                ELO{" "}
+                Best Score{" "}
                 <span className="text-primary-foreground">
-                  [{agent?.stats.score || 0}]
+                  [
+                  <BigNumberDisplay
+                    value={topRankForCompetitionType.toString()}
+                    decimals={0}
+                    displayDecimals={0}
+                    compact={false}
+                  />
+                  ]
                 </span>
               </li>
             </div>

@@ -19,7 +19,7 @@ export function configureTradeRoutes(
    *     tags:
    *       - Trade
    *     summary: Execute a trade (Paper Trading Only)
-   *     description: Execute a trade between two tokens. Only available during paper trading competitions.
+   *     description: Execute a trade between two tokens. Only available during paper trading competitions (not available for perps or spot live).
    *     security:
    *       - BearerAuth: []
    *     requestBody:
@@ -33,6 +33,7 @@ export function configureTradeRoutes(
    *               - toToken
    *               - amount
    *               - reason
+   *               - competitionId
    *             properties:
    *               fromToken:
    *                 type: string
@@ -50,6 +51,10 @@ export function configureTradeRoutes(
    *                 type: string
    *                 description: Reason for executing this trade
    *                 example: "Strong upward momentum in the market combined with positive news on this token's ecosystem growth."
+   *               competitionId:
+   *                 type: string
+   *                 description: Competition ID
+   *                 example: "comp_12345"
    *               slippageTolerance:
    *                 type: string
    *                 description: Optional slippage tolerance in percentage
@@ -172,10 +177,17 @@ export function configureTradeRoutes(
    *     tags:
    *       - Trade
    *     summary: Get a quote for a trade (Paper Trading Only)
-   *     description: Get a quote for a potential trade between two tokens. Only available during paper trading competitions.
+   *     description: Get a quote for a potential trade between two tokens. Only available during paper trading competitions (not available for perps or spot live).
    *     security:
    *       - BearerAuth: []
    *     parameters:
+   *       - in: query
+   *         name: competitionId
+   *         schema:
+   *           type: string
+   *         required: true
+   *         description: Competition ID to get quote for
+   *         example: comp_12345
    *       - in: query
    *         name: fromToken
    *         schema:

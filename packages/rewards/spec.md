@@ -1,11 +1,11 @@
-# Model for Voters
+# Model for Boosters
 
 ## High-level
 
 1. Users cast boosts to competitors
 2. Competition results determine top-k placements.
 3. Compute placement pools using a decaying reward curve
-4. For each placement, split the pool proportionally among voters
+4. For each placement, split the pool proportionally among boosters
 5. Sum all payouts to calculate each user’s total reward
 
 ## 1 Define the prize split across placements
@@ -40,7 +40,7 @@ $X=1000, k=10, r=0.5$
 | 9      | 0.00196 | 1.96       |
 | 10     | 0.00098 | 0.98       |
 
-## 2 Distribute each placement’s pool to its voters
+## 2 Distribute each placement’s pool to its boosters
 
 For the competitor who finished at placement $i$:
 
@@ -207,7 +207,7 @@ unnormalized_weights = [Decimal(r**i) for i in range(k)]
 total_weight = sum(unnormalized_weights)
 placement_pools = [Decimal(X) * (Decimal(w) / Decimal(total_weight)) for w in unnormalized_weights]
 
-# Step 2: distribute each placement's pool to voters
+# Step 2: distribute each placement's pool to boosters
 user_payouts = {}  # {user_id: total_payout}
 
 for rank in range(k):

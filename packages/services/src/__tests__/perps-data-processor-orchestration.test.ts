@@ -10,11 +10,14 @@ import type {
   SelectPerpsAccountSummary,
   SelectPerpsCompetitionConfig,
 } from "@recallnet/db/schema/trading/types";
+import type { Database } from "@recallnet/db/types";
 
 import { CalmarRatioService } from "../calmar-ratio.service.js";
 import { PerpsDataProcessor } from "../perps-data-processor.service.js";
 import { PerpsMonitoringService } from "../perps-monitoring.service.js";
 import { PerpsProviderFactory } from "../providers/perps-provider.factory.js";
+import { RiskMetricsService } from "../risk-metrics.service.js";
+import { SortinoRatioService } from "../sortino-ratio.service.js";
 import type {
   IPerpsDataProvider,
   PerpsAccountSummary,
@@ -32,7 +35,8 @@ class MockCompetitionRepository {
   createPortfolioSnapshot = vi.fn();
   batchCreatePortfolioSnapshots = vi.fn();
   getFirstAndLastSnapshots = vi.fn();
-  calculateMaxDrawdownSQL = vi.fn();
+  calculateMaxDrawdown = vi.fn();
+  getAgentPortfolioSnapshots = vi.fn();
 }
 
 class MockPerpsRepository {
@@ -46,11 +50,24 @@ class MockPerpsRepository {
   getPerpsCompetitionStats = vi.fn();
   getPerpsPositions = vi.fn();
   getLatestPerpsAccountSummary = vi.fn();
+  getBulkAgentRiskMetrics = vi.fn();
+  batchCreateRiskMetricsSnapshots = vi.fn();
   getCompetitionPerpsPositions = vi.fn();
 }
 
-class MockCalmarRatioService {
-  calculateAndSaveCalmarRatio = vi.fn();
+class MockRiskMetricsService extends RiskMetricsService {
+  calculateAndSaveAllRiskMetrics = vi.fn();
+
+  constructor() {
+    super(
+      null as unknown as CalmarRatioService,
+      null as unknown as SortinoRatioService,
+      null as unknown as PerpsRepository,
+      null as unknown as CompetitionRepository,
+      null as unknown as Database,
+      null as unknown as Logger,
+    );
+  }
 }
 
 class MockLogger {
@@ -66,7 +83,7 @@ vi.mock("@recallnet/db/repositories/competition");
 vi.mock("@recallnet/db/repositories/perps");
 vi.mock("../perps-monitoring.service.js");
 vi.mock("../providers/perps-provider.factory.js");
-vi.mock("../calmar-ratio.service.js");
+vi.mock("../risk-metrics.service.js");
 vi.mock("../../lib/logger.js");
 
 describe("PerpsDataProcessor - processPerpsCompetition", () => {
@@ -76,7 +93,7 @@ describe("PerpsDataProcessor - processPerpsCompetition", () => {
   let mockAgentRepo: MockAgentRepository;
   let mockCompetitionRepo: MockCompetitionRepository;
   let mockPerpsRepo: MockPerpsRepository;
-  let mockCalmarRatioService: MockCalmarRatioService;
+  let mockRiskMetricsService: MockRiskMetricsService;
   let mockLogger: MockLogger;
 
   // Competition object that matches what findById returns
@@ -91,8 +108,8 @@ describe("PerpsDataProcessor - processPerpsCompetition", () => {
     endDate: new Date("2024-12-31"),
     joinStartDate: null,
     joinEndDate: null,
-    votingStartDate: null,
-    votingEndDate: null,
+    boostStartDate: null,
+    boostEndDate: null,
     requiresAgoraId: false,
     maxParticipants: null,
     registeredParticipants: 0,
@@ -119,6 +136,7 @@ describe("PerpsDataProcessor - processPerpsCompetition", () => {
     selfFundingThresholdUsd: "100",
     initialCapital: "10000",
     minFundingThreshold: null,
+    evaluationMetric: "calmar_ratio",
     createdAt: new Date(),
     updatedAt: new Date(),
     inactivityHours: null,
@@ -175,6 +193,8 @@ describe("PerpsDataProcessor - processPerpsCompetition", () => {
     status: "active",
     deactivationReason: null,
     deactivationDate: null,
+    isRewardsIneligible: false,
+    rewardsIneligibilityReason: null,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -224,12 +244,12 @@ describe("PerpsDataProcessor - processPerpsCompetition", () => {
     mockAgentRepo = new MockAgentRepository();
     mockCompetitionRepo = new MockCompetitionRepository();
     mockPerpsRepo = new MockPerpsRepository();
-    mockCalmarRatioService = new MockCalmarRatioService();
+    mockRiskMetricsService = new MockRiskMetricsService();
     mockLogger = new MockLogger();
 
     // Create processor with dependencies
     processor = new PerpsDataProcessor(
-      mockCalmarRatioService as unknown as CalmarRatioService,
+      mockRiskMetricsService,
       mockAgentRepo as unknown as AgentRepository,
       mockCompetitionRepo as unknown as CompetitionRepository,
       mockPerpsRepo as unknown as PerpsRepository,
@@ -274,6 +294,31 @@ describe("PerpsDataProcessor - processPerpsCompetition", () => {
     mockCompetitionRepo.batchCreatePortfolioSnapshots.mockResolvedValue([
       mockPortfolioSnapshot,
     ]);
+
+    // Add mocks for risk metrics snapshot creation
+    mockPerpsRepo.getBulkAgentRiskMetrics.mockResolvedValue(
+      new Map([
+        [
+          "comp-1",
+          {
+            agentId: "agent-1",
+            competitionId: "comp-1",
+            calmarRatio: "1.5",
+            sortinoRatio: "1.2",
+            simpleReturn: "0.05",
+            annualizedReturn: "0.20",
+            maxDrawdown: "-0.10",
+            downsideDeviation: "0.08",
+          },
+        ],
+      ]),
+    );
+
+    mockCompetitionRepo.getAgentPortfolioSnapshots.mockResolvedValue([
+      mockPortfolioSnapshot,
+    ]);
+
+    mockPerpsRepo.batchCreateRiskMetricsSnapshots.mockResolvedValue([]);
   });
 
   describe("successful orchestration", () => {
@@ -754,18 +799,6 @@ describe("PerpsDataProcessor - processPerpsCompetition", () => {
 
   describe("calmar ratio calculation", () => {
     it("should calculate Calmar ratios for active competitions", async () => {
-      const mockCalculateAndSave = vi.fn().mockResolvedValue({
-        metrics: { id: "metrics-1", calmarRatio: "1.5" },
-        periods: [],
-      });
-
-      vi.mocked(CalmarRatioService).mockImplementation(
-        () =>
-          ({
-            calculateAndSaveCalmarRatio: mockCalculateAndSave,
-          }) as unknown as CalmarRatioService,
-      );
-
       vi.mocked(mockCompetitionRepo.findById).mockResolvedValue(
         sampleCompetition,
       );
@@ -779,9 +812,9 @@ describe("PerpsDataProcessor - processPerpsCompetition", () => {
 
       const result = await processor.processPerpsCompetition("comp-1");
 
-      // Should calculate Calmar ratio for successful agents
+      // Should calculate risk metrics for successful agents
       expect(
-        mockCalmarRatioService.calculateAndSaveCalmarRatio,
+        mockRiskMetricsService.calculateAndSaveAllRiskMetrics,
       ).toHaveBeenCalledWith("agent-1", "comp-1");
       expect(result.calmarRatioResult).toEqual({
         successful: 1,
@@ -809,26 +842,15 @@ describe("PerpsDataProcessor - processPerpsCompetition", () => {
 
       const result = await processor.processPerpsCompetition("comp-1");
 
-      // Should NOT calculate Calmar ratio for ended competitions
+      // Should NOT calculate risk metrics for ended competitions
       expect(
-        mockCalmarRatioService.calculateAndSaveCalmarRatio,
+        mockRiskMetricsService.calculateAndSaveAllRiskMetrics,
       ).not.toHaveBeenCalled();
       expect(result.calmarRatioResult).toBeUndefined();
     });
 
     it("should handle Calmar calculation failures gracefully", async () => {
       vi.useFakeTimers();
-
-      const mockCalculateAndSave = vi
-        .fn()
-        .mockRejectedValue(new Error("Database error"));
-
-      vi.mocked(CalmarRatioService).mockImplementation(
-        () =>
-          ({
-            calculateAndSaveCalmarRatio: mockCalculateAndSave,
-          }) as unknown as CalmarRatioService,
-      );
 
       vi.mocked(mockCompetitionRepo.findById).mockResolvedValue(
         sampleCompetition,
@@ -883,9 +905,8 @@ describe("PerpsDataProcessor - processPerpsCompetition", () => {
       vi.useFakeTimers();
 
       // Mock to succeed for agent-1, fail for agent-2
-      const mockCalculateAndSave = vi
-        .fn()
-        .mockImplementation((agentId: string) => {
+      mockRiskMetricsService.calculateAndSaveAllRiskMetrics.mockImplementation(
+        (agentId: string) => {
           if (agentId === "agent-1") {
             return Promise.resolve({
               metrics: { id: "metrics-1", calmarRatio: "1.5" },
@@ -893,13 +914,7 @@ describe("PerpsDataProcessor - processPerpsCompetition", () => {
             });
           }
           return Promise.reject(new Error("Agent-specific error"));
-        });
-
-      vi.mocked(CalmarRatioService).mockImplementation(
-        () =>
-          ({
-            calculateAndSaveCalmarRatio: mockCalculateAndSave,
-          }) as unknown as CalmarRatioService,
+        },
       );
 
       vi.mocked(mockCompetitionRepo.findById).mockResolvedValue(
@@ -937,11 +952,11 @@ describe("PerpsDataProcessor - processPerpsCompetition", () => {
 
       vi.useRealTimers();
 
-      // Should have all successful results (mock returns success for both)
+      // Should have 1 successful and 1 failed
       expect(result.calmarRatioResult).toEqual({
-        successful: 2,
-        failed: 0,
-        errors: undefined,
+        successful: 1,
+        failed: 1,
+        errors: ["Agent agent-2: Agent-specific error"],
       });
     });
 
@@ -969,9 +984,9 @@ describe("PerpsDataProcessor - processPerpsCompetition", () => {
 
       const result = await processor.processPerpsCompetition("comp-1");
 
-      // Should not calculate Calmar when no agents synced
+      // Should not calculate risk metrics when no agents synced
       expect(
-        mockCalmarRatioService.calculateAndSaveCalmarRatio,
+        mockRiskMetricsService.calculateAndSaveAllRiskMetrics,
       ).not.toHaveBeenCalled();
       expect(result.calmarRatioResult).toBeUndefined();
     });
@@ -991,8 +1006,8 @@ describe("PerpsDataProcessor - processPerpsCompetition", () => {
         agentId: agent.id,
       }));
 
-      // Mock all Calmar calculations to fail
-      mockCalmarRatioService.calculateAndSaveCalmarRatio.mockRejectedValue(
+      // Mock all risk metrics calculations to fail
+      mockRiskMetricsService.calculateAndSaveAllRiskMetrics.mockRejectedValue(
         new Error("Database down"),
       );
 
@@ -1023,7 +1038,7 @@ describe("PerpsDataProcessor - processPerpsCompetition", () => {
       // With the new approach: ALL agents should be attempted (with retries)
       // Each agent gets 4 attempts (1 initial + 3 retries) = 200 total calls
       expect(
-        mockCalmarRatioService.calculateAndSaveCalmarRatio,
+        mockRiskMetricsService.calculateAndSaveAllRiskMetrics,
       ).toHaveBeenCalledTimes(200);
 
       // All 50 should be marked as failed (all attempted but all failed)
@@ -1052,8 +1067,8 @@ describe("PerpsDataProcessor - processPerpsCompetition", () => {
         agentId: agent.id,
       }));
 
-      // Mock Calmar to fail for all agents but with varying errors
-      mockCalmarRatioService.calculateAndSaveCalmarRatio.mockImplementation(
+      // Mock risk metrics to fail for all agents but with varying errors
+      mockRiskMetricsService.calculateAndSaveAllRiskMetrics.mockImplementation(
         (agentId: string) => {
           // Systemic alert won't trigger because we vary the error pattern
           const index = parseInt(agentId.split("-")[1] || "0", 10);
@@ -1119,9 +1134,8 @@ describe("PerpsDataProcessor - processPerpsCompetition", () => {
       }));
 
       // Mock all to succeed
-      mockCalmarRatioService.calculateAndSaveCalmarRatio.mockResolvedValue({
+      mockRiskMetricsService.calculateAndSaveAllRiskMetrics.mockResolvedValue({
         metrics: { id: "metrics-1", calmarRatio: "1.5" },
-        periods: [],
       });
 
       vi.mocked(mockCompetitionRepo.findById).mockResolvedValue(
@@ -1144,7 +1158,7 @@ describe("PerpsDataProcessor - processPerpsCompetition", () => {
 
       // All should succeed
       expect(
-        mockCalmarRatioService.calculateAndSaveCalmarRatio,
+        mockRiskMetricsService.calculateAndSaveAllRiskMetrics,
       ).toHaveBeenCalledTimes(25);
       expect(result.calmarRatioResult?.successful).toBe(25);
       expect(result.calmarRatioResult?.failed).toBe(0);

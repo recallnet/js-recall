@@ -17,6 +17,7 @@
     "api",
     "@recallnet/ui2",
     "@recallnet/db",
-    "@recallnet/services"
+    "@recallnet/services",
+    "@recallnet/test-utils"
   ]
 }

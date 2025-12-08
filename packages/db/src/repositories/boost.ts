@@ -1,15 +1,29 @@
-import { and, desc, eq, isNull, notExists, sql, sum } from "drizzle-orm";
+import {
+  and,
+  desc,
+  eq,
+  gt,
+  inArray,
+  isNull,
+  notExists,
+  sql,
+  sum,
+} from "drizzle-orm";
 import { randomBytes } from "node:crypto";
 import { z } from "zod";
 
 import { BlockchainAddressAsU8A } from "../coders/index.js";
-import { stakes } from "../schema/indexing/defs.js";
-import * as schema from "../schema/voting/defs.js";
+import * as schema from "../schema/boost/defs.js";
 import {
+  InsertBoostBonus,
   InsertStakeBoostAward,
   SelectAgentBoost,
   SelectAgentBoostTotal,
-} from "../schema/voting/types.js";
+  SelectBoostBonus,
+} from "../schema/boost/types.js";
+import * as coreSchema from "../schema/core/defs.js";
+import { agents } from "../schema/core/defs.js";
+import { stakes } from "../schema/indexing/defs.js";
 import type { Transaction } from "../types.js";
 import { Database } from "../types.js";
 
@@ -25,6 +39,7 @@ export type {
 /** Schema of an optional structured context to attach to each boost change. */
 const BoostChangeMetaSchema = z.object({
   description: z.string().optional(),
+  boostBonusId: z.string().optional(), // UUID of bonus boost that created this change
 });
 /** Optional structured context to attach to each boost change. */
 type BoostChangeMeta = z.infer<typeof BoostChangeMetaSchema>;
@@ -104,11 +119,21 @@ type BoostAgentResult =
       agentBoostTotal: SelectAgentBoostTotal;
     };
 
+type ListCompetitionBoost = {
+  userId: string;
+  wallet: Uint8Array;
+  agentId: string;
+  agentName: string;
+  agentHandle: string;
+  amount: bigint;
+  createdAt: Date;
+};
+
 /**
  * BoostRepository
  *
  * Off-chain accounting for the "Boost"s.
- * Tables (see schema/voting/defs.ts):
+ * Tables (see schema/boost/defs.ts):
  *  - boost_balances: current mutable balance per wallet (CHECK balance >= 0)
  *  - boost_changes: immutable append-only journal of deltas with an idempotency key
  *
@@ -367,13 +392,13 @@ class BoostRepository {
       if (!balanceRow) {
         // A safety net for unexpected database behavior
         throw new Error(
-          `Can not decrease balance of non-existent wallet ${wallet} and competition ${competitionId}`,
+          `Can not decrease balance of non-existent wallet ${args.wallet} and competition ${competitionId}`,
         );
       }
       const currentBalance = balanceRow.balance;
       if (currentBalance < amount) {
         throw new Error(
-          `Can not decrease balance below zero for for wallet ${wallet} and competition ${competitionId}`,
+          `Can not decrease balance below zero for wallet ${args.wallet} and competition ${competitionId}`,
         );
       }
       // 2) Lock the (wallet, idemKey) change row if it exists
@@ -413,7 +438,7 @@ class BoostRepository {
 
       if (!updatedRow) {
         throw new Error(
-          `Can not decrease balance for wallet ${wallet} and competition ${competitionId}`,
+          `Can not decrease balance for wallet ${args.wallet} and competition ${competitionId}`,
         );
       }
 
@@ -434,7 +459,7 @@ class BoostRepository {
 
       if (!change) {
         throw new Error(
-          `Can not add change for wallet ${wallet}, competition ${competitionId} and delta -${amount}`,
+          `Can not add change for wallet ${args.wallet}, competition ${competitionId} and delta -${amount}`,
         );
       }
 
@@ -617,7 +642,7 @@ class BoostRepository {
     return await executor
       .select({
         userId: schema.boostBalances.userId,
-        wallet: schema.boostChanges.wallet,
+        wallet: coreSchema.users.walletAddress,
         deltaAmount: schema.boostChanges.deltaAmount,
         createdAt: schema.boostChanges.createdAt,
         agentId: schema.agentBoostTotals.agentId,
@@ -626,6 +651,10 @@ class BoostRepository {
       .innerJoin(
         schema.boostBalances,
         eq(schema.boostChanges.balanceId, schema.boostBalances.id),
+      )
+      .innerJoin(
+        coreSchema.users,
+        eq(schema.boostBalances.userId, coreSchema.users.id),
       )
       .innerJoin(
         schema.agentBoosts,
@@ -642,6 +671,142 @@ class BoostRepository {
         ),
       )
       .orderBy(schema.boostChanges.createdAt);
+  }
+
+  /**
+   * Retrieve paginated boost allocations for a specific competition.
+   *
+   * Behavior:
+   * 1) Join boost_changes with boost_balances to get user context.
+   * 2) Join with agent_boosts to link changes to specific agents.
+   * 3) Join with agent_boost_totals and agents to get agent information.
+   * 4) Filter by competition ID.
+   * 5) Order by creation timestamp descending (most recent first).
+   * 6) Apply limit and offset for pagination.
+   *
+   * Read-Only Operation:
+   * - This method only reads data and does not modify any records.
+   * - Safe to call concurrently with other operations.
+   *
+   * Returns:
+   * - Array of boost allocation records with user ID, wallet, agent ID, agent name, agent handle, amount (positive), and timestamp.
+   * - Empty array if no boost allocations found for the competition.
+   * - Amount is returned as positive bigint (negation of deltaAmount).
+   * - Wallet is returned as Uint8Array (binary format from database).
+   *
+   * Notes:
+   * - Only returns boost spending records via INNER JOIN to agent_boosts (which only contains spending).
+   * - The decrease() method guarantees all agent_boosts entries have negative deltaAmount.
+   * - Amounts are negated to positive values for display.
+   * - Results ordered by most recent first (createdAt DESC).
+   * - Supports pagination via limit and offset parameters.
+   *
+   * @param args - The query parameters
+   * @param args.competitionId - ID of the competition context
+   * @param args.limit - Maximum number of records to return
+   * @param args.offset - Number of records to skip
+   * @param tx - Optional database transaction to use for the query
+   * @returns Promise resolving to array of boost allocation records
+   */
+  async competitionBoosts(
+    {
+      competitionId,
+      limit,
+      offset,
+    }: { competitionId: string; limit: number; offset: number },
+    tx?: Transaction,
+  ): Promise<Array<ListCompetitionBoost>> {
+    const executor = tx || this.#db;
+    const results = await executor
+      .select({
+        userId: schema.boostBalances.userId,
+        wallet: schema.boostChanges.wallet,
+        agentId: schema.agentBoostTotals.agentId,
+        agentName: agents.name,
+        agentHandle: agents.handle,
+        // Negate deltaAmount to convert spending records (negative) to positive display amounts.
+        // Safe because WHERE clause ensures deltaAmount < 0, guaranteed by `decrease` method
+        // which stores spending as -amount.
+        amount: sql<bigint>`-${schema.boostChanges.deltaAmount}`.mapWith(
+          BigInt,
+        ),
+        createdAt: schema.boostChanges.createdAt,
+      })
+      .from(schema.boostChanges)
+      .innerJoin(
+        schema.boostBalances,
+        eq(schema.boostChanges.balanceId, schema.boostBalances.id),
+      )
+      .innerJoin(
+        schema.agentBoosts,
+        eq(schema.boostChanges.id, schema.agentBoosts.changeId),
+      )
+      .innerJoin(
+        schema.agentBoostTotals,
+        eq(schema.agentBoosts.agentBoostTotalId, schema.agentBoostTotals.id),
+      )
+      .innerJoin(agents, eq(schema.agentBoostTotals.agentId, agents.id))
+      .where(eq(schema.boostBalances.competitionId, competitionId))
+      .orderBy(desc(schema.boostChanges.createdAt))
+      .limit(limit)
+      .offset(offset);
+
+    return results;
+  }
+
+  /**
+   * Count total boost allocations for a specific competition.
+   *
+   * Behavior:
+   * 1) Join boost_changes with boost_balances to get competition context.
+   * 2) Join with agent_boosts to ensure we're counting agent allocations.
+   * 3) Join with agent_boost_totals and agents (matching competitionBoosts query structure).
+   * 4) Filter by competition ID.
+   * 5) Return the total count.
+   *
+   * Read-Only Operation:
+   * - This method only reads data and does not modify any records.
+   * - Safe to call concurrently with other operations.
+   *
+   * Returns:
+   * - Total count of boost allocation records for the competition.
+   * - Returns 0 if no boost allocations found.
+   *
+   * Notes:
+   * - Uses identical join structure as competitionBoosts() to ensure count matches returnable records.
+   * - Only counts boost spending records via INNER JOIN to agent_boosts.
+   * - Used for pagination to calculate total pages and hasMore flag.
+   *
+   * @param competitionId - ID of the competition context
+   * @param tx - Optional database transaction to use for the query
+   * @returns Promise resolving to total count of boost allocations
+   */
+  async countCompetitionBoosts(
+    competitionId: string,
+    tx?: Transaction,
+  ): Promise<number> {
+    const executor = tx || this.#db;
+    const [result] = await executor
+      .select({
+        count: sql<number>`count(*)::int`.as("count"),
+      })
+      .from(schema.boostChanges)
+      .innerJoin(
+        schema.boostBalances,
+        eq(schema.boostChanges.balanceId, schema.boostBalances.id),
+      )
+      .innerJoin(
+        schema.agentBoosts,
+        eq(schema.boostChanges.id, schema.agentBoosts.changeId),
+      )
+      .innerJoin(
+        schema.agentBoostTotals,
+        eq(schema.agentBoosts.agentBoostTotalId, schema.agentBoostTotals.id),
+      )
+      .innerJoin(agents, eq(schema.agentBoostTotals.agentId, agents.id))
+      .where(eq(schema.boostBalances.competitionId, competitionId));
+
+    return result?.count ?? 0;
   }
 
   /**
@@ -689,25 +854,25 @@ class BoostRepository {
   ): Promise<BoostAgentResult> {
     const executor = tx || this.#db;
     return await executor.transaction(async (tx) => {
-      // 1) Lock the agent boost total row if it exists
-      const [agentBoostTotal] = await tx
-        .select()
-        .from(schema.agentBoostTotals)
-        .where(
-          and(
-            eq(schema.agentBoostTotals.agentId, agentId),
-            eq(schema.agentBoostTotals.competitionId, competitionId),
-          ),
-        )
-        .limit(1)
-        .for("update"); // locks this row until tx ends
-
-      // Decrease the user's boost balance
+      // First, try to decrease the user's boost balance
       const diffRes = await this.decrease(
         { userId, amount, competitionId, wallet, idemKey },
         tx,
       );
+
+      // If it's a noop (idempotent), fetch the current total and return
       if (diffRes.type === "noop") {
+        const [agentBoostTotal] = await tx
+          .select()
+          .from(schema.agentBoostTotals)
+          .where(
+            and(
+              eq(schema.agentBoostTotals.agentId, agentId),
+              eq(schema.agentBoostTotals.competitionId, competitionId),
+            ),
+          )
+          .limit(1);
+
         if (!agentBoostTotal) {
           throw new Error(
             `Boost deduction already executed from wallet ${wallet} for competition ${competitionId}, but no agent boost total record exists for agent ${agentId}`,
@@ -719,14 +884,17 @@ class BoostRepository {
         };
       }
 
-      // Upsert into the agent boost totals table
+      // Atomically upsert the boost total
       const [updatedAgentBoostTotal] = await tx
+        // first try to insert a new row, there a unique constraint on
+        // compId+agentId so this will fail if the row already exists
         .insert(schema.agentBoostTotals)
         .values({
           agentId,
           competitionId,
           total: amount,
         })
+        // if the row exists, atomically increment the value of `total`
         .onConflictDoUpdate({
           target: [
             schema.agentBoostTotals.agentId,
@@ -804,7 +972,7 @@ class BoostRepository {
     tx?: Transaction,
   ) {
     const executor = tx || this.#db;
-    const u8aWallet = BlockchainAddressAsU8A.encode(wallet);
+    const walletAddress = wallet.toLowerCase();
     const awardsQuery = executor
       .select()
       .from(schema.stakeBoostAwards)
@@ -819,7 +987,7 @@ class BoostRepository {
       .from(stakes)
       .where(
         and(
-          eq(stakes.wallet, u8aWallet),
+          eq(stakes.walletAddress, walletAddress),
           isNull(stakes.unstakedAt),
           notExists(awardsQuery),
         ),
@@ -905,5 +1073,295 @@ class BoostRepository {
       return res;
     });
     return res;
+  }
+
+  /**
+   * Creates a new bonus boost entry.
+   *
+   * Multiple entries per user are allowed - amounts are summed when active.
+   *
+   * @param args - Bonus boost creation arguments
+   * @param tx - Optional transaction
+   * @returns Created bonus boost entry
+   */
+  async createBoostBonus(
+    args: {
+      userId: string;
+      amount: bigint;
+      expiresAt: Date;
+      createdByAdminId?: string;
+      meta?: Record<string, unknown>;
+    },
+    tx?: Transaction,
+  ): Promise<SelectBoostBonus> {
+    if (args.amount <= 0n) {
+      throw new Error("Bonus boost amount must be greater than 0");
+    }
+
+    const executor = tx || this.#db;
+    const [result] = await executor
+      .insert(schema.boostBonus)
+      .values({
+        userId: args.userId,
+        amount: args.amount,
+        expiresAt: args.expiresAt,
+        createdByAdminId: args.createdByAdminId ?? null,
+        meta: args.meta ?? {},
+      })
+      .returning();
+    if (!result) {
+      throw new Error("Failed to create bonus boost");
+    }
+    return result;
+  }
+
+  /**
+   * Updates an existing bonus boost entry.
+   *
+   * Note: The `amount` field is intentionally immutable. Once a boost is created
+   * and applied to competitions, changing the amount would create data inconsistencies
+   * in the audit trail. To correct an amount, revoke the boost and create a new one.
+   *
+   * @param id - Bonus boost ID
+   * @param updates - Fields to update (amount is immutable)
+   * @param tx - Optional transaction
+   * @returns Updated bonus boost entry
+   */
+  async updateBoostBonus(
+    id: string,
+    updates: {
+      expiresAt?: Date;
+      isActive?: boolean;
+      revokedAt?: Date | null;
+      meta?: Record<string, unknown>;
+    },
+    tx?: Transaction,
+  ): Promise<SelectBoostBonus> {
+    const executor = tx || this.#db;
+
+    const updateData: Partial<InsertBoostBonus> = {
+      ...updates,
+      updatedAt: new Date(),
+    };
+
+    const [result] = await executor
+      .update(schema.boostBonus)
+      .set(updateData)
+      .where(eq(schema.boostBonus.id, id))
+      .returning();
+    if (!result) {
+      throw new Error(`Bonus boost with id ${id} not found`);
+    }
+    return result;
+  }
+
+  /**
+   * Finds all active bonus boosts for a user.
+   *
+   * @param userId - User ID
+   * @param tx - Optional transaction
+   * @returns Array of active bonus boost entries
+   */
+  async findActiveBoostBonusesByUserId(
+    userId: string,
+    tx?: Transaction,
+  ): Promise<SelectBoostBonus[]> {
+    const executor = tx || this.#db;
+    return executor
+      .select()
+      .from(schema.boostBonus)
+      .where(
+        and(
+          eq(schema.boostBonus.userId, userId),
+          eq(schema.boostBonus.isActive, true),
+        ),
+      )
+      .orderBy(desc(schema.boostBonus.createdAt));
+  }
+
+  /**
+   * Finds a bonus boost by ID.
+   *
+   * @param id - Bonus boost ID
+   * @param tx - Optional transaction
+   * @returns Bonus boost entry or undefined if not found
+   */
+  async findBoostBonusById(
+    id: string,
+    tx?: Transaction,
+  ): Promise<SelectBoostBonus | undefined> {
+    const executor = tx || this.#db;
+    const [result] = await executor
+      .select()
+      .from(schema.boostBonus)
+      .where(eq(schema.boostBonus.id, id))
+      .limit(1);
+    return result;
+  }
+
+  /**
+   * Finds all active bonus boosts (for cron job processing).
+   *
+   * @param tx - Optional transaction
+   * @returns Array of all active bonus boost entries
+   */
+  async findAllActiveBoostBonuses(
+    tx?: Transaction,
+  ): Promise<SelectBoostBonus[]> {
+    const executor = tx || this.#db;
+    return executor
+      .select()
+      .from(schema.boostBonus)
+      .where(eq(schema.boostBonus.isActive, true))
+      .orderBy(desc(schema.boostBonus.createdAt));
+  }
+
+  /**
+   * Finds users with active bonus boosts that expire after a given date.
+   *
+   * Used for cron job eligibility checks.
+   *
+   * @param beforeDate - Only return boosts that expire after this date
+   * @param tx - Optional transaction
+   * @returns Array of active bonus boost entries
+   */
+  async findUsersWithActiveBoostBonuses(
+    beforeDate: Date,
+    tx?: Transaction,
+  ): Promise<SelectBoostBonus[]> {
+    const executor = tx || this.#db;
+    return executor
+      .select()
+      .from(schema.boostBonus)
+      .where(
+        and(
+          eq(schema.boostBonus.isActive, true),
+          gt(schema.boostBonus.expiresAt, beforeDate),
+        ),
+      )
+      .orderBy(desc(schema.boostBonus.createdAt));
+  }
+
+  /**
+   * Finds all boost_changes entries for a specific bonus boost.
+   *
+   * Used for revocation to find where boost was applied.
+   *
+   * @param boostBonusId - Bonus boost ID
+   * @param tx - Optional transaction
+   * @returns Array of boost_changes entries with meta.boostBonusId matching the given ID
+   */
+  async findBoostChangesByBoostBonusId(
+    boostBonusId: string,
+    tx?: Transaction,
+  ): Promise<Array<{ id: string; balanceId: string; competitionId: string }>> {
+    const executor = tx || this.#db;
+    // Query boost_changes where meta contains boostBonusId
+    // Note: This requires JSONB query - we'll need to join with boost_balances to get competitionId
+    const results = await executor
+      .select({
+        id: schema.boostChanges.id,
+        balanceId: schema.boostChanges.balanceId,
+        competitionId: schema.boostBalances.competitionId,
+      })
+      .from(schema.boostChanges)
+      .innerJoin(
+        schema.boostBalances,
+        eq(schema.boostChanges.balanceId, schema.boostBalances.id),
+      )
+      .where(
+        sql`${schema.boostChanges.meta}->>'boostBonusId' = ${boostBonusId}`,
+      );
+    return results;
+  }
+
+  /**
+   * Finds all boost_changes entries for a specific competition.
+   *
+   * Used for cleanup when boostStartDate changes.
+   *
+   * @param competitionId - Competition ID
+   * @param tx - Optional transaction
+   * @returns Array of boost_changes entries with meta.boostBonusId
+   */
+  async findBoostChangesByCompetitionId(
+    competitionId: string,
+    tx?: Transaction,
+  ): Promise<
+    Array<{
+      id: string;
+      balanceId: string;
+      meta: Record<string, unknown>;
+    }>
+  > {
+    const executor = tx || this.#db;
+    const results = await executor
+      .select({
+        id: schema.boostChanges.id,
+        balanceId: schema.boostChanges.balanceId,
+        meta: schema.boostChanges.meta,
+      })
+      .from(schema.boostChanges)
+      .innerJoin(
+        schema.boostBalances,
+        eq(schema.boostChanges.balanceId, schema.boostBalances.id),
+      )
+      .where(
+        and(
+          eq(schema.boostBalances.competitionId, competitionId),
+          sql`${schema.boostChanges.meta}->>'boostBonusId' IS NOT NULL`,
+        ),
+      );
+    return results.map((r) => ({
+      ...r,
+      meta: r.meta as Record<string, unknown>,
+    }));
+  }
+
+  /**
+   * Finds multiple bonus boosts by IDs.
+   *
+   * @param boostBonusIds - Array of bonus boost IDs
+   * @param tx - Optional transaction
+   * @returns Array of bonus boost entries
+   */
+  async findBoostBonusesByIds(
+    boostBonusIds: string[],
+    tx?: Transaction,
+  ): Promise<SelectBoostBonus[]> {
+    if (boostBonusIds.length === 0) {
+      return [];
+    }
+    const executor = tx || this.#db;
+    return executor
+      .select()
+      .from(schema.boostBonus)
+      .where(inArray(schema.boostBonus.id, boostBonusIds));
+  }
+
+  /**
+   * Sums all active bonus boost amounts for a user.
+   *
+   * @param userId - User ID
+   * @param tx - Optional transaction
+   * @returns Sum of all active bonus boost amounts
+   */
+  async sumActiveBoostBonusesForUser(
+    userId: string,
+    tx?: Transaction,
+  ): Promise<bigint> {
+    const executor = tx || this.#db;
+    const [result] = await executor
+      .select({
+        sum: sql`COALESCE(SUM(${schema.boostBonus.amount}), 0)`.mapWith(BigInt),
+      })
+      .from(schema.boostBonus)
+      .where(
+        and(
+          eq(schema.boostBonus.userId, userId),
+          eq(schema.boostBonus.isActive, true),
+        ),
+      );
+    return result?.sum ?? 0n;
   }
 }

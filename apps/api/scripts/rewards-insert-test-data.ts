@@ -6,7 +6,7 @@ import { v4 as uuidv4 } from "uuid";
 import { hexToBytes, keccak256 } from "viem";
 
 import { competitions, users } from "@recallnet/db/schema/core/defs";
-import { rewards } from "@recallnet/db/schema/voting/defs";
+import { rewards } from "@recallnet/db/schema/rewards/defs";
 import { createFauxLeafNode, createLeafNode } from "@recallnet/services";
 
 import { db } from "@/database/db.js";

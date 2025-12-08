@@ -2,7 +2,6 @@
 
 import { BarChart3, Info } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
 
 import {
   BenchmarkModel,
@@ -10,7 +9,6 @@ import {
   UnifiedSkillData,
 } from "@recallnet/services/types";
 import { Badge } from "@recallnet/ui2/components/badge";
-import { Button } from "@recallnet/ui2/components/button";
 import { Card } from "@recallnet/ui2/components/card";
 import { Tooltip } from "@recallnet/ui2/components/tooltip";
 import { cn } from "@recallnet/ui2/lib/utils";
@@ -53,8 +51,6 @@ type ParticipantEntry = (BenchmarkModel | LeaderboardAgent) & {
 export const SkillDetailLeaderboardTable: React.FC<
   SkillDetailLeaderboardTableProps
 > = ({ skill, skillData }) => {
-  const [showType, setShowType] = useState<"all" | "models" | "agents">("all");
-
   // Combine and rank all participants
   const allParticipants: ParticipantEntry[] = [
     ...skillData.participants.models.map((model, index) => ({
@@ -71,19 +67,9 @@ export const SkillDetailLeaderboardTable: React.FC<
     })),
   ].sort((a, b) => b.score - a.score);
 
-  // Apply filters
-  const filteredParticipants = allParticipants.filter((participant) => {
-    if (showType === "all") return true;
-    if (showType === "models") return participant.type === "model";
-    if (showType === "agents") return participant.type === "agent";
-    return true;
-  });
-
   // Calculate max score for bar scaling, including confidence intervals
   const maxPossibleScore = Math.max(
-    ...filteredParticipants.map(
-      (p) => getParticipantMetrics(p, skill.id).maxScore,
-    ),
+    ...allParticipants.map((p) => getParticipantMetrics(p, skill.id).maxScore),
     1,
   );
 
@@ -92,33 +78,6 @@ export const SkillDetailLeaderboardTable: React.FC<
 
   return (
     <div className="space-y-6">
-      {/* Filters */}
-      <div className="flex items-center gap-4">
-        <div className="flex items-center gap-2">
-          <Button
-            variant={showType === "all" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setShowType("all")}
-          >
-            All ({allParticipants.length})
-          </Button>
-          <Button
-            variant={showType === "models" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setShowType("models")}
-          >
-            Models ({skillData.stats.modelCount})
-          </Button>
-          <Button
-            variant={showType === "agents" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setShowType("agents")}
-          >
-            Agents ({skillData.stats.agentCount})
-          </Button>
-        </div>
-      </div>
-
       {/* Performance Comparison - Horizontal Bar Graphs */}
       <Card className="overflow-hidden">
         <div className="p-6">
@@ -126,7 +85,7 @@ export const SkillDetailLeaderboardTable: React.FC<
             Performance Comparison
           </h3>
           <div className="space-y-3">
-            {filteredParticipants.map((participant, index) => {
+            {allParticipants.map((participant, index) => {
               const metrics = getParticipantMetrics(participant, skill.id);
               const isModel = metrics.isModel;
               const confidenceInterval = metrics.confidenceInterval;

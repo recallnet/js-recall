@@ -2,17 +2,18 @@ import { Decimal } from "decimal.js";
 import { Logger } from "pino";
 
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
-import { PerpsRepository } from "@recallnet/db/repositories/perps";
-import type {
-  InsertPerpsRiskMetrics,
-  SelectPerpsRiskMetrics,
-} from "@recallnet/db/schema/trading/types";
 
 /**
- * Result of calculating and saving risk metrics
+ * Calculated Calmar metrics
  */
-export interface RiskMetricsResult {
-  metrics: SelectPerpsRiskMetrics;
+export interface CalmarMetrics {
+  agentId: string;
+  competitionId: string;
+  calmarRatio: string;
+  annualizedReturn: string;
+  simpleReturn: string;
+  maxDrawdown: string;
+  snapshotCount: number;
 }
 
 /**
@@ -24,31 +25,29 @@ export interface RiskMetricsResult {
  */
 export class CalmarRatioService {
   private competitionRepo: CompetitionRepository;
-  private perpsRepo: PerpsRepository;
   private logger: Logger;
 
-  constructor(
-    competitionRepo: CompetitionRepository,
-    perpsRepo: PerpsRepository,
-    logger: Logger,
-  ) {
+  // Minimum drawdown threshold to avoid division by zero
+  // Prevents infinite Calmar ratios while maintaining meaningful comparisons
+  private readonly MIN_DRAWDOWN = 0.0001;
+
+  constructor(competitionRepo: CompetitionRepository, logger: Logger) {
     this.competitionRepo = competitionRepo;
-    this.perpsRepo = perpsRepo;
     this.logger = logger;
   }
 
   /**
-   * Calculate and persist Calmar Ratio with all risk metrics
+   * Calculate Calmar Ratio metrics (without persisting)
    * Uses simple returns: (endValue/startValue) - 1
    *
    * @param agentId Agent ID
    * @param competitionId Competition ID
-   * @returns Saved risk metrics
+   * @returns Calculated metrics
    */
-  async calculateAndSaveCalmarRatio(
+  async calculateCalmarRatio(
     agentId: string,
     competitionId: string,
-  ): Promise<RiskMetricsResult> {
+  ): Promise<CalmarMetrics> {
     try {
       this.logger.info(
         `[CalmarRatio] Calculating Calmar Ratio for agent ${agentId} in competition ${competitionId}`,
@@ -107,7 +106,7 @@ export class CalmarRatioService {
       // 3. Calculate Max Drawdown using SQL
       // Use the same time period as the return calculation (snapshot dates, not competition dates)
       // This ensures consistent risk metrics over the same time window
-      const maxDrawdown = await this.competitionRepo.calculateMaxDrawdownSQL(
+      const maxDrawdown = await this.competitionRepo.calculateMaxDrawdown(
         agentId,
         competitionId,
         startSnapshot.timestamp, // Use first snapshot date
@@ -137,25 +136,24 @@ export class CalmarRatioService {
       );
 
       // 6. Save risk metrics
-      const metricsData: InsertPerpsRiskMetrics = {
+      // Return calculated metrics
+      const metrics: CalmarMetrics = {
         agentId,
         competitionId,
-        simpleReturn: simpleReturn.toFixed(8),
         calmarRatio: calmarRatio.toFixed(8),
-        annualizedReturn: periodReturn.toFixed(8), // DB field still named annualizedReturn for backward compatibility
+        annualizedReturn: periodReturn.toFixed(8),
+        simpleReturn: simpleReturn.toFixed(8),
         maxDrawdown: maxDrawdown.toFixed(8),
         snapshotCount: 2, // We only use first and last snapshots
       };
 
-      const savedMetrics = await this.perpsRepo.saveRiskMetrics(metricsData);
+      this.logger.info(`[CalmarRatio] Calculated metrics for agent ${agentId}`);
 
-      this.logger.info(`[CalmarRatio] Saved risk metrics for agent ${agentId}`);
-
-      return { metrics: savedMetrics };
+      return metrics;
     } catch (error) {
       this.logger.error(
-        `[CalmarRatio] Error calculating Calmar Ratio for agent ${agentId}:`,
-        error,
+        { error },
+        `[CalmarRatio] Error calculating Calmar Ratio for agent ${agentId}`,
       );
       throw error;
     }
@@ -199,26 +197,21 @@ export class CalmarRatioService {
     periodReturn: Decimal,
     maxDrawdown: number,
   ): Decimal {
-    // Handle edge cases
-    if (maxDrawdown === 0) {
-      // No drawdown
-      if (periodReturn.greaterThan(0)) {
-        // Positive return with no drawdown - cap at 100
-        this.logger.debug(
-          `[CalmarRatio] No drawdown with positive return, capping Calmar at 100`,
-        );
-        return new Decimal(100);
-      } else if (periodReturn.lessThan(0)) {
-        // Negative return with no drawdown - shouldn't happen but handle it
-        return new Decimal(-100);
-      } else {
-        // Zero return, zero drawdown
-        return new Decimal(0);
-      }
+    // Use minimum drawdown threshold to avoid division by zero
+    // and handle edge cases cleanly
+    if (maxDrawdown > 0) {
+      this.logger.error(
+        `[CalmarRatio] Invalid positive drawdown detected: ${maxDrawdown}`,
+      );
+      throw new Error(
+        `Invalid max drawdown: expected negative or zero, got ${maxDrawdown}`,
+      );
     }
+    const adjustedMaxDrawdown = Math.max(
+      Math.abs(maxDrawdown),
+      this.MIN_DRAWDOWN,
+    );
 
-    // Normal case: divide return by absolute value of drawdown
-    // Since drawdown is negative, we use Math.abs
-    return periodReturn.dividedBy(Math.abs(maxDrawdown));
+    return periodReturn.dividedBy(adjustedMaxDrawdown);
   }
 }

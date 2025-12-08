@@ -1,16 +1,16 @@
 import axios, { AxiosError } from "axios";
 import { beforeEach, describe, expect, test } from "vitest";
 
-import config from "@/config/index.js";
-import { BalancesResponse, ErrorResponse } from "@/e2e/utils/api-types.js";
-import { getBaseUrl } from "@/e2e/utils/server.js";
+import { specificChainTokens } from "@recallnet/services/lib";
+import { BalancesResponse, ErrorResponse } from "@recallnet/test-utils";
+import { getBaseUrl } from "@recallnet/test-utils";
 import {
   createTestClient,
   getAdminApiKey,
   registerUserAndAgentAndGetClient,
   startTestCompetition,
   wait,
-} from "@/e2e/utils/test-helpers.js";
+} from "@recallnet/test-utils";
 
 describe("Rate Limiter Middleware", () => {
   // Clean up test state before each test
@@ -40,11 +40,12 @@ describe("Rate Limiter Middleware", () => {
 
     // Start a competition with both agents
     const competitionName = `Rate Limit Test ${Date.now()}`;
-    await startTestCompetition({
+    const competitionResponse = await startTestCompetition({
       adminClient,
       name: competitionName,
       agentIds: [agent1.id, agent2.id],
     });
+    const competitionId = competitionResponse.competition.id;
 
     // Wait for competition to initialize
     await wait(500);
@@ -57,7 +58,7 @@ describe("Rate Limiter Middleware", () => {
     let agent1RateLimited = false;
 
     // Make first request to check if agent 1 is already rate limited
-    const firstResponse = await client1.getBalance();
+    const firstResponse = await client1.getBalance(competitionId);
 
     if (firstResponse.success === true) {
       // do nothing...?
@@ -77,7 +78,7 @@ describe("Rate Limiter Middleware", () => {
         // Small wait to avoid overwhelming the server
         await wait(50);
         // Start from 1 because we already made one request
-        const response = await client1.getBalance();
+        const response = await client1.getBalance(competitionId);
 
         if (response.success === true) {
           continue;
@@ -105,7 +106,7 @@ describe("Rate Limiter Middleware", () => {
     expect(agent1RateLimited).toBe(true);
 
     // Now verify agent 2 can still make requests, confirming rate limits are per-agent
-    const agent2Response = await client2.getBalance();
+    const agent2Response = await client2.getBalance(competitionId);
     expect(agent2Response.success).toBe(true);
   });
 
@@ -122,11 +123,12 @@ describe("Rate Limiter Middleware", () => {
 
     // Start a competition
     const competitionName = `Endpoint Rate Limit Test ${Date.now()}`;
-    await startTestCompetition({
+    const competitionResponse = await startTestCompetition({
       adminClient,
       name: competitionName,
       agentIds: [agent.id],
     });
+    const competitionId = competitionResponse.competition.id;
 
     // Wait for competition to initialize
     await wait(500);
@@ -140,7 +142,7 @@ describe("Rate Limiter Middleware", () => {
     // Make first request
     const firstAccountResponse = await client.request(
       "get",
-      "/api/agent/balances",
+      `/api/agent/balances?competitionId=${competitionId}`,
     );
 
     if ((firstAccountResponse as BalancesResponse).success === true) {
@@ -159,7 +161,10 @@ describe("Rate Limiter Middleware", () => {
 
       for (let i = 1; i < accountEndpointLimit; i++) {
         // Start from 1 because we already made one request
-        const response = await client.request("get", "/api/agent/balances");
+        const response = await client.request(
+          "get",
+          `/api/agent/balances?competitionId=${competitionId}`,
+        );
 
         if ((response as BalancesResponse).success === true) {
           // do nothing...?
@@ -184,7 +189,7 @@ describe("Rate Limiter Middleware", () => {
     // This confirms different endpoints have different limits
     const priceResponse = await client.request(
       "get",
-      `/api/price?token=${config.specificChainTokens.svm.sol}`,
+      `/api/price?token=${specificChainTokens.svm.sol}`,
     );
 
     if ((priceResponse as BalancesResponse).success === true) {
@@ -216,11 +221,12 @@ describe("Rate Limiter Middleware", () => {
 
     // Start a competition
     const competitionName = `Headers Rate Limit Test ${Date.now()}`;
-    await startTestCompetition({
+    const competitionResponse = await startTestCompetition({
       adminClient,
       name: competitionName,
       agentIds: [agent.id],
     });
+    const competitionId = competitionResponse.competition.id;
 
     // Wait for competition to initialize
     await wait(500);
@@ -250,7 +256,9 @@ describe("Rate Limiter Middleware", () => {
 
     for (let i = 0; i < limit; i++) {
       try {
-        await axiosInstance.get(`/api/agent/balances`);
+        await axiosInstance.get(
+          `/api/agent/balances?competitionId=${competitionId}`,
+        );
       } catch (error) {
         const axiosError = error as AxiosError;
         expect(axiosError.response && axiosError.response.status === 429).toBe(

@@ -1,5 +1,6 @@
 import {
   UseQueryResult,
+  skipToken,
   useMutation,
   useQuery,
   useQueryClient,
@@ -38,8 +39,7 @@ export const useUserAgents = (
 
   return useQuery(
     tanstackClient.user.getUserAgents.queryOptions({
-      input: params,
-      enabled: isAuthenticated,
+      input: isAuthenticated ? params : skipToken,
       placeholderData: (prev) => prev,
     }),
   );

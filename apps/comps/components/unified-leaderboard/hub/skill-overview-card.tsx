@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, Info, TrendingUp, Users } from "lucide-react";
+import { Info, Users } from "lucide-react";
 import Link from "next/link";
 
 import { BenchmarkModel } from "@recallnet/services/types";
@@ -54,9 +54,7 @@ export const SkillOverviewCard: React.FC<SkillOverviewCardProps> = ({
         cropSize={35}
         corner="bottom-right"
         className={cn(
-          "bg-card hover:bg-card/80 group flex w-full cursor-pointer flex-col transition-all",
-          "border border-transparent hover:border-gray-700",
-          "h-[450px]", // Taller to prevent cutoff
+          "bg-card hover:bg-card/90 group flex w-full cursor-pointer flex-col transition-all",
         )}
       >
         {/* Header - Mobile: flexible height, Desktop: EXACTLY 72px */}
@@ -77,10 +75,6 @@ export const SkillOverviewCard: React.FC<SkillOverviewCardProps> = ({
             >
               {isAgentSkill ? "AGENT" : "MODEL"}
             </Badge>
-            <ArrowRight
-              size={16}
-              className="text-gray-400 transition-transform group-hover:translate-x-1 md:h-[18px] md:w-[18px]"
-            />
           </div>
         </div>
 
@@ -99,18 +93,6 @@ export const SkillOverviewCard: React.FC<SkillOverviewCardProps> = ({
               {stats.totalParticipants} {isAgentSkill ? "agents" : "models"}
             </span>
           </div>
-
-          {stats.topScore && (
-            <div className="flex items-center gap-2">
-              <TrendingUp size={14} className="text-gray-500" />
-              <span className="text-sm text-gray-300">
-                Top:{" "}
-                {typeof stats.topScore === "number"
-                  ? stats.topScore.toFixed(0)
-                  : stats.topScore}
-              </span>
-            </div>
-          )}
         </div>
 
         {/* Top Participants - Simplified */}
@@ -126,7 +108,7 @@ export const SkillOverviewCard: React.FC<SkillOverviewCardProps> = ({
               return (
                 <div
                   key={participant.id}
-                  className="flex items-center gap-2 rounded p-1.5 hover:bg-gray-800/30 md:gap-3 md:p-2"
+                  className="flex items-center gap-2 rounded p-1.5 md:gap-3 md:p-2"
                 >
                   {/* Rank */}
                   <div className="flex h-5 w-5 items-center justify-center rounded bg-gray-600 text-xs font-medium text-white">

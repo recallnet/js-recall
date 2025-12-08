@@ -1,5 +1,13 @@
 import { randomUUID } from "crypto";
-import { and, count as drizzleCount, eq, ilike, ne, sql } from "drizzle-orm";
+import {
+  and,
+  count as drizzleCount,
+  eq,
+  ilike,
+  inArray,
+  ne,
+  sql,
+} from "drizzle-orm";
 import { Logger } from "pino";
 
 import { users } from "../schema/core/defs.js";
@@ -72,7 +80,7 @@ export class UserRepository {
       }
       return row;
     } catch (error) {
-      this.#logger.error("[UserRepository] Error in create:", error);
+      this.#logger.error({ error }, "[UserRepository] Error in create");
       throw error;
     }
   }
@@ -84,7 +92,7 @@ export class UserRepository {
     try {
       return await this.#db.select().from(users);
     } catch (error) {
-      this.#logger.error("[UserRepository] Error in findAll:", error);
+      this.#logger.error({ error }, "[UserRepository] Error in findAll");
       throw error;
     }
   }
@@ -92,16 +100,42 @@ export class UserRepository {
   /**
    * Find a user by ID
    * @param id User ID to find
+   * @param tx Optional transaction
    */
-  async findById(id: string): Promise<SelectUser | undefined> {
+  async findById(
+    id: string,
+    tx?: Transaction,
+  ): Promise<SelectUser | undefined> {
     try {
-      const [result] = await this.#db
-        .select()
-        .from(users)
-        .where(eq(users.id, id));
+      const db = tx ?? this.#db;
+      const [result] = await db.select().from(users).where(eq(users.id, id));
       return result;
     } catch (error) {
-      this.#logger.error("[UserRepository] Error in findById:", error);
+      this.#logger.error({ error }, "[UserRepository] Error in findById");
+      throw error;
+    }
+  }
+
+  /**
+   * Find multiple users by their IDs
+   * @param ids Array of user IDs to find
+   * @param tx Optional transaction
+   * @returns Array of users found (may be fewer than requested if some don't exist)
+   */
+  async findByIds(ids: string[], tx?: Transaction): Promise<SelectUser[]> {
+    try {
+      if (ids.length === 0) {
+        return [];
+      }
+
+      const db = tx ?? this.#db;
+      const results = await db
+        .select()
+        .from(users)
+        .where(inArray(users.id, ids));
+      return results;
+    } catch (error) {
+      this.#logger.error({ error }, "[UserRepository] Error in findByIds");
       throw error;
     }
   }
@@ -123,8 +157,8 @@ export class UserRepository {
       return result;
     } catch (error) {
       this.#logger.error(
-        "[UserRepository] Error in findByWalletAddress:",
-        error,
+        { error },
+        "[UserRepository] Error in findByWalletAddress",
       );
       throw error;
     }
@@ -149,8 +183,8 @@ export class UserRepository {
       return result;
     } catch (error) {
       this.#logger.error(
-        "[UserRepository] Error in findDuplicateByWalletAddress:",
-        error,
+        { error },
+        "[UserRepository] Error in findDuplicateByWalletAddress",
       );
       throw error;
     }
@@ -169,7 +203,7 @@ export class UserRepository {
 
       return result;
     } catch (error) {
-      this.#logger.error("[UserRepository] Error in findByEmail:", error);
+      this.#logger.error({ error }, "[UserRepository] Error in findByEmail");
       throw error;
     }
   }
@@ -187,7 +221,7 @@ export class UserRepository {
 
       return result;
     } catch (error) {
-      this.#logger.error("[UserRepository] Error in findByPrivyId:", error);
+      this.#logger.error({ error }, "[UserRepository] Error in findByPrivyId");
       throw error;
     }
   }
@@ -225,7 +259,7 @@ export class UserRepository {
 
       return result;
     } catch (error) {
-      this.#logger.error("[UserRepository] Error in update:", error);
+      this.#logger.error({ error }, "[UserRepository] Error in update");
       throw error;
     }
   }
@@ -246,7 +280,7 @@ export class UserRepository {
 
       return !!result;
     } catch (error) {
-      this.#logger.error("[UserRepository] Error in delete:", error);
+      this.#logger.error({ error }, "[UserRepository] Error in delete");
       throw error;
     }
   }
@@ -292,7 +326,7 @@ export class UserRepository {
         .from(users)
         .where(and(...conditions));
     } catch (error) {
-      this.#logger.error("[UserRepository] Error in searchUsers:", error);
+      this.#logger.error({ error }, "[UserRepository] Error in searchUsers");
       throw error;
     }
   }
@@ -307,7 +341,7 @@ export class UserRepository {
         .from(users);
       return result?.count ?? 0;
     } catch (error) {
-      this.#logger.error("[UserRepository] Error in count:", error);
+      this.#logger.error({ error }, "[UserRepository] Error in count");
       throw error;
     }
   }

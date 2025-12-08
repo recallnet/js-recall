@@ -5,6 +5,7 @@
     "build": {
       "env": [
         "ROOT_ENCRYPTION_KEY",
+        "TEST_MODE",
         "EVM_CHAINS",
         "COINGECKO_API_KEY",
         "COINGECKO_MODE",
@@ -27,7 +28,8 @@
         "INITIAL_OPTIMISM_OP_BALANCE",
         "INITIAL_SVM_SOL_BALANCE",
         "INITIAL_SVM_USDC_BALANCE",
-        "INITIAL_SVM_USDT_BALANCE"
+        "INITIAL_SVM_USDT_BALANCE",
+        "ALCHEMY_API_KEY"
       ]
     }
   }

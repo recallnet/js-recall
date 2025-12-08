@@ -49,6 +49,21 @@ export type InsertPerpsTransferHistory =
 export type SelectPerpsRiskMetrics = typeof defs.perpsRiskMetrics.$inferSelect;
 export type InsertPerpsRiskMetrics = typeof defs.perpsRiskMetrics.$inferInsert;
 
+export type SelectRiskMetricsSnapshot =
+  typeof defs.riskMetricsSnapshots.$inferSelect;
+export type InsertRiskMetricsSnapshot =
+  typeof defs.riskMetricsSnapshots.$inferInsert;
+
+export type SelectPaperTradingConfig =
+  typeof defs.paperTradingConfig.$inferSelect;
+export type InsertPaperTradingConfig =
+  typeof defs.paperTradingConfig.$inferInsert;
+
+export type SelectPaperTradingInitialBalances =
+  typeof defs.paperTradingInitialBalances.$inferSelect;
+export type InsertPaperTradingInitialBalances =
+  typeof defs.paperTradingInitialBalances.$inferInsert;
+
 /**
  * Perpetual position with embedded agent information
  */
@@ -69,7 +84,49 @@ export interface RiskAdjustedLeaderboardEntry {
   totalEquity: string;
   totalPnl: string | null;
   calmarRatio: string | null;
+  sortinoRatio: string | null;
   simpleReturn: string | null; // Simple return (endValue/startValue - 1)
   maxDrawdown: string | null;
+  downsideDeviation: string | null;
   hasRiskMetrics: boolean;
 }
+
+export type SelectSpotLiveCompetitionConfig =
+  typeof defs.spotLiveCompetitionConfig.$inferSelect;
+export type InsertSpotLiveCompetitionConfig =
+  typeof defs.spotLiveCompetitionConfig.$inferInsert;
+
+export type SelectSpotLiveCompetitionsLeaderboard =
+  typeof defs.spotLiveCompetitionsLeaderboard.$inferSelect;
+export type InsertSpotLiveCompetitionsLeaderboard =
+  typeof defs.spotLiveCompetitionsLeaderboard.$inferInsert;
+
+export type SelectSpotLiveAllowedProtocol =
+  typeof defs.spotLiveAllowedProtocols.$inferSelect;
+export type InsertSpotLiveAllowedProtocol =
+  typeof defs.spotLiveAllowedProtocols.$inferInsert;
+
+export type SelectSpotLiveCompetitionChain =
+  typeof defs.spotLiveCompetitionChains.$inferSelect;
+export type InsertSpotLiveCompetitionChain =
+  typeof defs.spotLiveCompetitionChains.$inferInsert;
+
+export type SelectSpotLiveAllowedToken =
+  typeof defs.spotLiveAllowedTokens.$inferSelect;
+export type InsertSpotLiveAllowedToken =
+  typeof defs.spotLiveAllowedTokens.$inferInsert;
+
+export type SelectSpotLiveTransferHistory =
+  typeof defs.spotLiveTransferHistory.$inferSelect;
+export type InsertSpotLiveTransferHistory =
+  typeof defs.spotLiveTransferHistory.$inferInsert;
+
+export type SelectSpotLiveAgentSyncState =
+  typeof defs.spotLiveAgentSyncState.$inferSelect;
+export type InsertSpotLiveAgentSyncState =
+  typeof defs.spotLiveAgentSyncState.$inferInsert;
+
+export type SelectSpotLiveSelfFundingAlert =
+  typeof defs.spotLiveSelfFundingAlerts.$inferSelect;
+export type InsertSpotLiveSelfFundingAlert =
+  typeof defs.spotLiveSelfFundingAlerts.$inferInsert;

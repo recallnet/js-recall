@@ -1,21 +1,50 @@
 import { z } from "zod/v4";
 
 import {
+  type UserMetadata,
   actorStatus,
+  allocationUnit,
   competitionAgentStatus,
   competitionStatus,
   competitionType,
+  displayState,
+  engineType,
 } from "@recallnet/db/schema/core/defs";
 import { MAX_HANDLE_LENGTH } from "@recallnet/db/schema/core/defs";
-import { SelectAgent, SelectUser } from "@recallnet/db/schema/core/types";
-import { crossChainTradingType } from "@recallnet/db/schema/trading/defs";
+import type {
+  SelectAgent,
+  SelectCompetition,
+  SelectUser,
+} from "@recallnet/db/schema/core/types";
+import {
+  crossChainTradingType,
+  evaluationMetricEnum,
+} from "@recallnet/db/schema/trading/defs";
 
 import { specificChainTokens } from "../lib/config-utils.js";
 
 export * from "./sort/index.js";
 export * from "./agent-metrics.js";
 export * from "./perps.js";
+export * from "./rpc.js";
+export * from "./spot-live.js";
 export * from "./unified-leaderboard.js";
+
+/**
+ * Trading constraints for token validation
+ */
+export interface TradingConstraints {
+  /** Minimum age of trading pair in hours */
+  minimumPairAgeHours: number;
+  /** Minimum 24-hour trading volume in USD */
+  minimum24hVolumeUsd: number;
+  /** Minimum liquidity in USD */
+  minimumLiquidityUsd: number;
+  /** Minimum fully diluted valuation in USD */
+  minimumFdvUsd: number;
+  /** Minimum trades per day (null = no constraint) */
+  minTradesPerDay: number | null;
+}
 
 /**
  * Custom error class with HTTP status code
@@ -107,6 +136,17 @@ export function isEvmChain(chain: SpecificChain | BlockchainType): boolean {
     return chainTypeMapping[chain as SpecificChain] === BlockchainType.EVM;
   }
   return chain === BlockchainType.EVM;
+}
+
+/**
+ * Request structure for fetching token prices with chain specificity
+ * Used by getBulkPrices to fetch prices for token+chain combinations
+ */
+export interface TokenPriceRequest {
+  /** Token contract address */
+  tokenAddress: string;
+  /** Specific blockchain where the token exists */
+  specificChain: SpecificChain;
 }
 
 /**
@@ -295,14 +335,6 @@ export interface AgentRef {
 }
 
 /**
- * User's metadata interface
- */
-export interface UserMetadata {
-  website?: string;
-  [key: string]: unknown;
-}
-
-/**
  * Admin's metadata interface
  */
 export interface AdminMetadata {
@@ -322,7 +354,6 @@ export const AgentStatsSchema = z.object({
   completedCompetitions: z.number(),
   totalTrades: z.number(),
   totalPositions: z.number(),
-  totalVotes: z.number(),
   bestPlacement: z
     .object({
       competitionId: z.string(),
@@ -331,10 +362,17 @@ export const AgentStatsSchema = z.object({
       totalAgents: z.number(),
     })
     .optional(),
-  rank: z.number().optional(),
-  score: z.number().optional(),
   totalRoi: z.number().optional(),
   bestPnl: z.number().optional(),
+  ranks: z
+    .array(
+      z.object({
+        type: z.string(),
+        rank: z.number(),
+        score: z.number(),
+      }),
+    )
+    .optional(),
 });
 
 export type AgentStats = z.infer<typeof AgentStatsSchema>;
@@ -463,27 +501,9 @@ export const CrossChainTradingTypeSchema = z.enum(
 export type CrossChainTradingType = z.infer<typeof CrossChainTradingTypeSchema>;
 
 /**
- * Competition interface
+ * Competition type
  */
-export interface Competition {
-  id: string;
-  name: string;
-  description?: string;
-  externalUrl?: string;
-  imageUrl?: string;
-  startDate: Date | null;
-  endDate: Date | null;
-  votingStartDate: Date | null;
-  votingEndDate: Date | null;
-  joinStartDate: Date | null;
-  joinEndDate: Date | null;
-  status: CompetitionStatus;
-  crossChainTradingType: CrossChainTradingType; // Controls cross-chain trading behavior
-  sandboxMode: boolean; // Controls automatic agent joining behavior
-  type: CompetitionType;
-  createdAt: Date;
-  updatedAt: Date;
-}
+export type Competition = SelectCompetition;
 
 /**
  * Agent-specific metrics for a competition
@@ -632,7 +652,7 @@ export function toApiUser(dbUser: SelectUser): User {
     isSubscribed: dbUser.isSubscribed,
     privyId: dbUser.privyId ?? undefined,
     imageUrl: dbUser.imageUrl ?? undefined,
-    metadata: dbUser.metadata ? (dbUser.metadata as UserMetadata) : undefined,
+    metadata: dbUser.metadata ?? undefined,
     status: dbUser.status as ActorStatus,
     createdAt: dbUser.createdAt,
     updatedAt: dbUser.updatedAt,
@@ -710,6 +730,46 @@ export const CompetitionTypeSchema = z.enum(competitionType.enumValues);
  */
 export type CompetitionType = z.infer<typeof CompetitionTypeSchema>;
 
+/**
+ * Zod schema for evaluation metrics used in perps competitions.
+ */
+export const EvaluationMetricSchema = z.enum(evaluationMetricEnum.enumValues);
+
+/**
+ * Evaluation metrics for perps competitions.
+ */
+export type EvaluationMetric = z.infer<typeof EvaluationMetricSchema>;
+
+/**
+ * Zod schema for engine types
+ */
+export const EngineTypeSchema = z.enum(engineType.enumValues);
+
+/**
+ * Engine type for competition routing
+ */
+export type EngineType = z.infer<typeof EngineTypeSchema>;
+
+/**
+ * Zod schema for allocation units
+ */
+export const AllocationUnitSchema = z.enum(allocationUnit.enumValues);
+
+/**
+ * Allocation unit for rewards
+ */
+export type AllocationUnit = z.infer<typeof AllocationUnitSchema>;
+
+/**
+ * Zod schema for display states
+ */
+export const DisplayStateSchema = z.enum(displayState.enumValues);
+
+/**
+ * Display state for UI
+ */
+export type DisplayState = z.infer<typeof DisplayStateSchema>;
+
 export const CompetitionAllowedUpdateSchema = z.strictObject({
   name: z.string().optional(),
   description: z.string().optional(),
@@ -718,12 +778,52 @@ export const CompetitionAllowedUpdateSchema = z.strictObject({
   imageUrl: z.string().optional(),
   startDate: z.date().optional(),
   endDate: z.date().optional(),
-  votingStartDate: z.date().optional(),
-  votingEndDate: z.date().optional(),
+  boostStartDate: z.date().optional(),
+  boostEndDate: z.date().optional(),
   joinStartDate: z.date().optional(),
   joinEndDate: z.date().optional(),
-  rewards: z.record(z.number(), z.number()).optional(),
+  maxParticipants: z.number().int().min(1).optional(),
   tradingConstraints: TradingConstraintsSchema.optional(),
+
+  // Arena and engine routing
+  arenaId: z.string().optional(),
+  engineId: z.enum(engineType.enumValues).optional(),
+  engineVersion: z.string().optional(),
+
+  // Participation rules (individual columns)
+  minimumStake: z.number().min(0).optional(),
+  vips: z.array(z.string()).optional(),
+  allowlist: z.array(z.string()).optional(),
+  blocklist: z.array(z.string()).optional(),
+  minRecallRank: z.number().int().optional(),
+  allowlistOnly: z.boolean().optional(),
+
+  // Reward allocation (individual columns)
+  agentAllocation: z.number().optional(),
+  agentAllocationUnit: z.enum(allocationUnit.enumValues).optional(),
+  boosterAllocation: z.number().optional(),
+  boosterAllocationUnit: z.enum(allocationUnit.enumValues).optional(),
+  rewardRules: z.string().optional(),
+  rewardDetails: z.string().optional(),
+
+  /**
+   * Rank-based prizes stored in competition_rewards table
+   * Maps rank position to reward amount (e.g., {1: 1000, 2: 500, 3: 250})
+   * Accepts JSON object with string keys (JSON limitation), transforms to Record<number, number>
+   * Input from API: {"1": 1000, "2": 500} → Internal type: {1: 1000, 2: 500}
+   * Rank positions are conceptually numeric, transformation provides type safety
+   */
+  rewards: z
+    .record(z.string().regex(/^\d+$/), z.number())
+    .transform((val) =>
+      Object.fromEntries(
+        Object.entries(val).map(([k, v]) => [parseInt(k, 10), v]),
+      ),
+    )
+    .optional(),
+
+  // Display state
+  displayState: z.enum(displayState.enumValues).optional(),
 });
 
 export type CompetitionAllowedUpdate = z.infer<
@@ -960,8 +1060,6 @@ export const LEADERBOARD_SORT_FIELDS = [
   "-name",
   "competitions",
   "-competitions",
-  "votes",
-  "-votes",
 ] as const;
 
 /**
@@ -969,6 +1067,7 @@ export const LEADERBOARD_SORT_FIELDS = [
  */
 export const LeaderboardParamsSchema = z.object({
   type: CompetitionTypeSchema.default("trading"),
+  arenaId: z.string().optional(),
   limit: z.coerce.number().min(1).max(100).default(50),
   offset: z.coerce.number().min(0).default(0),
 });
@@ -986,99 +1085,6 @@ export interface LeaderboardAgent
   rank: number;
   score: number;
   numCompetitions: number;
-  voteCount: number;
-}
-
-// ===========================
-// Vote-related types and schemas
-// ===========================
-
-/**
- * Vote interface for non-staking competition votes
- */
-export interface Vote {
-  id: string;
-  userId: string;
-  agentId: string;
-  competitionId: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-/**
- * Vote request body schema for creating votes
- */
-export const CreateVoteBodySchema = z
-  .object({
-    agentId: z.uuid("Invalid agent ID format"),
-    competitionId: z.uuid("Invalid competition ID format"),
-  })
-  .strict();
-
-/**
- * Create vote parameters schema (includes userId from auth)
- */
-export const CreateVoteSchema = z
-  .object({
-    userId: z.uuid("Invalid user ID format"),
-    body: CreateVoteBodySchema,
-  })
-  .strict();
-
-export type CreateVoteRequest = z.infer<typeof CreateVoteSchema>;
-
-/**
- * Vote response interface
- */
-export interface VoteResponse {
-  id: string;
-  userId: string;
-  agentId: string;
-  competitionId: string;
-  createdAt: Date;
-}
-
-/**
- * Agent with vote information
- */
-export interface AgentWithVotes extends Agent {
-  voteCount: number;
-  userHasVoted?: boolean;
-}
-
-/**
- * User's vote information for a competition
- */
-export interface UserVoteInfo {
-  hasVoted: boolean;
-  agentId?: string;
-  votedAt?: Date;
-}
-
-/**
- * Competition voting status for a user
- */
-export interface CompetitionVotingStatus {
-  canVote: boolean;
-  reason?: string; // Why voting is disabled (e.g., "Competition not started", "User already voted")
-  info: UserVoteInfo;
-}
-
-/**
- * Vote count result interface
- */
-export interface VoteCount {
-  agentId: string;
-  voteCount: number;
-}
-
-/**
- * Competition with voting information
- */
-export interface CompetitionWithVotes extends Competition {
-  votingEnabled: boolean; // Based on competition status
-  agents: AgentWithVotes[];
-  userVotingInfo?: CompetitionVotingStatus; // Only if user is authenticated
 }
 
 /**
@@ -1107,8 +1113,10 @@ export interface PerpsEnrichedLeaderboardEntry {
   totalAgents: number;
   score: number;
   calmarRatio: number | null;
+  sortinoRatio: number | null;
   simpleReturn: number | null;
   maxDrawdown: number | null;
+  downsideDeviation: number | null;
   totalEquity: number;
   totalPnl: number | null;
   hasRiskMetrics: true;
@@ -1129,50 +1137,6 @@ export function isPerpsEnrichedEntry(
 ): entry is PerpsEnrichedLeaderboardEntry {
   return entry.hasRiskMetrics === true;
 }
-
-/**
- * Vote error types for specific error handling
- */
-export const VOTE_ERROR_TYPES = {
-  COMPETITION_NOT_FOUND: "COMPETITION_NOT_FOUND",
-  AGENT_NOT_FOUND: "AGENT_NOT_FOUND",
-  AGENT_NOT_IN_COMPETITION: "AGENT_NOT_IN_COMPETITION",
-  COMPETITION_VOTING_DISABLED: "COMPETITION_VOTING_DISABLED",
-  VOTING_NOT_OPEN: "VOTING_NOT_OPEN",
-  USER_ALREADY_VOTED: "USER_ALREADY_VOTED",
-  VOTING_CUTOFF_EXCEEDED: "VOTING_CUTOFF_EXCEEDED",
-  DUPLICATE_VOTE: "DUPLICATE_VOTE",
-} as const;
-
-export type VoteErrorType = keyof typeof VOTE_ERROR_TYPES;
-
-/**
- * Vote error interface
- */
-export interface VoteError extends Error {
-  type: VoteErrorType;
-  code: number;
-}
-
-/**
- * Voting state params schema for getting competition voting state
- */
-export const VotingStateParamsSchema = z.object({
-  competitionId: z.uuid("Invalid competition ID format"),
-});
-
-export type VotingStateParams = z.infer<typeof VotingStateParamsSchema>;
-
-/**
- * User votes query params schema
- */
-export const UserVotesParamsSchema = z.object({
-  competitionId: z.uuid("Invalid competition ID format").optional(),
-  limit: z.coerce.number().min(1).max(100).default(50),
-  offset: z.coerce.number().min(0).default(0),
-});
-
-export type UserVotesParams = z.infer<typeof UserVotesParamsSchema>;
 
 /**
  * Admin create agent schema

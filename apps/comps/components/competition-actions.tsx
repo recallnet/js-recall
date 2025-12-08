@@ -7,25 +7,25 @@ import { Button } from "@recallnet/ui2/components/button";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { openForBoosting } from "@/lib/open-for-boosting";
-import { CompetitionStatus, CompetitionWithUserAgents } from "@/types";
+import { CompetitionWithUserAgents } from "@/types";
 
 import { JoinCompetitionButton } from "./join-competition-button";
 
 interface BoostButtonProps {
   competitionId: string;
-  votingEnabled: boolean;
+  boostingEnabled: boolean;
   className?: string;
 }
 
 const BoostButton: React.FC<BoostButtonProps> = ({
   competitionId,
-  votingEnabled,
+  boostingEnabled,
   className,
 }) => {
   const buttonStyles =
     "border border-yellow-500 bg-black uppercase text-white hover:bg-yellow-500 hover:text-black disabled:hover:bg-black disabled:hover:text-white";
 
-  if (votingEnabled) {
+  if (boostingEnabled) {
     return (
       <Link href={`/competitions/${competitionId}`} className={className}>
         <Button
@@ -40,7 +40,12 @@ const BoostButton: React.FC<BoostButtonProps> = ({
   }
 
   return (
-    <Button variant="default" size="lg" className={cn(buttonStyles, className)}>
+    <Button
+      variant="default"
+      size="lg"
+      className={cn(buttonStyles, className)}
+      disabled={!boostingEnabled}
+    >
       <span className="font-semibold">Boost</span>
     </Button>
   );
@@ -67,13 +72,13 @@ export const CompetitionActions: React.FC<CompetitionActionsProps> = ({
     [competition],
   );
 
-  if (competition.status === CompetitionStatus.Pending) {
+  if (competition.status === "pending") {
     return (
       <div className={containerClasses}>
         <div className="flex-1">
           <BoostButton
             competitionId={competition.id}
-            votingEnabled={isOpenForBoosting}
+            boostingEnabled={isOpenForBoosting}
             className="w-full"
           />
         </div>
@@ -91,19 +96,19 @@ export const CompetitionActions: React.FC<CompetitionActionsProps> = ({
     );
   }
 
-  if (competition.status === CompetitionStatus.Active) {
+  if (competition.status === "active") {
     return (
       <div className={containerClasses}>
         <BoostButton
           competitionId={competition.id}
-          votingEnabled={isOpenForBoosting}
+          boostingEnabled={isOpenForBoosting}
           className="w-full"
         />
       </div>
     );
   }
 
-  if (competition.status === CompetitionStatus.Ended) {
+  if (competition.status === "ended") {
     return (
       <div className={containerClasses}>
         <Link href={`/competitions/${competition.id}`} className="w-full">

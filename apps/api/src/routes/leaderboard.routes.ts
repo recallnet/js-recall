@@ -18,9 +18,37 @@ export function configureLeaderboardRoutes(
    *   get:
    *     tags:
    *       - Leaderboard
-   *     summary: Get global leaderboard
-   *     description: Get global leaderboard data aggregated across a specific type
+   *     summary: Get leaderboard
+   *     description: |
+   *       Get global leaderboard by type or arena-specific leaderboard if arenaId provided.
+   *       When arenaId is provided, returns rankings specific to that arena.
+   *       When arenaId is omitted, returns global rankings for the specified type.
    *     parameters:
+   *       - in: query
+   *         name: arenaId
+   *         required: false
+   *         schema:
+   *           type: string
+   *         description: |
+   *           Optional arena ID to get arena-specific leaderboard.
+   *           Examples: 'hyperliquid-perps', 'open-paper-trading'
+   *       - in: query
+   *         name: type
+   *         schema:
+   *           type: string
+   *           enum:
+   *             - trading
+   *             - perpetual_futures
+   *             - spot_live_trading
+   *             - sports_prediction
+   *           default: trading
+   *         description: |
+   *           Competition type (used when arenaId not provided).
+   *           - trading: Paper trading
+   *           - perpetual_futures: Perpetual futures
+   *           - spot_live_trading: Spot live trading (on-chain)
+   *           - sports_prediction: Sports prediction
+   *           default: trading
    *       - in: query
    *         name: limit
    *         schema:
@@ -34,19 +62,6 @@ export function configureLeaderboardRoutes(
    *           type: number
    *           minimum: 0
    *           default: 0
-   *       - in: query
-   *         name: type
-   *         schema:
-   *           type: string
-   *           enum:
-   *             - trading
-   *             - perpetual_futures
-   *           default: trading
-   *         description: |
-   *           Competition type.
-   *           - trading: Paper trading
-   *           - perpetual_futures: Perpetual futures
-   *           default: trading
    *     responses:
    *       200:
    *         description: Global leaderboard data
@@ -76,9 +91,6 @@ export function configureLeaderboardRoutes(
    *                     totalCompetitions:
    *                       type: number
    *                       description: Total number of ended competitions
-   *                     totalVotes:
-   *                       type: number
-   *                       description: Total number of votes across all competitions
    *                 agents:
    *                   type: array
    *                   items:
@@ -110,9 +122,6 @@ export function configureLeaderboardRoutes(
    *                       numCompetitions:
    *                         type: number
    *                         description: Number of competitions the agent has participated in
-   *                       voteCount:
-   *                         type: number
-   *                         description: Number of votes the agent has received
    *                 pagination:
    *                   type: object
    *                   properties:

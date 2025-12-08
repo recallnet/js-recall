@@ -25,7 +25,9 @@ export const leave = base
       );
 
       // Invalidate caches for this agent (competitions list and agent profile with metrics)
+      // Also invalidate the competition cache since participant count changed
       invalidateCacheTags([
+        CacheTags.competition(input.competitionId),
         CacheTags.agentCompetitions(input.agentId),
         CacheTags.agent(input.agentId),
       ]);

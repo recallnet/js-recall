@@ -5,11 +5,18 @@ import { MockProxy, mock } from "vitest-mock-extended";
 
 import { AgentRepository } from "@recallnet/db/repositories/agent";
 import { AgentScoreRepository } from "@recallnet/db/repositories/agent-score";
+import { ArenaRepository } from "@recallnet/db/repositories/arena";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
+import { PaperTradingConfigRepository } from "@recallnet/db/repositories/paper-trading-config";
+import { PaperTradingInitialBalancesRepository } from "@recallnet/db/repositories/paper-trading-initial-balances";
 import { PerpsRepository } from "@recallnet/db/repositories/perps";
+import { SpotLiveRepository } from "@recallnet/db/repositories/spot-live";
 import { StakesRepository } from "@recallnet/db/repositories/stakes";
+import { TradeRepository } from "@recallnet/db/repositories/trade";
+import { CompetitionAgentStatus } from "@recallnet/db/repositories/types";
 import { UserRepository } from "@recallnet/db/repositories/user";
 import {
+  SelectAgentWithCompetitionStatus,
   SelectCompetition,
   SelectCompetitionReward,
   UpdateCompetition,
@@ -24,30 +31,90 @@ import { Database, Transaction } from "@recallnet/db/types";
 import type { AgentService } from "../agent.service.js";
 import type { AgentRankService } from "../agentrank.service.js";
 import type { BalanceService } from "../balance.service.js";
+import type { BoostBonusService } from "../boost-bonus.service.js";
 import type { CompetitionRewardService } from "../competition-reward.service.js";
 import { CompetitionService } from "../competition.service.js";
+import { specificChainTokens } from "../lib/config-utils.js";
 import type { PerpsDataProcessor } from "../perps-data-processor.service.js";
 import type { PortfolioSnapshotterService } from "../portfolio-snapshotter.service.js";
+import type { PriceTrackerService } from "../price-tracker.service.js";
+import { RewardsService } from "../rewards.service.js";
+import type { SportsService } from "../sports.service.js";
+import type { SpotDataProcessor } from "../spot-data-processor.service.js";
 import type { TradeSimulatorService } from "../trade-simulator.service.js";
 import type { TradingConstraintsService } from "../trading-constraints.service.js";
-import { VoteService } from "../vote.service.js";
+
+/**
+ * Mock an agent with competition status and deactivation reason
+ * @param id - Agent ID
+ * @param name - Agent name
+ * @param handle - Agent handle
+ * @param competitionStatus - Competition status
+ * @param competitionDeactivationReason - Competition deactivation reason
+ * @returns Mocked agent
+ */
+function mockAgent({
+  id = randomUUID(),
+  name,
+  handle,
+  competitionStatus = "active",
+  competitionDeactivationReason = null,
+}: {
+  id?: string;
+  name: string;
+  handle: string;
+  competitionStatus?: CompetitionAgentStatus;
+  competitionDeactivationReason?: string | null;
+}): SelectAgentWithCompetitionStatus {
+  return {
+    id,
+    name,
+    email: null,
+    metadata: null,
+    handle,
+    description: null,
+    imageUrl: null,
+    status: "active" as const,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    walletAddress: null,
+    ownerId: randomUUID(),
+    apiKey: "mock-api-key-1",
+    apiKeyHash: null,
+    deactivationReason: null,
+    deactivationDate: null,
+    isRewardsIneligible: false,
+    rewardsIneligibilityReason: null,
+    competitionStatus,
+    competitionDeactivationReason,
+  };
+}
 
 describe("CompetitionService", () => {
   let competitionService: CompetitionService;
   let balanceService: MockProxy<BalanceService>;
   let tradeSimulatorService: MockProxy<TradeSimulatorService>;
   let portfolioSnapshotterService: MockProxy<PortfolioSnapshotterService>;
+  let priceTrackerService: MockProxy<PriceTrackerService>;
   let agentService: MockProxy<AgentService>;
   let agentRankService: MockProxy<AgentRankService>;
-  let voteService: MockProxy<VoteService>;
   let tradingConstraintsService: MockProxy<TradingConstraintsService>;
   let competitionRewardService: MockProxy<CompetitionRewardService>;
+  let rewardsService: MockProxy<RewardsService>;
   let perpsDataProcessor: MockProxy<PerpsDataProcessor>;
+  let spotDataProcessor: MockProxy<SpotDataProcessor>;
+  let spotLiveRepo: MockProxy<SpotLiveRepository>;
+  let boostBonusService: MockProxy<BoostBonusService>;
   let agentRepo: MockProxy<AgentRepository>;
   let agentScoreRepo: MockProxy<AgentScoreRepository>;
+  let arenaRepo: MockProxy<ArenaRepository>;
+  let sportsService: MockProxy<SportsService>;
   let perpsRepo: MockProxy<PerpsRepository>;
   let competitionRepo: MockProxy<CompetitionRepository>;
+  let paperTradingConfigRepo: MockProxy<PaperTradingConfigRepository>;
+  let paperTradingInitialBalancesRepo: MockProxy<PaperTradingInitialBalancesRepository>;
   let stakesRepo: MockProxy<StakesRepository>;
+  let tradeRepo: MockProxy<TradeRepository>;
   let userRepo: MockProxy<UserRepository>;
   let mockDb: MockProxy<Database>;
   let logger: MockProxy<Logger>;
@@ -67,16 +134,33 @@ describe("CompetitionService", () => {
     updatedAt: new Date(),
     imageUrl: null,
     externalUrl: null,
-    votingStartDate: null,
-    votingEndDate: null,
+    boostStartDate: null,
+    boostEndDate: null,
     joinStartDate: null,
     joinEndDate: null,
     maxParticipants: null,
     registeredParticipants: 0,
     minimumStake: null,
+    vips: null,
+    allowlist: null,
+    blocklist: null,
+    minRecallRank: null,
+    allowlistOnly: false,
+    agentAllocation: null,
+    agentAllocationUnit: null,
+    boosterAllocation: null,
+    boosterAllocationUnit: null,
+    rewardRules: null,
+    rewardDetails: null,
     sandboxMode: false,
+    displayState: null,
     competitionId: mockCompeitionId,
     crossChainTradingType: "allow",
+    arenaId: "default-paper-arena",
+    engineId: "spot_paper_trading" as const,
+    engineVersion: "1.0.0",
+    rewardsIneligible: null,
+    boostTimeDecayRate: null,
   };
 
   const mockRewards: SelectCompetitionReward[] = [
@@ -111,19 +195,33 @@ describe("CompetitionService", () => {
     balanceService = mock<BalanceService>();
     tradeSimulatorService = mock<TradeSimulatorService>();
     portfolioSnapshotterService = mock<PortfolioSnapshotterService>();
+    priceTrackerService = mock<PriceTrackerService>();
     agentService = mock<AgentService>();
     agentRankService = mock<AgentRankService>();
-    voteService = mock<VoteService>();
     tradingConstraintsService = mock<TradingConstraintsService>();
     competitionRewardService = mock<CompetitionRewardService>();
+    rewardsService = mock<RewardsService>();
     perpsDataProcessor = mock<PerpsDataProcessor>();
+    spotDataProcessor = mock<SpotDataProcessor>();
+    spotLiveRepo = mock<SpotLiveRepository>();
+    boostBonusService = mock<BoostBonusService>();
     agentRepo = mock<AgentRepository>();
     agentScoreRepo = mock<AgentScoreRepository>();
+    arenaRepo = mock<ArenaRepository>();
+    sportsService = mock<SportsService>();
     perpsRepo = mock<PerpsRepository>();
     competitionRepo = mock<CompetitionRepository>();
+    paperTradingConfigRepo = mock<PaperTradingConfigRepository>();
+    paperTradingInitialBalancesRepo =
+      mock<PaperTradingInitialBalancesRepository>();
     stakesRepo = mock<StakesRepository>();
+    tradeRepo = mock<TradeRepository>();
     userRepo = mock<UserRepository>();
     mockDb = mock<Database>();
+    // Mock database transaction method
+    mockDb.transaction.mockImplementation(async (callback) => {
+      return await callback(mockTx);
+    });
     logger = mock<Logger>();
 
     // Setup default mock return values
@@ -139,17 +237,26 @@ describe("CompetitionService", () => {
       balanceService,
       tradeSimulatorService,
       portfolioSnapshotterService,
+      priceTrackerService,
       agentService,
       agentRankService,
-      voteService,
       tradingConstraintsService,
       competitionRewardService,
+      rewardsService,
       perpsDataProcessor,
+      spotDataProcessor,
+      boostBonusService,
       agentRepo,
       agentScoreRepo,
+      arenaRepo,
+      sportsService,
       perpsRepo,
+      spotLiveRepo,
       competitionRepo,
+      paperTradingConfigRepo,
+      paperTradingInitialBalancesRepo,
       stakesRepo,
+      tradeRepo,
       userRepo,
       mockDb,
       {
@@ -166,6 +273,7 @@ describe("CompetitionService", () => {
         maxTradePercentage: 25,
         rateLimiting: { windowMs: 60000, maxRequests: 100 },
         specificChainBalances: { eth: { eth: 1 } },
+        specificChainTokens,
       },
       logger,
     );
@@ -429,6 +537,78 @@ describe("CompetitionService", () => {
       expect(mockDb.transaction).not.toHaveBeenCalled();
     });
 
+    it("should update competition with arena routing and participation fields", async () => {
+      const competitionId = mockCompetition.id;
+
+      // Mock arena for validation
+      arenaRepo.findById.mockResolvedValue({
+        id: "test-arena",
+        name: "Test Arena",
+        createdBy: "admin",
+        category: "crypto_trading",
+        skill: "spot_paper_trading",
+        venues: null,
+        chains: null,
+        kind: "Competition",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      mockDb.transaction.mockImplementation(async (callback) => {
+        return await callback(mockTx);
+      });
+
+      const updates = {
+        description: "Updated with arena fields",
+        arenaId: "test-arena",
+        engineId: "spot_paper_trading" as const,
+        engineVersion: "1.0.0",
+        vips: ["vip-1"],
+        allowlist: ["allowed-1", "allowed-2"],
+        blocklist: ["blocked-1"],
+        minRecallRank: 75,
+        allowlistOnly: true,
+        agentAllocation: 8000,
+        agentAllocationUnit: "USDC" as const,
+        boosterAllocation: 3000,
+        boosterAllocationUnit: "RECALL" as const,
+        rewardRules: "Top 5 winners",
+        rewardDetails: "Monthly payout",
+        displayState: "waitlist" as const,
+      };
+
+      const result = await competitionService.updateCompetition(
+        competitionId,
+        updates,
+      );
+
+      expect(mockDb.transaction).toHaveBeenCalledTimes(1);
+      expect(competitionRepo.updateOne).toHaveBeenCalledWith(
+        competitionId,
+        expect.objectContaining({
+          description: "Updated with arena fields",
+          arenaId: "test-arena",
+          engineId: "spot_paper_trading",
+          engineVersion: "1.0.0",
+          vips: ["vip-1"],
+          allowlist: ["allowed-1", "allowed-2"],
+          blocklist: ["blocked-1"],
+          minRecallRank: 75,
+          allowlistOnly: true,
+          agentAllocation: 8000,
+          agentAllocationUnit: "USDC",
+          boosterAllocation: 3000,
+          boosterAllocationUnit: "RECALL",
+          rewardRules: "Top 5 winners",
+          rewardDetails: "Monthly payout",
+          displayState: "waitlist",
+        }),
+        mockTx,
+      );
+
+      expect(result.competition).toBeDefined();
+    });
+
     it("should handle empty updates gracefully", async () => {
       const competitionId = mockCompetition.id;
 
@@ -452,6 +632,387 @@ describe("CompetitionService", () => {
         competition: mockCompetition,
         updatedRewards: [],
       });
+    });
+
+    it("should reject spotLiveConfig updates on non-pending competitions", async () => {
+      const activeSpotLiveCompetition: SelectCompetition &
+        SelectTradingCompetition = {
+        ...mockCompetition,
+        type: "spot_live_trading",
+        status: "active",
+      };
+
+      competitionRepo.findById.mockResolvedValue(activeSpotLiveCompetition);
+
+      await expect(
+        competitionService.updateCompetition(
+          activeSpotLiveCompetition.id,
+          {},
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          { selfFundingThresholdUsd: 100 },
+        ),
+      ).rejects.toThrow(
+        "Cannot update spot live configuration once competition has started",
+      );
+    });
+
+    it("should reject perpsProvider updates on non-pending competitions", async () => {
+      const activePerpsCompetition: SelectCompetition &
+        SelectTradingCompetition = {
+        ...mockCompetition,
+        type: "perpetual_futures",
+        status: "active",
+      };
+
+      competitionRepo.findById.mockResolvedValue(activePerpsCompetition);
+
+      await expect(
+        competitionService.updateCompetition(
+          activePerpsCompetition.id,
+          {},
+          undefined,
+          undefined,
+          undefined,
+          {
+            provider: "symphony",
+            initialCapital: 1000,
+            selfFundingThreshold: 0,
+          },
+        ),
+      ).rejects.toThrow(
+        "Cannot update perps configuration once competition has started",
+      );
+    });
+
+    it("should require spotLiveConfig when converting to spot_live_trading", async () => {
+      const pendingCompetition: SelectCompetition & SelectTradingCompetition = {
+        ...mockCompetition,
+        type: "trading",
+        status: "pending",
+      };
+
+      competitionRepo.findById.mockResolvedValue(pendingCompetition);
+      arenaRepo.findById.mockResolvedValue({
+        id: "default-spot-live-arena",
+        name: "Spot Live Arena",
+        createdBy: null,
+        category: "spot_live",
+        skill: "trading",
+        venues: [],
+        chains: ["base"],
+        kind: "spot_live",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      await expect(
+        competitionService.updateCompetition(pendingCompetition.id, {
+          type: "spot_live_trading",
+        }),
+      ).rejects.toThrow(
+        "Spot live configuration is required when changing to spot_live_trading type",
+      );
+    });
+  });
+
+  describe("getCompetitionAgentsWithMetrics", () => {
+    it("should assign last-place rank to inactive agents", async () => {
+      const competitionId = mockCompetition.id;
+
+      // Create mock agents - 3 active, 2 inactive
+      const mockAgents: SelectAgentWithCompetitionStatus[] = [
+        mockAgent({ id: "agent-1", name: "Agent 1", handle: "agent1" }),
+        mockAgent({ id: "agent-2", name: "Agent 2", handle: "agent2" }),
+        mockAgent({ id: "agent-3", name: "Agent 3", handle: "agent3" }),
+        mockAgent({
+          id: "agent-4",
+          name: "Agent 4",
+          handle: "agent4",
+          competitionStatus: "disqualified",
+          competitionDeactivationReason: "Disqualified",
+        }),
+        mockAgent({
+          id: "agent-5",
+          name: "Agent 5",
+          handle: "agent5",
+          competitionStatus: "withdrawn",
+          competitionDeactivationReason: "Withdrawn",
+        }),
+      ];
+
+      // Mock leaderboard - only active agents appear with scores
+      const mockLeaderboard = [
+        {
+          agentId: "agent-1",
+          value: 150000,
+          calmarRatio: null,
+          sortinoRatio: null,
+          simpleReturn: null,
+          maxDrawdown: null,
+          downsideDeviation: null,
+          hasRiskMetrics: false,
+        },
+        {
+          agentId: "agent-2",
+          value: 125000,
+          calmarRatio: null,
+          sortinoRatio: null,
+          simpleReturn: null,
+          maxDrawdown: null,
+          downsideDeviation: null,
+          hasRiskMetrics: false,
+        },
+        {
+          agentId: "agent-3",
+          value: 110000,
+          calmarRatio: null,
+          sortinoRatio: null,
+          simpleReturn: null,
+          maxDrawdown: null,
+          downsideDeviation: null,
+          hasRiskMetrics: false,
+        },
+      ];
+
+      agentRepo.findByCompetition.mockResolvedValue({
+        agents: mockAgents,
+        total: 5,
+      });
+
+      vi.spyOn(
+        competitionService as unknown as {
+          getLeaderboard: (
+            competitionId: string,
+          ) => Promise<typeof mockLeaderboard>;
+        },
+        "getLeaderboard",
+      ).mockResolvedValue(mockLeaderboard);
+
+      vi.spyOn(
+        competitionService as unknown as {
+          calculateBulkAgentMetrics: (
+            competitionId: string,
+            agentIds: string[],
+            currentValues: Map<string, number>,
+          ) => Promise<
+            Map<
+              string,
+              {
+                pnl: number;
+                pnlPercent: number;
+                change24h: number;
+                change24hPercent: number;
+              }
+            >
+          >;
+        },
+        "calculateBulkAgentMetrics",
+      ).mockResolvedValue(
+        new Map([
+          [
+            "agent-1",
+            {
+              pnl: 50000,
+              pnlPercent: 50,
+              change24h: 1000,
+              change24hPercent: 0.67,
+            },
+          ],
+          [
+            "agent-2",
+            {
+              pnl: 25000,
+              pnlPercent: 25,
+              change24h: 500,
+              change24hPercent: 0.4,
+            },
+          ],
+          [
+            "agent-3",
+            {
+              pnl: 10000,
+              pnlPercent: 10,
+              change24h: 200,
+              change24hPercent: 0.18,
+            },
+          ],
+          [
+            "agent-4",
+            { pnl: 0, pnlPercent: 0, change24h: 0, change24hPercent: 0 },
+          ],
+          [
+            "agent-5",
+            { pnl: 0, pnlPercent: 0, change24h: 0, change24hPercent: 0 },
+          ],
+        ]),
+      );
+
+      const result = await competitionService.getCompetitionAgentsWithMetrics(
+        competitionId,
+        {
+          sort: "rank",
+          limit: 10,
+          offset: 0,
+          includeInactive: true,
+        },
+      );
+      expect(result.agents).toHaveLength(5);
+      expect(result.total).toBe(5);
+
+      // Verify rankings
+      const activeAgents = result.agents.filter((a) => a.active);
+      const inactiveAgents = result.agents.filter((a) => !a.active);
+      expect(activeAgents).toHaveLength(3);
+      expect(inactiveAgents).toHaveLength(2);
+      const activeRanks = activeAgents.map((a) => a.rank).sort((a, b) => a - b);
+      expect(activeRanks).toEqual([1, 2, 3]);
+      for (const inactiveAgent of inactiveAgents) {
+        expect(inactiveAgent.rank).toBe(5);
+        expect(inactiveAgent.active).toBe(false);
+        expect(inactiveAgent.deactivationReason).toBeTruthy();
+      }
+    });
+
+    it("should handle all agents being inactive", async () => {
+      const competitionId = mockCompetition.id;
+
+      const mockAgents: SelectAgentWithCompetitionStatus[] = [
+        mockAgent({
+          name: "Agent 1",
+          handle: "agent1",
+          competitionStatus: "withdrawn",
+        }),
+        mockAgent({
+          name: "Agent 2",
+          handle: "agent2",
+          competitionStatus: "disqualified",
+        }),
+      ];
+
+      agentRepo.findByCompetition.mockResolvedValue({
+        agents: mockAgents,
+        total: 2,
+      });
+
+      vi.spyOn(
+        competitionService as unknown as {
+          getLeaderboard: (competitionId: string) => Promise<[]>;
+        },
+        "getLeaderboard",
+      ).mockResolvedValue([]);
+      vi.spyOn(
+        competitionService as unknown as {
+          calculateBulkAgentMetrics: (
+            competitionId: string,
+            agentIds: string[],
+            currentValues: Map<string, number>,
+          ) => Promise<Map<string, unknown>>;
+        },
+        "calculateBulkAgentMetrics",
+      ).mockResolvedValue(new Map());
+
+      const result = await competitionService.getCompetitionAgentsWithMetrics(
+        competitionId,
+        {
+          sort: "rank",
+          limit: 10,
+          offset: 0,
+          includeInactive: true,
+        },
+      );
+
+      // All agents should have last-place rank
+      expect(result.agents).toHaveLength(2);
+      for (const agent of result.agents) {
+        expect(agent.rank).toBe(2); // Total number of agents
+        expect(agent.active).toBe(false);
+      }
+    });
+
+    it("should handle all agents being active", async () => {
+      const competitionId = mockCompetition.id;
+
+      const mockAgents: SelectAgentWithCompetitionStatus[] = [
+        mockAgent({
+          id: "agent-1",
+          name: "Agent 1",
+          handle: "agent1",
+          competitionStatus: "active",
+        }),
+        mockAgent({
+          id: "agent-2",
+          name: "Agent 2",
+          handle: "agent2",
+          competitionStatus: "active",
+        }),
+      ];
+
+      const mockLeaderboard = [
+        {
+          agentId: "agent-1",
+          value: 125000,
+          calmarRatio: null,
+          sortinoRatio: null,
+          simpleReturn: null,
+          maxDrawdown: null,
+          downsideDeviation: null,
+          hasRiskMetrics: false,
+        },
+        {
+          agentId: "agent-2",
+          value: 110000,
+          calmarRatio: null,
+          sortinoRatio: null,
+          simpleReturn: null,
+          maxDrawdown: null,
+          downsideDeviation: null,
+          hasRiskMetrics: false,
+        },
+      ];
+
+      agentRepo.findByCompetition.mockResolvedValue({
+        agents: mockAgents,
+        total: 2,
+      });
+
+      vi.spyOn(
+        competitionService as unknown as {
+          getLeaderboard: (
+            competitionId: string,
+          ) => Promise<typeof mockLeaderboard>;
+        },
+        "getLeaderboard",
+      ).mockResolvedValue(mockLeaderboard);
+      vi.spyOn(
+        competitionService as unknown as {
+          calculateBulkAgentMetrics: (
+            competitionId: string,
+            agentIds: string[],
+            currentValues: Map<string, number>,
+          ) => Promise<Map<string, unknown>>;
+        },
+        "calculateBulkAgentMetrics",
+      ).mockResolvedValue(new Map());
+
+      const result = await competitionService.getCompetitionAgentsWithMetrics(
+        competitionId,
+        {
+          sort: "rank",
+          limit: 10,
+          offset: 0,
+          includeInactive: false,
+        },
+      );
+
+      expect(result.agents).toHaveLength(2);
+      expect(result.agents[0]?.rank).toBe(1);
+      expect(result.agents[1]?.rank).toBe(2);
+      expect(result.agents[0]?.active).toBe(true);
+      expect(result.agents[1]?.active).toBe(true);
     });
   });
 });

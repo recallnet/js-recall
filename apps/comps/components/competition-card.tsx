@@ -10,7 +10,7 @@ import { Card } from "@recallnet/ui2/components/card";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { tanstackClient } from "@/rpc/clients/tanstack-query";
-import { CompetitionStatus, CompetitionWithUserAgents } from "@/types";
+import { CompetitionWithUserAgents } from "@/types";
 import { formatAmount } from "@/utils/format";
 
 import {
@@ -69,7 +69,7 @@ export const CompetitionCard: React.FC<CompetitionCardProps> = ({
               compId={competition.id}
               agents={competition.agents}
               className="pr-6 pt-6"
-              showRank={competition.status !== CompetitionStatus.Pending}
+              showRank={competition.status !== "pending"}
             />
           </div>
 
@@ -85,12 +85,12 @@ export const CompetitionCard: React.FC<CompetitionCardProps> = ({
             compId={competition.id}
             agents={topLeaders?.agents || []}
             className="px-6 py-2"
-            showRank={competition.status !== CompetitionStatus.Pending}
+            showRank={competition.status !== "pending"}
           />
 
           <hr />
 
-          {competition.status === CompetitionStatus.Ended ? null : (
+          {competition.status === "ended" ? null : (
             <CompetitionStateSummary
               competition={competition}
               className="px-6 py-2"
@@ -113,7 +113,7 @@ export const CompetitionCard: React.FC<CompetitionCardProps> = ({
             <div className="w-full p-6">
               {/* Rewards (token or legacy) */}
               <h3 className="text-secondary-foreground mb-1 text-xs font-semibold uppercase">
-                Reward
+                Rewards
               </h3>
               {competition.rewardsTge ? (
                 <RewardsTGE

@@ -21,6 +21,8 @@ import {
   useUpdateSandboxAgent,
 } from "@/hooks/useSandbox";
 import type { RouterOutputs } from "@/rpc/router";
+import { displayAddress } from "@/utils/address";
+import { formatCompetitionType } from "@/utils/competition-utils";
 
 import BigNumberDisplay from "../bignumber";
 import { BreadcrumbNav } from "../breadcrumb-nav";
@@ -66,6 +68,10 @@ export default function AgentProfile({
   const [offset, setOffset] = React.useState(0);
   const skills = agent?.skills || [];
   const trophies = sortTrophies((agent.trophies || []) as Trophy[]);
+
+  // Ranks are pre-sorted server-side (ordered by rank & ties are also accounted for)
+  const ranks = agent.stats.ranks || [];
+  const topRank = ranks[0];
 
   const { data: userAgents } = useUserAgents({ limit: 100 });
   const isUserAgent = userAgents?.agents.some((a) => a.id === id) || false;
@@ -181,16 +187,15 @@ export default function AgentProfile({
     <>
       <BreadcrumbNav
         items={[
-          { label: "RECALL", href: "/" },
+          { label: "HOME", href: "/" },
           { label: "AGENTS", href: isUserAgent ? "/profile" : "/" },
           { label: agent.name },
         ]}
-        className="mb-10"
       />
 
-      <div className="xs:grid-rows-[550px_1fr] my-6 grid grid-cols-[300px_1fr_1fr] rounded-xl md:grid-cols-[400px_1fr_1fr]">
+      <div className="xs:grid-rows-[550px_1fr] my-6 grid grid-cols-[300px_1fr_1fr] rounded-sm md:grid-cols-[400px_1fr_1fr]">
         <Card
-          className="xs:col-span-1 xs:mr-8 between relative col-span-3 h-[550px] bg-[#11121A]"
+          className="xs:col-span-1 xs:mr-8 relative col-span-3 flex h-[550px] flex-col bg-[#11121A]"
           corner="top-left"
           cropSize={45}
         >
@@ -207,9 +212,10 @@ export default function AgentProfile({
           </div>
           <div
             className={cn(
+              "flex-1",
               agent?.imageUrl
-                ? "relative h-full w-full"
-                : "relative flex h-full w-full items-center justify-center",
+                ? "relative w-full"
+                : "relative flex w-full items-center justify-center",
             )}
           >
             {isUserAgent ? (
@@ -231,33 +237,68 @@ export default function AgentProfile({
             )}
           </div>
           {agent.walletAddress && (
-            <div className="px-15 xs:px-10 absolute bottom-0 right-[50%] z-20 w-full translate-x-[50%] border bg-black py-3 md:px-20">
+            <div className="bg-background flex justify-center border px-6 py-3 text-center">
               <Clipboard
-                text={agent.walletAddress}
-                className="text-secondary-foreground w-full rounded-[10px] px-3 py-2 text-lg"
+                text={displayAddress(agent.walletAddress, { numChars: 6 })}
+                textOnCopy={agent.walletAddress}
+                className="text-secondary-foreground px-3 py-2 font-mono text-lg"
+                showBorder={false}
               />
             </div>
           )}
         </Card>
-        <div className="flex-2 xs:col-span-2 xs:col-start-2 xs:row-start-1 xs:mt-0 col-span-3 row-start-2 mt-5 flex shrink flex-col border lg:col-span-1 lg:col-start-2">
+        <div className="flex-2 xs:col-span-2 xs:col-start-2 xs:row-start-1 xs:mt-0 col-span-3 row-start-2 mt-5 flex shrink flex-col rounded-xl border lg:col-span-1 lg:col-start-2 lg:rounded-r-none">
           <div className="relative flex w-full grow flex-col border-b p-6">
+            {/* Display best rank with tooltip showing all ranks */}
             <div className="flex gap-3 font-mono text-lg font-semibold">
-              {agent.stats.score != null && agent.stats.score > 0 && (
-                <Tooltip content="Global Score">
-                  <BigNumberDisplay
-                    decimals={0}
-                    value={agent.stats.score.toString()}
-                    displayDecimals={0}
-                    compact={false}
-                  />
-                </Tooltip>
-              )}
-              {agent.stats.rank && (
-                <Tooltip content="Global Rank">
-                  <span className="text-secondary-foreground">
-                    #{agent.stats.rank}
-                  </span>
-                </Tooltip>
+              {ranks.length > 0 && topRank ? (
+                <>
+                  <Tooltip
+                    content={
+                      <div className="space-y-2 p-2">
+                        {ranks.map((rankData) => (
+                          <div
+                            key={rankData.type}
+                            className="flex items-center justify-between gap-4"
+                          >
+                            <span className="text-secondary-foreground text-xs font-semibold uppercase">
+                              {formatCompetitionType(rankData.type)}
+                            </span>
+                            <div className="flex items-center gap-2 font-mono text-sm">
+                              <span className="text-primary-foreground font-bold">
+                                <BigNumberDisplay
+                                  decimals={0}
+                                  value={rankData.score.toString()}
+                                  displayDecimals={0}
+                                  compact={false}
+                                />
+                              </span>
+                              <span className="text-secondary-foreground font-bold">
+                                #{rankData.rank}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    }
+                  >
+                    <span className="cursor-help">
+                      <BigNumberDisplay
+                        decimals={0}
+                        value={topRank.score.toString()}
+                        displayDecimals={0}
+                        compact={false}
+                      />
+                      <span className="text-secondary-foreground ml-3">
+                        #{topRank.rank}
+                      </span>
+                    </span>
+                  </Tooltip>
+                </>
+              ) : (
+                <span className="text-secondary-foreground text-sm">
+                  No global rankings yet
+                </span>
               )}
             </div>
             {isUserAgent ? (
@@ -348,23 +389,24 @@ export default function AgentProfile({
           <div className="flex w-full">
             <div className="flex w-1/2 flex-col items-start p-5">
               <span className="text-secondary-foreground w-full text-nowrap text-left font-mono text-sm font-semibold uppercase tracking-wide">
-                Completed Comps
+                Completed Competitions
               </span>
               <span className="text-primary-foreground w-full text-left text-lg font-semibold">
                 {agent.stats.completedCompetitions}
               </span>
             </div>
-            <div className="flex w-1/2 flex-col items-start border-l p-5">
+            {/* TODO: Re-implement with boosts */}
+            {/* <div className="flex w-1/2 flex-col items-start border-l p-5">
               <span className="text-secondary-foreground w-full text-nowrap text-left font-mono text-sm font-semibold uppercase tracking-wide">
-                Total Votes
+                Total Boosts
               </span>
               <span className="text-primary-foreground w-full text-left text-lg font-semibold">
                 {agent.stats.totalVotes?.toLocaleString() || "0"}
               </span>
-            </div>
+            </div> */}
           </div>
         </div>
-        <div className="xs:grid col-span-3 row-start-2 mt-8 hidden grid-rows-2 border-b border-l border-r border-t text-xs lg:col-start-3 lg:row-start-1 lg:mt-0 lg:grid-rows-3 lg:border-l-0">
+        <div className="xs:grid col-span-3 row-start-2 mt-8 hidden grid-rows-2 rounded-xl border-b border-l border-r border-t text-xs lg:col-start-3 lg:row-start-1 lg:mt-0 lg:grid-rows-3 lg:rounded-l-none lg:border-l-0">
           <div className="flex flex-col items-start border-b p-6">
             {isUserAgent ? (
               <EditAgentField
@@ -435,7 +477,7 @@ export default function AgentProfile({
       </div>
 
       {isUserAgent && (
-        <div className="mb-8 flex flex-col border p-6">
+        <div className="mb-8 flex flex-col rounded-xl border p-6">
           <div className="flex items-center justify-between gap-2">
             <span className="text-secondary-foreground text-left font-semibold uppercase">
               Credentials

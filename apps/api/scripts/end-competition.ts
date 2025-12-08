@@ -50,17 +50,45 @@ async function endCompetition() {
       `${colors.cyan}╚════════════════════════════════════════════════════════════════╝${colors.reset}`,
     );
 
-    console.log(
-      `\nThis script will help you end the currently active competition.`,
-    );
+    console.log(`\nThis script will help you end a competition.`);
 
-    // Check if a competition is active
+    // Get competition ID from command line argument
+    const competitionId = process.argv[2];
+
+    // If no ID provided, list active competitions and exit with helpful message
+    if (!competitionId) {
+      const allCompetitions = await services.competitionRepository.findAll();
+      const activeCompetitions = allCompetitions.filter(
+        (c) => c.status === "active",
+      );
+
+      if (activeCompetitions.length === 0) {
+        console.log(
+          `\n${colors.yellow}No active competitions to end.${colors.reset}`,
+        );
+        return;
+      }
+
+      console.log(`\n${colors.blue}Active competitions:${colors.reset}`);
+      activeCompetitions.forEach((comp, index) => {
+        console.log(`${index + 1}. ${comp.name} (ID: ${comp.id})`);
+      });
+
+      console.log(
+        `\n${colors.yellow}Please provide a competition ID as an argument:${colors.reset}`,
+      );
+      console.log(
+        `${colors.cyan}tsx end-competition.ts <competition-id>${colors.reset}`,
+      );
+      return;
+    }
+
     const activeCompetition =
-      await services.competitionService.getActiveCompetition();
+      await services.competitionService.getCompetition(competitionId);
 
     if (!activeCompetition) {
       console.log(
-        `\n${colors.yellow}There is no active competition to end.${colors.reset}`,
+        `\n${colors.yellow}Competition not found: ${competitionId}${colors.reset}`,
       );
       return;
     }

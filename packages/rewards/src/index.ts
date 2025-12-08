@@ -38,7 +38,7 @@ export function calculateRewardsForUsers(
   leaderBoard: Leaderboard,
   window: BoostAllocationWindow,
   prizePoolDecayRate: number = PrizePoolDecayRate,
-  boostTimeDecayRate: number = BoostTimeDecayRate,
+  boostTimeDecayRate?: number,
   hook: (data: Record<string, unknown>) => void = () => {},
 ): Reward[] {
   if (
@@ -56,16 +56,18 @@ export function calculateRewardsForUsers(
     );
   }
 
-  if (prizePoolDecayRate <= 0.1 || prizePoolDecayRate >= 0.9) {
+  if (prizePoolDecayRate < 0.1 || prizePoolDecayRate > 0.9) {
     throw new Error(
       `Invalid prize pool decay rate: ${prizePoolDecayRate}. Must be between 0 and 1.`,
     );
   }
 
-  if (boostTimeDecayRate <= 0.1 || boostTimeDecayRate >= 0.9) {
-    throw new Error(
-      `Invalid boost time decay rate: ${boostTimeDecayRate}. Must be between 0 and 1.`,
-    );
+  if (boostTimeDecayRate) {
+    if (boostTimeDecayRate < 0.1 || boostTimeDecayRate > 0.9) {
+      throw new Error(
+        `Invalid boost time decay rate: ${boostTimeDecayRate}. Must be between 0 and 1.`,
+      );
+    }
   }
 
   const prizePoolSplits = splitPrizePool(
@@ -75,7 +77,14 @@ export function calculateRewardsForUsers(
   );
   hook({ prizePoolSplits: prizePoolSplits });
 
-  const boostDecayFn = makeBoostDecayFn(window, boostTimeDecayRate);
+  /**
+   * If boostTimeDecayRate is not set, use a boost decay function that always returns 1.
+   * Otherwise, use the makeBoostDecayFn with the provided boostTimeDecayRate.
+   */
+  const boostDecayFn =
+    boostTimeDecayRate === undefined
+      ? (_timestamp: Date) => new Decimal(1) // eslint-disable-line @typescript-eslint/no-unused-vars
+      : makeBoostDecayFn(window, boostTimeDecayRate);
 
   const competitorTotals: Record<string, Decimal> = {};
   const userTotals: Record<string, Record<string, Decimal>> = {};
@@ -118,7 +127,7 @@ export function calculateRewardsForUsers(
 
     for (const [competitor, effectiveBoost] of Object.entries(competitors)) {
       if (effectiveBoost.gt(0)) {
-        // This check is to avoid the case where an user has voted to a competitor that is not in the leaderboard,
+        // This check is to avoid the case where an user has boosted to a competitor that is not in the leaderboard,
         // that can happen if the  competitor was disqualified or removed from competition or left the competition
         if (
           !(competitor in prizePoolSplits) ||

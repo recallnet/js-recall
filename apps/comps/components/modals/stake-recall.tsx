@@ -5,20 +5,16 @@ import {
   Ban,
   Check,
   Lock,
+  OctagonMinus,
   Share2Icon,
   TrendingUp,
   Wallet,
   X,
-  Zap,
 } from "lucide-react";
 import React, { useEffect, useState } from "react";
+import { useAccount, useChainId } from "wagmi";
 
 import { Button } from "@recallnet/ui2/components/button";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@recallnet/ui2/components/collapsible";
 import {
   Dialog,
   DialogContent,
@@ -35,13 +31,14 @@ import {
 import { Recall } from "@/components/Recall";
 import { useStake } from "@/hooks/staking";
 import { useRecall } from "@/hooks/useRecall";
-import { useSafeAccount, useSafeChainId } from "@/hooks/useSafeWagmi";
 import { useStakingContractAddress } from "@/hooks/useStakingContract";
 import { useTokenApproval } from "@/hooks/useTokenApproval";
 import {
   handleApprovalError,
   handleStakeTransactionError,
 } from "@/lib/error-handling";
+import { formatDateRange } from "@/lib/format-date-range";
+import { formatBigintAmount, shouldShowCompact } from "@/utils/format";
 
 import { BoostIcon } from "../BoostIcon";
 
@@ -96,10 +93,9 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
     useState<StakeDurationKey>("30");
   const [error, setError] = useState<string | null>(null);
   const [termsAccepted, setTermsAccepted] = useState<boolean>(false);
-  const [isCollapsibleOpen, setIsCollapsibleOpen] = useState<boolean>(true);
 
-  const { address } = useSafeAccount();
-  const chainId = useSafeChainId();
+  const { address } = useAccount();
+  const chainId = useChainId();
   const recall = useRecall();
   const stakingContractAddress = useStakingContractAddress();
   const tokenApproval = useTokenApproval(recall.token, stakingContractAddress);
@@ -129,12 +125,25 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
   const unlockDate = getUnlockDate(selectedDuration);
   const stakeDuration = STAKE_DURATIONS[selectedDuration];
 
-  // Format helper: enable compact only for values > 1,000,000 tokens
-  const formatAmount = (rawValue: bigint): string => {
-    const isGreaterThanMillion =
-      dnum.cmp([rawValue, decimals], 1_000_000) === 1;
-    return dnum.format([rawValue, decimals], { compact: isGreaterThanMillion });
+  // Formatted values for the staking modal
+  const getCompactAmount = (amount: bigint) => {
+    return shouldShowCompact(amount, decimals, 1_000_000n);
   };
+  const formattedAvailable = formatBigintAmount(
+    availableRaw,
+    decimals,
+    getCompactAmount(availableRaw),
+  );
+  const formattedStakeAmount = formatBigintAmount(
+    stakeAmountRaw,
+    decimals,
+    getCompactAmount(stakeAmountRaw),
+  );
+  const formattedBoostAmount = formatBigintAmount(
+    boostAmountRaw,
+    decimals,
+    getCompactAmount(boostAmountRaw),
+  );
 
   // Check if approval is currently pending (loading or confirming)
   const isApprovalPending =
@@ -195,7 +204,6 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
       setSelectedDuration("30");
       setError(null);
       setTermsAccepted(false);
-      setIsCollapsibleOpen(true);
     }
   }, [isOpen]);
 
@@ -278,7 +286,6 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
     setStep("stake");
     setError(null);
     setTermsAccepted(false);
-    setIsCollapsibleOpen(true);
   };
 
   const handleClose = () => {
@@ -286,8 +293,8 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
   };
 
   const handleShareOnX = () => {
-    const formattedStake = formatAmount(stakeAmountRaw);
-    const formattedBoost = formatAmount(boostAmountRaw);
+    const formattedStake = formatBigintAmount(stakeAmountRaw);
+    const formattedBoost = formatBigintAmount(boostAmountRaw);
     const shareText = `I just staked ${formattedStake} $RECALL tokens and got ${formattedBoost} boost ⚡️`;
 
     const currentUrl = window.location.origin;
@@ -315,7 +322,7 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="min-w-xs">
+      <DialogContent className="min-w-xs max-w-lg">
         {/* Header */}
         <DialogHeader>
           <div className="flex items-center justify-between">
@@ -339,7 +346,7 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
               <div className="space-y-4">
                 <div className="flex justify-between">
                   <div className="flex items-center justify-center gap-2 text-5xl font-bold">
-                    {formatAmount(stakeAmountRaw)}
+                    {formattedStakeAmount}
                     <Recall size="md" />
                   </div>
                   <div
@@ -349,7 +356,7 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
                     <div className="text-secondary-foreground flex items-center justify-center gap-2 text-xl font-bold">
                       <Wallet className="text-secondary-foreground h-5 w-5" />
                       <span className="text-primary-foreground">
-                        {formatAmount(availableRaw)}
+                        {formattedAvailable}
                       </span>
                     </div>
                     <span className="text-secondary-foreground text-sm font-bold">
@@ -400,9 +407,9 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
                 {/* Boost Display */}
                 <div className="xs:m-0 m-auto flex w-fit items-center justify-center gap-2 rounded-lg bg-gray-800 p-3">
                   <span className="text-primary-foreground text-xl font-bold">
-                    +{formatAmount(boostAmountRaw)}
+                    +{formattedBoostAmount}
                   </span>
-                  <BoostIcon className="size-4" fill />
+                  <BoostIcon className="size-4" />
                   <span className="text-secondary-foreground text-sm font-bold">
                     BOOST
                   </span>
@@ -435,7 +442,7 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
                     </span>
                     <div className="flex items-center gap-2">
                       <span className="text-4xl font-bold">
-                        {formatAmount(stakeAmountRaw)}
+                        {formattedStakeAmount}
                       </span>
                       <Recall size="md" />
                     </div>
@@ -447,7 +454,7 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
                     </span>
                     <div className="flex items-center gap-2">
                       <span className="text-4xl font-bold">
-                        {formatAmount(boostAmountRaw)}
+                        {formattedBoostAmount}
                       </span>
                       <BoostIcon className="size-5" />
                     </div>
@@ -460,99 +467,89 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
                 {/* Unlock Date */}
                 <div className="space-y-2 text-center">
                   <div className="text-secondary-foreground text-sm font-bold">
-                    UNLOCK DATE
+                    STAKE PERIOD
                   </div>
                   <div className="font-bold">
-                    {formatUnlockDate(unlockDate)} UTC
+                    {formatDateRange(new Date(), unlockDate)}
                   </div>
                 </div>
 
                 {/* Terms and Conditions */}
                 <div className="space-y-3">
-                  <Collapsible
-                    open={isCollapsibleOpen}
-                    onOpenChange={setIsCollapsibleOpen}
-                  >
-                    <div className="flex w-full items-center justify-between">
-                      <label className="flex w-full items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={termsAccepted}
-                          onChange={(e) => {
-                            setTermsAccepted(e.target.checked);
-                            setIsCollapsibleOpen(!e.target.checked);
-                          }}
-                        />
-
-                        <span className="text-primary-foreground text-sm">
-                          I have read and accepted the{" "}
-                          <a
-                            href="https://recall.network/terms"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="underline"
-                          >
-                            Terms and Conditions
-                          </a>
-                          .
+                  <div className="rounded-2xl border p-0">
+                    <div className="text-secondary-foreground flex items-center gap-2 px-4 py-3 text-sm">
+                      <Lock className="size-4 flex-shrink-0" />
+                      <div className="text-primary-foreground">
+                        Your RECALL tokens will be{" "}
+                        <span className="text-yellow-400">
+                          {" "}
+                          staked for {selectedDuration} days.
                         </span>
-                      </label>
-
-                      <CollapsibleTrigger className="w-fit" />
+                      </div>
                     </div>
 
-                    <CollapsibleContent className="rounded-2xl border p-0">
-                      <div className="text-secondary-foreground flex items-center gap-2 px-4 py-3 text-sm">
-                        <Lock className="size-4 flex-shrink-0" />
-                        <div className="text-primary-foreground">
-                          Your RECALL tokens will be{" "}
-                          <span className="text-yellow-400">
-                            {" "}
-                            locked for {selectedDuration} days.
-                          </span>
-                        </div>
+                    <div className="border-t"></div>
+
+                    <div className="text-secondary-foreground flex items-center gap-2 px-4 py-3 text-sm">
+                      <Ban className="size-4 flex-shrink-0" />
+                      <div className="text-primary-foreground">
+                        You{" "}
+                        <span className="text-yellow-400">cannot unstake</span>{" "}
+                        before the unlock date.
                       </div>
+                    </div>
 
-                      <div className="border-t"></div>
+                    <div className="border-t"></div>
 
-                      <div className="text-secondary-foreground flex items-center gap-2 px-4 py-3 text-sm">
-                        <Ban className="size-4 flex-shrink-0" />
-                        <div className="text-primary-foreground">
-                          You{" "}
-                          <span className="text-yellow-400">
-                            cannot unstake
-                          </span>{" "}
-                          before the unlock date.
-                        </div>
+                    <div className="text-secondary-foreground flex items-center gap-2 px-4 py-3 text-sm">
+                      <TrendingUp className="text-secondary-foreground size-4 flex-shrink-0" />
+                      <div className="text-primary-foreground">
+                        Your Boost will be{" "}
+                        <span className="text-yellow-400">
+                          increased instantly
+                        </span>{" "}
+                        after staking.
                       </div>
+                    </div>
 
-                      <div className="border-t"></div>
+                    <div className="border-t"></div>
 
-                      <div className="text-secondary-foreground flex items-center gap-2 px-4 py-3 text-sm">
-                        <TrendingUp className="text-secondary-foreground size-4 flex-shrink-0" />
-                        <div className="text-primary-foreground">
-                          Your Boost will be{" "}
-                          <span className="text-yellow-400">
-                            increased instantly
-                          </span>{" "}
-                          after staking.
-                        </div>
+                    <div className="text-secondary-foreground flex items-center gap-2 px-4 py-3 text-sm">
+                      <OctagonMinus className="size-4 shrink-0" />
+                      <div className="text-primary-foreground">
+                        After Unstaking, a{" "}
+                        <span className="text-yellow-400">
+                          30-day cooldown period
+                        </span>{" "}
+                        will begin. Tokens are only withdrawable after the
+                        cooldown.
                       </div>
+                    </div>
+                  </div>
+                  <div className="flex w-full items-center justify-between">
+                    <label className="flex w-full items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={termsAccepted}
+                        onChange={(e) => {
+                          setTermsAccepted(e.target.checked);
+                        }}
+                      />
 
-                      <div className="border-t"></div>
-
-                      <div className="text-secondary-foreground flex items-center gap-2 px-4 py-3 text-sm">
-                        <Zap className="text-secondary-foreground size-4 flex-shrink-0" />
-                        <div className="text-primary-foreground">
-                          Use Boost to{" "}
-                          <span className="text-yellow-400">
-                            compete or vote
-                          </span>{" "}
-                          on agents.
-                        </div>
-                      </div>
-                    </CollapsibleContent>
-                  </Collapsible>
+                      <span className="text-primary-foreground text-sm">
+                        I have read and accepted the{" "}
+                        <a
+                          href="https://recall.network/terms"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="underline"
+                        >
+                          Terms and Conditions
+                        </a>
+                        .
+                      </span>
+                    </label>
+                  </div>
                 </div>
               </div>
             </div>
@@ -659,7 +656,7 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
                       </span>
                       <div className="flex items-center gap-2">
                         <span className="text-4xl font-bold">
-                          {formatAmount(stakeAmountRaw)}
+                          {formattedStakeAmount}
                         </span>
                         <Recall size="md" />
                       </div>
@@ -671,7 +668,7 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
                       </span>
                       <div className="flex items-center gap-2">
                         <span className="text-4xl font-bold">
-                          {formatAmount(boostAmountRaw)}
+                          {formattedBoostAmount}
                         </span>
                         <BoostIcon className="size-5" />
                       </div>

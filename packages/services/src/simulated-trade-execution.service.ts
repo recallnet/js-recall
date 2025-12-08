@@ -1,9 +1,13 @@
 import { randomUUID } from "crypto";
 import { Logger } from "pino";
 
+import { PaperTradingConfigRepository } from "@recallnet/db/repositories/paper-trading-config";
 import { TradeRepository } from "@recallnet/db/repositories/trade";
-import { TradingConstraintsRepository } from "@recallnet/db/repositories/trading-constraints";
-import { InsertTrade, SelectTrade } from "@recallnet/db/schema/trading/types";
+import {
+  InsertTrade,
+  SelectPaperTradingConfig,
+  SelectTrade,
+} from "@recallnet/db/schema/trading/types";
 
 import { BalanceService } from "./balance.service.js";
 import { CompetitionService } from "./competition.service.js";
@@ -11,6 +15,7 @@ import { EXEMPT_TOKENS, calculateSlippage } from "./lib/trade-utils.js";
 import { PriceTrackerService } from "./price-tracker.service.js";
 import { DexScreenerProvider } from "./providers/price/dexscreener.provider.js";
 import { TradeSimulatorService } from "./trade-simulator.service.js";
+import { TradingConstraintsService } from "./trading-constraints.service.js";
 import {
   ApiError,
   BlockchainType,
@@ -18,17 +23,10 @@ import {
   PriceReport,
   SpecificChain,
   SpecificChainTokens,
+  TradingConstraints,
 } from "./types/index.js";
 
 const MIN_TRADE_AMOUNT = 0.000001;
-
-// Interface for trading constraints
-interface TradingConstraints {
-  minimumPairAgeHours: number;
-  minimum24hVolumeUsd: number;
-  minimumLiquidityUsd: number;
-  minimumFdvUsd: number;
-}
 
 /**
  * Interface for chain specification options
@@ -70,9 +68,8 @@ export interface SimulatedTradeExecutionServiceConfig {
  * Handles business logic for trade execution including competition checks
  */
 export class SimulatedTradeExecutionService {
-  // Maximum percentage of portfolio that can be traded in a single transaction
-  private readonly constraintsCache = new Map<string, TradingConstraints>();
   private exemptTokens: Set<string>;
+  private paperTradingConfigCache: Map<string, SelectPaperTradingConfig | null>;
 
   constructor(
     private readonly competitionService: CompetitionService,
@@ -80,12 +77,14 @@ export class SimulatedTradeExecutionService {
     private readonly balanceService: BalanceService,
     private readonly priceTrackerService: PriceTrackerService,
     private readonly tradeRepo: TradeRepository,
-    private readonly tradingConstraintsRepo: TradingConstraintsRepository,
+    private readonly tradingConstraintsService: TradingConstraintsService,
     private readonly dexScreenerProvider: DexScreenerProvider,
+    private readonly paperTradingConfigRepo: PaperTradingConfigRepository,
     private readonly config: SimulatedTradeExecutionServiceConfig,
     private readonly logger: Logger,
   ) {
     this.exemptTokens = EXEMPT_TOKENS(config.specificChainTokens);
+    this.paperTradingConfigCache = new Map();
   }
 
   /**
@@ -124,12 +123,20 @@ export class SimulatedTradeExecutionService {
         throw new ApiError(404, `Competition not found: ${competitionId}`);
       }
 
-      // Check if this is a perps competition - trading endpoint is supported for paper trading competitions only
+      // Check competition type - trading endpoint is only for paper trading competitions
       if (competition.type === "perpetual_futures") {
         throw new ApiError(
           400,
           "This endpoint is not available for perpetual futures competitions. " +
-            "Perpetual futures positions are managed through Symphony, not through this API.",
+            "Perpetual futures positions are managed through external providers, not through this API.",
+        );
+      }
+
+      if (competition.type === "spot_live_trading") {
+        throw new ApiError(
+          400,
+          "This endpoint is not available for spot live trading competitions. " +
+            "Spot live trades occur on-chain through DEXs and are detected automatically.",
         );
       }
 
@@ -186,11 +193,13 @@ export class SimulatedTradeExecutionService {
       const currentBalance = await this.balanceService.getBalance(
         agentId,
         fromToken,
+        competitionId,
       );
 
       // Validate balances and portfolio limits
       await this.validateBalancesAndPortfolio(
         agentId,
+        competitionId,
         fromToken,
         fromAmount,
         fromValueUSD,
@@ -243,10 +252,7 @@ export class SimulatedTradeExecutionService {
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error during trade";
-      this.logger.error(
-        `[TradeSimulator] Trade execution failed:`,
-        errorMessage,
-      );
+      this.logger.error({ error }, `[TradeSimulator] Trade execution failed`);
 
       // If it's already an ApiError, re-throw it
       if (error instanceof ApiError) {
@@ -296,46 +302,37 @@ export class SimulatedTradeExecutionService {
   }
 
   /**
-   * Gets trading constraints for a competition, using cache when possible
+   * Gets trading constraints for a competition
    * @param competitionId The competition ID
    * @returns Trading constraints for the competition
    */
   private async getTradingConstraints(
     competitionId: string,
   ): Promise<TradingConstraints> {
-    // Check cache first
-    if (this.constraintsCache.has(competitionId)) {
-      return this.constraintsCache.get(competitionId)!;
+    // Use TradingConstraintsService which handles caching and defaults
+    return await this.tradingConstraintsService.getConstraintsWithDefaults(
+      competitionId,
+    );
+  }
+
+  /**
+   * Gets paper trading config for a competition, using cache when possible
+   * @param competitionId The competition ID
+   * @returns Paper trading config or null if not found
+   */
+  private async getPaperTradingConfig(
+    competitionId: string,
+  ): Promise<SelectPaperTradingConfig | null> {
+    if (this.paperTradingConfigCache.has(competitionId)) {
+      return this.paperTradingConfigCache.get(competitionId) ?? null;
     }
 
-    // Try to get from database
-    const dbConstraints =
-      await this.tradingConstraintsRepo.findByCompetitionId(competitionId);
+    const config =
+      await this.paperTradingConfigRepo.findByCompetitionId(competitionId);
 
-    let constraints: TradingConstraints;
-    if (dbConstraints) {
-      constraints = {
-        minimumPairAgeHours: dbConstraints.minimumPairAgeHours,
-        minimum24hVolumeUsd: dbConstraints.minimum24hVolumeUsd,
-        minimumLiquidityUsd: dbConstraints.minimumLiquidityUsd,
-        minimumFdvUsd: dbConstraints.minimumFdvUsd,
-      };
-    } else {
-      // Fall back to default values
-      constraints = {
-        minimumPairAgeHours:
-          this.config.tradingConstraints.defaultMinimumPairAgeHours,
-        minimum24hVolumeUsd:
-          this.config.tradingConstraints.defaultMinimum24hVolumeUsd,
-        minimumLiquidityUsd:
-          this.config.tradingConstraints.defaultMinimumLiquidityUsd,
-        minimumFdvUsd: this.config.tradingConstraints.defaultMinimumFdvUsd,
-      };
-    }
+    this.paperTradingConfigCache.set(competitionId, config);
 
-    // Cache the result
-    this.constraintsCache.set(competitionId, constraints);
-    return constraints;
+    return config;
   }
 
   /**
@@ -695,6 +692,7 @@ export class SimulatedTradeExecutionService {
    */
   private async validateBalancesAndPortfolio(
     agentId: string,
+    competitionId: string,
     fromToken: string,
     fromAmount: number,
     fromValueUSD: number,
@@ -714,21 +712,27 @@ export class SimulatedTradeExecutionService {
 
     // Calculate portfolio value to check maximum trade size (configurable percentage of portfolio)
     const portfolioValue =
-      await this.tradeSimulatorService.calculatePortfolioValue(agentId);
-    // TODO: maxTradePercentage should probably be a setting per comp.
-    const maxTradeValue =
-      portfolioValue * (this.config.maxTradePercentage / 100);
+      await this.tradeSimulatorService.calculatePortfolioValue(
+        agentId,
+        competitionId,
+      );
+    // Get maxTradePercentage from database, fallback to config default
+    const paperTradingConfig = await this.getPaperTradingConfig(competitionId);
+    const maxTradePercentage = paperTradingConfig
+      ? paperTradingConfig.maxTradePercentage
+      : this.config.maxTradePercentage;
+    const maxTradeValue = portfolioValue * (maxTradePercentage / 100);
     this.logger.debug(
       `[TradeSimulator] Portfolio value: $${portfolioValue}, Max trade value: $${maxTradeValue}, Attempted trade value: $${fromValueUSD}`,
     );
 
     if (fromValueUSD > maxTradeValue) {
       this.logger.debug(
-        `[TradeSimulator] Trade exceeds maximum size: $${fromValueUSD} > $${maxTradeValue} (${this.config.maxTradePercentage}% of portfolio)`,
+        `[TradeSimulator] Trade exceeds maximum size: $${fromValueUSD} > $${maxTradeValue} (${maxTradePercentage}% of portfolio)`,
       );
       throw new ApiError(
         400,
-        `Trade exceeds maximum size (${this.config.maxTradePercentage}% of portfolio value)`,
+        `Trade exceeds maximum size (${maxTradePercentage}% of portfolio value)`,
       );
     }
   }
@@ -858,6 +862,8 @@ export class SimulatedTradeExecutionService {
       toChain: chainInfo.toChain,
       fromSpecificChain: fromPrice.specificChain,
       toSpecificChain: toPrice.specificChain,
+      // Trade type (simulated for paper trading)
+      tradeType: "simulated",
     };
 
     // Execute the trade atomically (updates balances and creates trade record in one transaction)
@@ -866,12 +872,14 @@ export class SimulatedTradeExecutionService {
     // Update balance cache with absolute values from the database
     this.balanceService.setBalanceCache(
       agentId,
+      competitionId,
       fromToken,
       result.updatedBalances.fromTokenBalance,
     );
     if (result.updatedBalances.toTokenBalance !== undefined) {
       this.balanceService.setBalanceCache(
         agentId,
+        competitionId,
         toToken,
         result.updatedBalances.toTokenBalance,
       );

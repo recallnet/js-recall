@@ -11,6 +11,7 @@ import {
   gte,
   inArray,
   isNotNull,
+  isNull,
   lt,
   lte,
   ne,
@@ -22,6 +23,7 @@ import { Logger } from "pino";
 
 import {
   agents,
+  arenas,
   competitionAgents,
   competitionPrizePools,
   competitionRewards,
@@ -29,8 +31,6 @@ import {
   competitionsLeaderboard,
   users,
 } from "../schema/core/defs.js";
-// Import for enrichment functionality
-import { votes } from "../schema/core/defs.js";
 import {
   InsertCompetition,
   InsertCompetitionAgent,
@@ -40,9 +40,11 @@ import {
   SelectCompetitionsLeaderboard,
   UpdateCompetition,
 } from "../schema/core/types.js";
+import { rewardsRoots } from "../schema/rewards/defs.js";
 import {
   perpsCompetitionsLeaderboard,
   portfolioSnapshots,
+  spotLiveCompetitionsLeaderboard,
   tradingCompetitions,
   tradingCompetitionsLeaderboard,
 } from "../schema/trading/defs.js";
@@ -64,6 +66,16 @@ import {
 } from "./types/index.js";
 import { getSort } from "./util/query.js";
 import { PartialExcept } from "./util/types.js";
+
+/**
+ * Result of Sortino metrics calculation
+ */
+interface SortinoMetricsResult {
+  avgReturn: number;
+  downsideDeviation: number;
+  simpleReturn: number;
+  snapshotCount: number;
+}
 
 /**
  * Competition Repository
@@ -88,18 +100,23 @@ interface Snapshot24hResult {
 }
 
 // Type for leaderboard entries. Contains the fields stored in the database, enhanced with optional
-// PnL data (for trading competitions) or perps metrics (for perpetual futures competitions)
+// PnL data (for trading competitions), perps metrics (for perpetual futures), or spot live metrics
 type LeaderboardEntry = InsertCompetitionsLeaderboard & {
   // For spot trading competitions
   pnl?: number;
   startingValue?: number;
   // For perps competitions (all numeric fields return as numbers with mode: "number")
   calmarRatio?: number | null;
+  sortinoRatio?: number | null;
   simpleReturn?: number | null;
   maxDrawdown?: number | null;
+  downsideDeviation?: number | null;
   totalEquity?: number;
   totalPnl?: number | null;
   hasRiskMetrics?: boolean | null;
+  // For spot live trading competitions
+  currentValue?: number;
+  totalTrades?: number;
 };
 
 const MAX_CACHE_AGE = 1000 * 60 * 5; // 5 minutes
@@ -135,13 +152,152 @@ export class CompetitionRepository {
   }
 
   /**
-   * Builds the base competition query with rewards included
-   * @returns A query builder for competitions with rewards
+   * Convert snake_case database row to camelCase object for basic portfolio snapshots
+   * Used by multiple methods that fetch portfolio snapshots from raw SQL
+   * @private
+   * @param row Database row with snake_case fields
+   * @returns Object with camelCase fields matching SelectPortfolioSnapshot
    */
-  buildCompetitionWithRewardsQuery() {
+  private convertBasicSnapshotRow(row: {
+    id: number;
+    agent_id: string;
+    competition_id: string;
+    timestamp: Date;
+    total_value: number | string;
+  }): SelectPortfolioSnapshot {
+    return {
+      id: row.id,
+      agentId: row.agent_id,
+      competitionId: row.competition_id,
+      timestamp: row.timestamp,
+      totalValue: Number(row.total_value),
+    };
+  }
+
+  /**
+   * Convert snake_case database row to camelCase object for portfolio snapshots with risk metrics
+   * Used by getAgentPortfolioTimeline
+   * @private
+   * @param row Database row with snake_case fields and optional risk metrics
+   * @param includeRiskMetrics Whether to include risk metrics in the output
+   * @returns Object with camelCase fields including risk metrics
+   */
+  private convertEnrichedSnapshotRow(
+    row: {
+      timestamp: string;
+      agent_id: string;
+      agent_name: string;
+      competition_id: string;
+      total_value: number;
+      calmar_ratio?: string | null;
+      sortino_ratio?: string | null;
+      max_drawdown?: string | null;
+      downside_deviation?: string | null;
+      simple_return?: string | null;
+      annualized_return?: string | null;
+    },
+    includeRiskMetrics = false,
+  ) {
+    // Build base object that's always present
+    const base = {
+      timestamp: row.timestamp,
+      agentId: row.agent_id,
+      agentName: row.agent_name,
+      competitionId: row.competition_id,
+      totalValue: Number(row.total_value),
+    };
+
+    // Only add risk metrics if explicitly requested
+    if (includeRiskMetrics) {
+      return {
+        ...base,
+        calmarRatio: row.calmar_ratio ? Number(row.calmar_ratio) : null,
+        sortinoRatio: row.sortino_ratio ? Number(row.sortino_ratio) : null,
+        maxDrawdown: row.max_drawdown ? Number(row.max_drawdown) : null,
+        downsideDeviation: row.downside_deviation
+          ? Number(row.downside_deviation)
+          : null,
+        simpleReturn: row.simple_return ? Number(row.simple_return) : null,
+        annualizedReturn: row.annualized_return
+          ? Number(row.annualized_return)
+          : null,
+      };
+    }
+
+    return base;
+  }
+
+  /**
+   * Builds the full competition query with rewards and trading constraints
+   * Optionally includes arena classification data
+   * @param includeArena Whether to include arena data in the query
+   * @returns A query builder for competitions with all enrichment data
+   */
+  buildFullCompetitionQuery(includeArena: boolean = false) {
+    if (includeArena) {
+      return this.#db
+        .select({
+          ...getTableColumns(competitions),
+          ...getTableColumns(tradingConstraints),
+          ...getTableColumns(tradingCompetitions),
+          arena: {
+            id: arenas.id,
+            name: arenas.name,
+            category: arenas.category,
+            skill: arenas.skill,
+            venues: arenas.venues,
+            chains: arenas.chains,
+          },
+          rewards: sql<
+            | Array<{ rank: number; reward: number; agentId: string | null }>
+            | undefined
+          >`
+          (
+            SELECT COALESCE(
+              json_agg(
+                json_build_object(
+                  'rank', cr.rank,
+                  'reward', cr.reward,
+                  'agentId', cr.agent_id
+                ) ORDER BY cr.rank
+              ),
+              NULL
+            )
+            FROM ${competitionRewards} cr
+            WHERE cr.competition_id = ${competitions.id}
+          )
+        `.as("rewards"),
+          rewardsTge: sql<{ agentPool: bigint; userPool: bigint } | undefined>`
+          (
+            SELECT COALESCE(
+              json_build_object(
+                'agentPool', cpp.agent_pool,
+                'userPool', cpp.user_pool
+              ),
+              NULL
+            )
+            FROM ${competitionPrizePools} cpp
+            WHERE cpp.competition_id = ${competitions.id}
+          )
+        `.as("rewards_tge"),
+        })
+        .from(tradingCompetitions)
+        .innerJoin(
+          competitions,
+          eq(tradingCompetitions.competitionId, competitions.id),
+        )
+        .leftJoin(
+          tradingConstraints,
+          eq(tradingConstraints.competitionId, competitions.id),
+        )
+        .leftJoin(arenas, eq(competitions.arenaId, arenas.id));
+    }
+
     return this.#db
       .select({
-        crossChainTradingType: tradingCompetitions.crossChainTradingType,
+        ...getTableColumns(competitions),
+        ...getTableColumns(tradingConstraints),
+        ...getTableColumns(tradingCompetitions),
         rewards: sql<
           | Array<{ rank: number; reward: number; agentId: string | null }>
           | undefined
@@ -174,12 +330,15 @@ export class CompetitionRepository {
           WHERE cpp.competition_id = ${competitions.id}
         )
       `.as("rewards_tge"),
-        ...getTableColumns(competitions),
       })
       .from(tradingCompetitions)
       .innerJoin(
         competitions,
         eq(tradingCompetitions.competitionId, competitions.id),
+      )
+      .leftJoin(
+        tradingConstraints,
+        eq(tradingConstraints.competitionId, competitions.id),
       );
   }
 
@@ -229,10 +388,70 @@ export class CompetitionRepository {
   }
 
   /**
-   * Find a competition by ID
-   * @param id The ID to search for
+   * Get competition type and arena ID for ranking calculations
+   * @param competitionId The competition ID
+   * @param tx Optional database transaction
+   * @returns Object with type and arenaId, or null if competition not found
    */
-  async findById(id: string) {
+  async getCompetitionMetadata(
+    competitionId: string,
+    tx?: Transaction,
+  ): Promise<{ type: CompetitionType; arenaId: string | null } | null> {
+    const executor = tx || this.#dbRead;
+
+    try {
+      const [result] = await executor
+        .select({
+          type: competitions.type,
+          arenaId: competitions.arenaId,
+        })
+        .from(competitions)
+        .where(eq(competitions.id, competitionId))
+        .limit(1);
+
+      return result || null;
+    } catch (error) {
+      this.#logger.error(
+        { competitionId, error },
+        `[CompetitionRepository] Error getting competition metadata`,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Find a competition by ID
+   * Optionally includes arena classification data
+   * @param id The ID to search for
+   * @param includeArena Whether to include arena data
+   * @returns Competition with optional arena data, undefined if not found
+   */
+  async findById(id: string, includeArena: boolean = false) {
+    if (includeArena) {
+      const [result] = await this.#dbRead
+        .select({
+          crossChainTradingType: tradingCompetitions.crossChainTradingType,
+          ...getTableColumns(competitions),
+          arena: {
+            id: arenas.id,
+            name: arenas.name,
+            category: arenas.category,
+            skill: arenas.skill,
+            venues: arenas.venues,
+            chains: arenas.chains,
+          },
+        })
+        .from(tradingCompetitions)
+        .innerJoin(
+          competitions,
+          eq(tradingCompetitions.competitionId, competitions.id),
+        )
+        .leftJoin(arenas, eq(competitions.arenaId, arenas.id))
+        .where(eq(competitions.id, id))
+        .limit(1);
+      return result;
+    }
+
     const [result] = await this.#dbRead
       .select({
         crossChainTradingType: tradingCompetitions.crossChainTradingType,
@@ -246,6 +465,51 @@ export class CompetitionRepository {
       .where(eq(competitions.id, id))
       .limit(1);
     return result;
+  }
+
+  /**
+   * Find competitions by arena ID with pagination
+   * Uses buildFullCompetitionQuery to return enriched competition data
+   * @param arenaId Arena ID to filter by
+   * @param params Pagination and sorting parameters
+   * @returns Object containing enriched competitions array and total count
+   */
+  async findByArenaId(arenaId: string, params: PagingParams) {
+    try {
+      // Count query
+      const countQuery = this.#dbRead
+        .select({ count: drizzleCount() })
+        .from(tradingCompetitions)
+        .innerJoin(
+          competitions,
+          eq(tradingCompetitions.competitionId, competitions.id),
+        )
+        .where(eq(competitions.arenaId, arenaId));
+
+      const countResult = await countQuery;
+      const total = countResult[0]?.count ?? 0;
+
+      // Data query using buildFullCompetitionQuery for enriched data
+      let dataQuery = this.buildFullCompetitionQuery()
+        .where(eq(competitions.arenaId, arenaId))
+        .$dynamic();
+
+      if (params.sort) {
+        dataQuery = getSort(dataQuery, params.sort, competitionOrderByFields);
+      }
+
+      const competitionResults = await dataQuery
+        .limit(params.limit)
+        .offset(params.offset);
+
+      return { competitions: competitionResults, total };
+    } catch (error) {
+      this.#logger.error(
+        { error },
+        `[CompetitionRepository] Error in findByArenaId (${arenaId})`,
+      );
+      throw error;
+    }
   }
 
   /**
@@ -331,7 +595,7 @@ export class CompetitionRepository {
       });
       return result;
     } catch (error) {
-      this.#logger.error("Error in update:", error);
+      this.#logger.error({ error }, "Error in update");
       throw error;
     }
   }
@@ -365,7 +629,7 @@ export class CompetitionRepository {
 
       return result;
     } catch (error) {
-      this.#logger.error("Error in updateOne:", error);
+      this.#logger.error({ error }, "Error in updateOne");
       throw error;
     }
   }
@@ -397,7 +661,7 @@ export class CompetitionRepository {
 
       return updated || null;
     } catch (error) {
-      this.#logger.error("Error marking competition as ending:", error);
+      this.#logger.error({ error }, "Error marking competition as ending");
       throw error;
     }
   }
@@ -432,7 +696,7 @@ export class CompetitionRepository {
 
       return updated || null;
     } catch (error) {
-      this.#logger.error("Error marking competition as ended:", error);
+      this.#logger.error({ error }, "Error marking competition as ended");
       throw error;
     }
   }
@@ -537,8 +801,8 @@ export class CompetitionRepository {
       });
     } catch (error) {
       this.#logger.error(
-        `Error adding agent ${agentId} to competition ${competitionId} with limit check:`,
-        error,
+        { error },
+        `Error adding agent ${agentId} to competition ${competitionId} with limit check`,
       );
       throw error;
     }
@@ -600,8 +864,8 @@ export class CompetitionRepository {
       return true;
     } catch (error) {
       this.#logger.error(
-        `Error removing agent ${agentId} from competition ${competitionId}:`,
-        error,
+        { error },
+        `Error removing agent ${agentId} from competition ${competitionId}`,
       );
       throw error;
     }
@@ -678,7 +942,7 @@ export class CompetitionRepository {
         );
       });
     } catch (error) {
-      this.#logger.error("Error in addAgents:", error);
+      this.#logger.error({ error }, "Error in addAgents");
       throw error;
     }
   }
@@ -709,7 +973,7 @@ export class CompetitionRepository {
 
       return result.map((row) => row.agentId);
     } catch (error) {
-      this.#logger.error("Error in getAgents:", error);
+      this.#logger.error({ error }, "Error in getAgents");
       throw error;
     }
   }
@@ -753,7 +1017,7 @@ export class CompetitionRepository {
 
       return result.length > 0;
     } catch (error) {
-      this.#logger.error("Error in isAgentActiveInCompetition:", error);
+      this.#logger.error({ error }, "Error in isAgentActiveInCompetition");
       throw error;
     }
   }
@@ -782,7 +1046,7 @@ export class CompetitionRepository {
 
       return result.length > 0 ? result[0]!.status : null;
     } catch (error) {
-      this.#logger.error("Error in getAgentCompetitionStatus:", error);
+      this.#logger.error({ error }, "Error in getAgentCompetitionStatus");
       throw error;
     }
   }
@@ -823,7 +1087,7 @@ export class CompetitionRepository {
 
       return result.length > 0 ? result[0]! : null;
     } catch (error) {
-      this.#logger.error("Error in getAgentCompetitionRecord:", error);
+      this.#logger.error({ error }, "Error in getAgentCompetitionRecord");
       throw error;
     }
   }
@@ -880,7 +1144,7 @@ export class CompetitionRepository {
 
       return result;
     } catch (error) {
-      this.#logger.error("Error in getBulkAgentCompetitionRecords:", error);
+      this.#logger.error({ error }, "Error in getBulkAgentCompetitionRecords");
       throw error;
     }
   }
@@ -1020,7 +1284,7 @@ export class CompetitionRepository {
 
       return wasUpdated;
     } catch (error) {
-      this.#logger.error("Error in updateAgentCompetitionStatus:", error);
+      this.#logger.error({ error }, "Error in updateAgentCompetitionStatus");
       throw error;
     }
   }
@@ -1046,54 +1310,9 @@ export class CompetitionRepository {
   }
 
   /**
-   * Find active competition
-   */
-  async findActive() {
-    try {
-      const [result] = await this.#db
-        .select({
-          crossChainTradingType: tradingCompetitions.crossChainTradingType,
-          ...getTableColumns(competitions),
-        })
-        .from(tradingCompetitions)
-        .innerJoin(
-          competitions,
-          eq(tradingCompetitions.competitionId, competitions.id),
-        )
-        .where(eq(competitions.status, "active"))
-        .limit(1);
-
-      return result;
-    } catch (error) {
-      this.#logger.error("Error in findActive:", error);
-      throw error;
-    }
-  }
-
-  async findVotingOpen(tx?: Transaction) {
-    try {
-      const now = new Date();
-      const executor = tx || this.#db;
-      const result = await executor
-        .select()
-        .from(competitions)
-        .where(
-          and(
-            lt(competitions.votingStartDate, now),
-            gt(competitions.votingEndDate, now),
-          ),
-        );
-      return result;
-    } catch (error) {
-      this.#logger.error("Error in findVotingOpen:", error);
-      throw error;
-    }
-  }
-
-  /**
    * Find all competitions that are open for boosting
    * @param tx Optional transaction
-   * @returns All competitions that are open for boosting (active or pending, and within voting period)
+   * @returns All competitions that are open for boosting (active or pending, and within boosting period)
    */
   async findOpenForBoosting(tx?: Transaction) {
     const now = new Date();
@@ -1107,8 +1326,8 @@ export class CompetitionRepository {
             eq(competitions.status, "active"),
             eq(competitions.status, "pending"),
           ),
-          lt(competitions.votingStartDate, now),
-          gt(competitions.votingEndDate, now),
+          lt(competitions.boostStartDate, now),
+          gt(competitions.boostEndDate, now),
         ),
       );
     return result;
@@ -1136,7 +1355,7 @@ export class CompetitionRepository {
 
       return result;
     } catch (error) {
-      this.#logger.error("Error in createPortfolioSnapshot:", error);
+      this.#logger.error({ error }, "Error in createPortfolioSnapshot");
       throw error;
     }
   }
@@ -1175,7 +1394,33 @@ export class CompetitionRepository {
 
       return results;
     } catch (error) {
-      this.#logger.error("Error in batchCreatePortfolioSnapshots:", error);
+      this.#logger.error({ error }, "Error in batchCreatePortfolioSnapshots");
+      throw error;
+    }
+  }
+
+  /**
+   * Get the latest portfolio snapshot timestamp for a competition
+   * @param competitionId Competition ID
+   * @returns Latest snapshot timestamp or null if no snapshots exist
+   */
+  async getLatestPortfolioSnapshotTime(
+    competitionId: string,
+  ): Promise<Date | null> {
+    try {
+      const result = await this.#dbRead
+        .select({ timestamp: portfolioSnapshots.timestamp })
+        .from(portfolioSnapshots)
+        .where(eq(portfolioSnapshots.competitionId, competitionId))
+        .orderBy(desc(portfolioSnapshots.timestamp))
+        .limit(1);
+
+      return result[0]?.timestamp ?? null;
+    } catch (error) {
+      this.#logger.error(
+        { error, competitionId },
+        "Error in getLatestPortfolioSnapshotTime",
+      );
       throw error;
     }
   }
@@ -1210,15 +1455,9 @@ export class CompetitionRepository {
     `);
 
       // Convert snake_case to camelCase to match Drizzle `SelectPortfolioSnapshot` type
-      return result.rows.map((row) => ({
-        id: row.id,
-        agentId: row.agent_id,
-        competitionId: row.competition_id,
-        timestamp: row.timestamp,
-        totalValue: Number(row.total_value), // Convert string to number for numeric fields
-      }));
+      return result.rows.map((row) => this.convertBasicSnapshotRow(row));
     } catch (error) {
-      this.#logger.error("Error in getLatestPortfolioSnapshots:", error);
+      this.#logger.error({ error }, "Error in getLatestPortfolioSnapshots");
       throw error;
     }
   }
@@ -1267,15 +1506,9 @@ export class CompetitionRepository {
       );
 
       // Convert snake_case to camelCase to match Drizzle SelectPortfolioSnapshot type
-      return result.rows.map((row) => ({
-        id: row.id,
-        agentId: row.agent_id,
-        competitionId: row.competition_id,
-        timestamp: row.timestamp,
-        totalValue: Number(row.total_value),
-      }));
+      return result.rows.map((row) => this.convertBasicSnapshotRow(row));
     } catch (error) {
-      this.#logger.error("Error in getBulkLatestPortfolioSnapshots:", error);
+      this.#logger.error({ error }, "Error in getBulkLatestPortfolioSnapshots");
       throw error;
     }
   }
@@ -1345,7 +1578,7 @@ export class CompetitionRepository {
         ) ps
       `);
       } catch (error) {
-        this.#logger.error("Error executing earliestResult query:", error);
+        this.#logger.error({ error }, "Error executing earliestResult query");
         throw new Error(
           `Failed to get earliest snapshots: ${error instanceof Error ? error.message : "Unknown error"}`,
         );
@@ -1373,7 +1606,10 @@ export class CompetitionRepository {
         ) ps
       `);
       } catch (error) {
-        this.#logger.error("Error executing snapshots24hResult query:", error);
+        this.#logger.error(
+          { error },
+          "Error executing snapshots24hResult query",
+        );
         throw new Error(
           `Failed to get 24h snapshots: ${error instanceof Error ? error.message : "Unknown error"}`,
         );
@@ -1420,7 +1656,7 @@ export class CompetitionRepository {
       this.#snapshotCache.set(cacheKey, [now, result]);
       return result;
     } catch (error) {
-      this.#logger.error("Error in get24hSnapshots:", error);
+      this.#logger.error({ error }, "Error in get24hSnapshots");
       throw error;
     }
   }
@@ -1455,7 +1691,7 @@ export class CompetitionRepository {
 
       return await query;
     } catch (error) {
-      this.#logger.error("Error in getAgentPortfolioSnapshots:", error);
+      this.#logger.error({ error }, "Error in getAgentPortfolioSnapshots");
       throw error;
     }
   }
@@ -1512,7 +1748,7 @@ export class CompetitionRepository {
         last: lastResult[0] || null,
       };
     } catch (error) {
-      this.#logger.error("Error in getFirstAndLastSnapshots:", error);
+      this.#logger.error({ error }, "Error in getFirstAndLastSnapshots");
       throw error;
     }
   }
@@ -1529,7 +1765,7 @@ export class CompetitionRepository {
    * @param endDate End of calculation period
    * @returns Maximum drawdown as a decimal (e.g., -0.20 for 20% drawdown)
    */
-  async calculateMaxDrawdownSQL(
+  async calculateMaxDrawdown(
     agentId: string,
     competitionId: string,
     startDate?: Date,
@@ -1546,7 +1782,7 @@ export class CompetitionRepository {
         conditions.push(gte(portfolioSnapshots.timestamp, startDate));
       }
       if (endDate) {
-        conditions.push(lt(portfolioSnapshots.timestamp, endDate));
+        conditions.push(lte(portfolioSnapshots.timestamp, endDate));
       }
 
       // Drizzle doesn't yet support window functions directly, so we use raw SQL
@@ -1586,12 +1822,120 @@ export class CompetitionRepository {
       const maxDrawdown = result.rows[0]?.max_drawdown ?? 0;
 
       this.#logger.debug(
-        `[CompetitionRepository] Calculated max drawdown for agent ${agentId}: ${(maxDrawdown * 100).toFixed(2)}%`,
+        {
+          agentId,
+          maxDrawdown: `${(maxDrawdown * 100).toFixed(2)}%`,
+        },
+        "[CompetitionRepository] Calculated max drawdown",
       );
 
       return Number(maxDrawdown);
     } catch (error) {
-      this.#logger.error("Error in calculateMaxDrawdownSQL:", error);
+      this.#logger.error({ error }, "Error in calculateMaxDrawdown");
+      throw error;
+    }
+  }
+
+  /**
+   * Calculate Sortino ratio metrics using database-level computations
+   * @param agentId Agent ID
+   * @param competitionId Competition ID
+   * @param mar Minimum Acceptable Return (default 0 for crypto)
+   * @returns Object with average return, downside deviation, and simple return
+   */
+  async calculateSortinoMetrics(
+    agentId: string,
+    competitionId: string,
+    mar = 0,
+  ): Promise<SortinoMetricsResult> {
+    try {
+      // Calculate period returns and downside deviation in a single query
+      const result = await this.#dbRead.execute<{
+        avg_return: number | null;
+        downside_deviation: number | null;
+        simple_return: number | null;
+        snapshot_count: number;
+      }>(sql`
+        WITH snapshot_bounds AS (
+          -- Get first, last, and count in one efficient scan
+          SELECT 
+            MIN(total_value) FILTER (WHERE rn = 1) as first_value,
+            MAX(total_value) FILTER (WHERE rn = snapshot_count) as last_value,
+            MAX(snapshot_count) as total_snapshots
+          FROM (
+            SELECT 
+              total_value,
+              ROW_NUMBER() OVER (ORDER BY timestamp) as rn,
+              COUNT(*) OVER () as snapshot_count
+            FROM ${portfolioSnapshots} ps
+            WHERE ps.agent_id = ${agentId}
+              AND ps.competition_id = ${competitionId}
+          ) numbered
+        ),
+        period_returns AS (
+          -- Calculate period returns with LAG
+          SELECT 
+            CASE 
+              WHEN prev_value IS NOT NULL AND prev_value != 0 
+              THEN (total_value - prev_value) / prev_value
+              ELSE NULL
+            END as return_rate
+          FROM (
+            SELECT 
+              total_value,
+              LAG(total_value) OVER (ORDER BY timestamp) as prev_value
+            FROM ${portfolioSnapshots} ps
+            WHERE ps.agent_id = ${agentId}
+              AND ps.competition_id = ${competitionId}
+          ) with_lag
+        )
+        SELECT 
+          -- Average return (using subquery with COALESCE to handle empty CTE)
+          COALESCE((SELECT AVG(return_rate) FROM period_returns), 0) as avg_return,
+          -- Downside deviation: sqrt of average squared negative deviations from MAR
+          COALESCE((SELECT SQRT(AVG(
+            CASE 
+              WHEN return_rate < ${mar} 
+              THEN POWER(return_rate - ${mar}, 2) 
+              ELSE 0 
+            END
+          )) FROM period_returns), 0) as downside_deviation,
+          -- Simple return from first to last (using subquery to handle empty CTE)
+          COALESCE((SELECT 
+            CASE 
+              WHEN first_value IS NOT NULL AND first_value > 0 
+              THEN (last_value - first_value) / first_value
+              ELSE 0
+            END FROM snapshot_bounds), 0
+          ) as simple_return,
+          -- Total snapshot count (using subquery to handle empty CTE)
+          COALESCE((SELECT total_snapshots FROM snapshot_bounds), 0) as snapshot_count
+      `);
+
+      const metrics = result.rows[0];
+      if (!metrics) {
+        throw new Error("No metrics calculated - insufficient data");
+      }
+
+      this.#logger.debug(
+        {
+          agentId,
+          avgReturn: `${(Number(metrics.avg_return || 0) * 100).toFixed(2)}%`,
+          downsideDeviation: `${(Number(metrics.downside_deviation || 0) * 100).toFixed(2)}%`,
+          simpleReturn: `${(Number(metrics.simple_return || 0) * 100).toFixed(2)}%`,
+          snapshotCount: metrics.snapshot_count,
+        },
+        "[CompetitionRepository] Calculated Sortino metrics",
+      );
+
+      return {
+        avgReturn: Number(metrics.avg_return || 0),
+        downsideDeviation: Number(metrics.downside_deviation || 0),
+        simpleReturn: Number(metrics.simple_return || 0),
+        snapshotCount: Number(metrics.snapshot_count || 0),
+      };
+    } catch (error) {
+      this.#logger.error({ error }, "Error in calculateSortinoMetrics");
       throw error;
     }
   }
@@ -1647,7 +1991,7 @@ export class CompetitionRepository {
         oldest: sortedResults[sortedResults.length - 1],
       };
     } catch (error) {
-      this.#logger.error("Error in getAgentPortfolioSnapshotBounds:", error);
+      this.#logger.error({ error }, "Error in getAgentPortfolioSnapshotBounds");
       throw error;
     }
   }
@@ -1770,13 +2114,16 @@ export class CompetitionRepository {
 
       return snapshotMap;
     } catch (error) {
-      this.#logger.error("Error in getBulkBoundedSnapshots:", error);
+      this.#logger.error({ error }, "Error in getBulkBoundedSnapshots");
       throw error;
     }
   }
 
   /**
    * Get rankings for a single agent across multiple competitions
+   * For ended competitions, uses stored leaderboard rankings
+   * For active competitions, calculates rankings from current portfolio snapshots
+   * For pending competitions, does not calculate rankings (returns undefined)
    * @param agentId Agent ID
    * @param competitionIds Array of competition IDs
    * @returns Map of competition ID to ranking data
@@ -1794,44 +2141,23 @@ export class CompetitionRepository {
         `getAgentRankingsInCompetitions called for agent ${agentId} in ${competitionIds.length} competitions`,
       );
 
-      // Calculate rankings directly in SQL without fetching all agents
-      // Only include active agents in ranking calculation
-      const rankingResults = await this.#db.execute(
-        sql`
-        WITH latest_snapshots AS (
-          SELECT
-            ps.competition_id,
-            ps.agent_id,
-            ps.total_value,
-            ROW_NUMBER() OVER (PARTITION BY ps.competition_id, ps.agent_id ORDER BY ps.timestamp DESC) as rn
-          FROM ${portfolioSnapshots} ps
-          INNER JOIN ${competitionAgents} ca ON ps.agent_id = ca.agent_id AND ps.competition_id = ca.competition_id
-          WHERE ps.competition_id IN (${sql.join(
-            competitionIds.map((id) => sql`${id}`),
-            sql`, `,
-          )})
-            AND ca.status = ${"active"}
-        ),
-        ranked AS (
-          SELECT
-            competition_id,
-            agent_id,
-            total_value,
-            RANK() OVER (PARTITION BY competition_id ORDER BY total_value DESC) as rank,
-            COUNT(*) OVER (PARTITION BY competition_id) as total_agents
-          FROM latest_snapshots
-          WHERE rn = 1
-        )
-        SELECT
-          competition_id,
-          rank,
-          total_agents
-        FROM ranked
-        WHERE agent_id = ${agentId}
-      `,
-      );
+      // Get competition statuses to determine which approach to use
+      const competitionStatuses = await this.#db
+        .select({
+          id: competitions.id,
+          status: competitions.status,
+        })
+        .from(competitions)
+        .where(inArray(competitions.id, competitionIds));
 
-      // Convert results to map
+      const endedCompetitionIds = competitionStatuses
+        .filter((c) => c.status === "ended")
+        .map((c) => c.id);
+
+      const activeOrPendingCompetitionIds = competitionStatuses
+        .filter((c) => c.status !== "ended")
+        .map((c) => c.id);
+
       const rankingsMap = new Map<
         string,
         { rank: number; totalAgents: number } | undefined
@@ -1842,17 +2168,87 @@ export class CompetitionRepository {
         rankingsMap.set(competitionId, undefined);
       }
 
-      // Update with actual rankings
-      for (const row of rankingResults.rows) {
-        const { data, success, error } = BestPlacementDbSchema.safeParse(row);
-        if (success !== true) {
-          throw new Error(`${error}`);
-        }
+      // For ENDED competitions, use stored leaderboard rankings
+      if (endedCompetitionIds.length > 0) {
+        const leaderboardRankings = await this.#db
+          .select({
+            competitionId: competitionsLeaderboard.competitionId,
+            rank: competitionsLeaderboard.rank,
+            totalAgents: competitionsLeaderboard.totalAgents,
+          })
+          .from(competitionsLeaderboard)
+          .where(
+            and(
+              eq(competitionsLeaderboard.agentId, agentId),
+              inArray(
+                competitionsLeaderboard.competitionId,
+                endedCompetitionIds,
+              ),
+            ),
+          );
 
-        rankingsMap.set(data.competition_id, {
-          rank: data.rank,
-          totalAgents: data.total_agents,
-        });
+        // Update map with leaderboard rankings
+        for (const ranking of leaderboardRankings) {
+          rankingsMap.set(ranking.competitionId, {
+            rank: ranking.rank,
+            totalAgents: ranking.totalAgents,
+          });
+        }
+      }
+
+      // For ACTIVE/PENDING competitions, calculate from current snapshots
+      // Note: pending competitions will not have any snapshots taken, yet. This is ideal because
+      // the `rankingsMap` will result in undefined rankings for pending competitions. Downstream
+      // "best placement" calculations will then correctly include the pending competition in the
+      // response, but it will not attach the per-competition pending comp rankings to the agent.
+      if (activeOrPendingCompetitionIds.length > 0) {
+        const snapshotRankings = await this.#db.execute(
+          sql`
+          WITH latest_snapshots AS (
+            SELECT
+              ps.competition_id,
+              ps.agent_id,
+              ps.total_value,
+              ROW_NUMBER() OVER (PARTITION BY ps.competition_id, ps.agent_id ORDER BY ps.timestamp DESC) as rn
+            FROM ${portfolioSnapshots} ps
+            INNER JOIN ${competitionAgents} ca ON ps.agent_id = ca.agent_id AND ps.competition_id = ca.competition_id
+            WHERE ps.competition_id IN (${sql.join(
+              activeOrPendingCompetitionIds.map((id) => sql`${id}`),
+              sql`, `,
+            )})
+              AND ca.status = ${"active"}
+          ),
+          ranked AS (
+            SELECT
+              competition_id,
+              agent_id,
+              total_value,
+              RANK() OVER (PARTITION BY competition_id ORDER BY total_value DESC) as rank,
+              COUNT(*) OVER (PARTITION BY competition_id) as total_agents
+            FROM latest_snapshots
+            WHERE rn = 1
+          )
+          SELECT
+            competition_id,
+            rank,
+            total_agents
+          FROM ranked
+          WHERE agent_id = ${agentId}
+        `,
+        );
+
+        // Update map with snapshot-based rankings
+        for (const row of snapshotRankings.rows) {
+          const { data, success, error } = BestPlacementDbSchema.safeParse(row);
+          if (success !== true) {
+            throw new Error(`${error}`);
+          }
+
+          rankingsMap.set(data.competition_id, {
+            rank: data.rank,
+            totalAgents: data.total_agents,
+          });
+        }
       }
 
       this.#logger.debug(
@@ -1861,7 +2257,7 @@ export class CompetitionRepository {
 
       return rankingsMap;
     } catch (error) {
-      this.#logger.error("Error in getAgentRankingsInCompetitions:", error);
+      this.#logger.error({ error }, "Error in getAgentRankingsInCompetitions");
       throw error;
     }
   }
@@ -1883,7 +2279,7 @@ export class CompetitionRepository {
 
       return await query;
     } catch (error) {
-      this.#logger.error("Error in getAllPortfolioSnapshots:", error);
+      this.#logger.error({ error }, "Error in getAllPortfolioSnapshots");
       throw error;
     }
   }
@@ -1899,7 +2295,7 @@ export class CompetitionRepository {
 
       return result?.count ?? 0;
     } catch (error) {
-      this.#logger.error("[CompetitionRepository] Error in count:", error);
+      this.#logger.error({ error }, "[CompetitionRepository] Error in count");
       throw error;
     }
   }
@@ -1928,8 +2324,8 @@ export class CompetitionRepository {
       return result?.count ?? 0;
     } catch (error) {
       this.#logger.error(
-        `[CompetitionRepository] Error counting competitions for agent ${agentId}:`,
-        error,
+        { error },
+        `[CompetitionRepository] Error counting competitions for agent ${agentId}`,
       );
       throw error;
     }
@@ -1950,31 +2346,24 @@ export class CompetitionRepository {
   }) {
     try {
       // Count query
-      const countResult = await (() => {
-        if (status) {
-          return this.#db
-            .select({ count: drizzleCount() })
-            .from(tradingCompetitions)
-            .innerJoin(
-              competitions,
-              eq(tradingCompetitions.competitionId, competitions.id),
-            )
-            .where(eq(competitions.status, status));
-        } else {
-          return this.#db
-            .select({ count: drizzleCount() })
-            .from(tradingCompetitions)
-            .innerJoin(
-              competitions,
-              eq(tradingCompetitions.competitionId, competitions.id),
-            );
-        }
-      })();
+      let countQuery = this.#db
+        .select({ count: drizzleCount() })
+        .from(tradingCompetitions)
+        .innerJoin(
+          competitions,
+          eq(tradingCompetitions.competitionId, competitions.id),
+        )
+        .$dynamic();
 
+      if (status) {
+        countQuery = countQuery.where(eq(competitions.status, status));
+      }
+
+      const countResult = await countQuery;
       const total = countResult[0]?.count ?? 0;
 
-      // Data query with dynamic building
-      let dataQuery = this.buildCompetitionWithRewardsQuery().$dynamic();
+      // Data query
+      let dataQuery = this.buildFullCompetitionQuery().$dynamic();
 
       if (status) {
         dataQuery = dataQuery.where(eq(competitions.status, status));
@@ -1991,8 +2380,8 @@ export class CompetitionRepository {
       return { competitions: competitionResults, total };
     } catch (error) {
       this.#logger.error(
-        "[CompetitionRepository] Error in findByStatus:",
-        error,
+        { error },
+        "[CompetitionRepository] Error in findByStatus",
       );
       throw error;
     }
@@ -2045,8 +2434,8 @@ export class CompetitionRepository {
       };
     } catch (error) {
       this.#logger.error(
-        "[CompetitionRepository] Error in findAgentBestCompetitionRank:",
-        error,
+        { error },
+        "[CompetitionRepository] Error in findAgentBestCompetitionRank",
       );
       throw error;
     }
@@ -2118,8 +2507,10 @@ export class CompetitionRepository {
               return {
                 competitionsLeaderboardId: entry.id,
                 calmarRatio: entry.calmarRatio,
+                sortinoRatio: entry.sortinoRatio,
                 simpleReturn: entry.simpleReturn,
                 maxDrawdown: entry.maxDrawdown,
+                downsideDeviation: entry.downsideDeviation,
                 totalEquity: entry.totalEquity ?? DEFAULT_ZERO_VALUE, // Required field, default to 0 if undefined
                 totalPnl: entry.totalPnl,
                 hasRiskMetrics: entry.hasRiskMetrics,
@@ -2136,8 +2527,10 @@ export class CompetitionRepository {
             return {
               ...r,
               calmarRatio: perps.calmarRatio,
+              sortinoRatio: perps.sortinoRatio,
               simpleReturn: perps.simpleReturn,
               maxDrawdown: perps.maxDrawdown,
+              downsideDeviation: perps.downsideDeviation,
               totalEquity: perps.totalEquity,
               totalPnl: perps.totalPnl,
               hasRiskMetrics: perps.hasRiskMetrics,
@@ -2148,11 +2541,54 @@ export class CompetitionRepository {
         });
       }
 
+      // Handle spot live data
+      const spotLiveToInsert = valuesToInsert.filter(
+        (e) =>
+          e.simpleReturn !== undefined &&
+          e.currentValue !== undefined &&
+          !e.hasRiskMetrics,
+      );
+      if (spotLiveToInsert.length) {
+        const spotLiveResults = await executor
+          .insert(spotLiveCompetitionsLeaderboard)
+          .values(
+            spotLiveToInsert.map((entry) => {
+              return {
+                competitionsLeaderboardId: entry.id,
+                simpleReturn: entry.simpleReturn ?? DEFAULT_ZERO_VALUE,
+                pnl: entry.pnl ?? DEFAULT_ZERO_VALUE,
+                startingValue: entry.startingValue ?? DEFAULT_ZERO_VALUE,
+                currentValue: entry.currentValue ?? DEFAULT_ZERO_VALUE,
+                totalTrades: entry.totalTrades ?? 0,
+              };
+            }),
+          )
+          .returning();
+
+        results = results.map((r) => {
+          const spotLive = spotLiveResults.find(
+            (s: { competitionsLeaderboardId: string }) =>
+              s.competitionsLeaderboardId === r.id,
+          );
+          if (spotLive) {
+            return {
+              ...r,
+              simpleReturn: spotLive.simpleReturn,
+              pnl: spotLive.pnl,
+              startingValue: spotLive.startingValue,
+              currentValue: spotLive.currentValue,
+              totalTrades: spotLive.totalTrades,
+            };
+          }
+          return r;
+        });
+      }
+
       return results;
     } catch (error) {
       this.#logger.error(
-        "[CompetitionRepository] Error batch inserting leaderboard entries:",
-        error,
+        { error },
+        "[CompetitionRepository] Error batch inserting leaderboard entries",
       );
       throw error;
     }
@@ -2178,8 +2614,8 @@ export class CompetitionRepository {
         .orderBy(competitionsLeaderboard.rank);
     } catch (error) {
       this.#logger.error(
-        `[CompetitionRepository] Error finding leaderboard for competition ${competitionId}:`,
-        error,
+        { error },
+        `[CompetitionRepository] Error finding leaderboard for competition ${competitionId}`,
       );
       throw error;
     }
@@ -2210,8 +2646,8 @@ export class CompetitionRepository {
         .orderBy(competitionsLeaderboard.rank);
     } catch (error) {
       this.#logger.error(
-        `[CompetitionRepository] Error finding leaderboard for competition ${competitionId}:`,
-        error,
+        { error },
+        `[CompetitionRepository] Error finding leaderboard for competition ${competitionId}`,
       );
       throw error;
     }
@@ -2229,8 +2665,10 @@ export class CompetitionRepository {
           agentId: competitionsLeaderboard.agentId,
           value: perpsCompetitionsLeaderboard.totalEquity, // Alias totalEquity as value for API compatibility
           calmarRatio: perpsCompetitionsLeaderboard.calmarRatio,
+          sortinoRatio: perpsCompetitionsLeaderboard.sortinoRatio,
           simpleReturn: perpsCompetitionsLeaderboard.simpleReturn,
           maxDrawdown: perpsCompetitionsLeaderboard.maxDrawdown,
+          downsideDeviation: perpsCompetitionsLeaderboard.downsideDeviation,
           totalEquity: perpsCompetitionsLeaderboard.totalEquity,
           totalPnl: perpsCompetitionsLeaderboard.totalPnl,
           hasRiskMetrics: perpsCompetitionsLeaderboard.hasRiskMetrics,
@@ -2254,8 +2692,46 @@ export class CompetitionRepository {
       }));
     } catch (error) {
       this.#logger.error(
-        `[CompetitionRepository] Error finding perps leaderboard for competition ${competitionId}:`,
-        error,
+        { error },
+        `[CompetitionRepository] Error finding perps leaderboard for competition ${competitionId}`,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Find leaderboard entries for a specific spot live competition
+   * @param competitionId The competition ID
+   * @returns Array of leaderboard entries with spot live metrics sorted by rank
+   */
+  async findLeaderboardBySpotLiveComp(competitionId: string) {
+    try {
+      const rows = await this.#db
+        .select({
+          agentId: competitionsLeaderboard.agentId,
+          value: spotLiveCompetitionsLeaderboard.currentValue, // Alias currentValue as value for API compatibility
+          simpleReturn: spotLiveCompetitionsLeaderboard.simpleReturn,
+          pnl: spotLiveCompetitionsLeaderboard.pnl,
+          startingValue: spotLiveCompetitionsLeaderboard.startingValue,
+          currentValue: spotLiveCompetitionsLeaderboard.currentValue,
+          totalTrades: spotLiveCompetitionsLeaderboard.totalTrades,
+        })
+        .from(competitionsLeaderboard)
+        .innerJoin(
+          spotLiveCompetitionsLeaderboard,
+          eq(
+            competitionsLeaderboard.id,
+            spotLiveCompetitionsLeaderboard.competitionsLeaderboardId,
+          ),
+        )
+        .where(eq(competitionsLeaderboard.competitionId, competitionId))
+        .orderBy(competitionsLeaderboard.rank);
+
+      return rows;
+    } catch (error) {
+      this.#logger.error(
+        { error },
+        `[CompetitionRepository] Error finding spot live leaderboard for competition ${competitionId}`,
       );
       throw error;
     }
@@ -2279,8 +2755,8 @@ export class CompetitionRepository {
       return await query;
     } catch (error) {
       this.#logger.error(
-        "[CompetitionRepository] Error in getAllCompetitionsLeaderboard:",
-        error,
+        { error },
+        "[CompetitionRepository] Error in getAllCompetitionsLeaderboard",
       );
       throw error;
     }
@@ -2302,8 +2778,8 @@ export class CompetitionRepository {
       return result.map((row) => row.agentId);
     } catch (error) {
       this.#logger.error(
-        "[CompetitionRepository] Error in getAllCompetitionAgents:",
-        error,
+        { error },
+        "[CompetitionRepository] Error in getAllCompetitionAgents",
       );
       throw error;
     }
@@ -2369,8 +2845,8 @@ export class CompetitionRepository {
       return rankingsMap;
     } catch (error) {
       this.#logger.error(
-        "[CompetitionRepository] Error in getBulkAgentCompetitionRankings:",
-        error,
+        { error },
+        "[CompetitionRepository] Error in getBulkAgentCompetitionRankings",
       );
       // Return empty map on error - no reliable ranking data
       return new Map();
@@ -2410,8 +2886,8 @@ export class CompetitionRepository {
       return result;
     } catch (error) {
       this.#logger.error(
-        "[CompetitionRepository] Error in findCompetitionsNeedingEnding:",
-        error,
+        { error },
+        "[CompetitionRepository] Error in findCompetitionsNeedingEnding",
       );
       throw error;
     }
@@ -2458,12 +2934,55 @@ export class CompetitionRepository {
   }
 
   /**
+   * Find competition that need rewards calculation
+   * Finds competition that have ended but don't have rewards allocated yet.
+   * @returns Competition that should have rewards calculated or null if no competition found
+   */
+  async findCompetitionNeedingRewardsCalculation(): Promise<SelectCompetition | null> {
+    const [result] = await this.#db
+      .select({
+        crossChainTradingType: tradingCompetitions.crossChainTradingType,
+        ...getTableColumns(competitions),
+      })
+      .from(tradingCompetitions)
+      .innerJoin(
+        competitions,
+        eq(tradingCompetitions.competitionId, competitions.id),
+      )
+      .leftJoin(rewardsRoots, eq(competitions.id, rewardsRoots.competitionId))
+      .innerJoin(
+        competitionPrizePools,
+        eq(competitions.id, competitionPrizePools.competitionId),
+      )
+      .where(
+        and(
+          eq(competitions.status, "ended"),
+          isNotNull(competitions.endDate),
+          isNull(rewardsRoots.competitionId),
+          or(
+            gt(competitionPrizePools.agentPool, BigInt(0)),
+            gt(competitionPrizePools.userPool, BigInt(0)),
+          ),
+        ),
+      )
+      .orderBy(asc(competitions.endDate))
+      .limit(1);
+
+    return result || null;
+  }
+
+  /**
    * Get portfolio timeline for agents in a competition
    * @param competitionId Competition ID
    * @param bucket Time bucket interval in minutes (default: 30)
-   * @returns Array of portfolio timelines per agent
+   * @param includeRiskMetrics Whether to include risk metrics (for perps competitions)
+   * @returns Array of portfolio timelines per agent with optional risk metrics
    */
-  async getAgentPortfolioTimeline(competitionId: string, bucket: number = 30) {
+  async getAgentPortfolioTimeline(
+    competitionId: string,
+    bucket: number = 30,
+    includeRiskMetrics = false,
+  ) {
     try {
       const result = await this.#dbRead.execute<{
         timestamp: string;
@@ -2471,182 +2990,76 @@ export class CompetitionRepository {
         agent_name: string;
         competition_id: string;
         total_value: number;
+        calmar_ratio: string | null;
+        sortino_ratio: string | null;
+        max_drawdown: string | null;
+        downside_deviation: string | null;
+        simple_return: string | null;
+        annualized_return: string | null;
       }>(sql`
-      SELECT
-        timestamp,
-        agent_id,
-        name AS agent_name,
-        competition_id,
-        total_value
-      FROM (
         SELECT
-          ROW_NUMBER() OVER (
-            PARTITION BY ps.agent_id, ps.competition_id,FLOOR(EXTRACT(EPOCH FROM (ps.timestamp - c.start_date)) / 60 / ${bucket})
-            ORDER BY ps.timestamp DESC
-          ) AS rn,
-          ps.timestamp,
-          ps.agent_id,
-          a.name,
-          ps.competition_id,
-          ps.total_value
-        FROM competition_agents ca
-        JOIN trading_comps.portfolio_snapshots ps
-          ON ps.agent_id = ca.agent_id
-          AND ps.competition_id = ca.competition_id
-        JOIN agents a ON a.id = ca.agent_id
-        JOIN competitions c ON c.id = ca.competition_id
-        WHERE ca.competition_id = ${competitionId}
-          AND ca.status = ${"active"}
-      ) AS ranked_snapshots
-      WHERE rn = 1
-    `);
-
-      // Convert snake_case to camelCase
-      return result.rows.map((row) => ({
-        timestamp: row.timestamp,
-        agentId: row.agent_id,
-        agentName: row.agent_name,
-        competitionId: row.competition_id,
-        totalValue: Number(row.total_value),
-      }));
-    } catch (error) {
-      this.#logger.error("Error in getAgentPortfolioTimeline:", error);
-      throw error;
-    }
-  }
-
-  /**
-   * Get enriched competition data with votes and trading constraints in a single query
-   * @param userId The user ID to get voting state for
-   * @param competitionIds Array of competition IDs to enrich
-   * @returns Enriched competition data with voting and constraint information
-   */
-  async getEnrichedCompetitions(
-    userId: string,
-    competitionIds: string[],
-  ): Promise<
-    {
-      competitionId: string;
-      competitionStatus: string;
-      competitionVotingStartsAt: Date | null;
-      competitionVotingEndsAt: Date | null;
-      userVoteAgentId: string | null;
-      userVoteCreatedAt: Date | null;
-      minimumPairAgeHours: number | null;
-      minimum24hVolumeUsd: number | null;
-      minimumLiquidityUsd: number | null;
-      minimumFdvUsd: number | null;
-      minTradesPerDay: number | null;
-    }[]
-  > {
-    if (competitionIds.length === 0) {
-      return [];
-    }
-
-    try {
-      const result = await this.#db
-        .select({
-          // Competition fields
-          competitionId: competitions.id,
-          competitionStatus: competitions.status,
-          competitionVotingStartsAt: competitions.votingStartDate,
-          competitionVotingEndsAt: competitions.votingEndDate,
-
-          // User vote info
-          userVoteAgentId: votes.agentId,
-          userVoteCreatedAt: votes.createdAt,
-
-          // Trading constraints
-          minimumPairAgeHours: tradingConstraints.minimumPairAgeHours,
-          minimum24hVolumeUsd: tradingConstraints.minimum24hVolumeUsd,
-          minimumLiquidityUsd: tradingConstraints.minimumLiquidityUsd,
-          minimumFdvUsd: tradingConstraints.minimumFdvUsd,
-          minTradesPerDay: tradingConstraints.minTradesPerDay,
-        })
-        .from(competitions)
-        .leftJoin(
-          votes,
-          and(
-            eq(votes.competitionId, competitions.id),
-            eq(votes.userId, userId),
-          ),
-        )
-        .leftJoin(
-          tradingConstraints,
-          eq(tradingConstraints.competitionId, competitions.id),
-        )
-        .where(inArray(competitions.id, competitionIds));
-
-      return result.map((row) => ({
-        competitionId: row.competitionId,
-        competitionStatus: row.competitionStatus,
-        competitionVotingStartsAt: row.competitionVotingStartsAt,
-        competitionVotingEndsAt: row.competitionVotingEndsAt,
-        userVoteAgentId: row.userVoteAgentId,
-        userVoteCreatedAt: row.userVoteCreatedAt,
-        minimumPairAgeHours: row.minimumPairAgeHours,
-        minimum24hVolumeUsd: row.minimum24hVolumeUsd,
-        minimumLiquidityUsd: row.minimumLiquidityUsd,
-        minimumFdvUsd: row.minimumFdvUsd,
-        minTradesPerDay: row.minTradesPerDay,
-      }));
-    } catch (error) {
-      this.#logger.error("Error in getEnrichedCompetitions:", error);
-      throw error;
-    }
-  }
-
-  /**
-   * Get vote counts for multiple competitions in a single query
-   * @param competitionIds Array of competition IDs
-   * @returns Map of competition ID to Map of agent ID to vote count
-   */
-  async getBatchVoteCounts(
-    competitionIds: string[],
-  ): Promise<
-    Map<string, { agentVotes: Map<string, number>; totalVotes: number }>
-  > {
-    if (competitionIds.length === 0) {
-      return new Map();
-    }
-
-    try {
-      const voteCounts = await this.#db
-        .select({
-          competitionId: votes.competitionId,
-          agentId: votes.agentId,
-          voteCount: drizzleCount(),
-        })
-        .from(votes)
-        .where(inArray(votes.competitionId, competitionIds))
-        .groupBy(votes.competitionId, votes.agentId)
-        .orderBy(votes.competitionId, desc(drizzleCount()));
-
-      const competitionVoteMap = new Map<
-        string, // competitionId
-        { agentVotes: Map<string, number>; totalVotes: number }
-      >();
-
-      for (const { competitionId, agentId, voteCount } of voteCounts) {
-        if (!competitionVoteMap.has(competitionId)) {
-          competitionVoteMap.set(competitionId, {
-            agentVotes: new Map(),
-            totalVotes: 0,
-          });
+          ps_bucketed.timestamp,
+          ps_bucketed.agent_id,
+          ps_bucketed.agent_name,
+          ps_bucketed.competition_id,
+          ps_bucketed.total_value,
+          ${includeRiskMetrics ? sql`rms_bucketed.calmar_ratio` : sql`NULL::numeric`} AS calmar_ratio,
+          ${includeRiskMetrics ? sql`rms_bucketed.sortino_ratio` : sql`NULL::numeric`} AS sortino_ratio,
+          ${includeRiskMetrics ? sql`rms_bucketed.max_drawdown` : sql`NULL::numeric`} AS max_drawdown,
+          ${includeRiskMetrics ? sql`rms_bucketed.downside_deviation` : sql`NULL::numeric`} AS downside_deviation,
+          ${includeRiskMetrics ? sql`rms_bucketed.simple_return` : sql`NULL::numeric`} AS simple_return,
+          ${includeRiskMetrics ? sql`rms_bucketed.annualized_return` : sql`NULL::numeric`} AS annualized_return
+        FROM (
+          SELECT DISTINCT ON (agent_id, bucket_id)
+            ps.timestamp,
+            ps.agent_id,
+            a.name AS agent_name,
+            ps.competition_id,
+            ps.total_value,
+            FLOOR(EXTRACT(EPOCH FROM (ps.timestamp - c.start_date)) / 60 / ${bucket}) AS bucket_id
+          FROM competition_agents ca
+          JOIN trading_comps.portfolio_snapshots ps
+            ON ps.agent_id = ca.agent_id
+            AND ps.competition_id = ca.competition_id
+          JOIN agents a ON a.id = ca.agent_id
+          JOIN competitions c ON c.id = ca.competition_id
+          WHERE ca.competition_id = ${competitionId}
+            AND ca.status = ${"active"}
+          ORDER BY agent_id, bucket_id, ps.timestamp DESC
+        ) ps_bucketed
+        ${
+          includeRiskMetrics
+            ? sql`
+        LEFT JOIN (
+          SELECT DISTINCT ON (agent_id, bucket_id)
+            agent_id,
+            competition_id,
+            FLOOR(EXTRACT(EPOCH FROM (rms.timestamp - c.start_date)) / 60 / ${bucket}) AS bucket_id,
+            calmar_ratio,
+            sortino_ratio,
+            max_drawdown,
+            downside_deviation,
+            simple_return,
+            annualized_return
+          FROM trading_comps.risk_metrics_snapshots rms
+          JOIN competitions c ON c.id = rms.competition_id
+          WHERE rms.competition_id = ${competitionId}
+          ORDER BY agent_id, bucket_id, rms.timestamp DESC
+        ) rms_bucketed
+          ON rms_bucketed.agent_id = ps_bucketed.agent_id
+          AND rms_bucketed.bucket_id = ps_bucketed.bucket_id
+        `
+            : sql``
         }
-        const competition = competitionVoteMap.get(competitionId);
-        if (!competition) {
-          // This is only here to keep typescript and auto code review happy
-          // since the `has()` check above ensures the competition value exists
-          continue;
-        }
-        competition.agentVotes.set(agentId, voteCount);
-        competition.totalVotes += voteCount;
-      }
+        ORDER BY ps_bucketed.timestamp, ps_bucketed.agent_id
+      `);
 
-      return competitionVoteMap;
+      // Use the helper to convert snake_case to camelCase
+      return result.rows.map((row) =>
+        this.convertEnrichedSnapshotRow(row, includeRiskMetrics),
+      );
     } catch (error) {
-      this.#logger.error("Error in getBatchVoteCounts:", error);
+      this.#logger.error({ error }, "Error in getAgentPortfolioTimeline");
       throw error;
     }
   }
@@ -2703,8 +3116,8 @@ export class CompetitionRepository {
       return result || null;
     } catch (error) {
       this.#logger.error(
-        `[CompetitionRepository] Error getting prize pools for competition ${competitionId}:`,
-        error,
+        { error },
+        `[CompetitionRepository] Error getting prize pools for competition ${competitionId}`,
       );
       throw error;
     }
@@ -2752,8 +3165,78 @@ export class CompetitionRepository {
       return result;
     } catch (error) {
       this.#logger.error(
-        `[CompetitionRepository] Error upserting prize pools for competition ${competitionId}:`,
-        error,
+        { error },
+        `[CompetitionRepository] Error upserting prize pools for competition ${competitionId}`,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Get ROI-based leaderboard for spot live trading competitions
+   * Calculates simpleReturn from bounded portfolio snapshots and sorts by ROI descending
+   * Uses lateral joins to get oldest and newest snapshots per agent in a single query
+   * @param competitionId The competition ID
+   * @returns Array of leaderboard entries sorted by simpleReturn (ROI) descending
+   */
+  async getSpotLiveROILeaderboard(competitionId: string): Promise<
+    Array<{
+      agentId: string;
+      currentValue: number;
+      startingValue: number;
+      simpleReturn: number;
+    }>
+  > {
+    try {
+      // Uses CROSS JOIN LATERAL pattern consistent with getLatestPortfolioSnapshots
+      // Gets oldest and newest snapshots per agent, calculates ROI, sorts by ROI DESC
+      const result = await this.#dbRead.execute<{
+        agent_id: string;
+        current_value: string;
+        starting_value: string;
+        simple_return: string;
+      }>(sql`
+        SELECT
+          ca.agent_id,
+          newest.total_value AS current_value,
+          oldest.total_value AS starting_value,
+          CASE
+            WHEN oldest.total_value > 0 THEN
+              (newest.total_value - oldest.total_value) / oldest.total_value
+            ELSE 0
+          END AS simple_return
+        FROM ${competitionAgents} ca
+        CROSS JOIN LATERAL (
+          SELECT ps.total_value
+          FROM ${portfolioSnapshots} ps
+          WHERE ps.agent_id = ca.agent_id
+            AND ps.competition_id = ca.competition_id
+          ORDER BY ps.timestamp ASC
+          LIMIT 1
+        ) oldest
+        CROSS JOIN LATERAL (
+          SELECT ps.total_value
+          FROM ${portfolioSnapshots} ps
+          WHERE ps.agent_id = ca.agent_id
+            AND ps.competition_id = ca.competition_id
+          ORDER BY ps.timestamp DESC
+          LIMIT 1
+        ) newest
+        WHERE ca.competition_id = ${competitionId}
+          AND ca.status = ${"active"}
+        ORDER BY simple_return DESC
+      `);
+
+      return result.rows.map((row) => ({
+        agentId: row.agent_id,
+        currentValue: Number(row.current_value),
+        startingValue: Number(row.starting_value),
+        simpleReturn: Number(row.simple_return),
+      }));
+    } catch (error) {
+      this.#logger.error(
+        { error },
+        `[CompetitionRepository] Error getting spot live ROI leaderboard for competition ${competitionId}`,
       );
       throw error;
     }

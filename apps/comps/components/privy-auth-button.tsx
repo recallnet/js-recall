@@ -2,7 +2,7 @@
 
 import { useQueryClient } from "@tanstack/react-query";
 import { LogOut } from "lucide-react";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import React, { useEffect } from "react";
 
 import {
@@ -31,7 +31,6 @@ import { Identicon } from "./identicon/index";
  */
 export const PrivyAuthButton: React.FunctionComponent = () => {
   const router = useRouter();
-  const pathname = usePathname();
 
   const { login, backendUser, isAuthenticated, isPending, logout, error } =
     useSession();
@@ -43,7 +42,7 @@ export const PrivyAuthButton: React.FunctionComponent = () => {
       queryKey: tanstackClient.user.getCompetitions.key(),
     });
     queryClient.invalidateQueries({
-      queryKey: tanstackClient.competitions.listEnriched.key(),
+      queryKey: tanstackClient.competitions.list.key(),
     });
     queryClient.invalidateQueries({
       queryKey: tanstackClient.competitions.getById.key(),
@@ -75,9 +74,9 @@ export const PrivyAuthButton: React.FunctionComponent = () => {
 
   // Show authenticated state with dropdown
   if (backendUser && isAuthenticated) {
-    const displayName = backendUser.name;
+    const displayName = backendUser.name ?? undefined;
     const walletAddress = backendUser.walletAddress;
-    const avatarUrl = backendUser.imageUrl;
+    const avatarUrl = backendUser.imageUrl ?? undefined;
 
     return (
       <DropdownMenu>
@@ -85,7 +84,6 @@ export const PrivyAuthButton: React.FunctionComponent = () => {
           <div
             className={cn(
               "flex cursor-pointer items-center justify-between rounded px-2 py-1 transition-colors",
-              pathname !== "/profile" && "hover:bg-gray-900/50",
             )}
           >
             <Avatar className="h-10 w-10">
@@ -101,7 +99,7 @@ export const PrivyAuthButton: React.FunctionComponent = () => {
                 />
               </AvatarFallback>
             </Avatar>
-            <div className="ml-3 hidden font-mono text-xs font-medium uppercase tracking-widest text-white sm:block">
+            <div className="ml-3 hidden font-mono text-xs font-medium uppercase tracking-widest text-white md:block">
               {displayName && displayName.length > 15
                 ? displayName.slice(0, 15) + "..."
                 : displayName ||
@@ -113,19 +111,12 @@ export const PrivyAuthButton: React.FunctionComponent = () => {
           </div>
         </DropdownMenuTrigger>
         <DropdownMenuContent>
-          <DropdownMenuItem
-            onClick={() => router.push("/profile")}
-            className="cursor-pointer p-3 hover:bg-gray-800"
-          >
-            My Account
+          <DropdownMenuItem onClick={() => router.push("/profile")}>
+            Profile
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem
-            onClick={handleLogout}
-            className="cursor-pointer p-3 hover:bg-gray-800"
-            disabled={isPending}
-          >
-            <LogOut className="h-4 w-4 text-gray-600" />
+          <DropdownMenuItem onClick={handleLogout} disabled={isPending}>
+            <LogOut className="text-secondary-foreground h-4 w-4" />
             Log Out
           </DropdownMenuItem>
         </DropdownMenuContent>

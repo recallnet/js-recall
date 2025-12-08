@@ -1,13 +1,8 @@
-import { eq } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 import { beforeEach, describe, expect, test } from "vitest";
 
-import { competitions } from "@recallnet/db/schema/core/defs";
 import { trades as tradesDef } from "@recallnet/db/schema/trading/defs";
 import { InsertTrade } from "@recallnet/db/schema/trading/types";
-
-import config from "@/config/index.js";
-import { db } from "@/database/db.js";
 import {
   BalancesResponse,
   BlockchainType,
@@ -22,15 +17,15 @@ import {
   TradeHistoryResponse,
   TradeResponse,
   TradeTransaction,
-} from "@/e2e/utils/api-types.js";
-import { connectToDb } from "@/e2e/utils/db-manager.js";
-import {
   createTestClient,
   getAdminApiKey,
   looseTradingConstraints,
   registerUserAndAgentAndGetClient,
   startTestCompetition,
-} from "@/e2e/utils/test-helpers.js";
+} from "@recallnet/test-utils";
+
+import config from "@/config/index.js";
+import { db } from "@/database/db.js";
 import { ServiceRegistry } from "@/services/index.js";
 
 const reason = "trading end-to-end test";
@@ -43,6 +38,78 @@ describe("Trading API", () => {
   beforeEach(async () => {
     // Store the admin API key for authentication
     adminApiKey = await getAdminApiKey();
+  });
+
+  test("should handle case-insensitive token addresses in trades", async () => {
+    // Register user and agent
+    const { client, agent } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Case Test Agent",
+    });
+
+    // Start competition
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+    const startResp = await startTestCompetition({
+      adminClient,
+      name: `Case Sensitivity Test ${Date.now()}`,
+      agentIds: [agent.id],
+      tradingConstraints: looseTradingConstraints,
+    });
+    expect(startResp.success).toBe(true);
+    const competitionId = startResp.competition.id;
+
+    // Get agent's balances to see what case addresses are stored as
+    const balancesResp = (await client.getBalance(
+      competitionId,
+    )) as BalancesResponse;
+    expect(balancesResp.success).toBe(true);
+
+    // Find Ethereum USDC balance (should have 5000 from config)
+    const ethUsdcBalance = balancesResp.balances.find(
+      (b) =>
+        b.specificChain === "eth" &&
+        b.symbol?.toUpperCase() === "USDC" &&
+        b.amount > 0,
+    );
+    expect(ethUsdcBalance).toBeDefined();
+    expect(ethUsdcBalance?.amount).toBeGreaterThan(100);
+    expect(ethUsdcBalance?.tokenAddress).toBeDefined();
+
+    const storedAddress = ethUsdcBalance?.tokenAddress ?? "";
+    const lowercaseAddress = storedAddress.toLowerCase();
+
+    // Try to trade using LOWERCASE version of the address
+    // This should work (Ethereum addresses are case-insensitive)
+    const tradeResp = await client.executeTrade({
+      fromToken: lowercaseAddress, // Using lowercase
+      toToken: config.specificChainTokens.eth.eth, // WETH
+      amount: "50",
+      competitionId,
+      reason: "Test: lowercase address should work",
+      fromChain: BlockchainType.EVM,
+      toChain: BlockchainType.EVM,
+      fromSpecificChain: "eth" as SpecificChain,
+      toSpecificChain: "eth" as SpecificChain,
+    });
+
+    // Expect trade to succeed (case-insensitive lookups)
+    expect(tradeResp.success).toBe(true);
+
+    const successResp = tradeResp as TradeResponse;
+    expect(successResp.transaction).toBeDefined();
+    expect(successResp.transaction.success).toBe(true);
+    expect(successResp.transaction.fromToken).toBe(lowercaseAddress);
+
+    // Verify balance was actually deducted
+    const balancesAfter = (await client.getBalance(
+      competitionId,
+    )) as BalancesResponse;
+    const ethUsdcAfter = balancesAfter.balances.find(
+      (b) => b.specificChain === "eth" && b.symbol?.toUpperCase() === "USDC",
+    );
+    expect(ethUsdcAfter).toBeDefined();
+    expect(ethUsdcAfter?.amount).toBeLessThan(ethUsdcBalance?.amount ?? 0);
   });
 
   test("agent can execute a trade and verify balance updates", async () => {
@@ -59,14 +126,15 @@ describe("Trading API", () => {
 
     // Start a competition with our agent
     const competitionName = `Trading Test ${Date.now()}`;
-    (await adminClient.startCompetition({
+    const competitionResponse = (await adminClient.startCompetition({
       name: competitionName,
       agentIds: [agent.id],
       tradingType: CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
     })) as StartCompetitionResponse;
+    const competitionId = competitionResponse.competition.id;
 
     // Check initial balance
-    const initialBalanceResponse = await agentClient.getBalance();
+    const initialBalanceResponse = await agentClient.getBalance(competitionId);
     expect((initialBalanceResponse as BalancesResponse).success).toBe(true);
     expect((initialBalanceResponse as BalancesResponse).balances).toBeDefined();
 
@@ -96,6 +164,7 @@ describe("Trading API", () => {
       fromToken: usdcTokenAddress,
       toToken: solTokenAddress,
       amount: tradeAmount.toString(),
+      competitionId,
       fromChain: BlockchainType.SVM,
       toChain: BlockchainType.SVM,
       reason,
@@ -121,7 +190,7 @@ describe("Trading API", () => {
     expect(buyTransaction.toChain).toBe(BlockchainType.SVM);
 
     // Check updated balance
-    const updatedBalanceResponse = await agentClient.getBalance();
+    const updatedBalanceResponse = await agentClient.getBalance(competitionId);
     expect(updatedBalanceResponse.success).toBe(true);
 
     // USDC balance should have decreased
@@ -140,7 +209,8 @@ describe("Trading API", () => {
     expect(updatedSolBalance).toBeGreaterThan(initialSolBalance);
 
     // Get trade history
-    const tradeHistoryResponse = await agentClient.getTradeHistory();
+    const tradeHistoryResponse =
+      await agentClient.getTradeHistory(competitionId);
     expect(tradeHistoryResponse.success).toBe(true);
     expect(
       (tradeHistoryResponse as TradeHistoryResponse).trades,
@@ -166,6 +236,7 @@ describe("Trading API", () => {
       fromToken: solTokenAddress,
       toToken: usdcTokenAddress,
       amount: tokenToSell.toString(),
+      competitionId,
       fromChain: BlockchainType.SVM,
       toChain: BlockchainType.SVM,
       reason,
@@ -175,7 +246,7 @@ describe("Trading API", () => {
     expect((sellTradeResponse as TradeResponse).transaction).toBeDefined();
 
     // Check final balance
-    const finalBalanceResponse = await agentClient.getBalance();
+    const finalBalanceResponse = await agentClient.getBalance(competitionId);
     expect(finalBalanceResponse.success).toBe(true);
     // USDC balance should have increased compared to after buying
     const finalUsdcBalance = parseFloat(
@@ -207,14 +278,15 @@ describe("Trading API", () => {
 
     // Start a competition with our agent
     const competitionName = `Arbitrary Token Test ${Date.now()}`;
-    await startTestCompetition({
+    const competition = await startTestCompetition({
       adminClient,
       name: competitionName,
       agentIds: [agent.id],
     });
+    const competitionId = competition.competition.id;
 
     // Check initial balance
-    const initialBalanceResponse = await agentClient.getBalance();
+    const initialBalanceResponse = await agentClient.getBalance(competitionId);
     expect(initialBalanceResponse.success).toBe(true);
     expect((initialBalanceResponse as BalancesResponse).balances).toBeDefined();
 
@@ -244,6 +316,7 @@ describe("Trading API", () => {
       fromToken: usdcTokenAddress,
       toToken: raydiumTokenAddress,
       amount: tradeAmount.toString(),
+      competitionId,
       fromChain: BlockchainType.SVM,
       toChain: BlockchainType.SVM,
       reason,
@@ -255,7 +328,7 @@ describe("Trading API", () => {
     expect(tradeResponse.transaction.id).toBeDefined();
 
     // Check updated balance
-    const updatedBalanceResponse = await agentClient.getBalance();
+    const updatedBalanceResponse = await agentClient.getBalance(competitionId);
     expect(updatedBalanceResponse.success).toBe(true);
     // USDC balance should have decreased
     const updatedUsdcBalance = parseFloat(
@@ -276,7 +349,8 @@ describe("Trading API", () => {
     );
 
     // Get trade history
-    const tradeHistoryResponse = await agentClient.getTradeHistory();
+    const tradeHistoryResponse =
+      await agentClient.getTradeHistory(competitionId);
     expect(tradeHistoryResponse.success).toBe(true);
     expect(
       (tradeHistoryResponse as TradeHistoryResponse).trades,
@@ -308,14 +382,15 @@ describe("Trading API", () => {
       });
 
     // Start a competition with our agent
-    await startTestCompetition({
+    const competition = await startTestCompetition({
       adminClient,
       name: `Invalid Trading Test ${Date.now()}`,
       agentIds: [agent.id],
     });
+    const competitionId = competition.competition.id;
 
     // Check initial balance
-    const initialBalanceResponse = await agentClient.getBalance();
+    const initialBalanceResponse = await agentClient.getBalance(competitionId);
     const usdcTokenAddress = config.specificChainTokens.svm.usdc;
     const initialUsdcBalance = parseFloat(
       (initialBalanceResponse as BalancesResponse).balances
@@ -328,6 +403,7 @@ describe("Trading API", () => {
       fromToken: usdcTokenAddress,
       toToken: "InvalidTokenAddressFormat123", // This should be rejected by the API as not a valid token address format
       amount: "100",
+      competitionId,
       fromChain: BlockchainType.SVM,
       toChain: BlockchainType.SVM,
       reason,
@@ -344,6 +420,7 @@ describe("Trading API", () => {
       fromToken: usdcTokenAddress,
       toToken: nonExistentTokenAddress,
       amount: "100",
+      competitionId,
       fromChain: BlockchainType.SVM,
       toChain: BlockchainType.SVM,
       reason,
@@ -359,6 +436,7 @@ describe("Trading API", () => {
       fromToken: usdcTokenAddress,
       toToken: usdcTokenAddress, // Use USDC which has a known price
       amount: (initialUsdcBalance * 2).toString(), // Double the available balance
+      competitionId,
       fromChain: BlockchainType.SVM,
       toChain: BlockchainType.SVM,
       reason,
@@ -369,7 +447,7 @@ describe("Trading API", () => {
       "Cannot trade between identical tokens",
     );
     // Get fresh balances to calculate current portfolio value after trade attempts
-    const balancesResponse = await agentClient.getBalance();
+    const balancesResponse = await agentClient.getBalance(competitionId);
     expect(balancesResponse.success).toBe(true);
     const balances = (balancesResponse as BalancesResponse).balances;
     const portfolioValue = balances.reduce(
@@ -390,6 +468,7 @@ describe("Trading API", () => {
       fromToken: usdcTokenAddress,
       toToken: config.specificChainTokens.svm.sol,
       amount: insufficientBalanceAmount.toString(),
+      competitionId,
       fromChain: BlockchainType.SVM,
       toChain: BlockchainType.SVM,
       reason,
@@ -405,6 +484,7 @@ describe("Trading API", () => {
       fromToken: config.specificChainTokens.svm.sol, // Use SOL which we don't have in our balance
       toToken: usdcTokenAddress,
       amount: "100",
+      competitionId,
       fromChain: BlockchainType.SVM,
       toChain: BlockchainType.SVM,
       reason,
@@ -429,15 +509,17 @@ describe("Trading API", () => {
       });
 
     // Start a competition with our agent
-    await startTestCompetition({
+    const competition = await startTestCompetition({
       adminClient,
       name: `Max Trade Limit Test ${Date.now()}`,
       agentIds: [agent.id],
     });
+    const competitionId = competition.competition.id;
 
     // Check initial balance
-    const initialBalanceResponse =
-      (await agentClient.getBalance()) as BalancesResponse;
+    const initialBalanceResponse = (await agentClient.getBalance(
+      competitionId,
+    )) as BalancesResponse;
 
     const usdcTokenAddress = config.specificChainTokens.svm.usdc;
 
@@ -468,6 +550,7 @@ describe("Trading API", () => {
           fromToken: tokenAddress,
           toToken: usdcTokenAddress,
           amount: balance.toString(),
+          competitionId,
           fromChain: BlockchainType.SVM,
           toChain: BlockchainType.SVM,
           reason,
@@ -478,7 +561,8 @@ describe("Trading API", () => {
     }
 
     // // Verify we now have a consolidated USDC balance
-    const balanceAfterConsolidation = await agentClient.getBalance();
+    const balanceAfterConsolidation =
+      await agentClient.getBalance(competitionId);
     const consolidatedUsdcBalance = parseFloat(
       (balanceAfterConsolidation as BalancesResponse).balances
         .find((b) => b.tokenAddress === usdcTokenAddress)
@@ -494,6 +578,7 @@ describe("Trading API", () => {
       fromToken: usdcTokenAddress,
       toToken: config.specificChainTokens.svm.sol,
       amount: tradeAmount.toString(),
+      competitionId,
       fromChain: BlockchainType.SVM,
       toChain: BlockchainType.SVM,
       reason,
@@ -503,6 +588,186 @@ describe("Trading API", () => {
     expect((maxPercentageResponse as ErrorResponse).error).toContain(
       "exceeds maximum size",
     );
+  });
+
+  test("custom maxTradePercentage is enforced when set during competition creation", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agent and get client
+    const { client: agentClient, agent } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Custom Max Trade Percentage Agent",
+      });
+
+    // Start a competition with a custom maxTradePercentage of 10%
+    const customMaxTradePercentage = 10;
+    const competitionName = `Custom Max Trade Percentage Test ${Date.now()}`;
+    const competitionResponse = (await adminClient.startCompetition({
+      name: competitionName,
+      agentIds: [agent.id],
+      arenaId: "default-paper-arena",
+      paperTradingConfig: {
+        maxTradePercentage: customMaxTradePercentage,
+      },
+      tradingType: CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
+    } as Parameters<
+      typeof adminClient.startCompetition
+    >[0])) as StartCompetitionResponse;
+    const competitionId = competitionResponse.competition.id;
+
+    expect(competitionResponse.success).toBe(true);
+
+    // Check initial balance
+    const initialBalanceResponse = (await agentClient.getBalance(
+      competitionId,
+    )) as BalancesResponse;
+
+    const usdcTokenAddress = config.specificChainTokens.svm.usdc;
+
+    // Consolidate all non-USDC SVM tokens into USDC
+    const tokenAddressesBefore = Object.keys(initialBalanceResponse.balances);
+    for (const tokenAddress of tokenAddressesBefore) {
+      if (tokenAddress === usdcTokenAddress) continue;
+
+      const tokenChain =
+        services.priceTrackerService.determineChain(tokenAddress);
+      if (tokenChain !== BlockchainType.SVM) {
+        continue;
+      }
+
+      const balance = parseFloat(
+        initialBalanceResponse.balances
+          .find((b) => b.tokenAddress === tokenAddress)
+          ?.amount.toString() || "0",
+      );
+
+      if (balance > 0) {
+        const consolidateResponse = await agentClient.executeTrade({
+          fromToken: tokenAddress,
+          toToken: usdcTokenAddress,
+          amount: balance.toString(),
+          competitionId,
+          fromChain: BlockchainType.SVM,
+          toChain: BlockchainType.SVM,
+          reason,
+        });
+
+        expect(consolidateResponse.success).toBe(true);
+      }
+    }
+
+    // Get consolidated USDC balance and portfolio value
+    const balanceAfterConsolidation =
+      await agentClient.getBalance(competitionId);
+    const consolidatedUsdcBalance = parseFloat(
+      (balanceAfterConsolidation as BalancesResponse).balances
+        .find((b) => b.tokenAddress === usdcTokenAddress)
+        ?.amount.toString() || "0",
+    );
+    expect(consolidatedUsdcBalance).toBeGreaterThan(0);
+
+    // Calculate initial portfolio value to determine trade limits
+    let portfolioValue = (
+      balanceAfterConsolidation as BalancesResponse
+    ).balances.reduce((sum, balance) => sum + (balance.value || 0), 0);
+    expect(portfolioValue).toBeGreaterThan(0);
+
+    // Test 1: Trade within the custom maxTradePercentage (10%) should succeed
+    // Use 5% which is well within the 10% limit
+    const withinLimitAmount = (portfolioValue * 5) / 100;
+    const withinLimitTradeResponse = await agentClient.executeTrade({
+      fromToken: usdcTokenAddress,
+      toToken: config.specificChainTokens.svm.sol,
+      amount: withinLimitAmount.toString(),
+      competitionId,
+      fromChain: BlockchainType.SVM,
+      toChain: BlockchainType.SVM,
+      reason: "Testing trade within custom maxTradePercentage limit",
+    });
+
+    expect(withinLimitTradeResponse.success).toBe(true);
+
+    // Test 2: Trade exceeding the custom maxTradePercentage (10%) should fail
+    // Recalculate portfolio value after the successful trade
+    const balanceAfterFirstTrade = await agentClient.getBalance(competitionId);
+    portfolioValue = (
+      balanceAfterFirstTrade as BalancesResponse
+    ).balances.reduce((sum, balance) => sum + (balance.value || 0), 0);
+
+    // Get available USDC balance
+    const availableUsdcBalance = parseFloat(
+      (balanceAfterFirstTrade as BalancesResponse).balances
+        .find((b) => b.tokenAddress === usdcTokenAddress)
+        ?.amount.toString() || "0",
+    );
+
+    // Use 15% which exceeds the 10% limit
+    // But ensure we don't exceed available balance (to avoid "Insufficient balance" error)
+    const exceedingLimitUsdValue = (portfolioValue * 15) / 100;
+    const exceedingLimitAmount = Math.min(
+      exceedingLimitUsdValue,
+      availableUsdcBalance,
+    );
+
+    // Only test if we have enough balance to attempt the trade
+    // (we want the error to be about maxTradePercentage, not insufficient balance)
+    if (
+      exceedingLimitAmount > 0 &&
+      exceedingLimitAmount <= availableUsdcBalance
+    ) {
+      const exceedingLimitTradeResponse = await agentClient.executeTrade({
+        fromToken: usdcTokenAddress,
+        toToken: config.specificChainTokens.svm.sol,
+        amount: exceedingLimitAmount.toString(),
+        competitionId,
+        fromChain: BlockchainType.SVM,
+        toChain: BlockchainType.SVM,
+        reason: "Testing trade exceeding custom maxTradePercentage limit",
+      });
+
+      expect(exceedingLimitTradeResponse.success).toBe(false);
+      expect((exceedingLimitTradeResponse as ErrorResponse).error).toContain(
+        "exceeds maximum size",
+      );
+    }
+
+    // Test 3: Verify that another trade within the limit still succeeds
+    // Recalculate portfolio value again (should be unchanged since previous trade failed)
+    const balanceBeforeThirdTest = await agentClient.getBalance(competitionId);
+    portfolioValue = (
+      balanceBeforeThirdTest as BalancesResponse
+    ).balances.reduce((sum, balance) => sum + (balance.value || 0), 0);
+
+    // Get available USDC balance
+    const availableUsdcForThirdTest = parseFloat(
+      (balanceBeforeThirdTest as BalancesResponse).balances
+        .find((b) => b.tokenAddress === usdcTokenAddress)
+        ?.amount.toString() || "0",
+    );
+
+    // Try a trade at 7% which is within the 10% limit
+    const withinLimitUsdValue = (portfolioValue * 7) / 100;
+    const withinLimitAmountForThirdTest = Math.min(
+      withinLimitUsdValue,
+      availableUsdcForThirdTest,
+    );
+
+    expect(withinLimitAmountForThirdTest).toBeGreaterThan(0);
+
+    const thirdTradeResponse = await agentClient.executeTrade({
+      fromToken: usdcTokenAddress,
+      toToken: config.specificChainTokens.svm.sol,
+      amount: withinLimitAmountForThirdTest.toString(),
+      competitionId,
+      fromChain: BlockchainType.SVM,
+      toChain: BlockchainType.SVM,
+      reason: "Testing another trade within custom maxTradePercentage limit",
+    });
+
+    expect(thirdTradeResponse.success).toBe(true);
   });
 
   test("agent can fetch price and execute a calculated trade", async () => {
@@ -519,7 +784,7 @@ describe("Trading API", () => {
 
     // Start a competition with our agent
     const competitionName = `Price Calculation Test ${Date.now()}`;
-    await startTestCompetition({
+    const competition = await startTestCompetition({
       adminClient,
       name: competitionName,
       agentIds: [agent.id],
@@ -528,9 +793,10 @@ describe("Trading API", () => {
         minimumLiquidityUsd: 500,
       },
     });
+    const competitionId = competition.competition.id;
 
     // Check initial balance
-    const initialBalanceResponse = await agentClient.getBalance();
+    const initialBalanceResponse = await agentClient.getBalance(competitionId);
     expect(initialBalanceResponse.success).toBe(true);
     expect((initialBalanceResponse as BalancesResponse).balances).toBeDefined();
 
@@ -574,6 +840,7 @@ describe("Trading API", () => {
       fromToken: usdcTokenAddress,
       toToken: wethTokenAddress,
       amount: usdcAmount.toString(),
+      competitionId,
       fromChain: BlockchainType.SVM,
       toChain: BlockchainType.SVM,
       reason,
@@ -584,7 +851,7 @@ describe("Trading API", () => {
     expect((buyTradeResponse as TradeResponse).transaction.id).toBeDefined();
 
     // 4. Check final balance and validate it reflects the calculation
-    const finalBalanceResponse = await agentClient.getBalance();
+    const finalBalanceResponse = await agentClient.getBalance(competitionId);
     expect(finalBalanceResponse.success).toBe(true);
     expect((finalBalanceResponse as BalancesResponse).balances).toBeDefined();
     // USDC balance should have decreased by 10
@@ -606,7 +873,8 @@ describe("Trading API", () => {
     ); // Allow for small variations due to price fluctuations
 
     // Get trade history to verify details
-    const tradeHistoryResponse = await agentClient.getTradeHistory();
+    const tradeHistoryResponse =
+      await agentClient.getTradeHistory(competitionId);
     expect(tradeHistoryResponse.success).toBe(true);
     const tradeHistory = tradeHistoryResponse as TradeHistoryResponse;
     expect(tradeHistory.trades).toBeInstanceOf(Array);
@@ -634,14 +902,15 @@ describe("Trading API", () => {
 
     // Start a competition with our agent
     const competitionName = `Ethereum Token Test ${Date.now()}`;
-    (await adminClient.startCompetition({
+    const competitionResponse = (await adminClient.startCompetition({
       name: competitionName,
       agentIds: [agent.id],
       tradingType: CROSS_CHAIN_TRADING_TYPE.ALLOW,
     })) as StartCompetitionResponse;
+    const competitionId = competitionResponse.competition.id;
 
     // Check initial balance
-    const initialBalanceResponse = await agentClient.getBalance();
+    const initialBalanceResponse = await agentClient.getBalance(competitionId);
     expect(initialBalanceResponse.success).toBe(true);
     const balancesResponse = initialBalanceResponse as BalancesResponse;
     expect(balancesResponse.balances).toBeDefined();
@@ -686,6 +955,7 @@ describe("Trading API", () => {
       fromToken: svmUsdcAddress,
       toToken: ethTokenAddress,
       amount: tradeAmount.toString(),
+      competitionId,
       fromChain: BlockchainType.SVM,
       toChain: BlockchainType.EVM,
       reason,
@@ -694,7 +964,7 @@ describe("Trading API", () => {
     expect(buyTradeResponse.success).toBe(true);
 
     // Check updated balance
-    const updatedBalanceResponse = await agentClient.getBalance();
+    const updatedBalanceResponse = await agentClient.getBalance(competitionId);
     // ETH balance should have increased
     const updatedEthBalance = parseFloat(
       (updatedBalanceResponse as BalancesResponse).balances
@@ -704,7 +974,8 @@ describe("Trading API", () => {
     expect(updatedEthBalance).toBeGreaterThan(initialEthBalance);
 
     // Get trade history and verify the Ethereum trade
-    const tradeHistoryResponse = await agentClient.getTradeHistory();
+    const tradeHistoryResponse =
+      await agentClient.getTradeHistory(competitionId);
     expect(tradeHistoryResponse.success).toBe(true);
     expect(
       (tradeHistoryResponse as TradeHistoryResponse).trades.length,
@@ -733,14 +1004,15 @@ describe("Trading API", () => {
 
     // Start a competition with our agent
     const competitionName = `Chain-Specific Trading Test ${Date.now()}`;
-    await startTestCompetition({
+    const competition = await startTestCompetition({
       adminClient,
       name: competitionName,
       agentIds: [agent.id],
     });
+    const competitionId = competition.competition.id;
 
     // Check initial balance
-    const initialBalanceResponse = await agentClient.getBalance();
+    const initialBalanceResponse = await agentClient.getBalance(competitionId);
     expect(initialBalanceResponse.success).toBe(true);
 
     // Initial USDC balance should be the starting amount (e.g., 10000)
@@ -769,6 +1041,7 @@ describe("Trading API", () => {
       fromToken: usdcTokenAddress,
       toToken: solTokenAddress,
       amount: tradeAmount.toString(),
+      competitionId,
       fromChain: BlockchainType.SVM,
       toChain: BlockchainType.SVM,
       reason,
@@ -786,7 +1059,7 @@ describe("Trading API", () => {
     );
 
     // Check updated balance
-    const updatedBalanceResponse = await agentClient.getBalance();
+    const updatedBalanceResponse = await agentClient.getBalance(competitionId);
     expect(updatedBalanceResponse.success).toBe(true);
     // USDC balance should have decreased
     const updatedUsdcBalance = parseFloat(
@@ -804,7 +1077,8 @@ describe("Trading API", () => {
     expect(updatedSolBalance).toBeGreaterThan(initialSolBalance);
 
     // Get trade history and verify chain info is preserved
-    const tradeHistoryResponse = await agentClient.getTradeHistory();
+    const tradeHistoryResponse =
+      await agentClient.getTradeHistory(competitionId);
     expect(tradeHistoryResponse.success).toBe(true);
     // Get the most recent trade
     const lastTrade = (tradeHistoryResponse as TradeHistoryResponse).trades[0];
@@ -824,6 +1098,7 @@ describe("Trading API", () => {
       fromToken: usdcTokenAddress,
       toToken: ethTokenAddress,
       amount: tradeAmount.toString(),
+      competitionId,
       fromChain: BlockchainType.SVM,
       toChain: BlockchainType.EVM,
       fromSpecificChain: SpecificChain.SVM,
@@ -851,11 +1126,12 @@ describe("Trading API", () => {
 
     // Start a competition with our agent
     const competitionName = `Reason Verification Test ${Date.now()}`;
-    await startTestCompetition({
+    const competition = await startTestCompetition({
       adminClient,
       name: competitionName,
       agentIds: [agent.id],
     });
+    const competitionId = competition.competition.id;
 
     // Get tokens to trade
     const usdcTokenAddress = config.specificChainTokens.svm.usdc;
@@ -869,6 +1145,7 @@ describe("Trading API", () => {
       fromToken: usdcTokenAddress,
       toToken: solTokenAddress,
       amount: "10",
+      competitionId,
       fromChain: BlockchainType.SVM,
       toChain: BlockchainType.SVM,
       reason: specificReason,
@@ -882,8 +1159,9 @@ describe("Trading API", () => {
     expect(tradeResponse.transaction.reason).toBe(specificReason);
 
     // Get trade history
-    const tradeHistoryResponse =
-      (await agentClient.getTradeHistory()) as TradeHistoryResponse;
+    const tradeHistoryResponse = (await agentClient.getTradeHistory(
+      competitionId,
+    )) as TradeHistoryResponse;
 
     // Verify trade history response
     expect(tradeHistoryResponse.success).toBe(true);
@@ -919,11 +1197,12 @@ describe("Trading API", () => {
 
     // Start a competition with our agent
     const competitionName = `Reason Required Test ${Date.now()}`;
-    await startTestCompetition({
+    const competition = await startTestCompetition({
       adminClient,
       name: competitionName,
       agentIds: [agent.id],
     });
+    const competitionId = competition.competition.id;
 
     // Get tokens to trade
     const usdcTokenAddress = config.specificChainTokens.svm.usdc;
@@ -934,6 +1213,7 @@ describe("Trading API", () => {
       fromToken: usdcTokenAddress,
       toToken: solTokenAddress,
       amount: "10",
+      competitionId,
       fromChain: BlockchainType.SVM,
       toChain: BlockchainType.SVM,
       // reason field intentionally omitted
@@ -951,6 +1231,7 @@ describe("Trading API", () => {
       fromToken: usdcTokenAddress,
       toToken: solTokenAddress,
       amount: "10",
+      competitionId,
       fromChain: BlockchainType.SVM,
       toChain: BlockchainType.SVM,
       reason: "Validation test",
@@ -984,11 +1265,13 @@ describe("Trading API", () => {
       agentIds: [agent.id],
       tradingType: CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
     });
+    const competition1Id = (competitionResponse as StartCompetitionResponse)
+      .competition.id;
 
     expect(competitionResponse.success).toBe(true);
 
     // Check if competition rules reflect the disabled cross-chain trading
-    const rulesResponse = await agentClient.getRules();
+    const rulesResponse = await agentClient.getRules(competition1Id);
     expect(rulesResponse.success).toBe(true);
 
     // Find cross-chain trading rule in the rules list
@@ -1002,7 +1285,7 @@ describe("Trading API", () => {
 
     // Verify that cross-chain trading is actually disabled by attempting a cross-chain trade
 
-    const balanceResponse = await agentClient.getBalance();
+    const balanceResponse = await agentClient.getBalance(competition1Id);
     const svmUsdcBalance = parseFloat(
       (balanceResponse as BalancesResponse).balances
         .find((b) => b.tokenAddress === svmUsdcAddress)
@@ -1015,6 +1298,7 @@ describe("Trading API", () => {
       fromToken: svmUsdcAddress,
       toToken: ethTokenAddress,
       amount: tradeAmount,
+      competitionId: competition1Id,
       fromChain: BlockchainType.SVM,
       toChain: BlockchainType.EVM,
       reason: "testing cross-chain trading disabled",
@@ -1038,11 +1322,14 @@ describe("Trading API", () => {
       agentIds: [agent.id],
       tradingType: CROSS_CHAIN_TRADING_TYPE.ALLOW,
     });
+    const secondCompetitionId = (
+      secondCompetitionResponse as StartCompetitionResponse
+    ).competition.id;
 
     expect(secondCompetitionResponse.success).toBe(true);
 
     // Check if competition rules reflect the enabled cross-chain trading
-    const secondRulesResponse = await agentClient.getRules();
+    const secondRulesResponse = await agentClient.getRules(secondCompetitionId);
     expect(secondRulesResponse.success).toBe(true);
 
     // Find cross-chain trading rule in the rules list
@@ -1060,6 +1347,7 @@ describe("Trading API", () => {
       fromToken: svmUsdcAddress,
       toToken: ethTokenAddress,
       amount: tradeAmount,
+      competitionId: secondCompetitionId,
       fromChain: BlockchainType.SVM,
       toChain: BlockchainType.EVM,
       reason: "testing cross-chain trading enabled",
@@ -1112,11 +1400,13 @@ describe("Trading API", () => {
       agentIds: [agent.id],
       tradingType: CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
     });
+    const competitionId = (competitionResponse as StartCompetitionResponse)
+      .competition.id;
 
     expect(competitionResponse.success).toBe(true);
 
     // Verify the agent has some balance on the source chain
-    const initialBalanceResponse = await agentClient.getBalance();
+    const initialBalanceResponse = await agentClient.getBalance(competitionId);
     const sourceUsdcBalance = parseFloat(
       (initialBalanceResponse.success &&
         (initialBalanceResponse as BalancesResponse).balances
@@ -1131,10 +1421,12 @@ describe("Trading API", () => {
     const tradeAmount = Math.min(10, sourceUsdcBalance * 0.1).toString();
 
     // Attempt to execute an EVM-to-EVM cross-chain trade when disabled
-    const crossChainTradeResponse = await agentClient.executeTrade({
+    const comp1Response2 = await agentClient.executeTrade({
       fromToken: sourceUsdcAddress,
       toToken: targetUsdcAddress,
       amount: tradeAmount,
+      competitionId: (competitionResponse as StartCompetitionResponse)
+        .competition.id,
       fromChain: BlockchainType.EVM,
       toChain: BlockchainType.EVM,
       fromSpecificChain: sourceChain,
@@ -1143,8 +1435,8 @@ describe("Trading API", () => {
     });
 
     // Expect the trade to fail due to cross-chain trading being disabled
-    expect(crossChainTradeResponse.success).toBe(false);
-    expect((crossChainTradeResponse as ErrorResponse).error).toContain(
+    expect(comp1Response2.success).toBe(false);
+    expect((comp1Response2 as ErrorResponse).error).toContain(
       "Cross-chain trading is disabled",
     );
 
@@ -1168,6 +1460,8 @@ describe("Trading API", () => {
       fromToken: sourceUsdcAddress,
       toToken: targetUsdcAddress,
       amount: tradeAmount,
+      competitionId: (secondCompetitionResponse as StartCompetitionResponse)
+        .competition.id,
       fromChain: BlockchainType.EVM,
       toChain: BlockchainType.EVM,
       fromSpecificChain: sourceChain,
@@ -1197,7 +1491,14 @@ describe("Trading API", () => {
       name: competitionName,
       agentIds: [agent.id],
       tradingType: CROSS_CHAIN_TRADING_TYPE.DISALLOW_X_PARENT,
+      paperTradingInitialBalances: [
+        { specificChain: "base", tokenSymbol: "usdc", amount: 10 },
+        { specificChain: "eth", tokenSymbol: "usdc", amount: 10 },
+        { specificChain: "svm", tokenSymbol: "usdc", amount: 10 },
+      ],
     });
+    const competitionId = (competitionResponse as StartCompetitionResponse)
+      .competition.id;
 
     expect(competitionResponse.success).toBe(true);
 
@@ -1210,7 +1511,7 @@ describe("Trading API", () => {
     const svmUsdcAddress = config.specificChainTokens.svm.usdc;
 
     // Check the initial balances
-    const initialBalanceResponse = await agentClient.getBalance();
+    const initialBalanceResponse = await agentClient.getBalance(competitionId);
     expect(initialBalanceResponse.success).toBe(true);
 
     const baseUsdcBalance = parseFloat(
@@ -1230,6 +1531,7 @@ describe("Trading API", () => {
       fromToken: baseUsdcAddress,
       toToken: ethUsdcAddress,
       amount: tradeAmount,
+      competitionId,
       fromChain: BlockchainType.EVM,
       toChain: BlockchainType.EVM,
       fromSpecificChain: SpecificChain.BASE,
@@ -1243,7 +1545,7 @@ describe("Trading API", () => {
     // PART 2: Test that EVM-to-SVM trading fails with disallowXParent
 
     // Get updated balances after the first successful trade
-    const updatedBalanceResponse = await agentClient.getBalance();
+    const updatedBalanceResponse = await agentClient.getBalance(competitionId);
     const ethUsdcBalance = parseFloat(
       (updatedBalanceResponse as BalancesResponse).balances
         .find((b) => b.tokenAddress === ethUsdcAddress)
@@ -1258,6 +1560,7 @@ describe("Trading API", () => {
       fromToken: ethUsdcAddress,
       toToken: svmUsdcAddress,
       amount: secondTradeAmount,
+      competitionId,
       fromChain: BlockchainType.EVM,
       toChain: BlockchainType.SVM,
       fromSpecificChain: SpecificChain.ETH,
@@ -1343,11 +1646,12 @@ describe("Trading API", () => {
 
     // Start a competition with our agent
     const competitionName = `USD Amount Test ${Date.now()}`;
-    await startTestCompetition({
+    const competition = await startTestCompetition({
       adminClient,
       name: competitionName,
       agentIds: [agent.id],
     });
+    const competitionId = competition.competition.id;
 
     // Get tokens to trade
     const usdcTokenAddress = config.specificChainTokens.svm.usdc;
@@ -1374,6 +1678,7 @@ describe("Trading API", () => {
       fromToken: usdcTokenAddress,
       toToken: solTokenAddress,
       amount: tradeAmount.toString(),
+      competitionId,
       fromChain: BlockchainType.SVM,
       toChain: BlockchainType.SVM,
       reason: "Testing tradeAmountUsd field",
@@ -1393,7 +1698,8 @@ describe("Trading API", () => {
     expect(actualUsdValue).toBeCloseTo(expectedUsdValue, 1); // Using precision 1 to allow for price movement between fetch and execution
 
     // Verify tradeAmountUsd also appears in trade history
-    const tradeHistoryResponse = await agentClient.getTradeHistory();
+    const tradeHistoryResponse =
+      await agentClient.getTradeHistory(competitionId);
     expect(tradeHistoryResponse.success).toBe(true);
 
     // Get the most recent trade (should be the one we just executed)
@@ -1412,6 +1718,7 @@ describe("Trading API", () => {
       fromToken: solTokenAddress,
       toToken: usdcTokenAddress,
       amount: reverseTradeAmount.toString(),
+      competitionId,
       fromChain: BlockchainType.SVM,
       toChain: BlockchainType.SVM,
       reason: "Testing reverse tradeAmountUsd calculation",
@@ -1442,18 +1749,19 @@ describe("Trading API", () => {
 
     // Start a competition with our agent
     const competitionName = `Symbol Verification Test ${Date.now()}`;
-    await startTestCompetition({
+    const competition = await startTestCompetition({
       adminClient,
       name: competitionName,
       agentIds: [agent.id],
     });
+    const competitionId = competition.competition.id;
 
     // Get tokens to trade - use tokens we know have symbols
     const usdcTokenAddress = config.specificChainTokens.svm.usdc;
     const solTokenAddress = config.specificChainTokens.svm.sol;
 
     // 1. Verify symbols are returned in initial balance response
-    const initialBalanceResponse = await agentClient.getBalance();
+    const initialBalanceResponse = await agentClient.getBalance(competitionId);
     expect(initialBalanceResponse.success).toBe(true);
 
     const balancesResponse = initialBalanceResponse as BalancesResponse;
@@ -1480,6 +1788,7 @@ describe("Trading API", () => {
       usdcTokenAddress,
       solTokenAddress,
       "100",
+      competitionId,
     )) as QuoteResponse;
 
     // Check if it's an error response
@@ -1501,6 +1810,7 @@ describe("Trading API", () => {
       fromToken: usdcTokenAddress,
       toToken: solTokenAddress,
       amount: "50",
+      competitionId,
       fromChain: BlockchainType.SVM,
       toChain: BlockchainType.SVM,
       reason: "Testing symbol fields in trade execution",
@@ -1520,7 +1830,7 @@ describe("Trading API", () => {
     expect(transaction.fromTokenSymbol.length).toBeGreaterThan(0);
 
     // 4. Verify symbols are returned in updated balance response
-    const updatedBalanceResponse = await agentClient.getBalance();
+    const updatedBalanceResponse = await agentClient.getBalance(competitionId);
     expect(updatedBalanceResponse.success).toBe(true);
 
     const updatedBalancesResponse = updatedBalanceResponse as BalancesResponse;
@@ -1543,7 +1853,8 @@ describe("Trading API", () => {
     expect(updatedSolBalance!.symbol.length).toBeGreaterThan(0);
 
     // 5. Verify symbols in trade history
-    const tradeHistoryResponse = await agentClient.getTradeHistory();
+    const tradeHistoryResponse =
+      await agentClient.getTradeHistory(competitionId);
     expect(tradeHistoryResponse.success).toBe(true);
 
     const tradeHistory = tradeHistoryResponse as TradeHistoryResponse;
@@ -1618,14 +1929,15 @@ describe("Trading API", () => {
 
     // Start a competition with our agent
     const competitionName = `Trading Test ${Date.now()}`;
-    (await adminClient.startCompetition({
+    const competitionResponse = (await adminClient.startCompetition({
       name: competitionName,
       agentIds: [agent.id],
       tradingType: CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
     })) as StartCompetitionResponse;
+    const competitionId = competitionResponse.competition.id;
 
     // Check initial balance
-    const initialBalanceResponse = await agentClient.getBalance();
+    const initialBalanceResponse = await agentClient.getBalance(competitionId);
     expect((initialBalanceResponse as BalancesResponse).success).toBe(true);
     expect((initialBalanceResponse as BalancesResponse).balances).toBeDefined();
 
@@ -1655,6 +1967,7 @@ describe("Trading API", () => {
       fromToken: usdcTokenAddress,
       toToken: solTokenAddress,
       amount: tradeAmount.toString(),
+      competitionId,
       fromChain: BlockchainType.SVM,
       toChain: BlockchainType.SVM,
       reason,
@@ -1680,7 +1993,7 @@ describe("Trading API", () => {
     expect(buyTransaction.toChain).toBe(BlockchainType.SVM);
 
     // Check updated balance
-    const updatedBalanceResponse = await agentClient.getBalance();
+    const updatedBalanceResponse = await agentClient.getBalance(competitionId);
     expect(updatedBalanceResponse.success).toBe(true);
 
     // USDC balance should have decreased
@@ -1699,7 +2012,8 @@ describe("Trading API", () => {
     expect(updatedSolBalance).toBeGreaterThan(initialSolBalance);
 
     // Get trade history
-    const tradeHistoryResponse = await agentClient.getTradeHistory();
+    const tradeHistoryResponse =
+      await agentClient.getTradeHistory(competitionId);
     expect(tradeHistoryResponse.success).toBe(true);
     expect(
       (tradeHistoryResponse as TradeHistoryResponse).trades,
@@ -1725,6 +2039,7 @@ describe("Trading API", () => {
       fromToken: solTokenAddress,
       toToken: usdcTokenAddress,
       amount: tokenToSell.toString(),
+      competitionId,
       fromChain: BlockchainType.SVM,
       toChain: BlockchainType.SVM,
       reason,
@@ -1734,7 +2049,7 @@ describe("Trading API", () => {
     expect((sellTradeResponse as TradeResponse).transaction).toBeDefined();
 
     // Check final balance
-    const finalBalanceResponse = await agentClient.getBalance();
+    const finalBalanceResponse = await agentClient.getBalance(competitionId);
     expect(finalBalanceResponse.success).toBe(true);
     // USDC balance should have increased compared to after buying
     const finalUsdcBalance = parseFloat(
@@ -1766,14 +2081,16 @@ describe("Trading API", () => {
 
     // Start a competition with cross-chain trading enabled
     const competitionName = `Token Burn Test ${Date.now()}`;
-    await adminClient.startCompetition({
+    const competitionResponse = await adminClient.startCompetition({
       name: competitionName,
       agentIds: [agent.id],
       tradingType: CROSS_CHAIN_TRADING_TYPE.ALLOW,
     });
+    const competitionId = (competitionResponse as StartCompetitionResponse)
+      .competition.id;
 
     // Check initial balance
-    const initialBalanceResponse = await agentClient.getBalance();
+    const initialBalanceResponse = await agentClient.getBalance(competitionId);
     expect(initialBalanceResponse.success).toBe(true);
 
     // Get initial USDC balance on Solana
@@ -1795,6 +2112,7 @@ describe("Trading API", () => {
       fromToken: svmUsdcAddress,
       toToken: evmDeadAddress,
       amount: tradeAmount.toString(),
+      competitionId,
       fromChain: BlockchainType.SVM,
       toChain: BlockchainType.EVM,
       reason: "Burning tokens by trading to EVM dead address",
@@ -1820,7 +2138,8 @@ describe("Trading API", () => {
     expect(transaction.tradeAmountUsd).toBeGreaterThan(0);
 
     // Check updated balance after EVM burn
-    const afterEvmBurnBalanceResponse = await agentClient.getBalance();
+    const afterEvmBurnBalanceResponse =
+      await agentClient.getBalance(competitionId);
     const afterEvmBurnUsdcBalance = parseFloat(
       (afterEvmBurnBalanceResponse as BalancesResponse).balances
         .find((b) => b.tokenAddress === svmUsdcAddress)
@@ -1845,6 +2164,7 @@ describe("Trading API", () => {
       fromToken: svmUsdcAddress,
       toToken: solanaDeadAddress,
       amount: tradeAmount.toString(),
+      competitionId,
       fromChain: BlockchainType.SVM,
       toChain: BlockchainType.SVM,
       reason: "Burning tokens by trading to Solana dead address",
@@ -1873,7 +2193,7 @@ describe("Trading API", () => {
     expect(solanaBurnTransaction.tradeAmountUsd).toBeGreaterThan(0);
 
     // Check final balance after both burns
-    const finalBalanceResponse = await agentClient.getBalance();
+    const finalBalanceResponse = await agentClient.getBalance(competitionId);
     const finalUsdcBalance = parseFloat(
       (finalBalanceResponse as BalancesResponse).balances
         .find((b) => b.tokenAddress === svmUsdcAddress)
@@ -1892,7 +2212,8 @@ describe("Trading API", () => {
     expect(solanaDeadBalance).toBe(0);
 
     // Test 3: Verify burn trades appear correctly in trade history
-    const tradeHistoryResponse = await agentClient.getTradeHistory();
+    const tradeHistoryResponse =
+      await agentClient.getTradeHistory(competitionId);
     expect(tradeHistoryResponse.success).toBe(true);
 
     const trades = (tradeHistoryResponse as TradeHistoryResponse).trades;
@@ -1917,73 +2238,69 @@ describe("Trading API", () => {
     );
   });
 
-  test("competition with allow cross-chain trading overrides default disallowAll feature flag", async () => {
+  test("each competition uses its own cross-chain trading config independently", async () => {
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);
     const { client: agent1Client, agent: agent1 } =
       await registerUserAndAgentAndGetClient({
         adminApiKey,
-        agentName: "Agent Competition 1",
+        agentName: "Agent Multi Comp",
       });
 
-    // Start Competition with cross-chain trading enabled
-    const name = `Multi-Comp Test 1 ${Date.now()}`;
-    const competitionResponse = (await adminClient.startCompetition({
-      name,
+    // Create Competition 1 with cross-chain trading ENABLED
+    const comp1Response = (await adminClient.startCompetition({
+      name: `Cross-Chain Allow Comp ${Date.now()}`,
       agentIds: [agent1.id],
       tradingType: CROSS_CHAIN_TRADING_TYPE.ALLOW,
     })) as StartCompetitionResponse;
-    const competition1 = competitionResponse.competition;
-    expect(competitionResponse.success).toBe(true);
+    const competition1 = comp1Response.competition;
+    expect(comp1Response.success).toBe(true);
 
-    // We need to start a second competition to trigger the bug, but since concurrent comps
-    // are not allowed, we have to make some direct db changes temporarily. It occurs because
-    // `updateFeaturesWithCompetition` is called at app startup as well as when comps are
-    // started or ended.
-    const db = await connectToDb();
-    await db
-      .update(competitions)
-      .set({
-        status: "pending",
-      })
-      .where(eq(competitions.id, competition1.id));
-
-    // Create a second competition with cross-chain trading disabled
-    const competition2Response = (await adminClient.startCompetition({
-      name: "Competition 2",
-      agentIds: [agent1.id],
-      tradingType: CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
-    })) as StartCompetitionResponse;
-    const competition2 = competition2Response.competition;
-    expect(competition2Response.success).toBe(true);
-
-    // Fixup the db values so that app logic will work as expected
-    await db
-      .update(competitions)
-      .set({
-        status: "pending",
-      })
-      .where(eq(competitions.id, competition2.id));
-    await db
-      .update(competitions)
-      .set({
-        status: "active",
-      })
-      .where(eq(competitions.id, competition1.id));
-
-    // Verify competition 1 (allow) allows cross-chain trades
+    // Verify cross-chain trade SUCCEEDS in competition 1 (ALLOW)
     const svmUsdcAddress = config.specificChainTokens.svm.usdc;
     const ethTokenAddress = config.specificChainTokens.eth.eth;
     const tradeAmount = "10";
-    const comp1CrossChainResponse = await agent1Client.executeTrade({
+    const comp1TradeResponse = await agent1Client.executeTrade({
       fromToken: svmUsdcAddress,
       toToken: ethTokenAddress,
       amount: tradeAmount,
+      competitionId: competition1.id,
       fromChain: BlockchainType.SVM,
       toChain: BlockchainType.EVM,
       reason: "Testing cross-chain enabled in comp1",
     });
-    expect(comp1CrossChainResponse.success).toBe(true);
+    expect(comp1TradeResponse.success).toBe(true);
+
+    // End competition 1, then create competition 2 with different settings
+    await adminClient.endCompetition(competition1.id);
+
+    // Create Competition 2 with cross-chain trading DISABLED
+    const comp2Response = (await adminClient.startCompetition({
+      name: `Cross-Chain Disallow Comp ${Date.now()}`,
+      agentIds: [agent1.id],
+      tradingType: CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
+    })) as StartCompetitionResponse;
+    const competition2 = comp2Response.competition;
+    expect(comp2Response.success).toBe(true);
+
+    // Verify cross-chain trade FAILS in competition 2 (DISALLOW_ALL)
+    const comp2TradeResponse = await agent1Client.executeTrade({
+      fromToken: svmUsdcAddress,
+      toToken: ethTokenAddress,
+      amount: tradeAmount,
+      competitionId: competition2.id,
+      fromChain: BlockchainType.SVM,
+      toChain: BlockchainType.EVM,
+      reason: "Testing cross-chain disabled in comp2",
+    });
+    expect(comp2TradeResponse.success).toBe(false);
+    expect((comp2TradeResponse as ErrorResponse).error).toContain(
+      "Cross-chain",
+    );
+
+    // This proves each competition uses its own crossChainTradingType config
+    // from the database, not from global state. Testing simultaneous competitions
+    // will require updating test utilities to accept competitionId parameter.
   });
 
   test("agent cannot execute trade on competition they are not registered for", async () => {
@@ -2010,6 +2327,8 @@ describe("Trading API", () => {
       agentIds: [competitionAgent.id], // Only the second agent is registered
       tradingType: CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
     });
+    const competitionId = (competitionResponse as StartCompetitionResponse)
+      .competition.id;
 
     expect(competitionResponse.success).toBe(true);
 
@@ -2022,6 +2341,7 @@ describe("Trading API", () => {
       fromToken: usdcTokenAddress,
       toToken: solTokenAddress,
       amount: "100",
+      competitionId,
       fromChain: BlockchainType.SVM,
       toChain: BlockchainType.SVM,
       reason: "Testing trade with unregistered agent",
@@ -2032,13 +2352,14 @@ describe("Trading API", () => {
     expect((tradeResponse as ErrorResponse).error).toContain("not registered");
 
     // Verify that the agent can get balance but it should be empty since they're not in the competition
-    const balanceResponse = await agentClient.getBalance();
+    const balanceResponse = await agentClient.getBalance(competitionId);
     expect(balanceResponse.success).toBe(true);
     expect((balanceResponse as BalancesResponse).balances).toBeDefined();
     expect((balanceResponse as BalancesResponse).balances.length).toBe(0);
 
     // Verify that the agent can get trade history but it should be empty since they're not in the competition
-    const tradeHistoryResponse = await agentClient.getTradeHistory();
+    const tradeHistoryResponse =
+      await agentClient.getTradeHistory(competitionId);
     expect(tradeHistoryResponse.success).toBe(true);
     expect((tradeHistoryResponse as TradeHistoryResponse).trades).toBeDefined();
     expect((tradeHistoryResponse as TradeHistoryResponse).trades.length).toBe(

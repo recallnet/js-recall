@@ -1,4 +1,4 @@
-import { UseQueryResult, useQuery } from "@tanstack/react-query";
+import { UseQueryResult, skipToken, useQuery } from "@tanstack/react-query";
 
 import type { LeaderboardParams } from "@recallnet/services/types";
 
@@ -17,8 +17,7 @@ export function useLeaderboards(
 ): UseQueryResult<RouterOutputs["leaderboard"]["getGlobal"]> {
   return useQuery(
     tanstackClient.leaderboard.getGlobal.queryOptions({
-      input: params,
-      enabled,
+      input: enabled ? params : skipToken,
       placeholderData: (prev) => prev,
     }),
   );

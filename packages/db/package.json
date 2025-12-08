@@ -62,6 +62,16 @@
         "default": "./dist/repositories/agent.cjs"
       }
     },
+    "./repositories/arena": {
+      "import": {
+        "types": "./dist/repositories/arena.d.ts",
+        "default": "./dist/repositories/arena.js"
+      },
+      "require": {
+        "types": "./dist/repositories/arena.d.cts",
+        "default": "./dist/repositories/arena.cjs"
+      }
+    },
     "./repositories/agent-score": {
       "import": {
         "types": "./dist/repositories/agent-score.d.ts",
@@ -70,6 +80,16 @@
       "require": {
         "types": "./dist/repositories/agent-score.d.cts",
         "default": "./dist/repositories/agent-score.cjs"
+      }
+    },
+    "./repositories/airdrop": {
+      "import": {
+        "types": "./dist/repositories/airdrop.d.ts",
+        "default": "./dist/repositories/airdrop.js"
+      },
+      "require": {
+        "types": "./dist/repositories/airdrop.d.cts",
+        "default": "./dist/repositories/airdrop.cjs"
       }
     },
     "./repositories/balance": {
@@ -92,6 +112,66 @@
         "default": "./dist/repositories/boost.cjs"
       }
     },
+    "./repositories/competition-games": {
+      "import": {
+        "types": "./dist/repositories/competition-games.d.ts",
+        "default": "./dist/repositories/competition-games.js"
+      },
+      "require": {
+        "types": "./dist/repositories/competition-games.d.cts",
+        "default": "./dist/repositories/competition-games.cjs"
+      }
+    },
+    "./repositories/competition-aggregate-scores": {
+      "import": {
+        "types": "./dist/repositories/competition-aggregate-scores.d.ts",
+        "default": "./dist/repositories/competition-aggregate-scores.js"
+      },
+      "require": {
+        "types": "./dist/repositories/competition-aggregate-scores.d.cts",
+        "default": "./dist/repositories/competition-aggregate-scores.cjs"
+      }
+    },
+    "./repositories/game-prediction-scores": {
+      "import": {
+        "types": "./dist/repositories/game-prediction-scores.d.ts",
+        "default": "./dist/repositories/game-prediction-scores.js"
+      },
+      "require": {
+        "types": "./dist/repositories/game-prediction-scores.d.cts",
+        "default": "./dist/repositories/game-prediction-scores.cjs"
+      }
+    },
+    "./repositories/game-predictions": {
+      "import": {
+        "types": "./dist/repositories/game-predictions.d.ts",
+        "default": "./dist/repositories/game-predictions.js"
+      },
+      "require": {
+        "types": "./dist/repositories/game-predictions.d.cts",
+        "default": "./dist/repositories/game-predictions.cjs"
+      }
+    },
+    "./repositories/game-plays": {
+      "import": {
+        "types": "./dist/repositories/game-plays.d.ts",
+        "default": "./dist/repositories/game-plays.js"
+      },
+      "require": {
+        "types": "./dist/repositories/game-plays.d.cts",
+        "default": "./dist/repositories/game-plays.cjs"
+      }
+    },
+    "./repositories/games": {
+      "import": {
+        "types": "./dist/repositories/games.d.ts",
+        "default": "./dist/repositories/games.js"
+      },
+      "require": {
+        "types": "./dist/repositories/games.d.cts",
+        "default": "./dist/repositories/games.cjs"
+      }
+    },
     "./repositories/competition": {
       "import": {
         "types": "./dist/repositories/competition.d.ts",
@@ -112,6 +192,26 @@
         "default": "./dist/repositories/competition-rewards.cjs"
       }
     },
+    "./repositories/conviction-claims": {
+      "import": {
+        "types": "./dist/repositories/conviction-claims.d.ts",
+        "default": "./dist/repositories/conviction-claims.js"
+      },
+      "require": {
+        "types": "./dist/repositories/conviction-claims.d.cts",
+        "default": "./dist/repositories/conviction-claims.cjs"
+      }
+    },
+    "./repositories/indexing-events": {
+      "import": {
+        "types": "./dist/repositories/indexing-events.d.ts",
+        "default": "./dist/repositories/indexing-events.js"
+      },
+      "require": {
+        "types": "./dist/repositories/indexing-events.d.cts",
+        "default": "./dist/repositories/indexing-events.cjs"
+      }
+    },
     "./repositories/leaderboard": {
       "import": {
         "types": "./dist/repositories/leaderboard.d.ts",
@@ -122,6 +222,36 @@
         "default": "./dist/repositories/leaderboard.cjs"
       }
     },
+    "./repositories/partner": {
+      "import": {
+        "types": "./dist/repositories/partner.d.ts",
+        "default": "./dist/repositories/partner.js"
+      },
+      "require": {
+        "types": "./dist/repositories/partner.d.cts",
+        "default": "./dist/repositories/partner.cjs"
+      }
+    },
+    "./repositories/paper-trading-config": {
+      "import": {
+        "types": "./dist/repositories/paper-trading-config.d.ts",
+        "default": "./dist/repositories/paper-trading-config.js"
+      },
+      "require": {
+        "types": "./dist/repositories/paper-trading-config.d.cts",
+        "default": "./dist/repositories/paper-trading-config.cjs"
+      }
+    },
+    "./repositories/paper-trading-initial-balances": {
+      "import": {
+        "types": "./dist/repositories/paper-trading-initial-balances.d.ts",
+        "default": "./dist/repositories/paper-trading-initial-balances.js"
+      },
+      "require": {
+        "types": "./dist/repositories/paper-trading-initial-balances.d.cts",
+        "default": "./dist/repositories/paper-trading-initial-balances.cjs"
+      }
+    },
     "./repositories/perps": {
       "import": {
         "types": "./dist/repositories/perps.d.ts",
@@ -130,6 +260,16 @@
       "require": {
         "types": "./dist/repositories/perps.d.cts",
         "default": "./dist/repositories/perps.cjs"
+      }
+    },
+    "./repositories/spot-live": {
+      "import": {
+        "types": "./dist/repositories/spot-live.d.ts",
+        "default": "./dist/repositories/spot-live.js"
+      },
+      "require": {
+        "types": "./dist/repositories/spot-live.d.cts",
+        "default": "./dist/repositories/spot-live.cjs"
       }
     },
     "./repositories/rewards": {
@@ -182,14 +322,14 @@
         "default": "./dist/repositories/user.cjs"
       }
     },
-    "./repositories/vote": {
+    "./repositories/types": {
       "import": {
-        "types": "./dist/repositories/vote.d.ts",
-        "default": "./dist/repositories/vote.js"
+        "types": "./dist/repositories/types/index.d.ts",
+        "default": "./dist/repositories/types/index.js"
       },
       "require": {
-        "types": "./dist/repositories/vote.d.cts",
-        "default": "./dist/repositories/vote.cjs"
+        "types": "./dist/repositories/types/index.d.cts",
+        "default": "./dist/repositories/types/index.cjs"
       }
     },
     "./types": {
@@ -212,6 +352,26 @@
         "default": "./dist/schema/index.cjs"
       }
     },
+    "./schema/airdrop/defs": {
+      "import": {
+        "types": "./dist/schema/airdrop/defs.d.ts",
+        "default": "./dist/schema/airdrop/defs.js"
+      },
+      "require": {
+        "types": "./dist/schema/airdrop/defs.d.cts",
+        "default": "./dist/schema/airdrop/defs.cjs"
+      }
+    },
+    "./schema/airdrop/types": {
+      "import": {
+        "types": "./dist/schema/airdrop/types.d.ts",
+        "default": "./dist/schema/airdrop/types.js"
+      },
+      "require": {
+        "types": "./dist/schema/airdrop/types.d.cts",
+        "default": "./dist/schema/airdrop/types.cjs"
+      }
+    },
     "./schema/core/defs": {
       "import": {
         "types": "./dist/schema/core/defs.d.ts",
@@ -220,6 +380,36 @@
       "require": {
         "types": "./dist/schema/core/defs.d.cts",
         "default": "./dist/schema/core/defs.cjs"
+      }
+    },
+    "./schema/boost/defs": {
+      "import": {
+        "types": "./dist/schema/boost/defs.d.ts",
+        "default": "./dist/schema/boost/defs.js"
+      },
+      "require": {
+        "types": "./dist/schema/boost/defs.d.cts",
+        "default": "./dist/schema/boost/defs.cjs"
+      }
+    },
+    "./schema/conviction-claims/defs": {
+      "import": {
+        "types": "./dist/schema/conviction-claims/defs.d.ts",
+        "default": "./dist/schema/conviction-claims/defs.js"
+      },
+      "require": {
+        "types": "./dist/schema/conviction-claims/defs.d.cts",
+        "default": "./dist/schema/conviction-claims/defs.cjs"
+      }
+    },
+    "./schema/boost/types": {
+      "import": {
+        "types": "./dist/schema/boost/types.d.ts",
+        "default": "./dist/schema/boost/types.js"
+      },
+      "require": {
+        "types": "./dist/schema/boost/types.d.cts",
+        "default": "./dist/schema/boost/types.cjs"
       }
     },
     "./schema/core/relations": {
@@ -292,6 +482,36 @@
         "default": "./dist/schema/ranking/types.cjs"
       }
     },
+    "./schema/rewards/defs": {
+      "import": {
+        "types": "./dist/schema/rewards/defs.d.ts",
+        "default": "./dist/schema/rewards/defs.js"
+      },
+      "require": {
+        "types": "./dist/schema/rewards/defs.d.cts",
+        "default": "./dist/schema/rewards/defs.cjs"
+      }
+    },
+    "./schema/rewards/relations": {
+      "import": {
+        "types": "./dist/schema/rewards/relations.d.ts",
+        "default": "./dist/schema/rewards/relations.js"
+      },
+      "require": {
+        "types": "./dist/schema/rewards/relations.d.cts",
+        "default": "./dist/schema/rewards/relations.cjs"
+      }
+    },
+    "./schema/rewards/types": {
+      "import": {
+        "types": "./dist/schema/rewards/types.d.ts",
+        "default": "./dist/schema/rewards/types.js"
+      },
+      "require": {
+        "types": "./dist/schema/rewards/types.d.cts",
+        "default": "./dist/schema/rewards/types.cjs"
+      }
+    },
     "./schema/trading/defs": {
       "import": {
         "types": "./dist/schema/trading/defs.d.ts",
@@ -322,34 +542,34 @@
         "default": "./dist/schema/trading/types.cjs"
       }
     },
-    "./schema/voting/defs": {
+    "./utils": {
       "import": {
-        "types": "./dist/schema/voting/defs.d.ts",
-        "default": "./dist/schema/voting/defs.js"
+        "types": "./dist/utils/index.d.ts",
+        "default": "./dist/utils/index.js"
       },
       "require": {
-        "types": "./dist/schema/voting/defs.d.cts",
-        "default": "./dist/schema/voting/defs.cjs"
+        "types": "./dist/utils/index.d.cts",
+        "default": "./dist/utils/index.cjs"
       }
     },
-    "./schema/voting/relations": {
+    "./schema/sports/defs": {
       "import": {
-        "types": "./dist/schema/voting/relations.d.ts",
-        "default": "./dist/schema/voting/relations.js"
+        "types": "./dist/schema/sports/defs.d.ts",
+        "default": "./dist/schema/sports/defs.js"
       },
       "require": {
-        "types": "./dist/schema/voting/relations.d.cts",
-        "default": "./dist/schema/voting/relations.cjs"
+        "types": "./dist/schema/sports/defs.d.cts",
+        "default": "./dist/schema/sports/defs.cjs"
       }
     },
-    "./schema/voting/types": {
+    "./schema/sports/types": {
       "import": {
-        "types": "./dist/schema/voting/types.d.ts",
-        "default": "./dist/schema/voting/types.js"
+        "types": "./dist/schema/sports/types.d.ts",
+        "default": "./dist/schema/sports/types.js"
       },
       "require": {
-        "types": "./dist/schema/voting/types.d.cts",
-        "default": "./dist/schema/voting/types.cjs"
+        "types": "./dist/schema/sports/types.d.cts",
+        "default": "./dist/schema/sports/types.cjs"
       }
     }
   },
@@ -373,15 +593,17 @@
   },
   "dependencies": {
     "drizzle-orm": "^0.43.1",
+    "drizzle-seed": "^0.3.1",
     "drizzle-zod": "^0.8.2",
     "neverthrow": "^8.2.0",
-    "pino": "^9.7.0",
+    "pino": "^10.1.0",
     "zod": "3.25.76"
   },
   "devDependencies": {
     "@recallnet/eslint-config": "workspace:*",
     "@recallnet/typescript-config": "workspace:*",
     "@types/node": "^24.3.0",
+    "@types/pg": "^8.15.4",
     "@vitest/coverage-v8": "^3.2.4",
     "drizzle-kit": "^0.31.1",
     "tsup": "^8.3.6",
@@ -390,6 +612,7 @@
     "typedoc-plugin-markdown": "^4.6.0",
     "typescript": "^5.7.3",
     "vite-tsconfig-paths": "^5.1.4",
-    "vitest": "^3.2.4"
+    "vitest": "^3.2.4",
+    "vitest-mock-extended": "^3.1.0"
   }
 }

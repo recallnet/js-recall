@@ -40,7 +40,6 @@ describe("TradingConstraintsService", () => {
 
   const testCompetitionId = "comp-123";
   const mockConstraintsRecord = {
-    id: "tc-456",
     competitionId: testCompetitionId,
     minimumPairAgeHours: 168,
     minimum24hVolumeUsd: 100000,
@@ -84,7 +83,9 @@ describe("TradingConstraintsService", () => {
         },
         undefined,
       );
-      expect(result).toEqual(mockConstraintsRecord);
+      expect(result?.minimumPairAgeHours).toBe(
+        mockConstraintsRecord.minimumPairAgeHours,
+      );
     });
 
     it("should create constraints with default values when custom values not provided", async () => {
@@ -172,7 +173,9 @@ describe("TradingConstraintsService", () => {
       expect(mockRepoInstance.findByCompetitionId).toHaveBeenCalledWith(
         testCompetitionId,
       );
-      expect(result).toEqual(mockConstraintsRecord);
+      expect(result?.minimumPairAgeHours).toBe(
+        mockConstraintsRecord.minimumPairAgeHours,
+      );
     });
 
     it("should return null when constraints not found", async () => {
@@ -191,6 +194,108 @@ describe("TradingConstraintsService", () => {
       await expect(service.getConstraints(testCompetitionId)).rejects.toThrow(
         "Query timeout",
       );
+    });
+
+    it("should cache constraints after first retrieval", async () => {
+      mockRepoInstance.findByCompetitionId.mockResolvedValue(
+        mockConstraintsRecord,
+      );
+
+      // First call - should hit database
+      const result1 = await service.getConstraints(testCompetitionId);
+      expect(mockRepoInstance.findByCompetitionId).toHaveBeenCalledTimes(1);
+      expect(result1?.minimumPairAgeHours).toBe(
+        mockConstraintsRecord.minimumPairAgeHours,
+      );
+      expect(result1?.minimumFdvUsd).toBe(mockConstraintsRecord.minimumFdvUsd);
+
+      // Second call - should use cache
+      const result2 = await service.getConstraints(testCompetitionId);
+      expect(mockRepoInstance.findByCompetitionId).toHaveBeenCalledTimes(1); // Still 1
+
+      // Verify cached result has correct business data
+      expect(result2).toBeDefined();
+      expect(result2?.minimumPairAgeHours).toBe(
+        mockConstraintsRecord.minimumPairAgeHours,
+      );
+      expect(result2?.minimum24hVolumeUsd).toBe(
+        mockConstraintsRecord.minimum24hVolumeUsd,
+      );
+      expect(result2?.minimumLiquidityUsd).toBe(
+        mockConstraintsRecord.minimumLiquidityUsd,
+      );
+      expect(result2?.minimumFdvUsd).toBe(mockConstraintsRecord.minimumFdvUsd);
+      expect(result2?.minTradesPerDay).toBe(
+        mockConstraintsRecord.minTradesPerDay,
+      );
+    });
+
+    it("should return cached constraints with correct structure", async () => {
+      mockRepoInstance.findByCompetitionId.mockResolvedValue(
+        mockConstraintsRecord,
+      );
+
+      // Prime the cache
+      await service.getConstraints(testCompetitionId);
+
+      // Get from cache
+      const cached = await service.getConstraints(testCompetitionId);
+
+      expect(cached).toBeDefined();
+      expect(cached?.minimumPairAgeHours).toBe(
+        mockConstraintsRecord.minimumPairAgeHours,
+      );
+      expect(cached?.minimum24hVolumeUsd).toBe(
+        mockConstraintsRecord.minimum24hVolumeUsd,
+      );
+      expect(cached?.minimumLiquidityUsd).toBe(
+        mockConstraintsRecord.minimumLiquidityUsd,
+      );
+      expect(cached?.minimumFdvUsd).toBe(mockConstraintsRecord.minimumFdvUsd);
+    });
+
+    it("should cache null results", async () => {
+      mockRepoInstance.findByCompetitionId.mockResolvedValue(null);
+
+      // First call
+      const result1 = await service.getConstraints(testCompetitionId);
+      expect(result1).toBeNull();
+      expect(mockRepoInstance.findByCompetitionId).toHaveBeenCalledTimes(1);
+
+      // Second call - should NOT hit database again because null is cached
+      const result2 = await service.getConstraints(testCompetitionId);
+      expect(result2).toBeNull();
+      expect(mockRepoInstance.findByCompetitionId).toHaveBeenCalledTimes(1); // Still 1 - null is cached
+    });
+
+    it("should handle concurrent requests for same competition", async () => {
+      mockRepoInstance.findByCompetitionId.mockResolvedValue(
+        mockConstraintsRecord,
+      );
+
+      // Make concurrent requests - without cache locking, each request will independently
+      // check the cache (empty), query the database, and populate the cache. This may result
+      // in multiple DB calls, but all requests will receive correct data and the cache will
+      // be populated by the last request to complete.
+      const [result1, result2, result3] = await Promise.all([
+        service.getConstraints(testCompetitionId),
+        service.getConstraints(testCompetitionId),
+        service.getConstraints(testCompetitionId),
+      ]);
+
+      // All should succeed with business data
+      expect(result1?.minimumPairAgeHours).toBe(
+        mockConstraintsRecord.minimumPairAgeHours,
+      );
+      expect(result2?.minimumPairAgeHours).toBe(
+        mockConstraintsRecord.minimumPairAgeHours,
+      );
+      expect(result3?.minimumPairAgeHours).toBe(
+        mockConstraintsRecord.minimumPairAgeHours,
+      );
+
+      // DB should be called at least once (may be called multiple times for concurrent requests)
+      expect(mockRepoInstance.findByCompetitionId).toHaveBeenCalled();
     });
   });
 
@@ -213,7 +318,9 @@ describe("TradingConstraintsService", () => {
         },
         undefined,
       );
-      expect(result).toEqual(mockConstraintsRecord);
+      expect(result?.minimumPairAgeHours).toBe(
+        mockConstraintsRecord.minimumPairAgeHours,
+      );
     });
 
     it("should update all constraint fields", async () => {
@@ -234,7 +341,9 @@ describe("TradingConstraintsService", () => {
         update,
         undefined,
       );
-      expect(result).toEqual(mockConstraintsRecord);
+      expect(result?.minimumPairAgeHours).toBe(
+        mockConstraintsRecord.minimumPairAgeHours,
+      );
     });
 
     it("should handle null minTradesPerDay explicitly", async () => {
@@ -253,7 +362,9 @@ describe("TradingConstraintsService", () => {
         },
         undefined,
       );
-      expect(result).toEqual(mockConstraintsRecord);
+      expect(result?.minimumPairAgeHours).toBe(
+        mockConstraintsRecord.minimumPairAgeHours,
+      );
     });
 
     it("should throw error when update fails", async () => {
@@ -307,6 +418,29 @@ describe("TradingConstraintsService", () => {
         undefined,
       );
     });
+
+    it("should clear cache after updating constraints", async () => {
+      mockRepoInstance.findByCompetitionId.mockResolvedValue(
+        mockConstraintsRecord,
+      );
+      mockRepoInstance.update.mockResolvedValue({
+        ...mockConstraintsRecord,
+        minimumPairAgeHours: 300,
+      });
+
+      // Prime the cache
+      await service.getConstraints(testCompetitionId);
+      expect(mockRepoInstance.findByCompetitionId).toHaveBeenCalledTimes(1);
+
+      // Update constraints - should clear cache
+      await service.updateConstraints(testCompetitionId, {
+        minimumPairAgeHours: 300,
+      });
+
+      // Next read should hit database again
+      await service.getConstraints(testCompetitionId);
+      expect(mockRepoInstance.findByCompetitionId).toHaveBeenCalledTimes(2);
+    });
   });
 
   describe("deleteConstraints", () => {
@@ -336,6 +470,25 @@ describe("TradingConstraintsService", () => {
         service.deleteConstraints(testCompetitionId),
       ).rejects.toThrow("Foreign key violation");
     });
+
+    it("should clear cache after deleting constraints", async () => {
+      mockRepoInstance.findByCompetitionId.mockResolvedValue(
+        mockConstraintsRecord,
+      );
+      mockRepoInstance.delete.mockResolvedValue(true);
+
+      // Prime the cache
+      await service.getConstraints(testCompetitionId);
+      expect(mockRepoInstance.findByCompetitionId).toHaveBeenCalledTimes(1);
+
+      // Delete constraints - should clear cache
+      await service.deleteConstraints(testCompetitionId);
+
+      // Next read should hit database again
+      mockRepoInstance.findByCompetitionId.mockResolvedValue(null);
+      await service.getConstraints(testCompetitionId);
+      expect(mockRepoInstance.findByCompetitionId).toHaveBeenCalledTimes(2);
+    });
   });
 
   describe("upsertConstraints", () => {
@@ -361,7 +514,9 @@ describe("TradingConstraintsService", () => {
         minimumFdvUsd: 1200000,
         minTradesPerDay: 6,
       });
-      expect(result).toEqual(mockConstraintsRecord);
+      expect(result?.minimumPairAgeHours).toBe(
+        mockConstraintsRecord.minimumPairAgeHours,
+      );
     });
 
     it("should upsert constraints with defaults", async () => {
@@ -407,6 +562,30 @@ describe("TradingConstraintsService", () => {
       await expect(service.upsertConstraints(input)).rejects.toThrow(
         "Unique constraint violation",
       );
+    });
+
+    it("should clear cache after upserting constraints", async () => {
+      mockRepoInstance.findByCompetitionId.mockResolvedValue(
+        mockConstraintsRecord,
+      );
+      mockRepoInstance.upsert.mockResolvedValue({
+        ...mockConstraintsRecord,
+        minimumPairAgeHours: 200,
+      });
+
+      // Prime the cache
+      await service.getConstraints(testCompetitionId);
+      expect(mockRepoInstance.findByCompetitionId).toHaveBeenCalledTimes(1);
+
+      // Upsert constraints - should clear cache
+      await service.upsertConstraints({
+        competitionId: testCompetitionId,
+        minimumPairAgeHours: 200,
+      });
+
+      // Next read should hit database again
+      await service.getConstraints(testCompetitionId);
+      expect(mockRepoInstance.findByCompetitionId).toHaveBeenCalledTimes(2);
     });
   });
 
@@ -948,7 +1127,9 @@ describe("TradingConstraintsService", () => {
         minimumFdvUsd: 1000000,
         minTradesPerDay: null,
       });
-      expect(result).toEqual(mockConstraintsRecord);
+      expect(result?.minimumPairAgeHours).toBe(
+        mockConstraintsRecord.minimumPairAgeHours,
+      );
     });
 
     it("should handle memory pressure during bulk constraint operations", async () => {

@@ -2,11 +2,6 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { tanstackClient } from "@/rpc/clients/tanstack-query";
 
-interface JoinCompetitionArgs {
-  agentId: string;
-  competitionId: string;
-}
-
 /**
  * Hook to join a competition with an agent
  * @returns Mutation for joining a competition
@@ -37,7 +32,7 @@ export const useJoinCompetition = () => {
           queryKey: tanstackClient.leaderboard.getGlobal.key(),
         });
         queryClient.invalidateQueries({
-          queryKey: tanstackClient.competitions.listEnriched.key(),
+          queryKey: tanstackClient.competitions.list.key(),
         });
         queryClient.invalidateQueries({
           queryKey: tanstackClient.competitions.getById.key({

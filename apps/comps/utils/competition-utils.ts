@@ -1,9 +1,25 @@
 import { CheckIcon, ClockIcon, Play } from "lucide-react";
 
-import { RouterOutputs } from "@/rpc/router";
-import { UserCompetition } from "@/types";
+import { CompetitionType } from "@recallnet/db/repositories/types";
 
-import { formatDate } from "./format";
+import { RouterOutputs } from "@/rpc/router";
+import { EvaluationMetric, UserCompetition } from "@/types";
+
+import { formatDateShort } from "./format";
+
+/**
+ * Descriptions for competition types
+ */
+export const COMPETITION_DESCRIPTIONS: Record<CompetitionType, string> = {
+  trading:
+    "Agents execute crypto paper trading strategies in a real-time, simulated market environment.",
+  perpetual_futures:
+    "Agents execute perpetual futures trading strategies in a live environment with real assets.",
+  spot_live_trading:
+    "Agents execute spot trading strategies using real on-chain wallets with self-funded capital.",
+  sports_prediction:
+    "Agents predict the winner of live NFL games with confidence (% likelihood) and reasoning.",
+};
 
 export function iconForStatus(
   status: RouterOutputs["competitions"]["getById"]["status"],
@@ -20,6 +36,124 @@ export function iconForStatus(
 }
 
 /**
+ * Calculates polling interval with jitter for competition data
+ * Returns an interval for active, pending, and ending competitions to keep data fresh.
+ * Returns false for ended competitions to save resources.
+ *
+ * Polling interval matches backend cron job (perps) frequency (60s) with additional buffer
+ * to allow time for processing (perps data sync, risk metrics calculation).
+ *
+ * @param status - Competition status
+ * @returns Polling interval in milliseconds with jitter (60-65s), or false if ended
+ */
+export function getCompetitionPollingInterval(
+  status: "active" | "pending" | "ending" | "ended" | undefined,
+): number | false {
+  if (status === "active" || status === "pending" || status === "ending") {
+    // 60-65 second interval with jitter to prevent thundering herd
+    // Matches backend cron frequency and allows time for processing
+    return 60000 + Math.random() * 5000;
+  }
+  // No polling for ended competitions
+  return false;
+}
+
+/**
+ * Metric tab configuration for perps competitions
+ * Single source of truth for metric display names, tab values, and ordering
+ */
+export const PERPS_METRIC_TABS = [
+  {
+    metric: "simple_return" as const,
+    value: "account-value",
+    label: "ROI",
+  },
+  {
+    metric: "calmar_ratio" as const,
+    value: "calmar-ratio",
+    label: "Calmar Ratio",
+  },
+  {
+    metric: "max_drawdown" as const,
+    value: "max-drawdown",
+    label: "Max Drawdown",
+  },
+  {
+    metric: "sortino_ratio" as const,
+    value: "sortino-ratio",
+    label: "Sortino Ratio",
+  },
+] as const;
+
+/**
+ * Maps evaluation metric to display name
+ * @param metric - Evaluation metric enum value
+ * @returns Human-readable display name
+ */
+export function getEvaluationMetricDisplayName(
+  metric: EvaluationMetric | undefined,
+): string {
+  const tab = PERPS_METRIC_TABS.find((t) => t.metric === metric);
+  return tab?.label ?? "ROI";
+}
+
+/**
+ * Maps evaluation metric to chart tab value
+ * @param metric - Evaluation metric enum value
+ * @returns Tab value string used in the timeline chart
+ */
+export function getEvaluationMetricTabValue(
+  metric: EvaluationMetric | undefined,
+): string {
+  const tab = PERPS_METRIC_TABS.find((t) => t.metric === metric);
+  return tab?.value ?? "account-value";
+}
+
+/**
+ * Checks if a table header is the primary metric.
+ * @param headerId - Table header ID string
+ * @param metric - Evaluation metric enum value
+ * @returns True if the table header is the primary metric, false otherwise
+ */
+export function checkTableHeaderIsPrimaryMetric(
+  headerId: string,
+  metric: EvaluationMetric | undefined,
+): boolean {
+  if (!metric) return false;
+  const toSnakeCase = (str: string) =>
+    str.replace(/([a-z])([A-Z])/g, "$1_$2").toLowerCase();
+  return (
+    toSnakeCase(headerId) ===
+    PERPS_METRIC_TABS.find((t) => t.metric === metric)?.metric
+  );
+}
+
+/**
+ * Type for metric tab configuration
+ */
+export type MetricTab = {
+  metric: EvaluationMetric;
+  value: string;
+  label: string;
+};
+
+/**
+ * Gets ordered metric tabs with primary metric first
+ * @param primaryMetric - The evaluation metric to place first
+ * @returns Ordered array of tab configurations
+ */
+export function getOrderedMetricTabs(
+  primaryMetric: EvaluationMetric | undefined,
+): readonly MetricTab[] {
+  if (!primaryMetric) return PERPS_METRIC_TABS;
+
+  const primaryTab = PERPS_METRIC_TABS.find((t) => t.metric === primaryMetric);
+  const otherTabs = PERPS_METRIC_TABS.filter((t) => t.metric !== primaryMetric);
+
+  return primaryTab ? [primaryTab, ...otherTabs] : PERPS_METRIC_TABS;
+}
+
+/**
  * Formats the start and end dates of a competition in a user-friendly abbreviated form (MM/dd).
  * If either date is missing it falls back to the string "TBA".
  *
@@ -31,9 +165,12 @@ export function iconForStatus(
 export function formatCompetitionDates(
   startDate?: Date | number | string | null,
   endDate?: Date | number | string | null,
+  includeTime: boolean = false,
 ): string {
-  const start = startDate ? formatDate(new Date(startDate)) : "TBA";
-  const end = endDate ? formatDate(new Date(endDate)) : "TBA";
+  const start = startDate
+    ? formatDateShort(new Date(startDate), includeTime)
+    : "TBA";
+  const end = endDate ? formatDateShort(new Date(endDate), includeTime) : "TBA";
 
   return `${start} - ${end}`;
 }
@@ -42,12 +179,12 @@ export function formatCompetitionDates(
  * Merges a list of competitions with user competitions data to create a list of competitions
  * with their associated agents.
  *
- * @param competitions - List of competitions to merge
+ * @param competitions - List of competitions from competitions endpoint
  * @param userCompetitions - List of user competitions containing agent data
  * @returns List of competitions with their associated agents
  */
 export function mergeCompetitionsWithUserData(
-  competitions: RouterOutputs["competitions"]["listEnriched"]["competitions"],
+  competitions: RouterOutputs["competitions"]["list"]["competitions"],
   userCompetitions: UserCompetition[],
 ) {
   return competitions.map((competition) => {
@@ -80,6 +217,8 @@ export function formatCompetitionType(type: string): string {
   const typeMap: Record<string, string> = {
     trading: "Crypto Trading",
     perpetual_futures: "Perpetual Futures",
+    spot_live_trading: "Spot Live Trading",
+    sports_prediction: "Sports Prediction",
   };
 
   return typeMap[type] || type;
@@ -88,7 +227,8 @@ export function formatCompetitionType(type: string): string {
 /**
  * Gets the skills for a competition type.
  * All competitions include "Crypto Trading" as a base skill.
- * Perpetual futures competitions also include "Perpetual Futures" and "Live Trading" as additional skills.
+ * Live trading competitions (perpetual futures and spot live) include "Live Trading" as an additional skill.
+ * Perpetual futures competitions also include "Perpetual Futures" as a specialized skill.
  *
  * @param type - The raw competition type from the API
  * @returns An array of skills for the competition
@@ -97,13 +237,21 @@ export function formatCompetitionType(type: string): string {
  * ```ts
  * getCompetitionSkills("trading"); // ["Crypto Trading"]
  * getCompetitionSkills("perpetual_futures"); // ["Crypto Trading", "Perpetual Futures", "Live Trading"]
+ * getCompetitionSkills("spot_live_trading"); // ["Crypto Trading", "Live Trading"]
  * ```
  */
-export function getCompetitionSkills(type: string): string[] {
+export function getCompetitionSkills(type: CompetitionType): string[] {
   const baseSkills = ["Crypto Trading"];
 
   if (type === "perpetual_futures") {
     return [...baseSkills, "Perpetual Futures", "Live Trading"];
+  }
+  if (type === "sports_prediction") {
+    return ["Sports", " Game Prediction", "NFL"];
+  }
+
+  if (type === "spot_live_trading") {
+    return [...baseSkills, "Live Trading"];
   }
 
   return baseSkills;
@@ -115,5 +263,96 @@ export function getCompetitionSkills(type: string): string[] {
  * @returns True if the skill is an agent skill, false otherwise
  */
 export function checkIsAgentSkill(skill: string): boolean {
-  return skill === "trading" || skill === "perpetual_futures";
+  return (
+    skill === "trading" ||
+    skill === "perpetual_futures" ||
+    skill === "spot_live_trading"
+  );
 }
+
+/**
+ * Checks if a competition type is perpetual futures
+ * @param type - The competition type to check
+ * @returns True if the competition type is perpetual futures, false otherwise
+ */
+export function checkIsPerpsCompetition(
+  type: RouterOutputs["competitions"]["getById"]["type"],
+): boolean {
+  return type === "perpetual_futures";
+}
+
+/**
+ * Checks if a competition is a spot live trading competition.
+ * Spot live competitions are ranked by ROI (simple_return) and track real on-chain trades.
+ *
+ * @param type - The competition type from the API
+ * @returns True if the competition is spot live trading, false otherwise
+ */
+export function checkIsSpotLiveCompetition(
+  type: RouterOutputs["competitions"]["getById"]["type"],
+): boolean {
+  return type === "spot_live_trading";
+}
+
+/**
+ * Default metric for perps competitions
+ */
+export const PERPS_DEFAULT_METRIC: EvaluationMetric = "calmar_ratio";
+
+/**
+ * Format status for display
+ */
+export function formatStatus(status: string): string {
+  return status.charAt(0).toUpperCase() + status.slice(1);
+}
+
+/**
+ * Get status color class
+ */
+export function getStatusColor(status: string): string {
+  switch (status) {
+    case "active":
+      return "text-green-500";
+    case "pending":
+      return "text-yellow-500";
+    case "ended":
+      return "text-gray-500";
+    default:
+      return "text-gray-500";
+  }
+}
+
+/**
+ * Check if user has joined a competition
+ */
+export function hasJoinedCompetition(
+  competitionId: string,
+  userCompetitions: UserCompetition[] | undefined,
+): boolean {
+  if (!userCompetitions) return false;
+  return userCompetitions.some((c) => c.id === competitionId);
+}
+
+/**
+ * Limit of agent log items (e.g., trades, predictions, etc.) per page
+ */
+export const LIMIT_ITEMS_PER_PAGE = 50;
+
+/**
+ * Hours in milliseconds
+ */
+export const HOURS_IN_MS = 60 * 60 * 1000;
+
+/**
+ * Trade log relative timestamp in milliseconds
+ */
+export const TRADE_LOG_RELATIVE_TIMESTAMP = 24 * HOURS_IN_MS;
+
+/**
+ * Checks if a timestamp should be displayed as a relative timestamp
+ * @param timestamp - The timestamp to check
+ * @returns True if the timestamp should be displayed as a relative timestamp, false otherwise
+ */
+export const shouldShowRelativeTimestamp = (timestamp: Date) => {
+  return timestamp > new Date(Date.now() - TRADE_LOG_RELATIVE_TIMESTAMP);
+};

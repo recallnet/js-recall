@@ -61,78 +61,135 @@ export class AdminService {
   }
 
   /**
-   * Ensures ROOT_ENCRYPTION_KEY exists in .env file, generating one if needed
+   * Validates if an encryption key meets security requirements
    */
-  private async ensureRootEncryptionKey(): Promise<void> {
+  private isValidEncryptionKey(key: string): boolean {
+    return (
+      key.length >= 32 &&
+      !key.includes("default_encryption_key") &&
+      !key.includes("your_") &&
+      !key.includes("dev_") &&
+      !key.includes("test_") &&
+      !key.includes("replace_in_production")
+    );
+  }
+
+  /**
+   * Generates a new secure encryption key
+   */
+  private generateEncryptionKey(): string {
+    return crypto.randomBytes(32).toString("hex");
+  }
+
+  /**
+   * Updates the encryption key in memory
+   */
+  private updateEncryptionKeyInMemory(newKey: string): void {
+    process.env.ROOT_ENCRYPTION_KEY = newKey;
+    this.rootEncryptionKey = newKey;
+  }
+
+  /**
+   * Ensures ROOT_ENCRYPTION_KEY exists in test mode (memory only)
+   */
+  private ensureEncryptionKeyInTestMode(): void {
     try {
-      // Find the correct .env file based on environment
-      const envFile = process.env.NODE_ENV === "test" ? ".env.test" : ".env";
+      const existingKey = process.env.ROOT_ENCRYPTION_KEY;
+
+      if (!existingKey || !this.isValidEncryptionKey(existingKey)) {
+        const newKey = this.generateEncryptionKey();
+        this.updateEncryptionKeyInMemory(newKey);
+        this.logger.info(
+          "Generated ROOT_ENCRYPTION_KEY in memory (test mode - file not modified)",
+        );
+      } else {
+        this.updateEncryptionKeyInMemory(existingKey);
+        this.logger.info(
+          "Using existing ROOT_ENCRYPTION_KEY from environment (test mode)",
+        );
+      }
+    } catch (error) {
+      this.logger.error(
+        { error },
+        "Error ensuring ROOT_ENCRYPTION_KEY in test mode",
+      );
+    }
+  }
+
+  /**
+   * Ensures ROOT_ENCRYPTION_KEY exists in .env file for non-test mode
+   */
+  private ensureEncryptionKeyInEnvFile(): void {
+    try {
+      const envFile = ".env";
       const envPath = path.resolve(process.cwd(), envFile);
       this.logger.info(`Checking for ${envFile} file at: ${envPath}`);
 
-      if (fs.existsSync(envPath)) {
-        const envContent = fs.readFileSync(envPath, "utf8");
-        const rootKeyPattern = /ROOT_ENCRYPTION_KEY=.*$/m;
-
-        // Check if ROOT_ENCRYPTION_KEY already exists and is not the default
-        const keyMatch = rootKeyPattern.exec(envContent);
-        let needsNewKey = true;
-
-        if (keyMatch) {
-          const currentValue = keyMatch[0].split("=")[1];
-          if (
-            currentValue &&
-            currentValue.length >= 32 &&
-            !currentValue.includes("default_encryption_key") &&
-            !currentValue.includes("your_") &&
-            !currentValue.includes("dev_") &&
-            !currentValue.includes("test_") &&
-            !currentValue.includes("replace_in_production")
-          ) {
-            // Key exists and seems to be a proper key already
-            this.logger.info("ROOT_ENCRYPTION_KEY already exists in .env");
-            needsNewKey = false;
-          }
-        }
-
-        if (needsNewKey) {
-          // Generate a new secure encryption key
-          const newEncryptionKey = crypto.randomBytes(32).toString("hex");
-          this.logger.info("Generated new ROOT_ENCRYPTION_KEY");
-
-          // Update the .env file
-          let updatedEnvContent = envContent;
-
-          if (keyMatch) {
-            // Replace existing key
-            updatedEnvContent = envContent.replace(
-              rootKeyPattern,
-              `ROOT_ENCRYPTION_KEY=${newEncryptionKey}`,
-            );
-          } else {
-            // Add new key
-            updatedEnvContent =
-              envContent.trim() +
-              `\n\nROOT_ENCRYPTION_KEY=${newEncryptionKey}\n`;
-          }
-
-          fs.writeFileSync(envPath, updatedEnvContent);
-          this.logger.info(`Updated ROOT_ENCRYPTION_KEY in ${envFile} file`);
-
-          // We need to update the process.env with the new key for it to be used immediately
-          process.env.ROOT_ENCRYPTION_KEY = newEncryptionKey;
-
-          // Reload the configuration to pick up the new encryption key
-          this.rootEncryptionKey = newEncryptionKey;
-
-          this.logger.info("✅ Configuration reloaded with new encryption key");
-        }
-      } else {
+      if (!fs.existsSync(envPath)) {
         this.logger.error(`${envFile} file not found at expected location`);
+        return;
       }
+
+      const envContent = fs.readFileSync(envPath, "utf8");
+      // Match ROOT_ENCRYPTION_KEY=... only on non-commented lines
+      // ^(?!\s*#) - negative lookahead: line doesn't start with optional whitespace + #
+      const rootKeyPattern = /^(?!\s*#)\s*ROOT_ENCRYPTION_KEY=.*$/m;
+      const keyMatch = rootKeyPattern.exec(envContent);
+
+      // Check if key exists and is valid
+      if (keyMatch) {
+        // Extract the value after the = sign, handling optional whitespace
+        const matchedLine = keyMatch[0];
+        const currentValue = matchedLine.split("=")[1]?.trim();
+
+        if (currentValue && this.isValidEncryptionKey(currentValue)) {
+          this.updateEncryptionKeyInMemory(currentValue);
+          this.logger.info("ROOT_ENCRYPTION_KEY already exists in .env");
+          return;
+        }
+      }
+
+      // Generate and persist new key
+      const newEncryptionKey = this.generateEncryptionKey();
+      this.logger.info("Generated new ROOT_ENCRYPTION_KEY");
+
+      // Update the .env file content
+      const updatedEnvContent = keyMatch
+        ? envContent.replace(
+            rootKeyPattern,
+            `ROOT_ENCRYPTION_KEY=${newEncryptionKey}`,
+          )
+        : envContent.trim() + `\n\nROOT_ENCRYPTION_KEY=${newEncryptionKey}\n`;
+
+      fs.writeFileSync(envPath, updatedEnvContent);
+      this.logger.info(`Updated ROOT_ENCRYPTION_KEY in ${envFile} file`);
+
+      // Update in memory
+      this.updateEncryptionKeyInMemory(newEncryptionKey);
+
+      this.logger.info("✅ Configuration reloaded with new encryption key");
     } catch (envError) {
-      this.logger.error("Error updating ROOT_ENCRYPTION_KEY:", envError);
+      this.logger.error(
+        { error: envError },
+        "Error updating ROOT_ENCRYPTION_KEY",
+      );
       // Continue with admin setup even if the env update fails
+    }
+  }
+
+  /**
+   * Ensures ROOT_ENCRYPTION_KEY exists, generating one if needed.
+   * In test mode, the key is generated in memory only without modifying files.
+   * In non-test mode, the key is persisted to the .env file.
+   */
+  private async ensureRootEncryptionKey(): Promise<void> {
+    const isTestMode =
+      process.env.NODE_ENV === "test" || process.env.TEST_MODE === "true";
+
+    if (isTestMode) {
+      this.ensureEncryptionKeyInTestMode();
+    } else {
+      this.ensureEncryptionKeyInEnvFile();
     }
   }
 
@@ -225,15 +282,15 @@ export class AdminService {
     } catch (error) {
       if (error instanceof Error) {
         this.logger.error(
-          "[AdminManager] Error setting up initial admin:",
-          error,
+          { error },
+          "[AdminManager] Error setting up initial admin",
         );
         throw error;
       }
 
       this.logger.error(
-        "[AdminManager] Unknown error setting up admin:",
-        error,
+        { error },
+        "[AdminManager] Unknown error setting up admin",
       );
       throw new Error(`Failed to setup admin: ${error}`);
     }
@@ -309,11 +366,14 @@ export class AdminService {
       return savedAdmin;
     } catch (error) {
       if (error instanceof Error) {
-        this.logger.error("[AdminManager] Error creating admin:", error);
+        this.logger.error({ error }, "[AdminManager] Error creating admin");
         throw error;
       }
 
-      this.logger.error("[AdminManager] Unknown error creating admin:", error);
+      this.logger.error(
+        { error },
+        "[AdminManager] Unknown error creating admin",
+      );
       throw new Error(`Failed to create admin: ${error}`);
     }
   }
@@ -343,8 +403,8 @@ export class AdminService {
       return null;
     } catch (error) {
       this.logger.error(
-        `[AdminManager] Error retrieving admin ${adminId}:`,
-        error,
+        { error },
+        `[AdminManager] Error retrieving admin ${adminId}`,
       );
       return null;
     }
@@ -365,7 +425,10 @@ export class AdminService {
 
       return admins;
     } catch (error) {
-      this.logger.error("[AdminManager] Error retrieving all admins:", error);
+      this.logger.error(
+        { error },
+        "[AdminManager] Error retrieving all admins",
+      );
       return [];
     }
   }
@@ -392,8 +455,8 @@ export class AdminService {
       return updatedAdmin;
     } catch (error) {
       this.logger.error(
-        `[AdminManager] Error updating admin ${admin.id}:`,
-        error,
+        { error },
+        `[AdminManager] Error updating admin ${admin.id}`,
       );
       throw new Error(
         `Failed to update admin: ${error instanceof Error ? error.message : error}`,
@@ -438,8 +501,8 @@ export class AdminService {
       return deleted;
     } catch (error) {
       this.logger.error(
-        `[AdminManager] Error deleting admin ${adminId}:`,
-        error,
+        { error },
+        `[AdminManager] Error deleting admin ${adminId}`,
       );
       throw new Error(
         `Failed to delete admin: ${error instanceof Error ? error.message : error}`,
@@ -479,8 +542,8 @@ export class AdminService {
       return admin.id;
     } catch (error) {
       this.logger.error(
-        `[AdminManager] Error authenticating admin ${username}:`,
-        error,
+        { error },
+        `[AdminManager] Error authenticating admin ${username}`,
       );
       return null;
     }
@@ -522,8 +585,8 @@ export class AdminService {
             }
           } catch (decryptError) {
             this.logger.error(
-              `[AdminManager] Error decrypting API key for admin ${admin.id}:`,
-              decryptError,
+              { error: decryptError },
+              `[AdminManager] Error decrypting API key for admin ${admin.id}`,
             );
             // Skip this admin if decryption fails
             continue;
@@ -533,7 +596,7 @@ export class AdminService {
 
       return null;
     } catch (error) {
-      this.logger.error("[AdminManager] Error validating API key:", error);
+      this.logger.error({ error }, "[AdminManager] Error validating API key");
       return null;
     }
   }
@@ -560,8 +623,8 @@ export class AdminService {
       return apiKey;
     } catch (error) {
       this.logger.error(
-        `[AdminManager] Error generating API key for admin ${adminId}:`,
-        error,
+        { error },
+        `[AdminManager] Error generating API key for admin ${adminId}`,
       );
       throw new Error(
         `Failed to generate API key: ${error instanceof Error ? error.message : error}`,
@@ -588,8 +651,8 @@ export class AdminService {
       return await this.generateApiKeyForAdmin(adminId);
     } catch (error) {
       this.logger.error(
-        `[AdminManager] Error resetting API key for admin ${adminId}:`,
-        error,
+        { error },
+        `[AdminManager] Error resetting API key for admin ${adminId}`,
       );
       throw new Error(
         `Failed to reset API key: ${error instanceof Error ? error.message : error}`,
@@ -610,7 +673,7 @@ export class AdminService {
         .toString("hex");
       return `${salt}:${hash}`;
     } catch (error) {
-      this.logger.error("[AdminManager] Error hashing password:", error);
+      this.logger.error({ error }, "[AdminManager] Error hashing password");
       throw new Error("Failed to hash password");
     }
   }
@@ -634,8 +697,8 @@ export class AdminService {
       );
     } catch (error) {
       this.logger.error(
-        `[AdminManager] Error updating password for admin ${adminId}:`,
-        error,
+        { error },
+        `[AdminManager] Error updating password for admin ${adminId}`,
       );
       throw new Error(
         `Failed to update password: ${error instanceof Error ? error.message : error}`,
@@ -667,8 +730,8 @@ export class AdminService {
       return testHash === hash;
     } catch (error) {
       this.logger.error(
-        `[AdminManager] Error validating password for admin ${adminId}:`,
-        error,
+        { error },
+        `[AdminManager] Error validating password for admin ${adminId}`,
       );
       return false;
     }
@@ -683,8 +746,8 @@ export class AdminService {
       await this.adminRepository.updateLastLogin(adminId);
     } catch (error) {
       this.logger.error(
-        `[AdminManager] Error updating last login for admin ${adminId}:`,
-        error,
+        { error },
+        `[AdminManager] Error updating last login for admin ${adminId}`,
       );
       // Don't throw here as this is not critical
     }
@@ -701,8 +764,8 @@ export class AdminService {
       return admin?.status === "active";
     } catch (error) {
       this.logger.error(
-        `[AdminManager] Error checking admin status ${adminId}:`,
-        error,
+        { error },
+        `[AdminManager] Error checking admin status ${adminId}`,
       );
       return false;
     }
@@ -730,8 +793,8 @@ export class AdminService {
       );
     } catch (error) {
       this.logger.error(
-        `[AdminManager] Error suspending admin ${adminId}:`,
-        error,
+        { error },
+        `[AdminManager] Error suspending admin ${adminId}`,
       );
       throw new Error(
         `Failed to suspend admin: ${error instanceof Error ? error.message : error}`,
@@ -758,8 +821,8 @@ export class AdminService {
       this.logger.debug(`[AdminManager] Reactivated admin: ${adminId}`);
     } catch (error) {
       this.logger.error(
-        `[AdminManager] Error reactivating admin ${adminId}:`,
-        error,
+        { error },
+        `[AdminManager] Error reactivating admin ${adminId}`,
       );
       throw new Error(
         `Failed to reactivate admin: ${error instanceof Error ? error.message : error}`,
@@ -776,7 +839,7 @@ export class AdminService {
     try {
       return await this.adminRepository.searchAdmins(searchParams);
     } catch (error) {
-      this.logger.error("[AdminManager] Error searching admins:", error);
+      this.logger.error({ error }, "[AdminManager] Error searching admins");
       return [];
     }
   }
@@ -828,7 +891,7 @@ export class AdminService {
       );
       return result;
     } catch (error) {
-      this.logger.error("[AdminManager] Error encrypting API key:", error);
+      this.logger.error({ error }, "[AdminManager] Error encrypting API key");
       throw new Error("Failed to encrypt API key");
     }
   }
@@ -862,7 +925,7 @@ export class AdminService {
 
       return decrypted;
     } catch (error) {
-      this.logger.error("[AdminManager] Error decrypting API key:", error);
+      this.logger.error({ error }, "[AdminManager] Error decrypting API key");
       throw error;
     }
   }
@@ -876,7 +939,7 @@ export class AdminService {
       const res = await this.adminRepository.count();
       return res >= 0;
     } catch (error) {
-      this.logger.error("[AdminManager] Health check failed:", error);
+      this.logger.error({ error }, "[AdminManager] Health check failed");
       return false;
     }
   }
@@ -950,7 +1013,7 @@ export class AdminService {
             walletAddress: agentWalletAddress,
           });
         } catch (error) {
-          this.logger.error("Error creating agent for user:", error);
+          this.logger.error({ error }, "Error creating agent for user");
           // If agent creation fails, we still return the user but note the agent error
           agentError =
             error instanceof Error ? error.message : "Failed to create agent";
@@ -963,7 +1026,7 @@ export class AdminService {
         agentError,
       };
     } catch (error) {
-      this.logger.error("[AdminManager] Error registering user:", error);
+      this.logger.error({ error }, "[AdminManager] Error registering user");
 
       if (error instanceof Error) {
         // Check for invalid wallet address errors

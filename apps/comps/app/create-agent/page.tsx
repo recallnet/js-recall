@@ -45,12 +45,12 @@ function CreateAgentView() {
         // Create user in sandbox (if not already exists)
         await createSandboxUser.mutateAsync({
           walletAddress: backendUser.walletAddress,
-          email: backendUser.email,
-          name: backendUser.name,
-          imageUrl: backendUser.imageUrl,
-          metadata: backendUser.metadata,
-          privyId: backendUser.privyId,
-          embeddedWalletAddress: backendUser.embeddedWalletAddress,
+          email: backendUser.email ?? "",
+          name: backendUser.name ?? undefined,
+          imageUrl: backendUser.imageUrl ?? undefined,
+          metadata: backendUser.metadata ?? undefined,
+          privyId: backendUser.privyId ?? undefined,
+          embeddedWalletAddress: backendUser.embeddedWalletAddress ?? undefined,
         });
       } catch (error) {
         console.warn("Failed to create user in sandbox:", error);

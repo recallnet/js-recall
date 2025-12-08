@@ -25,11 +25,11 @@ import { UserService } from "../user.service.js";
 function createMockCompetition(
   overrides: Partial<SelectCompetition>,
 ): SelectCompetition {
-  return {
+  const baseCompetition = {
     id: "test-comp-id",
     name: "Test Competition",
-    type: "trading",
-    status: "active",
+    type: "trading" as const,
+    status: "active" as const,
     createdAt: new Date(),
     updatedAt: new Date(),
     description: null,
@@ -37,15 +37,59 @@ function createMockCompetition(
     imageUrl: null,
     startDate: null,
     endDate: null,
-    votingStartDate: null,
-    votingEndDate: null,
+    boostStartDate: null,
+    boostEndDate: null,
     joinStartDate: null,
     joinEndDate: null,
     sandboxMode: false,
     maxParticipants: null,
     registeredParticipants: 0,
     minimumStake: null,
+    vips: null,
+    allowlist: null,
+    blocklist: null,
+    minRecallRank: null,
+    allowlistOnly: false,
+    agentAllocation: null,
+    agentAllocationUnit: null,
+    boosterAllocation: null,
+    boosterAllocationUnit: null,
+    rewardRules: null,
+    rewardDetails: null,
+    displayState: null,
     ...overrides,
+  };
+
+  // Add engine config and arena based on competition type
+  const competitionType = baseCompetition.type;
+  if (competitionType === "trading") {
+    return {
+      ...baseCompetition,
+      arenaId: "default-paper-arena",
+      engineId: "spot_paper_trading" as const,
+      engineVersion: "1.0.0",
+      rewardsIneligible: null,
+      boostTimeDecayRate: null,
+    };
+  } else if (competitionType === "perpetual_futures") {
+    return {
+      ...baseCompetition,
+      arenaId: "default-perps-arena",
+      engineId: "perpetual_futures" as const,
+      engineVersion: "1.0.0",
+      rewardsIneligible: null,
+      boostTimeDecayRate: null,
+    };
+  }
+
+  // Default for any other type
+  return {
+    ...baseCompetition,
+    arenaId: null,
+    engineId: null,
+    engineVersion: null,
+    rewardsIneligible: null,
+    boostTimeDecayRate: null,
   };
 }
 

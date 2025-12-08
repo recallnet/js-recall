@@ -1,6 +1,5 @@
 "use client";
 
-import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { Menu } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -8,34 +7,39 @@ import { useMemo, useState } from "react";
 
 import { Avatar, AvatarImage } from "@recallnet/ui2/components/avatar";
 import { Button } from "@recallnet/ui2/components/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@recallnet/ui2/components/dropdown-menu";
 import { cn } from "@recallnet/ui2/lib/utils";
 
+import { Claim } from "@/components/Claim";
 import { ConnectWallet } from "@/components/connect-wallet";
 import { PrivyAuthButton } from "@/components/privy-auth-button";
 import { config } from "@/config/public";
 import { useSession } from "@/hooks";
+import { useClaim } from "@/hooks/useClaim";
 
-import { NonStakeBoost } from "./NonStakeBoost";
-//import { Claim } from "./Claim";
-//import { GetRecall } from "./GetRecall";
 import { RecallToken } from "./RecallToken";
-import { StakeBoost } from "./StakeBoost";
-
-//import { StakeRecall } from "./StakeRecall";
 
 export const Navbar: React.FunctionComponent = () => {
   const pathname = usePathname();
 
   const { isAuthenticated, isWalletConnected } = useSession();
+  const { totalClaimable } = useClaim();
 
   const [open, setOpen] = useState(false);
 
   const navItems = useMemo(() => {
     return [
-      { label: "COMPETITIONS", href: "/competitions", mobileOnly: false },
-      { label: "LEADERBOARDS", href: "/leaderboards", mobileOnly: false },
+      { label: "Competitions", href: "/competitions", mobileOnly: false },
+      { label: "Arenas", href: "/arenas", mobileOnly: false },
+      { label: "Leaderboards", href: "/leaderboards", mobileOnly: false },
       {
-        label: "STAKE RECALL",
+        label: "Stake Recall",
         href: "/stake",
         mobileOnly: isWalletConnected,
       },
@@ -43,8 +47,8 @@ export const Navbar: React.FunctionComponent = () => {
   }, [isWalletConnected]);
 
   return (
-    <nav className="flex w-full justify-center border-b bg-black">
-      <div className="mx-auto flex w-full max-w-screen-lg items-center justify-between px-5 sm:px-20">
+    <nav className="flex w-full justify-center border-b bg-black px-5 sm:px-12">
+      <div className="xs:pr-0 mx-auto flex w-full max-w-screen-2xl items-center justify-between">
         <div className="flex items-center">
           {/* Logo */}
           <Link href="/" className="flex items-center border-x p-1">
@@ -57,8 +61,8 @@ export const Navbar: React.FunctionComponent = () => {
             </Avatar>
           </Link>
 
-          {/* Inline nav items for lg+ */}
-          <div className="xs:flex hidden">
+          {/* Inline nav items for sm+ */}
+          <div className="hidden sm:flex">
             {navItems
               .filter((item) => !item.mobileOnly)
               .map((item) => {
@@ -68,12 +72,12 @@ export const Navbar: React.FunctionComponent = () => {
                     href={item.href}
                     key={item.href}
                     className={cn(
-                      "px-15 radial-hover flex h-14 items-center justify-center border-r",
+                      "radial-hover flex h-14 w-[clamp(140px,10vw,180px)] items-center justify-center border-r",
                       isActive ? "border-b-2 border-b-yellow-500" : "",
                     )}
                   >
                     <span
-                      className={`font-mono text-xs font-medium tracking-widest text-white transition-colors`}
+                      className={`font-mono text-xs font-medium uppercase tracking-widest text-white transition-colors`}
                     >
                       {item.label}
                     </span>
@@ -83,41 +87,36 @@ export const Navbar: React.FunctionComponent = () => {
           </div>
 
           {/* Dropdown trigger for <sm */}
-          <div className="xs:hidden">
-            <DropdownMenu.Root open={open} onOpenChange={setOpen}>
-              <DropdownMenu.Trigger asChild>
-                <Button className="bg-transparent text-white hover:bg-transparent">
+          <div className="sm:hidden">
+            <DropdownMenu open={open} onOpenChange={setOpen}>
+              <DropdownMenuTrigger asChild>
+                <Button className="bg-transparent text-white hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0">
                   <Menu />
                 </Button>
-              </DropdownMenu.Trigger>
-              <DropdownMenu.Portal>
-                <DropdownMenu.Content
-                  className="z-50 min-w-[180px] rounded-md border bg-black p-1 shadow-xl"
-                  sideOffset={5}
-                >
-                  {navItems.map((item) => (
-                    <DropdownMenu.Item
-                      key={item.href}
-                      asChild
-                      onSelect={() => setOpen(false)}
-                    >
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="mt-1">
+                {navItems.map((item, index) => (
+                  <div key={item.href}>
+                    <DropdownMenuItem asChild>
                       <Link
                         href={item.href}
-                        className="block px-4 py-2 text-sm text-gray-300"
+                        onClick={() => setOpen(false)}
+                        className="cursor-pointer p-3"
                       >
                         {item.label}
                       </Link>
-                    </DropdownMenu.Item>
-                  ))}
-                </DropdownMenu.Content>
-              </DropdownMenu.Portal>
-            </DropdownMenu.Root>
+                    </DropdownMenuItem>
+                    {index < navItems.length - 1 && <DropdownMenuSeparator />}
+                  </div>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 
         <div className="flex h-full items-center gap-4">
           {isAuthenticated && isWalletConnected && (
-            <div className="xs:flex hidden h-full items-center gap-4">
+            <div className="hidden h-full items-center gap-4 sm:flex">
               <div
                 className={cn(
                   "flex h-full items-center",
@@ -126,10 +125,7 @@ export const Navbar: React.FunctionComponent = () => {
               >
                 {config.publicFlags.tge && <RecallToken />}
               </div>
-              {config.publicFlags.tge ? <StakeBoost /> : <NonStakeBoost />}
-              {/* <GetRecall /> */}
-              {/* <StakeRecall /> */}
-              {/* <Claim /> */}
+              {totalClaimable > 0n && <Claim />}
             </div>
           )}
           {isAuthenticated && !isWalletConnected && (

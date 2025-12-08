@@ -4,13 +4,16 @@ import * as path from "path";
 import { parse } from "ts-command-line-args";
 import { Hex } from "viem";
 
+import { AgentRepository } from "@recallnet/db/repositories/agent";
 import { BoostRepository } from "@recallnet/db/repositories/boost";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
+import { CompetitionRewardsRepository } from "@recallnet/db/repositories/competition-rewards";
 import { RewardsRepository } from "@recallnet/db/repositories/rewards";
 import { RewardsService } from "@recallnet/services";
-import RewardsAllocator, {
+import {
+  ExternallyOwnedAccountAllocator,
   Network,
-} from "@recallnet/staking-contracts/rewards-allocator";
+} from "@recallnet/staking-contracts";
 
 import config from "@/config/index.js";
 import { db } from "@/database/db.js";
@@ -107,23 +110,30 @@ async function allocateRewards() {
     const boostRepo = new BoostRepository(db);
 
     const {
-      allocatorPrivateKey,
+      eoaPrivateKey,
       contractAddress,
       tokenContractAddress,
       rpcProvider,
     } = config.rewards;
-    const rewardsAllocator = new RewardsAllocator(
-      allocatorPrivateKey as Hex,
+    const rewardsAllocator = new ExternallyOwnedAccountAllocator(
+      eoaPrivateKey as Hex,
       rpcProvider,
       contractAddress as Hex,
       tokenContractAddress as Hex,
       config.rewards.network as Network,
     );
 
+    const agentRepo = new AgentRepository(
+      db,
+      serviceLogger,
+      new CompetitionRewardsRepository(db, serviceLogger),
+    );
+
     const rewardsService = new RewardsService(
       rewardsRepo,
       competitionRepo,
       boostRepo,
+      agentRepo,
       rewardsAllocator,
       db,
       serviceLogger,

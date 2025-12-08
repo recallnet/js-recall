@@ -109,6 +109,7 @@ export const config = {
       process.env.DATABASE_READ_REPLICA_URL ||
       process.env.DATABASE_URL ||
       "postgresql://postgres:postgres@localhost:5432/trading_simulator",
+    skipMigrations: process.env.DB_SKIP_MIGRATIONS === "true",
   },
   redis: {
     url: process.env.REDIS_URL || "redis://localhost:6379",
@@ -123,8 +124,6 @@ export const config = {
     maxRequests: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || "100", 10),
     disable: process.env.DISABLE_RATE_LIMITER === "true",
   },
-  leaderboardAccess:
-    process.env.DISABLE_PARTICIPANT_LEADERBOARD_ACCESS === "true",
   // Specific chain initial balances
   specificChainBalances: getSpecificChainBalances(),
   // Specific chain token addresses
@@ -234,23 +233,43 @@ export const config = {
   },
   stakingIndex: {
     isEnabled: process.env.INDEXING_ENABLED === "true",
-    stakingContract: process.env.INDEXING_STAKING_CONTRACT,
-    rewardsContract: process.env.INDEXING_REWARDS_CONTRACT,
-    startBlock: process.env.INDEXING_START_BLOCK
-      ? parseInt(process.env.INDEXING_START_BLOCK, 10)
-      : 27459229,
-    hypersyncUrl: process.env.INDEXING_HYPERSYNC_URL,
-    hypersyncBearerToken: process.env.INDEXING_HYPERSYNC_BEARER_TOKEN,
-    delayMs: process.env.INDEXING_DELAY
-      ? parseInt(process.env.INDEXING_DELAY, 10)
-      : 3000,
+    getConfig: () => ({
+      stakingContract: process.env.INDEXING_STAKING_CONTRACT || "",
+      rewardsContract: process.env.INDEXING_REWARDS_CONTRACT || "",
+      convictionClaimsContract:
+        process.env.INDEXING_CONVICTION_CLAIMS_CONTRACT ||
+        "0x6A3044c1Cf077F386c9345eF84f2518A2682Dfff",
+      eventStartBlock: process.env.INDEXING_EVENTS_START_BLOCK
+        ? parseInt(process.env.INDEXING_EVENTS_START_BLOCK, 10)
+        : 27459229,
+      transactionsStartBlock: process.env.INDEXING_TRANSACTIONS_START_BLOCK
+        ? parseInt(process.env.INDEXING_TRANSACTIONS_START_BLOCK, 10)
+        : 36800000,
+      hypersyncUrl: process.env.INDEXING_HYPERSYNC_URL || "",
+      hypersyncBearerToken: process.env.INDEXING_HYPERSYNC_BEARER_TOKEN || "",
+      delayMs: process.env.INDEXING_DELAY
+        ? parseInt(process.env.INDEXING_DELAY, 10)
+        : 3000,
+    }),
   },
   // Sentry configuration (imported from shared config)
   sentry: createSentryConfig(),
   // Rewards allocation configuration
   rewards: {
+    // Whether to use the externally owned account allocator
+    eoaEnabled: process.env.REWARDS_EOA_ENABLED === "true",
     // Private key for the rewards allocator account
-    allocatorPrivateKey: process.env.REWARDS_ALLOCATOR_PRIVATE_KEY || "",
+    eoaPrivateKey: process.env.REWARDS_EOA_PRIVATE_KEY || "",
+
+    // Whether to use the Safe transaction proposer
+    safeProposerEnabled: process.env.REWARDS_SAFE_PROPOSER_ENABLED === "true",
+    // Private key for the Safe transaction proposer
+    safeProposerPrivateKey: process.env.REWARDS_SAFE_PROPOSER_PRIVATE_KEY || "",
+    // Address of the Safe contract
+    safeAddress: process.env.REWARDS_SAFE_ADDRESS || "",
+    // API key for the Safe API
+    safeApiKey: process.env.REWARDS_SAFE_API_KEY || "",
+
     // Contract address for the rewards contract
     contractAddress: process.env.REWARDS_CONTRACT_ADDRESS || "",
     // Contract address of the ERC20 token
@@ -259,6 +278,8 @@ export const config = {
     rpcProvider: process.env.RPC_PROVIDER || "",
     // Network for the rewards allocator
     network: process.env.REWARDS_NETWORK || "baseSepolia",
+    // Slack webhook URL for rewards notifications
+    slackWebhookUrl: process.env.REWARDS_SLACK_WEBHOOK_URL || "",
   },
   boost: {
     // Amount of boost (in wei) to grant on wallet linking pre TGE
@@ -272,6 +293,12 @@ export const config = {
   },
   symphony: {
     apiUrl: process.env.SYMPHONY_API_URL || "https://api.symphony.io",
+  },
+  // For sports prediction data
+  sportsDataApi: {
+    apiKey: process.env.SPORTSDATAIO_API_KEY || "",
+    baseUrl:
+      process.env.SPORTSDATAIO_BASE_URL || "https://api.sportsdata.io/v3/nfl",
   },
 };
 

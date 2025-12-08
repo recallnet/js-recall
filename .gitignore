@@ -54,6 +54,11 @@ apps/api/**/*.log
 apps/api/*.log
 apps/api/baseline/*.sql
 
+# Comps E2E logs
+apps/comps/**/*.log
+# Cursor plans
+.cursor/plans/
+
 # Misc
 .DS_Store
 *.pem
@@ -61,3 +66,6 @@ coverage/
 
 # Load test reports
 packages/load-test/reports
+
+# Airdrop csv data
+apps/api/scripts/data/airdrop_*_*.csv

@@ -20,30 +20,32 @@ async function awardAllBoost() {
   const startTime = Date.now();
   logger.info("Starting award Boost task...");
 
-  const competitionManager = services.competitionService;
+  const competitionRepository = services.competitionRepository;
   const stakesRepository = services.stakesRepository;
   const userManager = services.userService;
   const boostAwardService = services.boostAwardService;
+  const boostBonusService = services.boostBonusService;
 
   try {
-    const upcomingCompetitionsRes = await competitionManager.getCompetitions(
-      "pending",
-      { limit: 100, offset: 0, sort: "" },
-    );
+    // Step 1: Award stake-based boosts to pending competitions
+    const upcomingCompetitionsRes = await competitionRepository.findByStatus({
+      status: "pending",
+      params: { limit: 100, offset: 0, sort: "" },
+    });
     const upcomingCompetitions = upcomingCompetitionsRes.competitions;
     logger.info(
       `${upcomingCompetitions.length} competitions need Boost awarded to the users`,
     );
     // Iterate over competitions
     for (const competition of upcomingCompetitions) {
-      const votingEndDate = competition.votingEndDate;
-      if (!votingEndDate) {
-        logger.warn(`No voting end date for competition: ${competition.id}`);
+      const boostEndDate = competition.boostEndDate;
+      if (!boostEndDate) {
+        logger.warn(`No boost end date for competition: ${competition.id}`);
         continue;
       }
-      const votingStartDate = competition.votingStartDate;
-      if (!votingStartDate) {
-        logger.warn(`No voting start date for competition: ${competition.id}`);
+      const boostStartDate = competition.boostStartDate;
+      if (!boostStartDate) {
+        logger.warn(`No boost start date for competition: ${competition.id}`);
         continue;
       }
       // Iterate over Stakes pages
@@ -68,8 +70,8 @@ async function awardAllBoost() {
             },
             {
               id: competition.id,
-              votingEndDate: votingEndDate,
-              votingStartDate: votingStartDate,
+              boostEndDate: boostEndDate,
+              boostStartDate: boostStartDate,
             },
           );
           if (diffResult.type === "applied") {
@@ -89,13 +91,31 @@ async function awardAllBoost() {
       }
     }
 
+    // Step 2: Apply bonus boosts to eligible competitions (both pending AND active)
+    logger.info("Starting to apply bonus boosts to eligible competitions...");
+    const bonusBoostResult =
+      await boostBonusService.applyBonusBoostsToEligibleCompetitions();
+    logger.info(
+      {
+        totalBoostsApplied: bonusBoostResult.totalBoostsApplied,
+        competitionsProcessed: bonusBoostResult.competitionsProcessed,
+        competitionsSkipped: bonusBoostResult.competitionsSkipped,
+        errorCount: bonusBoostResult.errors.length,
+      },
+      "Completed applying bonus boosts to eligible competitions",
+    );
+
+    if (bonusBoostResult.errors.length > 0) {
+      logger.warn(
+        { errors: bonusBoostResult.errors },
+        "Some competitions failed during bonus boost application",
+      );
+    }
+
     const duration = Date.now() - startTime;
     logger.info(`Awarding Boost completed successfully in ${duration}ms!`);
   } catch (error) {
-    logger.error(
-      "Error awarding Boost:",
-      error instanceof Error ? error.message : String(error),
-    );
+    logger.error({ error }, "Error awarding Boost:");
 
     throw error;
   }

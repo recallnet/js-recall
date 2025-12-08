@@ -1,5 +1,4 @@
-import { UseQueryResult } from "@tanstack/react-query";
-import { useQuery } from "@tanstack/react-query";
+import { UseQueryResult, skipToken, useQuery } from "@tanstack/react-query";
 
 import { tanstackClient } from "@/rpc/clients/tanstack-query";
 import { RouterOutputs } from "@/rpc/router";
@@ -16,7 +15,12 @@ export const useCompetitionTimeline = (
 ): UseQueryResult<RouterOutputs["competitions"]["getTimeline"]> =>
   useQuery(
     tanstackClient.competitions.getTimeline.queryOptions({
-      input: { competitionId: id, bucket: 180 }, // 3 hour buckets
-      enabled: status !== "pending",
+      input:
+        status !== "pending"
+          ? {
+              competitionId: id,
+              bucket: 30, // 30 minute buckets
+            }
+          : skipToken,
     }),
   );

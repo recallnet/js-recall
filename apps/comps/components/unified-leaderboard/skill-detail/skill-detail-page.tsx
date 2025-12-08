@@ -1,27 +1,24 @@
 "use client";
 
 import {
-  ArrowLeft,
-  Calendar,
+  ChartNoAxesColumn,
   ChevronDown,
   ChevronRight,
   ExternalLink,
   Info,
   Loader2,
-  Target,
-  TrendingUp,
+  Trophy,
   Users,
 } from "lucide-react";
-import Link from "next/link";
 import React, { useCallback, useState } from "react";
 import ReactMarkdown from "react-markdown";
 
 import { Badge } from "@recallnet/ui2/components/badge";
 import { Button } from "@recallnet/ui2/components/button";
 import { Card } from "@recallnet/ui2/components/card";
-import { Tooltip } from "@recallnet/ui2/components/tooltip";
 import { cn } from "@recallnet/ui2/lib/utils";
 
+import { BreadcrumbNav } from "@/components/breadcrumb-nav";
 import { useUnifiedLeaderboard } from "@/hooks/useUnifiedLeaderboard";
 import { client } from "@/rpc/clients/client-side";
 import { LeaderboardAgent } from "@/types/agent";
@@ -78,14 +75,22 @@ export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
 
   if (error) {
     return (
-      <Card className="p-8 text-center">
-        <h3 className="mb-2 text-lg font-semibold text-red-400">
-          Error Loading Skill
-        </h3>
-        <p className="text-gray-400">
-          Unable to load skill data. Please try again later.
-        </p>
-      </Card>
+      <div className="space-y-8 pb-16">
+        <BreadcrumbNav
+          items={[
+            { label: "Home", href: "/" },
+            { label: "Leaderboards", href: "/leaderboards" },
+          ]}
+        />
+        <Card className="p-8 text-center">
+          <h3 className="mb-2 text-lg font-semibold text-red-400">
+            Error Loading Skill
+          </h3>
+          <p className="text-gray-400">
+            Unable to load skill data. Please try again later.
+          </p>
+        </Card>
+      </div>
     );
   }
 
@@ -109,39 +114,36 @@ export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
 
   if (!skill || !skillData) {
     return (
-      <Card className="p-8 text-center">
-        <h3 className="mb-2 text-lg font-semibold text-yellow-400">
-          Skill Not Found
-        </h3>
-        <p className="text-gray-400">
-          The requested skill could not be found or is not currently available.
-        </p>
-        <Link href="/leaderboards">
-          <Button variant="outline" className="mt-4">
-            <ArrowLeft size={16} className="mr-2" />
-            Back to Leaderboards
-          </Button>
-        </Link>
-      </Card>
+      <div className="space-y-8 pb-16">
+        <BreadcrumbNav
+          items={[
+            { label: "Home", href: "/" },
+            { label: "Leaderboards", href: "/leaderboards" },
+          ]}
+        />
+        <Card className="p-8 text-center">
+          <h3 className="mb-2 text-lg font-semibold text-yellow-400">
+            Skill Not Found
+          </h3>
+          <p className="text-gray-400">
+            The requested skill could not be found or is not currently
+            available.
+          </p>
+        </Card>
+      </div>
     );
   }
 
   const isAgentSkill = checkIsAgentSkill(skill.category);
   return (
     <div className="space-y-8 pb-16">
-      {/* Header */}
-      <div className="mb-6 flex items-center gap-4">
-        <Link href="/leaderboards">
-          <Button
-            variant="outline"
-            size="sm"
-            className="border-gray-600 text-gray-300 hover:border-gray-500 hover:bg-gray-800 hover:text-white"
-          >
-            <ArrowLeft size={16} className="mr-2" />
-            Leaderboards
-          </Button>
-        </Link>
-      </div>
+      <BreadcrumbNav
+        items={[
+          { label: "Home", href: "/" },
+          { label: "Leaderboards", href: "/leaderboards" },
+          { label: skill.name },
+        ]}
+      />
 
       {/* Skill Info */}
       <div className="space-y-6">
@@ -227,7 +229,7 @@ export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
               {skillData.stats.topScore && (
                 <div>
                   <div className="mb-1 flex items-center justify-center gap-1">
-                    <Target size={16} className="text-green-400" />
+                    <Trophy size={16} className="text-green-400" />
                     <span className="text-lg font-bold text-green-400">
                       {typeof skillData.stats.topScore === "number"
                         ? skillData.stats.topScore.toFixed(0)
@@ -241,7 +243,7 @@ export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
               {skillData.stats.avgScore && (
                 <div>
                   <div className="mb-1 flex items-center justify-center gap-1">
-                    <TrendingUp size={16} className="text-blue-400" />
+                    <ChartNoAxesColumn size={16} className="text-blue-400" />
                     <span className="text-lg font-bold text-blue-400">
                       {skillData.stats.avgScore.toFixed(0)}
                     </span>
@@ -254,7 +256,7 @@ export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
         </div>
 
         {/* Stats Overview - Desktop */}
-        <div className="hidden grid-cols-4 gap-6 md:grid">
+        <div className="hidden grid-cols-3 gap-6 md:grid">
           <Card className="p-6 text-center">
             <div className="mb-2 flex items-center justify-center gap-2">
               <Users size={20} className="text-gray-400" />
@@ -270,7 +272,7 @@ export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
           {skillData.stats.topScore && (
             <Card className="p-6 text-center">
               <div className="mb-2 flex items-center justify-center gap-2">
-                <TrendingUp size={20} className="text-green-400" />
+                <Trophy size={20} className="text-green-400" />
                 <span className="text-2xl font-bold text-green-400">
                   {typeof skillData.stats.topScore === "number"
                     ? skillData.stats.topScore.toFixed(0)
@@ -284,7 +286,7 @@ export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
           {skillData.stats.avgScore && (
             <Card className="p-6 text-center">
               <div className="mb-2 flex items-center justify-center gap-2">
-                <TrendingUp size={20} className="text-blue-400" />
+                <ChartNoAxesColumn size={20} className="text-blue-400" />
                 <span className="text-2xl font-bold text-blue-400">
                   {skillData.stats.avgScore.toFixed(0)}
                 </span>
@@ -292,40 +294,10 @@ export const SkillDetailPage: React.FC<SkillDetailPageProps> = ({
               <div className="text-sm text-gray-400">Average Score</div>
             </Card>
           )}
-
-          <Card className="p-6 text-center">
-            <div className="mb-2 flex items-center justify-center gap-2">
-              <Calendar size={20} className="text-purple-400" />
-              <span className="text-2xl font-bold text-purple-400">
-                {skillData.stats.modelCount + skillData.stats.agentCount}
-              </span>
-            </div>
-            <Tooltip
-              content={
-                <div className="space-y-1">
-                  <div>
-                    <span className="font-semibold">M</span> = Models
-                  </div>
-                  <div>
-                    <span className="font-semibold">A</span> = Agents
-                  </div>
-                </div>
-              }
-              position="bottom"
-            >
-              <div className="cursor-help text-sm text-gray-400">
-                {skillData.stats.modelCount}M + {skillData.stats.agentCount}A
-              </div>
-            </Tooltip>
-          </Card>
         </div>
 
         {/* Leaderboard Table */}
         <div>
-          <h2 className="mb-6 text-2xl font-bold text-white">
-            {skill.name} Leaderboard
-          </h2>
-
           {/* Desktop View */}
           <div className="hidden md:block">
             <SkillDetailLeaderboardTable skill={skill} skillData={skillData} />

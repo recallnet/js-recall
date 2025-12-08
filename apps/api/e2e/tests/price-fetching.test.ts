@@ -1,15 +1,15 @@
 import { beforeEach, describe, expect, test } from "vitest";
 
 import { BlockchainType } from "@recallnet/services/types";
-
-import config from "@/config/index.js";
-import { ApiClient } from "@/e2e/utils/api-client.js";
-import { PriceResponse, SpecificChain } from "@/e2e/utils/api-types.js";
+import { ApiClient } from "@recallnet/test-utils";
+import { PriceResponse, SpecificChain } from "@recallnet/test-utils";
 import {
   createTestClient,
   getAdminApiKey,
   registerUserAndAgentAndGetClient,
-} from "@/e2e/utils/test-helpers.js";
+} from "@recallnet/test-utils";
+
+import config from "@/config/index.js";
 
 // Define Ethereum token addresses for testing
 const ETHEREUM_TOKENS = {
@@ -20,7 +20,7 @@ const ETHEREUM_TOKENS = {
 // Define Base chain token addresses for testing
 const BASE_TOKENS = {
   ETH: "0x4200000000000000000000000000000000000006", // WETH on Base
-  USDC: "0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA", // USDbC on Base
+  USDC: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
 };
 
 describe("Price Fetching", () => {

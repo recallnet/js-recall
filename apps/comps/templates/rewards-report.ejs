@@ -1,0 +1,31 @@
+:checkered_flag: *Competition Rewards Summary*
+*Competition:* <%= competitionName %>
+*Merkle Root:* `<%= merkleRoot %>`
+*Token Contract:* `<%= tokenContractAddress %>`
+*Rewards Contract:* `<%= rewardsContractAddress %>`
+*Rewards Allocator Multisig:* <https://app.safe.global/home?safe=base:0x5291a64014b7b8D4B482Ac0de43e1Ebe5892dFF6|0x5291a64014b7b8D4B482Ac0de43e1Ebe5892dFF6>
+*Total Recipients:* <%= totalRecipients %> (<%= totalBoosters %> boosters, <%= totalAgents %> agents)
+*Total Rewards:* `<%= totalRewards %>`
+*Generated at:* <%= generatedDate %> (commit `<%= commitHash %>`)
+
+
+:bar_chart: *Distribution Stats*
+<% if (top5Agents.length > 0) { %>*Top 5 Agents:*
+<% top5Agents.forEach((agent, index) => { %> • `<%= agent.address %>`: <%= agent.amountFormatted %>
+<% }); %><% } %>
+*Boosters:*
+ • *Average reward:* <%= boosterStats.averageFormatted %>
+ • *Median reward:* <%= boosterStats.medianFormatted %>
+ • *Largest reward:* <%= boosterStats.largestFormatted %> (wallet: `<%= boosterStats.largestAddress %>`)
+ • *Smallest reward:* <%= boosterStats.smallestFormatted %> (wallet: `<%= boosterStats.smallestAddress %>`)
+
+<% if (top5Boosters.length > 0) { %>*Top 5 Boosters:*
+<% top5Boosters.forEach((booster, index) => { %> • `<%= booster.address %>`: <%= booster.amountFormatted %>
+<% }); %><% } %>
+
+:brain: *Verification Instructions*
+Use the CLI tool <https://github.com/recallnet/verify-merkle-proof|verify_merkle_proof> to verify an individual reward proof (example using top competitor):
+
+```
+verify_merkle_proof --root <%= merkleRoot %> --address <%= verificationExample.address %> --amount <%= verificationExample.amount %> --proof <%= verificationExample.proof %>
+```

@@ -86,12 +86,16 @@ export function configureCompetitionsRoutes(
    *                         description: Competition status (always PENDING)
    *                       type:
    *                         type: string
-   *                         enum: [trading]
+   *                         enum: [trading, perpetual_futures]
    *                         description: Competition type
    *                       crossChainTradingType:
    *                         type: string
    *                         enum: [disallowAll, disallowXParent, allow]
    *                         description: The type of cross-chain trading allowed in this competition
+   *                       evaluationMetric:
+   *                         type: string
+   *                         enum: [calmar_ratio, sortino_ratio, simple_return, max_drawdown, total_pnl]
+   *                         description: Primary evaluation metric for perps competitions (only present for perpetual_futures type)
    *                       createdAt:
    *                         type: string
    *                         format: date-time
@@ -128,39 +132,6 @@ export function configureCompetitionsRoutes(
    *                               type: string
    *                               description: Agent ID of the reward
    *                               example: "123e4567-e89b-12d3-a456-426614174000"
-   *                       votingEnabled:
-   *                         type: boolean
-   *                         description: Whether voting is enabled for this competition (only present for authenticated users)
-   *                       totalVotes:
-   *                         type: integer
-   *                         description: Total number of votes cast in this competition (only present for authenticated users)
-   *                       userVotingInfo:
-   *                         type: object
-   *                         nullable: true
-   *                         description: User's voting state for this competition (only present for authenticated users)
-   *                         properties:
-   *                           canVote:
-   *                             type: boolean
-   *                             description: Whether the user can vote in this competition
-   *                           reason:
-   *                             type: string
-   *                             nullable: true
-   *                             description: Reason why voting is not allowed (if canVote is false)
-   *                           info:
-   *                             type: object
-   *                             properties:
-   *                               hasVoted:
-   *                                 type: boolean
-   *                                 description: Whether the user has already voted in this competition
-   *                               agentId:
-   *                                 type: string
-   *                                 nullable: true
-   *                                 description: ID of the agent the user voted for (if hasVoted is true)
-   *                               votedAt:
-   *                                 type: string
-   *                                 format: date-time
-   *                                 nullable: true
-   *                                 description: When the user cast their vote (if hasVoted is true)
    *                       tradingConstraints:
    *                         type: object
    *                         description: Trading constraints for the competition (only present for authenticated users)
@@ -185,6 +156,81 @@ export function configureCompetitionsRoutes(
    *                             type: number
    *                             nullable: true
    *                             description: Minimum number of trades required per day (null if no requirement)
+   *                       arenaId:
+   *                         type: string
+   *                         nullable: true
+   *                         description: Arena ID for grouping competitions
+   *                       engineId:
+   *                         type: string
+   *                         nullable: true
+   *                         enum: [spot_paper_trading, perpetual_futures, spot_live_trading]
+   *                         description: Engine type identifier
+   *                       engineVersion:
+   *                         type: string
+   *                         nullable: true
+   *                         description: Engine version
+   *                       vips:
+   *                         type: array
+   *                         nullable: true
+   *                         items:
+   *                           type: string
+   *                         description: VIP agent IDs with special access
+   *                       allowlist:
+   *                         type: array
+   *                         nullable: true
+   *                         items:
+   *                           type: string
+   *                         description: Allowlisted agent IDs
+   *                       blocklist:
+   *                         type: array
+   *                         nullable: true
+   *                         items:
+   *                           type: string
+   *                         description: Blocklisted agent IDs
+   *                       minRecallRank:
+   *                         type: integer
+   *                         nullable: true
+   *                         description: Minimum global Recall rank required to join
+   *                       allowlistOnly:
+   *                         type: boolean
+   *                         description: Whether only allowlisted agents can join
+   *                       agentAllocation:
+   *                         type: number
+   *                         nullable: true
+   *                         description: Agent reward pool allocation amount
+   *                       agentAllocationUnit:
+   *                         type: string
+   *                         nullable: true
+   *                         enum: [RECALL, USDC, USD]
+   *                         description: Unit for agent reward allocation
+   *                       boosterAllocation:
+   *                         type: number
+   *                         nullable: true
+   *                         description: Booster reward pool allocation amount
+   *                       boosterAllocationUnit:
+   *                         type: string
+   *                         nullable: true
+   *                         enum: [RECALL, USDC, USD]
+   *                         description: Unit for booster reward allocation
+   *                       rewardRules:
+   *                         type: string
+   *                         nullable: true
+   *                         description: Rules for reward distribution
+   *                       rewardDetails:
+   *                         type: string
+   *                         nullable: true
+   *                         description: Additional reward details
+   *                       displayState:
+   *                         type: string
+   *                         nullable: true
+   *                         enum: [active, waitlist, cancelled, pending, paused]
+   *                         description: UI display state
+   *                       rewardsIneligible:
+   *                         type: array
+   *                         nullable: true
+   *                         items:
+   *                           type: string
+   *                         description: Agent IDs ineligible to receive rewards from this competition
    *                 pagination:
    *                   type: object
    *                   description: Pagination metadata
@@ -364,7 +410,7 @@ export function configureCompetitionsRoutes(
    *                       description: Competition status
    *                     type:
    *                       type: string
-   *                       enum: [trading]
+   *                       enum: [trading, perpetual_futures, spot_live_trading]
    *                       description: Competition type
    *                     crossChainTradingType:
    *                       type: string
@@ -386,11 +432,11 @@ export function configureCompetitionsRoutes(
    *                       properties:
    *                         competitionType:
    *                           type: string
-   *                           enum: ["trading", "perpetual_futures"]
+   *                           enum: ["trading", "perpetual_futures", "spot_live_trading"]
    *                           description: Type of competition determining which metrics are available
    *                         totalTrades:
    *                           type: number
-   *                           description: Total number of trades (only for paper trading competitions)
+   *                           description: Total number of trades (for paper trading and spot_live_trading competitions)
    *                         totalPositions:
    *                           type: number
    *                           description: Total number of positions (only for perpetual futures competitions)
@@ -400,15 +446,70 @@ export function configureCompetitionsRoutes(
    *                         totalVolume:
    *                           type: number
    *                           description: Total volume in USD
-   *                         totalVotes:
-   *                           type: integer
-   *                           description: Total number of votes cast in this competition
    *                         uniqueTokens:
    *                           type: number
    *                           description: Total number of unique tokens traded (only for paper trading competitions)
    *                         averageEquity:
    *                           type: number
    *                           description: Average equity across all agents (only for perpetual futures competitions)
+   *                     evaluationMetric:
+   *                       type: string
+   *                       enum: [calmar_ratio, sortino_ratio, simple_return, max_drawdown, total_pnl]
+   *                       description: Primary evaluation metric (present for perpetual_futures and spot_live_trading types)
+   *                     spotLiveConfig:
+   *                       type: object
+   *                       nullable: true
+   *                       description: Spot live trading configuration (only present for spot_live_trading type)
+   *                       properties:
+   *                         dataSource:
+   *                           type: string
+   *                           enum: [rpc_direct, envio_indexing, hybrid]
+   *                           description: Data source type for tracking on-chain trades
+   *                         dataSourceConfig:
+   *                           type: object
+   *                           description: Data source configuration details
+   *                         selfFundingThresholdUsd:
+   *                           type: number
+   *                           description: Threshold for self-funding detection in USD
+   *                         minFundingThreshold:
+   *                           type: number
+   *                           nullable: true
+   *                           description: Minimum portfolio balance to start in competition (enforced at competition start)
+   *                         syncIntervalMinutes:
+   *                           type: number
+   *                           description: Interval in minutes between blockchain data syncs
+   *                         chains:
+   *                           type: array
+   *                           items:
+   *                             type: string
+   *                           description: Enabled blockchain networks for this competition
+   *                         allowedProtocols:
+   *                           type: array
+   *                           description: Allowed DeFi protocols for trading (empty array means all protocols allowed)
+   *                           items:
+   *                             type: object
+   *                             properties:
+   *                               protocol:
+   *                                 type: string
+   *                                 description: Protocol identifier (e.g., uniswap_v3, aerodrome)
+   *                               specificChain:
+   *                                 type: string
+   *                                 description: Chain the protocol is enabled on
+   *                         allowedTokens:
+   *                           type: array
+   *                           description: Allowed tokens for trading (empty array means all tokens allowed)
+   *                           items:
+   *                             type: object
+   *                             properties:
+   *                               address:
+   *                                 type: string
+   *                                 description: Token contract address
+   *                               symbol:
+   *                                 type: string
+   *                                 description: Token symbol (e.g., WETH, USDC)
+   *                               specificChain:
+   *                                 type: string
+   *                                 description: Chain the token is on
    *                     createdAt:
    *                       type: string
    *                       format: date-time
@@ -445,36 +546,6 @@ export function configureCompetitionsRoutes(
    *                             type: string
    *                             description: Agent ID of the reward
    *                             example: "123e4567-e89b-12d3-a456-426614174000"
-   *                     votingEnabled:
-   *                       type: boolean
-   *                       description: Whether voting is enabled for this competition (only present for authenticated users)
-   *                     userVotingInfo:
-   *                       type: object
-   *                       nullable: true
-   *                       description: User's voting state for this competition (only present for authenticated users)
-   *                       properties:
-   *                         canVote:
-   *                           type: boolean
-   *                           description: Whether the user can vote in this competition
-   *                         reason:
-   *                           type: string
-   *                           nullable: true
-   *                           description: Reason why voting is not allowed (if canVote is false)
-   *                         info:
-   *                           type: object
-   *                           properties:
-   *                             hasVoted:
-   *                               type: boolean
-   *                               description: Whether the user has already voted in this competition
-   *                             agentId:
-   *                               type: string
-   *                               nullable: true
-   *                               description: ID of the agent the user voted for (if hasVoted is true)
-   *                             votedAt:
-   *                               type: string
-   *                               format: date-time
-   *                               nullable: true
-   *                               description: When the user cast their vote (if hasVoted is true)
    *                     tradingConstraints:
    *                       type: object
    *                       description: Trading constraints for the competition
@@ -495,6 +566,81 @@ export function configureCompetitionsRoutes(
    *                           type: number
    *                           nullable: true
    *                           description: Minimum number of trades required per day (null if no requirement)
+   *                     arenaId:
+   *                       type: string
+   *                       nullable: true
+   *                       description: Arena ID for grouping competitions
+   *                     engineId:
+   *                       type: string
+   *                       nullable: true
+   *                       enum: [spot_paper_trading, perpetual_futures, spot_live_trading]
+   *                       description: Engine type identifier
+   *                     engineVersion:
+   *                       type: string
+   *                       nullable: true
+   *                       description: Engine version
+   *                     vips:
+   *                       type: array
+   *                       nullable: true
+   *                       items:
+   *                         type: string
+   *                       description: VIP agent IDs with special access
+   *                     allowlist:
+   *                       type: array
+   *                       nullable: true
+   *                       items:
+   *                         type: string
+   *                       description: Allowlisted agent IDs
+   *                     blocklist:
+   *                       type: array
+   *                       nullable: true
+   *                       items:
+   *                         type: string
+   *                       description: Blocklisted agent IDs
+   *                     minRecallRank:
+   *                       type: integer
+   *                       nullable: true
+   *                       description: Minimum global Recall rank required to join
+   *                     allowlistOnly:
+   *                       type: boolean
+   *                       description: Whether only allowlisted agents can join
+   *                     agentAllocation:
+   *                       type: number
+   *                       nullable: true
+   *                       description: Agent reward pool allocation amount
+   *                     agentAllocationUnit:
+   *                       type: string
+   *                       nullable: true
+   *                       enum: [RECALL, USDC, USD]
+   *                       description: Unit for agent reward allocation
+   *                     boosterAllocation:
+   *                       type: number
+   *                       nullable: true
+   *                       description: Booster reward pool allocation amount
+   *                     boosterAllocationUnit:
+   *                       type: string
+   *                       nullable: true
+   *                       enum: [RECALL, USDC, USD]
+   *                       description: Unit for booster reward allocation
+   *                     rewardRules:
+   *                       type: string
+   *                       nullable: true
+   *                       description: Rules for reward distribution
+   *                     rewardDetails:
+   *                       type: string
+   *                       nullable: true
+   *                       description: Additional reward details
+   *                     displayState:
+   *                       type: string
+   *                       nullable: true
+   *                       enum: [active, waitlist, cancelled, pending, paused]
+   *                       description: UI display state
+   *                     rewardsIneligible:
+   *                       type: array
+   *                       nullable: true
+   *                       items:
+   *                         type: string
+   *                       description: Agent IDs ineligible to receive rewards from this competition
    *       400:
    *         description: Bad request - Invalid competition ID format
    *       404:
@@ -553,7 +699,7 @@ export function configureCompetitionsRoutes(
    *             Optional field(s) to sort by. Supports single or multiple fields separated by commas.
    *             Prefix with '-' for descending order (e.g., '-name' or '-rank').
    *             Default is 'rank' ascending.
-   *           enum: [rank, -rank, score, -score, pnl, -pnl, pnlPercent, -pnlPercent, change24h, -change24h, change24hPercent, -change24hPercent, voteCount, -voteCount, calmarRatio, -calmarRatio, simpleReturn, -simpleReturn, maxDrawdown, -maxDrawdown, portfolioValue, -portfolioValue, id, -id, ownerId, -ownerId, walletAddress, -walletAddress, handle, -handle, status, -status, createdAt, -createdAt, updatedAt, -updatedAt, name, -name]
+   *           enum: [rank, -rank, score, -score, pnl, -pnl, pnlPercent, -pnlPercent, change24h, -change24h, change24hPercent, -change24hPercent, calmarRatio, -calmarRatio, simpleReturn, -simpleReturn, maxDrawdown, -maxDrawdown, portfolioValue, -portfolioValue, id, -id, ownerId, -ownerId, walletAddress, -walletAddress, handle, -handle, status, -status, createdAt, -createdAt, updatedAt, -updatedAt, name, -name]
    *           default: rank
    *         required: false
    *         description: Sort order for results
@@ -648,13 +794,14 @@ export function configureCompetitionsRoutes(
    *                       change24hPercent:
    *                         type: number
    *                         description: 24h change as percentage
-   *                       voteCount:
-   *                         type: integer
-   *                         description: Number of votes this agent has received in the competition
    *                       calmarRatio:
    *                         type: number
    *                         nullable: true
    *                         description: Risk-adjusted performance metric (Annualized Return / Max Drawdown) - only for perps competitions
+   *                       sortinoRatio:
+   *                         type: number
+   *                         nullable: true
+   *                         description: Risk-adjusted performance metric (Return / Downside Deviation) - only for perps competitions
    *                       simpleReturn:
    *                         type: number
    *                         nullable: true
@@ -663,6 +810,10 @@ export function configureCompetitionsRoutes(
    *                         type: number
    *                         nullable: true
    *                         description: Maximum observed loss from peak (negative value) - only for perps competitions
+   *                       downsideDeviation:
+   *                         type: number
+   *                         nullable: true
+   *                         description: Standard deviation of negative returns - only for perps competitions
    *                       hasRiskMetrics:
    *                         type: boolean
    *                         description: Whether risk metrics are available for this agent (perps only, requires 2+ snapshots)
@@ -894,6 +1045,30 @@ export function configureCompetitionsRoutes(
    *                             totalValue:
    *                               type: number
    *                               description: Total portfolio value on that date
+   *                             calmarRatio:
+   *                               type: number
+   *                               nullable: true
+   *                               description: Calmar ratio at this point (perps competitions only)
+   *                             sortinoRatio:
+   *                               type: number
+   *                               nullable: true
+   *                               description: Sortino ratio at this point (perps competitions only)
+   *                             maxDrawdown:
+   *                               type: number
+   *                               nullable: true
+   *                               description: Maximum drawdown at this point (perps competitions only)
+   *                             downsideDeviation:
+   *                               type: number
+   *                               nullable: true
+   *                               description: Downside deviation at this point (perps competitions only)
+   *                             simpleReturn:
+   *                               type: number
+   *                               nullable: true
+   *                               description: Simple return at this point (perps competitions only)
+   *                             annualizedReturn:
+   *                               type: number
+   *                               nullable: true
+   *                               description: Annualized return at this point (perps competitions only)
    *       400:
    *         description: Bad request - Invalid competition ID format or invalid bucket parameter (must be between 1 and 1440 minutes, must be an integer)
    *       404:
@@ -913,8 +1088,8 @@ export function configureCompetitionsRoutes(
    *   get:
    *     tags:
    *       - Competition
-   *     summary: Get trades for a competition (Paper Trading Only)
-   *     description: Get all trades for a specific competition. Only available for paper trading competitions.
+   *     summary: Get trades for a competition
+   *     description: Get all trades for a specific competition. Available for paper trading and spot live trading competitions.
    *     security:
    *       - BearerAuth: []
    *     parameters:
@@ -989,8 +1164,8 @@ export function configureCompetitionsRoutes(
    *   get:
    *     tags:
    *       - Competition
-   *     summary: Get trades for an agent in a competition (Paper Trading Only)
-   *     description: Get all trades for a specific agent in a specific competition. Only available for paper trading competitions.
+   *     summary: Get trades for an agent in a competition
+   *     description: Get all trades for a specific agent in a specific competition. Available for paper trading and spot live trading competitions.
    *     security:
    *       - BearerAuth: []
    *     parameters:
@@ -1070,7 +1245,7 @@ export function configureCompetitionsRoutes(
    * /api/competitions/{competitionId}/agents/{agentId}/perps/positions:
    *   get:
    *     tags:
-   *       - Competitions
+   *       - Competition
    *     summary: Get perps positions for an agent in a competition
    *     description: |
    *       Returns the current perpetual futures positions for a specific agent in a specific competition.
@@ -1235,7 +1410,7 @@ export function configureCompetitionsRoutes(
    * /api/competitions/{competitionId}/perps/all-positions:
    *   get:
    *     tags:
-   *       - Competitions
+   *       - Competition
    *     summary: Get all perps positions for a competition
    *     description: |
    *       Returns all perpetual futures positions for a competition with pagination support.
@@ -1280,7 +1455,7 @@ export function configureCompetitionsRoutes(
    *           default: ""
    *         description: Sort order (currently unused but included for consistency)
    *     security:
-   *       - bearerAuth: []
+   *       - BearerAuth: []
    *     responses:
    *       200:
    *         description: List of positions with pagination info
@@ -1429,6 +1604,75 @@ export function configureCompetitionsRoutes(
     "/:competitionId/perps/all-positions",
     ...authMiddlewares,
     competitionController.getCompetitionPerpsPositions,
+  );
+
+  /**
+   * @openapi
+   * /api/competitions/{competitionId}/partners:
+   *   get:
+   *     tags:
+   *       - Competition
+   *     summary: Get partners for a competition
+   *     description: Retrieve all partners/sponsors associated with a competition (public access)
+   *     parameters:
+   *       - in: path
+   *         name: competitionId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         description: Competition ID
+   *     responses:
+   *       200:
+   *         description: Partners retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                 partners:
+   *                   type: array
+   *                   items:
+   *                     type: object
+   *                     properties:
+   *                       id:
+   *                         type: string
+   *                         format: uuid
+   *                       name:
+   *                         type: string
+   *                       url:
+   *                         type: string
+   *                         nullable: true
+   *                       logoUrl:
+   *                         type: string
+   *                         nullable: true
+   *                       details:
+   *                         type: string
+   *                         nullable: true
+   *                       position:
+   *                         type: integer
+   *                       competitionPartnerId:
+   *                         type: string
+   *                         format: uuid
+   *                       createdAt:
+   *                         type: string
+   *                         format: date-time
+   *                       updatedAt:
+   *                         type: string
+   *                         format: date-time
+   *       400:
+   *         description: Bad Request
+   *       404:
+   *         description: Competition not found
+   *       500:
+   *         description: Server error
+   */
+  router.get(
+    "/:competitionId/partners",
+    optionalAuthMiddleware,
+    competitionController.getCompetitionPartners,
   );
 
   return router;

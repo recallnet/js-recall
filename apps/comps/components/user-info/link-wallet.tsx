@@ -4,13 +4,13 @@ import { Button } from "@recallnet/ui2/components/button";
 import { Tooltip } from "@recallnet/ui2/components/tooltip";
 
 import { Clipboard } from "@/components/clipboard";
-import { ProfileResponse } from "@/types/profile";
+import type { RouterOutputs } from "@/rpc/router";
 
 export default function LinkWallet({
   user,
   onLinkWallet,
 }: {
-  user: ProfileResponse["user"];
+  user: RouterOutputs["user"]["getProfile"];
   onLinkWallet: () => void;
 }) {
   if (!user) return null;
@@ -42,7 +42,7 @@ export default function LinkWallet({
       <Clipboard
         text={user.walletAddress}
         textOnCopy={user.walletAddress}
-        className="text-secondary-foreground text-sm"
+        className="text-secondary-foreground font-mono text-sm"
         showBorder={false}
       />
       {/* If a user has a custom wallet address stored in the db, we need them to officially

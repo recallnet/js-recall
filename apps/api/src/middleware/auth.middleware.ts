@@ -88,7 +88,7 @@ export const authMiddleware = (
       }
 
       /**
-       * API Key Authentication
+       * API Key Authentication for Agents and Admins.
        *
        * This section attempts to authenticate the request using an API key provided in the
        * 'Authorization: Bearer <API_KEY>' header. It tries agent API keys first, then admin API keys.
@@ -139,8 +139,8 @@ export const authMiddleware = (
       } catch (error) {
         // Agent API key validation failed, try admin API key
         authLogger.error(
+          { error },
           "[AuthMiddleware] Agent API key validation failed, trying admin API key:",
-          error,
         );
       }
 
@@ -176,8 +176,8 @@ export const authMiddleware = (
         }
       } catch (error) {
         authLogger.error(
+          { error },
           "[AuthMiddleware] Admin API key validation also failed: ",
-          error,
         );
       }
 
@@ -188,7 +188,7 @@ export const authMiddleware = (
         "Invalid API key. This key may have been reset or is no longer associated with an active account. Please ensure you're using your most recent API key.",
       );
     } catch (error) {
-      authLogger.error(`Error in authentication:`, error);
+      authLogger.error({ error }, `Error in authentication`);
       next(error);
     }
   };

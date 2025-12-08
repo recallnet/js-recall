@@ -21,34 +21,8 @@ jobs:
           submodules: true
           fetch-depth: 1
 
-      - name: Install Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 9
-
-      - name: Get pnpm store directory
-        shell: bash
-        run: |
-          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
-
-      - name: Setup pnpm cache
-        uses: actions/cache@v3
-        with:
-          path: ${{ env.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
-
-      - name: Install Dependencies
-        run: pnpm install
-
-      - name: Build everything
-        run: pnpm build
+      - name: Setup Node.js and pnpm
+        uses: ./.github/actions/setup-node-pnpm
 
       - name: Run unit tests
         run: |
@@ -56,6 +30,7 @@ jobs:
           pnpm test
         env:
           NODE_ENV: test
+          ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
 
   integration-tests:
     runs-on: ubuntu-latest
@@ -77,35 +52,12 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-
-      - name: Install Node.js
-        uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          submodules: true
+          fetch-depth: 0
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 9
-
-      - name: Get pnpm store directory
-        shell: bash
-        run: |
-          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
-
-      - name: Setup pnpm cache
-        uses: actions/cache@v3
-        with:
-          path: ${{ env.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
-
-      - name: Install Dependencies
-        run: pnpm install
-
-      - name: Build everything
-        run: pnpm build
+      - name: Setup Node.js and pnpm
+        uses: ./.github/actions/setup-node-pnpm
 
       - name: Create test environment for api app
         working-directory: apps/api
@@ -153,164 +105,18 @@ jobs:
           - 5432:5432
 
     steps:
-      - name: Checkout
+      - name: Checkout Repository
         uses: actions/checkout@v4
         with:
           submodules: true
           fetch-depth: 0
 
-      - name: Install Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22"
+      - name: Setup Node.js and pnpm
+        uses: ./.github/actions/setup-node-pnpm
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 9
-
-      - name: Get pnpm store directory
-        shell: bash
-        run: |
-          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
-
-      - name: Setup pnpm cache
-        uses: actions/cache@v3
-        with:
-          path: ${{ env.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
-
-      - name: Install Dependencies
-        run: pnpm install
-
-      - name: Build everything
-        run: pnpm build
-
-      - name: Detect environment and get postgres IP
-        id: detect-env
-        working-directory: apps/api
-        run: |
-          # Default for GitHub Actions
-          echo "db_host=localhost" >> $GITHUB_OUTPUT
-          echo "test_host=localhost" >> $GITHUB_OUTPUT
-
-          # Check if we're running in act
-          if [ -z "$ACTIONS_RUNTIME_URL" ]; then
-            echo "Running in act - finding Postgres container IP"
-
-            # Get the container ID of the postgres container
-            POSTGRES_CONTAINER_ID=$(docker ps --filter "ancestor=postgres:14" --format "{{.ID}}")
-
-            if [ -n "$POSTGRES_CONTAINER_ID" ]; then
-              echo "Found postgres container: $POSTGRES_CONTAINER_ID"
-
-              # Get the IP address of the container
-              POSTGRES_IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $POSTGRES_CONTAINER_ID)
-
-              if [ -n "$POSTGRES_IP" ]; then
-                echo "Found postgres container IP: $POSTGRES_IP"
-                echo "db_host=$POSTGRES_IP" >> $GITHUB_OUTPUT
-              else
-                echo "Could not get IP, falling back to 127.0.0.1"
-                echo "db_host=127.0.0.1" >> $GITHUB_OUTPUT
-              fi
-            else
-              echo "Could not find postgres container, falling back to 127.0.0.1"
-              echo "db_host=127.0.0.1" >> $GITHUB_OUTPUT
-            fi
-
-            # For act, we need to use 0.0.0.0 to listen on all interfaces
-            echo "test_host=0.0.0.0" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Create .env.test file
-        working-directory: apps/api
-        run: |
-          DB_HOST_VALUE="${{ steps.detect-env.outputs.db_host }}"
-          echo "Using DB_HOST=$DB_HOST_VALUE"
-
-          cat > .env.test << EOF
-          # Test Database Configuration
-          DATABASE_URL=postgresql://postgres:postgres@${DB_HOST_VALUE}:5432/trading_simulator_test
-
-          # Test Server Configuration
-          TEST_PORT=3001
-          TEST_HOST=${{ steps.detect-env.outputs.test_host }}
-          NODE_ENV=test
-          PORT=3001
-          DOMAIN=.example.com
-
-          # API Configuration
-          API_DOMAIN=http://localhost:3001
-
-          # Test Security Secrets
-          # Note: root encryption key is also used for sessions; requires a 32 character length
-          ROOT_ENCRYPTION_KEY=test_root_encryption_key_with_32_characters
-
-          # EVM Chain Configuration
-          EVM_CHAINS=eth,polygon,bsc,arbitrum,base,optimism,avalanche,linea
-
-          # Test Environment Options
-          START_SERVER_MODE=spawn
-          USE_APP_INIT_SCRIPT=false
-          E2E_CLEANUP_DB=true
-          DB_CLEANUP_STRATEGY=truncate
-
-          # Test Admin Credentials
-          TEST_ADMIN_USERNAME=admin
-          TEST_ADMIN_PASSWORD=test-password-123
-          TEST_ADMIN_EMAIL=admin@test.com
-
-          # Test Team Credentials
-          TEST_TEAM_NAME=Test Team Alpha
-          TEST_TEAM_EMAIL=team@test.com
-          TEST_TEAM_CONTACT=John Doe
-
-          # Test Solana Token Address
-          TEST_SOL_TOKEN_ADDRESS=4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R
-
-          # Initial token balances for testing
-          INITIAL_SVM_SOL_BALANCE=10
-          INITIAL_SVM_USDC_BALANCE=5000
-          INITIAL_SVM_USDT_BALANCE=1000
-
-          # Ethereum (EVM) balances
-          INITIAL_ETH_ETH_BALANCE=1
-          INITIAL_ETH_USDC_BALANCE=5000
-          INITIAL_ETH_USDT_BALANCE=0
-
-          # Individual chain balances
-          INITIAL_OPTIMISM_USDC_BALANCE=200
-          INITIAL_POLYGON_USDC_BALANCE=200
-          INITIAL_ARBITRUM_USDC_BALANCE=200
-
-          # Max Trade Percentage
-          MAX_TRADE_PERCENTAGE=15
-
-          # Base-specific balances
-          INITIAL_BASE_USDC_BALANCE=5000
-
-          # Portfolio configuration
-          PRICE_CACHE_TTL_MS=60000
-          PRICE_CACHE_MAX_SIZE=10000
-          CACHE_ACTIVE_COMP_TTL_MS=1
-
-          # Optional: Disable ability for participants to view leaderboard activity
-          DISABLE_PARTICIPANT_LEADERBOARD_ACCESS=false
-
-          # Metrics server configuration
-          METRICS_PORT=3003
-
-          # Disable cache API
-          DISABLE_CACHE_API=true
-
-          # Faux Loops API settings
-          LOOPS_API_KEY=faux_loops_api_key
-          LOOPS_MAILING_LIST_ID=faux_loops_mailing_list_id
-          LOOPS_BASE_URL=http://127.0.0.1:4010
-          EOF
+      - name: Setup E2E environment
+        id: setup-e2e
+        uses: ./.github/actions/setup-e2e
 
       - name: Run E2E tests
         working-directory: apps/api
@@ -395,13 +201,79 @@ jobs:
         env:
           TEST_MODE: true
           CI: true
-          DATABASE_URL: postgresql://postgres:postgres@${{ steps.detect-env.outputs.db_host }}:5432/trading_simulator_test
-          TEST_HOST: ${{ steps.detect-env.outputs.test_host }}
+          DATABASE_URL: postgresql://postgres:postgres@${{ steps.setup-e2e.outputs.db_host }}:5432/trading_simulator_test
+          TEST_HOST: ${{ steps.setup-e2e.outputs.test_host }}
           # TODO: I think the tests are Vitest, why do we have a JEST env here?
           JEST_WORKER_ID: 1 # Force single worker to prevent open handles from child processes
           DB_CONNECTION_TIMEOUT: 5000
           DB_IDLE_TIMEOUT: 1000
           NODE_OPTIONS: "--max-old-space-size=4096" # Increase Node.js memory limit
+          E2E_CLEANUP_DB: true
+          DB_CLEANUP_STRATEGY: truncate
+          TEST_FORCE_EXIT: true
+
+  comps-e2e-tests:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: trading_simulator_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 0
+
+      - name: Setup Node.js and pnpm
+        uses: ./.github/actions/setup-node-pnpm
+
+      - name: Setup E2E environment
+        id: setup-e2e
+        uses: ./.github/actions/setup-e2e
+
+      - name: Run Comps E2E tests
+        working-directory: apps/comps
+        run: |
+          # Show the current working directory
+          echo "Current working directory: $(pwd)"
+
+          # Comps tests start the API server for admin operations (no admin RPCs exist)
+          # Therefore they load API's .env.test for server configuration
+          echo "Verifying ../api/.env.test exists:"
+          if [ -f "../api/.env.test" ]; then
+            echo "✅ ../api/.env.test exists"
+          else
+            echo "❌ ../api/.env.test NOT found"
+            exit 1
+          fi
+
+          # Verify the path for e2e tests
+          echo "E2E directory structure:"
+          find e2e -type f -name "*.test.ts" | sort || echo "No e2e tests found yet"
+
+          # Run the E2E tests
+          pnpm test:e2e
+        env:
+          TEST_MODE: true
+          CI: true
+          DATABASE_URL: postgresql://postgres:postgres@${{ steps.setup-e2e.outputs.db_host }}:5432/trading_simulator_test
+          POSTGRES_URL: postgresql://postgres:postgres@${{ steps.setup-e2e.outputs.db_host }}:5432/trading_simulator_test
+          TEST_HOST: ${{ steps.setup-e2e.outputs.test_host }}
+          DB_CONNECTION_TIMEOUT: 5000
+          DB_IDLE_TIMEOUT: 1000
+          NODE_OPTIONS: "--max-old-space-size=4096"
           E2E_CLEANUP_DB: true
           DB_CLEANUP_STRATEGY: truncate
           TEST_FORCE_EXIT: true

@@ -1,8 +1,12 @@
+import { Decimal } from "decimal.js";
+
+import type { RawAgentMetricsQueryResult } from "@recallnet/db/repositories/types";
+
 import type {
   AgentMetricsData,
   AgentPublic,
+  AgentRankByType,
   AgentWithMetrics,
-  RawAgentMetricsQueryResult,
 } from "./types/agent-metrics.js";
 import type { AgentMetadata, AgentStats, AgentTrophy } from "./types/index.js";
 
@@ -30,19 +34,11 @@ export class AgentMetricsHelper {
     rawResults: RawAgentMetricsQueryResult,
   ): AgentMetricsData[] {
     // Create lookup maps for efficient access
-    const agentRanksMap = new Map(
-      rawResults.agentRanks.map((row) => [row.agentId, row]),
-    );
-
     const competitionCountsMap = new Map(
       rawResults.competitionCounts.map((row) => [
         row.agentId,
         row.completedCompetitions,
       ]),
-    );
-
-    const voteCountsMap = new Map(
-      rawResults.voteCounts.map((row) => [row.agentId, row.totalVotes]),
     );
 
     const tradeCountsMap = new Map(
@@ -53,7 +49,15 @@ export class AgentMetricsHelper {
       rawResults.positionCounts.map((row) => [row.agentId, row.totalPositions]),
     );
 
-    const bestPlacementMap = new Map(
+    const bestPlacementMap = new Map<
+      string,
+      {
+        competitionId: string;
+        rank: number;
+        score: number;
+        totalAgents: number;
+      }
+    >(
       rawResults.bestPlacements.map((row) => [
         row.agentId,
         {
@@ -65,7 +69,13 @@ export class AgentMetricsHelper {
       ]),
     );
 
-    const bestPnlMap = new Map(
+    const bestPnlMap = new Map<
+      string,
+      {
+        competitionId: string;
+        pnl: number;
+      }
+    >(
       rawResults.bestPnls.map((row) => [
         row.agentId,
         {
@@ -75,75 +85,56 @@ export class AgentMetricsHelper {
       ]),
     );
 
-    // Calculate global ranks from all agent scores
-    const globalRanksMap = new Map<string, number>();
+    // Build ranks map for each agent (ranks now calculated in SQL)
+    const agentRanksMap = new Map<string, AgentRankByType[]>();
 
-    // Sort all agents by ordinal (descending) to determine ranks
-    const sortedAgents = [...rawResults.allAgentScores].sort(
-      (a, b) => (b.ordinal || 0) - (a.ordinal || 0),
-    );
-
-    // Assign ranks to requested agents based on their position in sorted list
-    sortedAgents.forEach((agent, index) => {
-      if (agentIds.includes(agent.agentId)) {
-        globalRanksMap.set(agent.agentId, index + 1);
+    rawResults.agentRanks.forEach((rankData) => {
+      if (!agentRanksMap.has(rankData.agentId)) {
+        agentRanksMap.set(rankData.agentId, []);
       }
+
+      agentRanksMap.get(rankData.agentId)!.push({
+        type: rankData.type,
+        rank: rankData.rank,
+        score: rankData.ordinal,
+      });
     });
 
     // Calculate total ROI with business logic
     const totalRoiMap = new Map(
       rawResults.totalRois.map((row) => {
-        const totalPnl = row.totalPnl ? Number(row.totalPnl) : null;
-        const totalStartingValue = row.totalStartingValue
-          ? Number(row.totalStartingValue)
-          : null;
-
-        if (!this.isValidRoiData(totalPnl, totalStartingValue)) {
+        if (!row.totalPnl || !row.totalStartingValue) {
           return [row.agentId, null];
         }
-
-        // Calculate ROI as percentage in decimal format (e.g., 0.37 for 37%)
-        const roiPercent = totalPnl! / totalStartingValue!;
-        return [row.agentId, roiPercent];
+        try {
+          const totalPnl = new Decimal(row.totalPnl);
+          const totalStartingValue = new Decimal(row.totalStartingValue);
+          if (totalStartingValue.lessThanOrEqualTo(0)) {
+            return [row.agentId, null];
+          }
+          const roiPercent = totalPnl.dividedBy(totalStartingValue).toNumber();
+          return [row.agentId, roiPercent];
+        } catch {
+          return [row.agentId, null];
+        }
       }),
     );
 
     // Combine all data for each agent
     return agentIds.map((agentId) => {
-      const agentData = agentRanksMap.get(agentId);
+      const ranks = agentRanksMap.get(agentId) ?? [];
 
       return {
         agentId,
         completedCompetitions: competitionCountsMap.get(agentId) ?? 0,
-        totalVotes: voteCountsMap.get(agentId) ?? 0,
         totalTrades: tradeCountsMap.get(agentId) ?? 0,
         totalPositions: positionCountsMap.get(agentId) ?? 0,
         bestPlacement: bestPlacementMap.get(agentId) ?? null,
         bestPnl: bestPnlMap.get(agentId)?.pnl ?? null,
         totalRoi: totalRoiMap.get(agentId) ?? null,
-        globalRank: globalRanksMap.get(agentId) ?? null,
-        globalScore: agentData?.globalScore ?? null,
+        ranks,
       };
     });
-  }
-
-  /**
-   * Validate ROI data for calculation
-   * @param totalPnl Total profit/loss value
-   * @param totalStartingValue Total starting value
-   * @returns True if data is valid for ROI calculation
-   */
-  private static isValidRoiData(
-    totalPnl: number | null,
-    totalStartingValue: number | null,
-  ): boolean {
-    return (
-      typeof totalPnl === "number" &&
-      typeof totalStartingValue === "number" &&
-      !isNaN(totalPnl) &&
-      !isNaN(totalStartingValue) &&
-      totalStartingValue > 0
-    );
   }
 
   /**
@@ -164,14 +155,12 @@ export class AgentMetricsHelper {
   static transformToStats(metrics: AgentMetricsData): AgentStats {
     return {
       completedCompetitions: metrics.completedCompetitions,
-      totalVotes: metrics.totalVotes,
       totalTrades: metrics.totalTrades,
       totalPositions: metrics.totalPositions,
       bestPlacement: metrics.bestPlacement ?? undefined,
-      rank: metrics.globalRank ?? undefined,
-      score: metrics.globalScore ?? undefined,
       totalRoi: metrics.totalRoi ?? undefined,
       bestPnl: metrics.bestPnl ?? undefined,
+      ranks: metrics.ranks.length > 0 ? metrics.ranks : undefined,
     };
   }
 
@@ -208,14 +197,12 @@ export class AgentMetricsHelper {
     return {
       agentId,
       completedCompetitions: 0,
-      totalVotes: 0,
       totalTrades: 0,
       totalPositions: 0,
       bestPlacement: null,
       bestPnl: null,
       totalRoi: null,
-      globalRank: null,
-      globalScore: null,
+      ranks: [],
     };
   }
 }

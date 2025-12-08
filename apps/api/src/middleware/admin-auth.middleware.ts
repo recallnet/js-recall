@@ -81,7 +81,7 @@ export const adminAuthMiddleware = (adminService: AdminService) => {
 
       next();
     } catch (error) {
-      middlewareLogger.error(`Error in authentication:`, error);
+      middlewareLogger.error({ error }, `Error in authentication`);
       next(error);
     }
   };

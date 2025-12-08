@@ -1,7 +1,7 @@
 import axios, { AxiosResponse } from "axios";
 import { describe, expect, test } from "vitest";
 
-import { getBaseUrl } from "@/e2e/utils/server.js";
+import { getBaseUrl } from "@recallnet/test-utils";
 
 describe("Rate Limiter Disabled", () => {
   test("should not rate limit when disabled", async () => {

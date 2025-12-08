@@ -6,7 +6,9 @@ import {
   eq,
   getTableColumns,
   gt,
+  gte,
   inArray,
+  lte,
   not,
   sql,
   sum,
@@ -21,6 +23,7 @@ import {
   perpsRiskMetrics,
   perpsSelfFundingAlerts,
   perpsTransferHistory,
+  riskMetricsSnapshots,
 } from "../schema/trading/defs.js";
 import {
   InsertPerpetualPosition,
@@ -29,6 +32,7 @@ import {
   InsertPerpsRiskMetrics,
   InsertPerpsSelfFundingAlert,
   InsertPerpsTransferHistory,
+  InsertRiskMetricsSnapshot,
   PerpetualPositionWithAgent,
   RiskAdjustedLeaderboardEntry,
   SelectPerpetualPosition,
@@ -37,6 +41,7 @@ import {
   SelectPerpsRiskMetrics,
   SelectPerpsSelfFundingAlert,
   SelectPerpsTransferHistory,
+  SelectRiskMetricsSnapshot,
 } from "../schema/trading/types.js";
 import { Database, Transaction } from "../types.js";
 
@@ -74,6 +79,14 @@ export interface PerpsSelfFundingAlertReview {
   reviewedBy: string | null;
   reviewNote: string | null;
   actionTaken: string | null;
+}
+
+export interface RiskMetricsTimeSeriesOptions {
+  agentId?: string;
+  startDate?: Date;
+  endDate?: Date;
+  limit?: number;
+  offset?: number;
 }
 
 /**
@@ -121,7 +134,7 @@ export class PerpsRepository {
 
       return result;
     } catch (error) {
-      this.#logger.error("Error in createPerpsCompetitionConfig:", error);
+      this.#logger.error({ error }, "Error in createPerpsCompetitionConfig");
       throw error;
     }
   }
@@ -143,7 +156,7 @@ export class PerpsRepository {
 
       return result || null;
     } catch (error) {
-      this.#logger.error("Error in getPerpsCompetitionConfig:", error);
+      this.#logger.error({ error }, "Error in getPerpsCompetitionConfig");
       throw error;
     }
   }
@@ -181,7 +194,7 @@ export class PerpsRepository {
 
       return result || null;
     } catch (error) {
-      this.#logger.error("Error in updatePerpsCompetitionConfig:", error);
+      this.#logger.error({ error }, "Error in updatePerpsCompetitionConfig");
       throw error;
     }
   }
@@ -212,7 +225,7 @@ export class PerpsRepository {
 
       return deleted;
     } catch (error) {
-      this.#logger.error("Error in deletePerpsCompetitionConfig:", error);
+      this.#logger.error({ error }, "Error in deletePerpsCompetitionConfig");
       throw error;
     }
   }
@@ -268,7 +281,7 @@ export class PerpsRepository {
 
       return results;
     } catch (error) {
-      this.#logger.error("Error in batchUpsertPerpsPositions:", error);
+      this.#logger.error({ error }, "Error in batchUpsertPerpsPositions");
       throw error;
     }
   }
@@ -332,7 +345,7 @@ export class PerpsRepository {
 
       return results;
     } catch (error) {
-      this.#logger.error("Error in getPerpsPositions:", error);
+      this.#logger.error({ error }, "Error in getPerpsPositions");
       throw error;
     }
   }
@@ -368,7 +381,7 @@ export class PerpsRepository {
 
       return result;
     } catch (error) {
-      this.#logger.error("Error in createPerpsAccountSummary:", error);
+      this.#logger.error({ error }, "Error in createPerpsAccountSummary");
       throw error;
     }
   }
@@ -408,7 +421,10 @@ export class PerpsRepository {
 
       return results;
     } catch (error) {
-      this.#logger.error("Error in batchCreatePerpsAccountSummaries:", error);
+      this.#logger.error(
+        { error },
+        "Error in batchCreatePerpsAccountSummaries",
+      );
       throw error;
     }
   }
@@ -438,7 +454,7 @@ export class PerpsRepository {
 
       return result || null;
     } catch (error) {
-      this.#logger.error("Error in getLatestPerpsAccountSummary:", error);
+      this.#logger.error({ error }, "Error in getLatestPerpsAccountSummary");
       throw error;
     }
   }
@@ -471,7 +487,7 @@ export class PerpsRepository {
 
       return result;
     } catch (error) {
-      this.#logger.error("Error in createPerpsSelfFundingAlert:", error);
+      this.#logger.error({ error }, "Error in createPerpsSelfFundingAlert");
       throw error;
     }
   }
@@ -506,7 +522,10 @@ export class PerpsRepository {
 
       return results;
     } catch (error) {
-      this.#logger.error("Error in batchCreatePerpsSelfFundingAlerts:", error);
+      this.#logger.error(
+        { error },
+        "Error in batchCreatePerpsSelfFundingAlerts",
+      );
       throw error;
     }
   }
@@ -533,7 +552,7 @@ export class PerpsRepository {
 
       return alerts;
     } catch (error) {
-      this.#logger.error("Error in getUnreviewedPerpsAlerts:", error);
+      this.#logger.error({ error }, "Error in getUnreviewedPerpsAlerts");
       throw error;
     }
   }
@@ -565,7 +584,7 @@ export class PerpsRepository {
 
       return result;
     } catch (error) {
-      this.#logger.error("Error in reviewPerpsSelfFundingAlert:", error);
+      this.#logger.error({ error }, "Error in reviewPerpsSelfFundingAlert");
       throw error;
     }
   }
@@ -594,7 +613,7 @@ export class PerpsRepository {
 
       return alerts;
     } catch (error) {
-      this.#logger.error("Error in getAgentSelfFundingAlerts:", error);
+      this.#logger.error({ error }, "Error in getAgentSelfFundingAlerts");
       throw error;
     }
   }
@@ -656,7 +675,7 @@ export class PerpsRepository {
 
       return alertsMap;
     } catch (error) {
-      this.#logger.error("Error in batchGetAgentsSelfFundingAlerts:", error);
+      this.#logger.error({ error }, "Error in batchGetAgentsSelfFundingAlerts");
       throw error;
     }
   }
@@ -736,8 +755,8 @@ export class PerpsRepository {
         };
       } catch (error) {
         this.#logger.error(
-          `[PerpsRepository] Failed to sync agent ${agentId}:`,
-          error,
+          { error },
+          `[PerpsRepository] Failed to sync agent ${agentId}`,
         );
         throw error;
       }
@@ -851,6 +870,10 @@ export class PerpsRepository {
     competitionId: string,
     limit = 50,
     offset = 0,
+    evaluationMetric:
+      | "calmar_ratio"
+      | "sortino_ratio"
+      | "simple_return" = "calmar_ratio",
   ): Promise<RiskAdjustedLeaderboardEntry[]> {
     try {
       // Get active agents subquery
@@ -880,8 +903,10 @@ export class PerpsRepository {
         .select({
           agentId: perpsRiskMetrics.agentId,
           calmarRatio: perpsRiskMetrics.calmarRatio,
+          sortinoRatio: perpsRiskMetrics.sortinoRatio,
           simpleReturn: perpsRiskMetrics.simpleReturn,
           maxDrawdown: perpsRiskMetrics.maxDrawdown,
+          downsideDeviation: perpsRiskMetrics.downsideDeviation,
         })
         .from(perpsRiskMetrics)
         .where(
@@ -900,17 +925,32 @@ export class PerpsRepository {
           totalEquity: latestSummarySubquery.totalEquity,
           totalPnl: latestSummarySubquery.totalPnl,
           calmarRatio: riskMetricsSubquery.calmarRatio,
+          sortinoRatio: riskMetricsSubquery.sortinoRatio,
           simpleReturn: riskMetricsSubquery.simpleReturn,
           maxDrawdown: riskMetricsSubquery.maxDrawdown,
+          downsideDeviation: riskMetricsSubquery.downsideDeviation,
         })
         .from(activeAgents)
         .leftJoinLateral(latestSummarySubquery, sql`true`)
         .leftJoinLateral(riskMetricsSubquery, sql`true`)
         .orderBy(
-          // Sort by: has risk metrics first, then by calmar ratio, then by equity
-          sql`CASE WHEN ${riskMetricsSubquery.calmarRatio} IS NOT NULL THEN 0 ELSE 1 END`,
-          desc(sql`${riskMetricsSubquery.calmarRatio}`),
-          desc(sql`${latestSummarySubquery.totalEquity}`),
+          // Dynamic sorting based on evaluation metric
+          // Use SQL template to add NULLS LAST - agents WITHOUT metrics rank after agents WITH metrics
+          ...(evaluationMetric === "sortino_ratio"
+            ? [
+                sql`${riskMetricsSubquery.sortinoRatio} DESC NULLS LAST`,
+                desc(latestSummarySubquery.totalEquity),
+              ]
+            : evaluationMetric === "simple_return"
+              ? [
+                  sql`${riskMetricsSubquery.simpleReturn} DESC NULLS LAST`,
+                  desc(latestSummarySubquery.totalEquity),
+                ]
+              : [
+                  // Default to calmar_ratio sorting
+                  sql`${riskMetricsSubquery.calmarRatio} DESC NULLS LAST`,
+                  desc(latestSummarySubquery.totalEquity),
+                ]),
         )
         .limit(limit)
         .offset(offset);
@@ -923,9 +963,11 @@ export class PerpsRepository {
           totalEquity: row.totalEquity || "0",
           totalPnl: row.totalPnl,
           calmarRatio: row.calmarRatio,
+          sortinoRatio: row.sortinoRatio,
           simpleReturn: row.simpleReturn,
           maxDrawdown: row.maxDrawdown,
-          hasRiskMetrics: row.calmarRatio !== null,
+          downsideDeviation: row.downsideDeviation,
+          hasRiskMetrics: row.calmarRatio !== null || row.sortinoRatio !== null,
         }));
 
       this.#logger.debug(
@@ -934,7 +976,7 @@ export class PerpsRepository {
 
       return leaderboard;
     } catch (error) {
-      this.#logger.error("Error in getRiskAdjustedLeaderboard:", error);
+      this.#logger.error({ error }, "Error in getRiskAdjustedLeaderboard");
       throw error;
     }
   }
@@ -984,7 +1026,10 @@ export class PerpsRepository {
 
       return summaries;
     } catch (error) {
-      this.#logger.error("Error in getCompetitionLeaderboardSummaries:", error);
+      this.#logger.error(
+        { error },
+        "Error in getCompetitionLeaderboardSummaries",
+      );
       throw error;
     }
   }
@@ -1050,7 +1095,7 @@ export class PerpsRepository {
         averageEquity: Number(stats?.averageEquity ?? 0),
       };
     } catch (error) {
-      this.#logger.error("Error in getPerpsCompetitionStats:", error);
+      this.#logger.error({ error }, "Error in getPerpsCompetitionStats");
       throw error;
     }
   }
@@ -1109,8 +1154,8 @@ export class PerpsRepository {
       return countMap;
     } catch (error) {
       this.#logger.error(
-        "Error in countBulkAgentPositionsInCompetitions:",
-        error,
+        { error },
+        "Error in countBulkAgentPositionsInCompetitions",
       );
       throw error;
     }
@@ -1143,6 +1188,15 @@ export class PerpsRepository {
       }
 
       // Build the main query with agent join - following same pattern as getCompetitionTrades
+      // Sort based on status: Open positions by createdAt, Closed positions by closedAt
+      // Note: undefined defaults to "Open" (see filtering logic above)
+      const orderByClause =
+        statusFilter === "Closed"
+          ? desc(perpetualPositions.closedAt)
+          : statusFilter === "Open" || statusFilter === undefined
+            ? desc(perpetualPositions.createdAt)
+            : desc(perpetualPositions.lastUpdatedAt); // For "all" or other statuses
+
       const positionsQuery = this.#dbRead
         .select({
           ...getTableColumns(perpetualPositions),
@@ -1156,7 +1210,7 @@ export class PerpsRepository {
         .from(perpetualPositions)
         .innerJoin(agents, eq(perpetualPositions.agentId, agents.id))
         .where(and(...conditions))
-        .orderBy(desc(perpetualPositions.lastUpdatedAt));
+        .orderBy(orderByClause);
 
       // Apply pagination
       if (limit !== undefined) {
@@ -1181,7 +1235,7 @@ export class PerpsRepository {
         total: total[0]?.count ?? 0,
       };
     } catch (error) {
-      this.#logger.error("Error in getCompetitionPerpsPositions:", error);
+      this.#logger.error({ error }, "Error in getCompetitionPerpsPositions");
       throw error;
     }
   }
@@ -1218,7 +1272,7 @@ export class PerpsRepository {
 
       return result;
     } catch (error) {
-      this.#logger.error("Error in saveTransferHistory:", error);
+      this.#logger.error({ error }, "Error in saveTransferHistory");
       throw error;
     }
   }
@@ -1257,7 +1311,7 @@ export class PerpsRepository {
 
       return allResults;
     } catch (error) {
-      this.#logger.error("Error in batchSaveTransferHistory:", error);
+      this.#logger.error({ error }, "Error in batchSaveTransferHistory");
       throw error;
     }
   }
@@ -1308,7 +1362,7 @@ export class PerpsRepository {
 
       return transfers;
     } catch (error) {
-      this.#logger.error("Error in getAgentTransferHistory:", error);
+      this.#logger.error({ error }, "Error in getAgentTransferHistory");
       throw error;
     }
   }
@@ -1360,8 +1414,8 @@ export class PerpsRepository {
       return mappedResults;
     } catch (error) {
       this.#logger.error(
-        "Error in getCompetitionTransferViolationCounts:",
-        error,
+        { error },
+        "Error in getCompetitionTransferViolationCounts",
       );
       throw error;
     }
@@ -1372,7 +1426,7 @@ export class PerpsRepository {
   // =============================================================================
 
   /**
-   * Upsert risk metrics for an agent
+   * Upsert risk metrics for an agent (latest values only)
    * @param metrics Risk metrics to save/update
    * @param tx Optional transaction
    * @returns Saved risk metrics
@@ -1393,6 +1447,8 @@ export class PerpsRepository {
             calmarRatio: metrics.calmarRatio,
             annualizedReturn: metrics.annualizedReturn,
             maxDrawdown: metrics.maxDrawdown,
+            sortinoRatio: metrics.sortinoRatio,
+            downsideDeviation: metrics.downsideDeviation,
             snapshotCount: metrics.snapshotCount,
             calculationTimestamp: sql`CURRENT_TIMESTAMP`,
           },
@@ -1409,73 +1465,108 @@ export class PerpsRepository {
 
       return result;
     } catch (error) {
-      this.#logger.error("Error in upsertRiskMetrics:", error);
+      this.#logger.error({ error }, "Error in upsertRiskMetrics");
       throw error;
     }
   }
 
   /**
-   * Get risk metrics leaderboard for a competition
-   * @param competitionId Competition ID
-   * @param limit Optional limit
-   * @param offset Optional offset
-   * @returns Object with metrics array and total count
+   * Batch create risk metrics snapshots for time series data
+   * Following the same pattern as batchCreatePortfolioSnapshots
+   * @param snapshots Array of risk metrics snapshot data
+   * @returns Array of created snapshots
    */
-  async getCompetitionRiskMetricsLeaderboard(
-    competitionId: string,
-    limit = 100,
-    offset = 0,
-  ): Promise<{
-    metrics: Array<
-      SelectPerpsRiskMetrics & {
-        agent: { id: string; name: string; imageUrl: string | null } | null;
-      }
-    >;
-    total: number;
-  }> {
+  async batchCreateRiskMetricsSnapshots(
+    snapshots: InsertRiskMetricsSnapshot[],
+    tx?: Transaction,
+  ): Promise<SelectRiskMetricsSnapshot[]> {
+    if (snapshots.length === 0) {
+      return [];
+    }
+
+    const executor = tx || this.#db;
+
     try {
-      // Data query with agent join
-      const metricsQuery = this.#dbRead
-        .select({
-          id: perpsRiskMetrics.id,
-          agentId: perpsRiskMetrics.agentId,
-          competitionId: perpsRiskMetrics.competitionId,
-          simpleReturn: perpsRiskMetrics.simpleReturn,
-          calmarRatio: perpsRiskMetrics.calmarRatio,
-          annualizedReturn: perpsRiskMetrics.annualizedReturn,
-          maxDrawdown: perpsRiskMetrics.maxDrawdown,
-          calculationTimestamp: perpsRiskMetrics.calculationTimestamp,
-          snapshotCount: perpsRiskMetrics.snapshotCount,
-          agent: {
-            id: agents.id,
-            name: agents.name,
-            imageUrl: agents.imageUrl,
-          },
-        })
-        .from(perpsRiskMetrics)
-        .leftJoin(agents, eq(perpsRiskMetrics.agentId, agents.id))
-        .where(eq(perpsRiskMetrics.competitionId, competitionId))
-        .orderBy(desc(perpsRiskMetrics.calmarRatio))
-        .limit(limit)
-        .offset(offset);
-
-      // Count query
-      const totalQuery = this.#dbRead
-        .select({ count: drizzleCount() })
-        .from(perpsRiskMetrics)
-        .where(eq(perpsRiskMetrics.competitionId, competitionId));
-
-      const [results, total] = await Promise.all([metricsQuery, totalQuery]);
-
-      return {
-        metrics: results,
-        total: total[0]?.count ?? 0,
-      };
-    } catch (error) {
-      this.#logger.error(
-        "Error in getCompetitionRiskMetricsLeaderboard:",
-        error,
+      this.#logger.debug(
+        `[PerpsRepository] Batch creating ${snapshots.length} risk metrics snapshots`,
       );
+
+      const now = new Date();
+      const results = await executor
+        .insert(riskMetricsSnapshots)
+        .values(
+          snapshots.map((snapshot) => ({
+            ...snapshot,
+            timestamp: snapshot.timestamp || now,
+          })),
+        )
+        .returning();
+
+      this.#logger.debug(
+        `[PerpsRepository] Successfully created ${results.length} risk metrics snapshots`,
+      );
+
+      return results;
+    } catch (error) {
+      this.#logger.error({ error }, "Error in batchCreateRiskMetricsSnapshots");
+      throw error;
+    }
+  }
+
+  /**
+   * Get risk metrics time series data for a competition
+   * @param competitionId Competition ID
+   * @param options Optional parameters for filtering and pagination
+   * @returns Array of risk metrics snapshots
+   */
+  async getRiskMetricsTimeSeries(
+    competitionId: string,
+    options?: RiskMetricsTimeSeriesOptions,
+  ): Promise<SelectRiskMetricsSnapshot[]> {
+    try {
+      const conditions = [
+        eq(riskMetricsSnapshots.competitionId, competitionId),
+      ];
+
+      if (options?.agentId) {
+        conditions.push(eq(riskMetricsSnapshots.agentId, options.agentId));
+      }
+
+      if (options?.startDate) {
+        conditions.push(gte(riskMetricsSnapshots.timestamp, options.startDate));
+      }
+
+      if (options?.endDate) {
+        conditions.push(lte(riskMetricsSnapshots.timestamp, options.endDate));
+      }
+
+      const query = this.#dbRead
+        .select()
+        .from(riskMetricsSnapshots)
+        .where(and(...conditions))
+        .orderBy(desc(riskMetricsSnapshots.timestamp));
+
+      // Apply pagination if specified
+      let results: SelectRiskMetricsSnapshot[];
+      if (options?.limit !== undefined && options.limit > 0) {
+        if (options?.offset !== undefined && options.offset > 0) {
+          results = await query.limit(options.limit).offset(options.offset);
+        } else {
+          results = await query.limit(options.limit);
+        }
+      } else if (options?.offset !== undefined && options.offset > 0) {
+        results = await query.offset(options.offset);
+      } else {
+        results = await query;
+      }
+
+      this.#logger.debug(
+        `[PerpsRepository] Retrieved ${results.length} risk metrics snapshots for competition ${competitionId}`,
+      );
+
+      return results;
+    } catch (error) {
+      this.#logger.error({ error }, "Error in getRiskMetricsTimeSeries");
       throw error;
     }
   }
@@ -1487,8 +1578,9 @@ export class PerpsRepository {
    */
   async saveRiskMetrics(
     metrics: InsertPerpsRiskMetrics,
+    tx?: Transaction,
   ): Promise<SelectPerpsRiskMetrics> {
-    return this.upsertRiskMetrics(metrics);
+    return this.upsertRiskMetrics(metrics, tx);
   }
 
   /**
@@ -1528,7 +1620,7 @@ export class PerpsRepository {
 
       return metricsMap;
     } catch (error) {
-      this.#logger.error("Error in getBulkAgentRiskMetrics:", error);
+      this.#logger.error({ error }, "Error in getBulkAgentRiskMetrics");
       throw error;
     }
   }

@@ -7,6 +7,7 @@ import {
   ErrorMap,
   Meta,
   Middleware,
+  MiddlewareResult,
   ORPCErrorConstructorMap,
   os,
 } from "@orpc/server";
@@ -33,7 +34,7 @@ export function cacheMiddleware<
   key?: string[];
   revalidateSecs?: number;
   getTags?: (input: TInput) => string[];
-  includeContext?: (context: TInContext) => Record<string, any>;
+  includeContext?: (context: TInContext) => Record<string, unknown>;
 }): Middleware<
   TInContext,
   Record<never, never>,
@@ -45,6 +46,20 @@ export function cacheMiddleware<
   return os
     .$context<{ logger: Logger }>()
     .middleware(async ({ context, next, path }, input) => {
+      // In test environments (Vitest), Next.js cache is not available
+      // Check if we're in a test environment by looking for Vitest globals
+      const isTestEnvironment =
+        typeof process !== "undefined" &&
+        (process.env.VITEST === "true" || process.env.NODE_ENV === "test");
+
+      if (isTestEnvironment) {
+        context.logger.debug(
+          { path },
+          "Test environment detected, skipping cache middleware",
+        );
+        return next();
+      }
+
       // Extract additional context values for cache key if specified
       const contextValues = options?.includeContext?.(context as TInContext);
 
@@ -95,12 +110,18 @@ export function cacheMiddleware<
 
       // Deserialize to restore original types (BigInt, Date, etc.)
       const [json, meta, maps, blobs] = cachedResult;
-      return serializer.deserialize(json, meta, maps, (index: number) => {
-        const blob = blobs[index];
-        if (!blob) {
-          throw new Error(`Missing blob at index ${index}`);
-        }
-        return blob;
-      }) as any;
+      const result = serializer.deserialize(
+        json,
+        meta,
+        maps,
+        (index: number) => {
+          const blob = blobs[index];
+          if (!blob) {
+            throw new Error(`Missing blob at index ${index}`);
+          }
+          return blob;
+        },
+      );
+      return result as MiddlewareResult<Record<never, never>, TOutput>;
     });
 }

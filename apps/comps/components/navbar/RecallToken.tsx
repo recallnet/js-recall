@@ -1,10 +1,10 @@
-import { format } from "dnum";
 import Link from "next/link";
 
 import { Skeleton } from "@recallnet/ui2/components/skeleton";
 
 import { Recall } from "@/components/Recall";
 import { useRecall } from "@/hooks/useRecall";
+import { formatBigintAmount } from "@/utils/format";
 
 export const RecallToken = () => {
   const { value, decimals, isLoading } = useRecall();
@@ -25,7 +25,7 @@ export const RecallToken = () => {
         <Skeleton className="radial-hover-text h-3 w-20 rounded-xl bg-[#1D1F2B]" />
       ) : (
         <span className="radial-hover-text text-right font-mono text-base font-semibold not-italic leading-6 tracking-[0.96px] text-gray-100">
-          {format([value, decimals], { compact: true })}
+          {formatBigintAmount(value, decimals)}
         </span>
       )}
     </Link>

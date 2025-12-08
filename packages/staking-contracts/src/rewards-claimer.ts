@@ -1,6 +1,3 @@
-import * as fs from "fs";
-import { dirname, join } from "path";
-import { fileURLToPath } from "url";
 import {
   type Hex,
   type PublicClient,
@@ -11,16 +8,8 @@ import {
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 
+import { abi } from "./abi.js";
 import { Network, getChainForNetwork } from "./network.js";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const abi = JSON.parse(
-  fs.readFileSync(
-    join(__dirname, "../contracts/abi/RewardAllocation.json"),
-    "utf8",
-  ),
-);
 
 interface ClaimResult {
   transactionHash: string;
@@ -92,7 +81,7 @@ class RewardsClaimer {
       address: this.contractAddress,
       abi: abi,
       functionName: "claim",
-      args: [root, claimAmount, proof],
+      args: [root as `0x${string}`, claimAmount, proof as `0x${string}`[]],
       chain: this.walletClient.chain,
     });
 

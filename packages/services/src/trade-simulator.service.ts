@@ -4,9 +4,16 @@ import { TradeRepository } from "@recallnet/db/repositories/trade";
 import { SelectTrade } from "@recallnet/db/schema/trading/types";
 
 import { BalanceService } from "./balance.service.js";
+import { getTokenAddressForPriceLookup } from "./lib/config-utils.js";
+import { getPriceMapKey } from "./lib/price-map-key.js";
 import { calculateSlippage } from "./lib/trade-utils.js";
 import { PriceTrackerService } from "./price-tracker.service.js";
-import { ApiError, BlockchainType, SpecificChain } from "./types/index.js";
+import {
+  ApiError,
+  BlockchainType,
+  SpecificChain,
+  TokenPriceRequest,
+} from "./types/index.js";
 
 // Result types inferred from repository functions to ensure consistency
 type CompetitionTradesResult = Awaited<
@@ -111,7 +118,10 @@ export class TradeSimulatorService {
 
       return trades;
     } catch (error) {
-      this.logger.error(`[TradeSimulator] Error getting agent trades:`, error);
+      this.logger.error(
+        { error },
+        `[TradeSimulator] Error getting agent trades`,
+      );
       return [];
     }
   }
@@ -136,8 +146,8 @@ export class TradeSimulatorService {
       );
     } catch (error) {
       this.logger.error(
+        { error },
         `[TradeSimulator] Error getting competition trades:`,
-        error,
       );
       return { trades: [], total: 0 };
     }
@@ -157,8 +167,8 @@ export class TradeSimulatorService {
       return await this.tradeRepo.getCompetitionTradeMetrics(competitionId);
     } catch (error) {
       this.logger.error(
+        { error },
         `[TradeSimulator] Error getting competition trade metrics:`,
-        error,
       );
       return { totalTrades: 0, totalVolume: 0, uniqueTokens: 0 };
     }
@@ -187,8 +197,8 @@ export class TradeSimulatorService {
       );
     } catch (error) {
       this.logger.error(
+        { error },
         `[TradeSimulator] Error getting agent trades in competition:`,
-        error,
       );
       return { trades: [], total: 0 };
     }
@@ -197,15 +207,31 @@ export class TradeSimulatorService {
   /**
    * Calculate an agent's portfolio value in USD
    * @param agentId The agent ID
+   * @param competitionId The competition ID
    * @returns Total portfolio value in USD
    */
-  async calculatePortfolioValue(agentId: string) {
+  async calculatePortfolioValue(agentId: string, competitionId: string) {
     let totalValue = 0;
-    const balances = await this.balanceService.getAllBalances(agentId);
+    const balances = await this.balanceService.getAllBalances(
+      agentId,
+      competitionId,
+    );
 
     for (const balance of balances) {
-      const price = await this.priceTrackerService.getPrice(
+      // Get price with chain specificity to avoid multi-chain collision bug
+      // Map native token addresses (zero address) to WETH for price lookup
+      const chainType =
+        balance.specificChain === "svm"
+          ? BlockchainType.SVM
+          : BlockchainType.EVM;
+      const lookupAddress = getTokenAddressForPriceLookup(
         balance.tokenAddress,
+        balance.specificChain as SpecificChain,
+      );
+      const price = await this.priceTrackerService.getPrice(
+        lookupAddress,
+        chainType,
+        balance.specificChain,
       );
       if (price) {
         totalValue += balance.amount * price.price;
@@ -218,10 +244,12 @@ export class TradeSimulatorService {
   /**
    * Calculate portfolio values for multiple agents in bulk
    * @param agentIds Array of agent IDs
+   * @param competitionId The competition ID
    * @returns Map of agent ID to portfolio value in USD
    */
   async calculateBulkPortfolioValues(
     agentIds: string[],
+    competitionId: string,
   ): Promise<Map<string, number>> {
     this.logger.debug(
       `[TradeSimulator] Calculating bulk portfolio values for ${agentIds.length} agents`,
@@ -235,16 +263,42 @@ export class TradeSimulatorService {
 
     try {
       // Step 1: Get all balances for all agents in one query
-      const allBalances = await this.balanceService.getBulkBalances(agentIds);
+      const allBalances = await this.balanceService.getBulkBalances(
+        agentIds,
+        competitionId,
+      );
 
-      // Step 2: Get unique token addresses
-      const uniqueTokens = [
-        ...new Set(allBalances.map((balance) => balance.tokenAddress)),
-      ];
+      // Step 2: Build unique token+chain requests
+      // Track mapping from original address to lookup address (WETH for native)
+      const uniqueRequests = new Map<string, TokenPriceRequest>();
+      const addressMapping = new Map<string, string>(); // original key -> lookup key
 
-      // Step 3: Get all token prices USD in bulk
-      const priceMap =
-        await this.priceTrackerService.getBulkPrices(uniqueTokens);
+      for (const balance of allBalances) {
+        const originalKey = getPriceMapKey(
+          balance.tokenAddress,
+          balance.specificChain,
+        );
+        const lookupAddress = getTokenAddressForPriceLookup(
+          balance.tokenAddress,
+          balance.specificChain as SpecificChain,
+        );
+        const lookupKey = getPriceMapKey(lookupAddress, balance.specificChain);
+
+        // Store the mapping for later price lookup
+        addressMapping.set(originalKey, lookupKey);
+
+        if (!uniqueRequests.has(lookupKey)) {
+          uniqueRequests.set(lookupKey, {
+            tokenAddress: lookupAddress,
+            specificChain: balance.specificChain as SpecificChain,
+          });
+        }
+      }
+
+      // Step 3: Get all token prices USD in bulk with chain specificity
+      const priceMap = await this.priceTrackerService.getBulkPrices(
+        Array.from(uniqueRequests.values()),
+      );
 
       // Step 4: Initialize portfolio values for all agents
       agentIds.forEach((agentId) => {
@@ -252,8 +306,14 @@ export class TradeSimulatorService {
       });
 
       // Step 5: Calculate portfolio values efficiently
+      // Use the address mapping to find prices for native tokens
       allBalances.forEach((balance) => {
-        const priceReport = priceMap.get(balance.tokenAddress);
+        const originalKey = getPriceMapKey(
+          balance.tokenAddress,
+          balance.specificChain,
+        );
+        const lookupKey = addressMapping.get(originalKey) || originalKey;
+        const priceReport = priceMap.get(lookupKey);
         if (priceReport && priceReport.price) {
           const currentValue = portfolioValues.get(balance.agentId) || 0;
           const tokenValue = balance.amount * priceReport.price;
@@ -262,14 +322,14 @@ export class TradeSimulatorService {
       });
 
       this.logger.debug(
-        `[TradeSimulator] Successfully calculated ${portfolioValues.size} portfolio values using ${uniqueTokens.length} unique tokens`,
+        `[TradeSimulator] Successfully calculated ${portfolioValues.size} portfolio values using ${uniqueRequests.size} unique token+chain combinations`,
       );
 
       return portfolioValues;
     } catch (error) {
       this.logger.error(
+        { error },
         `[TradeSimulator] Error calculating bulk portfolio values:`,
-        error,
       );
 
       // Fallback to individual calculations
@@ -278,12 +338,15 @@ export class TradeSimulatorService {
       );
       for (const agentId of agentIds) {
         try {
-          const value = await this.calculatePortfolioValue(agentId);
+          const value = await this.calculatePortfolioValue(
+            agentId,
+            competitionId,
+          );
           portfolioValues.set(agentId, value);
         } catch (agentError) {
           this.logger.error(
+            { error: agentError },
             `[TradeSimulator] Error calculating portfolio for agent ${agentId}:`,
-            agentError,
           );
           portfolioValues.set(agentId, 0);
         }
@@ -387,7 +450,10 @@ export class TradeSimulatorService {
         },
       };
     } catch (error) {
-      this.logger.error(`[TradeSimulator] Error getting trade quote:`, error);
+      this.logger.error(
+        { error },
+        `[TradeSimulator] Error getting trade quote`,
+      );
       throw error;
     }
   }
@@ -402,7 +468,7 @@ export class TradeSimulatorService {
       await this.tradeRepo.count();
       return true;
     } catch (error) {
-      this.logger.error("[TradeSimulator] Health check failed:", error);
+      this.logger.error({ error }, "[TradeSimulator] Health check failed");
       return false;
     }
   }

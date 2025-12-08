@@ -5,7 +5,7 @@ import { Logger } from "pino";
 import { AgentRepository } from "@recallnet/db/repositories/agent";
 import { BoostRepository } from "@recallnet/db/repositories/boost";
 import { UserRepository } from "@recallnet/db/repositories/user";
-import { VoteRepository } from "@recallnet/db/repositories/vote";
+import { type UserMetadata } from "@recallnet/db/schema/core/defs";
 import { InsertUser, SelectUser } from "@recallnet/db/schema/core/types";
 import { Database, Transaction } from "@recallnet/db/types";
 
@@ -14,7 +14,7 @@ import { checkUserUniqueConstraintViolation } from "./lib/error-utils.js";
 import { verifyAndGetPrivyUserInfo } from "./lib/privy-verification.js";
 import { WalletWatchlist } from "./lib/watchlist.js";
 import { ApiError } from "./types/index.js";
-import { UserMetadata, UserSearchParams } from "./types/index.js";
+import { UserSearchParams } from "./types/index.js";
 
 /**
  * User Service
@@ -29,7 +29,6 @@ export class UserService {
   private emailService: EmailService;
   private agentRepo: AgentRepository;
   private userRepo: UserRepository;
-  private voteRepo: VoteRepository;
   private boostRepo: BoostRepository;
   private walletWatchlist: WalletWatchlist;
   private db: Database;
@@ -39,7 +38,6 @@ export class UserService {
     emailService: EmailService,
     agentRepo: AgentRepository,
     userRepo: UserRepository,
-    voteRepo: VoteRepository,
     boostRepo: BoostRepository,
     walletWatchlist: WalletWatchlist,
     db: Database,
@@ -50,7 +48,6 @@ export class UserService {
     this.emailService = emailService;
     this.agentRepo = agentRepo;
     this.userRepo = userRepo;
-    this.voteRepo = voteRepo;
     this.boostRepo = boostRepo;
     this.walletWatchlist = walletWatchlist;
     this.db = db;
@@ -157,8 +154,8 @@ export class UserService {
         }
       } catch (subErr) {
         this.logger.error(
+          { error: subErr },
           `[UserManager] Unexpected error during email subscription for ${savedUser.id}:`,
-          subErr,
         );
       }
 
@@ -173,11 +170,14 @@ export class UserService {
       return savedUser;
     } catch (error) {
       if (error instanceof Error) {
-        this.logger.error("[UserManager] Error registering user:", error);
+        this.logger.error({ error }, "[UserManager] Error registering user");
         throw error;
       }
 
-      this.logger.error("[UserManager] Unknown error registering user:", error);
+      this.logger.error(
+        { error },
+        "[UserManager] Unknown error registering user",
+      );
       throw new Error(`Failed to register user: ${error}`);
     }
   }
@@ -208,8 +208,8 @@ export class UserService {
       return null;
     } catch (error) {
       this.logger.error(
+        { error },
         `[UserManager] Error retrieving user ${userId}:`,
-        error,
       );
       return null;
     }
@@ -231,7 +231,7 @@ export class UserService {
 
       return users;
     } catch (error) {
-      this.logger.error("[UserManager] Error retrieving all users:", error);
+      this.logger.error({ error }, "[UserManager] Error retrieving all users");
       return [];
     }
   }
@@ -291,11 +291,6 @@ export class UserService {
             mergeRes,
             `Merged boost balances from duplicate user ${duplicateAccount.id} into ${user.id}`,
           );
-          await this.voteRepo.updateVotesOwner(
-            duplicateAccount.id,
-            user.id,
-            tx,
-          );
           await this.deleteUser(duplicateAccount.id, tx);
         }
         const updatedUser = await this.userRepo.update({ ...user }, tx);
@@ -311,7 +306,10 @@ export class UserService {
       this.logger.debug(`[UserManager] Updated user: ${user.id}`);
       return updatedUser;
     } catch (error) {
-      this.logger.error(`[UserManager] Error updating user ${user.id}:`, error);
+      this.logger.error(
+        { error },
+        `[UserManager] Error updating user ${user.id}`,
+      );
       throw new Error(
         `Failed to update user: ${error instanceof Error ? error.message : error}`,
       );
@@ -345,7 +343,10 @@ export class UserService {
 
       return deleted;
     } catch (error) {
-      this.logger.error(`[UserManager] Error deleting user ${userId}:`, error);
+      this.logger.error(
+        { error },
+        `[UserManager] Error deleting user ${userId}`,
+      );
       throw new Error(
         `Failed to delete user: ${error instanceof Error ? error.message : error}`,
       );
@@ -387,8 +388,8 @@ export class UserService {
       return null;
     } catch (error) {
       this.logger.error(
+        { error },
         `[UserManager] Error retrieving user by wallet address ${walletAddress}:`,
-        error,
       );
       return null;
     }
@@ -415,8 +416,8 @@ export class UserService {
       return null;
     } catch (error) {
       this.logger.error(
+        { error },
         `[UserManager] Error retrieving user by Privy ID ${privyId}:`,
-        error,
       );
       return null;
     }
@@ -526,8 +527,8 @@ export class UserService {
       return null;
     } catch (error) {
       this.logger.error(
+        { error },
         `[UserManager] Error retrieving user by email ${email}:`,
-        error,
       );
       return null;
     }
@@ -550,7 +551,7 @@ export class UserService {
 
       return users;
     } catch (error) {
-      this.logger.error("[UserManager] Error searching users:", error);
+      this.logger.error({ error }, "[UserManager] Error searching users");
       return [];
     }
   }
@@ -564,7 +565,7 @@ export class UserService {
       const res = await this.userRepo.count();
       return res >= 0;
     } catch (error) {
-      this.logger.error("[UserManager] Health check failed:", error);
+      this.logger.error({ error }, "[UserManager] Health check failed");
       return false;
     }
   }

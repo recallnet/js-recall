@@ -2,16 +2,14 @@ import axios from "axios";
 import { beforeEach, describe, expect, test } from "vitest";
 
 import { BlockchainType } from "@recallnet/services/types";
-
-import config from "@/config/index.js";
-import { ApiClient } from "@/e2e/utils/api-client.js";
+import { ApiClient } from "@recallnet/test-utils";
 import {
   AgentProfileResponse,
   BalancesResponse,
   SpecificChain,
   TradeResponse,
-} from "@/e2e/utils/api-types.js";
-import { getBaseUrl } from "@/e2e/utils/server.js";
+} from "@recallnet/test-utils";
+import { getBaseUrl } from "@recallnet/test-utils";
 import {
   createTestClient,
   getAdminApiKey,
@@ -19,7 +17,9 @@ import {
   registerUserAndAgentAndGetClient,
   startTestCompetition,
   wait,
-} from "@/e2e/utils/test-helpers.js";
+} from "@recallnet/test-utils";
+
+import config from "@/config/index.js";
 
 describe("Multi-Agent Competition", () => {
   let adminApiKey: string;
@@ -27,7 +27,7 @@ describe("Multi-Agent Competition", () => {
   // Number of agents to create for multi-agent tests
   const NUM_AGENTS = 6;
   // Base USDC token address
-  const BASE_USDC_ADDRESS = "0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA";
+  const BASE_USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
 
   // Store agent details for use in tests
   let agentClients: {
@@ -91,8 +91,9 @@ describe("Multi-Agent Competition", () => {
     // Step 4: Validate that all agents have the same starting balances
 
     // Get first agent's balance as reference
-    const referenceBalanceResponse =
-      (await agentClients[0]?.client.getBalance()) as BalancesResponse;
+    const referenceBalanceResponse = (await agentClients[0]?.client.getBalance(
+      competitionId,
+    )) as BalancesResponse;
     expect(referenceBalanceResponse.success).toBe(true);
     expect(referenceBalanceResponse.balances).toBeDefined();
 
@@ -118,8 +119,9 @@ describe("Multi-Agent Competition", () => {
     // Validate other agents have identical balances
     for (let i = 1; i < NUM_AGENTS; i++) {
       const agentClient = agentClients[i]?.client;
-      const agentBalanceResponse =
-        (await agentClient?.getBalance()) as BalancesResponse;
+      const agentBalanceResponse = (await agentClient?.getBalance(
+        competitionId,
+      )) as BalancesResponse;
 
       expect(agentBalanceResponse?.success).toBe(true);
       expect(agentBalanceResponse?.balances).toBeDefined();
@@ -189,9 +191,14 @@ describe("Multi-Agent Competition", () => {
       const agentClient = agentClients[i]?.client;
 
       // Check competition status
-      const competition = await agentClient?.getActiveCompetition();
-      expect(competition).toBeDefined();
-      expect(competition?.id).toBe(competitionId);
+      const competitionResponse =
+        await agentClient?.getCompetition(competitionId);
+      expect(competitionResponse).toBeDefined();
+      if (!competitionResponse?.success) {
+        throw new Error("Failed to get competition");
+      }
+      const competition = competitionResponse.competition;
+      expect(competition.id).toBe(competitionId);
 
       // Check leaderboard
       const leaderboardResponse = await agentClient?.getCompetitionAgents(
@@ -243,6 +250,9 @@ describe("Multi-Agent Competition", () => {
       name: competitionName,
       agentIds,
       tradingConstraints: noTradingConstraints,
+      paperTradingInitialBalances: [
+        { specificChain: "base", tokenSymbol: "usdc", amount: 500 },
+      ],
     });
 
     expect(competitionResponse.success).toBe(true);
@@ -274,6 +284,7 @@ describe("Multi-Agent Competition", () => {
         fromToken: BASE_USDC_ADDRESS,
         toToken: tokenToTrade!,
         amount: tradeAmountPerAgent[i]!.toString(),
+        competitionId,
         fromChain: BlockchainType.EVM,
         toChain: BlockchainType.EVM,
         fromSpecificChain: SpecificChain.BASE,

@@ -18,8 +18,8 @@ type StakePosition = {
 
 type CompetitionPosition = {
   id: string;
-  votingStartDate: Date;
-  votingEndDate: Date;
+  boostStartDate: Date;
+  boostEndDate: Date;
 };
 
 type InitForStakeResult = BoostDiffResult & {
@@ -63,25 +63,25 @@ export class BoostAwardService {
   awardAmountForStake(stake: StakePosition, competition: CompetitionPosition) {
     const stakedAt = stake.stakedAt.valueOf();
     const canUnstakeAfter = stake.canUnstakeAfter.valueOf();
-    const votingEndDate = competition.votingEndDate.valueOf();
-    const votingStartDate = competition.votingStartDate.valueOf();
+    const boostEndDate = competition.boostEndDate.valueOf();
+    const boostStartDate = competition.boostStartDate.valueOf();
 
     // TODO: we decided to remove the multipler for the time being,
     // but I'm keeping the logic to avoid a bigger refactoring at this point
 
     let multiplier: number;
-    // Before voting starts
-    if (stakedAt < votingStartDate) {
-      // And covers the voting period
-      if (canUnstakeAfter >= votingEndDate) {
-        // Means can not unstake before the voting ends
+    // Before boosting starts
+    if (stakedAt < boostStartDate) {
+      // And covers the boosting period
+      if (canUnstakeAfter >= boostEndDate) {
+        // Means can not unstake before the boosting ends
         multiplier = 1;
       } else {
-        // Can unstake during the voting period
+        // Can unstake during the boosting period
         multiplier = 1;
       }
     } else {
-      // Staked after the voting starts
+      // Staked after the boosting starts
       multiplier = 1;
     }
     return { boostAmount: stake.amount * BigInt(multiplier), multiplier };
@@ -93,9 +93,9 @@ export class BoostAwardService {
       throw new Error("Competition not found.");
     }
 
-    const { id, votingStartDate, votingEndDate } = competition;
+    const { id, boostStartDate, boostEndDate } = competition;
 
-    if (!(votingStartDate && votingEndDate)) {
+    if (!(boostStartDate && boostEndDate)) {
       return { stakes: [], totalAwardAmount: 0n };
     }
 
@@ -112,8 +112,8 @@ export class BoostAwardService {
         };
         const { boostAmount } = this.awardAmountForStake(stakePosition, {
           id,
-          votingStartDate,
-          votingEndDate,
+          boostStartDate,
+          boostEndDate,
         });
 
         acc.stakes.push({
@@ -222,16 +222,16 @@ export class BoostAwardService {
         return [];
       }
 
-      const competitions = await this.#competitionRepo.findVotingOpen(tx);
+      const competitions = await this.#competitionRepo.findOpenForBoosting(tx);
       if (competitions.length === 0) {
         return [];
       }
 
       return Promise.all(
         competitions.flatMap((competition) => {
-          const { votingStartDate, votingEndDate } = competition;
-          if (!votingStartDate || !votingEndDate) {
-            throw new Error("Competition missing voting dates");
+          const { boostStartDate, boostEndDate } = competition;
+          if (!boostStartDate || !boostEndDate) {
+            throw new Error("Competition missing boosting dates");
           }
           return stakes.map(async (stake) => {
             const awardRes = await this.awardForStake(
@@ -241,8 +241,8 @@ export class BoostAwardService {
               },
               {
                 ...competition,
-                votingStartDate,
-                votingEndDate,
+                boostStartDate,
+                boostEndDate,
               },
               tx,
             );
@@ -268,7 +268,7 @@ export class BoostAwardService {
       if (!amount) {
         throw new Error("No-stake boost amount not configured");
       }
-      const competitions = await this.#competitionRepo.findVotingOpen(tx);
+      const competitions = await this.#competitionRepo.findOpenForBoosting(tx);
 
       if (competitions.length === 0) {
         return [];

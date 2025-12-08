@@ -16,10 +16,9 @@ import client from "prom-client";
 import { afterAll, afterEach, beforeAll, beforeEach, vi } from "vitest";
 
 import { MockPrivyClient } from "@recallnet/services/lib";
+import { dbManager, setupPrivyTestEnvironment } from "@recallnet/test-utils";
 
 import { mockHyperliquidServer, mockSymphonyServer } from "../setup.js";
-import { dbManager } from "./db-manager.js";
-import { setupPrivyTestEnvironment } from "./privy.js";
 
 // TODO: is this log file needed if we use Pino?
 // Path to log file
@@ -96,32 +95,6 @@ afterAll(async () => {
       //  should be using the `--expose-gc` flag for tests, which we are not afaict
       global.gc();
       log("[File Teardown] Forced garbage collection");
-    }
-
-    // Clean up any generated ROOT_ENCRYPTION_KEY from .env.test to prevent git commits
-    try {
-      const envTestPath = path.resolve(__dirname, "../../.env.test");
-      if (fs.existsSync(envTestPath)) {
-        const envContent = fs.readFileSync(envTestPath, "utf8");
-
-        // Remove any ROOT_ENCRYPTION_KEY line that was added during tests
-        const updatedContent = envContent.replace(
-          /^ROOT_ENCRYPTION_KEY=.*$\n?/m,
-          "",
-        );
-
-        if (updatedContent !== envContent) {
-          fs.writeFileSync(envTestPath, updatedContent);
-          log("[File Teardown] ✅ Removed ROOT_ENCRYPTION_KEY from .env.test");
-        }
-      }
-    } catch (envCleanupError) {
-      log(
-        "[File Teardown] Warning: Could not clean up .env.test encryption key: " +
-          (envCleanupError instanceof Error
-            ? envCleanupError.message
-            : String(envCleanupError)),
-      );
     }
 
     // Add a longer delay to allow logging infrastructure and database connections to clean up

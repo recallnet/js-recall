@@ -1,4 +1,8 @@
-import { type UseQueryResult, useQuery } from "@tanstack/react-query";
+import {
+  type UseQueryResult,
+  skipToken,
+  useQuery,
+} from "@tanstack/react-query";
 
 import { tanstackClient } from "@/rpc/clients/tanstack-query";
 import type { RouterOutputs } from "@/rpc/router";
@@ -13,9 +17,8 @@ export const useCompetition = (
 ): UseQueryResult<RouterOutputs["competitions"]["getById"], Error> =>
   useQuery(
     tanstackClient.competitions.getById.queryOptions({
-      input: { id: id || "" },
-      enabled: !!id,
-      staleTime: 30 * 1000, // 30 seconds - shorter cache for real-time voting updates
+      input: id ? { id } : skipToken,
+      staleTime: 30 * 1000, // 30 seconds - shorter cache for real-time updates
       refetchInterval: 60 * 1000, // Refetch every minute to keep data fresh
     }),
   );

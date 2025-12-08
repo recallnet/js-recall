@@ -15,7 +15,6 @@ import { cn } from "@recallnet/ui2/lib/utils";
 
 import { Trophy, TrophyBadge } from "@/components/trophy-badge";
 import type { RouterOutputs } from "@/rpc/router";
-import { CompetitionStatus } from "@/types";
 
 import RainbowText from "../animations/rainbow-text";
 
@@ -84,14 +83,13 @@ export function CompetitionTable({
               >
                 Positions
               </SortableTableHeader>
-              <TableHead>Placement</TableHead>
-              {/* TODO: fix `bestPlacement.rank` sorting bug */}
-              {/* <SortableTableHeader
-                onToggleSort={() => handleSortChange("bestPlacement.rank")}
-                sortState={sortState["bestPlacement.rank"]}
+
+              <SortableTableHeader
+                onToggleSort={() => handleSortChange("bestPlacement")}
+                sortState={sortState["bestPlacement"]}
               >
                 Placement
-              </SortableTableHeader> */}
+              </SortableTableHeader>
               <TableHead>Trophies</TableHead>
               {canClaim && <TableHead className="text-left">Reward</TableHead>}
             </TableRow>
@@ -101,12 +99,12 @@ export function CompetitionTable({
             {competitions && competitions.length > 0 ? (
               competitions.slice(0, 10).map((comp, i) => {
                 const compStatus =
-                  comp.status === CompetitionStatus.Active
+                  comp.status === "active"
                     ? {
                         text: "Ongoing",
                         style: "border-green-500 text-green-500",
                       }
-                    : comp.status === CompetitionStatus.Pending
+                    : comp.status === "pending"
                       ? {
                           text: "Upcoming",
                           style: "border-blue-500 text-blue-500",
@@ -146,7 +144,7 @@ export function CompetitionTable({
                             {comp.calmarRatio !== null &&
                             comp.calmarRatio !== undefined
                               ? Number(comp.calmarRatio).toFixed(2)
-                              : "n/a"}
+                              : "N/A"}
                           </span>
                           <span className="text-xs text-gray-500">
                             Risk-Adjusted
@@ -156,7 +154,7 @@ export function CompetitionTable({
                         <div className="flex h-full items-center">
                           {typeof comp.portfolioValue === "number"
                             ? `$${comp.portfolioValue.toFixed(2)}`
-                            : "n/a"}
+                            : "N/A"}
                           <span className="ml-2 text-xs">USDC</span>
                         </div>
                       )}
@@ -165,7 +163,7 @@ export function CompetitionTable({
                       <span className="text-secondary-foreground flex flex-col">
                         {typeof comp.pnlPercent === "number"
                           ? `${Math.round(comp.pnlPercent)}%`
-                          : "n/a"}
+                          : "N/A"}
                       </span>
                     </TableCell>
                     <TableCell className="w-30 text-md text-secondary-foreground flex items-center text-center font-normal">
@@ -175,9 +173,15 @@ export function CompetitionTable({
                       {comp.totalPositions ?? 0}
                     </TableCell>
                     <TableCell className="w-30 text-secondary-foreground flex items-center text-center">
-                      {comp.bestPlacement?.rank &&
-                        comp.bestPlacement?.totalAgents &&
-                        `${comp.bestPlacement.rank}/${comp.bestPlacement.totalAgents}`}
+                      {/* If a comp is pending or active, we show `N/A`; else, an undefined best placement means the agent was DQ'd */}
+                      {comp.status === "pending" || comp.status === "active" ? (
+                        "N/A"
+                      ) : comp.bestPlacement?.rank &&
+                        comp.bestPlacement?.totalAgents ? (
+                        `${comp.bestPlacement.rank}/${comp.bestPlacement.totalAgents}`
+                      ) : (
+                        <span className="text-red-400">DQ</span>
+                      )}
                     </TableCell>
                     <TableCell className="h-25 ml-1 flex items-center gap-2">
                       {comp.trophies.length > 0 ? (
@@ -185,9 +189,7 @@ export function CompetitionTable({
                           <TrophyBadge size={50} key={i} trophy={trophy} />
                         ))
                       ) : (
-                        <span className="text-secondary-foreground">
-                          No trophies
-                        </span>
+                        <span className="text-secondary-foreground">N/A</span>
                       )}
                     </TableCell>
                     {canClaim && (

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test } from "vitest";
 
-import { ApiClient } from "@/e2e/utils/api-client.js";
+import { ApiClient } from "@recallnet/test-utils";
 import {
   AdminAgentResponse,
   BalancesResponse,
@@ -11,7 +11,7 @@ import {
   SnapshotResponse,
   StartCompetitionResponse,
   UserRegistrationResponse,
-} from "@/e2e/utils/api-types.js";
+} from "@recallnet/test-utils";
 import {
   createTestClient,
   createTestCompetition,
@@ -21,7 +21,7 @@ import {
   startPerpsTestCompetition,
   startTestCompetition,
   wait,
-} from "@/e2e/utils/test-helpers.js";
+} from "@recallnet/test-utils";
 
 describe("Sandbox Mode", () => {
   let adminApiKey: string;
@@ -65,7 +65,13 @@ describe("Sandbox Mode", () => {
       expect(competition.sandboxMode).toBe(true);
 
       // Verify competition is active and in sandbox mode
-      const activeCompetition = await adminClient.getActiveCompetition();
+      const activeCompetitionResponse = await adminClient.getCompetition(
+        competition.id,
+      );
+      if (!activeCompetitionResponse.success) {
+        throw new Error("Failed to get competition");
+      }
+      const activeCompetition = activeCompetitionResponse.competition;
       expect(activeCompetition.id).toBe(competition.id);
       expect(activeCompetition.status).toBe("active");
       expect(activeCompetition.sandboxMode).toBe(true);
@@ -162,7 +168,13 @@ describe("Sandbox Mode", () => {
       expect(competition.sandboxMode).toBe(false);
 
       // Verify competition is active but NOT in sandbox mode
-      const activeCompetition = await adminClient.getActiveCompetition();
+      const activeCompetitionResponse = await adminClient.getCompetition(
+        competition.id,
+      );
+      if (!activeCompetitionResponse.success) {
+        throw new Error("Failed to get competition");
+      }
+      const activeCompetition = activeCompetitionResponse.competition;
       expect(activeCompetition.id).toBe(competition.id);
       expect(activeCompetition.status).toBe("active");
       expect(activeCompetition.sandboxMode).toBe(false);
@@ -464,7 +476,9 @@ describe("Sandbox Mode", () => {
       expect(addToTradingResponse.success).toBe(true);
 
       // Verify the agent received standard trading balances
-      const tradingBalancesResponse = await agentClient.getBalance();
+      const tradingBalancesResponse = await agentClient.getBalance(
+        tradingCompetition.competition.id,
+      );
       expect(tradingBalancesResponse.success).toBe(true);
       const tradingBalances = (tradingBalancesResponse as BalancesResponse)
         .balances;
@@ -534,14 +548,18 @@ describe("Sandbox Mode", () => {
       expect(addToPerpsResponse.success).toBe(true);
 
       // For perps competitions, the balance endpoint returns an error
-      const perpsBalancesResponse = await perpsAgentClient.getBalance();
+      const perpsBalancesResponse = await perpsAgentClient.getBalance(
+        perpsCompetition.competition.id,
+      );
       expect(perpsBalancesResponse.success).toBe(false);
       expect((perpsBalancesResponse as ErrorResponse).error).toContain(
         "This endpoint is not available for perpetual futures competitions",
       );
 
       // Verification 1: Check perps account endpoint shows cleared balances
-      const perpsAccountResponse = await perpsAgentClient.getPerpsAccount();
+      const perpsAccountResponse = await perpsAgentClient.getPerpsAccount(
+        perpsCompetition.competition.id,
+      );
       expect(perpsAccountResponse.success).toBe(true);
       const account = (perpsAccountResponse as PerpsAccountResponse).account;
       expect(account).toBeDefined();
@@ -551,7 +569,9 @@ describe("Sandbox Mode", () => {
       expect(account.totalPnl).toBe("0");
 
       // Verification 2: Check that the agent has no perps positions (since they have no balance to trade)
-      const perpsPositionsResponse = await perpsAgentClient.getPerpsPositions();
+      const perpsPositionsResponse = await perpsAgentClient.getPerpsPositions(
+        perpsCompetition.competition.id,
+      );
       expect(perpsPositionsResponse.success).toBe(true);
       const positions = (perpsPositionsResponse as PerpsPositionsResponse)
         .positions;
@@ -723,7 +743,13 @@ describe("Sandbox Mode", () => {
     }
 
     // Verify the first competition is still active
-    const activeCompetition = await adminClient.getActiveCompetition();
+    const activeCompetitionResponse = await adminClient.getCompetition(
+      competition1.id,
+    );
+    if (!activeCompetitionResponse.success) {
+      throw new Error("Failed to get competition");
+    }
+    const activeCompetition = activeCompetitionResponse.competition;
 
     // Should still be the first competition
     expect(activeCompetition.id).toBe(competition1.id);
@@ -758,7 +784,13 @@ describe("Sandbox Mode", () => {
     expect(competition.sandboxMode).toBe(true);
 
     // Verify competition is active and in sandbox mode
-    const activeCompetition = await adminClient.getActiveCompetition();
+    const activeCompetitionResponse = await adminClient.getCompetition(
+      competition.id,
+    );
+    if (!activeCompetitionResponse.success) {
+      throw new Error("Failed to get competition");
+    }
+    const activeCompetition = activeCompetitionResponse.competition;
     expect(activeCompetition.id).toBe(competition.id);
     expect(activeCompetition.status).toBe("active");
     expect(activeCompetition.sandboxMode).toBe(true);

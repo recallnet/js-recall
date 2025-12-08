@@ -12,111 +12,104 @@ const services = new ServiceRegistry();
 const logger = createLogger("PortfolioSnapshots");
 
 /**
- * Take portfolio snapshots for the active competition
- * Routes to appropriate processor based on competition type
+ * Determine if we should take a snapshot based on timing
+ * Trading competitions: Every 5 minutes
+ */
+async function shouldTakeSnapshot(competitionId: string): Promise<boolean> {
+  const now = new Date();
+
+  // Get last portfolio snapshot time from database
+  const lastSnapshot =
+    await services.competitionRepository.getLatestPortfolioSnapshotTime(
+      competitionId,
+    );
+
+  if (!lastSnapshot) {
+    // No previous snapshot, take one now
+    return true;
+  }
+
+  const minutesSinceLastSnapshot =
+    (now.getTime() - lastSnapshot.getTime()) / (1000 * 60);
+
+  // Trading competitions: snapshot every 5 minutes
+  return minutesSinceLastSnapshot >= 5;
+}
+
+/**
+ * Take portfolio snapshots for trading competitions only
+ * Perps competitions are handled by process-perps-competitions.ts
  */
 async function takePortfolioSnapshots() {
   const startTime = Date.now();
   logger.info("Starting portfolio snapshots task...");
 
   try {
-    // Check if a competition is active
-    const activeCompetition =
-      await services.competitionService.getActiveCompetition();
+    // Get all active trading competitions (non-perps)
+    const allCompetitions = await services.competitionRepository.findAll();
+    const activeTradingCompetitions = allCompetitions.filter(
+      (c) => c.status === "active" && c.type !== "perpetual_futures",
+    );
 
-    if (!activeCompetition) {
+    if (activeTradingCompetitions.length === 0) {
       const duration = Date.now() - startTime;
       logger.info(
-        `There is no active competition. No snapshots will be taken. (took ${duration}ms)`,
+        `There are no active trading competitions. No snapshots will be taken. (took ${duration}ms)`,
       );
       return;
     }
 
-    // Display competition details
-    logger.info("Active Competition Details");
-    logger.info(
-      {
-        id: activeCompetition.id,
-        name: activeCompetition.name,
-        status: activeCompetition.status,
-        type: activeCompetition.type,
-      },
-      "Active Competition Details",
-    );
+    // Process each active trading competition
+    for (const activeCompetition of activeTradingCompetitions) {
+      // Check if we should take a snapshot based on timing
+      const shouldTake = await shouldTakeSnapshot(activeCompetition.id);
+      if (!shouldTake) {
+        logger.debug(
+          `Skipping snapshot for trading competition ${activeCompetition.id} - not time yet`,
+        );
+        continue;
+      }
 
-    // Route based on competition type
-    if (activeCompetition.type === "perpetual_futures") {
-      // Process perps competition
-      logger.info("Processing perpetual futures competition...");
+      // Display competition details
+      logger.info(
+        {
+          id: activeCompetition.id,
+          name: activeCompetition.name,
+          status: activeCompetition.status,
+          type: activeCompetition.type,
+        },
+        "Processing trading competition",
+      );
 
-      try {
-        // This single call orchestrates everything:
-        // - Fetches data from Symphony provider
-        // - Stores account summaries, positions, sync data
-        // - Creates portfolio snapshots
-        // - Runs self-funding monitoring
-        // - Stores any alerts
-        const result =
-          await services.perpsDataProcessor.processPerpsCompetition(
+      // Only process trading competitions
+      if (activeCompetition.type === "trading") {
+        // Take paper trading portfolio snapshots
+        logger.info("Taking paper trading portfolio snapshots...");
+
+        try {
+          await services.portfolioSnapshotterService.takePortfolioSnapshots(
             activeCompetition.id,
           );
-
-        const successfulCount = result.syncResult.successful.length;
-        const failedCount = result.syncResult.failed.length;
-        const totalCount = successfulCount + failedCount;
-
-        logger.info(
-          `Perps processing complete: ${successfulCount}/${totalCount} agents processed successfully`,
-        );
-
-        if (failedCount > 0) {
-          logger.warn(`Failed to process ${failedCount} agents`);
+        } catch (paperError) {
+          logger.error(
+            { error: paperError },
+            `Error taking paper trading snapshots for ${activeCompetition.id}:`,
+          );
+          // Continue processing other competitions even if one fails
         }
-
-        if (result.monitoringResult) {
-          const alertsCreated = result.monitoringResult.alertsCreated;
-          if (alertsCreated > 0) {
-            logger.warn(
-              `Self-funding monitoring created ${alertsCreated} alerts`,
-            );
-          }
-        }
-      } catch (perpsError) {
-        logger.error(
-          "Error processing perps competition:",
-          perpsError instanceof Error ? perpsError.message : String(perpsError),
-        );
-        throw perpsError;
+      } else {
+        // Unknown competition type - log error but continue
+        const errorMessage = `Unknown competition type: ${activeCompetition.type}. Expected 'trading' or 'perpetual_futures'.`;
+        logger.error(errorMessage);
       }
-    } else if (activeCompetition.type === "trading") {
-      // Take paper trading portfolio snapshots
-      logger.info("Taking paper trading portfolio snapshots...");
-
-      try {
-        await services.portfolioSnapshotterService.takePortfolioSnapshots(
-          activeCompetition.id,
-        );
-      } catch (paperError) {
-        logger.error(
-          "Error taking paper trading snapshots:",
-          paperError instanceof Error ? paperError.message : String(paperError),
-        );
-        throw paperError;
-      }
-    } else {
-      // Unknown competition type - throw error to fail fast
-      const errorMessage = `Unknown competition type: ${activeCompetition.type}. Expected 'trading' or 'perpetual_futures'.`;
-      logger.error(errorMessage);
-      throw new Error(errorMessage);
     }
 
     const duration = Date.now() - startTime;
-    logger.info(`Portfolio snapshots completed successfully in ${duration}ms!`);
-  } catch (error) {
-    logger.error(
-      "Error in portfolio snapshots task:",
-      error instanceof Error ? error.message : String(error),
+    logger.info(
+      `Portfolio snapshots completed for ${activeTradingCompetitions.length} competition(s) in ${duration}ms!`,
     );
+  } catch (error) {
+    logger.error({ error }, "Error in portfolio snapshots task:");
 
     throw error;
   }

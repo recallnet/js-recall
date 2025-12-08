@@ -3,8 +3,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MockProxy, mock } from "vitest-mock-extended";
 
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
-import { PerpsRepository } from "@recallnet/db/repositories/perps";
-import type { SelectPerpsRiskMetrics } from "@recallnet/db/schema/trading/types";
 
 import { CalmarRatioService } from "../calmar-ratio.service.js";
 
@@ -24,19 +22,37 @@ describe("CalmarRatioService", () => {
     imageUrl: null,
     startDate,
     endDate: endDate !== undefined ? endDate : null,
-    votingStartDate: null,
-    votingEndDate: null,
+    boostStartDate: null,
+    boostEndDate: null,
     joinStartDate: null,
     joinEndDate: null,
     maxParticipants: null,
     registeredParticipants: 0,
+    minimumStake: null,
+    vips: null,
+    allowlist: null,
+    blocklist: null,
+    minRecallRank: null,
+    allowlistOnly: false,
+    agentAllocation: null,
+    agentAllocationUnit: null,
+    boosterAllocation: null,
+    boosterAllocationUnit: null,
+    rewardRules: null,
+    rewardDetails: null,
     status: "active" as const,
     sandboxMode: false,
+    displayState: null,
     createdAt: new Date(),
     updatedAt: new Date(),
     creatorId: "creator-123",
     crossChainTradingType: "disallowAll" as const,
-    minimumStake: null,
+    evaluationMetric: "calmar_ratio" as const,
+    arenaId: "default-perps-arena",
+    engineId: "perpetual_futures" as const,
+    engineVersion: "1.0.0",
+    rewardsIneligible: null,
+    boostTimeDecayRate: null,
   });
 
   // Helper to create mock portfolio snapshots
@@ -57,37 +73,18 @@ describe("CalmarRatioService", () => {
     },
   });
 
-  // Helper to create mock saved metrics result
-  const createMockSavedMetrics = (): SelectPerpsRiskMetrics => ({
-    id: "metrics-123",
-    agentId: "agent-456",
-    competitionId: "comp-123",
-    simpleReturn: "0.15000000",
-    calmarRatio: "3.00000000",
-    annualizedReturn: "2.40000000",
-    maxDrawdown: "-0.20000000",
-    snapshotCount: 2,
-    calculationTimestamp: new Date(),
-  });
-
   let mockCompeitionRepo: MockProxy<CompetitionRepository>;
-  let mockPerpsRepo: MockProxy<PerpsRepository>;
   let mockLogger: MockProxy<Logger>;
 
   beforeEach(() => {
     vi.clearAllMocks();
     mockCompeitionRepo = mock<CompetitionRepository>();
-    mockPerpsRepo = mock<PerpsRepository>();
     mockLogger = mock<Logger>();
-    service = new CalmarRatioService(
-      mockCompeitionRepo,
-      mockPerpsRepo,
-      mockLogger,
-    );
+    service = new CalmarRatioService(mockCompeitionRepo, mockLogger);
   });
 
-  describe("calculateAndSaveCalmarRatio", () => {
-    it("should calculate and save Calmar ratio with simple returns", async () => {
+  describe("calculateCalmarRatio", () => {
+    it("should calculate Calmar ratio with simple returns", async () => {
       const agentId = "agent-456";
       const competitionId = "comp-123";
       const competition = createMockCompetition(
@@ -96,21 +93,16 @@ describe("CalmarRatioService", () => {
       );
       const snapshots = createMockSnapshots(1000, 1150); // 15% return
       const maxDrawdown = -0.2; // 20% drawdown
-      const savedMetrics = createMockSavedMetrics();
 
       mockCompeitionRepo.findById.mockResolvedValue(competition);
       mockCompeitionRepo.getFirstAndLastSnapshots.mockResolvedValue(snapshots);
-      mockCompeitionRepo.calculateMaxDrawdownSQL.mockResolvedValue(maxDrawdown);
-      mockPerpsRepo.saveRiskMetrics.mockResolvedValue(savedMetrics);
+      mockCompeitionRepo.calculateMaxDrawdown.mockResolvedValue(maxDrawdown);
 
-      const result = await service.calculateAndSaveCalmarRatio(
-        agentId,
-        competitionId,
-      );
+      const result = await service.calculateCalmarRatio(agentId, competitionId);
 
       expect(result).toBeDefined();
-      expect(result.metrics.simpleReturn).toBe("0.15000000");
-      expect(result.metrics.calmarRatio).toBe("3.00000000");
+      expect(result.simpleReturn).toBe("0.15000000");
+      expect(result.calmarRatio).toBeDefined();
 
       // Verify snapshots were fetched
       expect(mockCompeitionRepo.getFirstAndLastSnapshots).toHaveBeenCalledWith(
@@ -119,28 +111,24 @@ describe("CalmarRatioService", () => {
       );
 
       // Verify max drawdown calculation uses snapshot dates for consistency
-      expect(mockCompeitionRepo.calculateMaxDrawdownSQL).toHaveBeenCalledWith(
+      expect(mockCompeitionRepo.calculateMaxDrawdown).toHaveBeenCalledWith(
         agentId,
         competitionId,
         snapshots.first?.timestamp,
         snapshots.last?.timestamp,
       );
 
-      // Verify metrics were saved
-      expect(mockPerpsRepo.saveRiskMetrics).toHaveBeenCalledWith(
-        expect.objectContaining({
-          agentId,
-          competitionId,
-          simpleReturn: "0.15000000", // (1150 - 1000) / 1000 = 0.15
-          calmarRatio: expect.any(String),
-          annualizedReturn: expect.any(String),
-          maxDrawdown: "-0.20000000",
-          snapshotCount: 2,
-        }),
-      );
+      // Verify calculated values
+      expect(result).toMatchObject({
+        agentId,
+        competitionId,
+        simpleReturn: "0.15000000",
+        maxDrawdown: "-0.20000000",
+        snapshotCount: 2,
+      });
     });
 
-    it("should handle zero drawdown by capping Calmar ratio", async () => {
+    it("should handle zero drawdown by using minimum value", async () => {
       const agentId = "agent-456";
       const competitionId = "comp-123";
 
@@ -148,22 +136,19 @@ describe("CalmarRatioService", () => {
         createMockCompetition(new Date("2025-01-20")),
       );
       mockCompeitionRepo.getFirstAndLastSnapshots.mockResolvedValue(
-        createMockSnapshots(1000, 1500), // 50% return
+        createMockSnapshots(1000, 2500), // 150% return
       );
-      mockCompeitionRepo.calculateMaxDrawdownSQL.mockResolvedValue(0); // No drawdown
-      mockPerpsRepo.saveRiskMetrics.mockResolvedValue(createMockSavedMetrics());
+      mockCompeitionRepo.calculateMaxDrawdown.mockResolvedValue(0); // No drawdown
 
-      await service.calculateAndSaveCalmarRatio(agentId, competitionId);
+      const result = await service.calculateCalmarRatio(agentId, competitionId);
 
-      // Calmar should be capped at 100 when there's no drawdown
-      expect(mockPerpsRepo.saveRiskMetrics).toHaveBeenCalledWith(
-        expect.objectContaining({
-          calmarRatio: "100.00000000",
-        }),
-      );
+      // Should use minimum drawdown of 0.0001: 1.50 / 0.0001 = 15000
+      expect(result).toMatchObject({
+        calmarRatio: "15000.00000000",
+      });
     });
 
-    it("should handle negative returns with zero drawdown", async () => {
+    it("should handle negative returns with drawdown", async () => {
       const agentId = "agent-456";
       const competitionId = "comp-123";
 
@@ -173,17 +158,14 @@ describe("CalmarRatioService", () => {
       mockCompeitionRepo.getFirstAndLastSnapshots.mockResolvedValue(
         createMockSnapshots(1000, 900), // -10% return
       );
-      mockCompeitionRepo.calculateMaxDrawdownSQL.mockResolvedValue(0); // No drawdown (weird but possible)
-      mockPerpsRepo.saveRiskMetrics.mockResolvedValue(createMockSavedMetrics());
+      mockCompeitionRepo.calculateMaxDrawdown.mockResolvedValue(-0.1); // 10% drawdown (must exist with negative return)
 
-      await service.calculateAndSaveCalmarRatio(agentId, competitionId);
+      const result = await service.calculateCalmarRatio(agentId, competitionId);
 
-      // Should cap at -100 for negative return with no drawdown
-      expect(mockPerpsRepo.saveRiskMetrics).toHaveBeenCalledWith(
-        expect.objectContaining({
-          calmarRatio: "-100.00000000",
-        }),
-      );
+      // Should calculate normally: -0.10 / 0.10 = -1.0
+      expect(result).toMatchObject({
+        calmarRatio: "-1.00000000",
+      });
     });
 
     it("should handle very short competitions (< 1 day)", async () => {
@@ -212,18 +194,15 @@ describe("CalmarRatioService", () => {
           timestamp: new Date("2025-01-20T14:00:00Z"), // 4 hours later
         },
       });
-      mockCompeitionRepo.calculateMaxDrawdownSQL.mockResolvedValue(-0.005); // 0.5% drawdown
-      mockPerpsRepo.saveRiskMetrics.mockResolvedValue(createMockSavedMetrics());
+      mockCompeitionRepo.calculateMaxDrawdown.mockResolvedValue(-0.005); // 0.5% drawdown
 
-      await service.calculateAndSaveCalmarRatio(agentId, competitionId);
+      const result = await service.calculateCalmarRatio(agentId, competitionId);
 
       // For very short periods (< 1 day), return should NOT be annualized
-      expect(mockPerpsRepo.saveRiskMetrics).toHaveBeenCalledWith(
-        expect.objectContaining({
-          simpleReturn: "0.01000000",
-          annualizedReturn: "0.01000000", // Not annualized for < 1 day
-        }),
-      );
+      expect(result).toMatchObject({
+        simpleReturn: "0.01000000",
+        annualizedReturn: "0.01000000", // Not annualized for < 1 day
+      });
     });
 
     it("should use snapshot dates for calculations even if competition has no end date", async () => {
@@ -239,19 +218,23 @@ describe("CalmarRatioService", () => {
       mockCompeitionRepo.getFirstAndLastSnapshots.mockResolvedValue(
         mockSnapshots,
       );
-      mockCompeitionRepo.calculateMaxDrawdownSQL.mockResolvedValue(-0.05);
-      mockPerpsRepo.saveRiskMetrics.mockResolvedValue(createMockSavedMetrics());
+      mockCompeitionRepo.calculateMaxDrawdown.mockResolvedValue(-0.05);
 
-      await service.calculateAndSaveCalmarRatio(agentId, competitionId);
+      const result = await service.calculateCalmarRatio(agentId, competitionId);
 
       // Verify max drawdown was called with snapshot dates for consistency
       // This ensures return and drawdown are calculated over the same time period
-      expect(mockCompeitionRepo.calculateMaxDrawdownSQL).toHaveBeenCalledWith(
+      expect(mockCompeitionRepo.calculateMaxDrawdown).toHaveBeenCalledWith(
         agentId,
         competitionId,
-        mockSnapshots.first?.timestamp, // Use first snapshot date
-        mockSnapshots.last?.timestamp, // Use last snapshot date
+        mockSnapshots.first?.timestamp,
+        mockSnapshots.last?.timestamp,
       );
+
+      // Verify result structure
+      expect(result).toBeDefined();
+      expect(result.agentId).toBe(agentId);
+      expect(result.competitionId).toBe(competitionId);
     });
 
     it("should throw error if competition not found", async () => {
@@ -261,13 +244,12 @@ describe("CalmarRatioService", () => {
       mockCompeitionRepo.findById.mockResolvedValue(undefined);
 
       await expect(
-        service.calculateAndSaveCalmarRatio(agentId, competitionId),
+        service.calculateCalmarRatio(agentId, competitionId),
       ).rejects.toThrow(`Competition ${competitionId} not found`);
 
       expect(
         mockCompeitionRepo.getFirstAndLastSnapshots,
       ).not.toHaveBeenCalled();
-      expect(mockPerpsRepo.saveRiskMetrics).not.toHaveBeenCalled();
     });
 
     it("should throw error if competition not started", async () => {
@@ -279,7 +261,7 @@ describe("CalmarRatioService", () => {
       );
 
       await expect(
-        service.calculateAndSaveCalmarRatio(agentId, competitionId),
+        service.calculateCalmarRatio(agentId, competitionId),
       ).rejects.toThrow(`Competition ${competitionId} has not started yet`);
     });
 
@@ -296,7 +278,7 @@ describe("CalmarRatioService", () => {
       });
 
       await expect(
-        service.calculateAndSaveCalmarRatio(agentId, competitionId),
+        service.calculateCalmarRatio(agentId, competitionId),
       ).rejects.toThrow("Insufficient data: No portfolio snapshots found");
     });
 
@@ -312,7 +294,7 @@ describe("CalmarRatioService", () => {
       );
 
       await expect(
-        service.calculateAndSaveCalmarRatio(agentId, competitionId),
+        service.calculateCalmarRatio(agentId, competitionId),
       ).rejects.toThrow("Invalid data: Starting portfolio value is zero");
     });
 
@@ -326,19 +308,16 @@ describe("CalmarRatioService", () => {
       mockCompeitionRepo.getFirstAndLastSnapshots.mockResolvedValue(
         createMockSnapshots(1000, 800), // -20% return
       );
-      mockCompeitionRepo.calculateMaxDrawdownSQL.mockResolvedValue(-0.25); // 25% drawdown
-      mockPerpsRepo.saveRiskMetrics.mockResolvedValue(createMockSavedMetrics());
+      mockCompeitionRepo.calculateMaxDrawdown.mockResolvedValue(-0.25); // 25% drawdown
 
-      await service.calculateAndSaveCalmarRatio(agentId, competitionId);
+      const result = await service.calculateCalmarRatio(agentId, competitionId);
 
       // Verify negative Calmar ratio
-      expect(mockPerpsRepo.saveRiskMetrics).toHaveBeenCalledWith(
-        expect.objectContaining({
-          simpleReturn: "-0.20000000",
-          // Calmar should be negative when return is negative
-          // Expected: annualized(-0.20) / abs(-0.25)
-        }),
-      );
+      expect(result).toMatchObject({
+        simpleReturn: "-0.20000000",
+        // Calmar should be negative when return is negative
+        // Expected: annualized(-0.20) / abs(-0.25)
+      });
     });
   });
 });

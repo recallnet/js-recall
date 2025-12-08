@@ -4,5 +4,4 @@ export * from "./agent";
 export * from "./auth";
 export * from "./api";
 export * from "./profile";
-export * from "./vote";
 export * from "./admin";

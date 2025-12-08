@@ -37,7 +37,6 @@ export interface Agent {
       totalAgents: number;
     };
     bestPnl?: number;
-    totalVotes: number;
     totalTrades: number;
     completedCompetitions: number;
     score?: number;
@@ -95,7 +94,6 @@ export interface LeaderboardStats {
   totalCompetitions: number;
   totalTrades: number;
   totalVolume: number;
-  totalVotes: number;
 }
 
 export interface LeaderboardResponse {

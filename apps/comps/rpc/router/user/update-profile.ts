@@ -4,7 +4,6 @@ import { UpdateUserProfileBodySchema } from "@recallnet/services/types";
 
 import { base } from "@/rpc/context/base";
 import { authMiddleware } from "@/rpc/middleware/auth";
-import { serializeUser } from "@/rpc/router/utils/serialize-user";
 
 const SANCTIONED_WALLET_ERROR =
   "This wallet address is not permitted for use on this platform";
@@ -24,7 +23,7 @@ export const updateProfile = base
         ...input,
       });
 
-      return serializeUser(updatedUser);
+      return updatedUser;
     } catch (error) {
       // Re-throw if already an oRPC error
       if (error instanceof ORPCError) {

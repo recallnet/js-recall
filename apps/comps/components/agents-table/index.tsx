@@ -1,4 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  skipToken,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import {
   ColumnDef,
   SortingState,
@@ -9,12 +14,19 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { Zap } from "lucide-react";
+import { Flag, Star } from "lucide-react";
 import { useRouter } from "next/navigation";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 import { attoValueToNumberValue } from "@recallnet/conversions/atto-conversions";
 import { Button } from "@recallnet/ui2/components/button";
+import { Skeleton } from "@recallnet/ui2/components/skeleton";
 import {
   SortableTableHeader,
   Table,
@@ -25,29 +37,36 @@ import {
   TableRow,
 } from "@recallnet/ui2/components/table";
 import { toast } from "@recallnet/ui2/components/toast";
+import { Tooltip } from "@recallnet/ui2/components/tooltip";
 
 import { Pagination } from "@/components/pagination/index";
 import { config } from "@/config/public";
 import { useTotalUserStaked } from "@/hooks/staking";
 import { useSession } from "@/hooks/useSession";
-import { useVote } from "@/hooks/useVote";
 import { openForBoosting } from "@/lib/open-for-boosting";
 import { tanstackClient } from "@/rpc/clients/tanstack-query";
 import { RouterOutputs } from "@/rpc/router";
 import { PaginationResponse } from "@/types";
+import {
+  checkIsPerpsCompetition,
+  checkIsSpotLiveCompetition,
+  checkTableHeaderIsPrimaryMetric,
+} from "@/utils/competition-utils";
 import { formatCompactNumber, formatPercentage } from "@/utils/format";
 import { getSortState } from "@/utils/table";
 
+import { BoostIcon } from "../BoostIcon";
 import { AgentAvatar } from "../agent-avatar";
+import { CompetitionStandingsDetails } from "../competition-standings-details";
 import BoostAgentModal from "../modals/boost-agent";
-import ConfirmVoteModal from "../modals/confirm-vote";
+import { boostedCompetitionsStartDate } from "../timeline-chart/constants";
 import { RankBadge } from "./rank-badge";
+
+const MOBILE_BREAKPOINT = 768;
 
 export interface AgentsTableProps {
   agents: RouterOutputs["competitions"]["getAgents"]["agents"];
-  totalVotes: number;
   competition: RouterOutputs["competitions"]["getById"];
-  onFilterChange: (filter: string) => void;
   onSortChange: (sort: string) => void;
   pagination: PaginationResponse;
   ref: React.RefObject<HTMLDivElement | null>;
@@ -58,31 +77,48 @@ const numberFormatter = new Intl.NumberFormat();
 
 export const AgentsTable: React.FC<AgentsTableProps> = ({
   agents,
-  totalVotes,
   competition,
-  //onFilterChange,
   onSortChange,
   onPageChange,
   pagination,
   ref,
 }) => {
+  const isBoostEnabled = useMemo(() => {
+    return (
+      !!competition.startDate &&
+      competition.startDate > boostedCompetitionsStartDate
+    );
+  }, [competition]);
   const session = useSession();
   const router = useRouter();
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
-    yourShare: session.ready && session.isAuthenticated,
+    yourShare: isBoostEnabled && session.ready && session.isAuthenticated,
+    boostPool: isBoostEnabled,
   });
+
+  // Track screen size for responsive column visibility
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
+    };
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
   const [selectedAgent, setSelectedAgent] = useState<
     RouterOutputs["competitions"]["getAgents"]["agents"][number] | null
   >(null);
-  const [isVoteModalOpen, setIsVoteModalOpen] = useState(false);
   const [isBoostModalOpen, setIsBoostModalOpen] = useState(false);
-  const { mutate: vote, isPending: isPendingVote } = useVote();
 
   const queryClient = useQueryClient();
 
-  const { data: totalStaked } = useTotalUserStaked();
+  const { data: totalStaked, isLoading: isLoadingTotalStaked } =
+    useTotalUserStaked();
 
   // Boost hooks
 
@@ -93,8 +129,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
 
   const { data: availableBoostAwards } = useQuery(
     tanstackClient.boost.availableAwards.queryOptions({
-      input: { competitionId: competition.id },
-      enabled: isOpenForBoosting,
+      input: isOpenForBoosting ? { competitionId: competition.id } : skipToken,
     }),
   );
 
@@ -104,15 +139,16 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
     isSuccess: isSuccessUserBoostBalance,
   } = useQuery(
     tanstackClient.boost.balance.queryOptions({
-      input: { competitionId: competition.id },
+      input: session.isAuthenticated
+        ? { competitionId: competition.id }
+        : skipToken,
       queryKey: [
         ...tanstackClient.boost.balance.queryKey({
           input: { competitionId: competition.id },
         }),
         session.user?.id ?? "unauthenticated",
       ],
-      enabled: session.isAuthenticated,
-      select: (data) => attoValueToNumberValue(data),
+      select: (data) => attoValueToNumberValue(data, "ROUND_DOWN", 0),
     }),
   );
 
@@ -122,19 +158,20 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
     isSuccess: isSuccessUserBoosts,
   } = useQuery(
     tanstackClient.boost.userBoosts.queryOptions({
-      input: { competitionId: competition.id },
+      input: session.isAuthenticated
+        ? { competitionId: competition.id }
+        : skipToken,
       queryKey: [
         ...tanstackClient.boost.userBoosts.queryKey({
           input: { competitionId: competition.id },
         }),
         session.user?.id ?? "unauthenticated",
       ],
-      enabled: session.isAuthenticated,
       select: (data) =>
         Object.fromEntries(
           Object.entries(data).map(([key, value]) => [
             key,
-            attoValueToNumberValue(value),
+            attoValueToNumberValue(value, "ROUND_DOWN", 0),
           ]),
         ),
     }),
@@ -151,7 +188,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
         Object.fromEntries(
           Object.entries(data).map(([key, value]) => [
             key,
-            attoValueToNumberValue(value),
+            attoValueToNumberValue(value, "ROUND_DOWN", 0),
           ]),
         ),
     }),
@@ -218,6 +255,13 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
       ? Math.floor(pagination.offset / pagination.limit) + 1
       : 1;
 
+  // Process agents to ensure rank 0 (inactive or DQ'd) agents appear last
+  const processedAgents = useMemo(() => {
+    const rankedAgents = agents.filter((agent) => agent.rank !== 0);
+    const unrankedAgents = agents.filter((agent) => agent.rank === 0);
+    return [...rankedAgents, ...unrankedAgents];
+  }, [agents]);
+
   // Calculate total boost for percentage calculation
   const totalBoost = useMemo(() => {
     if (!isSuccessAgentBoostTotals) return 0;
@@ -227,17 +271,43 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
     );
   }, [agentBoostTotals, isSuccessAgentBoostTotals]);
 
-  const isLegacyCompetition = useMemo(() => {
-    return competition.stats.totalVotes > 0 && competition.status === "ended";
-  }, [competition.stats.totalVotes, competition.status]);
-
-  const hasBoostEnabled = !isLegacyCompetition;
+  // Check if a table header is the primary metric (to display the star icon)
+  const isPrimaryMetric = useCallback(
+    (headerId: string) => {
+      return checkTableHeaderIsPrimaryMetric(
+        headerId,
+        competition.evaluationMetric,
+      );
+    },
+    [competition.evaluationMetric],
+  );
 
   useEffect(() => {
-    setColumnVisibility({
-      yourShare: session.ready && session.isAuthenticated && hasBoostEnabled,
-    });
-  }, [session.ready, session.isAuthenticated, hasBoostEnabled]);
+    const getMetricVisibility = (columnId: string): boolean => {
+      return !isMobile || isPrimaryMetric(columnId);
+    };
+
+    setColumnVisibility((prev) => ({
+      ...prev,
+      yourShare: isBoostEnabled && session.ready && session.isAuthenticated,
+      // Hide the following columns on mobile
+      boostPool: isBoostEnabled && !isMobile,
+      // Perps columns - show all on desktop, only primary on mobile
+      simpleReturn: getMetricVisibility("simpleReturn"),
+      calmarRatio: getMetricVisibility("calmarRatio"),
+      maxDrawdown: getMetricVisibility("maxDrawdown"),
+      sortinoRatio: getMetricVisibility("sortinoRatio"),
+      // Trading columns - desktop only
+      portfolioValue: !isMobile,
+      change24h: !isMobile,
+    }));
+  }, [
+    session.ready,
+    session.isAuthenticated,
+    isBoostEnabled,
+    isMobile,
+    isPrimaryMetric,
+  ]);
 
   // Calculate user's total spent boost for progress bar
   const userSpentBoost = useMemo(() => {
@@ -255,28 +325,8 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
   const isBoostDataLoading =
     isLoadingUserBoostBalance ||
     isLoadingUserBoosts ||
-    isLoadingAgentBoostTotals;
-
-  const handleVote = async () => {
-    if (!selectedAgent) return;
-
-    vote(
-      {
-        agentId: selectedAgent.id,
-        competitionId: competition.id,
-      },
-      {
-        onSuccess: () => {
-          toast.success("Vote cast successfully!");
-        },
-        onError: (error) => {
-          toast.error(
-            error instanceof Error ? error.message : "Failed to cast vote",
-          );
-        },
-      },
-    );
-  };
+    isLoadingAgentBoostTotals ||
+    isLoadingTotalStaked;
 
   const handleStakeToBoost = () => {
     router.push("/stake");
@@ -297,6 +347,17 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
     setIsBoostModalOpen(true);
   };
 
+  const isPerpsCompetition = checkIsPerpsCompetition(competition.type);
+  const isSpotLiveCompetition = checkIsSpotLiveCompetition(competition.type);
+
+  // When agents are not active in a competition, display DQ'd tooltips or hide stats
+  const agentIsInactive = useCallback(
+    (agent: RouterOutputs["competitions"]["getAgents"]["agents"][number]) => {
+      return agent.deactivationReason !== null;
+    },
+    [],
+  );
+
   const columns = useMemo<
     ColumnDef<RouterOutputs["competitions"]["getAgents"]["agents"][number]>[]
   >(
@@ -305,10 +366,28 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
         id: "rank",
         accessorKey: "rank",
         header: () => <span>Rank</span>,
-        cell: ({ row }) =>
-          row.original.rank ? <RankBadge rank={row.original.rank} /> : null,
+        cell: ({ row }) => (
+          <div className="flex w-full items-center justify-center">
+            {agentIsInactive(row.original) ? (
+              <Tooltip
+                content={row.original.deactivationReason?.replace(
+                  "Admin removal: ",
+                  "Disqualified: ",
+                )}
+              >
+                <Flag className="h-5 w-5 text-red-400" fill="currentColor" />
+              </Tooltip>
+            ) : row.original.rank ? (
+              <RankBadge
+                rank={row.original.rank}
+                showIcon={!isMobile}
+                className={isMobile ? "min-w-8" : ""}
+              />
+            ) : null}
+          </div>
+        ),
         enableSorting: true,
-        size: 100,
+        size: isMobile ? 80 : 100,
         sortDescFirst: false, // Start with ascending (lower ranks first)
       },
       {
@@ -316,14 +395,14 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
         accessorKey: "name",
         header: () => <span>Agent</span>,
         cell: ({ row }) => (
-          <div className="flex min-w-0 items-center gap-3">
-            <AgentAvatar agent={row.original} size={32} />
+          <div className="flex min-w-0 items-center gap-2">
+            <AgentAvatar agent={row.original} size={isMobile ? 28 : 32} />
             <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
               <span className="block w-full overflow-hidden text-ellipsis whitespace-nowrap font-semibold leading-tight">
                 {row.original.name}
               </span>
 
-              <span className="text-secondary-foreground block w-full overflow-hidden text-ellipsis whitespace-nowrap text-xs">
+              <span className="text-secondary-foreground hidden w-full overflow-hidden text-ellipsis whitespace-nowrap text-xs sm:block">
                 {row.original.description}
               </span>
             </div>
@@ -332,40 +411,21 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
         enableSorting: true,
         sortDescFirst: false, // Alphabetical order
         meta: {
-          className: "flex-1 max-w-[520px]",
+          className: isMobile ? "flex-1 min-w-[140px]" : "flex-1 min-w-[180px]",
+          flex: true,
         },
       },
-      // Show Calmar Ratio as primary metric for perps, Portfolio Value for others
-      ...(competition.type === "perpetual_futures"
+      // Show ROI + risk metrics for perps, ROI + portfolio for spot live, portfolio + P&L for paper trading
+      ...(isPerpsCompetition
         ? [
-            {
-              id: "calmarRatio",
-              accessorKey: "calmarRatio",
-              header: () => <span>Calmar Ratio</span>,
-              cell: ({
-                row,
-              }: {
-                row: {
-                  original: RouterOutputs["competitions"]["getAgents"]["agents"][number];
-                };
-              }) => (
-                <span className="text-secondary-foreground font-semibold">
-                  {row.original.calmarRatio !== null &&
-                  row.original.calmarRatio !== undefined
-                    ? Number(row.original.calmarRatio).toFixed(2)
-                    : "-"}
-                </span>
-              ),
-              enableSorting: true,
-              size: 120,
-            },
             {
               id: "simpleReturn",
               accessorKey: "simpleReturn",
               header: () => (
                 <span>
-                  <span className="hidden sm:inline">Return %</span>
-                  <span className="sm:hidden">Ret%</span>
+                  <Tooltip content="Return on investment as a percentage of the starting equity.">
+                    ROI
+                  </Tooltip>
                 </span>
               ),
               cell: ({
@@ -374,35 +434,84 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                 row: {
                   original: RouterOutputs["competitions"]["getAgents"]["agents"][number];
                 };
-              }) => (
-                <span
-                  className={`font-semibold ${
-                    row.original.simpleReturn &&
-                    Number(row.original.simpleReturn) > 0
-                      ? "text-green-400"
-                      : row.original.simpleReturn &&
-                          Number(row.original.simpleReturn) < 0
-                        ? "text-red-400"
-                        : "text-secondary-foreground"
-                  }`}
-                >
-                  {row.original.simpleReturn !== null &&
-                  row.original.simpleReturn !== undefined
-                    ? `${(Number(row.original.simpleReturn) * 100).toFixed(2)}%`
-                    : "-"}
-                </span>
-              ),
+              }) => {
+                if (
+                  competition.status === "pending" ||
+                  agentIsInactive(row.original)
+                ) {
+                  return (
+                    <span className="text-secondary-foreground font-semibold">
+                      -
+                    </span>
+                  );
+                }
+                return (
+                  <span
+                    className={`font-semibold ${
+                      row.original.simpleReturn &&
+                      Number(row.original.simpleReturn) > 0
+                        ? "text-green-400"
+                        : row.original.simpleReturn &&
+                            Number(row.original.simpleReturn) < 0
+                          ? "text-red-400"
+                          : "text-secondary-foreground"
+                    }`}
+                  >
+                    {row.original.simpleReturn !== null
+                      ? `${(Number(row.original.simpleReturn) * 100).toFixed(2)}%`
+                      : "-"}
+                  </span>
+                );
+              },
               enableSorting: true,
-              size: 140,
+              meta: {
+                className: isMobile ? "max-w-[80px]" : "max-w-[100px]",
+              },
+            },
+            {
+              id: "calmarRatio",
+              accessorKey: "calmarRatio",
+              header: () => (
+                <Tooltip content="Risk-adjusted return metric calculated by dividing the total return by the maximum drawdown.">
+                  Calmar Ratio
+                </Tooltip>
+              ),
+              cell: ({
+                row,
+              }: {
+                row: {
+                  original: RouterOutputs["competitions"]["getAgents"]["agents"][number];
+                };
+              }) => {
+                if (
+                  competition.status === "pending" ||
+                  agentIsInactive(row.original)
+                ) {
+                  return (
+                    <span className="text-secondary-foreground font-semibold">
+                      -
+                    </span>
+                  );
+                }
+                return (
+                  <span className="text-secondary-foreground font-semibold">
+                    {row.original.calmarRatio !== null &&
+                    row.original.calmarRatio !== undefined
+                      ? Number(row.original.calmarRatio).toFixed(2)
+                      : "-"}
+                  </span>
+                );
+              },
+              enableSorting: true,
+              size: 120,
             },
             {
               id: "maxDrawdown",
               accessorKey: "maxDrawdown",
               header: () => (
-                <span>
-                  <span className="hidden sm:inline">Max Drawdown</span>
-                  <span className="sm:hidden">DD</span>
-                </span>
+                <Tooltip content="Largest observed equity decline from peak to trough, expressed as a percentage.">
+                  Max Drawdown
+                </Tooltip>
               ),
               cell: ({
                 row,
@@ -410,14 +519,25 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                 row: {
                   original: RouterOutputs["competitions"]["getAgents"]["agents"][number];
                 };
-              }) => (
-                <span className="font-semibold text-red-400">
-                  {row.original.maxDrawdown !== null &&
-                  row.original.maxDrawdown !== undefined
-                    ? `${Math.abs(Number(row.original.maxDrawdown) * 100).toFixed(2)}%`
-                    : "-"}
-                </span>
-              ),
+              }) => {
+                if (
+                  competition.status === "pending" ||
+                  agentIsInactive(row.original)
+                ) {
+                  return (
+                    <span className="text-secondary-foreground font-semibold">
+                      -
+                    </span>
+                  );
+                }
+                return (
+                  <span className="text-secondary-foreground font-semibold">
+                    {row.original.maxDrawdown !== null
+                      ? `${Math.abs(Number(row.original.maxDrawdown) * 100).toFixed(2)}%`
+                      : "-"}
+                  </span>
+                );
+              },
               enableSorting: true,
               size: 140,
               meta: {
@@ -425,148 +545,329 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
               },
             },
           ]
-        : [
-            {
-              id: "portfolioValue",
-              accessorKey: "portfolioValue",
-              header: () => <span>Portfolio</span>,
-              cell: ({
-                row,
-              }: {
-                row: {
-                  original: RouterOutputs["competitions"]["getAgents"]["agents"][number];
-                };
-              }) => (
-                <span className="text-secondary-foreground font-semibold">
-                  {row.original.portfolioValue.toLocaleString("en-US", {
-                    style: "currency",
-                    currency: "USD",
-                    maximumFractionDigits: 2,
-                  })}
-                </span>
-              ),
-              enableSorting: true,
-              size: 140,
-            },
-            {
-              id: "pnl",
-              accessorKey: "pnl",
-              header: () => <span>P&L</span>,
-              cell: ({
-                row,
-              }: {
-                row: {
-                  original: RouterOutputs["competitions"]["getAgents"]["agents"][number];
-                };
-              }) => {
-                const pnlColor =
-                  row.original.pnlPercent >= 0
-                    ? "text-green-500"
-                    : "text-red-500";
-                return (
-                  <div className="flex flex-col">
-                    <span className={`text-secondary-foreground font-semibold`}>
-                      {row.original.pnlPercent >= 0 ? "+" : ""}
+        : isSpotLiveCompetition
+          ? [
+              // Spot live: ROI (ranking metric), Portfolio Value, P&L
+              {
+                id: "simpleReturn",
+                accessorKey: "simpleReturn",
+                header: () => (
+                  <span>
+                    <Tooltip content="Return on investment as a percentage of the starting equity. Agents are ranked by this metric.">
+                      ROI
+                    </Tooltip>
+                  </span>
+                ),
+                cell: ({
+                  row,
+                }: {
+                  row: {
+                    original: RouterOutputs["competitions"]["getAgents"]["agents"][number];
+                  };
+                }) => {
+                  if (
+                    competition.status === "pending" ||
+                    agentIsInactive(row.original)
+                  ) {
+                    return (
+                      <span className="text-secondary-foreground font-semibold">
+                        -
+                      </span>
+                    );
+                  }
+                  return (
+                    <span
+                      className={`font-semibold ${
+                        row.original.simpleReturn &&
+                        Number(row.original.simpleReturn) > 0
+                          ? "text-green-400"
+                          : row.original.simpleReturn &&
+                              Number(row.original.simpleReturn) < 0
+                            ? "text-red-400"
+                            : "text-secondary-foreground"
+                      }`}
+                    >
+                      {row.original.simpleReturn !== null
+                        ? `${(Number(row.original.simpleReturn) * 100).toFixed(2)}%`
+                        : "-"}
+                    </span>
+                  );
+                },
+                enableSorting: true,
+                meta: {
+                  className: isMobile ? "max-w-[80px]" : "max-w-[100px]",
+                },
+              },
+              {
+                id: "portfolioValue",
+                accessorKey: "portfolioValue",
+                header: () => (
+                  <Tooltip content="The total value of the agent's portfolio in USD.">
+                    <span>Portfolio Value</span>
+                  </Tooltip>
+                ),
+                cell: ({
+                  row,
+                }: {
+                  row: {
+                    original: RouterOutputs["competitions"]["getAgents"]["agents"][number];
+                  };
+                }) => {
+                  if (
+                    competition.status === "pending" ||
+                    agentIsInactive(row.original)
+                  ) {
+                    return (
+                      <span className="text-secondary-foreground font-semibold">
+                        -
+                      </span>
+                    );
+                  }
+                  return (
+                    <span className="text-secondary-foreground font-semibold">
+                      {row.original.portfolioValue.toLocaleString("en-US", {
+                        style: "currency",
+                        currency: "USD",
+                        maximumFractionDigits: 2,
+                      })}
+                    </span>
+                  );
+                },
+                enableSorting: true,
+                size: 140,
+              },
+              {
+                id: "pnl",
+                accessorKey: "pnl",
+                header: () => (
+                  <Tooltip content="The profit or loss in USD.">P&L</Tooltip>
+                ),
+                cell: ({
+                  row,
+                }: {
+                  row: {
+                    original: RouterOutputs["competitions"]["getAgents"]["agents"][number];
+                  };
+                }) => {
+                  if (
+                    competition.status === "pending" ||
+                    agentIsInactive(row.original)
+                  ) {
+                    return (
+                      <span className="text-secondary-foreground font-semibold">
+                        -
+                      </span>
+                    );
+                  }
+                  const pnlColor =
+                    row.original.pnl >= 0 ? "text-green-500" : "text-red-500";
+                  return (
+                    <span className={`font-semibold ${pnlColor}`}>
+                      {row.original.pnl >= 0 ? "+" : ""}
                       {row.original.pnl.toLocaleString("en-US", {
                         style: "currency",
                         currency: "USD",
                         maximumFractionDigits: 2,
                       })}
                     </span>
-                    <span className={`text-xs ${pnlColor}`}>
-                      ({row.original.pnlPercent >= 0 ? "+" : ""}
-                      {row.original.pnlPercent.toFixed(2)}%)
-                    </span>
-                  </div>
-                );
+                  );
+                },
+                enableSorting: true,
+                size: 120,
               },
-              enableSorting: true,
-              size: 140,
-            },
-            {
-              id: "change24h",
-              accessorKey: "change24h",
-              header: () => <span>24h</span>,
-              cell: ({
-                row,
-              }: {
-                row: {
-                  original: RouterOutputs["competitions"]["getAgents"]["agents"][number];
-                };
-              }) => {
-                const percentColor =
-                  row.original.change24hPercent >= 0
-                    ? "text-green-500"
-                    : "text-red-500";
-                return (
-                  <div className="flex flex-col font-semibold">
-                    <span className={`text-xs ${percentColor}`}>
-                      {row.original.change24hPercent >= 0 ? "+" : ""}
-                      {row.original.change24hPercent.toFixed(2)}%
+            ]
+          : [
+              // Paper trading: Portfolio Value (ranking metric), P&L, 24h
+              {
+                id: "portfolioValue",
+                accessorKey: "portfolioValue",
+                header: () => (
+                  <Tooltip content="The total value of the agent's portfolio in USD.">
+                    <span>Portfolio Value</span>
+                  </Tooltip>
+                ),
+                cell: ({
+                  row,
+                }: {
+                  row: {
+                    original: RouterOutputs["competitions"]["getAgents"]["agents"][number];
+                  };
+                }) => {
+                  if (
+                    competition.status === "pending" ||
+                    agentIsInactive(row.original)
+                  ) {
+                    return (
+                      <span className="text-secondary-foreground font-semibold">
+                        -
+                      </span>
+                    );
+                  }
+                  return (
+                    <span className="text-secondary-foreground font-semibold">
+                      {row.original.portfolioValue.toLocaleString("en-US", {
+                        style: "currency",
+                        currency: "USD",
+                        maximumFractionDigits: 2,
+                      })}
                     </span>
-                  </div>
-                );
+                  );
+                },
+                enableSorting: true,
+                size: 140,
               },
-              enableSorting: true,
-              size: 140,
-            },
-          ]),
-
+              {
+                id: "pnl",
+                accessorKey: "pnl",
+                header: () => (
+                  <Tooltip content="The profit or loss as a percentage of the agent's starting portfolio value.">
+                    P&L
+                  </Tooltip>
+                ),
+                cell: ({
+                  row,
+                }: {
+                  row: {
+                    original: RouterOutputs["competitions"]["getAgents"]["agents"][number];
+                  };
+                }) => {
+                  if (
+                    competition.status === "pending" ||
+                    agentIsInactive(row.original)
+                  ) {
+                    return (
+                      <span className="text-secondary-foreground font-semibold">
+                        -
+                      </span>
+                    );
+                  }
+                  const pnlColor =
+                    row.original.pnlPercent >= 0
+                      ? "text-green-500"
+                      : "text-red-500";
+                  return (
+                    <div className="flex flex-col">
+                      <span
+                        className={`text-secondary-foreground font-semibold`}
+                      >
+                        {row.original.pnlPercent >= 0 ? "+" : ""}
+                        {row.original.pnl.toLocaleString("en-US", {
+                          style: "currency",
+                          currency: "USD",
+                          maximumFractionDigits: 2,
+                        })}
+                      </span>
+                      <span className={`text-xs ${pnlColor}`}>
+                        ({row.original.pnlPercent >= 0 ? "+" : ""}
+                        {row.original.pnlPercent.toFixed(2)}%)
+                      </span>
+                    </div>
+                  );
+                },
+                enableSorting: true,
+                size: 120,
+              },
+              {
+                id: "change24h",
+                accessorKey: "change24h",
+                header: () => (
+                  <Tooltip content="The change in the agent's portfolio value in the last 24 hours, expressed as a percentage.">
+                    24h
+                  </Tooltip>
+                ),
+                cell: ({
+                  row,
+                }: {
+                  row: {
+                    original: RouterOutputs["competitions"]["getAgents"]["agents"][number];
+                  };
+                }) => {
+                  if (
+                    competition.status === "pending" ||
+                    agentIsInactive(row.original)
+                  ) {
+                    return (
+                      <span className="text-secondary-foreground font-semibold">
+                        -
+                      </span>
+                    );
+                  }
+                  const percentColor =
+                    row.original.change24hPercent >= 0
+                      ? "text-green-500"
+                      : "text-red-500";
+                  return (
+                    <div className="flex flex-col font-semibold">
+                      <span className={`text-xs ${percentColor}`}>
+                        {row.original.change24hPercent >= 0 ? "+" : ""}
+                        {row.original.change24hPercent.toFixed(2)}%
+                      </span>
+                    </div>
+                  );
+                },
+                enableSorting: true,
+                meta: {
+                  className: isMobile ? "max-w-[60px]" : "max-w-[100px]",
+                },
+              },
+            ]),
       {
         id: "boostPool",
         accessorKey: "boostTotal",
         header: () => (
-          <span className="whitespace-nowrap">
-            {hasBoostEnabled ? "Boost Pool" : "Votes"}
+          <span className="cursor-help text-right">
+            <Tooltip content="The total amount of Boost that users have signaled to support this agent.">
+              Boost Pool
+            </Tooltip>
           </span>
         ),
         cell: ({ row }) => {
-          if (hasBoostEnabled) {
-            const agentBoostTotal = isSuccessAgentBoostTotals
-              ? agentBoostTotals[row.original.id] || 0
-              : 0;
+          const agentBoostTotal = isSuccessAgentBoostTotals
+            ? agentBoostTotals[row.original.id] || 0
+            : 0;
 
-            return (
-              <div className="flex flex-col items-end">
-                <span className="text-secondary-foreground font-semibold">
-                  {isBoostDataLoading
-                    ? "..."
-                    : formatCompactNumber(agentBoostTotal)}
-                </span>
-                <span className="text-xs text-slate-400">
-                  (
-                  {formatPercentage(
-                    Number(agentBoostTotal),
-                    Number(totalBoost),
-                  )}
-                  )
-                </span>
-              </div>
-            );
-          } else {
-            // Show vote counts for old competitions without boost
-            const voteCount = row.original.voteCount || 0;
-            return (
-              <div className="flex flex-col items-end">
-                <span className="text-secondary-foreground font-semibold">
-                  {formatCompactNumber(voteCount)}
-                </span>
-                <span className="text-xs text-slate-400">
-                  ({formatPercentage(Number(voteCount), Number(totalVotes))})
-                </span>
-              </div>
-            );
-          }
+          return (
+            <div className="flex flex-col items-end">
+              {isBoostDataLoading ? (
+                <>
+                  <Skeleton className="mb-1 h-4 rounded-xl" />
+                  <Skeleton className="h-4 rounded-xl" />
+                </>
+              ) : (
+                <>
+                  <span className="text-secondary-foreground font-semibold">
+                    {formatCompactNumber(agentBoostTotal)}
+                  </span>
+                  <span className="text-xs text-slate-400">
+                    (
+                    {formatPercentage(
+                      Number(agentBoostTotal),
+                      Number(totalBoost),
+                    )}
+                    )
+                  </span>
+                </>
+              )}
+            </div>
+          );
         },
         enableSorting: false,
-        size: 120,
+        size: isMobile ? 75 : 100,
         meta: {
-          className: "flex justify-end",
+          className: "justify-end text-right",
         },
       },
       {
         id: "yourShare",
-        header: () => <span className="whitespace-nowrap">Your Share</span>,
+        accessorKey: "yourShare",
+        enableSorting: false,
+        header: () => (
+          <span className="cursor-help text-right">
+            <Tooltip content="The amount of Boost that you have used to support the agent.">
+              Your Share
+            </Tooltip>
+          </span>
+        ),
         cell: ({ row }) => {
           // Use user boost allocation data
           const userBoostAmount = isSuccessUserBoosts
@@ -587,21 +888,24 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                     <Button
                       size="sm"
                       variant="outline"
-                      className="hover:bg-muted h-8 w-8 rounded-lg border border-yellow-500 p-0 hover:text-white"
+                      className={`disabled:hover:text-primary-foreground text-primary-foreground group h-8 w-full border border-yellow-500 bg-black font-bold uppercase hover:bg-yellow-500 hover:text-black ${isMobile ? "h-7 px-2 text-xs" : "h-8"}`}
                       disabled={!userBoostBalance}
                       onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                         e.stopPropagation();
                         handleBoost(row.original);
                       }}
                     >
-                      <Zap className="h-4 w-4 fill-yellow-500 text-yellow-500" />
+                      <BoostIcon
+                        className="ml-1 size-4 text-yellow-500 transition-colors duration-300 ease-in-out group-hover:text-black group-disabled:text-yellow-500"
+                        useCurrentColor
+                      />
                     </Button>
                   </>
                 ) : (
                   <Button
                     size="sm"
                     variant="outline"
-                    className="hover:bg-muted h-8 rounded-lg border border-yellow-500 font-bold text-white"
+                    className={`disabled:hover:text-primary-foreground text-primary-foreground group h-8 w-full border border-yellow-500 bg-black font-bold uppercase hover:bg-yellow-500 hover:text-black ${isMobile ? "h-7 px-2 text-xs" : "h-8"}`}
                     disabled={!userBoostBalance}
                     onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                       e.stopPropagation();
@@ -609,7 +913,10 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                     }}
                   >
                     Boost{" "}
-                    <Zap className="ml-1 h-4 w-4 fill-yellow-500 text-yellow-500" />
+                    <BoostIcon
+                      className="ml-1 size-4 text-yellow-500 transition-colors duration-300 ease-in-out group-hover:text-black group-disabled:text-yellow-500"
+                      useCurrentColor
+                    />
                   </Button>
                 )
               ) : (
@@ -620,9 +927,9 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
             </div>
           );
         },
-        size: 120,
+        size: isMobile ? 100 : 120,
         meta: {
-          className: "flex justify-end",
+          className: "justify-end",
         },
       },
     ],
@@ -634,15 +941,17 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
       userBoostBalance,
       isSuccessAgentBoostTotals,
       isOpenForBoosting,
-      competition.type,
       isSuccessUserBoosts,
-      hasBoostEnabled,
-      totalVotes,
+      isPerpsCompetition,
+      isSpotLiveCompetition,
+      isMobile,
+      competition.status,
+      agentIsInactive,
     ],
   );
 
   const table = useReactTable({
-    data: agents,
+    data: processedAgents,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
@@ -693,188 +1002,148 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
   };
 
   return (
-    <div className="mt-12 w-full" ref={ref}>
-      <div className="mb-5 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="w-full md:w-1/2">
-          <h2 className="text-2xl font-bold">
-            Competition {competitionTitles[competition.status]}
-            {/*({pagination.total})*/}
-          </h2>
-          {/*<div className="flex w-full items-center gap-2 rounded-2xl border px-3 py-2">
-            <Search className="text-secondary-foreground mr-1 h-5" />
-            <Input
-              className="border-none bg-transparent p-0 focus-visible:ring-0 focus-visible:ring-offset-0"
-              placeholder="Search for an agent..."
-              onChange={(e) => onFilterChange(e.target.value)}
-              aria-label="Search for an agent"
-            />
-          </div>*/}
-        </div>
+    <div className="mt-20 w-full scroll-mt-10 md:mt-40" ref={ref}>
+      {/* Header section with title, description, rewards, boost balance, and button */}
+      <div className="mb-5 flex flex-col gap-4">
+        {/* Title */}
+        <h2 className="text-2xl font-bold">
+          Competition {competitionTitles[competition.status]}
+        </h2>
 
-        {showBoostBalance && (
-          <div className="w-full md:w-1/2 lg:ml-8">
-            <div className="rounded-2xl p-4">
-              <div className="flex items-center gap-3">
-                <span className="flex items-center gap-2 whitespace-nowrap text-2xl font-bold">
-                  <Zap className="h-4 w-4 text-yellow-500" />
-                  <span className="font-bold">
-                    {isBoostDataLoading
-                      ? "..."
-                      : numberFormatter.format(userBoostBalance || 0)}
-                  </span>
-                  <span className="text-secondary-foreground text-sm font-medium">
-                    available
-                  </span>
-                </span>
-                <div className="bg-muted h-3 flex-1 overflow-hidden rounded-full">
-                  <div
-                    className="h-full rounded-full bg-yellow-500 transition-all duration-300"
-                    style={{
-                      width:
-                        isSuccessUserBoostBalance &&
-                        userBoostBalance > 0 &&
-                        totalBoostValue > 0
-                          ? `${Math.min(100, Number((userBoostBalance * 100) / totalBoostValue))}%`
-                          : "0%",
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-        {showActivateBoost ? (
-          <Button
-            size="lg"
-            variant="outline"
-            className="group h-8 self-end rounded-lg border border-yellow-500 bg-black font-bold text-white hover:bg-yellow-500 hover:text-black"
-            onClick={handleClaimBoost}
-          >
-            {config.publicFlags.tge ? "Activate Boost" : "Start Boosting"}{" "}
-            <Zap className="ml-1 h-4 w-4 fill-yellow-500 text-yellow-500 group-hover:fill-black group-hover:text-black" />
-          </Button>
-        ) : showStakeToBoost ? (
-          <Button
-            size="lg"
-            variant="outline"
-            className="group h-8 self-end rounded-lg border border-yellow-500 bg-black font-bold text-white hover:bg-yellow-500 hover:text-black"
-            onClick={handleStakeToBoost}
-          >
-            Stake to Boost{" "}
-            <Zap className="ml-1 h-4 w-4 fill-yellow-500 text-yellow-500 transition-all duration-300 ease-in-out group-hover:fill-black group-hover:text-black" />
-          </Button>
-        ) : null}
+        {/* Three column layout: Description/Rewards, Stats, Boost Balance */}
+        <CompetitionStandingsDetails
+          competition={competition}
+          showBoostBalance={showBoostBalance}
+          isBoostDataLoading={isBoostDataLoading}
+          isOpenForBoosting={isOpenForBoosting}
+          userBoostBalance={userBoostBalance}
+          isSuccessUserBoostBalance={isSuccessUserBoostBalance}
+          totalBoostValue={totalBoostValue}
+          showActivateBoost={showActivateBoost}
+          showStakeToBoost={showStakeToBoost}
+          onClaimBoost={handleClaimBoost}
+          onStakeToBoost={handleStakeToBoost}
+        />
       </div>
-      <div
-        ref={tableContainerRef}
-        style={{
-          overflowY: "auto",
-          position: "relative",
-        }}
-      >
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow
-                key={headerGroup.id}
-                style={{ display: "flex", width: "100%" }}
-              >
-                {headerGroup.headers.map((header) =>
-                  header.column.getCanSort() ? (
-                    <SortableTableHeader
-                      key={header.id}
-                      colSpan={header.colSpan}
-                      sortState={getSortState(header.column.getIsSorted())}
-                      style={{ width: header.getSize() }}
-                      className={header.column.columnDef.meta?.className}
-                      onClick={header.column.getToggleSortingHandler()}
-                    >
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
+
+      {/* Table section */}
+      <div>
+        <div
+          ref={tableContainerRef}
+          className="overflow-x-auto overflow-y-auto"
+        >
+          <Table className="w-full min-w-max table-auto">
+            <TableHeader className="sticky top-0 z-10 bg-black">
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id} style={{ display: "flex" }}>
+                  {headerGroup.headers.map((header) =>
+                    header.column.getCanSort() ? (
+                      <SortableTableHeader
+                        key={header.id}
+                        colSpan={header.colSpan}
+                        sortState={getSortState(header.column.getIsSorted())}
+                        style={{ width: header.getSize() }}
+                        className={header.column.columnDef.meta?.className}
+                        onClick={header.column.getToggleSortingHandler()}
+                      >
+                        <div className="inline-flex items-center">
+                          {flexRender(
                             header.column.columnDef.header,
                             header.getContext(),
                           )}
-                    </SortableTableHeader>
-                  ) : (
-                    <TableHead
-                      key={header.id}
-                      colSpan={header.colSpan}
-                      style={{ width: header.getSize() }}
-                      className={header.column.columnDef.meta?.className}
-                    >
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext(),
+                          {isPrimaryMetric(header.column.id) && (
+                            <Star className="ml-1 h-2 w-2 shrink-0 fill-yellow-500 text-yellow-500" />
                           )}
-                    </TableHead>
-                  ),
-                )}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-              const row = table.getRowModel().rows[virtualRow.index];
-              if (!row) return null;
-              return (
-                <TableRow
-                  key={row.id}
-                  style={{
-                    display: "flex",
-                    cursor: "pointer",
-                  }}
-                  ref={(el) => rowVirtualizer.measureElement(el)}
-                  data-index={virtualRow.index}
-                  onClick={(e) => {
-                    // Don't navigate if clicking on the "Vote" button
-                    const target = e.target as HTMLElement;
-                    const isInteractive = target.closest(
-                      'button, [type="button"]',
-                    );
-                    if (!isInteractive) {
-                      router.push(`/agents/${row.original.id}`);
-                    }
-                  }}
-                  className="hover:bg-muted/50 transition-colors"
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell
-                      key={cell.id}
-                      className={`flex items-center ${cell.column.columnDef.meta?.className ?? ""}`}
-                      style={{ width: cell.column.getSize() }}
-                    >
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext(),
-                      )}
-                    </TableCell>
-                  ))}
+                        </div>
+                      </SortableTableHeader>
+                    ) : (
+                      <TableHead
+                        key={header.id}
+                        colSpan={header.colSpan}
+                        style={{ width: header.getSize() }}
+                        className={header.column.columnDef.meta?.className}
+                      >
+                        {flexRender(
+                          header.column.columnDef.header,
+                          header.getContext(),
+                        )}
+                      </TableHead>
+                    ),
+                  )}
                 </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {processedAgents.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={table.getAllColumns().length}
+                    className="h-20 border-t text-center"
+                  >
+                    <span className="text-secondary-foreground">
+                      {competition.status === "pending" &&
+                      competition.joinStartDate &&
+                      competition.joinStartDate > new Date()
+                        ? "Agent registration is not open."
+                        : "No agents found for this competition."}
+                    </span>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                  const row = table.getRowModel().rows[virtualRow.index];
+                  if (!row) return null;
+                  return (
+                    <TableRow
+                      key={row.id}
+                      style={{ display: "flex", cursor: "pointer" }}
+                      ref={(el) => rowVirtualizer.measureElement(el)}
+                      data-index={virtualRow.index}
+                      onClick={(e) => {
+                        // Don't navigate if clicking on the "Boost" button
+                        const target = e.target as HTMLElement;
+                        const isInteractive = target.closest(
+                          'button, [type="button"]',
+                        );
+                        if (!isInteractive) {
+                          router.push(`/agents/${row.original.id}`);
+                        }
+                      }}
+                      className="hover:bg-muted/50 transition-colors"
+                    >
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell
+                          key={cell.id}
+                          className={`flex items-center ${cell.column.columnDef.meta?.className ?? ""}`}
+                          style={{
+                            width: cell.column.getSize(),
+                            minWidth: (
+                              cell.column.columnDef.meta as
+                                | { minWidth?: number }
+                                | undefined
+                            )?.minWidth,
+                          }}
+                        >
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext(),
+                          )}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+        </div>
+        <Pagination
+          totalItems={pagination.total}
+          currentPage={page}
+          itemsPerPage={pagination.limit}
+          onPageChange={onPageChange}
+        />
       </div>
-      <Pagination
-        totalItems={pagination.total}
-        currentPage={page}
-        itemsPerPage={pagination.limit}
-        onPageChange={onPageChange}
-      />
-
-      <ConfirmVoteModal
-        isOpen={isVoteModalOpen}
-        onClose={(open) => {
-          setIsVoteModalOpen(open);
-          if (!open) setSelectedAgent(null);
-        }}
-        agentName={selectedAgent?.name ?? ""}
-        onVote={handleVote}
-        isLoading={isPendingVote}
-      />
 
       <BoostAgentModal
         isOpen={isBoostModalOpen}

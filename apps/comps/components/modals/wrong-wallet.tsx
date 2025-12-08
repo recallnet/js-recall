@@ -50,7 +50,12 @@ export const WrongWalletModal: React.FC<WrongWalletModalProps> = ({
             </h4>
             <div className="flex items-center justify-between">
               <span className="font-mono text-sm text-white">
-                {displayAddress(expectedWalletAddress)}
+                <span className="xs:hidden">
+                  {displayAddress(expectedWalletAddress, { numChars: 8 })}
+                </span>
+                <span className="xs:inline hidden">
+                  {expectedWalletAddress}
+                </span>
               </span>
               <CopyButton textToCopy={expectedWalletAddress} />
             </div>

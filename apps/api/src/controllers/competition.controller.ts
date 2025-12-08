@@ -74,8 +74,6 @@ export function makeCompetitionController(services: ServiceRegistry) {
       next: NextFunction,
     ) {
       try {
-        const userId = req.userId;
-
         const status = req.query.status
           ? CompetitionStatusSchema.parse(req.query.status)
           : undefined;
@@ -86,8 +84,6 @@ export function makeCompetitionController(services: ServiceRegistry) {
         const cacheKey = generateCacheKey(req, "list", {
           status,
           ...pagingParams,
-          // Include userId in cache key since response includes user-specific voting data
-          ...(userId && { userId }),
         });
 
         if (shouldCacheResponse) {
@@ -102,7 +98,6 @@ export function makeCompetitionController(services: ServiceRegistry) {
           await services.competitionService.getEnrichedCompetitions({
             status,
             pagingParams,
-            userId,
           });
 
         // Cache the result
@@ -132,30 +127,16 @@ export function makeCompetitionController(services: ServiceRegistry) {
       next: NextFunction,
     ) {
       try {
-        const userId = req.userId;
         const competitionId = ensureUuid(req.params.competitionId);
 
         if (!competitionId) {
           throw new ApiError(400, "Competition ID is required");
         }
 
-        // Authentication check
-        if (userId) {
-          competitionLogger.debug(
-            `User ${userId} requesting competition details`,
-          );
-        } else {
-          competitionLogger.debug(
-            `Unauthenticated request for competition details (public access)`,
-          );
-        }
-
         // Check cache
         const shouldCacheResponse = checkShouldCacheResponse(req);
         const cacheKey = generateCacheKey(req, "byId", {
           competitionId,
-          // Include userId in cache key since response includes user-specific voting data
-          ...(userId && { userId }),
         });
 
         if (shouldCacheResponse) {
@@ -168,7 +149,6 @@ export function makeCompetitionController(services: ServiceRegistry) {
 
         const result = await services.competitionService.getCompetitionById({
           competitionId,
-          userId,
         });
 
         // Cache the result
@@ -626,6 +606,36 @@ export function makeCompetitionController(services: ServiceRegistry) {
         }
 
         res.status(200).json(responseBody);
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Get partners for a competition (public endpoint)
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async getCompetitionPartners(
+      req: AuthenticatedRequest,
+      res: Response,
+      next: NextFunction,
+    ) {
+      try {
+        const competitionId = ensureUuid(req.params.competitionId);
+
+        if (!competitionId) {
+          throw new ApiError(400, "Competition ID is required");
+        }
+
+        const partners =
+          await services.partnerService.findByCompetition(competitionId);
+
+        res.status(200).json({
+          success: true,
+          partners,
+        });
       } catch (error) {
         next(error);
       }

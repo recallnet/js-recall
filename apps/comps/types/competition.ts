@@ -1,9 +1,11 @@
+import type { CompetitionStatus } from "@recallnet/db/repositories/types";
+
 import type { RouterOutputs } from "@/rpc/router";
 import { mergeCompetitionsWithUserData } from "@/utils/competition-utils";
 
 import { Agent } from "./agent";
 import { PaginationResponse } from "./api";
-import { CompetitionStatus, CrossChainTradingType } from "./enums";
+import { CrossChainTradingType } from "./enums";
 
 export interface Reward {
   name: string;
@@ -39,7 +41,18 @@ export interface AgentStatus {
   };
 }
 
-export type CompetitionType = "trading" | "perpetual_futures";
+export type CompetitionType =
+  | "trading"
+  | "perpetual_futures"
+  | "spot_live_trading"
+  | "sports_prediction";
+
+export type EvaluationMetric =
+  | "calmar_ratio"
+  | "sortino_ratio"
+  | "simple_return"
+  | "max_drawdown"
+  | "total_pnl";
 
 export interface Competition {
   id: string;
@@ -60,23 +73,12 @@ export interface Competition {
     totalTrades?: number; // Only for paper trading competitions
     totalAgents: number;
     totalVolume?: number; // May not be present for all competition types
-    totalVotes: number;
     uniqueTokens?: number; // Only for paper trading competitions
     totalPositions?: number; // Only for perpetual futures competitions
     averageEquity?: number; // Only for perpetual futures competitions
   };
-  votingEnabled: boolean;
-  votingStartDate: string | null;
-  votingEndDate: string | null;
-  userVotingInfo?: {
-    canVote: boolean;
-    reason?: string;
-    info: {
-      hasVoted: boolean;
-      agentId?: string;
-      votedAt?: string;
-    };
-  };
+  boostStartDate: string | null;
+  boostEndDate: string | null;
   portfolioValue?: number;
   pnl?: number;
   pnlPercent?: number;
@@ -103,6 +105,8 @@ export interface Competition {
   // Registration limit fields
   maxParticipants: number | null;
   registeredParticipants: number;
+  // Evaluation metric for perps competitions (determines ranking)
+  evaluationMetric?: EvaluationMetric;
 }
 
 export interface CompetitionResponse {

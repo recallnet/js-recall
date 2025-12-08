@@ -13,18 +13,26 @@
  */
 import { os } from "@orpc/server";
 import { PrivyClient } from "@privy-io/server-auth";
-import { cookies } from "next/headers";
+import { RequestCookie } from "next/dist/compiled/@edge-runtime/cookies";
 import { Logger } from "pino";
 
 import {
   AgentService,
+  AirdropService,
+  ArenaService,
   BoostAwardService,
   BoostService,
   CompetitionService,
   EmailService,
   LeaderboardService,
+  RewardsService,
+  SportsService,
   UserService,
 } from "@recallnet/services";
+
+export interface CookieStore {
+  get(...args: [name: string] | [RequestCookie]): RequestCookie | undefined;
+}
 
 /**
  * The base context object for RPC procedures. The properties included
@@ -37,8 +45,10 @@ import {
  * @property userService - Service for user-related operations
  * @property competitionService - Service for competition operations
  * @property agentService - Service for agent management operations
+ * @property arenaService - Service for arena operations
  * @property emailService - Service for email operations
  * @property leaderboardService - Service for leaderboard operations
+ * @property rewardsService - Service for reward operations
  *
  * Standard errors:
  *   - NOT_FOUND: Resource not found
@@ -48,15 +58,19 @@ import {
  */
 export const base = os
   .$context<{
-    cookies: Awaited<ReturnType<typeof cookies>>;
+    cookies: CookieStore;
     privyClient: PrivyClient;
+    airdropService: AirdropService;
     boostService: BoostService;
     boostAwardService: BoostAwardService;
     userService: UserService;
     competitionService: CompetitionService;
     agentService: AgentService;
+    arenaService: ArenaService;
     emailService: EmailService;
     leaderboardService: LeaderboardService;
+    rewardsService: RewardsService;
+    sportsService: SportsService;
     logger: Logger;
   }>()
   .errors({

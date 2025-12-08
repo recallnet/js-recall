@@ -64,7 +64,7 @@ export function makeLeaderboardController(services: ServiceRegistry) {
 
         // Get leaderboard data from service layer
         const result =
-          await services.leaderboardService.getGlobalLeaderboard(data);
+          await services.leaderboardService.getGlobalLeaderboardForType(data);
 
         const responseBody = {
           success: true,

@@ -10,9 +10,9 @@ import {
 } from "vitest";
 
 import { BlockchainAddressAsU8A } from "../../coders/index.js";
+import * as schema from "../../schema/boost/defs.js";
 import * as coreSchema from "../../schema/core/defs.js";
 import { stakes } from "../../schema/indexing/defs.js";
-import * as schema from "../../schema/voting/defs.js";
 import { dropAllSchemas } from "../../utils/drop-all-schemas.js";
 import { pushSchema } from "../../utils/push-schema.js";
 import { BoostRepository } from "../boost.js";
@@ -119,6 +119,7 @@ describe("BoostRepository.unawardedStakes() Integration Tests", () => {
         await db.insert(stakes).values({
           id: stakeData.id,
           wallet: BlockchainAddressAsU8A.encode(testWallet),
+          walletAddress: testWallet.toLowerCase(),
           amount: BigInt(stakeData.id) * 100n, // Different amounts for identification
           stakedAt: createdTime,
           canUnstakeAfter: new Date(now.getTime() + 3600000), // 1 hour from now
@@ -150,6 +151,7 @@ describe("BoostRepository.unawardedStakes() Integration Tests", () => {
       await db.insert(stakes).values({
         id: 2001n,
         wallet: BlockchainAddressAsU8A.encode(testWallet),
+        walletAddress: testWallet.toLowerCase(),
         amount: 1000n,
         stakedAt: now,
         canUnstakeAfter: new Date(now.getTime() + 3600000),
@@ -160,6 +162,7 @@ describe("BoostRepository.unawardedStakes() Integration Tests", () => {
       await db.insert(stakes).values({
         id: 2002n,
         wallet: BlockchainAddressAsU8A.encode(testWallet),
+        walletAddress: testWallet.toLowerCase(),
         amount: 2000n,
         stakedAt: now,
         canUnstakeAfter: new Date(now.getTime() + 3600000),
@@ -187,6 +190,7 @@ describe("BoostRepository.unawardedStakes() Integration Tests", () => {
       await db.insert(stakes).values({
         id: stakeId1,
         wallet: BlockchainAddressAsU8A.encode(testWallet),
+        walletAddress: testWallet.toLowerCase(),
         amount: 1000n,
         stakedAt: now,
         canUnstakeAfter: new Date(now.getTime() + 3600000),
@@ -196,6 +200,7 @@ describe("BoostRepository.unawardedStakes() Integration Tests", () => {
       await db.insert(stakes).values({
         id: stakeId2,
         wallet: BlockchainAddressAsU8A.encode(testWallet),
+        walletAddress: testWallet.toLowerCase(),
         amount: 2000n,
         stakedAt: now,
         canUnstakeAfter: new Date(now.getTime() + 3600000),
@@ -250,6 +255,7 @@ describe("BoostRepository.unawardedStakes() Integration Tests", () => {
       await db.insert(stakes).values({
         id: stakeId,
         wallet: BlockchainAddressAsU8A.encode(testWallet),
+        walletAddress: testWallet.toLowerCase(),
         amount: 1000n,
         stakedAt: now,
         canUnstakeAfter: new Date(now.getTime() + 3600000),
@@ -329,6 +335,7 @@ describe("BoostRepository.unawardedStakes() Integration Tests", () => {
       await db.insert(stakes).values({
         id: 5001n,
         wallet: BlockchainAddressAsU8A.encode(testWallet),
+        walletAddress: testWallet.toLowerCase(),
         amount: 1000n,
         stakedAt: now,
         canUnstakeAfter: new Date(now.getTime() + 3600000),
@@ -338,6 +345,7 @@ describe("BoostRepository.unawardedStakes() Integration Tests", () => {
       await db.insert(stakes).values({
         id: 5002n,
         wallet: BlockchainAddressAsU8A.encode(otherWallet),
+        walletAddress: otherWallet.toLowerCase(),
         amount: 2000n,
         stakedAt: now,
         canUnstakeAfter: new Date(now.getTime() + 3600000),
@@ -371,6 +379,7 @@ describe("BoostRepository.unawardedStakes() Integration Tests", () => {
         await db.insert(stakes).values({
           id: stake.id,
           wallet: BlockchainAddressAsU8A.encode(testWallet),
+          walletAddress: testWallet.toLowerCase(),
           amount: 1000n,
           stakedAt: stakeTime,
           canUnstakeAfter: new Date(stake.time + 3600000),
@@ -402,6 +411,7 @@ describe("BoostRepository.unawardedStakes() Integration Tests", () => {
       await db.insert(stakes).values({
         id: 7001n,
         wallet: BlockchainAddressAsU8A.encode(testWallet),
+        walletAddress: testWallet.toLowerCase(),
         amount: 1000n,
         stakedAt: now,
         canUnstakeAfter: new Date(now.getTime() + 3600000),
@@ -428,6 +438,7 @@ describe("BoostRepository.unawardedStakes() Integration Tests", () => {
       await db.insert(stakes).values({
         id: 8001n,
         wallet: BlockchainAddressAsU8A.encode(testWallet),
+        walletAddress: testWallet.toLowerCase(),
         amount: 1000n,
         stakedAt: now,
         canUnstakeAfter: new Date(now.getTime() + 3600000),

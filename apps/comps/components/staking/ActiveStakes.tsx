@@ -1,28 +1,27 @@
 "use client";
 
-import { ArrowRightIcon } from "@radix-ui/react-icons";
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import { useBlock } from "wagmi";
 
 import { attoValueToNumberValue } from "@recallnet/conversions/atto-conversions";
-import { Button } from "@recallnet/ui2/components/button";
-import { Tooltip } from "@recallnet/ui2/components/tooltip";
+import { toast } from "@recallnet/ui2/components/toast";
 
-import { Recall } from "@/components/Recall";
-import { useRelock, useUnstake } from "@/hooks/staking";
+import { useUnstake } from "@/hooks/staking";
 import { useUserStakes } from "@/hooks/useStakingContract";
 import type { StakeInfoWithId } from "@/types/staking";
-import { formatAmount, formatDate } from "@/utils/format";
+import { formatAmount } from "@/utils/format";
 
-import { BoostIcon } from "../BoostIcon";
-import { StatusPill } from "./StatusPill";
+import { RelockRecallModal } from "../modals/relock-recall";
+import type { StakeEntryAction } from "./StakeEntryBase";
+import { StakeEntryBase } from "./StakeEntryBase";
+import { calculateTimeProgress } from "./stakeTime";
 
 interface ActiveStakeEntryProps {
   tokenId: bigint;
   amount: bigint;
   startTime: bigint;
   lockupEndTime: bigint;
-  onUnstake: (tokenId: bigint) => void;
-  onRelock: (tokenId: bigint) => void;
+  blockTimestamp?: bigint;
 }
 
 const ActiveStakeEntry: React.FunctionComponent<ActiveStakeEntryProps> = ({
@@ -30,11 +29,50 @@ const ActiveStakeEntry: React.FunctionComponent<ActiveStakeEntryProps> = ({
   amount,
   startTime,
   lockupEndTime,
-  onUnstake,
-  onRelock,
+  blockTimestamp,
 }) => {
-  const now = BigInt(Math.floor(Date.now() / 1000));
+  // Use block timestamp if available, otherwise fall back to Date.now()
+  const now = blockTimestamp ?? BigInt(Math.floor(Date.now() / 1000));
   const isLocked = now < lockupEndTime;
+
+  // State for relock modal
+  const [isRelockModalOpen, setIsRelockModalOpen] = useState(false);
+
+  // Per-row hooks for independent loading states
+  const {
+    execute: unstake,
+    isPending: isUnstakePending,
+    isConfirming: isUnstakeConfirming,
+    isConfirmed: isUnstakeConfirmed,
+    error: unstakeError,
+  } = useUnstake();
+
+  const isUnstakeProcessing = isUnstakePending || isUnstakeConfirming;
+
+  useEffect(() => {
+    if (isUnstakeConfirmed) {
+      toast.success("Successfully unstaked!");
+    }
+  }, [isUnstakeConfirmed]);
+
+  useEffect(() => {
+    if (unstakeError) {
+      toast.error("Failed to unstake");
+      console.error("Unstake error:", unstakeError);
+    }
+  }, [unstakeError]);
+
+  const handleUnstake = async () => {
+    try {
+      await unstake(tokenId);
+    } catch (error) {
+      console.error("Failed to unstake:", error);
+    }
+  };
+
+  const handleOpenRelockModal = () => {
+    setIsRelockModalOpen(true);
+  };
 
   const formattedAmount = useMemo(() => {
     const value = attoValueToNumberValue(amount);
@@ -46,126 +84,79 @@ const ActiveStakeEntry: React.FunctionComponent<ActiveStakeEntryProps> = ({
     return value ? formatAmount(value, 0, true) : "0";
   }, [amount]);
 
-  const stakedDate = useMemo(() => {
-    return formatDate(new Date(Number(startTime) * 1000));
-  }, [startTime]);
-
-  const unlockDate = useMemo(() => {
-    return formatDate(new Date(Number(lockupEndTime) * 1000));
-  }, [lockupEndTime]);
-
-  const stakedDateISO = useMemo(() => {
-    return new Date(Number(startTime) * 1000).toISOString();
-  }, [startTime]);
-
-  const unlockDateISO = useMemo(() => {
-    return new Date(Number(lockupEndTime) * 1000).toISOString();
-  }, [lockupEndTime]);
-
-  const progress = useMemo(() => {
-    if (!isLocked) return 100;
-    const totalDuration = Number(lockupEndTime - startTime);
-    const elapsed = Number(now - startTime);
-    return Math.min(Math.max((elapsed / totalDuration) * 100, 0), 100);
-  }, [isLocked, startTime, lockupEndTime, now]);
-
-  const progressText = useMemo(() => {
-    if (!isLocked) return "Unlocked";
-    const totalDays = Math.ceil(
-      Number(lockupEndTime - startTime) / (24 * 60 * 60),
-    );
-    const elapsedDays = Math.floor(Number(now - startTime) / (24 * 60 * 60));
-    return `${elapsedDays}/${totalDays} days (${Math.round(progress)}%)`;
-  }, [isLocked, startTime, lockupEndTime, now, progress]);
+  const timeProgress = useMemo(() => {
+    return calculateTimeProgress(startTime, lockupEndTime, now, "Unlocked");
+  }, [startTime, lockupEndTime, now]);
 
   const status = isLocked ? "locked" : "staked";
-  return (
-    <div className="xs:p-4 rounded-lg border border-[#212C3A] bg-gray-900 p-3 transition-colors hover:bg-gray-800">
-      <div className="flex flex-col items-stretch justify-between">
-        <div className="xs:flex-row xs:items-start flex flex-col justify-between gap-4">
-          <div className="flex flex-col items-start gap-4 sm:flex-row">
-            <StatusPill status={status} />
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
-              <div className="flex items-center gap-4">
-                <Recall size="md" />
-                <span className="text-lg font-semibold text-white">
-                  {formattedAmount}
-                </span>
-              </div>
-              <div className="hidden text-gray-400 sm:block">
-                <ArrowRightIcon />
-              </div>
-              <div className="flex items-center gap-1 text-yellow-400">
-                <BoostIcon fill />
-                <span className="font-bold">{boostAmount}</span>
-                <span className="text-gray-400">per competition.</span>
-              </div>
-            </div>
-          </div>
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <Button
-              variant="outline"
-              disabled={isLocked}
-              onClick={() => onUnstake(tokenId)}
-            >
-              UNSTAKE
-            </Button>
-            <Button
-              variant="default"
-              disabled={isLocked}
-              onClick={() => onRelock(tokenId)}
-            >
-              LOCK
-            </Button>
-          </div>
-        </div>
-      </div>
 
-      {isLocked && (
-        <div className="mt-4 flex items-center justify-between gap-8 text-sm text-gray-400">
-          <Tooltip content={stakedDateISO}>
-            <span className="cursor-help">Staked {stakedDate}</span>
-          </Tooltip>
-          <div className="xs:flex hidden max-w-md flex-1 items-center gap-2">
-            <div className="h-2 flex-1 overflow-hidden rounded-full bg-gray-700">
-              <div
-                className="h-full bg-[#6D85A4] transition-all duration-300"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-            <span className="text-primary-foreground">{progressText}</span>
-          </div>
-          <Tooltip content={unlockDateISO} className="text-right">
-            <span className="cursor-help">Unlocks {unlockDate}</span>
-          </Tooltip>
-        </div>
-      )}
-    </div>
+  const actions: StakeEntryAction[] = [
+    {
+      label: "UNSTAKE",
+      onClick: handleUnstake,
+      disabled: isLocked || isUnstakeProcessing,
+      isLoading: isUnstakeProcessing,
+      loadingLabel: "Unstaking...",
+      variant: "outline",
+    },
+    {
+      label: "RE-STAKE",
+      onClick: handleOpenRelockModal,
+      disabled: isLocked,
+      isLoading: false,
+      loadingLabel: "Re-Staking...",
+      variant: "default",
+    },
+  ];
+
+  return (
+    <>
+      <StakeEntryBase
+        status={status}
+        formattedAmount={formattedAmount}
+        boostAmount={boostAmount}
+        actions={actions}
+        progress={
+          isLocked
+            ? {
+                leftLabel: `Staked ${timeProgress.startDateFormatted}`,
+                leftLabelTooltip: timeProgress.startDateISO,
+                rightLabel: `Unlocks ${timeProgress.endDateFormatted}`,
+                rightLabelTooltip: timeProgress.endDateISO,
+                progressPercent: timeProgress.progress,
+                progressText: timeProgress.progressText,
+              }
+            : undefined
+        }
+      />
+      <RelockRecallModal
+        isOpen={isRelockModalOpen}
+        onClose={setIsRelockModalOpen}
+        tokenId={tokenId}
+        currentAmount={amount}
+      />
+    </>
   );
 };
 
 export const ActiveStakes: React.FunctionComponent = () => {
-  const { data: stakes, isLoading, error } = useUserStakes();
-  const { execute: unstake } = useUnstake();
-  const { execute: relock } = useRelock();
+  const { data: allStakes, isLoading, error } = useUserStakes();
 
-  const handleUnstake = async (tokenId: bigint) => {
-    try {
-      await unstake(tokenId);
-    } catch (error) {
-      console.error("Failed to unstake:", error);
-    }
-  };
+  // Filter to show only active stakes (withdrawAllowedTime === 0n)
+  const stakes = useMemo(() => {
+    const stakesList = allStakes as StakeInfoWithId[] | undefined;
+    return (stakesList ?? []).filter(
+      (stake) => stake.withdrawAllowedTime === 0n,
+    );
+  }, [allStakes]);
 
-  const handleRelock = async (tokenId: bigint) => {
-    try {
-      // For now, relock with the same amount and a default duration
-      const defaultDuration = BigInt(7 * 24 * 60 * 60); // 7 days in seconds
-      await relock(tokenId, defaultDuration);
-    } catch (error) {
-      console.error("Failed to relock:", error);
-    }
-  };
+  const { data: block } = useBlock({
+    query: {
+      refetchInterval: 10000,
+    },
+  });
+
+  const blockTimestamp = block?.timestamp ? BigInt(block.timestamp) : undefined;
 
   if (isLoading) {
     return (
@@ -209,8 +200,7 @@ export const ActiveStakes: React.FunctionComponent = () => {
             amount={stake.amount}
             startTime={stake.startTime}
             lockupEndTime={stake.lockupEndTime}
-            onUnstake={handleUnstake}
-            onRelock={handleRelock}
+            blockTimestamp={blockTimestamp}
           />
         ))}
       </div>

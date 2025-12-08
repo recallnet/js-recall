@@ -67,6 +67,7 @@ export const COMPUTED_SORT_FIELDS = [
   "totalTrades",
   "totalPositions",
   "rank",
+  "bestPlacement",
   "agentName",
   "agentHandle",
 ] as const;
@@ -139,7 +140,7 @@ export class AgentRepository {
 
       return result;
     } catch (error) {
-      this.#logger.error("Error in create:", error);
+      this.#logger.error({ error }, "Error in create");
       throw error;
     }
   }
@@ -163,7 +164,7 @@ export class AgentRepository {
 
       return query;
     } catch (error) {
-      this.#logger.error("Error in findAll:", error);
+      this.#logger.error({ error }, "Error in findAll");
       throw error;
     }
   }
@@ -240,7 +241,7 @@ export class AgentRepository {
         isComputedSort, // Flag to indicate service layer needs to handle sorting
       };
     } catch (error) {
-      this.#logger.error("Error in findAgentCompetitions:", error);
+      this.#logger.error({ error }, "Error in findAgentCompetitions");
       throw error;
     }
   }
@@ -329,7 +330,7 @@ export class AgentRepository {
         total,
       };
     } catch (error) {
-      this.#logger.error("Error in findByCompetition:", error);
+      this.#logger.error({ error }, "Error in findByCompetition");
       throw error;
     }
   }
@@ -346,7 +347,7 @@ export class AgentRepository {
         .where(eq(agents.id, id));
       return result;
     } catch (error) {
-      this.#logger.error("[AgentRepository] Error in findById:", error);
+      this.#logger.error({ error }, "[AgentRepository] Error in findById");
       throw error;
     }
   }
@@ -369,7 +370,39 @@ export class AgentRepository {
 
       return results;
     } catch (error) {
-      this.#logger.error("[AgentRepository] Error in findByIds:", error);
+      this.#logger.error({ error }, "[AgentRepository] Error in findByIds");
+      throw error;
+    }
+  }
+
+  /**
+   * Find multiple agents by their IDs with shared lock
+   * Prevents concurrent updates to agent eligibility during reward distribution
+   * @param ids Array of agent IDs to search for
+   * @param tx Transaction context (required for locking)
+   * @returns Array of agents matching the provided IDs
+   */
+  async findByIdsWithLock(
+    ids: string[],
+    tx: Transaction,
+  ): Promise<SelectAgent[]> {
+    try {
+      if (ids.length === 0) {
+        return [];
+      }
+
+      const results = await tx
+        .select()
+        .from(agents)
+        .where(inArray(agents.id, ids))
+        .for("share");
+
+      return results;
+    } catch (error) {
+      this.#logger.error(
+        { error },
+        "[AgentRepository] Error in findByIdsWithLock",
+      );
       throw error;
     }
   }
@@ -397,7 +430,7 @@ export class AgentRepository {
 
       return query;
     } catch (error) {
-      this.#logger.error("[AgentRepository] Error in findByOwnerId:", error);
+      this.#logger.error({ error }, "[AgentRepository] Error in findByOwnerId");
       throw error;
     }
   }
@@ -415,7 +448,10 @@ export class AgentRepository {
 
       return result;
     } catch (error) {
-      this.#logger.error("[AgentRepository] Error in findByApiKeyHash:", error);
+      this.#logger.error(
+        { error },
+        "[AgentRepository] Error in findByApiKeyHash",
+      );
       throw error;
     }
   }
@@ -448,7 +484,7 @@ export class AgentRepository {
 
       return await query;
     } catch (error) {
-      this.#logger.error("[AgentRepository] Error in findByWallet:", error);
+      this.#logger.error({ error }, "[AgentRepository] Error in findByWallet");
       throw error;
     }
   }
@@ -481,7 +517,7 @@ export class AgentRepository {
 
       return await query;
     } catch (error) {
-      this.#logger.error("[AgentRepository] Error in findByName:", error);
+      this.#logger.error({ error }, "[AgentRepository] Error in findByName");
       throw error;
     }
   }
@@ -511,7 +547,7 @@ export class AgentRepository {
 
       return result;
     } catch (error) {
-      this.#logger.error("Error in update:", error);
+      this.#logger.error({ error }, "Error in update");
       throw error;
     }
   }
@@ -530,7 +566,7 @@ export class AgentRepository {
 
       return !!result;
     } catch (error) {
-      this.#logger.error("Error in delete:", error);
+      this.#logger.error({ error }, "Error in delete");
       throw error;
     }
   }
@@ -558,7 +594,7 @@ export class AgentRepository {
 
       return !!result?.count;
     } catch (error) {
-      this.#logger.error("Error in isAgentInCompetition:", error);
+      this.#logger.error({ error }, "Error in isAgentInCompetition");
       throw error;
     }
   }
@@ -588,7 +624,7 @@ export class AgentRepository {
 
       return result;
     } catch (error) {
-      this.#logger.error("Error in deactivateAgent:", error);
+      this.#logger.error({ error }, "Error in deactivateAgent");
       throw error;
     }
   }
@@ -615,7 +651,7 @@ export class AgentRepository {
 
       return result;
     } catch (error) {
-      this.#logger.error("Error in reactivateAgent:", error);
+      this.#logger.error({ error }, "Error in reactivateAgent");
       throw error;
     }
   }
@@ -665,7 +701,7 @@ export class AgentRepository {
         .from(agents)
         .where(and(...conditions));
     } catch (error) {
-      this.#logger.error("Error in searchAgents:", error);
+      this.#logger.error({ error }, "Error in searchAgents");
       throw error;
     }
   }
@@ -680,7 +716,7 @@ export class AgentRepository {
         .from(agents);
       return result?.count ?? 0;
     } catch (error) {
-      this.#logger.error("Error in count:", error);
+      this.#logger.error({ error }, "Error in count");
       throw error;
     }
   }
@@ -696,7 +732,7 @@ export class AgentRepository {
         .where(eq(agents.walletAddress, walletAddress));
       return result?.count ?? 0;
     } catch (error) {
-      this.#logger.error("Error in countByWallet:", error);
+      this.#logger.error({ error }, "Error in countByWallet");
       throw error;
     }
   }
@@ -712,7 +748,7 @@ export class AgentRepository {
         .where(ilike(agents.name, name));
       return result?.count ?? 0;
     } catch (error) {
-      this.#logger.error("Error in countByName:", error);
+      this.#logger.error({ error }, "Error in countByName");
       throw error;
     }
   }
@@ -885,7 +921,10 @@ export class AgentRepository {
         isComputedSort, // Flag to indicate service layer needs to handle sorting
       };
     } catch (error) {
-      this.#logger.error("Error in findUserAgentCompetitionsOptimized:", error);
+      this.#logger.error(
+        { error },
+        "Error in findUserAgentCompetitionsOptimized",
+      );
       throw error;
     }
   }
@@ -987,7 +1026,7 @@ export class AgentRepository {
 
       return bulkTrophies;
     } catch (error) {
-      this.#logger.error("Error in getBulkAgentTrophies:", error);
+      this.#logger.error({ error }, "Error in getBulkAgentTrophies");
       throw error;
     }
   }
@@ -1009,8 +1048,8 @@ export class AgentRepository {
       return res.rowCount || 0;
     } catch (error) {
       this.#logger.error(
-        "[AgentRepository] Error in updateAgentsOwner:",
-        error,
+        { error },
+        "[AgentRepository] Error in updateAgentsOwner",
       );
       throw error;
     }

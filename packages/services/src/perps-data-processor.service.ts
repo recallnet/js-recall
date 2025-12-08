@@ -9,9 +9,9 @@ import type {
   InsertPerpsAccountSummary,
 } from "@recallnet/db/schema/trading/types";
 
-import { CalmarRatioService } from "./calmar-ratio.service.js";
 import { PerpsMonitoringService } from "./perps-monitoring.service.js";
 import { PerpsProviderFactory } from "./providers/perps-provider.factory.js";
+import { RiskMetricsService } from "./risk-metrics.service.js";
 import type {
   AgentPerpsSyncResult,
   BatchPerpsSyncResult,
@@ -42,20 +42,20 @@ Decimal.set({
  * Orchestrates fetching data from providers and storing in database
  */
 export class PerpsDataProcessor {
-  private calmarRatioService: CalmarRatioService;
+  private riskMetricsService: RiskMetricsService;
   private agentRepo: AgentRepository;
   private competitionRepo: CompetitionRepository;
   private perpsRepo: PerpsRepository;
   private logger: Logger;
 
   constructor(
-    calmarRatioService: CalmarRatioService,
+    riskMetricsService: RiskMetricsService,
     agentRepo: AgentRepository,
     competitionRepo: CompetitionRepository,
     perpsRepo: PerpsRepository,
     logger: Logger,
   ) {
-    this.calmarRatioService = calmarRatioService;
+    this.riskMetricsService = riskMetricsService;
     this.agentRepo = agentRepo;
     this.competitionRepo = competitionRepo;
     this.perpsRepo = perpsRepo;
@@ -150,8 +150,8 @@ export class PerpsDataProcessor {
     } catch (error) {
       // If Decimal.js can't handle it, log and return null
       this.logger.warn(
+        { error },
         `[PerpsDataProcessor] Failed to convert number to string: ${value}`,
-        error,
       );
       return null;
     }
@@ -814,7 +814,7 @@ export class PerpsDataProcessor {
       if (competition.status === "active" && syncResult.successful.length > 0) {
         try {
           this.logger.info(
-            `[PerpsDataProcessor] Calculating Calmar Ratios for ${syncResult.successful.length} agents`,
+            `[PerpsDataProcessor] Calculating risk metrics (Calmar & Sortino) for ${syncResult.successful.length} agents`,
           );
 
           calmarRatioResult = await this.calculateCalmarRatiosForCompetition(
@@ -823,14 +823,14 @@ export class PerpsDataProcessor {
           );
 
           this.logger.info(
-            `[PerpsDataProcessor] Calmar Ratio calculations complete: ${calmarRatioResult.successful} successful, ${calmarRatioResult.failed} failed`,
+            `[PerpsDataProcessor] Risk metrics calculations complete: ${calmarRatioResult.successful} successful, ${calmarRatioResult.failed} failed`,
           );
         } catch (error) {
           this.logger.error(
-            `[PerpsDataProcessor] Error calculating Calmar Ratios:`,
-            error,
+            { error },
+            `[PerpsDataProcessor] Error calculating risk metrics:`,
           );
-          // Don't fail the entire process if Calmar calculation fails
+          // Don't fail the entire process if risk metrics calculation fails
           calmarRatioResult = {
             successful: 0,
             failed: syncResult.successful.length,
@@ -846,8 +846,8 @@ export class PerpsDataProcessor {
       };
     } catch (error) {
       this.logger.error(
+        { error },
         `[PerpsDataProcessor] Error processing perps competition ${competitionId}:`,
-        error,
       );
 
       return {
@@ -1038,13 +1038,15 @@ export class PerpsDataProcessor {
                 10000, // Max 10 seconds
               );
               this.logger.debug(
-                `[PerpsDataProcessor] Retrying Calmar calculation for agent ${agent.agentId} ` +
+                `[PerpsDataProcessor] Retrying risk metrics calculation for agent ${agent.agentId} ` +
                   `(attempt ${attempt}/${maxRetries + 1}) after ${backoffDelay}ms`,
               );
               await new Promise((resolve) => setTimeout(resolve, backoffDelay));
             }
 
-            await this.calmarRatioService.calculateAndSaveCalmarRatio(
+            // Calculate all risk metrics atomically using orchestrator service
+            // RiskMetricsService wraps Calmar + Sortino + snapshot in a single transaction
+            await this.riskMetricsService.calculateAndSaveAllRiskMetrics(
               agent.agentId,
               competitionId,
             );
@@ -1052,7 +1054,7 @@ export class PerpsDataProcessor {
             // Success! Log if it was a retry
             if (attempt > 1) {
               this.logger.info(
-                `[PerpsDataProcessor] Calmar calculation succeeded for agent ${agent.agentId} on attempt ${attempt}`,
+                `[PerpsDataProcessor] Risk metrics calculation succeeded for agent ${agent.agentId} on attempt ${attempt}`,
               );
             }
 
@@ -1095,8 +1097,8 @@ export class PerpsDataProcessor {
       return await this.perpsRepo.getPerpsCompetitionStats(competitionId);
     } catch (error) {
       this.logger.error(
+        { error },
         `[PerpsDataProcessor] Error getting competition stats for ${competitionId}:`,
-        error,
       );
       throw error;
     }
@@ -1122,8 +1124,8 @@ export class PerpsDataProcessor {
       );
     } catch (error) {
       this.logger.error(
+        { error },
         `[PerpsDataProcessor] Error getting positions for agent ${agentId}:`,
-        error,
       );
       throw error;
     }
@@ -1143,8 +1145,8 @@ export class PerpsDataProcessor {
       );
     } catch (error) {
       this.logger.error(
+        { error },
         `[PerpsDataProcessor] Error getting account summary for agent ${agentId}:`,
-        error,
       );
       throw error;
     }

@@ -1,12 +1,38 @@
-import { and, desc, count as drizzleCount, eq, sql } from "drizzle-orm";
+import {
+  and,
+  desc,
+  count as drizzleCount,
+  eq,
+  isNotNull,
+  sql,
+} from "drizzle-orm";
 import { Logger } from "pino";
 
 import { agents } from "../schema/core/defs.js";
 import { trades } from "../schema/trading/defs.js";
-import { InsertTrade } from "../schema/trading/types.js";
+import type { InsertTrade, SelectTrade } from "../schema/trading/types.js";
 import { Database } from "../types.js";
 import { BalanceRepository } from "./balance.js";
 import { SpecificChainSchema } from "./types/index.js";
+
+/**
+ * Result of a single trade creation with balance updates
+ */
+export interface TradeCreationResult {
+  trade: SelectTrade;
+  updatedBalances: {
+    fromTokenBalance: number;
+    toTokenBalance?: number;
+  };
+}
+
+/**
+ * Result of batch trade creation
+ */
+export interface BatchTradeCreationResult {
+  successful: Array<TradeCreationResult & { agentId: string }>;
+  failed: Array<{ trade: InsertTrade; error: Error }>;
+}
 
 /**
  * Trade Repository
@@ -32,14 +58,35 @@ export class TradeRepository {
    * @param trade Trade to create
    * @returns Object containing the created trade and updated balance amounts
    */
-  async createTradeWithBalances(trade: InsertTrade): Promise<{
-    trade: typeof trades.$inferSelect;
-    updatedBalances: {
-      fromTokenBalance: number;
-      toTokenBalance?: number;
-    };
-  }> {
+  async createTradeWithBalances(
+    trade: InsertTrade,
+  ): Promise<TradeCreationResult> {
     return await this.#db.transaction(async (tx) => {
+      // For spot_live trades with txHash, check if already exists BEFORE touching balances
+      // This optimization avoids wasted balance operations for duplicates during re-sync
+      if (trade.tradeType === "spot_live" && trade.txHash) {
+        const existing = await tx
+          .select({ id: trades.id })
+          .from(trades)
+          .where(
+            and(
+              eq(trades.txHash, trade.txHash),
+              eq(trades.competitionId, trade.competitionId),
+              eq(trades.agentId, trade.agentId),
+            ),
+          )
+          .limit(1);
+
+        if (existing.length > 0) {
+          this.#logger.debug(
+            `[TradeRepository] Trade already exists (txHash=${trade.txHash}), skipping duplicate`,
+          );
+          throw new Error(
+            `Duplicate trade: txHash=${trade.txHash} already exists for agent ${trade.agentId}`,
+          );
+        }
+      }
+
       // Validate and parse the fromSpecificChain
       const fromSpecificChain = SpecificChainSchema.parse(
         trade.fromSpecificChain,
@@ -51,6 +98,7 @@ export class TradeRepository {
           tx,
           trade.agentId,
           trade.fromToken,
+          trade.competitionId,
           trade.fromAmount,
           fromSpecificChain,
           trade.fromTokenSymbol,
@@ -74,6 +122,7 @@ export class TradeRepository {
             tx,
             trade.agentId,
             trade.toToken,
+            trade.competitionId,
             trade.toAmount,
             toSpecificChain,
             trade.toTokenSymbol,
@@ -89,7 +138,9 @@ export class TradeRepository {
       }
 
       // Create the trade record
-      const [result] = await tx
+      // Note: We already checked for duplicates above for spot_live trades
+      // The unique constraint serves as a safety net if the check is bypassed
+      const [insertedTrade] = await tx
         .insert(trades)
         .values({
           ...trade,
@@ -97,16 +148,16 @@ export class TradeRepository {
         })
         .returning();
 
-      if (!result) {
+      if (!insertedTrade) {
         throw new Error("Failed to create trade - no result returned");
       }
 
       this.#logger.debug(
-        `[TradeRepository] Trade created successfully: agent=${trade.agentId}, tradeId=${result.id}, fromBalance=${fromTokenBalance}, toBalance=${toTokenBalance ?? "N/A (burn)"}`,
+        `[TradeRepository] Trade created successfully: agent=${trade.agentId}, tradeId=${insertedTrade.id}, fromBalance=${fromTokenBalance}, toBalance=${toTokenBalance ?? "N/A (burn)"}`,
       );
 
       return {
-        trade: result,
+        trade: insertedTrade,
         updatedBalances: {
           fromTokenBalance,
           toTokenBalance,
@@ -139,7 +190,7 @@ export class TradeRepository {
 
       return await query;
     } catch (error) {
-      this.#logger.error("Error in getAgentTrades:", error);
+      this.#logger.error({ error }, "Error in getAgentTrades");
       throw error;
     }
   }
@@ -181,7 +232,7 @@ export class TradeRepository {
         uniqueTokens: Number(result.unique_tokens),
       };
     } catch (error) {
-      this.#logger.error("Error in getCompetitionTradeMetrics:", error);
+      this.#logger.error({ error }, "Error in getCompetitionTradeMetrics");
       throw error;
     }
   }
@@ -214,6 +265,8 @@ export class TradeRepository {
           tradeAmountUsd: trades.tradeAmountUsd,
           timestamp: trades.timestamp,
           reason: trades.reason,
+          txHash: trades.txHash,
+          tradeType: trades.tradeType,
           agent: {
             id: agents.id,
             name: agents.name,
@@ -246,7 +299,7 @@ export class TradeRepository {
         total: total[0]?.count ?? 0,
       };
     } catch (error) {
-      this.#logger.error("Error in getCompetitionTrades:", error);
+      this.#logger.error({ error }, "Error in getCompetitionTrades");
       throw error;
     }
   }
@@ -307,7 +360,10 @@ export class TradeRepository {
 
       return countMap;
     } catch (error) {
-      this.#logger.error("Error in countBulkAgentTradesInCompetitions:", error);
+      this.#logger.error(
+        { error },
+        "Error in countBulkAgentTradesInCompetitions",
+      );
       throw error;
     }
   }
@@ -357,7 +413,7 @@ export class TradeRepository {
         total: total[0]?.count ?? 0,
       };
     } catch (error) {
-      this.#logger.error("Error in getAgentTradesInCompetition:", error);
+      this.#logger.error({ error }, "Error in getAgentTradesInCompetition");
       throw error;
     }
   }
@@ -373,7 +429,146 @@ export class TradeRepository {
 
       return result?.count ?? 0;
     } catch (error) {
-      this.#logger.error("Error in count:", error);
+      this.#logger.error({ error }, "Error in count");
+      throw error;
+    }
+  }
+
+  /**
+   * Get the latest on-chain trade block number for an agent in a competition on a specific chain
+   * Used to determine incremental sync starting point for spot live competitions
+   *
+   * IMPORTANT: The returned block number should be used WITH OVERLAP (not +1) to prevent gaps.
+   * Example: If latestBlock=1000, next sync should start from block 1000 (not 1001).
+   *
+   * Why overlap is necessary:
+   * - Block 1000 might have 3 trades: A (success), B (failed), C (success)
+   * - MAX(block_number) returns 1000 (from A or C)
+   * - If next sync starts from 1001, trade B is permanently lost
+   * - Starting from 1000 allows B to be retried
+   * - Unique constraint (txHash, competitionId, agentId) prevents duplicates from A and C
+   *
+   * @param agentId Agent ID
+   * @param competitionId Competition ID
+   * @param specificChain Specific chain to query
+   * @returns Latest block number or null if no trades exist
+   */
+  async getLatestSpotLiveTradeBlock(
+    agentId: string,
+    competitionId: string,
+    specificChain: string,
+  ): Promise<number | null> {
+    try {
+      const [result] = await this.#db
+        .select({ blockNumber: trades.blockNumber })
+        .from(trades)
+        .where(
+          and(
+            eq(trades.agentId, agentId),
+            eq(trades.competitionId, competitionId),
+            eq(trades.tradeType, "spot_live"),
+            eq(trades.fromSpecificChain, specificChain),
+            isNotNull(trades.blockNumber),
+          ),
+        )
+        .orderBy(desc(trades.blockNumber))
+        .limit(1);
+
+      return result?.blockNumber ?? null;
+    } catch (error) {
+      this.#logger.error({ error }, "Error in getLatestSpotLiveTradeBlock");
+      throw error;
+    }
+  }
+
+  /**
+   * Batch create trades with balance updates
+   * Processes trades in controlled batches to avoid database contention
+   * @param tradesToCreate Array of trades to create
+   * @returns Results with successes and failures
+   */
+  async batchCreateTradesWithBalances(
+    tradesToCreate: InsertTrade[],
+  ): Promise<BatchTradeCreationResult> {
+    const successful: Array<TradeCreationResult & { agentId: string }> = [];
+    const failed: Array<{ trade: InsertTrade; error: Error }> = [];
+
+    if (tradesToCreate.length === 0) {
+      return { successful, failed };
+    }
+
+    const concurrencyLimit = 5;
+
+    for (let i = 0; i < tradesToCreate.length; i += concurrencyLimit) {
+      const batch = tradesToCreate.slice(i, i + concurrencyLimit);
+
+      const batchResults = await Promise.allSettled(
+        batch.map((trade) =>
+          this.createTradeWithBalances(trade).then((result) => ({
+            agentId: trade.agentId,
+            ...result,
+          })),
+        ),
+      );
+
+      batchResults.forEach((result, index) => {
+        const trade = batch[index];
+        if (!trade) {
+          this.#logger.error(
+            `[TradeRepository] Unexpected missing trade at index ${index}`,
+          );
+          return;
+        }
+
+        if (result.status === "fulfilled") {
+          successful.push(result.value);
+        } else {
+          failed.push({
+            trade,
+            error:
+              result.reason instanceof Error
+                ? result.reason
+                : new Error(String(result.reason)),
+          });
+        }
+      });
+    }
+
+    this.#logger.info(
+      `[TradeRepository] Batch trade creation completed: ${successful.length} successful, ${failed.length} failed`,
+    );
+
+    return { successful, failed };
+  }
+
+  /**
+   * Count spot live trades for an agent in a competition
+   * @param agentId Agent ID
+   * @param competitionId Competition ID
+   * @returns Number of spot_live trades
+   */
+  async countSpotLiveTradesForAgent(
+    agentId: string,
+    competitionId: string,
+  ): Promise<number> {
+    try {
+      const result = await this.#db
+        .select({ count: drizzleCount() })
+        .from(trades)
+        .where(
+          and(
+            eq(trades.agentId, agentId),
+            eq(trades.competitionId, competitionId),
+            eq(trades.tradeType, "spot_live"),
+          ),
+        );
+
+      return result[0]?.count ?? 0;
+    } catch (error) {
+      this.#logger.error(
+        { error, agentId, competitionId },
+        "[TradeRepository] Error counting spot live trades",
+      );
       throw error;
     }
   }

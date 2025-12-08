@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { skipToken, useQuery } from "@tanstack/react-query";
 import AutoScroll from "embla-carousel-auto-scroll";
 import useEmblaCarousel from "embla-carousel-react";
 import Link from "next/link";
@@ -44,7 +44,7 @@ export default function CompetitionsPageClient() {
 
   const { data: activeCompetitions, isLoading: isLoadingActiveCompetitions } =
     useQuery(
-      tanstackClient.competitions.listEnriched.queryOptions({
+      tanstackClient.competitions.list.queryOptions({
         input: { status: "active", paging: { sort: "startDate" } },
       }),
     );
@@ -53,14 +53,14 @@ export default function CompetitionsPageClient() {
     data: upcomingCompetitions,
     isLoading: isLoadingUpcomingCompetitions,
   } = useQuery(
-    tanstackClient.competitions.listEnriched.queryOptions({
+    tanstackClient.competitions.list.queryOptions({
       input: { status: "pending", paging: { sort: "startDate" } },
     }),
   );
 
   const { data: endedCompetitions, isLoading: isLoadingEndedCompetitions } =
     useQuery(
-      tanstackClient.competitions.listEnriched.queryOptions({
+      tanstackClient.competitions.list.queryOptions({
         input: { status: "ended", paging: { sort: "-startDate" } },
       }),
     );
@@ -68,8 +68,7 @@ export default function CompetitionsPageClient() {
   const { data: userCompetitions, isLoading: isLoadingUserCompetitions } =
     useQuery(
       tanstackClient.user.getCompetitions.queryOptions({
-        input: {},
-        enabled: isAuthenticated,
+        input: isAuthenticated ? {} : skipToken,
         placeholderData: (prev) => prev,
       }),
     );
@@ -124,21 +123,21 @@ export default function CompetitionsPageClient() {
         {carouselContent.length > 0 &&
           !config.publicFlags.disableLeaderboard && (
             <HeroCarousel
-              className="absolute left-[-350px] right-[-350px] top-0"
+              className="absolute left-[-350px] right-[-350px] top-6"
               texts={carouselContent}
             />
           )}
 
         <div
           className={cn(
-            `absolute bottom-[-20] left-[-350px] right-[-350px] top-0 z-10`,
+            `absolute bottom-[-20] left-[-350px] right-[-350px] top-7 z-10`,
             "bg-gradient-to-r",
             "md:from-8% from-black from-20% via-transparent via-35% to-transparent sm:from-15%",
           )}
         ></div>
         <div
           className={cn(
-            `absolute bottom-[-20] left-[-350px] right-[-350px] top-0 z-10`,
+            `absolute bottom-[-20] left-[-350px] right-[-350px] top-7 z-10`,
             "bg-gradient-to-l",
             "md:from-8% from-black from-20% via-transparent via-35% to-transparent sm:from-15%",
           )}
@@ -158,7 +157,7 @@ export default function CompetitionsPageClient() {
             <div className="flex gap-1">
               <Link href="/leaderboards">
                 <Button className="border border-blue-500 bg-blue-500 p-6 uppercase text-white transition-colors duration-200 hover:border-white hover:bg-white hover:text-blue-500">
-                  Browse Leaderboard
+                  Browse Leaderboards
                 </Button>
               </Link>
               {!session.isAuthenticated && (

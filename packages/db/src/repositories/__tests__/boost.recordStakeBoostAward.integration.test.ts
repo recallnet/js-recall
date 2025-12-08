@@ -10,9 +10,9 @@ import {
 } from "vitest";
 
 import { BlockchainAddressAsU8A } from "../../coders/index.js";
+import * as schema from "../../schema/boost/defs.js";
 import * as coreSchema from "../../schema/core/defs.js";
 import { stakes } from "../../schema/indexing/defs.js";
-import * as schema from "../../schema/voting/defs.js";
 import { dropAllSchemas } from "../../utils/drop-all-schemas.js";
 import { pushSchema } from "../../utils/push-schema.js";
 import { BoostRepository } from "../boost.js";
@@ -62,6 +62,7 @@ describe("BoostRepository.recordStakeBoostAward() Integration Tests", () => {
     await db.insert(stakes).values({
       id: testStakeId,
       wallet: BlockchainAddressAsU8A.encode(testWallet),
+      walletAddress: testWallet.toLowerCase(),
       amount: 1000n,
       stakedAt: now,
       canUnstakeAfter: new Date(now.getTime() + 3600000),
@@ -183,6 +184,7 @@ describe("BoostRepository.recordStakeBoostAward() Integration Tests", () => {
       await db.insert(stakes).values({
         id: testStakeId2,
         wallet: BlockchainAddressAsU8A.encode(testWallet),
+        walletAddress: testWallet.toLowerCase(),
         amount: 2000n,
         stakedAt: now,
         canUnstakeAfter: new Date(now.getTime() + 3600000),

@@ -9,8 +9,8 @@ import {
   test,
 } from "vitest";
 
+import * as schema from "../../schema/boost/defs.js";
 import * as coreSchema from "../../schema/core/defs.js";
-import * as schema from "../../schema/voting/defs.js";
 import { dropAllSchemas } from "../../utils/drop-all-schemas.js";
 import { pushSchema } from "../../utils/push-schema.js";
 import { BoostRepository } from "../boost.js";
@@ -1148,6 +1148,269 @@ describe("BoostRepository.boostAgent() Integration Tests", () => {
       );
 
       // This test proves perfect mathematical consistency across all repository functions!
+    });
+  });
+
+  describe("race condition tests", () => {
+    test("should handle multiple users simultaneously boosting the same agent", async () => {
+      // Create additional users for concurrent testing
+      const numUsers = 10;
+      const users: Array<{ id: string; wallet: string }> = [];
+
+      // Setup users with boost balance
+      for (let i = 0; i < numUsers; i++) {
+        const userId = randomUUID();
+        const wallet = `0x${randomUUID().replace(/-/g, "").substring(0, 40).padEnd(40, String(i))}`;
+
+        await db.insert(coreSchema.users).values({
+          id: userId,
+          walletAddress: wallet,
+          name: `Concurrent User ${i}`,
+          status: "active",
+        });
+
+        users.push({ id: userId, wallet });
+
+        // Give each user some boost balance
+        await repository.increase({
+          userId,
+          wallet,
+          competitionId: testCompetitionId1,
+          amount: 1000n,
+        });
+      }
+
+      const boostAmount = 100n;
+      const targetAgentId = testAgentId1;
+
+      // Execute concurrent boosts - all users try to boost the same agent at once
+      const boostPromises = users.map((user) =>
+        repository
+          .boostAgent({
+            userId: user.id,
+            wallet: user.wallet,
+            agentId: targetAgentId,
+            competitionId: testCompetitionId1,
+            amount: boostAmount,
+            idemKey: Buffer.from(`concurrent-boost-${user.id}-${Date.now()}`),
+          })
+          .then((result) => ({ user, result })),
+      );
+
+      // Wait for all boosts to complete
+      const results = await Promise.all(boostPromises);
+      // All boosts should succeed and
+      results.forEach(({ result }) => {
+        expect(result.type).toBe("applied");
+        expect(result.agentBoostTotal).toBeDefined();
+      });
+
+      // Verify the final agent boost total is correct
+      const agentTotals = await repository.agentBoostTotals({
+        competitionId: testCompetitionId1,
+      });
+      expect(agentTotals[targetAgentId]).toBe(BigInt(numUsers) * boostAmount);
+
+      // Verify each user's balance was correctly deducted
+      for (const user of users) {
+        const balance = await repository.userBoostBalance({
+          userId: user.id,
+          competitionId: testCompetitionId1,
+        });
+        expect(balance).toBe(1000n - boostAmount);
+      }
+
+      // Verify database consistency - check the raw tables
+      const [agentBoostTotal] = await db
+        .select()
+        .from(schema.agentBoostTotals)
+        .where(
+          and(
+            eq(schema.agentBoostTotals.agentId, targetAgentId),
+            eq(schema.agentBoostTotals.competitionId, testCompetitionId1),
+          ),
+        );
+
+      expect(agentBoostTotal).toBeDefined();
+      expect(agentBoostTotal!.total).toBe(BigInt(numUsers) * boostAmount);
+
+      // Verify we have the correct number of agent boost records
+      const agentBoostRecords = await db
+        .select()
+        .from(schema.agentBoosts)
+        .where(eq(schema.agentBoosts.agentBoostTotalId, agentBoostTotal!.id));
+
+      expect(agentBoostRecords).toHaveLength(numUsers);
+    });
+
+    test("should maintain consistency when same user tries concurrent boosts with same idempotency key", async () => {
+      // Give user balance
+      await repository.increase({
+        userId: testUserId1,
+        wallet: testWallet1,
+        competitionId: testCompetitionId1,
+        amount: 1000n,
+      });
+
+      const idemKey = randomBytes(32);
+      const boostAmount = 200n;
+
+      // Try to boost the same agent 10 times concurrently with the same idempotency key
+      const concurrentAttempts = 10;
+      const boostPromises = Array(concurrentAttempts)
+        .fill(null)
+        .map(() =>
+          repository.boostAgent({
+            userId: testUserId1,
+            wallet: testWallet1,
+            agentId: testAgentId1,
+            competitionId: testCompetitionId1,
+            amount: boostAmount,
+            idemKey, // Same key for all attempts
+          }),
+        );
+
+      const results = await Promise.all(boostPromises);
+
+      // Exactly one should be "applied", the rest should be "noop"
+      const appliedResults = results.filter((r) => r.type === "applied");
+      const noopResults = results.filter((r) => r.type === "noop");
+
+      expect(appliedResults).toHaveLength(1);
+      expect(noopResults).toHaveLength(concurrentAttempts - 1);
+
+      // All noop results should have the same agentBoostTotal value
+      const totalFromNoops = noopResults[0]?.agentBoostTotal.total;
+      noopResults.forEach((result) => {
+        expect(result.agentBoostTotal.total).toBe(totalFromNoops);
+      });
+
+      // Verify balance was only deducted once
+      const remainingBalance = await repository.userBoostBalance({
+        userId: testUserId1,
+        competitionId: testCompetitionId1,
+      });
+      expect(remainingBalance).toBe(1000n - boostAmount);
+
+      // Verify agent total only increased once
+      const agentTotals = await repository.agentBoostTotals({
+        competitionId: testCompetitionId1,
+      });
+      expect(agentTotals[testAgentId1]).toBe(boostAmount);
+    });
+
+    test("should handle mixed concurrent operations (different agents, same competition)", async () => {
+      // Setup multiple users with balance
+      const user1 = { id: testUserId1, wallet: testWallet1 };
+      const user2 = { id: testUserId2, wallet: testWallet2 };
+
+      await repository.increase({
+        userId: user1.id,
+        wallet: user1.wallet,
+        competitionId: testCompetitionId1,
+        amount: 2000n,
+      });
+
+      await repository.increase({
+        userId: user2.id,
+        wallet: user2.wallet,
+        competitionId: testCompetitionId1,
+        amount: 2000n,
+      });
+
+      // Create a mix of concurrent operations
+      const operations = [
+        // User 1 boosts agent 1
+        repository.boostAgent({
+          userId: user1.id,
+          wallet: user1.wallet,
+          agentId: testAgentId1,
+          competitionId: testCompetitionId1,
+          amount: 300n,
+          idemKey: randomBytes(32),
+        }),
+        // User 2 boosts agent 1
+        repository.boostAgent({
+          userId: user2.id,
+          wallet: user2.wallet,
+          agentId: testAgentId1,
+          competitionId: testCompetitionId1,
+          amount: 400n,
+          idemKey: randomBytes(32),
+        }),
+        // User 1 boosts agent 2
+        repository.boostAgent({
+          userId: user1.id,
+          wallet: user1.wallet,
+          agentId: testAgentId2,
+          competitionId: testCompetitionId1,
+          amount: 500n,
+          idemKey: randomBytes(32),
+        }),
+        // User 2 boosts agent 2
+        repository.boostAgent({
+          userId: user2.id,
+          wallet: user2.wallet,
+          agentId: testAgentId2,
+          competitionId: testCompetitionId1,
+          amount: 600n,
+          idemKey: randomBytes(32),
+        }),
+        // User 1 boosts agent 1 again
+        repository.boostAgent({
+          userId: user1.id,
+          wallet: user1.wallet,
+          agentId: testAgentId1,
+          competitionId: testCompetitionId1,
+          amount: 200n,
+          idemKey: randomBytes(32),
+        }),
+      ];
+
+      const results = await Promise.all(operations);
+
+      // All operations should succeed
+      results.forEach((result) => {
+        expect(result.type).toBe("applied");
+      });
+
+      // Verify final state
+      const agentTotals = await repository.agentBoostTotals({
+        competitionId: testCompetitionId1,
+      });
+
+      // Agent 1: 300 + 400 + 200 = 900
+      expect(agentTotals[testAgentId1]).toBe(900n);
+      // Agent 2: 500 + 600 = 1100
+      expect(agentTotals[testAgentId2]).toBe(1100n);
+
+      // Verify user balances
+      const user1Balance = await repository.userBoostBalance({
+        userId: user1.id,
+        competitionId: testCompetitionId1,
+      });
+      expect(user1Balance).toBe(2000n - 300n - 500n - 200n); // 1000n
+
+      const user2Balance = await repository.userBoostBalance({
+        userId: user2.id,
+        competitionId: testCompetitionId1,
+      });
+      expect(user2Balance).toBe(2000n - 400n - 600n); // 1000n
+
+      // Verify user boosts
+      const user1Boosts = await repository.userBoosts({
+        userId: user1.id,
+        competitionId: testCompetitionId1,
+      });
+      expect(user1Boosts[testAgentId1]).toBe(500n); // 300 + 200
+      expect(user1Boosts[testAgentId2]).toBe(500n);
+
+      const user2Boosts = await repository.userBoosts({
+        userId: user2.id,
+        competitionId: testCompetitionId1,
+      });
+      expect(user2Boosts[testAgentId1]).toBe(400n);
+      expect(user2Boosts[testAgentId2]).toBe(600n);
     });
   });
 });
