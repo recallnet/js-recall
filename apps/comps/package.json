@@ -86,14 +86,8 @@
     "@types/ejs": "^3.1.5",
     "@types/node": "^20",
     "@types/pg": "^8.10.0",
-<<<<<<< HEAD
     "@types/react": "^19.1.17",
     "@types/react-dom": "^19.1.11",
-    "@types/uuid": "^9.0.1",
-=======
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
->>>>>>> f371bb47c (refactor(uuid): migrate from uuid to crypto.randomUUID across repo)
     "@vitejs/plugin-react": "^5.0.2",
     "@vitest/coverage-v8": "^3.2.4",
     "dotenv": "^16.0.3",
