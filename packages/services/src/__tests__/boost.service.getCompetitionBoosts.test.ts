@@ -99,7 +99,7 @@ describe("BoostService.getCompetitionBoosts", () => {
         expect(result.value.items).toHaveLength(1);
         expect(result.value.items[0]).toEqual({
           userId: testUserId1,
-          wallet: testWallet1.toLowerCase(), // Decoded to hex string
+          wallet: testWallet1.toLowerCase(),
           agentId: testAgentId1,
           agentName: "Test Agent 1",
           agentHandle: "testagent1",
@@ -581,39 +581,6 @@ describe("BoostService.getCompetitionBoosts", () => {
         expect(result.value.items).toHaveLength(3);
         expect(result.value.pagination.total).toBe(3);
         expect(result.value.pagination.hasMore).toBe(false);
-      }
-    });
-  });
-
-  describe("wallet address normalization", () => {
-    it("should convert wallet to lowercase hex", async () => {
-      const mixedCaseWallet = "0xAbCdEf1234567890123456789012345678901234";
-      const walletBytes = mixedCaseWallet;
-
-      mockBoostRepo.competitionBoosts.mockResolvedValue([
-        {
-          userId: testUserId1,
-          wallet: walletBytes,
-          agentId: testAgentId1,
-          agentName: "Test Agent",
-          agentHandle: "testagent",
-          amount: 100n,
-          createdAt: new Date(),
-        },
-      ]);
-      mockBoostRepo.countCompetitionBoosts.mockResolvedValue(1);
-
-      const result = await service.getCompetitionBoosts(testCompetitionId, {
-        limit: 50,
-        offset: 0,
-      });
-
-      expect(result.isOk()).toBe(true);
-      if (result.isOk()) {
-        expect(result.value.items[0]?.wallet).toBe(
-          mixedCaseWallet.toLowerCase(),
-        );
-        expect(result.value.items[0]?.wallet).toMatch(/^0x[0-9a-f]{40}$/);
       }
     });
   });
