@@ -133,23 +133,23 @@ type ListCompetitionBoost = {
  *  - boost_changes: immutable append-only journal of deltas with an idempotency key
  *
  * Core ideas:
- *  - **Idempotency** effectively via (balanceId, idem_key). Repeating the same logical operation
+ *  - **Idempotency** effectively via (balanceId, idemKey). Repeating the same logical operation
  *    with the same `idemKey` against the same balance will be applied at most once.
  *  - **Atomicity**: change log and balance mutation happen in a single DB transaction.
  *
  * Common usage:
- *  - Call `increase({ wallet, amount, idemKey? })` to credit Boost.
- *  - Call `decrease({ wallet, amount, idemKey? })` to debit Boost.
- *    (Will throw if wallet doesn’t exist or if balance would go below zero.)
+ *  - Call `increase({ userId, amount, idemKey? })` to credit Boost.
+ *  - Call `decrease({ userId, amount, idemKey? })` to debit Boost.
+ *    (Will throw if user doesn’t exist or if balance would go below zero.)
  *
  * Idempotency key (`idemKey`):
  * - **Why it exists: ** Distributed systems deliver duplicates (retries, redeliveries,
  *   crash-replays). `idemKey` ensures the *same logical operation* on a given balance
  *   is applied **at most once**. We enforce this with a unique constraint on
- *   `(balance_id, idem_key)` in `boost_changes`.
+ *   `(balanceId, idemKey)` in `boost_changes`.
  *
  * - **Scope: ** The key is **per balance** (user + competition). The same `idemKey` value can be reused
- *   for a *different* balance without a conflict. If an operation spans multiple wallets
+ *   for a *different* balance without a conflict. If an operation spans multiple users
  *   (e.g., a transfer), use **distinct** keys per balance-side.
  *
  * - **How to choose: **
@@ -272,7 +272,7 @@ class BoostRepository {
         }
         balanceRow = selected;
       }
-      // 1) Try to record the change (idempotent via (balance_id, idem_key))
+      // 1) Try to record the change (idempotent via (balanceId, idemKey))
       const [insertedChange] = await tx
         .insert(schema.boostChanges)
         .values({
@@ -433,7 +433,7 @@ class BoostRepository {
         );
       }
 
-      // 4) Record the change (unique (balance_id, idem_key) prevents dupes)
+      // 4) Record the change (unique (balanceId, idemKey) prevents dupes)
       const [change] = await tx
         .insert(schema.boostChanges)
         .values({
