@@ -1,5 +1,5 @@
 {
-  "id": "070bea7b-c400-42f5-b5fe-f2679c579971",
+  "id": "fa61ffbe-7afb-48e7-86d9-d61a22c2aedb",
   "prevId": "d67635a6-df3a-48e3-a4c7-ea9a821f73ce",
   "version": "7",
   "dialect": "postgresql",
@@ -540,7 +540,7 @@
           "tableTo": "agent_boost_totals",
           "columnsFrom": ["agent_boost_total_id"],
           "columnsTo": ["id"],
-          "onDelete": "cascade",
+          "onDelete": "restrict",
           "onUpdate": "cascade"
         },
         "agent_boosts_change_id_boost_changes_id_fk": {
@@ -1006,7 +1006,7 @@
           "tableTo": "boost_balances",
           "columnsFrom": ["balance_id"],
           "columnsTo": ["id"],
-          "onDelete": "cascade",
+          "onDelete": "restrict",
           "onUpdate": "cascade"
         }
       },
@@ -1139,6 +1139,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "wallet_address": {
+          "name": "wallet_address",
+          "type": "varchar(42)",
+          "primaryKey": false,
+          "notNull": false
+        },
         "eligible_amount": {
           "name": "eligible_amount",
           "type": "numeric(78, 0)",
@@ -1202,6 +1208,21 @@
           "columns": [
             {
               "expression": "account",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "conviction_claims_wallet_address_idx": {
+          "name": "conviction_claims_wallet_address_idx",
+          "columns": [
+            {
+              "expression": "wallet_address",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -3376,6 +3397,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "wallet_address": {
+          "name": "wallet_address",
+          "type": "varchar(42)",
+          "primaryKey": false,
+          "notNull": false
+        },
         "delta_amount": {
           "name": "delta_amount",
           "type": "numeric(78, 0)",
@@ -3472,6 +3499,21 @@
           "method": "btree",
           "with": {}
         },
+        "stake_changes_wallet_address_idx": {
+          "name": "stake_changes_wallet_address_idx",
+          "columns": [
+            {
+              "expression": "wallet_address",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
         "stake_changes_wallet_created_idx": {
           "name": "stake_changes_wallet_created_idx",
           "columns": [
@@ -3557,6 +3599,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "wallet_address": {
+          "name": "wallet_address",
+          "type": "varchar(42)",
+          "primaryKey": false,
+          "notNull": false
+        },
         "amount": {
           "name": "amount",
           "type": "numeric(78, 0)",
@@ -3620,6 +3668,21 @@
           "columns": [
             {
               "expression": "wallet",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "stakes_wallet_address_idx": {
+          "name": "stakes_wallet_address_idx",
+          "columns": [
+            {
+              "expression": "wallet_address",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -4039,6 +4102,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "wallet_address": {
+          "name": "wallet_address",
+          "type": "varchar(42)",
+          "primaryKey": false,
+          "notNull": false
+        },
         "amount": {
           "name": "amount",
           "type": "numeric(78, 0)",
@@ -4124,6 +4193,21 @@
           "columns": [
             {
               "expression": "address",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_rewards_wallet_address": {
+          "name": "idx_rewards_wallet_address",
+          "columns": [
+            {
+              "expression": "wallet_address",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
