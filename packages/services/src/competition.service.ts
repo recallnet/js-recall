@@ -1865,21 +1865,28 @@ export class CompetitionService {
 
     // Check each agent's portfolio value
     for (const snapshot of latestSnapshots) {
-      const portfolioValue = Number(snapshot.totalValue);
+      try {
+        const portfolioValue = Number(snapshot.totalValue);
 
-      if (portfolioValue < threshold) {
-        this.logger.warn(
-          `[CompetitionService] Agent ${snapshot.agentId} has portfolio value $${portfolioValue.toFixed(2)}, below threshold $${threshold}. Removing from competition.`,
+        if (portfolioValue < threshold) {
+          this.logger.warn(
+            `[CompetitionService] Agent ${snapshot.agentId} has portfolio value $${portfolioValue.toFixed(2)}, below threshold $${threshold}. Removing from competition.`,
+          );
+
+          // Remove agent using existing method
+          await this.removeAgentFromCompetition(
+            competitionId,
+            snapshot.agentId,
+            `Insufficient initial funding: $${portfolioValue.toFixed(2)} < $${threshold} minimum`,
+          );
+
+          removedAgents.push(snapshot.agentId);
+        }
+      } catch (error) {
+        // Log error but continue checking other agents - isolation principle
+        this.logger.error(
+          `[CompetitionService] Failed to remove underfunded agent ${snapshot.agentId}: ${error}`,
         );
-
-        // Remove agent using existing method
-        await this.removeAgentFromCompetition(
-          competitionId,
-          snapshot.agentId,
-          `Insufficient initial funding: $${portfolioValue.toFixed(2)} < $${threshold} minimum`,
-        );
-
-        removedAgents.push(snapshot.agentId);
       }
     }
 

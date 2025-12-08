@@ -10,6 +10,7 @@ import { SpecificChainSchema } from "@recallnet/db/repositories/types";
 import type {
   InsertSpotLiveTransferHistory,
   InsertTrade,
+  SelectPortfolioSnapshot,
 } from "@recallnet/db/schema/trading/types";
 
 import {
@@ -501,11 +502,33 @@ export class SpotDataProcessor {
           tokenWhitelistEnabled,
         );
 
-        // Return early after balance initialization
-        // Current blockchain balances already reflect all past trading activity
-        // Subsequent syncs will process NEW swaps incrementally
-        this.logger.info(
-          `[SpotDataProcessor] Completed initial balance setup for agent ${agentId} - skipping historical trade processing`,
+        // Re-fetch balances to verify initialization succeeded
+        // (initializeAgentBalancesFromBlockchain swallows errors to not block other agents)
+        const newBalances = await this.balanceRepo.getAgentBalances(
+          agentId,
+          competitionId,
+        );
+
+        if (newBalances.length > 0) {
+          // Success - return early after balance initialization
+          // Current blockchain balances already reflect all past trading activity
+          // Subsequent syncs will process NEW swaps incrementally
+          this.logger.info(
+            `[SpotDataProcessor] Completed initial balance setup for agent ${agentId} (${newBalances.length} balances) - skipping historical trade processing`,
+          );
+
+          return {
+            agentId,
+            tradesProcessed: 0,
+            balancesUpdated: newBalances.length,
+            violationsDetected: 0,
+          };
+        }
+
+        // Initialization failed (RPC error, circuit breaker, etc.)
+        // Return early without creating sync state so next cron will retry
+        this.logger.warn(
+          `[SpotDataProcessor] Balance initialization failed for agent ${agentId} - will retry on next sync`,
         );
 
         return {
@@ -1180,12 +1203,48 @@ export class SpotDataProcessor {
       );
 
       // 6. Create portfolio snapshots for all agents
+      // First, identify agents without snapshots (for late threshold enforcement)
+      // Only needed for cron syncs (!skipMonitoring) with minFundingThreshold configured
+      let agentsWithoutPriorSnapshots: string[] = [];
+      if (
+        !skipMonitoring &&
+        syncResult.successful.length > 0 &&
+        spotLiveConfig.minFundingThreshold
+      ) {
+        const allAgentIds =
+          await this.competitionRepo.getCompetitionAgents(competitionId);
+        const existingSnapshots =
+          await this.competitionRepo.getLatestPortfolioSnapshots(competitionId);
+        const agentsWithSnapshots = new Set(
+          existingSnapshots.map((s) => s.agentId),
+        );
+        agentsWithoutPriorSnapshots = allAgentIds.filter(
+          (id) => !agentsWithSnapshots.has(id),
+        );
+      }
+
       if (syncResult.successful.length > 0) {
         try {
           await this.portfolioSnapshotter.takePortfolioSnapshots(competitionId);
           this.logger.info(
             `[SpotDataProcessor] Portfolio snapshots updated for competition ${competitionId}`,
           );
+
+          // 6b. Late enforcement of minFundingThreshold for agents who just got their first snapshot
+          // This catches agents whose initial sync failed at competition start but recovered later
+          // Skip during initial sync (skipMonitoring=true) since CompetitionService.startCompetition
+          // handles threshold enforcement via enforceMinFundingThreshold after this returns
+          if (
+            !skipMonitoring &&
+            spotLiveConfig.minFundingThreshold &&
+            agentsWithoutPriorSnapshots.length > 0
+          ) {
+            await this.enforceLateMinFundingThreshold(
+              competitionId,
+              Number(spotLiveConfig.minFundingThreshold),
+              agentsWithoutPriorSnapshots,
+            );
+          }
         } catch (error) {
           this.logger.warn(
             `[SpotDataProcessor] Failed to create portfolio snapshots: ${error}`,
@@ -1287,5 +1346,68 @@ export class SpotDataProcessor {
     }
 
     return competition.type === "spot_live_trading";
+  }
+
+  /**
+   * Enforce minimum funding threshold for agents who just completed their first successful sync.
+   * This handles agents whose initial sync failed at competition start but recovered on a later sync cycle.
+   * @param competitionId Competition ID
+   * @param threshold Minimum portfolio value in USD
+   * @param agentsPreviouslyWithoutSnapshots Agent IDs that had no snapshots before this sync cycle
+   */
+  private async enforceLateMinFundingThreshold(
+    competitionId: string,
+    threshold: number,
+    agentsPreviouslyWithoutSnapshots: string[],
+  ): Promise<void> {
+    if (agentsPreviouslyWithoutSnapshots.length === 0) return;
+
+    this.logger.info(
+      `[SpotDataProcessor] Checking late minFundingThreshold enforcement for ${agentsPreviouslyWithoutSnapshots.length} agents`,
+    );
+
+    // Get fresh snapshots - these may include newly created ones
+    const latestSnapshots =
+      await this.competitionRepo.getLatestPortfolioSnapshots(competitionId);
+    const snapshotByAgentId = new Map<string, SelectPortfolioSnapshot>(
+      latestSnapshots.map((s) => [s.agentId, s]),
+    );
+
+    for (const agentId of agentsPreviouslyWithoutSnapshots) {
+      try {
+        const snapshot = snapshotByAgentId.get(agentId);
+        if (!snapshot) {
+          // Still no snapshot (balance sync must have failed again or no balances)
+          continue;
+        }
+
+        // This is their first snapshot - check threshold
+        const portfolioValue = Number(snapshot.totalValue);
+
+        if (portfolioValue < threshold) {
+          this.logger.warn(
+            `[SpotDataProcessor] Late threshold enforcement: Agent ${agentId} has portfolio value ` +
+              `$${portfolioValue.toFixed(2)}, below threshold $${threshold}. Removing from competition.`,
+          );
+
+          await this.competitionRepo.updateAgentCompetitionStatus(
+            competitionId,
+            agentId,
+            "disqualified",
+            `Insufficient initial funding: $${portfolioValue.toFixed(2)} < $${threshold} minimum (late enforcement)`,
+          );
+        } else {
+          this.logger.info(
+            `[SpotDataProcessor] Late threshold check passed: Agent ${agentId} has ` +
+              `$${portfolioValue.toFixed(2)} >= $${threshold}`,
+          );
+        }
+      } catch (error) {
+        // Log error but continue processing other agents - isolation principle
+        this.logger.error(
+          `[SpotDataProcessor] Failed to enforce late threshold for agent ${agentId}: ${error}`,
+        );
+      }
+    }
   }
 }
