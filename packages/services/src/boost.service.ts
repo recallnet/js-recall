@@ -1,7 +1,6 @@
 import { ResultAsync, errAsync, ok } from "neverthrow";
 import { Logger } from "pino";
 
-import { BlockchainAddressAsU8A } from "@recallnet/db/coders";
 import { BoostRepository } from "@recallnet/db/repositories/boost";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { UserRepository } from "@recallnet/db/repositories/user";
@@ -357,7 +356,7 @@ export class BoostService {
     ).map(([items, total]) => {
       const mappedItems: CompetitionBoost[] = items.map((item) => ({
         userId: item.userId,
-        wallet: BlockchainAddressAsU8A.decode(item.wallet),
+        wallet: item.wallet,
         agentId: item.agentId,
         agentName: item.agentName,
         agentHandle: item.agentHandle,
