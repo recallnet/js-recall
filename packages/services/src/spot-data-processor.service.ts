@@ -165,6 +165,7 @@ export class SpotDataProcessor {
   /**
    * Initialize agent balances from blockchain during first sync
    * Applies same constraints as trade processing: chain filter, token whitelist, price availability
+   * @returns Result indicating whether initialization completed (success=true even if 0 balances)
    */
   private async initializeAgentBalancesFromBlockchain(
     agentId: string,
@@ -174,7 +175,7 @@ export class SpotDataProcessor {
     chains: SpecificChain[],
     allowedTokens: Map<string, Set<string>>,
     tokenWhitelistEnabled: boolean,
-  ): Promise<void> {
+  ): Promise<{ success: boolean; balancesCreated: number }> {
     try {
       // 1. Fetch token balances from all enabled chains
       const allTokenBalances: Array<{
@@ -257,7 +258,7 @@ export class SpotDataProcessor {
         this.logger.info(
           `[SpotDataProcessor] No token balances to initialize for agent ${agentId}`,
         );
-        return;
+        return { success: true, balancesCreated: 0 };
       }
 
       // 3. Fetch prices for all tokens
@@ -336,6 +337,8 @@ export class SpotDataProcessor {
           balanceRecordsToInsert,
         );
       }
+
+      return { success: true, balancesCreated: balanceRecordsToInsert.length };
     } catch (error) {
       this.logger.error(
         {
@@ -345,6 +348,7 @@ export class SpotDataProcessor {
         `[SpotDataProcessor] Error initializing balances from blockchain`,
       );
       // Don't throw - allow competition to start even if balance init fails
+      return { success: false, balancesCreated: 0 };
     }
   }
 
@@ -492,7 +496,7 @@ export class SpotDataProcessor {
           `[SpotDataProcessor] First sync for agent ${agentId} - initializing token balances from blockchain`,
         );
 
-        await this.initializeAgentBalancesFromBlockchain(
+        const initResult = await this.initializeAgentBalancesFromBlockchain(
           agentId,
           competitionId,
           walletAddress,
@@ -502,25 +506,17 @@ export class SpotDataProcessor {
           tokenWhitelistEnabled,
         );
 
-        // Re-fetch balances to verify initialization succeeded
-        // (initializeAgentBalancesFromBlockchain swallows errors to not block other agents)
-        const newBalances = await this.balanceRepo.getAgentBalances(
-          agentId,
-          competitionId,
-        );
-
-        if (newBalances.length > 0) {
-          // Success - return early after balance initialization
-          // Current blockchain balances already reflect all past trading activity
-          // Subsequent syncs will process NEW swaps incrementally
+        if (initResult.success) {
+          // Initialization completed (may have 0 balances if no qualified tokens)
+          // Return early - subsequent syncs will process NEW swaps incrementally
           this.logger.info(
-            `[SpotDataProcessor] Completed initial balance setup for agent ${agentId} (${newBalances.length} balances) - skipping historical trade processing`,
+            `[SpotDataProcessor] Completed initial balance setup for agent ${agentId} (${initResult.balancesCreated} balances) - skipping historical trade processing`,
           );
 
           return {
             agentId,
             tradesProcessed: 0,
-            balancesUpdated: newBalances.length,
+            balancesUpdated: initResult.balancesCreated,
             violationsDetected: 0,
           };
         }

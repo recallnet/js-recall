@@ -455,27 +455,20 @@ describe("SpotDataProcessor", () => {
     });
 
     describe("balance initialization retry logic", () => {
-      it("should return early with success when balance init succeeds on first sync", async () => {
+      it("should return early with success when balance init creates balances", async () => {
         // First sync: no existing balances
-        mockBalanceRepo.getAgentBalances
-          .mockResolvedValueOnce([]) // First call: no existing balances
-          .mockResolvedValueOnce([
-            // Second call after init: balances created
-            {
-              id: "1",
-              agentId: "agent-1",
-              tokenAddress: "0xusdc",
-              amount: 100,
-            },
-          ]);
+        mockBalanceRepo.getAgentBalances.mockResolvedValueOnce([]);
 
         // Mock provider with getTokenBalances (triggers init flow)
         const providerWithTokenBalances = {
           ...mockProvider,
           getTokenBalances: vi
             .fn()
-            .mockResolvedValue([{ tokenAddress: "0xusdc", balance: 100 }]),
-          getNativeBalance: vi.fn().mockResolvedValue(0.01),
+            .mockResolvedValue([
+              { contractAddress: "0xusdc", balance: "100000000" },
+            ]),
+          getNativeBalance: vi.fn().mockResolvedValue("10000000000000000"),
+          getTokenDecimals: vi.fn().mockResolvedValue(6),
         };
 
         // Mock price for balance init
@@ -507,17 +500,57 @@ describe("SpotDataProcessor", () => {
         );
       });
 
-      it("should return early with failure when balance init fails, allowing retry on next sync", async () => {
-        // First sync: no existing balances
-        mockBalanceRepo.getAgentBalances
-          .mockResolvedValueOnce([]) // First call: no existing balances
-          .mockResolvedValueOnce([]); // Second call after init: STILL no balances (init failed)
+      it("should return success with 0 balances when agent has no qualified tokens (no retry)", async () => {
+        // Agent has no existing balances
+        mockBalanceRepo.getAgentBalances.mockResolvedValueOnce([]);
 
-        // Mock provider with getTokenBalances that returns empty (simulating failure)
+        // Provider returns empty token list (agent has no tokens)
         const providerWithTokenBalances = {
           ...mockProvider,
-          getTokenBalances: vi.fn().mockResolvedValue([]), // Returns empty
-          getNativeBalance: vi.fn().mockRejectedValue(new Error("RPC error")), // Native also fails
+          getTokenBalances: vi.fn().mockResolvedValue([]),
+          getNativeBalance: vi.fn().mockResolvedValue("0"),
+        };
+
+        const result = await processor.processAgentData(
+          "agent-1",
+          "comp-1",
+          "0xagent123",
+          providerWithTokenBalances,
+          new Map(),
+          false,
+          ["base"],
+          new Date("2024-01-01"),
+        );
+
+        // Should return success with 0 balances (no qualified tokens, but init succeeded)
+        expect(result.balancesUpdated).toBe(0);
+        expect(result.tradesProcessed).toBe(0);
+
+        // Should NOT call trade processing (returned early)
+        expect(mockProvider.getTradesSince).not.toHaveBeenCalled();
+
+        // Should log success (not warning)
+        expect(mockLogger.info).toHaveBeenCalledWith(
+          expect.stringContaining("Completed initial balance setup"),
+        );
+        expect(mockLogger.warn).not.toHaveBeenCalledWith(
+          expect.stringContaining("will retry on next sync"),
+        );
+      });
+
+      it("should return early with failure when RPC throws, allowing retry on next sync", async () => {
+        // First sync: no existing balances
+        mockBalanceRepo.getAgentBalances.mockResolvedValueOnce([]);
+
+        // Mock provider where getTokenBalances throws an error
+        const providerWithTokenBalances = {
+          ...mockProvider,
+          getTokenBalances: vi
+            .fn()
+            .mockRejectedValue(new Error("RPC connection failed")),
+          getNativeBalance: vi
+            .fn()
+            .mockRejectedValue(new Error("RPC connection failed")),
         };
 
         const result = await processor.processAgentData(
@@ -547,28 +580,19 @@ describe("SpotDataProcessor", () => {
         );
       });
 
-      it("should retry balance initialization on subsequent sync after failure", async () => {
+      it("should retry balance initialization on subsequent sync after RPC failure", async () => {
         // Simulate second sync after failed first sync
-        // First call: still no balances (previous init failed)
-        // Second call: balances created (retry succeeded)
-        mockBalanceRepo.getAgentBalances
-          .mockResolvedValueOnce([]) // First call: no existing balances
-          .mockResolvedValueOnce([
-            // Second call after init: NOW we have balances
-            {
-              id: "1",
-              agentId: "agent-1",
-              tokenAddress: "0xusdc",
-              amount: 100,
-            },
-          ]);
+        mockBalanceRepo.getAgentBalances.mockResolvedValueOnce([]);
 
         const providerWithTokenBalances = {
           ...mockProvider,
           getTokenBalances: vi
             .fn()
-            .mockResolvedValue([{ tokenAddress: "0xusdc", balance: 100 }]),
-          getNativeBalance: vi.fn().mockResolvedValue(0.01),
+            .mockResolvedValue([
+              { contractAddress: "0xusdc", balance: "100000000" },
+            ]),
+          getNativeBalance: vi.fn().mockResolvedValue("10000000000000000"),
+          getTokenDecimals: vi.fn().mockResolvedValue(6),
         };
 
         mockPriceTracker.getBulkPrices.mockResolvedValue(
