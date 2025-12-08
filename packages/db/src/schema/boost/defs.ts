@@ -74,19 +74,20 @@ export const boostBalances = pgTable(
  * Immutable journal of all Boost mutations.
  *
  * Purpose:
- * - Append-only log of “earn” (+X) and “spend” (−X) operations.
+ * - Append-only log of "earn" (+X) and "spend" (−X) operations.
  * - Provides audit trail, idempotency, and replay capability.
  *
  * Invariants / notes:
  * - (balance_id, idem_key) is unique → an operation is applied at most once per balance (i.e., wallet x competitionId) entry.
  * - `delta_amount` is signed: positive for earn, negative for spend.
  * - `meta` holds structured context (competition id, reason, etc).
- * - Rows are never updated or deleted.
+ * - Rows are never updated, but will be cascade-deleted if the parent balance is deleted.
  *
  * Coupling:
  * - Insert into `boost_changes` and update `boost_balances` in the same transaction.
  * - If the insert is skipped due to the unique constraint, skip the balance mutation
  *   (idempotent replay).
+ * - Changes are cascade-deleted when their parent `boost_balances` row is deleted.
  *
  * Typical queries:
  * - Fetch wallet history ordered by created_at.
@@ -99,7 +100,7 @@ export const boostChanges = pgTable(
     balanceId: uuid("balance_id")
       .notNull()
       .references(() => boostBalances.id, {
-        onDelete: "restrict",
+        onDelete: "cascade",
         onUpdate: "cascade",
       }),
     wallet: bytea("wallet").notNull(),
@@ -187,7 +188,7 @@ export const agentBoosts = pgTable(
     agentBoostTotalId: uuid("agent_boost_total_id")
       .notNull()
       .references(() => agentBoostTotals.id, {
-        onDelete: "restrict",
+        onDelete: "cascade",
         onUpdate: "cascade",
       }),
     changeId: uuid("change_id")
