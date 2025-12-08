@@ -401,6 +401,8 @@ type TradeWithAgent = {
   tradeAmountUsd: number;
   timestamp: Date | null;
   reason: string | null;
+  txHash: string | null;
+  tradeType: "simulated" | "spot_live" | null;
   agent: {
     id: string;
     name: string;

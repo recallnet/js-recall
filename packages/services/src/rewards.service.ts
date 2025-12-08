@@ -1,6 +1,6 @@
 import { MerkleTree } from "merkletreejs";
 import { Logger } from "pino";
-import { Hex, bytesToHex, encodePacked, hexToBytes, keccak256 } from "viem";
+import { Hex, encodePacked, hexToBytes, keccak256 } from "viem";
 
 import { AgentRepository } from "@recallnet/db/repositories/agent";
 import { BoostRepository } from "@recallnet/db/repositories/boost";
@@ -157,7 +157,7 @@ export class RewardsService {
         (entry) => {
           return {
             user_id: entry.userId,
-            user_wallet: bytesToHex(entry.wallet) as string,
+            user_wallet: entry.wallet,
             competitor: entry.agentId,
             boost: -entry.deltaAmount, // Convert negative spending to positive boost
             timestamp: entry.createdAt,
@@ -195,17 +195,21 @@ export class RewardsService {
         competition.boostTimeDecayRate ?? undefined,
       );
 
-      const rewardsToInsert = rewards.map((reward) => ({
-        userId: reward.owner,
-        agentId: reward.competitor ?? null,
-        competitionId: competitionId,
-        address: reward.address.toLowerCase(),
-        amount: reward.amount,
-        leafHash: hexToBytes(
-          createLeafNode(reward.address as Hex, reward.amount),
-        ),
-        id: crypto.randomUUID(),
-      }));
+      const rewardsToInsert = rewards.map((reward) => {
+        const normalizedAddress = reward.address.toLowerCase();
+        return {
+          userId: reward.owner,
+          agentId: reward.competitor ?? null,
+          competitionId: competitionId,
+          address: normalizedAddress,
+          walletAddress: normalizedAddress,
+          amount: reward.amount,
+          leafHash: hexToBytes(
+            createLeafNode(reward.address as Hex, reward.amount),
+          ),
+          id: crypto.randomUUID(),
+        };
+      });
       await runWithConcurrencyLimit(
         rewardsToInsert,
         1000,

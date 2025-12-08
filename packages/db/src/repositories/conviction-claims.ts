@@ -27,7 +27,7 @@ export class ConvictionClaimsRepository {
       const results = await this.#db
         .select()
         .from(convictionClaims)
-        .where(eq(convictionClaims.account, normalizedAccount))
+        .where(eq(convictionClaims.walletAddress, normalizedAccount))
         .orderBy(desc(convictionClaims.blockTimestamp));
 
       return results;
@@ -49,7 +49,7 @@ export class ConvictionClaimsRepository {
         .from(convictionClaims)
         .where(
           and(
-            eq(convictionClaims.account, normalizedAccount),
+            eq(convictionClaims.walletAddress, normalizedAccount),
             eq(convictionClaims.season, season),
           ),
         )
@@ -96,8 +96,8 @@ export class ConvictionClaimsRepository {
         .from(convictionClaims)
         .where(
           normalizedAccounts.length === 1
-            ? eq(convictionClaims.account, normalizedAccounts[0]!)
-            : inArray(convictionClaims.account, normalizedAccounts),
+            ? eq(convictionClaims.walletAddress, normalizedAccounts[0]!)
+            : inArray(convictionClaims.walletAddress, normalizedAccounts),
         )
         .orderBy(desc(convictionClaims.blockTimestamp));
 
@@ -162,11 +162,13 @@ export class ConvictionClaimsRepository {
         `Inserting conviction claim for account ${claim.account}, season ${claim.season}`,
       );
 
+      const normalizedAccount = claim.account.toLowerCase();
       const result = await this.#db
         .insert(convictionClaims)
         .values({
           ...claim,
-          account: claim.account.toLowerCase(),
+          account: normalizedAccount,
+          walletAddress: normalizedAccount,
         })
         .returning();
 
@@ -239,6 +241,7 @@ export class ConvictionClaimsRepository {
       .values({
         id: crypto.randomUUID(),
         account,
+        walletAddress: account,
         eligibleAmount: params.eligibleAmount,
         claimedAmount: params.claimedAmount,
         season: params.season,
@@ -273,7 +276,7 @@ export class ConvictionClaimsRepository {
     const executor = tx || this.#db;
     const normalizedAccount = account.toLowerCase();
 
-    const conditions = [eq(convictionClaims.account, normalizedAccount)];
+    const conditions = [eq(convictionClaims.walletAddress, normalizedAccount)];
     if (season !== undefined) {
       conditions.push(eq(convictionClaims.season, season));
     }
@@ -303,7 +306,7 @@ export class ConvictionClaimsRepository {
     const executor = tx || this.#db;
     const normalizedAccount = account.toLowerCase();
 
-    const conditions = [eq(convictionClaims.account, normalizedAccount)];
+    const conditions = [eq(convictionClaims.walletAddress, normalizedAccount)];
     if (season !== undefined) {
       conditions.push(eq(convictionClaims.season, season));
     }
@@ -377,7 +380,7 @@ export class ConvictionClaimsRepository {
       .from(convictionClaims)
       .where(
         and(
-          eq(convictionClaims.account, normalizedAccount),
+          eq(convictionClaims.walletAddress, normalizedAccount),
           eq(convictionClaims.season, season),
         ),
       )

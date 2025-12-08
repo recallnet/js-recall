@@ -23,9 +23,7 @@ import { config } from "@/config/public";
 import { useSession } from "@/hooks";
 import { useClaim } from "@/hooks/useClaim";
 
-import { NonStakeBoost } from "./NonStakeBoost";
 import { RecallToken } from "./RecallToken";
-import { StakeBoost } from "./StakeBoost";
 
 export const Navbar: React.FunctionComponent = () => {
   const pathname = usePathname();
@@ -127,9 +125,6 @@ export const Navbar: React.FunctionComponent = () => {
               >
                 {config.publicFlags.tge && <RecallToken />}
               </div>
-              {config.publicFlags.tge ? <StakeBoost /> : <NonStakeBoost />}
-              {/* <GetRecall /> */}
-              {/* <StakeRecall /> */}
               {totalClaimable > 0n && <Claim />}
             </div>
           )}
