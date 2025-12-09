@@ -2,40 +2,57 @@ import { toSvg } from "jdenticon";
 import { ImageResponse } from "next/og";
 import { readFile } from "node:fs/promises";
 import { extname, join } from "node:path";
+import type { ReactElement } from "react";
 
 import { createSafeClient } from "@/rpc/clients/server-side";
 import { RouterOutputs } from "@/rpc/router";
 import { formatCompetitionDates } from "@/utils/competition-utils";
-import { formatAmount } from "@/utils/format";
-import { formatBigintAmount } from "@/utils/format";
+import { formatAmount, formatBigintAmount } from "@/utils/format";
 
-/** Button CTA colors */
-const BUTTON_BLUE = "#0E66BE";
-const BUTTON_BLUE_LIGHT = "#1A8FE3";
+// =============================================================================
+// CONSTANTS
+// =============================================================================
 
-/** Text colors */
-const TEXT_GRAY = "#A7A7A7";
+/** OG Image dimensions */
+const OG_WIDTH = 1200;
+const OG_HEIGHT = 675;
 
-/** Trophy colors matching */
-const TROPHY_COLORS = {
-  first: { text: "#b79128", border: "#b79128" },
-  second: { text: "#6e7277", border: "#4b4e51" },
-  third: { text: "#834e25", border: "#834e25" },
+/** Font families */
+const FONT_MONO = "Roboto Mono, sans-serif";
+const FONT_SANS = "Geist, sans-serif";
+
+/** Color palette */
+const COLORS = {
+  button: { base: "#0E66BE", light: "#1A8FE3" },
+  text: { gray: "#A7A7A7", white: "#ffffff", light: "#e5f2ff" },
+  trophy: {
+    first: { text: "#b79128", border: "#b79128" },
+    second: { text: "#6e7277", border: "#4b4e51" },
+    third: { text: "#834e25", border: "#834e25" },
+    default: { text: "#666", border: "#333" },
+  },
+  table: {
+    headerBg: "#0c0d12",
+    rowDark: "#050507",
+    rowLight: "#0c0d12",
+    border: "#303846",
+    textLight: "#93a5ba",
+    textSecondary: "#6d85a4",
+    headerText: "#e9edf1",
+    green: "#38a430",
+    red: "#ef4444",
+  },
+  fallbackBg: "#0f172a",
+  avatarBg: "#475569",
 };
 
-/** Table colors (for active or ended competitions) */
-const TABLE_COLORS = {
-  headerBg: "#0c0d12",
-  rowDark: "#050507",
-  rowLight: "#0c0d12",
-  border: "#303846",
-  textLight: "#93a5ba",
-  textSecondary: "#6d85a4",
-  green: "#38a430",
-  red: "#ef4444",
-};
+// =============================================================================
+// TYPES
+// =============================================================================
 
-/** Top agents for active competitions */
+type Competition = NonNullable<RouterOutputs["competitions"]["getById"]>;
+type CompetitionStatus = Competition["status"];
+
 interface TopAgent {
   id: string;
   name: string;
@@ -44,18 +61,14 @@ interface TopAgent {
   portfolioValue: number;
   pnl: number;
   pnlPercent: number;
-  change24h: number;
-  change24hPercent: number;
 }
 
-/** Cached assets for OG image generation */
 interface CachedAssets {
   backgroundImage: string | null;
   recallTokenSvg: string | null;
   recallLogoSvg: string | null;
 }
 
-/** Font configuration for OG image generation */
 interface FontConfig {
   name: string;
   data: ArrayBuffer;
@@ -63,63 +76,26 @@ interface FontConfig {
   style: "normal" | "italic";
 }
 
-/** Module-level cache for fonts to avoid repeated network requests */
-let cachedFontsPromise: Promise<FontConfig[]> | null = null;
+// =============================================================================
+// CACHES
+// =============================================================================
 
-/** Module-level cache for assets to avoid repeated file system reads */
+let cachedFontsPromise: Promise<FontConfig[]> | null = null;
 let cachedAssetsPromise: Promise<CachedAssets> | null = null;
 
-/**
- * Generates an identicon SVG as a data URL for agents without profile images.
- *
- * @param agentId - The agent ID to use as the seed for the identicon
- * @param size - The size of the identicon in pixels
- * @returns A data URL containing the SVG identicon
- */
-function generateIdenticonDataUrl(agentId: string, size: number = 32): string {
-  const svg = toSvg(agentId, size, {
-    padding: 0.1,
-    hues: [227],
-    lightness: {
-      color: [0.74, 1.0],
-      grayscale: [0.63, 0.82],
-    },
-    saturation: {
-      color: 0.51,
-      grayscale: 0.67,
-    },
-    backColor: "#475569",
-  });
-  const base64 = Buffer.from(svg).toString("base64");
-  return `data:image/svg+xml;base64,${base64}`;
-}
-
-/**
- * Checks if the competition should show the agents table.
- *
- * @param status - The competition status to check
- * @returns True if the competition status is active, ending, or ended.
- */
-function shouldShowAgentsTable(
-  status: RouterOutputs["competitions"]["getById"]["status"] | undefined,
-): boolean {
-  return status ? ["active", "ending", "ended"].includes(status) : false;
-}
+// =============================================================================
+// ASSET LOADERS
+// =============================================================================
 
 /**
  * Loads a font from Google Fonts.
- * Note: Satori (next/og) only supports TTF/OTF, not WOFF2, and Geist Mono is not supported.
- *
- * @param family - Font family name (e.g., "Geist" or "Roboto Mono")
- * @param weight - Font weight to load
- * @returns ArrayBuffer of font data
+ * Note: Satori (next/og) only supports TTF/OTF formats.
  */
 async function loadGoogleFont(
   family: string,
   weight: number,
 ): Promise<ArrayBuffer> {
-  const encodedFamily = encodeURIComponent(family);
-  const url = `https://fonts.googleapis.com/css2?family=${encodedFamily}:wght@${weight}&display=swap`;
+  const url = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(family)}:wght@${weight}&display=swap`;
   const css = await (await fetch(url)).text();
   const resource = css.match(
     /src: url\((.+)\) format\('(opentype|truetype|woff2)'\)/,
@@ -136,28 +112,20 @@ async function loadGoogleFont(
 }
 
 /**
- * Loads fonts for OG image generation using Geist and Roboto Mono from Google Fonts.
- * Font data is cached in memory to avoid repeated network requests on each OG image generation.
- *
- * @returns Array of font configurations
+ * Loads and caches fonts for OG image generation.
  */
 async function loadFonts(): Promise<FontConfig[]> {
   if (!cachedFontsPromise) {
     cachedFontsPromise = (async () => {
       try {
-        const [
-          geistLight,
-          geistRegular,
-          geistBold,
-          robotoMonoRegular,
-          robotoMonoBold,
-        ] = await Promise.all([
-          loadGoogleFont("Geist", 300),
-          loadGoogleFont("Geist", 400),
-          loadGoogleFont("Geist", 700),
-          loadGoogleFont("Roboto Mono", 400),
-          loadGoogleFont("Roboto Mono", 700),
-        ]);
+        const [geistLight, geistRegular, geistBold, monoRegular, monoBold] =
+          await Promise.all([
+            loadGoogleFont("Geist", 300),
+            loadGoogleFont("Geist", 400),
+            loadGoogleFont("Geist", 700),
+            loadGoogleFont("Roboto Mono", 400),
+            loadGoogleFont("Roboto Mono", 700),
+          ]);
 
         return [
           { name: "Geist", data: geistLight, weight: 300, style: "normal" },
@@ -165,19 +133,13 @@ async function loadFonts(): Promise<FontConfig[]> {
           { name: "Geist", data: geistBold, weight: 700, style: "normal" },
           {
             name: "Roboto Mono",
-            data: robotoMonoRegular,
+            data: monoRegular,
             weight: 400,
             style: "normal",
           },
-          {
-            name: "Roboto Mono",
-            data: robotoMonoBold,
-            weight: 700,
-            style: "normal",
-          },
-        ];
+          { name: "Roboto Mono", data: monoBold, weight: 700, style: "normal" },
+        ] as FontConfig[];
       } catch (err) {
-        // Clear cache on error so subsequent requests can retry
         cachedFontsPromise = null;
         console.error("Failed to load fonts:", err);
         return [];
@@ -188,10 +150,7 @@ async function loadFonts(): Promise<FontConfig[]> {
 }
 
 /**
- * Loads an asset from the public directory and returns it as a base64 data URL.
- *
- * @param assetPath - Path relative to the public directory
- * @returns Base64 data URL for the asset, or null if the asset cannot be loaded
+ * Loads a file from public directory as base64 data URL.
  */
 async function loadAssetAsBase64(assetPath: string): Promise<string | null> {
   try {
@@ -200,9 +159,12 @@ async function loadAssetAsBase64(assetPath: string): Promise<string | null> {
     const base64 = buffer.toString("base64");
 
     const ext = extname(assetPath).toLowerCase();
-    let mimeType = "image/svg+xml";
-    if (ext === ".png") mimeType = "image/png";
-    if (ext === ".jpg" || ext === ".jpeg") mimeType = "image/jpeg";
+    const mimeType =
+      ext === ".png"
+        ? "image/png"
+        : ext === ".jpg" || ext === ".jpeg"
+          ? "image/jpeg"
+          : "image/svg+xml";
 
     return `data:${mimeType};base64,${base64}`;
   } catch (err) {
@@ -212,10 +174,7 @@ async function loadAssetAsBase64(assetPath: string): Promise<string | null> {
 }
 
 /**
- * Loads static assets for OG image generation.
- * Asset data is cached in memory to avoid repeated file system reads on each OG image generation.
- *
- * @returns Object containing base64-encoded assets
+ * Loads and caches static assets for OG image generation.
  */
 async function loadAssets(): Promise<CachedAssets> {
   if (!cachedAssetsPromise) {
@@ -232,12 +191,353 @@ async function loadAssets(): Promise<CachedAssets> {
   return cachedAssetsPromise;
 }
 
+// =============================================================================
+// HELPERS
+// =============================================================================
+
+/**
+ * Generates an identicon SVG as a data URL for agents without profile images.
+ */
+function generateIdenticonDataUrl(agentId: string, size: number = 32): string {
+  const svg = toSvg(agentId, size, {
+    padding: 0.1,
+    hues: [227],
+    lightness: { color: [0.74, 1.0], grayscale: [0.63, 0.82] },
+    saturation: { color: 0.51, grayscale: 0.67 },
+    backColor: COLORS.avatarBg,
+  });
+  return `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
+}
+
+/**
+ * Returns rank colors based on position.
+ */
+function getRankColors(rank: number | null): { text: string; border: string } {
+  if (rank === 1) return COLORS.trophy.first;
+  if (rank === 2) return COLORS.trophy.second;
+  if (rank === 3) return COLORS.trophy.third;
+  return COLORS.trophy.default;
+}
+
+/**
+ * Formats rank as ordinal (1st, 2nd, 3rd, 4th, etc).
+ */
+function formatRankOrdinal(rank: number | null): string {
+  if (rank === 1) return "1st";
+  if (rank === 2) return "2nd";
+  if (rank === 3) return "3rd";
+  return `${rank}th`;
+}
+
+/**
+ * Truncates text to max length with ellipsis.
+ */
+function truncate(text: string, maxLength: number): string {
+  return text.length > maxLength ? `${text.slice(0, maxLength)}…` : text;
+}
+
+/**
+ * Determines if competition should show the agents leaderboard table.
+ */
+function shouldShowAgentsTable(status: CompetitionStatus | undefined): boolean {
+  return status ? ["active", "ending", "ended"].includes(status) : false;
+}
+
+/**
+ * Determines the CTA button text based on competition status.
+ */
+function getCtaText(status: CompetitionStatus): string {
+  return status === "ending" || status === "ended" ? "RESULTS" : "PREDICT";
+}
+
+// =============================================================================
+// UI COMPONENTS
+// =============================================================================
+
+interface LeftSectionProps {
+  competition: Competition;
+  logoSvg: string;
+}
+
+function LeftSection({ competition, logoSvg }: LeftSectionProps): ReactElement {
+  return (
+    <div
+      tw="flex flex-col w-1/2 px-16 mb-12"
+      style={{ justifyContent: "flex-end" }}
+    >
+      <div tw="flex flex-col items-center">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={logoSvg}
+          alt="Recall logo"
+          height={28}
+          width={120}
+          style={{ marginBottom: 6 }}
+        />
+        <div
+          tw="text-6xl text-white leading-tight text-center font-bold uppercase"
+          style={{ margin: "0 0 4px 0" }}
+        >
+          {competition.name}
+        </div>
+        <span
+          tw="text-3xl tracking-widest uppercase leading-tight"
+          style={{ margin: 0, color: COLORS.text.gray }}
+        >
+          {formatCompetitionDates(competition.startDate, competition.endDate)}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+interface AgentRowProps {
+  agent: TopAgent;
+  index: number;
+  isLast: boolean;
+}
+
+function AgentRow({ agent, index, isLast }: AgentRowProps): ReactElement {
+  const rankColors = getRankColors(agent.rank);
+  const isPositive = agent.pnlPercent >= 0;
+
+  return (
+    <div
+      tw="flex w-full items-center px-8 py-6 justify-between"
+      style={{
+        backgroundColor:
+          index % 2 === 0 ? COLORS.table.rowDark : COLORS.table.rowLight,
+        borderBottom: isLast ? "none" : `1px solid ${COLORS.table.border}`,
+      }}
+    >
+      {/* Rank badge */}
+      <div tw="w-20 flex items-center">
+        <div
+          tw="flex items-center justify-center px-2 py-1 rounded text-sm font-bold"
+          style={{
+            border: `1px solid ${rankColors.border}`,
+            color: rankColors.text,
+          }}
+        >
+          {formatRankOrdinal(agent.rank)}
+        </div>
+      </div>
+
+      {/* Agent info */}
+      <div tw="flex-1 flex items-center" style={{ gap: "8px" }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={agent.imageUrl || generateIdenticonDataUrl(agent.id)}
+          alt={agent.name}
+          width={32}
+          height={32}
+          tw="rounded-full"
+          style={{ backgroundColor: COLORS.avatarBg }}
+        />
+        <span tw="text-xl truncate" style={{ color: COLORS.table.textLight }}>
+          {truncate(agent.name, 12)}
+        </span>
+      </div>
+
+      {/* Portfolio value */}
+      <div tw="flex flex-col items-end">
+        <span tw="text-xl" style={{ color: COLORS.table.textLight }}>
+          ${formatAmount(agent.portfolioValue, 2, true, 2)}
+        </span>
+        <div tw="flex" style={{ gap: "4px" }}>
+          <span
+            tw="text-sm"
+            style={{
+              color: isPositive ? COLORS.table.green : COLORS.table.red,
+            }}
+          >
+            ({isPositive ? "+" : ""}
+            {formatAmount(agent.pnlPercent)}%)
+          </span>
+          <span tw="text-sm" style={{ color: COLORS.table.textSecondary }}>
+            {agent.pnl >= 0 ? "+" : ""}${formatAmount(agent.pnl, 2, true, 2)}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+interface AgentsTableProps {
+  agents: TopAgent[];
+}
+
+function AgentsTable({ agents }: AgentsTableProps): ReactElement {
+  return (
+    <div
+      tw="flex flex-col w-full rounded-lg overflow-hidden"
+      style={{ border: `1px solid ${COLORS.table.border}` }}
+    >
+      {/* Header */}
+      <div
+        tw="flex w-full px-8 py-3 text-sm font-semibold tracking-wider justify-between"
+        style={{
+          backgroundColor: COLORS.table.headerBg,
+          color: COLORS.table.headerText,
+          borderBottom: `1px solid ${COLORS.table.border}`,
+        }}
+      >
+        <div tw="w-20">Rank</div>
+        <div tw="flex-1">Agent</div>
+        <div>Portfolio</div>
+      </div>
+
+      {/* Rows */}
+      {agents.map((agent, index) => (
+        <AgentRow
+          key={agent.id}
+          agent={agent}
+          index={index}
+          isLast={index === agents.length - 1}
+        />
+      ))}
+    </div>
+  );
+}
+
+/**
+ * Props for the CTA button component.
+ */
+interface CtaButtonProps {
+  text: string;
+  variant: "large" | "compact";
+}
+
+/**
+ * CTA button component for the OG image.
+ */
+function CtaButton({ text, variant }: CtaButtonProps): ReactElement {
+  const isLarge = variant === "large";
+
+  return (
+    <div
+      tw={`flex items-center justify-center rounded-xl text-white font-semibold ${
+        isLarge
+          ? "mt-20 px-42 py-7 text-4xl tracking-widest"
+          : "px-10 py-8 text-3xl tracking-tight"
+      }`}
+      style={{
+        background: `linear-gradient(180deg, ${COLORS.button.light} 0%, ${COLORS.button.base} 100%)`,
+        boxShadow: isLarge
+          ? "0 4px 20px rgba(0, 0, 0, 0.45)"
+          : "0 12px 16px rgba(0, 0, 0, 0.8), inset 4px 12px 20px #3399ff",
+        color: COLORS.text.light,
+      }}
+    >
+      {text}
+    </div>
+  );
+}
+
+/**
+ * Props for the right section active component.
+ */
+interface RightSectionActiveProps {
+  competition: Competition;
+  agents: TopAgent[];
+}
+
+/**
+ * Right section active component for the OG image.
+ */
+function RightSectionActive({
+  competition,
+  agents,
+}: RightSectionActiveProps): ReactElement {
+  return (
+    <div tw="flex flex-col w-full text-white h-full justify-between">
+      <AgentsTable agents={agents} />
+      <CtaButton text={getCtaText(competition.status)} variant="compact" />
+    </div>
+  );
+}
+
+/**
+ * Props for the right section pending component.
+ */
+interface RightSectionPendingProps {
+  competition: Competition;
+  totalRewards: bigint;
+  tokenSvg: string;
+}
+
+/**
+ * Right section pending component for the OG image.
+ */
+function RightSectionPending({
+  competition,
+  totalRewards,
+  tokenSvg,
+}: RightSectionPendingProps): ReactElement {
+  return (
+    <div tw="flex flex-col items-center text-3xl tracking-wider gap-y-5 h-full justify-end">
+      {/* Top text - left aligned */}
+      <div tw="flex flex-col items-start w-full">
+        <div style={{ display: "flex", columnGap: "20px" }}>
+          <span style={{ color: COLORS.text.gray }}>{"///"}</span>
+          <span tw="text-white">PREDICT</span>
+          <span style={{ color: COLORS.text.gray }}>WINNERS</span>
+        </div>
+      </div>
+
+      {/* Reward amount */}
+      <div tw="flex items-center" style={{ gap: "16px" }}>
+        <div tw="flex items-center justify-center w-14 h-14 bg-white rounded-full">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={tokenSvg} alt="Recall token" width={36} height={36} />
+        </div>
+        <span
+          tw="text-white font-bold text-[120px]"
+          style={{ fontFamily: FONT_SANS }}
+        >
+          {formatBigintAmount(totalRewards, undefined, false)}
+        </span>
+      </div>
+
+      {/* Bottom text - right aligned */}
+      <div tw="flex flex-col items-end w-full">
+        <div style={{ display: "flex", columnGap: "20px" }}>
+          <span tw="text-white">REWARD</span>
+          <span style={{ color: COLORS.text.gray }}>POOL</span>
+          <span style={{ color: COLORS.text.gray }}>{"///"}</span>
+        </div>
+      </div>
+
+      <CtaButton text={getCtaText(competition.status)} variant="large" />
+    </div>
+  );
+}
+
+/**
+ * Fallback image component for the OG image.
+ */
+function FallbackImage(title: string, fonts: FontConfig[]): ImageResponse {
+  return new ImageResponse(
+    (
+      <div
+        tw="flex w-full h-full items-center justify-center text-white text-5xl font-bold"
+        style={{ fontFamily: FONT_MONO, backgroundColor: COLORS.fallbackBg }}
+      >
+        {title}
+      </div>
+    ),
+    { width: OG_WIDTH, height: OG_HEIGHT, fonts },
+  );
+}
+
+// =============================================================================
+// ROUTE HANDLER
+// =============================================================================
+
 export async function GET(
   _req: Request,
   context: { params: Promise<{ id: string }> },
 ): Promise<ImageResponse> {
-  const monospaceFontFamily = "Roboto Mono, sans-serif";
-
   try {
     const client = await createSafeClient();
     const { id } = await context.params;
@@ -248,6 +548,7 @@ export async function GET(
       loadAssets(),
     ]);
 
+    // Fetch top agents for active/ended competitions
     let topAgents: TopAgent[] = [];
     if (shouldShowAgentsTable(competition?.status)) {
       try {
@@ -266,306 +567,59 @@ export async function GET(
             portfolioValue: a.portfolioValue,
             pnl: a.pnl,
             pnlPercent: a.pnlPercent,
-            change24h: a.change24h,
-            change24hPercent: a.change24hPercent,
           }));
         }
       } catch (err) {
-        console.error("Failed to load top agents for active competition:", err);
+        console.error("Failed to load top agents:", err);
       }
     }
 
     const { backgroundImage, recallTokenSvg, recallLogoSvg } = assets;
-    const normalFontFamily = "Geist, sans-serif";
 
-    // Fall back to simple image if any required assets failed to load
+    // Return fallback if required data is missing
     if (!competition || !backgroundImage || !recallTokenSvg || !recallLogoSvg) {
-      return new ImageResponse(
-        (
-          <div
-            tw="flex w-full h-full items-center justify-center bg-slate-950 text-white text-5xl font-bold"
-            style={{ fontFamily: monospaceFontFamily }}
-          >
-            {competition?.name || "Recall Competitions"}
-          </div>
-        ),
-        { width: 1200, height: 675, fonts },
-      );
+      return FallbackImage(competition?.name || "Recall Competitions", fonts);
     }
 
     const totalRewards =
       BigInt(competition.rewardsTge?.agentPool ?? 0) +
       BigInt(competition.rewardsTge?.userPool ?? 0);
 
+    const showTable =
+      shouldShowAgentsTable(competition.status) && topAgents.length > 0;
+
     return new ImageResponse(
       (
         <div
           tw="flex w-full h-full"
           style={{
-            fontFamily: monospaceFontFamily,
+            fontFamily: FONT_MONO,
             backgroundImage: `url(${backgroundImage})`,
             backgroundSize: "cover",
           }}
         >
-          {/* Left section */}
-          <div
-            tw="flex flex-col w-1/2 px-16 mb-12"
-            style={{ justifyContent: "flex-end" }}
-          >
-            <div tw="flex flex-col items-center">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={recallLogoSvg}
-                alt="Recall logo"
-                height={28}
-                width={120}
-                style={{ marginBottom: 6 }}
-              />
+          <LeftSection competition={competition} logoSvg={recallLogoSvg} />
 
-              <div
-                tw="text-6xl text-white leading-tight text-center font-bold uppercase"
-                style={{ margin: "0 0 4px 0" }}
-              >
-                {competition.name}
-              </div>
-
-              <span
-                tw="text-3xl tracking-widest uppercase leading-tight"
-                style={{ margin: 0, color: TEXT_GRAY }}
-              >
-                {formatCompetitionDates(
-                  competition.startDate,
-                  competition.endDate,
-                )}
-              </span>
-            </div>
-          </div>
-
-          {/* Right section */}
           <div tw="flex flex-col w-1/2 px-8 pt-12 pb-10">
-            {shouldShowAgentsTable(competition.status) &&
-            topAgents.length > 0 ? (
-              <div tw="flex flex-col w-full text-white h-full justify-between">
-                {/* Table container */}
-                <div
-                  tw="flex flex-col w-full rounded-lg overflow-hidden"
-                  style={{
-                    border: `1px solid ${TABLE_COLORS.border}`,
-                  }}
-                >
-                  {/* Table header */}
-                  <div
-                    tw="flex w-full px-8 py-3 text-sm font-semibold tracking-wider justify-between"
-                    style={{
-                      backgroundColor: TABLE_COLORS.headerBg,
-                      color: "#e9edf1",
-                      borderBottom: `1px solid ${TABLE_COLORS.border}`,
-                    }}
-                  >
-                    <div tw="w-20">Rank</div>
-                    <div tw="flex-1">Agent</div>
-                    <div>Portfolio</div>
-                  </div>
-
-                  {/* Table rows */}
-                  {topAgents.map((agent, index) => {
-                    const rankColors =
-                      agent.rank === 1
-                        ? TROPHY_COLORS.first
-                        : agent.rank === 2
-                          ? TROPHY_COLORS.second
-                          : agent.rank === 3
-                            ? TROPHY_COLORS.third
-                            : { text: "#666", border: "#333" };
-
-                    return (
-                      <div
-                        key={agent.id}
-                        tw="flex w-full items-center px-8 py-6 justify-between"
-                        style={{
-                          backgroundColor:
-                            index % 2 === 0
-                              ? TABLE_COLORS.rowDark
-                              : TABLE_COLORS.rowLight,
-                          borderBottom:
-                            index < topAgents.length - 1
-                              ? `1px solid ${TABLE_COLORS.border}`
-                              : "none",
-                        }}
-                      >
-                        {/* Rank badge */}
-                        <div tw="w-20 flex items-center">
-                          <div
-                            tw="flex items-center justify-center px-2 py-1 rounded text-sm font-bold"
-                            style={{
-                              border: `1px solid ${rankColors.border}`,
-                              color: rankColors.text,
-                            }}
-                          >
-                            {agent.rank === 1
-                              ? "1st"
-                              : agent.rank === 2
-                                ? "2nd"
-                                : agent.rank === 3
-                                  ? "3rd"
-                                  : `${agent.rank}th`}
-                          </div>
-                        </div>
-
-                        {/* Agent info */}
-                        <div
-                          tw="flex-1 flex items-center"
-                          style={{ gap: "8px" }}
-                        >
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={
-                              agent.imageUrl ||
-                              generateIdenticonDataUrl(agent.id)
-                            }
-                            alt={agent.name}
-                            width={32}
-                            height={32}
-                            tw="rounded-full"
-                            style={{
-                              backgroundColor: "#475569",
-                            }}
-                          />
-                          <span
-                            tw="text-xl truncate"
-                            style={{ color: TABLE_COLORS.textLight }}
-                          >
-                            {agent.name.length > 12
-                              ? `${agent.name.slice(0, 12)}…`
-                              : agent.name}
-                          </span>
-                        </div>
-
-                        {/* Portfolio value */}
-                        <div tw="flex flex-col items-end">
-                          <span
-                            tw="text-xl"
-                            style={{ color: TABLE_COLORS.textLight }}
-                          >
-                            ${formatAmount(agent.portfolioValue, 2, true, 2)}
-                          </span>
-                          <div tw="flex" style={{ gap: "4px" }}>
-                            <span
-                              tw="text-sm"
-                              style={{
-                                color:
-                                  agent.pnlPercent >= 0
-                                    ? TABLE_COLORS.green
-                                    : TABLE_COLORS.red,
-                              }}
-                            >
-                              ({agent.pnlPercent >= 0 ? "+" : ""}
-                              {formatAmount(agent.pnlPercent)}%)
-                            </span>
-                            <span
-                              tw="text-sm"
-                              style={{ color: TABLE_COLORS.textSecondary }}
-                            >
-                              {agent.pnl >= 0 ? "+" : ""}$
-                              {formatAmount(agent.pnl, 2, true, 2)}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* Button below table */}
-                <div
-                  tw="flex items-center justify-center px-10 py-8 rounded-xl text-3xl tracking-tight font-semibold"
-                  style={{
-                    background: `linear-gradient(180deg, ${BUTTON_BLUE_LIGHT} 0%, ${BUTTON_BLUE} 100%)`,
-                    boxShadow:
-                      "0 12px 16px rgba(0, 0, 0, 0.8), inset 4px 12px 20px #3399ff",
-                    color: "#e5f2ff",
-                  }}
-                >
-                  {competition.status === "ending" ||
-                  competition.status === "ended"
-                    ? "RESULTS"
-                    : "PREDICT"}
-                </div>
-              </div>
+            {showTable ? (
+              <RightSectionActive
+                competition={competition}
+                agents={topAgents}
+              />
             ) : (
-              <div tw="flex flex-col items-center text-3xl tracking-wider gap-y-5 h-full justify-end">
-                {/* Top text - left aligned */}
-                <div tw="flex flex-col items-start w-full">
-                  <div style={{ display: "flex", columnGap: "20px" }}>
-                    <span style={{ color: TEXT_GRAY }}>{"///"}</span>
-                    <span tw="text-white">PREDICT</span>
-                    <span style={{ color: TEXT_GRAY }}>WINNERS</span>
-                  </div>
-                </div>
-
-                <div tw="flex items-center" style={{ gap: "16px" }}>
-                  <div tw="flex items-center justify-center w-14 h-14 bg-white rounded-full">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={recallTokenSvg}
-                      alt="Recall token"
-                      width={36}
-                      height={36}
-                    />
-                  </div>
-                  <span
-                    tw="text-white font-bold text-[120px]"
-                    style={{ fontFamily: normalFontFamily }}
-                  >
-                    {formatBigintAmount(totalRewards, undefined, false)}
-                  </span>
-                </div>
-
-                {/* Bottom text - right aligned */}
-                <div tw="flex flex-col items-end w-full">
-                  <div style={{ display: "flex", columnGap: "20px" }}>
-                    <span tw="text-white">REWARD</span>
-                    <span style={{ color: TEXT_GRAY }}>POOL</span>
-                    <span style={{ color: TEXT_GRAY }}>{"///"}</span>
-                  </div>
-                </div>
-
-                <div
-                  tw="flex items-center justify-center mt-20 px-42 py-7 rounded-xl text-white text-4xl tracking-widest font-semibold"
-                  style={{
-                    background: `linear-gradient(180deg, ${BUTTON_BLUE_LIGHT} 0%, ${BUTTON_BLUE} 100%)`,
-                    boxShadow: "0 4px 20px rgba(0, 0, 0, 0.45)",
-                  }}
-                >
-                  {competition.status === "ending" ||
-                  competition.status === "ended"
-                    ? "RESULTS"
-                    : "PREDICT"}
-                </div>
-              </div>
+              <RightSectionPending
+                competition={competition}
+                totalRewards={totalRewards}
+                tokenSvg={recallTokenSvg}
+              />
             )}
           </div>
         </div>
       ),
-      {
-        width: 1200,
-        height: 675,
-        fonts,
-      },
+      { width: OG_WIDTH, height: OG_HEIGHT, fonts },
     );
   } catch (err) {
     console.error("Failed to generate OG image:", err);
-    // Return a simple fallback image on any unexpected error
-    return new ImageResponse(
-      (
-        <div
-          tw="flex w-full h-full items-center justify-center bg-slate-950 text-white text-5xl font-bold"
-          style={{ fontFamily: monospaceFontFamily }}
-        >
-          Recall Competitions
-        </div>
-      ),
-      { width: 1200, height: 675 },
-    );
+    return FallbackImage("Recall Competitions", []);
   }
 }
