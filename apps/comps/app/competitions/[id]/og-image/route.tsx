@@ -6,6 +6,7 @@ import type { ReactElement } from "react";
 
 import { createSafeClient } from "@/rpc/clients/server-side";
 import { RouterOutputs } from "@/rpc/router";
+import { CompetitionLeaderboardEntry } from "@/types/nfl";
 import { formatCompetitionDates } from "@/utils/competition-utils";
 import { formatAmount, formatBigintAmount } from "@/utils/format";
 
@@ -52,8 +53,11 @@ const COLORS = {
 
 type Competition = NonNullable<RouterOutputs["competitions"]["getById"]>;
 type CompetitionStatus = Competition["status"];
+type CompetitionType = Competition["type"];
 
-interface TopAgent {
+/** Trading competition agent data */
+interface TradingAgent {
+  type: "trading" | "perpetual_futures" | "spot_live_trading";
   id: string;
   name: string;
   imageUrl: string | null;
@@ -62,6 +66,20 @@ interface TopAgent {
   pnl: number;
   pnlPercent: number;
 }
+
+/** Sports prediction competition agent data */
+interface SportsAgent {
+  type: "sports_prediction";
+  id: string;
+  name: string;
+  imageUrl: string | null;
+  rank: number;
+  averageBrierScore: number;
+  gamesScored: number;
+}
+
+/** Union type for leaderboard entries */
+type LeaderboardEntry = TradingAgent | SportsAgent;
 
 interface CachedAssets {
   backgroundImage: string | null;
@@ -138,7 +156,7 @@ async function loadFonts(): Promise<FontConfig[]> {
             style: "normal",
           },
           { name: "Roboto Mono", data: monoBold, weight: 700, style: "normal" },
-        ] as FontConfig[];
+        ];
       } catch (err) {
         cachedFontsPromise = null;
         console.error("Failed to load fonts:", err);
@@ -250,15 +268,28 @@ function getCtaText(status: CompetitionStatus): string {
   return status === "ending" || status === "ended" ? "RESULTS" : "PREDICT";
 }
 
+/**
+ * Determines the value column header based on competition type.
+ */
+function getValueColumnHeader(competitionType: CompetitionType): string {
+  return competitionType === "sports_prediction" ? "Score" : "Portfolio";
+}
+
 // =============================================================================
 // UI COMPONENTS
 // =============================================================================
 
+/**
+ * Props for the left section component.
+ */
 interface LeftSectionProps {
   competition: Competition;
   logoSvg: string;
 }
 
+/**
+ * Left section component for the OG image.
+ */
 function LeftSection({ competition, logoSvg }: LeftSectionProps): ReactElement {
   return (
     <div
@@ -291,15 +322,24 @@ function LeftSection({ competition, logoSvg }: LeftSectionProps): ReactElement {
   );
 }
 
-interface AgentRowProps {
-  agent: TopAgent;
+/**
+ * Props for the leaderboard row component.
+ */
+interface LeaderboardRowProps {
+  entry: LeaderboardEntry;
   index: number;
   isLast: boolean;
 }
 
-function AgentRow({ agent, index, isLast }: AgentRowProps): ReactElement {
-  const rankColors = getRankColors(agent.rank);
-  const isPositive = agent.pnlPercent >= 0;
+/**
+ * Leaderboard row component for the OG image.
+ */
+function LeaderboardRow({
+  entry,
+  index,
+  isLast,
+}: LeaderboardRowProps): ReactElement {
+  const rankColors = getRankColors(entry.rank);
 
   return (
     <div
@@ -319,7 +359,7 @@ function AgentRow({ agent, index, isLast }: AgentRowProps): ReactElement {
             color: rankColors.text,
           }}
         >
-          {formatRankOrdinal(agent.rank)}
+          {formatRankOrdinal(entry.rank)}
         </div>
       </div>
 
@@ -327,47 +367,92 @@ function AgentRow({ agent, index, isLast }: AgentRowProps): ReactElement {
       <div tw="flex-1 flex items-center" style={{ gap: "8px" }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={agent.imageUrl || generateIdenticonDataUrl(agent.id)}
-          alt={agent.name}
+          src={entry.imageUrl || generateIdenticonDataUrl(entry.id)}
+          alt={entry.name}
           width={32}
           height={32}
           tw="rounded-full"
           style={{ backgroundColor: COLORS.avatarBg }}
         />
         <span tw="text-xl truncate" style={{ color: COLORS.table.textLight }}>
-          {truncate(agent.name, 12)}
+          {truncate(entry.name, 15)}
         </span>
       </div>
 
-      {/* Portfolio value */}
-      <div tw="flex flex-col items-end">
-        <span tw="text-xl" style={{ color: COLORS.table.textLight }}>
-          ${formatAmount(agent.portfolioValue, 2, true, 2)}
+      {/* Value column - different for trading vs sports */}
+      {entry.type === "trading" ||
+      entry.type === "perpetual_futures" ||
+      entry.type === "spot_live_trading" ? (
+        <TradingValueColumn entry={entry} />
+      ) : entry.type === "sports_prediction" ? (
+        <SportsValueColumn entry={entry} />
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * Trading value column component for the OG image.
+ */
+function TradingValueColumn({ entry }: { entry: TradingAgent }): ReactElement {
+  const isPositive = entry.pnlPercent >= 0;
+
+  return (
+    <div tw="flex flex-col items-end">
+      <span tw="text-xl" style={{ color: COLORS.table.textLight }}>
+        ${formatAmount(entry.portfolioValue, 2, true, 2)}
+      </span>
+      <div tw="flex" style={{ gap: "4px" }}>
+        <span
+          tw="text-sm"
+          style={{
+            color: isPositive ? COLORS.table.green : COLORS.table.red,
+          }}
+        >
+          ({isPositive ? "+" : ""}
+          {formatAmount(entry.pnlPercent)}%)
         </span>
-        <div tw="flex" style={{ gap: "4px" }}>
-          <span
-            tw="text-sm"
-            style={{
-              color: isPositive ? COLORS.table.green : COLORS.table.red,
-            }}
-          >
-            ({isPositive ? "+" : ""}
-            {formatAmount(agent.pnlPercent)}%)
-          </span>
-          <span tw="text-sm" style={{ color: COLORS.table.textSecondary }}>
-            {agent.pnl >= 0 ? "+" : ""}${formatAmount(agent.pnl, 2, true, 2)}
-          </span>
-        </div>
+        <span tw="text-sm" style={{ color: COLORS.table.textSecondary }}>
+          {entry.pnl >= 0 ? "+" : ""}${formatAmount(entry.pnl, 2, true, 2)}
+        </span>
       </div>
     </div>
   );
 }
 
-interface AgentsTableProps {
-  agents: TopAgent[];
+/**
+ * Sports value column component for the OG image.
+ */
+function SportsValueColumn({ entry }: { entry: SportsAgent }): ReactElement {
+  return (
+    <div tw="flex flex-col items-end">
+      <span tw="text-xl" style={{ color: COLORS.table.textLight }}>
+        {formatAmount(entry.averageBrierScore, 4)}
+      </span>
+      <span tw="text-sm" style={{ color: COLORS.table.textSecondary }}>
+        {entry.gamesScored} game{entry.gamesScored !== 1 ? "s" : ""}
+      </span>
+    </div>
+  );
 }
 
-function AgentsTable({ agents }: AgentsTableProps): ReactElement {
+/**
+ * Props for the leaderboard table component.
+ */
+interface LeaderboardTableProps {
+  entries: LeaderboardEntry[];
+  competitionType: CompetitionType;
+}
+
+/**
+ * Leaderboard table component for the OG image.
+ */
+function LeaderboardTable({
+  entries,
+  competitionType,
+}: LeaderboardTableProps): ReactElement {
+  const valueColumnHeader = getValueColumnHeader(competitionType);
+
   return (
     <div
       tw="flex flex-col w-full rounded-lg overflow-hidden"
@@ -384,16 +469,16 @@ function AgentsTable({ agents }: AgentsTableProps): ReactElement {
       >
         <div tw="w-20">Rank</div>
         <div tw="flex-1">Agent</div>
-        <div>Portfolio</div>
+        <div>{valueColumnHeader}</div>
       </div>
 
       {/* Rows */}
-      {agents.map((agent, index) => (
-        <AgentRow
-          key={agent.id}
-          agent={agent}
+      {entries.map((entry, index) => (
+        <LeaderboardRow
+          key={entry.id}
+          entry={entry}
           index={index}
-          isLast={index === agents.length - 1}
+          isLast={index === entries.length - 1}
         />
       ))}
     </div>
@@ -437,21 +522,21 @@ function CtaButton({ text, variant }: CtaButtonProps): ReactElement {
 /**
  * Props for the right section active component.
  */
-interface RightSectionActiveProps {
+interface RightSectionActiveOrEndedProps {
   competition: Competition;
-  agents: TopAgent[];
+  entries: LeaderboardEntry[];
 }
 
 /**
  * Right section active component for the OG image.
  */
-function RightSectionActive({
+function RightSectionActiveOrEnded({
   competition,
-  agents,
-}: RightSectionActiveProps): ReactElement {
+  entries,
+}: RightSectionActiveOrEndedProps): ReactElement {
   return (
     <div tw="flex flex-col w-full text-white h-full justify-between">
-      <AgentsTable agents={agents} />
+      <LeaderboardTable entries={entries} competitionType={competition.type} />
       <CtaButton text={getCtaText(competition.status)} variant="compact" />
     </div>
   );
@@ -534,6 +619,76 @@ function FallbackImage(title: string, fonts: FontConfig[]): ImageResponse {
 // ROUTE HANDLER
 // =============================================================================
 
+/**
+ * Fetches trading competition leaderboard entries.
+ */
+async function fetchTradingLeaderboard(
+  client: Awaited<ReturnType<typeof createSafeClient>>,
+  competitionId: string,
+  competitionType: "trading" | "perpetual_futures" | "spot_live_trading",
+): Promise<TradingAgent[]> {
+  const result = await client.competitions.getAgents({
+    competitionId,
+    paging: { limit: 3, offset: 0, sort: "rank" },
+    includeInactive: false,
+  });
+
+  if (!result.isSuccess) return [];
+
+  return result.data.agents.map((a) => ({
+    type: competitionType,
+    id: a.id,
+    name: a.name,
+    imageUrl: a.imageUrl,
+    rank: a.rank,
+    portfolioValue: a.portfolioValue,
+    pnl: a.pnl,
+    pnlPercent: a.pnlPercent,
+  }));
+}
+
+/**
+ * Fetches sports prediction competition leaderboard entries.
+ * Merges leaderboard data with agent images from the agents endpoint.
+ */
+async function fetchSportsLeaderboard(
+  client: Awaited<ReturnType<typeof createSafeClient>>,
+  competitionId: string,
+  competitionType: "sports_prediction",
+): Promise<SportsAgent[]> {
+  const [leaderboardResult, agentsResult] = await Promise.all([
+    client.nfl.getLeaderboard({ competitionId }),
+    client.competitions.getAgents({
+      competitionId,
+      paging: { limit: 100, offset: 0, sort: "rank" },
+      includeInactive: false,
+    }),
+  ]);
+
+  if (!leaderboardResult.isSuccess) return [];
+
+  // Build a map of agent IDs to image URLs
+  const agentImageMap = new Map<string, string | null>();
+  if (agentsResult.isSuccess) {
+    for (const agent of agentsResult.data.agents) {
+      agentImageMap.set(agent.id, agent.imageUrl);
+    }
+  }
+
+  // Filter to competition-level entries and take top 3
+  return (leaderboardResult.data.leaderboard as CompetitionLeaderboardEntry[])
+    .slice(0, 3)
+    .map((entry) => ({
+      type: competitionType,
+      id: entry.agentId,
+      name: entry.agentName ?? "Unknown Agent",
+      imageUrl: agentImageMap.get(entry.agentId) ?? null,
+      rank: entry.rank,
+      averageBrierScore: entry.averageBrierScore,
+      gamesScored: entry.gamesScored,
+    }));
+}
+
 export async function GET(
   _req: Request,
   context: { params: Promise<{ id: string }> },
@@ -547,33 +702,6 @@ export async function GET(
       loadFonts(),
       loadAssets(),
     ]);
-
-    // Fetch top agents for active/ended competitions
-    let topAgents: TopAgent[] = [];
-    if (shouldShowAgentsTable(competition?.status)) {
-      try {
-        const result = await client.competitions.getAgents({
-          competitionId: id,
-          paging: { limit: 3, offset: 0, sort: "rank" },
-          includeInactive: false,
-        });
-
-        if (result.isSuccess) {
-          topAgents = result.data.agents.map((a) => ({
-            id: a.id,
-            name: a.name,
-            imageUrl: a.imageUrl,
-            rank: a.rank,
-            portfolioValue: a.portfolioValue,
-            pnl: a.pnl,
-            pnlPercent: a.pnlPercent,
-          }));
-        }
-      } catch (err) {
-        console.error("Failed to load top agents:", err);
-      }
-    }
-
     const { backgroundImage, recallTokenSvg, recallLogoSvg } = assets;
 
     // Return fallback if required data is missing
@@ -581,12 +709,26 @@ export async function GET(
       return FallbackImage(competition?.name || "Recall Competitions", fonts);
     }
 
+    // Fetch leaderboard entries for active/ended competitions
+    let leaderboardEntries: LeaderboardEntry[] = [];
+    if (shouldShowAgentsTable(competition.status)) {
+      try {
+        leaderboardEntries =
+          competition.type === "sports_prediction"
+            ? await fetchSportsLeaderboard(client, id, competition.type)
+            : await fetchTradingLeaderboard(client, id, competition.type);
+      } catch (err) {
+        console.error("Failed to load leaderboard:", err);
+      }
+    }
+
     const totalRewards =
       BigInt(competition.rewardsTge?.agentPool ?? 0) +
       BigInt(competition.rewardsTge?.userPool ?? 0);
 
     const showTable =
-      shouldShowAgentsTable(competition.status) && topAgents.length > 0;
+      shouldShowAgentsTable(competition.status) &&
+      leaderboardEntries.length > 0;
 
     return new ImageResponse(
       (
@@ -600,11 +742,11 @@ export async function GET(
         >
           <LeftSection competition={competition} logoSvg={recallLogoSvg} />
 
-          <div tw="flex flex-col w-1/2 px-8 pt-12 pb-10">
+          <div tw="flex flex-col w-1/2 px-8 pt-30 pb-10">
             {showTable ? (
-              <RightSectionActive
+              <RightSectionActiveOrEnded
                 competition={competition}
-                agents={topAgents}
+                entries={leaderboardEntries}
               />
             ) : (
               <RightSectionPending
