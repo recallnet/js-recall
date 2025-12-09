@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { MockProxy, mock, mockReset } from "vitest-mock-extended";
 
-import { BlockchainAddressAsU8A } from "@recallnet/db/coders";
 import { type BoostRepository } from "@recallnet/db/repositories/boost";
 import { type CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { type UserRepository } from "@recallnet/db/repositories/user";
@@ -78,7 +77,7 @@ describe("BoostService.getCompetitionBoosts", () => {
       const mockBoosts = [
         {
           userId: testUserId1,
-          wallet: BlockchainAddressAsU8A.encode(testWallet1),
+          wallet: testWallet1,
           agentId: testAgentId1,
           agentName: "Test Agent 1",
           agentHandle: "testagent1",
@@ -100,7 +99,7 @@ describe("BoostService.getCompetitionBoosts", () => {
         expect(result.value.items).toHaveLength(1);
         expect(result.value.items[0]).toEqual({
           userId: testUserId1,
-          wallet: testWallet1.toLowerCase(), // Decoded to hex string
+          wallet: testWallet1.toLowerCase(),
           agentId: testAgentId1,
           agentName: "Test Agent 1",
           agentHandle: "testagent1",
@@ -114,7 +113,7 @@ describe("BoostService.getCompetitionBoosts", () => {
       const mockBoosts = [
         {
           userId: testUserId1,
-          wallet: BlockchainAddressAsU8A.encode(testWallet1),
+          wallet: testWallet1,
           agentId: testAgentId1,
           agentName: "Test Agent 1",
           agentHandle: "testagent1",
@@ -123,7 +122,7 @@ describe("BoostService.getCompetitionBoosts", () => {
         },
         {
           userId: testUserId2,
-          wallet: BlockchainAddressAsU8A.encode(testWallet2),
+          wallet: testWallet2,
           agentId: testAgentId2,
           agentName: "Test Agent 2",
           agentHandle: "testagent2",
@@ -154,7 +153,7 @@ describe("BoostService.getCompetitionBoosts", () => {
       mockBoostRepo.competitionBoosts.mockResolvedValue([
         {
           userId: testUserId1,
-          wallet: BlockchainAddressAsU8A.encode(testWallet1),
+          wallet: testWallet1,
           agentId: testAgentId1,
           agentName: "Test Agent 1",
           agentHandle: "testagent1",
@@ -184,7 +183,7 @@ describe("BoostService.getCompetitionBoosts", () => {
       mockBoostRepo.competitionBoosts.mockResolvedValue([
         {
           userId: testUserId1,
-          wallet: BlockchainAddressAsU8A.encode(testWallet1),
+          wallet: testWallet1,
           agentId: testAgentId1,
           agentName: "Test Agent 1",
           agentHandle: "testagent1",
@@ -258,8 +257,8 @@ describe("BoostService.getCompetitionBoosts", () => {
 
   describe("data transformation", () => {
     it("should convert wallet Uint8Array to hex string", async () => {
-      const wallet1Bytes = BlockchainAddressAsU8A.encode(testWallet1);
-      const wallet2Bytes = BlockchainAddressAsU8A.encode(testWallet2);
+      const wallet1Bytes = testWallet1;
+      const wallet2Bytes = testWallet2;
 
       mockBoostRepo.competitionBoosts.mockResolvedValue([
         {
@@ -305,7 +304,7 @@ describe("BoostService.getCompetitionBoosts", () => {
       mockBoostRepo.competitionBoosts.mockResolvedValue([
         {
           userId: testUserId1,
-          wallet: BlockchainAddressAsU8A.encode(testWallet1),
+          wallet: testWallet1,
           agentId: testAgentId1,
           agentName: "Test Agent 1",
           agentHandle: "testagent1",
@@ -335,7 +334,7 @@ describe("BoostService.getCompetitionBoosts", () => {
       mockBoostRepo.competitionBoosts.mockResolvedValue([
         {
           userId: testUserId1,
-          wallet: BlockchainAddressAsU8A.encode(testWallet1),
+          wallet: testWallet1,
           agentId: testAgentId1,
           agentName: "Test Agent 1",
           agentHandle: "testagent1",
@@ -361,7 +360,7 @@ describe("BoostService.getCompetitionBoosts", () => {
       mockBoostRepo.competitionBoosts.mockResolvedValue([
         {
           userId: testUserId1,
-          wallet: BlockchainAddressAsU8A.encode(testWallet1),
+          wallet: testWallet1,
           agentId: testAgentId1,
           agentName: "Alpha Trader",
           agentHandle: "alphatrader",
@@ -426,7 +425,7 @@ describe("BoostService.getCompetitionBoosts", () => {
       const mockBoosts = [
         {
           userId: testUserId1,
-          wallet: BlockchainAddressAsU8A.encode(testWallet1),
+          wallet: testWallet1,
           agentId: testAgentId1,
           agentName: "Test Agent 1",
           agentHandle: "testagent1",
@@ -516,7 +515,7 @@ describe("BoostService.getCompetitionBoosts", () => {
       mockBoostRepo.competitionBoosts.mockResolvedValue([
         {
           userId: testUserId1,
-          wallet: BlockchainAddressAsU8A.encode(testWallet1),
+          wallet: testWallet1,
           agentId: testAgentId1,
           agentName: "Agent 1",
           agentHandle: "agent1",
@@ -525,7 +524,7 @@ describe("BoostService.getCompetitionBoosts", () => {
         },
         {
           userId: testUserId2,
-          wallet: BlockchainAddressAsU8A.encode(testWallet2),
+          wallet: testWallet2,
           agentId: testAgentId2,
           agentName: "Agent 2",
           agentHandle: "agent2",
@@ -534,7 +533,7 @@ describe("BoostService.getCompetitionBoosts", () => {
         },
         {
           userId: testUserId1,
-          wallet: BlockchainAddressAsU8A.encode(testWallet1),
+          wallet: testWallet1,
           agentId: testAgentId1,
           agentName: "Agent 1",
           agentHandle: "agent1",
@@ -561,7 +560,7 @@ describe("BoostService.getCompetitionBoosts", () => {
     it("should handle items count matching total when no pagination", async () => {
       const mockBoosts = Array.from({ length: 3 }, (_, i) => ({
         userId: testUserId1,
-        wallet: BlockchainAddressAsU8A.encode(testWallet1),
+        wallet: testWallet1,
         agentId: testAgentId1,
         agentName: "Test Agent",
         agentHandle: "testagent",
@@ -582,39 +581,6 @@ describe("BoostService.getCompetitionBoosts", () => {
         expect(result.value.items).toHaveLength(3);
         expect(result.value.pagination.total).toBe(3);
         expect(result.value.pagination.hasMore).toBe(false);
-      }
-    });
-  });
-
-  describe("wallet address normalization", () => {
-    it("should convert wallet to lowercase hex", async () => {
-      const mixedCaseWallet = "0xAbCdEf1234567890123456789012345678901234";
-      const walletBytes = BlockchainAddressAsU8A.encode(mixedCaseWallet);
-
-      mockBoostRepo.competitionBoosts.mockResolvedValue([
-        {
-          userId: testUserId1,
-          wallet: walletBytes,
-          agentId: testAgentId1,
-          agentName: "Test Agent",
-          agentHandle: "testagent",
-          amount: 100n,
-          createdAt: new Date(),
-        },
-      ]);
-      mockBoostRepo.countCompetitionBoosts.mockResolvedValue(1);
-
-      const result = await service.getCompetitionBoosts(testCompetitionId, {
-        limit: 50,
-        offset: 0,
-      });
-
-      expect(result.isOk()).toBe(true);
-      if (result.isOk()) {
-        expect(result.value.items[0]?.wallet).toBe(
-          mixedCaseWallet.toLowerCase(),
-        );
-        expect(result.value.items[0]?.wallet).toMatch(/^0x[0-9a-f]{40}$/);
       }
     });
   });

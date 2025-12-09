@@ -251,7 +251,6 @@ export class BoostBonusService {
           const result = await this.#boostRepository.decrease(
             {
               userId: boost.userId,
-              wallet: user.walletAddress,
               competitionId,
               amount: boost.amount,
               idemKey,
@@ -481,7 +480,6 @@ export class BoostBonusService {
       const appliedCompetitions =
         await this.applyBoostBonusToEligibleCompetitions(
           user.id,
-          user.walletAddress,
           boost.id,
           amount,
           expiresAt,
@@ -703,7 +701,6 @@ export class BoostBonusService {
                 const result = await this.#boostRepository.increase(
                   {
                     userId: boost.userId,
-                    wallet: user.walletAddress,
                     competitionId,
                     amount: boost.amount,
                     idemKey,
@@ -1023,7 +1020,6 @@ export class BoostBonusService {
           const result = await this.#boostRepository.decrease(
             {
               userId: boost.userId,
-              wallet: user.walletAddress,
               competitionId,
               amount: boost.amount,
               idemKey,
@@ -1120,7 +1116,6 @@ export class BoostBonusService {
    */
   private async applyBoostBonusToEligibleCompetitions(
     userId: string,
-    wallet: string,
     boostBonusId: string,
     amount: bigint,
     expiresAt: Date,
@@ -1194,7 +1189,6 @@ export class BoostBonusService {
         const result = await this.#boostRepository.increase(
           {
             userId,
-            wallet,
             competitionId,
             amount,
             idemKey,

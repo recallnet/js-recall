@@ -72,7 +72,6 @@ describe("BoostRepository.recordStakeBoostAward() Integration Tests", () => {
     // 4. Create a boost balance and boost change to reference
     const increaseResult = await repository.increase({
       userId: testUserId,
-      wallet: testWallet,
       competitionId: testCompetitionId,
       amount: 500n,
     });
@@ -194,7 +193,6 @@ describe("BoostRepository.recordStakeBoostAward() Integration Tests", () => {
       // Create another boost change
       const increaseResult2 = await repository.increase({
         userId: testUserId,
-        wallet: testWallet,
         competitionId: testCompetitionId,
         amount: 750n,
       });
@@ -358,7 +356,6 @@ describe("BoostRepository.recordStakeBoostAward() Integration Tests", () => {
       // Create boost change for second competition
       const increaseResult2 = await repository.increase({
         userId: testUserId,
-        wallet: testWallet,
         competitionId: testCompetitionId2,
         amount: 300n,
       });

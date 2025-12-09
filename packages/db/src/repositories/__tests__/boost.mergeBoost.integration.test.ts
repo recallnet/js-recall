@@ -9,7 +9,6 @@ import {
   test,
 } from "vitest";
 
-import { BlockchainAddressAsU8A } from "../../coders/index.js";
 import * as schema from "../../schema/boost/defs.js";
 import * as coreSchema from "../../schema/core/defs.js";
 import { dropAllSchemas } from "../../utils/drop-all-schemas.js";
@@ -135,7 +134,6 @@ describe("BoostRepository.mergeBoost() Integration Tests", () => {
       // Set up source user with some boost balance
       await repository.increase({
         userId: fromUserId,
-        wallet: testWallet1,
         competitionId: testCompetitionId1,
         amount: 1000n,
       });
@@ -179,23 +177,18 @@ describe("BoostRepository.mergeBoost() Integration Tests", () => {
 
       expect(changeRecords).toHaveLength(1);
       expect(changeRecords[0]?.deltaAmount).toBe(1000n);
-      expect(changeRecords[0]?.wallet).toEqual(
-        BlockchainAddressAsU8A.encode(testWallet1),
-      );
     });
 
     test("should merge multiple competition balances", async () => {
       // Set up source user with balances in multiple competitions
       await repository.increase({
         userId: fromUserId,
-        wallet: testWallet1,
         competitionId: testCompetitionId1,
         amount: 500n,
       });
 
       await repository.increase({
         userId: fromUserId,
-        wallet: testWallet1,
         competitionId: testCompetitionId2,
         amount: 750n,
       });
@@ -223,14 +216,12 @@ describe("BoostRepository.mergeBoost() Integration Tests", () => {
       // Create multiple boost changes for same competition
       await repository.increase({
         userId: fromUserId,
-        wallet: testWallet1,
         competitionId: testCompetitionId1,
         amount: 300n,
       });
 
       await repository.increase({
         userId: fromUserId,
-        wallet: testWallet1,
         competitionId: testCompetitionId1,
         amount: 200n,
       });
@@ -238,7 +229,6 @@ describe("BoostRepository.mergeBoost() Integration Tests", () => {
       // Also create a decrease to test sum calculation
       await repository.decrease({
         userId: fromUserId,
-        wallet: testWallet1,
         competitionId: testCompetitionId1,
         amount: 100n,
       });
@@ -284,14 +274,12 @@ describe("BoostRepository.mergeBoost() Integration Tests", () => {
       // Set up both users with balances in same competition
       await repository.increase({
         userId: fromUserId,
-        wallet: testWallet1,
         competitionId: testCompetitionId1,
         amount: 600n,
       });
 
       await repository.increase({
         userId: toUserId,
-        wallet: testWallet2,
         competitionId: testCompetitionId1,
         amount: 400n,
       });
@@ -326,28 +314,20 @@ describe("BoostRepository.mergeBoost() Integration Tests", () => {
       expect(changeRecords).toHaveLength(2);
       // First change should be from source user (600n) - created first chronologically
       expect(changeRecords[0]?.deltaAmount).toBe(600n);
-      expect(changeRecords[0]?.wallet).toEqual(
-        BlockchainAddressAsU8A.encode(testWallet1),
-      );
       // Second change should be from target user (400n) - created second chronologically
       expect(changeRecords[1]?.deltaAmount).toBe(400n);
-      expect(changeRecords[1]?.wallet).toEqual(
-        BlockchainAddressAsU8A.encode(testWallet2),
-      );
     });
 
     test("should handle partial competition overlaps", async () => {
       // Source has balances in both competitions
       await repository.increase({
         userId: fromUserId,
-        wallet: testWallet1,
         competitionId: testCompetitionId1,
         amount: 300n,
       });
 
       await repository.increase({
         userId: fromUserId,
-        wallet: testWallet1,
         competitionId: testCompetitionId2,
         amount: 500n,
       });
@@ -355,7 +335,6 @@ describe("BoostRepository.mergeBoost() Integration Tests", () => {
       // Target has balance only in competition 1
       await repository.increase({
         userId: toUserId,
-        wallet: testWallet2,
         competitionId: testCompetitionId1,
         amount: 200n,
       });
@@ -386,7 +365,6 @@ describe("BoostRepository.mergeBoost() Integration Tests", () => {
       // Create a zero-amount balance for source user
       await repository.increase({
         userId: fromUserId,
-        wallet: testWallet1,
         competitionId: testCompetitionId1,
         amount: 0n,
       });
@@ -444,28 +422,24 @@ describe("BoostRepository.mergeBoost() Integration Tests", () => {
       // Create a complex history for source user
       await repository.increase({
         userId: fromUserId,
-        wallet: testWallet1,
         competitionId: testCompetitionId1,
         amount: 1000n,
       });
 
       await repository.decrease({
         userId: fromUserId,
-        wallet: testWallet1,
         competitionId: testCompetitionId1,
         amount: 300n,
       });
 
       await repository.increase({
         userId: fromUserId,
-        wallet: testWallet1,
         competitionId: testCompetitionId1,
         amount: 250n,
       });
 
       await repository.decrease({
         userId: fromUserId,
-        wallet: testWallet1,
         competitionId: testCompetitionId1,
         amount: 150n,
       });
@@ -512,7 +486,6 @@ describe("BoostRepository.mergeBoost() Integration Tests", () => {
       // Set up source user with balance
       await repository.increase({
         userId: fromUserId,
-        wallet: testWallet1,
         competitionId: testCompetitionId1,
         amount: 500n,
       });
@@ -548,7 +521,6 @@ describe("BoostRepository.mergeBoost() Integration Tests", () => {
       // Create boost with specific idempotency key and metadata
       await repository.increase({
         userId: fromUserId,
-        wallet: testWallet1,
         competitionId: testCompetitionId1,
         amount: 400n,
         idemKey,
@@ -595,7 +567,6 @@ describe("BoostRepository.mergeBoost() Integration Tests", () => {
       // Set up source user with balance
       await repository.increase({
         userId: fromUserId,
-        wallet: testWallet1,
         competitionId: testCompetitionId1,
         amount: 500n,
       });
