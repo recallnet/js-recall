@@ -488,9 +488,10 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
             continue;
           }
 
-          // Override amounts from getAssetTransfers (already decimal-adjusted)
-          // The receipt logs give us correct token addresses, but raw amounts
-          // Use getAssetTransfers amounts which are properly adjusted
+          // Override amounts with getAssetTransfers values (already decimal-adjusted)
+          // Receipt logs provide deterministic token identification via logIndex ordering,
+          // but getAssetTransfers has more reliable pre-adjusted amounts.
+          // Note: Override is conditional - if no matching transfer found, receipt log amounts are kept as fallback
           const wallet = walletAddress.toLowerCase();
           const outboundTransfer = txTransfers.find(
             (t) =>
@@ -928,13 +929,17 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
     }
 
     // Convert BigInt values to numbers with proper decimals
+    // These amounts serve dual purpose:
+    // 1. Validation: reject 0-value swaps before returning
+    // 2. Fallback: used if getAssetTransfers doesn't have matching tokens (edge case safety net)
+    // In normal flow, amounts are overridden by getAssetTransfers values which are pre-adjusted
     const fromDecimals = tokenDecimals.get(outbound.tokenAddress) ?? 18;
     const toDecimals = tokenDecimals.get(inbound.tokenAddress) ?? 18;
 
     const fromAmount = Number(outbound.value) / Math.pow(10, fromDecimals);
     const toAmount = Number(inbound.value) / Math.pow(10, toDecimals);
 
-    // Validate: reject 0-value swaps as invalid
+    // Validation: reject 0-value swaps as invalid
     if (fromAmount === 0) {
       this.logger.warn(
         {
