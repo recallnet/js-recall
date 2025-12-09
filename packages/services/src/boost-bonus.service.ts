@@ -513,6 +513,132 @@ export class BoostBonusService {
   }
 
   /**
+   * Adds multiple bonus boosts in a single transaction.
+   *
+   * This method provides an atomic way to add multiple bonus boosts at once.
+   * Either all boosts are added successfully, or none are added (transaction rollback).
+   *
+   * **Process:**
+   * 1. Validates all input parameters for each boost
+   * 2. Processes each boost sequentially within a transaction
+   * 3. Returns results for all boosts with their respective applied competitions
+   *
+   * **Validation (for each boost):**
+   * - Amount must be > 0 and <= 10^24
+   * - Expiration must be at least 1 minute in the future
+   * - Meta field must be <= 1000 characters when serialized
+   * - Meta field must only contain primitives
+   * - User must exist
+   *
+   * **Transaction Guarantees:**
+   * - All boosts are added or none are added (atomic)
+   * - If any boost fails validation or application, entire batch rolls back
+   * - Database remains consistent even if operation fails mid-batch
+   *
+   * @param boosts - Array of boost configurations to add
+   * @param tx - Optional transaction (if not provided, creates new transaction)
+   * @returns Array of results, one per boost, in same order as input
+   * @throws Error if any validation fails or user not found
+   *
+   * @example
+   * ```typescript
+   * const results = await boostBonusService.addBoostBonusBatch([
+   *   {
+   *     wallet: '0x1234...',
+   *     amount: 1000000000000000000n,
+   *     expiresAt: new Date('2025-12-31'),
+   *     meta: { source: 'campaign-1' }
+   *   },
+   *   {
+   *     wallet: '0x5678...',
+   *     amount: 2000000000000000000n,
+   *     expiresAt: new Date('2025-12-31'),
+   *     meta: { source: 'campaign-1' }
+   *   }
+   * ]);
+   * console.log(`Added ${results.length} boosts`);
+   * ```
+   */
+  async addBoostBonusBatch(
+    boosts: Array<{
+      wallet: string;
+      amount: bigint;
+      expiresAt: Date;
+      createdByAdminId?: string;
+      meta?: Record<string, unknown>;
+    }>,
+    tx?: Transaction,
+  ): Promise<AddBoostBonusResult[]> {
+    const executeWithTx = async (transaction: Transaction) => {
+      const results: AddBoostBonusResult[] = [];
+
+      for (const boost of boosts) {
+        const result = await this.addBoostBonus(
+          boost.wallet,
+          boost.amount,
+          boost.expiresAt,
+          boost.createdByAdminId,
+          boost.meta,
+          transaction,
+        );
+
+        results.push(result);
+      }
+
+      return results;
+    };
+
+    if (tx) {
+      return executeWithTx(tx);
+    } else {
+      return this.#db.transaction(executeWithTx);
+    }
+  }
+
+  /**
+   * Revoke multiple bonus boosts in a batch operation.
+   *
+   * This method revokes multiple bonus boosts in a single transaction.
+   * Each boost is revoked using the same logic as `revokeBoostBonus`.
+   *
+   * @param boostBonusIds - Array of boost bonus IDs to revoke
+   * @param tx - Optional transaction to use for the operation
+   * @returns Array of revocation results for each boost
+   *
+   * @throws {ApiError} If any boost is not found or already revoked
+   *
+   * @example
+   * ```typescript
+   * const results = await boostBonusService.revokeBoostBonusBatch([
+   *   'boost-id-1',
+   *   'boost-id-2',
+   * ]);
+   * ```
+   */
+  async revokeBoostBonusBatch(
+    boostBonusIds: string[],
+    tx?: Transaction,
+  ): Promise<RevokeBoostBonusResult[]> {
+    const executeWithTx = async (transaction: Transaction) => {
+      const results: RevokeBoostBonusResult[] = [];
+
+      for (const boostBonusId of boostBonusIds) {
+        const result = await this.revokeBoostBonus(boostBonusId, transaction);
+
+        results.push(result);
+      }
+
+      return results;
+    };
+
+    if (tx) {
+      return executeWithTx(tx);
+    } else {
+      return this.#db.transaction(executeWithTx);
+    }
+  }
+
+  /**
    * Applies all active bonus boosts to eligible competitions.
    *
    * This method is called by the cron job to apply bonus boosts to competitions.

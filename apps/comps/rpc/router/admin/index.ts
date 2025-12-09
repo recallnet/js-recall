@@ -1,5 +1,6 @@
 import { agents } from "./agents";
 import { arenas } from "./arenas";
+import { bonusBoost } from "./bonus-boost";
 import { competitions } from "./competitions";
 import { partners } from "./partners";
 import { reports } from "./reports";
@@ -18,4 +19,5 @@ export const router = {
   reports,
   rewards,
   search: globalSearch,
+  bonusBoost,
 } as const;

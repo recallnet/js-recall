@@ -24,6 +24,7 @@ import {
   ArenaService,
   BalanceService,
   BoostAwardService,
+  BoostBonusService,
   BoostService,
   CompetitionService,
   EmailService,
@@ -75,6 +76,7 @@ export const base = os
     airdropService: AirdropService;
     boostService: BoostService;
     boostAwardService: BoostAwardService;
+    boostBonusService: BoostBonusService;
     userService: UserService;
     competitionService: CompetitionService;
     competitionRepository: CompetitionRepository;
