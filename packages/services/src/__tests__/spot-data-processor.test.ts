@@ -174,10 +174,12 @@ describe("SpotDataProcessor", () => {
       { id: "1", agentId: "agent1", tokenAddress: "0xusdc", amount: 1000 },
     ]);
 
-    // Default mock provider
+    // Default mock provider - getTradesSince returns TradesResult with trades array
     mockProvider = {
       getName: vi.fn().mockReturnValue("RPC Direct (Alchemy)"),
-      getTradesSince: vi.fn().mockResolvedValue([sampleOnChainTrade]),
+      getTradesSince: vi
+        .fn()
+        .mockResolvedValue({ trades: [sampleOnChainTrade] }),
       getTransferHistory: vi.fn().mockResolvedValue([sampleTransfer]),
       isHealthy: vi.fn().mockResolvedValue(true),
       getCurrentBlock: vi.fn().mockResolvedValue(2000000),
@@ -347,7 +349,7 @@ describe("SpotDataProcessor", () => {
     });
 
     it("should handle empty trade list gracefully", async () => {
-      mockProvider.getTradesSince = vi.fn().mockResolvedValue([]);
+      mockProvider.getTradesSince = vi.fn().mockResolvedValue({ trades: [] });
 
       const result = await processor.processAgentData(
         "agent-1",
@@ -665,7 +667,7 @@ describe("SpotDataProcessor", () => {
       // First agent succeeds, second fails
       mockProvider.getTradesSince = vi
         .fn()
-        .mockResolvedValueOnce([sampleOnChainTrade])
+        .mockResolvedValueOnce({ trades: [sampleOnChainTrade] })
         .mockRejectedValueOnce(new Error("RPC timeout"));
 
       const result = await processor.processSpotLiveCompetition("comp-1");
@@ -717,9 +719,9 @@ describe("SpotDataProcessor", () => {
       // First and third succeed, second fails
       mockProvider.getTradesSince = vi
         .fn()
-        .mockResolvedValueOnce([sampleOnChainTrade])
+        .mockResolvedValueOnce({ trades: [sampleOnChainTrade] })
         .mockRejectedValueOnce(new Error("RPC timeout"))
-        .mockResolvedValueOnce([sampleOnChainTrade]);
+        .mockResolvedValueOnce({ trades: [sampleOnChainTrade] });
 
       const result = await processor["processBatchAgentData"](
         agents,
