@@ -1,4 +1,5 @@
 import { ORPCError } from "@orpc/server";
+import { Logger } from "pino";
 
 import { ApiError } from "@recallnet/services/types";
 
@@ -17,24 +18,10 @@ import { base } from "@/rpc/context/base";
 export const adminMiddleware = base.middleware(
   async ({ context, next, errors }) => {
     try {
-      const authHeader = context.headers.get("authorization");
-
-      if (!authHeader || !authHeader.startsWith("Bearer ")) {
-        throw errors.UNAUTHORIZED();
-      }
-
-      const apiKey = authHeader.substring(7);
-
-      if (!apiKey) {
-        throw errors.UNAUTHORIZED({
-          message:
-            "Admin authentication required. Use Authorization: Bearer YOUR_ADMIN_API_KEY",
-        });
-      }
+      const apiKey = extractApiKey(context, errors);
 
       // Validate admin API key
       const adminId = await context.adminService.validateApiKey(apiKey);
-
       if (!adminId) {
         throw errors.UNAUTHORIZED({
           message:
@@ -74,3 +61,29 @@ export const adminMiddleware = base.middleware(
     }
   },
 );
+
+function extractApiKey(
+  context: { headers: Headers; logger: Logger },
+  errors: { UNAUTHORIZED: (opts?: { message: string }) => Error },
+): string {
+  const authHeader = context.headers.get("authorization");
+
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    throw errors.UNAUTHORIZED();
+  }
+
+  const apiKey = authHeader.substring(7);
+
+  if (!apiKey) {
+    throw errors.UNAUTHORIZED({
+      message:
+        "Admin authentication required. Use Authorization: Bearer YOUR_ADMIN_API_KEY",
+    });
+  }
+
+  // Log partial key for debugging (only first 8 chars)
+  const partialKey = apiKey ? `${apiKey.substring(0, 8)}...` : "undefined";
+  context.logger.debug(`Using API Key: ${partialKey}`);
+
+  return apiKey;
+}
