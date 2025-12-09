@@ -1282,6 +1282,275 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
     });
 
     // =============================================================================
+    // UNIQUE ROI TEST WALLETS (for isolated ROI ranking test)
+    // Same logic as above ROI wallets but with unique addresses to prevent test interference
+    // =============================================================================
+
+    // Unique ROI Wallet 1: HIGHEST ROI (50%), LOWEST portfolio value ($150)
+    const uniqueRoiSwap1Time = new Date(
+      Date.now() - 5 * 60 * 1000,
+    ).toISOString();
+    const uniqueRoiPool1 = "0xae00000001000000000000000000000000000001";
+    this.setWalletData("0xa011000000000000000000000000000000000001", {
+      transfers: [
+        createMockTransfer({
+          from: "0xa011000000000000000000000000000000000001",
+          to: uniqueRoiPool1,
+          value: 50,
+          asset: "USDC",
+          hash: "0xunique_roi_swap_1",
+          blockNum: "0x1e8700",
+          blockTimestamp: uniqueRoiSwap1Time,
+          tokenAddress: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+          decimal: "6",
+        }),
+        createMockTransfer({
+          from: uniqueRoiPool1,
+          to: "0xa011000000000000000000000000000000000001",
+          value: 100,
+          asset: "USDC",
+          hash: "0xunique_roi_swap_1",
+          blockNum: "0x1e8700",
+          blockTimestamp: uniqueRoiSwap1Time,
+          tokenAddress: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+          decimal: "6",
+        }),
+      ],
+      transactions: new Map([
+        [
+          "0xunique_roi_swap_1",
+          {
+            hash: "0xunique_roi_swap_1",
+            from: "0xa011000000000000000000000000000000000001",
+            to: "0xcf77a3ba9a5ca399b7c97c74d54e5b1beb874e43",
+            blockNumber: 2003712,
+          },
+        ],
+      ]),
+      receipts: new Map([
+        [
+          "0xunique_roi_swap_1",
+          {
+            transactionHash: "0xunique_roi_swap_1",
+            blockNumber: 2003712,
+            gasUsed: "150000",
+            effectiveGasPrice: "50000000000",
+            status: true,
+            from: "0xa011000000000000000000000000000000000001",
+            to: "0xcf77a3ba9a5ca399b7c97c74d54e5b1beb874e43",
+            logs: [
+              createTransferLog({
+                tokenAddress: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+                from: "0xa011000000000000000000000000000000000001",
+                to: uniqueRoiPool1,
+                value: 50,
+                decimals: 6,
+                logIndex: 0,
+                blockNumber: 2003712,
+                txHash: "0xunique_roi_swap_1",
+              }),
+              createTransferLog({
+                tokenAddress: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+                from: uniqueRoiPool1,
+                to: "0xa011000000000000000000000000000000000001",
+                value: 100,
+                decimals: 6,
+                logIndex: 1,
+                blockNumber: 2003712,
+                txHash: "0xunique_roi_swap_1",
+              }),
+              createAerodromeSwapLog({
+                poolAddress: uniqueRoiPool1,
+                sender: "0xcf77a3ba9a5ca399b7c97c74d54e5b1beb874e43",
+                to: "0xa011000000000000000000000000000000000001",
+                logIndex: 2,
+                blockNumber: 2003712,
+                txHash: "0xunique_roi_swap_1",
+              }),
+            ],
+          },
+        ],
+      ]),
+      balances: new Map([["0x833589fcd6edb6e08f4c7c32d4f71b54bda02913", 100]]),
+    });
+
+    // Unique ROI Wallet 2: MEDIUM ROI (20%), HIGHEST portfolio value ($1200)
+    const uniqueRoiSwap2Time = new Date(
+      Date.now() - 5 * 60 * 1000,
+    ).toISOString();
+    const uniqueRoiPool2 = "0xae00000002000000000000000000000000000002";
+    this.setWalletData("0xa022000000000000000000000000000000000002", {
+      transfers: [
+        createMockTransfer({
+          from: "0xa022000000000000000000000000000000000002",
+          to: uniqueRoiPool2,
+          value: 500,
+          asset: "USDC",
+          hash: "0xunique_roi_swap_2",
+          blockNum: "0x1e8701",
+          blockTimestamp: uniqueRoiSwap2Time,
+          tokenAddress: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+          decimal: "6",
+        }),
+        createMockTransfer({
+          from: uniqueRoiPool2,
+          to: "0xa022000000000000000000000000000000000002",
+          value: 700,
+          asset: "USDC",
+          hash: "0xunique_roi_swap_2",
+          blockNum: "0x1e8701",
+          blockTimestamp: uniqueRoiSwap2Time,
+          tokenAddress: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+          decimal: "6",
+        }),
+      ],
+      transactions: new Map([
+        [
+          "0xunique_roi_swap_2",
+          {
+            hash: "0xunique_roi_swap_2",
+            from: "0xa022000000000000000000000000000000000002",
+            to: "0xcf77a3ba9a5ca399b7c97c74d54e5b1beb874e43",
+            blockNumber: 2003713,
+          },
+        ],
+      ]),
+      receipts: new Map([
+        [
+          "0xunique_roi_swap_2",
+          {
+            transactionHash: "0xunique_roi_swap_2",
+            blockNumber: 2003713,
+            gasUsed: "150000",
+            effectiveGasPrice: "50000000000",
+            status: true,
+            from: "0xa022000000000000000000000000000000000002",
+            to: "0xcf77a3ba9a5ca399b7c97c74d54e5b1beb874e43",
+            logs: [
+              createTransferLog({
+                tokenAddress: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+                from: "0xa022000000000000000000000000000000000002",
+                to: uniqueRoiPool2,
+                value: 500,
+                decimals: 6,
+                logIndex: 0,
+                blockNumber: 2003713,
+                txHash: "0xunique_roi_swap_2",
+              }),
+              createTransferLog({
+                tokenAddress: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+                from: uniqueRoiPool2,
+                to: "0xa022000000000000000000000000000000000002",
+                value: 700,
+                decimals: 6,
+                logIndex: 1,
+                blockNumber: 2003713,
+                txHash: "0xunique_roi_swap_2",
+              }),
+              createAerodromeSwapLog({
+                poolAddress: uniqueRoiPool2,
+                sender: "0xcf77a3ba9a5ca399b7c97c74d54e5b1beb874e43",
+                to: "0xa022000000000000000000000000000000000002",
+                logIndex: 2,
+                blockNumber: 2003713,
+                txHash: "0xunique_roi_swap_2",
+              }),
+            ],
+          },
+        ],
+      ]),
+      balances: new Map([["0x833589fcd6edb6e08f4c7c32d4f71b54bda02913", 1000]]),
+    });
+
+    // Unique ROI Wallet 3: LOWEST ROI (10%), MEDIUM portfolio value ($550)
+    const uniqueRoiSwap3Time = new Date(
+      Date.now() - 5 * 60 * 1000,
+    ).toISOString();
+    const uniqueRoiPool3 = "0xae00000003000000000000000000000000000003";
+    this.setWalletData("0xa033000000000000000000000000000000000003", {
+      transfers: [
+        createMockTransfer({
+          from: "0xa033000000000000000000000000000000000003",
+          to: uniqueRoiPool3,
+          value: 200,
+          asset: "USDC",
+          hash: "0xunique_roi_swap_3",
+          blockNum: "0x1e8702",
+          blockTimestamp: uniqueRoiSwap3Time,
+          tokenAddress: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+          decimal: "6",
+        }),
+        createMockTransfer({
+          from: uniqueRoiPool3,
+          to: "0xa033000000000000000000000000000000000003",
+          value: 250,
+          asset: "USDC",
+          hash: "0xunique_roi_swap_3",
+          blockNum: "0x1e8702",
+          blockTimestamp: uniqueRoiSwap3Time,
+          tokenAddress: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+          decimal: "6",
+        }),
+      ],
+      transactions: new Map([
+        [
+          "0xunique_roi_swap_3",
+          {
+            hash: "0xunique_roi_swap_3",
+            from: "0xa033000000000000000000000000000000000003",
+            to: "0xcf77a3ba9a5ca399b7c97c74d54e5b1beb874e43",
+            blockNumber: 2003714,
+          },
+        ],
+      ]),
+      receipts: new Map([
+        [
+          "0xunique_roi_swap_3",
+          {
+            transactionHash: "0xunique_roi_swap_3",
+            blockNumber: 2003714,
+            gasUsed: "150000",
+            effectiveGasPrice: "50000000000",
+            status: true,
+            from: "0xa033000000000000000000000000000000000003",
+            to: "0xcf77a3ba9a5ca399b7c97c74d54e5b1beb874e43",
+            logs: [
+              createTransferLog({
+                tokenAddress: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+                from: "0xa033000000000000000000000000000000000003",
+                to: uniqueRoiPool3,
+                value: 200,
+                decimals: 6,
+                logIndex: 0,
+                blockNumber: 2003714,
+                txHash: "0xunique_roi_swap_3",
+              }),
+              createTransferLog({
+                tokenAddress: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+                from: uniqueRoiPool3,
+                to: "0xa033000000000000000000000000000000000003",
+                value: 250,
+                decimals: 6,
+                logIndex: 1,
+                blockNumber: 2003714,
+                txHash: "0xunique_roi_swap_3",
+              }),
+              createAerodromeSwapLog({
+                poolAddress: uniqueRoiPool3,
+                sender: "0xcf77a3ba9a5ca399b7c97c74d54e5b1beb874e43",
+                to: "0xa033000000000000000000000000000000000003",
+                logIndex: 2,
+                blockNumber: 2003714,
+                txHash: "0xunique_roi_swap_3",
+              }),
+            ],
+          },
+        ],
+      ]),
+      balances: new Map([["0x833589fcd6edb6e08f4c7c32d4f71b54bda02913", 500]]),
+    });
+
+    // =============================================================================
     // NATIVE ETH TEST WALLET
     // Tests native token support: initial balance, swap detection, portfolio pricing
     // =============================================================================
@@ -1501,6 +1770,9 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
       lowerAddress === "0x0001000000000000000000000000000000000001" || // ROI ranking test - highest ROI
       lowerAddress === "0x0002000000000000000000000000000000000002" || // ROI ranking test - medium ROI
       lowerAddress === "0x0003000000000000000000000000000000000003" || // ROI ranking test - lowest ROI
+      lowerAddress === "0xa011000000000000000000000000000000000001" || // Unique ROI test - highest ROI
+      lowerAddress === "0xa022000000000000000000000000000000000002" || // Unique ROI test - medium ROI
+      lowerAddress === "0xa033000000000000000000000000000000000003" || // Unique ROI test - lowest ROI
       lowerAddress === "0x9999000000000000000000000000000000000009" // Native ETH swap test
     ) {
       // Test wallets with swaps/transfers - reveal on first manual sync (sync 1+)
@@ -1901,6 +2173,39 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
         balancesToReturn.set("0x833589fcd6edb6e08f4c7c32d4f71b54bda02913", 500); // Initial: $500 USDC
       } else {
         // After trade: $500 → $550 (10% ROI)
+        balancesToReturn.set("0x833589fcd6edb6e08f4c7c32d4f71b54bda02913", 550);
+      }
+    } else if (lowerAddress === "0xa011000000000000000000000000000000000001") {
+      // Unique ROI Wallet 1: HIGHEST ROI (50%), LOWEST portfolio value ($150)
+      balancesToReturn = new Map();
+
+      if (syncNumber === 0) {
+        balancesToReturn.set("0x833589fcd6edb6e08f4c7c32d4f71b54bda02913", 100);
+      } else {
+        balancesToReturn.set("0x833589fcd6edb6e08f4c7c32d4f71b54bda02913", 150);
+      }
+    } else if (lowerAddress === "0xa022000000000000000000000000000000000002") {
+      // Unique ROI Wallet 2: MEDIUM ROI (20%), HIGHEST portfolio value ($1200)
+      balancesToReturn = new Map();
+
+      if (syncNumber === 0) {
+        balancesToReturn.set(
+          "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+          1000,
+        );
+      } else {
+        balancesToReturn.set(
+          "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+          1200,
+        );
+      }
+    } else if (lowerAddress === "0xa033000000000000000000000000000000000003") {
+      // Unique ROI Wallet 3: LOWEST ROI (10%), MEDIUM portfolio value ($550)
+      balancesToReturn = new Map();
+
+      if (syncNumber === 0) {
+        balancesToReturn.set("0x833589fcd6edb6e08f4c7c32d4f71b54bda02913", 500);
+      } else {
         balancesToReturn.set("0x833589fcd6edb6e08f4c7c32d4f71b54bda02913", 550);
       }
     } else if (lowerAddress === "0x9999000000000000000000000000000000000009") {
