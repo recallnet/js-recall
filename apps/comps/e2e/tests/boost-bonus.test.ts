@@ -1392,7 +1392,6 @@ describe("Bonus Boosts E2E", () => {
       // Simulate a staked boost increase (500000000000000000 = 0.5 tokens)
       const stakeBoostResult = await boostRepo.increase({
         userId: user.id,
-        wallet: user.walletAddress,
         competitionId: comp.competition.id,
         amount: 500000000000000000n,
       });
@@ -1468,14 +1467,12 @@ describe("Bonus Boosts E2E", () => {
 
       await boostRepo.increase({
         userId: user.id,
-        wallet: user.walletAddress,
         competitionId: activeComp.competition.id,
         amount: 500000000000000000n,
       });
 
       await boostRepo.increase({
         userId: user.id,
-        wallet: user.walletAddress,
         competitionId: pendingComp.competition.id,
         amount: 500000000000000000n,
       });

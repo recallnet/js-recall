@@ -1,5 +1,7 @@
+import { and, eq } from "drizzle-orm";
 import { beforeEach, describe, expect, test } from "vitest";
 
+import { portfolioSnapshots } from "@recallnet/db/schema/trading/defs";
 import {
   type AdminCompetitionTransferViolationsResponse,
   type AgentCompetitionsResponse,
@@ -23,6 +25,7 @@ import {
 } from "@recallnet/test-utils";
 import type { AdminAgentResponse } from "@recallnet/test-utils";
 
+import { db } from "@/database/db.js";
 import { ServiceRegistry } from "@/services/index.js";
 
 describe("Spot Live Competition", () => {
@@ -1644,6 +1647,198 @@ describe("Spot Live Competition", () => {
 
     // Verify only 1 agent remains (sufficiently funded)
     expect(typedAgents.agents.length).toBe(1);
+  });
+
+  test("should enforce late minimum funding threshold for agents that recovered from failed initial sync", async () => {
+    // Verifies late threshold enforcement runs for agents without prior snapshots.
+    // Both agents have balances above threshold, so both remain active after recovery.
+
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    const { agent: agentStaysActive } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Stays Above Threshold",
+      agentWalletAddress: "0xaaaa000000000000000000000000000000000001", // $2000 USDC
+    });
+
+    const { agent: agentToRecover } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Will Recover After Simulated Sync Failure",
+      agentWalletAddress: "0xbbbb000000000000000000000000000000000002", // $3000 USDC
+    });
+
+    const response = await startSpotLiveTestCompetition({
+      adminClient,
+      name: `Late Threshold Recovery Test ${Date.now()}`,
+      agentIds: [agentStaysActive.id, agentToRecover.id],
+      spotLiveConfig: {
+        dataSource: "rpc_direct" as const,
+        dataSourceConfig: {
+          type: "rpc_direct" as const,
+          provider: "alchemy" as const,
+          chains: ["base"],
+        },
+        chains: ["base"],
+        minFundingThreshold: 100, // $100 threshold
+        selfFundingThresholdUsd: 10,
+        syncIntervalMinutes: 2,
+      },
+    });
+
+    expect(response.success).toBe(true);
+    const competition = response.competition;
+
+    // Wait for competition start
+    await wait(2000);
+
+    // Verify both agents are active after competition start
+    const initialAgents = await adminClient.getCompetitionAgents(
+      competition.id,
+    );
+    expect(initialAgents.success).toBe(true);
+    expect((initialAgents as CompetitionAgentsResponse).agents.length).toBe(2);
+
+    // Delete agentToRecover's snapshot to simulate failed initial sync
+    await db
+      .delete(portfolioSnapshots)
+      .where(
+        and(
+          eq(portfolioSnapshots.competitionId, competition.id),
+          eq(portfolioSnapshots.agentId, agentToRecover.id),
+        ),
+      );
+
+    // Confirm agent has no snapshot before sync
+    const snapshotsBefore = await db
+      .select()
+      .from(portfolioSnapshots)
+      .where(
+        and(
+          eq(portfolioSnapshots.competitionId, competition.id),
+          eq(portfolioSnapshots.agentId, agentToRecover.id),
+        ),
+      );
+    expect(snapshotsBefore.length).toBe(0);
+
+    // Trigger sync - late enforcement runs for agent without prior snapshot
+    const services = new ServiceRegistry();
+    await services.spotDataProcessor.processSpotLiveCompetition(competition.id);
+
+    await wait(2000);
+
+    // Both agents remain active (both above $100 threshold)
+    const agentsResponse = await adminClient.getCompetitionAgents(
+      competition.id,
+    );
+    expect(agentsResponse.success).toBe(true);
+
+    const typedAgents = agentsResponse as CompetitionAgentsResponse;
+
+    const staysActiveEntry = typedAgents.agents.find(
+      (a) => a.id === agentStaysActive.id,
+    );
+    expect(staysActiveEntry).toBeDefined();
+    expect(staysActiveEntry?.active).toBe(true);
+
+    const recoveredEntry = typedAgents.agents.find(
+      (a) => a.id === agentToRecover.id,
+    );
+    expect(recoveredEntry).toBeDefined();
+    expect(recoveredEntry?.active).toBe(true);
+    expect(recoveredEntry?.portfolioValue).toBeGreaterThan(2500);
+  });
+
+  test("should disqualify agent via late enforcement when recovered with balance below threshold", async () => {
+    // Verifies late enforcement disqualifies agents below threshold.
+    // Mock balances:
+    //   0xbbbb: $3000 at sync 0, $2866 at sync 1+
+    //   0xaaaa: $2000 at sync 0, $1933 at sync 1+
+    // Threshold $1950: 0xaaaa passes at start but fails late enforcement.
+
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    const { agent: agentAboveThreshold } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Above Threshold After Sync",
+        agentWalletAddress: "0xbbbb000000000000000000000000000000000002", // $2866 after sync
+      });
+
+    const { agent: agentBelowThreshold } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Below Threshold After Sync",
+        agentWalletAddress: "0xaaaa000000000000000000000000000000000001", // $1933 after sync
+      });
+
+    const response = await startSpotLiveTestCompetition({
+      adminClient,
+      name: `Late Threshold Disqualify High Test ${Date.now()}`,
+      agentIds: [agentAboveThreshold.id, agentBelowThreshold.id],
+      spotLiveConfig: {
+        dataSource: "rpc_direct" as const,
+        dataSourceConfig: {
+          type: "rpc_direct" as const,
+          provider: "alchemy" as const,
+          chains: ["base"],
+        },
+        chains: ["base"],
+        minFundingThreshold: 1950, // $1950 threshold
+        selfFundingThresholdUsd: 10,
+        syncIntervalMinutes: 2,
+      },
+    });
+
+    expect(response.success).toBe(true);
+    const competition = response.competition;
+
+    await wait(2000);
+
+    // Both agents pass threshold at competition start (initial balances > $1950)
+    const initialAgents = await adminClient.getCompetitionAgents(
+      competition.id,
+    );
+    expect(initialAgents.success).toBe(true);
+    expect((initialAgents as CompetitionAgentsResponse).agents.length).toBe(2);
+
+    // Delete agentBelowThreshold's snapshot to simulate failed initial sync
+    await db
+      .delete(portfolioSnapshots)
+      .where(
+        and(
+          eq(portfolioSnapshots.competitionId, competition.id),
+          eq(portfolioSnapshots.agentId, agentBelowThreshold.id),
+        ),
+      );
+
+    // Trigger sync - late enforcement creates snapshot and checks threshold
+    const services = new ServiceRegistry();
+    await services.spotDataProcessor.processSpotLiveCompetition(competition.id);
+
+    await wait(2000);
+
+    const agentsResponse = await adminClient.getCompetitionAgents(
+      competition.id,
+    );
+    expect(agentsResponse.success).toBe(true);
+
+    const typedAgents = agentsResponse as CompetitionAgentsResponse;
+
+    // Agent above threshold remains active
+    const aboveEntry = typedAgents.agents.find(
+      (a) => a.id === agentAboveThreshold.id,
+    );
+    expect(aboveEntry).toBeDefined();
+    expect(aboveEntry?.active).toBe(true);
+    expect(aboveEntry?.portfolioValue).toBeGreaterThan(2500);
+
+    // Agent below threshold is removed by late enforcement
+    const belowEntry = typedAgents.agents.find(
+      (a) => a.id === agentBelowThreshold.id,
+    );
+    expect(belowEntry).toBeUndefined();
   });
 
   test("should filter balances and portfolio by token whitelist", async () => {

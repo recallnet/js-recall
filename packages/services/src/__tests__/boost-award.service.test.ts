@@ -140,7 +140,6 @@ describe("BoostAwardService", () => {
       expect(mockBoostRepo.increase).toHaveBeenCalledWith(
         {
           userId: testUserId,
-          wallet: testWallet,
           competitionId: "comp-1",
           amount: noStakeBoostAmount,
           meta: {
@@ -516,7 +515,6 @@ describe("BoostAwardService", () => {
       expect(mockBoostRepo.increase).toHaveBeenCalledWith(
         expect.objectContaining({
           userId: expect.any(String),
-          wallet: testWallet,
           competitionId: "comp-1",
           amount: expect.any(BigInt),
           meta: expect.objectContaining({
