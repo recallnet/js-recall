@@ -123,7 +123,7 @@ async function handleRequest(
   { params }: { params: Promise<Record<string, string | string[]>> },
 ) {
   const { matched, response } = await openApiHandler.handle(request, {
-    prefix: "/api/admin",
+    prefix: "/api",
     context: {
       cookies: await cookies(),
       headers: await headers(),
