@@ -6,10 +6,6 @@
     "outDir": "./dist",
     "rootDir": ".",
     "baseUrl": ".",
-    "paths": {
-      "@/*": ["./src/*"],
-      "@/scripts/*": ["./scripts/*"]
-    },
     "forceConsistentCasingInFileNames": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
