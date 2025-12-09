@@ -26,7 +26,7 @@ runs:
           echo "Running in act - finding Postgres container IP"
 
           # Get the container ID of the postgres container
-          POSTGRES_CONTAINER_ID=$(docker ps --filter "ancestor=postgres:14" --format "{{.ID}}")
+          POSTGRES_CONTAINER_ID=$(docker ps --filter "ancestor=postgres:17" --format "{{.ID}}")
 
           if [ -n "$POSTGRES_CONTAINER_ID" ]; then
             echo "Found postgres container: $POSTGRES_CONTAINER_ID"
