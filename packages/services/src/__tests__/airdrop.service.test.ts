@@ -303,6 +303,7 @@ describe("AirdropService", () => {
         {
           id: "claim-1",
           account: mockAddress.toLowerCase(),
+          walletAddress: mockAddress.toLowerCase(),
           eligibleAmount: BigInt("1000000000000000000"),
           claimedAmount: BigInt("1000000000000000000"),
           season: 0,
@@ -389,6 +390,7 @@ describe("AirdropService", () => {
         {
           id: "claim-1",
           account: mockAddress.toLowerCase(),
+          walletAddress: mockAddress.toLowerCase(),
           eligibleAmount: BigInt("1000000000000000000"),
           claimedAmount: BigInt("1000000000000000000"),
           season: 0,

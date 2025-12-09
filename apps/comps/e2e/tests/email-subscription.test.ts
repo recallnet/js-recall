@@ -1,4 +1,4 @@
-import { v4 as uuidv4 } from "uuid";
+import { randomUUID } from "crypto";
 import { describe, expect, test } from "vitest";
 
 import { users } from "@recallnet/db/schema/core/defs";
@@ -39,7 +39,7 @@ describe("email subscription", () => {
     // Manually create a user via db write
     const db = await connectToDb();
     const walletAddress = generateRandomEthAddress();
-    const userId = uuidv4();
+    const userId = randomUUID();
     const privyId = generateRandomPrivyId();
     const email = `bob@example.com`;
     const [row] = await db

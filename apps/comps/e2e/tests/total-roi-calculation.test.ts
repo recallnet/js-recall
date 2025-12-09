@@ -4,18 +4,18 @@ import { beforeEach, describe, expect, test } from "vitest";
 import { specificChainTokens } from "@recallnet/services/lib";
 import {
   CROSS_CHAIN_TRADING_TYPE,
-  GetUserAgentsResponse,
   StartCompetitionResponse,
 } from "@recallnet/test-utils";
 import {
   createTestClient,
   getAdminApiKey,
   getStartingValue,
-  registerUserAndAgentAndGetClient,
   wait,
 } from "@recallnet/test-utils";
 
 import { db } from "@/lib/db";
+
+import { registerUserAndAgentAndGetRpcClient } from "../utils/test-helpers.js";
 
 // Type definitions for database query results
 interface LeaderboardEntry {
@@ -37,11 +37,14 @@ describe("Total ROI Calculation Tests", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Register test agent
-    const { client: agentClient, agent } =
-      await registerUserAndAgentAndGetClient({
-        adminApiKey,
-        agentName: "ROI Test Agent",
-      });
+    const {
+      client: agentClient,
+      agent,
+      rpcClient,
+    } = await registerUserAndAgentAndGetRpcClient({
+      adminApiKey,
+      agentName: "ROI Test Agent",
+    });
 
     // Create and start competition
     const competitionName = `ROI Test Competition ${Date.now()}`;
@@ -73,11 +76,9 @@ describe("Total ROI Calculation Tests", () => {
     await wait(2000);
 
     // Get agent metrics to verify totalRoi calculation
-    const agentsResponse =
-      (await agentClient.getUserAgents()) as GetUserAgentsResponse;
-    expect(agentsResponse.success).toBe(true);
+    const { agents } = await rpcClient.user.getUserAgents({});
 
-    const agentData = agentsResponse.agents.find((a) => a.id === agent.id);
+    const agentData = agents.find((a) => a.id === agent.id);
     expect(agentData).toBeDefined();
     expect(agentData?.stats?.totalRoi).toBeDefined();
     // Use 2 decimal places (0.005 tolerance) to handle market volatility
@@ -111,11 +112,14 @@ describe("Total ROI Calculation Tests", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Register test agent
-    const { client: agentClient, agent } =
-      await registerUserAndAgentAndGetClient({
-        adminApiKey,
-        agentName: "Multi Competition Agent",
-      });
+    const {
+      client: agentClient,
+      agent,
+      rpcClient,
+    } = await registerUserAndAgentAndGetRpcClient({
+      adminApiKey,
+      agentName: "Multi Competition Agent",
+    });
 
     // Create and run first competition
     const competition1Name = `ROI Multi Test 1 ${Date.now()}`;
@@ -175,13 +179,10 @@ describe("Total ROI Calculation Tests", () => {
       startResponse2.competition.id,
     );
 
-    // Get agent metrics
     // Get agent metrics to verify totalRoi calculation
-    const agentsResponse =
-      (await agentClient.getUserAgents()) as GetUserAgentsResponse;
-    expect(agentsResponse.success).toBe(true);
+    const { agents } = await rpcClient.user.getUserAgents({});
 
-    const agentData = agentsResponse.agents.find((a) => a.id === agent.id);
+    const agentData = agents.find((a) => a.id === agent.id);
     expect(agentData).toBeDefined();
     expect(agentData?.stats?.totalRoi).toBeDefined();
 
@@ -223,11 +224,14 @@ describe("Total ROI Calculation Tests", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Register test agent
-    const { client: agentClient, agent } =
-      await registerUserAndAgentAndGetClient({
-        adminApiKey,
-        agentName: "Ended Competition Agent",
-      });
+    const {
+      client: agentClient,
+      agent,
+      rpcClient,
+    } = await registerUserAndAgentAndGetRpcClient({
+      adminApiKey,
+      agentName: "Ended Competition Agent",
+    });
 
     // Create and start first competition (will be ended)
     const competition1Name = `Ended Competition Test ${Date.now()}`;
@@ -274,11 +278,9 @@ describe("Total ROI Calculation Tests", () => {
     await wait(2000);
 
     // Get agent metrics
-    const agentsResponse =
-      (await agentClient.getUserAgents()) as GetUserAgentsResponse;
-    expect(agentsResponse.success).toBe(true);
+    const { agents } = await rpcClient.user.getUserAgents({});
 
-    const agentData = agentsResponse.agents.find((a) => a.id === agent.id);
+    const agentData = agents.find((a) => a.id === agent.id);
     expect(agentData).toBeDefined();
     expect(agentData?.stats?.totalRoi).toBeDefined();
 
@@ -295,11 +297,14 @@ describe("Total ROI Calculation Tests", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Register test agent
-    const { client: agentClient, agent } =
-      await registerUserAndAgentAndGetClient({
-        adminApiKey,
-        agentName: "No Ended Competitions Agent",
-      });
+    const {
+      client: agentClient,
+      agent,
+      rpcClient,
+    } = await registerUserAndAgentAndGetRpcClient({
+      adminApiKey,
+      agentName: "No Ended Competitions Agent",
+    });
 
     // Create competition but don't end it
     const competitionName = `No Ended Competition Test ${Date.now()}`;
@@ -322,11 +327,9 @@ describe("Total ROI Calculation Tests", () => {
     await wait(2000);
 
     // Get agent metrics
-    const agentsResponse =
-      (await agentClient.getUserAgents()) as GetUserAgentsResponse;
-    expect(agentsResponse.success).toBe(true);
+    const { agents } = await rpcClient.user.getUserAgents({});
 
-    const agentData = agentsResponse.agents.find((a) => a.id === agent.id);
+    const agentData = agents.find((a) => a.id === agent.id);
     expect(agentData).toBeDefined();
 
     // Should return undefined when no ended competitions

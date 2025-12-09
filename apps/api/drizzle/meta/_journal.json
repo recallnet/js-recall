@@ -484,6 +484,20 @@
       "when": 1764788427882,
       "tag": "0068_stale_spencer_smythe",
       "breakpoints": true
+    },
+    {
+      "idx": 69,
+      "version": "7",
+      "when": 1764796559688,
+      "tag": "0069_slim_whistler",
+      "breakpoints": true
+    },
+    {
+      "idx": 70,
+      "version": "7",
+      "when": 1765215492083,
+      "tag": "0070_remarkable_leech",
+      "breakpoints": true
     }
   ]
 }

@@ -1,13 +1,9 @@
-import axios from "axios";
 import { beforeEach, describe, expect, test } from "vitest";
 
 import {
   CompetitionAgentsResponse,
-  CompetitionTimelineResponse,
-  ErrorResponse,
   StartCompetitionResponse,
 } from "@recallnet/test-utils";
-import { getBaseUrl } from "@recallnet/test-utils";
 import {
   createTestClient,
   getAdminApiKey,
@@ -17,13 +13,18 @@ import {
 
 import { portfolioSnapshotterService } from "@/lib/services";
 
+import { createTestRpcClient } from "../utils/rpc-client-helpers.js";
+
 describe("Competition Timeline API", () => {
   let adminApiKey: string;
+  let rpcClient: Awaited<ReturnType<typeof createTestRpcClient>>;
 
   // Clean up test state before each test
   beforeEach(async () => {
     // Store the admin API key for authentication
     adminApiKey = await getAdminApiKey();
+    // Create RPC client for timeline queries (public access, no auth needed)
+    rpcClient = await createTestRpcClient();
   });
 
   test("should get competition timeline", async () => {
@@ -79,17 +80,16 @@ describe("Competition Timeline API", () => {
     await portfolioSnapshotterService.takePortfolioSnapshots(competition.id);
 
     // Get competition timeline
-    const timelineResponse = (await agentClient1.getCompetitionTimeline(
-      competition.id,
-    )) as CompetitionTimelineResponse;
+    const timeline = await rpcClient.competitions.getTimeline({
+      competitionId: competition.id,
+    });
 
     // Verify the response
-    expect(timelineResponse.success).toBe(true);
-    expect(Array.isArray(timelineResponse.timeline)).toBe(true);
+    expect(Array.isArray(timeline)).toBe(true);
 
     // Each entry should have the expected fields
-    if (timelineResponse.timeline.length > 0) {
-      const firstAgent = timelineResponse.timeline[0];
+    if (timeline.length > 0) {
+      const firstAgent = timeline[0];
       if (firstAgent) {
         expect(firstAgent).toHaveProperty("agentId");
         expect(firstAgent).toHaveProperty("agentName");
@@ -108,24 +108,12 @@ describe("Competition Timeline API", () => {
   });
 
   test("should return 404 for non-existent competition timeline", async () => {
-    // Setup admin client
-    const adminClient = createTestClient();
-    await adminClient.loginAsAdmin(adminApiKey);
-
-    // Register an agent
-    const { client: agentClient } = await registerUserAndAgentAndGetClient({
-      adminApiKey,
-      agentName: "404 Timeline Test Agent",
-    });
-
     // Try to get timeline for a non-existent competition
-    const response = await agentClient.getCompetitionTimeline(
-      "00000000-0000-0000-0000-000000000000",
-    );
-
-    // Should return error response
-    expect(response.success).toBe(false);
-    expect((response as ErrorResponse).error).toContain("not found");
+    await expect(
+      rpcClient.competitions.getTimeline({
+        competitionId: "00000000-0000-0000-0000-000000000000",
+      }),
+    ).rejects.toThrow(/not found/i);
   });
 
   test("should allow unauthenticated access to timeline endpoint", async () => {
@@ -152,12 +140,12 @@ describe("Competition Timeline API", () => {
       agentIds: [agent1.id, agent2.id],
     });
 
-    // Test: Direct axios call without authentication
-    const response = await axios.get(
-      `${getBaseUrl()}/competitions/${competitionResponse.competition.id}/timeline`,
-    );
+    // Test: RPC call without authentication (rpcClient has no Privy token)
+    const timeline = await rpcClient.competitions.getTimeline({
+      competitionId: competitionResponse.competition.id,
+    });
 
-    expect(response.status).toBe(200);
+    expect(Array.isArray(timeline)).toBe(true);
   });
 
   test("should return one snapshot after start of competition", async () => {
@@ -184,19 +172,13 @@ describe("Competition Timeline API", () => {
     const competition = (startResponse as StartCompetitionResponse).competition;
 
     // Get competition timeline immediately (no trades executed)
-    const { client: agentClient } = await registerUserAndAgentAndGetClient({
-      adminApiKey,
-      agentName: "Timeline Viewer Agent",
+    const timeline = await rpcClient.competitions.getTimeline({
+      competitionId: competition.id,
     });
 
-    const timelineResponse = (await agentClient.getCompetitionTimeline(
-      competition.id,
-    )) as CompetitionTimelineResponse;
-
-    // Should return empty array
-    expect(timelineResponse.success).toBe(true);
-    expect(Array.isArray(timelineResponse.timeline)).toBe(true);
-    expect(timelineResponse.timeline.length).toBe(1);
+    // Should return array with 1 snapshot (initial)
+    expect(Array.isArray(timeline)).toBe(true);
+    expect(timeline.length).toBe(1);
   });
 
   test("should accept bucket query parameter", async () => {
@@ -223,19 +205,13 @@ describe("Competition Timeline API", () => {
     const competition = (startResponse as StartCompetitionResponse).competition;
 
     // Get competition timeline with custom bucket
-    const { client: agentClient } = await registerUserAndAgentAndGetClient({
-      adminApiKey,
-      agentName: "Bucket Viewer Agent",
+    const timeline = await rpcClient.competitions.getTimeline({
+      competitionId: competition.id,
+      bucket: 60, // 1 hour bucket
     });
 
-    const timelineResponse = (await agentClient.getCompetitionTimeline(
-      competition.id,
-      60, // 1 hour bucket
-    )) as CompetitionTimelineResponse;
-
     // Should return success response
-    expect(timelineResponse.success).toBe(true);
-    expect(Array.isArray(timelineResponse.timeline)).toBe(true);
+    expect(Array.isArray(timeline)).toBe(true);
   });
 
   test("should not include non-active competition agents in the timeline", async () => {
@@ -305,14 +281,12 @@ describe("Competition Timeline API", () => {
     expect(agent2Status.agents[0]?.id).toBe(agent1.id);
 
     // Get competition timeline
-    const timelineResponse = (await agentClient1.getCompetitionTimeline(
-      competition.id,
-    )) as CompetitionTimelineResponse;
+    const timeline = await rpcClient.competitions.getTimeline({
+      competitionId: competition.id,
+    });
 
     // Should return only 1 agent ID since agent 2 is disqualified
-    const agentIds = new Set(
-      timelineResponse.timeline.map((agent) => agent.agentId),
-    );
+    const agentIds = new Set(timeline.map((agent) => agent.agentId));
     expect(agentIds.size).toBe(1);
     expect(agentIds.has(agent1.id)).toBe(true);
   });

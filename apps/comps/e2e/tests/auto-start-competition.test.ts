@@ -6,14 +6,11 @@ import {
   CreateCompetitionResponse,
   SnapshotResponse,
 } from "@recallnet/test-utils";
-import {
-  createTestClient,
-  getAdminApiKey,
-  registerUserAndAgentAndGetClient,
-  wait,
-} from "@recallnet/test-utils";
+import { createTestClient, getAdminApiKey, wait } from "@recallnet/test-utils";
 
 import { competitionService } from "@/lib/services";
+
+import { registerUserAndAgentAndGetRpcClient } from "../utils/test-helpers.js";
 
 describe("Competition Start Date Processing", () => {
   let adminApiKey: string;
@@ -28,11 +25,14 @@ describe("Competition Start Date Processing", () => {
     expect(loginSuccess).toBe(true);
 
     // Register agent and join the competition pre-start
-    const { agent, client: agentClient } =
-      await registerUserAndAgentAndGetClient({
-        adminApiKey,
-        agentName: "Auto Start Agent",
-      });
+    const {
+      agent,
+      client: agentClient,
+      rpcClient,
+    } = await registerUserAndAgentAndGetRpcClient({
+      adminApiKey,
+      agentName: "Auto Start Agent",
+    });
 
     // Create a competition with a start date a few seconds in the future
     const competitionName = `Auto Start Competition ${Date.now()}`;
@@ -50,11 +50,10 @@ describe("Competition Start Date Processing", () => {
       .competition;
 
     // Pre-register agent by joining the pending competition
-    const joinResponse = await agentClient.joinCompetition(
-      competition.id,
-      agent.id,
-    );
-    expect(joinResponse.success).toBe(true);
+    await rpcClient.competitions.join({
+      competitionId: competition.id,
+      agentId: agent.id,
+    });
 
     // Wait beyond the start time (simulate cron delay)
     await wait(6000);
@@ -148,11 +147,10 @@ describe("Competition Start Date Processing", () => {
     expect(loginSuccess).toBe(true);
 
     // Create a sandbox competition eligible for start
-    const { agent, client: agentClient } =
-      await registerUserAndAgentAndGetClient({
-        adminApiKey,
-        agentName: "Sandbox Agent",
-      });
+    const { agent, rpcClient } = await registerUserAndAgentAndGetRpcClient({
+      adminApiKey,
+      agentName: "Sandbox Agent",
+    });
 
     const startSoon = new Date(Date.now() + 2000);
 
@@ -166,11 +164,10 @@ describe("Competition Start Date Processing", () => {
     const sandboxComp = (sandboxCreate as CreateCompetitionResponse)
       .competition;
 
-    const joinSandbox = await agentClient.joinCompetition(
-      sandboxComp.id,
-      agent.id,
-    );
-    expect(joinSandbox.success).toBe(true);
+    await rpcClient.competitions.join({
+      competitionId: sandboxComp.id,
+      agentId: agent.id,
+    });
 
     // Wait and process
     await competitionService.processCompetitionStartDateChecks();
@@ -189,21 +186,30 @@ describe("Competition Start Date Processing", () => {
     expect(loginSuccess).toBe(true);
 
     // Create 3 agents for the competitions
-    const { agent: agent1, client: client1 } =
-      await registerUserAndAgentAndGetClient({
-        adminApiKey,
-        agentName: "Concurrent Agent 1",
-      });
-    const { agent: agent2, client: client2 } =
-      await registerUserAndAgentAndGetClient({
-        adminApiKey,
-        agentName: "Concurrent Agent 2",
-      });
-    const { agent: agent3, client: client3 } =
-      await registerUserAndAgentAndGetClient({
-        adminApiKey,
-        agentName: "Concurrent Agent 3",
-      });
+    const {
+      agent: agent1,
+      client: client1,
+      rpcClient: rpcClient1,
+    } = await registerUserAndAgentAndGetRpcClient({
+      adminApiKey,
+      agentName: "Concurrent Agent 1",
+    });
+    const {
+      agent: agent2,
+      client: client2,
+      rpcClient: rpcClient2,
+    } = await registerUserAndAgentAndGetRpcClient({
+      adminApiKey,
+      agentName: "Concurrent Agent 2",
+    });
+    const {
+      agent: agent3,
+      client: client3,
+      rpcClient: rpcClient3,
+    } = await registerUserAndAgentAndGetRpcClient({
+      adminApiKey,
+      agentName: "Concurrent Agent 3",
+    });
 
     // Create 3 competitions with staggered start times (all in the past)
     const now = Date.now();
@@ -239,9 +245,18 @@ describe("Competition Start Date Processing", () => {
     const comp3 = (comp3Create as CreateCompetitionResponse).competition;
 
     // Join each competition with an agent
-    await client1.joinCompetition(comp1.id, agent1.id);
-    await client2.joinCompetition(comp2.id, agent2.id);
-    await client3.joinCompetition(comp3.id, agent3.id);
+    await rpcClient1.competitions.join({
+      competitionId: comp1.id,
+      agentId: agent1.id,
+    });
+    await rpcClient2.competitions.join({
+      competitionId: comp2.id,
+      agentId: agent2.id,
+    });
+    await rpcClient3.competitions.join({
+      competitionId: comp3.id,
+      agentId: agent3.id,
+    });
 
     // Wait to ensure all data is persisted
     await wait(2000);

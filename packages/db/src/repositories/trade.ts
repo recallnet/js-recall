@@ -265,6 +265,8 @@ export class TradeRepository {
           tradeAmountUsd: trades.tradeAmountUsd,
           timestamp: trades.timestamp,
           reason: trades.reason,
+          txHash: trades.txHash,
+          tradeType: trades.tradeType,
           agent: {
             id: agents.id,
             name: agents.name,
