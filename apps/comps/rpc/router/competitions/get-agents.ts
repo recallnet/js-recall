@@ -17,15 +17,21 @@ export const getAgents = base
       competitionId: z.uuid(),
       paging: PagingParamsSchema.optional(),
       includeInactive: z.boolean().optional(),
+      filter: z.string().optional(),
+      sort: z.string().optional(),
     }),
   )
   .handler(async ({ context, input, errors }) => {
     try {
+      const paging = input.paging || PagingParamsSchema.parse({});
       const res = await context.competitionService.getCompetitionAgents({
         competitionId: input.competitionId,
         queryParams: {
-          ...(input.paging || PagingParamsSchema.parse({})),
+          limit: paging.limit,
+          offset: paging.offset,
           includeInactive: input.includeInactive ?? false,
+          filter: input.filter,
+          sort: input.sort,
         },
       });
       return res;
