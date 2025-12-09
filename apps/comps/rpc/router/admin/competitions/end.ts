@@ -18,10 +18,30 @@ export const endCompetition = base
     description: "End a competition and calculate final results",
     tags: ["admin"],
   })
-  .handler(async ({ context, input }) => {
-    const { competition, leaderboard } =
+  .handler(async ({ context, input, errors }) => {
+    const competition = await context.competitionService.getCompetition(
+      input.competitionId,
+    );
+    if (!competition) {
+      throw errors.NOT_FOUND({ message: "Competition not found" });
+    }
+
+    // End the NFL competition (note: slightly different leaderboard format)
+    if (competition.type === "sports_prediction") {
+      const { competition: endedCompetition, leaderboard } =
+        await context.competitionService.endNflCompetition(input.competitionId);
+      return { success: true, competition: endedCompetition, leaderboard };
+    }
+
+    // End the competition for all other competition types
+    const { competition: endedCompetition, leaderboard } =
       await context.competitionService.endCompetition(input.competitionId);
-    return { success: true, competition, leaderboard };
+
+    context.logger.info(
+      `Successfully ended competition, id: ${input.competitionId}`,
+    );
+
+    return { success: true, competition: endedCompetition, leaderboard };
   });
 
 export type EndCompetitionType = typeof endCompetition;
