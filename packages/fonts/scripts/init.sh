@@ -39,7 +39,7 @@ if [ -n "${PRIVATE_FONTS}" ] && [ "${PRIVATE_FONTS}" != "false" ] && [ "${PRIVAT
   rm -rf "${TEMP_DIR}"
 
   # Count the number of files copied
-  FONT_COUNT=$(find "${OUTPUT_DIR}" -type f -name "*.woff*" | wc -l)
+  FONT_COUNT=$(find "${OUTPUT_DIR}" -type f \( -name "*.woff*" -o -name "*.otf" \) | wc -l)
   if [ "$FONT_COUNT" -eq 1 ]; then
     FILES_WORD="file"
   else

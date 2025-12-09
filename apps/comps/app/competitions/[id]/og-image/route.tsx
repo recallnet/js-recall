@@ -9,7 +9,7 @@ import { createSafeClient } from "@/rpc/clients/server-side";
 import { RouterOutputs } from "@/rpc/router";
 import { CompetitionLeaderboardEntry } from "@/types/nfl";
 import { formatCompetitionDates } from "@/utils/competition-utils";
-import { formatAmount, formatBigintAmount } from "@/utils/format";
+import { formatAmount, formatBigintAmount, toOrdinal } from "@/utils/format";
 
 // =============================================================================
 // CONSTANTS
@@ -82,12 +82,14 @@ interface SportsAgent {
 /** Union type for leaderboard entries */
 type LeaderboardEntry = TradingAgent | SportsAgent;
 
+/** Cached assets for OG image generation */
 interface CachedAssets {
   backgroundImage: string | null;
   recallTokenSvg: string | null;
   recallLogoSvg: string | null;
 }
 
+/** Font configuration for OG image generation */
 interface FontConfig {
   name: string;
   data: ArrayBuffer;
@@ -108,7 +110,11 @@ let cachedAssetsPromise: Promise<CachedAssets> | null = null;
 
 /**
  * Loads a font from Google Fonts.
- * Note: Satori (next/og) only supports TTF/OTF formats.
+ * Note: Satori (next/og) only supports TTF/OTF formats, and Geist Mono (our app's fallback mono
+ * font) is not supported due to encoding issues
+ * @param family - The font family to load.
+ * @param weight - The font weight to load.
+ * @returns The font data as an ArrayBuffer.
  */
 async function loadGoogleFont(
   family: string,
@@ -132,6 +138,7 @@ async function loadGoogleFont(
 
 /**
  * Loads and caches fonts for OG image generation.
+ * @returns Promise resolving to an array of font configurations.
  */
 async function loadFonts(): Promise<FontConfig[]> {
   if (!cachedFontsPromise) {
@@ -170,6 +177,8 @@ async function loadFonts(): Promise<FontConfig[]> {
 
 /**
  * Loads a file from public directory as base64 data URL.
+ * @param assetPath - The relative path to the asset in the public directory.
+ * @returns Promise resolving to a base64 data URL string, or null if loading fails.
  */
 async function loadAssetAsBase64(assetPath: string): Promise<string | null> {
   try {
@@ -194,6 +203,7 @@ async function loadAssetAsBase64(assetPath: string): Promise<string | null> {
 
 /**
  * Loads and caches static assets for OG image generation.
+ * @returns Promise resolving to cached assets object containing background image and SVG logos.
  */
 async function loadAssets(): Promise<CachedAssets> {
   if (!cachedAssetsPromise) {
@@ -216,6 +226,9 @@ async function loadAssets(): Promise<CachedAssets> {
 
 /**
  * Generates an identicon SVG as a data URL for agents without profile images.
+ * @param agentId - The unique identifier for the agent.
+ * @param size - The size of the identicon in pixels. Defaults to 32.
+ * @returns A base64-encoded SVG data URL.
  */
 function generateIdenticonDataUrl(agentId: string, size: number = 32): string {
   const svg = toSvg(agentId, size, {
@@ -230,6 +243,8 @@ function generateIdenticonDataUrl(agentId: string, size: number = 32): string {
 
 /**
  * Returns rank colors based on position.
+ * @param rank - The rank position (1st, 2nd, 3rd, etc.), or null.
+ * @returns An object containing text and border color strings.
  */
 function getRankColors(rank: number | null): { text: string; border: string } {
   if (rank === 1) return COLORS.trophy.first;
@@ -239,17 +254,10 @@ function getRankColors(rank: number | null): { text: string; border: string } {
 }
 
 /**
- * Formats rank as ordinal (1st, 2nd, 3rd, 4th, etc).
- */
-function formatRankOrdinal(rank: number | null): string {
-  if (rank === 1) return "1st";
-  if (rank === 2) return "2nd";
-  if (rank === 3) return "3rd";
-  return `${rank}th`;
-}
-
-/**
  * Truncates text to max length with ellipsis.
+ * @param text - The text to truncate.
+ * @param maxLength - The maximum length before truncation.
+ * @returns The truncated text with ellipsis if needed.
  */
 function truncate(text: string, maxLength: number): string {
   return text.length > maxLength ? `${text.slice(0, maxLength)}…` : text;
@@ -257,6 +265,8 @@ function truncate(text: string, maxLength: number): string {
 
 /**
  * Determines if competition should show the agents leaderboard table.
+ * @param status - The competition status.
+ * @returns True if the leaderboard table should be shown.
  */
 function shouldShowAgentsTable(status: CompetitionStatus | undefined): boolean {
   return status ? ["active", "ending", "ended"].includes(status) : false;
@@ -264,6 +274,8 @@ function shouldShowAgentsTable(status: CompetitionStatus | undefined): boolean {
 
 /**
  * Determines the CTA button text based on competition status.
+ * @param competition - The competition object.
+ * @returns The CTA button text.
  */
 function getCtaText(competition: Competition): string {
   return openForBoosting(competition) || competition.status === "pending"
@@ -273,6 +285,8 @@ function getCtaText(competition: Competition): string {
 
 /**
  * Determines the value column header based on competition type.
+ * @param competitionType - The type of competition.
+ * @returns The column header text.
  */
 function getValueColumnHeader(competitionType: CompetitionType): string {
   return competitionType === "sports_prediction" ? "Score" : "Portfolio";
@@ -292,6 +306,10 @@ interface LeftSectionProps {
 
 /**
  * Left section component for the OG image.
+ * @param props - Component props.
+ * @param props.competition - The competition object.
+ * @param props.logoSvg - The Recall logo SVG data URL.
+ * @returns React element for the left section.
  */
 function LeftSection({ competition, logoSvg }: LeftSectionProps): ReactElement {
   return (
@@ -336,6 +354,11 @@ interface LeaderboardRowProps {
 
 /**
  * Leaderboard row component for the OG image.
+ * @param props - Component props.
+ * @param props.entry - The leaderboard entry data.
+ * @param props.index - The row index.
+ * @param props.isLast - Whether this is the last row.
+ * @returns React element for a leaderboard row.
  */
 function LeaderboardRow({
   entry,
@@ -362,7 +385,7 @@ function LeaderboardRow({
             color: rankColors.text,
           }}
         >
-          {formatRankOrdinal(entry.rank)}
+          {entry.rank ? toOrdinal(entry.rank) : "N/A"}
         </div>
       </div>
 
@@ -396,6 +419,9 @@ function LeaderboardRow({
 
 /**
  * Trading value column component for the OG image.
+ * @param props - Component props.
+ * @param props.entry - The trading agent entry data.
+ * @returns React element for the trading value column.
  */
 function TradingValueColumn({ entry }: { entry: TradingAgent }): ReactElement {
   const isPositive = entry.pnlPercent >= 0;
@@ -425,6 +451,9 @@ function TradingValueColumn({ entry }: { entry: TradingAgent }): ReactElement {
 
 /**
  * Sports value column component for the OG image.
+ * @param props - Component props.
+ * @param props.entry - The sports agent entry data.
+ * @returns React element for the sports value column.
  */
 function SportsValueColumn({ entry }: { entry: SportsAgent }): ReactElement {
   return (
@@ -449,6 +478,10 @@ interface LeaderboardTableProps {
 
 /**
  * Leaderboard table component for the OG image.
+ * @param props - Component props.
+ * @param props.entries - Array of leaderboard entries.
+ * @param props.competitionType - The type of competition.
+ * @returns React element for the leaderboard table.
  */
 function LeaderboardTable({
   entries,
@@ -497,6 +530,9 @@ interface CtaButtonProps {
 
 /**
  * CTA button component for the OG image.
+ * @param props - Component props.
+ * @param props.text - The button text.
+ * @returns React element for the CTA button.
  */
 function CtaButton({ text }: CtaButtonProps): ReactElement {
   return (
@@ -523,6 +559,10 @@ interface RightSectionActiveOrEndedProps {
 
 /**
  * Right section active component for the OG image.
+ * @param props - Component props.
+ * @param props.competition - The competition object.
+ * @param props.entries - Array of leaderboard entries.
+ * @returns React element for the right section when competition is active or ended.
  */
 function RightSectionActiveOrEnded({
   competition,
@@ -547,6 +587,11 @@ interface RightSectionPendingProps {
 
 /**
  * Right section pending component for the OG image.
+ * @param props - Component props.
+ * @param props.competition - The competition object.
+ * @param props.totalRewards - The total rewards amount.
+ * @param props.tokenSvg - The Recall token SVG data URL.
+ * @returns React element for the right section when competition is pending.
  */
 function RightSectionPending({
   competition,
@@ -594,6 +639,9 @@ function RightSectionPending({
 
 /**
  * Fallback image component for the OG image.
+ * @param title - The title text to display.
+ * @param fonts - Array of font configurations.
+ * @returns ImageResponse for the fallback image.
  */
 function FallbackImage(title: string, fonts: FontConfig[]): ImageResponse {
   return new ImageResponse(
@@ -615,6 +663,10 @@ function FallbackImage(title: string, fonts: FontConfig[]): ImageResponse {
 
 /**
  * Fetches trading competition leaderboard entries.
+ * @param client - The RPC client instance.
+ * @param competitionId - The competition ID.
+ * @param competitionType - The type of trading competition.
+ * @returns Promise resolving to an array of trading agent entries.
  */
 async function fetchTradingLeaderboard(
   client: Awaited<ReturnType<typeof createSafeClient>>,
@@ -644,6 +696,10 @@ async function fetchTradingLeaderboard(
 /**
  * Fetches sports prediction competition leaderboard entries.
  * Merges leaderboard data with agent images from the agents endpoint.
+ * @param client - The RPC client instance.
+ * @param competitionId - The competition ID.
+ * @param competitionType - The type of sports competition.
+ * @returns Promise resolving to an array of sports agent entries.
  */
 async function fetchSportsLeaderboard(
   client: Awaited<ReturnType<typeof createSafeClient>>,
@@ -654,7 +710,7 @@ async function fetchSportsLeaderboard(
     client.nfl.getLeaderboard({ competitionId }),
     client.competitions.getAgents({
       competitionId,
-      paging: { limit: 100, offset: 0, sort: "rank" },
+      paging: { limit: 3, offset: 0, sort: "rank" },
       includeInactive: false,
     }),
   ]);
@@ -683,6 +739,9 @@ async function fetchSportsLeaderboard(
     }));
 }
 
+/**
+ * GET route handler for generating OG images for competitions.
+ */
 export async function GET(
   _req: Request,
   context: { params: Promise<{ id: string }> },
