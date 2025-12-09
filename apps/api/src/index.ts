@@ -11,6 +11,7 @@ import { makeArenaController } from "@/controllers/arena.controller.js";
 import { makeAuthController } from "@/controllers/auth.controller.js";
 import { makeCompetitionController } from "@/controllers/competition.controller.js";
 import { makeDocsController } from "@/controllers/docs.controller.js";
+import { makeEigenaiController } from "@/controllers/eigenai.controller.js";
 import { makeHealthController } from "@/controllers/health.controller.js";
 import { makeLeaderboardController } from "@/controllers/leaderboard.controller.js";
 import { makePriceController } from "@/controllers/price.controller.js";
@@ -34,6 +35,7 @@ import { configureArenaRoutes } from "@/routes/arena.routes.js";
 import { configureAuthRoutes } from "@/routes/auth.routes.js";
 import { configureCompetitionsRoutes } from "@/routes/competitions.routes.js";
 import { configureDocsRoutes } from "@/routes/docs.routes.js";
+import { configureEigenaiRoutes } from "@/routes/eigenai.routes.js";
 import { configureHealthRoutes } from "@/routes/health.routes.js";
 import { configureNflRoutes } from "@/routes/nfl.routes.js";
 import { configurePriceRoutes } from "@/routes/price.routes.js";
@@ -178,6 +180,7 @@ const userController = makeUserController(
 const agentController = makeAgentController(services);
 const leaderboardController = makeLeaderboardController(services);
 const boostController = makeBoostController(services);
+const eigenaiController = makeEigenaiController(services);
 
 const adminRoutes = configureAdminRoutes(adminController, adminMiddleware);
 const adminSetupRoutes = configureAdminSetupRoutes(adminController);
@@ -197,6 +200,10 @@ const userRoutes = configureUserRoutes(userController, rewardsController);
 const agentRoutes = configureAgentRoutes(agentController);
 const agentsRoutes = configureAgentsRoutes(agentController);
 const leaderboardRoutes = configureLeaderboardRoutes(leaderboardController);
+const eigenaiRoutes = configureEigenaiRoutes(
+  eigenaiController,
+  authMiddlewareInstance,
+);
 const nflRoutes = configureNflRoutes(
   services,
   optionalAuth,
@@ -217,6 +224,7 @@ apiRouter.use("/agent", agentRoutes);
 apiRouter.use("/agents", agentsRoutes);
 apiRouter.use("/arenas", arenaRoutes);
 apiRouter.use("/leaderboard", leaderboardRoutes);
+apiRouter.use("/eigenai", eigenaiRoutes);
 apiRouter.use("/nfl", nflRoutes);
 
 // Mount the API router with the prefix + /api path

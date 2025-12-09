@@ -256,6 +256,10 @@ For convenience, we provide an API client that handles authentication automatica
         name: "NFL",
         description: "NFL prediction game endpoints",
       },
+      {
+        name: "EigenAI",
+        description: "EigenAI verifiable inference badge endpoints",
+      },
     ],
   },
   apis: ["./src/routes/*.ts"], // Path to the API routes files

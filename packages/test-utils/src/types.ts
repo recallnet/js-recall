@@ -1342,3 +1342,105 @@ export interface RevokeBonusBoostsResponse {
     results: RevokeBonusBoostResult[];
   };
 }
+
+/**
+ * EIGENAI VERIFIABLE INFERENCE TYPES
+ */
+
+// EigenAI verification status values
+export const EIGENAI_VERIFICATION_STATUS = {
+  VERIFIED: "verified",
+  INVALID: "invalid",
+  PENDING: "pending",
+} as const;
+
+export type EigenaiVerificationStatus =
+  (typeof EIGENAI_VERIFICATION_STATUS)[keyof typeof EIGENAI_VERIFICATION_STATUS];
+
+// EigenAI signature submission
+export interface EigenaiSignatureSubmission {
+  id: string;
+  agentId: string;
+  competitionId: string;
+  signature: string;
+  chainId: string;
+  modelId: string;
+  fullPrompt: string;
+  fullOutput: string;
+  verificationStatus: EigenaiVerificationStatus;
+  submittedAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// EigenAI badge status
+export interface EigenaiBadgeStatus {
+  agentId: string;
+  competitionId: string;
+  isBadgeActive: boolean;
+  signaturesLast24h: number;
+  lastVerifiedAt: string | null;
+}
+
+// Submit EigenAI signature request params
+export interface EigenaiSubmitSignatureParams {
+  competitionId: string;
+  requestPrompt: string;
+  responseModel: string;
+  responseOutput: string;
+  signature: string;
+}
+
+// Submit EigenAI signature response
+export interface EigenaiSubmitSignatureResponse extends ApiResponse {
+  success: true;
+  submissionId: string;
+  verified: boolean;
+  verificationStatus: EigenaiVerificationStatus;
+  badgeStatus: {
+    isBadgeActive: boolean;
+    signaturesLast24h: number;
+    lastVerifiedAt: string | null;
+  };
+}
+
+// Get EigenAI badge status response (flat structure)
+export interface EigenaiBadgeStatusResponse extends ApiResponse {
+  success: true;
+  agentId: string;
+  competitionId: string;
+  isBadgeActive: boolean;
+  signaturesLast24h: number;
+  lastVerifiedAt: string | null;
+}
+
+// Submission summary (returned in submissions list)
+export interface EigenaiSubmissionSummary {
+  id: string;
+  verificationStatus: EigenaiVerificationStatus;
+  submittedAt: string;
+  modelId: string;
+}
+
+// Get EigenAI submissions response
+export interface EigenaiSubmissionsResponse extends ApiResponse {
+  success: true;
+  agentId: string;
+  competitionId: string;
+  submissions: EigenaiSubmissionSummary[];
+  pagination: {
+    total: number;
+    limit: number;
+    offset: number;
+    hasMore: boolean;
+  };
+}
+
+// Get EigenAI competition stats response (flat structure)
+export interface EigenaiCompetitionStatsResponse extends ApiResponse {
+  success: true;
+  competitionId: string;
+  totalAgentsWithSubmissions: number;
+  agentsWithActiveBadge: number;
+  totalVerifiedSignatures: number;
+}
