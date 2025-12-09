@@ -158,7 +158,6 @@ export class BoostAwardService {
     const increaseRes = await this.#boostRepository.increase(
       {
         userId: userId,
-        wallet: wallet,
         competitionId: competition.id,
         amount: boostAmount,
         meta: {
@@ -199,7 +198,6 @@ export class BoostAwardService {
     return this.#boostRepository.increase(
       {
         userId: userId,
-        wallet: wallet,
         competitionId: competitionId,
         amount: boostAmount,
         meta: {

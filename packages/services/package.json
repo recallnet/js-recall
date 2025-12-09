@@ -51,6 +51,7 @@
     "test:integration": "vitest run --project integration",
     "test:coverage": "vitest run --coverage --project unit",
     "clean": "rm -rf .turbo node_modules dist",
+    "check-types": "tsc --noEmit",
     "lint": "eslint . --max-warnings 0",
     "docs:check": "typedoc --emit none",
     "docs:build": "typedoc",

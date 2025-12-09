@@ -5,9 +5,12 @@ import * as path from "path";
 import { parseArgs } from "util";
 
 import { attoValueToStringValue } from "@recallnet/conversions/atto-conversions";
-import { BlockchainAddressAsU8A } from "@recallnet/db/coders";
 import { seasons } from "@recallnet/db/schema/airdrop/defs";
-import { agentBoosts, boostChanges } from "@recallnet/db/schema/boost/defs";
+import {
+  agentBoosts,
+  boostBalances,
+  boostChanges,
+} from "@recallnet/db/schema/boost/defs";
 import { convictionClaims } from "@recallnet/db/schema/conviction-claims/defs";
 import {
   agents,
@@ -256,25 +259,23 @@ Examples:
     // Step 6: Query for all agent boosters during the season.
     const userAgentBoosts = await db
       .select({
-        address: boostChanges.wallet,
+        address: users.walletAddress,
         boostAmount: sum(boostChanges.deltaAmount),
       })
       .from(agentBoosts)
       .innerJoin(boostChanges, eq(agentBoosts.changeId, boostChanges.id))
+      .innerJoin(boostBalances, eq(boostChanges.balanceId, boostBalances.id))
+      .innerJoin(users, eq(boostBalances.userId, users.id))
       .where(
         and(
           gte(agentBoosts.createdAt, currentSeason.startDate),
           lte(agentBoosts.createdAt, currentSeason.endDate),
         ),
       )
-      .groupBy(boostChanges.wallet);
+      .groupBy(users.walletAddress);
 
     const userAgentBoostsMap = userAgentBoosts.reduce(
-      (acc, boost) =>
-        acc.set(
-          BlockchainAddressAsU8A.decode(boost.address),
-          BigInt(boost.boostAmount || "0"),
-        ),
+      (acc, boost) => acc.set(boost.address, BigInt(boost.boostAmount || "0")),
       new Map<string, bigint>(),
     );
 

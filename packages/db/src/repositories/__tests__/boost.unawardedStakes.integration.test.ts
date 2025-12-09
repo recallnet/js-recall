@@ -210,7 +210,6 @@ describe("BoostRepository.unawardedStakes() Integration Tests", () => {
       // Create a boost change to reference in the award
       const increaseResult = await repository.increase({
         userId: testUserId,
-        wallet: testWallet,
         competitionId: testCompetitionId,
         amount: 500n,
       });
@@ -265,14 +264,12 @@ describe("BoostRepository.unawardedStakes() Integration Tests", () => {
       // Create boost changes for both competitions
       const increaseResult1 = await repository.increase({
         userId: testUserId,
-        wallet: testWallet,
         competitionId: testCompetitionId,
         amount: 500n,
       });
 
       const increaseResult2 = await repository.increase({
         userId: testUserId,
-        wallet: testWallet,
         competitionId: otherCompetitionId,
         amount: 300n,
       });
@@ -458,7 +455,6 @@ describe("BoostRepository.unawardedStakes() Integration Tests", () => {
         const increaseResult = await repository.increase(
           {
             userId: testUserId,
-            wallet: testWallet,
             competitionId: testCompetitionId,
             amount: 500n,
           },
