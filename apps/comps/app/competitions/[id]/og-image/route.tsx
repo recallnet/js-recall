@@ -8,6 +8,7 @@ import { formatBigintAmount } from "@/utils/format";
 
 const BUTTON_BLUE = "#0E66BE";
 const BUTTON_BLUE_LIGHT = "#1A8FE3";
+const TEXT_GRAY = "#A7A7A7";
 
 /** Cached assets for OG image generation */
 interface CachedAssets {
@@ -206,7 +207,7 @@ export async function GET(
         >
           {/* Left section */}
           <div
-            tw="flex flex-col w-1/2 px-16 pb-16"
+            tw="flex flex-col w-1/2 px-16 mb-12"
             style={{ justifyContent: "flex-end" }}
           >
             <div tw="flex flex-col items-center">
@@ -216,13 +217,20 @@ export async function GET(
                 alt="Recall logo"
                 height={28}
                 width={120}
+                style={{ marginBottom: 6 }}
               />
 
-              <h1 tw="text-5xl text-white leading-tight mt-6 text-center font-bold uppercase">
+              <div
+                tw="text-6xl text-white leading-tight text-center font-bold uppercase"
+                style={{ margin: "0 0 4px 0" }}
+              >
                 {competition.name}
-              </h1>
+              </div>
 
-              <span tw="text-2xl mt-6 tracking-widest text-gray-400 uppercase font-semibold">
+              <span
+                tw="text-3xl tracking-widest uppercase leading-tight"
+                style={{ margin: 0, color: TEXT_GRAY }}
+              >
                 {formatCompetitionDates(
                   competition.startDate,
                   competition.endDate,
@@ -234,22 +242,22 @@ export async function GET(
           {/* Right section */}
           <div
             tw="flex flex-col w-1/2 px-12"
-            style={{ justifyContent: "flex-end", paddingBottom: "70px" }}
+            style={{ justifyContent: "flex-end", marginBottom: "60px" }}
           >
-            <div tw="flex flex-col items-center font-normal">
+            <div
+              tw="flex flex-col items-center text-3xl tracking-wider"
+              style={{ rowGap: "20px" }}
+            >
               {/* Top text - left aligned */}
               <div tw="flex flex-col items-start w-full">
-                <div
-                  tw="text-3xl tracking-wider"
-                  style={{ display: "flex", columnGap: "20px" }}
-                >
-                  <span tw="text-gray-400">{"///"}</span>
+                <div style={{ display: "flex", columnGap: "20px" }}>
+                  <span style={{ color: TEXT_GRAY }}>{"///"}</span>
                   <span tw="text-white">PREDICT</span>
-                  <span tw="text-gray-400">WINNERS</span>
+                  <span style={{ color: TEXT_GRAY }}>WINNERS</span>
                 </div>
               </div>
 
-              <div tw="flex items-center mt-2" style={{ gap: "16px" }}>
+              <div tw="flex items-center" style={{ gap: "16px" }}>
                 <div tw="flex items-center justify-center w-14 h-14 bg-white rounded-full">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
@@ -268,14 +276,11 @@ export async function GET(
               </div>
 
               {/* Bottom text - right aligned */}
-              <div tw="flex flex-col items-end w-full mt-2">
-                <div
-                  tw="text-3xl tracking-wider"
-                  style={{ display: "flex", columnGap: "20px" }}
-                >
+              <div tw="flex flex-col items-end w-full">
+                <div style={{ display: "flex", columnGap: "20px" }}>
                   <span tw="text-white">REWARD</span>
-                  <span tw="text-gray-400">POOL</span>
-                  <span tw="text-gray-400">{"///"}</span>
+                  <span style={{ color: TEXT_GRAY }}>POOL</span>
+                  <span style={{ color: TEXT_GRAY }}>{"///"}</span>
                 </div>
               </div>
 
