@@ -6,6 +6,7 @@ import React from "react";
 
 import { Badge } from "@recallnet/ui2/components/badge";
 import { Card } from "@recallnet/ui2/components/card";
+import { Skeleton } from "@recallnet/ui2/components/skeleton";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { AgentAvatar } from "@/components/agent-avatar";
@@ -28,7 +29,7 @@ export const ArenaCard: React.FC<ArenaCardProps> = ({ arena, className }) => {
     : undefined;
 
   // Fetch top 3 agents for this arena
-  const { data: leaderboard } = useQuery(
+  const { data: leaderboard, isLoading: isLoadingLeaderboard } = useQuery(
     tanstackClient.leaderboard.getGlobal.queryOptions({
       input: {
         arenaId: arena.id,
@@ -39,14 +40,15 @@ export const ArenaCard: React.FC<ArenaCardProps> = ({ arena, className }) => {
   );
 
   // Fetch competitions for this specific arena (efficient - only fetches 4)
-  const { data: arenaCompetitionsData } = useQuery(
-    tanstackClient.arena.getCompetitions.queryOptions({
-      input: {
-        arenaId: arena.id,
-        paging: { limit: 4, offset: 0, sort: "-startDate" },
-      },
-    }),
-  );
+  const { data: arenaCompetitionsData, isLoading: isLoadingCompetitions } =
+    useQuery(
+      tanstackClient.arena.getCompetitions.queryOptions({
+        input: {
+          arenaId: arena.id,
+          paging: { limit: 4, offset: 0, sort: "-startDate" },
+        },
+      }),
+    );
 
   const topAgents = leaderboard?.agents || [];
   const topScore = topAgents[0]?.score || 0;
@@ -110,7 +112,13 @@ export const ArenaCard: React.FC<ArenaCardProps> = ({ arena, className }) => {
 
         {/* Latest Competitions - Single row, horizontal scroll */}
         <div className="shrink-0 overflow-hidden px-4 py-2 md:px-6">
-          {arenaCompetitions.length > 0 ? (
+          {isLoadingCompetitions ? (
+            <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1">
+              {Array.from({ length: 3 }).map((_, idx) => (
+                <Skeleton key={idx} className="h-9 w-28 rounded" />
+              ))}
+            </div>
+          ) : arenaCompetitions.length > 0 ? (
             <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1">
               {arenaCompetitions.map((comp) => {
                 const dateLabel =
@@ -174,7 +182,23 @@ export const ArenaCard: React.FC<ArenaCardProps> = ({ arena, className }) => {
         {/* Top 3 Agents - Flexible height but same starting point */}
         <div className="min-h-[200px] flex-1 border-t border-gray-800 bg-gray-900/30 p-3 md:p-4">
           <div className="space-y-2 md:space-y-3">
-            {topAgents.length > 0 ? (
+            {isLoadingLeaderboard ? (
+              Array.from({ length: 3 }).map((_, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-center gap-2 rounded p-1.5 md:gap-3 md:p-2"
+                >
+                  <div className="flex h-5 w-5 items-center justify-center rounded bg-gray-700" />
+                  <div className="size-4 rounded-full bg-gray-700" />
+                  <div className="min-w-0 flex-1">
+                    <Skeleton className="h-3 w-28 rounded-xl" />
+                    <Skeleton className="mt-1 h-3 w-16 rounded-xl" />
+                  </div>
+                  <div className="h-2 w-16 rounded-full bg-gray-800 md:w-20" />
+                  <Skeleton className="h-3 w-10 rounded-xl" />
+                </div>
+              ))
+            ) : topAgents.length > 0 ? (
               topAgents.map((agent, index) => {
                 const barWidth = topScore ? (agent.score / topScore) * 100 : 0;
                 const barColor = getAgentColor(agent.name);
