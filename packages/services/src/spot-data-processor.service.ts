@@ -1374,11 +1374,14 @@ export class SpotDataProcessor {
         const snapshot = snapshotByAgentId.get(agentId);
         if (!snapshot) {
           // Still no snapshot (balance sync must have failed again or no balances)
+          this.logger.debug(
+            `[SpotDataProcessor] Late enforcement: agent ${agentId} still has no snapshot - skipping threshold check`,
+          );
           continue;
         }
 
         // This is their first snapshot - check threshold
-        const portfolioValue = Number(snapshot.totalValue);
+        const portfolioValue = snapshot.totalValue;
 
         if (portfolioValue < threshold) {
           this.logger.warn(

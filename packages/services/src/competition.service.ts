@@ -1866,7 +1866,7 @@ export class CompetitionService {
     // Check each agent's portfolio value
     for (const snapshot of latestSnapshots) {
       try {
-        const portfolioValue = Number(snapshot.totalValue);
+        const portfolioValue = snapshot.totalValue;
 
         if (portfolioValue < threshold) {
           this.logger.warn(
