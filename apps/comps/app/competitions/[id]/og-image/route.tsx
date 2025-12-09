@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises";
 import { extname, join } from "node:path";
 import type { ReactElement } from "react";
 
+import { openForBoosting } from "@/lib/open-for-boosting";
 import { createSafeClient } from "@/rpc/clients/server-side";
 import { RouterOutputs } from "@/rpc/router";
 import { CompetitionLeaderboardEntry } from "@/types/nfl";
@@ -264,8 +265,10 @@ function shouldShowAgentsTable(status: CompetitionStatus | undefined): boolean {
 /**
  * Determines the CTA button text based on competition status.
  */
-function getCtaText(status: CompetitionStatus): string {
-  return status === "ending" || status === "ended" ? "RESULTS" : "PREDICT";
+function getCtaText(competition: Competition): string {
+  return openForBoosting(competition) || competition.status === "pending"
+    ? "PREDICT"
+    : "RESULTS";
 }
 
 /**
@@ -490,27 +493,18 @@ function LeaderboardTable({
  */
 interface CtaButtonProps {
   text: string;
-  variant: "large" | "compact";
 }
 
 /**
  * CTA button component for the OG image.
  */
-function CtaButton({ text, variant }: CtaButtonProps): ReactElement {
-  const isLarge = variant === "large";
-
+function CtaButton({ text }: CtaButtonProps): ReactElement {
   return (
     <div
-      tw={`flex items-center justify-center rounded-xl text-white font-semibold ${
-        isLarge
-          ? "mt-20 px-42 py-7 text-4xl tracking-widest"
-          : "px-10 py-8 text-3xl tracking-tight"
-      }`}
+      tw="flex items-center justify-center rounded-xl text-white font-semibold mt-20 px-42 py-7 text-4xl tracking-widest w-full"
       style={{
         background: `linear-gradient(180deg, ${COLORS.button.light} 0%, ${COLORS.button.base} 100%)`,
-        boxShadow: isLarge
-          ? "0 4px 20px rgba(0, 0, 0, 0.45)"
-          : "0 12px 16px rgba(0, 0, 0, 0.8), inset 4px 12px 20px #3399ff",
+        boxShadow: "0 4px 20px rgba(0, 0, 0, 0.45)",
         color: COLORS.text.light,
       }}
     >
@@ -535,9 +529,9 @@ function RightSectionActiveOrEnded({
   entries,
 }: RightSectionActiveOrEndedProps): ReactElement {
   return (
-    <div tw="flex flex-col w-full text-white h-full justify-between">
+    <div tw="flex flex-col pt-30 w-full text-white h-full justify-between">
       <LeaderboardTable entries={entries} competitionType={competition.type} />
-      <CtaButton text={getCtaText(competition.status)} variant="compact" />
+      <CtaButton text={getCtaText(competition)} />
     </div>
   );
 }
@@ -560,7 +554,7 @@ function RightSectionPending({
   tokenSvg,
 }: RightSectionPendingProps): ReactElement {
   return (
-    <div tw="flex flex-col items-center text-3xl tracking-wider gap-y-5 h-full justify-end">
+    <div tw="flex flex-col items-center text-3xl tracking-wider gap-y-5 h-full pt-30 justify-between">
       {/* Top text - left aligned */}
       <div tw="flex flex-col items-start w-full">
         <div style={{ display: "flex", columnGap: "20px" }}>
@@ -593,7 +587,7 @@ function RightSectionPending({
         </div>
       </div>
 
-      <CtaButton text={getCtaText(competition.status)} variant="large" />
+      <CtaButton text={getCtaText(competition)} />
     </div>
   );
 }
@@ -742,7 +736,7 @@ export async function GET(
         >
           <LeftSection competition={competition} logoSvg={recallLogoSvg} />
 
-          <div tw="flex flex-col w-1/2 px-8 pt-30 pb-10">
+          <div tw="flex flex-col w-1/2 px-8 pb-10">
             {showTable ? (
               <RightSectionActiveOrEnded
                 competition={competition}
