@@ -443,21 +443,31 @@ export class EigenaiService {
    * Called by cron job to recalculate badge status for all agents
    * based on their verified signatures in the last 24 hours.
    *
+   * For active competitions: uses current time as reference
+   * For ended competitions: uses referenceDate (typically competition endDate)
+   * to create a frozen snapshot of badge status at that point in time
+   *
    * @param competitionId Competition ID
+   * @param referenceDate Point in time to calculate from (defaults to now)
    * @returns Number of agents updated
    */
-  async refreshBadgeStatuses(competitionId: string): Promise<number> {
-    const now = new Date();
-    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  async refreshBadgeStatuses(
+    competitionId: string,
+    referenceDate?: Date,
+  ): Promise<number> {
+    const reference = referenceDate ?? new Date();
+    const windowStart = new Date(reference.getTime() - 24 * 60 * 60 * 1000);
 
     this.logger.debug(
-      `[EigenaiService] Refreshing badge statuses for competition=${competitionId}`,
+      `[EigenaiService] Refreshing badge statuses for competition=${competitionId}, reference=${reference.toISOString()}`,
     );
 
     // Get aggregated data for all agents with submissions
+    // When referenceDate is provided, bound the window to only count submissions up to that point
     const refreshData = await this.eigenaiRepository.getBadgeRefreshData(
       competitionId,
-      twentyFourHoursAgo,
+      windowStart,
+      referenceDate, // Pass as upper bound only if explicitly provided
     );
 
     if (refreshData.length === 0) {
@@ -492,5 +502,32 @@ export class EigenaiService {
     );
 
     return results.length;
+  }
+
+  /**
+   * Get all badge statuses for a competition
+   *
+   * Returns all badge statuses (active and inactive) for a competition.
+   * Used by frontend to determine if any agent has a badge and conditionally
+   * show/hide badge columns.
+   *
+   * @param competitionId Competition ID
+   * @returns Array of badge statuses with active flag
+   */
+  async getAllBadgeStatusesForCompetition(
+    competitionId: string,
+  ): Promise<AgentBadgeStatusResponse[]> {
+    const statuses =
+      await this.eigenaiRepository.getAllBadgeStatusesForCompetition(
+        competitionId,
+      );
+
+    return statuses.map((status) => ({
+      agentId: status.agentId,
+      competitionId: status.competitionId,
+      isBadgeActive: status.isBadgeActive,
+      signaturesLast24h: status.signaturesLast24h,
+      lastVerifiedAt: status.lastVerifiedAt,
+    }));
   }
 }

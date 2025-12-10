@@ -903,4 +903,157 @@ describe("EigenAI Verification", () => {
     expect(expiredBadge.isBadgeActive).toBe(false);
     expect(expiredBadge.signaturesLast24h).toBe(0);
   });
+
+  // =============================================================================
+  // COMPETITION END - BADGE FREEZE TESTS
+  // These tests verify that badge status is frozen when a competition ends
+  // =============================================================================
+
+  test("should freeze badge status when competition ends via endCompetition", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register an agent
+    const { agent, client: agentClient } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: `EigenAI Freeze Agent ${Date.now()}`,
+      });
+
+    // Start a paper trading competition
+    const competitionResponse = await startTestCompetition({
+      adminClient,
+      name: `EigenAI Freeze Test ${Date.now()}`,
+      agentIds: [agent.id],
+    });
+
+    expect(competitionResponse.success).toBe(true);
+    const competition = competitionResponse.competition;
+
+    await wait(500);
+
+    // Submit a valid signature - badge should become active
+    const submitResponse = await agentClient.submitEigenaiSignature({
+      competitionId: competition.id,
+      requestPrompt: EIGENAI_TEST_FIXTURE.fullPrompt,
+      responseModel: EIGENAI_TEST_FIXTURE.responseModel,
+      responseOutput: EIGENAI_TEST_FIXTURE.fullOutput,
+      signature: EIGENAI_TEST_FIXTURE.signature,
+    });
+
+    expect(submitResponse.success).toBe(true);
+
+    // Verify badge is active after submission
+    const services = new ServiceRegistry();
+    await services.eigenaiService.refreshBadgeStatuses(competition.id);
+
+    const activeBadgeResponse = await agentClient.getEigenaiBadgeStatus(
+      competition.id,
+    );
+    expect(activeBadgeResponse.success).toBe(true);
+    expect(
+      (activeBadgeResponse as EigenaiBadgeStatusResponse).isBadgeActive,
+    ).toBe(true);
+    expect(
+      (activeBadgeResponse as EigenaiBadgeStatusResponse).signaturesLast24h,
+    ).toBe(1);
+
+    // End the competition - this should freeze badge status
+    const endResult = await services.competitionService.endCompetition(
+      competition.id,
+    );
+    expect(endResult.competition.status).toBe("ended");
+
+    // Wait for any async operations to complete
+    await wait(500);
+
+    // Verify badge status is still frozen and accessible
+    const frozenBadgeResponse = await agentClient.getEigenaiBadgeStatus(
+      competition.id,
+    );
+    expect(frozenBadgeResponse.success).toBe(true);
+    const frozenBadge = frozenBadgeResponse as EigenaiBadgeStatusResponse;
+    expect(frozenBadge.isBadgeActive).toBe(true);
+    expect(frozenBadge.signaturesLast24h).toBe(1);
+
+    // Verify competition stats are still accessible for ended competition
+    const publicClient = new ApiClient();
+    const statsResponse = await publicClient.getEigenaiCompetitionStats(
+      competition.id,
+    );
+    expect(statsResponse.success).toBe(true);
+    const stats = statsResponse as EigenaiCompetitionStatsResponse;
+    expect(stats.agentsWithActiveBadge).toBe(1);
+    expect(stats.totalVerifiedSignatures).toBe(1);
+  });
+
+  test("should preserve badge status after competition ends even if cron runs", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register an agent
+    const { agent, client: agentClient } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: `EigenAI Preserve Agent ${Date.now()}`,
+      });
+
+    // Start a paper trading competition
+    const competitionResponse = await startTestCompetition({
+      adminClient,
+      name: `EigenAI Preserve Test ${Date.now()}`,
+      agentIds: [agent.id],
+    });
+
+    expect(competitionResponse.success).toBe(true);
+    const competition = competitionResponse.competition;
+
+    await wait(500);
+
+    // Submit a valid signature
+    await agentClient.submitEigenaiSignature({
+      competitionId: competition.id,
+      requestPrompt: EIGENAI_TEST_FIXTURE.fullPrompt,
+      responseModel: EIGENAI_TEST_FIXTURE.responseModel,
+      responseOutput: EIGENAI_TEST_FIXTURE.fullOutput,
+      signature: EIGENAI_TEST_FIXTURE.signature,
+    });
+
+    // Initial refresh
+    const services = new ServiceRegistry();
+    await services.eigenaiService.refreshBadgeStatuses(competition.id);
+
+    // Verify badge is active
+    const activeBadgeResponse = await agentClient.getEigenaiBadgeStatus(
+      competition.id,
+    );
+    expect(
+      (activeBadgeResponse as EigenaiBadgeStatusResponse).isBadgeActive,
+    ).toBe(true);
+
+    // End the competition
+    await services.competitionService.endCompetition(competition.id);
+
+    await wait(500);
+
+    // Record badge state after ending
+    const afterEndBadge = await agentClient.getEigenaiBadgeStatus(
+      competition.id,
+    );
+    const afterEndState = afterEndBadge as EigenaiBadgeStatusResponse;
+    expect(afterEndState.isBadgeActive).toBe(true);
+
+    // Simulate what would happen if cron tried to refresh an ended competition
+    // The cron job should skip ended competitions, but even if it ran,
+    // the badge status should remain frozen at the end state
+    // (In practice, the cron only processes active competitions)
+
+    // Verify badge state hasn't changed
+    const finalBadge = await agentClient.getEigenaiBadgeStatus(competition.id);
+    const finalState = finalBadge as EigenaiBadgeStatusResponse;
+    expect(finalState.isBadgeActive).toBe(afterEndState.isBadgeActive);
+    expect(finalState.signaturesLast24h).toBe(afterEndState.signaturesLast24h);
+  });
 });

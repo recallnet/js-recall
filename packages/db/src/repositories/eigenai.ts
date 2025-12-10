@@ -5,6 +5,7 @@ import {
   eq,
   gte,
   inArray,
+  lte,
   max,
   sql,
 } from "drizzle-orm";
@@ -330,17 +331,31 @@ export class EigenaiRepository {
 
   /**
    * Get badge refresh data for a competition
-   * Counts verified signatures in last 24h per agent and gets last verified timestamp
+   * Counts verified signatures in the time window per agent and gets last verified timestamp
    * Used by the badge refresh cron job
    * @param competitionId Competition ID
-   * @param since Timestamp to count from (typically now - 24h)
+   * @param since Window start (typically referenceDate - 24h)
+   * @param until Window end (defaults to unbounded; use competition endDate for ended competitions)
    * @returns Array of badge refresh data per agent
    */
   async getBadgeRefreshData(
     competitionId: string,
     since: Date,
+    until?: Date,
   ): Promise<BadgeRefreshData[]> {
     try {
+      // Build base conditions for the time window
+      const windowConditions = [
+        eq(signatureSubmissions.competitionId, competitionId),
+        eq(signatureSubmissions.verificationStatus, "verified"),
+        gte(signatureSubmissions.submittedAt, since),
+      ];
+
+      // Add upper bound if provided (for ended competitions)
+      if (until) {
+        windowConditions.push(lte(signatureSubmissions.submittedAt, until));
+      }
+
       // Query 1: Count verified submissions in the time window per agent
       const verifiedCounts = await this.#dbRead
         .select({
@@ -348,37 +363,47 @@ export class EigenaiRepository {
           verifiedCount: drizzleCount(signatureSubmissions.id),
         })
         .from(signatureSubmissions)
-        .where(
-          and(
-            eq(signatureSubmissions.competitionId, competitionId),
-            eq(signatureSubmissions.verificationStatus, "verified"),
-            gte(signatureSubmissions.submittedAt, since),
-          ),
-        )
+        .where(and(...windowConditions))
         .groupBy(signatureSubmissions.agentId);
 
-      // Query 2: Get the most recent verified submission per agent (all time)
+      // Build conditions for lastVerifiedAt (bounded by until if provided)
+      const lastVerifiedConditions = [
+        eq(signatureSubmissions.competitionId, competitionId),
+        eq(signatureSubmissions.verificationStatus, "verified"),
+      ];
+
+      if (until) {
+        lastVerifiedConditions.push(
+          lte(signatureSubmissions.submittedAt, until),
+        );
+      }
+
+      // Query 2: Get the most recent verified submission per agent (within bounds)
       const lastVerifiedDates = await this.#dbRead
         .select({
           agentId: signatureSubmissions.agentId,
           lastVerifiedAt: max(signatureSubmissions.submittedAt),
         })
         .from(signatureSubmissions)
-        .where(
-          and(
-            eq(signatureSubmissions.competitionId, competitionId),
-            eq(signatureSubmissions.verificationStatus, "verified"),
-          ),
-        )
+        .where(and(...lastVerifiedConditions))
         .groupBy(signatureSubmissions.agentId);
 
-      // Query 3: Get all agents with any submissions in this competition
+      // Build conditions for all agents (bounded by until if provided)
+      const allAgentsConditions = [
+        eq(signatureSubmissions.competitionId, competitionId),
+      ];
+
+      if (until) {
+        allAgentsConditions.push(lte(signatureSubmissions.submittedAt, until));
+      }
+
+      // Query 3: Get all agents with any submissions in this competition (within bounds)
       const allAgents = await this.#dbRead
         .selectDistinct({
           agentId: signatureSubmissions.agentId,
         })
         .from(signatureSubmissions)
-        .where(eq(signatureSubmissions.competitionId, competitionId));
+        .where(and(...allAgentsConditions));
 
       // Build lookup maps
       const countMap = new Map<string, number>();
@@ -577,6 +602,35 @@ export class EigenaiRepository {
       return await query;
     } catch (error) {
       this.#logger.error({ error }, "Error in getActiveBadgesForCompetition");
+      throw error;
+    }
+  }
+
+  /**
+   * Get all badge statuses for a competition
+   * Used for frontend to determine if any agent has a badge and display accordingly
+   * @param competitionId Competition ID
+   * @returns Array of all badge statuses for the competition
+   */
+  async getAllBadgeStatusesForCompetition(
+    competitionId: string,
+  ): Promise<SelectAgentBadgeStatus[]> {
+    try {
+      const results = await this.#dbRead
+        .select()
+        .from(agentBadgeStatus)
+        .where(eq(agentBadgeStatus.competitionId, competitionId));
+
+      this.#logger.debug(
+        `[EigenaiRepository] Retrieved ${results.length} badge statuses for competition ${competitionId}`,
+      );
+
+      return results;
+    } catch (error) {
+      this.#logger.error(
+        { error },
+        "Error in getAllBadgeStatusesForCompetition",
+      );
       throw error;
     }
   }
